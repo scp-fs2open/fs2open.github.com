@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-11-23 00:59:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-01-31 03:56:46 $
+ * $Author: phreak $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/11/23 00:59:01  Goober5000
+ * fixed a bug introduced by Penguin for running with NO_NETWORK defined
+ * --Goober5000
+ *
  * Revision 2.5  2003/09/13 06:02:03  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -234,7 +238,7 @@ void afterburners_start(object *objp)
 	Assert( objp->instance >= 0 && objp->instance < MAX_SHIPS );
 
 	if ( (objp->flags & OF_PLAYER_SHIP) && (objp == Player_obj) ) {
-		int now;
+		unsigned int now;
 		now = timer_get_milliseconds();
 
 		if ( (now - Player_afterburner_start_time) < 1300 ) {
