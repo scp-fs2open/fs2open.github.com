@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapons.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 19:29:29 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2002-11-06 23:22:05 $
+ * $Author: phreak $
  *
  * Code to handle the weapon systems
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 19:29:29  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move
  *
@@ -751,10 +754,10 @@ void parse_wi_flags(weapon_info *weaponp)
 		Assert(!(weaponp->wi_flags & WIF_CORKSCREW) && !(weaponp->wi_flags & WIF_FLAK));
 	}
 
-	// make sure flak guns are only placed on turrets
-	if(weaponp->wi_flags & WIF_FLAK){
-		Assert(weaponp->wi_flags & WIF_BIG_ONLY);
-	}
+	// make sure flak guns are only placed on turrets - commented out phreak 11/05/02
+//	if(weaponp->wi_flags & WIF_FLAK){
+//		Assert(weaponp->wi_flags & WIF_BIG_ONLY);
+//	}
 }
 
 // function to parse the information for a specific weapon type.	
