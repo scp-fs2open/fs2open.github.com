@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-07-26 20:47:40 $
- * $Author: Kazan $
+ * $Revision: 2.26 $
+ * $Date: 2004-07-31 08:52:45 $
+ * $Author: et1 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/07/26 20:47:40  Kazan
+ * remove MCD complete
+ *
  * Revision 2.24  2004/07/17 18:46:08  taylor
  * various OGL and memory leak fixes
  *
@@ -1512,8 +1515,14 @@ void wl_load_anim(int weapon_class)
 		icon->anim = anim_load(animation_filename, 1);
 	}
 
-	if ( icon->anim == NULL ) {
-		Int3();		// couldn't load anim filename.. get Alan
+	if ( icon->anim == NULL )
+    {
+
+
+        // *If no weapon loadout ani is found, output error instead of just crashing in debug build -Et1
+        // Int3();		// couldn't load anim filename.. get Alan
+
+        Error( LOCATION, "Couldn't find weapon loadout screen animation '%s'\n", animation_filename );
 	}
 }
 
