@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.65 $
- * $Date: 2004-07-27 18:04:09 $
+ * $Revision: 2.66 $
+ * $Date: 2004-07-29 23:41:22 $
  * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2004/07/27 18:04:09  Kazan
+ * i love it when bugs go crunch (autopilot ai fixup)
+ *
  * Revision 2.64  2004/07/26 20:47:50  Kazan
  * remove MCD complete
  *
@@ -5043,7 +5046,7 @@ void ai_fly_to_ship()
 		{
 			for (j = 0; j < MAX_SHIPS; j++)
 			{
-				if (Ships[j].objnum != -1 && !stricmp(aip->goals[i].ship_name, Ships[i].ship_name))
+				if (Ships[j].objnum != -1 && !stricmp(aip->goals[i].ship_name, Ships[j].ship_name))
 				{
 					target_object = Ships[j].objnum;
 					break;

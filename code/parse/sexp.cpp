@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.98 $
- * $Date: 2004-07-27 18:52:10 $
+ * $Revision: 2.99 $
+ * $Date: 2004-07-29 23:41:21 $
  * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2004/07/27 18:52:10  Kazan
+ * squished another
+ *
  * Revision 2.97  2004/07/26 21:26:45  Goober5000
  * outline of ship-tag and ship-untag sexps
  * --Goober5000
@@ -10455,13 +10458,7 @@ void set_nav_carry_status(int node)
 			if (!stricmp(Wings[i].name, name))
 			{
 				Wings[i].flags |= WF_NAV_CARRY;
-
-				
-				// move to next ship/wing in list
-				n = CDR(n);
-				// short circuit to the start of the loop
-				continue;
-
+				break;
 			}
 		}
 

@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.10 $
- * $Date: 2004-07-27 18:52:10 $
+ * $Revision: 1.11 $
+ * $Date: 2004-07-29 23:41:21 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2004/07/27 18:52:10  Kazan
+ * squished another
+ *
  * Revision 1.9  2004/07/27 18:04:09  Kazan
  * i love it when bugs go crunch (autopilot ai fixup)
  *
@@ -73,6 +76,8 @@ bool AutoPilotEngaged;
 int CurrentNav;
 NavPoint Navs[MAX_NAVPOINTS];
 
+// used for ramping time compression;
+int start_dist;
 
 // ********************************************************************************************
 
@@ -208,7 +213,7 @@ void StartAutopilot()
 	AutoPilotEngaged = true;
 
 	sexp_player_use_ai(1);
-	Game_time_compression = F1_0*32;
+	Game_time_compression = F1_0;
 
 	// determine speed cap
 	int i,j;
@@ -322,6 +327,8 @@ void StartAutopilot()
 		}
 	}
 
+	start_dist = DistanceTo(CurrentNav);
+
 }
 
 // ********************************************************************************************
@@ -364,6 +371,8 @@ void EndAutoPilot()
 			 )
 		   )
 		{
+			Ai_info[Ships[i].ai_index].waypoint_speed_cap = -1; // uncap their speed
+
 			// old "dumb" routine
 			//ai_clear_ship_goals( &(Ai_info[Ships[i].ai_index]) );
 			for (j = 0; j < MAX_AI_GOALS; j++)
@@ -434,6 +443,46 @@ void NavSystem_Do()
 		{
 			if (Navs[i].flags & NP_VALIDTYPE && DistanceTo(i) < 1000)
 				Navs[i].flags |= NP_VISITED;
+		}
+	}
+
+	// ramp time compression
+	if (AutoPilotEngaged)
+	{
+		int dstfrm_start = start_dist - DistanceTo(CurrentNav);
+
+		// Ramp UP time compression
+		if (dstfrm_start < 3500)
+		{
+
+			if (dstfrm_start >= 3000 && DistanceTo(CurrentNav) > 30000)
+				Game_time_compression = F1_0 * 64;
+			else if (dstfrm_start >= 2000)
+				Game_time_compression = F1_0 * 32;
+			else if (dstfrm_start >= 1600)
+				Game_time_compression = F1_0 * 16;
+			else if (dstfrm_start >= 1200)
+				Game_time_compression = F1_0 * 8;
+			else if (dstfrm_start >= 800)
+				Game_time_compression = F1_0 * 4;
+			else if (dstfrm_start >= 400)
+				Game_time_compression = F1_0 * 2;
+		}
+
+		// Ramp DOWN time compression
+		if (DistanceTo(CurrentNav) <= 7000)
+		{
+			int dist = DistanceTo(CurrentNav);
+			if (dist >= 5000)
+				Game_time_compression = F1_0 * 32;
+			else if (dist >= 4000)
+				Game_time_compression = F1_0 * 16;
+			else if (dist >= 3000)
+				Game_time_compression = F1_0 * 8;
+			else if (dist >= 2000)
+				Game_time_compression = F1_0 * 4;
+			else if (dist >= 1000)
+				Game_time_compression = F1_0 * 2;
 		}
 	}
 }
