@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.6 $
- * $Date: 2004-10-31 21:33:05 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-01-16 22:39:09 $
+ * $Author: wmcoolmon $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/10/31 21:33:05  taylor
+ * rename OGL_inited to OGL_enabled to match D3D version
+ *
  * Revision 2.5  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -255,6 +258,7 @@
 #define	VM_PADLOCK_LEFT				(1 << 9)
 #define	VM_PADLOCK_RIGHT				(1 << 10)
 #define	VM_WARPIN_ANCHOR				(1 << 11)			// special warpin camera mode
+#define VM_TOPDOWN					(1 << 12)
 
 #define	VM_PADLOCK_ANY (VM_PADLOCK_UP|VM_PADLOCK_REAR|VM_PADLOCK_LEFT|VM_PADLOCK_RIGHT)
 

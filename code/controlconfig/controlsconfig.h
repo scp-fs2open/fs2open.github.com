@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.9 $
- * $Date: 2004-08-11 05:06:19 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2005-01-16 22:39:08 $
+ * $Author: wmcoolmon $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/08/11 05:06:19  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.8  2004/07/25 00:31:28  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -485,17 +488,17 @@ typedef struct config_item {
 #define UP_SLIDE_THRUST									110
 #define DOWN_SLIDE_THRUST								111
 #define HUD_TARGETBOX_TOGGLE_WIREFRAME					112
+#define VIEW_TOPDOWN									113
 
 #if defined(ENABLE_AUTO_PILOT)
 //AutoPilot - Kazan
-#define AUTO_PILOT_TOGGLE								113
-#define NAV_CYCLE										114
+#define AUTO_PILOT_TOGGLE								114
+#define NAV_CYCLE										115
 
 // this should be the total number of control action defines above (or last define + 1)
-#define CCFG_MAX 115
+#define CCFG_MAX 116
 #else
-#define CCFG_MAX 113
-
+#define CCFG_MAX 114
 #endif
 
 extern int Failed_key_index;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.38 $
- * $Date: 2004-09-28 19:54:32 $
- * $Author: Kazan $
+ * $Revision: 2.39 $
+ * $Date: 2005-01-16 22:39:09 $
+ * $Author: wmcoolmon $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2004/09/28 19:54:32  Kazan
+ * | is binary or, || is boolean or - please use the right one
+ * autopilot velocity ramping biasing
+ * made debugged+k kill guardianed ships
+ *
  * Revision 2.37  2004/08/26 18:19:36  Kazan
  * small standalone-related multibug fix
  * prohibited execution of process_debug_keys(int) while Game_mode & GM_MULTIPLAYER
@@ -597,6 +602,7 @@ int Normal_key_set[] = {
 
 	VIEW_CHASE,
 	VIEW_OTHER_SHIP,
+	VIEW_TOPDOWN,
 
 	SHOW_GOALS,
 	END_MISSION,
@@ -689,6 +695,7 @@ int Dead_key_set[] = {
 
 	VIEW_CHASE,
 	VIEW_OTHER_SHIP,
+	VIEW_TOPDOWN,
 
 	SHOW_GOALS,
 
@@ -772,6 +779,7 @@ int Non_critical_key_set[] = {
 	VIEW_EXTERNAL,
 	VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK,
 	VIEW_OTHER_SHIP,
+	VIEW_TOPDOWN,
 	RADAR_RANGE_CYCLE,
 	SQUADMSG_MENU,
 	SHOW_GOALS,
@@ -2101,6 +2109,12 @@ void game_process_keys()
 						break;
 					}
 
+					//If topdown view in non-2D mission, go back to cockpit view.
+					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags & MISSION_FLAG_2D_MISSION)) {
+						Viewer_mode &= ~VM_TOPDOWN;
+						break;
+					}
+
 					// if in external view or chase view, go back to cockpit view
 					if ( Viewer_mode & (VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP) ) {
 						Viewer_mode &= ~(VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP);
@@ -2500,6 +2514,15 @@ int button_function_demo_valid(int n)
 		Viewer_mode &= ~VM_EXTERNAL_CAMERA_LOCKED;	// reset camera lock when leave/entering external view
 		if ( Viewer_mode & VM_EXTERNAL ) {
 			Viewer_mode &= ~VM_CHASE;
+		}
+		ret = 1;
+		break;
+
+	case VIEW_TOPDOWN:
+		control_used(VIEW_TOPDOWN);
+		Viewer_mode ^= VM_TOPDOWN;
+		if(Viewer_mode & VM_TOPDOWN) {
+			Viewer_mode &= ~VM_TOPDOWN;
 		}
 		ret = 1;
 		break;

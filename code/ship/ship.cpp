@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.150 $
- * $Date: 2005-01-12 04:45:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.151 $
+ * $Date: 2005-01-16 22:39:10 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150  2005/01/12 04:45:33  Goober5000
+ * fixed a nasty bug where dock pointers would run off a cliff and crash
+ * --Goober5000
+ *
  * Revision 2.149  2005/01/11 21:38:48  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -3310,6 +3314,77 @@ void physics_ship_init(object *objp)
 	vm_set_identity(&pi->last_rotmat);
 }
 
+//Function to get the type of the given ship as a string
+int ship_get_type(char* output, ship_info *sip)
+{
+	switch(sip->flags & SIF_ALL_SHIP_TYPES)
+	{
+		case SIF_SUPPORT:
+			strcpy(output, "Support");
+			return 1;
+		case SIF_CARGO:
+			strcpy(output, "Cargo");
+			return 1;
+		case SIF_FIGHTER:
+			strcpy(output, "Fighter");
+			return 1;
+		case SIF_BOMBER:
+			strcpy(output, "Bomber");
+			return 1;
+		case SIF_CRUISER:
+			strcpy(output, "Cruiser");
+			return 1;
+		case SIF_FREIGHTER:
+			strcpy(output, "Freighter");
+			return 1;
+		case SIF_CAPITAL:
+			if(sip->max_speed == 0)
+				strcpy(output, "Installation");
+			else
+				strcpy(output, "Destroyer");
+			return 1;
+		case SIF_TRANSPORT:
+			strcpy(output, "Transport");
+			return 1;
+		case SIF_NAVBUOY:
+			strcpy(output, "Nav buoy");
+			return 1;
+		case SIF_SENTRYGUN:
+			strcpy(output, "Sentry gun");
+			return 1;
+		case SIF_ESCAPEPOD:
+			strcpy(output, "Escape pod");
+			return 1;
+		case SIF_NO_SHIP_TYPE:
+			strcpy(output, "None");
+			return 1;
+		case SIF_SHIP_CLASS_STEALTH:
+			strcpy(output, "Stealthed");
+			return 1;
+		case SIF_SUPERCAP:
+			strcpy(output, "Superdestroyer");
+			return 1;
+		case SIF_DRYDOCK:
+			strcpy(output, "Drydock");
+			return 1;
+		case SIF_CORVETTE:
+			strcpy(output, "Corvette");
+			return 1;
+		case SIF_GAS_MINER:
+			strcpy(output, "Gas miner");
+			return 1;
+		case SIF_AWACS:
+			strcpy(output, "AWACS");
+			return 1;
+		case SIF_KNOSSOS_DEVICE:
+			strcpy(output, "Subspace portal");
+			return 1;
+		default:
+			strcpy(output, "Unknown");
+			return 0;
+	}
+}
+
 // function to set the orders allowed for a ship -- based on ship type.  This value might get overridden
 // by a value in the mission file.
 int ship_get_default_orders_accepted( ship_info *sip )
@@ -3988,8 +4063,10 @@ void ship_render(object * obj)
 #endif
 
 
-	if ( obj == Viewer_obj ) {
-		if (ship_show_velocity_dot && (obj==Player_obj) )	{
+	if ( obj == Viewer_obj && !(Viewer_mode & VM_TOPDOWN))
+	{
+		if (ship_show_velocity_dot && (obj==Player_obj) )
+		{
 			vector p0,v;
 			vertex v0;
 
@@ -4006,9 +4083,11 @@ void ship_render(object * obj)
 		}
 
 		// Show the shield hit effect for the viewer.
-		if ( Show_shield_hits )	{
+		if ( Show_shield_hits )
+		{
 			shipp = &Ships[num];
-			if (shipp->shield_hits) {
+			if (shipp->shield_hits)
+			{
 				create_shield_explosion_all(obj);
 				shipp->shield_hits = 0;
 			}
@@ -9053,13 +9132,10 @@ void compute_slew_matrix(matrix *orient, angles *a)
 // eyes have no defined up vector)
 void ship_get_eye( vector *eye_pos, matrix *eye_orient, object *obj )
 {
-	ship *shipp;
-	polymodel *pm;
-	eye *ep;
+	ship *shipp = &Ships[obj->instance];
+	polymodel *pm = model_get( shipp->modelnum );
+	eye *ep = &(pm->view_positions[0]);
 	// vector vec;
-
-	shipp = &Ships[obj->instance];
-	pm = model_get( shipp->modelnum );
 
 	// check to be sure that we have a view eye to look at.....spit out nasty debug message
 	if ( pm->n_view_positions == 0 ) {
@@ -9068,12 +9144,12 @@ void ship_get_eye( vector *eye_pos, matrix *eye_orient, object *obj )
 		*eye_orient = obj->orient;
 		return;
 	}
-	ep = &(pm->view_positions[0] );
 
 	// eye points are stored in an array -- the normal viewing position for a ship is the current_eye_index
 	// element.
-	model_find_world_point( eye_pos, &ep->pnt, shipp->modelnum, ep->parent, &obj->orient, &obj->pos );
+	model_find_world_point( eye_pos, &ep->pnt,shipp->modelnum, ep->parent, &obj->orient, &obj->pos );
 	// if ( shipp->current_eye_index == 0 ) {
+		//vm_vec_scale_add(eye_pos, &viewer_obj->pos, &tm.vec.fvec, 2.0f * viewer_obj->radius + Viewer_external_info.distance);
 		*eye_orient = obj->orient;
 	//} else {
 	// 	model_find_world_dir( &vec, &ep->norm, shipp->modelnum, ep->parent, &obj->orient, &obj->pos );
