@@ -286,7 +286,7 @@ int bm_d3d_load( char * real_filename )
 			
 			// Image is already loaded
 			if(n == 1) {
-				return handle;
+				return h;
 			}
 
 			// File was found
