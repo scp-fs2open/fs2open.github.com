@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2003-10-16 17:36:29 $
+ * $Author: randomtiger $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
  * DX8 branch commit
  *
@@ -957,7 +960,9 @@ void options_change_gamma(float delta)
 
 	gr_set_gamma(Freespace_gamma);
 	sprintf(tmp_gamma_string, NOX("%.2f"), Freespace_gamma);
-	os_config_write_string(NULL, NOX("Gamma"), tmp_gamma_string);
+
+	os_config_write_string(NULL, 
+		(gr_screen.mode == GR_DIRECT3D) ? NOX("GammaD3D") : NOX("Gamma"), tmp_gamma_string);
 }
 
 void options_button_pressed(int n)

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-08-22 07:35:08 $
- * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2003-10-16 17:36:29 $
+ * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/08/22 07:35:08  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.7  2003/08/21 20:54:38  randomtiger
  * Fixed switching - RT
  *
@@ -715,7 +720,7 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 					r = 255;
 					g = 255;
 					b = 255;
-					a = Gr_gamma_lookup[(i*255)/15];
+					a = (i*255)/15;
 					r /= Gr_ta_red.scale;
 					g /= Gr_ta_green.scale;
 					b /= Gr_ta_blue.scale;

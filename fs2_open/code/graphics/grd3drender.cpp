@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-10-16 00:17:14 $
+ * $Revision: 2.25 $
+ * $Date: 2003-10-16 17:36:29 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/10/16 00:17:14  randomtiger
+ * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
+ * As well as initialised in a different mode, bitmaps are stretched and for these modes
+ * previously point filtered textures now use linear to keep them smooth.
+ * I also had to shuffle some of the GR_1024 a bit.
+ * Put my HT&L flags in ready for my work to sort out some of the render order issues.
+ * Tided some other stuff up.
+ *
  * Revision 2.23  2003/10/14 17:39:13  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -1171,14 +1179,14 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			g = gr_palette[pal*3+1];
 			b = gr_palette[pal*3+2];
 		} else if ( (flags & TMAP_FLAG_RAMP) && (flags & TMAP_FLAG_GOURAUD) )	{
-			r = Gr_gamma_lookup[verts[i]->b];
-			g = Gr_gamma_lookup[verts[i]->b];
-			b = Gr_gamma_lookup[verts[i]->b];
+			r = verts[i]->b;
+			g = verts[i]->b;
+			b = verts[i]->b;
 		} else if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )	{
 			// Make 0.75 be 256.0f
-			r = Gr_gamma_lookup[verts[i]->r];
-			g = Gr_gamma_lookup[verts[i]->g];
-			b = Gr_gamma_lookup[verts[i]->b];
+			r = verts[i]->r;
+			g = verts[i]->g;
+			b = verts[i]->b;
 		} else {
 			// use constant RGB values...
 		}
