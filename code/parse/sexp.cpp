@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.24 $
- * $Date: 2003-01-02 03:09:01 $
+ * $Revision: 2.25 $
+ * $Date: 2003-01-03 21:58:07 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/01/02 03:09:01  Goober5000
+ * this is the way we squash the bugs, squash the bugs, squash the bugs
+ * this is the way we squash the bugs, so early in the morning :p
+ * --Goober5000
+ *
  * Revision 2.23  2003/01/02 00:35:20  Goober5000
  * added don't-collide-invisible and collide-invisible sexps
  * --Goober5000
@@ -658,6 +663,7 @@ sexp_oper Operators[] = {
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,		3, INT_MAX },					//phreak
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
+	{ "primitive-sensors-set-range",OP_PRIMITIVE_SENSORS_SET_RANGE,	2,	2 },	// Goober5000
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
 	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
 	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
@@ -3623,8 +3629,10 @@ int sexp_is_ship_visible(int n)
 	}
 
 	// get ship's *radar* visiblity
-	if (Player_ship != NULL) {
-		if (ship_is_visible_by_team(shipnum, Player_ship->team)) {
+	if (Player_ship != NULL)
+	{
+		if (ship_is_visible_by_team_new(&Objects[Ships[shipnum].objnum], Player_ship))
+		{
 			ship_is_visible = 2;
 		}
 	}
@@ -5900,16 +5908,16 @@ void sexp_cap_waypont_speed(int n)
 		return;
 	}
 
-	// cap speed to range (-1, 127) to store within char
+	// cap speed to range (-1, 32767) to store within int
 	if (speed < 0) {
 		speed = -1;
 	}
 
-	if (speed > 127) {
-		speed = 127;
+	if (speed > 32767) {
+		speed = 32767;
 	}
 
-	Ai_info[Ships[shipnum].ai_index].waypoint_speed_cap = (char) speed;
+	Ai_info[Ships[shipnum].ai_index].waypoint_speed_cap = speed;
 }
 
 // this function causes a ship to jettison its cargo
@@ -8103,6 +8111,23 @@ void sexp_awacs_set_radius(int node)
 	awacs->awacs_radius = (float)atoi(CTEXT(CDR(CDR(node))));	
 }
 
+// Goober500
+void sexp_primitive_sensors_set_range(int n)
+{
+	char *ship_name = CTEXT(n);
+	int ship_num, range = atoi(CTEXT(CDR(n)));
+
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+		return;
+
+	// get the ship - doesn't matter if it hasn't arrived yet
+	ship_num = ship_name_lookup_absolute(ship_name);
+
+	// set the new range
+	Ships[ship_num].primitive_sensor_range = range;
+}
+
 int sexp_is_tagged(int node)
 {
 	int sindex;
@@ -9437,6 +9462,11 @@ int eval_sexp(int cur_node)
 				sexp_awacs_set_radius(node);
 				break;
 
+			case OP_PRIMITIVE_SENSORS_SET_RANGE:
+				sexp_primitive_sensors_set_range(node);
+				sexp_val = 1;
+				break;
+
 			case OP_CAP_WAYPOINT_SPEED:
 				sexp_val = 1;
 				sexp_cap_waypont_speed(node);
@@ -9799,6 +9829,7 @@ int query_operator_return_type(int op)
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_AWACS_SET_RADIUS:
+		case OP_PRIMITIVE_SENSORS_SET_RANGE:
 		case OP_SEND_MESSAGE_LIST:
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_TURRET_TAGGED_ONLY_ALL:
@@ -10470,6 +10501,12 @@ int query_operator_argument_type(int op, int argnum)
 			} else {
 				return OPF_NUMBER;
 			}
+
+		case OP_PRIMITIVE_SENSORS_SET_RANGE:
+			if (!argnum)
+				return OPF_SHIP;
+			else
+				return OPF_NUMBER;
 
 		case OP_CAP_WAYPOINT_SPEED:
 			if (argnum == 0) {
@@ -11377,6 +11414,7 @@ int get_subcategory(int sexp_id)
 		case OP_MODIFY_VARIABLE:
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_AWACS_SET_RADIUS:
+		case OP_PRIMITIVE_SENSORS_SET_RANGE:
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_SET_SPECIAL_WARPOUT_NAME:
 		case OP_SHIP_VANISH:

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.10 $
- * $Date: 2002-12-31 19:18:41 $
+ * $Revision: 2.11 $
+ * $Date: 2003-01-03 21:58:08 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2002/12/31 19:18:41  Goober5000
+ * if it ain't broke, don't fix it
+ * --Goober5000
+ *
  * Revision 2.8  2002/12/22 21:31:01  Goober5000
  * tweaked positioning of the new HUD graphics
  * --Goober5000
@@ -747,7 +751,7 @@ int hud_target_invalid_awacs(object *objp)
 	// if objp is ship object, first check if can be targeted with team info
 	if (objp->type == OBJ_SHIP) {
 		if (Player_ship != NULL) {
-			if (ship_is_visible_by_team(objp->instance, Player_ship->team)) {
+			if (ship_is_visible_by_team_new(objp, Player_ship)) {
 				return 0;
 			}
 		}
@@ -5484,6 +5488,10 @@ void hud_show_auto_icons()
 {
 	int show_flag;
 	if ( Toggle_gauge.first_frame == -1 ) 
+		return;
+
+	// don't draw auto icons if we have primitive sensors - Goober5000
+	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
 		return;
 
 	// display auto target icon

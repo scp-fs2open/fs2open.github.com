@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-01-02 03:09:00 $
+ * $Revision: 2.26 $
+ * $Date: 2003-01-03 21:58:06 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/01/02 03:09:00  Goober5000
+ * this is the way we squash the bugs, squash the bugs, squash the bugs
+ * this is the way we squash the bugs, so early in the morning :p
+ * --Goober5000
+ *
  * Revision 2.24  2002/12/31 19:35:14  Goober5000
  * tweaked stuff
  * --Goober5000
@@ -2165,6 +2170,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->special_exp_index = -1;
 	shipp->num_hits = 0;
 	shipp->flags = 0;
+	shipp->flags2 = 0;
 	shipp->wash_killed = 0;
 	shipp->time_cargo_revealed = 0;
 	shipp->time_first_tagged = 0;
@@ -2382,6 +2388,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	oo_arrive_time_count[shipp - Ships] = 0;				
 	oo_interp_count[shipp - Ships] = 0;	
 #endif
+
+	shipp->primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
 
 	shipp->special_warp_objnum = -1;
 
@@ -10637,6 +10645,9 @@ float ship_get_max_speed(ship *shipp)
 	// afterburn
 	max_speed = max(max_speed, Ship_info[ship_info_index].afterburner_max_vel.xyz.z);
 
+	// maybe cap-waypoint-speed has set it higher - Goober5000
+	max_speed = max(max_speed, Ai_info[shipp->ai_index].waypoint_speed_cap);
+
 	return max_speed;
 }
 
@@ -10685,6 +10696,7 @@ float ship_get_length(ship* shipp)
 	return (pm->maxs.xyz.z - pm->mins.xyz.z);
 }
 
+// Goober5000
 void ship_set_new_ai_class(int ship_num, int new_ai_class)
 {
 	Assert(ship_num >= 0);
@@ -10706,6 +10718,7 @@ void ship_set_new_ai_class(int ship_num, int new_ai_class)
 	// I think that's everything!
 }
 
+// Goober5000
 void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_class)
 {
 	Assert(ship_num >= 0);

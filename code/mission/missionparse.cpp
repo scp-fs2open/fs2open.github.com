@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-01-02 00:35:21 $
+ * $Revision: 2.12 $
+ * $Date: 2003-01-03 21:58:08 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/01/02 00:35:21  Goober5000
+ * added don't-collide-invisible and collide-invisible sexps
+ * --Goober5000
+ *
  * Revision 2.10  2003/01/01 23:33:34  Goober5000
  * added ship-vaporize and ship-no-vaporize sexps
  * --Goober5000
@@ -650,6 +654,10 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 	"beam-protect-ship",
 	"guardian",
 	"special-warp"
+};
+
+char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
+	"primitive-sensors"
 };
 
 char *Starting_wing_names[MAX_STARTING_WINGS+1] = {
@@ -1462,7 +1470,6 @@ int parse_create_object(p_object *objp)
 	int	i, j, k, objnum, shipnum;
 	ai_info *aip;
 	ship_subsys *ptr;
-	ship_subsys *temp_subsys;
 	ship_info *sip;
 	subsys_status *sssp;
 	ship_weapon *wp;
@@ -1557,24 +1564,6 @@ int parse_create_object(p_object *objp)
 #endif
 	}
 
-	// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
-	if (The_mission.flags & MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT)
-	{
-		temp_subsys = GET_FIRST(&Ships[shipnum].subsys_list);
-		while(temp_subsys != END_OF_LIST(&Ships[shipnum].subsys_list))
-		{
-			// just mark all turrets as beam free
-			if(temp_subsys->system_info->type == SUBSYSTEM_TURRET)
-			{
-				temp_subsys->weapons.flags |= SW_FLAG_BEAM_FREE;
-				temp_subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
-			}
-
-			// next item
-			temp_subsys = GET_NEXT(temp_subsys);
-		}
-	}
-	
 	// check the parse object's flags for possible flags to set on this newly created ship
 	if ( objp->flags & P_OF_PROTECTED ) {
 		Objects[objnum].flags |= OF_PROTECTED;
@@ -1644,6 +1633,9 @@ int parse_create_object(p_object *objp)
 
 	if ( objp->flags & P_SF_HIDDEN_FROM_SENSORS )
 		Ships[shipnum].flags |= SF_HIDDEN_FROM_SENSORS;
+
+	if ( objp->flags2 & P2_SF2_PRIMITIVE_SENSORS )
+		Ships[shipnum].flags2 |= SF2_PRIMITIVE_SENSORS;
 
 	if ( objp->flags & P_SIF_STEALTH )
 		Ship_info[Ships[shipnum].ship_info_index].flags |= SIF_STEALTH;
@@ -1772,7 +1764,19 @@ int parse_create_object(p_object *objp)
 		}
 
 		ptr = GET_FIRST(&Ships[shipnum].subsys_list);
-		while (ptr != END_OF_LIST(&Ships[shipnum].subsys_list)) {
+		while (ptr != END_OF_LIST(&Ships[shipnum].subsys_list))
+		{
+			// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
+			if (The_mission.flags & MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT)
+			{
+				// mark all turrets as beam free
+				if(ptr->system_info->type == SUBSYSTEM_TURRET)
+				{
+					ptr->weapons.flags |= SW_FLAG_BEAM_FREE;
+					ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+				}
+			}
+
 			if (!stricmp(ptr->system_info->subobj_name, sssp->name)) {
 				if (Fred_running)
 					ptr->current_hits = sssp->percent;
@@ -1819,7 +1823,7 @@ int parse_create_object(p_object *objp)
 			ptr = GET_NEXT(ptr);
 		}
 	}
-
+	
 	// initial hull strength, shields, and velocity are all expressed as a percentage of the max value/
 	// so a initial_hull value of 90% means 90% of max.  This way is opposite of how subsystems are dealt
 	// with
@@ -1937,7 +1941,8 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	// p_object	temp_object;
 	// p_object	*objp;
 	int	i, j, count, shipnum, delay, destroy_before_mission_time;
-	char	name[NAME_LENGTH], flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
+	char name[NAME_LENGTH], flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
+	char flag_strings_2[MAX_PARSE_OBJECT_FLAGS_2][NAME_LENGTH];
 
 	Assert(pm != NULL);
 
@@ -2119,6 +2124,23 @@ int parse_object(mission *pm, int flag, p_object *objp)
 
 			if (j == MAX_PARSE_OBJECT_FLAGS)
 				Warning(LOCATION, "Unknown flag in mission file: %s\n", flag_strings[i]);
+		}
+	}
+
+	// second set - Goober5000
+	objp->flags2 = 0;
+	if (optional_string("+Flags2:")) {
+		count = stuff_string_list(flag_strings_2, MAX_PARSE_OBJECT_FLAGS_2);
+		for (i=0; i<count; i++) {
+			for (j=0; j<MAX_PARSE_OBJECT_FLAGS_2; j++) {
+				if (!stricmp(flag_strings_2[i], Parse_object_flags_2[j])) {
+					objp->flags2 |= (1 << j);
+					break;
+				}
+			}
+
+			if (j == MAX_PARSE_OBJECT_FLAGS_2)
+				Warning(LOCATION, "Unknown flag2 in mission file: %s\n", flag_strings_2[i]);
 		}
 	}
 
@@ -5190,12 +5212,16 @@ void mission_warp_in_support_ship( object *requester_objp )
 	pobj->departure_location = 0;		// ASSUMPTION: this is index to departure_lcation string array for hyperspace!!!!
 	pobj->departure_anchor = -1;
 	pobj->departure_cue = Locked_sexp_false;
-	pobj->departure_delay= 0;
+	pobj->departure_delay = 0;
 
 	pobj->determination = 10;			// ASSUMPTION:  mission file always had this number written out
 	pobj->wingnum = -1;
+
+	pobj->flags = 0;
+	pobj->flags2 = 0;
+
 	if ( Player_obj->flags & P_OF_NO_SHIELDS )
-		pobj->flags = P_OF_NO_SHIELDS;	// support ships have no shields when player has not shields
+		pobj->flags |= P_OF_NO_SHIELDS;	// support ships have no shields when player has not shields
 
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-01-03 21:58:07 $
+ * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -421,7 +424,7 @@ void radar_plot_object( object *objp )
 	int ship_is_visible = 0;
 	if (objp->type == OBJ_SHIP) {
 		if (Player_ship != NULL) {
-			if (ship_is_visible_by_team(objp->instance, Player_ship->team)) {
+			if (ship_is_visible_by_team_new(objp, Player_ship)) {
 				ship_is_visible = 1;
 			}
 		}
@@ -560,17 +563,30 @@ void radar_plot_object( object *objp )
 	b->y = ypos;
 
 	// see if blip should be drawn distorted
-	if (objp->type == OBJ_SHIP) {
+	if (objp->type == OBJ_SHIP)
+	{
 		// ships specifically hidden from sensors
 		if ( Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS ) {
 			b->flags |= BLIP_DRAW_DISTORTED;
 		}
 
 		// determine if its AWACS distorted
-		if ( awacs_level < 1.0f ){
+		if ( awacs_level < 1.0f )
+		{
+			// check if it's 
 			b->flags |= BLIP_DRAW_DISTORTED;
 		}
 	}				
+
+	// don't distort the sensor blips if the player has primitive sensors and the nebula effect
+	// is not active
+	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
+	{
+		if (!(The_mission.flags & MISSION_FLAG_FULLNEB))
+		{
+			b->flags &= ~BLIP_DRAW_DISTORTED;
+		}
+	}
 
 	N_blips++;
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-12-31 18:59:43 $
+ * $Revision: 2.8 $
+ * $Date: 2003-01-03 21:58:08 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/31 18:59:43  Goober5000
+ * if it ain't broke, don't fix it
+ * --Goober5000
+ *
  * Revision 2.5  2002/12/10 05:43:34  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -2355,6 +2359,7 @@ int button_function_demo_valid(int n)
 }
 
 // execute function corresponding to action n (BUTTON_ #define from KeyControl.h)
+// Goober5000: function returns 1 when action was taken
 int button_function(int n)
 {
 	Assert(n >= 0);
@@ -2369,7 +2374,47 @@ int button_function(int n)
 	if (Game_mode & GM_DEAD_DIED){
 		return 0;
 	}
-		
+
+	
+	// Goober5000 - if we have primitive sensors, some keys don't work: so test and exit early
+	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
+	{
+		switch (n)
+		{
+			case MATCH_TARGET_SPEED:
+			case TOGGLE_AUTO_MATCH_TARGET_SPEED:
+			case TOGGLE_AUTO_TARGETING:
+			case TARGET_NEXT:
+			case TARGET_PREV:
+			case TARGET_NEXT_CLOSEST_HOSTILE:
+			case TARGET_PREV_CLOSEST_HOSTILE:
+			case TARGET_NEXT_CLOSEST_FRIENDLY:
+			case TARGET_PREV_CLOSEST_FRIENDLY:
+			case TARGET_SHIP_IN_RETICLE:
+			case TARGET_LAST_TRANMISSION_SENDER:
+			case TARGET_CLOSEST_REPAIR_SHIP:
+			case TARGET_CLOSEST_SHIP_ATTACKING_TARGET:
+			case STOP_TARGETING_SHIP:
+			case TARGET_CLOSEST_SHIP_ATTACKING_SELF:
+			case TARGET_TARGETS_TARGET:
+			case TARGET_SUBOBJECT_IN_RETICLE:
+			case TARGET_NEXT_SUBOBJECT:
+			case TARGET_PREV_SUBOBJECT:
+			case STOP_TARGETING_SUBSYSTEM:
+			case TARGET_NEXT_BOMB:
+			case TARGET_PREV_BOMB:
+			case TARGET_NEXT_UNINSPECTED_CARGO:
+			case TARGET_PREV_UNINSPECTED_CARGO:
+			case TARGET_NEWEST_SHIP:
+			case TARGET_NEXT_LIVE_TURRET:
+			case TARGET_PREV_LIVE_TURRET:
+			case TARGET_NEXT_ESCORT_SHIP:
+				control_used(n);	// set the timestamp for when we used the control, in case we need it
+				return 1;			// pretend we took the action: if we return 0, strange stuff may happen
+		}
+	}
+
+	// now handle keys the regular way
 	switch (n) {
 		// cycle to next primary weapon
 		case CYCLE_NEXT_PRIMARY:			
@@ -2422,7 +2467,7 @@ int button_function(int n)
 
 		// undefined in multiplayer for clients right now
 		// match target speed
-		case MATCH_TARGET_SPEED:			
+		case MATCH_TARGET_SPEED:
 			control_used(MATCH_TARGET_SPEED);
 			// If player is auto-matching, break auto-match speed
 			if ( Player->flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.11 $
- * $Date: 2002-12-31 18:59:42 $
+ * $Revision: 2.12 $
+ * $Date: 2003-01-03 21:58:07 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2002/12/31 18:59:42  Goober5000
+ * if it ain't broke, don't fix it
+ * --Goober5000
+ *
  * Revision 2.9  2002/12/10 05:43:33  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -1261,7 +1265,7 @@ int ai_is_stealth_visible(object *viewer_objp, object *stealth_objp)
 	Assert(Ship_info[shipp->ship_info_index].flags & SIF_STEALTH);
 
 	// check if in neb and below awac level for visible
-	if ( !ship_is_visible_by_team(stealth_objp->instance, Ships[viewer_objp->instance].team) ) {
+	if ( !ship_is_visible_by_team_new(stealth_objp, &Ships[viewer_objp->instance]) ) {
 		vm_vec_sub(&vec_to_stealth, &stealth_objp->pos, &viewer_objp->pos);
 		dist_to_stealth = vm_vec_mag_quick(&vec_to_stealth);
 		dot_to_stealth = vm_vec_dotprod(&viewer_objp->orient.vec.fvec, &vec_to_stealth) / dist_to_stealth;
@@ -2011,9 +2015,11 @@ int object_is_targetable(object *target, ship *viewer)
 	int stealth_ship = 0;
 
 	// if target is ship, check if visible by team
-	if (target->type == OBJ_SHIP) {
+	if (target->type == OBJ_SHIP)
+	{
 		stealth_ship = (Ship_info[Ships[target->instance].ship_info_index].flags & SIF_STEALTH);
-		if ( ship_is_visible_by_team(target->instance, viewer->team) == 1) {
+		if ( ship_is_visible_by_team_new(target, viewer) == 1)
+		{
 			return 1;
 		}
 	}

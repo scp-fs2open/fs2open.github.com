@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.3 $
- * $Date: 2002-12-10 05:43:33 $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-03 21:58:07 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/10 05:43:33  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
  * Revision 2.2  2002/10/19 19:29:28  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -451,7 +454,7 @@ typedef struct ai_info {
 	int		wp_index;				// waypoint index in list
 	int		wp_flags;				//	waypoint flags, see WPF_xxxx
 	int		wp_dir;					//	1 or -1, amount to add to get to next waypoint index.
-	char		waypoint_speed_cap;	// -1 no cap, otherwise cap
+	int		waypoint_speed_cap;	// -1 no cap, otherwise cap - changed to int by Goober5000
 
 	//	Path following information
 	int		path_start;				//	Index into global array, start of path.
