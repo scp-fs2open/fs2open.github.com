@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.27 $
- * $Date: 2004-04-01 15:31:21 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2004-04-11 13:56:33 $
+ * $Author: randomtiger $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/04/01 15:31:21  taylor
+ * don't use interface anis as ship textures
+ *
  * Revision 2.26  2004/03/17 04:07:29  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -694,6 +697,8 @@ typedef struct screen {
 	// Texture maps the current bitmap.  See TMAP_FLAG_?? defines for flag values
 	void (*gf_tmapper)(int nv, vertex *verts[], uint flags );
 
+	void (*gf_tmapper_batch_3d_unlit)( int nverts, vertex *verts, uint flags);	
+
 	// dumps the current screen to a file
 	void (*gf_print_screen)(char * filename);
 
@@ -955,6 +960,7 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define gr_scaler				GR_CALL(gr_screen.gf_scaler)
 #define gr_aascaler			GR_CALL(gr_screen.gf_aascaler)
 #define gr_tmapper			GR_CALL(gr_screen.gf_tmapper)
+#define gr_tmapper_batch_3d_unlit	GR_CALL(gr_screen.gf_tmapper_batch_3d_unlit)
 
 #define gr_gradient			GR_CALL(gr_screen.gf_gradient)
 

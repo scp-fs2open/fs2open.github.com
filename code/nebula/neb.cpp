@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-04-03 02:55:49 $
- * $Author: bobboau $
+ * $Revision: 2.23 $
+ * $Date: 2004-04-11 13:56:33 $
+ * $Author: randomtiger $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/04/03 02:55:49  bobboau
+ * commiting recent minor bug fixes
+ *
  * Revision 2.21  2004/03/17 04:07:30  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -642,7 +645,7 @@ void neb2_render_setup(vector *eye_pos, matrix *eye_orient)
 	if(Neb2_render_mode == NEB2_RENDER_HTL) {
 
 
-/*		if(Neb2_htl_fog_data)
+		if(Neb2_htl_fog_data)
 		{
 		  	Neb2_cur_fog_value++;
 				
@@ -657,7 +660,7 @@ void neb2_render_setup(vector *eye_pos, matrix *eye_orient)
 			Neb2_fog_colour_g = (ubyte) (g & 0xff);
 			Neb2_fog_colour_b = (ubyte) (b & 0xff);
 		}
-*/
+
 		// RT The background needs to be the same colour as the fog and this seems
 		// to be the ideal place to do it
 		unsigned char tr = gr_screen.current_clear_color.red;  

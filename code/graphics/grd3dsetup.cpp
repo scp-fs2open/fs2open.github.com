@@ -774,6 +774,7 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_scaler = gr_d3d_scaler;
 	gr_screen.gf_aascaler = gr_d3d_aascaler;
 	gr_screen.gf_tmapper = gr_d3d_tmapper;
+	gr_screen.gf_tmapper_batch_3d_unlit = gr_d3d_tmapper_internal_batch_3d_unlit;
 
 	gr_screen.gf_gradient = gr_d3d_gradient;
 
