@@ -3,7 +3,7 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "Freespace2"=.\Freespace2.dsp - Package Owner=<4>
+Project: "Freespace2"=".\Freespace2.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -21,7 +21,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "code"=.\code.dsp - Package Owner=<4>
+Project: "wxFRED2"=".\wxFRED2.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -33,7 +33,19 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libjpeg"=.\libjpeg.dsp - Package Owner=<4>
+Project: "code"=".\code.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libjpeg"=".\libjpeg.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
