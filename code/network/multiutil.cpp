@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-07-12 02:50:48 $
+ * $Revision: 2.19 $
+ * $Date: 2004-07-12 03:04:03 $
  * $Author: wmcoolmon $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/07/12 02:50:48  wmcoolmon
+ * Ingame joining stuff - use -rt to enabled/disable
+ *
  * Revision 2.17  2004/07/07 21:00:08  Kazan
  * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
  *
@@ -2213,7 +2216,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}
 
 	// check to make sure we are otherwise in a state to accept
-	if(Netgame.game_state != NETGAME_STATE_FORMING && (Netgame.game_state != NETGAME_STATE_IN_MISSION || Cmdline_rt)){
+	if(Netgame.game_state != NETGAME_STATE_FORMING && (Netgame.game_state != NETGAME_STATE_IN_MISSION || !Cmdline_rt)){
 		return JOIN_DENY_JR_STATE;
 	}
 	
