@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.72 $
- * $Date: 2004-04-11 13:56:33 $
- * $Author: randomtiger $
+ * $Revision: 2.73 $
+ * $Date: 2004-04-14 10:24:51 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2004/04/11 13:56:33  randomtiger
+ * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
+ *
  * Revision 2.71  2004/04/03 20:27:57  phreak
  * OpenGL files spilt up to make developing and finding bugs much easier
  *
@@ -1925,10 +1928,12 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
 
 
-	if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-	{
-		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-		return;
+	if ( flags & TMAP_FLAG_TEXTURED ) {
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+		{
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
+		}
 	}
 	
 	if (flags & TMAP_FLAG_PIXEL_FOG) {
@@ -2016,11 +2021,12 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 
 	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
 
-	
-	if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-	{
-		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-		return;
+	if ( flags & TMAP_FLAG_TEXTURED ) {
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+		{
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
+		}
 	}
 	
 	
@@ -2095,10 +2101,12 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 
 	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
 
-	if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-	{
-		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-		return;
+	if ( flags & TMAP_FLAG_TEXTURED ) {
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+		{
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
+		}
 	}
 
 
