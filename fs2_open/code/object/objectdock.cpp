@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.3 $
- * $Date: 2005-01-30 09:27:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2005-02-10 04:05:42 $
+ * $Author: wmcoolmon $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/01/30 09:27:40  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 2.2  2005/01/29 05:34:30  Goober5000
  * docking fixes for FRED
  * --Goober5000
@@ -304,10 +308,10 @@ void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, v
 	else
 	{
 		// create a bit array to mark the objects we checked
-		char visited_bitstring[MAX_OBJECTS >> 3 + 1];
+		char visited_bitstring[(MAX_OBJECTS >> 3) + 1];
 
 		// clear it
-		memset(visited_bitstring, 0, MAX_OBJECTS >> 3 + 1);
+		memset(visited_bitstring, 0, (MAX_OBJECTS >> 3) + 1);
 
 		// start evaluating the tree
 		dock_evaluate_tree(objp, infop, function, visited_bitstring);
