@@ -20,6 +20,9 @@
 int CheckSingleMission(const char* mission, unsigned int crc32, TCP_Socket &Socket, const char* masterserver, int port, int timeout)
 {
 	
+	// Clear any old dead crap data
+	Socket.IgnorePackets();
+
 	timeout = timeout * CLK_TCK;
 	int starttime = clock();
 
@@ -43,7 +46,7 @@ int CheckSingleMission(const char* mission, unsigned int crc32, TCP_Socket &Sock
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.GetData((char *) &c_reply, sizeof(fs2open_fcheck_reply)) != -1)
+		if (Socket.MT_DataReady() && Socket.GetData((char *) &c_reply, sizeof(fs2open_fcheck_reply)) != -1)
 		{
 
 			if (c_reply.pid != PCKT_MCHECK_REPLY) // ignore packet
@@ -66,6 +69,9 @@ int CheckSingleMission(const char* mission, unsigned int crc32, TCP_Socket &Sock
 
 int SendPlayerData(int SID, const char* player_name, const char* user, player *pl, const char* masterserver, TCP_Socket &Socket, int port, int timeout)
 {
+
+	// Clear any old dead crap data
+	Socket.IgnorePackets();
 
 	
 
@@ -126,7 +132,7 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.GetData((char *) &u_reply, sizeof(fs2open_pilot_updatereply)) != -1)
+		if (Socket.MT_DataReady() && Socket.GetData((char *) &u_reply, sizeof(fs2open_pilot_updatereply)) != -1)
 		{
 
 			if (u_reply.pid != PCKT_PILOT_UREPLY) // ignore packet
@@ -150,6 +156,9 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 
 int GetPlayerData(int SID, const char* player_name, player *pl, const char* masterserver, TCP_Socket &Socket, int port, bool CanCreate, int timeout)
 {
+
+	// Clear any old dead crap data
+	Socket.IgnorePackets();
 
 	fs2open_get_pilot prq_packet;
 
@@ -176,7 +185,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.GetData((char *) &PacketBuffer, 16384) != -1)
+		if (Socket.MT_DataReady() && Socket.GetData((char *) &PacketBuffer, 16384) != -1)
 		{
 
 			if (p_reply->pid != PCKT_PILOT_REPLY) // ignore packet
@@ -235,6 +244,9 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 
 file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket &Socket, int port, int timeout)
 {
+	// Clear any old dead crap data
+	Socket.IgnorePackets();
+
 	fs2open_file_check fc_packet;
 	fc_packet.pid = PCKT_TABLES_RQST;
 
@@ -256,7 +268,7 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.GetData(PacketBuffer, 16384) != -1)
+		if (Socket.MT_DataReady() && Socket.GetData(PacketBuffer, 16384) != -1)
 		{
 			if (misreply_ptr->pid != PCKT_TABLES_REPLY)
 			{
@@ -289,6 +301,9 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 
 file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Socket &Socket, int port, int timeout)
 {
+	// Clear any old dead crap data
+	Socket.IgnorePackets();
+
 	fs2open_file_check fc_packet;
 	fc_packet.pid = PCKT_MISSIONS_RQST;
 
@@ -302,16 +317,31 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 		return NULL;
 
 	char PacketBuffer[16384]; // 16K should be enough i think..... I HOPE!
+	memset(PacketBuffer, 0, 16384);
+
 	fs2open_pxo_missreply *misreply_ptr = (fs2open_pxo_missreply *) PacketBuffer;
 	
 	file_record *frecs = NULL;
 	numMissions = 0;
+	//int depth = 0;
+	Sleep(2); // lets give it a second
 
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.GetData(PacketBuffer, 16384) != -1)
+		if (Socket.MT_DataReady() && Socket.GetData(PacketBuffer, 16384) != -1)
 		{
+			// eliminate leading nullspace - for some reason i've been getting nullspace here
+			/*while (*((char *)misreply_ptr) == 0 && depth < 16384)
+			{
+				depth++;
+
+				misreply_ptr = (fs2open_pxo_missreply *) (PacketBuffer + depth);
+			}
+
+			if (depth >= 16384)
+				return NULL;*/
+
 			if (misreply_ptr->pid != PCKT_MISSIONS_REPLY)
 			{
 				continue; // skip and ignore this packet
@@ -320,7 +350,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 
 			if ((misreply_ptr->num_files * sizeof(file_record)) + (sizeof(int) * 2) > 16384)
 			{
-				// WE"RE IN DEAP SHIT!
+				// WE"RE IN DEEP SHIT!
 
 				ml_printf("Network (FS2OpenPXO): PCKT_MISSIONS_REPLY was larger than 16k!!!\n");
 				return NULL;
@@ -343,6 +373,9 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 
 int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Socket, const char* masterserver, int port, int timeout)
 {
+	// Clear any old dead crap data
+	Socket.IgnorePackets();
+
 	timeout = timeout * CLK_TCK;
 	int starttime = clock();
 
@@ -366,7 +399,7 @@ int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Soc
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.GetData((char *)&loginreply, sizeof(fs2open_pxo_lreply)) != -1)
+		if (Socket.MT_DataReady() && Socket.GetData((char *)&loginreply, sizeof(fs2open_pxo_lreply)) != -1)
 		{
 			if (loginreply.pid != PCKT_LOGIN_REPLY)
 			{
@@ -393,6 +426,9 @@ int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Soc
 
 void SendHeartBeat(const char* masterserver, int targetport, TCP_Socket &Socket, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers, int myPort)
 {
+	// Clear any old dead crap data
+	Socket.IgnorePackets();
+
 	// ---------- Prepair and send packet ------------	
 	serverlist_hb_packet hbpack;
 	memset(&hbpack, 0, sizeof(serverlist_hb_packet));
@@ -414,6 +450,9 @@ void SendHeartBeat(const char* masterserver, int targetport, TCP_Socket &Socket,
 
 net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_Socket &Socket, int port, int timeout)
 {
+	// Clear any old dead crap data
+	Socket.IgnorePackets();
+
 	numServersFound = 0;
 
 	
@@ -437,7 +476,7 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_So
 
 	while ((clock() - starttime) <= timeout)
 	{
-		if (Socket.DataReady() && Socket.GetData((char *)&NewServer, sizeof(serverlist_reply_packet)) != -1)
+		if (Socket.MT_DataReady() && Socket.GetData((char *)&NewServer, sizeof(serverlist_reply_packet)) != -1)
 		{
 
 			if (!strcmp(NewServer.servername, "TERM") && NewServer.status == 0 && NewServer.players == 0 && NewServer.netspeed == 0 && NewServer.type == 0)
@@ -473,6 +512,9 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_So
 
 int Ping(const char* target, TCP_Socket &Socket)
 {
+	// Clear any old dead crap data
+	Socket.IgnorePackets();
+
 	fs2open_ping ping;
 	fs2open_pingreply rping;
 	ping.pid = PCKT_PING;

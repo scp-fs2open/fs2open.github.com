@@ -8,6 +8,8 @@
 // Enable Multithread
 //#define MT_TCP_Socket
 
+// Enable MultiThreaded Receive - FreeSpace 2 TCP_Socket only!
+#define FS2_TCP_RMultithread
 
 #if defined(WIN32)
 // Windows Version
@@ -85,10 +87,24 @@ typedef void (__cdecl *sproc)(STYPE);
 
 #define TCP_SOCKET_TIMEOUT 15000
 
+#if defined(FS2_TCP_RMultithread)
+#define FS2_TCP_MaxWaiting 20
+#define FS2_TCP_ReceiveBuffer 16384
+
+
+#endif
 class TCP_Socket : public Generic_Socket
 {
 	private:
 		bool ServerMode;
+#if defined(FS2_TCP_RMultithread)
+		int QueueLen;
+		char ReceiveBuffer[FS2_TCP_MaxWaiting][FS2_TCP_ReceiveBuffer];
+		int	ReceiveLen[FS2_TCP_MaxWaiting];
+
+		bool Lock;
+		bool MtDie;
+#endif
 
 #if defined(WIN32) && defined(MT_TCP_Socket)
 		// used for servers in windows
@@ -98,7 +114,14 @@ class TCP_Socket : public Generic_Socket
 
 	public:
 		TCP_Socket(int aport = 0, bool WillbeServer = false) : ServerMode(WillbeServer), Generic_Socket() { port = aport; }
-		~TCP_Socket() { Close(); }
+		~TCP_Socket() 
+			{ 
+
+#if defined(FS2_TCP_RMultithread)
+				MtDie = true; 
+#endif
+				Close(); 
+			}
 		void MakeFromSocket(STYPE nSocket) { mySocket = nSocket; Initialized = true; }
 
 
@@ -110,7 +133,17 @@ class TCP_Socket : public Generic_Socket
 
 		bool InitSocket(std::string rem_host, int rem_port);
 
+#if defined(FS2_TCP_RMultithread)
 
+		void IgnorePackets() { ClearData(); QueueLen = 0; }
+		bool MT_DataReady() { return (QueueLen > 0); }
+		
+		void ClearData() { memset(ReceiveBuffer, 0, FS2_TCP_MaxWaiting * FS2_TCP_ReceiveBuffer); }
+		int GetDataFromNetwork();
+		void RemoveFirstPacket();
+
+		friend void _cdecl tcp_socket_mt_run(void *arg);
+#endif
 
 		STYPE GetSocketNum() { return mySocket; }; 
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.83 $
- * $Date: 2003-10-07 03:43:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.84 $
+ * $Date: 2003-10-12 03:46:23 $
+ * $Author: Kazan $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2003/10/07 03:43:21  Goober5000
+ * fixed some warnings
+ * --Goober5000
+ *
  * Revision 2.82  2003/09/26 14:37:16  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -1474,7 +1478,11 @@ void parse_engine_wash()
 }
 
 
-#define SHIP_MULTITEXT_LENGTH 1500
+// Kazan -- Volition had this set to 1500, Set it to 4K for WC Saga
+//#define SHIP_MULTITEXT_LENGTH 1500
+#define SHIP_MULTITEXT_LENGTH 4096
+
+
 // function to parse the information for a specific ship type.	
 int parse_ship()
 {

@@ -3,6 +3,12 @@
 // Derek Meek
 // 2-14-2003
 
+#pragma warning(disable:4100)
+#pragma warning(disable:4511)
+#pragma warning(disable:4512)
+#pragma warning(disable:4663)
+#pragma warning(disable:4018)
+
 #if !defined(__pxo_client_h_)
 #define __pxo_client_h_
 

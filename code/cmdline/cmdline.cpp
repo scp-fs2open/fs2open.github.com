@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.32 $
- * $Date: 2003-10-10 03:59:40 $
- * $Author: matt $
- * $Revision: 2.32 $
- * $Date: 2003-10-10 03:59:40 $
- * $Author: matt $
+ * $Revision: 2.33 $
+ * $Date: 2003-10-12 03:41:36 $
+ * $Author: Kazan $
+ * $Revision: 2.33 $
+ * $Date: 2003-10-12 03:41:36 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/10/10 03:59:40  matt
+ * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
+ * out now. -Sticks
+ *
  * Revision 2.31  2003/09/25 21:12:22  Kazan
  * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
  * Also D3D8 Screenshots work now.
@@ -406,7 +410,7 @@ cmdline_parm safeloading_arg("-safeloading", NULL); //Uses old loading method -C
 cmdline_parm nospec_arg("-nospec", NULL); // skip specular highlighting -Sticks
 cmdline_parm MissionCRCs("-missioncrcs", NULL);
 cmdline_parm TableCRCs("-tablecrcs", NULL);
-cmdline_parm nohtl_arg("-nohtl", NULL); //Use software HT&L
+cmdline_parm nohtl_arg("-htl", NULL); //Use software HT&L
 
 cmdline_parm cell_arg("-cell", NULL);
 
@@ -673,40 +677,10 @@ char *cmdline_parm::str()
 }
 
 // external entry point into this modules
-#ifdef _WIN32
-int parse_cmdline(char *cmdline)
-#else
-int parse_cmdline(int argc, char *argv[])
-#endif
-{
-   #ifdef _WIN32
-	os_init_cmdline(cmdline);
-   #else
-	if (argc > 1) {
-		// kind of silly -- combine arg list into single string for parsing,
-		// but it fits with the win32-centric existing code.
-		char *cmdline = NULL;
-		unsigned int arglen = 0;
-		int i;
-		for (i = 1;  i < argc;  i++)
-			arglen += strlen(argv[i]);
-		if (argc > 2)
-			arglen += argc - 2; // leave room for the separators
-		cmdline = new char [arglen+1];
-		i = 1;
-		strcpy(cmdline, argv[i]);
-		for ( ; i < argc;  i++) {
-			strcat(cmdline, " ");
-			strcat(cmdline, argv[i]);
-		}
-		os_init_cmdline(cmdline);
-		delete [] cmdline;
-	} else {
-		// no cmdline args
-		os_init_cmdline("");
-	}
-   #endif
 
+void SetCmdlineParams()
+// Sets externed variables used for communication cmdline information
+{
 	if (MissionCRCs.found()) {
 		Cmdline_SpewMission_CRCs = 1;
 	}
@@ -902,9 +876,92 @@ int parse_cmdline(int argc, char *argv[])
 		Cmdline_nospec = 1;
 	}
 
-	if ( nohtl_arg.found() ) {
+
+	if ( nohtl_arg.found() ) 
+	{
+		nohtl = 0;
+	}
+	else
+	{
 		nohtl = 1;
 	}
+
+}
+
+
+int fred2_parse_cmdline(int argc, char *argv[])
+{
+	if (argc > 1) {
+		// kind of silly -- combine arg list into single string for parsing,
+		// but it fits with the win32-centric existing code.
+		char *cmdline = NULL;
+		unsigned int arglen = 0;
+		int i;
+		for (i = 1;  i < argc;  i++)
+			arglen += strlen(argv[i]);
+		if (argc > 2)
+			arglen += argc - 2; // leave room for the separators
+		cmdline = new char [arglen+1];
+		i = 1;
+		memset(cmdline, 0, arglen+1); // clear it out
+
+		strcpy(cmdline, argv[i]);
+		for (i=2; i < argc;  i++) {
+			strcat(cmdline, " ");
+			strcat(cmdline, argv[i]);
+		}
+		os_init_cmdline(cmdline);
+		delete [] cmdline;
+	} else {
+		// no cmdline args
+		os_init_cmdline("");
+	}
+
+	SetCmdlineParams();
+	return 1;
+}
+
+#ifdef _WIN32
+int parse_cmdline(char *cmdline)
+#else
+int parse_cmdline(int argc, char *argv[])
+#endif
+{
+   #ifdef _WIN32
+	os_init_cmdline(cmdline);
+   #else
+	if (argc > 1) {
+		// kind of silly -- combine arg list into single string for parsing,
+		// but it fits with the win32-centric existing code.
+		char *cmdline = NULL;
+		unsigned int arglen = 0;
+		int i;
+		for (i = 1;  i < argc;  i++)
+			arglen += strlen(argv[i]);
+		if (argc > 2)
+			arglen += argc - 2; // leave room for the separators
+		cmdline = new char [arglen+1];
+		i = 1;
+		strcpy(cmdline, argv[i]);
+		for ( ; i < argc;  i++) {
+			strcat(cmdline, " ");
+			strcat(cmdline, argv[i]);
+		}
+		os_init_cmdline(cmdline);
+		delete [] cmdline;
+	} else {
+		// no cmdline args
+		os_init_cmdline("");
+	}
+   #endif
+
+
+
+	// --------------- Kazan -------------
+	// If you're looking for the list of if (someparam.found()) { cmdline_someparam = something; } look above at this function
+	// I did this because of fred2_parse_cmdline()
+	SetCmdlineParams();
+
 	return 1;
 }
 
