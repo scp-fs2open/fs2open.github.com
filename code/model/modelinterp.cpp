@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-07-04 02:28:37 $
+ * $Revision: 2.24 $
+ * $Date: 2003-07-15 02:37:59 $
  * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/07/04 02:28:37  phreak
+ * changes for cloaking implemented
+ *
  * Revision 2.22  2003/06/08 17:31:37  phreak
  * debris is now properly fogged
  *
@@ -442,6 +445,7 @@ static float Interp_xparent_alpha = 1.0f;
 float Interp_light = 0.0f;
 
 int Interp_multitex_cloakmap=-1;
+int Interp_cloakmap_alpha=255;
 
 void set_warp_globals(float a, float b, float c, int d, float e){
 	Model_Interp_scale_x =a;
@@ -454,16 +458,17 @@ void set_warp_globals(float a, float b, float c, int d, float e){
 
 static int FULLCLOAK=-1;
 
-void model_setup_cloak(vector *shift, int full_cloak)
+void model_setup_cloak(vector *shift, int full_cloak, int alpha)
 {
 	FULLCLOAK=full_cloak;
 	int unit;
 	if (full_cloak)
 	{
-//		Int3();
 		unit=0;
 		Interp_multitex_cloakmap=0;
 		model_set_insignia_bitmap(-1);
+		model_set_forced_texture(CLOAKMAP);
+		gr_set_cull(1);
 	}
 	else
 	{
@@ -471,6 +476,7 @@ void model_setup_cloak(vector *shift, int full_cloak)
 		Interp_multitex_cloakmap=1;
 	}
 
+	Interp_cloakmap_alpha=alpha;
 	gr_push_texture_matrix(unit);
 	gr_translate_texture_matrix(unit,shift);
 }
@@ -478,12 +484,13 @@ void model_setup_cloak(vector *shift, int full_cloak)
 void model_finish_cloak(int full_cloak)
 {
 	int unit;
-	if (full_cloak)		unit=0;
+	if (full_cloak){		unit=0; gr_set_cull(0);}
 	else				unit=2;
 
 	gr_pop_texture_matrix(unit);
 	Interp_multitex_cloakmap=-1;
 	model_set_forced_texture(-1);
+	FULLCLOAK=-1;
 }
 
 
@@ -1114,12 +1121,20 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					} else {
 						if (pm->is_ani[w(p+40)]){
 							texture = pm->textures[w(p+40)] + ((timestamp() / (int)(pm->fps[w(p+40)])) % pm->num_frames[w(p+40)]);//here is were it picks the texture to render for ani-Bobboau
-							if(glow_maps_active)
-							GLOWMAP = pm->glow_textures[w(p+40)] + ((timestamp() / (int)(pm->glow_fps[w(p+40)])) % pm->glow_numframes[w(p+40)]);
 						}else{
 							texture = pm->textures[w(p+40)];//here is were it picks the texture to render for normal-Bobboau
-							if(glow_maps_active)
-							GLOWMAP = pm->glow_textures[w(p+40)];
+						}
+
+						if(glow_maps_active)
+						{
+							if (pm->glow_is_ani[w(p+40)])
+							{
+								GLOWMAP = pm->glow_textures[w(p+40)] + ((timestamp() / (int)(pm->glow_fps[w(p+40)])) % pm->glow_numframes[w(p+40)]);
+							}
+							else
+							{
+								GLOWMAP = pm->glow_textures[w(p+40)];
+							}
 						}
 					}
 
@@ -1235,7 +1250,8 @@ void model_interp_sortnorm(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_ch
 	// max = 
 //	light_filter_push_box( vp(p+56), vp(p+68) );
 
-#if 1	//def BACK_TO_FRONT
+if (FULLCLOAK!=1){	
+//#if 1 //def BACK_TO_FRONT
 
 	if (prelist) model_interp_sub(p+prelist,pm,sm,do_box_check);		// prelist
 
@@ -1260,7 +1276,8 @@ void model_interp_sortnorm(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_ch
 
 	if (postlist) model_interp_sub(p+postlist,pm,sm,do_box_check);		// postlist
 
-#else
+}else{
+//#else
 	if (postlist) model_interp_sub(p+postlist,pm,sm,do_box_check);		// postlist
 
 	if (g3_check_normal_facing(vp(p+20),vp(p+8))) {		//facing
@@ -1286,9 +1303,8 @@ void model_interp_sortnorm(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_ch
 	}
 
 	if (prelist) model_interp_sub(p+prelist,pm,sm,do_box_check);		// prelist
-#endif
-
-
+}
+//#endif
 //	light_filter_pop();
 }
 
@@ -3056,7 +3072,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 
 	if (FULLCLOAK != -1)	model_finish_cloak(FULLCLOAK);
-	FULLCLOAK=-1;
 
 	if ( pm->submodel[pm->detail[0]].num_arcs )	{
 		interp_render_lightning( pm, &pm->submodel[pm->detail[0]]);
