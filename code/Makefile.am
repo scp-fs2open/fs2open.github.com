@@ -1,7 +1,9 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.6 2005-03-10 07:59:59 taylor Exp $
+## $Id: Makefile.am,v 1.7 2005-03-10 16:15:18 taylor Exp $
 
+INCLUDES =	\
+	-I../libjpeg
 
 noinst_LIBRARIES = libcode.a
 noinst_PROGRAMS = @FS2_BINARY@
@@ -354,8 +356,8 @@ fs2_open_r_SOURCES =	\
 	freespace2/freespace.cpp freespace2/levelpaging.cpp	\
 	${PLATFORM_SOURCES}
 
-fs2_open_d_LDADD = libcode.a
-fs2_open_r_LDADD = libcode.a
+fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a
+fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a
 
 ##
 ## End MAIN library

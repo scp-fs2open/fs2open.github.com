@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.4 2005-03-02 21:18:18 taylor Exp $
+dnl $Id: configure.ac,v 1.5 2005-03-10 16:15:17 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -208,6 +208,7 @@ AM_CONDITIONAL(FS2_DEBUG,      test "$fs2_debug"      = "yes")
 AM_CONDITIONAL([am__fastdepOBJC],  test "$fs2_os_osx"  = "yes")
 
 AC_CHECK_HEADER(malloc.h)
+AC_CHECK_HEADER(stdlib.h)
 
 dnl From licq: Copyright (c) 2000 Dirk Mueller
 dnl Check if the type socklen_t is defined anywhere
@@ -325,13 +326,13 @@ FS2_CXXFLAGS=$FS2_CXXFLAGS" $SDL_CFLAGS"
 FS2_LDFLAGS=$FS2_LDFLAGS" $SDL_LIBS"
 
 dnl libjpeg
-if test "$fs2_os_unix" = "yes" ; then
-	if test "x$fs2_static_jpeg" != "x" ; then
-		FS2_LIBS="$FS2_LIBS $fs2_static_jpeg/libjpeg.a"
-	else
-		FS2_LDFLAGS="$FS2_LDFLAGS -ljpeg"
-	fi
-fi
+dnl if test "$fs2_os_unix" = "yes" ; then
+dnl 	if test "x$fs2_static_jpeg" != "x" ; then
+dnl 		FS2_LIBS="$FS2_LIBS $fs2_static_jpeg/libjpeg.a"
+dnl 	else
+dnl 		FS2_LDFLAGS="$FS2_LDFLAGS -ljpeg"
+dnl 	fi
+dnl fi
 
 dnl OGG Vorbis
 if test "$fs2_os_unix" = "yes" ; then
@@ -373,7 +374,7 @@ LIBS="$FS2_LIBS"
 
 
 dnl The makefiles we create
-AC_OUTPUT([Makefile code/Makefile])
+AC_OUTPUT([Makefile libjpeg/Makefile code/Makefile])
 
 
 echo
