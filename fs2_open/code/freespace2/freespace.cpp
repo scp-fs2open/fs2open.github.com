@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.79 $
- * $Date: 2004-03-08 22:16:32 $
- * $Author: phreak $
+ * $Revision: 2.80 $
+ * $Date: 2004-03-16 18:37:02 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2004/03/08 22:16:32  phreak
+ * fugly hack to get skyboxes working in HT&L.  please port stars_draw() to use HT&L
+ * so this hack can be removed
+ *
  * Revision 2.78  2004/03/08 22:02:38  Kazan
  * Lobby GUI screen restored
  *
@@ -7550,7 +7554,10 @@ int WinMainSub(int argc, char *argv[])
 
 
 #ifdef _WIN32
-	parse_cmdline(szCmdLine);	
+	if(parse_cmdline(szCmdLine) == false)
+	{
+		return 0;
+	}
 #else
    parse_cmdline(argc, argv);
 #endif
