@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-02-22 04:13:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.18 $
+ * $Date: 2003-03-18 10:07:00 $
+ * $Author: unknownplayer $
+ * $Revision: 2.18 $
+ * $Date: 2003-03-18 10:07:00 $
+ * $Author: unknownplayer $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/02/22 04:13:17  wmcoolmon
+ * Added "-dshowvid" command-line option, which must be set in order for movies to play.
+ *
  * Revision 2.16  2002/12/21 13:39:25  DTP
  * did bit more house keeping. modfied Phreaks fps cmdline a bit, so that we dont have to specific build code.libs for fred, but can use the same code.lib for both fs2_open.exe and fred2_open.exe
  *
@@ -50,6 +56,32 @@
  *
  * Revision 2.6  2002/08/27 13:38:57  penguin
  * Moved DirectX8 stuff to directx8 branch; reverted to previous
+ *
+ * Revision 2.4.2.4  2002/11/10 11:32:29  randomtiger
+ *
+ * Made D3D8 mipmapping optional on command line flag -d3dmipmip, off by default.
+ * When on is now less blury. - RT
+ *
+ * Revision 2.4.2.3  2002/11/04 23:53:24  randomtiger
+ *
+ * Added new command line parameter -d3dlauncher which brings up the launcher.
+ * This is needed since FS2 DX8 now stores the last successful details in the registry and
+ * uses them to choose the adapter and mode to run in unless its windowed or they are not set.
+ * Added some code for Antialiasing but it messes up the font but hopefully that can be fixed later. - RT
+ *
+ * Revision 2.4.2.2  2002/11/04 21:24:59  randomtiger
+ *
+ * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
+ * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Cleaned up some more texture stuff enabled console debug for D3D.
+ *
+ * Revision 2.4.2.1  2002/08/27 13:19:02  penguin
+ * Moved to directx8 branch
+ *
+ * Revision 2.5  2002/08/18 19:48:28  randomtiger
+ * Added new lib files: strmiids and ddraw to get dshow working
+ * Added new command line parameter to active direct show movie play: -dshowvid
+ * Uncommented movie_play calls and includes
  *
  * Revision 2.4  2002/08/07 00:44:13  DTP
  * Implented -GF4FIX commandline switch
@@ -300,6 +332,10 @@ cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including
 cmdline_parm dshowvid_arg("-dshowvid", NULL); // Allows video streaming
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
 cmdline_parm fps_arg("-fps", NULL);
+//cmdline_parm dshowvid_arg("-dshowvid", NULL); // Allows video streaming - redefinition
+cmdline_parm d3dlowmem_arg("-d3dlowmem", NULL); //DTP for random tigers GF4fix
+cmdline_parm d3dlauncher_arg("-d3dlauncher", NULL);
+cmdline_parm d3dmipmap_arg("-d3dmipmap", NULL);
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -334,8 +370,10 @@ int Cmdline_phreak	= 0;
 int Cmdline_dshowvid = 0;
 int Cmdline_show_fps = 0;
 
-
-
+//int Cmdline_dshowvid = 0;	// multiple initialization
+int Cmdline_d3dlowmem = 0;
+int Cmdline_d3dlauncher = 0;
+int Cmdline_d3dmipmap = 0;
 
 static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
@@ -713,6 +751,7 @@ int parse_cmdline(int argc, char *argv[])
 
 	if(dshowvid_arg.found() ) {
 		Cmdline_dshowvid = 1;
+		Cmdline_gf4fix = 1;
 	}
 
 	if(mod_arg.found() ) {
@@ -723,6 +762,22 @@ int parse_cmdline(int argc, char *argv[])
 	if (fps_arg.found())
 	{
 		Cmdline_show_fps = 1;
+	}
+
+	if(dshowvid_arg.found() ) {
+		Cmdline_dshowvid = 1;
+	}
+
+	if( d3dlowmem_arg.found() ) {
+		Cmdline_d3dlowmem = 1;
+	}
+
+	if( d3dlauncher_arg.found() ) {
+		Cmdline_d3dlauncher = 1;
+	}
+
+	if( d3dmipmap_arg.found() ) {
+		Cmdline_d3dmipmap = 1;
 	}
 
 	return 1;

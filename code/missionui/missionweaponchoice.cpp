@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-03-06 09:13:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2003-03-18 10:07:04 $
+ * $Author: unknownplayer $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/03/06 09:13:42  Goober5000
+ * fixed what should be the last bug with bank-specific loadouts
+ * --Goober5000
+ *
  * Revision 2.12  2003/03/05 12:38:01  Goober5000
  * rewrote the restricted bank loadout code; it should work now
  * --Goober5000
@@ -37,6 +41,12 @@
  *
  * Revision 2.2  2002/12/10 05:43:33  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
@@ -503,6 +513,7 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "playerman/player.h"
+#include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

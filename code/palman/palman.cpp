@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Palman/PalMan.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-18 10:07:05 $
+ * $Author: unknownplayer $
  *
  * Palette manager routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1.2.1  2002/10/20 22:21:48  randomtiger
+ * Some incomplete code to handle background drawing when message boxes are drawn.
+ * It doesnt work but its a good base for someone to start from. - RT
+ *
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -686,8 +693,6 @@ void palette_update(char *name_with_extension, int restrict_font_to_128)
 
 	Palman_restrict_colors = restrict_font_to_128;
 	
-//	mprintf(( "<<<<<<<<< PALETTE UPDATE (%s) >>>>>>>>>>>\n", (name_with_extension?name_with_extension:"null") ));
-
 	strcpy( name, name_with_extension );
 	char *p = strchr( name, '.' );
 	if ( p ) *p = 0;

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.8 $
- * $Date: 2003-03-02 05:27:44 $
- * $Author: penguin $
+ * $Revision: 2.9 $
+ * $Date: 2003-03-18 10:07:02 $
+ * $Author: unknownplayer $
+ * $Revision: 2.9 $
+ * $Date: 2003-03-18 10:07:02 $
+ * $Author: unknownplayer $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/03/02 05:27:44  penguin
+ * only define min() and max() if they're not already defined
+ *  - penguin
+ *
  * Revision 2.7  2003/01/18 19:48:19  phreak
  * added some defines that deal with mages using DXTC
  *
@@ -24,6 +31,16 @@
  *
  * Revision 2.5  2002/12/02 20:49:14  Goober5000
  * fixed misspelling of "category" as "catagory"
+ *
+ * Revision 2.4.2.3  2002/10/19 23:56:40  randomtiger
+ * Changed generic bitmap code to allow maximum dimensions to be determined by 3D's engines maximum texture size query.
+ * Defaults to 256 as it was before. Also added base code for reworking the texture code to be more efficient. - RT
+ *
+ * Revision 2.4.2.2  2002/09/24 18:56:42  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.4  2002/08/06 01:49:08  penguin
  * Renamed ccode members to cc_or and cc_and
@@ -360,7 +377,7 @@ typedef struct vertex {
 // max res == 1024x768. max texture size == 256
 #define MAX_BMAP_SECTIONS_X				4
 #define MAX_BMAP_SECTIONS_Y				3
-#define MAX_BMAP_SECTION_SIZE				256
+
 typedef struct bitmap_section_info {
 	ushort sx[MAX_BMAP_SECTIONS_X];		// x offset of each section
 	ushort sy[MAX_BMAP_SECTIONS_Y];		// y offset of each section

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-18 10:07:04 $
+ * $Author: unknownplayer $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4.2.1  2002/09/24 18:56:44  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+ * Revision 2.4  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.3  2002/07/29 08:05:20  DTP
  * -almission(autoload mission) commandline arguement handling implemented
  *
@@ -498,6 +507,7 @@
 #include "anim/animplay.h"
 #include "network/multi_dogfight.h"
 #include "missionui/missionpause.h"
+#include "debugconsole/dbugfile.h"
 
 // -------------------------------------------------------------------------------------------------------------
 // 

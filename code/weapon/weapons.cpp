@@ -19,6 +19,16 @@
  * Revision 2.2  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
+ * $Log: not supported by cvs2svn $
+ * Revision 2.1.2.2  2002/09/28 22:13:43  randomtiger
+ * Sorted out some bits and pieces. The background nebula blends now which is nice. – RT
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:46  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move
  *
@@ -401,6 +411,7 @@
 #include "localization/localize.h"
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
+#include "debugconsole/dbugfile.h" 
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1282,6 +1293,7 @@ int parse_weapon()
 	} else {
 		wip->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	}
+
 	if( optional_string("$Leech Afterburner:") ){
 		stuff_float(&wip->afterburner_reduce);
 	} else {
@@ -1345,7 +1357,7 @@ int parse_weapon()
 	wip->b_info.beam_shrink_pct = 0.0f;
 	wip->b_info.range = BEAM_FAR_LENGTH;
 	wip->b_info.damage_threshold = 1.0f;
-	
+
 	if( optional_string("$BeamInfo:")){
 		// beam type
 		required_string("+Type:");
@@ -1445,11 +1457,17 @@ int parse_weapon()
 			stuff_string(tex_name, F_NAME, NULL);
 			i.texture = -1;
 			if(!Fred_running){
+	
 				i.texture = bm_load(tex_name);
+	
 				if(i.texture >= 0){
+	
 					bm_lock(i.texture, 16, BMP_TEX_OTHER);
+	
 					bm_unlock(i.texture);
+	
 				}
+	
 			}
 
 			// rgba inner
@@ -1468,7 +1486,7 @@ int parse_weapon()
 
 			// flicker
 			required_string("+Flicker:");
-			stuff_float(&i.flicker);			
+			stuff_float(&i.flicker); 
 
 			// zadd
 			required_string("+Zadd:");
@@ -1726,6 +1744,7 @@ void weapon_init()
 		// parse weapon_exp.tbl
 		parse_weapon_expl_tbl();
 #endif
+
 
 		// parse weapons.tbl
 		if ((rval = setjmp(parse_abort)) != 0) {

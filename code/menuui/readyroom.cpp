@@ -9,16 +9,32 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-03 04:28:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-18 10:07:03 $
+ * $Author: unknownplayer $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/03 04:28:37  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.2  2002/10/19 03:50:29  randomtiger
  * Added special pause mode for easier action screenshots.
  * Added new command line parameter for accessing all single missions in tech room. - RT
+ *
+ * Revision 2.1.2.2  2002/11/04 21:25:00  randomtiger
+ *
+ * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
+ * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Cleaned up some more texture stuff enabled console debug for D3D.
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
@@ -111,6 +127,7 @@
 #include "globalincs/alphacolors.h"
 #include "cmdline/cmdline.h"
 #include "menuui/techmenu.h"	// for tech menu reset stuff
+#include "debugconsole/dbugfile.h"
 
 #define MAX_MISSIONS	1024
 
@@ -601,8 +618,10 @@ int build_campaign_mission_list_do_frame()
 	Campaign_mission_flags[Num_campaign_missions_with_info] = 0;
 	
 	// Only allow missions already completed
-	if (Campaign.missions[Num_campaign_missions_with_info].completed || Cmdline_allslev) {
-		if (!get_mission_info(Campaign.missions[Num_campaign_missions_with_info].name)) {
+	if (Campaign.missions[Num_campaign_missions_with_info].completed || Cmdline_allslev) 
+	{
+		if (!get_mission_info(Campaign.missions[Num_campaign_missions_with_info].name)) 
+		{
 			// add to list
 			Campaign_mission_names[Num_campaign_missions_with_info] = strdup(The_mission.name);
 			Campaign_mission_flags[Num_campaign_missions_with_info] = The_mission.game_type;
@@ -611,7 +630,8 @@ int build_campaign_mission_list_do_frame()
 			// determine some extra information
 			int flags = 0;
 			fs_builtin_mission *fb = game_find_builtin_mission(Campaign.missions[Num_campaign_missions_with_info].name);				
-			if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
+			if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION))
+			{
 				flags |= READYROOM_FLAG_FROM_VOLITION;
 			}				
 	

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-10 05:43:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-18 10:07:04 $
+ * $Author: unknownplayer $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/10 05:43:33  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -167,6 +176,7 @@
 #include "sound/audiostr.h"
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
+#include "debugconsole/dbugfile.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Red Alert Mission-Level

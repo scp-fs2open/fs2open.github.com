@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-03-18 01:44:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2003-03-18 10:07:04 $
+ * $Author: unknownplayer $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/03/18 01:44:31  Goober5000
+ * fixed some misspellings
+ * --Goober5000
+ *
  * Revision 2.18  2003/03/02 05:55:51  penguin
  * Moved Gr_scaler_zbuffering definition to top of file
  *  - penguin
@@ -76,6 +80,11 @@
  *
  * Revision 2.4  2002/10/19 19:29:27  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
+ * Revision 2.3.2.1  2002/10/30 22:57:21  randomtiger
+ *
+ * Changed DX8 code to not use set render and texture states if they are already set to that value.
+ * Disabled buffer saving and restoring code when windowed to stop DX8 debug runs from crashing. - RT
  *
  * Revision 2.3  2002/08/01 01:41:07  penguin
  * The big include file move
@@ -323,6 +332,7 @@
 #include "math/staticrand.h"
 #include "globalincs/alphacolors.h"
 //#include "weapon/beam.h" //I don't need this after all:\ -Bobboau
+#include "debugconsole/dbugfile.h"
 
 // Some debug variables used externally for displaying stats
 #ifndef NDEBUG
@@ -2793,7 +2803,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		flags |= MR_NO_POLYS;
 	}
 
-	Interp_flags = flags;
+	Interp_flags = flags;			 
 
 	pm = model_get(model_num);	
 

@@ -9,13 +9,66 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.2 $
- * $Date: 2002-10-05 16:46:09 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-18 10:07:02 $
+ * $Author: unknownplayer $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/05 16:46:09  randomtiger
+ * Added us fs2_open people to the credits. Worth looking at just for that.
+ * Added timer bar code, by default its not compiled in.
+ * Use TIMEBAR_ACTIVE in project and dependancy code settings to activate.
+ * Added the new timebar files with the new code.
+ *
+ * Revision 2.1.2.9  2002/11/11 21:26:04  randomtiger
+ *
+ * Tided up D3DX8 calls, did some documentation and add new file: grd3dcalls.cpp. - RT
+ *
+ * Revision 2.1.2.8  2002/11/04 21:24:59  randomtiger
+ *
+ * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
+ * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Cleaned up some more texture stuff enabled console debug for D3D.
+ *
+ * Revision 2.1.2.7  2002/10/30 22:57:21  randomtiger
+ *
+ * Changed DX8 code to not use set render and texture states if they are already set to that value.
+ * Disabled buffer saving and restoring code when windowed to stop DX8 debug runs from crashing. - RT
+ *
+ * Revision 2.1.2.6  2002/10/21 16:33:41  randomtiger
+ * Added D3D only 32 bit TGA functionality. Will load a texture as big as your graphics card allows. Code not finished yet and will forge the beginnings of the new texture system. - RT
+ *
+ * Revision 2.1.2.5  2002/10/11 18:50:54  randomtiger
+ * Checked in fix for 16 bit problem, thanks to Righteous1
+ * Removed a fair bit of code that was used by the 16 bit code path which no longer exists.
+ * 32 bit and 16 bit should now work in exactly the same way. - RT
+ *
+ * Revision 2.1.2.4  2002/10/04 00:48:42  randomtiger
+ * Fixed video memory leaks
+ * Added code to cope with lost device, not tested
+ * Got rid of some DX5 stuff we definately dont need
+ * Moved some enum's into internal,h because gr_d3d_set_state should be able to be called from any dx file
+ * Cleaned up some stuff - RT
+ *
+ * Revision 2.1.2.3  2002/10/02 11:40:19  randomtiger
+ * Bmpmap has been reverted to an old non d3d8 version.
+ * All d3d8 code is now in the proper place.
+ * PCX code is now working to an extent. Problems with alpha though.
+ * Ani's work slowly with alpha problems.
+ * Also I have done a bit of tidying - RT
+ *
+ * Revision 2.1.2.2  2002/09/28 22:13:43  randomtiger
+ * Sorted out some bits and pieces. The background nebula blends now which is nice. – RT
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:42  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+>>>>>>> 2.1.2.9
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -133,46 +186,28 @@
 #include <windows.h>
 #include <windowsx.h>
 
-#define D3D_OVERLOADS
 #include "directx/vddraw.h"
 
 // To remove an otherwise well-lodged compiler error
 // 4201 nonstandard extension used : nameless struct/union (happens a lot in Windows include headers)
 #pragma warning(disable: 4201)
 
-#include "directx/vd3d.h"
+#include <d3d8.h>
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 
-
-extern LPDIRECTDRAW			lpDD1;
-extern LPDIRECTDRAW2			lpDD;
-extern LPDIRECT3D2			lpD3D;
-extern LPDIRECT3DDEVICE		lpD3DDeviceEB; 
-extern LPDIRECT3DDEVICE2	lpD3DDevice; 
-extern LPDIRECTDRAWSURFACE	lpBackBuffer;
-extern LPDIRECTDRAWSURFACE	lpFrontBuffer;
-extern LPDIRECTDRAWSURFACE	lpZBuffer;
-
-extern LPDIRECT3DVIEWPORT2	lpViewport;
-extern LPDIRECTDRAWPALETTE	lpPalette;
-
-extern DDPIXELFORMAT			AlphaTextureFormat;
-extern DDPIXELFORMAT			NonAlphaTextureFormat;
-extern DDPIXELFORMAT			ScreenFormat;
-
-extern D3DDEVICEDESC D3DHWDevDesc, D3DHELDevDesc;
-extern LPD3DDEVICEDESC lpDevDesc;
-extern DDCAPS DD_driver_caps;
-extern DDCAPS DD_hel_caps;
+extern IDirect3D8 *lpD3D;
+extern IDirect3DDevice8 *lpD3DDevice;	 
+extern D3DVIEWPORT8 viewport;
+extern D3DCAPS8 d3d_caps;
+extern D3DPRESENT_PARAMETERS d3dpp; 
 
 extern int D3D_texture_divider;
-
 extern int D3D_32bit;
 
-extern char* d3d_error_string(HRESULT error);
+extern const char* d3d_error_string(HRESULT error);
 
-void d3d_tcache_init(int use_sections);
+void d3d_tcache_init();
 void d3d_tcache_cleanup();
 void d3d_tcache_flush();
 void d3d_tcache_frame();
@@ -183,7 +218,6 @@ void d3d_flush();
 int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_ratio, float *v_ratio, int fail_on_full=0, int sx = -1, int sy = -1, int force = 0);
 
 // Functions in GrD3DRender.cpp stuffed into gr_screen structure
-
 void gr_d3d_flash(int r, int g, int b);
 void gr_d3d_zbuffer_clear(int mode);
 int gr_d3d_zbuffer_get();
@@ -201,7 +235,6 @@ void gr_d3d_set_color( int r, int g, int b );
 void gr_d3d_get_color( int * r, int * g, int * b );
 void gr_d3d_set_color_fast(color *dst);
 void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx=-1, int sy=-1 );
-void gr_d3d_bitmap_ex(int x,int y,int w,int h,int sx,int sy);
 void gr_d3d_bitmap(int x, int y);
 void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy);
 void gr_d3d_aabitmap(int x, int y);
@@ -222,8 +255,104 @@ void gr_d3d_print_screen(char *filename);
 
 void d3d_render_timer_bar(int colour, float x, float y, float w, float h);
 
-// Functions used to render.  Calls either DrawPrim or Execute buffer code
-HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE dwRenderStateType,  DWORD dwRenderState );
-HRESULT d3d_DrawPrimitive( D3DPRIMITIVETYPE dptPrimitiveType, D3DVERTEXTYPE dvtVertexType, LPVOID lpvVertices, DWORD dwVertexCount, DWORD dwFlags );
+enum
+{
+	D3DVT_TLVERTEX,
+	D3DVT_LVERTEX,
+	D3DVT_VERTEX,
+	D3DVT_MAX
+};
+
+// This vertex type tells D3D that it has already been transformed an lit
+// D3D will simply display the polygon with no extra processing
+typedef struct { 
+    float sx, sy, sz; 
+	float rhw; 
+
+    DWORD color; 
+    DWORD specular; 
+    float tu, tv; 
+
+} D3DTLVERTEX;
+
+// This vertex type should be used for vertices that have already been lit
+// make sure lighting is set to off while these polygons are rendered 
+typedef struct { 
+    float sx, sy, sz;
+  
+    DWORD color; 
+    DWORD specular; 
+    float tu, tv; 
+
+} D3DLVERTEX;
+
+// Renders a normal polygon that is to be transformed and lit by D3D
+typedef struct { 
+    float sx, sy, sz;
+  	float nx, ny, nz;
+
+    float tu, tv; 
+
+} D3DVERTEX;
+
+typedef struct {
+	int fvf;
+	int size;
+
+} VertexTypeInfo;
+
+typedef float D3DVALUE;
+
+// 32 bit formats, only for use in a 32 bit mode.
+extern D3DFORMAT default_32_non_alpha_tformat;
+extern D3DFORMAT default_32_alpha_tformat;
+
+// 16 bit formats for pcx media
+extern D3DFORMAT default_non_alpha_tformat;
+extern D3DFORMAT default_alpha_tformat;
+
+extern DDPIXELFORMAT AlphaTextureFormat;
+extern DDPIXELFORMAT NonAlphaTextureFormat;
+
+typedef enum gr_texture_source {
+	TEXTURE_SOURCE_NONE,
+	TEXTURE_SOURCE_DECAL,
+	TEXTURE_SOURCE_NO_FILTERING,
+} gr_texture_source;
+
+typedef enum gr_alpha_blend {
+	ALPHA_BLEND_NONE,							// 1*SrcPixel + 0*DestPixel
+	ALPHA_BLEND_ALPHA_ADDITIVE,			// Alpha*SrcPixel + 1*DestPixel
+	ALPHA_BLEND_ALPHA_BLEND_ALPHA,		// Alpha*SrcPixel + (1-Alpha)*DestPixel
+	ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel
+} gr_alpha_blend;
+
+typedef enum gr_zbuffer_type {
+	ZBUFFER_TYPE_NONE,
+	ZBUFFER_TYPE_READ,
+	ZBUFFER_TYPE_WRITE,
+	ZBUFFER_TYPE_FULL,
+	ZBUFFER_TYPE_DEFAULT,
+} gr_zbuffer_type;
+
+// INTERNAL D3D Functions
+
+// GrD3D functions
+void d3d_set_initial_render_state();
+int d3d_get_mode_bit(D3DFORMAT type);
+
+// GrD3DRender functions
+void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt );
+
+// GrD3DTexture functions
+
+// GrD3DCall functions
+void d3d_reset_render_states();
+HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_state );
+HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pvertices, DWORD vertex_count);
+void d3d_reset_texture_stage_states();
+HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value);
+void d3d_lost_device();
+HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr);
 
 #endif //_GRD3DINTERNAL_H

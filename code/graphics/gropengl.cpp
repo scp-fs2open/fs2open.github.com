@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-03-07 00:15:45 $
- * $Author: phreak $
+ * $Revision: 2.17 $
+ * $Date: 2003-03-18 10:07:02 $
+ * $Author: unknownplayer $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/03/07 00:15:45  phreak
+ * added some hacks that shutdown and restore opengl because of cutscenes
+ *
  * Revision 2.15  2003/02/16 18:43:13  phreak
  * tweaked some more stuff
  *
@@ -92,6 +95,27 @@
  *
  * Revision 1.42  2002/06/02 10:28:17  relnev
  * fix texture handle leak
+ * Revision 2.3.2.2  2002/11/04 16:04:21  randomtiger
+ *
+ * Tided up some bumpman stuff and added a few function points to gr_screen. - RT
+ *
+ * Revision 2.3.2.1  2002/11/04 03:02:29  randomtiger
+ *
+ * I have made some fairly drastic changes to the bumpman system. Now functionality can be engine dependant.
+ * This is so D3D8 can call its own loading code that will allow good efficient loading and use of textures that it desparately needs without
+ * turning bumpman.cpp into a total hook infested nightmare. Note the new bumpman code is still relying on a few of the of the old functions and all of the old bumpman arrays.
+ *
+ * I have done this by adding to the gr_screen list of function pointers that are set up by the engines init functions.
+ * I have named the define calls the same name as the original 'bm_' functions so that I havent had to change names all through the code.
+ *
+ * Rolled back to an old version of bumpman and made a few changes.
+ * Added new files: grd3dbumpman.cpp and .h
+ * Moved the bitmap init function to after the 3D engine is initialised
+ * Added includes where needed
+ * Disabled (for now) the D3D8 TGA loading - RT
+ *
+ * Revision 2.3  2002/08/01 01:41:05  penguin
+ * The big include file move
  *
  * Revision 1.41  2002/06/01 09:00:34  relnev
  * silly debug memmanager
@@ -365,6 +389,8 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #define REQUIRED_GL_VERSION 1.2f
 
 extern int OGL_inited;
+
+int vram_full = 0;			// UnknownPlayer
 
 //0==no fog
 //1==linear
@@ -2632,7 +2658,7 @@ int opengl_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_s
 }
 
 		
-extern int bm_get_cache_slot( int bitmap_id, int separate_ani_frames );
+//extern int bm_get_cache_slot( int bitmap_id, int separate_ani_frames );
 int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0)
 {
 	bitmap *bmp = NULL;
@@ -3533,7 +3559,38 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	
 	gr_screen.gf_fog_set = gr_opengl_fog_set;	
 
+	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
 	gr_screen.gf_get_region = gr_opengl_get_region;
+
+	// now for the bitmap functions
+	gr_screen.gf_bm_get_next_handle         = bm_gfx_get_next_handle;         
+	gr_screen.gf_bm_close                   = bm_gfx_close;                   
+	gr_screen.gf_bm_init                    = bm_gfx_init;                    
+	gr_screen.gf_bm_get_frame_usage         = bm_gfx_get_frame_usage;         
+	gr_screen.gf_bm_create                  = bm_gfx_create;                  
+	gr_screen.gf_bm_load                    = bm_gfx_load;                   
+	gr_screen.gf_bm_load_duplicate          = bm_gfx_load_duplicate;          
+	gr_screen.gf_bm_load_animation          = bm_gfx_load_animation;          
+	gr_screen.gf_bm_get_info                = bm_gfx_get_info;                
+	gr_screen.gf_bm_lock                    = bm_gfx_lock;                    
+	gr_screen.gf_bm_unlock                  = bm_gfx_unlock;                  
+	gr_screen.gf_bm_get_palette             = bm_gfx_get_palette;             
+	gr_screen.gf_bm_release                 = bm_gfx_release;                 
+	gr_screen.gf_bm_unload                  = bm_gfx_unload;                  
+	gr_screen.gf_bm_unload_all              = bm_gfx_unload_all;              
+	gr_screen.gf_bm_page_in_texture         = bm_gfx_page_in_texture;         
+	gr_screen.gf_bm_page_in_start           = bm_gfx_page_in_start;           
+	gr_screen.gf_bm_page_in_stop            = bm_gfx_page_in_stop;            
+	gr_screen.gf_bm_get_cache_slot          = bm_gfx_get_cache_slot;          
+	gr_screen.gf_bm_24_to_16                = bm_gfx_24_to_16;                
+	gr_screen.gf_bm_get_components          = bm_gfx_get_components;          
+	gr_screen.gf_bm_get_section_size        = bm_gfx_get_section_size;
+
+	gr_screen.gf_bm_page_in_nondarkening_texture = bm_gfx_page_in_nondarkening_texture; 
+	gr_screen.gf_bm_page_in_xparent_texture		 = bm_gfx_page_in_xparent_texture;		 
+	gr_screen.gf_bm_page_in_aabitmap			 = bm_gfx_page_in_aabitmap;
+
+//	RunGLTest( 0, NULL, 0, 0, 0, 0.0, 0 );
 
 	gr_screen.gf_get_pixel = gr_opengl_get_pixel;
 

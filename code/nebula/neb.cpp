@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-11-18 21:32:48 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-18 10:07:04 $
+ * $Author: unknownplayer $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/11/18 21:32:48  phreak
+ * added some lines that makes ogl work in windowed mode for fullneb - phreak
+ *
+ * Revision 2.1.2.3  2002/11/11 21:26:04  randomtiger
+ *
+ * Tided up D3DX8 calls, did some documentation and add new file: grd3dcalls.cpp. - RT
+ *
+ * Revision 2.1.2.2  2002/11/10 02:44:43  randomtiger
+ *
+ * Have put in a hack to get fog working in D3D8 but the method V has used is frowned
+ * on in D3D8 and will likely be a lot slower than the same thing in D3D5. - RT
+ *
+ * Revision 2.1.2.1  2002/10/26 09:55:42  unknownplayer
+ *
+ * Fixed the nebula flicker bug. Check the NO_DIRECT3D conditional compile
+ * sections in the future for bits of code which may cause problems due to hacks
+ * correcting for DirectX5 that no longer apply.
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -928,7 +946,7 @@ int frames_total = 0;
 int frame_count = 0;
 float frame_avg;
 void neb2_render_player()
-{	
+{
 	vertex p, ptemp;
 	int idx1, idx2, idx3;
 	float alpha;
@@ -1190,6 +1208,13 @@ int this_esize = ESIZE;
 extern float Viewer_zoom;
 float ex_scale, ey_scale;
 int tbmap = -1;
+// UnknownPlayer : Contained herein, the origins of the nebula rendering bug!
+// I am really not entirely sure what the hell this code achieves, but the old
+// D3D calls were the cause of the nebula bug - they have been commented out.
+// If you want to save some rendering time, I would suggest maybe kill this off.
+// It doesn't use much, but it APPEARS to be fairly useless unless someone wants
+// to enlighten me.
+//
 void neb2_pre_render(vector *eye_pos, matrix *eye_orient)
 {	
 	// bail early in lame and poly modes
@@ -1213,16 +1238,8 @@ void neb2_pre_render(vector *eye_pos, matrix *eye_orient)
 	extern void stars_draw_background();
 	stars_draw_background();		
 
-	Neb2_render_mode = neb_save;	
-
-#ifndef NO_DIRECT3D
-	// HACK - flush d3d here so everything is rendered
-	if(gr_screen.mode == GR_DIRECT3D){
-		extern void d3d_flush();
-		d3d_flush();
-	}
-#endif
-
+	Neb2_render_mode = neb_save;
+	
 	// grab the region
 	gr_get_region(0, this_esize, this_esize, (ubyte*)tpixels);	
 
@@ -1240,14 +1257,6 @@ void neb2_pre_render(vector *eye_pos, matrix *eye_orient)
 	g3_end_frame();
 	
 	gr_clear();	
-
-#ifndef NO_DIRECT3D
-	// HACK - flush d3d here so everything is properly cleared
-	if(gr_screen.mode == GR_DIRECT3D){
-		extern void d3d_flush();
-		d3d_flush();
-	}
-#endif
 
 	// if the size has changed between frames, make a new bitmap
 	if(this_esize != last_esize){
@@ -1272,7 +1281,7 @@ void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 {	
 	int ra, ga, ba;
 	ubyte rv, gv, bv;	
-	int avg_count;
+	ubyte avg_count;
 	int xs, ys;
 
 	// if we're in lame rendering mode, return a constant value
@@ -1363,9 +1372,9 @@ void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 		avg_count++;
 	}		
 
-	rv = (ubyte) (ra / avg_count);
-	gv = (ubyte) (ga / avg_count);
-	bv = (ubyte) (ba / avg_count);	
+	rv = ra / avg_count;
+	gv = ga / avg_count;
+	bv = ba / avg_count;	
 
 	// return values
 	*r = (int)rv;

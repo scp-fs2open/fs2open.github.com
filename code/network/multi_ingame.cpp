@@ -9,17 +9,30 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-01-03 21:58:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2003-03-18 10:07:04 $
+ * $Author: unknownplayer $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/01/03 21:58:08  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.4  2002/12/31 18:59:43  Goober5000
  * if it ain't broke, don't fix it
  * --Goober5000
  *
  * Revision 2.2  2002/12/10 05:43:34  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
@@ -348,6 +361,7 @@
 #include "network/multi_obj.h"
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
+#include "debugconsole/dbugfile.h"
 
 // --------------------------------------------------------------------------------------------------
 // DAVE's BIGASS INGAME JOIN WARNING/DISCLAIMER

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-06 01:49:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-18 10:07:05 $
+ * $Author: unknownplayer $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2.2.1  2002/09/24 18:56:45  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+ * Revision 2.2  2002/08/06 01:49:08  penguin
+ * Renamed ccode members to cc_or and cc_and
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -1804,42 +1813,22 @@ int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flag
 	v[3].u = 0.0f;
 	v[3].v = 1.0f;
 	v[3].flags = PF_PROJECTED;
-	v[3].codes = 0;		
+	v[3].codes = 0;	
 
 	/*
-	v[0].sx = (float)x;
-	v[0].sy = (float)y;	
-	v[0].sw = 0.0f;
 	v[0].u = 0.5f / i2fl(bw);
 	v[0].v = 0.5f / i2fl(bh);
-	v[0].flags = PF_PROJECTED;
-	v[0].codes = 0;
 
-	v[1].sx = (float)(x + w);
-	v[1].sy = (float)y;	
-	v[1].sw = 0.0f;
 	v[1].u = 1.0f + (0.5f / i2fl(bw));
 	v[1].v = 0.0f + (0.5f / i2fl(bh));
-	v[1].flags = PF_PROJECTED;
-	v[1].codes = 0;
 
-	v[2].sx = (float)(x + w);
-	v[2].sy = (float)(y + h);	
-	v[2].sw = 0.0f;
 	v[2].u = 1.0f + (0.5f / i2fl(bw));
 	v[2].v = 1.0f + (0.5f / i2fl(bh));
-	v[2].flags = PF_PROJECTED;
-	v[2].codes = 0;
 
-	v[3].sx = (float)x;
-	v[3].sy = (float)(y + h);	
-	v[3].sw = 0.0f;
 	v[3].u = 0.0f + (0.5f / i2fl(bw));
 	v[3].v = 1.0f + (0.5f / i2fl(bh));
-	v[3].flags = PF_PROJECTED;
-	v[3].codes = 0;	
-	*/
-		
+	*/ 
+	
 	// no filtering
 	gr_filter_set(0);
 
