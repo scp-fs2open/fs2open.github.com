@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-01-31 23:27:54 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-02-13 08:42:41 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.10  2005/01/29 08:09:47  wmcoolmon
  * Various updates; shader, clipping
  *
@@ -1681,11 +1684,11 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	if(sip == NULL)
 	{
 		//Assume it's a weapon
-		rot_angles.h = -(PI/2);
+		rot_angles.h = -(PI/2.0f);
 	}
 	else if(sip->flags & SIF_SMALL_SHIP)
 	{
-		rot_angles.p = -(PI/2);
+		rot_angles.p = -(PI/2.0f);
 	}
 	else if((sip->max_speed <= 0.0f) && !(sip->flags & SIF_CARGO))
 	{
@@ -1695,7 +1698,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	else
 	{
 		//Probably a capship
-		rot_angles.h = PI/2;
+		rot_angles.h = PI/2.0f;
 	}
 	vm_angles_2_matrix(&object_orient, &rot_angles);
 	
