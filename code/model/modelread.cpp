@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-02-25 06:22:49 $
+ * $Revision: 2.17 $
+ * $Date: 2003-02-25 16:46:01 $
  * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/02/25 06:22:49  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.15  2003/01/19 01:07:41  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -2311,7 +2317,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	pm->id = Model_signature + num;
 	Assert( (pm->id % MAX_POLYGON_MODELS) == num );
 
-	if (!read_model_file(pm, filename, n_subsystems, subsystems, ferror))	{
+	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
 		return -1;
 	}
 
