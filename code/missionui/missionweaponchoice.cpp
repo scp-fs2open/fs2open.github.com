@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-01-15 05:53:18 $
+ * $Revision: 2.29 $
+ * $Date: 2005-01-16 23:18:03 $
  * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/01/15 05:53:18  wmcoolmon
+ * Current version of the new techroom code -C
+ *
  * Revision 2.27  2004/12/14 14:46:13  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -3736,7 +3739,7 @@ int wl_update_ship_weapons(int objnum, wss_unit *slot )
 	// AL 11-15-97: Ensure that the player ship hasn't removed all 
 	//					 weapons from their ship.  This will cause a warning to appear.
 	if ( objnum == OBJ_INDEX(Player_obj) && Weapon_select_open ) {
-		if ( wl_slots_all_empty(slot) && sip->num_primary_banks > 0 || sip->num_secondary_banks) {
+		if ( wl_slots_all_empty(slot) && (sip->num_primary_banks > 0 || sip->num_secondary_banks > 0)) {
 			return -1;
 		}
 		else
