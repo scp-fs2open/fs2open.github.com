@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-01-15 23:23:30 $
+ * $Revision: 2.13 $
+ * $Date: 2003-01-16 06:49:11 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/01/15 23:23:30  Goober5000
+ * NOW the model duplicates work! :p
+ * still gotta do the textures, but it shouldn't be hard now
+ * --Goober5000
+ *
  * Revision 2.11  2003/01/15 08:57:23  Goober5000
  * assigning duplicate models to ships now works; committing so I have a base
  * to fall back to as I work on texture replacement
@@ -2164,9 +2169,11 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	char tmp_name[256];
 	strcpy(tmp_name, file);
 
-	pm->transparent[i]=0;	//it's transparent
-	pm->ambient[i]=0;		//ambient glow
+	pm->is_transparent[i]=0;	//it's transparent
+	pm->is_ambient[i]=0;		//ambient glow
 	pm->is_ani[i]=0;		//animated textures
+	pm->num_frames[i]=1;	// number of frames - default 1 (no animation)
+
 	if ( strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))
 	{
 		// Don't load textures for thruster animations or invisible textures
@@ -2177,14 +2184,14 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	{
 		if(strstr(tmp_name, "-trans"))
 		{
-			pm->transparent[i]=1;
+			pm->is_transparent[i]=1;
 			nprintf(("%s is transparent, oooow\n",tmp_name));
 		}
 
 		if(strstr(tmp_name, "-amb"))
 		{
-			pm->ambient[i]=1;
-			nprintf(("%s is amient, aaaahhh\n",tmp_name));
+			pm->is_ambient[i]=1;
+			nprintf(("%s is ambient, aaaahhh\n",tmp_name));
 		}
 
 		pm->textures[i] = bm_load( tmp_name );
@@ -2193,7 +2200,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 			nprintf(("couldn't find %s.pcx",tmp_name));
 
 			pm->is_ani[i] = 1;	//this is an animated texture
-			pm->textures[i] = bm_load_animation(tmp_name,  &pm->numframes[i], &pm->fps[i], 1);
+			pm->textures[i] = bm_load_animation(tmp_name,  &pm->num_frames[i], &pm->fps[i], 1);
 							
 			if(pm->textures[i]<0)
 			{
@@ -2205,7 +2212,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 			else
 			{
 				mprintf(("but I did find %s.ani, ", tmp_name));
-				mprintf(("with %d frames, ", pm->numframes[i]));
+				mprintf(("with %d frames, ", pm->num_frames[i]));
 				mprintf(("and a rate of %d\n", pm->fps[i]));
 			}
 		}
@@ -2279,6 +2286,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	}
 	Assert( (Model_signature % MAX_POLYGON_MODELS) == 0 );
 	pm->id = Model_signature + num;
+	Assert( (pm->id % MAX_POLYGON_MODELS) == num );
 
 	if (!read_model_file(pm, filename, n_subsystems, subsystems, ferror))	{
 		return -1;
@@ -3735,7 +3743,42 @@ int model_get_num_dock_points(int modelnum)
 }
 
 // Goober5000
-void model_duplicate_reskin(int new_model, int old_model, char *ship_name)
+void model_duplicate_reskin(int modelnum, char *ship_name)
 {
+	polymodel *pm = model_get(modelnum);
 
+	int i, j;
+	char *p = NULL;
+	char texture_file[MAX_FILENAME_LEN];
+
+	// for all textures
+	for (i=0; i<Num_texture_replacements; i++)
+	{
+		// this the right ship?
+		if (!strcmp(ship_name, Texture_replace[i].ship_name))
+		{
+			// look for textures
+			for (j=0; j<pm->n_textures; j++)
+			{
+				// get texture file name
+				bm_get_filename(pm->textures[j], texture_file);
+
+				// get rid of file extension
+				p = strchr( texture_file, '.' );
+				if ( p )
+				{
+					mprintf(( "ignoring extension on file '%s'\n", texture_file ));
+					*p = 0;
+				}
+
+				// now compare the extension-less texture file names
+				if (!stricmp(texture_file, Texture_replace[i].old_texture))
+				{
+					// replace it
+					model_load_texture(pm, j, Texture_replace[i].new_texture);
+					break;	// break out of the one loop
+				}
+			}
+		}
+	}
 }

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.36 $
- * $Date: 2003-01-15 23:23:30 $
+ * $Revision: 2.37 $
+ * $Date: 2003-01-16 06:49:11 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/01/15 23:23:30  Goober5000
+ * NOW the model duplicates work! :p
+ * still gotta do the textures, but it shouldn't be hard now
+ * --Goober5000
+ *
  * Revision 2.35  2003/01/15 08:57:23  Goober5000
  * assigning duplicate models to ships now works; committing so I have a base
  * to fall back to as I work on texture replacement
@@ -5072,7 +5077,7 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 				// now load the duplicate model
 				shipp->modelnum = model_load(sip->pof_file, shipp->n_subsystems, &shipp->subsystems[0], 1, 1);
 				shipp->alt_modelnum = shipp->modelnum;
-				model_duplicate_reskin(shipp->modelnum, sip->modelnum, ship_name);
+				model_duplicate_reskin(shipp->modelnum, ship_name);
 				break;
 			}
 		}
@@ -10253,8 +10258,6 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 	return (int) (capacity / size);
 }
 
-
-
 // Page in bitmaps for all the ships in this level
 void ship_page_in()
 {
@@ -10379,23 +10382,9 @@ void ship_page_in()
 			ship_info *sip = &Ship_info[i];
 
 			if ( sip->modelnum > -1 )	{
-				polymodel *pm = model_get(sip->modelnum);
-				
 				nprintf(( "Paging", "Paging in textures for model '%s'\n", sip->pof_file ));
 
-				for (j=0; j<pm->n_textures; j++ )	{
-					int bitmap_num = pm->original_textures[j];
-
-					if ( bitmap_num > -1 )	{
-						// if we're in Glide (and maybe later with D3D), use nondarkening textures
-						if(gr_screen.mode == GR_GLIDE){
-							bm_page_in_nondarkening_texture( bitmap_num );
-						} else {
-							bm_page_in_texture( bitmap_num );
-						}
-					}
-				}
-
+				ship_page_in_model_textures(sip->modelnum);
 			} else {
 				nprintf(( "Paging", "Couldn't load model '%s'\n", sip->pof_file ));
 			}
@@ -10451,6 +10440,58 @@ void ship_page_in()
 	{
 		if (Wings[i].wing_insignia_texture >= 0)
 			bm_page_in_xparent_texture(Wings[i].wing_insignia_texture);
+	}
+
+	// page in duplicate model textures - Goober5000
+	for (i = 0; i < MAX_SHIPS; i++)
+	{
+		if ( Ships[i].objnum != -1)
+		{
+			if ( Ships[i].alt_modelnum != -1 )
+			{
+				Assert(Ships[i].modelnum == Ships[i].alt_modelnum);
+
+				nprintf(( "Paging", "Paging in textures for model duplicate for ship '%s'\n", Ships[i].ship_name ));
+				mprintf(( "Paging in textures for model duplicate for ship '%s'\n", Ships[i].ship_name ));
+
+				ship_page_in_model_textures(Ships[i].alt_modelnum);		
+			}
+		}
+	}
+}
+
+// Goober5000 - called from ship_page_in()
+void ship_page_in_model_textures(int modelnum)
+{
+	int i;
+	polymodel *pm = model_get(modelnum);
+				
+	for (i=0; i<pm->n_textures; i++ )
+	{
+		int bitmap_num = pm->original_textures[i];
+
+		if ( bitmap_num > -1 )
+		{
+			// see about different kinds of textures... load frames, too, in case we have an ani
+
+			// transparent?
+			if (pm->is_transparent[i])
+			{
+				bm_page_in_xparent_texture( bitmap_num, pm->num_frames[i] );
+			}
+			else
+			{
+				// if we're in Glide (and maybe later with D3D), use nondarkening textures
+				if(gr_screen.mode == GR_GLIDE)
+				{
+					bm_page_in_nondarkening_texture( bitmap_num, pm->num_frames[i] );
+				}
+				else
+				{
+					bm_page_in_texture( bitmap_num, pm->num_frames[i] );
+				}
+			}
+		}
 	}
 }
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.23 $
- * $Date: 2003-01-15 23:23:30 $
+ * $Revision: 2.24 $
+ * $Date: 2003-01-16 06:49:11 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/01/15 23:23:30  Goober5000
+ * NOW the model duplicates work! :p
+ * still gotta do the textures, but it shouldn't be hard now
+ * --Goober5000
+ *
  * Revision 2.22  2003/01/15 08:57:23  Goober5000
  * assigning duplicate models to ships now works; committing so I have a base
  * to fall back to as I work on texture replacement
@@ -1441,6 +1446,12 @@ int ship_get_reinforcement_team(int r_index);
 
 // determine if the given texture is used by a ship type. return ship info index, or -1 if not used by a ship
 int ship_get_texture(int bitmap);
+
+// page in bitmaps for all ships on a given level
+void ship_page_in();
+
+// Goober5000 - helper for above
+void ship_page_in_model_textures(int modelnum);
 
 // update artillery lock info
 void ship_update_artillery_lock();
