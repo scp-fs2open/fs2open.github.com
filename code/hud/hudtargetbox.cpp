@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-02-04 09:02:45 $
+ * $Revision: 2.29 $
+ * $Date: 2004-02-06 23:17:43 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/02/04 09:02:45  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.27  2004/02/04 08:41:04  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -550,12 +554,12 @@ char *hud_targetbox_truncate_subsys_name(char *outstr)
 			strcpy(outstr, "tourelle");
 		} 
 	} else {	
-		if (!strnicmp(outstr, XSTR( "communication", 333), 3))	{
+		if ( strstr(outstr, XSTR( "communication", 333)))	{
 			strcpy( outstr, XSTR( "comm", 334) );
-		} else if (!strnicmp(outstr, XSTR( "navigation", 335), 3))	{
+		} else if ( strstr(outstr, XSTR( "navigation", 335)))	{
 			strcpy( outstr, XSTR( "nav", 336) );
 		} else if (!stricmp(outstr, "Gas Collector")) {
-			strcpy(outstr, "Collector");
+			strcpy(outstr, "collector");
 		}
 	}
 
