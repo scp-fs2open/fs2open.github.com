@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.62 $
- * $Date: 2004-07-25 18:46:29 $
+ * $Revision: 2.63 $
+ * $Date: 2004-07-25 19:27:51 $
  * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2004/07/25 18:46:29  Kazan
+ * -fred_no_warn has become -no_warn and applies to both fred and fs2
+ * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
+ * fixed player ship speed bug w/ player-use-ai, now stays in formation correctly and manages speed
+ * made -radar_reduce ignore itself if no parameter is given (ignoring launcher bug)
+ *
  * Revision 2.61  2004/07/25 00:31:30  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -703,6 +709,7 @@
   // still need this...
   #include "network/multi.h"
 
+#include "Autopilot/Autopilot.h"
 
 // memory tracking - ALWAYS INCLUDE LAST
 #include "mcd/mcd.h"
@@ -14976,12 +14983,14 @@ void ai_process( object * obj, int ai_index, float frametime )
 //		if (aip->submode == AIS_NONE_FORMATION)
 //			rfc = 0;
 //		break;
+#if defined(ENABLE_AUTO_PILOT)
 		// Kazan -- disable afterburning during thses
 	case AIM_WAYPOINTS:
 	case AIM_FLY_TO_SHIP:
-		AI_ci.afterburner_stop = 1;
+		if (AutoPilotEngaged)
+			AI_ci.afterburner_stop = 1;
 		break;
-
+#endif
 
 	default:
 		break;

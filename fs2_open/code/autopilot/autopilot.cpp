@@ -4,11 +4,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.5 $
- * $Date: 2004-07-25 18:46:28 $
+ * $Revision: 1.6 $
+ * $Date: 2004-07-25 19:27:51 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/07/25 18:46:28  Kazan
+ * -fred_no_warn has become -no_warn and applies to both fred and fs2
+ * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
+ * fixed player ship speed bug w/ player-use-ai, now stays in formation correctly and manages speed
+ * made -radar_reduce ignore itself if no parameter is given (ignoring launcher bug)
+ *
  * Revision 1.4  2004/07/25 00:31:27  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -141,7 +147,7 @@ bool CanAutopilot()
 
 	int dist = sexp_distance2(Player_ship->objnum, "<any hostile>");
 
-	CanAuto = CanAuto && (10000 <= dist || dist == SEXP_NAN);
+	CanAuto = CanAuto && (5000 <= dist || dist == SEXP_NAN);
 	
 
 	if (CanAuto) // protect against no currentNav
