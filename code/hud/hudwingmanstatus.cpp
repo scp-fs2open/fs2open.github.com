@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-06 04:39:26 $
  * $Author: penguin $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -171,6 +174,13 @@ static int HUD_wingman_update_timer;
 static int HUD_wingman_flash_duration[HUD_WINGMAN_MAX_WINGS][HUD_WINGMAN_MAX_SHIPS_PER_WINGS];
 static int HUD_wingman_flash_next[HUD_WINGMAN_MAX_WINGS][HUD_WINGMAN_MAX_SHIPS_PER_WINGS];
 static int HUD_wingman_flash_is_bright;
+
+
+//XSTR:OFF
+// Text versions of wingman names (instead of bitmaps in winman5.ani)
+static char *Wingman_status_name_abbr[6] = { "alp", "bet", "gam", "del", "eps", "zet" };
+//XSTR:ON
+
 
 // coords to draw wingman status icons, for 1-5 wings (0-4)
 int HUD_wingman_left_coords[GR_NUM_RESOLUTIONS][5][2] = {
@@ -691,8 +701,6 @@ void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wing
 	}
 
 	// draw wing name
-	bitmap = Wingman_status_frames[WINGMAN_STATUS_NAMES].first_frame + wing_index;
-
 	if ( num_wings_to_draw == 1 ) {
 		sx = HUD_wingman_status_single_coords[gr_screen.res][0][0] - 8;
 		sy = HUD_wingman_status_single_coords[gr_screen.res][0][1] + 26; 
@@ -700,15 +708,8 @@ void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wing
 		sx = HUD_wingman_status_name_coords[gr_screen.res][screen_pos][0];
 		sy = HUD_wingman_status_name_coords[gr_screen.res][screen_pos][1]; 
 	}
-
-	// hud_set_default_color();
 	hud_set_gauge_color(HUD_WINGMEN_STATUS);
-	if ( bitmap > -1 ) {
-		GR_AABITMAP(bitmap, sx, sy);
-		// gr_set_bitmap(bitmap);
-		// gr_aabitmap(sx, sy);
-	}
-
+	gr_string(sx, sy, Wingman_status_name_abbr[wing_index]);
 }
 
 int hud_wingman_status_wingmen_exist(int num_wings_to_draw)
