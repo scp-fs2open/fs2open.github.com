@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/03/05 09:01:54  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.27  2003/12/17 16:41:25  phreak
  * "small only" weapons flag added. weapon shoots at small ships like fighters
  *
@@ -620,6 +624,7 @@ typedef struct weapon_info {
 	// spawn weapons
 	short	spawn_type;							//	Type of weapon to spawn when detonated.
 	short	spawn_count;						//	Number of weapons of spawn_type to spawn.
+	float	spawn_angle;						//  Angle to spawn the child weapons in.  default is 180
 
 	// swarm count
 	short swarm_count;						// how many swarm missiles are fired for this weapon
