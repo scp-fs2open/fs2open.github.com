@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.45 $
- * $Date: 2003-09-30 04:05:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.46 $
+ * $Date: 2003-10-08 06:32:06 $
+ * $Author: argv $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/09/30 04:05:09  Goober5000
+ * updated FRED to import FS1 default weapons loadouts as well as missions
+ * --Goober5000
+ *
  * Revision 2.44  2003/09/28 21:22:59  Goober5000
  * added the option to import FSM missions, added a replace function, spruced
  * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
@@ -3537,8 +3541,9 @@ void parse_event(mission *pm)
 	event->timestamp = timestamp(-1);
 
 	// sanity check on the repeat count variable
-	if ( event->repeat_count <= 0 ){
-		Error (LOCATION, "Repeat count for mission event %s is <=0.\nMust be >= 1!", event->name );
+	// _argv[-1] - negative repeat count is now legal; means repeat indefinitely.
+	if ( event->repeat_count == 0 ){
+		Error (LOCATION, "Repeat count for mission event %s is 0.\nMust be >= 1 or negative!", event->name );
 	}
 }
 
