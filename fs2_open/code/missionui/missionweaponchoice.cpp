@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-03-31 11:11:56 $
+ * $Revision: 2.45 $
+ * $Date: 2005-03-31 12:43:51 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/03/31 11:11:56  Goober5000
+ * changed a bunch of literal constants to their #define'd keywords
+ * --Goober5000
+ *
  * Revision 2.43  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -653,11 +657,11 @@
 
 //XSTR:OFF
 #if (MAX_SHIP_PRIMARY_BANKS > MAX_WL_PRIMARY)
-#error "Illegal: MAX_SHIP_PRIMARY_BANKS greater than MAX_WL_PRIMARY"
+#error Illegal: MAX_SHIP_PRIMARY_BANKS greater than MAX_WL_PRIMARY
 #endif
 
 #if (MAX_SHIP_SECONDARY_BANKS > MAX_WL_SECONDARY)
-#error "Illegal: MAX_SHIP_SECONDARY_BANKS greater than MAX_WL_SECONDARY"
+#error Illegal: MAX_SHIP_SECONDARY_BANKS greater than MAX_WL_SECONDARY
 #endif
 //XSTR:ON
 
@@ -4558,6 +4562,7 @@ int wl_dump_to_list(int from_bank, int to_list, int ship_slot, int *sound)
 //       sound => gets filled with sound id to play
 int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 {
+	int update=0;
 	wss_unit	*slot;
 	slot = &Wss_slots[ship_slot];
 	int max_fit, to_index;
@@ -4613,6 +4618,9 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 		}
 	}
 
+	// we will have some sort of success from this point
+	update = 1;
+
 	// find how much dest bank can fit
 	if ( to_bank < MAX_WL_PRIMARY )
 	{
@@ -4626,6 +4634,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 	// take weapon from list
 	if ( Wl_pool[from_list] < max_fit ) {
 		max_fit = Wl_pool[from_list];
+		update=2;
 	}
 	Wl_pool[from_list] -= max_fit;
 
@@ -4850,4 +4859,59 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 // Goober5000
 void wl_apply_current_loadout_to_all_ships_in_current_wing()
 {
+	int source_slot, start_slot, cur_slot, cur_bank;
+	int weapon_type_to_add, result;
+	char ship_name[NAME_LENGTH];
+
+	// make sure we're not holding anything
+	wl_dump_carried_icon();
+
+	// find the currently selected ship (or the squadron leader if none)
+	source_slot = Selected_wl_slot;
+	if (source_slot == -1)
+		source_slot = 0;
+
+	// find the slot that starts the wing this ship is part of
+	start_slot = (source_slot / MAX_WING_SLOTS) * MAX_WING_SLOTS;
+
+	// for all ships in the current wing
+	for (cur_slot = start_slot; cur_slot < (start_slot + MAX_WING_SLOTS); cur_slot++)
+	{
+		// not the selected ship
+		if (cur_slot == source_slot)
+			continue;
+
+		// must be valid for us to change
+		if (!ss_valid_slot(cur_slot))
+			continue;
+
+		// copy weapons from source slot to this slot
+		for (cur_bank = 0; cur_bank < MAX_WL_WEAPONS; cur_bank++)
+		{
+			// this bank must exist on both the source ship and the destination ship
+			if ((Wss_slots[source_slot].wep_count[cur_bank] < 0) || (Wss_slots[cur_slot].wep_count[cur_bank] < 0))
+				continue;
+
+			// dump the destination ship's weapons
+			wl_drop(cur_bank, -1, -1, Wss_slots[cur_slot].wep[cur_bank], cur_slot, -1, true);
+
+			// determine the weapon we need
+			weapon_type_to_add = Wss_slots[source_slot].wep[cur_bank];
+
+			// add from the weapon pool
+			result = wl_drop(-1, weapon_type_to_add, cur_bank, -1, cur_slot, -1, true);
+
+			// did it work?  if not, notify the player
+			if ((result == 0) || (result == 2))
+			{
+				ss_return_name(source_slot / MAX_WING_SLOTS, source_slot % MAX_WING_SLOTS, ship_name);
+
+				if (result == 0)
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "No more %s available to arm %s", Weapon_info[weapon_type_to_add].name, ship_name);
+
+				else if (result == 2)
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "Insufficient %s available to arm %s", Weapon_info[weapon_type_to_add].name, ship_name);
+			}
+		}
+	}
 }
