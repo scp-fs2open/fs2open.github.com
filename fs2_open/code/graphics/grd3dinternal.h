@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.16 $
- * $Date: 2003-11-29 10:52:09 $
+ * $Revision: 2.17 $
+ * $Date: 2003-12-05 18:17:06 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/11/29 10:52:09  randomtiger
+ * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Added stats command for ingame stats on memory usage.
+ * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
+ * Added fix for fonts wrapping round in non standard hi res modes.
+ * Changed D3D mipmapping to a good value to suit htl mode.
+ * Added new fog colour method which makes use of the bitmap, making this htl feature backcompatible again.
+ *
  * Revision 2.15  2003/11/19 20:37:24  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -271,6 +279,8 @@
 #include <d3d8.h>
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
+
+const int NUM_COMPRESSION_TYPES = 5;
 
 /* Structures */
 

@@ -324,8 +324,8 @@ int bm_d3d_load( char * real_filename )
 		const int type_list[NUM_TYPES] = {BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_DDS, BM_TYPE_PCX};
 		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".dds", ".pcx"};
 		
-		// Only load TGA and JPG if given flag
-		int i = Cmdline_jpgtga ? 0 : BM_TYPE_PCX;
+		// Only load TGA and JPG if given flag, support DDS and PCX by default
+		int i = Cmdline_jpgtga ? 0 : 2; // 2 Means start with DDS and fall back to PCX
 
 		for(; i < NUM_TYPES; i++) {
 		
@@ -851,8 +851,6 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 	int bitmapnum = handle % MAX_BITMAPS;
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
 
-
-	// Turn off 32bit PCX for now, its still buggy
 	int valid_type = 
 		bm_bitmaps[bitmapnum].type == BM_TYPE_TGA || 
 		bm_bitmaps[bitmapnum].type == BM_TYPE_DDS || 

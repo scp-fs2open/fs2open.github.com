@@ -24,6 +24,7 @@ static char			szAppVersion[128];
 
 char *Osreg_company_name = "Volition";
 char *Osreg_class_name = "Freespace2Class";
+/*
 #if defined(FS2_DEMO)
 char *Osreg_app_name = "FreeSpace2Demo";
 char *Osreg_title = "Freespace 2 Demo";
@@ -31,9 +32,15 @@ char *Osreg_title = "Freespace 2 Demo";
 char *Osreg_app_name = "FreeSpace2OEM";
 char *Osreg_title = "Freespace 2 OEM";
 #else
+*/
+
+// RT Lets make all versions use the same registry location
+// If we dont the launcher either needs to handle somehow telling what release type a 
+// FS2 exe is or it wont work. Its far similar to just use one default location.
+// The Launcher will set up everything needed
 char *Osreg_app_name = "FreeSpace2";
 char *Osreg_title = "Freespace 2";
-#endif
+//#endif
 
 int Os_reg_inited = 0;
 
