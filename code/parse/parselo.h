@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.11 $
+ * $Revision: 2.12 $
  * $Author: Goober5000 $
- * $Date: 2004-03-05 09:02:08 $
+ * $Date: 2004-05-11 02:52:11 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/05 09:02:08  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.10  2004/02/07 00:48:52  Goober5000
  * made FS2 able to account for subsystem mismatches between ships.tbl and the
  * model file - e.g. communication vs. communications
@@ -414,10 +418,10 @@ extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL)
 extern char	parse_error_text[64];
 
 // Goober5000 - returns position of replacement or -1 for exceeded length
-extern int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int start = 0);
+extern int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
 
 // Goober5000 - returns number of replacements or -1 for exceeded length
-extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int start = 0);
+extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
 
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);

@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.41 $
+ * $Revision: 2.42 $
  * $Author: Goober5000 $
- * $Date: 2004-05-10 10:51:53 $
+ * $Date: 2004-05-11 02:52:12 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2004/05/10 10:51:53  Goober5000
+ * made primary and secondary banks quite a bit more friendly... added error-checking
+ * and reorganized a bunch of code
+ * --Goober5000
+ *
  * Revision 2.40  2004/05/10 08:03:30  Goober5000
  * fixored the handling of no lasers and no engines... the tests should check the ship,
  * not the object
@@ -846,6 +851,7 @@ void convertFSMtoFS2();
 void conv_replace_ship_classes();
 void conv_add_alt_names();
 void conv_fix_briefing_stuff();
+void conv_fix_punctuation();
 void restore_default_weapons(char *ships_tbl);
 void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
 void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
