@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-07-15 02:58:08 $
- * $Author: phreak $
- * $Revision: 2.6 $
- * $Date: 2003-07-15 02:58:08 $
- * $Author: phreak $
+ * $Revision: 2.7 $
+ * $Date: 2003-08-21 20:54:38 $
+ * $Author: randomtiger $
+ * $Revision: 2.7 $
+ * $Date: 2003-08-21 20:54:38 $
+ * $Author: randomtiger $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/07/15 02:58:08  phreak
+ * the cutscene section in the techroom does not append *.mve onto a filename
+ *
  * Revision 2.5  2003/03/18 10:07:01  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -486,9 +489,17 @@ void cutscenes_screen_play()
 //	full_name = cf_add_ext(name, NOX(".mve"));
 
 	// no soup for you!
-	gr_activate(0);
+	if(gr_screen.mode != GR_DIRECT3D )
+	{
+		gr_activate(0);
+	}
+
 	int rval = movie_play(name);
-	gr_activate(1);
+
+	if(gr_screen.mode != GR_DIRECT3D )
+	{
+		gr_activate(1);
+	}
 
 	if ( !rval ) {
 		char str[256];

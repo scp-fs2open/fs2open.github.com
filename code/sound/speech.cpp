@@ -24,7 +24,6 @@ bool speech_init()
 #ifndef FS2_SPEECH
 	return false;
 #else
- 	::CoInitialize(NULL);
     Speech_init = SUCCEEDED(CoCreateInstance(
 		CLSID_SpVoice, 
 		NULL, 
@@ -42,7 +41,6 @@ void speech_deinit()
 
 #ifdef FS2_SPEECH
 	Voice_device->Release();
-    ::CoUninitialize();
 #endif
 }
 

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-08-16 03:52:23 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2003-08-21 20:54:38 $
+ * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/08/16 03:52:23  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.5  2003/08/05 23:45:18  bobboau
  * glow maps, for some reason they wern't in here, they should be now,
  * also there is some debug code for changeing the FOV in game,
@@ -1062,7 +1071,7 @@ void d3d_tcache_init()
 	D3D_texture_ram = lpD3DDevice->GetAvailableTextureMem();
 
 	// setup texture divider
-	uint tmp_val = os_config_read_uint( NULL, NOX("D3DFast"), 1 );
+	uint tmp_val = os_config_read_uint( NULL, NOX("D3DFast"), 0);
 	D3D_texture_divider = 1;
 	if(tmp_val){
 		D3D_texture_divider = 4;

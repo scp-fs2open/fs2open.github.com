@@ -10,11 +10,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.21 $
- * $Date: 2003-08-12 03:18:33 $
- * $Author: bobboau $
+ * $Revision: 2.22 $
+ * $Date: 2003-08-21 20:54:37 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/08/12 03:18:33  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.20  2003/08/09 06:07:23  bobboau
  * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
  *
@@ -281,13 +299,11 @@ extern char *Cmdline_almission;	//DTP for autoload mission
 extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
 extern int Cmdline_allslev;
 extern int Cmdline_phreak;
-extern int Cmdline_dshowvid;	//WMC Toggles movie playing support
+extern int Cmdline_dnoshowvid;	//WMC Toggles movie playing support
 extern char *Cmdline_mod; //DTP for mod support
 extern int Cmdline_show_fps;//DTP moved here because it is the correct place for it to be.
 
-extern int Cmdline_dshowvid;
 extern int Cmdline_d3dlowmem;
-extern int Cmdline_d3dlauncher;
 extern int Cmdline_d3dmipmap;
 
 extern int Cmdline_beams_no_pierce_shields;	// Goober5000

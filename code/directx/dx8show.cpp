@@ -64,9 +64,6 @@ bool dx8show_play_cutscene(char *movie_file)
 {
     HRESULT hr;
 
-    // Initialize COM
-	RUN_FUNCTION_ROF(CoInitialize(NULL));
-
     // Get DirectShow interfaces
     RUN_FUNCTION_ROF(get_interfaces());
 
@@ -90,7 +87,6 @@ bool dx8show_play_cutscene(char *movie_file)
 
     // Release DirectShow interfaces
     cleanup_interfaces();
-    CoUninitialize();
 
     return true;
 }

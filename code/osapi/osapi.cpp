@@ -9,13 +9,30 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-07-06 00:19:25 $
+ * $Revision: 2.9 $
+ * $Date: 2003-08-21 20:54:38 $
  * $Author: randomtiger $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/07/06 00:19:25  randomtiger
+ * Random Tiger 6/7/2003
+ *
+ * fs2_open now uses the registry entry 'VideocardFs2open' instead of 'Videocard' to store its video settings. To run fs2_open now you MUST use the launcher I have provided.
+ *
+ * Launcher binary:      http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher.rar
+ * Launcher source code: http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher_code.rar
+ *
+ * I have also taken the opertunity to fix a few bugs in the launcher and add a new feature to make selecting mods a bit easier.
+ *
+ * The launcher now uses some files in the freespace project so it should be put into CVS with the rest of the code inside the 'code' directory (still in its 'Launcher' dir of course). Currently the launcher wont compile since speech.cpp and speech.h arent in cvs yet. But once Roee has checked in that will be sorted.
+ *
+ * I have also removed the internal launcher from the D3D8 module.
+ * Please contact me if you have any problems.
+ *
+ * When trying to run the exe after updating I get an error parsing 'rank.tbl' but im fairly sure thats nothing to do with me so I'll just have to leave it for now because I'm still using a 56K modem and cant afford to find out.
+ *
  * Revision 2.7  2003/03/18 10:07:05  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -144,6 +161,7 @@
 static HINSTANCE	hInstApp;
 static HWND			hwndApp = NULL;
 static int			fAppActive = 0;
+static int			fOldAppActive = 0;
 static int			main_window_inited = 0;
 static char			szWinTitle[128];
 static char			szWinClass[128];
@@ -412,6 +430,39 @@ void os_app_activate_set(bool state)
 	os_app_activate_hook_on = state;
 }
 
+void change_window_active_state()
+{
+	if(os_app_activate_hook_on == false)
+	{
+		return;
+	}
+
+	if(fAppActive != fOldAppActive)
+	{
+
+		if ( fAppActive )	{
+			// maximize it
+			joy_reacquire_ff();
+
+#ifdef THREADED
+			SetThreadPriority( hThread, THREAD_PRIORITY_HIGHEST );
+#endif
+		} else {
+			joy_unacquire_ff();
+			if (Mouse_hidden)	{
+				Mouse_hidden=0;
+			}
+
+#ifdef THREADED
+			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
+#endif
+		}
+		gr_activate(fAppActive);
+	}
+
+	fOldAppActive = fAppActive;
+}
+
 int Got_message = 0;
 // message handler for the main thread
 LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
@@ -557,62 +608,18 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 			break;
 		}
 
-	case WM_ACTIVATE:			//APP:	//
+
+	case WM_ACTIVATE:		   
+	{
+		int flag = LOWORD(wParam);
+		fAppActive = (( flag == WA_ACTIVE) || (flag==WA_CLICKACTIVE)) ? TRUE : FALSE;
+		change_window_active_state();
+		break;
+	}
+
 	case WM_ACTIVATEAPP:
-		{
-			if(os_app_activate_hook_on == false)
-			{
-				break;
-			}
-
-			BOOL OldfAppActive = fAppActive;
-			
-			// The application z-ordering has changed. If we are now the
-			// foreground application wParm will be TRUE.
-			if ( msg == WM_ACTIVATE )	{
-				if ( (LOWORD(wParam) == WA_ACTIVE) || (LOWORD(wParam)==WA_CLICKACTIVE))	{
-					fAppActive = TRUE;	//(BOOL)wParam;
-				} else {
-					fAppActive = FALSE;	//(BOOL)wParam;
-				}
-
-			} else {
-				fAppActive = (BOOL)wParam;
-			}
-
-			//mprintf(( "Activate: %d\n", fAppActive ));
-
-			if ( OldfAppActive != fAppActive )	{
-
-				if ( fAppActive )	{
-					// maximize it
-					//	mprintf(( "Priority: HIGH\n" ));
-					joy_reacquire_ff();
-
-#ifdef THREADED
-					SetThreadPriority( hThread, THREAD_PRIORITY_HIGHEST );
-#endif
-
-					gr_activate(fAppActive);
-					//SetThreadPriority( hThread, THREAD_PRIORITY_TIME_CRITICAL );
-				} else {
-					//mprintf(( "Priority: LOW\n" ));
-					joy_unacquire_ff();
-					if (Mouse_hidden)	{
-						Mouse_hidden=0;
-						//ShowCursor(1);
-						//mprintf(( "Mouse:Alive\n" ));		
-					}
-					// minimize it
-					// key_outkey( KEY_PAUSE );
-
-#ifdef THREADED
-					SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
-#endif
-					gr_activate(fAppActive);
-				}
-			}
-		}
+		fAppActive = (BOOL)wParam;
+		change_window_active_state();
 		break;
 
 	case WM_DESTROY:
