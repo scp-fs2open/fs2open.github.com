@@ -9,6 +9,14 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/11/29 10:52:09  randomtiger
+ * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Added stats command for ingame stats on memory usage.
+ * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
+ * Added fix for fonts wrapping round in non standard hi res modes.
+ * Changed D3D mipmapping to a good value to suit htl mode.
+ * Added new fog colour method which makes use of the bitmap, making this htl feature backcompatible again.
+ *
  * Revision 2.6  2003/11/19 20:37:24  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -74,6 +82,7 @@ const int MAX_STRING_LEN = 512;
 typedef struct
 {
 	int magic_number;
+	int magic_number2;
 	bool used_this_frame;
 	bool free_slot;
 	int x,y, len;
@@ -553,13 +562,14 @@ void d3d_batch_string_end_frame()
 	}
 }
 
-int find_string(int len, int magic_num, int sx, int sy, uint color, bool long_str)
+int find_string(int len, int magic_num, int magic_num2, int sx, int sy, uint color, bool long_str)
 {
 	StringBatch *array  = (long_str) ? long_str_array : small_str_array;
 	int loop_len		= (long_str) ? MAX_LG_STRINGS : MAX_SM_STRINGS;
 
 	for(int i = 0; i < loop_len; i++) {
 		if(array[i].magic_number == magic_num &&
+			array[i].magic_number2 == magic_num2 &&
 			array[i].len == len &&
 			array[i].offsetx == gr_screen.offset_x && 
 			array[i].offsety == gr_screen.offset_y && 
@@ -598,16 +608,17 @@ int find_free_slot(bool long_str)
  * @param int &magic_number
  * @return - Length of string
  */
-inline int strlen_magic(char *s, int &magic_number)
+inline int strlen_magic(char *s, int &magic_number, int &magic_number2)
 {
 	int count = 0;
-	magic_number = 0;
+	magic_number  = 0;
+	magic_number2 = 0;
 
 	while(*s != '\0')
 	{
-		magic_number += *s;
+		magic_number  += *s;
+		magic_number2 += (count % 2) ? + *s : - *s;
 		count++;
-
 		s++;
 	}
 
@@ -628,8 +639,8 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
   	do
 	{
 	HRESULT hr;
-	int magic_num;
-	int len = strlen_magic(s, magic_num);
+	int magic_num, magic_num2;
+	int len = strlen_magic(s, magic_num, magic_num2);
 	int new_id = -1;
 
 	if(len == 0) return;
@@ -641,7 +652,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 	{
 		bool long_str = (len >= MAX_SM_STR_LEN);
 
-		int index = find_string(len, magic_num, sx, sy, color, long_str);
+		int index = find_string(len, magic_num, magic_num2, sx, sy, color, long_str);
 		
 		// We have found the string, render and mark as rendered
 		if(index != -1)
@@ -749,12 +760,14 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 			src_v = &d3d_verts[char_count * 6];
 		}
 
-	// Change the color this way to see which strings are being cached
-	  //	uint color2 = (new_id == -1) ? color : 0xff00ff00;
+#if 0
+		// Change the color this way to see which strings are being cached
+	  	uint color2 = (new_id == -1) ? color : 0xff00ff00;
 
 		// Marks the end of a batch blue
-	  //	if(char_count > (MAX_STRING_LEN - 10)) 
-	  //		color2 = 0xff0000ff;
+	  	if(char_count > (MAX_STRING_LEN - 10)) 
+	  		color2 = 0xff0000ff;
+#endif
 
 	 	d3d_stuff_char(src_v, xc, yc, wc, hc, u+xd, v+yd, bw, bh, u_scale, v_scale, color);
 
@@ -787,6 +800,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 		array[new_id].free_slot    = false;
 		array[new_id].len		   = len;
 		array[new_id].magic_number = magic_num;
+		array[new_id].magic_number2 = magic_num2;
 		array[new_id].x			   = sx;
 		array[new_id].y			   = sy;
 		array[new_id].offsetx      = gr_screen.offset_x; 

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.58 $
- * $Date: 2003-12-03 19:27:01 $
+ * $Revision: 2.59 $
+ * $Date: 2003-12-04 20:39:10 $
  * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2003/12/03 19:27:01  randomtiger
+ * Changed -t32 flag to -jpgtga
+ * Added -query_flag to identify builds with speech not compiled and other problems
+ * Now loads up launcher if videocard reg entry not found
+ * Now offers to go online to download launcher if its not present
+ * Changed target view not to use lower res texture, hi res one is already chached so might as well use it
+ *
  * Revision 2.57  2003/11/29 17:13:54  randomtiger
  * Undid my node fix, it introduced a lot of bugs, update again if you have that version.
  *
@@ -3372,7 +3379,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		return;
 	}
 
-	g3_start_instance_matrix(pos,orient);
+	bool is_outlines_only = !Cmdline_nohtl && (flags & MR_NO_POLYS) && 
+		((flags & MR_SHOW_OUTLINE_PRESET) || (flags & MR_SHOW_OUTLINE));  
+
+	g3_start_instance_matrix(pos,orient, !is_outlines_only);
 
 	if ( Interp_flags & MR_SHOW_RADIUS )	{
 		if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
@@ -3488,6 +3498,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		neb2_get_fog_colour(&r, &g, &b);
 		gr_fog_set(GR_FOGMODE_FOG, r, g, b, fog_near, fog_far);
 	}
+
 	// Draw the subobjects	
 	i = pm->submodel[pm->detail[detail_level]].first_child;
 
@@ -3502,7 +3513,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			}
 			gr_zbuffer_set(zbuf_mode);
 			// When in htl mode render with htl method unless its a jump node
-			if(!Cmdline_nohtl){
+			if(!Cmdline_nohtl && !(is_outlines_only)){
 				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
 			}
 			else {
@@ -3543,10 +3554,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	model_radius = pm->submodel[pm->detail[detail_level]].rad;
 
-	// draw the hull of the ship
-	
+	//*************************** draw the hull of the ship *********************************************
+
 	// When in htl mode render with htl method unless its a jump node
-	if(!Cmdline_nohtl){// && !(flags & (MR_NO_POLYS|MR_SHOW_OUTLINE_PRESET))){
+	if(!Cmdline_nohtl && !(is_outlines_only)){
 		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
 //		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
 	}
@@ -4074,7 +4085,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 			gr_zbuffer_set(zbuf_mode);
 
-			if(!Cmdline_nohtl) {
+			if(!Cmdline_nohtl && !is_outlines_only) {
 				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
 			} else {
 				model_interp_subcall( pm, i, detail_level );
@@ -4094,12 +4105,13 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 
 	if((Interp_flags & MR_AUTOCENTER) && (pm->flags & PM_FLAG_AUTOCEN)){
-		g3_done_instance(true);
+		g3_done_instance(!is_outlines_only);
 	}
 
 //	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
-	g3_done_instance(true);
+	g3_done_instance(!is_outlines_only);
+	
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
 	glow_maps_active = 1;

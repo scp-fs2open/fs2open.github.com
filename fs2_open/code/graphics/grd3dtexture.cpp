@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-12-03 19:27:00 $
+ * $Revision: 2.22 $
+ * $Date: 2003-12-04 20:39:09 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/12/03 19:27:00  randomtiger
+ * Changed -t32 flag to -jpgtga
+ * Added -query_flag to identify builds with speech not compiled and other problems
+ * Now loads up launcher if videocard reg entry not found
+ * Now offers to go online to download launcher if its not present
+ * Changed target view not to use lower res texture, hi res one is already chached so might as well use it
+ *
  * Revision 2.20  2003/11/19 20:37:24  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -1432,7 +1439,9 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags, i
 
 	D3DFORMAT use_format;
 
-	bool d3dx_format  = ((type == BM_TYPE_TGA) || (type == BM_TYPE_JPG)) && Cmdline_jpgtga;
+	bool d3dx_format  = 
+		((type == BM_TYPE_TGA) || (type == BM_TYPE_JPG) || (type == BM_TYPE_DDS)) 
+		&& Cmdline_jpgtga;
 
 	if(d3dx_format) {
 		use_format = use_alpha_format ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8;
@@ -1477,6 +1486,7 @@ void *d3d_lock_d3dx_types(char *file, int type, ubyte flags )
 	bool use_alpha_format = true;
 	switch(type)
 	{
+		case BM_TYPE_DDS: strcat( filename, ".dds" ); use_alpha_format = true;  break;
 		case BM_TYPE_TGA: strcat( filename, ".tga" ); use_alpha_format = true;  break;
 		case BM_TYPE_JPG: strcat( filename, ".jpg" ); use_alpha_format = false; break;
 		default: return NULL;
@@ -1518,6 +1528,7 @@ bool d3d_read_header_d3dx(char *file, int type, int *w, int *h)
 
 	switch(type)
 	{
+		case BM_TYPE_DDS: strcat( filename, ".dds" ); break;
 		case BM_TYPE_TGA: strcat( filename, ".tga" ); break;
 		case BM_TYPE_JPG: strcat( filename, ".jpg" ); break;
 	}

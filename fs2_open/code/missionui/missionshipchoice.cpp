@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-11-17 04:25:57 $
- * $Author: bobboau $
+ * $Revision: 2.15 $
+ * $Date: 2003-12-04 20:39:10 $
+ * $Author: randomtiger $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/11/17 04:25:57  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.13  2003/11/16 04:09:22  Goober5000
  * language
  *
@@ -468,6 +474,7 @@
 #include "debugconsole/dbugfile.h"
 #include "menuui/techmenu.h"
 #include "lighting/lighting.h"
+#include "cmdline/cmdline.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1699,6 +1706,28 @@ void ship_select_do(float frametime)
 
 	ss_maybe_drop_icon();
 
+	if(!Cmdline_ship_choice_3d)
+	{
+		if (Selected_ss_class >= 0 && ShipSelectModelNum >= 0)
+		{
+			Assert(Selected_ss_class >= 0);
+			if ( Ss_icons[Selected_ss_class].anim_instance->frame_num == Ss_icons[Selected_ss_class].anim_instance->stop_at ) { 
+				nprintf(("anim", "Frame number = %d, Stop at %d\n", Ss_icons[Selected_ss_class].anim_instance->frame_num, Ss_icons[Selected_ss_class].anim_instance->stop_at));
+				anim_play_struct aps;
+				anim_release_render_instance(Ss_icons[Selected_ss_class].anim_instance);
+				anim_play_init(&aps, Ss_icons[Selected_ss_class].anim, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
+				aps.start_at = SHIP_ANIM_LOOP_FRAME;
+//				aps.start_at = 0;
+				aps.screen_id = ON_SHIP_SELECT;
+				aps.framerate_independent = 1;
+				aps.skip_frames = 0;
+				Ss_icons[Selected_ss_class].anim_instance = anim_play(&aps);
+			}
+		}
+
+		gr_reset_clip();
+	}
+
 	ship_select_render(frametime);
 	if ( !Background_playing ) {		
 		Ship_select_ui_window.draw();
@@ -1743,20 +1772,21 @@ void ship_select_do(float frametime)
 	//////////////////////////////////
 	// Render and draw the 3D model //
 	//////////////////////////////////
-
+	if(Cmdline_ship_choice_3d)
+	{
 	// check we have a valid ship class selected
 	if (Selected_ss_class >= 0 && ShipSelectModelNum >= 0)
 	{
-
+	
 		// now render the trackball ship, which is unique to the ships tab
 		float rev_rate;
 		angles rot_angles, view_angles;
 		int z;
 		ship_info *sip = &Ship_info[Selected_ss_class];
-
+	
 		// get correct revolution rate
 	#define REVOLUTION_RATE 5.2f		// Move this somewhere else later - UnknownPlayer
-
+	
 		rev_rate = REVOLUTION_RATE;
 		z = sip->flags;
 		if (z & SIF_BIG_SHIP) {
@@ -1765,21 +1795,21 @@ void ship_select_do(float frametime)
 		if (z & SIF_HUGE_SHIP) {
 			rev_rate *= 3.0f;
 		}
-
+	
 		// rotate the ship as much as required for this frame
 		ShipSelectScreenShipRot += PI2 * frametime / rev_rate;
 		while (ShipSelectScreenShipRot > PI2){
 			ShipSelectScreenShipRot -= PI2;	
 		}
-
+	
 		// turn off fogging
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-
+	
 		//	reorient ship
 	/*	if (Trackball_active) {
 			int dx, dy;
 			matrix mat1, mat2;
-
+	
 			if (Trackball_active) {
 				mouse_get_delta(&dx, &dy);
 				if (dx || dy) {
@@ -1788,28 +1818,28 @@ void ship_select_do(float frametime)
 					Techroom_ship_orient = mat2;
 				}
 			}
-
+	
 		} else {
 	*/		// setup stuff needed to render the ship
 			view_angles.p = -0.6f;
 			view_angles.b = 0.0f;
 			view_angles.h = 0.0f;
 			vm_angles_2_matrix(&ShipScreenOrient, &view_angles);
-
+	
 			rot_angles.p = 0.0f;
 			rot_angles.b = 0.0f;
 			rot_angles.h = ShipSelectScreenShipRot;
 			vm_rotate_matrix_by_angles(&ShipScreenOrient, &rot_angles);
 	//	}
-
+	
 	//	gr_set_clip(Tech_ship_display_coords[gr_screen.res][0], Tech_ship_display_coords[gr_screen.res][1], Tech_ship_display_coords[gr_screen.res][2], Tech_ship_display_coords[gr_screen.res][3]);	
 		gr_set_clip(Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], Tech_ship_display_coords[gr_screen.res][2], Tech_ship_display_coords[gr_screen.res][3]);		
-
+	
 		// render the ship
 		g3_start_frame(1);
 		g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
 		if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1f,30000);
-
+	
 		// lighting for techroom
 		light_reset();
 		vector light_dir = vmd_zero_vector;
@@ -1818,19 +1848,19 @@ void ship_select_do(float frametime)
 		// light_filter_reset();
 		light_rotate_all();
 		// lighting for techroom
-
+	
 		model_clear_instance(ShipSelectModelNum);
 		model_set_detail_level(0);
 		model_render(ShipSelectModelNum, &ShipScreenOrient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
-
+	
 		if (!Cmdline_nohtl) 
 		{
 			gr_end_view_matrix();
 			gr_end_proj_matrix();
 		}
-
+	
 		g3_end_frame();
-
+	}
 	}
 
 	gr_reset_clip();
@@ -1846,12 +1876,6 @@ void ship_select_do(float frametime)
 			Net_player->p_info.ship_class = Selected_ss_class;
 	}	 
 #endif
-
-	// UPlayer : commented this out for a tiny tiny tiny performance gain
-//	if(!Background_playing){
-//		// should render this as close to last as possible so it overlaps all controls
-//		// chatbox_render();		
-//	}
 
 	// If the commit button was pressed, do the commit button actions.  Done at the end of the
 	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
@@ -2069,56 +2093,60 @@ anim* ss_load_individual_animation(int ship_class)
 // in the tech room - UnknownPlayer
 void start_ship_animation(int ship_class, int play_sound)
 {
+	if(Cmdline_ship_choice_3d)
+	{
 	if (ship_class < 0)
 	{
 		DBUGFILE_OUTPUT_0("No ship class passed in to start_ship_animation - why?");
 		ShipSelectModelNum = -1;
 		return;
 	}
-
+	
 	ship_info* sip = &Ship_info[ship_class];
-
+	
 	// Load the necessary model file
 	ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-
+	
 	// page in ship textures properly (takes care of nondimming pixels)
 	model_page_in_textures(ShipSelectModelNum, ship_class);
-
+	
 	if (sip->modelnum < 0)
 	{
 		DBUGFILE_OUTPUT_0("Couldn't load model file in missionshipchoice.cpp - tell UnknownPlayer");
 	}
+	} else {
 
-/*	ss_icon_info	*ss_icon;
+	ss_icon_info	*ss_icon;
 	Assert( ship_class >= 0 );
-
+	
 	if ( Ship_anim_class == ship_class ) 
 		return;
-
+	
 	if ( Ship_anim_class >= 0 ) {
 		stop_ship_animation();
 	}
-
+	
 	ss_icon = &Ss_icons[ship_class];
-
+	
 	// see if we need to load in the animation from disk
 	if ( ss_icon->anim == NULL ) {
 		ss_icon->anim = ss_load_individual_animation(ship_class);
 	}
-
+	
 	// see if we need to get an instance
 	if ( ss_icon->anim_instance == NULL ) {
 		anim_play_struct aps;
-
+	
 		anim_play_init(&aps, ss_icon->anim, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
 		aps.screen_id = ON_SHIP_SELECT;
 		aps.framerate_independent = 1;
 		aps.skip_frames = 0;
 		ss_icon->anim_instance = anim_play(&aps);
 	}
-
+	
 	Ship_anim_class = ship_class;
-*/
+	}
+
 //	if ( play_sound ) {
 		gamesnd_play_iface(SND_SHIP_ICON_CHANGE);
 //	}

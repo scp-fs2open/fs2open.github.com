@@ -320,9 +320,9 @@ int bm_d3d_load( char * real_filename )
 		bool found = false;
 
 		//int handle = -1;
-		const int NUM_TYPES	= 3;
-		const int type_list[NUM_TYPES] = {BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_PCX};
-		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".pcx"};
+		const int NUM_TYPES	= 4;
+		const int type_list[NUM_TYPES] = {BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_DDS, BM_TYPE_PCX};
+		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".dds", ".pcx"};
 		
 		// Only load TGA and JPG if given flag
 		int i = Cmdline_jpgtga ? 0 : BM_TYPE_PCX;
@@ -853,7 +853,10 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 
 
 	// Turn off 32bit PCX for now, its still buggy
-	int valid_type = bm_bitmaps[bitmapnum].type == BM_TYPE_TGA || bm_bitmaps[bitmapnum].type == BM_TYPE_JPG;
+	int valid_type = 
+		bm_bitmaps[bitmapnum].type == BM_TYPE_TGA || 
+		bm_bitmaps[bitmapnum].type == BM_TYPE_DDS || 
+		bm_bitmaps[bitmapnum].type == BM_TYPE_JPG;
 
 	if(valid_type)	
 	{
@@ -923,6 +926,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 		
 			// We'll let D3DX handle this
 			case BM_TYPE_JPG:
+			case BM_TYPE_DDS:
 			case BM_TYPE_TGA:
 			{
 				d3d_bitmap_entry[bitmapnum].tinterface = 
