@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-02-04 20:06:07 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2005-02-18 09:58:40 $
+ * $Author: wmcoolmon $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/02/04 20:06:07  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.24  2005/01/28 11:06:22  Goober5000
  * changed a bunch of transpose-rotate sequences to use unrotate instead
  * --Goober5000
@@ -672,7 +675,7 @@ int g3_draw_sphere(vertex *pnt,float rad)
 
 			t=r2*Canv_w2/pnt->z;
 
-			gr_circle(fl2i(pnt->sx),fl2i(pnt->sy),fl2i(t*2.0f));
+			gr_circle(fl2i(pnt->sx),fl2i(pnt->sy),fl2i(t*2.0f),false);
 		}
 	}
 
