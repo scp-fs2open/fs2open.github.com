@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-12-23 23:08:21 $
+ * $Revision: 2.28 $
+ * $Date: 2004-12-24 05:07:05 $
  * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/12/23 23:08:21  wmcoolmon
+ * Proposed HUD system stuffs - within NEW_HUD defines.
+ *
  * Revision 2.26  2004/12/14 14:46:12  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -3424,9 +3427,9 @@ extern void hudtargetbox_page_in();
 // Page in all hud bitmaps
 void hud_page_in()
 {
+	int i;
 #ifdef NEW_HUD
 	//Page in new hud stuff
-	int i;
 	for(i = 0; i < current_hud->num_gauges; i++)
 	{
 		if(current_hud->gauges[i].type != HG_UNUSED)
@@ -3436,7 +3439,6 @@ void hud_page_in()
 		}
 	}
 #endif
-	int i;
 
 	bm_page_in_aabitmap( Kills_gauge.first_frame, Kills_gauge.num_frames );
 	bm_page_in_aabitmap( Head_frame_gauge.first_frame, Head_frame_gauge.num_frames );

@@ -7,9 +7,10 @@
 #include "graphics/2d.h"
 #include "localization/localize.h"
 #include "ship/ship.h"
-#include "hud/hudparse.h"
 #include "hud/hud.h"
 #include "hud/hudescort.h"
+#include "weapon/emp.h"
+#include "hud/hudparse.h"
 
 
 
@@ -55,6 +56,233 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 //Number of gauges
 int Num_gauge_types = 16;
 int Num_custom_gauges = 0;
+#else
+/*
+int hud_escort_list(gauge_data* cg, ship* gauge_owner)
+{
+	if ( !Show_escort_view ) {
+		return -1;
+	}
+
+	if ( !Num_escort_ships ) {
+		return -1;
+	}
+
+	return 1;
+}
+int hud_escort_ship(gauge_data* cg, ship* gauge_owner)
+{
+	int curr_item = cg->get_update_num();
+	if(curr_item < Num_escort_ships)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+int hud_escort_ship_name()
+{
+	return 1;
+}*/
+/*
+int hud_player_shield(gauge_data* cg, ship* gauge_owner)
+{
+	//Don't show if object isn't a ship
+	if(Objects[gauge_owner->objnum].type != OBJ_SHIP)
+	{
+		return HG_RETURNNODRAW;
+	}
+
+	//Or current ship has primitive sensors
+	if(gauge_owner->flags & SF2_PRIMITIVE_SENSORS)
+	{
+		return HG_RETURNNODRAW;
+	}
+
+	object* targetp = Objects[Ai_info[gauge_owner->ai_index].target_objnum];
+	float max_shield = get_max_shield_quad(targetp);
+	if(targetp->flags & OF_NO_SHIELDS)
+	{
+		return HG_RETURNLASTUPDATE;
+	}
+}*/
+
+int hud_weapon_energy_text(gauge_data* cg, ship* gauge_owner)
+{
+	static float old_percent_left;
+	float percent_left;
+
+	percent_left = gauge_owner->weapon_energy/Ship_info[gauge_owner->ship_info_index].max_weapon_reserve;
+
+	if ( percent_left > 1 )
+	{
+		percent_left = 1.0f;
+	}
+
+	//If it's the same, don't bother updating info
+	if(percent_left == old_percent_left)
+	{
+		//mprintf(("REDRAWING WEAPONS ENERGY LIKE A GOOD FUNCTION"));
+		return 2;
+	}
+
+	old_percent_left = percent_left;
+
+	if ( percent_left <= 0.3 )
+	{
+		if ( percent_left < 0.1 ) {
+			gr_init_alphacolor(&cg->g_color, 200, 0, 0, 255);
+		}
+		sprintf(cg->text,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
+		hud_num_make_mono(cg->text);
+	}
+
+	return 1;
+}
+
+int hud_weapon_energy(gauge_data* cg, ship* gauge_owner)
+{
+	static float old_percent_left;
+	float percent_left;
+
+	if ( Player_ship->weapons.num_primary_banks <= 0 )
+	{
+		return -1;
+	}
+
+	// also leave if no energy can be stored for weapons - Goober5000
+	if (!ship_has_energy_weapons(gauge_owner))
+		return -1;
+
+	percent_left = gauge_owner->weapon_energy/Ship_info[gauge_owner->ship_info_index].max_weapon_reserve;
+	if ( percent_left > 1 )
+	{
+		percent_left = 1.0f;
+	}
+
+	//If it's the same, don't bother updating info
+	if(percent_left == old_percent_left)
+	{
+		//mprintf(("REDRAWING WEAPONS ENERGY LIKE A GOOD FUNCTION"));
+		return 2;
+	}
+
+	old_percent_left = percent_left;
+	
+	//wtf is this??
+/*	if ( percent_left <= 0.3 ) {
+		char buf[32];
+		if ( percent_left < 0.1 ) {
+			gr_set_color_fast(&Color_bright_red);
+		}
+		sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
+		hud_num_make_mono(buf);
+		gr_string(Weapon_energy_text_coords[gr_screen.res][0], Weapon_energy_text_coords[gr_screen.res][1], buf);
+	}*/
+
+	int clip_h = fl2i( (1.0f - percent_left) * cg->image_size[0] + 0.5f );
+
+	cg->frame[0] = 2;
+	cg->frame_info[0][2] = cg->image_size[0] - clip_h;
+
+	cg->frame[1] = 3;
+	cg->frame_info[1][0] = clip_h;
+
+	return 1;
+}
+
+int hud_afterburner_energy(gauge_data* cg, ship* gauge_owner)
+{
+	Assert(gauge_owner);
+	static float old_percent_left = 0.0f;
+
+	//No afterburner? Don't draw it
+	if ( !(Ship_info[gauge_owner->ship_info_index].flags & SIF_AFTERBURNER) )
+	{
+		//Don't draw the gauge at all
+		return HG_RETURNNODRAW;
+	}
+
+	float percent_left;
+	percent_left = gauge_owner->afterburner_fuel/Ship_info[gauge_owner->ship_info_index].afterburner_fuel_capacity;
+
+	//Can't have over 100% displayed in gauge
+	if ( percent_left > 1 )
+	{
+		percent_left = 1.0f;
+	}
+
+	//If it's the same, don't bother updating info
+	if(percent_left == old_percent_left)
+	{
+		//mprintf(("REDRAWING AFTERBURNER LIKE A GOOD FUNCTION"));
+		//Redraw the gauge with the current info
+		return HG_RETURNREDRAW;
+	}
+
+	old_percent_left = percent_left;
+
+	//How much do we want to clip off
+	int clip_h = fl2i( (1.0f - percent_left) * cg->image_size[0] + 0.5f );
+
+	//Set the clipping for the background
+	cg->frame[0] = 0;
+	cg->frame_info[0][2] = cg->image_size[0] - clip_h;	//From the bottom
+
+	//Set the clipping for the actual energy stuff
+	cg->frame[1] = 1;
+	cg->frame_info[1][0] = clip_h;	//From the top
+
+	//Only draw once
+	return HG_RETURNLASTUPDATE;
+}
+/*
+int hud_shield_mini(gauge_data* cg, ship* gauge_owner)
+{
+	int hud_shield_icon(gauge_data* cg, ship* gauge_owner)
+{
+	float max_shield;
+	object* objp = &Objects[gauge_info->target_objnum];
+
+	max_shield = get_max_shield_quad(objp);
+
+	for ( int i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+
+		if ( objp->flags & OF_NO_SHIELDS ) {
+			break;
+		}
+
+		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+			continue;
+		}
+				
+		range = HUD_color_alpha;
+		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
+		Assert(hud_color_index >= 0 && hud_color_index <= range);
+	
+		if ( hud_color_index < 0 ) {
+			hud_color_index = 0;
+		}
+		if ( hud_color_index >= HUD_NUM_COLOR_LEVELS ) {
+			hud_color_index = HUD_NUM_COLOR_LEVELS - 1;
+		}
+
+		if ( hud_gauge_maybe_flash(HUD_TARGET_MINI_ICON) == 1) {
+			// hud_set_bright_color();
+			hud_set_gauge_color(HUD_TARGET_MINI_ICON, HUD_C_BRIGHT);
+		} else {
+			// gr_set_color_fast(&HUD_color_defaults[hud_color_index]);
+			hud_set_gauge_color(HUD_TARGET_MINI_ICON, hud_color_index);
+		}
+
+		frames[i] = Shield_mini_gauge.first_frame + i;		
+	}
+
+	return 1;
+}*/
 #endif
 
 //Loads defaults for if a hud isn't specified in the table
