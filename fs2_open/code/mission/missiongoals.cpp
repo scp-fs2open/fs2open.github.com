@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2004-03-28 17:49:55 $
+ * $Author: taylor $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.6  2004/02/14 00:18:34  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -379,6 +383,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "playerman/player.h"
+#include "localization/localize.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -422,23 +427,22 @@ static int Goal_screen_icon_xcoord[GR_NUM_RESOLUTIONS] = {
 };
 
 
-#if defined(GERMAN_BUILD)
-	// german version gets slightly diff coords
-	static int Objective_key_text_coords[GR_NUM_RESOLUTIONS][3][2] = {
-		{
-			// GR_640
-			{175, 344},
-			{316, 344},
-			{432, 344}
-		},
-		{
-			// GR_1024
-			{310, 546},
-			{536, 546},
-			{688, 546}
-		}
-	};
-	static int Objective_key_icon_coords[GR_NUM_RESOLUTIONS][3][2] = {
+// german version gets slightly diff coords
+static int Objective_key_text_coords_gr[GR_NUM_RESOLUTIONS][3][2] = {
+	{
+		// GR_640
+		{175, 344},
+		{316, 344},
+		{432, 344}
+	},
+	{
+		// GR_1024
+		{310, 546},
+		{536, 546},
+		{688, 546}
+	}
+};
+static int Objective_key_icon_coords_gr[GR_NUM_RESOLUTIONS][3][2] = {
 	{
 		// GR_640
 		{150, 339},
@@ -452,22 +456,22 @@ static int Goal_screen_icon_xcoord[GR_NUM_RESOLUTIONS] = {
 		{650, 542}
 	}
 };
-#else
-	static int Objective_key_text_coords[GR_NUM_RESOLUTIONS][3][2] = {
-		{
-			// GR_640
-			{195, 344},
-			{306, 344},
-			{432, 344}
-		},
-		{
-			// GR_1024
-			{310, 546},
-			{486, 546},
-			{688, 546}
-		}
-	};
-	static int Objective_key_icon_coords[GR_NUM_RESOLUTIONS][3][2] = {
+
+static int Objective_key_text_coords[GR_NUM_RESOLUTIONS][3][2] = {
+	{
+		// GR_640
+		{195, 344},
+		{306, 344},
+		{432, 344}
+	},
+	{
+		// GR_1024
+		{310, 546},
+		{486, 546},
+		{688, 546}
+	}
+};
+static int Objective_key_icon_coords[GR_NUM_RESOLUTIONS][3][2] = {
 	{
 		// GR_640
 		{170, 339},
@@ -481,7 +485,6 @@ static int Goal_screen_icon_xcoord[GR_NUM_RESOLUTIONS] = {
 		{650, 542}
 	}
 };
-#endif
 
 
 #define NUM_GOAL_SCREEN_BUTTONS			3  // total number of buttons
@@ -1052,16 +1055,29 @@ void ML_objectives_do_frame(int scroll_offset)
 void ML_render_objectives_key()
 {
 	// display icon key at the bottom
-	gr_set_bitmap(Goal_complete_bitmap);
-	gr_bitmap(Objective_key_icon_coords[gr_screen.res][0][0], Objective_key_icon_coords[gr_screen.res][0][1]);
-	gr_set_bitmap(Goal_incomplete_bitmap);
-	gr_bitmap(Objective_key_icon_coords[gr_screen.res][1][0], Objective_key_icon_coords[gr_screen.res][1][1]);
-	gr_set_bitmap(Goal_failed_bitmap);
-	gr_bitmap(Objective_key_icon_coords[gr_screen.res][2][0], Objective_key_icon_coords[gr_screen.res][2][1]);
-	
-	gr_string(Objective_key_text_coords[gr_screen.res][0][0], Objective_key_text_coords[gr_screen.res][0][1] , XSTR("Complete",	1437));
-	gr_string(Objective_key_text_coords[gr_screen.res][1][0], Objective_key_text_coords[gr_screen.res][1][1] , XSTR("Incomplete", 1438));
-	gr_string(Objective_key_text_coords[gr_screen.res][2][0], Objective_key_text_coords[gr_screen.res][2][1] , XSTR("Failed",		1439));
+	if (Lcl_gr) {
+		gr_set_bitmap(Goal_complete_bitmap);
+		gr_bitmap(Objective_key_icon_coords_gr[gr_screen.res][0][0], Objective_key_icon_coords_gr[gr_screen.res][0][1]);
+		gr_set_bitmap(Goal_incomplete_bitmap);
+		gr_bitmap(Objective_key_icon_coords_gr[gr_screen.res][1][0], Objective_key_icon_coords_gr[gr_screen.res][1][1]);
+		gr_set_bitmap(Goal_failed_bitmap);
+		gr_bitmap(Objective_key_icon_coords_gr[gr_screen.res][2][0], Objective_key_icon_coords_gr[gr_screen.res][2][1]);
+
+		gr_string(Objective_key_text_coords_gr[gr_screen.res][0][0], Objective_key_text_coords_gr[gr_screen.res][0][1] , XSTR("Complete",	1437));
+		gr_string(Objective_key_text_coords_gr[gr_screen.res][1][0], Objective_key_text_coords_gr[gr_screen.res][1][1] , XSTR("Incomplete", 1438));
+		gr_string(Objective_key_text_coords_gr[gr_screen.res][2][0], Objective_key_text_coords_gr[gr_screen.res][2][1] , XSTR("Failed",		1439));
+	} else {
+		gr_set_bitmap(Goal_complete_bitmap);
+		gr_bitmap(Objective_key_icon_coords[gr_screen.res][0][0], Objective_key_icon_coords[gr_screen.res][0][1]);
+		gr_set_bitmap(Goal_incomplete_bitmap);
+		gr_bitmap(Objective_key_icon_coords[gr_screen.res][1][0], Objective_key_icon_coords[gr_screen.res][1][1]);
+		gr_set_bitmap(Goal_failed_bitmap);
+		gr_bitmap(Objective_key_icon_coords[gr_screen.res][2][0], Objective_key_icon_coords[gr_screen.res][2][1]);
+
+		gr_string(Objective_key_text_coords[gr_screen.res][0][0], Objective_key_text_coords[gr_screen.res][0][1] , XSTR("Complete",	1437));
+		gr_string(Objective_key_text_coords[gr_screen.res][1][0], Objective_key_text_coords[gr_screen.res][1][1] , XSTR("Incomplete", 1438));
+		gr_string(Objective_key_text_coords[gr_screen.res][2][0], Objective_key_text_coords[gr_screen.res][2][1] , XSTR("Failed",		1439));
+	}
 }
 
 	

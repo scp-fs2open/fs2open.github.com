@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-05 09:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2004-03-28 17:49:55 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/05 09:02:05  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.8  2004/02/20 04:29:55  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -356,11 +360,7 @@ lang_info Lcl_languages[LCL_NUM_LANGUAGES] = {
 	{ "French",			"fr" },								// french
 };
 
-//#if defined(GERMAN_BUILD)
-//#define DEFAULT_LANGUAGE							"German"
-//#else
 #define DEFAULT_LANGUAGE							"English"
-//#endif
 
 // following is the offset where special characters start in our font
 #define LCL_SPECIAL_CHARS_FR	164
@@ -481,14 +481,10 @@ void lcl_init(int lang_init)
 	// read the language from the registry
 	if(lang_init < 0){
 		memset(lang_string, 0, 128);
-#if defined(GERMAN_BUILD)
-		// defualt lang to German, mein herr
-		ret = os_config_read_string(NULL, "Language", "German");
-#else
 		// default to DEFAULT_LANGUAGE (which should be english so we dont have to put German text 
 		// in tstrings in the #default section
 		ret = os_config_read_string(NULL, "Language", DEFAULT_LANGUAGE);
-#endif
+
 		if(ret == NULL){
 			Int3();
 			strcpy(lang_string, DEFAULT_LANGUAGE);
@@ -1151,11 +1147,11 @@ int lcl_ext_lookup(char *out, int id)
 		// found a matching string/id pair
 		case 2 :			
 			// success
-#if defined(GERMAN_BUILD)
-			// this is because tstrings.tbl reads in as ANSI for some reason
-			// opening tstrings with "rb" mode didnt seem to help, so its now still "rt" like before
-			lcl_fix_umlauts(out, LCL_TO_ASCII);		
-#endif
+			if (Lcl_gr) {
+				// this is because tstrings.tbl reads in as ANSI for some reason
+				// opening tstrings with "rb" mode didnt seem to help, so its now still "rt" like before
+				lcl_fix_umlauts(out, LCL_TO_ASCII);
+			}
 			return 1;
 
 		// end of language found

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-05 09:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2004-03-28 17:49:55 $
+ * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.8  2004/02/20 04:29:55  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -1381,11 +1385,11 @@ void player_select_display_copyright()
 
 //	sprintf(Copyright_msg1, NOX("FreeSpace 2"));
 	get_version_string(Copyright_msg1);
-#if defined(GERMAN_BUILD)
-	sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\xA8');
-#else
-	sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\x83');
-#endif
+	if (Lcl_gr) {
+		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\xA8');
+	} else {
+		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\x83');
+	}
 
 	gr_get_string_size(&w, NULL, Copyright_msg1);
 	sx = fl2i((gr_screen.max_w / 2) - w/2.0f + 0.5f);
