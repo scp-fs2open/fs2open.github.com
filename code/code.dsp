@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "..\Debug\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W4 /Gm /Gi /GX /ZI /Od /I ".." /I "anim" /I "asteroid" /I "bmpman" /I "cfile" /I "cmdline" /I "cmeasure" /I "controlconfig" /I "cutscene" /I "debris" /I "debugconsole" /I "directx" /I "fireball" /I "fred" /I "freespace2" /I "fs2launch" /I "gamehelp" /I "gamesequence" /I "gamesnd" /I "glide" /I "globalincs" /I "graphics" /I "hud" /I "io" /I "jumpnode" /I "lighting" /I "math" /I "menuui" /I "mission" /I "missionui" /I "model" /I "movie" /I "network" /I "object" /I "observer" /I "osapi" /I "palman" /I "parse" /I "particle" /I "pcxutils" /I "physics" /I "playerman" /I "popup" /I "radar" /I "render" /I "ship" /I "sndman" /I "sound" /I "starfield" /I "stats" /I "ui" /I "vcodec" /I "weapon" /I "localization" /I "fred2" /I "nebula" /I "TgaUtils" /I "demo" /I "inetfile" /I "exceptionhandler" /I "3dnow" /I "windows_stub" /FI"PSTypes.h" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "USE_DX81" /U "NDEBUG" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /G5 /MTd /W4 /Gm /Gi /GX /ZI /Od /I "." /FI"PSTypes.h" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "USE_DX81" /U "NDEBUG" /FR /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -475,30 +475,6 @@ SOURCE=.\GlobalIncs\WinDebug.cpp
 # Begin Group "Graphics"
 
 # PROP Default_Filter ""
-# Begin Group "DirectX8"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\Graphics\DirectX8\GrD3D81.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\DirectX8\GrD3D81.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\DirectX8\grd3d81internal.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\DirectX8\GrD3D81Render.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\DirectX8\GrD3D81Texture.cpp
-# End Source File
-# End Group
 # Begin Source File
 
 SOURCE=.\Graphics\2d.cpp
