@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-10-23 18:03:25 $
- * $Author: randomtiger $
+ * $Revision: 2.7 $
+ * $Date: 2004-01-30 07:39:09 $
+ * $Author: Goober5000 $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/10/23 18:03:25  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.5  2003/09/26 14:37:16  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -325,7 +328,7 @@ int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci,
 	}
 
 	// real_parent is the guy who caused this shockwave to happen
-	if (parent_objnum == -1) {
+	if (parent_objnum == -1) {	// Goober5000
 		real_parent = -1;
 	} else if ( Objects[parent_objnum].type == OBJ_WEAPON ){
 		real_parent = Objects[parent_objnum].parent;
@@ -358,7 +361,7 @@ int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci,
 //	sw->total_time = i2fl(si->num_frames) / si->fps;	// in seconds
 	sw->total_time = sw->outer_radius / sw->speed;
 
-	if ( (parent_objnum != -1) && Objects[parent_objnum].type == OBJ_WEAPON ) {		
+	if ( (parent_objnum != -1) && Objects[parent_objnum].type == OBJ_WEAPON ) {		// Goober5000: allow -1
 		sw->weapon_info_index = Weapons[Objects[parent_objnum].instance].weapon_info_index;
 	}
 	else {		

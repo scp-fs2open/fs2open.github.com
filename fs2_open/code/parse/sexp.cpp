@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.80 $
- * $Date: 2003-11-24 18:18:00 $
+ * $Revision: 2.81 $
+ * $Date: 2004-01-30 07:39:09 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2003/11/24 18:18:00  Goober5000
+ * fixed bug in tech-reset-to-default
+ * --Goober5000
+ *
  * Revision 2.79  2003/11/09 04:09:18  Goober5000
  * edited for language
  * --Goober5000
@@ -4618,6 +4622,9 @@ int sexp_distance3(int obj1, int obj2)
 // locate the subsystem on a ship - Goober5000
 void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vector *subsys_world_pos)
 {
+	Assert(subsys_name);
+	Assert(subsys_world_pos);
+
 	ship_subsys *ss;
 
 	if(shipnum < 0)
@@ -4754,6 +4761,8 @@ int sexp_distance_subsystem(int n)	// Goober5000
 // Goober5000
 int sexp_vec_coordinate(vector *v, int index)
 {
+	Assert(v);
+
 	// return result:
 	switch(index)
 	{
@@ -4772,6 +4781,8 @@ int sexp_vec_coordinate(vector *v, int index)
 // Goober5000
 int sexp_calculate_new_world_coordinate(vector *origin, matrix *orient, vector *relative_location, int index)
 {
+	Assert(origin && orient && relative_location);
+
 	vector new_world_pos;
 
 	vm_vec_unrotate(&new_world_pos, relative_location, orient);
@@ -4961,6 +4972,8 @@ void sexp_set_ship_position(int n)
 // Goober5000
 void sexp_set_ship_orient(int ship_num, vector *location, int turn_time, int bank)
 {
+	Assert(location);
+
 	vector v_orient;
 	matrix m_orient;
 	object *obj;
@@ -7277,7 +7290,10 @@ void sexp_set_cargo(int n)
 	{
 		// make new entry if possible
 		if (Num_cargo + 1 >= MAX_CARGO)
+		{
+			Warning(LOCATION, "set-cargo: Maximum number of cargo names (%d) reached.  Ignoring new name.\n", MAX_CARGO);
 			return;
+		}
 
 		Assert(strlen(cargo) <= NAME_LENGTH - 1);
 
@@ -8166,8 +8182,7 @@ void sexp_beam_protect_ships( int n, int flag )
 }
 
 
-
-// sets the "dont collide invisible" flag on a list of ships - Goober5000
+// Goober5000 - sets the "dont collide invisible" flag on a list of ships
 void sexp_dont_collide_invisible( int n, int dont_collide )
 {
 	char *ship_name;
@@ -8219,7 +8234,7 @@ void sexp_dont_collide_invisible( int n, int dont_collide )
 	}
 }
 
-// sets the vaporize flag on a list of ships - Goober5000
+// Goober5000 - sets the vaporize flag on a list of ships
 void sexp_ships_vaporize( int n, int vaporize )
 {
 	char *ship_name;
@@ -9715,7 +9730,7 @@ void sexp_turret_tagged_clear_all(int node)
 }
 
 // Goober5000
-void sexp_set_subsys_rotation(int node, int locked)
+void sexp_set_subsys_rotation_lock(int node, int locked)
 {
 	int ship_num;		
 	ship_subsys *rotate;
@@ -11735,7 +11750,7 @@ int eval_sexp(int cur_node)
 
 			case OP_LOCK_ROTATING_SUBSYSTEM:
 			case OP_FREE_ROTATING_SUBSYSTEM:
-				sexp_set_subsys_rotation(node, op_num == OP_LOCK_ROTATING_SUBSYSTEM);
+				sexp_set_subsys_rotation_lock(node, op_num == OP_LOCK_ROTATING_SUBSYSTEM);
 				sexp_val = 1;
 				break;
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.99 $
- * $Date: 2004-01-14 07:07:14 $
+ * $Revision: 2.100 $
+ * $Date: 2004-01-30 07:39:06 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2004/01/14 07:07:14  Goober5000
+ * added error checking for an annoying crash when running an out-of-range
+ * sound; also, Phreak misspelled "tertiary"
+ * --Goober5000
+ *
  * Revision 2.98  2004/01/14 06:34:07  Goober5000
  * made set-support-ship number align with general FS convention
  * --Goober5000
@@ -1938,7 +1943,7 @@ strcpy(parse_error_text, temp_error);
 
 	// optional ballistic primary imformation (Goober5000)......
 	pbank_capacity_specified = 0;
-	if(optional_string("$Pbank Capacity:"))
+	if(optional_string("$PBank Capacity:"))
 	{
 		pbank_capacity_specified = 1;
 		// get the capacity of each primary bank
@@ -2054,7 +2059,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	// Get the capacity of each secondary bank
-	required_string("$Sbank Capacity:");
+	required_string("$SBank Capacity:");
 strcat(parse_error_text,"'s secondary banks capacities");
 	sbank_capacity_count = stuff_int_list(sip->secondary_bank_ammo_capacity, MAX_SECONDARY_BANKS, RAW_INTEGER_TYPE);
 strcpy(parse_error_text, temp_error);
@@ -2101,6 +2106,11 @@ strcpy(parse_error_text, temp_error);
 
 	required_string("$Hitpoints:");
 	stuff_float(&sip->initial_hull_strength);
+	if (sip->initial_hull_strength == 0.0f)
+	{
+		Warning(LOCATION, "Initial hull strength on ship %s cannot be 0.  Defaulting to 100.\n", sip->name);
+		sip->initial_hull_strength = 100.0f;
+	}
 
 	required_string("$Flags:");
 	char	ship_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
@@ -2221,10 +2231,11 @@ strcpy(parse_error_text, temp_error);
 		required_string("+Aburn Burn Rate:");
 		stuff_float(&sip->afterburner_burn_rate);
 
-
 		required_string("+Aburn Rec Rate:");
 		stuff_float(&sip->afterburner_recover_rate);
 
+		// Goober5000: check div-0
+		Assert(sip->afterburner_fuel_capacity);
 	} else {
 	
 //		mprintf(("no AB or ABtrails\n"));
@@ -2461,6 +2472,10 @@ strcpy(parse_error_text, temp_error);
 			stuff_string(sp->subobj_name, F_NAME, ",");
 			Mp++;
 			stuff_float(&percentage_of_hits);
+			if (percentage_of_hits == 0.0f)
+			{
+				Warning(LOCATION, "Subsystem %s on ship %s has 0 hitpoints.\n", sp->subobj_name, sp->name);
+			}
 			stuff_float(&turning_rate);
 			hull_percentage_of_hits -= percentage_of_hits;
 			sp->max_subsys_strength = sip->initial_hull_strength * (percentage_of_hits / 100.0f);
@@ -2489,7 +2504,7 @@ strcpy(parse_error_text, temp_error);
 			}
 
 			// get capacity of each primary bank - Goober5000
-			if (optional_string("+Pbank Capacity:")){
+			if (optional_string("$PBank Capacity:")){
 strcat(parse_error_text,"'s primary banks capacities");
 				stuff_int_list(sp->primary_bank_capacity, MAX_PRIMARY_BANKS, RAW_INTEGER_TYPE);
 strcpy(parse_error_text, temp_error);
@@ -2503,7 +2518,7 @@ strcpy(parse_error_text, temp_error);
 			}
 
 			// Get the capacity of each secondary bank
-			if (optional_string("$Sbank Capacity:")){
+			if (optional_string("$SBank Capacity:")){
 strcat(parse_error_text,"'s secondary banks capacities");
 				stuff_int_list(sp->secondary_bank_capacity, MAX_SECONDARY_BANKS, RAW_INTEGER_TYPE);
 strcpy(parse_error_text, temp_error);
@@ -2547,7 +2562,7 @@ strcpy(parse_error_text, temp_error);
 	// (we don't want a div-0 error)
 	if (hull_percentage_of_hits < 0.0f )
 	{
-		Warning(LOCATION, "THe subsystems defined for the %s can take more combined damage than	the ship itself. Adjust the tables so that the percentages add up to less than 100", sip->name);
+		Warning(LOCATION, "The subsystems defined for the %s can take more combined damage than the ship itself. Adjust the tables so that the percentages add up to less than 100", sip->name);
 	}
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	sip->n_subsystems = n_subsystems;
@@ -2587,7 +2602,7 @@ char get_engine_wash_index(char *engine_wash_name)
 	int i;
 
 	for (i=0; i<Num_engine_wash_types; i++) {
-		if ( 0 == stricmp(engine_wash_name, Engine_wash_info[i].name) ) {
+		if ( !stricmp(engine_wash_name, Engine_wash_info[i].name) ) {
 			return (char)i;
 		}
 	}
@@ -2801,13 +2816,10 @@ int ship_find_exited_ship_by_name( char *name )
 
 	for (i = 0; i < Num_exited_ships; i++) {
 		if ( !stricmp(name, Ships_exited[i].ship_name) )
-			break;
+			return i;
 	}
 
-	if ( i == Num_exited_ships )
-		return -1;
-	else
-		return i;
+	return -1;
 }
 
 // function which attempts to find information about an exited ship based on shipname
@@ -2817,13 +2829,10 @@ int ship_find_exited_ship_by_signature( int signature )
 
 	for (i = 0; i < Num_exited_ships; i++) {
 		if ( signature == Ships_exited[i].obj_signature )
-			break;
+			return i;
 	}
 
-	if ( i == Num_exited_ships )
-		return -1;
-	else
-		return i;
+	return -1;
 }
 
 
@@ -3837,7 +3846,7 @@ void ship_subsystem_delete(ship *shipp)
 		systemp = temp;												// use the temp variable to move right along
 	}
 
-	// see about the alt stuff
+	// Goober5000 - free stuff used for alt models if we have an alt model
 	if (shipp->alt_modelnum != -1)
 	{
 		free(shipp->subsystems);
@@ -5871,7 +5880,7 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	show_ship_subsys_count();
 	if (pm_alt)
 	{
-		show_ship_subsys_count();	// double if two models
+		show_ship_subsys_count();	// Goober5000 - double if two models
 	}
 
 	if ( sip->num_detail_levels < pm_orig->n_detail_levels )
@@ -5883,7 +5892,7 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 		}
 	}
 	
-	// one for each model
+	// Goober5000 - one for each model
 	for (i=0; i<sip->num_detail_levels; i++ )	{
 		pm_orig->detail_depth[i] = i2fl(sip->detail_distance[i]);
 	}
@@ -6225,6 +6234,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		}
 	}
 
+	// Goober5000: div-0 checks
+	Assert(sp->ship_initial_hull_strength > 0.0f);
+	Assert(objp->hull_strength > 0.0f);
+
 	// subsys stuff done only after hull stuff is set
 
 	// if the subsystem list is not currently empty, then we need to clear it out first.
@@ -6507,8 +6520,9 @@ void ship_fire_tracer(int weapon_objnum)
 	particle_create(&pinfo);
 }
 
-int ship_stop_fire_primary_bank(object * obj, int bank_to_stop){//stops a single primary bank-Bobboau
-
+// stops a single primary bank-Bobboau
+int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
+{
 	ship			*shipp;
 	ship_weapon	*swp;
 
@@ -6554,8 +6568,9 @@ int ship_stop_fire_primary_bank(object * obj, int bank_to_stop){//stops a single
 }
 
 
-int ship_stop_fire_primary(object * obj){	//stuff to do when the ship has stoped fireing all primary weapons-Bobboau
-
+//stuff to do when the ship has stoped fireing all primary weapons-Bobboau
+int ship_stop_fire_primary(object * obj)
+{
 //	gr_set_color( 250, 50, 75 );
 
 	int num_primary_banks = 0, bank_to_stop = 0;
@@ -12076,7 +12091,7 @@ void ship_set_new_ai_class(int ship_num, int new_ai_class)
 // Goober5000
 void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_class)
 {
-	Assert(ship_num >= 0);
+	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
 	Assert(subsystem);
 	Assert(new_ai_class >= 0);
 
@@ -12102,7 +12117,7 @@ void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_c
 // Goober5000: check ship's iff, currently only called from is-iff in sexp.cpp
 int ship_is_iff(int ship_num, int check_team)
 {
-	Assert(ship_num >= 0);
+	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
 
 	return (Ships[ship_num].team == check_team);
 }
@@ -12110,7 +12125,7 @@ int ship_is_iff(int ship_num, int check_team)
 // Goober5000: change ship's iff, currently only called from change-iff in sexp.cpp
 void ship_change_iff(int ship_num, int new_team)
 {
-	Assert(ship_num >= 0);
+	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
 
 	Ships[ship_num].team = new_team;
 
@@ -12155,6 +12170,8 @@ void wing_load_squad_bitmap(wing *w)
 // check whether this ship has a docking bay
 int ship_has_dock_bay(int shipnum)
 {
+	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
+
 	polymodel *pm;
 				
 	pm = model_get( Ships[shipnum].modelnum );
@@ -12319,6 +12336,10 @@ int ship_fire_tertiary(object *objp)
 // Goober5000
 void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss)
 {
+	Assert(shipp);
+	Assert(psub);
+	Assert(pss);
+
 	// check if we actually can rotate
 	if ( !(psub->flags & MSS_FLAG_ROTATES) )
 		return;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-06-11 02:59:47 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-01-30 07:39:07 $
+ * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/06/11 02:59:47  phreak
+ * local ssm stuff for hud.
+ * they are always in lock range due to the subspace drive on them
+ * they also can't be targeted when in stage 3.
+ *
  * Revision 2.2  2003/01/19 22:20:23  Goober5000
  * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
  * and departure into hangars should now all work properly
@@ -1186,6 +1191,9 @@ void hud_squadmsg_repair_rearm_abort( int toggle_state, object *obj)
 // returns 1 if an order is valid for a ship.  Applies to things like departure when engines are blown, etc.
 int hud_squadmsg_ship_order_valid( int shipnum, int order )
 {
+	// Goober5000
+	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
+
 	switch ( order  )
 	{
 		case DEPART_ITEM:

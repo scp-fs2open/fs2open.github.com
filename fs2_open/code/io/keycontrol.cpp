@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-01-14 06:38:41 $
+ * $Revision: 2.20 $
+ * $Date: 2004-01-30 07:39:07 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/01/14 06:38:41  Goober5000
+ * fixx0red a bug
+ * --Goober5000
+ *
  * Revision 2.18  2003/10/15 22:03:25  Kazan
  * Da Species Update :D
  *
@@ -834,6 +838,8 @@ void debug_max_secondary_weapons(object *objp)
 
 void debug_max_primary_weapons(object *objp)	// Goober5000
 {
+	Assert(objp);	// Goober5000
+
 	int index;
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];

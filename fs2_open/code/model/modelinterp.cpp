@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.62 $
- * $Date: 2004-01-24 12:47:48 $
- * $Author: randomtiger $
+ * $Revision: 2.63 $
+ * $Date: 2004-01-30 07:39:08 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2004/01/24 12:47:48  randomtiger
+ * Font and other small changes for Fred
+ *
  * Revision 2.61  2004/01/20 22:39:06  Goober5000
  * commented the variables in a commented function
  * --Goober5000
@@ -1309,10 +1312,14 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	int nv;
 	model_tmap_vert *verts;
 
+	// Goober5000
+	int tmap_num = w(p+40);
+	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
+
 	int is_invisible = 0;
 
 	if((Warp_Map < 0)){
-		if ((!Interp_thrust_scale_subobj) && (pm->textures[w(p+40)]<0))	{
+		if ((!Interp_thrust_scale_subobj) && (pm->textures[tmap_num]<0))	{
 			// Don't draw invisible polygons.
 			if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES))	{
 				return;
@@ -1397,7 +1404,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	//		}
 
 	//		Assert( verts[i].normnum == verts[i].vertnum );
-			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->ambient[w(p+40)]))	{	//gets the ambient glow to work
+			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->ambient[tmap_num]))	{	//gets the ambient glow to work
 				if ( D3D_enabled || OGL_inited )	{
 					Interp_list[i]->r = 191;
 					Interp_list[i]->g = 191;
@@ -1516,7 +1523,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				tflags &=  (~(TMAP_FLAG_TEXTURED|TMAP_FLAG_TILED|TMAP_FLAG_CORRECT));
 				g3_draw_poly( nv, Interp_list, tflags );		
 			}
-		} else if(Warp_Map > -1){	//warpin effect-Bobboau
+		} else if(Warp_Map >= 0){	//warpin effect-Bobboau
 			gr_set_bitmap( Warp_Map, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			g3_draw_poly( nv, Interp_list, TMAP_FLAG_TEXTURED );
 		}else{
@@ -1526,7 +1533,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			if ( Interp_tmap_flags & TMAP_FLAG_TEXTURED )	{
 				// subspace special case
 				if ( Interp_subspace && D3D_enabled )	{										
-					gr_set_bitmap( pm->textures[w(p+40)], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
+					gr_set_bitmap( pm->textures[tmap_num], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
 				}
 				// all other textures
 				else {					
@@ -1538,23 +1545,23 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					}else if(Interp_replacement_bitmap >= 0){
 						texture = Interp_replacement_bitmap;
 					} else {
-						if (pm->is_ani[w(p+40)]){
-							texture = pm->textures[w(p+40)] + ((timestamp() / (int)(pm->fps[w(p+40)])) % pm->num_frames[w(p+40)]);//here is were it picks the texture to render for ani-Bobboau
+						if (pm->is_ani[tmap_num]){
+							texture = pm->textures[tmap_num] + ((timestamp() / (int)(pm->fps[tmap_num])) % pm->num_frames[tmap_num]);//here is were it picks the texture to render for ani-Bobboau
 						}else{
-							texture = pm->textures[w(p+40)];//here is were it picks the texture to render for normal-Bobboau
+							texture = pm->textures[tmap_num];//here is were it picks the texture to render for normal-Bobboau
 						}
 
-						if((Detail.lighting > 2)  && (model_current_LOD < 1))SPECMAP = pm->specular_textures[w(p+40)];
+						if((Detail.lighting > 2)  && (model_current_LOD < 1))SPECMAP = pm->specular_textures[tmap_num];
 
 						if(glow_maps_active)
 						{
-							if (pm->glow_is_ani[w(p+40)])
+							if (pm->glow_is_ani[tmap_num])
 							{
-								GLOWMAP = pm->glow_textures[w(p+40)] + ((timestamp() / (int)(pm->glow_fps[w(p+40)])) % pm->glow_numframes[w(p+40)]);
+								GLOWMAP = pm->glow_textures[tmap_num] + ((timestamp() / (int)(pm->glow_fps[tmap_num])) % pm->glow_numframes[tmap_num]);
 							}
 							else
 							{
-								GLOWMAP = pm->glow_textures[w(p+40)];
+								GLOWMAP = pm->glow_textures[tmap_num];
 							}
 						}
 					}
@@ -1563,7 +1570,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					if(Interp_flags & MR_ALL_XPARENT){
 						gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_xparent_alpha );
 					} else {
-						if(pm->transparent[w(p+40)]){	//trying to get transperent textures-Bobboau
+						if(pm->transparent[tmap_num]){	//trying to get transperent textures-Bobboau
 							gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
 						}else{
 							gr_set_bitmap( texture );
@@ -2191,6 +2198,9 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 	chunk_type = w(p);
 	chunk_size = w(p+4);
 
+	// Goober5000
+	int tmap_num = w(p+40);
+	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 
 	
 	while ( chunk_type != OP_EOF )	{
@@ -2205,7 +2215,7 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 			// possible texture replacements - Goober5000
 			if (Interp_replacement_textures)
 			{
-				model_set_replacement_bitmap(Interp_replacement_textures[w(p+40)]);
+				model_set_replacement_bitmap(Interp_replacement_textures[tmap_num]);
 			}
 			else
 			{

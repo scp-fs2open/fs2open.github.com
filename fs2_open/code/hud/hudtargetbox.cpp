@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-12-16 20:46:37 $
- * $Author: phreak $
+ * $Revision: 2.26 $
+ * $Date: 2004-01-30 07:39:07 $
+ * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/12/16 20:46:37  phreak
+ * made gr_set_proj_matrix use the MIN/MAX_DRAW_DISTANCE constants
+ *
  * Revision 2.24  2003/12/04 20:39:09  randomtiger
  * Added DDS image support for D3D
  * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
@@ -781,7 +784,7 @@ void hud_get_target_strength(object *objp, float *shields, float *integrity)
 		*shields = 0.0f;
 	}
 
-	if ( shipp->ship_initial_hull_strength == 0 ) {
+	if ( shipp->ship_initial_hull_strength == 0.0f ) {
 		Int3(); // illegal initial hull strength
 		*integrity = 0.0f;
 		return;
@@ -999,7 +1002,7 @@ void hud_render_target_asteroid(object *target_objp)
 	emp_hud_printf(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, hud_name);	
 	
 
-	if ( time_to_impact >= 0 ) {
+	if ( time_to_impact >= 0.0f ) {
 		emp_hud_printf(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, NOX("impact: %.1f sec"), time_to_impact);	
 	}
 #endif
@@ -1007,6 +1010,7 @@ void hud_render_target_asteroid(object *target_objp)
 
 void get_turret_subsys_name(model_subsystem *system_info, char *outstr)
 {
+	Assert(system_info);	// Goober5000
 	Assert(system_info->type == SUBSYSTEM_TURRET);
 
 	if (system_info->turret_weapon_type >= 0) {
@@ -1060,6 +1064,7 @@ void hud_render_target_ship_info(object *target_objp)
 	char			outstr[256];
 	float			ship_integrity, shield_strength;
 
+	Assert(target_objp);	// Goober5000
 	Assert(target_objp->type == OBJ_SHIP);
 	target_shipp = &Ships[target_objp->instance];
 	target_sip = &Ship_info[target_shipp->ship_info_index];
@@ -1212,7 +1217,9 @@ void hud_blit_target_integrity(int disabled,int force_obj_num)
 		Assert(Player_ai->target_objnum >= 0 );
 		objp = &Objects[Player_ai->target_objnum];
 	} else {
-		objp = &Objects[Player_ai->target_objnum];
+		// Goober5000: what the... this probably should be changed
+		//objp = &Objects[Player_ai->target_objnum];
+		objp = &Objects[force_obj_num];
 	}
 
 	clip_h = fl2i( (1 - Pl_target_integrity) * Integrity_bar_coords[gr_screen.res][3] );
@@ -1471,8 +1478,9 @@ void hud_render_target_ship(object *target_objp)
 
 			if ( subsys_in_view != -1 ) {
 
-				// AL 29-3-98: If subsystem is destroyed, draw gray brackets					
-				if ( (Player_ai->targeted_subsys->current_hits <= 0) && (strnicmp(NOX("fighter"), Player_ai->targeted_subsys->system_info->name, 7)) ) {
+				// AL 29-3-98: If subsystem is destroyed, draw gray brackets
+				// Goober5000 - hm, caught a tricky bug for destroyable fighterbays
+				if ( (Player_ai->targeted_subsys->current_hits <= 0) && ship_subsys_takes_damage(Player_ai->targeted_subsys) ) {
 					gr_set_color_fast(&IFF_colors[IFF_COLOR_MESSAGE][1]);
 				} else {
 					hud_set_iff_color( target_objp, 1 );
@@ -1556,6 +1564,7 @@ void hud_render_target_debris(object *target_objp)
 	base_index = debrisp->ship_info_index;
 	if ( Ship_info[base_index].flags & SIF_SHIP_COPY )
 		base_index = ship_info_base_lookup( debrisp->ship_info_index );
+	Assert(base_index >= 0);	// Goober5000
 
 	// print out ship class that debris came from
 	char printable_ship_class[NAME_LENGTH];

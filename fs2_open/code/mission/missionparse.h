@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.36 $
- * $Author: phreak $
- * $Date: 2003-10-23 23:48:03 $
+ * $Revision: 2.37 $
+ * $Author: Goober5000 $
+ * $Date: 2004-01-30 07:39:08 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/10/23 23:48:03  phreak
+ * added code for the mission parser to recognize user defined skyboxes
+ *
  * Revision 2.35  2003/10/15 22:03:25  Kazan
  * Da Species Update :D
  *
@@ -437,6 +440,8 @@ typedef struct mission {
 
 // cargo defines
 // NOTE: MAX_CARGO MUST REMAIN <= 64 (CARGO_NO_DEPLETE) for NO_DEPLETE to work.
+// FURTHER NOTE (Goober5000): If a new flag is added here, the code (particularly in sexp.cpp)
+// must be reworked so that all the flags are maintained from function to function
 #define CARGO_INDEX_MASK	0xBF
 #define CARGO_NO_DEPLETE	0x40		// CARGO_NO_DEPLETE + CARGO_INDEX_MASK must == FF
 #define MAX_CARGO				30

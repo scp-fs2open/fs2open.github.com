@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-11-25 02:32:16 $
+ * $Revision: 2.25 $
+ * $Date: 2004-01-30 07:39:06 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/11/25 02:32:16  Goober5000
+ * fixed an old omission
+ * --Goober5000
+ *
  * Revision 2.23  2003/11/11 02:15:41  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -726,7 +730,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector* hitpo
 		if ( &(sip->subsystems[i]) == psub )
 			break;
 
-		// check alt stuff too
+		// check alt stuff too - Goober5000
 		if ( ship_p->alt_modelnum != -1 )
 			if ( &(ship_p->subsystems[i]) == psub )
 				break;
@@ -815,7 +819,9 @@ float subsys_get_range(object *other_obj, ship_subsys *subsys)
 {
 	float	range;
 
-	if ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE)) {
+	Assert(subsys);	// Goober5000
+
+	if ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE)) {	// Goober5000 - check for NULL when via sexp
 		range = Shockwaves[other_obj->instance].outer_radius * 0.75f;	//	Shockwaves were too lethal to subsystems.
 	} else if ( subsys->system_info->type == SUBSYSTEM_TURRET ) {
 		range = subsys->system_info->radius*3;
@@ -916,6 +922,9 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 	sublist			subsys_list[MAX_SUBSYS_LIST];
 	vector			hitpos2;
 
+	Assert(ship_obj);	// Goober5000 (but other_obj might be NULL via sexp)
+	Assert(hitpos);		// Goober5000
+
 	ship_p = &Ships[ship_obj->instance];
 
 	//	Don't damage player subsystems in a training mission.
@@ -926,12 +935,12 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 	}
 
 	//	Shockwave damage is applied like weapon damage.  It gets consumed.
-	if ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE)) {
+	if ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE))	// Goober5000 check for NULL
+	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		if ( Ship_info[ship_p->ship_info_index].flags & (SIF_SMALL_SHIP))
 			return damage;
 		else {
-
 			damage_left = Shockwaves[other_obj->instance].damage/4.0f;
 		}
 		hitpos2 = other_obj->pos;
@@ -941,7 +950,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 	}
 
 	// scale subsystem damage if appropriate
-	weapon_info_index = shiphit_get_damage_weapon(other_obj);
+	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 	if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON)) {
 		damage_left *= Weapon_info[weapon_info_index].subsystem_factor;
 	}
@@ -960,25 +969,26 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 	//	First, create a list of the N subsystems within range.
 	//	Then, one at a time, process them in order.
 	int	count = 0;
-	for ( subsys=GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys) ) {
+	for ( subsys=GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys) )
+	{
 		#ifndef NDEBUG
-		//	Debug option.  If damage is negative of subsystem type, then just destroy that subsystem.
-		if (damage < 0.0f) {
-			// single player or multiplayer
-			Assert(Player_ai->targeted_subsys != NULL);
-			if ( (subsys == Player_ai->targeted_subsys) && (subsys->current_hits > 0) ) {
-				Assert(subsys->system_info->type == (int) -damage);
-				ship_p->subsys_info[subsys->system_info->type].current_hits -= subsys->current_hits;
-				if (ship_p->subsys_info[subsys->system_info->type].current_hits < 0) {
-					ship_p->subsys_info[subsys->system_info->type].current_hits = 0.0f;
+			//	Debug option.  If damage is negative of subsystem type, then just destroy that subsystem.
+			if (damage < 0.0f) {
+				// single player or multiplayer
+				Assert(Player_ai->targeted_subsys != NULL);
+				if ( (subsys == Player_ai->targeted_subsys) && (subsys->current_hits > 0) ) {
+					Assert(subsys->system_info->type == (int) -damage);
+					ship_p->subsys_info[subsys->system_info->type].current_hits -= subsys->current_hits;
+					if (ship_p->subsys_info[subsys->system_info->type].current_hits < 0) {
+						ship_p->subsys_info[subsys->system_info->type].current_hits = 0.0f;
+					}
+					subsys->current_hits = 0.0f;
+					do_subobj_destroyed_stuff( ship_p, subsys, hitpos );
+					continue;
+				} else {
+					continue;
 				}
-				subsys->current_hits = 0.0f;
-				do_subobj_destroyed_stuff( ship_p, subsys, hitpos );
-				continue;
-			} else {
-				continue;
 			}
-		}
 		#endif
 		
 		if (subsys->current_hits > 0.0f) {
@@ -1027,13 +1037,15 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 		dist = subsys_list[min_index].dist;
 		subsys_list[min_index].dist = 9999999.9f;	//	Make sure we don't use this one again.
 
+		Assert(range > 0.0f);	// Goober5000 - avoid div-0 below
+
 		//	HORRIBLE HACK!
 		//	MK, 9/4/99
 		//	When Helios bombs are dual fired against the Juggernaut in sm3-01 (FS2), they often
 		//	miss their target.  There is code dating to FS1 in the collision code to detect that a bomb or
 		//	missile has somehow missed its target.  It gets its lifeleft set to 0.1 and then it detonates.
 		//	Unfortunately, the shockwave damage was cut by 4 above.  So boost it back up here.
-		if ((dist < 10.0f) && ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE))) {
+		if ((dist < 10.0f) && ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE))) {	// Goober5000 check for NULL
 			damage_left *= 4.0f * Weapon_info[weapon_info_index].subsystem_factor;;
 		}
 
@@ -1306,6 +1318,9 @@ float apply_damage_to_ship(object *objp, float damage)
 //	Do music processing for a ship hit.
 void ship_hit_music(object *ship_obj, object *other_obj)
 {
+	Assert(ship_obj);	// Goober5000
+	Assert(other_obj);	// Goober5000
+
 	ship* ship_p = &Ships[ship_obj->instance];
 
 	// Switch to battle track when a ship is hit by fire 
@@ -1864,6 +1879,8 @@ void ship_vaporize(ship *shipp)
 //	*ship_obj was hit and we've determined he's been killed!  By *other_obj!
 void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, int self_destruct)
 {
+	Assert(ship_obj);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
+
 	ship *sp;
 	char *killer_ship_name;
 	int killer_damage_percent = 0;
@@ -2145,6 +2162,9 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 	float max_damage;
 	shockwave *sw;
 
+	Assert(ship_obj);	// Goober5000 (but not other_obj in case of sexp)
+	Assert(damage);		// Goober5000
+
 	Assert(ship_obj->type == OBJ_SHIP);
 
 	if (!other_obj) {
@@ -2205,7 +2225,7 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 //				damage		=>		damage to apply to the ship
 //				quadrant	=> which part of shield takes damage, -1 if not shield hit
 //				wash_damage	=>		1 if damage is done by engine wash
-// Goober5000 - sanity checked this whole function in the case that other_obj is null, which
+// Goober5000 - sanity checked this whole function in the case that other_obj is NULL, which
 // will happen with the explosion-effect sexp
 void ai_update_lethality(object *ship_obj, object *weapon_obj, float damage);
 static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int quadrant, int wash_damage=0)
@@ -2214,6 +2234,11 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 
 	ship *shipp;	
 	float subsystem_damage = damage;			// damage to be applied to subsystems
+	int other_obj_is_weapon;
+	int other_obj_is_shockwave;
+
+	Assert(ship_obj);	// Goober5000
+	Assert(hitpos);		// Goober5000
 
 	Assert(ship_obj->instance >= 0);
 	Assert(ship_obj->type == OBJ_SHIP);
@@ -2222,17 +2247,27 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 	// maybe adjust damage done by shockwave for BIG|HUGE
 	maybe_shockwave_damage_adjust(ship_obj, other_obj, &damage);
 
-	// update lethality of ship doing damage
-	int update_lethality = FALSE;
-	update_lethality = ((other_obj != NULL) && (other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS));
-	update_lethality = update_lethality || ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE) && (other_obj->instance >= 0) && (other_obj->instance < MAX_SHOCKWAVES));
-	if (update_lethality) {
+	// Goober5000 - check to see what other_obj is
+	if (other_obj)
+	{
+		other_obj_is_weapon = ((other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS));
+		other_obj_is_shockwave = ((other_obj->type == OBJ_SHOCKWAVE) && (other_obj->instance >= 0) && (other_obj->instance < MAX_SHOCKWAVES));
+	}
+	else
+	{
+		other_obj_is_weapon = 0;
+		other_obj_is_shockwave = 0;
+	}
+
+	// update lethality of ship doing damage - modified by Goober5000
+	if (other_obj_is_weapon || other_obj_is_shockwave) {
 		ai_update_lethality(ship_obj, other_obj, damage);
 	}
 //mprintf(("lethality updated\n"));
 
 	// if this is a weapon
-	if((other_obj != NULL) && (other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS)){
+	if (other_obj_is_weapon)
+	{
 		damage *= weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_obj);
 	}
 
@@ -2245,7 +2280,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 		}
 	}
 
-	if ( (other_obj != NULL) && (other_obj->type == OBJ_WEAPON) ) {		
+	if ( other_obj_is_weapon ) {		
 		// for tvt and dogfight missions, don't scale damage
 #ifndef NO_NETWORK
 		if( (Game_mode & GM_MULTIPLAYER) && ((Netgame.type_flags & NG_TYPE_TEAM) || (Netgame.type_flags & NG_TYPE_DOGFIGHT)) ){
@@ -2268,40 +2303,40 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 	// Goober5000: make sure other_obj doesn't cause a read violation!
 	if (other_obj)
 	{
+		// Goober5000 - the #ifndef NO_NETWORK and its #else were exactly the same
+		// except for one check, so I simplified things.  In multiplayer, the condition
+		// is that either the weapon subtype is not a laser or the machine is not a
+		// multiplayer client.  In single player, the condition is simply that the
+		// weapon subtype is not a laser.  (See also the comment above this section.)
+		
+		// For the record, ship_hit_pain seems to simply be the red flash that appears
+		// on the screen when you're hit.
 
-#ifndef NO_NETWORK
+		#ifndef NO_NETWORK
+			int special_check = !MULTIPLAYER_CLIENT;
+		#else
+			int special_check = 0;	// not 1... remember, this wasn't included in the original logical OR
+		#endif
 
-if(other_obj->type == OBJ_BEAM){
-Assert((beam_get_weapon_info_index(other_obj) > -1) && (beam_get_weapon_info_index(other_obj) < Num_weapon_types));
-	if((other_obj != NULL) && ((Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (ship_obj == Player_obj)){
-//mprintf(("sending pain\n"));
-		ship_hit_pain(damage);
-	}	
-}
-if(other_obj->type == OBJ_WEAPON){
-Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < Num_weapon_types));
-	if((other_obj != NULL) && ((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (ship_obj == Player_obj)){
-//mprintf(("sending pain\n"));
-		ship_hit_pain(damage);
-	}
-}
-#else
-if(other_obj->type == OBJ_BEAM){
-Assert((beam_get_weapon_info_index(other_obj) > -1) && (beam_get_weapon_info_index(other_obj) < Num_weapon_types));
-	if((other_obj != NULL) && (Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) && (Player_obj != NULL) && (ship_obj == Player_obj)){
-//mprintf(("sending pain\n"));
-		ship_hit_pain(damage);
-	}	
-}
-if(other_obj->type == OBJ_WEAPON){
-Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < Num_weapons));
-	if((other_obj != NULL) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) && (Player_obj != NULL) && (ship_obj == Player_obj)){
-//mprintf(("sending pain\n"));
-		ship_hit_pain(damage);
-	}
-}
-#endif
-
+		// now the actual checks
+		if (other_obj->type == OBJ_BEAM)
+		{
+			Assert((beam_get_weapon_info_index(other_obj) >= 0) && (beam_get_weapon_info_index(other_obj) < Num_weapon_types));
+			if (((Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_obj == Player_obj))
+			{
+				//mprintf(("sending pain\n"));
+				ship_hit_pain(damage);
+			}	
+		}
+		if (other_obj->type == OBJ_WEAPON)
+		{
+			Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < Num_weapon_types));
+			if (((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_obj == Player_obj))
+			{
+				//mprintf(("sending pain\n"));
+				ship_hit_pain(damage);
+			}
+		}
 	}	// read violation sanity check
 
 //mprintf(("pain sent\n"));
@@ -2321,7 +2356,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 	
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.
-	if ( quadrant > -1 && !(ship_obj->flags & OF_NO_SHIELDS) )	{
+	if ( quadrant >= 0 && !(ship_obj->flags & OF_NO_SHIELDS) )	{
 //		mprintf(("applying damage ge to shield\n"));
 		float shield_factor = -1.0f;
 		int	weapon_info_index;		
@@ -2370,7 +2405,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 
 		// continue with damage?
 		if(damage > 0.0){
-			weapon_info_index = shiphit_get_damage_weapon(other_obj);
+			weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 			if ( weapon_info_index >= 0 ) {
 				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) {
 					damage /= 4;
@@ -2442,7 +2477,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 					default:
 						break;
 				}
-			}
+			}	// other_obj
 //mprintf(("\n"));
 			if (ship_obj->hull_strength <= 0.0f) {
 //mprintf(("doing vaporizeing stuff\n"));
@@ -2460,11 +2495,14 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 					if ( !(shipp->flags & SF_VAPORIZE) ) {
 						// Only small ships can be vaporized
 						if (sip->flags & (SIF_SMALL_SHIP)) {
-							if ((other_obj != NULL) && (other_obj->type == OBJ_BEAM)) {
-								int beam_weapon_info_index = beam_get_weapon_info_index(other_obj);
-								if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_BEAM|WIF_HUGE)) ) {
-									// Flag as vaporized
-									shipp->flags |= SF_VAPORIZE;								
+							if (other_obj) {	// Goober5000 check for NULL
+								if (other_obj->type == OBJ_BEAM)
+								{
+									int beam_weapon_info_index = beam_get_weapon_info_index(other_obj);
+									if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_BEAM|WIF_HUGE)) ) {
+										// Flag as vaporized
+										shipp->flags |= SF_VAPORIZE;
+									}
 								}
 							}
 						}
@@ -2493,7 +2531,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 	}
 //mprintf(("fun stuff with weapons\n"));
 	// if the hitting object is a weapon, maybe do some fun stuff here
-	if((other_obj != NULL) && (other_obj->type == OBJ_WEAPON))
+	if(other_obj_is_weapon)
 	{
 		weapon_info *wip;
 		Assert(other_obj->instance >= 0);
@@ -2525,6 +2563,9 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 // if quadrant is not -1, then that part of the shield takes damage properly.
 void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int quadrant, bool create_spark, int submodel_num, vector *hit_normal)
 {
+	Assert(ship_obj);	// Goober5000
+	Assert(other_obj);	// Goober5000
+
 	ship *ship_p	= &Ships[ship_obj->instance];	
 
 	//	If got hit by a weapon, tell the AI so it can react.  Only do this line in single player,
@@ -2668,7 +2709,9 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 // like for debug keys to damage an object or something.  It will 
 // assume damage is non-directional and will apply it correctly.   
 void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force_center, float damage )
-{				
+{
+	Assert(ship_obj);	// Goober5000 (but not other_obj in case of sexp)
+
 	vector tmp, world_hitpos;
 
 	if ( force_center )	{
@@ -2688,6 +2731,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force
 		shield_quad = get_quadrant(&local_hitpos);
 
 		// world_hitpos use force_center for shockwave
+		// Goober5000 check for NULL
 		if ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE) && (Ship_info[Ships[ship_obj->instance].ship_info_index].flags & SIF_HUGE_SHIP))
 		{
 			world_hitpos = *force_center;
@@ -2709,6 +2753,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage
 	if ( ship_obj == Player_obj ) {
 		// only show blast icon if playing on medium skill or lower -> unknownplayer: why? I think this should be changed.
+		// Goober5000 - agreed; commented out
 		//if ( Game_skill_level <= 2 ) {
 			hud_start_text_flash(XSTR("Blast", 1428), 2000);
 		//}
@@ -2736,6 +2781,7 @@ void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage)
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage
 	if ( ship_obj == Player_obj ) {
 		// only show blast icon if playing on medium skill or lower
+		// Goober5000 - commented out
 		//if ( Game_skill_level <= 2 ) {
 			hud_start_text_flash(XSTR("Engine Wash", 1429), 2000);
 		//}

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-07 01:37:42 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2004-01-30 07:39:08 $
+ * $Author: Goober5000 $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/07 01:37:42  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -655,6 +661,7 @@ void model_collide_tmappoly(ubyte * p)
 	if ( nv < 0 ) return;
 
 	int tmap_num = w(p+40);
+	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);	// Goober5000
 
 	if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->textures[tmap_num] < 0) )	{
 		// Don't check invisible polygons.

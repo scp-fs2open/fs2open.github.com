@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-10-14 16:47:34 $
+ * $Revision: 2.7 $
+ * $Date: 2004-01-30 07:39:06 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/10/14 16:47:34  Goober5000
+ * tweaked a thingy with FS1-style music to make deciding the style less of a hack
+ * --Goober5000
+ *
  * Revision 2.5  2003/08/25 04:46:53  Goober5000
  * added extra code to enable playing of FS1 music tracks
  * --Goober5000
@@ -908,6 +912,9 @@ int event_music_friendly_arrival()
 
 	if ( (Current_pattern == SONG_VICT_1) || (Current_pattern == SONG_VICT_1) )
 		return 0;
+
+	// Goober5000 - to avoid array out-of-bounds
+	Assert(Current_pattern >= 0 && Current_pattern < MAX_PATTERNS);
 
 	if ( Patterns[Current_pattern].next_pattern != Patterns[Current_pattern].default_next_pattern )
 		return 0;	// don't squash a pending pattern

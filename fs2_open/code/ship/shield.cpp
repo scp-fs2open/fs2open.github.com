@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-11 02:15:40 $
+ * $Revision: 2.12 $
+ * $Date: 2004-01-30 07:39:06 $
  * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/11 02:15:40  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.10  2003/10/23 18:03:25  randomtiger
  * Bobs changes (take 2)
  *
@@ -892,7 +897,7 @@ float apply_damage_to_shield(object *objp, int quadrant, float damage)
 	}
 #endif
 
-	if ( (quadrant < 0)  || (quadrant > 3) ) return damage;	
+	if ( (quadrant < 0)  || (quadrant >= MAX_SHIELD_SECTIONS) ) return damage;	
 	
 	Assert(objp->type == OBJ_SHIP);
 	aip = &Ai_info[Ships[objp->instance].ai_index];
@@ -1234,7 +1239,7 @@ void ship_draw_shield( object *objp)
 // just one quadrant
 int ship_is_shield_up( object *obj, int quadrant )
 {
-	if ( (quadrant>=0) && (quadrant<=3))	{
+	if ( (quadrant >= 0) && (quadrant < MAX_SHIELD_SECTIONS))	{
 		// Just check one quadrant
 		if (obj->shield_quadrant[quadrant] > max(2.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength/4.0f))	{
 			return 1;

@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2004/01/20 22:10:01  Goober5000
+ * heat-seekers now home in on hidden ships
+ * --Goober5000
+ *
  * Revision 2.48  2003/12/17 20:38:26  phreak
  * fixed some logic when dealing with parsing local ssms
  *
@@ -848,9 +852,9 @@ void parse_wi_flags(weapon_info *weaponp)
 
 				strncpy(Spawn_names[Num_spawn_types++], &(weapon_strings[i][skip_length]), name_length);
 				Assert(Num_spawn_types < MAX_SPAWN_WEAPONS);
-			} else
-				Warning(LOCATION, "Illegal to have two spawn types for one weapon.\n"
-										"Ignoring weapon %s", weaponp->name);
+			} else {
+				Warning(LOCATION, "Illegal to have two spawn types for one weapon.\nIgnoring weapon %s", weaponp->name);
+			}
 		} else if (!stricmp(NOX("Remote Detonate"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_REMOTE;
 		else if (!stricmp(NOX("Puncture"), weapon_strings[i]))
@@ -1224,6 +1228,7 @@ int parse_weapon()
 	required_string("$Energy Consumed:");
 	stuff_float(&wip->energy_consumed);
 
+	// Goober5000: cargo size is checked for div-0 errors... see below (must parse flags first)
 	required_string("$Cargo Size:");
 	stuff_float(&wip->cargo_size);
 
@@ -1389,6 +1394,16 @@ int parse_weapon()
 		if (!wip->outer_radius)
 		{
 			Warning(LOCATION, "Outer blast radius of weapon %s is zero - EMP will not work.\nAdd $Outer Radius to weapon table entry.\n", wip->name);
+		}
+	}
+
+	// also make sure secondaries and ballistic primaries do not have 0 cargo size
+	if (First_secondary_index != -1 || wip->wi_flags2 & WIF2_BALLISTIC)
+	{
+		if (wip->cargo_size == 0.0f)
+		{
+			Warning(LOCATION, "Cargo size of weapon %s cannot be 0.  Setting to 1.\n", wip->name);
+			wip->cargo_size = 1;
 		}
 	}
 
@@ -4534,6 +4549,8 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	float hull_pct;
 	int is_big_damage_ship = 0;
 
+	Assert(wip && wep && target);	// Goober5000 - additional sanity
+
 	// sanity
 	if((wip == NULL) || (wep == NULL) || (target == NULL)){
 		return 1.0f;
@@ -4593,7 +4610,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 			total_scale *= FLAK_DAMAGE_SCALE;
 		}
 		
-		/* Goober5000 - commented this, since it's kinds redundant with the next thingy
+		/* Goober5000 - commented this, since it's kinda redundant with the next thingy
 		// if the player is firing small weapons at a big ship
 		if( from_player && is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) )
 		{
