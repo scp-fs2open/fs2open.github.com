@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.130 $
- * $Date: 2004-07-12 16:33:05 $
- * $Author: Kazan $
+ * $Revision: 2.131 $
+ * $Date: 2004-07-14 01:26:10 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.130  2004/07/12 16:33:05  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.129  2004/07/11 03:22:52  bobboau
  * added the working decal code
  *
@@ -11493,32 +11496,11 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 // Page in bitmaps for all the ships in this level
 
 extern unsigned int used_weapons[MAX_WEAPON_TYPES];
-void ship_weapons_page_in(ship* sip)
-{
-	int i;
+extern int Cmdline_load_only_used;
 
-	//Main weapons
-	for(i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
-		used_weapons[sip->weapons.primary_bank_weapons[i]]++;
-
-	for(i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
-		used_weapons[sip->weapons.secondary_bank_weapons[i]]++;
-
-	//Subsystems
-	ship_subsys* sub;
-	for(sub = GET_FIRST(&sip->subsys_list); sub != END_OF_LIST(&sip->subsys_list); sub = GET_NEXT(sub))
-	{
-		for(i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
-			used_weapons[sub->weapons.primary_bank_weapons[i]]++;
-
-		for(i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
-			used_weapons[sub->weapons.secondary_bank_weapons[i]]++;
-
-	}
-}
 void ship_page_in()
 {
-	int i,j;
+	int i,j,k;
 	int num_subsystems_needed = 0;
 
 	int ship_class_used[MAX_SHIP_TYPES];
@@ -11530,30 +11512,69 @@ void ship_page_in()
 
 	// Mark any support ship types as used
 	// 
+	ship_info* sip;
 	for (i=0; i<Num_ship_types; i++ )	{
 		if ( Ship_info[i].flags & SIF_SUPPORT )	{
-			nprintf(( "Paging", "Found support ship '%s'\n", Ship_info[i].name ));
+			sip = &Ship_info[i];
+			nprintf(( "Paging", "Found support ship '%s'\n", sip->name ));
 			ship_class_used[i]++;
 
-			//Add weapons to used_weapons
-			for(j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
-				used_weapons[Ship_info[i].primary_bank_weapons[j]]++;
-			for(j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
-				used_weapons[Ship_info[i].secondary_bank_weapons[j]]++;
+			if(Cmdline_load_only_used)
+			{
+				//Add weapons to used_weapons
+				for(j = 0; j < sip->num_primary_banks; j++)
+					mark_weapon_used(sip->primary_bank_weapons[j]);
+				for(j = 0; j < sip->num_secondary_banks; j++)
+					mark_weapon_used(sip->secondary_bank_weapons[j]);
+				for(j = 0; j < sip->n_subsystems; j++)
+				{
+					for(k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
+					{
+						Assert(sip->subsystems[j].primary_banks[k] != -1);
+						mark_weapon_used(sip->subsystems[j].primary_banks[k]);
+					}
+					for(k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
+					{
+						mark_weapon_used(sip->subsystems[j].primary_banks[k]);
+					}
+				}
 
-			num_subsystems_needed += Ship_info[i].n_subsystems;
+				num_subsystems_needed += Ship_info[i].n_subsystems;
+			}
 		}
 	}
 	
 	// Mark any ships in the mission as used
 	//
+	ship* sjp;
 	for (i=0; i<MAX_SHIPS; i++)	{
 		if (Ships[i].objnum > -1)	{
-			nprintf(( "Paging","Found ship '%s'\n", Ships[i].ship_name ));
+			sjp = &Ships[i];
+			nprintf(( "Paging","Found ship '%s'\n", sjp->ship_name ));
 			ship_class_used[Ships[i].ship_info_index]++;
 
-			//Add weapons to the used weapons list
-			ship_weapons_page_in(&Ships[i]);
+			if(Cmdline_load_only_used)
+			{
+				//Add weapons to the used weapons list
+				//Main weapons
+				for(j = 0; j < sjp->weapons.num_primary_banks; j++)
+					mark_weapon_used(sjp->weapons.primary_bank_weapons[j]);
+
+				for(j = 0; j < sjp->weapons.num_secondary_banks; j++)
+					mark_weapon_used(sjp->weapons.secondary_bank_weapons[j]);
+
+				//Subsystems
+				ship_subsys* sub;
+				for(sub = GET_FIRST(&sjp->subsys_list); sub != END_OF_LIST(&sjp->subsys_list); sub = GET_NEXT(sub))
+				{
+					for(j = 0; j < sub->weapons.num_primary_banks; j++)
+						mark_weapon_used(sub->weapons.primary_bank_weapons[j]);
+
+					for(j = 0; j < sub->weapons.num_secondary_banks; j++)
+						mark_weapon_used(sub->weapons.secondary_bank_weapons[j]);
+
+				}
+			}
 
 			num_subsystems_needed += Ship_info[Ships[i].ship_info_index].n_subsystems;
 		}
@@ -11566,14 +11587,17 @@ void ship_page_in()
 		nprintf(( "Paging","Found future arrival ship '%s'\n", p_objp->name ));
 		ship_class_used[p_objp->ship_class]++;
 
-		//Get weapons
-		for(i = 0; i < p_objp->subsys_count; i++)
+		if(Cmdline_load_only_used)
 		{
-			for(j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
-				used_weapons[Subsys_status[p_objp->subsys_index + i].primary_banks[j]]++;
-			
-			for(j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
-				used_weapons[Subsys_status[p_objp->subsys_index + i].secondary_banks[j]]++;
+			//Get weapons
+			for(i = 0; i < p_objp->subsys_count; i++)
+			{
+				for(j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
+					mark_weapon_used(Subsys_status[p_objp->subsys_index + i].primary_banks[j]);
+				
+				for(j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
+					mark_weapon_used(Subsys_status[p_objp->subsys_index + i].secondary_banks[j]);
+			}
 		}
 
 		num_subsystems_needed += Ship_info[p_objp->ship_class].n_subsystems;
@@ -11690,7 +11714,7 @@ void ship_page_in()
 				else sip->splodeing_texture = -1;
 
 				int idontcare = 0;
-				for(int k = 0; k<sip->n_thruster_particles; k++){
+				for( k = 0; k<sip->n_thruster_particles; k++){
 					if(strcmp(sip->normal_thruster_particles[k].thruster_particle_bitmap01_name, "none"))sip->normal_thruster_particles[k].thruster_particle_bitmap01 = bm_load_animation(sip->normal_thruster_particles[k].thruster_particle_bitmap01_name, &sip->normal_thruster_particles[k].thruster_particle_bitmap01_nframes, &idontcare, 1);
 					else sip->normal_thruster_particles[k].thruster_particle_bitmap01 = -1;
 				}
