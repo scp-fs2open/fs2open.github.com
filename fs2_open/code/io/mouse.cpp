@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-03-03 16:18:19 $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-14 03:38:54 $
  * $Author: taylor $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/03 16:18:19  taylor
+ * lockup fixes, and it's Linux friendly too :)
+ *
  * Revision 2.9  2005/03/03 06:05:28  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -227,6 +230,8 @@ void di_cleanup();
 void mouse_eval_deltas_di();
 #endif
 
+extern int Cmdline_window;
+
 void mouse_force_pos(int x, int y);
 
 int mouse_is_visible()
@@ -262,7 +267,7 @@ void mouse_init()
 	Mouse_y = gr_screen.max_h / 2;
 
 #ifdef USE_DIRECTINPUT
-	if (!di_init())
+	if (!di_init() || Cmdline_window)
 		Mouse_mode = MOUSE_MODE_WIN;
 #else
 	Mouse_mode = MOUSE_MODE_WIN;
