@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-03-27 12:28:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.29 $
+ * $Date: 2005-03-29 07:03:16 $
+ * $Author: wmcoolmon $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/03/27 12:28:33  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.27  2005/03/25 06:57:34  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -513,7 +517,7 @@ void hud_shield_show(object *objp)
 	{
 		sgp = &Shield_gauges[sip->shield_icon_index];
 
-		if ( sgp->first_frame == -1 && sip->shield_icon_index >= 0 && sip->shield_icon_index < Hud_shield_filename_count) {
+		if ( sgp->first_frame == -1 && sip->shield_icon_index < Hud_shield_filename_count) {
 			sgp->first_frame = bm_load_animation(Hud_shield_filenames[sip->shield_icon_index], &sgp->num_frames);
 			if ( sgp->first_frame == -1 ) {
 				if(!shield_ani_warning_displayed_already){
