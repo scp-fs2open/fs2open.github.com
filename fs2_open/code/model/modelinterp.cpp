@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.35 $
- * $Date: 2003-10-13 05:57:48 $
- * $Author: Kazan $
+ * $Revision: 2.36 $
+ * $Date: 2003-10-14 17:39:15 $
+ * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/10/13 05:57:48  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  * Revision 2.34  2003/10/10 03:59:41  matt
  * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
  * out now. -Sticks
@@ -425,7 +431,7 @@ int modelstats_num_sortnorms = 0;
 int modelstats_num_boxes = 0;
 #endif
 
-extern int nohtl;
+extern int Cmdline_nohtl;
 
 int glow_maps_active = 1;
 
@@ -944,7 +950,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 
 		for (n=0; n<nverts; n++ )	{	
 
-			if(!nohtl) {
+			if(!Cmdline_nohtl) {
 				if(GEOMETRY_NOISE!=0.0f){
 					GEOMETRY_NOISE = model_radius / 50;
 
@@ -1203,7 +1209,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	if ( nv < 0 ) return;
 
 	verts = (model_tmap_vert *)(p+44);
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		if((Warp_Map < 0)){
 			if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)){
 				if(Cmdline_cell){
@@ -3356,7 +3362,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		d3d_zbias(1);
 	}
 #endif
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		light_set_all_relevent();
 	}
 	// Draw the subobjects	
@@ -3370,7 +3376,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			if(Interp_flags & MR_NO_ZBUFFER){
 				zbuf_mode = GR_ZBUFF_NONE;
 			}
-			if(!nohtl) {
+			if(!Cmdline_nohtl) {
 
 				gr_zbuffer_set(zbuf_mode);
 				{
@@ -3411,7 +3417,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	model_radius = pm->submodel[pm->detail[detail_level]].rad;
 
 	// draw the hull of the ship
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
 	}
 	else {
@@ -4680,6 +4686,13 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 	gr_start_instance_matrix();
 	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING) );
 	gr_set_cull(1);
+
+	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
+	{
+		unsigned char r, g, b;
+		neb2_get_fog_colour(&r, &g, &b);
+		gr_fog_set(GR_FOGMODE_FOG, r, g, b, 50.0f, 500.0f);
+	}
 
 	for(int i = 0; i<model->n_buffers; i++){
 		int texture = -1;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-10-12 03:41:37 $
- * $Author: Kazan $
+ * $Revision: 2.25 $
+ * $Date: 2003-10-14 17:39:15 $
+ * $Author: randomtiger $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/10/12 03:41:37  Kazan
+ * #Kazan# FS2NetD client code gone multithreaded, some Fred2 Open -mod stuff [obvious code.lib] including a change in cmdline.cpp, changed Stick's "-nohtl" to "-htl" - HTL is _OFF_ by default here (Bobboau and I decided this was a better idea for now)
+ *
  * Revision 2.23  2003/10/10 03:59:41  matt
  * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
  * out now. -Sticks
@@ -827,7 +830,7 @@
 polymodel *Polygon_models[MAX_POLYGON_MODELS];
 
 static int model_initted = 0;
-extern int nohtl;
+extern int Cmdline_nohtl;
 
 #ifndef NDEBUG
 CFILE *ss_fp;			// file pointer used to dump subsystem information
@@ -929,7 +932,7 @@ static void model_unload(int modelnum)
 
 	if (pm->submodel)	{
 		for (i=0; i<pm->n_models; i++ )	{
-			if(!nohtl) {
+			if(!Cmdline_nohtl) {
 				for (int k=0; k<pm->submodel[i].n_buffers; k++ ){
 					gr_destroy_buffer(pm->submodel[i].buffer[k].vertex_buffer);
 				}
@@ -1712,7 +1715,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		//mprintf(( "Submodel %d, data offset %d\n", n, pm->submodel[n].data_offset ));
 		//key_getch();
 
-				if(!nohtl) {
+				if(!Cmdline_nohtl) {
 					generate_vertex_buffers(&pm->submodel[n], pm);
 				}
 				break;

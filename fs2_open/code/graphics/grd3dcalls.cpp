@@ -180,6 +180,18 @@ HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_
 // This is all stuff needed for draw primitive call
 int D3D_vertex_type = -1;
 
+HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **buffer)
+{
+	return lpD3DDevice->CreateVertexBuffer(
+		vertex_types[D3DVT_VERTEX].size * size, 
+		usage, 
+		vertex_types[D3DVT_VERTEX].fvf,
+		D3DPOOL_MANAGED,
+		(IDirect3DVertexBuffer8**) buffer);
+}
+
+
+
 /**
  * This is a wrapper function for the D3D8.1 call DrawPrimitveUP, it also handles the vertex shader
  *
@@ -219,11 +231,30 @@ HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pv
 			return !S_OK;
 	}
 
+	hr = d3d_SetVertexShader(vertex_type);
+	
+	if(FAILED(hr))
+	{
+		return hr;
+	}
+
+
+	hr = lpD3DDevice->DrawPrimitiveUP(prim_type, prim_count, pvertices, vertex_types[vertex_type].size);
+
+	if(FAILED(hr)) {
+		mprintf(("Failed to draw primitive"));
+	}
+		
+	return hr;
+}
+
+HRESULT d3d_SetVertexShader(int vertex_type)
+{
 #ifdef D3D_CALLS_CHECK
 	if(D3D_vertex_type != vertex_type) 
 #endif
 	{
-		hr = lpD3DDevice->SetVertexShader(	vertex_types[vertex_type].fvf );
+		HRESULT hr = lpD3DDevice->SetVertexShader(	vertex_types[vertex_type].fvf );
 		
 		if(FAILED(hr)) {
 			mprintf(("Failed to set vertex shader"));
@@ -233,13 +264,7 @@ HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pv
 		D3D_vertex_type = vertex_type;
 	}
 
-	hr = lpD3DDevice->DrawPrimitiveUP(prim_type, prim_count, pvertices, vertex_types[vertex_type].size);
-
-	if(FAILED(hr)) {
-		mprintf(("Failed to draw primitive"));
-	}
-		
-	return hr;
+	return S_OK;
 }
 
 // This is all stuff needed for set texture stage state

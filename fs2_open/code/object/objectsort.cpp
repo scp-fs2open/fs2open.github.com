@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-10-14 17:39:17 $
+ * $Author: randomtiger $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -324,7 +327,7 @@ void obj_render_all(void (*render_function)(object *objp) )
 			// only reset fog if the fog mode has changed - since regenerating a fog table takes
 			// a bit of time
 			if((fog_near != gr_screen.fog_near) || (fog_far != gr_screen.fog_far)){
-				gr_fog_set(GR_FOGMODE_FOG, gr_screen.current_fog_color.red, gr_screen.current_fog_color.green, gr_screen.current_fog_color.blue, fog_near, fog_far);
+		 		gr_fog_set(GR_FOGMODE_FOG, gr_screen.current_fog_color.red, gr_screen.current_fog_color.green, gr_screen.current_fog_color.blue, fog_near, fog_far);
 			}
 
 			// maybe skip rendering an object because its obscured by the nebula

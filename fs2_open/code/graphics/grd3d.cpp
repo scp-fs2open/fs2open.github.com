@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-10-13 19:39:19 $
- * $Author: matt $
+ * $Revision: 2.26 $
+ * $Date: 2003-10-14 17:39:13 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/10/13 19:39:19  matt
+ * prelim reworking of lighting code, dynamic lights work properly now
+ * albeit at only 8 lights per object, although it looks just as good as
+ * the old software version --Sticks
+ *
  * Revision 2.24  2003/10/10 03:59:40  matt
  * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
  * out now. -Sticks
@@ -532,7 +537,7 @@ RECT D3D_cursor_clip_rect;
 int  D3D_texture_divider = 1;
 int  D3D_window = 0;
 char Device_init_error[512] = "";
-extern int nohtl;
+extern int Cmdline_nohtl;
 
 const int multisample_max = 16;
 const D3DMULTISAMPLE_TYPE multisample_types[multisample_max] =
@@ -1228,7 +1233,7 @@ void d3d_setup_format_components(
 	a_gun->mask = surface->dwRGBAlphaBitMask;
 
 	// UP: Filter out cases which cause infinite loops
-	if ((surface->dwFlags & DDPF_ALPHAPIXELS) && (( surface->dwFlags != 5956559 ) && (surface->dwRGBAlphaBitMask != 0)) ) 
+	if ((surface->dwFlags & DDPF_ALPHAPIXELS) && (surface->dwRGBAlphaBitMask != 0) ) 
 	{	
 		// UP: This is the exact line causing problems - it forms an infinite loop
 		// under the right conditions so the above if statement has been modified to filter
@@ -1384,7 +1389,7 @@ bool d3d_init_device(int screen_width, int screen_height)
 	// setup proper render state
 	d3d_set_initial_render_state();	
 
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 
 		ZeroMemory(&material,sizeof(D3DMATERIAL8));
 		material.Diffuse.r = 1.0f;
@@ -1790,7 +1795,7 @@ void gr_d3d_unlock()
 void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
 {
 	D3DCOLOR color = 0;	
-	  
+
 	Assert((r >= 0) && (r < 256));
 	Assert((g >= 0) && (g < 256));
 	Assert((b >= 0) && (b < 256));	
@@ -1812,7 +1817,7 @@ void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog
 		d3d_SetRenderState(D3DRS_FOGENABLE, TRUE);	
 
 		// if we're using table fog, enable table fogging
-		if(D3D_fog_mode == 2){
+		if(!Cmdline_nohtl){
 			d3d_SetRenderState( D3DRS_FOGTABLEMODE, D3DFOG_LINEAR );			
 		}
 
@@ -1834,7 +1839,7 @@ void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog
 		gr_screen.fog_far = fog_far;					
 
 		// only generate a new fog table if we have to (wfog/table fog mode)
-		if(D3D_fog_mode == 2){	
+		if(!Cmdline_nohtl){
 			d3d_SetRenderState( D3DRS_FOGSTART, *((DWORD *)(&fog_near)));		
 			d3d_SetRenderState( D3DRS_FOGEND, *((DWORD *)(&fog_far)));
 		}				
@@ -2339,7 +2344,8 @@ void d3d_fill_pixel_format(DDPIXELFORMAT *pixelf, D3DFORMAT tformat)
 			pixelf->dwRBitMask         = 0xff0000;      
 			pixelf->dwGBitMask         = 0xff00;      
 			pixelf->dwBBitMask         = 0xff;       
-			pixelf->dwRGBAlphaBitMask  = 0;;
+			pixelf->dwFlags			   = 0;
+			pixelf->dwRGBAlphaBitMask  = 0;
 			DBUGFILE_OUTPUT_0("Using: D3DFMT_X8R8G8B8");
 			break;
 		case D3DFMT_R8G8B8:
@@ -2347,6 +2353,7 @@ void d3d_fill_pixel_format(DDPIXELFORMAT *pixelf, D3DFORMAT tformat)
 			pixelf->dwRBitMask         = 0xff0000;      
 			pixelf->dwGBitMask         = 0xff00;      
 			pixelf->dwBBitMask         = 0xff;           
+			pixelf->dwFlags			   = 0;
 			pixelf->dwRGBAlphaBitMask  = 0;
 			DBUGFILE_OUTPUT_0("Using: D3DFMT_R8G8B8");
 			break;
@@ -2355,6 +2362,7 @@ void d3d_fill_pixel_format(DDPIXELFORMAT *pixelf, D3DFORMAT tformat)
 			pixelf->dwRBitMask         = 0x7c00;      
 			pixelf->dwGBitMask         = 0x3e0;      
 			pixelf->dwBBitMask         = 0x1f;      
+			pixelf->dwFlags			   = 0;
 			pixelf->dwRGBAlphaBitMask  = 0;
 			DBUGFILE_OUTPUT_0("Using: D3DFMT_X1R5G5B5");
 			break;
@@ -2363,6 +2371,7 @@ void d3d_fill_pixel_format(DDPIXELFORMAT *pixelf, D3DFORMAT tformat)
 			pixelf->dwRBitMask         = 0xf800;      
 			pixelf->dwGBitMask         = 0x7e0;      
 			pixelf->dwBBitMask         = 0x1f;      
+			pixelf->dwFlags			   = 0;
 			pixelf->dwRGBAlphaBitMask  = 0;
 			DBUGFILE_OUTPUT_0("Using: D3DFMT_R5G6B5");
 			break;
@@ -2370,7 +2379,8 @@ void d3d_fill_pixel_format(DDPIXELFORMAT *pixelf, D3DFORMAT tformat)
 			pixelf->dwRGBBitCount      = 16;   
 			pixelf->dwRBitMask         = 0xf00;      
 			pixelf->dwGBitMask         = 0xf0;      
-			pixelf->dwBBitMask         = 0xf;      
+			pixelf->dwBBitMask         = 0xf;
+			pixelf->dwFlags			   = 0;
 			pixelf->dwRGBAlphaBitMask  = 0;
 			DBUGFILE_OUTPUT_0("Using: D3DFMT_X4R4G4B4");
 			break;
@@ -2563,14 +2573,13 @@ int gr_d3d_make_buffer(poly_list *list){
 	if(idx > -1){
 		IDirect3DVertexBuffer8 **buffer = &vertex_buffer[idx].buffer;
 
-		lpD3DDevice->CreateVertexBuffer(sizeof(D3DVERTEX)*(list->n_poly*3), NULL, (D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX2), D3DPOOL_MANAGED,	buffer);
+		d3d_CreateVertexBuffer(D3DVT_VERTEX, (list->n_poly*3), NULL, (void**)buffer);
 
 		D3DVERTEX *v, *V;
 		vertex *L;
 		vector *N;
 
 		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
-	int p = 0;
 		for(int k = 0; k<list->n_poly; k++){
 			for(int j = 0; j < 3; j++){
 				V = &v[(k*3)+j];
@@ -2659,9 +2668,8 @@ void gr_d3d_destroy_buffer(int idx){
 
 }*/
 //set_stage_for_spec_glow_mapped
-void gr_d3d_render_buffer(int idx){
-
-
+void gr_d3d_render_buffer(int idx)
+{
 	// Sets the current alpha of the object
 	if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER){
 		material.Ambient.a = gr_screen.current_alpha;
@@ -2680,9 +2688,9 @@ void gr_d3d_render_buffer(int idx){
 	if(!vertex_buffer[idx].ocupied)return;
 	float u_scale = 1.0f, v_scale = 1.0f;
 
-	gr_alpha_blend ab;
-	if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_NONE)	ab = ALPHA_BLEND_NONE;
-	else if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER)	ab = ALPHA_BLEND_ALPHA_ADDITIVE;
+	gr_alpha_blend ab = ALPHA_BLEND_NONE;
+	if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER)	
+		ab = ALPHA_BLEND_ALPHA_ADDITIVE;
 
 	d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0);
 	gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
@@ -2693,9 +2701,9 @@ void gr_d3d_render_buffer(int idx){
 //	set_stage_for_defuse();
 	if(GLOWMAP > -1){
 		//glowmapped
-		gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
-		d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);
-		set_stage_for_glow_mapped_defuse();
+	 	gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+	 	d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);
+	 	set_stage_for_glow_mapped_defuse();
 	}else{
 		//non glowmapped
 		d3d_SetTexture(1, NULL);
@@ -2703,7 +2711,9 @@ void gr_d3d_render_buffer(int idx){
 		set_stage_for_defuse();
 	}
 
-	int passes = 1;
+	int passes = (n_active_lights/d3d_caps.MaxActiveLights);
+	d3d_SetVertexShader(D3DVT_VERTEX);
+
 	lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DVERTEX));
 
 	lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
@@ -2717,6 +2727,9 @@ void gr_d3d_render_buffer(int idx){
 
 	pre_render_lights_init();
 	shift_active_lights(0);
+
+	// Bob, put a return here and look how well the fog works
+
 	//spec mapping
 	if(SPECMAP > 0){
 		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
@@ -2743,17 +2756,12 @@ void gr_d3d_render_buffer(int idx){
 
 }
 
-
-//D3DXMATRIX old_p, old_w, old_v;
-unsigned long old_shader;
-
 //D3DLIGHT8 I_light;
 extern float Model_Interp_scale_x;	//added these three for warpin stuff-Bobbau
 extern float Model_Interp_scale_y;
 extern float Model_Interp_scale_z;
 
 void gr_d3d_start_instance_matrix(){
-	lpD3DDevice->GetVertexShader(&old_shader);
 	D3DXMATRIX mat, scale;
 
 /*	lpD3DDevice->GetTransform(D3DTS_PROJECTION, &old_p);
@@ -2808,7 +2816,6 @@ void gr_d3d_start_instance_matrix(){
 //	lpD3DDevice->LightEnable(0,TRUE);
 
 //	lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_XRGB(16,16,16));
-	lpD3DDevice->SetVertexShader((D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX2));
 
 	if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER){
 		material.Ambient.a = gr_screen.current_alpha;
@@ -2832,7 +2839,6 @@ void gr_d3d_end_instance_matrix(){
 	lpD3DDevice->SetTransform(D3DTS_PROJECTION, &mat);
 	lpD3DDevice->SetTransform(D3DTS_WORLD, &mat);
 
-	lpD3DDevice->SetVertexShader(old_shader);
 	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
 	d3d_SetTexture(1, NULL);
 	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
@@ -3132,7 +3138,7 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_pop_texture_matrix = gr_d3d_pop_texture_matrix;
 	gr_screen.gf_translate_texture_matrix = gr_d3d_translate_texture_matrix;
 
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		gr_screen.gf_make_buffer = gr_d3d_make_buffer;
 		gr_screen.gf_destroy_buffer = gr_d3d_destroy_buffer;
 		gr_screen.gf_render_buffer = gr_d3d_render_buffer;
@@ -3233,8 +3239,10 @@ bool gr_d3d_init()
 	//this right here used to be just D3DFMT_D16, but it's now part of the format_type array -Bobboau
     d3dpp.AutoDepthStencilFormat = format_type[0];
 
-	// Sadly we need this until we implement hardware fog
-	d3dpp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+	if(Cmdline_nohtl) {
+		// Only need this for software fog
+		d3dpp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+	}
     
 	D3D_window = Cmdline_window;
 
@@ -3448,6 +3456,8 @@ bool gr_d3d_init()
 
 	TIMERBAR_SET_DRAW_FUNC(d3d_render_timer_bar);
 	DBUGFILE_OUTPUT_0("gr_d3d_init end");
+	gr_d3d_activate(1);
+
 	return true;
 
 }

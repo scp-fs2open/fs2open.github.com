@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-26 14:37:15 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2003-10-14 17:39:16 $
+ * $Author: randomtiger $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/26 14:37:15  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.6  2003/03/19 23:06:40  Goober5000
  * bit o' housecleaning
  * --Goober5000
@@ -141,9 +151,14 @@
 
 #include "globalincs/alphacolors.h"
 
+
 // --------------------------------------------------------------------------------------------------------
 // NEBULA DEFINES/VARS
 //
+
+unsigned char Neb2_fog_colour_r = 0;
+unsigned char Neb2_fog_colour_g = 0;
+unsigned char Neb2_fog_colour_b = 0;
 
 // #define NEB2_THUMBNAIL
 
@@ -367,7 +382,7 @@ void neb2_init()
 		// nebula
 		required_string("+Nebula:");
 		stuff_string(name, F_NAME, NULL);
-
+		
 		if(Neb2_bitmap_count < MAX_NEB2_BITMAPS){
 			strcpy(Neb2_bitmap_filenames[Neb2_bitmap_count++], name);
 		}
@@ -408,6 +423,13 @@ void neb2_set_detail_level(int level)
 	Neb2_regen = 1;
 }
 
+void neb2_get_fog_colour(unsigned char *r, unsigned char *g, unsigned char *b)
+{
+	if(r) *r = Neb2_fog_colour_r;
+	if(g) *g = Neb2_fog_colour_g;
+	if(b) *b = Neb2_fog_colour_b;
+}
+
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
 void neb2_level_init()
 {
@@ -433,9 +455,59 @@ void neb2_level_init()
 	}
 	*/
 
-	// by default we'll use pof rendering
-	Neb2_render_mode = NEB2_RENDER_POF;
-	stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
+	extern int Cmdline_nohtl;
+	if(Cmdline_nohtl) {
+		// by default we'll use pof rendering
+		Neb2_render_mode = NEB2_RENDER_POF;
+		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
+	} else {
+		// RT - This is not very good coding practice but it allows the nebula stuff
+		// to be  back compatible. 
+		// Perviously the software fog used a bitmap background to optain a colour 
+		// to blend an objects vertices with.
+		// Now with hardware table fogging it can just be set as a fog colour
+		// By checking the bitmap name we can set the fog colours to match the
+		// old system. 
+
+		// Commented out these ifs to make this the default colour
+	  //	if(stricmp("nbackblue1", Neb2_texture_name) == 0) {
+			Neb2_fog_colour_r =  30;
+			Neb2_fog_colour_g =  52;
+			Neb2_fog_colour_b = 157;
+	  //	} else 
+			
+		if(stricmp("nbackblue2", Neb2_texture_name) == 0) {
+			Neb2_fog_colour_r =  37;
+			Neb2_fog_colour_g =   1;
+			Neb2_fog_colour_b = 137;
+		} else if(stricmp("nbackcyan",  Neb2_texture_name) == 0) {
+			Neb2_fog_colour_r =   1;
+			Neb2_fog_colour_g = 126;
+			Neb2_fog_colour_b = 132;
+		} else if(stricmp("nbackgreen", Neb2_texture_name) == 0) {
+			Neb2_fog_colour_r =   1;
+			Neb2_fog_colour_g = 126;
+			Neb2_fog_colour_b =   1;
+		} else if(stricmp("nbackpurp1", Neb2_texture_name) == 0) {
+			Neb2_fog_colour_r = 111;
+			Neb2_fog_colour_g =  28;
+			Neb2_fog_colour_b = 154;
+		} else if(stricmp("nbackpurp2", Neb2_texture_name) == 0) {
+			Neb2_fog_colour_r =  80;
+			Neb2_fog_colour_g =  63;
+			Neb2_fog_colour_b = 120;
+		} else if(stricmp("nbackred", Neb2_texture_name) == 0) {
+			Neb2_fog_colour_r = 117;
+			Neb2_fog_colour_g =  38;
+			Neb2_fog_colour_b =  14;
+		} else if(stricmp("nbackblack", Neb2_texture_name) == 0) {
+			Neb2_fog_colour_r =   1;
+			Neb2_fog_colour_g =   1;
+			Neb2_fog_colour_b =   1;
+		}
+
+		Neb2_render_mode = NEB2_RENDER_HTL;
+	}
 
 	// load in all nebula bitmaps
 	for(idx=0; idx<Neb2_poof_count; idx++){
@@ -517,6 +589,27 @@ void neb2_render_setup(vector *eye_pos, matrix *eye_orient)
 	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){		
 		return;
 	}
+
+	if(Neb2_render_mode == NEB2_RENDER_HTL) {
+		// RT The background needs to be the same colour as the fog and this seems
+		// to be the ideal place to do it
+		unsigned char tr = gr_screen.current_clear_color.red;  
+		unsigned char tg = gr_screen.current_clear_color.green;
+		unsigned char tb = gr_screen.current_clear_color.blue; 
+		
+		neb2_get_fog_colour(
+			&gr_screen.current_clear_color.red,
+			&gr_screen.current_clear_color.green,
+			&gr_screen.current_clear_color.blue);
+		
+		gr_clear();
+		
+		gr_screen.current_clear_color.red   = tr;
+		gr_screen.current_clear_color.green = tg;
+		gr_screen.current_clear_color.blue  = tb;
+		return;	 
+	}
+
 
 	// pre-render the real background nebula
 	neb2_pre_render(eye_pos, eye_orient);		
@@ -1254,6 +1347,8 @@ int tbmap = -1;
 //
 void neb2_pre_render(vector *eye_pos, matrix *eye_orient)
 {	
+	if(Neb2_render_mode == NEB2_RENDER_HTL) return;
+
 	// bail early in lame and poly modes
 	if(Neb2_render_mode != NEB2_RENDER_POF){
 		return;
@@ -1316,6 +1411,8 @@ int wacky_scheme = 3;
 #define PIXEL_INDEX_SMALL(xv, yv)	( (this_esize * (yv) * gr_screen.bytes_per_pixel) + ((xv) * gr_screen.bytes_per_pixel) )
 void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 {	
+	if(Neb2_render_mode == NEB2_RENDER_HTL) return;
+
 	int ra, ga, ba;
 	ubyte rv, gv, bv;	
 	ubyte avg_count;

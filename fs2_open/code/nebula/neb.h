@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.1 $
- * $Date: 2003-09-26 14:37:15 $
- * $Author: bobboau $
+ * $Revision: 2.2 $
+ * $Date: 2003-10-14 17:39:16 $
+ * $Author: randomtiger $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/09/26 14:37:15  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -60,6 +70,7 @@ extern float Neb_backg_fog_far;
 #define NEB2_RENDER_POLY								1			// background is the old-school polygons
 #define NEB2_RENDER_POF									2			// background is the nice pof file
 #define NEB2_RENDER_LAME								3			// super simple nebula effect 
+#define NEB2_RENDER_HTL									4			// We are using proper fogging now 
 extern int Neb2_render_mode;
 
 // the AWACS suppresion level for the nebula
@@ -161,5 +172,8 @@ void neb2_set_backg_color(int r, int g, int b);
 
 // get the color to fog the background color to
 void neb2_get_backg_color(int *r, int *g, int *b);
+
+void neb2_get_fog_colour(unsigned char *r, unsigned char *g, unsigned char *b);
+
 
 #endif

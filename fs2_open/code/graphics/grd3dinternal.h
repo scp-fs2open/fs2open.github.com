@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.7 $
- * $Date: 2003-09-26 14:37:14 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2003-10-14 17:39:13 $
+ * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/26 14:37:14  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.6  2003/08/22 07:35:08  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -389,6 +399,8 @@ void d3d_reset_texture_stage_states();
 HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value);
 void d3d_lost_device();
 HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr);
+HRESULT d3d_SetVertexShader(int vertex_type);
+HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **buffer);
 
 #define VEC2DVEC(v) D3DXVECTOR3(v.xyz.x,v.xyz.y,v.xyz.z)
 #endif //_GRD3DINTERNAL_H

@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.46 $
- * $Date: 2003-09-26 14:37:13 $
- * $Author: bobboau $
+ * $Revision: 2.47 $
+ * $Date: 2003-10-14 17:39:12 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/09/26 14:37:13  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.45  2003/09/25 21:12:23  Kazan
  * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
  * Also D3D8 Screenshots work now.
@@ -8253,6 +8263,16 @@ if ( FS_VERSION_BUILD == 0 ) {
 	} else {
 		strcat(str, " (fs2_open)");
 	}
+
+	// Lets get some more info in here
+	switch(gr_screen.mode)
+	{
+		case GR_DIRECT3D: strcat(str, " D3D"); break;
+		case GR_OPENGL:	  strcat(str, " OGL"); break;
+	}
+
+	extern int Cmdline_nohtl;
+	if(!Cmdline_nohtl) strcat(str, " HT&L"); 
 
 //XSTR:ON
 	/*
