@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-01-29 05:34:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.29 $
+ * $Date: 2005-01-29 16:31:55 $
+ * $Author: phreak $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/01/29 05:34:30  Goober5000
+ * docking fixes for FRED
+ * --Goober5000
+ *
  * Revision 2.27  2005/01/16 22:39:09  wmcoolmon
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
  *
@@ -811,6 +815,8 @@ void set_shield_strength(object *objp, float strength)
 	}
 }
 
+extern int Cmdline_smart_shields;
+
 //	Recharge whole shield.
 //	Apply delta/MAX_SHIELD_SECTIONS to each shield section.
 void add_shield_strength(object *objp, float delta)
@@ -820,14 +826,49 @@ void add_shield_strength(object *objp, float delta)
 
 	section_max = get_max_shield_quad(objp);
 
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
-		objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
-		if (objp->shield_quadrant[i] > section_max)
-			objp->shield_quadrant[i] = section_max;
-		else if (objp->shield_quadrant[i] < 0.0f)
-			objp->shield_quadrant[i] = 0.0f;
+	if (!Cmdline_smart_shields)
+	{
+		for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
+			objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
+			if (objp->shield_quadrant[i] > section_max)
+				objp->shield_quadrant[i] = section_max;
+			else if (objp->shield_quadrant[i] < 0.0f)
+				objp->shield_quadrant[i] = 0.0f;
+		}
 	}
-
+	else
+	{
+		//smart shield repair
+		float weakest=0;
+		int weakest_idx;
+		while ((delta > 0) && (weakest < section_max))
+		{
+			//find weakest shield quadrant
+			weakest=objp->shield_quadrant[0];
+			weakest_idx=0;
+			for (i=1; i < MAX_SHIELD_SECTIONS; i++)
+			{
+				if (objp->shield_quadrant[i] < weakest)
+				{
+					weakest=objp->shield_quadrant[i];
+					weakest_idx=i;
+				}
+			}
+		
+			//throw all possible shield power at this quadrant
+			//if there's any leftover then apply it to the next weakest on the next pass
+			if ((delta+weakest > section_max) && (weakest < section_max))
+			{
+				objp->shield_quadrant[weakest_idx]=section_max;
+				delta-=(section_max-delta);
+			}	
+			else
+			{
+				objp->shield_quadrant[weakest_idx]+=delta;
+				delta=0;
+			}
+		}
+	}
 }
 
 //sets up the free list & init player & whatever else
