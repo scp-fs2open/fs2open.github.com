@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-12-23 17:52:51 $
+ * $Revision: 2.8 $
+ * $Date: 2002-12-23 19:25:39 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/23 17:52:51  phreak
+ * added code that displays an error if user's OGL version is less than 1.2
+ *
  * Revision 2.6  2002/12/16 23:28:52  phreak
  * optimized fullscreen/minimized functions.. alot faster
  *
@@ -3239,7 +3242,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	float version_float=(float)atof(curver);
 	if (version_float < REQUIRED_GL_VERSION)
 	{
-		Error(LOCATION,"Current GL Version of %f is less than required version of 1.4\nSwitch video modes or update drivers", version_float, REQUIRED_GL_VERSION);
+		Error(LOCATION,"Current GL Version of %f is less than required version of %f\nSwitch video modes or update drivers", version_float, REQUIRED_GL_VERSION);
 	}
 	
 	curext=strtok(extlist, " ");
