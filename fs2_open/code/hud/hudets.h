@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.h $
- * $Revision: 2.2 $
- * $Date: 2003-09-11 19:04:36 $
- * $Author: argv $
+ * $Revision: 2.3 $
+ * $Date: 2003-09-13 06:02:05 $
+ * $Author: Goober5000 $
  *
  * Header file that supports code to manage and display the Energy Transfer System (ETS)
  *
@@ -64,7 +64,7 @@ extern float Energy_levels[];
 extern int Weapon_energy_cheat;
 
 
-enum SYSTEM_TYPE {WEAPONS, SHIELDS, ENGINES, WEAPONS_QUIET, SHIELDS_QUIET, ENGINES_QUIET};
+enum SYSTEM_TYPE {WEAPONS, SHIELDS, ENGINES};
 
 void update_ets(object* obj, float fl_frametime);
 void ets_init_ship(object* obj);

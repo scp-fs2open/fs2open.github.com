@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-09-12 03:57:00 $
+ * $Revision: 2.9 $
+ * $Date: 2003-09-13 06:02:07 $
  * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.7  2003/09/11 19:24:11  argv
- * All player ships may now carry turrets, not just bombers.
- *
  * Revision 2.6  2003/09/05 04:25:28  Goober5000
  * well, let's see here...
  *
@@ -2019,14 +2016,12 @@ void player_maybe_fire_turret(object *objp)
 
 	ship			*shipp = &Ships[objp->instance];
 	ai_info			*aip = &Ai_info[shipp->ai_index];
+	ship_info		*sip = &Ship_info[shipp->ship_info_index];
 
 	// do a quick out if this isn't a bomber
-	// _argv[-1] - allow all player ships to carry turrets. This arbitrary restriction Sucks.
-	/*
-	if ( !(Ship_info[shipp->ship_info_index].flags & SIF_BOMBER) ) {
+	if ( !(sip->flags & SIF_BOMBER) ) {
 		return;
 	}
-	*/
 
 	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED)) {
 		if (aip->dock_objnum > -1) {

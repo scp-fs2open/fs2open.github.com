@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-09-11 19:05:10 $
- * $Author: argv $
+ * $Revision: 2.16 $
+ * $Date: 2003-09-13 06:02:06 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
@@ -1077,13 +1077,10 @@ void process_debug_keys(int k)
 
 					do_subobj_hit_stuff(objp, Player_obj, &g_subobj_pos, (float) -Player_ai->targeted_subsys->system_info->type); //100.0f);
 
-					// _argv[-1] - this is now handled in hudets.cpp.
-					/*
 					if ( sp->subsys_info[SUBSYSTEM_ENGINE].current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
 						sp->flags |= SF_DISABLED;				// add the disabled flag
 					}
-					*/
 
 					if ( sp->subsys_info[SUBSYSTEM_TURRET].current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISARMED, sp->ship_name, NULL );

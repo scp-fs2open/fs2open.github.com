@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-09-11 19:08:11 $
- * $Author: argv $
+ * $Revision: 2.4 $
+ * $Date: 2003-09-13 06:02:06 $
+ * $Author: Goober5000 $
  *
  * Module for working with Mission goals
  *
@@ -1245,13 +1245,11 @@ void mission_process_event( int event )
 	Event_index = 0;
 	Mission_events[event].result = result;
 
-	// _argv[-1] - changed this so that a negative repeat count means repeat indefinitely.
-
 	// if the sexpression is known false, then no need to evaluate anymore
 	if ((sindex >= 0) && (Sexp_nodes[sindex].value == SEXP_KNOWN_FALSE)) {
 		Mission_events[event].timestamp = (int) Missiontime;
 		Mission_events[event].satisfied_time = Missiontime;
-		Mission_events[event].repeat_count = 0 /*-1*/;
+		Mission_events[event].repeat_count = -1;
 		Mission_events[event].formula = -1;
 		return;
 	}
@@ -1265,9 +1263,8 @@ void mission_process_event( int event )
 
 	// decrement the repeat count.  When at 0, don't eval this function anymore
 	if ( result || timestamp_valid(Mission_events[event].timestamp) ) {
-		if (Mission_events[event].repeat_count > 0)
-			Mission_events[event].repeat_count--;
-		if (Mission_events[event].repeat_count /*<=*/ == 0) {
+		Mission_events[event].repeat_count--;
+		if ( Mission_events[event].repeat_count <= 0 ) {
 			Mission_events[event].timestamp = (int)Missiontime;
 			Mission_events[event].formula = -1;
 

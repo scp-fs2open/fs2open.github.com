@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.h $
- * $Revision: 2.2 $
- * $Date: 2003-09-12 00:12:13 $
+ * $Revision: 2.3 $
+ * $Date: 2003-09-13 06:02:05 $
  * $Author: Goober5000 $
  *
  * Header file for the display and management of the HUD shield
@@ -80,7 +80,7 @@ typedef struct shield_hit_info
 	int shield_hit_next_flash[NUM_SHIELD_HIT_MEMBERS];
 } shield_hit_info;
 
-extern ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS];
+extern ubyte Quadrant_xlate[4];
 
 struct player;
 

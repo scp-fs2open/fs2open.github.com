@@ -10,9 +10,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.24 $
- * $Date: 2003-09-11 18:55:23 $
- * $Author: argv $
+ * $Revision: 2.25 $
+ * $Date: 2003-09-13 06:02:05 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
  * Revision 2.23  2003/08/22 07:35:08  bobboau
@@ -323,15 +323,5 @@ extern float static_point_factor;
 extern double specular_exponent_value;
 
 extern int cell;
-
-// _argv[-1] - use a struct with bitfields to avoid wasting memory.
-struct argv_options {
-	int auto_ets:1;
-	int no_implicit_disable_auto_target:1;
-	int no_auto_target_turret:1;
-	int sound_from_own_turrets:1;
-	int singular_shields:1;
-};
-extern struct argv_options Argv_options;
 
 #endif

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-09-11 19:25:00 $
- * $Author: argv $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-13 06:02:03 $
+ * $Author: Goober5000 $
  *
  * C file for managing the afterburners
  *
@@ -365,14 +365,6 @@ void afterburners_update(object *objp, float fl_frametime)
 #else
 	if (objp != Player_obj) {
 #endif
-		// _argv[-1] - apply power drain.
-		if (shipp->power_drain != 0.0f) {
-			shipp->afterburner_fuel -= fl_frametime * shipp->power_drain;
-			if (shipp->afterburner_fuel < 0.0f)
-				shipp->afterburner_fuel = 0.0f;
-			else if (shipp->afterburner_fuel > sip->afterburner_fuel_capacity)
-				shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
-		}
 		if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 			// Recover afterburner fuel
 
@@ -380,8 +372,7 @@ void afterburners_update(object *objp, float fl_frametime)
 
 			if ( shipp->afterburner_fuel < sip->afterburner_fuel_capacity ) {
 				float recharge_scale;
-				// _argv[-1] - apply effect of reduction of power output.
-				recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * Skill_level_afterburner_recharge_scale[Game_skill_level] * (shipp->power_output / sip->full_power_output);
+				recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * Skill_level_afterburner_recharge_scale[Game_skill_level];
 				shipp->afterburner_fuel += (sip->afterburner_recover_rate * fl_frametime * recharge_scale);
 
 				if ( shipp->afterburner_fuel >  sip->afterburner_fuel_capacity){

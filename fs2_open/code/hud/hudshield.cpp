@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-12 00:12:13 $
+ * $Revision: 2.8 $
+ * $Date: 2003-09-13 06:02:05 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.6  2003/09/11 19:06:27  argv
- * Singular shield support, and a couple of other things.
- *
  * Revision 2.5  2003/09/09 05:51:14  Goober5000
  * if player has primitive sensors, hud will not display shield icons or message sender brackets
  * --Goober5000
@@ -307,7 +304,7 @@ hud_frames Shield_mini_gauge;
 static shield_hit_info	Shield_hit_data[2];
 
 // translate between clockwise-from-top shield quadrant ordering to way quadrants are numbered in the game
-ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS] = {1,0,2,3};
+ubyte Quadrant_xlate[4] = {1,0,2,3};
 
 void hud_shield_game_init()
 {
@@ -455,8 +452,7 @@ void hud_shield_show(object *objp)
 	// draw the four quadrants
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	// _argv[-1] - singular shield.
-	max_shield = sp->ship_initial_shield_strength / (1.0f * (sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1 : MAX_SHIELD_SECTIONS));
+	max_shield = sp->ship_initial_shield_strength/4.0f;
 
 	for ( i = 0; i < 4; i++ ) {
 
@@ -464,16 +460,12 @@ void hud_shield_show(object *objp)
 			break;
 		}
 
-		if ( objp->shield_quadrant[sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i]] < 0.1f ) {
+		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 
 		range = max(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
-		if (!ship_is_shield_up(objp, sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i]))
-			// sometimes, this will draw something even with the shield down. this is not informative, so don't do that!
-			hud_color_index = 0;
-		else
-			hud_color_index = fl2i( (objp->shield_quadrant[sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i]] / max_shield) * range + 0.5);
+		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 
 		if ( hud_color_index < 0 ) {
@@ -565,10 +557,6 @@ void hud_shield_equalize(object *objp, player *pl)
 		return;
 	}
 
-	// _argv[-1] - singular shield.
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
-		return;
-
 	// are all quadrants equal?
 	for(idx=0; idx<MAX_SHIELD_SECTIONS-1; idx++){
 		if(objp->shield_quadrant[idx] != objp->shield_quadrant[idx+1]){
@@ -620,10 +608,6 @@ void hud_shield_equalize(object *objp, player *pl)
 //
 void hud_augment_shield_quadrant(object *objp, int direction)
 {
-	// _argv[-1] - singular shield.
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
-		return;
-
 	float	full_shields, xfer_amount, energy_avail, percent_to_take, delta;
 	float	max_quadrant_val;
 	int	i;
@@ -775,17 +759,15 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	// _argv[-1] - singular shield.
-	max_shield = sp->ship_initial_shield_strength / (1.0f * (sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1 : MAX_SHIELD_SECTIONS));
+	max_shield = sp->ship_initial_shield_strength/4.0f;
 
-	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+	for ( i = 0; i < 4; i++ ) {
 
 		if ( objp->flags & OF_NO_SHIELDS ) {
 			break;
 		}
 
-		//if ( objp->shield_quadrant[sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i]] < 0.1f ) {
-		if (!ship_is_shield_up(objp, sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i])) {
+		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 
@@ -796,7 +778,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = fl2i( (objp->shield_quadrant[sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i]] / max_shield) * range + 0.5);
+		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {
