@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-09-26 14:37:15 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-10-10 03:59:41 $
+ * $Author: matt $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/26 14:37:15  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.2  2003/08/09 06:07:24  bobboau
  * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
  *
@@ -150,6 +160,7 @@ int instance_depth = 0;
 
 int G3_count = 0;
 int G3_frame_count = 0;
+extern int nohtl;
 
 //start the frame
 // Pass true for zbuffer_flag to turn on zbuffering
@@ -435,14 +446,14 @@ void g3_start_user_clip_plane( vector *plane_point, vector *plane_normal )
 	}
 
 	G3_user_clip = 1;
-#ifdef HTL
-	G3_user_clip_normal = *plane_normal;
-	G3_user_clip_point = *plane_point;
+	if(!nohtl) {
+		G3_user_clip_normal = *plane_normal;
+		G3_user_clip_point = *plane_point;
 //	return;
 
 
-	gr_start_clip();
-#endif
+		gr_start_clip();
+	}
 	vm_vec_rotate(&G3_user_clip_normal, plane_normal, &View_matrix );
 	vm_vec_normalize(&G3_user_clip_normal);
 
@@ -455,9 +466,9 @@ void g3_start_user_clip_plane( vector *plane_point, vector *plane_normal )
 void g3_stop_user_clip_plane()
 {
 	G3_user_clip = 0;
-#ifdef HTL
-	gr_end_clip();
-#endif
+	if(!nohtl) {
+		gr_end_clip();
+	}
 }
 
 // Returns TRUE if point is behind user plane

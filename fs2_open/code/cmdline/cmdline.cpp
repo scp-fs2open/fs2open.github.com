@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.31 $
- * $Date: 2003-09-25 21:12:22 $
- * $Author: Kazan $
- * $Revision: 2.31 $
- * $Date: 2003-09-25 21:12:22 $
- * $Author: Kazan $
+ * $Revision: 2.32 $
+ * $Date: 2003-10-10 03:59:40 $
+ * $Author: matt $
+ * $Revision: 2.32 $
+ * $Date: 2003-10-10 03:59:40 $
+ * $Author: matt $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/09/25 21:12:22  Kazan
+ * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
+ * Also D3D8 Screenshots work now.
+ *
  * Revision 2.30  2003/09/23 02:42:52  Kazan
  * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
  *
@@ -402,6 +406,7 @@ cmdline_parm safeloading_arg("-safeloading", NULL); //Uses old loading method -C
 cmdline_parm nospec_arg("-nospec", NULL); // skip specular highlighting -Sticks
 cmdline_parm MissionCRCs("-missioncrcs", NULL);
 cmdline_parm TableCRCs("-tablecrcs", NULL);
+cmdline_parm nohtl_arg("-nohtl", NULL); //Use software HT&L
 
 cmdline_parm cell_arg("-cell", NULL);
 
@@ -444,6 +449,8 @@ int Cmdline_nospec = 0;
 
 int Cmdline_d3dlowmem = 0;
 int Cmdline_d3dmipmap = 0;
+
+int nohtl = 0;
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 
@@ -893,6 +900,10 @@ int parse_cmdline(int argc, char *argv[])
 
 	if ( nospec_arg.found() ) {
 		Cmdline_nospec = 1;
+	}
+
+	if ( nohtl_arg.found() ) {
+		nohtl = 1;
 	}
 	return 1;
 }

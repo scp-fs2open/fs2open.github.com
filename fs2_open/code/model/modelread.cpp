@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-09-26 14:37:15 $
- * $Author: bobboau $
+ * $Revision: 2.23 $
+ * $Date: 2003-10-10 03:59:41 $
+ * $Author: matt $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/09/26 14:37:15  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.21  2003/08/28 20:42:18  Goober5000
  * implemented rotating barrels for firing primary weapons
  * --Goober5000
@@ -812,6 +822,7 @@
 polymodel *Polygon_models[MAX_POLYGON_MODELS];
 
 static int model_initted = 0;
+extern int nohtl;
 
 #ifndef NDEBUG
 CFILE *ss_fp;			// file pointer used to dump subsystem information
@@ -835,9 +846,7 @@ texture_replace Texture_replace[MAX_TEXTURE_REPLACEMENTS];
 
 static int Model_signature = 0;
 
-#ifdef HTL
 void generate_vertex_buffers(bsp_info*, polymodel*);
-#endif
 
 // Free up a model, getting rid of all its memory
 // Can't be called from outside of model code because more
@@ -915,11 +924,11 @@ static void model_unload(int modelnum)
 
 	if (pm->submodel)	{
 		for (i=0; i<pm->n_models; i++ )	{
-#ifdef HTL
-			for (int k=0; k<pm->submodel[i].n_buffers; k++ ){
-				gr_destroy_buffer(pm->submodel[i].buffer[k].vertex_buffer);
+			if(!nohtl) {
+				for (int k=0; k<pm->submodel[i].n_buffers; k++ ){
+					gr_destroy_buffer(pm->submodel[i].buffer[k].vertex_buffer);
+				}
 			}
-#endif
 			
 			if ( pm->submodel[i].bsp_data )	{
 				free(pm->submodel[i].bsp_data);
@@ -1694,9 +1703,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		//mprintf(( "Submodel %d, data offset %d\n", n, pm->submodel[n].data_offset ));
 		//key_getch();
 
-#ifdef HTL
-				generate_vertex_buffers(&pm->submodel[n], pm);
-#endif
+				if(!nohtl) {
+					generate_vertex_buffers(&pm->submodel[n], pm);
+				}
 				break;
 
 			}
