@@ -2,13 +2,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.66 $
- * $Date: 2004-03-05 04:33:09 $
+ * $Revision: 2.67 $
+ * $Date: 2004-03-08 21:57:04 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2004/03/05 04:33:09  phreak
+ * fixed the lack of ships in the hud targetbox
+ * prevented other functions calls to glColor3ub() from messing
+ * with the color of textures in gr_opengl_render_buffer().  this was causing some
+ * minor rendering bugs
+ *
  * Revision 2.65  2004/02/20 21:45:41  randomtiger
  * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
  * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
@@ -2728,7 +2734,7 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 
 void gr_opengl_tmapper( int nverts, vertex **verts, uint flags )
 {
-	if (flags & TMAP_HTL_3D_UNLIT)
+	if ((!Cmdline_nohtl) && (flags & TMAP_HTL_3D_UNLIT))
 		gr_opengl_tmapper_internal3d( nverts, verts, flags, 0 );
 	else
 		gr_opengl_tmapper_internal(nverts,verts,flags,0);
@@ -4993,6 +4999,10 @@ void gr_opengl_init(int reinit)
 	if(!Cmdline_nohtl) {
 		opengl_init_vertex_buffers();
 	}
+
+	//shut these command line parameters down if they are in use
+	Cmdline_jpgtga = 0;
+	Cmdline_pcx32 = 0;
 
 	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
 
