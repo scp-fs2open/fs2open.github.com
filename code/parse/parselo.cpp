@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.28 $
+ * $Revision: 2.29 $
  * $Author: Goober5000 $
- * $Date: 2005-01-25 22:21:45 $
+ * $Date: 2005-01-25 22:47:37 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/01/25 22:21:45  Goober5000
+ * separated one parsing function into two
+ * --Goober5000
+ *
  * Revision 2.27  2005/01/25 21:28:58  Goober5000
  * streamlined some redundant stuff
  * --Goober5000
@@ -1417,14 +1421,29 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 void read_file_text(char *filename, int mode, char *processed_text, char *raw_text)
 {
 	// read the raw text
-	int raw_text_len = read_raw_file_text(filename, mode, raw_text);
+	read_raw_file_text(filename, mode, raw_text);
 
 	// process it (strip comments)
-	process_raw_file_text(raw_text_len, processed_text, raw_text);
+	process_raw_file_text(processed_text, raw_text);
 }
 
 // Goober5000
-int read_raw_file_text(char *filename, int mode, char *raw_text)
+void read_file_text_from_array(char *array, char *processed_text, char *raw_text)
+{
+	// if we have no raw buffer, set it as the array
+	if (raw_text == NULL)
+		raw_text = array;
+
+	// copy text in the array (but only if the raw text and the array are not the same)
+	if (raw_text != array)
+		strcpy(raw_text, array);
+
+	// process the text
+	process_raw_file_text(processed_text, raw_text);
+}
+
+// Goober5000
+void read_raw_file_text(char *filename, int mode, char *raw_text)
 {
 	CFILE	*mf;
 	int	file_is_encrypted = 0;
@@ -1464,17 +1483,16 @@ int read_raw_file_text(char *filename, int mode, char *raw_text)
 		cfread(raw_text, file_len, 1, mf);
 	}
 	cfclose(mf);
-
-	return file_len;
 }
 
 // Goober5000
-void process_raw_file_text(int raw_text_len, char *processed_text, char *raw_text)
+void process_raw_file_text(char *processed_text, char *raw_text)
 {
 	char	*mp;
 	char	*mp_raw;
 	char outbuf[PARSE_BUF_SIZE], *str;
 	int in_comment = 0;
+	int raw_text_len = strlen(raw_text);
 
 	mp = processed_text;
 	mp_raw = raw_text;
