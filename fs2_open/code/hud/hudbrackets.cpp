@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-14 01:55:04 $
+ * $Author: Goober5000 $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -227,6 +230,7 @@
 #include "bmpman/bmpman.h"
 #include "globalincs/linklist.h"
 #include "weapon/emp.h"
+#include "mission/missionparse.h"
 
 #define FADE_FACTOR	2			// how much the bounding brackets get faded
 #define LOWEST_RED	50			// lowest r value for bounding bracket
@@ -608,8 +612,11 @@ void draw_bounding_brackets_subobject()
 			// determine if subsystem is on far or near side of the ship
 			Player->subsys_in_view = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, 0);
 
-			// AL 29-3-98: If subsystem is destroyed, draw gray brackets					
-			if ( (Player_ai->targeted_subsys->current_hits <= 0) && (!subsys_is_fighterbay(Player_ai->targeted_subsys)) ) {
+			// AL 29-3-98: If subsystem is destroyed, draw gray brackets
+			// Goober5000: usually, this is not meant to execute for fighterbays; but with the
+			// fighterbay_show_damage mission flag, this will now execute
+			if ( (Player_ai->targeted_subsys->current_hits <= 0) && ( !subsys_is_fighterbay(Player_ai->targeted_subsys) || The_mission.flags & MISSION_FLAG_FIGHTERBAY_SHOW_DAMAGE ) )
+			{
 				gr_set_color_fast(&IFF_colors[IFF_COLOR_MESSAGE][1]);
 			} else {
 				hud_set_iff_color( targetp, 1 );
