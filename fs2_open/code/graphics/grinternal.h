@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.2 $
- * $Date: 2003-01-18 19:49:02 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2004-02-16 11:47:33 $
+ * $Author: randomtiger $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/18 19:49:02  phreak
+ * added tcache flag TCACHE_FLAG_COMPRESSED
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -221,6 +224,10 @@ extern int Gr_gamma_lookup[256];
 #define TCACHE_TYPE_NONDARKENING			3		// Bitmap with 255,255,255 = non-darkening.  Alpha=1 if non-darkening, 0 if not.
 #define TCACHE_TYPE_BITMAP_SECTION		4		// section of a bitmap
 #define TCACHE_TYPE_COMPRESSED			(1<<31)
+
+extern int Ambient_r_default;
+extern int Ambient_g_default;
+extern int Ambient_b_default;
 
 #endif
 

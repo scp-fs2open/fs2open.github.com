@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.106 $
- * $Date: 2004-02-14 00:18:35 $
+ * $Revision: 2.107 $
+ * $Date: 2004-02-16 11:47:34 $
  * $Author: randomtiger $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.106  2004/02/14 00:18:35  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.105  2004/02/07 00:48:52  Goober5000
  * made FS2 able to account for subsystem mismatches between ships.tbl and the
  * model file - e.g. communication vs. communications
@@ -5482,9 +5493,7 @@ void ship_process_post(object * obj, float frametime)
 		// Goober5000 - player may want to use AI
 		if ( (Ships[num].ai_index >= 0) && (!(obj->flags & OF_PLAYER_SHIP) || Player_use_ai) ){
 			if (!physics_paused && !ai_paused){
-				TIMERBAR_PUSH(5);
 				ai_process( obj, Ships[num].ai_index, frametime );
-				TIMERBAR_POP();
 			}
 		}
 	}			

@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-02-14 00:18:33 $
+ * $Revision: 2.13 $
+ * $Date: 2004-02-16 11:47:33 $
  * $Author: randomtiger $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/02/14 00:18:33  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.11  2004/01/24 15:52:26  randomtiger
  * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
  * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
@@ -1030,6 +1041,7 @@ void main_hall_init(int main_hall_num)
 
 	// set the game_mode based on the type of player
 	Assert( Player != NULL );
+
 #ifndef NO_NETWORK
 	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ){
 		Game_mode = GM_MULTIPLAYER;
@@ -1048,6 +1060,14 @@ void main_hall_init(int main_hall_num)
 #else
 	Game_mode = GM_NORMAL;
 #endif // ifndef NO_NETWORK
+
+	if(Cmdline_start_mission) {
+		strcpy(Game_current_mission_filename, Cmdline_start_mission);
+		mprintf(( "Straight to mission '%s'\n", Game_current_mission_filename ));
+ 		gameseq_post_event(GS_EVENT_START_GAME);
+		// This stops the mission from loading again when you go back to the hall
+		Cmdline_start_mission = NULL;
+	}
 }
 
 void main_hall_exit_game()

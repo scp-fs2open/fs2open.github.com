@@ -1399,6 +1399,12 @@ bool gr_d3d_init()
 		return false;
 	}	
 
+	if(d3d_init_light() == false) {
+		// Func will give its own errors
+		sprintf(Device_init_error, "Failed to setup lighting");
+		return false;
+	}
+
 	d3d_setup_color();
 
 	// Tell Freespace code that we're using Direct3D.

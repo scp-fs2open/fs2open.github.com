@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-02-14 00:18:37 $
+ * $Revision: 2.14 $
+ * $Date: 2004-02-16 11:47:34 $
  * $Author: randomtiger $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/02/14 00:18:37  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.12  2004/02/04 09:02:42  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -282,7 +293,6 @@ extern int Cmdline_nohtl;
 /*
 void trail_render( trail * trailp )
 {
-	TIMERBAR_PUSH(6);		
 	trail_info *ti;	
 
 	if ( trailp->tail == trailp->head ) return;
@@ -412,19 +422,16 @@ void trail_render( trail * trailp )
 		last_top = top;
 		last_bot = bot;
 	}
-	TIMERBAR_POP();
 }
 */
 #define MAX_TRAIL_POLYS 129
 void trail_render( trail * trailp )
 {		
-	TIMERBAR_PUSH(6);
 //	if(!Cmdline_nohtl)gr_set_lighting(false,false);//this shouldn't need to be here but it does need to be here, WHY!!!!!!!?-Bobboau
 	trail_info *ti;	
 
 	if ( trailp->tail == trailp->head ) 
 	{
-		TIMERBAR_POP();
 		return;
 	}
 
@@ -558,7 +565,6 @@ void trail_render( trail * trailp )
 		v_list[nv+1] = bot;
 	}
 	if(!nv) {
-		TIMERBAR_POP();
 		return;
 	}
 	if(nv<3)Error( LOCATION, "too few verts in trail render\n" );

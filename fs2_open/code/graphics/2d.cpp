@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-02-15 06:02:31 $
- * $Author: bobboau $
+ * $Revision: 2.16 $
+ * $Date: 2004-02-16 11:47:32 $
+ * $Author: randomtiger $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/02/15 06:02:31  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.14  2004/02/14 00:18:31  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -1282,7 +1287,7 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 				}
 
 				// RT draws all hall interface stuff
-			   	g3_draw_2d_poly_bitmap(px1, py1, px2, py2, TMAP_FLAG_BITMAP_SECTION);
+			   	g3_draw_2d_poly_bitmap(px1, py1, px2, py2, TMAP_FLAG_BITMAP_SECTION | TMAP_HTL_2D);
 				x_line += section_x;
 			}
 			y_line += section_y;
