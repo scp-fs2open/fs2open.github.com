@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.11 $
- * $Date: 2005-02-13 08:38:54 $
+ * $Revision: 2.12 $
+ * $Date: 2005-02-27 07:07:47 $
  * $Author: wmcoolmon $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/02/13 08:38:54  wmcoolmon
+ * nonstandard resolution-friendly function updates
+ *
  * Revision 2.10  2005/01/30 03:26:11  wmcoolmon
  * HUD updates
  *
@@ -388,7 +391,7 @@ void hud_num_make_mono(char *num_str);
 
 // functions for handling hud animations
 void	hud_anim_init(hud_anim *ha, int sx, int sy, char *filename);
-int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0);
+int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0,bool resize=true);
 int	hud_anim_load(hud_anim *ha);
 void	hud_anim_release(hud_anim *ha);
 
