@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.26 $
- * $Date: 2003-09-14 18:32:24 $
+ * $Revision: 2.27 $
+ * $Date: 2003-09-14 19:00:02 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/09/14 18:32:24  wmcoolmon
+ * Added "-safeloading" command line parameter, which uses old fs2_retail-style loading code -C
+ *
  * Revision 2.25  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -315,6 +318,7 @@ extern int Cmdline_dnoshowvid;	//WMC Toggles movie playing support
 extern char *Cmdline_mod; //DTP for mod support
 extern int Cmdline_show_fps;//DTP moved here because it is the correct place for it to be.
 extern int Cmdline_safeloading;
+extern int Cmdline_nospec;
 
 extern int Cmdline_d3dlowmem;
 extern int Cmdline_d3dmipmap;
@@ -327,6 +331,6 @@ extern float static_tube_factor;
 extern float static_point_factor;
 extern double specular_exponent_value;
 
-extern int cell;
+extern int Cmdline_cell;
 
 #endif

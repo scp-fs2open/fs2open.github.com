@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.28 $
- * $Date: 2003-09-14 18:32:24 $
+ * $Revision: 2.29 $
+ * $Date: 2003-09-14 19:00:02 $
  * $Author: wmcoolmon $
- * $Revision: 2.28 $
- * $Date: 2003-09-14 18:32:24 $
+ * $Revision: 2.29 $
+ * $Date: 2003-09-14 19:00:02 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/09/14 18:32:24  wmcoolmon
+ * Added "-safeloading" command line parameter, which uses old fs2_retail-style loading code -C
+ *
  * Revision 2.27  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -427,6 +430,7 @@ int Cmdline_phreak	= 0;
 int Cmdline_dnoshowvid = 0;
 int Cmdline_show_fps = 0;
 int Cmdline_safeloading = 0;
+int Cmdline_nospec = 0;
 
 int Cmdline_d3dlowmem = 0;
 int Cmdline_d3dmipmap = 0;
@@ -440,8 +444,7 @@ float Cmdline_fov = 0.75f;
 extern float VIEWER_ZOOM_DEFAULT;
 extern float Viewer_zoom;
 
-int cell = 0;
-int nospec = 0;
+int Cmdline_cell = 0;
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -866,11 +869,11 @@ int parse_cmdline(int argc, char *argv[])
 	}
 
 	if ( cell_arg.found() ) {
-		cell = 1;
+		Cmdline_cell = 1;
 	}
 
 	if ( nospec_arg.found() ) {
-		nospec = 1;
+		Cmdline_nospec = 1;
 	}
 	return 1;
 }
