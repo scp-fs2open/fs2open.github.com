@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:10:40 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-29 20:12:02 $
  * $Author: penguin $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:10:40  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/21 15:46:27  mharris
  * Turned on debug logging to file
  *
@@ -128,7 +131,6 @@
 
 #ifndef NDEBUG
 
-#include <windows.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
