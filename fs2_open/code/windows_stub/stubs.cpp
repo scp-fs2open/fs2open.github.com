@@ -138,11 +138,11 @@ int MessageBox(HWND h, const char *s1, const char *s2, int i)
 }
 
 
-
 int MulDiv(int number, int numerator, int denominator)
 {
 	int result;
 
+#if defined(__i386__)
 	__asm(
 		        "movl  %1,%%eax\n"
 		"        movl  %2,%%ebx\n"
@@ -152,6 +152,12 @@ int MulDiv(int number, int numerator, int denominator)
 		: "=eax" (result)
 		: "m" (number), "m" (numerator), "m" (denominator)
 		: "ebx","edx");
+#else
+        longlong tmp;
+        tmp = ((longlong) number) * ((longlong) numerator);
+        tmp /= (longlong) denominator;
+        result = (int) tmp;
+#endif
 	return result;
 }
 
