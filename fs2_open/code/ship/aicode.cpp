@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.10 $
- * $Date: 2002-12-31 08:20:30 $
+ * $Revision: 2.11 $
+ * $Date: 2002-12-31 18:59:42 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
@@ -5708,37 +5708,40 @@ void set_primary_weapon_linkage(object *objp)
 	}
 
 	// also check ballistics - Goober5000
-	total_ammo = 0;
-	current_ammo = 0;
-
-	// count ammo, and do not continue unless all weapons are ballistic
-	for (i = 0; i < swp->num_primary_banks; i++)
+	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
 	{
-		wip = &Weapon_info[swp->primary_bank_weapons[i]];
+		total_ammo = 0;
+		current_ammo = 0;
 
-		if (wip->wi_flags2 & WIF2_BALLISTIC)
+		// count ammo, and do not continue unless all weapons are ballistic
+		for (i = 0; i < swp->num_primary_banks; i++)
 		{
-			total_ammo += swp->primary_bank_start_ammo[i];
-			current_ammo += swp->primary_bank_ammo[i];
-		}
-		else
-		{
-			return;
-		}
-	}
+			wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-	ammo_pct = float (current_ammo) / float (total_ammo);
+			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			{
+				total_ammo += swp->primary_bank_start_ammo[i];
+				current_ammo += swp->primary_bank_ammo[i];
+			}
+			else
+			{
+				return;
+			}
+		}
 
-	// link according to defined levels
-	if (ammo_pct > Link_ammo_levels_always[Game_skill_level])
-	{
-		shipp->flags |= SF_PRIMARY_LINKED;
-	}
-	else if (ammo_pct > Link_ammo_levels_maybe[Game_skill_level])
-	{
-		if (objp->hull_strength < Ship_info[shipp->ship_info_index].initial_hull_strength/3.0f)
+		ammo_pct = float (current_ammo) / float (total_ammo);
+
+		// link according to defined levels
+		if (ammo_pct > Link_ammo_levels_always[Game_skill_level])
 		{
 			shipp->flags |= SF_PRIMARY_LINKED;
+		}
+		else if (ammo_pct > Link_ammo_levels_maybe[Game_skill_level])
+		{
+			if (objp->hull_strength < Ship_info[shipp->ship_info_index].initial_hull_strength/3.0f)
+			{
+				shipp->flags |= SF_PRIMARY_LINKED;
+			}
 		}
 	}
 }
@@ -13241,16 +13244,19 @@ int maybe_request_support(object *objp)
 	}
 
 	// Set desire based on ballistic weapons - Goober5000
-	for (i = 0; i < swp->num_primary_banks; i++)
+	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
 	{
-		wip = &Weapon_info[swp->primary_bank_weapons[i]];
-
-		if (wip->wi_flags2 & WIF2_BALLISTIC)
+		for (i = 0; i < swp->num_primary_banks; i++)
 		{
-			r = (float) swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i];
+			wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-			// cube ammo level for better behavior, and adjust for number of banks
-			desire += (int) ((1.0f - r)*(1.0f - r)*(1.0f - r) * (5.0f / swp->num_primary_banks));
+			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			{
+				r = (float) swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i];
+
+				// cube ammo level for better behavior, and adjust for number of banks
+				desire += (int) ((1.0f - r)*(1.0f - r)*(1.0f - r) * (5.0f / swp->num_primary_banks));
+			}
 		}
 	}
 

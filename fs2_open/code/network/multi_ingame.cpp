@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-31 08:20:31 $
+ * $Revision: 2.4 $
+ * $Date: 2002-12-31 18:59:43 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
@@ -1739,6 +1739,13 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		val = (ubyte)shipp->engine_recharge_index;
 		ADD_DATA(val);
 
+		// add the ballistic primary flag - Goober5000
+		val = 0;
+		if(sip->flags & SIF_BALLISTIC_PRIMARIES){
+			val |= (1<<0);
+		}
+		ADD_DATA(val);
+
 		// add current primary and secondary banks, and add link status
 		val = (ubyte)shipp->weapons.current_primary_bank;
 		ADD_DATA(val);
@@ -1977,6 +1984,12 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		Player_ship->shield_recharge_index = val;
 		GET_DATA(val);
 		Player_ship->engine_recharge_index = val;		
+
+		// handle the ballistic primary flag - Goober5000
+		GET_DATA(val);
+		if(val & (1<<0)){
+			Player_ship->flags |= SIF_BALLISTIC_PRIMARIES;
+		}
 
 		// get current primary and secondary banks, and add link status
 		GET_DATA(val);

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.20 $
- * $Date: 2002-12-31 07:26:40 $
+ * $Revision: 2.21 $
+ * $Date: 2002-12-31 18:59:43 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2002/12/31 07:26:40  Goober5000
+ * added damaged-escort-priority-all sexp
+ * --Goober5000
+ *
  * Revision 2.19  2002/12/27 20:16:18  phreak
  * added damage-escort-list as a new sexp
  *
@@ -7021,6 +7025,10 @@ int sexp_primaries_depleted(int node)
 	if (shipp->objnum < 0) {
 		return 0;
 	}
+
+	// see if ship has ballistic primary weapons   
+	if (!(Ship_info[shipp->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES))   
+		return 0; 
 
 	// get num primary banks
 	num_banks = shipp->weapons.num_primary_banks;
