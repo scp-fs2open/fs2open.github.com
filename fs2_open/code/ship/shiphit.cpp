@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-07-29 08:19:41 $
- * $Author: DTP $
+ * $Revision: 2.4 $
+ * $Date: 2002-07-29 20:48:51 $
+ * $Author: penguin $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/07/29 08:19:41  DTP
+ * Bumped MAX_SUBSYS_LIST from 32 to 200
+ *
  * Revision 2.2  2002/07/18 03:25:10  unknownplayer
  * no message
  *
@@ -494,6 +497,9 @@
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
+
+struct ssm_firing_info;
+extern void ssm_create(vector *target, vector *start, int ssm_index, ssm_firing_info *override);
 
 typedef struct spark_pair {
 	int index1, index2;
@@ -2449,9 +2455,6 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 			}
 			mprintf(("Level 2 TAGGED %s for %f seconds\n", Ships[ship_obj->instance].ship_name, Ships[ship_obj->instance].level2_tag_left));
 		} else if (Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_level == 3) {
-			struct ssm_firing_info;
-			extern void ssm_create(vector *target, vector *start, int ssm_index, ssm_firing_info *override);
-
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Firing artillery", 1570));
 
 			vector temp;
