@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.h $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-17 18:46:08 $
+ * $Author: taylor $
  *
  * Header file for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/05 09:17:14  Goober5000
  * cleaned out Bobboau's buggy code - about to rewrite with new, bug-free code :)
  * --Goober5000
@@ -174,6 +178,7 @@ void weapon_select_init();
 void weapon_select_common_init();
 void weapon_select_do(float frametime);
 void weapon_select_close();
+void weapon_select_close_team();
 
 void	wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot);
 int	wl_update_ship_weapons(int objnum, wss_unit *slot);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.103 $
- * $Date: 2004-07-12 16:32:46 $
- * $Author: Kazan $
+ * $Revision: 2.104 $
+ * $Date: 2004-07-17 18:46:06 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2004/07/12 16:32:46  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.102  2004/07/12 03:19:15  Kazan
  * removed a couple pointless useless messages from the debug console
  *
@@ -1935,7 +1938,6 @@ void game_level_close()
 
 	// De-Initialize the game subsystems
 	sexp_music_close();	// Goober5000
-	message_mission_shutdown();
 	event_music_level_close();
 	game_stop_looped_sounds();
 	snd_stop_all();
@@ -1944,6 +1946,7 @@ void game_level_close()
 #endif
 	gamesnd_unload_gameplay_sounds();	// unload gameplay sounds from memory
 	anim_level_close();						// stop and clean up any anim instances
+	message_mission_shutdown();			// called after anim_level_close() to make sure instances are clear
 	shockwave_level_close();
 	fireball_level_close();	
 	shield_hit_close();
@@ -1955,6 +1958,7 @@ void game_level_close()
 	ct_level_close();
 	beam_level_close();
 	mflash_level_close();
+	mission_brief_common_reset();		// close out parsed briefing/mission stuff
 
 	audiostream_unpause_all();
 	Game_paused = 0;
@@ -3045,8 +3049,7 @@ void game_init()
 	weapon_init();	
 	ai_init();		
 	ship_init();						// read in ships.tbl	
-		void ship_info_close();
-		atexit(ship_info_close);
+
 	player_init();	
 	mission_campaign_init();		// load in the default campaign	
 	anim_init();
@@ -4384,41 +4387,24 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	}
 #endif
 
-	//fugly hack.  this will make the skybox render in HT&L
-	//i want the stars_draw() function to get ported to HT&L quick
-	int nohtl_save = Cmdline_nohtl;
-	extern int OGL_inited;//you wanted fugly you got it
-
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-
+	// don't set proj/view matrix before this call, breaks OGL
 	gr_setup_background_fog(true);
-	if (OGL_inited)Cmdline_nohtl = 1;
-/*	if ( Game_subspace_effect )	{
-		stars_draw(0,0,0,1,2);
-	} else {
-		stars_draw(1,1,1,0,2);
-	}
-	gr_setup_background_fog(false);
-
-  */
 	if ( Game_subspace_effect )	{
 		stars_draw(0,0,0,1,0);
 	} else {
 		stars_draw(1,1,1,0,0);
 	}
+	gr_setup_background_fog(false);
 
 	if((!cube_map_drawen || Game_subspace_effect) && Cmdline_env){
 		setup_environment_mapping(eye_pos, eye_orient);
 		cube_map_drawen = true;
 	}
 
-	if (OGL_inited)Cmdline_nohtl = nohtl_save;
-
-
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 	obj_render_all(obj_render);
 	beam_render_all();						// render all beam weapons
@@ -8047,6 +8033,9 @@ void game_shutdown(void)
 #endif
 	training_menu_close();
 	gr_close();
+
+	// free left over memory from table parsing
+	player_tips_close();
 
 	joy_close();
 

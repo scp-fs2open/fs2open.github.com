@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-17 18:46:08 $
+ * $Author: taylor $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -319,6 +323,7 @@ void mission_brief_common_init();
 // Frees all the memory allocated in the briefing and debriefing structures
 // and sets all pointers to NULL.
 void mission_brief_common_reset();
+void mission_debrief_common_reset();
 
 
 // --------------------------------------------------------------------------------------

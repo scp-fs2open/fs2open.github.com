@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-07-12 16:32:54 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-07-17 18:46:08 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/07/12 16:32:54  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.16  2004/05/11 02:52:12  Goober5000
  * completed the FRED import conversion stuff that I started ages ago
  * --Goober5000
@@ -955,20 +958,25 @@ void messages_init()
 // free a loaded avi
 void message_mission_free_avi(int m_index)
 {
+	int count = 0;
+	int i;
+
+	// check for bogus index
 	if ( (m_index < 0) || (m_index > Num_message_avis) )
 		return;
 
-#ifndef NDEBUG
-	/*
 	if (Message_avis[m_index].anim_data != NULL) {
-		while (Message_avis[m_index].anim_data->ref_count) {
-			anim_free(Message_avis[m_index].anim_data);
-		}
+		// how may tries do we need to make
+		count = Message_avis[m_index].anim_data->ref_count;
 
-		Message_avis[m_index].anim_data = NULL;
+		for (i=0; i<count; i++) {
+			if ( anim_free(Message_avis[m_index].anim_data) == 0 ) {
+				// successfully free'd so reset to NULL and get out
+				Message_avis[m_index].anim_data = NULL;
+				break;
+			}
+		}
 	}
-	*/
-#endif
 }
 
 // called to do cleanup when leaving a mission
@@ -1395,12 +1403,10 @@ void message_play_anim( message_q *q )
 	// check to see if the avi has been loaded.  If not, then load the AVI.  On an error loading
 	// the avi, set the top level index to -1 to avoid multiple tries at loading the flick.
 
-#ifndef NDEBUG
 	// if there is something already here that's not this same file then go ahead a let go of it - taylor
 	if ( (anim_info->anim_data != NULL) && !strstr(anim_info->anim_data->name, ani_name) ) {
 		message_mission_free_avi( m->avi_info.index );
 	}
-#endif
 
 	anim_info->anim_data = anim_load( ani_name, 0 );
 

@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.81 $
- * $Date: 2004-07-12 16:32:48 $
- * $Author: Kazan $
+ * $Revision: 2.82 $
+ * $Date: 2004-07-17 18:46:07 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2004/07/12 16:32:48  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.80  2004/07/11 03:22:49  bobboau
  * added the working decal code
  *
@@ -2727,7 +2730,7 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h)
 
 	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
         
-	// this should really only haved to be malloc'd once
+	// this should really only have to be malloc'd once
 	if (GL_saved_mouse_data == NULL)
 		GL_saved_mouse_data = (ubyte*)malloc(cursor_size * gr_screen.bytes_per_pixel);
 
@@ -2738,6 +2741,14 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h)
 	glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_BGRA, fmt, GL_saved_mouse_data);
         
 	Gr_opengl_mouse_saved = 1;
+}
+
+void gr_opengl_free_mouse_area()
+{
+	if (GL_saved_mouse_data != NULL) {
+		free(GL_saved_mouse_data);
+		GL_saved_mouse_data = NULL;
+	}
 }
 
 int gr_opengl_save_screen()
@@ -2865,6 +2876,18 @@ void gr_opengl_zbias_stub(int bias)
 //fill mode, solid/wire frame
 void gr_opengl_set_fill_mode(int mode)
 {
+	if (mode == GR_FILL_MODE_SOLID) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		return;
+	}
+
+	if (mode == GR_FILL_MODE_WIRE) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		return;
+	}
+
+	// default setting
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 
@@ -2900,6 +2923,11 @@ void gr_opengl_bitmap_internal(int x,int y,int w,int h,int sx,int sy)
 
 	// mharris mod - not sure if this is right...
 	bmp = bm_lock( gr_screen.current_bitmap, 16, 0 );
+
+	if (bmp == NULL) {
+		return;
+	}
+
 	size=w*h*4;
 
 	/*mprintf(("gr_opengl_bitmap_ex_internal: at (%3d,%3d) size (%3d,%3d) name %s -- temp (%d,%d)\n", 
@@ -3352,20 +3380,26 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		OGL_extensions=(const char*)glGetString(GL_EXTENSIONS);
 
 		extlist=(char*)malloc(strlen(OGL_extensions));
-		memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
 
-		if (*(ver+2) < REQUIRED_GL_VERSION)
-		{
-			Error(LOCATION,"Current GL Version of 1.%c is less than required version of 1.%c\nSwitch video modes or update drivers", *(ver+2), REQUIRED_GL_VERSION);
-		}
+		if (extlist != NULL) {
+			memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
+
+			if (*(ver+2) < REQUIRED_GL_VERSION)
+			{
+				Error(LOCATION,"Current GL Version of 1.%c is less than required version of 1.%c\nSwitch video modes or update drivers", *(ver+2), REQUIRED_GL_VERSION);
+			}
 	
-		curext=strtok(extlist, " ");
-		while (curext)
-		{
-			mprintf(( "%s\n", curext ));
-			curext=strtok(NULL, " ");
+			curext=strtok(extlist, " ");
+
+			while (curext)
+			{
+				mprintf(( "%s\n", curext ));
+				curext=strtok(NULL, " ");
+			}
+
+			free(extlist);
+			extlist = NULL;
 		}
-		free(extlist);
 	}
 
 	glGetIntegerv(GL_MAX_LIGHTS, &max_gl_lights); //Get the max number of lights supported
@@ -3641,6 +3675,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.current_bitmap = -1;
 
 	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);	
+
+	atexit( gr_opengl_free_mouse_area );
 }
 
 DCF(min_ogl, "minimizes opengl")

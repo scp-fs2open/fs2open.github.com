@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-12 16:32:41 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2004-07-17 18:46:06 $
+ * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/12 16:32:41  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.8  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1122,11 +1125,15 @@ int anim_free(anim *ptr)
 		cfclose(ptr->cfile_ptr);
 		if ( ptr->cache ) {
 			free(ptr->cache);
+			ptr->cache = NULL;
 		}
 	}
 	else {
 		Assert(ptr->data);
-		free(ptr->data);
+		if ( ptr->data ) {
+			free(ptr->data);
+			ptr->data = NULL;
+		}
 	}
 
 	*prev_anim = ptr->next;
