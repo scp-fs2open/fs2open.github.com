@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.16 $
- * $Date: 2004-05-25 00:21:39 $
- * $Author: wmcoolmon $
+ * $Revision: 1.17 $
+ * $Date: 2004-07-06 23:45:34 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2004/05/25 00:21:39  wmcoolmon
+ * Updated to use <iostream> instead of <iostream.h>
+ *
  * Revision 1.15  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -279,7 +282,10 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 				continue;
 			}
 
-			CheckSize += sizeof(fs2open_ship_typekill) * p_reply->ship_types;
+			if (p_reply->replytype == 0)
+				CheckSize += sizeof(fs2open_ship_typekill) * p_reply->ship_types;
+			else
+				CheckSize = 8;
 
 			ml_printf("Precompletion Pilot Update: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
 			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
