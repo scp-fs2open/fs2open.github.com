@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-09-13 08:27:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.19.2.1 $
+ * $Date: 2003-09-19 00:35:51 $
+ * $Author: argv $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/09/13 08:27:29  Goober5000
+ * added some minor things, such as code cleanup and the following:
+ * --turrets will not fire at cargo
+ * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
+ * --supercaps have their own default message bitfields (distinguished from capships)
+ * --turrets are allowed on fighters
+ * --jump speed capped at 65m/s, to avoid ship travelling too far
+ * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
+ * ----Goober5000
+ *
  * Revision 2.18  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -965,8 +975,11 @@ void get_turret_subsys_name(model_subsystem *system_info, char *outstr)
 	Assert(system_info->type == SUBSYSTEM_TURRET);
 
 	if (system_info->turret_weapon_type >= 0) {
+		// _argv[-1] - table specified HUD display name!
+		if (Weapon_info[system_info->turret_weapon_type].use_turret_display_name)
+			sprintf(outstr, "%s", Weapon_info[system_info->turret_weapon_type].turret_display_name);
 		// check if beam or flak using weapon flags
-		if (Weapon_info[system_info->turret_weapon_type].wi_flags & WIF_FLAK) {
+		else if (Weapon_info[system_info->turret_weapon_type].wi_flags & WIF_FLAK) {
 			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
 		} else if (Weapon_info[system_info->turret_weapon_type].wi_flags & WIF_BEAM) {
 			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
@@ -1111,7 +1124,9 @@ void hud_render_target_ship_info(object *target_objp)
 		// PRINT SUBSYS NAME
 		// hud_set_default_color();
 		// get turret subsys name
-		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET) {
+		if (Player_ai->targeted_subsys->system_info->use_display_name) // _argv[-1] - table specified display name!
+			sprintf(outstr, "%s", Player_ai->targeted_subsys->system_info->display_name);
+		else if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET) {
 			get_turret_subsys_name(Player_ai->targeted_subsys->system_info, outstr);
 		} else {
 			sprintf(outstr, "%s", Player_ai->targeted_subsys->system_info->name);
