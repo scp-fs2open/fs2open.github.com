@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-26 20:47:31 $
- * $Author: Kazan $
+ * $Revision: 2.14 $
+ * $Date: 2004-10-31 21:34:39 $
+ * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/26 20:47:31  Kazan
+ * remove MCD complete
+ *
  * Revision 2.12  2004/07/25 18:46:28  Kazan
  * -fred_no_warn has become -no_warn and applies to both fred and fs2
  * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
@@ -181,7 +184,7 @@
 #endif // _MSC_VER
 
 
-#ifndef __ASSERT
+#ifndef _ASSERT
   #ifndef _DEBUG
     #define _ASSERT(expr) ((void)0)
   #else
