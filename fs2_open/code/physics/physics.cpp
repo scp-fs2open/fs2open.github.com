@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 19:29:28 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2003-08-06 17:39:49 $
+ * $Author: phreak $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 19:29:28  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -917,6 +920,11 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		goal_vel.xyz.y = ci->vertical*pi->afterburner_max_vel.xyz.y;
 		goal_vel.xyz.z = ci->forward* pi->afterburner_max_vel.xyz.z;
 	}
+	else if ( pi->flags & PF_BOOSTER_ON ) {
+		goal_vel.xyz.x = ci->sideways*pi->booster_max_vel.xyz.x;
+		goal_vel.xyz.y = ci->vertical*pi->booster_max_vel.xyz.y;
+		goal_vel.xyz.z = ci->forward* pi->booster_max_vel.xyz.z;
+	}
 	else {
 		goal_vel.xyz.x = ci->sideways*pi->max_vel.xyz.x;
 		goal_vel.xyz.y = ci->vertical*pi->max_vel.xyz.y;
@@ -995,6 +1003,8 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		if ( goal_vel.xyz.z >= pi->prev_ramp_vel.xyz.z )  {
 			if ( pi->flags & PF_AFTERBURNER_ON )
 				ramp_time_const = pi->afterburner_forward_accel_time_const;
+			else if (pi->flags & PF_BOOSTER_ON)
+				ramp_time_const = pi->booster_forward_accel_time_const;
 			else
 				ramp_time_const = pi->forward_accel_time_const;
 		} else

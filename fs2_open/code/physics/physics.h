@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 19:29:28 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2003-08-06 17:39:49 $
+ * $Author: phreak $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 19:29:28  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -160,6 +163,7 @@
 #define	PF_SPECIAL_WARP_IN	(1 << 11)	//	Use when ship is warping in and we want to slow the ship faster than normal game physics
 #define	PF_WARP_OUT				(1 << 12)	//	Use when ship is warping out
 #define	PF_SPECIAL_WARP_OUT	(1 << 13)	//	Use when ship is warping out and we want to slow the ship faster than normal game physics
+#define PF_BOOSTER_ON		(1 << 14)
 
 //information for physics sim for an object
 typedef struct physics_info {
@@ -175,6 +179,7 @@ typedef struct physics_info {
 
 	vector	max_vel;			//maximum foward velocity in x,y,z
 	vector	afterburner_max_vel;	// maximum foward velocity in x,y,z while afterburner engaged
+	vector booster_max_vel;
 	vector	max_rotvel;		//maximum p,b,h rotational velocity
 	float		max_rear_vel;	//maximum velocity in the backwards Z direction
 
@@ -184,6 +189,7 @@ typedef struct physics_info {
 	//
 	float		forward_accel_time_const;	// forward acceleration time const
 	float		afterburner_forward_accel_time_const;	// forward acceleration time const while afterburner engaged
+	float		booster_forward_accel_time_const;
 	float		forward_decel_time_const;	// forward deceleration time const
 	float		slide_accel_time_const;		// slide acceleration time const
 	float		slide_decel_time_const;		// slide deceleration time const
