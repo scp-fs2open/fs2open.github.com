@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.56 $
- * $Date: 2004-02-20 21:58:07 $
- * $Author: randomtiger $
+ * $Revision: 2.57 $
+ * $Date: 2004-02-27 04:09:55 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2004/02/20 21:58:07  randomtiger
+ * Added * to - conversion for start mission code to allow launcher missions with '-' in them.
+ * Currently the parsing code counts that as a flag and messes it up.
+ *
  * Revision 2.55  2004/02/20 21:45:40  randomtiger
  * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
  * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
@@ -1213,4 +1217,6 @@ int parse_cmdline(int argc, char *argv[])
 
 	return 1;
 }
+
+//float global_scaleing_factor = 3.0f;
 

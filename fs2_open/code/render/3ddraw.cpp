@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-02-14 00:18:35 $
- * $Author: randomtiger $
+ * $Revision: 2.16 $
+ * $Date: 2004-02-27 04:09:56 $
+ * $Author: bobboau $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/02/14 00:18:35  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.14  2004/02/13 04:17:14  randomtiger
  * Turned off fog in OGL for Fred.
  * Simulated speech doesnt say tags marked by $ now.
@@ -662,7 +673,121 @@ int g3_draw_sphere_ez(vector *pnt,float rad)
 3----2
 1.41421356
 */
+
 int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth){
+//return 0;
+	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+	vector PNT;
+	vm_vert2vec(pnt, &PNT);
+	vector p[4];
+	vertex P[4];
+	//unused variables that were there for some reason
+//	matrix m;
+//	vm_set_identity(&m);
+
+	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
+	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
+
+	p[0].xyz.x = rad * aspect;	p[0].xyz.y = rad;	p[0].xyz.z = -depth;
+	p[1].xyz.x = -rad * aspect;	p[1].xyz.y = rad;	p[1].xyz.z = -depth;
+	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
+	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
+
+	matrix te = View_matrix;
+	vm_transpose_matrix(&te);
+	for(int i = 0; i<4; i++){
+		vector t = p[i];
+		vm_vec_rotate(&p[i],&t,&te);//point it at the eye
+		vm_vec_add2(&p[i],&PNT);//move it
+	}
+
+	//move all the data from the vecs into the verts
+	g3_transfer_vertex(&P[0], &p[3]);
+	g3_transfer_vertex(&P[1], &p[2]);
+	g3_transfer_vertex(&P[2], &p[1]);
+	g3_transfer_vertex(&P[3], &p[0]);
+ 
+	//set up the UV coords
+	P[0].u = 0.0f;	P[0].v = 0.0f;
+	P[1].u = 1.0f;	P[1].v = 0.0f;
+	P[2].u = 1.0f;	P[2].v = 1.0f;
+	P[3].u = 0.0f;	P[3].v = 1.0f;
+
+	gr_set_cull(0);
+	g3_draw_poly(4,ptlist,tmap_flags);
+	gr_set_cull(1);
+
+	return 0;
+}
+
+/*
+//alternate method
+int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth){
+//return 0;
+//	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+	vector PNT;
+	vm_vert2vec(pnt, &PNT);
+	vector p[4];
+	vertex P[4];
+	vector fvec, rvec, uvec;
+	vm_vec_sub(&fvec, &View_position, &PNT);
+	vm_vec_normalize(&fvec);
+//	vm_vec_sub(&fvec, &PNT, &View_position);
+//	vm_vec_crossprod(&uvec, &fvec, &View_matrix.vec.rvec);
+//	vm_vec_crossprod(&rvec, &fvec, &uvec);
+	//unused variables that were there for some reason
+	matrix m;
+//	vm_set_identity(&m);
+	vm_vector_2_matrix(&m, &fvec, &View_matrix.vec.uvec, NULL);
+	vm_fix_matrix(&m);
+	uvec = m.vec.uvec;
+	rvec = m.vec.rvec;
+
+	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
+	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
+
+	vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
+	vm_vec_scale_add(&p[0], &PNT, &rvec, rad * aspect);
+	vm_vec_scale_add(&p[2], &PNT, &rvec, -rad * aspect);
+
+	vm_vec_scale_add(&p[1], &p[2], &uvec, rad);
+	vm_vec_scale_add(&p[3], &p[0], &uvec, -rad);
+	vm_vec_scale_add(&p[0], &p[0], &uvec, rad);
+	vm_vec_scale_add(&p[2], &p[2], &uvec, -rad);
+
+//	p[0].xyz.x = rad * aspect;	p[0].xyz.y = rad;	p[0].xyz.z = -depth;
+//	p[1].xyz.x = -rad * aspect;	p[1].xyz.y = rad;	p[1].xyz.z = -depth;
+//	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
+//	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
+
+	matrix te = View_matrix;
+	vm_transpose_matrix(&te);
+//	for(int i = 0; i<4; i++){
+//		vector t = p[i];
+//		vm_vec_rotate(&p[i],&t,&te);//point it at the eye
+//		vm_vec_add2(&p[i],&PNT);//move it
+//	}
+
+	//move all the data from the vecs into the verts
+	g3_transfer_vertex(&P[0], &p[3]);
+	g3_transfer_vertex(&P[1], &p[2]);
+	g3_transfer_vertex(&P[2], &p[1]);
+	g3_transfer_vertex(&P[3], &p[0]);
+
+	//set up the UV coords
+	P[0].u = 0.0f;	P[0].v = 0.0f;
+	P[1].u = 1.0f;	P[1].v = 0.0f;
+	P[2].u = 1.0f;	P[2].v = 1.0f;
+	P[3].u = 0.0f;	P[3].v = 1.0f;
+
+	gr_set_cull(0);
+	g3_draw_poly(4,ptlist,tmap_flags);
+	gr_set_cull(1);
+
+	return 0;
+}
+*/
+int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float depth, float c){
 //return 0;
 //	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 	vector PNT;
@@ -695,6 +820,10 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 	g3_transfer_vertex(&P[2], &p[1]);
 	g3_transfer_vertex(&P[3], &p[0]);
 
+	for( i = 0; i<4; i++){
+		P[i].r = 255 * c; P[i].g = 255 * c; P[i].b = 255 * c; 
+	}
+
 	//set up the UV coords
 	P[0].u = 0.0f;	P[0].v = 0.0f;
 	P[1].u = 1.0f;	P[1].v = 0.0f;
@@ -702,11 +831,25 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 	P[3].u = 0.0f;	P[3].v = 1.0f;
 
 	gr_set_cull(0);
-	g3_draw_poly(4,ptlist,tmap_flags);
+	g3_draw_poly(4,ptlist,tmap_flags  | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
 	gr_set_cull(1);
 
 	return 0;
 }
+
+int g3_draw_bitmap_3d_volume(vertex *pnt,int orient, float rad,uint tmap_flags, float depth, int resolution){
+	float s = 1.0f;
+	float res = float(resolution);
+//	float total = 0.0f;
+	for(int i = 0; i <resolution; i++){
+		s = (1.0f - (float(i-1)/res))/6.5;
+	//	total +=s;
+		float d = (float(i)/res);
+		g3_draw_bitmap_3d_v(pnt,orient, rad, tmap_flags, depth * d, s);
+	}
+	return 0;
+}
+
 
 //draws a bitmap with the specified 3d width & height 
 //returns 1 if off screen, 0 if drew
@@ -722,6 +865,7 @@ int g3_draw_bitmap(vertex *pnt,int orient, float rad,uint tmap_flags, float dept
 				return 0;
 
 		if(tmap_flags & TMAP_HTL_3D_UNLIT)
+		//	return g3_draw_bitmap_3d_volume(pnt, orient, rad, tmap_flags, depth, 10);// just playing with an idea for makeing glows on thrusters less... not... good
 			return g3_draw_bitmap_3d(pnt, orient, rad, tmap_flags, depth);
 	}
 
@@ -854,6 +998,7 @@ int g3_get_bitmap_dims(int bitmap, vertex *pnt, float rad, int *x, int *y, int *
 
 int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags, float depth){
 
+//	return 0;
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 
 	angle+=Physics_viewer_bank;

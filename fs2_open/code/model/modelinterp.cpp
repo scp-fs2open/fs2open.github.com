@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.71 $
- * $Date: 2004-02-20 21:45:41 $
- * $Author: randomtiger $
+ * $Revision: 2.72 $
+ * $Date: 2004-02-27 04:09:55 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2004/02/20 21:45:41  randomtiger
+ * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
+ * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
+ * Fixed setup of center_alpha in OGL which was causing crash.
+ *
  * Revision 2.70  2004/02/15 06:02:32  bobboau
  * fixed sevral asorted matrix errors,
  * OGL people make sure I didn't break anything,
@@ -3276,7 +3281,7 @@ void moldel_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos
 
 	temp = *pos;
 
-//	vm_vec_sub( &rvec, &Eye_position, &temp );
+//	vm_vec_sub( &rvec, &View, &temp );
 	vm_vec_sub( &rvec, Eyeposition, &temp );
 	vm_vec_normalize( &rvec );	
 
@@ -3380,7 +3385,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	bool is_outlines_only = !Cmdline_nohtl && (flags & MR_NO_POLYS) && ((flags & MR_SHOW_OUTLINE_PRESET) || (flags & MR_SHOW_OUTLINE));  
 
 
-	g3_start_instance_matrix(pos,orient, !is_outlines_only && (gr_screen.mode == GR_DIRECT3D));
+	g3_start_instance_matrix(pos,orient, !is_outlines_only || (gr_screen.mode == GR_DIRECT3D));
 
 	if ( Interp_flags & MR_SHOW_RADIUS )	{
 		if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
@@ -3499,7 +3504,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	while( i>-1 )	{
 		if (!pm->submodel[i].is_thruster )	{
-			zbuf_mode = GR_ZBUFF_WRITE;
+			zbuf_mode = GR_ZBUFF_FULL;
 
 
 			// no zbuffering
@@ -3622,6 +3627,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					
 						if(bank->submodel_parent > 0){//this is were it rotates for the submodel parent-Bobboau
 							matrix m;
+							if(pm->submodel[bank->submodel_parent].blown_off)continue;
+
 							angles angs = pm->submodel[bank->submodel_parent].angs;
 							angs.b = PI2 - angs.b;
 							angs.p = PI2 - angs.p;
@@ -3674,7 +3681,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 								//if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_FOG, 0, 0, 0);
 								if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 		
-								g3_rotate_vertex( &p, &pnt );
+								vertex pt;
+								g3_rotate_vertex( &p, &bank->pnt[j] );
+								if(!Cmdline_nohtl) g3_transfer_vertex(&pt, &bank->pnt[j]);
+								else pt = p;
 								
 	
 							//	if(bank->submodel_parent)
@@ -3683,7 +3693,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 								gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
 							//	mprintf(( "rendering glow with texture %d\n", bank->glow_bitmap ));
-								g3_draw_bitmap(&p,0,w*0.5f, TMAP_FLAG_TEXTURED );
+								if(Cmdline_nohtl)g3_draw_bitmap(&pt,0,w*0.5f, TMAP_FLAG_TEXTURED );
+								else g3_draw_bitmap(&pt,0,w*0.5f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w );
 								//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
 
 							}//d>0
@@ -3701,23 +3712,27 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 								vm_vec_normalize(&fvec);
 
-								moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, bank->radius[j], 1.0f, &Eye_position);	
-								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, bank->radius[j], 1.0f, &Eye_position);	
+								moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, bank->radius[j], 1.0f, &View_position);	
+								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, bank->radius[j], 1.0f, &View_position);	
 
 								int idx = 0;
-
-/*R_VERTICES()*/		do { 
+ 
+/*R_VERTICES()*/		if(Cmdline_nohtl){ 
 							g3_rotate_vertex(verts[0], &bottom1); 
 							g3_rotate_vertex(verts[1], &bottom2);	
 							g3_rotate_vertex(verts[2], &top2); 
-							g3_rotate_vertex(verts[3], &top1); } while(0);
+							g3_rotate_vertex(verts[3], &top1); 
+						}else{
+							g3_transfer_vertex(verts[0], &bottom1); 
+							g3_transfer_vertex(verts[1], &bottom2);	
+							g3_transfer_vertex(verts[2], &top2); 
+							g3_transfer_vertex(verts[3], &top1);
+						}
 /*P_VERTICES()*/		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
-/*STUFF_VERTICES()*/	do { 
-								verts[0]->u = 0.0f; verts[0]->v = 0.0f;	
-								verts[1]->u = 1.0f; verts[1]->v = 0.0f; 
-								verts[2]->u = 1.0f;	verts[2]->v = 1.0f; 
-								verts[3]->u = 0.0f; verts[3]->v = 1.0f; 
-						} while(0);
+						verts[0]->u = 0.0f; verts[0]->v = 0.0f;	
+						verts[1]->u = 1.0f; verts[1]->v = 0.0f; 
+						verts[2]->u = 1.0f;	verts[2]->v = 1.0f; 
+						verts[3]->u = 0.0f; verts[3]->v = 1.0f; 
 //								mR_VERTICES();																// rotate and project the vertices
 //								mP_VERTICES();						
 //								mSTUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
@@ -3732,7 +3747,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 							}else{
 								gr_set_bitmap(bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
 							}
-								g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
+								g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
 							gr_set_cull(1);
 						}
 					}//flick
@@ -3871,7 +3886,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 //						g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
 						if(Cmdline_nohtl)g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
-						else g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, 0.375f*w );
+						else g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w );
 
 						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
 					}
@@ -3885,7 +3900,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					p.sw -= w;
 					//g3_draw_bitmap(&p,0,w, TMAP_FLAG_TEXTURED );
 					if(Cmdline_nohtl)g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED); 
-					else g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, -0.375f*(D>0)?D:-D);
+					else g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, -(D>0)?D:-D);
 				}
 				
 
@@ -4082,12 +4097,12 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 
 	if((Interp_flags & MR_AUTOCENTER) && (pm->flags & PM_FLAG_AUTOCEN)){
-		g3_done_instance(!is_outlines_only && (gr_screen.mode == GR_DIRECT3D));
+		g3_done_instance(!is_outlines_only || (gr_screen.mode == GR_DIRECT3D));
 	}
 
 //	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
-	g3_done_instance(!is_outlines_only && (gr_screen.mode == GR_DIRECT3D));
+	g3_done_instance(!is_outlines_only || (gr_screen.mode == GR_DIRECT3D));
 	
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
@@ -4142,7 +4157,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 		light_filter_push( -1, pos, pm->submodel[submodel_num].rad );
 	}
 
-	g3_start_instance_matrix(pos,orient);
+	g3_start_instance_matrix(pos,orient, (gr_screen.mode == GR_DIRECT3D));
 
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_rotate_all();
@@ -4704,6 +4719,7 @@ void parse_tmap(int offset, ubyte *bsp_data){
 
 	  	problem_count += check_values(N);
 		vm_vec_normalize(N);
+//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+1];
 		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)+1];
@@ -4719,6 +4735,7 @@ void parse_tmap(int offset, ubyte *bsp_data){
 
 	 	problem_count += check_values(N);
 		vm_vec_normalize(N);
+//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+2];
 		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)+2];
@@ -4734,6 +4751,7 @@ void parse_tmap(int offset, ubyte *bsp_data){
 
 		problem_count += check_values(N);
 		vm_vec_normalize(N);
+//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
 		list[pof_tex].n_poly++;
 	
@@ -5045,7 +5063,7 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 			if(Interp_flags & MR_NO_ZBUFFER){
 				zbuf_mode = GR_ZBUFF_NONE;
 			} else {
-				zbuf_mode = GR_ZBUFF_READ;		// read only
+				zbuf_mode = GR_ZBUFF_FULL;		// read only
 			}
 
 			gr_zbuffer_set(zbuf_mode);

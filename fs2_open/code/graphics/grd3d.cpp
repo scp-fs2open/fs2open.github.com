@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.57 $
- * $Date: 2004-02-20 21:45:41 $
- * $Author: randomtiger $
+ * $Revision: 2.58 $
+ * $Date: 2004-02-27 04:09:55 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2004/02/20 21:45:41  randomtiger
+ * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
+ * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
+ * Fixed setup of center_alpha in OGL which was causing crash.
+ *
  * Revision 2.56  2004/02/20 04:29:54  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -2203,6 +2208,7 @@ void gr_d3d_end_proj_matrix(){
 //	proj_matrix_stack->Pop();
 }
 
+//extern float global_scaleing_factor;
 	//the view matrix
 void gr_d3d_set_view_matrix(vector* offset, matrix *orient){
 
@@ -2217,14 +2223,12 @@ void gr_d3d_set_view_matrix(vector* offset, matrix *orient){
 		offset->xyz.x, offset->xyz.y, offset->xyz.z, 1);
 
 	D3DXMatrixIdentity(&mat);
+
+//	D3DXMatrixScaling(&scale_m, 1/global_scaleing_factor, 1/global_scaleing_factor, 1/global_scaleing_factor);//global sacaleing
+//	D3DXMatrixMultiply(&MAT, &MAT, &scale_m);
+
 	D3DXMatrixInverse(&mat, NULL, &MAT);
-//	view_matrix_stack->LoadMatrix(&mat);
-//	D3DXMatrixScaling(&scale_m, 3.0f, 3.0f, 3.0f);
-//	D3DXMatrixMultiply(&mat, &scale_m, &mat);
-
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_VIEW, &mat);
-
-
 }
 
 void gr_d3d_end_view_matrix(){
@@ -2244,10 +2248,10 @@ void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
 		orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, orient->vec.fvec.xyz.z, 0,
 		offset->xyz.x, offset->xyz.y, offset->xyz.z, 1);
 
-	D3DXMatrixMultiply(&world, &world, &old_world);
-
-//	D3DXMatrixScaling(&scale_m, 3.0f, 3.0f, 3.0f);
+//	D3DXMatrixScaling(&scale_m, global_scaleing_factor, global_scaleing_factor, global_scaleing_factor);//global sacaleing
 //	D3DXMatrixMultiply(&world, &scale_m, &world);
+
+	D3DXMatrixMultiply(&world, &world, &old_world);
 
 	world_matrix_stack->LoadMatrix(&world);
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
@@ -2266,10 +2270,12 @@ void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient){
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		offset->xyz.x, offset->xyz.y, offset->xyz.z, 1);
+
+///	D3DXMatrixScaling(&scale_m, global_scaleing_factor, global_scaleing_factor, global_scaleing_factor);;//global sacaleing
+//	D3DXMatrixMultiply(&world, &scale_m, &world);
+
 	D3DXMatrixMultiply(&mat, &mat, &world);
 	D3DXMatrixMultiply(&mat, &mat, &current);
-
-//	D3DXMatrixScaling(&scale_m, 3.0f, 3.0f, 3.0f);
 
 	world_matrix_stack->LoadMatrix(&mat);
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
