@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-02-16 21:22:15 $
- * $Author: randomtiger $
+ * $Revision: 2.7 $
+ * $Date: 2004-02-25 05:53:32 $
+ * $Author: Goober5000 $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/02/16 21:22:15  randomtiger
+ * Use _REPORT_MEM_LEAKS compile flag in code.lib to get a report of memory leaks from malloc calls.
+ *
  * Revision 2.5  2004/02/14 00:18:31  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -981,6 +984,7 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 #else
 
 #ifndef NDEBUG
+#ifndef DONT_SHOW_WARNINGS	// Goober5000
 
 	va_list args;
 	int id;
@@ -1016,6 +1020,8 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 		AsmInt3();
 #endif
 	}
+
+#endif // DONT_SHOW_WARNINGS - Goober5000
 #endif // NDEBUG
 
 #endif // FRED OGL else
