@@ -15,12 +15,13 @@ struct CFILE;
 #define DDS_ERROR_NONE					0		//everything went fine
 #define DDS_ERROR_INVALID_FILENAME		1		//bad filename
 #define DDS_ERROR_NO_MEM				2		//not enough mem to load
-#define DDS_ERROR_UNCOMPRESSED			3		//not using dxtc compression		
+#define DDS_ERROR_UNSUPPORTED			3		//not a readable format		
 #define DDS_ERROR_INVALID_FORMAT		4		//can only use dxtc1, dxtc3, dxtc5
 #define DDS_ERROR_BAD_HEADER			5		//header was not "DDS "
 
 
 #define DDS_DXT_INVALID				-1
+#define DDS_UNCOMPRESSED				0
 #define DDS_DXT1						1
 #define DDS_DXT3						3
 #define DDS_DXT5						5
