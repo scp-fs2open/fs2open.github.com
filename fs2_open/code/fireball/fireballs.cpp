@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-07 01:37:41 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-18 01:44:30 $
+ * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/07 01:37:41  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.2  2002/11/14 04:18:16  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -126,7 +132,7 @@
  * Made warp in glow page in
  * 
  * 67    3/27/98 2:17p Lawrance
- * Don't play warphole closing for non-captial sized warp effects
+ * Don't play warphole closing for non-capital sized warp effects
  * 
  * 66    3/26/98 5:44p Lawrance
  * take out debug comments for warphole sounds playing
@@ -371,7 +377,7 @@ typedef struct fireball_info	{
 
 // flag values for fireball struct flags member
 #define	FBF_WARP_CLOSE_SOUND_PLAYED	(1<<0)
-#define	FBF_WARP_CAPTIAL_SIZE			(1<<1)
+#define	FBF_WARP_CAPITAL_SIZE			(1<<1)
 #define	FBF_WARP_CRUISER_SIZE			(1<<2)
 
 typedef struct fireball {					
@@ -417,7 +423,7 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 	if((ship_class >= 0) && (ship_class < Num_ship_types)){
 		if ( Ship_info[ship_class].flags & SIF_HUGE_SHIP ) {
 			sound_index = SND_CAPITAL_WARP_IN;
-			fb->flags |= FBF_WARP_CAPTIAL_SIZE;
+			fb->flags |= FBF_WARP_CAPITAL_SIZE;
 		} else if ( Ship_info[ship_class].flags & SIF_BIG_SHIP ) {
 			range_multiplier = 6.0f;
 			fb->flags |= FBF_WARP_CRUISER_SIZE;
@@ -438,10 +444,10 @@ void fireball_play_warphole_close_sound(fireball *fb)
 
 	sound_index = SND_WARP_OUT;
 
-	if ( fb->flags & FBF_WARP_CAPTIAL_SIZE ) {
+	if ( fb->flags & FBF_WARP_CAPITAL_SIZE ) {
 		sound_index = SND_CAPITAL_WARP_OUT;
 	} else {
-		// AL 27-3-98: Decided that warphole closing is only required for captial ship sized warp effects.
+		// AL 27-3-98: Decided that warphole closing is only required for capital ship sized warp effects.
 		return;
 	}
 

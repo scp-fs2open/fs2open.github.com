@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-18 01:44:31 $
+ * $Author: Goober5000 $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -851,7 +854,7 @@ void obj_snd_do_frame()
 			vector *vel=NULL;
 			vel = &objp->phys_info.vel;
 
-			// Don't play doppler effect for cruisers or captials
+			// Don't play doppler effect for cruisers or capitals
 			if ( sp ) {
 				if ( ship_get_SIF(sp) & (SIF_BIG_SHIP | SIF_HUGE_SHIP) ) {
 					vel=NULL;
@@ -866,7 +869,7 @@ void obj_snd_do_frame()
 				snd_get_3d_vol_and_pan(gs, &source_pos, &osp->vol, &osp->pan, add_distance);
 				snd_set_volume( osp->instance, osp->vol*speed_vol_multiplier );
 				snd_set_pan( osp->instance, osp->pan );
-				// Don't play doppler effect for cruisers or captials
+				// Don't play doppler effect for cruisers or capitals
 				if ( objp->type == OBJ_SHIP && Doppler_enabled == TRUE ) {
 					if ( !(ship_get_SIF(sp) & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
 						int new_freq;

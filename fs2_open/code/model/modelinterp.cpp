@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-03-02 05:55:51 $
- * $Author: penguin $
+ * $Revision: 2.19 $
+ * $Date: 2003-03-18 01:44:31 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/03/02 05:55:51  penguin
+ * Moved Gr_scaler_zbuffering definition to top of file
+ *  - penguin
+ *
  * Revision 2.17  2003/01/30 23:19:14  phreak
  * enabled RGB lighting for OpenGL
  *
@@ -418,7 +422,7 @@ static float Interp_xparent_alpha = 1.0f;
 
 float Interp_light = 0.0f;
 
-void set_warp_gloabals(float a, float b, float c, int d, float e){
+void set_warp_globals(float a, float b, float c, int d, float e){
 	Model_Interp_scale_x =a;
 	Model_Interp_scale_y=b;
 	Model_Interp_scale_z=c;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-03-03 09:53:32 $
+ * $Revision: 2.7 $
+ * $Date: 2003-03-18 01:44:30 $
  * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/03/03 09:53:32  Goober5000
+ * fixed the warp effect from always being the knossos type
+ * --Goober5000
+ *
  * Revision 2.5  2003/03/03 09:31:59  Goober5000
  * changed "Subspace node activated" message to "Subspace drive activated"
  * --Goober5000
@@ -1093,7 +1097,7 @@ void shipfx_warpout_start( object *objp )
 	if ( objp == Player_obj )	{
 // changed by Goober5000 to be more accurate
 //		HUD_printf(XSTR( "Subspace node activated", 498) );
-		HUD_printf(NOX("Subspace drive activated"));
+		HUD_printf(NOX("Subspace drive engaged"));
 	}
 
 	float	speed, effect_time, effect_radius;

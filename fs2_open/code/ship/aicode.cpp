@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.26 $
- * $Date: 2003-02-25 06:22:49 $
- * $Author: bobboau $
+ * $Revision: 2.27 $
+ * $Date: 2003-03-18 01:44:30 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/02/25 06:22:49  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.25  2003/02/16 05:14:29  bobboau
  * added glow map nebula bug fix for d3d, someone should add a fix for glide too
  * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
@@ -13066,7 +13072,7 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
 
 	if ( parent_objnum == -1 )
 	{
-		// locate a captial ship on the same team:
+		// locate a capital ship on the same team:
 		objnum = Ships[ship_get_ship_with_dock_bay(Ships[pl_objp->instance].team)].objnum;
 	} else {
 		objnum = parent_objnum;
