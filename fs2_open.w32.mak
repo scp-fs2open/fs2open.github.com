@@ -1,5 +1,6 @@
 # Microsoft Developer Studio Generated NMAKE File, Based on fs2_open.dsp
 # heavily modified by penguin
+# Test comment by Inquisitor
 
 !IF "$(CFG)" != "Release" && "$(CFG)" != "Debug"
 !MESSAGE Invalid configuration "$(CFG)" specified.
