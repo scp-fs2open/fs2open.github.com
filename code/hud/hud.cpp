@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-09-17 00:18:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2004-11-21 11:29:53 $
+ * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/09/17 00:18:17  Goober5000
+ * changed toggle-hud to hud-disable; added hud-disable-except-messages
+ * --Goober5000
+ *
  * Revision 2.23  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -929,6 +933,7 @@ void hud_init_kills_gauge();
 void hud_show_kills_gauge();
 int hud_maybe_render_emp_icon();
 void hud_init_emp_icon();
+void hud_maybe_blit_head_border();
 
 //	Saturate a value in minv..maxv.
 void saturate(int *i, int minv, int maxv)
@@ -1089,6 +1094,18 @@ void hud_disable_except_messages(int disable)
 // like hud_disabled, except messages are still drawn
 int hud_disabled_except_messages()
 {
+	if (HUD_disable_except_messages) {
+		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
+			// draw a border around a talking head if it is playing
+			hud_maybe_blit_head_border();
+
+			// show the directives popup and/or training popup
+			message_training_display();
+		}
+
+		hud_show_messages();
+	}
+
 	return HUD_disable_except_messages;
 }
 
@@ -1328,6 +1345,10 @@ void hud_show_asteroid_brackets()
 // Draw radar gauge on the HUD
 void hud_show_radar()
 {
+	if ( hud_disabled_except_messages() ) {
+		return;
+	}
+
 	if ( hud_disabled() ) {
 		return;
 	}
@@ -1345,6 +1366,10 @@ void hud_show_radar()
 // Render model of target in the target view box
 void hud_show_target_model()
 {
+	if ( hud_disabled_except_messages() ) {
+		return;
+	}
+
 	if ( hud_disabled() ) {
 		return;
 	}
@@ -1629,17 +1654,6 @@ void HUD_render_2d(float frametime)
 	// Goober5000 - special case... hud is off, but we're still displaying messages
 	if ( hud_disabled_except_messages() )
 	{
-		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY )))
-		{
-			// draw a border around a talking head if it is playing
-			hud_maybe_blit_head_border();
-
-			// show the directives popup and/or training popup
-			message_training_display();
-		}
-
-		hud_show_messages();
-
 		return;
 	}
 
