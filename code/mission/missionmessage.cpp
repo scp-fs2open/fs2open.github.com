@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-05-02 01:26:52 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2004-05-10 13:07:22 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/05/02 01:26:52  taylor
+ * comment out avi free code for now
+ *
  * Revision 2.13  2004/04/26 01:40:53  taylor
  * better anim free stuff, disable for now to prevent CTD
  *
@@ -815,6 +818,8 @@ void message_parse( )
 
 void parse_msgtbl()
 {
+	char *p1, *p2, *p3;
+
 	// open localization
 	lcl_ext_open();
 
@@ -823,6 +828,31 @@ void parse_msgtbl()
 	Num_messages = 0;
 	Num_personas = 0;
 
+	// Goober5000 - ugh, nasty nasty hack to fix the FS2 retail tables
+	p1 = strstr(Mp, "#End");
+	*(p1+4)=0;
+	p1 = strstr(Mp, "2926");
+	if (p1)
+	{
+		p2 = strstr(p1, "Vawacs25.wav");
+		p3 = strstr(p1, "$Name");
+		if (p2 && p3 && (p2 < p3))
+		{
+			replace_one(p2, "Vawacs25.wav", "Awacs25.wav", 500, 0);
+		}
+	}
+	p1 = strstr(Mp, "2927");
+	if (p1)
+	{
+		p2 = strstr(p1, "Awacs75.wav");
+		p3 = strstr(p1, "$Name");
+		if (p2 && p3 && (p2 < p3))
+		{
+			replace_one(p2, "Awacs75.wav", "Vawacs75.wav", 500, 0);
+		}
+	}
+
+	// Goober5000 - now we can start parsing
 	required_string("#Personas");
 	while ( required_string_either("#Messages", "$Persona:")){
 		persona_parse();
