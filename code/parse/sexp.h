@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.30 $
+ * $Revision: 2.31 $
  * $Author: Goober5000 $
- * $Date: 2003-03-18 08:44:05 $
+ * $Date: 2003-03-19 06:23:28 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/03/18 08:44:05  Goober5000
+ * added explosion-effect sexp and did some other minor housekeeping
+ * --Goober5000
+ *
  * Revision 2.29  2003/03/03 04:28:37  Goober5000
  * fixed the tech room bug!  yay!
  * --Goober5000
@@ -547,6 +551,7 @@
 #define CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN				(0x0005 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_SPECIAL							(0x0006 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES				(0x0007 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION			(0x0008	| OP_CATEGORY_CHANGE)
 
 #define	OP_PLUS									(0x0000 | OP_CATEGORY_ARITHMETIC)
 #define	OP_MINUS								(0x0001 | OP_CATEGORY_ARITHMETIC)
@@ -554,13 +559,6 @@
 #define	OP_MUL									(0x0003 | OP_CATEGORY_ARITHMETIC)
 #define	OP_DIV									(0x0004 | OP_CATEGORY_ARITHMETIC)
 #define	OP_RAND									(0x0005 | OP_CATEGORY_ARITHMETIC)
-#define OP_GET_OBJECT_X							(0x0006	| OP_CATEGORY_ARITHMETIC)	// Goober5000
-#define OP_GET_OBJECT_Y							(0x0007	| OP_CATEGORY_ARITHMETIC)	// Goober5000
-#define OP_GET_OBJECT_Z							(0x0008	| OP_CATEGORY_ARITHMETIC)	// Goober5000
-#define OP_SET_OBJECT_X							(0x0009	| OP_CATEGORY_ARITHMETIC)	// Goober5000
-#define OP_SET_OBJECT_Y							(0x000a	| OP_CATEGORY_ARITHMETIC)	// Goober5000
-#define OP_SET_OBJECT_Z							(0x000b	| OP_CATEGORY_ARITHMETIC)	// Goober5000
-
 
 #define	OP_TRUE									(0x0000 | OP_CATEGORY_LOGICAL)
 #define	OP_FALSE									(0x0001 | OP_CATEGORY_LOGICAL)
@@ -744,6 +742,15 @@
 #define OP_EXPLOSION_EFFECT					(0x007d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_WARP_EFFECT						(0x007e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_EMP_EFFECT						(0x007f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_SHIP_FACING					(0x0080 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_SHIP_FACING_OBJECT			(0x0081 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_OBJECT_X						(0x0082	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_OBJECT_Y						(0x0083	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_OBJECT_Z						(0x0084	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_OBJECT_X						(0x0085	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_OBJECT_Y						(0x0086	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_OBJECT_Z						(0x0087	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
