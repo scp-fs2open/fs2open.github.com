@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.52 $
- * $Date: 2003-03-22 06:35:37 $
+ * $Revision: 2.53 $
+ * $Date: 2003-03-22 07:24:53 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2003/03/22 06:35:37  Goober5000
+ * bugs are bad, mmkay?
+ * --Goober5000
+ *
  * Revision 2.51  2003/03/22 06:11:51  Goober5000
  * added play-sound-from-table, play-sound-from-file, and close-sound-from-file
  * --Goober5000
@@ -836,7 +840,7 @@ sexp_oper Operators[] = {
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
 	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 1 },		// Goober5000
-	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	0, 1 },		// Goober5000
+	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	1, 1 },		// Goober5000
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -6002,12 +6006,9 @@ void sexp_play_sound_from_table(int n)
 // Goober5000
 void sexp_close_sound_from_file(int n)
 {
-	if (n != -1)
+	if (Sexp_nodes[Sexp_nodes[n].first].value != SEXP_KNOWN_TRUE)
 	{
-		if (Sexp_nodes[Sexp_nodes[n].first].value != SEXP_KNOWN_TRUE)
-		{
-			sexp_stop_music(0);
-		}
+		sexp_stop_music(0);
 	}
 
 	sexp_stop_music();
