@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-11-25 15:04:46 $
- * $Author: fryday $
+ * $Revision: 2.4 $
+ * $Date: 2004-02-03 18:29:30 $
+ * $Author: randomtiger $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/11/25 15:04:46  fryday
+ * Got lasers to work in HT&L OpenGL
+ * Messed a bit with opengl_tmapper_internal3d, draw_laser functions, and added draw_laser_htl
+ *
  * Revision 2.2  2003/08/21 15:03:43  phreak
  * zeroed out the specular fields since they caused some flickering
  *
@@ -148,6 +152,7 @@
 int Lasers = 1;
 DCF_BOOL( lasers, Lasers );
 
+// This works but leaves the effect looking very flat
 float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, int g, int b, uint tmap_flags)
 {
 	vector uvec, fvec, rvec, center;
@@ -172,7 +177,9 @@ float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, 
 	int i;
 	vector vecs[4];
 	vertex pts[4];
-	vertex *ptlist[4] = { &pts[3], &pts[2], &pts[1], &pts[0] };
+	vertex *ptlist[8] = 
+	{ &pts[3], &pts[2], &pts[1], &pts[0], 
+	  &pts[0], &pts[1], &pts[2], &pts[3]};
 
 	vm_vec_scale_add( &vecs[0], p0, &uvec, width1/2.0f );
 	vm_vec_scale_add( &vecs[1], p1, &uvec, width2/2.0f );
@@ -206,7 +213,10 @@ float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, 
 	ptlist[3]->g = (ubyte)g;
 	ptlist[3]->b = (ubyte)b;
 	ptlist[3]->a = 255;
-	gr_tmapper(4,ptlist,tmap_flags | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+
+	gr_tmapper(gr_screen.mode == GR_DIRECT3D ? 8 : 4,
+		ptlist,tmap_flags | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+	
 	return center.xyz.z;
 }
 
@@ -220,8 +230,9 @@ float g3_draw_laser(vector *headp, float head_width, vector *tailp, float tail_w
 	if (!Lasers){
 		return 0.0f;
 	}
-	if((!Cmdline_nohtl)&&(gr_screen.mode == GR_OPENGL))
-	{
+	if((!Cmdline_nohtl)
+		){
+		//&&(gr_screen.mode == GR_OPENGL)) {
 		return g3_draw_laser_htl(headp, head_width, tailp, tail_width, 255,255,255, tmap_flags | TMAP_HTL_3D_UNLIT);
 	}
 	float headx, heady, headr, tailx, taily, tailr;
@@ -385,7 +396,9 @@ float g3_draw_laser_rgb(vector *headp, float head_width, vector *tailp, float ta
 	if (!Lasers){
 		return 0.0f;
 	}
-	if((!Cmdline_nohtl)&&(gr_screen.mode==GR_OPENGL)) {
+	if((!Cmdline_nohtl)
+		){
+	  //	&&(gr_screen.mode==GR_OPENGL)) {
 		return g3_draw_laser_htl(headp,head_width,tailp,tail_width,r,g,b,tmap_flags | TMAP_HTL_3D_UNLIT);
 	}
 	float headx, heady, headr, tailx, taily, tailr;

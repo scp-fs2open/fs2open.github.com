@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.58 $
- * $Date: 2004-01-24 12:47:48 $
+ * $Revision: 2.59 $
+ * $Date: 2004-02-03 18:29:30 $
  * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2004/01/24 12:47:48  randomtiger
+ * Font and other small changes for Fred
+ *
  * Revision 2.57  2004/01/20 22:59:09  Goober5000
  * got rid of some warnings... it actually looks like Gr_gamma_lookup can be changed
  * from int to ubyte, because everything that accesses it converts to a ubyte  O.o
@@ -2930,16 +2933,18 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 		return;
 	}
 	
-	if (gr_screen.current_fog_mode != fog_mode) {
-		if (OGL_fogmode==3)
+  	if (gr_screen.current_fog_mode != fog_mode) {
+	  	if (OGL_fogmode==3)
 			glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
-		else if (OGL_fogmode==2)
+
+		else if (OGL_fogmode==2 && Cmdline_nohtl)
 		{
 			glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT);
 			fog_near*=fog_near;		//its faster this way
 			fog_far*=fog_far;		
 		}
-		glEnable(GL_FOG);
+
+		glEnable(GL_FOG); 
 		glFogf(GL_FOG_MODE, GL_LINEAR);
 		glFogf(GL_FOG_START, fog_near);
 		glFogf(GL_FOG_END, fog_far);
@@ -4632,7 +4637,7 @@ void gr_opengl_render_buffer(int idx)
 	pre_render_init_lights();
 	change_active_lights(0);
 
-	glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3);
+   	glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3);
 
 	if((lighting_is_enabled)&&((n_active_lights-1)/max_gl_lights > 0)) {
 		gr_opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
