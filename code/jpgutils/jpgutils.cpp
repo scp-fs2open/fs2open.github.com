@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-03-12 04:59:14 $
- * $Author: taylor $
+ * $Revision: 1.19 $
+ * $Date: 2005-03-12 05:21:36 $
+ * $Author: wmcoolmon $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/03/12 04:59:14  taylor
+ * absolute header location for jpeglib.h in jpgutils.cpp (thanks WMC)
+ * update VC6 project files to correct versions that work properly with internal libjpeg
+ *
  * Revision 1.17  2005/03/11 01:37:35  wmcoolmon
  * Isn't the extern needed too? causes linking errors on my system w/o it, although it compiles fine.
  *
@@ -74,13 +78,7 @@
 #include <string.h>
 #include <setjmp.h>
 
-#ifndef WMC
 #include "../../libjpeg/jpeglib.h"
-#else
-extern "C" {
-#include <libjpeg/jpeglib.h>
-}
-#endif
 
 #undef LOCAL // fix from a jpeg header, pstypes.h will define it again
 
