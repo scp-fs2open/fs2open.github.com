@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/version.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-04 05:11:36 $
  * $Author: penguin $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -114,19 +117,14 @@
 //		1.01	Patch for Win95 volume label bug
 //		1.20	German release version
 
-#if defined (FS2_DEMO)
-	#define FS_VERSION_MAJOR 01					// Major is 0 for pre-release and 1 for 1.0 release
-	#define FS_VERSION_MINOR 10					// Increase by 1 for minor revs, 10 for major.
-	#define FS_VERSION_BUILD 00					// Build version 
-#elif defined(OEM_BUILD)
-	#define FS_VERSION_MAJOR 01					// Major is 0 for pre-release and 1 for 1.0 release
-	#define FS_VERSION_MINOR 00					// Increase by 1 for minor revs, 10 for major.
-	#define FS_VERSION_BUILD 00					// Build version 
-#else
-	#define FS_VERSION_MAJOR 01					// Major is 0 for pre-release and 1 for 1.0 release
-	#define FS_VERSION_MINOR 20					// Increase by 1 for minor revs, 10 for major.
-	#define FS_VERSION_BUILD 00					// Build version 
-#endif
+
+// fs2_open version numbers:
+//   the first version is 3.0 :-)
+//   Major.Minor.Bugfix
+
+#define FS_VERSION_MAJOR 3					// major version
+#define FS_VERSION_MINOR 1					// increase by 1 for minor revs
+#define FS_VERSION_BUILD 0					// bugfix release
 
 #define VERSION_LOC_FNAME			"version.nfo"
 #define MOTD_LOC_FNAME				"motd.txt"
