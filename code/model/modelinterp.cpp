@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.59 $
- * $Date: 2003-12-04 20:39:10 $
+ * $Revision: 2.60 $
+ * $Date: 2004-01-12 21:12:41 $
  * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2003/12/04 20:39:10  randomtiger
+ * Added DDS image support for D3D
+ * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
+ * Hopefully have fixed D3D text batching bug that caused old values to appear
+ * Added Hud_target_object_factor variable to control 3D object sizes of zoom in HUD target
+ * Fixed jump nodes not showing
+ *
  * Revision 2.58  2003/12/03 19:27:01  randomtiger
  * Changed -t32 flag to -jpgtga
  * Added -query_flag to identify builds with speech not compiled and other problems
@@ -4180,6 +4187,18 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 	}
 
 	if(!Cmdline_nohtl) {
+
+		// RT - Put this here to fog debris
+		if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
+		{
+			float fog_near, fog_far;
+			object *obj = &Objects[light_ignore_id];
+			neb2_get_fog_values(&fog_near, &fog_far, obj);
+			unsigned char r, g, b;
+			neb2_get_fog_colour(&r, &g, &b);
+			gr_fog_set(GR_FOGMODE_FOG, r, g, b, fog_near, fog_far);
+		}
+
 		model_render_buffers(&pm->submodel[submodel_num], pm);
 	} else {
 		model_interp_sub( pm->submodel[submodel_num].bsp_data, pm, &pm->submodel[submodel_num], 0 );
