@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2005/03/02 21:24:48  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.91  2005/03/01 06:55:45  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -1269,7 +1272,7 @@ int parse_weapon(int subtype, bool replace)
 					nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", wip->pofbitmap_name, wip->name,wip->laser_bitmap_nframes, wip->laser_bitmap_fps));
 				}
 			}else{
-				wip->laser_bitmap_nframes = 0;
+				wip->laser_bitmap_nframes = 1;
 				wip->laser_bitmap_fps = 0;
 			}
 
@@ -1892,6 +1895,8 @@ int parse_weapon(int subtype, bool replace)
 	wip->b_info.beam_warmdown_sound = -1;
 	wip->b_info.beam_num_sections = 0;
 	wip->b_info.beam_glow_bitmap = -1;
+	wip->b_info.beam_glow_nframes = 1;
+	wip->b_info.beam_glow_fps = 0;
 	wip->b_info.beam_shots = 0;
 	wip->b_info.beam_shrink_factor = 0.0f;
 	wip->b_info.beam_shrink_pct = 0.0f;
@@ -1963,6 +1968,10 @@ int parse_weapon(int subtype, bool replace)
 		stuff_string(fname, F_NAME, NULL);
 		if(!Fred_running){
 			wip->b_info.beam_glow_bitmap = bm_load(fname);
+
+			if (wip->b_info.beam_glow_bitmap == -1) {
+				wip->b_info.beam_glow_bitmap = bm_load_animation(fname, &wip->b_info.beam_glow_nframes, &wip->b_info.beam_glow_fps);
+			}
 		}
 
 		// # of shots (only used for type D beams)

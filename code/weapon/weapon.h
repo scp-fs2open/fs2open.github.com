@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/03/01 06:55:45  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.41  2005/02/19 07:54:33  wmcoolmon
  * Removed trails limit
  *
@@ -609,6 +613,8 @@ typedef struct beam_weapon_info {
 	int	beam_warmdown_sound;			// warmdown sound
 	int	beam_num_sections;			// the # of visible "sections" on the beam
 	int	beam_glow_bitmap;				// muzzle glow bitmap
+	int beam_glow_nframes;				// number of frames, if animated
+	int beam_glow_fps;					// frames/sec, if animated
 	int	beam_shots;						// # of shots the beam takes
 	float	beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
