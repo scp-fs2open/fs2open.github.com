@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.58 $
- * $Date: 2004-04-06 16:19:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.59 $
+ * $Date: 2004-05-25 00:26:25 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2004/04/06 16:19:11  Goober5000
+ * commented out one of Bobboau's hacks because it was messing stuff up
+ * --Goober5000
+ *
  * Revision 2.57  2004/03/17 04:07:31  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -9835,7 +9839,7 @@ void ai_big_guard()
 		// get desired z
 		// how often to choose new desired_z
 		// 1*(64) sec < 2000, 2*(64) < 2-4000 3*(64) > 4-8000, etc (Missiontime >> 22 is 64 sec intervals)
-		int time_choose = int(floor(log(length * 0.001) / log(2)));
+		int time_choose = int(floor(log(length * 0.001) / log((double)2)));
 		float desired_z = min_z + length * static_randf( Pl_objp-Objects ^ (Missiontime >> (22 + time_choose)) );
 
 		// get r from guard_ship
