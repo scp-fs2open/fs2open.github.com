@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.130 $
- * $Date: 2005-01-18 06:15:33 $
+ * $Revision: 2.131 $
+ * $Date: 2005-01-26 01:52:21 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.130  2005/01/18 06:15:33  Goober5000
+ * fixed a crazy error
+ * --Goober5000
+ *
  * Revision 2.129  2005/01/18 01:20:03  Goober5000
  * variables can be specified in training messages too now
  * --Goober5000
@@ -932,6 +936,7 @@ sexp_oper Operators[] = {
 	{ "/",					OP_DIV,				2,	INT_MAX	},
 	{ "mod",				OP_MOD,				2,	INT_MAX	},
 	{ "rand",				OP_RAND,			2,	2	},
+	{ "rand-multiple",		OP_RAND_MULTIPLE,	2,	2	},	// Goober5000
 	{ "abs",				OP_ABS,				1,	1 },	// Goober5000
 	{ "min",				OP_MIN,				1,	INT_MAX },	// Goober5000
 	{ "max",				OP_MAX,				1,	INT_MAX },	// Goober5000
@@ -3547,7 +3552,7 @@ int avg_sexp(int n)
 	return (int) floor(((double) avg_val / num) + 0.5);
 }
 
-int rand_sexp(int n, int multiple = 1)	// was 0 - changed to 1 by Goober5000
+int rand_sexp(int n, int multiple=0)
 {
 	int low = 0;
 	int high = 0;
@@ -3581,6 +3586,19 @@ int rand_sexp(int n, int multiple = 1)	// was 0 - changed to 1 by Goober5000
 	}
 
 	return rand_num;
+}
+
+// Goober5000
+int rand_multiple_sexp(int n)
+{
+	// get lower bound
+	int low = eval_num(n);
+
+	// get upper bound
+	int high = eval_num(CDR(n));
+
+	// get the random number
+	return rand_internal(low, high);
 }
 
 // boolean evaluation functions.  Evaluate all sexpressions in the 'or' operator.  Needed to mark
@@ -12144,6 +12162,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = rand_sexp( node );
 				break;
 
+			case OP_RAND_MULTIPLE:
+				sexp_val = rand_multiple_sexp( node );
+				break;
+
 			case OP_ABS:
 				sexp_val = abs_sexp( node );
 				break;
@@ -13535,6 +13557,7 @@ int query_operator_return_type(int op)
 		case OP_MUL:
 		case OP_DIV:
 		case OP_RAND:
+		case OP_RAND_MULTIPLE:
 		case OP_MIN:
 		case OP_MAX:
 		case OP_AVG:
@@ -13826,6 +13849,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
 		case OP_RAND:
+		case OP_RAND_MULTIPLE:
 		case OP_ABS:
 		case OP_MIN:
 		case OP_MAX:

@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.82 $
+ * $Revision: 2.83 $
  * $Author: Goober5000 $
- * $Date: 2005-01-18 00:14:37 $
+ * $Date: 2005-01-26 01:52:21 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2005/01/18 00:14:37  Goober5000
+ * clarified a bunch of sexp stuff and fixed a bug
+ * --Goober5000
+ *
  * Revision 2.81  2005/01/17 22:46:32  Goober5000
  * variables can now be displayed in messages
  * --Goober5000
@@ -800,6 +804,7 @@ struct ship_subsys;
 #define OP_MIN									(0x0007	| OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_MAX									(0x0008	| OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_AVG									(0x0009	| OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_RAND_MULTIPLE						(0x000a | OP_CATEGORY_ARITHMETIC)	// Goober5000
 
 #define	OP_TRUE									(0x0000 | OP_CATEGORY_LOGICAL)
 #define	OP_FALSE									(0x0001 | OP_CATEGORY_LOGICAL)
