@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-03-05 09:01:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-11 03:22:51 $
+ * $Author: bobboau $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/03/05 09:01:57  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.9  2004/01/31 03:54:50  phreak
  * commented out decal references
  *
@@ -236,7 +240,7 @@ void update_danger_weapon(object *ship_obj, object *weapon_obj)
 
 // function to actually deal with weapon-ship hit stuff.  separated from check_collision routine below
 // because of multiplayer reasons.
-void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *world_hitpos, vector *hitpos, int quadrant_num, int submodel_num)
+void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *world_hitpos, vector *hitpos, int quadrant_num, int submodel_num, vector /*not a pointer intentionaly*/ hit_dir)
 {
 	weapon	*wp = &Weapons[weapon_obj->instance];
 	weapon_info	*wip = &Weapon_info[wp->weapon_info_index];
@@ -287,13 +291,19 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *worl
 	}
 
 	if(quadrant_num == -1){
-		/*weapon_info	*wip = &Weapon_info[Weapons[weapon_obj->instance].weapon_info_index];
+		weapon_info	*wip = &Weapon_info[Weapons[weapon_obj->instance].weapon_info_index];
 		decal_point dec;
 		dec.orient = weapon_obj->orient;
+		vector hit_fvec;
+		vm_vec_negate(&hit_dir);
+		vm_vec_avg(&hit_fvec, &hit_dir, &weapon_obj->orient.vec.fvec);
+		vm_vec_normalize(&hit_fvec);
+		dec.orient.vec.fvec = hit_fvec;
+		vm_fix_matrix(&dec.orient);
 		dec.pnt.xyz = hitpos->xyz;
 		dec.radius = wip->decal_rad;
 		if((dec.radius > 0) && (wip->decal_texture > -1))
-		decal_create(ship_obj, &dec, submodel_num, wip->decal_texture, wip->decal_backface_texture );*/
+		decal_create(ship_obj, &dec, submodel_num, wip->decal_texture, wip->decal_backface_texture, wip->decal_glow_texture, wip->decal_burn_texture, wip->decal_burn_time);
 	}
 	
 
@@ -417,7 +427,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 	}
 
 	if ( valid_hit_occured )	{
-		ship_weapon_do_hit_stuff(ship_obj, weapon_obj, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel);
+		ship_weapon_do_hit_stuff(ship_obj, weapon_obj, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 	} else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->wi_flags & WIF_HOMING) && (wp->homing_object == ship_obj)) {
 		if (dist < wip->inner_radius) {
 			vector	vec_to_ship;

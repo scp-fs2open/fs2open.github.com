@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-07-01 01:12:31 $
+ * $Revision: 2.25 $
+ * $Date: 2004-07-11 03:22:48 $
  * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/07/01 01:12:31  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.23  2004/06/28 02:13:07  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -1563,17 +1567,17 @@ short find_fisrt_index_vb(poly_list *plist, int idx, poly_list *v){
 
 void poly_list::allocate(int virts){
 		if(virts <= currently_allocated)return;
-		if(vert!=NULL){delete[] vert; vert = NULL;}
-		if(norm!=NULL){delete[] norm; norm = NULL;}
-		if(virts)vert = new vertex[virts];
-		if(virts)norm = new vector[virts];
+		if(vert!=NULL){free((void*)vert); vert = NULL;}
+		if(norm!=NULL){free((void*)norm); norm = NULL;}
+		if(virts)vert = (vertex*)malloc(sizeof(vertex)*virts);
+		if(virts)norm = (vector*)malloc(sizeof(vector)*virts);
 		n_verts = 0;
 		currently_allocated = virts;
 }
 
 poly_list::~poly_list(){
-	if(vert!=NULL)delete[] vert; 
-	if(norm!=NULL)delete[] norm;
+	if(vert!=NULL)free(vert); 
+	if(norm!=NULL)free(norm);
 }
 
 poly_list poly_list_index_bufer_internal_list;

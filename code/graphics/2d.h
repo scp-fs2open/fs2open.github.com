@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.33 $
- * $Date: 2004-07-05 05:09:19 $
+ * $Revision: 2.34 $
+ * $Date: 2004-07-11 03:22:48 $
  * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2004/07/05 05:09:19  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.32  2004/07/01 01:12:31  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -880,6 +886,8 @@ typedef struct screen {
 	void (*gf_set_fill_mode)(int);
 	void (*gf_set_texture_panning)(float u, float v, bool enable);
 
+	void (*gf_set_environment_mapping)(int i);
+
 /*	void (*gf_begin_sprites)();//does prep work for sprites
 	void (*gf_draw_sprite)(vector*);//draws a sprite
 	void (*gf_display_sprites))();//actualy darws the drawen sprites
@@ -1150,11 +1158,12 @@ __inline void bm_page_in_xparent_texture( int bitmapnum, int nframes = 1)
 #define	gr_end_clip GR_CALL				(*gr_screen.gf_end_clip_plane)
 
 #define	gr_zbias GR_CALL				(*gr_screen.gf_zbias)
-#define	gr_set_fill_mode GR_CALL				(*gr_screen.gf_set_fill_mode)
-#define	gr_set_texture_panning GR_CALL				(*gr_screen.gf_set_texture_panning)
+#define	gr_set_fill_mode GR_CALL		(*gr_screen.gf_set_fill_mode)
+#define	gr_set_texture_panning GR_CALL	(*gr_screen.gf_set_texture_panning)
 
+#define	gr_set_environment_mapping GR_CALL	(*gr_screen.gf_set_environment_mapping)
 
-#define gr_setup_background_fog GR_CALL		(*gr_screen.gf_setup_background_fog)
+#define gr_setup_background_fog GR_CALL	(*gr_screen.gf_setup_background_fog)
 
 /*
 #define	gr_begin_sprites GR_CALL		(*gr_screen.gf_begin_sprites)

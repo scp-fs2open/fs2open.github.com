@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.67 $
- * $Date: 2004-07-05 05:09:19 $
+ * $Revision: 2.68 $
+ * $Date: 2004-07-11 03:22:48 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2004/07/05 05:09:19  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.66  2004/06/28 02:13:07  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -1330,6 +1336,7 @@ bool set_stage_for_env_mapped(bool set){
 	return true;
 }
 
+
 //glow texture stage 3
 void set_stage_for_single_pass_glow_specmapping(int SAME){
 	//D3DPMISCCAPS_TSSARGTEMP
@@ -2427,6 +2434,15 @@ void gr_d3d_render_buffer(int start, int n_prim, short* index_buffer)
 				else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 			}
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
+			if(Cmdline_env){
+				gr_zbias(2);
+				gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+				set_stage_for_env_mapped();
+				d3d_SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT3);
+				if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+				else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
+				d3d_SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
+			}
 		}
 		gr_zbias(0);
 	}
@@ -2631,6 +2647,7 @@ const char *d3d_error_string(HRESULT error)
 //this is an attempt to get something more like the old style fogging that used the lockable back buffer, 
 //it will render the model with the background texture then fog with black as the color
 void gr_d3d_setup_background_fog(bool set){
+	return;
 	IDirect3DSurface8 *bg_surf;
 	if(!background_render_target){
 		GlobalD3DVars::lpD3DDevice->CreateTexture(
@@ -2649,4 +2666,57 @@ void gr_d3d_setup_background_fog(bool set){
 	//	GlobalD3DVars::lpD3DDevice->GetRenderTarget(&background_render_target);
 		GlobalD3DVars::lpD3DDevice->SetRenderTarget(old_render_target , 0);
 	}
+}
+
+
+IDirect3DSurface8 *old_render_sten = NULL;
+
+extern D3DFORMAT d3d8_format;
+LPDIRECT3DSURFACE8 face;
+
+void d3d_init_environment(){
+	if(!cube_map){
+		D3DFORMAT use_format;
+		use_format =  D3DFMT_X8R8G8B8;
+		GlobalD3DVars::lpD3DDevice->CreateCubeTexture(512, 1, D3DUSAGE_RENDERTARGET , use_format, D3DPOOL_DEFAULT, &cube_map);
+	}
+
+	if(!old_render_target){
+		GlobalD3DVars::lpD3DDevice->GetRenderTarget(&old_render_target);
+		GlobalD3DVars::lpD3DDevice->GetDepthStencilSurface(&old_render_sten);
+	}
+	
+	for(int i = 0; i<6; i++){
+		cube_map->GetCubeMapSurface(_D3DCUBEMAP_FACES(i), 0, &face);
+		GlobalD3DVars::lpD3DDevice->SetRenderTarget(face , NULL);
+		gr_d3d_clear();
+	}
+	GlobalD3DVars::lpD3DDevice->SetRenderTarget(old_render_target, old_render_sten);
+
+//	old_render_target = NULL;
+
+}
+
+void d3d_render_to_env(int FACE){
+	if(!cube_map){
+		D3DFORMAT use_format;
+		use_format =  D3DFMT_X8R8G8B8;
+		GlobalD3DVars::lpD3DDevice->CreateCubeTexture(512, 1, D3DUSAGE_RENDERTARGET , use_format, D3DPOOL_DEFAULT, &cube_map);
+	}
+
+	if(!old_render_target){
+		GlobalD3DVars::lpD3DDevice->GetRenderTarget(&old_render_target);
+		GlobalD3DVars::lpD3DDevice->GetDepthStencilSurface(&old_render_sten);
+	}
+	
+	if(FACE > -1){
+		cube_map->GetCubeMapSurface(_D3DCUBEMAP_FACES(FACE), 0, &face);
+		GlobalD3DVars::lpD3DDevice->SetRenderTarget(face , NULL);
+		gr_d3d_clear();
+	}else{
+		GlobalD3DVars::lpD3DDevice->SetRenderTarget(old_render_target, old_render_sten);
+	}
+
+//	old_render_target = NULL;
+
 }

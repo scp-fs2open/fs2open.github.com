@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.100 $
- * $Date: 2004-07-08 22:08:21 $
- * $Author: wmcoolmon $
+ * $Revision: 2.101 $
+ * $Date: 2004-07-11 03:22:47 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2004/07/08 22:08:21  wmcoolmon
+ * Moved set_current_hud, as well as added a conditional to hud_positions_it; it shouldn't and won't be executed on a standalone server.
+ *
  * Revision 2.99  2004/07/01 16:38:18  Kazan
  * working on autonav
  *
@@ -1151,6 +1154,8 @@ void multi_spew_table_checksums(int max_files, char *outfile);
 
 extern bool frame_rate_display;
 
+bool cube_map_drawen = false;
+
 void game_level_init(int seed = -1);
 void game_post_level_init();
 void game_do_frame();
@@ -1942,7 +1947,7 @@ void game_level_close()
 	Game_paused = 0;
 }
 
-
+void init_decals();
 // intializes game stuff and loads the mission.  Returns 0 on failure, 1 on success
 // input: seed =>	DEFAULT PARAMETER (value -1).  Only set by demo playback code.
 void game_level_init(int seed)
@@ -1990,6 +1995,7 @@ void game_level_init(int seed)
 	model_free_all();				// Free all existing models
 	mission_brief_common_init();		// Free all existing briefing/debriefing text
 	weapon_level_init();
+	init_decals();
 
 #if defined(ENABLE_AUTO_PILOT)
 	NavSystem_Init();				// zero out the nav system
@@ -2049,6 +2055,8 @@ void game_level_init(int seed)
 
 	// campaign wasn't ended
 	Campaign_ended_in_mission = 0;
+
+	cube_map_drawen = false;
 }
 
 // called when a mission is over -- does server specific stuff.
@@ -4023,6 +4031,62 @@ extern void compute_slew_matrix(matrix *orient, angles *a);	// TODO: move code t
 //	Player's velocity just before he blew up.  Used to keep camera target moving.
 vector	Dead_player_last_vel = {1.0f, 1.0f, 1.0f};
 
+
+#define render_environment 	{gr_set_environment_mapping(i);g3_set_view_matrix( &nv, &new_orient, new_zoom );gr_set_proj_matrix( (PI/2.0f), 1.0f, 1.0f, 30000.0f);if ( Game_subspace_effect ){stars_draw(0,0,0,1,1);} else {stars_draw(1,1,1,0,1);}i++;}
+
+extern float View_zoom, Canv_w2, Canv_h2;
+void setup_environment_mapping(vector *eye_pos, matrix *eye_orient){
+	if(gr_screen.mode != GR_DIRECT3D)return;
+	if(!Cmdline_nohtl){
+//		matrix old_orient = Eye_matrix;
+//		vector old_position = Eye_position;
+		matrix new_orient;
+		float old_zoom = View_zoom, new_zoom = 0.925f;
+		vector nv = ZERO_VECTOR;
+
+		{
+			int i = 0;
+			new_orient.vec.fvec.xyz.x = 1.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = 0.0f;
+			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
+			vm_fix_matrix(&new_orient);
+			render_environment	
+
+			new_orient.vec.fvec.xyz.x = -1.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = 0.0f;
+			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
+			vm_fix_matrix(&new_orient);
+			render_environment	
+
+			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = 1.0f;new_orient.vec.fvec.xyz.z = 0.0f;
+			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 0.0f;new_orient.vec.uvec.xyz.z = -1.0f;
+			vm_fix_matrix(&new_orient);
+			render_environment	
+
+			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = -1.0f;new_orient.vec.fvec.xyz.z = 0.0f;
+			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 0.0f;new_orient.vec.uvec.xyz.z = 1.0f;
+			vm_fix_matrix(&new_orient);
+			render_environment	
+
+			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = 1.0f;
+			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
+			vm_fix_matrix(&new_orient);
+			render_environment	
+
+			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = -1.0f;
+			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
+			vm_fix_matrix(&new_orient);
+			render_environment	
+				
+		}
+
+//		View_zoom = old_zoom;
+		g3_set_view_matrix( eye_pos, eye_orient, old_zoom );
+		gr_set_proj_matrix( ((4.0f/9.0f)*(PI)*View_zoom), Canv_w2/Canv_h2, 1.0f, 30000.0f);
+		gr_set_environment_mapping(-1);
+//		first_frame = false;
+	}
+//	}
+}
+
 //	Set eye_pos and eye_orient based on view mode.
 void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 {
@@ -4301,13 +4365,34 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	//fugly hack.  this will make the skybox render in HT&L
 	//i want the stars_draw() function to get ported to HT&L quick
 	int nohtl_save = Cmdline_nohtl;
-	Cmdline_nohtl = !(gr_screen.mode == GR_OPENGL) && Cmdline_nohtl;
+	extern int OGL_inited;//you wanted fugly you got it
+
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+
+	gr_setup_background_fog(true);
+	if (OGL_inited)Cmdline_nohtl = 1;
+/*	if ( Game_subspace_effect )	{
+		stars_draw(0,0,0,1,2);
+	} else {
+		stars_draw(1,1,1,0,2);
+	}
+	gr_setup_background_fog(false);
+
+  */
 	if ( Game_subspace_effect )	{
 		stars_draw(0,0,0,1,0);
 	} else {
 		stars_draw(1,1,1,0,0);
 	}
-	Cmdline_nohtl = nohtl_save;
+
+	if((!cube_map_drawen || Game_subspace_effect) && Cmdline_env){
+		setup_environment_mapping(eye_pos, eye_orient);
+		cube_map_drawen = true;
+	}
+
+	if (OGL_inited)Cmdline_nohtl = nohtl_save;
 
 
 	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);

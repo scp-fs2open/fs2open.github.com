@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2004/07/01 01:54:59  phreak
+ * function pointer radar update.
+ * will enable us to make different radar styles that we can switch between
+ *
  * Revision 2.67  2004/06/29 06:02:34  wmcoolmon
  * Support as well as the extern for "-load_only_used"; this way everything that includes cmdline.h doesn't have to be recompiled.
  *
@@ -1929,20 +1933,33 @@ int parse_weapon(int subtype, bool replace)
 		stuff_int(&wip->shots);
 	}
 
+
 	wip->decal_texture = -1;
+	wip->decal_glow_texture = -1;
+	wip->decal_burn_texture = -1;
 	wip->decal_backface_texture = -1;
 	wip->decal_rad = -1;
+	wip->decal_burn_time = 1000;
 	if( optional_string("$decal:")){
-		char tex_name[64];
+		char tex_name[64], temp[64];
 		required_string("+texture:");
 		stuff_string(tex_name, F_NAME, NULL);
 		wip->decal_texture = bm_load(tex_name);
+		strcpy(temp, tex_name);
+		strcat(tex_name, "-glow");
+		wip->decal_glow_texture = bm_load(tex_name);
+		strcpy(tex_name, temp);
+		strcat(tex_name, "-burn");
+		wip->decal_burn_texture = bm_load(tex_name);
 		if( optional_string("+backface texture:")){
 			stuff_string(tex_name, F_NAME, NULL);
 			wip->decal_backface_texture = bm_load(tex_name);
 		}
 		required_string("+radius:");
 		stuff_float(&wip->decal_rad);
+		if( optional_string("+burn time:")){
+			stuff_int(&wip->decal_burn_time);
+		}
 	}
 
 	//pretty stupid if a target must be tagged to shoot tag missiles at it

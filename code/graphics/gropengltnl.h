@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.3 $
- * $Date: 2004-07-05 05:09:19 $
+ * $Revision: 1.4 $
+ * $Date: 2004-07-11 03:22:49 $
  * $Author: bobboau $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/07/05 05:09:19  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 1.2  2004/06/28 02:13:07  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -56,6 +62,6 @@ int gr_opengl_make_buffer(poly_list *list, uint flags);
 void gr_opengl_destroy_buffer(int idx);
 void gr_opengl_set_buffer(int idx);
 void gr_opengl_render_buffer(int start, int n_prim, short* index_list);
-
+void gr_opengl_render_to_env(int FACE);
 
 #endif //_GROPENGLTNL_H

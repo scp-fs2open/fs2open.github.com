@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.38 $
- * $Date: 2004-07-01 01:12:31 $
+ * $Revision: 2.39 $
+ * $Date: 2004-07-11 03:22:49 $
  * $Author: bobboau $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2004/07/01 01:12:31  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.37  2004/06/06 12:25:20  randomtiger
  * Added new compression option -pcx32dds, build posted in RSB forum.
  * Changed flag because of launcher bug, have fixed launcher bug, will distribute later.
@@ -577,7 +581,7 @@
 
 bool Supports_compression[NUM_COMPRESSION_TYPES];
 
-tcache_slot_d3d *Textures = NULL;
+tcache_slot_d3d Textures[MAX_BITMAPS];
 
 int D3D_frame_count = 0;
 int D3D_min_texture_width = 0;
@@ -1163,7 +1167,7 @@ void d3d_tcache_init()
 
 	DBUGFILE_OUTPUT_2("Max textures: %d %d",D3D_max_texture_width,D3D_max_texture_height);
 	
-	Textures = (tcache_slot_d3d *) malloc(MAX_BITMAPS * sizeof(tcache_slot_d3d));
+//	Textures = (tcache_slot_d3d *) malloc(MAX_BITMAPS * sizeof(tcache_slot_d3d));
 
 	if ( !Textures ) {
 		DBUGFILE_OUTPUT_0("exit");
@@ -1211,10 +1215,10 @@ void d3d_tcache_cleanup()
 	D3D_textures_in = 0;
 	D3D_textures_in_frame = 0;
 
-	if ( Textures )	{
+/*	if ( Textures )	{
 		free(Textures);
 		Textures = NULL;
-	}
+	}*/
 }
 
 void d3d_tcache_frame()

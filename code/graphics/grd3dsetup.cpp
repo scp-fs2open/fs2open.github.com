@@ -900,6 +900,7 @@ void d3d_setup_function_pointers()
 		gr_screen.gf_start_clip_plane = gr_d3d_start_clip;
 		gr_screen.gf_end_clip_plane   = gr_d3d_end_clip;
 		gr_screen.gf_setup_background_fog	= gr_d3d_setup_background_fog;
+		gr_screen.gf_set_environment_mapping = d3d_render_to_env;
 	}
 
 }
@@ -1476,6 +1477,7 @@ void d3d_generate_state_blocks(){
 */
 }
 
+void d3d_init_environment();
 
 bool gr_d3d_init()
 {
@@ -1513,7 +1515,9 @@ bool gr_d3d_init()
 
 	// Tell Freespace code that we're using Direct3D.
 	D3D_enabled    = 1;
-	GlobalD3DVars::D3D_inited = true;	
+	GlobalD3DVars::D3D_inited = true;
+	
+	d3d_generate_state_blocks();
 
   	d3d_tcache_init();
 
@@ -1549,6 +1553,8 @@ bool gr_d3d_init()
 
 	TIMERBAR_SET_DRAW_FUNC(d3d_render_timer_bar);
 	mprintf(( "Direct3D Initialized OK!\n" ));
+
+	d3d_init_environment();
 
 	return true;
 

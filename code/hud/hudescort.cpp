@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-07-09 07:32:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2004-07-11 03:22:50 $
+ * $Author: bobboau $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/09 07:32:55  wmcoolmon
+ * Fixed conditional.
+ *
  * Revision 2.13  2004/07/09 05:53:05  wmcoolmon
  * Fixed HUD escort list for dogfight mode, and for any usage.
  *
@@ -824,6 +827,7 @@ void hud_display_escort()
 
 	//This is temporary
 	Num_escort_ships--;
+	i=0;
 
 	if(Num_escort_ships)
 	{

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.14 $
- * $Date: 2004-07-05 05:09:19 $
+ * $Revision: 2.15 $
+ * $Date: 2004-07-11 03:22:49 $
  * $Author: bobboau $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/05 05:09:19  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.13  2004/07/01 01:12:31  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -168,17 +174,17 @@ cloak_state_block;
 
 void d3d_start_frame();
 void d3d_stop_frame();
-void d3d_set_initial_render_state(bool set = true)	;
-void set_stage_for_defuse(bool set = true);
-void set_stage_for_glow_mapped_defuse(bool set = true);
-void set_stage_for_defuse_and_non_mapped_spec(bool set = true);
-void set_stage_for_glow_mapped_defuse_and_non_mapped_spec(bool set = true);
-bool set_stage_for_spec_mapped(bool set = true);
-void set_stage_for_cell_shaded(bool set = true);
-void set_stage_for_cell_glowmapped_shaded(bool set = true);
-void set_stage_for_additive_glowmapped(bool set = true);
-void set_stage_for_background_fog(bool set = true);
-bool set_stage_for_env_mapped(bool set = true);
+void d3d_set_initial_render_state(bool set = false)	;
+void set_stage_for_defuse(bool set = false);
+void set_stage_for_glow_mapped_defuse(bool set = false);
+void set_stage_for_defuse_and_non_mapped_spec(bool set = false);
+void set_stage_for_glow_mapped_defuse_and_non_mapped_spec(bool set = false);
+bool set_stage_for_spec_mapped(bool set = false);
+void set_stage_for_cell_shaded(bool set = false);
+void set_stage_for_cell_glowmapped_shaded(bool set = false);
+void set_stage_for_additive_glowmapped(bool set = false);
+void set_stage_for_background_fog(bool set = false);
+bool set_stage_for_env_mapped(bool set = false);
 //void set_stage_for_single_pass_specmapping(int SAME, bool set = true);
 //void set_stage_for_single_pass_glow_specmapping(int SAME, bool set = true);
 
@@ -232,5 +238,6 @@ extern ID3DXMatrixStack *proj_matrix_stack;
 void gr_d3d_set_texture_addressing(int);
 
 void gr_d3d_setup_background_fog(bool);
+void d3d_render_to_env(int FACE);
 #endif
 
