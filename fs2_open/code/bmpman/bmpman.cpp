@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.18 $
- * $Date: 2004-01-17 21:59:52 $
+ * $Revision: 2.19 $
+ * $Date: 2004-01-18 14:03:22 $
  * $Author: randomtiger $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/01/17 21:59:52  randomtiger
+ * Some small changes to the main codebase that allow Fred_open OGL to compile.
+ *
  * Revision 2.17  2003/11/16 09:42:38  Goober5000
  * clarified and pruned debug spew messages
  * --Goober5000
@@ -1420,11 +1423,15 @@ static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flag
 	int idx;	
 	int r, g, b, a;
 
-	if(Pofview_running || Is_standalone){
+#ifndef FRED_OGL
+	if(Fred_running || Pofview_running || Is_standalone){
 		Assert(bmp->bpp == 8);
 
 		return;
-	} else {
+	} 
+	else 
+#endif
+	{
 		if(flags & BMP_AABITMAP){
 			Assert(bmp->bpp == 8);
 		} else {
@@ -1537,10 +1544,13 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 			//return -1;
 		}
 
+#ifndef FRED_OGL
+
 		// now swizzle the thing into the proper format
-		if(Pofview_running){
+		if(Fred_running || Pofview_running){
 			bm_swizzle_8bit_for_fred(be, bmp, data, palette);
 		}
+#endif
 	} else {	
 		int pcx_error;
 
@@ -1608,10 +1618,14 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		bm_free_data( first_frame+i );
 
 		bm->flags = 0;
+#ifndef FRED_OGL
+
 		// briefing editor in Fred2 uses aabitmaps (ani's) - force to 8 bit
-		if(Is_standalone){
+		if(Fred_running || Is_standalone){
 			bm->bpp = 8;
-		} else {
+		} else 
+#endif
+		{
 			bm->bpp = bpp;
 		}
 		bm->data = (uint)bm_malloc(first_frame + i, size);
@@ -1749,9 +1763,13 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
 
-	if(Is_standalone){
+#ifndef FRED_OGL
+	if(Fred_running || Is_standalone){
 		Assert(bpp == 8);
-	} else {
+	} 
+	else 
+#endif
+	{
 		Assert(bpp == 16);
 	}
 
@@ -1849,10 +1867,15 @@ bitmap * bm_gfx_lock( int handle, ubyte bpp, ubyte flags )
 	} 
 	// otherwise do it as normal
 	else {
-		if(Pofview_running){
+#ifndef FRED_OGL
+
+		if(Fred_running || Pofview_running){
 			Assert( bpp == 8 );
 			Assert( (bm_bitmaps[bitmapnum].type == BM_TYPE_PCX) || (bm_bitmaps[bitmapnum].type == BM_TYPE_ANI) || (bm_bitmaps[bitmapnum].type == BM_TYPE_TGA));
-		} else {
+		} 
+		else 
+#endif
+		{
 			if(flags & BMP_AABITMAP){
 				Assert( bpp == 8 );
 			} else if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
