@@ -9,17 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapons.cpp $
- * Revision 2.4  2002/11/11 20:18:30  phreak
- * updated parse_weapon to parse custom corkscrew missiles
+ * $Revision: 2.37 $
+ * $Date: 2003-09-12 02:08:57 $
+ * $Author: Goober5000 $
  *
- * Revision 2.3  2002/11/06 23:22:05  phreak
- * Parser error handling for fighter flak, it didn't want flak on player weapons, now it doesn't care
- *
- 2.4
- * Revision 2.2  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * Code for weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/09/11 19:48:00  argv
+ * New weapon table flags, configurable beam whacking, subsystem display names, new energy system, modified the meaning of big damage.
+ *
  * Revision 2.35  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -558,11 +557,18 @@ int		Weapon_impact_timer;			// timer, initalized at start of each mission
 #define ESUCK_DEFAULT_WEAPON_REDUCE				(10.0f)
 #define ESUCK_DEFAULT_AFTERBURNER_REDUCE		(10.0f)
 
+// Goober5000 - as a rule of thumb, it looks like these are just the complement of the cutoff
+// (i.e. supercap used to be cut off at 75% but now uses the existing scale of 25%)
+
 // scale factor for supercaps taking damage from weapons which are not "supercap" weapons
 #define SUPERCAP_DAMAGE_SCALE			0.25f
 
+// scale factor for small weapons - added by Goober5000 to accompany SUPERCAP_DAMAGE_SCALE
+#define SMALL_DAMAGE_SCALE				0.90f
+
 // scale factor for big ships getting hit by flak
 #define FLAK_DAMAGE_SCALE				0.05f
+
 
 extern int Max_allowed_player_homers[];
 extern int compute_num_homing_objects(object *target_objp);
@@ -4479,7 +4485,8 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	}
 
 	// don't scale any damage if its not a weapon	
-	if((wep->type == OBJ_WEAPON && (wep->instance < 0 || wep->instance > MAX_WEAPONS)) || (wep->type != OBJ_WEAPON && wep->type != OBJ_BEAM)){
+	if ((wep->type != OBJ_WEAPON && wep->type != OBJ_BEAM) || (wep->instance < 0) || (wep->instance > MAX_WEAPONS))
+	{
 		return 1.0f;
 	}
 
@@ -4533,30 +4540,26 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		}
 		
 		// _argv[-1] - changed this. AI fighters should not be reducing destroyers' hull strength by 50% with their Subachs and SHLs.
+		// Goober5000 - restored this - the guns must inflict some damage
 		// if the player is firing small weapons at a big ship
-		if( /*from_player == 1 &&*/ is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) ){
-			/*
+		if( /*from_player &&*/ is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) )
+		{
 			// if its a laser weapon
-			if(wip->subtype == WP_LASER){
-				total_scale *= 0.001f;
+			if(wip->subtype == WP_LASER) {
+				total_scale *= 0.01f;
 			} else {
-				total_scale *= 0.005f;
+				total_scale *= 0.05f;
 			}
-			*/
-
-			return 0.0f;
 		}
 
 		// if the weapon is a small weapon being fired at a big ship
-		/*
 		if( is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) ){
 			if(hull_pct > 0.1f){
-				total_scale *= hull_pct;
-			} else {
-				return 0.0f;
+				total_scale *= hull_pct * SMALL_DAMAGE_SCALE;	// Goober5000
+			/*} else {
+				return 0.0f;*/
 			}
 		}
-		*/
 	}
 	
 	return total_scale;
