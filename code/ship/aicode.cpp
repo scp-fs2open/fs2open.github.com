@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.75 $
- * $Date: 2004-12-14 14:46:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.76 $
+ * $Date: 2004-12-30 08:07:52 $
+ * $Author: argv $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2004/12/14 14:46:11  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.74  2004/12/05 22:01:12  bobboau
  * sevral feature additions that WCS wanted,
  * and the foundations of a submodel animation system,
@@ -3115,6 +3119,20 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			}
 		}
 	} // end ship section
+
+	// _argv[-1], 29 Dec 2004: Turret AI should shoot at asteroids, as it did in the retail game. This makes it shoot at them again.
+	if (objp->type == OBJ_ASTEROID) {
+		dist *= 1.2f; // rocks are relatively unimportant.
+
+		if (eeo->turret_parent_objnum == asteroid_collide_objnum(objp) && dist < eeo->nearest_attacker_dist) {
+			eeo->nearest_attacker_dist = dist;
+			eeo->nearest_attacker_objnum = OBJ_INDEX(objp);
+		}
+		if (dist < eeo->nearest_dist) {
+			eeo->nearest_dist = dist;
+			eeo->nearest_objnum = OBJ_INDEX(objp);
+		}
+	}
 }
 
 // return 0 only if objnum is beam protected and turret is beam turret
