@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-10-05 16:46:09 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-14 05:53:58 $
+ * $Author: Goober5000 $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/05 16:46:09  randomtiger
+ * Added us fs2_open people to the credits. Worth looking at just for that.
+ * Added timer bar code, by default its not compiled in.
+ * Use TIMEBAR_ACTIVE in project and dependancy code settings to activate.
+ * Added the new timebar files with the new code.
+ *
  * Revision 2.2  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -1811,7 +1817,7 @@ void gr_d3d_flip()
 		}
 		ddrval = lpFrontBuffer->Flip( NULL, DDFLIP_WAIT  );
 		if ( ddrval == DDERR_SURFACELOST )	{
-			mprintf(( "Front surface lost... attempting to restore...\n" ));
+//			mprintf(( "Front surface lost... attempting to restore...\n" ));
 			os_sleep(1000);	// Wait a second
 
 			// os poll?
