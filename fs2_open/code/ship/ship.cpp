@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.157 $
- * $Date: 2005-01-29 08:11:41 $
+ * $Revision: 2.158 $
+ * $Date: 2005-01-30 01:34:39 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157  2005/01/29 08:11:41  wmcoolmon
+ * When drawing the viewer_obj, temporarily clip less close up for in-cockpit models.
+ *
  * Revision 2.156  2005/01/28 11:57:36  Goober5000
  * fixed Bobboau's spelling of 'relative'
  * --Goober5000
@@ -1992,9 +1995,11 @@ int parse_ship(bool replace)
 		}
 	}
 
-	required_string("$Show damage:");
-	int bogus_bool;
-	stuff_boolean(&bogus_bool);
+	if(optional_string("$Show damage:"))
+	{
+		int bogus_bool;
+		stuff_boolean(&bogus_bool);
+	}
 
 	required_string("$Density:");
 	stuff_float( &(sip->density) );
@@ -2024,8 +2029,10 @@ int parse_ship(bool replace)
 	sip->max_rotvel.xyz.z = (2 * PI) / sip->rotation_time.xyz.z;
 
 	// get the backwards velocity;
-	required_string("$Rear Velocity:");
-	stuff_float(&sip->max_rear_vel);
+	if(optional_string("$Rear Velocity:"))
+		stuff_float(&sip->max_rear_vel);
+	else
+		sip->max_rear_vel = 0.0f;
 
 	// get the accelerations
 	required_string("$Forward accel:");
@@ -2034,11 +2041,15 @@ int parse_ship(bool replace)
 	required_string("$Forward decel:");
 	stuff_float(&sip->forward_decel );
 
-	required_string("$Slide accel:");
-	stuff_float(&sip->slide_accel );
+	if(optional_string("$Slide accel:"))
+		stuff_float(&sip->slide_accel );
+	else
+		sip->slide_accel = 0.0f;
 
-	required_string("$Slide decel:");
-	stuff_float(&sip->slide_decel );
+	if(optional_string("$Slide decel:"))
+		stuff_float(&sip->slide_decel );
+	else
+		sip->slide_decel = 0.0f;
 
 	// get ship explosion info
 	required_string("$Expl inner rad:");
@@ -2053,11 +2064,15 @@ int parse_ship(bool replace)
 	required_string("$Expl blast:");
 	stuff_float(&sip->blast);
 
-	required_string("$Expl Propagates:");
-	stuff_boolean(&sip->explosion_propagates);
+	if(optional_string("$Expl Propagates:"))
+		stuff_boolean(&sip->explosion_propagates);
+	else
+		sip->explosion_propagates = 1;
 
-	required_string("$Shockwave Speed:");
-	stuff_float( &sip->shockwave_speed );
+	if(optional_string("$Shockwave Speed:"))
+		stuff_float( &sip->shockwave_speed );
+	else
+		sip->shockwave_speed = 0.0f;
 
 	sip->shockwave_count = 1;
 	if(optional_string("$Shockwave Count:")){
@@ -2297,31 +2312,38 @@ strcpy(parse_error_text, temp_error);
 	{
 		sip->secondary_bank_weapons[i] = -1;
 	}
-	required_string("$Default SBanks:");
-strcat(parse_error_text,"'s default secondary banks");
-	sip->num_secondary_banks = stuff_int_list(sip->secondary_bank_weapons, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
-strcpy(parse_error_text, temp_error);
 
-	// error checking
-	for ( i = 0; i < sip->num_secondary_banks; i++ )
+	if(optional_string("$Default SBanks:"))
 	{
-		if(sip->secondary_bank_weapons[i] < 0)
+		strcat(parse_error_text,"'s default secondary banks");
+		sip->num_secondary_banks = stuff_int_list(sip->secondary_bank_weapons, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
+		strcpy(parse_error_text, temp_error);
+
+		// error checking
+		for ( i = 0; i < sip->num_secondary_banks; i++ )
 		{
-			Warning(LOCATION, "%s has no secondary weapons, this cannot be!", sip->name);
+			if(sip->secondary_bank_weapons[i] < 0)
+			{
+				Warning(LOCATION, "%s has no secondary weapons, this cannot be!", sip->name);
+			}
+			// Assert(sip->secondary_bank_weapons[i] >= 0);
 		}
-		// Assert(sip->secondary_bank_weapons[i] >= 0);
+
+		// Get the capacity of each secondary bank
+		required_string("$SBank Capacity:");
+		strcat(parse_error_text,"'s secondary banks capacities");
+		sbank_capacity_count = stuff_int_list(sip->secondary_bank_ammo_capacity, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
+		strcpy(parse_error_text, temp_error);
+		if ( sbank_capacity_count != sip->num_secondary_banks )
+		{
+			Warning(LOCATION, "Secondary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
+		}
+	}
+	else
+	{
+		sip->num_secondary_banks = 0;
 	}
 
-	// Get the capacity of each secondary bank
-	required_string("$SBank Capacity:");
-strcat(parse_error_text,"'s secondary banks capacities");
-	sbank_capacity_count = stuff_int_list(sip->secondary_bank_ammo_capacity, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
-strcpy(parse_error_text, temp_error);
-	if ( sbank_capacity_count != sip->num_secondary_banks )
-	{
-		Warning(LOCATION, "Secondary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
-	}
-    
 	// copy to regular allowed_weapons array
 	for (i=0; i<MAX_SHIP_WEAPONS; i++)
 	{
@@ -2335,8 +2357,10 @@ strcpy(parse_error_text, temp_error);
 		}
 	}
 
-	required_string("$Shields:");
-	stuff_float(&sip->initial_shield_strength);
+	if(optional_string("$Shields:"))
+		stuff_float(&sip->initial_shield_strength);
+	else
+		sip->initial_shield_strength = 0.0f;
 
 	// optional shield color
 	sip->shield_color[0] = 255;
@@ -2367,23 +2391,14 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if(optional_string("+Hull Repair Rate:"))
-	{
 		stuff_float(&sip->hull_repair_rate_percent);
-	}
 	else
-	{
 		sip->hull_repair_rate_percent = 0.0f;
-	}
 
 	if(optional_string("+Subsystem Repair Rate:"))
-	{
 		stuff_float(&sip->subsys_repair_rate_percent);
-	}
 	else
-	{
-		//Old SHIP_REPAIR_SUBSYSTEM_RATE define
-		sip->subsys_repair_rate_percent = 0.01f;
-	}
+		sip->subsys_repair_rate_percent = 0.01f;	//Old SHIP_REPAIR_SUBSYSTEM_RATE define
 
 	required_string("$Flags:");
 	char	ship_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
@@ -2504,9 +2519,11 @@ strcpy(parse_error_text, temp_error);
 
 	// Get Afterburner information
 	// Be aware that if $Afterburner is not 1, the other Afterburner fields are not read in
-	required_string("$Afterburner:");
-	int has_afterburner;
-	stuff_boolean(&has_afterburner);
+	int has_afterburner = 0;
+
+	if(optional_string("$Afterburner:"))
+		stuff_boolean(&has_afterburner);
+
 	if ( has_afterburner == 1 ) {
 		sip->flags |= SIF_AFTERBURNER;
 
@@ -2561,8 +2578,10 @@ strcpy(parse_error_text, temp_error);
 	}
 
 
-	required_string("$Countermeasures:");
-	stuff_int(&sip->cmeasure_max);
+	if(optional_string("$Countermeasures:"))
+		stuff_int(&sip->cmeasure_max);
+	else
+		sip->cmeasure_max = 0;
 
 	required_string("$Scan time:");
 	stuff_int(&sip->scan_time);
@@ -3085,6 +3104,8 @@ void parse_shiptbl(char* longname, bool is_chunk)
 
 	// close localization
 	lcl_ext_close();
+
+	mprintf(("Loaded modular ship table file %s\n", longname));
 }
 
 int ship_show_velocity_dot = 0;
