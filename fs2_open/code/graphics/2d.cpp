@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.29 $
- * $Date: 2004-10-31 21:35:53 $
+ * $Revision: 2.30 $
+ * $Date: 2004-11-27 10:45:35 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/10/31 21:35:53  taylor
+ * OGL_enabled, s/fisrt/first/g
+ *
  * Revision 2.28  2004/07/26 20:47:31  Kazan
  * remove MCD complete
  *
@@ -707,6 +710,34 @@ bool gr_unsize_screen_pos(int *x, int *y)
 	if(y) {
 		(*y) *= mult_by_y;
 		(*y) /= gr_screen.max_h;
+	}
+
+	return true;
+}
+
+/**
+ * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
+ * lengths in order to keep the correctly scaled to nonstandard resolutions
+ *
+ * @param float *x - x value (width to be scaled), can be NULL
+ * @param float *y - y value (height to be scaled), can be NULL
+ * @return always true
+ */
+bool gr_resize_screen_posf(float *x, float *y)
+{
+	if(gr_screen.custom_size < 0)	return false;
+
+	float div_by_x = (float)((gr_screen.custom_size == GR_1024) ? 1024 : 640);
+	float div_by_y = (float)((gr_screen.custom_size == GR_1024) ?  768 : 480);
+			
+	if(x) {
+		(*x) *= (float)gr_screen.max_w;
+		(*x) /= div_by_x;
+	}
+
+	if(y) {
+		(*y) *= (float)gr_screen.max_h;
+		(*y) /= div_by_y;
 	}
 
 	return true;
