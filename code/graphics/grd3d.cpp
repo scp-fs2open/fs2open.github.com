@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-30 14:29:15 $
+ * $Author: unknownplayer $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -2674,6 +2677,8 @@ void gr_d3d_init()
 	if(os_config_read_uint(NULL, "DisableZbias", 0)){
 		D3D_zbias = 0;
 	}
+
+	// perform a check for bump mapping capabilities - unknownplayer
 	
 	d3d_start_frame();	
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-22 01:22:26 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-30 14:29:15 $
+ * $Author: unknownplayer $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/22 01:22:26  penguin
+ * Linux port -- added NO_STANDALONE ifdefs
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -138,6 +141,8 @@
 #include "cmdline.h"
 
 #ifdef PSNET2
+
+#include "psnet2.h"
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 DEFINES/VARS
