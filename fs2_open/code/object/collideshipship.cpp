@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-26 16:17:46 $
  * $Author: penguin $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -1526,18 +1529,18 @@ void do_kamikaze_crash(object *obj1, object *obj2)
 }
 
 // response when hit by fast moving cap ship
-void maybe_push_little_ship_from_fast_big_ship(object *big, object *small, float impulse, vector *normal)
+void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_obj, float impulse, vector *normal)
 {
 	// Move player out of the way of a BIG|HUGE ship warping in or out
-	if (Ship_info[Ships[big->instance].ship_info_index].flags & (SIF_CAPITAL|SIF_SUPERCAP)) {
-		if (Ship_info[Ships[small->instance].ship_info_index].flags & (SIF_SMALL_SHIP)) {
-			float big_speed = vm_vec_mag_quick(&big->phys_info.vel);
-			if (big_speed > 3*big->phys_info.max_vel.xyz.z) {
+	if (Ship_info[Ships[big_obj->instance].ship_info_index].flags & (SIF_CAPITAL|SIF_SUPERCAP)) {
+		if (Ship_info[Ships[small_obj->instance].ship_info_index].flags & (SIF_SMALL_SHIP)) {
+			float big_speed = vm_vec_mag_quick(&big_obj->phys_info.vel);
+			if (big_speed > 3*big_obj->phys_info.max_vel.xyz.z) {
 				// push player away in direction perp to forward of big ship
 				// get perp vec
 				vector temp, perp;
-				vm_vec_sub(&temp, &small->pos, &big->pos);
-				vm_vec_scale_add(&perp, &temp, &big->orient.vec.fvec, -vm_vec_dotprod(&temp, &big->orient.vec.fvec));
+				vm_vec_sub(&temp, &small_obj->pos, &big_obj->pos);
+				vm_vec_scale_add(&perp, &temp, &big_obj->orient.vec.fvec, -vm_vec_dotprod(&temp, &big_obj->orient.vec.fvec));
 				vm_vec_normalize_quick(&perp);
 
 				// don't drive into sfc we just collided with
@@ -1546,11 +1549,11 @@ void maybe_push_little_ship_from_fast_big_ship(object *big, object *small, float
 				}
 
 				// get magnitude of added perp vel
-				float added_perp_vel_mag = impulse / small->phys_info.mass;
+				float added_perp_vel_mag = impulse / small_obj->phys_info.mass;
 
 				// add to vel and ramp vel
-				vm_vec_scale_add2(&small->phys_info.vel, &perp, added_perp_vel_mag);
-				vm_vec_rotate(&small->phys_info.prev_ramp_vel, &small->phys_info.vel, &small->orient);
+				vm_vec_scale_add2(&small_obj->phys_info.vel, &perp, added_perp_vel_mag);
+				vm_vec_rotate(&small_obj->phys_info.prev_ramp_vel, &small_obj->phys_info.vel, &small_obj->orient);
 			}
 		}
 	}
