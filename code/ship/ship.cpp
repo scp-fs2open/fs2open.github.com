@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.82 $
- * $Date: 2003-09-26 14:37:16 $
- * $Author: bobboau $
+ * $Revision: 2.83 $
+ * $Date: 2003-10-07 03:43:21 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2003/09/26 14:37:16  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.81  2003/09/13 20:59:54  Goober5000
  * fixed case-sensitivity bugs and possibly that Zeta wing bug
  * --Goober5000
@@ -4403,7 +4413,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				// need to timeout immediately to keep physics in sync
 				sp->really_final_death_time = timestamp(0);
 				polymodel *pm = model_get(sp->modelnum);
-				sp->end_death_time = timestamp(pm->core_radius);
+				sp->end_death_time = timestamp((int) pm->core_radius);
 			} else {
 				// only do big fireball if not big ship
 				float big_rad;
