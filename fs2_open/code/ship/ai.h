@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.19 $
- * $Date: 2005-01-27 11:26:23 $
+ * $Revision: 2.20 $
+ * $Date: 2005-01-28 09:01:04 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/01/27 11:26:23  Goober5000
+ * dock points on rotating submodels is *almost* working
+ * --Goober5000
+ *
  * Revision 2.18  2005/01/13 03:33:07  Goober5000
  * hmm, rolled back one of my clarifications since it caused things to get messed up
  * --Goober5000
@@ -755,7 +759,6 @@ extern int ai_set_attack_subsystem(object *objp, int subnum);
 extern int ai_issue_rearm_request(object *requester_objp);		//	Object requests rearm/repair.
 extern int ai_abort_rearm_request(object *requester_objp);		//	Object aborts rearm/repair.
 extern void ai_do_repair_frame(object *objp, ai_info *aip, float frametime);		//	Repair a ship object, player or AI.
-extern float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode);	//	Move to a position relative to a dock bay using thrusters.
 extern void ai_update_danger_weapon(int objnum, int weapon_objnum);
 
 // called externally from MissionParse.cpp to position ships in wings upon arrival into the
