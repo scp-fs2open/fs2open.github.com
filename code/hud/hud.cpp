@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2004-03-28 17:49:54 $
+ * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.10  2003/09/13 20:59:54  Goober5000
  * fixed case-sensitivity bugs and possibly that Zeta wing bug
  * --Goober5000
@@ -581,25 +585,23 @@ int Kills_text_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-#if defined(GERMAN_BUILD)
-	int Kills_text_val_coords[GR_NUM_RESOLUTIONS][2] = {
-		{ // GR_640
-			615, 365
-		},
-		{ // GR_1024
-			984, 628
-		}
-	};
-#else
-	int Kills_text_val_coords[GR_NUM_RESOLUTIONS][2] = {
-		{ // GR_640
-			571, 365
-		},
-		{ // GR_1024
-			954, 628
-		}
-	};
-#endif
+int Kills_text_val_coords_gr[GR_NUM_RESOLUTIONS][2] = {
+	{ // GR_640
+		615, 365
+	},
+	{ // GR_1024
+		984, 628
+	}
+};
+
+int Kills_text_val_coords[GR_NUM_RESOLUTIONS][2] = {
+	{ // GR_640
+		571, 365
+	},
+	{ // GR_1024
+		954, 628
+	}
+};
 
 char Kills_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
 	"kills1",
@@ -2214,7 +2216,11 @@ void hud_show_kills_gauge()
 	sprintf(num_kills_string, "%d", Player->stats.m_kill_count_ok);
 
 	gr_get_string_size(&w, &h, num_kills_string);
-	gr_string(Kills_text_val_coords[gr_screen.res][0]-w, Kills_text_val_coords[gr_screen.res][1], num_kills_string);
+	if (Lcl_gr) {
+		gr_string(Kills_text_val_coords_gr[gr_screen.res][0]-w, Kills_text_val_coords_gr[gr_screen.res][1], num_kills_string);
+	} else {
+		gr_string(Kills_text_val_coords[gr_screen.res][0]-w, Kills_text_val_coords[gr_screen.res][1], num_kills_string);
+	}
 }
 
 #ifndef NO_NETWORK

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.82 $
- * $Date: 2004-03-20 14:47:13 $
- * $Author: randomtiger $
+ * $Revision: 2.83 $
+ * $Date: 2004-03-28 17:49:54 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2004/03/20 14:47:13  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.81  2004/03/19 14:51:55  randomtiger
  * New command line parameter: -d3d_lesstmem causes D3D to bypass V's secondry texture system.
  *
@@ -1159,6 +1163,9 @@ static int Show_player_pos = 0;		// debug console command to show player world p
 int Debug_octant = -1;
 
 fix Game_time_compression = F1_0;
+
+// auto-lang stuff
+int detect_lang();
 
 // if the ships.tbl the player has is valid
 int Game_ships_tbl_valid = 0;
@@ -2610,7 +2617,7 @@ void game_init()
 	}
 
 	// initialize localization module. Make sure this is down AFTER initialzing OS.
-	lcl_init();	
+	lcl_init( detect_lang() );	
 	lcl_xstr_init();
 
 	// verify that he has a valid ships.tbl (will Game_ships_tbl_valid if so)
@@ -9328,6 +9335,59 @@ int game_do_cd_mission_check(char *filename)
 	return 1;
 }
 #endif  // ifdef WIN32
+
+// ----------------------------------------------------------------
+// Language autodetection stuff
+//
+
+// this layout *must* match Lcl_languages in localize.cpp in order for the
+// correct language to be detected
+int Lang_auto_detect_checksums[LCL_NUM_LANGUAGES] = {
+	589986744,						// English
+	-1132430286,					// German
+	0,								// French
+};
+
+// default setting is "-1" to use registry setting with English as fall back
+// DO NOT change that default setting here or something uncouth might happen
+// int the localization code
+int detect_lang()
+{
+	uint file_checksum;
+	int idx;
+
+	// try and open the file to verify
+	CFILE *detect = cfopen("font01.vf", "rb");
+
+	// will use default setting if something went wrong
+	if (!detect)
+		return -1;
+
+	// get the long checksum of the file
+	file_checksum = 0;
+	cfseek(detect, 0, SEEK_SET);
+	cf_chksum_long(detect, &file_checksum);
+	cfclose(detect);
+	detect = NULL;
+
+	// now compare the checksum/filesize against known #'s
+	for (idx=0; idx<LCL_NUM_LANGUAGES; idx++) {
+		if (Lang_auto_detect_checksums[idx] == (int)file_checksum) {
+			mprintf(( "AutoLang: Language auto-detection successful...\n" ));
+			return idx;
+		}
+	}
+
+	// notify if a match was not found, include detected checksum
+	mprintf(( "ERROR: Unknown Language Checksum: %i\n", (int)file_checksum ));
+	mprintf(( "Using default language settings...\n" ));
+
+	return -1;
+}
+
+//
+// Eng Auto Lang stuff
+// ----------------------------------------------------------------
 
 
 // ----------------------------------------------------------------

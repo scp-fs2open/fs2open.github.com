@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-28 17:49:54 $
+ * $Author: taylor $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2004/02/14 00:18:32  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -516,13 +520,14 @@ void hud_render_throttle_speed(float current_speed, int y_end)
 		} else {
 			offset = 3;
 		}
-#if defined(GERMAN_BUILD)
-		// print an m, cuz the voice says its an m.  
-		// its a normal m cuz the german font has no special m (its an a)
-		gr_string(sx+offset, sy + h, "m");
-#else
-		gr_printf(sx+offset, sy + h, "%c", Lcl_special_chars + 3);
-#endif
+
+		if (Lcl_gr) {
+			// print an m, cuz the voice says its an m.  
+			// its a normal m cuz the german font has no special m (its an a)
+			gr_string(sx+offset, sy + h, "m");
+		} else {
+			gr_printf(sx+offset, sy + h, "%c", Lcl_special_chars + 3);
+		}
 	}
 }
 
