@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-10-13 05:57:48 $
- * $Author: Kazan $
+ * $Revision: 2.23 $
+ * $Date: 2003-10-14 17:39:13 $
+ * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/10/13 05:57:48  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  * Revision 2.21  2003/09/25 21:12:24  Kazan
  * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
  * Also D3D8 Screenshots work now.
@@ -971,265 +977,6 @@ static float Interp_fog_level;
 int w_factor = 256;
 
 /**
- * This will be used to render the 3D parts the of FS2 engine
- *
- * @param int nverts
- * @param  vertex **verts
- * @param  uint flags
- * @param  int is_scaler
- *
- * @return void
- */
-void gr_d3d_tmapper_internal_3d( int nverts, vertex **verts, uint flags, int is_scaler )	
-{
-	int i;
-	float u_scale = 1.0f, v_scale = 1.0f;
-	int bw = 1, bh = 1;		
-
-	gr_texture_source texture_source = (gr_texture_source)-1;
-	gr_alpha_blend alpha_blend = (gr_alpha_blend)-1;
-	gr_zbuffer_type zbuffer_type = (gr_zbuffer_type)-1;
-
-	if ( gr_zbuffering )	{
-		if ( is_scaler || (gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER)	)	{
-			zbuffer_type = ZBUFFER_TYPE_READ;
-		} else {
-			zbuffer_type = ZBUFFER_TYPE_FULL;
-		}
-	} else {
-		zbuffer_type = ZBUFFER_TYPE_NONE;
-	}
-
-	int alpha;
-
-	int tmap_type = TCACHE_TYPE_NORMAL;
-
-	int r, g, b;
-
-	if ( flags & TMAP_FLAG_TEXTURED )	{
-		r = 255;
-		g = 255;
-		b = 255;
-	} else {
-		r = gr_screen.current_color.red;
-		g = gr_screen.current_color.green;
-		b = gr_screen.current_color.blue;
-	}
-
-	// want to be in here!
-	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER )	{
-
-		if (d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE  )	{
-			tmap_type   = TCACHE_TYPE_NORMAL;
-			alpha_blend = ALPHA_BLEND_ALPHA_ADDITIVE;
-
-			// Blend with screen pixel using src*alpha+dst
-			float factor = gr_screen.current_alpha;
-
-			alpha = 255;
-
-			if ( factor <= 1.0f )	{
-				int tmp_alpha = fl2i(gr_screen.current_alpha*255.0f);
-				r = (r*tmp_alpha)/255;
-				g = (g*tmp_alpha)/255;
-				b = (b*tmp_alpha)/255;
-			}
-		} else {
-
-			tmap_type = TCACHE_TYPE_XPARENT;
-
-			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-
-			// Blend with screen pixel using src*alpha+dst
-			float factor = gr_screen.current_alpha;
-
-			if ( factor > 1.0f )	{
-				alpha = 255;
-			} else {
-				alpha = fl2i(gr_screen.current_alpha*255.0f);
-			}
-		}
-	} else {
-		if(Bm_pixel_format == BM_PIXEL_FORMAT_ARGB_D3D){
-			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-		} else {
-			alpha_blend = ALPHA_BLEND_NONE;
-		}
-		alpha = 255;
-	}
-
-	if(flags & TMAP_FLAG_BITMAP_SECTION){
-		tmap_type = TCACHE_TYPE_BITMAP_SECTION;
-	}
-
-	texture_source = TEXTURE_SOURCE_NONE;
- 
-	if ( flags & TMAP_FLAG_TEXTURED )	{
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
-			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
-			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			return;
-		}
-
-		// use nonfiltered textures for bitmap sections
-		if(flags & TMAP_FLAG_BITMAP_SECTION) {
-			texture_source = TEXTURE_SOURCE_NO_FILTERING;
-		} else {
-			texture_source = TEXTURE_SOURCE_DECAL;
-		}
-	}
-	
-	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
-	
-	Assert(nverts < 32);
-
-	D3DTLVERTEX d3d_verts[32];
-	D3DTLVERTEX *src_v = d3d_verts;
-
-	int x1, y1, x2, y2;
-	x1 = gr_screen.clip_left*16;
-	x2 = gr_screen.clip_right*16+15;
-	y1 = gr_screen.clip_top*16;
-	y2 = gr_screen.clip_bottom*16+15;
-
-	float uoffset = 0.0f;
-	float voffset = 0.0f;
-
-	float minu=0.0f, minv=0.0f, maxu=1.0f, maxv=1.0f;
-
-	if ( flags & TMAP_FLAG_TEXTURED )	{								
-		if ( D3d_rendition_uvs )	{				
-			bm_get_info(gr_screen.current_bitmap, &bw, &bh);			
-				
-			uoffset = 2.0f/i2fl(bw);
-			voffset = 2.0f/i2fl(bh);
-
-			minu = uoffset;
-			minv = voffset;
-
-			maxu = 1.0f - uoffset;
-			maxv = 1.0f - voffset;
-		}				
-	}	
-
-	for (i=0; i<nverts; i++ )	{
-		vertex * va = verts[i];		
-			  
-		// store in case we're doing vertex fog.		
-		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) )	{
-			src_v->sz = va->z / z_mult;	// For zbuffering and fogging
-			if ( src_v->sz > 0.98f )	{
-				src_v->sz = 0.98f;
-			}		
-		} else {
-			src_v->sz = 0.99f;
-		}			
-
-		// For texture correction 	
-	  	src_v->rhw = ( flags & TMAP_FLAG_CORRECT ) ? va->sw : 1.0f;
-		int a      = ( flags & TMAP_FLAG_ALPHA )   ? verts[i]->a : alpha;
-
-		if ( flags & TMAP_FLAG_NEBULA )	{
-			int pal = (verts[i]->b*(NEBULA_COLORS-1))/255;
-			r = gr_palette[pal*3+0];
-			g = gr_palette[pal*3+1];
-			b = gr_palette[pal*3+2];
-		} else if ( (flags & TMAP_FLAG_RAMP) && (flags & TMAP_FLAG_GOURAUD) )	{
-			r = Gr_gamma_lookup[verts[i]->b];
-			g = Gr_gamma_lookup[verts[i]->b];
-			b = Gr_gamma_lookup[verts[i]->b];
-		} else if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )	{
-			// Make 0.75 be 256.0f
-			r = Gr_gamma_lookup[verts[i]->r];
-			g = Gr_gamma_lookup[verts[i]->g];
-			b = Gr_gamma_lookup[verts[i]->b];
-		} else {
-			// use constant RGB values...
-		}
-
-		src_v->color = D3DCOLOR_ARGB(a, r, g, b);
-
-		// if we're fogging and we're doing vertex fog
-		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (D3D_fog_mode == 1)){
-			gr_d3d_stuff_fog_value(va->z, &src_v->specular);
-		} else {
-			src_v->specular = 0;
-		}
-
-		int x, y;
-		x = fl2i(va->sx*16.0f);
-		y = fl2i(va->sy*16.0f);
-
-		x += gr_screen.offset_x*16;
-		y += gr_screen.offset_y*16;
-		
-		src_v->sx = i2fl(x) / 16.0f;
-		src_v->sy = i2fl(y) / 16.0f;
-
-		if ( flags & TMAP_FLAG_TEXTURED )	{
-			// argh. rendition
-			if ( D3d_rendition_uvs ){				
-				// tiled texture (ships, etc), bitmap sections
-				if(flags & TMAP_FLAG_TILED){					
-					src_v->tu = va->u*u_scale;
-					src_v->tv = va->v*v_scale;
-				}
-				// sectioned
-				else if(flags & TMAP_FLAG_BITMAP_SECTION){
-					int sw, sh;
-					bm_get_section_size(gr_screen.current_bitmap, 
-						gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &sw, &sh);
-
-
-				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
-					src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
-					src_v->tv = (va->v + (0.5f / i2fl(sh))) * v_scale;
-				}										   
-
-				// all else.
-				else {				
-					src_v->tu = flCAP(va->u, minu, maxu);
-					src_v->tv = flCAP(va->v, minv, maxv);
-				}				
-			}
-			// yay. non-rendition
-			else {
-				src_v->tu = va->u*u_scale;
-				src_v->tv = va->v*v_scale;
-			}							
-		} else {
-			src_v->tu = 0.0f;
-			src_v->tv = 0.0f;
-		}
-		src_v++;
-	}
-
-	// if we're rendering against a fullneb background
-	if(flags & TMAP_FLAG_PIXEL_FOG){	
-		int r, g, b;
-		int ra, ga, ba;		
-		ra = ga = ba = 0;		
-
-		// get the average pixel color behind the vertices
-		for(i=0; i<nverts; i++){			
-			neb2_get_pixel((int)d3d_verts[i].sx, (int)d3d_verts[i].sy, &r, &g, &b);
-			ra += r;
-			ga += g;
-			ba += b;
-		}				
-		ra /= nverts;
-		ga /= nverts;
-		ba /= nverts;		
-
-		// set fog
-		gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
-	}					
-
-	// Draws just about everything except stars and lines
- 	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
-}
-
-/**
  * This is used to render the 2D parts the of FS2 engine
  *
  * @param int nverts
@@ -1634,9 +1381,9 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		if(set_stage_for_spec_mapped()){
 			//spec mapping is always done on a second pass
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
-			if(flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+			if(flags & TMAP_FLAG_PIXEL_FOG) gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 			d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
-			if(flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
+			if(flags & TMAP_FLAG_PIXEL_FOG) gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 			gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 		}
 	}

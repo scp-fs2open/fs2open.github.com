@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.33 $
- * $Date: 2003-10-12 03:41:36 $
- * $Author: Kazan $
- * $Revision: 2.33 $
- * $Date: 2003-10-12 03:41:36 $
- * $Author: Kazan $
+ * $Revision: 2.34 $
+ * $Date: 2003-10-14 17:39:12 $
+ * $Author: randomtiger $
+ * $Revision: 2.34 $
+ * $Date: 2003-10-14 17:39:12 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/10/12 03:41:36  Kazan
+ * #Kazan# FS2NetD client code gone multithreaded, some Fred2 Open -mod stuff [obvious code.lib] including a change in cmdline.cpp, changed Stick's "-nohtl" to "-htl" - HTL is _OFF_ by default here (Bobboau and I decided this was a better idea for now)
+ *
  * Revision 2.32  2003/10/10 03:59:40  matt
  * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
  * out now. -Sticks
@@ -410,7 +413,7 @@ cmdline_parm safeloading_arg("-safeloading", NULL); //Uses old loading method -C
 cmdline_parm nospec_arg("-nospec", NULL); // skip specular highlighting -Sticks
 cmdline_parm MissionCRCs("-missioncrcs", NULL);
 cmdline_parm TableCRCs("-tablecrcs", NULL);
-cmdline_parm nohtl_arg("-htl", NULL); //Use software HT&L
+cmdline_parm nohtl_arg("-htl", NULL); //Use software HT&L	  
 
 cmdline_parm cell_arg("-cell", NULL);
 
@@ -454,7 +457,8 @@ int Cmdline_nospec = 0;
 int Cmdline_d3dlowmem = 0;
 int Cmdline_d3dmipmap = 0;
 
-int nohtl = 0;
+// Lets keep a convention here
+int Cmdline_nohtl = 0;
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 
@@ -879,11 +883,11 @@ void SetCmdlineParams()
 
 	if ( nohtl_arg.found() ) 
 	{
-		nohtl = 0;
+		Cmdline_nohtl = 0;
 	}
 	else
 	{
-		nohtl = 1;
+		Cmdline_nohtl = 1;
 	}
 
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-10-10 03:59:41 $
- * $Author: matt $
+ * $Revision: 2.5 $
+ * $Date: 2003-10-14 17:39:18 $
+ * $Author: randomtiger $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/10/10 03:59:41  matt
+ * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
+ * out now. -Sticks
+ *
  * Revision 2.3  2003/09/26 14:37:15  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -160,7 +164,7 @@ int instance_depth = 0;
 
 int G3_count = 0;
 int G3_frame_count = 0;
-extern int nohtl;
+extern int Cmdline_nohtl;
 
 //start the frame
 // Pass true for zbuffer_flag to turn on zbuffering
@@ -446,7 +450,7 @@ void g3_start_user_clip_plane( vector *plane_point, vector *plane_normal )
 	}
 
 	G3_user_clip = 1;
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		G3_user_clip_normal = *plane_normal;
 		G3_user_clip_point = *plane_point;
 //	return;
@@ -466,7 +470,7 @@ void g3_start_user_clip_plane( vector *plane_point, vector *plane_normal )
 void g3_stop_user_clip_plane()
 {
 	G3_user_clip = 0;
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		gr_end_clip();
 	}
 }

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-10-13 19:39:20 $
- * $Author: matt $
+ * $Revision: 2.11 $
+ * $Date: 2003-10-14 17:39:14 $
+ * $Author: randomtiger $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/10/13 19:39:20  matt
+ * prelim reworking of lighting code, dynamic lights work properly now
+ * albeit at only 8 lights per object, although it looks just as good as
+ * the old software version --Sticks
+ *
  * Revision 2.9  2003/10/10 03:59:41  matt
  * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
  * out now. -Sticks
@@ -262,7 +267,7 @@ typedef struct light {
 
 light Lights[MAX_LIGHTS];
 int Num_lights=0;
-extern int nohtl;
+extern int Cmdline_nohtl;
 
 light *Relevent_lights[MAX_LIGHTS][MAX_LIGHT_LEVELS];
 int Num_relevent_lights[MAX_LIGHT_LEVELS];
@@ -384,7 +389,7 @@ void light_reset()
 	Num_lights = 0;
 	light_filter_reset();
 
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		for(int i = 0; i<MAX_LIGHTS; i++)gr_destroy_light(i);
 	}
 }
@@ -396,7 +401,7 @@ void light_rotate(light * l)
 	case LT_DIRECTIONAL:
 		// Rotate the light direction into local coodinates
 
-		if(!nohtl) {
+		if(!Cmdline_nohtl) {
 			light_data L = *(light_data*)(void*)l;
 			gr_modify_light(&L,l->instance, 2);
 		}
@@ -411,7 +416,7 @@ void light_rotate(light * l)
 			vm_vec_sub(&tempv, &l->vec, &Light_base );
 			vm_vec_rotate(&l->local_vec, &tempv, &Light_matrix );
 
-			if(!nohtl) {
+			if(!Cmdline_nohtl) {
 				light_data L = *(light_data*)(void*)l;
 				gr_modify_light(&L,l->instance, 2);
 			}
@@ -429,7 +434,7 @@ void light_rotate(light * l)
 			vm_vec_sub(&tempv, &l->vec2, &Light_base );
 			vm_vec_rotate(&l->local_vec2, &tempv, &Light_matrix );
 
-			if(!nohtl) {
+			if(!Cmdline_nohtl) {
 
 				//move the point to the neares to the object on the line
 					vector pos;
@@ -517,7 +522,7 @@ void light_add_directional( vector *dir, float intensity, float r, float g, floa
 	if(Static_light_count < MAX_STATIC_LIGHTS){		
 		Static_light[Static_light_count++] = l;
 	}
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		light_data *L = (light_data*)(void*)l;
 		gr_make_light(L,Num_lights-1, 1);
 	}
@@ -564,7 +569,7 @@ void light_add_point( vector * pos, float rad1, float rad2, float intensity, flo
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		light_data *L = (light_data*)(void*)l;
 		gr_make_light(L,Num_lights-1, 2);
 	}
@@ -613,7 +618,7 @@ void light_add_point_unique( vector * pos, float rad1, float rad2, float intensi
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		light_data *L = (light_data*)(void*)l;
 		gr_make_light(L,Num_lights-1, 2);
 	}
@@ -663,7 +668,7 @@ void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity,
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		light_data *L = (light_data*)(void*)l;
 		gr_make_light(L,Num_lights-1, 3);
 	}

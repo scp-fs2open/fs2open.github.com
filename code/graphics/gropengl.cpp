@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.34 $
- * $Date: 2003-10-13 19:39:19 $
- * $Author: matt $
+ * $Revision: 2.35 $
+ * $Date: 2003-10-14 17:39:13 $
+ * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/10/13 19:39:19  matt
+ * prelim reworking of lighting code, dynamic lights work properly now
+ * albeit at only 8 lights per object, although it looks just as good as
+ * the old software version --Sticks
+ *
  * Revision 2.33  2003/10/13 05:57:48  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
  * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
@@ -458,7 +463,7 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #define REQUIRED_GL_VERSION 1.2f
 
 extern int OGL_inited;
-extern int nohtl;
+extern int Cmdline_nohtl;
 
 int vram_full = 0;			// UnknownPlayer
 
@@ -4271,7 +4276,7 @@ void gr_opengl_init(int reinit)
 	char curver[3];
 	int bpp = gr_screen.bits_per_pixel;
 
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		opengl_init_vertex_buffers();
 	}
 
@@ -4634,7 +4639,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.gf_pop_texture_matrix = gr_opengl_pop_texture_matrix;
 	gr_screen.gf_translate_texture_matrix = gr_opengl_translate_texture_matrix;
 
-	if(!nohtl) {
+	if(!Cmdline_nohtl) {
 		gr_screen.gf_make_buffer = gr_opengl_make_buffer;
 		gr_screen.gf_destroy_buffer = gr_opengl_destroy_buffer;
 		gr_screen.gf_render_buffer = gr_opengl_render_buffer;
