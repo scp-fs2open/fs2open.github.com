@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2004/03/20 14:47:14  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.57  2004/03/17 04:07:32  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -3230,7 +3234,7 @@ void weapon_process_post(object * obj, float frame_time)
 	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
 	{
 
-		if ((timestamp_elapsed(wp->lssm_warpout_time)) && (wp->lssm_stage==1))
+		if ((wp->lssm_stage==1) && (timestamp_elapsed(wp->lssm_warpout_time)))
 		{
 			//if we don't have a lock at this point, just stay in normal space
 			if (wp->target_num == -1)
@@ -3251,7 +3255,7 @@ void weapon_process_post(object * obj, float frame_time)
 		}
 
 		//its in subspace. don't collide or render
-		if ((fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <= wp->lssm_warp_pct) && (wp->lssm_stage==2))
+		if ((wp->lssm_stage==2) && (fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <= wp->lssm_warp_pct))
 		{
 			uint flags=obj->flags & ~(OF_RENDERS | OF_COLLIDES);
 
@@ -3293,7 +3297,7 @@ void weapon_process_post(object * obj, float frame_time)
 	
 
 		//done warping in.  render and collide it. let the fun begin
-		if ((fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <=0.5f) && (wp->lssm_stage==4))
+		if ((wp->lssm_stage==4) && (fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <=0.5f))
 		{
 			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, wip->lssm_stage5_vel );
 			obj->phys_info.vel = obj->phys_info.desired_vel;
@@ -3600,6 +3604,20 @@ int weapon_create( vector * pos, matrix * porient, int weapon_id, int parent_obj
 	} else {
 		wp->cscrew_index = -1;
 	}
+
+	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
+	{
+
+		Assert(parent_objp);		//local ssms must have a parent
+
+		wp->lssm_warpout_time=timestamp(wip->lssm_warpout_delay);
+		wp->lssm_warpin_time=timestamp(wip->lssm_warpout_delay + wip->lssm_warpin_delay);
+		wp->lssm_stage=1;
+	}
+	else{
+		wp->lssm_stage=-1;
+	}
+
 
 	// if this is a flak weapon shell, make it so
 	// NOTE : this function will change some fundamental things about the weapon object
