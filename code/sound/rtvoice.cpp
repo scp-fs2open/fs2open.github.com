@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/rtvoice.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:52 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-02-02 10:36:23 $
+ * $Author: taylor $
  *
  * C module file for real-time voice
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:52  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:33:06  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -287,7 +290,11 @@ void rtvoice_stop_recording()
 	dscap_stop_record();
 
 	if ( Rtv_record_timer_id ) {
+#ifndef _WIN32
+		STUB_FUNCTION;
+#else
 		timeKillEvent(Rtv_record_timer_id);
+#endif
 		Rtv_record_timer_id = 0;
 	}
 
@@ -344,7 +351,13 @@ int rtvoice_start_recording( void (*user_callback)(), int callback_time )
 	}
 
 	if ( user_callback ) {
+#ifndef _WIN32
+		STUB_FUNCTION;
+
+		return -1;
+#else
 		Rtv_record_timer_id = timeSetEvent(callback_time, callback_time, TimeProc, 0, TIME_PERIODIC);
+#endif
 		if ( !Rtv_record_timer_id ) {
 			dscap_stop_record();
 			return -1;
