@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.39 $
- * $Date: 2004-12-05 22:01:11 $
- * $Author: bobboau $
+ * $Revision: 2.40 $
+ * $Date: 2004-12-15 15:22:23 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2004/12/05 22:01:11  bobboau
+ * sevral feature additions that WCS wanted,
+ * and the foundations of a submodel animation system,
+ * the calls to the animation triggering code (exept the procesing code,
+ * wich shouldn't do anything without the triggering code)
+ * have been commented out.
+ *
  * Revision 2.38  2004/11/27 10:45:36  taylor
  * some fixes for position problems on the HUD in non-standard resolutions
  * few compiler warning fixes
@@ -4444,7 +4451,6 @@ void hud_show_lead_indicator(vector *target_world_pos)
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
-/*
 	if(swp->current_secondary_bank>=0)
 	{
 		int bank=swp->current_secondary_bank;
@@ -4506,7 +4512,6 @@ void hud_show_lead_indicator(vector *target_world_pos)
 			}
 		}
 	}
-*/
 }
 
 // hud_cease_subsystem_targeting() will cease targeting the current targets subsystems
