@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.5 $
- * $Date: 2004-04-03 18:11:21 $
- * $Author: Kazan $
+ * $Revision: 1.6 $
+ * $Date: 2004-05-25 00:24:00 $
+ * $Author: wmcoolmon $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/04/03 18:11:21  Kazan
+ * FRED fixes
+ *
  * Revision 1.4  2004/04/03 06:22:33  Goober5000
  * fixed some stub functions and a bunch of compile warnings
  * --Goober5000
@@ -49,7 +52,7 @@
 irc_channel::irc_channel(std::string logfile, int nummessages) : messages(nummessages), max_messages(nummessages),  cur_messages(0)
 {
 
-	LogStream.open(logfile.c_str(), ios::out | ios::app);  
+	LogStream.open(logfile.c_str(), std::ios::out | std::ios::app);  
 
 	if (!LogStream)
 		Log = false;
@@ -79,7 +82,7 @@ void irc_channel::AddMessage(const std::string& message)
 	messages[cur_messages] = message;
 
 	if (Log)
-		LogStream << message.c_str() << endl;
+		LogStream << message.c_str() << std::endl;
 
 	cur_messages++;
 }
@@ -370,7 +373,7 @@ void irc_client::Interpret_Commands_Do()
 {
 	std::vector<std::string> raw_input = Maybe_GetRawLines();
 
-	for (int i = 0; i < raw_input.size(); i++)
+	for (unsigned int i = 0; i < raw_input.size(); i++)
 	{
 		Interpret_Command(raw_input[i]);
 	}
