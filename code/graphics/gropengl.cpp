@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-01-26 23:30:53 $
- * $Author: DTP $
+ * $Revision: 2.14 $
+ * $Date: 2003-02-01 02:57:42 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/01/26 23:30:53  DTP
+ * temporary fix, added some // so that we can do debug builds. i expect Goober5000 will fix it soon.
+ *
  * Revision 2.12  2003/01/19 22:45:34  Goober5000
  * cleaned up build output a bit
  * --Goober5000
@@ -385,17 +388,18 @@ typedef struct ogl_extension
 	int required_to_run;			//is this extension required for use	
 } ogl_extension;
 
-#define GL_FOG_COORDF 0
-#define GL_FOG_COORD_POINTER 1
-#define GL_MULTITEXTURE_COORD2F 2
-#define GL_ACTIVE_TEX 3
-#define GL_SECONDARY_COLOR3F 4
-#define GL_SECONDARY_COLOR3UB 5
-#define GL_SECONDARY_COLOR_POINTER 6
-#define GL_TEXTURE_ENV_ADD 7
-#define GL_COMP_TEX	8
-#define GL_TEX_COMP_S3TC		9
-#define GL_NUM_EXTENSIONS 10
+#define GL_FOG_COORDF					0			// coordinate fog system
+#define GL_FOG_COORD_POINTER			1			// used with vertex arrays
+#define GL_MULTITEXTURE_COORD2F			2			// multitex coordinated
+#define GL_ACTIVE_TEX					3			// currenly active multitexture
+#define GL_SECONDARY_COLOR3F			4			// secondary color (3 floats)
+#define GL_SECONDARY_COLOR3UB			5			// secondary color (3 unsinged bytes)
+#define GL_SECONDARY_COLOR_POINTER		6			// secondary color array
+#define GL_TEXTURE_ENV_ADD				7			// additive texture environment
+#define GL_COMP_TEX						8			// texture compression
+#define GL_TEX_COMP_S3TC				9			// S3TC/DXTC compression format
+#define GL_TEX_FILTER_ANSIO				10			// ansiotrophic filtering
+#define GL_NUM_EXTENSIONS				11
 
 static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 {
@@ -408,7 +412,8 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 	{0, NULL, "glSecondaryColorPointerEXT", "GL_EXT_secondary_color",0},
 	{0, NULL, NULL, "GL_ARB_texture_env_add", 1},					//required for glow maps
 	{0, NULL, "glCompressedTexImage2D", "GL_ARB_texture_compression",0},
-	{0, NULL, NULL, "GL_EXT_texture_compression_s3tc",0}
+	{0, NULL, NULL, "GL_EXT_texture_compression_s3tc",0},
+	{0, NULL, NULL, "GL_EXT_texture_filter_anisotropic", 0}
 };
 
 #define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
@@ -3525,6 +3530,14 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	//if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
 	Texture_compression_enabled=((GL_Extensions[GL_TEX_COMP_S3TC].enabled) && (GL_Extensions[GL_COMP_TEX].enabled));
+
+	//setup ansiotropic filtering if found
+	if (GL_Extensions[GL_TEX_FILTER_ANSIO].enabled)
+	{
+		float max_ansio;
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_ansio);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_ansio);
+	}
 }
 #endif
 
