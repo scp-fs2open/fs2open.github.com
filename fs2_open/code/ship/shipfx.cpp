@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-19 01:07:42 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-03 09:31:59 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/19 01:07:42  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.3  2003/01/17 01:48:49  Goober5000
  * added capability to the $Texture replace code to substitute the textures
  * without needing and extra model, however, this way you can't substitute
@@ -1084,7 +1087,9 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	if ( objp == Player_obj )	{
-		HUD_printf(XSTR( "Subspace node activated", 498) );
+// changed by Goober5000 to be more accurate
+//		HUD_printf(XSTR( "Subspace node activated", 498) );
+		HUD_printf(NOX("Subspace drive activated"));
 	}
 
 	float	speed, effect_time, effect_radius;
