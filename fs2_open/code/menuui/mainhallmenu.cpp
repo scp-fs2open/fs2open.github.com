@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-29 07:56:10 $
+ * $Author: DTP $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.8  2002/05/17 03:05:08  mharris
  * more porting tweaks
  *
@@ -975,7 +978,11 @@ void main_hall_init(int main_hall_num)
 		Game_mode = GM_NORMAL;
 	}
 
-	if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && !Main_hall_netgame_started ) {
+	//if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && !Main_hall_netgame_started ) {
+	//	Main_hall_netgame_started = 1;
+	//	main_hall_do_multi_ready();
+	//} DTP commented out to keep original source
+	if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && (!Main_hall_netgame_started) && (Game_mode == GM_MULTIPLAYER)) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl dont get thrown into Multiplayer with a Singleplayer Pilot.
 		Main_hall_netgame_started = 1;
 		main_hall_do_multi_ready();
 	}
