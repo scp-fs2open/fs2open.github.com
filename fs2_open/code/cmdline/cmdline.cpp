@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.42 $
- * $Date: 2003-11-09 06:31:38 $
- * $Author: Kazan $
+ * $Revision: 2.43 $
+ * $Date: 2003-11-11 03:56:10 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/11/09 06:31:38  Kazan
+ * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
+ * conflicts in cmdline and timerbar.h log entries
+ * cvs stopped acting like it was on crack obviously
+ *
  * Revision 2.41  2003/11/09 04:09:18  Goober5000
  * edited for language
  * --Goober5000
@@ -456,7 +461,7 @@ cmdline_parm safeloading_arg("-safeloading", NULL); //Uses old loading method -C
 cmdline_parm nospec_arg("-nospec", NULL); // skip specular highlighting -Sticks
 cmdline_parm MissionCRCs("-missioncrcs", NULL);
 cmdline_parm TableCRCs("-tablecrcs", NULL);
-cmdline_parm nohtl_arg("-htl", NULL); //Use software HT&L	  
+cmdline_parm nohtl_arg("-htl", NULL); //Use HT&L	  
 cmdline_parm cell_arg("-cell", NULL);
 cmdline_parm textures_32bit("-t32",NULL);
 cmdline_parm no_set_gamma("-no_set_gamma",NULL);

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-11-09 06:31:40 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2003-11-11 03:56:13 $
+ * $Author: bobboau $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/11/09 06:31:40  Kazan
+ * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
+ * conflicts in cmdline and timerbar.h log entries
+ * cvs stopped acting like it was on crack obviously
+ *
  * Revision 2.6  2003/11/02 05:50:08  bobboau
  * modified trails to render with tristrips now rather than with stinky old trifans,
  * MUCH faster now, at least one order of magnatude.
@@ -394,12 +399,10 @@ void trail_render( trail * trailp )
 }
 */
 #define MAX_TRAIL_POLYS 129
-
 void trail_render( trail * trailp )
 {		
 	TIMERBAR_PUSH(6);
-
-	if (!Cmdline_nohtl) gr_set_lighting(false,false);//this shouldn't need to be here but it does need to be here, WHY!!!!!!!?-Bobboau
+//	if(!Cmdline_nohtl)gr_set_lighting(false,false);//this shouldn't need to be here but it does need to be here, WHY!!!!!!!?-Bobboau
 	trail_info *ti;	
 
 	if ( trailp->tail == trailp->head ) return;
@@ -492,13 +495,12 @@ void trail_render( trail * trailp )
 				// Last one...
 				vector centerv;
 				vm_vec_avg( &centerv, &topv, &botv );
-				vertex center;
 				if(!Cmdline_nohtl){
-					g3_transfer_vertex( &center, &centerv );
+					g3_transfer_vertex( &v_list[nv+2], &centerv );
 				}else{
-					g3_rotate_vertex( &center, &centerv );
+					g3_rotate_vertex( &v_list[nv+2], &centerv );
 				}
-				center.a = l;	
+				v_list[nv].a = l;	
 
 				vlist[nv] = &v_list[nv];
 				vlist[nv]->u = float(i);  vlist[nv]->v = 1.0f; 
@@ -540,14 +542,15 @@ void trail_render( trail * trailp )
 
 	gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 	if ( D3D_enabled || OGL_inited )	{
-		if(Cmdline_nohtl)g3_draw_poly( nv, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TRISTRIP );
-		else g3_draw_poly( nv, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
+		if(Cmdline_nohtl)g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TRISTRIP );
+		else g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
 	} else {
 		if(Cmdline_nohtl)g3_draw_poly( nv, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TRISTRIP);
 		else g3_draw_poly( nv, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP);
 	}
 	TIMERBAR_POP();
 }
+
 
 
 void trail_add_segment( int trail_num, vector *pos )

@@ -120,8 +120,8 @@ int find_first_empty_light()
 }
 
 void pre_render_lights_init(){
-	if(lighting_enabled)	GlobalD3DVars::lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
-	else 	GlobalD3DVars::lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
+//	if(lighting_enabled)	GlobalD3DVars::lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
+//	else 	GlobalD3DVars::lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
 	for(int i = 0; i<8; i++){
 		if(currently_enabled[i] > -1)GlobalD3DVars::lpD3DDevice->LightEnable(currently_enabled[i],false);
 		currently_enabled[i] = -1;
@@ -199,7 +199,7 @@ void gr_d3d_lighting(bool set, bool state)
 
 
 	if((gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set){
-		float a = gr_screen.current_alpha;
+/*		float a = gr_screen.current_alpha;
 		D3DCOLORVALUE col;
 		col.r = a;
 		col.g = a;
@@ -208,17 +208,13 @@ void gr_d3d_lighting(bool set, bool state)
 		material.Ambient = col;
 		material.Diffuse = col;
 		material.Specular = col;
-		material.Emissive = col;
-		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
-	//	D3D_vertex_type = -1;
-	//	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
-	//	d3d_SetTexture(1, NULL);
-	//	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-	d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
-	for(int i = 0; i<8; i++){
-		if(currently_enabled[i] > -1)GlobalD3DVars::lpD3DDevice->LightEnable(currently_enabled[i],false);
-		currently_enabled[i] = -1;
-	}
+		material.Emissive = col;*/
+		int l = int(255.0f*gr_screen.current_alpha);
+		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(l,l,l,l));
+		for(int i = 0; i<8; i++){
+			if(currently_enabled[i] > -1)GlobalD3DVars::lpD3DDevice->LightEnable(currently_enabled[i],false);
+			currently_enabled[i] = -1;
+		}
 		d3d_set_initial_render_state();
 	}else{
 		D3DCOLORVALUE col;
@@ -230,6 +226,8 @@ void gr_d3d_lighting(bool set, bool state)
 		material.Emissive = col;
 		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
 	}
+	if(!state)d3d_set_initial_render_state();
+
 	GlobalD3DVars::lpD3DDevice->SetMaterial(&material);
 	d3d_SetRenderState(D3DRS_LIGHTING , state);
 

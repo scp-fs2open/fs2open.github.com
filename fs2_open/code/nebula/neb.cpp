@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-11-11 02:15:46 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2003-11-11 03:56:12 $
+ * $Author: bobboau $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/11/11 02:15:46  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.8  2003/10/14 17:39:16  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -161,6 +166,7 @@
 
 #include "globalincs/alphacolors.h"
 
+extern int Cmdline_nohtl;
 
 // --------------------------------------------------------------------------------------------------------
 // NEBULA DEFINES/VARS
@@ -1183,8 +1189,11 @@ void neb2_render_player()
 					continue;
 				}
 
+				vertex p_;
 				// rotate and project the vertex into viewspace
 				g3_rotate_vertex(&p, &Neb2_cubes[idx1][idx2][idx3].pt);
+				if(!Cmdline_nohtl) g3_transfer_vertex(&p_, &Neb2_cubes[idx1][idx2][idx3].pt);
+
 				ptemp = p;
 				g3_project_vertex(&ptemp);
 
@@ -1212,16 +1221,19 @@ void neb2_render_player()
 				}
 	
 				// set the bitmap and render				
-				gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha + Neb2_cubes[idx1][idx2][idx3].flash);
+				gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
 
-#ifndef NDEBUG
+/*#ifndef NDEBUG
 				this_area = g3_draw_rotated_bitmap_area(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED, max_area);				
 				total_area += this_area;
 				frame_area -= this_area;
 				frame_rendered++;			
-#else 
-				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
-#endif
+#else */
+				if(!Cmdline_nohtl)gr_set_lighting(false,false);
+				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+				if(Cmdline_nohtl)g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
+				else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+//#endif
 			}
 		}
 	}	
@@ -1248,6 +1260,25 @@ void neb2_eye_changed()
 	Neb2_regen = 1;
 }
 
+/*
+//Object types
+#define OBJ_NONE				0		//unused object
+#define OBJ_SHIP				1		//a ship
+#define OBJ_WEAPON			2		//a laser, missile, etc
+#define OBJ_FIREBALL			3		//an explosion
+#define OBJ_START				4		//a starting point marker (player start, etc)
+#define OBJ_WAYPOINT			5		//a waypoint object, maybe only ever used by Fred
+#define OBJ_DEBRIS			6		//a flying piece of ship debris
+#define OBJ_CMEASURE			7		//a countermeasure, such as chaff
+#define OBJ_GHOST				8		//so far, just a placeholder for when a player dies.
+#define OBJ_POINT				9		//generic object type to display a point in Fred.
+#define OBJ_SHOCKWAVE		10		// a shockwave
+#define OBJ_WING				11		// not really a type used anywhere, but I need it for Fred.
+#define OBJ_OBSERVER       12    // used for multiplayer observers (possibly single player later)
+#define OBJ_ASTEROID			13		//	An asteroid, you know, a big rock, like debris, sort of.
+#define OBJ_JUMP_NODE		14		// A jump node object, used only in Fred.
+#define OBJ_BEAM				15		// beam weapons. we have to roll them into the object system to get the benefits of the collision pairs
+*/
 // get near and far fog values based upon object type and rendering mode
 void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 {
@@ -1270,9 +1301,17 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 				nNfog_index = SHIP_TYPE_FIGHTER_BOMBER;
 			}
 		}
-	}
+/*	}else if(objp->type == OBJ_FIREBALL){//mostly here for the warp effect
+		*fnear = objp->radius*2;
+		*ffar = (objp->radius*objp->radius*200)+objp->radius*200;
+		return;
+		//we want these to show up realy far away, this seems like a good value-Bobboau
+/*	}else if(objp->type == OBJ_BEAM){
+		*fnear = 10.0f;
+		*ffar = 10000.0f;
+		return;
 	// fog everything else like a fighter
-	else {
+*/	}else {
 		nNfog_index = SHIP_TYPE_FIGHTER_BOMBER;
 	}
 
