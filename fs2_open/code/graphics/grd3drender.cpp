@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.38 $
- * $Date: 2003-11-29 10:52:09 $
+ * $Revision: 2.39 $
+ * $Date: 2003-11-29 17:13:53 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/11/29 10:52:09  randomtiger
+ * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Added stats command for ingame stats on memory usage.
+ * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
+ * Added fix for fonts wrapping round in non standard hi res modes.
+ * Changed D3D mipmapping to a good value to suit htl mode.
+ * Added new fog colour method which makes use of the bitmap, making this htl feature backcompatible again.
+ *
  * Revision 2.37  2003/11/19 20:37:24  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -1480,7 +1488,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 		src_v->color = D3DCOLOR_ARGB(a, r, g, b);
 
-		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && Cmdline_nohtl) {
+		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE)){// && Cmdline_nohtl) {
 			gr_d3d_stuff_fog_value(va->z, &src_v->specular);
 		} else {
 			src_v->specular = 0;
@@ -1540,7 +1548,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	float f_float;	
 
 	// if we're rendering against a fullneb background
-	if(flags & TMAP_FLAG_PIXEL_FOG){	
+	if(flags & TMAP_FLAG_PIXEL_FOG && Cmdline_nohtl){	
 		int r, g, b;
 //		int ra, ga, ba;		
 		ra = ga = ba = 0;		
