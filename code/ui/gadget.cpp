@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/GADGET.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2005-02-15 02:15:04 $
+ * $Author: taylor $
  *
  * Functions for the base gadget class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.6  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -339,7 +342,10 @@ void UI_GADGET::destroy()
 
 	for ( i=0; i<m_num_frames; i++ ) {
 		if (bmap_ids[i] != -1) {
-			bm_release(bmap_ids[i]);
+			// we need to unload here rather than release since some controls
+			// may still need access to the bitmap slot.  if it can be released
+			// then the child should do it - taylor
+			bm_unload(bmap_ids[i]);
 			bmap_ids[i] = -1;
 		}
 	}
