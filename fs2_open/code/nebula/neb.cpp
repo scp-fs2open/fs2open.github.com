@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-07-26 20:47:41 $
- * $Author: Kazan $
+ * $Revision: 2.29 $
+ * $Date: 2004-10-31 21:56:09 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/07/26 20:47:41  Kazan
+ * remove MCD complete
+ *
  * Revision 2.27  2004/07/12 16:32:56  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -566,7 +569,7 @@ void neb2_level_init()
 
 		// OK, lets try something a bit more interesting
 		int width, height;
-		pcx_read_header(Neb2_texture_name, &width, &height, NULL);
+		pcx_read_header(Neb2_texture_name, NULL, &width, &height, NULL);
 
 		Neb2_max_fog_value = width * height;
 		Neb2_htl_fog_data = (ubyte *) malloc(Neb2_max_fog_value * 4);
@@ -1308,14 +1311,11 @@ void neb2_render_player()
 				frame_area -= this_area;
 				frame_rendered++;			
 #else */
-				// have lighting enabled but not set to fix whiteout in OGL
-				if(!Cmdline_nohtl)gr_set_lighting(false,(gr_screen.mode == GR_OPENGL));
+				if (!Cmdline_nohtl) gr_set_lighting(false, false);
 				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 		 	  	if(Cmdline_nohtl || Cmdline_2d_poof)
 	 				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 		 	  	else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-				// turn lighting back off if in OGL to not mess up HUD
-				if(!Cmdline_nohtl && (gr_screen.mode == GR_OPENGL))gr_set_lighting(false,false);
 //#endif
 			}
 		}
