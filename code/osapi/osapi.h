@@ -57,7 +57,9 @@ void os_toggle_fullscreen();
 int os_foreground();
 
 // Returns the handle to the main window
-uint os_get_window();	 
+uint os_get_window(); 
+
+void os_set_window(uint new_handle);	 
 
 void os_app_activate_set(bool state);
 

@@ -9,13 +9,19 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-10-26 00:31:59 $
+ * $Revision: 2.12 $
+ * $Date: 2004-01-17 21:59:54 $
  * $Author: randomtiger $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/10/26 00:31:59  randomtiger
+ * Fixed hulls not drawing (with Phreaks advise).
+ * Put my 32bit PCX loading under PCX_32 compile flag until its working.
+ * Fixed a bug with res 640x480 I introduced with my non standard mode code.
+ * Changed JPG and TGA loading command line param to "-t32"
+ *
  * Revision 2.10  2003/10/16 00:17:18  randomtiger
  * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
  * As well as initialised in a different mode, bitmaps are stretched and for these modes
@@ -285,6 +291,12 @@ int os_foreground()
 uint os_get_window()
 {
 	return (uint)hwndApp;
+}
+
+// Returns the handle to the main window
+void os_set_window(uint new_handle)
+{
+	hwndApp = (HWND) new_handle;
 }
 
 

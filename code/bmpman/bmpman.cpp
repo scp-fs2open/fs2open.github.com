@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.17 $
- * $Date: 2003-11-16 09:42:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2004-01-17 21:59:52 $
+ * $Author: randomtiger $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/11/16 09:42:38  Goober5000
+ * clarified and pruned debug spew messages
+ * --Goober5000
+ *
  * Revision 2.16  2003/10/24 17:35:04  randomtiger
  * Implemented support for 32bit TGA and JPG for D3D
  * Also 32 bit PCX, but it still has some bugs to be worked out
@@ -1416,7 +1420,7 @@ static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flag
 	int idx;	
 	int r, g, b, a;
 
-	if(Fred_running || Pofview_running || Is_standalone){
+	if(Pofview_running || Is_standalone){
 		Assert(bmp->bpp == 8);
 
 		return;
@@ -1534,7 +1538,7 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		}
 
 		// now swizzle the thing into the proper format
-		if(Fred_running || Pofview_running){
+		if(Pofview_running){
 			bm_swizzle_8bit_for_fred(be, bmp, data, palette);
 		}
 	} else {	
@@ -1605,7 +1609,7 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 		bm->flags = 0;
 		// briefing editor in Fred2 uses aabitmaps (ani's) - force to 8 bit
-		if(Fred_running || Is_standalone){
+		if(Is_standalone){
 			bm->bpp = 8;
 		} else {
 			bm->bpp = bpp;
@@ -1745,7 +1749,7 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
 
-	if(Fred_running || Is_standalone){
+	if(Is_standalone){
 		Assert(bpp == 8);
 	} else {
 		Assert(bpp == 16);
@@ -1845,7 +1849,7 @@ bitmap * bm_gfx_lock( int handle, ubyte bpp, ubyte flags )
 	} 
 	// otherwise do it as normal
 	else {
-		if(Fred_running || Pofview_running){
+		if(Pofview_running){
 			Assert( bpp == 8 );
 			Assert( (bm_bitmaps[bitmapnum].type == BM_TYPE_PCX) || (bm_bitmaps[bitmapnum].type == BM_TYPE_ANI) || (bm_bitmaps[bitmapnum].type == BM_TYPE_TGA));
 		} else {
