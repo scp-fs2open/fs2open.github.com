@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.7 $
- * $Date: 2005-03-14 06:33:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-24 23:27:25 $
+ * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/14 06:33:38  wmcoolmon
+ * Made sounds dynamically allocated
+ *
  * Revision 2.6  2005/01/08 09:59:10  wmcoolmon
  * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
  *
@@ -365,7 +368,7 @@ void snd_ffwd(int snd_handle, game_snd *sg, float seconds);						// fast forward
 void snd_set_pos(int snd_handle, game_snd *sg, float val,int as_pct);		// set the position val as either a percentage (if as_pct) or as a # of seconds into the sound
 
 void snd_get_format(int handle, int *bits_per_sample, int *frequency);
-int snd_time_remaining(int handle, int bits_per_sample=8, int frequency=11025);
+int snd_time_remaining(int handle);
 
 #else
 
