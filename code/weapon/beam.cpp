@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-02-16 05:14:29 $
- * $Author: bobboau $
+ * $Revision: 2.12 $
+ * $Date: 2003-02-16 18:55:59 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/02/16 05:14:29  bobboau
+ * added glow map nebula bug fix for d3d, someone should add a fix for glide too
+ * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
+ *
  * Revision 2.10  2003/01/19 01:07:43  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -1496,14 +1500,14 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 		if(per > 1.0f)per = 1.0f;
 		if(per < 0.0f)per = 0.0f;
 
-		verts[1]->r = (255 * per);
-		verts[2]->r = (255 * per);
-		verts[1]->g = (255 * per);
-		verts[2]->g = (255 * per);
-		verts[1]->b = (255 * per);
-		verts[2]->b = (255 * per);
-		verts[1]->a = (255 * per);
-		verts[2]->a = (255 * per);
+		verts[1]->r = (ubyte)(255 * per);
+		verts[2]->r = (ubyte)(255 * per);
+		verts[1]->g = (ubyte)(255 * per);
+		verts[2]->g = (ubyte)(255 * per);
+		verts[1]->b = (ubyte)(255 * per);
+		verts[2]->b = (ubyte)(255 * per);
+		verts[1]->a = (ubyte)(255 * per);
+		verts[2]->a = (ubyte)(255 * per);
 
 		verts[0]->r = 255;
 		verts[3]->r = 255;
@@ -3259,7 +3263,7 @@ float beam_get_ship_damage(beam *b, object *objp, vector *hit_pos)
 
 	float aten = 1.0;
 	float pre = b->range*b->damage_threshold;
-	if((b->range != pre)&&(dist > pre))aten = 1.0 - (dist - pre)/(b->range - pre);
+	if((b->range != pre)&&(dist > pre))aten = 1.0f - (dist - pre)/(b->range - pre);
 
 	// if the beam is on the same team as the object
 	Assert((objp != NULL) && (b != NULL));
