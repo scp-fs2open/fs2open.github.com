@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.61 $
- * $Date: 2004-01-20 22:39:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.62 $
+ * $Date: 2004-01-24 12:47:48 $
+ * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2004/01/20 22:39:06  Goober5000
+ * commented the variables in a commented function
+ * --Goober5000
+ *
  * Revision 2.60  2004/01/12 21:12:41  randomtiger
  * Added fix for fogging debris in D3D htl.
  *
@@ -5085,7 +5089,8 @@ extern vector Object_position;
 extern matrix Object_matrix;
 
 void model_render_buffers(bsp_info* model, polymodel * pm){
-	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING), true );
+	// RT Added second conditional parameter, seems to not distrupt anything in either API
+	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING), !(Interp_flags & MR_NO_LIGHTING) );
 
 	vector scale;
 

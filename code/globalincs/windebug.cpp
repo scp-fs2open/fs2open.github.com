@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-02 05:30:26 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-01-24 12:47:48 $
+ * $Author: randomtiger $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/02 05:30:26  penguin
+ * Added #ifdef _MSC_VER to MSVC-specific code
+ *  - penguin
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -120,6 +124,7 @@
 #include <windowsx.h>
 #include <stdio.h>
 
+#include "osapi/osapi.h"
 #include "globalincs/pstypes.h"
 
 #ifdef _MSC_VER
@@ -927,11 +932,40 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 
 void _cdecl Warning( char * filename, int line, char * format, ... )
 {
+	va_list args;
+
+
+#ifdef FRED_OGL
+
+	static bool show_warnings = true;
+
+	if(show_warnings == false) return;
+
+	char *explanation = 
+		"This warning system is new to release Fred2_open. The following issue will not prevent "
+		"your mission from loading in FS2 but it could cause instablility (i.e. crashes), please fix it.";
+
+	char *end = "Continue with warnings?";//\n\nYes: continue with warnings\nNo: continue without\nCancel: shutdown Fred";
+
+	va_start(args, format);
+	vsprintf(AssertText1,format,args);
+	va_end(args);
+	sprintf(AssertText2,"%s\n\nWarning: %s\r\nFile:%s\r\nLine: %d\n\n%s", 
+		explanation, AssertText1, filename, line, end);
+
+	int result = MessageBox((HWND) os_get_window(), AssertText2, "Fred Warning", MB_ICONWARNING | MB_YESNO);//CANCEL);
+
+	switch(result)
+	{
+		case IDNO: show_warnings = false; break;
+		case IDCANCEL: exit(1);
+	}
+
+#else
+
 #ifndef NDEBUG
 
 	int id;
-	
-	va_list args;
 
 	gr_force_windowed();
 
@@ -939,7 +973,6 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 	vsprintf(AssertText1,format,args);
 	va_end(args);
 	sprintf(AssertText2,"Warning: %s\r\nFile:%s\r\nLine: %d", AssertText1, filename, line );
-
 
 	#ifdef SHOW_CALL_STACK
 		dumpBuffer.Clear();
@@ -966,6 +999,8 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 #endif
 	}
 #endif // NDEBUG
+
+#endif // FRED OGL else
 }
 
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-11-17 06:52:52 $
- * $Author: bobboau $
+ * $Revision: 2.13 $
+ * $Date: 2004-01-24 12:47:48 $
+ * $Author: randomtiger $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/11/17 06:52:52  bobboau
+ * got assert to work again
+ *
  * Revision 2.11  2003/10/27 23:04:21  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -586,6 +589,7 @@ void gr_close()
 {
 	if ( !Gr_inited )	return;
 
+	DBUGFILE_OUTPUT_0("About to palette_flush");
 	palette_flush();
 
 	switch( gr_screen.mode )	{
@@ -610,6 +614,7 @@ void gr_close()
 
 #ifdef USE_OPENGL
 	case GR_OPENGL:
+		DBUGFILE_OUTPUT_0("About to gr_opengl_cleanup");
 		gr_opengl_cleanup();
 		break;
 #endif  // ifdef USE_OPENGL
@@ -618,6 +623,7 @@ void gr_close()
 		Int3();		// Invalid graphics mode
 	}
 
+	DBUGFILE_OUTPUT_0("About to gr_font_close");
 	gr_font_close();
 
 	Gr_inited = 0;

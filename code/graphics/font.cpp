@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-01-19 00:56:09 $
+ * $Revision: 2.6 $
+ * $Date: 2004-01-24 12:47:48 $
  * $Author: randomtiger $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/01/19 00:56:09  randomtiger
+ * Some more small changes for Fred OGL
+ *
  * Revision 2.4  2003/03/02 05:41:52  penguin
  * Added some #ifndef NO_SOFTWARE_RENDERING
  *  - penguin
@@ -659,7 +662,11 @@ extern HDC hDibDC;
 void gr_string_win(int x, int y, char *s)
 {
 #ifdef FRED_OGL
-  // 	gr_string(x,y,s);
+
+	int old_bitmap = gr_screen.current_bitmap; 
+	gr_set_font(FONT1);
+   	gr_string(x,y,s);
+	gr_screen.current_bitmap = old_bitmap; 
    	return;
 #endif
 
