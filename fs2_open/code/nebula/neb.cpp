@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-11-29 10:52:10 $
+ * $Revision: 2.15 $
+ * $Date: 2004-01-12 21:12:42 $
  * $Author: randomtiger $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/11/29 10:52:10  randomtiger
+ * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Added stats command for ingame stats on memory usage.
+ * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
+ * Added fix for fonts wrapping round in non standard hi res modes.
+ * Changed D3D mipmapping to a good value to suit htl mode.
+ * Added new fog colour method which makes use of the bitmap, making this htl feature backcompatible again.
+ *
  * Revision 2.13  2003/11/19 20:37:24  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -204,7 +212,7 @@ unsigned char Neb2_fog_colour_b = 0;
 ubyte *Neb2_htl_fog_data = NULL;
 int Neb2_max_fog_value = 0;
 int Neb2_cur_fog_value = 0;
-const int Neb2_cur_fog_factor = 20;
+const int Neb2_cur_fog_factor = 10;
 
 // #define NEB2_THUMBNAIL
 
@@ -507,53 +515,6 @@ void neb2_level_init()
 		Neb2_render_mode = NEB2_RENDER_POF;
 		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
 	} else {
-#if 0
-
-		// RT - This is not very good coding practice but it allows the nebula stuff
-		// to be  back compatible. 
-		// Perviously the software fog used a bitmap background to optain a colour 
-		// to blend an objects vertices with.
-		// Now with hardware table fogging it can just be set as a fog colour
-		// By checking the bitmap name we can set the fog colours to match the
-		// old system. 
-
-		// Commented out these ifs to make this the default colour
-	  //	if(stricmp("nbackblue1", Neb2_texture_name) == 0) {
-			Neb2_fog_colour_r =  30;
-			Neb2_fog_colour_g =  52;
-			Neb2_fog_colour_b = 157;
-	  //	} else 
-			
-		if(stricmp("nbackblue2", Neb2_texture_name) == 0) {
-			Neb2_fog_colour_r =  37;
-			Neb2_fog_colour_g =   1;
-			Neb2_fog_colour_b = 137;
-		} else if(stricmp("nbackcyan",  Neb2_texture_name) == 0) {
-			Neb2_fog_colour_r =   1;
-			Neb2_fog_colour_g = 126;
-			Neb2_fog_colour_b = 132;
-		} else if(stricmp("nbackgreen", Neb2_texture_name) == 0) {
-			Neb2_fog_colour_r =   1;
-			Neb2_fog_colour_g = 126;
-			Neb2_fog_colour_b =   1;
-		} else if(stricmp("nbackpurp1", Neb2_texture_name) == 0) {
-			Neb2_fog_colour_r = 111;
-			Neb2_fog_colour_g =  28;
-			Neb2_fog_colour_b = 154;
-		} else if(stricmp("nbackpurp2", Neb2_texture_name) == 0) {
-			Neb2_fog_colour_r =  80;
-			Neb2_fog_colour_g =  63;
-			Neb2_fog_colour_b = 120;
-		} else if(stricmp("nbackred", Neb2_texture_name) == 0) {
-			Neb2_fog_colour_r = 117;
-			Neb2_fog_colour_g =  38;
-			Neb2_fog_colour_b =  14;
-		} else if(stricmp("nbackblack", Neb2_texture_name) == 0) {
-			Neb2_fog_colour_r =   1;
-			Neb2_fog_colour_g =   1;
-			Neb2_fog_colour_b =   1;
-		}
-#endif
 		// Set a default colour just incase something goes wrong
 		Neb2_fog_colour_r =  30;
 		Neb2_fog_colour_g =  52;
@@ -682,9 +643,13 @@ void neb2_render_setup(vector *eye_pos, matrix *eye_orient)
 			if(Neb2_cur_fog_value >= (Neb2_max_fog_value*Neb2_cur_fog_factor))
 				Neb2_cur_fog_value = 0;
 
-			Neb2_fog_colour_r = (ubyte) (((Neb2_fog_colour_r + Neb2_htl_fog_data[Neb2_cur_fog_value/Neb2_cur_fog_factor*4+2])/2) & 0xff);
-			Neb2_fog_colour_g = (ubyte) (((Neb2_fog_colour_g + Neb2_htl_fog_data[Neb2_cur_fog_value/Neb2_cur_fog_factor*4+1])/2) & 0xff);
-			Neb2_fog_colour_b = (ubyte) (((Neb2_fog_colour_b + Neb2_htl_fog_data[Neb2_cur_fog_value/Neb2_cur_fog_factor*4+0])/2) & 0xff);
+			int index = Neb2_cur_fog_value / Neb2_cur_fog_factor * 4;
+			int r = (((int) Neb2_fog_colour_r) + ((int) Neb2_htl_fog_data[index+2]))/2;
+			int g = (((int) Neb2_fog_colour_g) + ((int) Neb2_htl_fog_data[index+1]))/2;
+			int b = (((int) Neb2_fog_colour_b) + ((int) Neb2_htl_fog_data[index+0]))/2;
+			Neb2_fog_colour_r = (ubyte) (r & 0xff);
+			Neb2_fog_colour_g = (ubyte) (g & 0xff);
+			Neb2_fog_colour_b = (ubyte) (b & 0xff);
 		}
 
 		// RT The background needs to be the same colour as the fog and this seems
