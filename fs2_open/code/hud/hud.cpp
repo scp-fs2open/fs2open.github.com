@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-12-14 14:46:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.27 $
+ * $Date: 2004-12-23 23:08:21 $
+ * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/12/14 14:46:12  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.25  2004/11/21 11:29:53  taylor
  * make hud_disabled_except_messages() do everything at once, add it to hud_show_radar() and hud_show_target_model() so those don't show up (bug #271)
  *
@@ -1666,6 +1670,17 @@ void HUD_render_2d(float frametime)
 	}
 
 	//Custom hud stuff
+#ifdef NEW_HUD
+		int i;
+	//	gauge_data* cg;
+	for(i = 0; i < current_hud->num_gauges; i++)
+	{
+		if(current_hud->gauges[i].type == HG_MAINGAUGE)
+		{
+			current_hud->gauges[i].update(current_hud->owner);
+		}
+	}
+#else
 	int i;
 	static bool image_ids_set = false;
 	static hud_frames image_ids[MAX_CUSTOM_HUD_GAUGES];
@@ -1716,6 +1731,7 @@ void HUD_render_2d(float frametime)
 		//So we're back to normal
 		hud_set_default_color();
 	}
+#endif
 
 	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY )))
 	{
@@ -3408,6 +3424,18 @@ extern void hudtargetbox_page_in();
 // Page in all hud bitmaps
 void hud_page_in()
 {
+#ifdef NEW_HUD
+	//Page in new hud stuff
+	int i;
+	for(i = 0; i < current_hud->num_gauges; i++)
+	{
+		if(current_hud->gauges[i].type != HG_UNUSED)
+		{
+			current_hud->gauges[i].reset();
+			current_hud->gauges[i].page_in();
+		}
+	}
+#endif
 	int i;
 
 	bm_page_in_aabitmap( Kills_gauge.first_frame, Kills_gauge.num_frames );
