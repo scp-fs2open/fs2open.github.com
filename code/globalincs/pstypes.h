@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:04 $
+ * $Revision: 2.4 $
+ * $Date: 2002-08-06 01:49:08 $
  * $Author: penguin $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/22 01:04:37  penguin
  * took out GAME_CD_CHECK define
  *
@@ -269,7 +272,7 @@ typedef unsigned int uint;
 
 //Stucture to store clipping codes in a word
 typedef struct ccodes {
-	ubyte or,and;	//or is low byte, and is high byte
+	ubyte cc_or, cc_and;		//or is low byte, and is high byte
 } ccodes;
 
 typedef struct vector {
