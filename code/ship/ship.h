@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.11 $
- * $Date: 2002-12-17 02:18:39 $
+ * $Revision: 2.12 $
+ * $Date: 2002-12-20 07:09:03 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2002/12/17 02:18:39  Goober5000
+ * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
+ * --Goober5000
+ *
  * Revision 2.10  2002/12/14 17:09:27  Goober5000
  * removed mission flag for fighterbay damage; instead made damage display contingent on whether the fighterbay subsystem is assigned a damage percentage in ships.tbl
  * --Goober5000
@@ -432,6 +436,7 @@ typedef	struct ship_subsys {
 
 	int subsys_cargo_name;			// cap ship cargo on subsys
 	int subsys_cargo_revealed;
+	fix time_subsys_cargo_revealed;	// added by Goober5000
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
