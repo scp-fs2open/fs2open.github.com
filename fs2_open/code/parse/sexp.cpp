@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.8 $
- * $Date: 2002-12-17 03:25:30 $
+ * $Revision: 2.9 $
+ * $Date: 2002-12-20 07:17:23 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/12/17 03:25:30  Goober5000
+ * added set-scanned and set-unscanned sexps
+ *
+ * PLEASE NOTE: These sexps will cause cargo-known-delay and cap-subsys-cargo-known-delay to not work correctly if set-scanned and set-unscanned are used more than once.  I'll fix this later.
+ *
+ * --Goober5000
+ *
  * Revision 2.7  2002/12/12 08:01:57  Goober5000
  * added distance-ship-subsystem sexp
  * ~Goober5000~
@@ -4187,9 +4194,13 @@ int ship_name_lookup_absolute(char *name)
 
 // function which determines if N seconds have elapsed since all discovery of all cargo
 // of given ships
+// Goober5000 - I reworked this function to allow for the set-scanned and set-unscanned sexps
+// to work multiple times in a row and also to fix the potential bug where exited ships are
+// checked against their departure time, not against their cargo known time
 int sexp_is_cargo_known( int n, int check_delay )
 {
-	int count, shipnum, num_known, delay;
+	int count, ship_num, num_known, delay;
+
 	char *name;
 
 	Assert ( n >= 0 );
@@ -4199,12 +4210,14 @@ int sexp_is_cargo_known( int n, int check_delay )
 
 	// get the delay value (if there is one)
 	delay = 0;
-	if ( check_delay ) {
+	if ( check_delay )
+	{
 		delay = atoi(CTEXT(n) );
 		n = CDR(n);
 	}
 
-	while ( n != -1 ) {
+	while ( n != -1 )
+	{
 		fix time_known;
 		int is_known;
 
@@ -4213,44 +4226,58 @@ int sexp_is_cargo_known( int n, int check_delay )
 		count++;
 
 		// see if we have already checked this entry
-		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE ) {
+		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE )
+		{
 			num_known++;
-		} else {
-			int exited_index;
-
+		}
+		else
+		{
 			name = CTEXT(n);
 
-			// see if the ship has already exited the mission (either through departure or destruction).  If so,
-			// grab the status of whether the cargo is known from this list
-			exited_index = ship_find_exited_ship_by_name( name );
-			if (exited_index != -1 ) {
-				if ( !(Ships_exited[exited_index].flags & SEF_CARGO_KNOWN) )
+			// find the index in the ship array
+			ship_num = ship_name_lookup_absolute(name);
+			Assert(ship_num != -1);	// make sure that the ship actually is valid
+
+			// see if the ship has already exited the mission (either through departure or destruction)
+			if (ship_find_exited_ship_by_name(name) != -1)
+			{
+				// if not known, the whole thing is known false
+				if ( !(Ships[ship_num].flags & SF_CARGO_REVEALED) )
 					return SEXP_KNOWN_FALSE;
 
-				// check the delay of when we found out.  We use the ship died time which isn't entirely accurate
-				// but won't cause huge delays.
-				time_known = Missiontime - Ships_exited[exited_index].time;
+				// check the delay of when we found out
+				time_known = Missiontime - Ships[ship_num].time_cargo_revealed;
 				if ( f2i(time_known) >= delay )
+				{
 					is_known = 1;
-			} else {
 
-				// otherwise, ship should still be in the mission.  If ship_name_lookup returns -1, then ship
-				// is yet to arrive.
-				shipnum = ship_name_lookup( name );
-				if ( shipnum != -1 ) {
-					if ( Ships[shipnum].flags & SF_CARGO_REVEALED ) {
-						time_known = Missiontime - Ships[shipnum].time_cargo_revealed;
+					// here is the only place in the new sexp that this can be known true
+					Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
+				}
+			}
+			// ship either in mission or not arrived yet
+			else
+			{
+				// if ship_name_lookup returns -1, then ship is either exited or yet to arrive,
+				// and we've already checked exited
+				if ( ship_name_lookup(name) != -1 )
+				{
+					if ( Ships[ship_num].flags & SF_CARGO_REVEALED )
+					{
+						time_known = Missiontime - Ships[ship_num].time_cargo_revealed;
 						if ( f2i(time_known) >= delay )
+						{
 							is_known = 1;
+						}
 					}
 				}
 			}
 		}
 
-		// if cargo is known, mark our variable and this sexpression.
-		if ( is_known ) {
+		// if cargo is known, mark our variable, but not the sexp, because it may change later
+		if ( is_known )
+		{
 			num_known++;
-			Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
 		}
 
 		n = CDR(n);
@@ -4258,14 +4285,46 @@ int sexp_is_cargo_known( int n, int check_delay )
 
 	Directive_count += count - num_known;
 	if ( count == num_known )
-		return SEXP_KNOWN_TRUE;
+		return SEXP_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
+void get_cap_subsys_cargo_flags(int shipnum, char *subsys_name, int *known, fix *time_revealed)
+{
+	int subsys_set = 0;
+	ship_subsys *ss;
+
+	// find the ship subsystem by searching ship's subsys_list
+	ss = GET_FIRST( &Ships[shipnum].subsys_list );
+	while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) )
+	{
+		// if we found the subsystem
+		if ( !stricmp(ss->system_info->subobj_name, subsys_name))
+		{
+			// set the flags
+			*known = ss->subsys_cargo_revealed;
+			*time_revealed = ss->time_subsys_cargo_revealed;
+
+			subsys_set = 1;
+		}
+
+		ss = GET_NEXT( ss );
+	}
+
+	// if we didn't find the subsystem, the ship hasn't arrived yet
+	if (!subsys_set)
+	{
+		*known = -1;
+		*time_revealed = 0;
+	}
+}
+
+// reworked by Goober5000 to allow for set-scanned and set-unscanned to be used more than once
 int sexp_cap_subsys_cargo_known_delay(int n)
 {
-	int delay, count, delta_time, num_known;
+	int delay, count, num_known, ship_num, cargo_revealed;
+	fix time_revealed;
 	char *ship_name, *subsys_name;
 
 	num_known = 0;
@@ -4275,44 +4334,88 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 	delay = atoi(CTEXT(n));
 	n = CDR(n);
 
-	// get shipname
+	// get ship name
 	ship_name = CTEXT(n);
 	n = CDR(n);
 
-	while ( n != -1 ) {
+	// find the index in the ship array
+	ship_num = ship_name_lookup_absolute(ship_name);
+	Assert(ship_num != -1);	// make sure that the ship actually is valid
+
+	while ( n != -1 )
+	{
 		fix time_known;
 		int is_known;
-		int logged;
 
 		is_known = 0;
-		logged = 0;
 		count++;
 
 		// see if we have already checked this entry
-		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE ) {
+		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE )
+		{
 			num_known++;
-		} else {
+		}
+		else
+		{
 			// get subsys name
 			subsys_name = CTEXT(n);
 
-			logged = mission_log_get_time(LOG_CAP_SUBSYS_CARGO_REVEALED, ship_name, subsys_name, &time_known);
-			if (logged) {
-				delta_time = f2i(Missiontime - time_known);
-				if (delta_time >= delay) {
+			// get flags
+			get_cap_subsys_cargo_flags(ship_num, subsys_name, &cargo_revealed, &time_revealed);
+
+			// see if the ship has already exited the mission (either through departure or destruction)
+			if (ship_find_exited_ship_by_name(ship_name) != -1)
+			{
+				// if not known, the whole thing is known false
+				if (!cargo_revealed)
+					return SEXP_KNOWN_FALSE;
+
+				// check the delay of when we found out...
+				// Since there is no way to keep track of subsystem status once a ship has departed
+				// or has been destroyed, check the mission log.  This will work in 99.9999999% of
+				// all cases; however, if the mission designer repeatedly sets and resets the scanned
+				// status of the subsystem, the mission log will only return the first occurrence of the
+				// subsystem cargo being revealed (regardless of whether it was first hidden using
+				// set-unscanned).  Normally, ships keep track of cargo data in the subsystem struct,
+				// but once/ the ship has left the mission, the subsystem linked list is purged,
+				// causing the loss of this information.  I judged the significant rework of the
+				// subsystem code not worth the rare instance that this sexp may be required to work
+				// in this way, especially since this problem only occurs after the ship departs.  If
+				// the mission designer really needs this functionality, he or she can achieve the
+				// same result with creative combinations of event chaining and is-event-true.
+				mission_log_get_time(LOG_CAP_SUBSYS_CARGO_REVEALED, ship_name, subsys_name, &time_known);
+
+				if (f2i(Missiontime - time_known) >= delay)
+				{
 					is_known = 1;
+
+					// here is the only place in the new sexp that this can be known true
+					Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
 				}
 			}
-
-			// if (exited or destroyed) and not logged, known false
-			// otherwise, still out there and cargo not yet known
-			if ( (mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL ) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL )) && !logged ) {
-				return SEXP_KNOWN_FALSE;
+			// ship either in mission or not arrived yet
+			else
+			{
+				// if ship_name_lookup returns -1, then ship is either exited or yet to arrive,
+				// and we've already checked exited
+				if ( ship_name_lookup(ship_name) != -1 )
+				{
+					if (cargo_revealed)
+					{
+						time_known = Missiontime - time_revealed;
+						if ( f2i(time_known) >= delay )
+						{
+							is_known = 1;
+						}
+					}
+				}
 			}
 		}
 
-		if (is_known) {
+		// if cargo is known, mark our variable, but not the sexp, because it may change later
+		if (is_known)
+		{
 			num_known++;
-			Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
 		}
 
 		n = CDR(n);
@@ -4320,9 +4423,9 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 
 	Directive_count += count - num_known;
 	if ( count == num_known )
-		return SEXP_KNOWN_TRUE;
+		return SEXP_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 // Goober5000
@@ -4343,7 +4446,12 @@ void sexp_set_scanned_unscanned(int n, int flag)
 
 	// get ship number
 	shipnum = ship_name_lookup(ship_name);
-	Assert(shipnum >= 0);
+
+	// if the ship isn't in the mission, do nothing
+	if (shipnum == -1)
+	{
+		return;
+	}
 
 	// check for possible next optional argument: subsystem
 	n = CDR(n);
