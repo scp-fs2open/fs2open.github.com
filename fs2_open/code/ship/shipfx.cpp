@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-09-26 14:37:16 $
- * $Author: bobboau $
+ * $Revision: 2.22 $
+ * $Date: 2003-12-16 20:55:13 $
+ * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/09/26 14:37:16  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.20  2003/09/13 08:27:28  Goober5000
  * added some minor things, such as code cleanup and the following:
  * --turrets will not fire at cargo
@@ -3133,7 +3143,7 @@ void shipfx_start_cloak(ship *shipp, int warmup, int recalc_matrix, int device)
 	//this will be true if we aren't cheating ;)
 	if (device)
 	{
-		shipp->time_until_uncloak=timestamp(Tertiary_weapon_info[shipp->tertiary_weapon_info_idx].cloak_lifetime);
+//		shipp->time_until_uncloak=timestamp(Tertiary_weapon_info[shipp->tertiary_weapon_info_idx].cloak_lifetime);
 	}
 	else
 	{
@@ -3193,7 +3203,7 @@ void shipfx_cloak_frame(ship *shipp, float frametime)
 
 			if (timestamp_elapsed(shipp->time_until_uncloak) && (shipp->time_until_uncloak != 0))
 			{
-				shipfx_stop_cloak(shipp,Tertiary_weapon_info[shipp->tertiary_weapon_info_idx].cloak_cooldown);
+		//		shipfx_stop_cloak(shipp,Tertiary_weapon_info[shipp->tertiary_weapon_info_idx].cloak_cooldown);
 				break;
 			}
 			//uncloak if departing or arriving
