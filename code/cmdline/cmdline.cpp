@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.39 $
- * $Date: 2003-11-03 18:07:26 $
- * $Author: randomtiger $
- * $Revision: 2.39 $
- * $Date: 2003-11-03 18:07:26 $
- * $Author: randomtiger $
+ * $Revision: 2.40 $
+ * $Date: 2003-11-08 22:25:47 $
+ * $Author: Kazan $
+ * $Revision: 2.40 $
+ * $Date: 2003-11-08 22:25:47 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/11/03 18:07:26  randomtiger
+ * Added -d3d_no_vsync command to make turning off vsync optional.
+ * Removed 32bit command, it doesnt do anything.
+ * Made aa multisample reg check safe.
+ *
  * Revision 2.38  2003/10/27 23:04:20  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -450,7 +455,10 @@ cmdline_parm cell_arg("-cell", NULL);
 cmdline_parm textures_32bit("-t32",NULL);
 cmdline_parm no_set_gamma("-no_set_gamma",NULL);
 cmdline_parm d3d_no_vsync("-d3d_no_vsync", NULL);
+cmdline_parm timerbar("-timerbar", NULL);
 
+
+int Cmdline_timerbar = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
 int Cmdline_freespace_no_music = 0;
@@ -723,6 +731,9 @@ void SetCmdlineParams()
 // Sets externed variables used for communication cmdline information
 {
 
+	if (timerbar.found()) {
+		Cmdline_timerbar = 1;
+	}
 
 	if (MissionCRCs.found()) {
 		Cmdline_SpewMission_CRCs = 1;

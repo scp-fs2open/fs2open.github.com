@@ -10,11 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.34 $
- * $Date: 2003-11-03 18:07:26 $
- * $Author: randomtiger $
+ * $Revision: 2.35 $
+ * $Date: 2003-11-08 22:25:47 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/11/03 18:07:26  randomtiger
+ * Added -d3d_no_vsync command to make turning off vsync optional.
+ * Removed 32bit command, it doesnt do anything.
+ * Made aa multisample reg check safe.
+ *
  * Revision 2.33  2003/10/27 23:04:20  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -367,5 +372,7 @@ extern int Cmdline_nohtl;
 extern int Cmdline_32bit_textures;
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_d3d_no_vsync;
+
+extern int Cmdline_timerbar;
 
 #endif
