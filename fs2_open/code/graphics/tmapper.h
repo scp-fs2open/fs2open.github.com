@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.4 $
- * $Date: 2003-11-02 05:50:08 $
+ * $Revision: 2.5 $
+ * $Date: 2004-02-15 06:02:32 $
  * $Author: bobboau $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/11/02 05:50:08  bobboau
+ * modified trails to render with tristrips now rather than with stinky old trifans,
+ * MUCH faster now, at least one order of magnatude.
+ *
  * Revision 2.3  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -161,4 +165,7 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 //tristrips, for trails mostly, might find other uses eventualy
 #define TMAP_FLAG_TRISTRIP	(1<<20)
 
+#define TMAP_ADDRESS_WRAP		1
+#define TMAP_ADDRESS_MIRROR		2
+#define TMAP_ADDRESS_CLAMP		3
 #endif

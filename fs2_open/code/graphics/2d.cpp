@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-02-14 00:18:31 $
- * $Author: randomtiger $
+ * $Revision: 2.15 $
+ * $Date: 2004-02-15 06:02:31 $
+ * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/02/14 00:18:31  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.13  2004/01/24 12:47:48  randomtiger
  * Font and other small changes for Fred
  *
@@ -1276,7 +1287,7 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 			}
 			y_line += section_y;
 		}
-	}			
+	}
 }
 
 // given endpoints, and thickness, calculate coords of the endpoint

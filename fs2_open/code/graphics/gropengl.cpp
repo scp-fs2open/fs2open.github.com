@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.63 $
- * $Date: 2004-02-15 03:04:25 $
+ * $Revision: 2.64 $
+ * $Date: 2004-02-15 06:02:31 $
  * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2004/02/15 03:04:25  bobboau
+ * fixed bug involving 3d shockwaves, note I wasn't able to compile the directshow file, so I ifdefed everything to an older version,
+ * you shouldn't see anything diferent, as the ifdef should be set to the way it should be, if it isn't you will get a warning mesage during compile telling you how to fix it
+ *
  * Revision 2.62  2004/02/14 00:18:32  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -4953,6 +4957,8 @@ void gr_opengl_center_alpha( int type){
 	//do stuff here
 }
 
+void gr_opengl_set_texture_addressing(int mode){
+}
 extern char *Osreg_title;
 void gr_opengl_init(int reinit)
 {
@@ -5320,6 +5326,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.gf_push_texture_matrix = gr_opengl_push_texture_matrix;
 	gr_screen.gf_pop_texture_matrix = gr_opengl_pop_texture_matrix;
 	gr_screen.gf_translate_texture_matrix = gr_opengl_translate_texture_matrix;
+
+	gr_screen.gf_set_texture_addressing = gr_opengl_set_texture_addressing;
 
 	if(!Cmdline_nohtl) {
 		gr_screen.gf_make_buffer = gr_opengl_make_buffer;
