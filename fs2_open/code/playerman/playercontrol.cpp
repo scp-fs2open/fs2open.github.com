@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-04-29 01:03:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-08-06 17:39:04 $
+ * $Author: phreak $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/04/29 01:03:24  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/17 02:18:40  Goober5000
  * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
  * --Goober5000
@@ -924,6 +928,10 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if ( check_control(AFTERBURNER) ) {
 			ci->forward = 1.0f;
 		}
+
+		if (Player_ship->boost_pod_engaged)
+			ci->forward = 1.0f;
+
 
 		if ( Player->flags & PLAYER_FLAGS_MATCH_TARGET ) {
 			if ( (Player_ai->last_target == Player_ai->target_objnum) && (Player_ai->target_objnum != -1) && ( ci->forward_cruise_percent == oldspeed) ) {
