@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.92 $
- * $Date: 2005-01-14 05:28:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.93 $
+ * $Date: 2005-01-21 08:25:14 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2005/01/14 05:28:58  wmcoolmon
+ * gr_curve
+ *
  * Revision 2.91  2005/01/03 18:45:22  taylor
  * dynamic allocation of num supported OpenGL lights
  * add config option for more realistic light settings
@@ -3416,9 +3419,6 @@ void opengl_render_timer_bar(int colour, float x, float y, float w, float h)
 
 void gr_opengl_center_alpha( int type){
 	//do stuff here
-}
-
-void gr_opengl_set_texture_addressing(int mode){
 }
 
 void gr_opengl_setup_background_fog(bool set)

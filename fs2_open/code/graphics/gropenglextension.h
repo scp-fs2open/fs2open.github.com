@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.3 $
- * $Date: 2004-10-31 21:45:13 $
+ * $Revision: 1.4 $
+ * $Date: 2005-01-21 08:25:14 $
  * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/10/31 21:45:13  taylor
+ * Linux tree merge, single array for VBOs/HTL
+ *
  * Revision 1.2  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -91,17 +94,19 @@ extern ogl_extension GL_Extensions[];
 #define GL_MULT_TRANSPOSE				16
 #define GL_CLIENT_ACTIVE_TEX			17
 #define GL_DRAW_RANGE_ELEMENTS			18
+#define GL_ARB_TEXTURE_MIRRORED_REPEAT	19
+#define GL_ARB_TEXTURE_NON_POWER_OF_TWO	20
 
 //GL_ARB_vertex_buffer_object FUNCTIONS
-#define GL_ARB_VBO_BIND_BUFFER			19
-#define GL_ARB_VBO_DEL_BUFFER			20
-#define GL_ARB_VBO_GEN_BUFFER			21
-#define GL_ARB_VBO_BUFFER_DATA			22
+#define GL_ARB_VBO_BIND_BUFFER			21
+#define GL_ARB_VBO_DEL_BUFFER			22
+#define GL_ARB_VBO_GEN_BUFFER			23
+#define GL_ARB_VBO_BUFFER_DATA			24
 //#define GL_ARB_VBO_MAP_BUFFER			23
 //#define GL_ARB_VBO_UNMAP_BUFFER			24
 
 
-#define GL_NUM_EXTENSIONS				23
+#define GL_NUM_EXTENSIONS				25
 
 
 int opengl_get_extensions();
