@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-07-30 17:57:40 $
+ * $Revision: 2.5 $
+ * $Date: 2002-07-30 18:11:25 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/07/30 17:57:40  wmcoolmon
+ * Modified to add hull repair capabilities and toggling of them via a mission flag, MISSION_FLAG_SUPPORT_REPAIRS_HULL
+ *
  * Revision 2.3  2002/07/29 08:22:42  DTP
  * Bumped MAX_SHIP_SUBOBJECTS to 2100(2100 /(average fighter has 7 subsystems) = 400 fighters
  *
@@ -7009,7 +7012,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
 //	if ( ((ssp = END_OF_LIST(&shipp->subsys_list)) != NULL )&&(objp->hull_strength == sip->initial_hull_strength)&&(shields_full) ) {
-	if ( (subsys_all_ok && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength == sip->initial_hull_strength) && shields_full) || (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) ) {
+	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength == sip->initial_hull_strength) ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) ) {
 
 		if ( objp == Player_obj ) {
 			player_stop_repair_sound();
