@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-01-15 05:53:18 $
- * $Author: wmcoolmon $
+ * $Revision: 2.29 $
+ * $Date: 2005-01-28 11:39:17 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/01/15 05:53:18  wmcoolmon
+ * Current version of the new techroom code -C
+ *
  * Revision 2.27  2004/12/14 14:46:13  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -1957,7 +1960,7 @@ void ship_select_do(float frametime)
 			int x = mouse_x + Ss_delta_x;
 			int y = mouse_y + Ss_delta_y;
 
-			draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25, x, y, 32, 28, sip);
+			draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip);
 			draw_brackets_square(x, y, x + 32, y + 28);
 			//gr_shade(mouse_x + Ss_delta_x, mouse_y + Ss_delta_y, 32, 28);
 		}
@@ -2192,7 +2195,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 	char	buf[32];
 	int	num_x,num_y;
 	ss_icon_info *ss_icon;
-	color *color_to_draw;
+	color *color_to_draw = NULL;
 	//shader *shader_to_use;
 
 
@@ -2247,7 +2250,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 		ship_info *sip = &Ship_info[ship_class];
 		gr_set_color_fast(color_to_draw);
 		//gr_set_shader(shader_to_use);
-		draw_model_icon(ss_icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip);
+		draw_model_icon(ss_icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip);
 		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28);
 		//gr_shade(Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28);
 	}
@@ -2764,7 +2767,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 			ship_info *sip = &Ship_info[Wss_slots[slot_index].ship_class];
 			gr_set_color_fast(color_to_draw);
 			//gr_set_shader(shader_to_use);
-			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip);
+			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip);
 			draw_brackets_square(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28);
 			//gr_shade(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28);
 		}
@@ -2833,7 +2836,7 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 			ship_info *sip = &Ship_info[ship_class];
 			gr_set_color_fast(&Icon_colors[bmap_num]);
 			//gr_set_shader(&Icon_shaders[bmap_num]);
-			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25, x, y, 32, 28, sip);
+			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip);
 			draw_brackets_square(x, y, x + 32, y + 28);
 			//gr_shade(x, y, 32, 28);
 		}
