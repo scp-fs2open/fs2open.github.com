@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-10-10 03:59:40 $
- * $Author: matt $
+ * $Revision: 2.9 $
+ * $Date: 2003-10-16 00:17:14 $
+ * $Author: randomtiger $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/10/10 03:59:40  matt
+ * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
+ * out now. -Sticks
+ *
  * Revision 2.7  2003/09/26 14:37:14  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -1299,7 +1303,15 @@ void gr_bitmap(int x, int y)
 				// determine the width and height of this section
 				bm_get_section_size(gr_screen.current_bitmap, s_idx, idx, &section_x, &section_y);
 
-				// draw as a poly
+				// I will tidy this up later - RT
+				if(gr_screen.mode == GR_DIRECT3D)
+				{
+					extern bool gr_d3d_resize_screen_pos(int *x, int *y);
+
+					gr_d3d_resize_screen_pos(&x, &y);
+					gr_d3d_resize_screen_pos(&section_x, &section_y);
+				}
+
 				// RT draws all hall interface stuff
 			   	g3_draw_2d_poly_bitmap(x + x_line, y + y_line, section_x, section_y, TMAP_FLAG_BITMAP_SECTION);
 				x_line += section_x;

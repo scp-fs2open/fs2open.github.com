@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-10-14 17:39:13 $
+ * $Revision: 2.24 $
+ * $Date: 2003-10-16 00:17:14 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/10/14 17:39:13  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.22  2003/10/13 05:57:48  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
  * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
@@ -612,8 +622,16 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 		break;
 
 	case TEXTURE_SOURCE_NO_FILTERING:
-		d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_POINT );
-		d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_POINT );
+
+		if(D3D_custom_size < 0) {
+			d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_POINT );
+			d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_POINT );
+		} else {
+			// If we are using a non standard mode we will need this because textures are being stretched
+			d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR  );
+			d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR  );
+		}
+
 		d3d_SetTextureStageState(0, D3DTSS_MIPFILTER, D3DTEXF_NONE);
 
 		// RT This code seems to render inactive text
@@ -681,7 +699,6 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 
 	switch( zt )	{
 
-//	d3d_SetRenderState(D3DRS_ZENABLE, D3DZB_USEW);
 	case ZBUFFER_TYPE_NONE:
 		d3d_SetRenderState(D3DRS_ZENABLE,FALSE);
 		d3d_SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
@@ -1841,10 +1858,29 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 		v1 = v_scale*(i2fl(sy+h)-0.5f) / fbh;
 	}
 
-	x1 = i2fl(x+gr_screen.offset_x);
-	y1 = i2fl(y+gr_screen.offset_y);
-	x2 = i2fl(x+w+gr_screen.offset_x);
-	y2 = i2fl(y+h+gr_screen.offset_y);
+	if(D3D_custom_size == -1)
+	{
+		x1 = i2fl(x+gr_screen.offset_x);
+		y1 = i2fl(y+gr_screen.offset_y);
+		x2 = i2fl(x+w+gr_screen.offset_x);
+		y2 = i2fl(y+h+gr_screen.offset_y);
+
+	} else {
+		extern bool gr_d3d_resize_screen_pos(int *x, int *y);
+
+		int nx = x+gr_screen.offset_x;
+		int ny = y+gr_screen.offset_y;
+		int nw = x+w+gr_screen.offset_x;
+		int nh = y+h+gr_screen.offset_y;
+
+		gr_d3d_resize_screen_pos(&nx, &ny);
+		gr_d3d_resize_screen_pos(&nw, &nh);
+
+		x1 = i2fl(nx);
+		y1 = i2fl(ny);
+		x2 = i2fl(nw);
+		y2 = i2fl(nh);
+	}
 
 	src_v = d3d_verts;
 

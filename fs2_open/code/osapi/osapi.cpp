@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-08-21 20:54:38 $
+ * $Revision: 2.10 $
+ * $Date: 2003-10-16 00:17:18 $
  * $Author: randomtiger $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/08/21 20:54:38  randomtiger
+ * Fixed switching - RT
+ *
  * Revision 2.8  2003/07/06 00:19:25  randomtiger
  * Random Tiger 6/7/2003
  *
@@ -656,13 +659,15 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 BOOL win32_create_window()
 {
 	int windowed = 0;
-	int hires = 0;
+	int hires = 1;
 	char *ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);	
 	if(ptr && ( (strstr(ptr, NOX("D3D8-")) ) || (strstr(ptr, NOX("OpenGL -")))) && Cmdline_window){
 		windowed = 1;
 	}
-	if(ptr && strstr(ptr, NOX("1024")) && Cmdline_window){
-		hires = 1;
+	// Lets work this out the other way round, assume its hi-res
+	// For example 800x600 would be better running with 1024x768 data
+	if(ptr && strstr(ptr, NOX("640"))){
+		hires = 0;
 	}
 
 	WNDCLASSEX wclass;							// Huh?

@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-10-14 17:39:14 $
+ * $Revision: 2.12 $
+ * $Date: 2003-10-16 00:17:17 $
  * $Author: randomtiger $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/10/14 17:39:14  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.10  2003/10/13 19:39:20  matt
  * prelim reworking of lighting code, dynamic lights work properly now
  * albeit at only 8 lights per object, although it looks just as good as
@@ -915,7 +925,6 @@ void light_set_shadow( int state )
 
 
 void light_set_all_relevent(){
-	int set_lights = 0;
 	int i = 0;
 	gr_reset_lighting();
 	for(int idx=0; idx<Static_light_count; idx++)gr_set_light((light_data*)(void*)Static_light[idx]);

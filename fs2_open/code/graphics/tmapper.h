@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.1 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.2 $
+ * $Date: 2003-10-16 00:17:14 $
+ * $Author: randomtiger $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.0.2.1  2002/11/11 21:26:04  randomtiger
  *
  * Tided up D3DX8 calls, did some documentation and add new file: grd3dcalls.cpp. - RT
@@ -135,13 +138,10 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 #define TMAP_FLAG_BITMAP_SECTION	(1<<11)
 
 // RT Flags added to determine whats being drawn for HT&L
-#define TMAP_FLAG_TYPE_2D_HUD	(1<<12)
-#define TMAP_FLAG_TYPE_3D		(1<<13)
-#define TMAP_FLAG_TYPE_2D_3D	(1<<14)
-#define TMAP_FLAG_TYPE_2D_2D	(1<<15)
-
-#define TMAP_FLAG_TYPE_SUN		 (1<<16)
-#define TMAP_FLAG_TYPE_PARTICLE	 (1<<17)
-#define TMAP_FLAG_TYPE_THRUSTPNT (1<<18)
+#define TMAP_HTL_3D_LIT	    (1<<12)	  
+#define TMAP_HTL_3D_UNLIT	(1<<13)	  
+#define TMAP_HTL_2D_UNLIT	(1<<14)	  
+#define TMAP_HTL_PARTICLE  	(1<<15)	  
+#define TMAP_HTL_VIDEO  	(1<<16)
 
 #endif

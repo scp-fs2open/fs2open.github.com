@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.26 $
- * $Date: 2003-10-14 17:39:13 $
+ * $Revision: 2.27 $
+ * $Date: 2003-10-16 00:17:14 $
  * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/10/14 17:39:13  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.25  2003/10/13 19:39:19  matt
  * prelim reworking of lighting code, dynamic lights work properly now
  * albeit at only 8 lights per object, although it looks just as good as
@@ -298,7 +308,6 @@
  * This is the scub of UP's previous code with the more up to date RT code.
  * For full details check previous dev e-mails
  *
->>>>>>> 2.2.2.28
  * Revision 2.2  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -517,7 +526,8 @@ D3DCAPS8 d3d_caps;
 // Present parameters, these are filled before device create to determine a number of display options
 D3DPRESENT_PARAMETERS d3dpp; 
 
-bool D3D_Antialiasing = 0;
+bool D3D_Antialiasing =  0;
+int	 D3D_custom_size  = -1;
 
 // DirectDraw structures used without DD
 // To contain shift and scale variables to convert graphics files to textures 
@@ -583,6 +593,26 @@ D3DLIGHT8 empty_light;
 
 LPVOID lpBufStart, lpPointer, lpInsStart;
 int Exb_size;
+
+bool gr_d3d_resize_screen_pos(int *x, int *y)
+{
+	if(D3D_custom_size < 0)	return false;
+
+	int div_by_x = (D3D_custom_size == GR_1024) ? 1024 : 640;
+	int div_by_y = (D3D_custom_size == GR_1024) ?  768 : 480;
+			
+	if(x) {
+		(*x) *= d3dpp.BackBufferWidth;
+		(*x) /= div_by_x;
+	}
+
+	if(y) {
+		(*y) *= d3dpp.BackBufferHeight;
+		(*y) /= div_by_y;
+	}
+
+	return true;
+}
 
 void d3d_fill_pixel_format(DDPIXELFORMAT *pixelf, D3DFORMAT tformat);
 
@@ -2711,7 +2741,7 @@ void gr_d3d_render_buffer(int idx)
 		set_stage_for_defuse();
 	}
 
-	int passes = (n_active_lights/d3d_caps.MaxActiveLights);
+	int passes = 1;//(n_active_lights/d3d_caps.MaxActiveLights);
 	d3d_SetVertexShader(D3DVT_VERTEX);
 
 	lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DVERTEX));
@@ -2769,7 +2799,7 @@ void gr_d3d_start_instance_matrix(){
 	lpD3DDevice->GetTransform(D3DTS_VIEW, &old_v);
 */
 	//hmm... seems I don't need these
-	D3DXMatrixPerspectiveFovLH(&mat, (4.0/9.0)*(D3DX_PI)*View_zoom, Canv_w2/Canv_h2, 0.2f, 30000);
+	D3DXMatrixPerspectiveFovLH(&mat, (4.0f/9.0f)*(D3DX_PI)*View_zoom, Canv_w2/Canv_h2, 0.2f, 30000.0f);
 	lpD3DDevice->SetTransform(D3DTS_PROJECTION, &mat);
 
 	D3DXMATRIX world(
@@ -3003,8 +3033,18 @@ extern vector G3_user_clip_point;
 
 D3DXPLANE d3d_user_clip_plane;
 
+#define VEC2DVEC(v) D3DXVECTOR3(v.xyz.x,v.xyz.y,v.xyz.z)
+
 void d3d_start_clip(){
-	D3DXPlaneFromPointNormal(&d3d_user_clip_plane, &VEC2DVEC(G3_user_clip_point), &VEC2DVEC(G3_user_clip_normal));
+
+	// Lets be safe instead, see 'Compiler Warning (level 4) C4238'- RT 
+	// D3DXPlaneFromPointNormal(&d3d_user_clip_plane, &VEC2DVEC(G3_user_clip_point), &VEC2DVEC(G3_user_clip_normal));
+
+	D3DXVECTOR3 point(G3_user_clip_point.xyz.x,G3_user_clip_point.xyz.y,G3_user_clip_point.xyz.z); 
+	D3DXVECTOR3	normal(G3_user_clip_normal.xyz.x,G3_user_clip_normal.xyz.y,G3_user_clip_normal.xyz.z);
+
+	D3DXPlaneFromPointNormal(&d3d_user_clip_plane, &point, &normal);
+
 	lpD3DDevice->SetClipPlane(0, d3d_user_clip_plane);
 	d3d_SetRenderState(D3DRS_CLIPPLANEENABLE , D3DCLIPPLANE0);
 }
@@ -3272,6 +3312,7 @@ bool gr_d3d_init()
 		
 		if(mode_choice == -1)
 		{
+			strcpy(Device_init_error, "Couldnt match mode");
 			return false;
 		}
 
@@ -3295,6 +3336,20 @@ bool gr_d3d_init()
 		d3dpp.MultiSampleType  = multisample_types[aatype_choice];
 		d3dpp.BackBufferWidth  = mode.Width;
 		d3dpp.BackBufferHeight = mode.Height;
+
+		// Determine if we are using a custom size
+		if(mode.Width != 1024 && mode.Height != 768) {
+			D3D_custom_size = GR_1024;
+
+			// Override these values
+			gr_screen.max_w = mode.Width;
+			gr_screen.max_h = mode.Height;
+			gr_screen.clip_right  = gr_screen.max_w - 1;
+			gr_screen.clip_bottom = gr_screen.max_h - 1;
+			gr_screen.clip_width  = gr_screen.max_w;
+			gr_screen.clip_height = gr_screen.max_h;
+
+		}
 
 		d3dpp.FullScreen_RefreshRateInHz      = D3DPRESENT_RATE_DEFAULT;
 		d3dpp.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_ONE;
@@ -3345,7 +3400,12 @@ bool gr_d3d_init()
 		}
 	}
 
-	if (t != -1) return false;
+	if (t != -1) 
+	{
+		sprintf(Device_init_error, "Failed to get depth stencil format");
+		return false;
+	}
+
 	// determine 32 bit status
 	gr_screen.bits_per_pixel  = d3d_get_mode_bit(d3dpp.BackBufferFormat);
 	gr_screen.bytes_per_pixel = gr_screen.bits_per_pixel / 8;
@@ -3360,14 +3420,7 @@ bool gr_d3d_init()
 	// Tell Freespace code that we're using Direct3D.
 	D3D_enabled = 1;		
 
-	if(d3dpp.BackBufferWidth == 1024) {
-		gr_init_res(GR_1024, GR_DIRECT3D);
-	} else if(d3dpp.BackBufferWidth == 640) {
-		gr_init_res(GR_640, GR_DIRECT3D);
-	} else {
-		DBUGFILE_OUTPUT_0("Big problem, no correct gfx res selected");
-		return false;
-	}
+	d3dpp.BackBufferWidth = mode.Width;
 
 	d3d_reset_render_states();
 	d3d_reset_texture_stage_states();
@@ -3375,7 +3428,7 @@ bool gr_d3d_init()
 	
 	// did we initialize properly?
 	if(!D3D_inited){
-		DBUGFILE_OUTPUT_0("Failed to initialise device");
+		sprintf(Device_init_error, "Failed to initialise device");
 		return false;
 	}												    
 
