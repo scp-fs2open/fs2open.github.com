@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.72 $
+ * $Revision: 2.73 $
  * $Author: Goober5000 $
- * $Date: 2004-09-17 00:28:32 $
+ * $Date: 2004-09-22 06:56:45 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2004/09/17 00:28:32  Goober5000
+ * removed player-not-use-ai and changed player-use-ai to take an argument
+ * --Goober5000
+ *
  * Revision 2.71  2004/09/17 00:18:18  Goober5000
  * changed toggle-hud to hud-disable; added hud-disable-except-messages
  * --Goober5000
@@ -666,15 +670,18 @@ struct ship_subsys;
 #endif
 
 #define OPF_SSM_CLASS			50		// Goober5000 - an SSM class
+#define OPF_FLEXIBLE_ARGUMENT	51		// Goober5000 - special to match for when-argument
+#define OPF_ANYTHING			52		// Goober5000 - anything goes
 
 // Operand return types
-#define	OPR_NUMBER		1	// returns number
-#define	OPR_BOOL		2	// returns true/false value
-#define	OPR_NULL		3	// doesn't return a value
-#define	OPR_AI_GOAL		4	// is an ai operator (doesn't really return a value, but used for type matching)
-#define	OPR_POSITIVE	5	// returns a non-negative number
-#define	OPR_STRING		6	// not really a return type, but used for type matching.
-#define	OPR_AMBIGUOUS	7	// not really a return type, but used for type matching.
+#define	OPR_NUMBER				1	// returns number
+#define	OPR_BOOL				2	// returns true/false value
+#define	OPR_NULL				3	// doesn't return a value
+#define	OPR_AI_GOAL				4	// is an ai operator (doesn't really return a value, but used for type matching)
+#define	OPR_POSITIVE			5	// returns a non-negative number
+#define	OPR_STRING				6	// not really a return type, but used for type matching.
+#define	OPR_AMBIGUOUS			7	// not really a return type, but used for type matching.
+#define OPR_FLEXIBLE_ARGUMENT	8	// Goober5000 - is an argument operator (doesn't really return a value, but used for type matching)
 
 #define	OP_INSERT_FLAG			0x8000
 #define	OP_REPLACE_FLAG			0x4000
@@ -848,18 +855,23 @@ struct ship_subsys;
 #define OP_IS_SHIP_TYPE						(0x0026 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_SHIP_CLASS					(0x0027	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_NUM_SHIPS_IN_BATTLE				(0x0028 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
-#define OP_CURRENT_SPEED					(0x0031 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
 
 #if defined(ENABLE_AUTO_PILOT)
-//text: is-nav-visited
-#define OP_NAV_ISVISITED					(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Kazan
-//text: distance-to-nav
-#define OP_NAV_DISTANCE						(0x0030 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#define OP_NAV_ISVISITED					(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Kazan (is-nav-visited)
+#define OP_NAV_DISTANCE						(0x002a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Kazan (distance-to-nav)
 #endif
 
+#define OP_CURRENT_SPEED					(0x002b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
+
 // conditional sexpressions
-#define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
-#define OP_EVERY_TIME							(0x0001 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
+#define OP_WHEN_ARGUMENT					(0x0001 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_EVERY_TIME						(0x0002 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_EVERY_TIME_ARGUMENT				(0x0003 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_ANY_OF							(0x0004 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_EVERY_OF							(0x0005 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_RANDOM_OF						(0x0006 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_NUMBER_OF						(0x0007 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 // sexpressions with side-effects
 #define OP_CHANGE_IFF						(0x0000 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
@@ -1090,6 +1102,7 @@ struct ship_subsys;
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
+#define SEXP_ARGUMENT_STRING		"<argument>"
 
 // macros for accessing sexpression atoms
 #define CAR(n)		(Sexp_nodes[n].first)

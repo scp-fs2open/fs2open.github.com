@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.106 $
- * $Date: 2004-09-17 08:07:52 $
+ * $Revision: 2.107 $
+ * $Date: 2004-09-22 06:56:44 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.106  2004/09/17 08:07:52  Goober5000
+ * a bit of reordering
+ * --Goober5000
+ *
  * Revision 2.105  2004/09/17 07:12:23  Goober5000
  * changed around the logic for the 3D warp effect
  * --Goober5000
@@ -944,9 +948,15 @@ sexp_oper Operators[] = {
 	{ "time-docked",				OP_TIME_DOCKED,			3, 3, },
 	{ "time-undocked",			OP_TIME_UNDOCKED,			3, 3, },
 
-	{ "when",			OP_WHEN,	2, INT_MAX, },
-	{ "cond",			OP_COND, 1, INT_MAX, },
-	{ "every-time",		OP_EVERY_TIME,	2, INT_MAX, },	// Goober5000
+	{ "cond",					OP_COND,				1, INT_MAX, },
+	{ "when",					OP_WHEN,				2, INT_MAX, },
+	{ "when-argument",			OP_WHEN_ARGUMENT,		3, INT_MAX, },	// Goober5000
+	{ "every-time",				OP_EVERY_TIME,			2, INT_MAX, },	// Goober5000
+	{ "every-time-argument",	OP_EVERY_TIME_ARGUMENT,	3, INT_MAX, },	// Goober5000
+	{ "any-of",					OP_ANY_OF,				1, INT_MAX, },	// Goober5000
+	{ "every-of",				OP_EVERY_OF,			1, INT_MAX, },	// Goober5000
+	{ "random-of",				OP_RANDOM_OF,			1, INT_MAX, },	// Goober5000
+	{ "number-of",				OP_NUMBER_OF,			2, INT_MAX, },	// Goober5000
 
 	{ "send-message-list",			OP_SEND_MESSAGE_LIST,			4, INT_MAX	},
 	{ "send-message",					OP_SEND_MESSAGE,					3, 3,			},
@@ -1750,7 +1760,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 	if (op == -1)
 		return SEXP_CHECK_UNKNOWN_OP;  // unrecognized operator
 
-	// special case - OPR_AMBIGUOUS matches all
+	// check that types match - except that OPR_AMBIGUOUS matches everything
 	if (return_type != OPR_AMBIGUOUS)
 	{
 		// get the return type of the next thing
@@ -1759,6 +1769,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 		{
 			// positive data type can map to number data type just fine
 		}
+		// Goober5000's number hack
 		else if (z == OPR_NUMBER && return_type == OPR_POSITIVE)
 		{
 			// this isn't kosher, but we hack it to make it work
@@ -1815,11 +1826,16 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 						t = OPR_NULL;
 						break;
 
+					// Goober5000
+					case OPF_FLEXIBLE_ARGUMENT:
+						t = OPR_FLEXIBLE_ARGUMENT;
+						break;
+
 					case OPF_AI_GOAL:
 						t = OPR_AI_GOAL;
 						break;
 
-					// special case for modify-variable"
+					// special case for modify-variable
 					case OPF_AMBIGUOUS:
 						t = OPR_AMBIGUOUS;
 						break;
@@ -2281,6 +2297,13 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				break;
 
+			case OPF_AI_ORDER:
+				if ( type2 != SEXP_ATOM_STRING ){
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				break;
+
 			case OPF_NULL:
 				if (type2 != OPR_NULL){
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -2288,11 +2311,15 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				break;
 
-			case OPF_AI_ORDER:
-				if ( type2 != SEXP_ATOM_STRING ){
+			// Goober5000
+			case OPF_FLEXIBLE_ARGUMENT:
+				if (type2 != OPR_FLEXIBLE_ARGUMENT) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
+				break;
 
+			// Goober5000
+			case OPF_ANYTHING:
 				break;
 
 			case OPF_AI_GOAL:
@@ -2659,6 +2686,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				break;
 
+			// Goober5000
 			case OPF_INTEL_NAME:
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -6133,9 +6161,23 @@ int eval_when(int n)
 		return SEXP_KNOWN_FALSE;  // no need to waste time on this anymore
 
 	if (val == SEXP_KNOWN_FALSE)
-		return 0;  // can't return known false, as this would bypass future actions under the when
+		return SEXP_FALSE;  // can't return known false, as this would bypass future actions under the when
 
 	return val;
+}
+
+// Goober5000
+int eval_when_argument(int n)
+{
+	Assert( n >= 0 );
+
+	// construct a new node to evaluate the argument conditions
+
+	// construct a new node to do the required actions
+
+	// handle known_false, etc., properly
+
+	return 0;
 }
 
 // eval_cond() evaluates the cond conditional
@@ -11634,10 +11676,23 @@ int eval_sexp(int cur_node)
 				sexp_val = eval_cond( node );
 				break;
 
+			// Goober5000: special case ubersexp
+			case OP_WHEN_ARGUMENT:
+				sexp_val = eval_when_argument( node );
+				break;
+
 			// Goober5000: special case; evaluate like when, but flush the sexp tree
 			// and return SEXP_NAN so this will always be re-evaluated
 			case OP_EVERY_TIME:
 				eval_when( node );
+				flush_sexp_tree( node );
+				sexp_val = SEXP_NAN;
+				break;
+
+			// Goober5000: special case: evaluate like when-argument, but flush the sexp tree
+			// and return SEXP_NAN so this will always be re-evaluated
+			case OP_EVERY_TIME_ARGUMENT:
+				eval_when_argument( node );
 				flush_sexp_tree( node );
 				sexp_val = SEXP_NAN;
 				break;
@@ -12690,7 +12745,9 @@ int query_operator_return_type(int op)
 
 		case OP_COND:
 		case OP_WHEN:
+		case OP_WHEN_ARGUMENT:
 		case OP_EVERY_TIME:
+		case OP_EVERY_TIME_ARGUMENT:
 		case OP_CHANGE_IFF:
 		case OP_CHANGE_AI_CLASS:
 		case OP_CLEAR_SHIP_GOALS:
@@ -12858,6 +12915,12 @@ int query_operator_return_type(int op)
 		case OP_AI_PLAY_DEAD:
 			return OPR_AI_GOAL;
 
+		case OP_ANY_OF:
+		case OP_EVERY_OF:
+		case OP_RANDOM_OF:
+		case OP_NUMBER_OF:
+			return OPR_FLEXIBLE_ARGUMENT;
+
 		default:
 			Int3();
 	}
@@ -12900,6 +12963,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_RED_ALERT:
 		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
+		case OP_ARGUMENT:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -13167,13 +13231,28 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_AI_GOAL;
 
-		case OP_WHEN:
 		case OP_COND:
+		case OP_WHEN:
 		case OP_EVERY_TIME:
 			if (!argnum)
 				return OPF_BOOL;
 			else
 				return OPF_NULL;
+
+		case OP_WHEN_ARGUMENT:
+		case OP_EVERY_TIME_ARGUMENT:
+			if (argnum == 0)
+				return OPF_FLEXIBLE_ARGUMENT;
+			else if (argnum == 1)
+				return OPF_BOOL;
+			else
+				return OPF_NULL;
+
+		case OP_ANY_OF:
+		case OP_EVERY_OF:
+		case OP_RANDOM_OF:
+		case OP_NUMBER_OF:
+			return OPF_ANYTHING;
 
 		case OP_AI_DISABLE_SHIP:
 		case OP_AI_DISARM_SHIP:
@@ -14088,6 +14167,14 @@ int sexp_query_type_match(int opf, int opr)
 
 		case OPF_NULL:
 			return (opr == OPR_NULL);
+
+		// Goober5000
+		case OPF_FLEXIBLE_ARGUMENT:
+			return (opr == OPR_FLEXIBLE_ARGUMENT);
+
+		// Goober5000
+		case OPF_ANYTHING:
+			return 1;
 
 		case OPF_AI_GOAL:
 			return (opr == OPR_AI_GOAL);
