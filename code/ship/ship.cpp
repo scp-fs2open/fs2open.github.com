@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.80 $
- * $Date: 2003-09-13 08:27:28 $
+ * $Revision: 2.81 $
+ * $Date: 2003-09-13 20:59:54 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2003/09/13 08:27:28  Goober5000
+ * added some minor things, such as code cleanup and the following:
+ * --turrets will not fire at cargo
+ * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
+ * --supercaps have their own default message bitfields (distinguished from capships)
+ * --turrets are allowed on fighters
+ * --jump speed capped at 65m/s, to avoid ship travelling too far
+ * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
+ * ----Goober5000
+ *
  * Revision 2.79  2003/09/13 06:02:03  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -1261,6 +1271,17 @@ int ship_in_abgz(ship *shipp)
 	if(!strcmp(shipp->ship_name, "Zeta 2")) return 1;
 	if(!strcmp(shipp->ship_name, "Zeta 3")) return 1;
 	if(!strcmp(shipp->ship_name, "Zeta 4")) return 1;
+
+	// added by Goober5000 in case we change this in the future,
+	// and because Zeta wing might be a 6-fighter single-player wing
+	if(!strcmp(shipp->ship_name, "Alpha 5")) return 1;
+	if(!strcmp(shipp->ship_name, "Alpha 6")) return 1;
+	if(!strcmp(shipp->ship_name, "Beta 5")) return 1;
+	if(!strcmp(shipp->ship_name, "Beta 6")) return 1;
+	if(!strcmp(shipp->ship_name, "Gamma 5")) return 1;
+	if(!strcmp(shipp->ship_name, "Gamma 6")) return 1;
+	if(!strcmp(shipp->ship_name, "Zeta 5")) return 1;
+	if(!strcmp(shipp->ship_name, "Zeta 6")) return 1;
 
 	// not in
 	return 0;
@@ -11336,7 +11357,7 @@ ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name)
 	lookup = GET_FIRST(&shipp->subsys_list);
 	while(lookup != END_OF_LIST(&shipp->subsys_list)){
 		// turret
-		if(!strcmp(lookup->system_info->subobj_name, subsys_name)){
+		if(!stricmp(lookup->system_info->subobj_name, subsys_name)){
 			return lookup;
 		}
 

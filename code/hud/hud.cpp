@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-08-21 08:31:24 $
+ * $Revision: 2.10 $
+ * $Date: 2003-09-13 20:59:54 $
  * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/08/21 08:31:24  Goober5000
+ * fixed turret text display for non-laser weapons
+ * --Goober5000
+ *
  * Revision 2.8  2003/06/11 02:59:48  phreak
  * local ssm stuff for hud.
  * they are always in lock range due to the subspace drive on them
@@ -2128,7 +2132,7 @@ void hud_start_text_flash(char *txt, int t)
 	}
 
 	// HACK. don't override EMP if its still going    :)
-	if(!strcmp(Hud_text_flash, NOX("Emp")) && !hud_targetbox_flash_expired(TBOX_FLASH_CMEASURE)){
+	if(!stricmp(Hud_text_flash, NOX("Emp")) && !hud_targetbox_flash_expired(TBOX_FLASH_CMEASURE)){
 		return;
 	}
 
