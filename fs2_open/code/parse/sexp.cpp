@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.23 $
- * $Date: 2003-01-02 00:35:20 $
+ * $Revision: 2.24 $
+ * $Date: 2003-01-02 03:09:01 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/01/02 00:35:20  Goober5000
+ * added don't-collide-invisible and collide-invisible sexps
+ * --Goober5000
+ *
  * Revision 2.22  2003/01/01 23:33:33  Goober5000
  * added ship-vaporize and ship-no-vaporize sexps
  * --Goober5000
@@ -10217,7 +10221,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_REPAIR_SUBSYSTEM:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 			if (!argnum)
-				return OPF_SHIP_NOT_PLAYER;
+				return OPF_SHIP;		// changed from OPF_SHIP_NOT_PLAYER by Goober5000: now it can be the player ship also
 			else if (argnum == 1 )
 				return OPF_SUBSYSTEM;
 			else
