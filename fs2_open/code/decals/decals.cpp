@@ -2113,7 +2113,7 @@ void set_submodel_instance(int model_num, int sub_model_num){
 		decal_submodel_instance_depth++;
 		
 		sub_model_num = pm->submodel[sub_model_num].parent;
-		if(decal_submodel_instance_depth > 7)break;
+		if(decal_submodel_instance_depth == 7)break;
 	}
 	for(int i = 0; i < decal_submodel_instance_depth; i++){
 		g3_start_instance_angles(&offset[i], &orient[i]);
