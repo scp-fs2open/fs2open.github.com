@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.2 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 1.3 $
+ * $Date: 2004-10-31 21:45:13 $
+ * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.1  2004/05/24 07:25:32  taylor
  * filename case change
  *
@@ -32,6 +35,8 @@
 #ifndef _GROPENGLEXT_H
 #define _GROPENGLEXT_H
 
+#include "globalincs/pstypes.h"
+
 //EXTENSIONS!!!!
 //be sure to check for this at startup and handle not finding it gracefully
 
@@ -44,7 +49,7 @@
 typedef struct ogl_extension
 {
 	int enabled;					//is this extension enabled
-	uint func_pointer;				//address of function
+	ptr_u func_pointer;				//address of function
 	const char* function_name;		//name passed to wglGetProcAddress()
 	const char* extension_name;		//name found in extension string
 	int required_to_run;			//is this extension required for use	
@@ -85,29 +90,27 @@ extern ogl_extension GL_Extensions[];
 #define GL_LOAD_TRANSPOSE				15			
 #define GL_MULT_TRANSPOSE				16
 #define GL_CLIENT_ACTIVE_TEX			17
-
+#define GL_DRAW_RANGE_ELEMENTS			18
 
 //GL_ARB_vertex_buffer_object FUNCTIONS
-#define GL_ARB_VBO_BIND_BUFFER			18			
-#define GL_ARB_VBO_DEL_BUFFER			19
-#define GL_ARB_VBO_GEN_BUFFER			20
-#define GL_ARB_VBO_BUFFER_DATA			21
-//#define GL_ARB_VBO_MAP_BUFFER			22
-//#define GL_ARB_VBO_UNMAP_BUFFER			23
+#define GL_ARB_VBO_BIND_BUFFER			19
+#define GL_ARB_VBO_DEL_BUFFER			20
+#define GL_ARB_VBO_GEN_BUFFER			21
+#define GL_ARB_VBO_BUFFER_DATA			22
+//#define GL_ARB_VBO_MAP_BUFFER			23
+//#define GL_ARB_VBO_UNMAP_BUFFER			24
 
 
-#define GL_NUM_EXTENSIONS				22
+#define GL_NUM_EXTENSIONS				23
 
 
 int opengl_get_extensions();
 void opengl_print_extensions();
 int opengl_extension_is_enabled(int idx);
 
+#ifdef _WIN32
 #define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
 							((x)GL_Extensions[i].func_pointer)
-
-
-//we may want to put an ifdef block around here incase people build this on linux/unix based stuff
 
 //void glFogCoordfEXT(float value);
 //void glFogCoordPointerEXT(unsigned int, unsigned int, void*);
@@ -137,5 +140,7 @@ int opengl_extension_is_enabled(int idx);
 #define glDeleteBuffersARB GLEXT_CALL(PFNGLDELETEBUFFERSARBPROC, GL_ARB_VBO_DEL_BUFFER)
 #define glGenBuffersARB GLEXT_CALL(PFNGLGENBUFFERSARBPROC, GL_ARB_VBO_GEN_BUFFER)
 #define glBufferDataARB GLEXT_CALL(PFNGLBUFFERDATAARBPROC, GL_ARB_VBO_BUFFER_DATA)
+#define glDrawRangeElements GLEXT_CALL(PFNGLDRAWRANGEELEMENTSPROC, GL_DRAW_RANGE_ELEMENTS)
+#endif // _WIN32
 
-#endif
+#endif // _GROPENGLEXT_H

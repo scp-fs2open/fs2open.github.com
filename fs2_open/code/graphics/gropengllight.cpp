@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.3 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 1.4 $
+ * $Date: 2004-10-31 21:45:13 $
+ * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 1.2  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -43,17 +46,15 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <windows.h>
-
+#endif
 
 #include "globalincs/pstypes.h"
 #include "graphics/gropengl.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengllight.h"
 #include "graphics/2d.h"
-#include "graphics/gl/gl.h"
-#include "graphics/gl/glu.h"
-#include "graphics/gl/glext.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"
 

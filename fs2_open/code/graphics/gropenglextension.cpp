@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.3 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 1.4 $
+ * $Date: 2004-10-31 21:45:13 $
+ * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 1.2  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -31,10 +34,11 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 #include "globalincs/pstypes.h"
-#include "graphics/gl/gl.h"
 #include "graphics/gropengl.h"
 #include "graphics/gropenglextension.h"
 
@@ -70,28 +74,29 @@ ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 
 ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 {
-	{0, NULL, "glFogCoordfEXT", "GL_EXT_fog_coord",0},
-	{0, NULL, "glFogCoordPointerEXT", "GL_EXT_fog_coord",0},
-	{0, NULL, "glMultiTexCoord2fARB", "GL_ARB_multitexture",1},		//required for glow maps
-	{0, NULL, "glActiveTextureARB", "GL_ARB_multitexture",1},		//required for glow maps
-	{0, NULL, NULL, "GL_ARB_texture_env_add", 1},					//required for glow maps
-	{0, NULL, "glCompressedTexImage2D", "GL_ARB_texture_compression",0},
-	{0, NULL, NULL, "GL_EXT_texture_compression_s3tc",0},
-	{0, NULL, NULL, "GL_EXT_texture_filter_anisotropic", 0},
-	{0, NULL, NULL, "GL_NV_fog_distance", 0},
-	{0, NULL, "glSecondaryColor3fvEXT", "GL_EXT_secondary_color", 0},
-	{0, NULL, "glSecondaryColor3ubvEXT", "GL_EXT_secondary_color", 0},
-	{0, NULL, NULL, "GL_ARB_texture_env_combine",0},
-	{0, NULL, NULL, "GL_EXT_texture_env_combine",0},
-	{0, NULL, "glLockArraysEXT", "GL_EXT_compiled_vertex_array",0},
-	{0, NULL, "glUnlockArraysEXT", "GL_EXT_compiled_vertex_array",0},
-	{0, NULL,"glLoadTransposeMatrixfARB","GL_ARB_transpose_matrix",	1},
-	{0, NULL, "glMultTransposeMatrixfARB", "GL_ARB_transpose_matrix",1},
-	{0, NULL, "glClientActiveTextureARB", "GL_ARB_multitexture",1},
-	{0, NULL, "glBindBufferARB", "GL_ARB_vertex_buffer_object",0},
-	{0, NULL, "glDeleteBuffersARB", "GL_ARB_vertex_buffer_object",0},
-	{0, NULL, "glGenBuffersARB", "GL_ARB_vertex_buffer_object",0},
-	{0, NULL, "glBufferDataARB", "GL_ARB_vertex_buffer_object",0}
+	{0, 0, "glFogCoordfEXT", "GL_EXT_fog_coord",0},
+	{0, 0, "glFogCoordPointerEXT", "GL_EXT_fog_coord",0},
+	{0, 0, "glMultiTexCoord2fARB", "GL_ARB_multitexture",1},		//required for glow maps
+	{0, 0, "glActiveTextureARB", "GL_ARB_multitexture",1},		//required for glow maps
+	{0, 0, NULL, "GL_ARB_texture_env_add", 1},					//required for glow maps
+	{0, 0, "glCompressedTexImage2D", "GL_ARB_texture_compression",0},
+	{0, 0, NULL, "GL_EXT_texture_compression_s3tc",0},
+	{0, 0, NULL, "GL_EXT_texture_filter_anisotropic", 0},
+	{0, 0, NULL, "GL_NV_fog_distance", 0},
+	{0, 0, "glSecondaryColor3fvEXT", "GL_EXT_secondary_color", 0},
+	{0, 0, "glSecondaryColor3ubvEXT", "GL_EXT_secondary_color", 0},
+	{0, 0, NULL, "GL_ARB_texture_env_combine",0},
+	{0, 0, NULL, "GL_EXT_texture_env_combine",0},
+	{0, 0, "glLockArraysEXT", "GL_EXT_compiled_vertex_array",0},
+	{0, 0, "glUnlockArraysEXT", "GL_EXT_compiled_vertex_array",0},
+	{0, 0,"glLoadTransposeMatrixfARB","GL_ARB_transpose_matrix",	1},
+	{0, 0, "glMultTransposeMatrixfARB", "GL_ARB_transpose_matrix",1},
+	{0, 0, "glClientActiveTextureARB", "GL_ARB_multitexture",1},
+	{0, 0, "glDrawRangeElements", "GL_EXT_draw_range_elements", 1},
+	{0, 0, "glBindBufferARB", "GL_ARB_vertex_buffer_object",0},
+	{0, 0, "glDeleteBuffersARB", "GL_ARB_vertex_buffer_object",0},
+	{0, 0, "glGenBuffersARB", "GL_ARB_vertex_buffer_object",0},
+	{0, 0, "glBufferDataARB", "GL_ARB_vertex_buffer_object",0},
 
 };
 
@@ -148,7 +153,11 @@ int opengl_get_extensions()
 				continue;
 			}
 			
-			cur->func_pointer=(uint)wglGetProcAddress(cur->function_name);
+#ifdef _WIN32
+			cur->func_pointer=(ptr_u)wglGetProcAddress(cur->function_name);
+#else
+			cur->func_pointer=(ptr_u)SDL_GL_GetProcAddress(cur->function_name);
+#endif
 			if (cur->func_pointer)
 			{
 				cur->enabled=1;
