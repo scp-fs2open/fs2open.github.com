@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-11-18 21:27:13 $
+ * $Author: phreak $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:58  penguin
  * Back-port to MSVC
  *
@@ -2334,6 +2337,30 @@ void bm_set_components_argb_d3d_32_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte
 	}
 }
 
+void bm_set_components_opengl(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
+{
+	// rgba 
+	*((ushort*)pixel) |= (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
+	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
+	*((ushort*)pixel) &= ~(0x8000);
+	if(*av){
+		*((ushort*)pixel) |= 0x8000;
+	}
+	
+}
+
+void bm_set_components_opengl_32bit_scr(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
+{
+	// rgba 
+	*((uint*)pixel) |= (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	*((uint*)pixel) |= (uint)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
+	*((uint*)pixel) |= (uint)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
+	if(*av){
+		*((uint*)pixel) |= 0xff000000;
+	}
+}
+
 // for selecting pixel formats
 void BM_SELECT_SCREEN_FORMAT()
 {
@@ -2348,12 +2375,15 @@ void BM_SELECT_SCREEN_FORMAT()
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
+			mprintf(("bm_set_components_argb_d3d_screen\n"));
 			bm_set_components = bm_set_components_d3d;
 		} else {
 #ifndef NO_DIRECT3D
 			if(D3D_32bit){
+				mprintf(("bm_set_components_argb_d3d_32_screen\n"));
 				bm_set_components = bm_set_components_argb_d3d_32_screen;
 			} else {
+				mprintf(("bm_set_components_argb_d3d_16_screen\n"));
 				bm_set_components = bm_set_components_argb_d3d_16_screen;
 			}
 #else
@@ -2361,6 +2391,16 @@ void BM_SELECT_SCREEN_FORMAT()
 #endif  // ifndef NO_DIRECT3D
 		}
 	}
+
+#ifdef USE_OPENGL
+	else if (gr_screen.mode == GR_OPENGL)
+	{
+		if (gr_screen.bits_per_pixel==32)
+			bm_set_components = bm_set_components_opengl_32bit_scr;
+		else
+			bm_set_components = bm_set_components_opengl;
+	}
+#endif	
 #else
 	bm_set_components = bm_set_components_argb_d3d_16_screen;
 #endif  // ifdef WIN32
@@ -2379,12 +2419,15 @@ void BM_SELECT_TEX_FORMAT()
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
+			mprintf(("bm_set_components_argb_d3d_screen\n"));
 			bm_set_components = bm_set_components_d3d;
 		} else {
 #ifndef NO_DIRECT3D
 			if(D3D_32bit){
+				mprintf(("bm_set_components_argb_d3d_32_tex\n"));
 				bm_set_components = bm_set_components_argb_d3d_32_tex;
 			} else {
+				mprintf(("bm_set_components_argb_d3d_16_tex\n"));
 				bm_set_components = bm_set_components_argb_d3d_16_tex;
 			}
 #else
@@ -2392,6 +2435,12 @@ void BM_SELECT_TEX_FORMAT()
 #endif
 		}
 	}
+#ifdef USE_OPENGL
+	else if (gr_screen.mode == GR_OPENGL)
+	{
+		bm_set_components = bm_set_components_opengl;
+	}
+#endif	
 #else
 	bm_set_components = bm_set_components_argb_d3d_16_tex;
 #endif  // ifdef WIN32
@@ -2410,12 +2459,15 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
+			mprintf(("bm_set_components_argb_d3d\n"));
 			bm_set_components = bm_set_components_d3d;
 		} else {
 #ifndef NO_DIRECT3D
 			if(D3D_32bit){
+				mprintf(("bm_set_components_argb_d3d_32_tex\n"));
 				bm_set_components = bm_set_components_argb_d3d_32_tex;
 			} else {
+				mprintf(("bm_set_components_argb_d3d_32_tex\n"));
 				bm_set_components = bm_set_components_argb_d3d_16_tex;
 			}
 #else
@@ -2423,6 +2475,12 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 #endif
 		}
 	}
+#ifdef USE_OPENGL
+	else if (gr_screen.mode == GR_OPENGL)
+	{
+		bm_set_components = bm_set_components_opengl;
+	}
+#endif	
 #else
 	bm_set_components = bm_set_components_argb_d3d_16_tex;
 #endif  // ifdef WIN32
