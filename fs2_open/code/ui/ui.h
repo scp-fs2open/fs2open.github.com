@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/UI.H $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-06 03:50:48 $
  * $Author: penguin $
  *
  * Include file for our user interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -379,17 +382,17 @@ class UI_DOT_SLIDER_NEW;
 
 class UI_GADGET
 {
-	friend UI_WINDOW;
-	friend UI_BUTTON;
-	friend UI_KEYTRAP;
-	friend UI_CHECKBOX;
-	friend UI_RADIO;
-	friend UI_SCROLLBAR;
-	friend UI_LISTBOX;
-	friend UI_INPUTBOX;
-	// friend UI_SLIDER;
-	friend UI_DOT_SLIDER;	
-	friend UI_DOT_SLIDER_NEW;
+	friend class UI_WINDOW;
+	friend class UI_BUTTON;
+	friend class UI_KEYTRAP;
+	friend class UI_CHECKBOX;
+	friend class UI_RADIO;
+	friend class UI_SCROLLBAR;
+	friend class UI_LISTBOX;
+	friend class UI_INPUTBOX;
+	// friend class UI_SLIDER;
+	friend class UI_DOT_SLIDER;	
+	friend class UI_DOT_SLIDER_NEW;
 
 	protected:
 		char *bm_filename;
@@ -513,10 +516,10 @@ typedef struct UI_XSTR {
 
 class UI_BUTTON : public UI_GADGET
 {
-	friend UI_SCROLLBAR;
-	// friend UI_SLIDER;
-	friend UI_DOT_SLIDER;
-	friend UI_DOT_SLIDER_NEW;
+	friend class UI_SCROLLBAR;
+	// friend class UI_SLIDER;
+	friend class UI_DOT_SLIDER;
+	friend class UI_DOT_SLIDER_NEW;
 
 		char *text;
 		int position;			// indicates position of button (0 - up, 1 - down by mouse click 2 - down by keypress
@@ -711,8 +714,8 @@ class UI_RADIO : public UI_GADGET
 
 class UI_SCROLLBAR : public UI_GADGET
 {
-	friend UI_LISTBOX;
-	friend UI_BUTTON;
+	friend class UI_LISTBOX;
+	friend class UI_BUTTON;
 		int horz;
 		int start;
 		int stop;
@@ -749,7 +752,7 @@ class UI_SCROLLBAR : public UI_GADGET
 
 class UI_SLIDER2 : public UI_GADGET
 {
-	friend UI_BUTTON;
+	friend class UI_BUTTON;
 	private:
 		int numberItems;				// total range
 		int numberPositions;			// total positions (height - bitmapbuttonheight)
@@ -807,7 +810,7 @@ class UI_SLIDER2 : public UI_GADGET
 // to be phased out eventually in FS2
 class UI_DOT_SLIDER : public UI_GADGET
 {
-	friend UI_BUTTON;
+	friend class UI_BUTTON;
 
 		UI_BUTTON button;
 		UI_BUTTON up_button;
@@ -827,7 +830,7 @@ class UI_DOT_SLIDER : public UI_GADGET
 
 class UI_DOT_SLIDER_NEW : public UI_GADGET
 {
-	friend UI_BUTTON;
+	friend class UI_BUTTON;
 		UI_BUTTON button;
 		UI_BUTTON up_button;
 		UI_BUTTON down_button;		
@@ -900,19 +903,19 @@ class UI_LISTBOX : public UI_GADGET
 
 class UI_WINDOW
 {
-	friend UI_GADGET;
-	friend UI_BUTTON;
-	friend UI_KEYTRAP;
-	friend UI_CHECKBOX;
-	friend UI_RADIO;
-	friend UI_SCROLLBAR;
-	friend UI_LISTBOX;
-	friend UI_INPUTBOX;
-	// friend UI_SLIDER;
-	friend UI_SLIDER2;
-	friend UI_DOT_SLIDER;
-	friend UI_DOT_SLIDER_NEW;
-	friend UI_ICON;
+	friend class UI_GADGET;
+	friend class UI_BUTTON;
+	friend class UI_KEYTRAP;
+	friend class UI_CHECKBOX;
+	friend class UI_RADIO;
+	friend class UI_SCROLLBAR;
+	friend class UI_LISTBOX;
+	friend class UI_INPUTBOX;
+	// friend class UI_SLIDER;
+	friend class UI_SLIDER2;
+	friend class UI_DOT_SLIDER;
+	friend class UI_DOT_SLIDER_NEW;
+	friend class UI_ICON;
 
 protected:
 	int flags;
@@ -1007,7 +1010,7 @@ void ui_sort_filenames( int n, char **list );
 /*
 class UI_SLIDER : public UI_GADGET
 {
-	friend UI_BUTTON;
+	friend class UI_BUTTON;
 		int horz;
 		int position;
 		int window_size;
