@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.35 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.36 $
+ * $Date: 2004-10-31 21:36:39 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.34  2004/07/11 03:22:48  bobboau
  * added the working decal code
  *
@@ -513,6 +516,7 @@ gr_line(x1,y1,x2,y2)
 #include "globalincs/pstypes.h"
 #include "graphics/tmapper.h"
 #include "cfile/cfile.h"
+#include "bmpman/bmpman.h"
 
 
 #define MATRIX_TRANSFORM_TYPE_WORLD 0
@@ -579,10 +583,10 @@ private:
 bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2);
 
 //finds the first occorence of a vertex within a poly list
-short find_fisrt_index(poly_list *plist, int idx);
+short find_first_index(poly_list *plist, int idx);
 
 //given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
-short find_fisrt_index_vb(poly_list *plist, int idx, poly_list *v);
+short find_first_index_vb(poly_list *plist, int idx, poly_list *v);
 
 
 struct line_list{
@@ -818,31 +822,12 @@ typedef struct screen {
 	void (*gf_set_clear_color)(int r, int g, int b);
 
 	// Here be the bitmap functions
-	int (*gf_bm_get_next_handle)();
-	void (*gf_bm_close)();
-	void (*gf_bm_init)();
-	void (*gf_bm_get_frame_usage)(int *ntotal, int *nnew);
-	int (*gf_bm_create)( int bpp, int w, int h, void * data, int flags );
-	int (*gf_bm_load)( char * real_filename );
-	int (*gf_bm_load_duplicate)(char *filename);
-	int (*gf_bm_load_animation)( char *real_filename, int *nframes, int *fps, int can_drop_frames, int dir_type);
-	void (*gf_bm_get_info)( int bitmapnum, int *w, int * h, ubyte * flags, int *nframes, int *fps, bitmap_section_info **sections);
-	bitmap * (*gf_bm_lock)( int handle, ubyte bpp, ubyte flags );
-	void (*gf_bm_unlock)( int handle );
-	void (*gf_bm_get_palette)(int handle, ubyte *pal, char *name);
-	void (*gf_bm_release)(int handle);
-	int (*gf_bm_unload)( int handle );
-	void (*gf_bm_unload_all)();
-	void (*gf_bm_page_in_texture)( int bitmapnum, int nframes);
+	void (*gf_bm_free_data)(int n);
+	void (*gf_bm_create)(int n);
+	int (*gf_bm_load)(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size);
+	void (*gf_bm_init)(int n);
 	void (*gf_bm_page_in_start)();
-	void (*gf_bm_page_in_stop)();
-	int (*gf_bm_get_cache_slot)( int bitmap_id, int separate_ani_frames );
-	void (*gf_bm_get_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
-	void (*gf_bm_get_section_size)(int bitmapnum, int sx, int sy, int *w, int *h);
-
-	void (*gf_bm_page_in_nondarkening_texture)( int bitmapnum, int nframes);
-	void (*gf_bm_page_in_xparent_texture)( int bitmapnum, int nframes);
-	void (*gf_bm_page_in_aabitmap)( int bitmapnum, int nframes);
+	int (*gf_bm_lock)(char *filename, int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags);
 
 	void (*gf_translate_texture_matrix)(int unit, vector *shift);
 	void (*gf_push_texture_matrix)(int unit);
@@ -1087,47 +1072,15 @@ __inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float
 
 
 // Here be the bitmap functions
-#define bm_get_next_handle         GR_CALL(*gr_screen.gf_bm_get_next_handle)
-#define bm_close                   GR_CALL(*gr_screen.gf_bm_close)
-#define bm_init                    GR_CALL(*gr_screen.gf_bm_init)
-#define bm_get_frame_usage         GR_CALL(*gr_screen.gf_bm_get_frame_usage)
-#define bm_create                  GR_CALL(*gr_screen.gf_bm_create)
-#define bm_load                    GR_CALL(*gr_screen.gf_bm_load)
-#define bm_load_duplicate          GR_CALL(*gr_screen.gf_bm_load_duplicate)
-//#define bm_load_animation          GR_CALL(*gr_screen.gf_bm_load_animation)
-__inline int bm_load_animation( char *real_filename, int *nframes, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY)
+#define gr_bm_free_data				GR_CALL(*gr_screen.gf_bm_free_data)
+#define gr_bm_create				GR_CALL(*gr_screen.gf_bm_create)
+#define gr_bm_init					GR_CALL(*gr_screen.gf_bm_init)
+__inline int gr_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, ubyte *c_type = 0, int *mm_lvl = 0, int *size = 0)
 {
-	return (*gr_screen.gf_bm_load_animation)(real_filename, nframes, fps, can_drop_frames, dir_type);
+	return (*gr_screen.gf_bm_load)(type, n, filename, img_cfp, w, h, bpp, c_type, mm_lvl, size);
 }
-//#define bm_get_info                GR_CALL(*gr_screen.gf_bm_get_info)
-__inline void bm_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL, bitmap_section_info **sections = NULL)
-{
-	(*gr_screen.gf_bm_get_info)( bitmapnum, w, h, flags, nframes, fps, sections);
-}
-#define bm_lock                    GR_CALL(*gr_screen.gf_bm_lock)
-#define bm_unlock                  GR_CALL(*gr_screen.gf_bm_unlock)
-#define bm_get_palette             GR_CALL(*gr_screen.gf_bm_get_palette)
-#define bm_release                 GR_CALL(*gr_screen.gf_bm_release)
-#define bm_unload                  GR_CALL(*gr_screen.gf_bm_unload)
-#define bm_unload_all              GR_CALL(*gr_screen.gf_bm_unload_all)
-//#define bm_page_in_texture         GR_CALL(*gr_screen.gf_bm_page_in_texture)
-__inline void bm_page_in_texture( int bitmapnum, int nframes = 1)
-{
-	(*gr_screen.gf_bm_page_in_texture)(bitmapnum, nframes);
-}
-#define bm_page_in_start           GR_CALL(*gr_screen.gf_bm_page_in_start)
-#define bm_page_in_stop            GR_CALL(*gr_screen.gf_bm_page_in_stop)
-#define bm_get_cache_slot          GR_CALL(*gr_screen.gf_bm_get_cache_slot)
-#define bm_get_components          GR_CALL(*gr_screen.gf_bm_get_components)
-#define bm_get_section_size        GR_CALL(*gr_screen.gf_bm_get_section_size)
-
-#define bm_page_in_nondarkening_texture  GR_CALL(*gr_screen.gf_bm_page_in_nondarkening_texture)
-//#define bm_page_in_xparent_texture 		 GR_CALL(*gr_screen.gf_bm_page_in_xparent_texture)     
-__inline void bm_page_in_xparent_texture( int bitmapnum, int nframes = 1)
-{
-	(*gr_screen.gf_bm_page_in_xparent_texture)(bitmapnum, nframes);
-}
-#define bm_page_in_aabitmap				 GR_CALL(*gr_screen.gf_bm_page_in_aabitmap)            
+#define gr_bm_page_in_start			GR_CALL(*gr_screen.gf_bm_page_in_start)
+#define gr_bm_lock					GR_CALL(*gr_screen.gf_bm_lock)          
 
 #define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            
 
