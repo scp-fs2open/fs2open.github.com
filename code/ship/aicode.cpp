@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.35 $
- * $Date: 2003-06-25 03:16:32 $
+ * $Revision: 2.36 $
+ * $Date: 2003-07-02 03:31:27 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/06/25 03:16:32  phreak
+ * changed around ai code to take into account a limited lock range for local ssms
+ *
  * Revision 2.34  2003/06/14 21:22:42  phreak
  * capital ship turrets that use the "huge" flag will not target bombs
  * this will prevent large beams from shooting the player if he shoots a bomb at a destroyer
@@ -7920,7 +7923,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 
 		if (is_big_ship) {
 			priority1 = WIF_HUGE;
-			priority2 = WIF_HOMING;
+			priority2 = WIF_BOMBER_PLUS;
 		} else if ( (esip != NULL) && (esip->flags & SIF_BOMBER) ) {
 			priority1 = WIF_BOMBER_PLUS;
 			priority2 = WIF_HOMING;
