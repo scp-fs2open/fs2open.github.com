@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.h $
- * $Revision: 2.2 $
- * $Date: 2003-01-06 21:52:58 $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-07 20:06:44 $
  * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/06 21:52:58  Goober5000
+ * allowed fighters and bombers to accept the stay-near-ship and
+ * keep-safe-distance orders
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -180,10 +185,19 @@
 #define AI_GOAL_PLAY_DEAD				(1<<21)
 #define AI_GOAL_CHASE_WEAPON			(1<<22)
 
+// Goober5000: new goals go here
+
+// Goober5000: this new goal is special: it doesn't take the usual kind of argument; it takes
+// many arguments, requiring a modification to the ai_goal data type.  Therefore, I didn't
+// add it to ai_update_goal_references() or ai_query_goal_references().  I also didn't add it
+// to the list in Fred\Management.cpp, because it can't be specified as an initial order - it
+// can only be specified through a sexp.
+#define AI_GOAL_CHASE_ANY_EXCEPT		(1<<23)		// hey Hoffoss!  I added a new goal! :p
+
 // now the masks for ship types
 
 // Goober5000: added AI_GOAL_STAY_NEAR_SHIP and AI_GOAL_KEEP_SAFE_DISTANCE as valid for fighters
-#define AI_GOAL_ACCEPT_FIGHTER		( AI_GOAL_CHASE | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_WARP | AI_GOAL_DESTROY_SUBSYSTEM | AI_GOAL_CHASE_WING | AI_GOAL_GUARD | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE_ANY | AI_GOAL_IGNORE | AI_GOAL_GUARD_WING | AI_GOAL_EVADE_SHIP | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD | AI_GOAL_STAY_NEAR_SHIP | AI_GOAL_KEEP_SAFE_DISTANCE)
+#define AI_GOAL_ACCEPT_FIGHTER		( AI_GOAL_CHASE | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_WARP | AI_GOAL_DESTROY_SUBSYSTEM | AI_GOAL_CHASE_WING | AI_GOAL_GUARD | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE_ANY | AI_GOAL_IGNORE | AI_GOAL_GUARD_WING | AI_GOAL_EVADE_SHIP | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD | AI_GOAL_STAY_NEAR_SHIP | AI_GOAL_KEEP_SAFE_DISTANCE | AI_GOAL_CHASE_ANY_EXCEPT )
 #define AI_GOAL_ACCEPT_BOMBER			( AI_GOAL_ACCEPT_FIGHTER )
 #define AI_GOAL_ACCEPT_STEALTH		( AI_GOAL_ACCEPT_FIGHTER )
 #define AI_GOAL_ACCEPT_TRANSPORT		( AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_DOCK | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_WARP | AI_GOAL_UNDOCK | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD)

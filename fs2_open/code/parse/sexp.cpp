@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.27 $
- * $Date: 2003-01-05 01:26:35 $
+ * $Revision: 2.28 $
+ * $Date: 2003-01-07 20:06:44 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/01/05 01:26:35  Goober5000
+ * added capability of is-iff and change-iff to have wings as well as ships
+ * as their arguments; also allowed a bunch of sexps to accept the player
+ * as an argument where they would previously display a parse error
+ * --Goober5000
+ *
  * Revision 2.26  2003/01/04 23:15:39  Goober5000
  * fixed the order sexp
  * --Goober5000
@@ -694,6 +700,7 @@ sexp_oper Operators[] = {
 	{ "ai-chase",					OP_AI_CHASE,					2, 2, },
 	{ "ai-chase-wing",			OP_AI_CHASE_WING,				2, 2, },
 	{ "ai-chase-any",				OP_AI_CHASE_ANY,				1, 1, },
+	{ "ai-chase-any-except",	OP_AI_CHASE_ANY_EXCEPT,		1, 1+MAX_SPECIAL_OBJECTS, },
 	{ "ai-guard",					OP_AI_GUARD,					2, 2, },
 	{ "ai-guard-wing",			OP_AI_GUARD_WING,				2, 2, },
 	{ "ai-destroy-subsystem",	OP_AI_DESTROY_SUBSYS,		3, 3, },
@@ -750,6 +757,7 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_DISARM_SHIP, OP_AI_DISARM_SHIP },
 	{ AI_GOAL_GUARD, OP_AI_GUARD },
 	{ AI_GOAL_CHASE_ANY, OP_AI_CHASE_ANY },
+	{ AI_GOAL_CHASE_ANY_EXCEPT, OP_AI_CHASE_ANY_EXCEPT },
 	{ AI_GOAL_GUARD_WING, OP_AI_GUARD_WING },
 	{ AI_GOAL_EVADE_SHIP, OP_AI_EVADE_SHIP },
 	{ AI_GOAL_STAY_NEAR_SHIP, OP_AI_STAY_NEAR_SHIP },
@@ -9908,6 +9916,7 @@ int query_operator_return_type(int op)
 		case OP_AI_GUARD:
 		case OP_AI_GUARD_WING:
 		case OP_AI_CHASE_ANY:
+		case OP_AI_CHASE_ANY_EXCEPT:
 		case OP_AI_EVADE_SHIP:
 		case OP_AI_STAY_NEAR_SHIP:
 		case OP_AI_KEEP_SAFE_DISTANCE:
@@ -10365,6 +10374,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AI_PLAY_DEAD:
 		case OP_AI_CHASE_ANY:
 			return OPF_POSITIVE;
+
+		case OP_AI_CHASE_ANY_EXCEPT:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else
+				return OPF_SHIP_WING;
 
 		case OP_AI_STAY_STILL:
 			if (!argnum)

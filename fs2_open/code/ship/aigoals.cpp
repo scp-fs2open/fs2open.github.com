@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-01-06 22:57:23 $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-07 20:06:44 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/06 22:57:23  Goober5000
+ * implemented keep-safe-distance
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -1116,7 +1120,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 // common routine to add a sexpression mission goal to the appropriate goal structure.
 void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
 {
-	int node, dummy, op;
+	int n, node, dummy, op;
 	char *text;
 
 	Assert ( Sexp_nodes[sexp].first != -1 );
@@ -1220,6 +1224,48 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
 	case OP_AI_CHASE_ANY:
 		aigp->priority = atoi( CTEXT(CDR(node)) );
 		aigp->ai_mode = AI_GOAL_CHASE_ANY;
+		break;
+
+	case OP_AI_CHASE_ANY_EXCEPT:
+		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->ai_mode = AI_GOAL_CHASE_ANY_EXCEPT;
+
+		// reset goal stuff
+		aigp->num_special_objects = 0;
+		aigp->special_object_flags = 0;
+
+		// get list of exceptions
+		n = CDR(CDR(node));
+		for ( ; n != -1; n = CDR(n) )
+		{
+			aigp->special_object[aigp->num_special_objects] = ai_get_goal_ship_name( CTEXT(n), &aigp->special_object_index[aigp->num_special_objects] );
+			aigp->special_object_num[aigp->num_special_objects] = -1;
+
+			// do we have a ship?
+			if ( (dummy = ship_name_lookup(aigp->special_object[aigp->num_special_objects], 1)) != -1 )
+			{
+				aigp->special_object_num[aigp->num_special_objects] = dummy;
+			}
+
+			// do we have a wing?
+			if ( (dummy = wing_name_lookup(aigp->special_object[aigp->num_special_objects], 1)) != -1 )
+			{
+				aigp->special_object_num[aigp->num_special_objects] = dummy;
+				aigp->special_object_flags |= (1 << (aigp->num_special_objects));	// set wing flag
+			}
+
+			// make sure we got something assigned
+			Assert(aigp->special_object_num[aigp->num_special_objects] != -1);
+
+			aigp->num_special_objects++;
+		}
+
+		if (!aigp->num_special_objects)	// found any?
+		{
+			// just make it ai-chase-any
+			aigp->ai_mode = AI_GOAL_CHASE_ANY;
+		}
+
 		break;
 
 	case OP_AI_PLAY_DEAD:
@@ -1439,7 +1485,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	//  these orders are always achievable.
 	if ( (aigp->ai_mode == AI_GOAL_KEEP_SAFE_DISTANCE) || (aigp->ai_mode == AI_GOAL_WARP)
 		|| (aigp->ai_mode == AI_GOAL_CHASE_ANY) || (aigp->ai_mode == AI_GOAL_STAY_STILL)
-		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) )
+		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) || (aigp->ai_mode == AI_GOAL_CHASE_ANY_EXCEPT) )
 		return AI_GOAL_ACHIEVABLE;
 
 	// form on my wing is always achievable, but need to set the override bit so that it
@@ -2119,6 +2165,12 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	case AI_GOAL_CHASE_ANY:
 		ai_attack_object( objp, NULL, current_goal->priority, NULL );
+		break;
+
+	case AI_GOAL_CHASE_ANY_EXCEPT:
+		aip->target_objnum = -1;	// force reacquisition of target in case we're attacking an exception
+		aip->enemy_wing = -1;		// same with any current enemy wing
+		ai_attack_object( objp, NULL, current_goal->priority, NULL, 1 );
 		break;
 
 	case AI_GOAL_WARP: {

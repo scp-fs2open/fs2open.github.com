@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.5 $
- * $Date: 2003-01-06 22:57:23 $
+ * $Revision: 2.6 $
+ * $Date: 2003-01-07 20:06:44 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/01/06 22:57:23  Goober5000
+ * implemented keep-safe-distance
+ * --Goober5000
+ *
  * Revision 2.4  2003/01/03 21:58:07  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -260,6 +264,11 @@
 
 #define	KAMIKAZE_HULL_ON_DEATH	-1000.0f	//	Hull strength ship gets set to if it crash-dies.
 
+// Goober5000, currently only used for the ai-chase-any-except behavior.  This can never go
+// above 32, because 32 is the maximum number of bits possible in a unit data type.  If you
+// need more, you're out of luck - you'll have to add a second special object array. :)
+#define MAX_SPECIAL_OBJECTS	32
+
 // structure for AI goals
 typedef struct ai_goals {
 	int	signature;			//	Unique identifier.  All goals ever created (per mission) have a unique signature.
@@ -273,6 +282,13 @@ typedef struct ai_goals {
 	int	ship_name_index;	// index of ship_name in Goal_ship_names[][]
 	int	wp_index;			// index into waypoints list of waypoints that this ship might fly.
 	int	weapon_signature;	// signature of weapon this ship might be chasing.  Paired with above value to get target.
+
+	// Goober5000
+	char	*special_object[MAX_SPECIAL_OBJECTS];		// name of ship (or wing) that this goal acts upon
+	int		special_object_num[MAX_SPECIAL_OBJECTS];	// index of ship or wing in Ship[] or Wing[]
+	int		special_object_index[MAX_SPECIAL_OBJECTS];	// index of special_object in Goal_ship_names[][]
+	uint	special_object_flags;
+	int		num_special_objects;
 
 	// unions for docking stuff.
 	union {
@@ -656,7 +672,7 @@ extern waypoint_list Waypoint_lists[MAX_WAYPOINT_LISTS];
 extern int	Num_waypoint_lists;
 
 extern void init_ai_system(void);
-extern void ai_attack_object(object *attacker, object *attacked, int priority, ship_subsys *ssp);
+extern void ai_attack_object(object *attacker, object *attacked, int priority, ship_subsys *ssp, int except = 0);
 extern void ai_evade_object(object *evader, object *evaded, int priority);
 extern void ai_ignore_object(object *ignorer, object *ignored, int priority);
 extern void ai_ignore_wing(object *ignorer, int wingnum, int priority);
@@ -728,7 +744,7 @@ extern int ai_maybe_fire_afterburner(object *objp, ai_info *aip);
 extern void set_predicted_enemy_pos(vector *predicted_enemy_pos, object *pobjp, object *eobjp, ai_info *aip);
 
 extern int is_instructor(object *objp);
-extern int find_enemy(int objnum, float range, int max_attackers);
+extern int find_enemy(int objnum, float range, int max_attackers, int except = 0);
 
 float ai_get_weapon_speed(ship_weapon *swp);
 void set_predicted_enemy_pos_turret(vector *predicted_enemy_pos, vector *gun_pos, object *pobjp, vector *enemy_pos, vector *enemy_vel, float weapon_speed, float time_enemy_in_range);
@@ -745,5 +761,8 @@ extern void ai_do_objects_repairing_stuff( object *repaired_obj, object *repair_
 extern int find_danger_weapon(object *sobjp, float dtime, float *atime, float dot_threshhold);
 
 void ai_set_mode_warp_out(object *objp, ai_info *aip);
+
+// prototyped by Goober5000
+int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, int except = 0);
 
 #endif

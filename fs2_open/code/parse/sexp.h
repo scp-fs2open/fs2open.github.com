@@ -9,13 +9,20 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.21 $
+ * $Revision: 2.22 $
  * $Author: Goober5000 $
- * $Date: 2003-01-03 21:58:07 $
+ * $Date: 2003-01-07 20:06:44 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/01/03 21:58:07  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.20  2003/01/02 00:35:20  Goober5000
  * added don't-collide-invisible and collide-invisible sexps
  * --Goober5000
@@ -695,6 +702,7 @@
 #define OP_AI_IGNORE								(0x0010 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
 #define OP_AI_STAY_STILL						(0x0011 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
 #define OP_AI_PLAY_DEAD							(0x0012 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
+#define OP_AI_CHASE_ANY_EXCEPT					(0x0013 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 #define OP_GOALS_ID								(0x0001 | OP_CATEGORY_UNLISTED)
 #define OP_NEXT_MISSION							(0x0002 | OP_CATEGORY_UNLISTED)		// used in campaign files for branching
