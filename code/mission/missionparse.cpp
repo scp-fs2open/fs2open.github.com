@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.64 $
- * $Date: 2004-07-27 20:09:12 $
- * $Author: Kazan $
+ * $Revision: 2.65 $
+ * $Date: 2004-09-01 00:22:36 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2004/07/27 20:09:12  Kazan
+ * making another bug a little bit more dead inside :D
+ *
  * Revision 2.63  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -1846,6 +1849,9 @@ int parse_create_object(p_object *objp)
 
 		ship_recalc_subsys_strength( shipp );
 	}
+
+	// Goober5000 - this is also stupid; this is in ship_set but it needs to be done here because of the special hitpoints mod
+	Objects[objnum].hull_strength = shipp->ship_initial_hull_strength;
 
 
 	Ships[shipnum].respawn_priority = objp->respawn_priority;
