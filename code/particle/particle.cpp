@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:47 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2004-11-21 11:33:23 $
+ * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:47  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/12 16:33:02  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -288,17 +291,11 @@ void particle_page_in()
 		Particles[i].type = -1;
 	}
 
-	for (i=0; i<Anim_num_frames_fire; i++ )	{
-		bm_page_in_texture( Anim_bitmap_id_fire + i );
-	}
+	bm_page_in_texture( Anim_bitmap_id_fire, Anim_num_frames_fire );
 
-	for (i=0; i<Anim_num_frames_smoke; i++ )	{
-		bm_page_in_texture( Anim_bitmap_id_smoke + i );
-	}
+	bm_page_in_texture( Anim_bitmap_id_smoke, Anim_num_frames_smoke );
 
-	for (i=0; i<Anim_num_frames_smoke2; i++ )	{
-		bm_page_in_texture( Anim_bitmap_id_smoke2 + i );
-	}
+	bm_page_in_texture( Anim_bitmap_id_smoke2, Anim_num_frames_smoke2 );
 }
 
 DCF(particles,"Turns particles on/off")
