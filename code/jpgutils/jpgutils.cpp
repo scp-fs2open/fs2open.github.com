@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.9 $
- * $Date: 2005-02-07 08:33:14 $
+ * $Revision: 1.10 $
+ * $Date: 2005-02-12 10:44:11 $
  * $Author: taylor $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/02/07 08:33:14  taylor
+ * should fix linker error in libjpeg
+ *
  * Revision 1.8  2005/02/05 04:15:35  taylor
  * more post merge happiness
  *
@@ -132,9 +135,31 @@ void jpg_output_message(j_common_ptr cinfo)
 //
 int jpeg_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette)
 {
-	Assert( img_cfp != NULL );
+	CFILE *jpeg_file = NULL;
+	char filename[MAX_FILENAME_LEN];
 
-	if (img_cfp == NULL)
+	if (img_cfp == NULL) {
+		strcpy( filename, real_filename );
+
+		char *p = strchr( filename, '.' );
+
+		if ( p )
+			*p = 0;
+
+		strcat( filename, ".jpg" );
+
+		jpeg_file = cfopen( filename , "rb" );
+
+		if ( !jpeg_file ) {
+			return JPEG_ERROR_READING;
+		}
+	} else {
+		jpeg_file = img_cfp;
+	}
+
+	Assert( jpeg_file != NULL );
+
+	if (jpeg_file == NULL)
 		return JPEG_ERROR_READING;
 
 	// set the basic/default error code
@@ -148,7 +173,7 @@ int jpeg_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *b
 	jpeg_create_decompress(&jpeg_info);
 
 	// setup to read data via CFILE
-	jpeg_cfile_src(&jpeg_info, img_cfp);
+	jpeg_cfile_src(&jpeg_info, jpeg_file);
 
 	jpeg_read_header(&jpeg_info, TRUE);
 
@@ -160,6 +185,10 @@ int jpeg_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *b
 	// cleanup
 	jpeg_destroy_decompress(&jpeg_info);
 
+	if (img_cfp == NULL) {
+		cfclose(jpeg_file);
+		jpeg_file = NULL;
+	}
 
 	return jpeg_error_code;
 }
