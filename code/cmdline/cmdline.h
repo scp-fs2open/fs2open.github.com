@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.61 $
- * $Date: 2004-08-11 05:06:19 $
- * $Author: Kazan $
+ * $Revision: 2.62 $
+ * $Date: 2004-09-10 13:51:20 $
+ * $Author: et1 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2004/08/11 05:06:19  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.60  2004/08/02 22:40:59  phreak
  * added -orbradar to enable orb rendering for the radar
  *
@@ -491,6 +494,7 @@ extern int Cmdline_show_stats;
 extern int Cmdline_safeloading;
 extern int Cmdline_nospec;
 extern int Cmdline_orb_radar;
+extern int Cmdline_TBPWarpEffects;  // TBP warp effects -Et1
 
 extern int Cmdline_cache_ani;
 extern int Cmdline_d3dmipmap;
