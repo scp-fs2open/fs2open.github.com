@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-11-18 21:32:11 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-02 05:41:52 $
+ * $Author: penguin $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/11/18 21:32:11  phreak
+ * added some ogl functionality - phreak
+ *
  * Revision 2.3  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -516,9 +519,6 @@ void gr_close()
 
 	switch( gr_screen.mode )	{
 #ifdef _WIN32
-	case GR_SOFTWARE:		
-		gr_soft_cleanup();
-		break;
 	case GR_DIRECTDRAW:
 		Int3();
 		gr_directdraw_cleanup();
@@ -530,6 +530,12 @@ void gr_close()
 		gr_glide_cleanup();
 		break;
 #endif
+
+#ifndef NO_SOFTWARE_RENDERING
+	case GR_SOFTWARE:		
+		gr_soft_cleanup();
+		break;
+#endif  // ifndef NO_SOFTWARE_RENDERING
 
 #ifdef USE_OPENGL
 	case GR_OPENGL:
@@ -890,9 +896,6 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 	if ( Gr_inited )	{
 		switch( gr_screen.mode )	{
 #ifdef _WIN32
-		case GR_SOFTWARE:			
-			gr_soft_cleanup();
-			break;
 		case GR_DIRECTDRAW:
 			Int3();
 			gr_directdraw_cleanup();
@@ -907,7 +910,13 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 		case GR_GLIDE:
 			gr_glide_cleanup();
 			break;
-#endif
+#endif  // ifdef _WIN32
+
+#ifndef NO_SOFTWARE_RENDERING
+		case GR_SOFTWARE:			
+			gr_soft_cleanup();
+			break;
+#endif  // ifndef NO_SOFTWARE_RENDERING
 
 #ifdef USE_OPENGL
 		case GR_OPENGL:
@@ -981,10 +990,6 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 
 	switch( gr_screen.mode )	{
 #ifdef _WIN32
-		case GR_SOFTWARE:
-			Assert(Fred_running || Pofview_running || Is_standalone || Nebedit_running);
-			gr_soft_init();
-			break;
 		// directdraw, direct3d, 
 		case GR_DIRECTDRAW:
 			Int3();
@@ -1022,6 +1027,13 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 			gr_glide_init();
 			break;
 #endif  // ifdef WIN32
+
+#ifndef NO_SOFTWARE_RENDERING
+		case GR_SOFTWARE:
+			Assert(Fred_running || Pofview_running || Is_standalone || Nebedit_running);
+			gr_soft_init();
+			break;
+#endif  // ifndef NO_SOFTWARE_RENDERING
 
 #ifdef USE_OPENGL
 		case GR_OPENGL:
@@ -1069,12 +1081,6 @@ void gr_force_windowed()
 
 	switch( gr_screen.mode )	{
 #ifdef _WIN32
-		case GR_SOFTWARE:
-			{				
-				extern void gr_soft_force_windowed();
-				gr_soft_force_windowed();
-			}
-			break;
 		case GR_DIRECTDRAW:
 			{
 				Int3();
@@ -1091,6 +1097,15 @@ void gr_force_windowed()
 			}
 			break;
 #endif  // ifdef WIN32
+
+#ifndef NO_SOFTWARE_RENDERING
+		case GR_SOFTWARE:
+			{				
+				extern void gr_soft_force_windowed();
+				gr_soft_force_windowed();
+			}
+			break;
+#endif  // ifndef NO_SOFTWARE_RENDERING
 
 #ifdef USE_OPENGL
 		case GR_OPENGL:
@@ -1115,13 +1130,6 @@ void gr_activate(int active)
 
 	switch( gr_screen.mode )	{
 #ifdef _WIN32
-		case GR_SOFTWARE:
-			{				
-				extern void gr_soft_activate(int active);
-				gr_soft_activate(active);
-				return;
-			}
-			break;
 		case GR_DIRECTDRAW:
 			{
 				Int3();
@@ -1145,6 +1153,16 @@ void gr_activate(int active)
 			}
 			break;
 #endif  // ifdef WIN32
+
+#ifndef NO_SOFTWARE_RENDERING
+		case GR_SOFTWARE:
+			{				
+				extern void gr_soft_activate(int active);
+				gr_soft_activate(active);
+				return;
+			}
+			break;
+#endif  // ifndef NO_SOFTWARE_RENDERING
 
 #ifdef USE_OPENGL
 		case GR_OPENGL:
@@ -1246,10 +1264,6 @@ void gr_bitmap(int x, int y)
 	// old school bitmaps
 	switch(gr_screen.mode){
 #ifdef _WIN32
-	case GR_SOFTWARE:
-		grx_bitmap(x, y);
-		break;
-
 	case GR_DIRECTDRAW:
 		grx_bitmap(x, y);
 		break;
@@ -1261,8 +1275,13 @@ void gr_bitmap(int x, int y)
 	case GR_GLIDE:		
 		gr_glide_bitmap(x, y);		
 		break;
-
 #endif  // ifdef WIN32
+
+#ifndef NO_SOFTWARE_RENDERING
+	case GR_SOFTWARE:
+		grx_bitmap(x, y);
+		break;
+#endif  // ifndef NO_SOFTWARE_RENDERING
 
 #ifdef USE_OPENGL
 	case GR_OPENGL:
@@ -1277,10 +1296,6 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy)
 {
 	switch(gr_screen.mode){
 #ifdef _WIN32
-	case GR_SOFTWARE:
-		grx_bitmap_ex(x, y, w, h, sx, sy);
-		break;
-
 	case GR_DIRECTDRAW:
 		grx_bitmap_ex(x, y, w, h, sx, sy);
 		break;
@@ -1293,6 +1308,12 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy)
 		gr_glide_bitmap_ex(x, y, w, h, sx, sy);
 		break;
 #endif  // ifdef WIN32
+
+#ifndef NO_SOFTWARE_RENDERING
+	case GR_SOFTWARE:
+		grx_bitmap_ex(x, y, w, h, sx, sy);
+		break;
+#endif  // ifndef NO_SOFTWARE_RENDERING
 
 #ifdef USE_OPENGL
 	case GR_OPENGL:
