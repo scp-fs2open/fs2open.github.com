@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-12-02 23:18:53 $
+ * $Author: Goober5000 $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/30 14:29:15  unknownplayer
  *
  * Started work on DX8.1 implementation. Updated the project files to encompass
@@ -2616,7 +2619,8 @@ void psnet_ras_status()
 void psnet_socket_options( SOCKET sock )
 {
 	int broadcast;
-	int ret, cursize, bufsize; 
+//	int ret;
+	int cursize, bufsize; 
 	socklen_t cursizesize;
 
 	// Set the mode of the socket to allow broadcasting.  We need to be able to broadcast
