@@ -20,6 +20,9 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/06/12 16:54:06  phreak
+ * fixed a minor bug where local ssms will warpin at 0,0,0 if their target was destroyed while in subspace
+ *
  * Revision 2.27  2003/06/11 03:13:39  phreak
  * i hate to update again so soon, but there was a compile warning that i accidently passed over
  *
@@ -2936,52 +2939,50 @@ void weapon_process_post(object * obj, float frame_time)
 		{
 			uint flags=obj->flags & ~(OF_RENDERS | OF_COLLIDES);
 
-			//if we don't have a target at this point, delete it. otherwise they will warp in at 0,0,0 and travel along the x-axis
+			//if we don't have a target at this point, blow it up. otherwise they will warp in at 0,0,0 and travel along the x-axis
 			if (wp->target_num == -1)
-				flags |= OF_SHOULD_BE_DEAD;
-
-			obj_set_flags(obj, flags);
-			wp->lssm_stage=3;
-
-		}
-
-		if ((wp->lssm_stage==3))
-		{
-			//the target has been destroyed or has departed while its in subspace,
-			//leave the missile stranded in subspace or something
-			if (wp->target_sig != wp->homing_object->signature)
 			{
-				obj->flags |= OF_SHOULD_BE_DEAD;
+				wp->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+				weapon_detonate(obj);
 				return;
 			}
 
-			//time to warp in.
-			if (timestamp_elapsed(wp->lssm_warpin_time))
-			{
-				vector warpin;
-				object* target_objp=wp->homing_object;
-				vector fvec;
-				matrix orient;
+			obj_set_flags(obj, flags);
 
-				//ugh
-				vm_vec_random_in_circle(&warpin, &target_objp->pos, &target_objp->orient, wip->lssm_warpin_radius + target_objp->radius,1);
-	
-				vm_vec_sub(&fvec,&wp->homing_object->pos, &warpin);
-	
-				vm_vector_2_matrix(&orient,&fvec,NULL,NULL);
-	
-				wp->lssm_warp_idx=fireball_create(&warpin, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,0,&vmd_zero_vector,wp->lssm_warp_time,0,&orient);
+			wp->lssm_target_pos=Objects[wp->target_num].pos;
 
-				obj->orient=orient;
-				obj->pos=warpin;
-				obj->phys_info.speed=0;
-				obj->phys_info.desired_vel = vmd_zero_vector;
-				obj->phys_info.vel = obj->phys_info.desired_vel;
-		
-				wp->lssm_stage=4;
+			wp->lssm_stage=3;
 
-			}
 		}
+	
+		//time to warp in.
+		if ((wp->lssm_stage==3) && (timestamp_elapsed(wp->lssm_warpin_time)))
+		{
+
+			vector warpin;
+			object* target_objp=wp->homing_object;
+			vector fvec;
+			matrix orient;
+
+			//ugh
+			vm_vec_random_in_circle(&warpin, &wp->lssm_target_pos, &target_objp->orient, wip->lssm_warpin_radius + target_objp->radius,1);
+	
+			vm_vec_sub(&fvec,&wp->lssm_target_pos, &warpin);
+	
+			vm_vector_2_matrix(&orient,&fvec,NULL,NULL);
+	
+			wp->lssm_warp_idx=fireball_create(&warpin, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,0,&vmd_zero_vector,wp->lssm_warp_time,0,&orient);
+
+			obj->orient=orient;
+			obj->pos=warpin;
+			obj->phys_info.speed=0;
+			obj->phys_info.desired_vel = vmd_zero_vector;
+			obj->phys_info.vel = obj->phys_info.desired_vel;
+		
+			wp->lssm_stage=4;
+
+		}
+	
 
 		//done warping in.  render and collide it. let the fun begin
 		if ((fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <=0.5f) && (wp->lssm_stage==4))

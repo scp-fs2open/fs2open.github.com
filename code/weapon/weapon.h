@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/06/11 03:06:07  phreak
+ * local subspace missiles are now in game. yay
+ *
  * Revision 2.12  2003/05/03 23:47:04  phreak
  * added multipliers for beam turrets and sensors for disruptor missiles
  *
@@ -465,6 +468,7 @@ typedef struct weapon {
 	int lssm_warp_idx;			//warphole index
 	float lssm_warp_time;		//length of time warphole stays open		
 	float lssm_warp_pct;		//how much of the warphole's life should be dedicated to stage 2
+	vector lssm_target_pos;
 
 } weapon;
 
