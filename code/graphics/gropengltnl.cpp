@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.5 $
- * $Date: 2004-07-12 16:32:48 $
- * $Author: Kazan $
+ * $Revision: 1.6 $
+ * $Date: 2004-07-17 18:40:40 $
+ * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/07/12 16:32:48  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 1.4  2004/07/11 03:22:49  bobboau
  * added the working decal code
  *
@@ -86,7 +89,8 @@ int GL_htl_view_matrix_set = 0;
 
 struct opengl_vertex_buffer
 {
-	int n_poly;
+	int n_prim;
+	int n_verts;
 	vector *vertex_array;
 	uv_pair *texcoord_array;
 	vector *normal_array;
@@ -110,6 +114,7 @@ struct opengl_vertex_buffer
 #define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*MAX_BUFFERS_PER_SUBMODEL
 
 static opengl_vertex_buffer vertex_buffers[MAX_BUFFERS];
+static opengl_vertec_buffer *g_vbp;
 
 //zeros everything out
 void opengl_init_vertex_buffers()
@@ -198,10 +203,6 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 	{
 		opengl_vertex_buffer *vbp=&vertex_buffers[buffer_num];
 
-		vbp->used=1;
-
-		vbp->n_poly=list->n_verts / 3;
-
 		vbp->texcoord_array=(uv_pair*)malloc(list->n_verts * sizeof(uv_pair));	
 		memset(vbp->texcoord_array,0,list->n_verts*sizeof(uv_pair));
 
@@ -234,12 +235,17 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 
 		}
 
+		vbp->used = 1;
+
+		vbp->n_prim = list->n_verts;
+		vbp->n_verts = list->n_verts;
+
 		//maybe load it into a vertex buffer object
 		if (VBO_ENABLED)
 		{
-			vbp->vbo_vert=opengl_create_vbo(vbp->n_poly*9*sizeof(float),(void**)&vbp->vertex_array);
-			vbp->vbo_norm=opengl_create_vbo(vbp->n_poly*9*sizeof(float),(void**)&vbp->normal_array);
-			vbp->vbo_tex=opengl_create_vbo(vbp->n_poly*6*sizeof(float),(void**)&vbp->texcoord_array);
+			vbp->vbo_vert=opengl_create_vbo(vbp->n_verts*3*sizeof(float),(void**)&vbp->vertex_array);
+			vbp->vbo_norm=opengl_create_vbo(vbp->n_verts*3*sizeof(float),(void**)&vbp->normal_array);
+			vbp->vbo_tex=opengl_create_vbo(vbp->n_verts*2*sizeof(float),(void**)&vbp->texcoord_array);
 		}
 
 	}
@@ -250,20 +256,35 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 	
 void gr_opengl_destroy_buffer(int idx)
 {
-	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
-	if (vbp->normal_array)		free(vbp->normal_array);
-	if (vbp->texcoord_array)	free(vbp->texcoord_array);
-	if (vbp->vertex_array)		free(vbp->vertex_array);
+	if (idx > -1)
+		gr_opengl_set_buffer(idx);
 
-	if (vbp->vbo_norm)			glDeleteBuffersARB(1,&vbp->vbo_norm);
-	if (vbp->vbo_vert)			glDeleteBuffersARB(1,&vbp->vbo_vert);
-	if (vbp->vbo_tex)			glDeleteBuffersARB(1,&vbp->vbo_tex);
+	opengl_vertex_buffer *vbp = g_vbp;
+
+	if (vbp->normal_array)
+		free(vbp->normal_array);
+
+	if (vbp->texcoord_array)
+		free(vbp->texcoord_array);
+
+	if (vbp->vertex_array)
+		free(vbp->vertex_array);
+
+	if (vbp->vbo_norm)
+		glDeleteBuffersARB(1,&vbp->vbo_norm);
+
+	if (vbp->vbo_vert)
+		glDeleteBuffersARB(1,&vbp->vbo_vert);
+
+	if (vbp->vbo_tex)
+		glDeleteBuffersARB(1,&vbp->vbo_tex);
 
 	memset(vbp,0,sizeof(opengl_vertex_buffer));
 }
 
-opengl_vertex_buffer *g_vbp;
-void gr_opengl_set_buffer(int idx){
+
+void gr_opengl_set_buffer(int idx)
+{
 	g_vbp=&vertex_buffers[idx];
 }
 
@@ -284,7 +305,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	
 	glColor3ub(255,255,255);
 	
-	opengl_vertex_buffer *vbp=g_vbp;
+	opengl_vertex_buffer *vbp = g_vbp;
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	if (vbp->vbo_vert)
@@ -305,7 +326,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	}
 	else
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	//	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		glNormalPointer(GL_FLOAT,0,vbp->normal_array);
 	}
 
@@ -318,7 +339,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	}
 	else
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	//	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
 	}
 
@@ -336,7 +357,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 		}
 		else
 		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		//	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
 		}
 	}
@@ -352,7 +373,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 		}
 		else
 		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		//	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
 		}
 	}
@@ -368,7 +389,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 		}
 		else
 		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		//	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
 		}
 	}
@@ -386,12 +407,16 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 
 	gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
 	
-	glLockArraysEXT(0,vbp->n_poly*3);
+//	glLockArraysEXT(0,vbp->n_poly*3);
 	
 	opengl_pre_render_init_lights();
 	opengl_change_active_lights(0);
 
-   	glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3);
+	if (index_list != NULL) {
+		glDrawElements(GL_TRIANGLES, n_prim * 3, GL_UNSIGNED_SHORT, (ushort*)index_list);
+	} else {
+		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
+	}
 
 	if((lighting_is_enabled)&&((n_active_gl_lights-1)/max_gl_lights > 0)) {
 		gr_opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
@@ -400,11 +425,16 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 		for(int i=1; i< (n_active_gl_lights-1)/max_gl_lights; i++)
 		{
 			opengl_change_active_lights(i);
-			glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3); 
+
+			if (index_list != NULL) {
+				glDrawElements(GL_TRIANGLES, n_prim * 3, GL_UNSIGNED_SHORT, (ushort*)index_list);
+			} else {
+				glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
+			}
 		}
 	}
 
-	glUnlockArraysEXT();
+//	glUnlockArraysEXT();
 
 
 	TIMERBAR_POP();
