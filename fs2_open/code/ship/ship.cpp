@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.112 $
- * $Date: 2004-03-17 04:07:32 $
+ * $Revision: 2.113 $
+ * $Date: 2004-03-20 21:17:13 $
  * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2004/03/17 04:07:32  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.111  2004/03/05 23:54:48  Goober5000
  * d'oh!
  * --Goober5000
@@ -6089,10 +6096,10 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 			//	ci = &sip->ct_info[sip->ct_count++];
 
 
-			if(pm_orig->thrusters[h].norm[j].xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
+			if(pm_orig->thrusters[h].point[j].norm.xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
 
-			ci->pt = pm_orig->thrusters[h].pnt[j];//offset
-				ci->w_start = pm_orig->thrusters[h].radius[j] * sip->ABwidth_factor;//width * table loaded width factor
+			ci->pt = pm_orig->thrusters[h].point[j].pnt;//offset
+				ci->w_start = pm_orig->thrusters[h].point[j].radius * sip->ABwidth_factor;//width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
 	
@@ -6327,10 +6334,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			//	ci = &sip->ct_info[sip->ct_count++];
 
 
-			if(pm_orig->thrusters[h].norm[j].xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
+			if(pm_orig->thrusters[h].point[j].norm.xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
 
-			ci->pt = pm_orig->thrusters[h].pnt[j];//offset
-				ci->w_start = pm_orig->thrusters[h].radius[j] * sip->ABwidth_factor;//width * table loaded width factor
+			ci->pt = pm_orig->thrusters[h].point[j].pnt;//offset
+				ci->w_start = pm_orig->thrusters[h].point[j].radius * sip->ABwidth_factor;//width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
 	
@@ -6909,7 +6916,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 				if ( shipp->weapon_energy < points*winfo_p->energy_consumed*flFrametime)
 				{
-					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]*2.0f);
+					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]*2);
 					if ( obj == Player_obj )
 					{
 						if ( ship_maybe_play_primary_fail_sound() )

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.46 $
- * $Date: 2004-03-20 14:47:13 $
- * $Author: randomtiger $
+ * $Revision: 2.47 $
+ * $Date: 2004-03-20 21:17:12 $
+ * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2004/03/20 14:47:13  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.45  2004/03/17 04:07:29  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -1334,6 +1338,7 @@ void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint fla
  * @return void
  */
 //this is all RT's stuff
+bool warn___ = true;
 void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
 	// Some checks to make sure this function isnt used when it shouldnt be
@@ -1423,6 +1428,8 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 		// use nonfiltered textures for bitmap sections
 		texture_source = TEXTURE_SOURCE_DECAL;
 	}
+
+//	if((u_scale != 1.0f || v_scale != 1.0f) && warn___)Warning(LOCATION, "UV scale diferent");
 	
 	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 	

@@ -123,7 +123,7 @@ void interp_clear_instance();
 
 #define MAX_POLYGON_VECS	6500		//6500 (7x)
 //be sure to update 2d.h
-#define MAX_POLYGON_NORMS	10500		//6500 (3x)
+#define MAX_POLYGON_NORMS	6500		//6500 (3x)
 
 extern vector *Interp_verts[MAX_POLYGON_VECS];
 

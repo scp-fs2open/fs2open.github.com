@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.76 $
- * $Date: 2004-03-17 04:07:30 $
+ * $Revision: 2.77 $
+ * $Date: 2004-03-20 21:17:13 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2004/03/17 04:07:30  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.75  2004/03/06 23:28:23  bobboau
  * fixed motion debris
  * animated laser textures
@@ -3627,8 +3634,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 						}
  
 					if(flick == 1){
-						vector pnt = bank->pnt[j];
-						vector norm = bank->norm[j];
+						glow_point *gpt = &bank->point[j];
+						vector pnt = gpt->pnt;
+						vector norm = gpt->norm;
 					
 						if(bank->submodel_parent > 0){//this is were it rotates for the submodel parent-Bobboau
 							matrix m;
@@ -3656,7 +3664,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 						switch(bank->type){
 						case 0:
 							float d;
-							if((bank->norm[j].xyz.x == 0.0f) && (bank->norm[j].xyz.z == 0.0f) && (bank->norm[j].xyz.z == 0.0f)){
+							if((bank->point[j].norm.xyz.x == 0.0f) && (bank->point[j].norm.xyz.z == 0.0f) && (bank->point[j].norm.xyz.z == 0.0f)){
 								d=1.0f;	//if given a nul vector then always show it
 							}else{
 								vm_vec_sub(&tempv,&View_position,&pnt);
@@ -3672,7 +3680,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 								d *= 3.0f;
 								if ( d > 1.0f ) d = 1.0f;
 	
-								float w = bank->radius[j];
+								float w = bank->point[j].radius;
 		
 								// fade them in the nebula as well
 								if(The_mission.flags & MISSION_FLAG_FULLNEB){
@@ -3687,8 +3695,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 								if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 		
 								vertex pt;
-								g3_rotate_vertex( &p, &bank->pnt[j] );
-								if(!Cmdline_nohtl) g3_transfer_vertex(&pt, &bank->pnt[j]);
+								g3_rotate_vertex( &p, &bank->point[j].pnt );
+								if(!Cmdline_nohtl) g3_transfer_vertex(&pt, &bank->point[j].pnt);
 								else pt = p;
 								
 	
@@ -3717,8 +3725,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 								vm_vec_normalize(&fvec);
 
-								moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, bank->radius[j], 1.0f, &View_position);	
-								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, bank->radius[j], 1.0f, &View_position);	
+								moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, bank->point[j].radius, 1.0f, &View_position);	
+								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, bank->point[j].radius, 1.0f, &View_position);	
 
 								int idx = 0;
  
@@ -3786,10 +3794,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			for ( j=0; j<bank->num_slots; j++ )	{
 				float d, D;
 				vector tempv;
-				vm_vec_sub(&tempv,&View_position,&bank->pnt[j]);
+				vm_vec_sub(&tempv,&View_position,&bank->point[j].pnt);
 				vm_vec_normalize(&tempv);
 
-				D = d = vm_vec_dot(&tempv,&bank->norm[j]);
+				D = d = vm_vec_dot(&tempv,&bank->point[j].norm);
 
 					//ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
 					#define NOISE_SCALE 0.5f
@@ -3802,7 +3810,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					vector scale_vec;
 
 					// normalize banks, in case of incredibly big normals
-					vm_vec_copy_normalize(&scale_vec, &bank->norm[j]);
+					vm_vec_copy_normalize(&scale_vec, &bank->point[j].norm);
 
 					// adjust for thrust
 					(scale_vec.xyz.x *= Interp_thrust_scale_x) -= 0.1f;
@@ -3866,7 +3874,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				// fade them in the nebula as well
 				if(The_mission.flags & MISSION_FLAG_FULLNEB){
 				//	vector npnt;
-					vm_vec_rotate(&npnt, &bank->pnt[j], orient);
+					vm_vec_rotate(&npnt, &bank->point[j].pnt, orient);
 					vm_vec_add2(&npnt, pos);
 					fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
 				//	fog_int /=10;.0f;
@@ -3881,11 +3889,11 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 // this is the original scaling code - Goober5000
 //					scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
-					float w = bank->radius[j]*(scale+Interp_thrust_glow_noise*NOISE_SCALE );
+					float w = bank->point[j].radius*(scale+Interp_thrust_glow_noise*NOISE_SCALE );
 
 					vertex pt;
-					g3_rotate_vertex( &p, &bank->pnt[j] );
-					if(!Cmdline_nohtl) g3_transfer_vertex(&pt, &bank->pnt[j]);
+					g3_rotate_vertex( &p, &bank->point[j].pnt );
+					if(!Cmdline_nohtl) g3_transfer_vertex(&pt, &bank->point[j].pnt);
 					else pt = p;
 					//these two lines are used by the tertiary glows, thus we will need to project this all of the time
 				if ( d > 0.0f){
@@ -3919,7 +3927,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				//ok, how's this there suposed to look cool! hows that, 
 				//it that scientific enough for you!! you anti-asthetic basturds!!!
 				///AAAHHhhhh!!!!
-				vector pnt = bank->pnt[j];
+				vector pnt = bank->point[j].pnt;
 
 				scale = magnitude*(MAX_SCALE-(MIN_SCALE/2))+(MIN_SCALE/2);
 																				    
@@ -3942,7 +3950,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 					vm_vec_normalize(&fvec);
 
-					float w = bank->radius[j]*scale*2;
+					float w = bank->point[j].radius*scale*2;
 
 			//		vm_vec_scale_add(&pnt, &pnt, &fvec, -0.25f * w*2*);
 			//	vm_vec_scale_add(&norm, &pnt, &fvec, 0.75f);
@@ -4048,8 +4056,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 					pe.num_low = tp->n_low;					// Lowest number of particles to create
 					pe.num_high = tp->n_high;				// Highest number of particles to create
-					pe.min_rad = bank->radius[j]*tp->min_rad;	// * objp->radius;
-					pe.max_rad = bank->radius[j]*tp->max_rad; // * objp->radius;
+					pe.min_rad = bank->point[j].radius*tp->min_rad;	// * objp->radius;
+					pe.max_rad = bank->point[j].radius*tp->max_rad; // * objp->radius;
 					pe.normal_variance = tp->variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 
 					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_particle_bitmap01);

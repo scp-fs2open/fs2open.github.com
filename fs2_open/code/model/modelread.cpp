@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.34 $
- * $Date: 2004-03-05 09:02:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.35 $
+ * $Date: 2004-03-20 21:17:13 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2004/03/05 09:02:07  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.33  2004/02/27 04:09:56  bobboau
  * fixed a Z buffer error in HTL submodel rendering,
  * and glow points,
@@ -872,6 +876,7 @@
 #include "ship/ship.h"
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
+#include "cmdline/cmdline.h"
 
 #include <direct.h>
 #include <windows.h>
@@ -1955,9 +1960,10 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 					}
 					for (j = 0; j < bank->num_slots; j++) {
-						cfread_vector( &(bank->pnt[j]), fp );
-						cfread_vector( &(bank->norm[j]), fp );
-							bank->radius[j] = cfread_float( fp );
+						glow_point *p = &bank->point[j];
+						cfread_vector( &(p->pnt), fp );
+						cfread_vector( &(p->norm), fp );
+							p->radius = cfread_float( fp );
 							//mprintf(( "Rad = %.2f\n", rad ));
 					}
 					//mprintf(( "Num slots = %d\n", bank->num_slots ));
@@ -2020,14 +2026,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 
 					for (j = 0; j < bank->num_slots; j++) {
-
-						cfread_vector( &(bank->pnt[j]), fp );
-						cfread_vector( &(bank->norm[j]), fp );
+						glow_point *p = &bank->point[j];
+						cfread_vector( &(p->pnt), fp );
+						cfread_vector( &(p->norm), fp );
 						if ( pm->version > 2004 )	{
-							bank->radius[j] = cfread_float( fp );
+							p->radius = cfread_float( fp );
 							//mprintf(( "Rad = %.2f\n", rad ));
 						} else {
-							bank->radius[j] = 1.0f;
+							p->radius = 1.0f;
 						}
 					}
 					//mprintf(( "Num slots = %d\n", bank->num_slots ));
@@ -2418,6 +2424,10 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	}
 	pm->glow_original_textures[i] = pm->glow_textures[i];
 
+	if(Cmdline_nospec){
+		pm->specular_textures[i] = -1;
+		return;
+	}
 	strcpy(tmp_name, file);
 	strcat( tmp_name, "-shine");
 	pm->specular_textures[i] = bm_load( tmp_name );
