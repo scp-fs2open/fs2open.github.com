@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.45 $
- * $Author: phreak $
- * $Date: 2003-06-19 18:12:12 $
+ * $Revision: 2.46 $
+ * $Author: Goober5000 $
+ * $Date: 2003-08-27 01:38:00 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/06/19 18:12:12  phreak
+ * added turret-tagged-specific and turret-tagged-clear-specific sexps
+ *
  * Revision 2.44  2003/05/24 16:47:58  phreak
  * added Sesquipedalian's kamikaze and not-kamikaze sexps
  *
@@ -558,6 +561,7 @@
 #define OPF_SOUNDTRACK_NAME		45		// Goober5000 - the name of a music soundtrack
 #define OPF_INTEL_NAME			46		// Goober5000 - the name of an intel entry in species.tbl
 #define OPF_STRING				47		// Goober5000 - any old string
+#define OPF_ROTATING_SUBSYSTEM	48		// Goober5000 - a rotating subsystem
 
 // Operand return types
 #define	OPR_NUMBER		1	// returns number
@@ -614,6 +618,7 @@
 #define	OP_MUL									(0x0003 | OP_CATEGORY_ARITHMETIC)
 #define	OP_DIV									(0x0004 | OP_CATEGORY_ARITHMETIC)
 #define	OP_RAND									(0x0005 | OP_CATEGORY_ARITHMETIC)
+#define OP_ABS									(0x0006	| OP_CATEGORY_ARITHMETIC)	// Goober5000
 
 #define	OP_TRUE									(0x0000 | OP_CATEGORY_LOGICAL)
 #define	OP_FALSE									(0x0001 | OP_CATEGORY_LOGICAL)
@@ -626,7 +631,6 @@
 #define	OP_IS_IFF								(0x0008 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)
 #define	OP_HAS_TIME_ELAPSED					(0x0009 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)
 #define	OP_NOT									(0x000a | OP_CATEGORY_LOGICAL)
-#define OP_IS_AI_CLASS						(0x000b | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 #define	OP_GOAL_INCOMPLETE					(0x0000 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
 #define	OP_GOAL_TRUE_DELAY					(0x0001 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
@@ -701,6 +705,9 @@
 #define OP_GET_OBJECT_RELATIVE_X			(0x0022 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_RELATIVE_Y			(0x0023 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_RELATIVE_Z			(0x0024 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_AI_CLASS						(0x0025 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_SHIP_TYPE						(0x0026 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_SHIP_CLASS					(0x0027	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -811,6 +818,8 @@
 #define OP_NOT_KAMIKAZE						(0x0087 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_TURRET_TAGGED_SPECIFIC			(0x0088 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
 #define OP_TURRET_TAGGED_CLEAR_SPECIFIC		(0x0089 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
+#define OP_LOCK_ROTATING_SUBSYSTEM			(0x008a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_FREE_ROTATING_SUBSYSTEM			(0x008b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.65 $
- * $Date: 2003-08-21 09:00:19 $
+ * $Revision: 2.66 $
+ * $Date: 2003-08-27 01:38:00 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2003/08/21 09:00:19  Goober5000
+ * fixed set-support-ship sexp
+ * --Goober5000
+ *
  * Revision 2.64  2003/06/19 18:12:12  phreak
  * added turret-tagged-specific and turret-tagged-clear-specific sexps
  *
@@ -669,6 +673,7 @@ sexp_oper Operators[] = {
 	{ "/",					OP_DIV,				2,	INT_MAX	},
 	{ "mod",				OP_MOD,				2,	INT_MAX	},
 	{ "rand",				OP_RAND,			2,	2	},
+	{ "abs",				OP_ABS,				1,	1 },	// Goober5000
 
 	{ "true",							OP_TRUE,							0,	0,			},
 	{ "false",							OP_FALSE,						0,	0,			},
@@ -680,7 +685,6 @@ sexp_oper Operators[] = {
 	{ ">",								OP_GREATER_THAN,				2,	2,			},
 	{ "<",								OP_LESS_THAN,					2,	2,			},
 	{ "is-iff",							OP_IS_IFF,						2, INT_MAX,	},
-	{ "is-ai-class",					OP_IS_AI_CLASS,					2, INT_MAX,	},
 	{ "has-time-elapsed",			OP_HAS_TIME_ELAPSED,			1,	1,			},
 
 	{ "is-goal-true-delay",					OP_GOAL_TRUE_DELAY,				2, 2,	},
@@ -731,6 +735,9 @@ sexp_oper Operators[] = {
 	{ "is-friendly-stealth-visible",		OP_IS_FRIENDLY_STEALTH_VISIBLE,	1, 1, },
 	{ "is_tagged",								OP_IS_TAGGED,							1, 1			},
 	{ "has-been-tagged-delay",				OP_HAS_BEEN_TAGGED_DELAY,			2, INT_MAX,	},
+	{ "is-ai-class",					OP_IS_AI_CLASS,					2, INT_MAX,	},
+	{ "is-ship-type",					OP_IS_SHIP_TYPE,					2, INT_MAX,	},
+	{ "is-ship-class",					OP_IS_SHIP_CLASS,					2, INT_MAX,	},
 	{ "shield-recharge-pct",				OP_SHIELD_RECHARGE_PCT,				1, 1			},
 	{ "engine-recharge-pct",				OP_ENGINE_RECHARGE_PCT,				1, 1			},
 	{ "weapon-recharge-pct",				OP_WEAPON_RECHARGE_PCT,				1, 1			},
@@ -794,6 +801,8 @@ sexp_oper Operators[] = {
 	{ "unprotect-ship",				OP_UNPROTECT_SHIP,				1, INT_MAX,	},
 	{ "beam-protect-ship",			OP_BEAM_PROTECT_SHIP,			1, INT_MAX,	},
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
+	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
+	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
 
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
 	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,				3, 3,			},
@@ -807,6 +816,8 @@ sexp_oper Operators[] = {
 	{ "cargo-no-deplete",			OP_CARGO_NO_DEPLETE,				1,	2			},
 	{ "set-scanned",				OP_SET_SCANNED,					1, 2 },
 	{ "set-unscanned",				OP_SET_UNSCANNED,					1, 2 },
+	{ "lock-rotating-subsystem",	OP_LOCK_ROTATING_SUBSYSTEM,	2, INT_MAX },	// Goober5000
+	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM, 2, INT_MAX },	// Goober5000
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",				OP_SHIP_VULNERABLE,				1, INT_MAX	},
@@ -836,6 +847,8 @@ sexp_oper Operators[] = {
 	{ "turret-lock-all",				OP_TURRET_LOCK_ALL,				1, 1			},
 	{ "turret-tagged-only",			OP_TURRET_TAGGED_ONLY_ALL,		1,	1			},
 	{ "turret-tagged-clear",		OP_TURRET_TAGGED_CLEAR_ALL,	1,	1			},
+	{ "turret-tagged-specific",		OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
+	{ "turret-tagged-clear-specific", OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 
 	{ "red-alert",						OP_RED_ALERT,						0, 0			},
 	{ "end-mission",			OP_END_MISSION,			0, 0,			}, //-Sesquipedalian
@@ -887,10 +900,6 @@ sexp_oper Operators[] = {
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "toggle-hud",					OP_TOGGLE_HUD,					0, 0 },		// Goober5000
-	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
-	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
-	{ "turret-tagged-specific",		OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
-	{ "turret-tagged-clear-specific", OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -1696,6 +1705,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				break;
 
 			case OPF_AWACS_SUBSYSTEM:
+			case OPF_ROTATING_SUBSYSTEM:
 			case OPF_SUBSYSTEM:
 			{
 				char *shipname;
@@ -1775,6 +1785,15 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if(Fred_running)
 				{
 					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_AWACS))
+					{
+						return SEXP_CHECK_INVALID_SUBSYS;
+					}
+				}
+
+				// rotating subsystem, like above - Goober5000
+				if (Fred_running)
+				{
+					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_ROTATES))
 					{
 						return SEXP_CHECK_INVALID_SUBSYS;
 					}
@@ -2968,6 +2987,11 @@ int rand_internal(int low, int high)
 	return (low + rand() % (diff + 1));
 }
 
+// Goober5000
+int abs_sexp(int n)
+{
+	return abs(num_eval(n));
+}
 
 int rand_sexp(int n, int multiple = 1)	// was 0 - changed to 1 by Goober5000
 {
@@ -5771,6 +5795,68 @@ void sexp_change_iff( int n )
 }
 
 // Goober5000
+int sexp_is_ship_class( int n )
+{
+	int ship_num, ship_class_num;
+
+	// get class
+	ship_class_num = ship_info_lookup(CTEXT(n));
+	n = CDR(n);
+
+	// eval ships
+	while (n != -1)
+	{
+		// get ship
+		ship_num = ship_name_lookup(CTEXT(n));
+
+		// we can't do anything with ships that aren't present
+		if (ship_num < 0)
+			return SEXP_CANT_EVAL;
+
+		// if it doesn't match, return false
+		if (Ships[ship_num].ship_info_index != ship_class_num)
+			return SEXP_FALSE;
+
+		// increment
+		n = CDR(n);
+	}
+
+	// we're this far; it must be true
+	return SEXP_TRUE;
+}
+
+// Goober5000
+int sexp_is_ship_type( int n )
+{
+	int ship_num, ship_type_num;
+
+	// get type
+	ship_type_num = ship_type_name_lookup(CTEXT(n));
+	n = CDR(n);
+
+	// eval ships
+	while (n != -1)
+	{
+		// get ship
+		ship_num = ship_name_lookup(CTEXT(n));
+
+		// we can't do anything with ships that aren't present
+		if (ship_num < 0)
+			return SEXP_CANT_EVAL;
+
+		// if it doesn't match, return false
+		if (!(Ship_info[Ships[ship_num].ship_info_index].flags & Ship_type_flags[ship_type_num]))
+			return SEXP_FALSE;
+
+		// increment
+		n = CDR(n);
+	}
+
+	// we're this far; it must be true
+	return SEXP_TRUE;
+}
+
+// Goober5000
 // ai class value is the first parameter, second is a ship, rest are subsystems to check
 int sexp_is_ai_class( int n )
 {
@@ -5797,7 +5883,7 @@ int sexp_is_ai_class( int n )
 	ship_num = ship_name_lookup(ship_name);
 
 	// we can't do anything with ships that aren't present
-	if (ship_num != -1)
+	if (ship_num < 0)
 		return SEXP_CANT_EVAL;
 
 	// subsys?
@@ -5868,7 +5954,7 @@ void sexp_change_ai_class( int n )
 	n = CDR(n);
 
 	// we can't do anything with ships that aren't present
-	if (ship_num != -1)
+	if (ship_num < 0)
 		return;
 
 	// subsys?
@@ -9364,6 +9450,33 @@ void sexp_turret_tagged_clear_all(int node)
 	}
 }
 
+// Goober5000
+void sexp_set_subsys_rotation(int node, int locked)
+{
+	int ship_num;		
+	ship_subsys *rotate;
+
+	// get the ship
+	ship_num = ship_name_lookup(CTEXT(node));
+
+	if(ship_num < 0)
+		return;
+	
+	if(Ships[ship_num].objnum < 0)
+		return;
+
+	// get the rotating subsystem
+	rotate = ship_get_subsys(&Ships[ship_num], CTEXT(CDR(node)));
+	if(rotate == NULL)
+		return;
+
+	// set rotate or not, depending on flag
+	if (locked)
+		rotate->system_info->flags &= ~MSS_FLAG_ROTATES;
+	else
+		rotate->system_info->flags |= MSS_FLAG_ROTATES;
+}
+
 void sexp_turret_tagged_specific(int node)
 {
 	ship_subsys *subsys;
@@ -9710,10 +9823,13 @@ void sexp_awacs_set_radius(int node)
 	}
 
 	// make sure this _is_ an awacs subsystem
-	Assert(awacs->system_info->flags & MSS_FLAG_AWACS);
+	// changed by Goober5000 - it looks like the Volition code was broken
+	/*Assert(awacs->system_info->flags & MSS_FLAG_AWACS);
 	if(awacs->system_info->flags & MSS_FLAG_AWACS){
 		return;
-	}
+	}*/
+	if (!(awacs->system_info->flags & MSS_FLAG_AWACS))
+		return;
 
 	// set the new awacs radius
 	awacs->awacs_radius = (float)sexp_get_val(CDR(CDR(node)));
@@ -10354,6 +10470,9 @@ int eval_sexp(int cur_node)
 				sexp_val = rand_sexp( node );
 				break;
 
+			case OP_ABS:
+				sexp_val = abs_sexp( node );
+
 		// boolean operators can have one of the special sexp values (known true, known false, unknown)
 			case OP_TRUE:
 				sexp_val = SEXP_KNOWN_TRUE;
@@ -10789,6 +10908,14 @@ int eval_sexp(int cur_node)
 				sexp_val = sexp_is_ai_class(node);
 				break;
 				
+			case OP_IS_SHIP_TYPE:
+				sexp_val = sexp_is_ship_type(node);
+				break;
+
+			case OP_IS_SHIP_CLASS:
+				sexp_val = sexp_is_ship_class(node);
+				break;
+
 			case OP_CHANGE_SOUNDTRACK:
 				sexp_change_soundtrack(node);
 				sexp_val = 1;
@@ -11311,6 +11438,12 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_LOCK_ROTATING_SUBSYSTEM:
+			case OP_FREE_ROTATING_SUBSYSTEM:
+				sexp_set_subsys_rotation(node, op_num == OP_LOCK_ROTATING_SUBSYSTEM);
+				sexp_val = 1;
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -11448,6 +11581,8 @@ int query_operator_return_type(int op)
 		case OP_HAS_DEPARTED_DELAY:
 		case OP_IS_IFF:
 		case OP_IS_AI_CLASS:
+		case OP_IS_SHIP_TYPE:
+		case OP_IS_SHIP_CLASS:
 		case OP_HAS_TIME_ELAPSED:
 		case OP_GOAL_INCOMPLETE:
 		case OP_GOAL_TRUE_DELAY:
@@ -11506,6 +11641,15 @@ int query_operator_return_type(int op)
 		case OP_MUL:
 		case OP_DIV:
 		case OP_RAND:
+		case OP_GET_OBJECT_X:
+		case OP_GET_OBJECT_Y:
+		case OP_GET_OBJECT_Z:
+		case OP_GET_OBJECT_RELATIVE_X:
+		case OP_GET_OBJECT_RELATIVE_Y:
+		case OP_GET_OBJECT_RELATIVE_Z:
+			return OPR_NUMBER;
+
+		case OP_ABS:
 		case OP_TIME_SHIP_DESTROYED:
 		case OP_TIME_SHIP_ARRIVED:
 		case OP_TIME_SHIP_DEPARTED:
@@ -11652,16 +11796,9 @@ int query_operator_return_type(int op)
 		case OP_NOT_KAMIKAZE:
 		case OP_TURRET_TAGGED_SPECIFIC:
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
-
+		case OP_LOCK_ROTATING_SUBSYSTEM:
+		case OP_FREE_ROTATING_SUBSYSTEM:
 			return OPR_NULL;
-
-		case OP_GET_OBJECT_X:
-		case OP_GET_OBJECT_Y:
-		case OP_GET_OBJECT_Z:
-		case OP_GET_OBJECT_RELATIVE_X:
-		case OP_GET_OBJECT_RELATIVE_Y:
-		case OP_GET_OBJECT_RELATIVE_Z:
-			return OPR_NUMBER;
 
 		case OP_AI_CHASE:
 		case OP_AI_DOCK:
@@ -11744,6 +11881,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
 		case OP_RAND:
+		case OP_ABS:
+			return OPF_NUMBER;
+
 		case OP_HAS_TIME_ELAPSED:
 		case OP_SPEED:
 		case OP_SET_TRAINING_CONTEXT_SPEED:
@@ -12051,6 +12191,18 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			else
 				return OPF_SUBSYSTEM;
+
+		case OP_IS_SHIP_TYPE:
+			if (argnum == 0)
+				return OPF_SHIP_TYPE;
+			else
+				return OPF_SHIP;
+
+		case OP_IS_SHIP_CLASS:
+			if (argnum == 0)
+				return OPF_SHIP_CLASS_NAME;
+			else
+				return OPF_SHIP;
 
 		case OP_CHANGE_SOUNDTRACK:
 			return OPF_SOUNDTRACK_NAME;
@@ -12385,6 +12537,13 @@ int query_operator_argument_type(int op, int argnum)
 			} else {
 				return OPF_SUBSYSTEM;
 			}
+
+		case OP_LOCK_ROTATING_SUBSYSTEM:
+		case OP_FREE_ROTATING_SUBSYSTEM:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_ROTATING_SUBSYSTEM;
 
 		case OP_BEAM_FREE_ALL:
 		case OP_BEAM_LOCK_ALL:
@@ -12802,7 +12961,8 @@ int sexp_query_type_match(int opf, int opr)
 			return ((opr == OPR_NUMBER) || (opr == OPR_POSITIVE));
 
 		case OPF_POSITIVE:
-			return (opr == OPR_POSITIVE);
+			// Goober5000: uncomment the following for the number hack
+			return ((opr == OPR_POSITIVE) /*|| (opr == OPR_NUMBER)*/);
 
 		case OPF_BOOL:
 			return (opr == OPR_BOOL);
@@ -13338,6 +13498,8 @@ int get_subcategory(int sexp_id)
 		case OP_CARGO_NO_DEPLETE:
 		case OP_SET_SCANNED:
 		case OP_SET_UNSCANNED:
+		case OP_LOCK_ROTATING_SUBSYSTEM:
+		case OP_FREE_ROTATING_SUBSYSTEM:
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
 		case OP_SHIP_INVULNERABLE:
