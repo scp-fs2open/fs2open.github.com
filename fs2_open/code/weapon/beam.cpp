@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-04-29 01:03:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2003-05-04 20:21:00 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/04/29 01:03:22  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.18  2003/03/29 09:42:05  Goober5000
  * made beams default shield piercing again
  * also added a beam no pierce command line flag
@@ -3205,7 +3209,13 @@ int beam_ok_to_fire(beam *b)
 	if(b->subsys->current_hits <= 0.0f){		
 		mprintf(("BEAM : killing beam because turret has been destroyed!\n"));
 		return -1;
-	}		
+	}
+	
+	//kill it if its disrupted
+	if (ship_subsys_disrupted(b->subsys))
+	{
+		return -1;
+	}
 
 	// if the beam will be firing out of its FOV, power it down
 	vector aim_dir, temp;
