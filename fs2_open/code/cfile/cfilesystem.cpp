@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-07-26 20:47:25 $
- * $Author: Kazan $
+ * $Revision: 2.23 $
+ * $Date: 2004-10-31 21:28:38 $
+ * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/07/26 20:47:25  Kazan
+ * remove MCD complete
+ *
  * Revision 2.21  2004/07/17 09:26:00  taylor
  * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
  *
@@ -185,9 +188,14 @@
 #include <winbase.h>		/* needed for memory mapping of file functions */
 #endif
 
-#ifdef unix
+#ifdef SCP_UNIX
 #include <glob.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <fnmatch.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 #include "cmdline/cmdline.h"
@@ -199,6 +207,9 @@
 
 #define CF_ROOTTYPE_PATH 0
 #define CF_ROOTTYPE_PACK 1
+
+// for a defined and specifically set location to get/send pilot/campaign files
+char *Pilot_file_path = NULL;
 
 //  Created by:
 //    specifying hard drive tree
@@ -227,7 +238,8 @@ typedef struct cf_root_block {
 
 static int Num_roots = 0;
 static cf_root_block  *Root_blocks[CF_MAX_ROOT_BLOCKS];
-  
+
+static int Num_path_roots = 0;
 
 // Created by searching all roots in order.   This means Files is then sorted by precedence.
 typedef struct cf_file {
@@ -318,10 +330,11 @@ int cf_get_packfile_count(cf_root *root)
 	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
 		strcpy( filespec, root->path );
 		
-			if(strlen(Pathtypes[i].path)) { 
-				strcat( filespec, Pathtypes[i].path );
+		if(strlen(Pathtypes[i].path)) { 
+			strcat( filespec, Pathtypes[i].path );
+			if ( filespec[strlen(filespec)-1] != DIR_SEPARATOR_CHAR ) {
 				strcat( filespec, DIR_SEPARATOR_STR );
-		//	}
+			}
 		}
 
 #if defined _WIN32
@@ -342,7 +355,7 @@ int cf_get_packfile_count(cf_root *root)
 
 			_findclose( find_handle );
 		}	
-#elif defined unix
+#elif defined SCP_UNIX
 		strcat( filespec, "*.[vV][pP]" );
 
 		glob_t globinfo;
@@ -410,7 +423,9 @@ void cf_build_pack_list( cf_root *root )
 		
 		if(strlen(Pathtypes[i].path)) {
 			strcat( filespec, Pathtypes[i].path );
-			strcat( filespec, DIR_SEPARATOR_STR );
+			if ( filespec[strlen(filespec)-1] != DIR_SEPARATOR_CHAR ) {
+				strcat( filespec, DIR_SEPARATOR_STR );
+			}
 		}
 		
 
@@ -450,7 +465,7 @@ void cf_build_pack_list( cf_root *root )
 
 			_findclose( find_handle );
 		}	
-#elif defined unix
+#elif defined SCP_UNIX
 		strcat( filespec, "*.[vV][pP]" );
 		glob_t globinfo;
 		memset(&globinfo, 0, sizeof(globinfo));
@@ -504,9 +519,56 @@ void cf_build_pack_list( cf_root *root )
 void cf_build_root_list(char *cdrom_dir)
 {
 	Num_roots = 0;
+	Num_path_roots = 0;
 
 	cf_root	*root;
 	char str_temp[128], *cur_pos;
+
+#ifdef SCP_UNIX
+	// =========================================================================
+	// now look for mods under the users HOME directory to use before system ones
+	if (Cmdline_mod) {
+		for (cur_pos=Cmdline_mod; strlen(cur_pos) != 0; cur_pos+= (strlen(cur_pos)+1))
+		{
+			memset(str_temp, 0, 128);
+			strcpy(str_temp, cur_pos);
+
+			strcat(str_temp, DIR_SEPARATOR_STR);
+			root = cf_create_root();
+
+			strcpy( root->path, Cfile_user_dir );
+
+			// do we already have a slash? as in the case of a root directory install
+			if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+				strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+			}
+
+			strcat(root->path, str_temp);
+			root->roottype = CF_ROOTTYPE_PATH;
+			cf_build_pack_list(root);
+		}
+	}
+	// =========================================================================
+
+	// =========================================================================
+	// set users HOME directory as default for loading and saving files
+	root = cf_create_root();
+	strcpy( root->path, Cfile_user_dir );
+
+	// do we already have a slash? as in the case of a root directory install
+	if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+		strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+	}
+	root->roottype = CF_ROOTTYPE_PATH;
+
+	// set the default player location to here
+	if ( Pilot_file_path == NULL )
+		Pilot_file_path = root->path;
+
+	// Next, check any VP files under the current directory.
+	cf_build_pack_list(root);
+	// =========================================================================
+#endif
 
 	if(Cmdline_mod) {
 		// stackable Mod support -- Kazan
@@ -519,8 +581,6 @@ void cf_build_root_list(char *cdrom_dir)
 
 			memset(str_temp, 0, 128);
 			strcpy(str_temp, cur_pos);
-
-
 
 			strcat(str_temp, DIR_SEPARATOR_STR);
 			root = cf_create_root();
@@ -553,6 +613,10 @@ void cf_build_root_list(char *cdrom_dir)
 
 	   
 	root->roottype = CF_ROOTTYPE_PATH;
+
+	// set the default path for pilot files
+	if ( Pilot_file_path == NULL )
+		Pilot_file_path = root->path;
 
    //======================================================
 	// Next, check any VP files under the current directory.
@@ -602,11 +666,18 @@ void cf_search_root_path(int root_index)
 
 	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
 
+		// we don't want to add player files to the cache - taylor
+		if ( (i == CF_TYPE_SINGLE_PLAYERS) || (i == CF_TYPE_MULTI_PLAYERS) ) {
+			continue;
+		}
+
 		strcpy( search_path, root->path );
 
 		if(strlen(Pathtypes[i].path)) {
 			strcat( search_path, Pathtypes[i].path );
-			strcat( search_path, DIR_SEPARATOR_STR );
+			if ( search_path[strlen(search_path)-1] != DIR_SEPARATOR_CHAR ) {
+				strcat( search_path, DIR_SEPARATOR_STR );
+			}
 		} 
 
 #if defined _WIN32
@@ -645,37 +716,51 @@ void cf_search_root_path(int root_index)
 
 			_findclose( find_handle );
 		}
-#elif defined unix
-		strcat( search_path, "*" );
-		glob_t globinfo;
-		memset(&globinfo, 0, sizeof(globinfo));
-		int status = glob(search_path, 0, NULL, &globinfo);
-		if (status == 0) {
-			for (unsigned int j = 0;  j < globinfo.gl_pathc;  j++) {
-				// Determine if this is a regular file
-				struct stat statbuf;
-				memset(&statbuf, 0, sizeof(statbuf));
-				stat(globinfo.gl_pathv[j], &statbuf);
-				if (S_ISREG(statbuf.st_mode)) {
-					char *ext = strchr(globinfo.gl_pathv[j], '.' );
+#elif defined SCP_UNIX
+		DIR *dirp;
+		struct dirent *dir;
+
+		dirp = opendir (search_path);
+		if ( dirp ) {
+			while ((dir = readdir (dirp)) != NULL)
+			{
+				if (!fnmatch ("*.*", dir->d_name, 0))
+				{
+					char fn[MAX_PATH];
+					snprintf(fn, MAX_PATH-1, "%s%s", search_path, dir->d_name);
+					fn[MAX_PATH-1] = 0;
+
+					struct stat buf;
+					if (stat(fn, &buf) == -1) {
+						continue;
+					}
+					
+					if (!S_ISREG(buf.st_mode)) {
+						continue;
+					}
+					
+					char *ext = strchr( dir->d_name, '.' );
 					if ( ext )	{
 						if ( is_ext_in_list( Pathtypes[i].extensions, ext ) )	{
 							// Found a file!!!!
 							cf_file *file = cf_create_file();
-							
-							strcpy( file->name_ext, globinfo.gl_pathv[j] );
+
+							strcpy( file->name_ext, dir->d_name );
 							file->root_index = root_index;
 							file->pathtype_index = i;
-							file->write_time = statbuf.st_mtime;
-							file->size = statbuf.st_size;
+
+
+							file->write_time = buf.st_mtime;
+							file->size = buf.st_size;
+
 							file->pack_offset = 0;			// Mark as a non-packed file
-							
+
 							//mprintf(( "Found file '%s'\n", file->name_ext ));
 						}
 					}
 				}
 			}
-			globfree(&globinfo);
+			closedir(dirp);
 		}
 #endif
 	}
@@ -714,6 +799,10 @@ void cf_search_root_pack(int root_index)
 	Assert( sizeof(VP_header) == 16 );
 	fread(&VP_header, 1, sizeof(VP_header), fp);
 
+	VP_header.version = INTEL_INT( VP_header.version );
+	VP_header.index_offset = INTEL_INT( VP_header.index_offset );
+	VP_header.num_files = INTEL_INT( VP_header.num_files );
+
 	// Read index info
 	fseek(fp, VP_header.index_offset, SEEK_SET);
 
@@ -728,6 +817,10 @@ void cf_search_root_pack(int root_index)
 
 		fread( &find, sizeof(VP_FILE), 1, fp );
 
+		find.offset = INTEL_INT( find.offset );
+		find.size = INTEL_INT( find.size );
+		find.write_time = INTEL_INT( find.write_time );
+
 		if ( find.size == 0 )	{
 			if ( !stricmp( find.filename, ".." ))	{
 				int l = strlen(search_path);
@@ -737,8 +830,8 @@ void cf_search_root_pack(int root_index)
 				}
 				*p = 0;
 			} else {
-				if ( strlen(search_path)	)	{
-					strcat( search_path,	DIR_SEPARATOR_STR );
+				if ( strlen(search_path) && (search_path[strlen(search_path)-1] != DIR_SEPARATOR_CHAR) ) {
+						strcat( search_path, DIR_SEPARATOR_STR );
 				}
 				strcat( search_path, find.filename );
 			}
@@ -878,18 +971,14 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 	// of the file
 
 	// NOTE: full path should also include localization, if so desired
+#ifdef SCP_UNIX
+	if ( strpbrk(filespec, "/") ) {			// do we have a full path already?
+#else
 	if ( strpbrk(filespec,"/\\:")  ) {		// do we have a full path already?
+#endif
 		FILE *fp = fopen(filespec, "rb" );
 		if (fp)	{
-			if ( size ) {
-#if defined _WIN32
-				*size = filelength(fileno(fp));
-#elif defined unix
-				struct stat statbuf;
-				fstat(fileno(fp), &statbuf);
-				*size = statbuf.st_size;
-#endif
-			}
+			if ( size ) *size = filelength(fileno(fp));
 			if ( offset ) *offset = 0;
 			if ( pack_filename ) {
 				strcpy( pack_filename, filespec );
@@ -930,6 +1019,7 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 			case CF_TYPE_MULTI_PLAYERS:
 			case CF_TYPE_MULTI_CACHE:
 			case CF_TYPE_MISSIONS:
+			case CF_TYPE_CACHE:
 				cfs_slow_search = 1;
 				break;
  
@@ -977,7 +1067,7 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 					return 1;
 				}
 			}
-#elif defined unix
+#elif defined SCP_UNIX
 			FILE *fp = fopen(longname, "rb" );
 			if (fp) {
 				if ( size ) {
@@ -1023,7 +1113,9 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 					strcpy( pack_filename, r->path );
 					if ( f->pack_offset < 1 )	{
 						strcat( pack_filename, Pathtypes[f->pathtype_index].path );
-						strcat( pack_filename, DIR_SEPARATOR_STR );
+						if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR ) {
+							strcat( pack_filename, DIR_SEPARATOR_STR );
+						}
 						strcat( pack_filename, f->name_ext );
 					}
 				}
@@ -1045,7 +1137,9 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 
 					if(strlen(Pathtypes[f->pathtype_index].path)){
 						strcat( pack_filename, Pathtypes[f->pathtype_index].path );
-						strcat( pack_filename, DIR_SEPARATOR_STR );
+						if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR ) {
+							strcat( pack_filename, DIR_SEPARATOR_STR );
+						}
 					}
 
 					strcat( pack_filename, f->name_ext );
@@ -1126,7 +1220,7 @@ int cf_file_already_in_list( int num_files, char **list, char *filename )
 int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort, file_list_info *info )
 {
 	char *ptr;
-	int i, l, find_handle, num_files = 0, own_flag = 0;
+	int i, l, num_files = 0, own_flag = 0;
 
 	if (max < 1) {
 		Get_file_list_filter = NULL;
@@ -1143,10 +1237,12 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 
 	char filespec[MAX_PATH_LEN];
 
+#if defined _WIN32
 	cf_create_default_path_string( filespec, pathtype, filter );
 
-#if defined _WIN32
 	_finddata_t find;
+	int find_handle;
+
 	find_handle = _findfirst( filespec, &find );
 	if (find_handle != -1) {
 		do {
@@ -1177,41 +1273,53 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 		_findclose( find_handle );
 	}
 
-#elif defined unix
-	char base_filespec[MAX_PATH_LEN];
-	cf_create_default_path_string( base_filespec, pathtype );
-	int base_filespec_len = strlen(base_filespec);
-	glob_t globinfo;
-	memset(&globinfo, 0, sizeof(globinfo));
-	int status = glob(filespec, 0, NULL, &globinfo);
-	if (status == 0) {
-		for (unsigned int i = 0;  i < globinfo.gl_pathc;  i++) {
-			// Determine if this is a regular file
-			struct stat statbuf;
-			memset(&statbuf, 0, sizeof(statbuf));
-			stat(globinfo.gl_pathv[i], &statbuf);
-			if (S_ISREG(statbuf.st_mode)) {
-				if ( !Get_file_list_filter || (*Get_file_list_filter)(globinfo.gl_pathv[i]) ) {
-					char *found_file = globinfo.gl_pathv[i];
-					Assert(strncmp(found_file, base_filespec, base_filespec_len) == 0);
-					found_file += base_filespec_len;
-					ptr = strrchr(found_file, '.');
-					if (ptr)
-						l = ptr - found_file;
-					else
-						l = strlen(found_file);
-					
-					list[num_files] = (char *)malloc(l + 1);
-					strncpy(list[num_files], found_file, l);
-					list[num_files][l] = 0;
-					if (info)
-						info[num_files].write_time = statbuf.st_mtime;
-					
-					num_files++;
-				}
+#elif defined SCP_UNIX
+	cf_create_default_path_string( filespec, pathtype, NULL );
+
+	DIR *dirp;
+	struct dirent *dir;
+
+	dirp = opendir (filespec);
+	if ( dirp ) {
+		while ((dir = readdir (dirp)) != NULL)
+		{
+			if (num_files >= max)
+				break;
+
+			if (fnmatch(filter, dir->d_name, 0) != 0)
+				continue;
+
+			char fn[MAX_PATH];
+			snprintf(fn, MAX_PATH-1, "%s/%s", filespec, dir->d_name);
+			fn[MAX_PATH-1] = 0;
+
+			struct stat buf;
+			if (stat(fn, &buf) == -1) {
+				continue;
 			}
-			globfree(&globinfo);
+
+			if (!S_ISREG(buf.st_mode)) {
+				continue;
+			}
+
+			if ( !Get_file_list_filter || (*Get_file_list_filter)(dir->d_name) ) {
+				ptr = strrchr(dir->d_name, '.');
+				if (ptr)
+					l = ptr - dir->d_name;
+				else
+					l = strlen(dir->d_name);
+
+				list[num_files] = (char *)malloc(l + 1);
+				strncpy(list[num_files], dir->d_name, l);
+				list[num_files][l] = 0;
+				if (info)
+					info[num_files].write_time = buf.st_mtime;
+
+				num_files++;
+			}
 		}
+
+		closedir(dirp);
 	}
 #endif
 
@@ -1226,7 +1334,6 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 			}
 
 			if (num_files >= max)
-
 				break;
 			
 			if ( !cf_matches_spec( filter,f->name_ext))	{
@@ -1324,12 +1431,12 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 
 	char filespec[MAX_PATH_LEN];
 
+	// Search the default directories
+#if defined _WIN32
 	cf_create_default_path_string( filespec, pathtype, filter );
 	mprintf(("cf_get_file_list_preallocated looking for type=%d, filter=\"%s\"\n",
 				pathtype, filter));
 
-	// Search the default directories
-#if defined _WIN32
 	int find_handle;
 	_finddata_t find;
 	
@@ -1362,41 +1469,51 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 		_findclose( find_handle );
 	}
 
-#elif defined unix
-	char base_filespec[MAX_PATH_LEN];
-	cf_create_default_path_string( base_filespec, pathtype );
-	int base_filespec_len = strlen(base_filespec);
-	glob_t globinfo;
-	memset(&globinfo, 0, sizeof(globinfo));
-	int status = glob(filespec, 0, NULL, &globinfo);
-	if (status == 0) {
-		for (unsigned int i = 0;  i < globinfo.gl_pathc;  i++) {
-			// Determine if this is a regular file
-			struct stat statbuf;
-			memset(&statbuf, 0, sizeof(statbuf));
-			stat(globinfo.gl_pathv[i], &statbuf);
-			if (S_ISREG(statbuf.st_mode)) {
-				if ( !Get_file_list_filter || (*Get_file_list_filter)(globinfo.gl_pathv[i]) ) {
-					
-					char *found_file = globinfo.gl_pathv[i];
-					Assert(strncmp(found_file, base_filespec, base_filespec_len) == 0);
-					found_file += base_filespec_len;
+#elif defined SCP_UNIX
+	cf_create_default_path_string( filespec, pathtype, NULL );
 
-					strncpy(arr[num_files], found_file, MAX_FILENAME_LEN - 1 );
-					char *ptr = strrchr(arr[num_files], '.');
-					if ( ptr ) {
-						*ptr = 0;
-					}
+	DIR *dirp;
+	struct dirent *dir;
 
-					if (info)	{
-						info[num_files].write_time = statbuf.st_mtime;
-					}
-					
-					num_files++;
+	dirp = opendir (filespec);
+	if ( dirp ) {
+		while ((dir = readdir (dirp)) != NULL)
+		{
+			if (num_files >= max)
+				break;
+
+			if (fnmatch(filter, dir->d_name, 0) != 0)
+				continue;
+
+			char fn[MAX_PATH];
+			snprintf(fn, MAX_PATH-1, "%s/%s", filespec, dir->d_name);
+			fn[MAX_PATH-1] = 0;
+
+			struct stat buf;
+			if (stat(fn, &buf) == -1) {
+				continue;
+			}
+
+			if (!S_ISREG(buf.st_mode)) {
+				continue;
+			}
+
+			if ( !Get_file_list_filter || (*Get_file_list_filter)(dir->d_name) ) {
+
+				strncpy(arr[num_files], dir->d_name, MAX_FILENAME_LEN - 1 );
+				char *ptr = strrchr(arr[num_files], '.');
+				if ( ptr ) {
+					*ptr = 0;
 				}
+
+				if (info)	{
+					info[num_files].write_time = buf.st_mtime;
+				}
+
+				num_files++;
 			}
 		}
-		globfree(&globinfo);
+		closedir(dirp);
 	}
 #endif
 
@@ -1466,7 +1583,11 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 // Output:  path      - Fully qualified pathname.
 void cf_create_default_path_string( char *path, int pathtype, char *filename, bool localize )
 {
-	if ( filename && strpbrk(filename,"/\\:")  ) {  
+#ifdef SCP_UNIX
+	if ( filename && strpbrk(filename,"/")  ) {
+#else
+	if ( filename && strpbrk(filename,"/\\:")  ) {
+#endif
 		// Already has full path
 		strcpy( path, filename );
 
@@ -1480,13 +1601,29 @@ void cf_create_default_path_string( char *path, int pathtype, char *filename, bo
 
 		Assert(CF_TYPE_SPECIFIED(pathtype));
 
-		strcpy(path, root->path);
+		// force a specific directory to search for player files
+		if ( (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
+			strcpy(path, Pilot_file_path);
+		} else {
+			strcpy(path, root->path);
+		}
+
 		strcat(path, Pathtypes[pathtype].path);
 
 		// Don't add slash for root directory
 		if (Pathtypes[pathtype].path[0] != '\0') {
-		strcat(path, DIR_SEPARATOR_STR);
+			if ( path[strlen(path)-1] != DIR_SEPARATOR_CHAR ) {
+				strcat(path, DIR_SEPARATOR_STR);
+			}
 		}
+
+#ifdef INF_BUILD
+		// keep pilot files separated for an Inferno build since they aren't compatible
+		if ( pathtype == CF_TYPE_SINGLE_PLAYERS ) {
+			strcat(path, "inferno");
+			strcat(path, DIR_SEPARATOR_STR);
+		}
+#endif
 
 		// add filename
 		if (filename) {
@@ -1512,4 +1649,3 @@ void cf_create_default_path_string( char *path, int pathtype, char *filename, bo
 		}
 	}
 }
-
