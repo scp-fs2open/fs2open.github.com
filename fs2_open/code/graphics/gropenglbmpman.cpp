@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-03-11 14:11:53 $
- * $Author: taylor $
+ * $Revision: 1.9 $
+ * $Date: 2005-03-19 20:35:45 $
+ * $Author: wmcoolmon $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/03/11 14:11:53  taylor
+ * apparently this change never got in
+ *
  * Revision 1.7  2005/03/07 13:10:21  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -277,7 +280,7 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 //#define BMP_TEX_CUBEMAP						(1<<8)				// a texture made for cubic environment map
 //*****static render targets must be able to survive anything, includeing application minimiseation*****//
 bool gr_ogl_make_render_target(int n, int &x, int &y, int flags){
-	return -1;//the error code, this function doesn't do anything yet so return acordingly, this should return the texture index of the created render target
+	return false;//the error code, this function doesn't do anything yet so return acordingly, this should return the texture index of the created render target
 }
 
 //sets rendering to the specified texture handle (note this is diferent that texture index)
