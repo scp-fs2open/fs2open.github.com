@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.74 $
- * $Date: 2004-03-05 09:02:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.75 $
+ * $Date: 2004-03-05 21:19:38 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2004/03/05 09:02:01  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.73  2004/02/20 18:04:27  randomtiger
  * Changed memory leak detection to happen after atexit all other calls.
  * This will mean it doesnt report leaks that are cleared by just before the game quits by preset functions.
@@ -9437,7 +9441,7 @@ int game_hacked_data()
 
 	if (!cf_exist( "tvalid.cfg", CF_TYPE_DATA ))
 	{
-		// create the mvalid.cfg
+		// create the tvalid.cfg
 		multi_update_valid_tables();
 	}
 

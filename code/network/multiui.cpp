@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2004-03-05 21:19:39 $
+ * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.17  2004/03/04 05:57:45  Kazan
  * LAN works A1 Supar!
  *
@@ -5240,12 +5244,20 @@ void multi_create_list_load_missions()
 				mcip->respawn = m_respawn;
 				mcip->max_players = (ubyte)max_players;
 				
-				v_string = mcip->filename;
-				v_string = v_string + "   valid";
+				v_string = "'";
+				v_string = v_string + mcip->filename;
+				
+				if (!strstr(mcip->filename, ".fs2"))
+					v_string = v_string + ".fs2";
+					
+				v_string = v_string + "'   valid";
 
 				// valid status appears to be the OPPOSITE of what you would expect.....
 				if (mvalid_cfg_buffer != NULL)
+				{
+					ml_printf("Searching for: %s in mvalid.cfg", v_string.c_str());
 					!strstr(mvalid_cfg_buffer, v_string.c_str()) ? mcip->valid_status = 1: mcip->valid_status = 0;
+				}
 				else
 					mcip->valid_status = 1; 
 
