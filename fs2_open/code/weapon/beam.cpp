@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-02-26 02:56:55 $
- * $Author: bobboau $
+ * $Revision: 2.16 $
+ * $Date: 2003-03-02 17:19:45 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/02/26 02:56:55  bobboau
+ * fixed the bug with fighter beams not giveing you kills
+ *
  * Revision 2.14  2003/02/25 07:15:07  bobboau
  * doh... forgot something in the beam rendering code
  *
@@ -2859,7 +2862,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 	beam_collision *bc;
 	int idx;
 	int	quadrant_num = -1;
-	weapon_info *bwi = &Weapon_info[b->weapon_info_index];
+//	weapon_info *bwi = &Weapon_info[b->weapon_info_index];
 
 	// if we haven't reached the limit for beam collisions, just add
 	if(b->f_collision_count < MAX_FRAME_COLLISIONS){
