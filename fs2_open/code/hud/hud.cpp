@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-07-12 16:32:49 $
+ * $Revision: 2.22 $
+ * $Date: 2004-07-26 17:54:04 $
  * $Author: Kazan $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/07/12 16:32:49  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.20  2004/07/01 01:53:27  phreak
  * function pointer radar update.
  * will enable us to make different radar styles that we can switch between
@@ -1327,6 +1330,12 @@ void hud_show_target_model()
 
 void hud_show_common_3d_gauges(float frametime, int in_cockpit)
 {
+
+#if defined(ENABLE_AUTO_PILOT)
+	// Draw Navigation stuff
+	HUD_Draw_Navigation();
+#endif
+	
 	// draw boxes around current selection set, if any
 	hud_show_selection_set();
 
@@ -1336,8 +1345,11 @@ void hud_show_common_3d_gauges(float frametime, int in_cockpit)
 	// draw brackets around asteroids is necessary
 	hud_show_asteroid_brackets();
 
+
 	// draw targetting data around the current target
 	hud_show_targeting_gauges(frametime, in_cockpit);
+
+
 
 	// draw brackets and distance to remote detonate missile
 	hud_show_remote_detonate_missile();
@@ -1680,10 +1692,7 @@ void HUD_render_2d(float frametime)
 		// draw the reticle
 		hud_show_reticle();
 
-#if defined(ENABLE_AUTO_PILOT)
-		// Draw Navigation stuff
-		HUD_Draw_Navigation();
-#endif
+
 		/*
 		// why is this here twice?
 		// display Energy Transfer System gauges

@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.3 $
- * $Date: 2004-07-12 16:32:49 $
+ * $Revision: 1.4 $
+ * $Date: 2004-07-26 17:54:04 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/07/12 16:32:49  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 1.2  2004/07/01 16:38:19  Kazan
  * working on autonav
  *
@@ -30,9 +33,18 @@
 #include "ship/ship.h"
 #include "object/object.h"
 #include "render/3d.h"
+#include "hud/hud.h"
+#include "hud/hudbrackets.h"
+#include "hud/hudtargetbox.h"
 
 // memory tracking - ALWAYS INCLUDE LAST
 #include "mcd/mcd.h"
+
+extern int sexp_distance2(int obj1, char *subj);
+extern void hud_target_show_dist_on_bracket(int x, int y, float distance);
+extern void draw_brackets_square(int x1, int y1, int x2, int y2);
+extern void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick);
+
 
 extern float Cmdline_fov;
 // Draws the Navigation stuff on the HUD
@@ -41,127 +53,84 @@ void HUD_Draw_Navigation()
 	if (CurrentNav != -1 && Navs[CurrentNav].flags & NP_VALIDTYPE && !(Navs[CurrentNav].flags & NP_NOSELECT))
 	{
 		
-		gr_string( 20, 120, Navs[CurrentNav].NavName);
-		// Draw offscreen indicator if appropriate
-		/*vertex target_point;
-		vector target_pos = Navs[CurrentNav].GetPosition();
+		// ----------------- debug stuff -----------------
+		/*char *name = Navs[CurrentNav].GetInteralName();
+		int dista = sexp_distance2(Player_ship->objnum, name);
+		delete[] name;
+
+
+		char diststr[128];
+		sprintf(diststr, "Range to Nav: %d", dista);
+		gr_string( 20, 130, diststr);
+		gr_string( 20, 120, Navs[CurrentNav].NavName);*/
+		// ------------------------------------------------
+
+		int in_cockpit;
+		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
+			in_cockpit = 1;
+		else  
+			in_cockpit = 0;
+
+		vertex target_point;					// temp vertex used to find screen position for 3-D object;
+		vector target_pos;
+
+		//Players[Player_num].lead_indicator_active = 0;
+
+
+		target_pos = Navs[CurrentNav].GetPosition();//get it's position
+		float dist = vm_vec_dist_quick(&Objects[Player_ship->objnum].pos,&target_pos);
+
+		// find the current target vertex 
+		//
+		// The 2D screen pos depends on the current viewer position and orientation.  
+
+		
+		color NavColor;
+		gr_init_alphacolor( &NavColor,	0x80, 0x80, 0xff, HUD_COLOR_ALPHA_MAX * 16);
+		gr_set_color_fast(&NavColor);
+		
+
 
 		g3_rotate_vertex(&target_point,&target_pos);
 		g3_project_vertex(&target_point);
 
 
-		color NavTrackColor;	
-		gr_init_alphacolor( &NavTrackColor, 0x00, 0xDD, 0xFF, 0xFF );
-		gr_set_color_fast(&NavTrackColor);
+		int box_scale = 15;
+		if (dist < 1000)
+			box_scale = int(float(dist)/1000.0f * 15);
+		if (box_scale < 4)
+			box_scale=4;
 
-		float dist = vm_vec_dist_quick(&target_pos, &Player_obj->pos);
-		hud_draw_offscreen_indicator(&target_point, &target_pos, dist);
+		//SAFEPOINT(s)
+		if (!(target_point.flags & PF_OVERFLOW) && target_point.codes == 0)
+		{  // make sure point projected and target center is not on screen
+			//hud_show_brackets(targetp, &target_point);
 
-		// Render Nav Indicator
-		HUD_Draw_Nav_Brackets();
-		*/
+			int x = int(target_point.sx);
+			int y = int(target_point.sy);
+			draw_brackets_square(x-box_scale, y-box_scale, 
+							     x+box_scale, y+box_scale);
+
+			gr_set_color_fast(&NavColor);
+			// draw the nav name
+			gr_string(x-(box_scale+10), y-(box_scale+20), Navs[CurrentNav].NavName);
+			// draw distance to target in lower right corner of box
+			hud_target_show_dist_on_bracket(x+(box_scale+10),y+(box_scale+10),dist);
+
+		}
+
+
+		if ( in_cockpit && target_point.codes != 0) {
+			gr_set_color_fast(&NavColor);
+			hud_draw_offscreen_indicator(&target_point, &target_pos, dist);	
+		}
 	}
+	/*
 	else
 	{
 		gr_string( 20, 120, "No Nav Point Selected");
-	}
+	}*/
 }
 
-
-
-void HUD_Draw_Nav_Brackets()
-{
-	// figure out if it's within the field of view
-	vector player_to_nav, target_pos = Navs[CurrentNav].GetPosition();
-
-	vm_vec_sub(&player_to_nav, &Player_obj->pos, &target_pos);
-
-	float angle = vm_vec_delta_ang(&player_to_nav,&Eye_matrix.vec.fvec,NULL);
-		
-	if (angle > Cmdline_fov)
-		return;
-
-	
-	float updown, leftright;
-	vector screen_relative;
-		
-	vm_vec_rotate(&screen_relative,&player_to_nav,&View_matrix);
-
-	// trig
-	// adjacent = Z
-	// updown opposite = Y
-	// leftright opposite = X
-
-	// Soh Coa Toa
-	updown = (float)atan(screen_relative.xyz.y/screen_relative.xyz.z);
-	leftright = (float)atan(screen_relative.xyz.x/screen_relative.xyz.z);
-
-
-	// figure out where on the screen to draw based upon the angle to from players eye pos to nav point location
-	vector center;
-
-	if (gr_screen.res == 0)
-	{
-		center.xyz.x = 320 + (320 * (leftright/Cmdline_fov));
-		center.xyz.y = 240 + (240 * (updown/Cmdline_fov));
-
-	
-	}
-	else
-	{
-		center.xyz.x = 512 + (512 * (leftright/Cmdline_fov));
-		center.xyz.y = 384 + (384 * (updown/Cmdline_fov));
-
-	}
-
-	// draw
-	vector UpLeft, DownLeft, UpRight, DownRight;
-
-	UpLeft.xyz.x = center.xyz.x-10;
-	UpLeft.xyz.y = center.xyz.x-10;
-
-	DownLeft.xyz.x = center.xyz.x-10;
-	DownLeft.xyz.y = center.xyz.x+10;
-
-
-	UpRight.xyz.x = center.xyz.x+10;
-	UpRight.xyz.y = center.xyz.x-10;
-
-	DownRight.xyz.x = center.xyz.x+10;
-	DownRight.xyz.y = center.xyz.x+10;
-	
-
-	//      <-    x    ->
-	// *******         ******* 
-	// *   *             *   *
-	// *  *               *  * 
-	// * *                 * * ^
-	// *                     * |
-	//
-	//                         Y
-    //
-    // *                     * |
-	// * *                 * * v
-	// *  *               *  * 
-	// *   *             *   *
-	// *******         ******* 
-
-
-	hud_tri_empty(UpLeft.xyz.x,		UpLeft.xyz.y,
-				  UpLeft.xyz.x+7,	UpLeft.xyz.y,
-				  UpLeft.xyz.x,		UpLeft.xyz.y+7);
-
-	hud_tri_empty(DownLeft.xyz.x,	DownLeft.xyz.y,
-				  DownLeft.xyz.x+7,	DownLeft.xyz.y,
-				  DownLeft.xyz.x,	DownLeft.xyz.y-7);
-
-	hud_tri_empty(UpRight.xyz.x,	UpRight.xyz.y,
-				  UpRight.xyz.x-7,	UpRight.xyz.y,
-				  UpRight.xyz.x,	UpRight.xyz.y+7);
-
-	hud_tri_empty(UpLeft.xyz.x,		UpLeft.xyz.y,
-				  UpLeft.xyz.x-7,	UpLeft.xyz.y,
-				  UpLeft.xyz.x,		UpLeft.xyz.y-7);
-}
 
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.105 $
- * $Date: 2004-07-18 04:07:26 $
+ * $Revision: 2.106 $
+ * $Date: 2004-07-26 17:54:04 $
  * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2004/07/18 04:07:26  Kazan
+ * nothing major
+ *
  * Revision 2.104  2004/07/17 18:46:06  taylor
  * various OGL and memory leak fixes
  *
@@ -3156,7 +3159,7 @@ void game_get_framerate()
 			Framerate = FRAME_FILTER / frametotal;
 		else
 			Framerate = Framecount / frametotal;
-		sprintf( text, NOX("FPS: %.1f"), Framerate );
+		sprintf( text, NOX("FPS: %.1f"), Framerate * (Game_time_compression>>16));
 	} else {
 		sprintf( text, NOX("FPS: ?") );
 	}

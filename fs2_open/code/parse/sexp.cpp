@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.94 $
- * $Date: 2004-07-12 16:33:01 $
+ * $Revision: 2.95 $
+ * $Date: 2004-07-26 17:54:05 $
  * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2004/07/12 16:33:01  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.93  2004/07/03 08:23:00  wmcoolmon
  * Replaced some more Int3s with Warnings and Errors.
  *
@@ -736,6 +739,7 @@
 #include "stats/medals.h"
 #include "playerman/player.h"
 #include "hud/hud.h"
+#include "hud/hudconfig.h"
 #include "missionui/redalert.h"
 #include "jumpnode/jumpnode.h"
 #include "hud/hudshield.h"
@@ -1052,6 +1056,7 @@ sexp_oper Operators[] = {
 	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
 	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
 	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
+	{ "radar-set-max-range",		OP_RADAR_SET_MAXRANGE,			1, 1 }, //Kazan
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -6684,6 +6689,12 @@ void sexp_hud_set_color(int n)
 }
 
 
+// Kazan
+void sexp_radar_set_maxrange(int n)
+{
+	Radar_ranges[RR_MAX_RANGES-1] = atof(CTEXT(n));
+}
+
 // Goober5000
 // trigger whether player uses the game AI for stuff
 void sexp_player_use_ai(int use_ai)
@@ -11719,6 +11730,11 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_RADAR_SET_MAXRANGE: //Kazan
+				sexp_radar_set_maxrange(node);
+				sexp_val = 1;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -12713,6 +12729,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_COORDS:		//WMC
 		case OP_HUD_SET_FRAME:		//WMC
 		case OP_HUD_SET_COLOR:		//WMC
+		case OP_RADAR_SET_MAXRANGE: //Kazan
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -12809,6 +12826,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SPECIAL_CHECK:
 		case OP_AI_WARP_OUT:
 		case OP_TEAM_SCORE:
+		case OP_RADAR_SET_MAXRANGE: //Kazan
 			return OPF_POSITIVE;
 
 		case OP_AI_WARP:								// this operator is obsolete
@@ -14589,6 +14607,7 @@ int get_subcategory(int sexp_id)
 		case OP_SET_SUPPORT_SHIP:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
+		case OP_RADAR_SET_MAXRANGE: //Kazan
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_TOGGLE_HUD:

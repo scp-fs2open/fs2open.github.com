@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.65 $
+ * $Revision: 2.66 $
  * $Author: Kazan $
- * $Date: 2004-07-01 16:38:19 $
+ * $Date: 2004-07-26 17:54:05 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2004/07/01 16:38:19  Kazan
+ * working on autonav
+ *
  * Revision 2.64  2004/06/15 21:04:18  wmcoolmon
  * Bumped MAX_SEXP_NODES to 3500
  *
@@ -949,6 +952,7 @@ struct ship_subsys;
 #define OP_HUD_SET_COORDS					(0x0091 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_FRAME					(0x0092 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_COLOR					(0x0093 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_RADAR_SET_MAXRANGE				(0x0094 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //Kazan
 
 /* made obsolete by Goober5000
 // debugging sexpressions
