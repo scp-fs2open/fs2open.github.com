@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.73 $
- * $Date: 2004-12-15 17:32:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.74 $
+ * $Date: 2004-12-22 21:48:21 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2004/12/15 17:32:19  Goober5000
+ * move wing name initialization to ship_level_init
+ * --Goober5000
+ *
  * Revision 2.72  2004/12/14 14:46:13  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -5767,6 +5771,8 @@ int allocate_subsys_status()
 	// set primary weapon ammunition here, but does it actually matter? - Goober5000
 
 	Assert(Subsys_index >= 0 && Subsys_index < MAX_SUBSYS_STATUS);
+	Verify( Subsys_index < MAX_SUBSYS_STATUS );
+
 	Subsys_status[Subsys_index].percent = 0.0f;
 
 	Subsys_status[Subsys_index].primary_banks[0] = SUBSYS_STATUS_NO_CHANGE;
