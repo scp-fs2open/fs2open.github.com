@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-01-14 04:00:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2003-01-27 00:51:46 $
+ * $Author: DTP $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/01/14 04:00:16  Goober5000
+ * allowed for up to 256 main halls
+ * --Goober5000
+ *
  * Revision 2.4  2003/01/08 19:49:15  Goober5000
  * fixed debriefing music in non-campaign missions
  * --Goober5000
@@ -2087,7 +2091,8 @@ void debrief_button_pressed(int num)
 void debrief_setup_ship_kill_stats(int stage_num)
 {
 	int i;
-	ushort *kill_arr;
+	//ushort *kill_arr;
+	int *kill_arr;	//DTP max ships
 	debrief_stats_kill_info	*kill_info;
 
 	Assert(Current_stage < DEBRIEF_NUM_STATS_PAGES);
