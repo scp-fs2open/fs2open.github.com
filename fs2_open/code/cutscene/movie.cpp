@@ -6,6 +6,7 @@
 #include "cmdline/cmdline.h"	
 #include "graphics/2d.h"
 #include "debugconsole/dbugfile.h" 
+#include "graphics/gropengl.h"
 
 bool movie_shutdown_fgx = false;
 
@@ -41,7 +42,14 @@ bool movie_play(char *name, int unknown_value)
 		gr_activate(0);
 	}
 
+
 #ifdef _WIN32
+
+	if (gr_screen.mode==GR_OPENGL)
+	{
+		gr_opengl_cleanup(0);
+	}
+
 	 os_app_activate_set(false);
 
 	dx8show_set_hwnd((void *) os_get_window());
@@ -69,7 +77,12 @@ bool movie_play(char *name, int unknown_value)
 	}
 	*/
  
+	if (gr_screen.mode==GR_OPENGL)
+	{
+		gr_opengl_init(1);
+	}
 #endif // _WIN32
+
 
 	if(movie_shutdown_fgx == true)
 	{
@@ -122,6 +135,12 @@ bool movie_play_two(char *name1, char *name2, int unknown_value)
 	}
 
 #ifdef _WIN32
+
+	if (gr_screen.mode==GR_OPENGL)
+	{
+		gr_opengl_cleanup();
+	}
+
 	 os_app_activate_set(false);
 		 
   	dx8show_play_cutscene(name1);
@@ -138,6 +157,12 @@ bool movie_play_two(char *name1, char *name2, int unknown_value)
 	dx8show_play_cutscene(name2);
 
 	os_app_activate_set(true);
+
+	if (gr_screen.mode==GR_OPENGL)
+	{
+		gr_opengl_init(1);
+	}
+
 #endif
 
 	if(movie_shutdown_fgx == true)
