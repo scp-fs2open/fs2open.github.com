@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.38 $
- * $Date: 2003-10-18 02:43:59 $
- * $Author: phreak $
+ * $Revision: 2.39 $
+ * $Date: 2003-10-23 13:53:36 $
+ * $Author: fryday $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/10/18 02:43:59  phreak
+ * oops!  forgot to bracket something off with an if :rolleyes:
+ *
  * Revision 2.37  2003/10/18 01:59:02  phreak
  * switched around positions of gr_start_instance_matrix and gr_end_instance_matrix
  *
@@ -3386,16 +3389,17 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		if (!pm->submodel[i].is_thruster )	{
 			zbuf_mode = GR_ZBUFF_WRITE;
 
+
 			// no zbuffering
 			if(Interp_flags & MR_NO_ZBUFFER){
 				zbuf_mode = GR_ZBUFF_NONE;
 			}
 			if(!Cmdline_nohtl) {
 
-				gr_zbuffer_set(zbuf_mode);
+/*				gr_zbuffer_set(zbuf_mode);
 				{
 					model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
-				}
+				}*/
 			}
 			else {
 				model_interp_subcall( pm, i, detail_level );
@@ -3410,7 +3414,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}	
 
 	if ( pm->submodel[pm->detail[detail_level]].num_children > 0 ){
-		// zbuf_mode |= GR_ZBUFF_WRITE;		// write only
+//		zbuf_mode |= GR_ZBUFF_WRITE;		// write only
 		zbuf_mode = GR_ZBUFF_FULL;
 	}
 
@@ -3431,8 +3435,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	model_radius = pm->submodel[pm->detail[detail_level]].rad;
 
 	// draw the hull of the ship
+	
 	if(!Cmdline_nohtl) {
-		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
+//		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
+		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
 	}
 	else {
 
