@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-03 16:18:19 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-27 08:57:52 $
  * $Author: taylor $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/03 16:18:19  taylor
+ * lockup fixes, and it's Linux friendly too :)
+ *
  * Revision 2.6  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -223,7 +226,7 @@ sub_again:
 		 "mov   %1, %%edx;"		  // temp_large.HighPart
 		 "mov   %2, %%eax;"		  // temp_large.LowPart
 
-		 "shld  $16,%%edx,%%eax;"			 // Keep 32+11 bits
+		 "shld  $16,%%eax,%%edx;"			 // Keep 32+11 bits
 		 "shl   $16,%%eax;"
 		 // edx:eax = number of 1.19Mhz pulses elapsed.
 		 "mov   %3,%%ebx;"		  // Timer_freq
