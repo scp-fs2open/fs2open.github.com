@@ -9,16 +9,34 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.11 $
- * $Date: 2003-08-12 03:18:33 $
+ * $Revision: 2.12 $
+ * $Date: 2003-08-16 03:52:23 $
  * $Author: bobboau $
- * $Revision: 2.11 $
- * $Date: 2003-08-12 03:18:33 $
+ * $Revision: 2.12 $
+ * $Date: 2003-08-16 03:52:23 $
  * $Author: bobboau $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/08/12 03:18:33  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.10  2003/06/08 17:38:21  phreak
  * added a vector in the vertex struct that stores the real world position
  * the x,y,z variables do not accurately reflect the real position
@@ -356,6 +374,14 @@ typedef struct uv_pair {
 // Used to store rotated points for mines.
 // Has flag to indicate if projected.
 typedef struct vertex {
+	vertex(){
+		x=0.0f;y=0.0f;z=0.0f;
+		u=0.0f;v=0.0f;
+		sx=0.0f;sy=0.0f;sw=0.0f;
+		env_u=0.0f;env_v=0.0f;
+		spec_r=0;spec_g=0;spec_b=0;
+		r=0;g=0;b=0;a=0;
+	}
 	float		x, y, z;				// world space position
 	float		sx, sy, sw;			// screen space position (sw == 1/z)
 	float		u, v;					// texture position

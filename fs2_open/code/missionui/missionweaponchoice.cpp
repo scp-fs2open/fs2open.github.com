@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.15 $
+ * $Date: 2003-08-16 03:52:24 $
+ * $Author: bobboau $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.13  2003/03/06 09:13:42  Goober5000
  * fixed what should be the last bug with bank-specific loadouts
  * --Goober5000
@@ -1420,11 +1423,11 @@ void wl_load_icons(int weapon_class)
 	icon = &Wl_icons[weapon_class];
 
 	first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames);
-	if ( first_frame == -1 ) {
+/*	if ( first_frame == -1 ) {
 		Int3();	// Could not load in icon frames.. get Alan
 		return;
 	}
-
+*/
 	for ( i = 0; i < num_frames ; i++ ) {
 		icon->icon_bmaps[i] = first_frame+i;
 	}

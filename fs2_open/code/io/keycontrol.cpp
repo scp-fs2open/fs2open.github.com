@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-08-05 23:45:18 $
+ * $Revision: 2.14 $
+ * $Date: 2003-08-16 03:52:23 $
  * $Author: bobboau $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/08/05 23:45:18  bobboau
+ * glow maps, for some reason they wern't in here, they should be now,
+ * also there is some debug code for changeing the FOV in game,
+ * and I have some changes to the init code to try and get a 32 or 24 bit back buffer
+ * if posable, this may cause problems for people
+ * the changes were all marked and if needed can be undone
+ *
  * Revision 2.12  2003/07/15 02:35:59  phreak
  * added a debug key to cloak targeted ship ~+shift+x
  *
@@ -846,6 +853,8 @@ extern vector Eye_position;
 extern matrix Eye_matrix;
 extern void g3_set_view_matrix(vector *view_pos,matrix *view_matrix,float zoom);
 
+extern int Show_cpu;
+
 void process_debug_keys(int k)
 {
 #ifdef INTERPLAYQA
@@ -1509,6 +1518,12 @@ void process_debug_keys(int k)
 			Viewer_zoom -= 0.1f;
 			g3_set_view_matrix(&Eye_position, &Eye_matrix, Viewer_zoom);
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "viewer zoom lowered to %0.2f" , Viewer_zoom);
+			}
+			break;
+		case KEY_DEBUGGED + KEY_Z:
+		case KEY_DEBUGGED1 + KEY_Z:
+			{
+				Show_cpu = !Show_cpu;
 			}
 			break;
 

@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-08-12 03:18:33 $
+ * $Revision: 2.28 $
+ * $Date: 2003-08-16 03:52:24 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/08/12 03:18:33  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.26  2003/08/06 17:24:57  phreak
  * optimized the way cloaking is handled
  *
@@ -456,6 +474,8 @@ float Interp_light = 0.0f;
 int Interp_multitex_cloakmap=-1;
 int Interp_cloakmap_alpha=255;
 
+int model_current_LOD = 0;
+
 void set_warp_globals(float a, float b, float c, int d, float e){
 	Model_Interp_scale_x =a;
 	Model_Interp_scale_y=b;
@@ -826,9 +846,10 @@ vector Interp_offset;
 
 void interp_compute_environment_mapping( vector *nrm, vertex * pnt)
 {
+	return;
 	vector R;
 	float a;
-	matrix * m = &View_matrix;
+//	matrix * m = &View_matrix;
 
 	vm_vec_rotate( &R, nrm, &View_matrix );	
 	vm_vec_normalize(&R);
@@ -945,6 +966,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 	}
 }
 
+extern bool env_enabled;
 // Textured Poly
 // +0      int         id
 // +4      int         size 
@@ -970,7 +992,10 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	int i;
 	int nv;
 	model_tmap_vert *verts;
-
+/*	Interp_list[i]->spec_r = 0;
+	Interp_list[i]->spec_g = 0;
+	Interp_list[i]->spec_b = 0;
+*/
 	int is_invisible = 0;
 
 	if(Warp_Map < 0){
@@ -1039,9 +1064,9 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
 					if ( D3D_enabled || OGL_inited )	{
 						light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-						if(Detail.lighting > 2 && Interp_detail_level < 3)
+						if((Detail.lighting > 2) && (model_current_LOD < 2))
 							light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
-						//interp_compute_environment_mapping(vp(p+8), &Interp_list[i]);
+						interp_compute_environment_mapping(vp(p+8), Interp_list[i]);
 					} else {
 						Interp_list[i]->b = light_apply( Interp_verts[vertnum], vp(p+8), Interp_light );
 					}
@@ -1051,9 +1076,9 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 						if ( D3D_enabled || OGL_inited )	{
 							light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-							if(Detail.lighting > 2 && Interp_detail_level < 3)
+							if((Detail.lighting > 2) && (model_current_LOD < 2))
 								light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
-							//interp_compute_environment_mapping(Interp_verts[vertnum], &Interp_list[i]);
+							interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 
 						} else {
 							int li;
@@ -1086,9 +1111,9 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 						Interp_light_applied[norm] = 1;
 					}else if(Interp_light_applied[norm]){
-						if(Detail.lighting > 2 && Interp_detail_level < 3)
+						if((Detail.lighting > 2) && (model_current_LOD < 2))
 							light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
-					//	interp_compute_environment_mapping(Interp_verts[vertnum], &Interp_list[i]);
+						interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 					}
 
 					if ( D3D_enabled || OGL_inited )	{
@@ -1131,6 +1156,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			gr_set_bitmap( Warp_Map, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			g3_draw_poly( nv, Interp_list, TMAP_FLAG_TEXTURED );
 		}else{
+			env_enabled = true;
 			// all textured polys go through here
 			if ( Interp_tmap_flags & TMAP_FLAG_TEXTURED )	{
 				// subspace special case
@@ -1153,7 +1179,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 							texture = pm->textures[w(p+40)];//here is were it picks the texture to render for normal-Bobboau
 						}
 
-						if(Detail.lighting > 2  && Interp_detail_level < 2)SPECMAP = pm->specular_textures[w(p+40)];
+						if((Detail.lighting > 2)  && (model_current_LOD < 1))SPECMAP = pm->specular_textures[w(p+40)];
 
 						if(glow_maps_active)
 						{
@@ -1195,6 +1221,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				}
 			}
 
+			env_enabled = false;
 			GLOWMAP = -1;
 			SPECMAP = -1;
 		}
@@ -3055,7 +3082,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 		//detail_level = fl2i(depth/10.0f);		
 		//detail_level = 0;
-		detail_level = i-1-tmp_detail_level;
+		model_current_LOD = detail_level = i-1-tmp_detail_level;
 
 		if ( detail_level < 0 ) 
 			detail_level = 0;

@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dClipper.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-08-12 03:18:34 $
+ * $Revision: 2.4 $
+ * $Date: 2003-08-16 03:52:24 $
  * $Author: bobboau $
  *
  * Polygon clipping functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/08/12 03:18:34  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.2  2002/08/06 01:49:08  penguin
  * Renamed ccode members to cc_or and cc_and
  *
@@ -188,6 +206,9 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 	if (flags & TMAP_FLAG_TEXTURED) {
 		tmp->u = on_pnt->u + (off_pnt->u-on_pnt->u) * ratio;
 		tmp->v = on_pnt->v + (off_pnt->v-on_pnt->v) * ratio;
+
+		tmp->env_u = on_pnt->env_u + (off_pnt->env_u-on_pnt->env_u) * ratio;
+		tmp->env_v = on_pnt->env_v + (off_pnt->env_v-on_pnt->env_v) * ratio;
 	}
 
 	if (flags & TMAP_FLAG_GOURAUD ) {

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-08-05 23:45:18 $
+ * $Revision: 2.6 $
+ * $Date: 2003-08-16 03:52:23 $
  * $Author: bobboau $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/08/05 23:45:18  bobboau
+ * glow maps, for some reason they wern't in here, they should be now,
+ * also there is some debug code for changeing the FOV in game,
+ * and I have some changes to the init code to try and get a 32 or 24 bit back buffer
+ * if posable, this may cause problems for people
+ * the changes were all marked and if needed can be undone
+ *
  * Revision 2.4  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -907,8 +914,7 @@ bool d3d_preload_texture_func(int bitmap_id)
 	return 1;
 }
 
-
-int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force )
+int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage )
 {
 	bitmap *bmp = NULL;
 	int idx, s_idx;	
@@ -919,11 +925,11 @@ int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scal
 		return 0;
 	}
 
-	if(bitmap_id != GLOWMAP){
+	if(stage == 0){
 		d3d_SetTexture(1, NULL);
 		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
 	}
-	//turn off glowmapping right away, if it's needed turn it back on later
+	//turn off glowmapping/specmapping right away, if it's needed turn it back on later
 
 	int n = bm_get_cache_slot( bitmap_id, 1 );
 
@@ -1015,12 +1021,12 @@ int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scal
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
 
-		if(bitmap_id != GLOWMAP){
-			d3d_SetTexture(0, t->d3d8_thandle);
-		}else if(GLOWMAP > 0){
-			d3d_SetTexture(1, t->d3d8_thandle);
-			d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
-		}
+//		if(bitmap_id != GLOWMAP){
+			d3d_SetTexture(stage, t->d3d8_thandle);
+//		}else if(GLOWMAP > 0){
+//			d3d_SetTexture(1, t->d3d8_thandle);
+///			d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
+//		}
 		//glowmapping stuff-Bobboau
 		
 		D3D_last_bitmap_id = t->bitmap_id;
@@ -1036,11 +1042,16 @@ int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scal
    	}	
 
 	//glowmapping stuff-Bobboau
-	if((GLOWMAP > 0) && (bitmap_id != GLOWMAP)){
-		d3d_tcache_set(GLOWMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force);
-	}
+//	if((GLOWMAP > 0) && (bitmap_id != GLOWMAP)){
+//		d3d_tcache_set(GLOWMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force);
+//	}
 
 	return 1;
+}
+
+int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force )
+{
+	return d3d_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0 );
 }
 
 void d3d_tcache_init()

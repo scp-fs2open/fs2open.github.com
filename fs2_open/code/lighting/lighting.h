@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.h $
- * $Revision: 2.1 $
- * $Date: 2003-08-12 03:18:33 $
+ * $Revision: 2.2 $
+ * $Date: 2003-08-16 03:52:23 $
  * $Author: bobboau $
  *
  * Include file for lighting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/08/12 03:18:33  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -98,10 +116,10 @@ void light_set_ambient(float ambient_light);
 
 // Intensity - how strong the light is.  1.0 will cast light around 5meters or so.
 // r,g,b - only used for colored lighting. Ignored currently.
-void light_add_directional( vector *dir, float intensity, float r, float g, float b );
-void light_add_point( vector * pos, float r1, float r2, float intensity, float r, float g, float b, int ignore_objnum );
-void light_add_point_unique( vector * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum);
-void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum);
+void light_add_directional( vector *dir, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
+void light_add_point( vector * pos, float r1, float r2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
+void light_add_point_unique( vector * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
+void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 void light_rotate_all();
 
 // Reset the list of lights to point to all lights.

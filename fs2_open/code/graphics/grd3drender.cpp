@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-08-12 03:18:33 $
+ * $Revision: 2.15 $
+ * $Date: 2003-08-16 03:52:23 $
  * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/08/12 03:18:33  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.13  2003/08/05 23:45:18  bobboau
  * glow maps, for some reason they wern't in here, they should be now,
  * also there is some debug code for changeing the FOV in game,
@@ -1186,6 +1204,8 @@ void gr_d3d_tmapper_internal_3d( int nverts, vertex **verts, uint flags, int is_
  */
 
 extern int spec;
+bool env_enabled = false;
+
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
 	int i;
@@ -1438,30 +1458,11 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 	}					
 
-/*	// Obsolete bty DX8.1 merge
-	d3d_DrawPrimitive(D3DPT_TRIANGLEFAN, D3DVT_TLVERTEX, (LPVOID)d3d_verts, nverts, NULL);
+	//BEGIN FINAL SETTINGS
 
+	//set for the most basic rendering type, change it later if needed
+//	d3d_set_initial_render_state();
 
-	//this is my hack to get some sort of luminence mapping-Bobboau
-	if(GLOWMAP > 0){
-
-		gr_screen.gf_set_bitmap(GLOWMAP, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0);
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
-			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			return;
-		}
-
-		gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, zbuffer_type );
-
-		for (i=0; i<nverts; i++ )	{
-			if(flags & TMAP_FLAG_PIXEL_FOG)d3d_verts[i].color = RGBA_MAKE((255 - ra), (255 - ga), (255 - ba), ((ba + ga + ra)/2));
-			else d3d_verts[i].color = RGBA_MAKE(255, 255, 255, 0);
-		}
-		if(flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-		d3d_DrawPrimitive(D3DPT_TRIANGLEFAN, D3DVT_TLVERTEX, (LPVOID)d3d_verts, nverts, NULL);
-		if(flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
-	}
-*/
 	//a bit of optomiseation, if there is no specular highlights don't bother waisting the recorses on trying to render them
 	bool has_spec = false;
 	for (i=0; i<nverts; i++ )	{
@@ -1471,53 +1472,86 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		}
 	}
 
-	if((SPECMAP > 0) && has_spec)d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
-	//LOD 1
-	if((SPECMAP < 0) && has_spec){
-		d3d_SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_SPECULAR);
-		d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_ADD);
-		for (i=0; i<nverts; i++ )	{
-			d3d_verts[i].specular = D3DCOLOR_RGBA(verts[i]->spec_r/2, verts[i]->spec_g/2, verts[i]->spec_b/2, *(((ubyte*)&d3d_verts[i].specular)+3));
+	//if this poly has specular but no spec map has been set
+	if(has_spec && (SPECMAP < 0)){
+		//if there is a glow map also
+		if(GLOWMAP > -1){
+			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+			if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1))	{
+				mprintf(( "Not rendering glowmap texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
+
+			set_stage_for_glow_mapped_defuse_and_non_mapped_spec();
+		}else{
+			set_stage_for_defuse_and_non_mapped_spec();
 		}
 	}
-	//d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+
+
+	//if this poly has no specular of any kind
+	if(!has_spec){
+		//if there is a glow map also
+		if(GLOWMAP > -1){
+			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+			if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1))	{
+				mprintf(( "Not rendering glowmap texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
+			
+			set_stage_for_glow_mapped_defuse();
+		}else{
+			set_stage_for_defuse();
+		}
+	}else{
+			//if there is a glow map also
+		if(GLOWMAP > -1){
+			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+			if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1))	{
+				mprintf(( "Not rendering glowmap texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
+			set_stage_for_glow_mapped_defuse();
+		}else{
+			set_stage_for_defuse();
+		}
+	}
+
 
 	// Draws just about everything except stars and lines
  	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 
-	if((SPECMAP < 0) && has_spec){
-		d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
-	}
-
-	if((SPECMAP > 0) && has_spec){
-	//new specular code,yay!!!-Bobboau
-		
-		gr_screen.gf_set_bitmap(SPECMAP, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0);
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
-			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			return;
-		}
-
-		d3d_zbias(1);
+	//spec mapping
+	if(has_spec && (SPECMAP > 0)){
+		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
+				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
 		for (i=0; i<nverts; i++ )	{
 			d3d_verts[i].specular = D3DCOLOR_RGBA(verts[i]->spec_r, verts[i]->spec_g, verts[i]->spec_b, *(((ubyte*)&d3d_verts[i].specular)+3));
 		}
 
-		d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_SPECULAR);
-		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE4X);
-
-		gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, zbuffer_type );
-
-		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
-			
- 		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
-
-		d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-		d3d_zbias(0);
+		if(set_stage_for_spec_mapped())
+		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 	}
+//	d3d_set_initial_render_state();
+
 }
 
+/*
+			if(env_enabled){
+				gr_screen.gf_set_bitmap(ENVMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+				if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1))	{
+						mprintf(( "Not rendering environment texture because it didn't fit in VRAM!\n" ));
+						return;
+				}
+				for (i=0; i<nverts; i++ )	{
+					d3d_verts[i].env_u = verts[i]->env_u;
+					d3d_verts[i].env_v = verts[i]->env_v;
+				}
+			}
+*/
 /**
  * This is just a wrapper for gr_d3d_tmapper_internal function, this calls it with a final parameter
  * zero while another D3D functions calls it internally with one.

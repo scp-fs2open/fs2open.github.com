@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.2 $
- * $Date: 2002-09-20 20:04:54 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2003-08-16 03:52:24 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/09/20 20:04:54  phreak
+ * added glare variable for ambient suns
+ * if glare is 0 then the sun glare whiteout is not shown when looking at the sun
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -136,7 +140,7 @@ typedef struct starfield_bitmap {
 	int bitmap;												// bitmap handle
 	int glow_bitmap;										// only for suns
 	int xparent;	
-	float r, g, b, i;										// only for suns
+	float r, g, b, i, spec_r, spec_g, spec_b;										// only for suns
 	int glare;												// only for suns
 } starfield_bitmap;
 

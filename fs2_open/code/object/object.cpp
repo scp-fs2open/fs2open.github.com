@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-07-15 16:05:33 $
- * $Author: phreak $
+ * $Revision: 2.10 $
+ * $Date: 2003-08-16 03:52:24 $
+ * $Author: bobboau $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/07/15 16:05:33  phreak
+ * the game handles colored laser lighting for opengl now.
+ * this used to be exclusive to d3d
+ *
  * Revision 2.8  2003/04/29 01:03:22  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -1617,7 +1621,7 @@ void obj_move_all_post(object *objp, float frametime)
 			// P goes from 0 to 1 to 0 over the life of the explosion
 			float rad = p*(1.0f+frand()*0.05f)*objp->radius;
 
-			light_add_point( &objp->pos, rad*2.0f, rad*5.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1 );
+			light_add_point( &objp->pos, rad*2.0f, rad*5.0f, 1.0f, 0.5f, 0.2f, 1.0f, -1 );
 		}
 		break;
 	case OBJ_SHOCKWAVE:

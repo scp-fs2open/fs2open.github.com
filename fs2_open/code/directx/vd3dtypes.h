@@ -305,6 +305,14 @@ typedef struct _D3DTLVERTEX {
 	D3DVALUE    tv;
 	D3DVALUE    dvTV;
     };
+    union {
+	D3DVALUE    env_u;             /* Texture coordinates */
+	D3DVALUE    dvenv_U;
+    };
+    union {
+	D3DVALUE    env_v;
+	D3DVALUE    dvenv_V;
+    };
 #if (defined __cplusplus) && (defined D3D_OVERLOADS)
     _D3DTLVERTEX() { }
     _D3DTLVERTEX(const D3DVECTOR& v, float _rhw,
