@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.2 $
- * $Date: 2002-11-14 04:18:16 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-02 05:12:39 $
+ * $Author: penguin $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/11/14 04:18:16  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -209,6 +214,6 @@ float fireball_lifeleft_percent( object *obj );
 extern void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius );
 extern int Warp_glow_bitmap;			// Internal
 
-#endif /* _FIREBALLS_H */
-
 extern int wm;
+
+#endif /* _FIREBALLS_H */
