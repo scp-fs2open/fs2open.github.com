@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.10 $
- * $Date: 2002-11-14 04:18:17 $
+ * $Revision: 2.11 $
+ * $Date: 2002-11-14 06:15:03 $
  * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2002/11/14 04:18:17  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.9  2002/11/11 20:05:52  phreak
  * changed a line in ship_fire_secondary to allow for custom
  * amounts of corkscrew missiles fired
@@ -2662,7 +2667,7 @@ void ship_render(object * obj)
 		}
 
 		// maybe set squad logo bitmap
-		model_set_insignia_bitmap(-1);
+		model_set_insignia_bitmap(shipp->nameplate);
 #ifndef NO_NETWORK
 		if(Game_mode & GM_MULTIPLAYER){
 			// if its any player's object
