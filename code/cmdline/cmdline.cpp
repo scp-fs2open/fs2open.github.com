@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.78 $
- * $Date: 2004-07-26 20:47:25 $
+ * $Revision: 2.79 $
+ * $Date: 2004-07-29 03:49:44 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2004/07/26 20:47:25  Kazan
+ * remove MCD complete
+ *
  * Revision 2.77  2004/07/25 18:46:28  Kazan
  * -fred_no_warn has become -no_warn and applies to both fred and fs2
  * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
@@ -1272,10 +1275,11 @@ bool SetCmdlineParams()
 
 		// Ok - mod stacking support
 		int len = strlen(Cmdline_mod);
-		char *modlist = new char[len+1];
+		char *modlist = new char[len+2];
+		memset(modlist, 0, len+2);
 		strcpy(modlist, Cmdline_mod);
 
-		modlist[len]= '\0'; // double null termination at the end
+		//modlist[len]= '\0'; // double null termination at the end
 
 		// null terminate each individual
 		for (int i = 0; i < len; i++)
