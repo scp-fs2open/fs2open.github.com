@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.31 $
- * $Date: 2004-09-10 13:55:49 $
- * $Author: et1 $
+ * $Revision: 2.32 $
+ * $Date: 2004-10-31 22:02:47 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/09/10 13:55:49  et1
+ * Use yellow warp anim when doing exit jump with "-tbpwarpeffects"
+ *
  * Revision 2.30  2004/07/26 20:47:52  Kazan
  * remove MCD complete
  *
@@ -1764,8 +1767,6 @@ DCF(particle_life, "Multiplier for the lifetime of particles created")
 		}
 	}
 }
-
-extern int OGL_inited;
 
 // Make sparks fly off of ship n.
 // sn = spark number to spark, corrosponding to element in

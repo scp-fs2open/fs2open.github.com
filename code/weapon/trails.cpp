@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-07-26 20:47:56 $
- * $Author: Kazan $
+ * $Revision: 2.20 $
+ * $Date: 2004-10-31 22:02:47 $
+ * $Author: taylor $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/07/26 20:47:56  Kazan
+ * remove MCD complete
+ *
  * Revision 2.18  2004/07/12 16:33:09  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -307,8 +310,6 @@ int trail_is_on_ship(int trail_index, ship *shipp)
 	// nope
 	return 0;
 }
-
-extern int OGL_inited;
 
 // Render the trail behind a missile.
 // Basically a queue of points that face the viewer

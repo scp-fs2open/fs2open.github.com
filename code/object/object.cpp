@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-07-26 20:47:45 $
- * $Author: Kazan $
+ * $Revision: 2.24 $
+ * $Date: 2004-10-31 22:02:47 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/07/26 20:47:45  Kazan
+ * remove MCD complete
+ *
  * Revision 2.22  2004/07/12 16:32:59  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1624,9 +1627,6 @@ void obj_clear_weapon_group_id_list()
 
 int Arc_light = 1;		// If set, electrical arcs on debris cast light
 DCF_BOOL(arc_light, Arc_light)	
-extern int OGL_inited;
-extern fireball Fireballs[];
-
 extern fireball Fireballs[];
 
 void obj_move_all_post(object *objp, float frametime)
