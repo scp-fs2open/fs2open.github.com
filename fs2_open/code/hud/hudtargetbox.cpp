@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-06 16:50:44 $
+ * $Author: phreak $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ *
+ * Revision 2.21 2002/08/04 23:17:40  PhReAk
+ * Did the toggling code for wireframes -> CTRL+SHIFT+Q
+ *
+ * Revision 2.2  2002/08/04 21:53:13  PhReAk
+ * Changed hud_render_target_asteroid, ...weapon, ...ship to render in wireframe
+ *
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -367,6 +377,8 @@ int Targetbox_flash_flags;
 // The HUD_config controls whether this can be shown... but the player can still toggle it on/off
 // during the game.
 int Targetbox_show_extra_info = 1;
+
+int Targetbox_wire=0;
 
 // Different target states.  This drives the text display right below the hull integrity on the targetbox.
 #define TS_DIS		0
@@ -794,11 +806,14 @@ void hud_render_target_asteroid(object *target_objp)
 	float			time_to_impact, factor;	
 	int			subtype;
 
+	int flags=0;									//draw flags for wireframe
 	asteroidp = &Asteroids[target_objp->instance];
 
 	target_team = obj_team(target_objp);
 
 	subtype = asteroidp->asteroid_subtype;
+	
+	time_to_impact = asteroid_time_to_impact(target_objp);
 
 	if ( Detail.targetview_model )	{
 		// take the forward orientation to be the vector from the player to the current target
@@ -817,7 +832,20 @@ void hud_render_target_asteroid(object *target_objp)
 
 		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(Asteroid_info[asteroidp->type].model_num[subtype]);
-		model_render(Asteroid_info[asteroidp->type].model_num[subtype], &target_objp->orient, &obj_pos, MR_NO_LIGHTING | MR_LOCK_DETAIL );
+		
+		if (Targetbox_wire!=0)
+		{
+			if (time_to_impact>=0)
+				model_set_outline_color(255,255,255);
+			else
+				model_set_outline_color(64,64,0);
+
+			flags = MR_SHOW_OUTLINE;
+			if (Targetbox_wire==1)
+				flags |=MR_NO_POLYS;
+		}
+
+		model_render(Asteroid_info[asteroidp->type].model_num[subtype], &target_objp->orient, &obj_pos, flags |MR_NO_LIGHTING | MR_LOCK_DETAIL );
 		hud_render_target_close();
 	}
 
@@ -860,7 +888,7 @@ void hud_render_target_asteroid(object *target_objp)
 
 	emp_hud_printf(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, hud_name);	
 	
-	time_to_impact = asteroid_time_to_impact(target_objp);
+
 	if ( time_to_impact >= 0 ) {
 		emp_hud_printf(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, NOX("impact: %.1f sec"), time_to_impact);	
 	}
@@ -1231,6 +1259,7 @@ void hud_render_target_ship(object *target_objp)
 	target_shipp	= &Ships[target_objp->instance];
 	target_sip		= &Ship_info[target_shipp->ship_info_index];
 
+	int flags=0;
 	if ( Detail.targetview_model )	{
 		// take the forward orientation to be the vector from the player to the current target
 		vm_vec_sub(&orient_vec, &target_objp->pos, &Player_obj->pos);
@@ -1253,11 +1282,41 @@ void hud_render_target_ship(object *target_objp)
 		// model_clear_instance(target_sip->modelnum);
 		ship_model_start( target_objp );
 
+		if (Targetbox_wire!=0)
+		{
+			//set team colors
+			if (target_shipp->team==Player_ship->team)
+			{
+				model_set_outline_color(0,255,0);
+			}
+			else if (((Player_ship->team==TEAM_TRAITOR) && (target_shipp->team==TEAM_FRIENDLY)) ||
+					(target_shipp->team==TEAM_HOSTILE) || (target_shipp->team==TEAM_NEUTRAL))
+			{
+				model_set_outline_color(255,0,0);
+			}
+			else if (target_shipp->team==TEAM_UNKNOWN)
+			{
+				model_set_outline_color(255,0,255);
+			}
+			else
+			{
+				model_set_outline_color(255,255,255);
+			}
+
+			//if a ship is tagged, it overrides team colors
+			if (ship_is_tagged(target_objp))
+			{	
+				model_set_outline_color(255,255,0);
+			}
+			flags = MR_SHOW_OUTLINE;
+			if (Targetbox_wire==1)
+				flags |=MR_NO_POLYS;
+		}
 		// maybe render a special hud-target-only model
 		if(target_sip->modelnum_hud >= 0){
-			model_render( target_sip->modelnum_hud, &target_objp->orient, &obj_pos, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
+			model_render( target_sip->modelnum_hud, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
 		} else {
-			model_render( target_sip->modelnum, &target_objp->orient, &obj_pos, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
+			model_render( target_sip->modelnum, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
 		}
 		ship_model_stop( target_objp );
 
@@ -1311,6 +1370,7 @@ void hud_render_target_debris(object *target_objp)
 	vector	orient_vec, up_vector;
 	int		target_team, base_index;
 	float		factor;	
+	int flags=0;
 
 	debrisp = &Debris[target_objp->instance];
 
@@ -1333,9 +1393,16 @@ void hud_render_target_debris(object *target_objp)
 		// the objects position
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
+		if (Targetbox_wire!=0)
+		{
+			model_set_outline_color(255,255,255);
+			flags = MR_SHOW_OUTLINE;
+			if (Targetbox_wire==1)
+				flags |=MR_NO_POLYS;
+		}
 		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(debrisp->model_num);
-		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, MR_NO_LIGHTING | MR_LOCK_DETAIL );
+		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL );
 		hud_render_target_close();
 	}
 
@@ -1380,6 +1447,7 @@ void hud_render_target_weapon(object *target_objp)
 	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, w, h;
 	float			factor;
 	char			outstr[100];				// temp buffer
+	int flags=0;
 
 	target_team = obj_team(target_objp);
 
@@ -1408,6 +1476,31 @@ void hud_render_target_weapon(object *target_objp)
 			viewed_model_num	= Ships[wp->homing_object->instance].modelnum;
 		}
 
+		if (Targetbox_wire!=0)
+		{
+			if (target_team==Player_ship->team)
+			{
+				model_set_outline_color(0,255,0);
+			}
+			else if (((Player_ship->team==TEAM_TRAITOR) && (target_team==TEAM_FRIENDLY)) ||
+					(target_team==TEAM_HOSTILE) || (target_team==TEAM_NEUTRAL))
+			{
+				model_set_outline_color(128,128,0);
+			}
+			else if (target_team==TEAM_UNKNOWN)
+			{
+				model_set_outline_color(255,0,255);
+			}
+			else
+			{
+				model_set_outline_color(255,255,255);
+			}
+			flags = MR_SHOW_OUTLINE;
+			if (Targetbox_wire==1)
+				flags |=MR_NO_POLYS;
+		}
+			
+
 		// take the forward orientation to be the vector from the player to the current target
 		vm_vec_sub(&orient_vec, &viewed_obj->pos, &viewer_obj->pos);
 		vm_vec_normalize(&orient_vec);
@@ -1427,7 +1520,8 @@ void hud_render_target_weapon(object *target_objp)
 
 		hud_render_target_setup(&camera_eye, &camera_orient, View_zoom/3);
 		model_clear_instance(viewed_model_num);
-		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, MR_NO_LIGHTING | MR_LOCK_DETAIL );
+
+		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);		
 		hud_render_target_close();
 	}
 
