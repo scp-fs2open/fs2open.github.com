@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.7 $
+ * $Revision: 2.8 $
  * $Author: Goober5000 $
- * $Date: 2003-08-22 07:01:57 $
+ * $Date: 2003-08-25 04:45:57 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/08/22 07:01:57  Goober5000
+ * implemented $callsign to add the player callsign in a briefing, message, or whatever
+ * --Goober5000
+ *
  * Revision 2.6  2003/03/02 06:10:58  penguin
  * Made a debug error message less confusing
  *  - penguin
@@ -744,6 +748,7 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 		outstr[foundstr - instr] = 0;
 
 	} else {
+
 		nprintf(("Error", "Error.  Too much text (%i chars, %i allowed) before %s\n",
 			foundstr - instr - strlen(endstr), max_chars, endstr));
 
@@ -767,8 +772,8 @@ void stuff_string_white(char *pstr)
 // the default string length if using the F_NAME case.
 void stuff_string(char *pstr, int type, char *terminators, int len)
 {	
-	char read_str[2048] = "";
-	int read_len = 2048;	
+	char read_str[PARSE_BUF_SIZE] = "";
+	int read_len = PARSE_BUF_SIZE;
 	int final_len = len;
 	int tag_id;
 
@@ -862,8 +867,8 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 // stuff a string, but only until the end of a line. don't ignore leading whitespace. close analog of fgets()/cfgets()
 void stuff_string_line(char *pstr, int len)
 {
-	char read_str[2048] = "";
-	int read_len = 2048;	
+	char read_str[PARSE_BUF_SIZE] = "";
+	int read_len = PARSE_BUF_SIZE;
 	int final_len = len;
 	int tag_id;
 	
@@ -916,8 +921,6 @@ void compact_multitext_string(char *str)
 		if (str[i] == '\n')
 			str[i] = ' ';
 }
-
-#define	BUF_SIZE 2048
 
 // Strip comments from a line of input.
 int strip_comments_fred(char *readp, int in_comment)
@@ -1151,7 +1154,7 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 void read_file_text(char *filename, int mode)
 {
 	CFILE	*mf;
-	char	outbuf[BUF_SIZE], *str;
+	char	outbuf[PARSE_BUF_SIZE], *str;
 	char	*mp = Mission_text;
 	char	*mp2 = Mission_text_raw;
 	int	file_is_encrypted = 0, in_comment = 0;
@@ -1199,7 +1202,7 @@ void read_file_text(char *filename, int mode)
 	int num_chars_read = 0;
 
 	mp2 = Mission_text_raw;
-	while ( (num_chars_read = parse_get_line(outbuf, BUF_SIZE, Mission_text_raw, file_len, mp2)) != 0 ) {
+	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, Mission_text_raw, file_len, mp2)) != 0 ) {
 		mp2 += num_chars_read;
 
 		if(Fred_running){
@@ -1224,9 +1227,9 @@ void read_file_text(char *filename, int mode)
 	
 	*mp = *mp2 = (char)EOF_CHAR;
 /*
-	while (cfgets(outbuf, BUF_SIZE, mf) != NULL) {
-		if (strlen(outbuf) >= BUF_SIZE-1)
-			error_display(0, "Input string too long.  Max is %i characters.\n%.256s\n", BUF_SIZE, outbuf);
+	while (cfgets(outbuf, PARSE_BUF_SIZE, mf) != NULL) {
+		if (strlen(outbuf) >= PARSE_BUF_SIZE-1)
+			error_display(0, "Input string too long.  Max is %i characters.\n%.256s\n", PARSE_BUF_SIZE, outbuf);
 
 		//	If you hit this assert, it is probably telling you the obvious.  The file
 		//	you are trying to read is truly too large.  Look at *filename to see the file name.

@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-08-22 07:01:57 $
+ * $Revision: 2.3 $
+ * $Date: 2003-08-25 04:45:57 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/08/22 07:01:57  Goober5000
+ * implemented $callsign to add the player callsign in a briefing, message, or whatever
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -365,7 +369,7 @@ char *Lcl_ext_filename = NULL;
 CFILE *Lcl_ext_file = NULL;
 
 // for scanning/parsing tstrings.tbl (from ExStr)
-#define PARSE_TEXT_STRING_LEN			2048
+#define PARSE_TEXT_STRING_LEN			PARSE_BUF_SIZE
 #define PARSE_ID_STRING_LEN			128
 #define TS_SCANNING						0				// scanning for a line of text
 #define TS_ID_STRING						1				// reading in an id string
@@ -766,7 +770,8 @@ void lcl_ext_close()
 }
 
 // Goober5000 - replace stuff in the string, e.g. "$callsign" with player's callsign
-#define LCL_NUM_REPLACEMENTS 1
+// now will also replace "$rank" with rank, e.g. "Lieutenant"
+#define LCL_NUM_REPLACEMENTS 2
 #define LCL_TEMP_TEXT_SIZE 2048
 void lcl_replace_stuff(char *text, uint max_len)
 {
@@ -784,6 +789,8 @@ void lcl_replace_stuff(char *text, uint max_len)
 	// fill replacements array (this is if we want to add more in the future)
 	strcpy(replace[0][0], "$callsign");
 	strcpy(replace[0][1], Player->callsign);
+	strcpy(replace[1][0], "$rank");
+	strcpy(replace[1][1], Ranks[Player->stats.rank].name);
 
 	// do all replacements
 	for (i = 0; i < LCL_NUM_REPLACEMENTS; i++)
@@ -822,8 +829,8 @@ void lcl_replace_stuff(char *text, uint max_len)
 void lcl_ext_localize(char *in, char *out, int max_len, int *id)
 {			
 	char first_four[5];
-	char text_str[2048]="";
-	char lookup_str[2048]="";
+	char text_str[PARSE_BUF_SIZE]="";
+	char lookup_str[PARSE_BUF_SIZE]="";
 	int str_id;	
 	int str_len;	
 
