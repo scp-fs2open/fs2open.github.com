@@ -11,7 +11,6 @@
 
 //Global stuffs
 hud_info* current_hud;
-hud_info real_current_hud;
 hud_info default_hud;
 hud_info ship_huds[MAX_SHIP_TYPES];
 extern int ships_inited; //Need this
@@ -30,9 +29,10 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 {NULL,			HUD_VAR(Aburn_coords),			"$Afterburner Energy:",		171, 265, 274, 424, HUD_VAR(Aburn_size) ,HUD_VAR(Aburn_fname), NULL, NULL, NULL},
 {NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size) ,HUD_VAR(Wenergy_fname), NULL, NULL, NULL},
 //Mini-gauges
-{&gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				310, 298, 502, 477,	NULL, NULL, NULL, NULL},
-{&gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			6, 0, 6, 0,	NULL, NULL, NULL, NULL, &gauges[5]},
-{&gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			2, 0, 2, 0,	NULL, NULL, NULL, NULL, &gauges[5]}};
+{&gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				5, 7, 5, 7,			NULL, NULL, NULL, NULL},
+{&gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			6, 0, 6, 0,			NULL, NULL, NULL, NULL},
+{&gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			2, 0, 2, 0,			NULL, NULL, NULL, NULL}
+};
 
 //Number of gauges
 int Num_coord_types = 8;
@@ -45,7 +45,7 @@ static void load_hud_defaults()
 	for(int i = 0; i < Num_coord_types; i++)
 	{
 		cg = &gauges[i];
-		if(cg->addparent && cg->fieldname)
+		if(cg->parent && cg->fieldname)
 		{
 			HUD_INT(&default_hud, cg->coord_dest)[0] = -1;
 			HUD_INT(&default_hud, cg->coord_dest)[1] = -1;
@@ -103,6 +103,7 @@ int stuff_coords(char* pstr, hud_info* dest_hud, size_t i, size_t image, size_t 
 	//Speed up calculations
 	static hud_info* factor_for_hud;
 	static float resize_factor[2];
+	float fl_buffer[2];
 
 	if(required)
 	{
@@ -113,15 +114,16 @@ int stuff_coords(char* pstr, hud_info* dest_hud, size_t i, size_t image, size_t 
 		return 0;
 	}
 
-	stuff_int_list(HUD_INT(dest_hud, i), 2, RAW_INTEGER_TYPE);
+	//stuff_int_list(HUD_INT(dest_hud, i), 2, RAW_INTEGER_TYPE);
+	stuff_float_list(fl_buffer, 2);
 	if(dest_hud != factor_for_hud)
 	{
 		resize_factor[0] = (float)gr_screen.max_w / (float)dest_hud->resolution[0];
 		resize_factor[1] = (float)gr_screen.max_h / (float)dest_hud->resolution[1];
 	}
 	//Resize to current res
-	HUD_INT(dest_hud, i)[0] = fl2i((float)HUD_INT(dest_hud, i)[0] * resize_factor[0]);
-	HUD_INT(dest_hud, i)[1] = fl2i((float)HUD_INT(dest_hud, i)[1] * resize_factor[1]);
+	HUD_INT(dest_hud, i)[0] = fl2i(fl_buffer[0] * resize_factor[0]);
+	HUD_INT(dest_hud, i)[1] = fl2i(fl_buffer[1] * resize_factor[1]);
 
 	if(optional_string("+Size:"))
 	{
@@ -239,10 +241,10 @@ static void calculate_gauges(hud_info* dest_hud)
 		cg = &gauges[i];
 		if(cg->parent)
 		{
-			if(cg->addparent)
+			if(cg->parent)
 			{
-				resize_x = HUD_INT(dest_hud, cg->coord_dest)[0] + HUD_INT(dest_hud, cg->addparent->coord_dest)[0];
-				resize_y = HUD_INT(dest_hud, cg->coord_dest)[1] + HUD_INT(dest_hud, cg->addparent->coord_dest)[1];
+				resize_x = HUD_INT(dest_hud, cg->coord_dest)[0] + HUD_INT(dest_hud, cg->parent->coord_dest)[0];
+				resize_y = HUD_INT(dest_hud, cg->coord_dest)[1] + HUD_INT(dest_hud, cg->parent->coord_dest)[1];
 			}
 			else
 			{
@@ -342,7 +344,7 @@ void parse_custom_gauge()
 {
 	if(Num_coord_types < MAX_HUD_GAUGE_TYPES)
 	{
-		char buffer[32], buffer2[32];
+		char buffer[32];
 
 		gauge_info* cg = &gauges[Num_coord_types];
 		memset(cg, 0, sizeof(gauge_info));
@@ -380,16 +382,6 @@ void parse_custom_gauge()
 		{
 			stuff_string(buffer, F_NAME, NULL);
 			cg->parent = hud_get_gauge(buffer);
-		}
-		if(optional_string("$AddParent:"))
-		{
-			stuff_string(buffer, F_NAME, NULL);
-			if(!stricmp(buffer, buffer2))
-			{
-				cg->addparent = cg->parent;
-			}
-
-			cg->addparent = hud_get_gauge(buffer);
 		}
 
 		Num_coord_types++;
@@ -545,6 +537,8 @@ void hud_positions_init()
 //This lets you change HUD info via SEXPs and still have it be reset
 void set_current_hud(int player_ship_num)
 {
+	static hud_info real_current_hud;
+
 	if(player_ship_num >= 0 && player_ship_num < MAX_SHIP_TYPES && ship_huds[player_ship_num].loaded)
 	{
 		memcpy(&real_current_hud, &ship_huds[player_ship_num], sizeof(hud_info));
