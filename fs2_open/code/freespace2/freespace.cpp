@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.89 $
- * $Date: 2004-04-26 18:23:48 $
- * $Author: Kazan $
+ * $Revision: 2.90 $
+ * $Date: 2004-04-27 20:41:58 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2004/04/26 18:23:48  Kazan
+ * -no_fps_capping
+ *
  * Revision 2.88  2004/04/26 00:25:08  taylor
  * don't preload every sound (fixes some slowdowns), snd_preload option support
  *
@@ -9577,6 +9580,13 @@ int game_hacked_data()
 	}
 
 	CFILE *tvalid_cfg = cfopen("tvalid.cfg", "rt", CFILE_NORMAL, CF_TYPE_DATA);
+
+	// if it's null then multi_update_valid_tables() didn't do it's job correctly
+	if (tvalid_cfg == NULL) {
+		ml_printf("Can't open tvalid.cfg for crc verification, assuming HACKED!\n");
+		return 1; // assume hacked
+	}
+
 	char *buffer = new char[cfilelength(tvalid_cfg)];
 	cfread(buffer, 1, cfilelength(tvalid_cfg), tvalid_cfg);	
 	
