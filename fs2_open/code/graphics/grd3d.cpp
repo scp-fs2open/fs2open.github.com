@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.74 $
- * $Date: 2005-01-30 03:24:39 $
+ * $Revision: 2.75 $
+ * $Date: 2005-02-10 04:01:42 $
  * $Author: wmcoolmon $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2005/01/30 03:24:39  wmcoolmon
+ * Don't try and create a vertex buffer with no vertices (Seems to cause CTD) and fix to brackets in nonstandard res
+ *
  * Revision 2.73  2004/12/20 20:28:15  fryday
  * Fixed a tiny error in bob's code in d3d_init_environment (which seems to be called even
  * if there's no -env command-line) which created the cube-map and didn't check
@@ -2131,26 +2134,43 @@ int find_first_empty_buffer(){
 int gr_d3d_make_buffer(poly_list *list, uint flags){
 	int idx = find_first_empty_buffer();
 
-	if(list->n_verts < 1)
-		return -1;
-
 	if(idx > -1){
+		int k;
+
 		vertex_buffer[idx].size = vertex_size(flags);
 		vertex_buffer[idx].FVF = convert_to_fvf(flags);
 
 //		d3d_CreateVertexBuffer(D3DVT_VERTEX, (list->n_verts), NULL, (void**)buffer);
 		
-		GlobalD3DVars::lpD3DDevice->CreateVertexBuffer(	
+		k = GlobalD3DVars::lpD3DDevice->CreateVertexBuffer(	
 			vertex_buffer[idx].size * list->n_verts, 
 			D3DUSAGE_WRITEONLY, 
 			vertex_buffer[idx].FVF,
 			D3DPOOL_MANAGED,
 			&vertex_buffer[idx].buffer);
 
+		switch(k)
+		{
+			case D3DERR_INVALIDCALL:
+				Error(LOCATION, "CreateVertexBuffer returned D3DERR_INVALIDCALL.");
+				break;
+			case D3DERR_OUTOFVIDEOMEMORY:
+				Error(LOCATION, "CreateVertexBuffer returned D3DERR_OUTOFVIDEOMEMORY");
+				break;
+			case E_OUTOFMEMORY:
+				Error(LOCATION, "CreateVertexBuffer returned E_OUTOFMEMORY");
+				break;
+			default:
+				break;
+		}
+
+		if(vertex_buffer[idx].buffer == NULL)
+			return -1;
+
 		byte* v;
 
 		vertex_buffer[idx].buffer->Lock(0, 0, &v, D3DLOCK_DISCARD);
-		for(int k = 0; k<list->n_verts; k++){
+		for(k = 0; k<list->n_verts; k++){
 				fill_vert(&v[k*vertex_buffer[idx].size],  &list->vert[k], &list->norm[k], flags);
 				vertex_buffer[idx].n_verts++;
 		}

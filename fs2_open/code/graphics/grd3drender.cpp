@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-01-30 03:24:39 $
+ * $Revision: 2.57 $
+ * $Date: 2005-02-10 04:01:42 $
  * $Author: wmcoolmon $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/01/30 03:24:39  wmcoolmon
+ * Don't try and create a vertex buffer with no vertices (Seems to cause CTD) and fix to brackets in nonstandard res
+ *
  * Revision 2.55  2005/01/29 08:04:15  wmcoolmon
  * Ahh, the sweet smell of optimized code
  *
@@ -2393,10 +2396,13 @@ void gr_d3d_clear()
  *
  * @return void
  */
-void gr_d3d_set_clip(int x,int y,int w,int h)
+void gr_d3d_set_clip(int x,int y,int w,int h, bool resize)
 {
-	gr_resize_screen_pos(&x, &y);
-	gr_resize_screen_pos(&w, &h);
+	if(resize)
+	{
+		gr_resize_screen_pos(&x, &y);
+		gr_resize_screen_pos(&w, &h);
+	}
 
 	gr_screen.offset_x = x;
 	gr_screen.offset_y = y;

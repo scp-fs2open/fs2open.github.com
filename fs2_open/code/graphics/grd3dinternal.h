@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.34 $
- * $Date: 2005-02-04 23:29:31 $
- * $Author: taylor $
+ * $Revision: 2.35 $
+ * $Date: 2005-02-10 04:01:42 $
+ * $Author: wmcoolmon $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/02/04 23:29:31  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
  * Revision 2.33  2005/01/14 05:28:57  wmcoolmon
  * gr_curve
  *
@@ -555,7 +558,7 @@ void gr_d3d_scaler(vertex *va, vertex *vb );
 void gr_d3d_aascaler(vertex *va, vertex *vb );
 void gr_d3d_pixel(int x, int y);
 void gr_d3d_clear();
-void gr_d3d_set_clip(int x,int y,int w,int h);
+void gr_d3d_set_clip(int x,int y,int w,int h,bool resize);
 void gr_d3d_reset_clip();
 void gr_d3d_init_color(color *c, int r, int g, int b);
 void gr_d3d_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type );
