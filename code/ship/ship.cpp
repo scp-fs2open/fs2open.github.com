@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.88 $
- * $Date: 2003-11-01 21:59:22 $
- * $Author: bobboau $
+ * $Revision: 2.89 $
+ * $Date: 2003-11-09 04:09:17 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2003/11/01 21:59:22  bobboau
+ * new matrix handeling code, and fixed some problems with 3D lit verts,
+ * several other small fixes
+ *
  * Revision 2.87  2003/10/25 06:56:06  bobboau
  * adding FOF stuff,
  * and fixed a small error in the matrix code,
@@ -1587,7 +1591,7 @@ int parse_ship()
 
 #if defined(MORE_SPECIES)
 
-	// had to do this dirty static alias shit thanks to MSVC being STUPID!
+	// static alias stuff
 	static char *tspecies_names[MAX_SPECIES_NAMES] = { Species_names[0], Species_names[1], Species_names[2], Species_names[3],
 													   Species_names[4], Species_names[5], Species_names[6], Species_names[7] };
 

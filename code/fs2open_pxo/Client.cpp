@@ -5,12 +5,20 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.7 $
- * $Date: 2003-11-06 20:22:05 $
- * $Author: Kazan $
+ * $Revision: 1.8 $
+ * $Date: 2003-11-09 04:09:17 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2003/11/06 20:22:05  Kazan
+ * slight change to .dsp - leave the damn release target as fs2_open_r.exe already
+ * added myself to credit
+ * killed some of the stupid fscking warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * Release builds should have warning level set no higher than 2 (default is 1)
+ * Why the hell are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
+ *
  * Revision 1.6  2003/10/13 06:02:50  Kazan
  * Added Log Comment Thingy to these files
  *
@@ -280,7 +288,7 @@ file_record* GetTablesList(int &numTables, const char *masterserver, UDP_Socket 
 
 			if ((misreply_ptr->num_files * sizeof(file_record)) + (sizeof(int) * 2) > 16384)
 			{
-				// WE"RE IN DEAP SHIT!
+				// WE'RE IN TROUBLE!
 
 				ml_printf("Network (FS2OpenPXO): PCKT_TABLES_REPLY was larger than 16k!!!\n");
 				return NULL;
@@ -334,7 +342,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, UDP_Soc
 
 			if ((misreply_ptr->num_files * sizeof(file_record)) + (sizeof(int) * 2) > 16384)
 			{
-				// WE"RE IN DEAP SHIT!
+				// WE'RE IN TROUBLE!
 
 				ml_printf("Network (FS2OpenPXO): PCKT_MISSIONS_REPLY was larger than 16k!!!\n");
 				return NULL;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/Encrypt.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-09-28 21:22:59 $
+ * $Revision: 2.3 $
+ * $Date: 2003-11-09 04:09:18 $
  * $Author: Goober5000 $
  *
  * Module for encryption code common to FreeSpace and related tools
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/09/28 21:22:59  Goober5000
+ * added the option to import FSM missions, added a replace function, spruced
+ * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -453,7 +458,7 @@ int is_encrypted(char *scrambled_text)
 void encrypt_init()
 {	
 	int idx;
-	ushort haha_you_dumbass = 0xe2A8;
+	ushort temp_var = 0xe2A8;
 
 	if(Encrypt_inited){
 		return;
@@ -461,7 +466,7 @@ void encrypt_init()
 
 	// meddle with the key table so someone reading the disassembly won't be able to get key values unless they're _REALLY_ careful
 	for(idx=0; idx<NUM_LVL1_KEYS; idx++){
-		Lvl1_keys[idx] ^= (haha_you_dumbass >> 2);
+		Lvl1_keys[idx] ^= (temp_var >> 2);
 	}
 
 	Encrypt_inited = 1;

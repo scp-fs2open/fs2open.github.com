@@ -5,12 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/protocol.h $
- * $Revision: 1.7 $
- * $Date: 2003-10-30 15:30:23 $
- * $Author: Kazan $
+ * $Revision: 1.8 $
+ * $Date: 2003-11-09 04:09:17 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2003/10/30 15:30:23  Kazan
+ * lil update
+ *
  * Revision 1.6  2003/10/13 06:02:50  Kazan
  * Added Log Comment Thingy to these files
  *
@@ -188,7 +191,7 @@ struct fs2open_pilot_reply
 
          // if and only if (replytype == 0) then the rest of this data
 
-         // unsigned __int64 points; -- i'd use this except DUMBASS MICROSOFT DOESN'T SUPPORT INT64 COPRRECTLY! DUMBFUCKS
+         // unsigned __int64 points; -- i'd use this except MICROSOFT DOESN'T SUPPORT INT64 COPRRECTLY!
          unsigned int points;
 		 unsigned int missions;
          //unsigned __int64 flighttime;
@@ -217,7 +220,7 @@ struct fs2open_pilot_update
 
 		 char name[65];
 		 char user[65];
-         // unsigned __int64 points; -- i'd use this except DUMBASS MICROSOFT DOESN'T SUPPORT INT64 COPRRECTLY! DUMBFUCKS
+         // unsigned __int64 points; -- i'd use this except MICROSOFT DOESN'T SUPPORT INT64 COPRRECTLY!
          unsigned int points;
 		 unsigned int missions;
          //unsigned __int64 flighttime;
