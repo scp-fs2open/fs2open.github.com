@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/openil/il_func.cpp $
- * $Revision: 1.5 $
- * $Date: 2004-10-31 22:00:56 $
- * $Author: taylor $
+ * $Revision: 1.6 $
+ * $Date: 2004-11-18 00:05:37 $
+ * $Author: Goober5000 $
  *
  * Callback functions for OpenIL (DevIL) to use CFILE
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/10/31 22:00:56  taylor
+ * new bmpman merge support, add PreProcDefines.h a few new places
+ *
  * Revision 1.4  2004/07/26 20:47:46  Kazan
  * remove MCD complete
  *
@@ -33,6 +36,10 @@
  */
 
 #include "PreProcDefines.h"
+
+// 4701 = variable may be used without having been initialized
+// 4702 = unreachable code
+#pragma warning(disable: 4701 4702)
 
 #include "openil/il_func.h"
 #include "globalincs/pstypes.h"

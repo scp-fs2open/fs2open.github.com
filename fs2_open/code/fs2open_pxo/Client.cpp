@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.14 $
- * $Date: 2004-05-25 00:21:39 $
- * $Author: wmcoolmon $
+ * $Revision: 1.15 $
+ * $Date: 2004-11-18 00:05:36 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2004/05/25 00:21:39  wmcoolmon
+ * Updated to use <iostream> instead of <iostream.h>
+ *
  * Revision 1.13  2004/03/07 23:07:20  Kazan
  * [Incomplete] Readd of Software renderer so Standalone server works
  *
@@ -53,6 +56,9 @@
  *
  *
  */
+
+// 4711 = function selected for automatic inline expansion
+#pragma warning(disable: 4711)
 
 #include "Client.h"
 //#include "protocol.h"

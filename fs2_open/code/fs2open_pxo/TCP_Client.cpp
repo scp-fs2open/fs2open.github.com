@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.21 $
- * $Date: 2004-07-26 20:47:29 $
- * $Author: Kazan $
+ * $Revision: 1.22 $
+ * $Date: 2004-11-18 00:05:36 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2004/07/26 20:47:29  Kazan
+ * remove MCD complete
+ *
  * Revision 1.20  2004/07/12 16:32:46  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -93,7 +96,8 @@
 // 4018 = signed/unsigned mismatch
 // 4663 = new template specification syntax
 // 4245 = signed/unsigned mismatch in conversion of const value
-#pragma warning(disable: 4663 4018 4663 4245)
+// 4711 = function selected for automatic inline expansion
+#pragma warning(disable: 4663 4018 4663 4245 4711)
 
 #include "Client.h"
 #include "protocol.h"

@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.11 $
- * $Date: 2004-07-26 20:47:29 $
- * $Author: Kazan $
+ * $Revision: 1.12 $
+ * $Date: 2004-11-18 00:05:36 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2004/07/26 20:47:29  Kazan
+ * remove MCD complete
+ *
  * Revision 1.10  2004/07/12 16:32:46  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -55,10 +58,11 @@
  *
  */
 
-#pragma warning(disable:4100)	// unreferenced formal parameter
-#pragma warning(disable:4511)	// copy constructor could not be generated
-#pragma warning(disable:4512)	// assignment operator could not be generated
-#pragma warning(disable:4711)	// function selected for inlining
+// 4100 = unreferenced formal parameter
+// 4511 = copy constructor could not be generated
+// 4512 = assignment operator could not be generated
+// 4711 = function selected for inlining
+#pragma warning(disable:4100 4511 4512 4711)
 
 #include "TCP_Socket.h"
 //#include <process.h>

@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.8 $
- * $Date: 2004-07-26 20:47:35 $
- * $Author: Kazan $
+ * $Revision: 1.9 $
+ * $Date: 2004-11-18 00:05:37 $
+ * $Author: Goober5000 $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/07/26 20:47:35  Kazan
+ * remove MCD complete
+ *
  * Revision 1.7  2004/07/12 16:32:51  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -43,10 +46,13 @@
  *
  */
 
+// 4786 = identifier truncated in the debug information
+// 4710 = function not inlined
+// 4711 = function inlined
+// 4097 = something used as synonym for class
+// 4127 = conditional expression is constant
+#pragma warning(disable: 4786 4710 4711 4097 4127)
 
-#pragma warning(disable:4786)	// identifier truncated in the debug information
-#pragma warning(disable:4710)	// function not inlined
-#pragma warning(disable:4711)	// function inlined
 #include "irc.h"
 #include "direct.h"
 
