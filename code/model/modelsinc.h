@@ -92,6 +92,7 @@
 #define ID_EYE  0x45594520				// EYE : eye information
 #define ID_INSG 0x494e5347				// INSG: insignia information
 #define ID_ACEN 0x4143454e				// ACEN: autocentering information
+#define ID_GLOW 'WOLG' // glow points -Bobboau
 
 #else
 // neither BIG_ENDIAN nor LITTLE_ENDIAN ??
