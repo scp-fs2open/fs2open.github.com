@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.74 $
- * $Date: 2004-04-26 12:43:58 $
+ * $Revision: 2.75 $
+ * $Date: 2004-05-02 16:01:38 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2004/04/26 12:43:58  taylor
+ * minor fixes, HTL lines, 32-bit texture support
+ *
  * Revision 2.73  2004/04/14 10:24:51  taylor
  * fix for lines and shaders - shouldn't be textured
  *
@@ -1536,8 +1539,9 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 	}
 
 	// prepare to lose brain cells - then find a better fix
+	// don't use this with Fred since it hides models
 	extern int GL_htl_projection_matrix_set;
-	if (!Cmdline_nohtl && GL_htl_projection_matrix_set) {
+	if (!Cmdline_nohtl && !Fred_running && GL_htl_projection_matrix_set) {
 		gr_opengl_line_htl(sx1, sy1, sx2, sy2);
 		return;
 	}
