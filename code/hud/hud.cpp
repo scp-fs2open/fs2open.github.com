@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-01-17 06:35:35 $
+ * $Revision: 2.36 $
+ * $Date: 2005-01-30 03:26:11 $
  * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/01/17 06:35:35  wmcoolmon
+ * Attempt to fix the crash when a player ship's subsystems receives damage, and it has a lot (ie player ship is a capital ship).This seems to be controlled by SUBSYSTEM_MAX, which also controls the number of subsystems saved in red alert missions.
+ *
  * Revision 2.34  2005/01/12 00:17:09  phreak
  * fixed hud offsets bug
  *
@@ -467,6 +470,7 @@
 #include "hud/hudwingmanstatus.h"
 #include "hud/hudparse.h"
 #include "object/objectdock.h"
+#include "render/3dinternal.h"
 
 #if defined(ENABLE_AUTO_PILOT)
 #include "hud/hudnavigation.h"	//kazan
@@ -3433,6 +3437,38 @@ void HUD_set_clip(int x, int y, int w, int h)
 
 	gr_set_clip(hx+x, hy+y, w, h );
 }
+
+// -------------------------------------------------------------------------------------
+// hud_save_restore_camera_data()
+//
+//	Called to save and restore the 3D camera settings.
+//
+void hud_save_restore_camera_data(int save)
+{
+	static vector	save_view_position;
+	static float	save_view_zoom;
+	static matrix	save_view_matrix;
+	static matrix	save_eye_matrix;
+	static vector	save_eye_position;
+
+	// save global view variables, so we can restore them
+	if ( save ) {
+		save_view_position	= View_position;
+		save_view_zoom			= View_zoom;
+		save_view_matrix		= View_matrix;
+		save_eye_matrix		= Eye_matrix;
+		save_eye_position		= Eye_position;
+	}
+	else {
+		// restore global view variables
+		View_position	= save_view_position;
+		View_zoom		= save_view_zoom;
+		View_matrix		= save_view_matrix;
+		Eye_matrix		= save_eye_matrix;
+		Eye_position	= save_eye_position;
+	}
+}
+
 
 void hud_toggle_contrast()
 {

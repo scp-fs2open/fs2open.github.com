@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:25 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-01-30 03:26:11 $
+ * $Author: wmcoolmon $
  *
  * Header file for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:25  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -90,7 +93,7 @@
 void hud_init_brackets();
 void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, int h_correction, float distance=0.0f, int target_objnum=-1);
 void draw_bounding_brackets_subobject();
-void draw_brackets_square(int x1, int y1, int x2, int y2);
+void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize = false);
 void draw_brackets_diamond(int x1, int y1, int x2, int y2);
 void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick=0);
 void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2, int thick=0);

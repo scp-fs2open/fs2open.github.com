@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-12-23 23:36:30 $
+ * $Revision: 2.14 $
+ * $Date: 2005-01-30 03:26:11 $
  * $Author: wmcoolmon $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/12/23 23:36:30  wmcoolmon
+ * Removed unneccessary function call (.0000001 ms speed increase!)
+ *
  * Revision 2.12  2004/11/27 10:45:36  taylor
  * some fixes for position problems on the HUD in non-standard resolutions
  * few compiler warning fixes
@@ -348,9 +351,15 @@ int hud_brackets_get_iff_color(int team)
 
 
 //	Called by draw_bounding_brackets.  
-void draw_brackets_square(int x1, int y1, int x2, int y2)
+void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize)
 {
 	int	width, height;
+
+	if(resize)
+	{
+		gr_resize_screen_pos(&x1, &y1);
+		gr_resize_screen_pos(&x2, &y2);
+	}
 	
 	width = x2 - x1;
 	Assert( width > 0);
