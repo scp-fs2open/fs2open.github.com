@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-10 18:42:14 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -2773,6 +2776,54 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		d3d_zbias(0);	
 	}	
 #endif
+	//start rendering glow points -Bobboau
+	if ( (pm->n_glows) /*&& (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
+
+		for (i = 0; i < pm->n_glows; i++ ) {
+			glow_bank *bank = &pm->glows[i];
+			int j;
+
+			for ( j=0; j<bank->num_slots; j++ )	{
+				float d;
+				vector tempv;
+				vm_vec_sub(&tempv,&View_position,&bank->pnt[j]);
+				vm_vec_normalize(&tempv);
+
+				d = vm_vec_dot(&tempv,&bank->norm[j]);
+
+				if ( d > 0.0f)	{
+					vertex p;					
+
+					// Make glow bitmap fade in/out quicker from sides.
+					d *= 3.0f;
+					if ( d > 1.0f ) d = 1.0f;
+
+					// fade them in the nebula as well
+					if(The_mission.flags & MISSION_FLAG_FULLNEB){
+						d *= (1.0f - Interp_fog_level);
+					}
+
+					float w = bank->radius[j];
+
+					// disable fogging
+					gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+
+					g3_rotate_vertex( &p, &bank->pnt[j] );
+					gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
+					{
+						extern int Gr_scaler_zbuffering;
+						Gr_scaler_zbuffering = 1;
+						g3_draw_bitmap(&p,0,w*0.5f, TMAP_FLAG_TEXTURED );
+						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
+						Gr_scaler_zbuffering = 0;
+					}
+				}
+
+			}
+		}
+	}
+
+	//end rendering glow points
 
 	// Draw the thruster glow
 	if ( (Interp_thrust_glow_bitmap != -1) && (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-10 18:42:14 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -787,6 +790,10 @@ static void model_unload(int modelnum)
 
 	if ( pm->thrusters )	{
 		free(pm->thrusters);
+	}
+
+	if ( pm->glows )	{ // free the glows!!! -Bobboau
+		free(pm->glows);
 	}
 
 #ifndef NDEBUG
@@ -1648,6 +1655,47 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 				break;
 			}
+
+			case ID_GLOW:{					//start glowpoint reading -Bobboau
+				char props[MAX_PROP_LEN];
+				pm->n_glows = cfread_int(fp);
+				pm->glows = (glow_bank *)malloc(sizeof(glow_bank) * pm->n_glows);
+				Assert( pm->glows != NULL );
+
+				for (int q = 0; q < pm->n_glows; q++ ) {
+					glow_bank *bank = &pm->glows[q];
+
+					bank->num_slots = cfread_int(fp);
+	
+						cfread_string_len( props, MAX_PROP_LEN, fp );
+						// look for $glow_texture=xxx
+						int length = strlen(props);
+						if (length > 0) {
+							int base_length = strlen("$glow_texture=");
+							Assert( strstr( (const char *)&props, "$glow_texture=") != NULL );
+							Assert( length > base_length );
+								char *glow_texture_name = props + base_length;
+							if (glow_texture_name[0] == '$') {
+								glow_texture_name++;
+							}
+						bank->glow_bitmap = bm_load( glow_texture_name );
+						if (bank->glow_bitmap < 0)	{
+							Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
+						
+						}
+					}
+					for (j = 0; j < bank->num_slots; j++) {
+
+						cfread_vector( &(bank->pnt[j]), fp );
+						cfread_vector( &(bank->norm[j]), fp );
+							bank->radius[j] = cfread_float( fp );
+							//mprintf(( "Rad = %.2f\n", rad ));
+					}
+					//mprintf(( "Num slots = %d\n", bank->num_slots ));
+
+				}
+				break;					
+			 }				//end glowpoint reading -Bobboau
 
 			case ID_FUEL:
 				char props[MAX_PROP_LEN];

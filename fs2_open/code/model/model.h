@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-10 18:42:14 $
+ * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:09  mharris
  * got some stuff to compile
  *
@@ -525,6 +528,13 @@ typedef struct thruster_bank {
 	char		wash_info_index;			// index into Engine_wash_info
 } thruster_bank;
 	
+typedef struct glow_bank {  // glow bank struckture -Bobboau
+	int		num_slots;
+	vector	pnt[MAX_THRUSTER_SLOTS];
+	vector	norm[MAX_THRUSTER_SLOTS];
+	float		radius[MAX_THRUSTER_SLOTS];
+	int		glow_bitmap;
+} glow_bank;
 
 // defines for docking bay things.  The types are essentially flags since docking bays can probably
 // be used for multiple things in some cases (i.e. rearming and general docking)
@@ -706,6 +716,10 @@ typedef struct polymodel {
 	int			debug_info_size;
 	char			*debug_info;
 #endif
+
+	int n_glows;							// number of glows on this ship. -Bobboau
+	glow_bank *glows;						// array of glow objects -Bobboau
+
 } polymodel;
 
 
