@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.38 $
- * $Date: 2003-03-18 08:44:05 $
+ * $Revision: 2.39 $
+ * $Date: 2003-03-30 07:27:34 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/03/18 08:44:05  Goober5000
+ * added explosion-effect sexp and did some other minor housekeeping
+ * --Goober5000
+ *
  * Revision 2.37  2003/03/06 09:13:43  Goober5000
  * fixed what should be the last bug with bank-specific loadouts
  * --Goober5000
@@ -921,6 +925,8 @@ typedef struct exited_ship {
 	int		flags;
 	fix		time;
 	int		hull_strength;
+	fix		time_cargo_revealed;
+	char	cargo1;
 } exited_ship;
 
 extern exited_ship Ships_exited[MAX_EXITED_SHIPS];
@@ -1321,7 +1327,6 @@ extern int get_subsystem_pos(vector *pos, object *objp, ship_subsys *subsysp);
 extern int ship_info_lookup(char *name);
 extern int ship_info_base_lookup(int si_index);
 extern int ship_name_lookup(char *name, int inc_players = 0);	// returns the index into Ship array of name
-extern int ship_name_lookup_absolute(char *name);
 extern int ship_type_name_lookup(char *name);
 
 extern int wing_lookup(char *name);

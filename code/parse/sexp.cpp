@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.58 $
- * $Date: 2003-03-30 04:34:38 $
+ * $Revision: 2.59 $
+ * $Date: 2003-03-30 07:27:33 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2003/03/30 04:34:38  Goober5000
+ * preliminary work on ai facing sexp
+ * --Goober5000
+ *
  * Revision 2.57  2003/03/29 11:23:46  sesquipedalian
  * Aaaand nevermind...
  *
@@ -1925,7 +1929,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				// ship exists at this point
 
 				// now determine if this ship has a docking bay
-				if (!ship_has_dock_bay(ship_name_lookup_absolute(CTEXT(index))))
+				if (!ship_has_dock_bay(ship_name_lookup(CTEXT(index))))
 				{
 					return SEXP_CHECK_INVALID_SHIP_WITH_BAY;
 				}
@@ -4339,7 +4343,10 @@ void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vector *subsys_world
 {
 	ship_subsys *ss;
 
-	Assert(shipnum >= 0);
+	if(shipnum < 0)
+	{
+		Error(LOCATION, "Error - nonexistent ship.\n");
+	}
 
 	// find the ship subsystem by searching ship's subsys_list
 	ss = GET_FIRST( &Ships[shipnum].subsys_list );
@@ -5182,19 +5189,19 @@ int sexp_is_cargo_known( int n, int check_delay )
 		{
 			name = CTEXT(n);
 
-			// find the index in the ship array
-			ship_num = ship_name_lookup_absolute(name);
-			Assert(ship_num != -1);	// make sure that the ship actually is valid
+			// find the index in the ship array (will be -1 if not in mission)
+			ship_num = ship_name_lookup(name);
 
 			// see if the ship has already exited the mission (either through departure or destruction)
-			if (ship_find_exited_ship_by_name(name) != -1)
+			int exited_index = ship_find_exited_ship_by_name(name);
+			if (exited_index != -1)
 			{
 				// if not known, the whole thing is known false
-				if ( !(Ships[ship_num].flags & SF_CARGO_REVEALED) )
+				if ( !(Ships_exited[exited_index].flags & SEF_CARGO_KNOWN) )
 					return SEXP_KNOWN_FALSE;
 
 				// check the delay of when we found out
-				time_known = Missiontime - Ships[ship_num].time_cargo_revealed;
+				time_known = Missiontime - Ships_exited[exited_index].time_cargo_revealed;
 				if ( f2i(time_known) >= delay )
 				{
 					is_known = 1;
@@ -5208,7 +5215,7 @@ int sexp_is_cargo_known( int n, int check_delay )
 			{
 				// if ship_name_lookup returns -1, then ship is either exited or yet to arrive,
 				// and we've already checked exited
-				if ( ship_name_lookup(name) != -1 )
+				if ( ship_num != -1 )
 				{
 					if ( Ships[ship_num].flags & SF_CARGO_REVEALED )
 					{
@@ -5271,14 +5278,11 @@ void get_cap_subsys_cargo_flags(int shipnum, char *subsys_name, int *known, fix 
 // reworked by Goober5000 to allow for set-scanned and set-unscanned to be used more than once
 int sexp_cap_subsys_cargo_known_delay(int n)
 {
-	int delay, count, num_known, ship_num, cargo_revealed;
-	fix time_revealed;
+	int delay, count, num_known, ship_num;
 	char *ship_name, *subsys_name;
 
 	num_known = 0;
 	count = 0;
-	cargo_revealed = 0;
-	time_revealed = 0;
 
 	// get delay
 	delay = sexp_get_val(n);
@@ -5289,8 +5293,7 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 	n = CDR(n);
 
 	// find the index in the ship array
-	ship_num = ship_name_lookup_absolute(ship_name);
-	Assert(ship_num != -1);	// make sure that the ship actually is valid
+	ship_num = ship_name_lookup(ship_name);
 
 	while ( n != -1 )
 	{
@@ -5310,16 +5313,9 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 			// get subsys name
 			subsys_name = CTEXT(n);
 
-			// get flags
-			get_cap_subsys_cargo_flags(ship_num, subsys_name, &cargo_revealed, &time_revealed);
-
 			// see if the ship has already exited the mission (either through departure or destruction)
 			if (ship_find_exited_ship_by_name(ship_name) != -1)
 			{
-				// if not known, the whole thing is known false
-				if (!cargo_revealed)
-					return SEXP_KNOWN_FALSE;
-
 				// check the delay of when we found out...
 				// Since there is no way to keep track of subsystem status once a ship has departed
 				// or has been destroyed, check the mission log.  This will work in 99.9999999% of
@@ -5333,7 +5329,11 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 				// in this way, especially since this problem only occurs after the ship departs.  If
 				// the mission designer really needs this functionality, he or she can achieve the
 				// same result with creative combinations of event chaining and is-event-true.
-				mission_log_get_time(LOG_CAP_SUBSYS_CARGO_REVEALED, ship_name, subsys_name, &time_known);
+				if (!mission_log_get_time(LOG_CAP_SUBSYS_CARGO_REVEALED, ship_name, subsys_name, &time_known))
+				{
+					// if not known, the whole thing is known false
+					return SEXP_KNOWN_FALSE;
+				}
 
 				if (f2i(Missiontime - time_known) >= delay)
 				{
@@ -5348,8 +5348,14 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 			{
 				// if ship_name_lookup returns -1, then ship is either exited or yet to arrive,
 				// and we've already checked exited
-				if ( ship_name_lookup(ship_name) != -1 )
+				if ( ship_num != -1 )
 				{
+					int cargo_revealed(0);
+					fix time_revealed(0);
+
+					// get flags
+					get_cap_subsys_cargo_flags(ship_num, subsys_name, &cargo_revealed, &time_revealed);
+
 					if (cargo_revealed)
 					{
 						time_known = Missiontime - time_revealed;
@@ -6802,10 +6808,10 @@ int sexp_is_cargo(int n)
 	cargo_index = -1;
 
 	// find ship
-	ship_num = ship_name_lookup_absolute(ship);
+	ship_num = ship_name_lookup(ship);
 
 	// in-mission?
-	if (ship_name_lookup(ship) != -1)
+	if (ship_num != -1)
 	{
 		if (subsystem)
 		{
@@ -6840,9 +6846,10 @@ int sexp_is_cargo(int n)
 		}
 
 		// departed?
-		if (ship_find_exited_ship_by_name(ship) != -1)
+		int exited_index = ship_find_exited_ship_by_name(ship);
+		if (exited_index != -1)
 		{
-			cargo_index = Ships[ship_num].cargo1;
+			cargo_index = Ships_exited[exited_index].cargo1;
 		}
 		// not arrived yet
 		else
@@ -9531,8 +9538,12 @@ void sexp_primitive_sensors_set_range(int n)
 	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
 		return;
 
-	// get the ship - doesn't matter if it hasn't arrived yet
-	ship_num = ship_name_lookup_absolute(ship_name);
+	// get the ship
+	ship_num = ship_name_lookup(ship_name);
+
+	// ship not yet in mission? do nothing
+	if (ship_num < 0)
+		return;
 
 	// set the new range
 	Ships[ship_num].primitive_sensor_range = range;

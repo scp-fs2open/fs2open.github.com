@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.38 $
+ * $Revision: 2.39 $
  * $Author: Goober5000 $
- * $Date: 2003-03-30 04:34:38 $
+ * $Date: 2003-03-30 07:27:33 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/03/30 04:34:38  Goober5000
+ * preliminary work on ai facing sexp
+ * --Goober5000
+ *
  * Revision 2.37  2003/03/29 11:23:46  sesquipedalian
  * Aaaand nevermind...
  *
@@ -1042,6 +1046,7 @@ extern int Training_context_goal_waypoint;
 extern int Training_context_at_waypoint;
 extern float Training_context_distance;
 extern int Players_target;
+extern int Players_mlocked;
 extern ship_subsys *Players_targeted_subsys;
 extern int Players_target_timestamp;
 extern int Players_mlocked_timestamp;

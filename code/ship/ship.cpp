@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.57 $
- * $Date: 2003-03-18 10:07:05 $
- * $Author: unknownplayer $
+ * $Revision: 2.58 $
+ * $Date: 2003-03-30 07:27:34 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2003/03/18 10:07:05  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.56  2003/03/18 01:44:30  Goober5000
  * fixed some misspellings
  * --Goober5000
@@ -2385,8 +2388,15 @@ void ship_add_exited_ship( ship *sp, int reason )
 	Ships_exited[entry].time = Missiontime;
 	Ships_exited[entry].hull_strength = int(Objects[sp->objnum].hull_strength);
 
+	Ships_exited[entry].cargo1 = sp->cargo1;
+
+	Ships_exited[entry].time_cargo_revealed = (fix)0;
 	if ( sp->flags & SF_CARGO_REVEALED )
+	{
 		Ships_exited[entry].flags |= SEF_CARGO_KNOWN;
+		Ships_exited[entry].time_cargo_revealed = sp->time_cargo_revealed;
+	}
+
 	if ( sp->time_first_tagged > 0 )
 		Ships_exited[entry].flags |= SEF_BEEN_TAGGED;
 }
@@ -7669,28 +7679,6 @@ int ship_name_lookup(char *name, int inc_players)
 				}
 			}
 		}
-	}
-	
-	// couldn't find it
-	return -1;
-}
-
-// Goober5000: return the ship index of the ship with name *name, without regard to whether
-// the ship is in the mission or not
-int ship_name_lookup_absolute(char *name)
-{
-	int	i;
-
-	// bogus
-	if(name == NULL){
-		return -1;
-	}
-
-	for (i=0; i<MAX_SHIPS; i++)
-	{
-		if (strlen(Ships[i].ship_name) > 0)
-			if (!stricmp(name, Ships[i].ship_name))
-				return i;
 	}
 	
 	// couldn't find it
