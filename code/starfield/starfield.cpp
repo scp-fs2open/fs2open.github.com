@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-02-04 20:06:09 $
+ * $Revision: 2.41 $
+ * $Date: 2005-02-15 00:03:34 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/02/04 20:06:09  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.39  2005/01/30 09:27:40  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -1209,6 +1212,11 @@ void stars_draw_sun( int show_sun, int env )
 			continue;
 		}
 
+		// if no bitmap then bail...
+		if (bm->bitmap < 0) {
+			continue;
+		}
+
 		// get sun pos
 		sun_pos = vmd_zero_vector;
 		sun_pos.xyz.y = 1.0f;
@@ -1251,6 +1259,10 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 	dy = 2.0f*(i2fl(gr_screen.clip_bottom-gr_screen.clip_top)*0.5f - sun_vex->sy); // meaning it is the vector to the opposite position on the screen
 	for(j = 0; j<bm->flare_n_tex; j++)
 	{
+		// if no bitmap then bail...
+		if (bm->flare_bitmaps[j] < 0)
+			continue;
+
 		gr_set_bitmap(bm->flare_bitmaps[j], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
 		for(i = 0; i<bm->flare_n_flares; i++)
 		if( bm->flare_infos[i].tex_num == j) //draw sorted by texture, to minimize texture changes. not the most efficient way, but better than non-sorted
@@ -1280,6 +1292,11 @@ void stars_draw_sun_glow(int sun_n)
 	// get the instance
 	bm = stars_lookup_sun(&Suns[sun_n]);
 	if(bm == NULL){
+		return;
+	}
+
+	// if no bitmap then bail...
+	if (bm->glow_bitmap < 0) {
 		return;
 	}
 
@@ -1355,6 +1372,11 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 			continue;
 		}
 	
+		// if no bitmap then bail...
+		if (Starfield_bitmaps[star_index].bitmap < 0) {
+			continue;
+		}
+
 		{
 			
 			if(Starfield_bitmaps[star_index].xparent){

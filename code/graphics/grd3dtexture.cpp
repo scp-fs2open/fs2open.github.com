@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-01-01 11:24:22 $
+ * $Revision: 2.45 $
+ * $Date: 2005-02-15 00:03:36 $
  * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/01/01 11:24:22  taylor
+ * good OpenGL spec mapping
+ * fix VBO crash with multitexture using same uv coord data
+ * little speedup of opengl_tcache_frame()
+ * error message to make sure hardware supports the minimum texture size
+ * move OpenGL version check out of the extention printout code
+ * disable 2d_poof with OpenGL
+ *
  * Revision 2.43  2004/10/31 21:40:11  taylor
  * move some otherwise bmpman stuff into grd3dbmpman.cpp
  *
@@ -595,7 +603,7 @@
 #include "network/multi_log.h"
 
 
-tcache_slot_d3d Textures[MAX_BITMAPS];
+static tcache_slot_d3d *Textures = NULL;
 
 int D3D_frame_count = 0;
 int D3D_min_texture_width = 0;
@@ -1186,22 +1194,24 @@ void d3d_tcache_init()
 
 	DBUGFILE_OUTPUT_2("Max textures: %d %d",D3D_max_texture_width,D3D_max_texture_height);
 	
-//	Textures = (tcache_slot_d3d *) malloc(MAX_BITMAPS * sizeof(tcache_slot_d3d));
+	Textures = (tcache_slot_d3d *) malloc(MAX_BITMAPS * sizeof(tcache_slot_d3d));
 
 	if ( !Textures ) {
 		DBUGFILE_OUTPUT_0("exit");
 		exit(1);
 	}
 
+	memset( Textures, 0, MAX_BITMAPS * sizeof(tcache_slot_d3d) );
+
 	// Init the texture structures
 	for( i=0; i<MAX_BITMAPS; i++ )	{
-		Textures[i].d3d8_thandle = NULL;
+	//	Textures[i].d3d8_thandle = NULL;
 
 		Textures[i].bitmap_id = -1;
-		Textures[i].size = 0;
-		Textures[i].used_this_frame = 0; 
+	//	Textures[i].size = 0;
+	//	Textures[i].used_this_frame = 0; 
 
-		Textures[i].parent = NULL;
+	//	Textures[i].parent = NULL;
 	}
 
 	D3D_last_detail = Detail.hardware_textures;
@@ -1234,10 +1244,10 @@ void d3d_tcache_cleanup()
 	D3D_textures_in = 0;
 	D3D_textures_in_frame = 0;
 
-/*	if ( Textures )	{
+	if ( Textures )	{
 		free(Textures);
 		Textures = NULL;
-	}*/
+	}
 }
 
 void d3d_tcache_frame()

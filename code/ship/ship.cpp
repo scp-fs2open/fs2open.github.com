@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.161 $
- * $Date: 2005-02-10 14:38:50 $
+ * $Revision: 2.162 $
+ * $Date: 2005-02-15 00:03:35 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.161  2005/02/10 14:38:50  taylor
+ * fix an issue with bm_set_components()
+ * abs is for ints fabsf is for floats (camera.cpp)
+ * make the in-cockpit stuff OGL friendly
+ *
  * Revision 2.160  2005/02/04 20:06:08  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -6465,7 +6470,7 @@ void show_ship_subsys_count()
 //	-1 means failed.
 int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 {
-	int			i, n, objnum, j, k, h, t;
+	int			i, n, objnum, j, k, t;
 	ship_info	*sip;
 	ship			*shipp;
 
@@ -6729,9 +6734,11 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	shipp->ab_count = 0;
 	if(sip->flags & SIF_AFTERBURNER)
 	{
-		for(h = 0; h < pm_orig->n_thrusters; h++)
+		for(i = 0; i < pm_orig->n_thrusters; i++)
 		{
-			for(j = 0; j < pm_orig->thrusters->num_slots; j++)
+			thruster_bank *bank = &pm_orig->thrusters[i];
+
+			for(j = 0; j < bank->num_slots; j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
@@ -6739,11 +6746,11 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 				ci = &shipp->ab_info[shipp->ab_count];
 			//	ci = &sip->ct_info[sip->ct_count++];
 
+				if (bank->point[j].norm.xyz.z > -0.5)
+					continue;// only make ab trails for thrusters that are pointing backwards
 
-			if(pm_orig->thrusters[h].point[j].norm.xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
-
-			ci->pt = pm_orig->thrusters[h].point[j].pnt;//offset
-				ci->w_start = pm_orig->thrusters[h].point[j].radius * sip->ABwidth_factor;//width * table loaded width factor
+				ci->pt = bank->point[j].pnt;//offset
+				ci->w_start = bank->point[j].radius * sip->ABwidth_factor;//width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
 	
@@ -6755,10 +6762,10 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	
 				ci->stamp = 60;	//spew time???	
 
-			ci->bitmap = sip->ABbitmap; //table loaded bitmap used on this ships burner trails
-			mprintf(("ab trail point %d made\n", shipp->ab_count));
-			shipp->ab_count++;
-			Assert(MAX_SHIP_CONTRAILS > shipp->ab_count);
+				ci->bitmap = sip->ABbitmap; //table loaded bitmap used on this ships burner trails
+				mprintf(("ab trail point %d made\n", shipp->ab_count));
+				shipp->ab_count++;
+				Assert(MAX_SHIP_CONTRAILS > shipp->ab_count);
 			}
 		}
 	}//end AB trails -Bobboau
