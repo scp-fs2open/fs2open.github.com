@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-01-09 05:55:55 $
+ * $Revision: 2.12 $
+ * $Date: 2003-01-16 06:49:11 $
  * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/01/09 05:55:55  Goober5000
+ * fixed the giant thruster glow bug
+ * --Goober5000
+ *
  * Revision 2.10  2003/01/06 19:33:22  Goober5000
  * cleaned up some stuff with model_set_thrust and a commented Assert that
  * shouldn't have been
@@ -910,7 +914,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	//		Assert( verts[i].normnum == verts[i].vertnum );
 
-			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->ambient[w(p+40)]))	{	//gets the ambient glow to work
+			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->is_ambient[w(p+40)]))	{	//gets the ambient glow to work
 				if ( D3D_enabled )	{
 					Interp_list[i]->r = 191;
 					Interp_list[i]->g = 191;
@@ -1024,7 +1028,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						texture = Interp_nameplate_bitmap;
 					} else {
 						if (pm->is_ani[w(p+40)]){
-							texture = pm->textures[w(p+40)] + ((timestamp() / (int)(pm->fps[w(p+40)])) % pm->numframes[w(p+40)]);//here is were it picks the texture to render for ani-Bobboau
+							texture = pm->textures[w(p+40)] + ((timestamp() / (int)(pm->fps[w(p+40)])) % pm->num_frames[w(p+40)]);//here is were it picks the texture to render for ani-Bobboau
 						}else{
 							texture = pm->textures[w(p+40)];//here is were it picks the texture to render for normal-Bobboau
 						}
@@ -1034,7 +1038,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					if(Interp_flags & MR_ALL_XPARENT){
 						gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_xparent_alpha );
 					} else {
-						if(pm->transparent[w(p+40)]){	//trying to get transperent textures-Bobboau
+						if(pm->is_transparent[w(p+40)]){	//trying to get transperent textures-Bobboau
 							gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
 						}else{
 							gr_set_bitmap( texture );

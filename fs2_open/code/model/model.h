@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.14 $
- * $Date: 2003-01-15 08:57:23 $
+ * $Revision: 2.15 $
+ * $Date: 2003-01-16 06:49:11 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/01/15 08:57:23  Goober5000
+ * assigning duplicate models to ships now works; committing so I have a base
+ * to fall back to as I work on texture replacement
+ * --Goober5000
+ *
  * Revision 2.13  2003/01/15 05:18:13  Goober5000
  * moved texture loading around a bit; added Texture_replace in preparation
  * for some cool stuff
@@ -741,12 +746,12 @@ typedef struct polymodel {
 	int			n_textures;
 	int			original_textures[MAX_MODEL_TEXTURES];		// what gets read in from file
 	int			textures[MAX_MODEL_TEXTURES];					// what textures you draw with.  reset to original_textures by model_set_instance
-	int			numframes[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
+	int			num_frames[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			fps[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			is_ani[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			nameplate[MAX_MODEL_TEXTURES];				// use the nameplate texture-Bobboau
-	int			ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
-	int			transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau
+	int			is_ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
+	int			is_transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau
 
 
 	vector		autocenter;							// valid only if PM_FLAG_AUTOCEN is set
@@ -826,7 +831,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 void model_load_texture(polymodel *pm, int i, char *file);
 
 // Goober5000
-void model_duplicate_reskin(int new_model, int old_model, char *ship_name);
+void model_duplicate_reskin(int modelnum, char *ship_name);
 
 // notify the model system that a ship has died
 void model_notify_dead_ship(int objnum);
