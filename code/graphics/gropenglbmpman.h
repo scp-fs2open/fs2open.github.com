@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.h $
- * $Revision: 1.1 $
- * $Date: 2004-10-31 21:21:11 $
+ * $Revision: 1.2 $
+ * $Date: 2004-11-23 00:10:06 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/10/31 21:21:11  taylor
+ * initial import from bmpman merge
+ *
  *
  * $NoKeywords: $
  */
@@ -54,7 +57,7 @@ void gr_opengl_bm_init(int n);
 void gr_opengl_bm_page_in_start();
 
 // Lock an image files data into memory
-int gr_opengl_bm_lock(char *filename, int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags);
+int gr_opengl_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
 
 #endif // _OGL_BMPMAN_H

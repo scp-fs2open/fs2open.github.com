@@ -123,6 +123,10 @@ SOURCE=.\Bmpman\BmpMan.cpp
 
 SOURCE=.\Bmpman\BmpMan.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\bmpman\bm_internal.h
+# End Source File
 # End Group
 # Begin Group "CFile"
 

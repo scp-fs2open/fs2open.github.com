@@ -31,7 +31,7 @@ void gr_d3d_bm_create(int n);
 int gr_d3d_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, ubyte *c_type = 0, int *mm_lvl = 0, int *size = 0);
 void gr_d3d_bm_init(int n);
 void gr_d3d_bm_page_in_start();
-int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags);
+int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
 
 #endif

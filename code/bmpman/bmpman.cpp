@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.36 $
- * $Date: 2004-11-21 11:26:39 $
+ * $Revision: 2.37 $
+ * $Date: 2004-11-23 00:10:06 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2004/11/21 11:26:39  taylor
+ * split bm_load_sub() into fast (memory only) and slow (disk only) versions
+ * EFF bug fix for fps and much better error handling
+ *
  * Revision 2.35  2004/11/04 08:33:44  taylor
  * note to self: copy is down pat, now just learn how to paste, moron
  *
@@ -660,6 +664,9 @@
 #include "jpgutils/jpgutils.h"
 #include "parse/parselo.h"
 
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
+
 extern int Cmdline_jpgtga;
 extern int Cmdline_pcx32;
 
@@ -886,6 +893,7 @@ void bm_init()
 	for (i=0; i<MAX_BITMAPS; i++ ) {
 		bm_bitmaps[i].filename[0] = '\0';
 		bm_bitmaps[i].type = BM_TYPE_NONE;
+		bm_bitmaps[i].dir_type = CF_TYPE_ANY;
 		bm_bitmaps[i].info.user.data = NULL;
 		bm_bitmaps[i].bm.data = 0;
 		bm_bitmaps[i].bm.palette = NULL;
@@ -1052,7 +1060,7 @@ int bm_load_sub_slow(char *real_filename, const char *ext, CFILE **img_cfp = NUL
 // returns  0 if it could not be found
 //          1 if it already exists, fills in handle
 int Bm_ignore_duplicates = 0;
-int bm_load_sub_fast(char *real_filename, const char *ext, int *handle)
+int bm_load_sub_fast(char *real_filename, const char *ext, int *handle, int dir_type = CF_TYPE_ANY)
 {
 	if (Bm_ignore_duplicates)
 		return 0;
@@ -1067,7 +1075,7 @@ int bm_load_sub_fast(char *real_filename, const char *ext, int *handle)
 	}
 
 	for (i = 0; i < MAX_BITMAPS; i++) {
-		if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && !stricmp(filename, bm_bitmaps[i].filename) ) {
+		if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && !stricmp(filename, bm_bitmaps[i].filename) && (bm_bitmaps[i].dir_type == dir_type) ) {
 			nprintf (("BmpMan", "Found bitmap %s -- number %d\n", filename, i));
 			*handle = bm_bitmaps[i].handle;
 			return 1;
@@ -1204,6 +1212,7 @@ int bm_load( char * real_filename )
 	bm_bitmaps[n].bm.palette = NULL;
 	bm_bitmaps[n].num_mipmaps = mm_lvl;
 	bm_bitmaps[n].mem_taken = bm_size;
+	bm_bitmaps[n].dir_type = CF_TYPE_ANY;
 
 	bm_bitmaps[n].palette_checksum = 0;
 	bm_bitmaps[n].handle = bm_get_next_handle()*MAX_BITMAPS + n;
@@ -1410,7 +1419,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		const char *ext_list[NUM_TYPES] = {".eff", ".ani"};
 
 		for (i=0; i<NUM_TYPES; i++) {
-			if ( bm_load_sub_fast(filename, ext_list[i], &handle) ) {
+			if ( bm_load_sub_fast(filename, ext_list[i], &handle, dir_type) ) {
 				n = handle % MAX_BITMAPS;
 				Assert( bm_bitmaps[n].handle == handle );
 
@@ -1535,6 +1544,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		bm_bitmaps[n+i].last_used = -1;
 		bm_bitmaps[n+i].num_mipmaps = mm_lvl;
 		bm_bitmaps[n+i].mem_taken = img_size;
+		bm_bitmaps[n+i].dir_type = dir_type;
 
 		// fill in section info
 		bm_calc_sections(&bm_bitmaps[n+i].bm);
@@ -2182,7 +2192,7 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	#endif
 
 	// read the file data
-	if ( gr_bm_lock( be->filename, handle, bitmapnum, be, bmp, bpp, flags ) == -1 ) {
+	if ( gr_bm_lock( be->filename, handle, bitmapnum, bpp, flags ) == -1 ) {
 		// oops, this isn't good - reset and return NULL
 		bm_unlock( bitmapnum );
 		bm_unload( bitmapnum );
