@@ -9,13 +9,18 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-11-14 04:18:16 $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-05 23:41:50 $
  * $Author: bobboau $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/11/14 04:18:16  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -217,7 +222,8 @@ void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float ra
 		set_warp_gloabals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, 0.0f);
 
 		gr_set_cull(0);
-
+/*
+//this is that half done effect that was pissing people off-Bobboau
 		matrix m;
 		vector ray_dir;
 		vm_vector_2_matrix(&m, &orient->vec.fvec, NULL, NULL);//this is the beam things that will come outof the point-Bobboau
@@ -248,7 +254,7 @@ void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float ra
 			gr_set_bitmap(Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
 			g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
 		}
-
+*/
 		gr_set_cull(1);
 
 		vecs[4] = center;		//this is for the warp glow-Bobboau

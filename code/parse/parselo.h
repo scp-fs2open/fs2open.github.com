@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.2 $
- * $Author: penguin $
- * $Date: 2002-08-01 01:41:09 $
+ * $Revision: 2.3 $
+ * $Author: bobboau $
+ * $Date: 2003-01-05 23:41:51 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/20 19:21:13  DTP
  * bumped MAX_MISSION_TEXT to 1000000 in code/parse/parselo.h
  *
@@ -365,4 +368,6 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 extern int required_string_fred(char *pstr, char *end = NULL);
 extern int required_string_either_fred(char *str1, char *str2);
 extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL);
+
+extern char	parse_error_text[64];
 #endif

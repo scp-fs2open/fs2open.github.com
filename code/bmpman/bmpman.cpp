@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-12-02 23:26:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-01-05 23:41:50 $
+ * $Author: bobboau $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/12/02 23:26:08  Goober5000
+ * fixed misspelling
+ *
  * Revision 2.5  2002/12/02 20:46:41  Goober5000
  * fixed misspelling of "category" as "catagory"
  *
@@ -510,6 +513,10 @@
 #define BMPMAN_NDEBUG
 #endif
 
+
+int GLOWMAP[MAX_BITMAPS] = {-1};
+
+
 // keep this defined to use per-ship nondarkening pixels
 #define BMPMAN_SPECIAL_NONDARK
 
@@ -766,7 +773,7 @@ void bm_init()
 		bm_free_data(i);  	// clears flags, bbp, data, etc
 	}
 
-
+		GLOWMAP[i]=-1;
 }
 
 #ifdef BMPMAN_NDEBUG
@@ -970,6 +977,7 @@ int bm_load( char * real_filename )
 	// found as pre-existing
 	case 1:
 		found = 1;
+		GLOWMAP[handle] = -1;
 		return handle;		
 	}
 
@@ -989,6 +997,7 @@ int bm_load( char * real_filename )
 
 		// found as pre-existing
 		case 1:						
+			GLOWMAP[handle] = -1;
 			return handle;					
 		}
 	}
@@ -1051,6 +1060,8 @@ int bm_load( char * real_filename )
 
 	// fill in section info
 	bm_calc_sections(&bm_bitmaps[n].bm);
+
+	GLOWMAP[n] = -1;//make sure to load a glow map after you have loaded a texture
 
 	return bm_bitmaps[n].handle;
 }

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-01-05 01:26:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.28 $
+ * $Date: 2003-01-05 23:41:51 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/01/05 01:26:35  Goober5000
+ * added capability of is-iff and change-iff to have wings as well as ships
+ * as their arguments; also allowed a bunch of sexps to accept the player
+ * as an argument where they would previously display a parse error
+ * --Goober5000
+ *
  * Revision 2.26  2003/01/03 21:58:06  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -1180,6 +1186,8 @@ int parse_ship()
 	required_string("$Name:");
 	stuff_string(sip->name, F_NAME, NULL);
 
+	strcpy(parse_error_text, "\nin ship: ");
+	strcat(parse_error_text, sip->name);
 	// AL 28-3-98: If this is a demo build, we only want to parse weapons that are preceded with
 	//             the '@' symbol
 #ifdef DEMO // not needed FS2_DEMO (using separate table file)
@@ -1375,10 +1383,15 @@ int parse_ship()
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ){
 		sip->allowed_weapons[i] = 0;
 	}
-
+char temp_error[64];
+strcpy(temp_error, parse_error_text);
 	// Set the weapons filter used in weapons loadout (for primary weapons)
 	if (optional_string("$Allowed PBanks:")) {
+
+strcat(parse_error_text,"'s primary banks");
 		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+strcpy(parse_error_text, temp_error);
+		
 
 		// actually say which weapons are allowed
 		for ( i = 0; i < num_allowed; i++ ) {
@@ -1390,7 +1403,10 @@ int parse_ship()
 
 	// Set the weapons filter used in weapons loadout (for primary weapons)
 	if (optional_string("$Allowed Dogfight PBanks:")) {
+
+strcat(parse_error_text,"'s primary dogfight banks");
 		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+strcpy(parse_error_text, temp_error);
 
 		// actually say which weapons are allowed
 		for ( i = 0; i < num_allowed; i++ ) {
@@ -1404,8 +1420,11 @@ int parse_ship()
 	for ( i = 0; i < MAX_PRIMARY_BANKS; i++ ){
 		sip->primary_bank_weapons[i] = -1;
 	}
+
 	required_string("$Default PBanks:");
+strcat(parse_error_text,"'s default primary banks");
 	sip->num_primary_banks = stuff_int_list(sip->primary_bank_weapons, MAX_PRIMARY_BANKS, WEAPON_LIST_TYPE);
+strcpy(parse_error_text, temp_error);
 
 	// error checking
 	for ( i = 0; i < sip->num_primary_banks; i++ ) {
@@ -1424,7 +1443,9 @@ int parse_ship()
 	{
 		pbank_capacity_specified = 1;
 		// get the capacity of each primary bank
+strcat(parse_error_text,"'s default primary banks' ammo");
 		pbank_capacity_count = stuff_int_list(sip->primary_bank_ammo_capacity, MAX_PRIMARY_BANKS, RAW_INTEGER_TYPE);
+strcpy(parse_error_text, temp_error);
 		if ( pbank_capacity_count != sip->num_primary_banks )
 		{
 			Warning(LOCATION, "Primary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
@@ -1433,7 +1454,9 @@ int parse_ship()
 	
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
 	if (optional_string("$Allowed SBanks:")) {
+strcat(parse_error_text,"'s secondary banks");
 		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+strcpy(parse_error_text, temp_error);
 
 		// actually say which weapons are allowed
 		for ( i = 0; i < num_allowed; i++ ) {
@@ -1445,7 +1468,9 @@ int parse_ship()
 
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
 	if (optional_string("$Allowed Dogfight SBanks:")) {
+strcat(parse_error_text,"'s primary dogfight banks");
 		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+strcpy(parse_error_text, temp_error);
 
 		// actually say which weapons are allowed
 		for ( i = 0; i < num_allowed; i++ ) {
@@ -1460,16 +1485,23 @@ int parse_ship()
 		sip->secondary_bank_weapons[i] = -1;
 	}
 	required_string("$Default SBanks:");
+strcat(parse_error_text,"'s default secondary banks");
 	sip->num_secondary_banks = stuff_int_list(sip->secondary_bank_weapons, MAX_SECONDARY_BANKS, WEAPON_LIST_TYPE);
+strcpy(parse_error_text, temp_error);
 
 	// error checking
 	for ( i = 0; i < sip->num_secondary_banks; i++ ) {
-		Assert(sip->secondary_bank_weapons[i] >= 0);
+		if(sip->secondary_bank_weapons[i] < 0){
+			Warning(LOCATION, "%s has no secondary weapons, this cannot be!", sip->name);
+		}		
+//		Assert(sip->secondary_bank_weapons[i] >= 0);
 	}
 
 	// Get the capacity of each secondary bank
 	required_string("$Sbank Capacity:");
+strcat(parse_error_text,"'s secondary banks capacities");
 	sbank_capacity_count = stuff_int_list(sip->secondary_bank_ammo_capacity, MAX_SECONDARY_BANKS, RAW_INTEGER_TYPE);
+strcpy(parse_error_text, temp_error);
 	if ( sbank_capacity_count != sip->num_secondary_banks ) {
 		Warning(LOCATION, "Secondary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
 	}
@@ -1780,22 +1812,30 @@ int parse_ship()
 
 			//	Get default primary bank weapons
 			if (optional_string("$Default PBanks:")){
+strcat(parse_error_text,"'s default primary banks");
 				stuff_int_list(sp->primary_banks, MAX_PRIMARY_BANKS, WEAPON_LIST_TYPE);
+strcpy(parse_error_text, temp_error);
 			}
 
 			// get capacity of each primary bank - Goober5000
 			if (optional_string("+Pbank Capacity:")){
+strcat(parse_error_text,"'s primary banks capacities");
 				stuff_int_list(sp->primary_bank_capacity, MAX_PRIMARY_BANKS, RAW_INTEGER_TYPE);
+strcpy(parse_error_text, temp_error);
 			}
 
 			//	Get default secondary bank weapons
 			if (optional_string("$Default SBanks:")){
+strcat(parse_error_text,"'s default secondary banks");
 				stuff_int_list(sp->secondary_banks, MAX_SECONDARY_BANKS, WEAPON_LIST_TYPE);
+strcpy(parse_error_text, temp_error);
 			}
 
 			// Get the capacity of each secondary bank
 			if (optional_string("$Sbank Capacity:")){
+strcat(parse_error_text,"'s secondary banks capacities");
 				stuff_int_list(sp->secondary_bank_capacity, MAX_SECONDARY_BANKS, RAW_INTEGER_TYPE);
+strcpy(parse_error_text, temp_error);
 			}
 
 			// Get optional engine wake info
@@ -1862,6 +1902,8 @@ int parse_ship()
 		}
 	}
 
+	strcpy(parse_error_text, "");
+
 	return rtn;
 }
 
@@ -1923,7 +1965,9 @@ void parse_shiptbl()
 	// This list is used to select an alternate ship when a particular ship is not available
 	// during ship selection.
 	required_string("$Player Ship Precedence:");
+strcpy(parse_error_text,"'player ship precedence");
 	Num_player_ship_precedence = stuff_int_list(Player_ship_precedence, MAX_PLAYER_SHIP_CHOICES, SHIP_INFO_TYPE);
+strcpy(parse_error_text, "");
 
 	// close localization
 	lcl_ext_close();

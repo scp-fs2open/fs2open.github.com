@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-12-07 01:37:42 $
+ * $Revision: 2.7 $
+ * $Date: 2003-01-05 23:41:51 $
  * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/12/07 01:37:42  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.5  2002/11/14 04:18:16  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -1969,6 +1975,17 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						}
 					}
 					pm->original_textures[i] = pm->textures[i];
+					//a quick hack for glow mapping-Bobboau
+					strcat( tmp_name, "-glow");
+					mprintf(("looking for glow map %s\n", tmp_name));
+					GLOWMAP[pm->textures[i]]=bm_load( tmp_name ); //see if there is one 
+					if(GLOWMAP[pm->textures[i]]!=-1){//then fill it into the array
+						mprintf(("texture '%s' has a glow map, %d, assosiated with it, isn't that nice\n", tmp_name, GLOWMAP[pm->textures[i]]));
+						bm_lock((GLOWMAP[pm->textures[i]]), 8, BMP_AABITMAP);
+						bm_unlock((GLOWMAP[pm->textures[i]]));
+
+					}
+
 					//mprintf(0,"<%s>\n",name_buf);
 				}
 
