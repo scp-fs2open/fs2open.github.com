@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.152 $
- * $Date: 2005-01-16 23:18:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.153 $
+ * $Date: 2005-01-17 23:35:45 $
+ * $Author: argv $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.152  2005/01/16 23:18:03  wmcoolmon
+ * Added "show ship" ship flag
+ *
  * Revision 2.151  2005/01/16 22:39:10  wmcoolmon
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
  *
@@ -2408,6 +2411,8 @@ strcpy(parse_error_text, temp_error);
 			sip->flags |= SIF_BALLISTIC_PRIMARIES;
 		else if( !stricmp( NOX("flash"), ship_strings[i]))
 			sip->flags2 |= SIF2_FLASH;
+		else if ( !stricmp( NOX("surface shields"), ship_strings[i]))
+			sip->flags2 |= SIF2_SURFACE_SHIELDS;
 		else if( !stricmp( NOX("show ship"), ship_strings[i]))
 			sip->flags2 |= SIF2_SHOW_SHIP_MODEL;
 		else

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-01-14 23:08:17 $
+ * $Revision: 2.45 $
+ * $Date: 2005-01-17 23:35:45 $
  * $Author: argv $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/01/14 23:08:17  argv
+ * Revision 2.42 (Goober's fixes) broke "no pierce shields". Fixed.
+ *
+ * -- _argv[-1]
+ *
  * Revision 2.43  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -707,7 +712,7 @@ int beam_start_firing(beam *b);
 void beam_start_warmdown(beam *b);
 
 // add a collision to the beam for this frame (to be evaluated later)
-void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo);
+void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad = -1);
 
 // sort collisions for the frame
 int beam_sort_collisions_func(const void *e1, const void *e2);
@@ -2655,7 +2660,7 @@ int beam_collide_ship(obj_pair *pair)
 			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 		}
 	} else {	
-		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for type c beams -Bobboau
+		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for type c beams -Bobboau
 //			mprintf(("there is a shield, isn't it\n"));
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_RAY;	
 		}else{	
@@ -2667,7 +2672,7 @@ int beam_collide_ship(obj_pair *pair)
 	model_collide(&test_collide);
 
 	quad = -1;
-	if(test_collide.flags & MC_CHECK_SHIELD)	//if we're checking shields
+	if((test_collide.flags & MC_CHECK_SHIELD) || (!(Objects[shipp->objnum].flags & OF_NO_SHIELDS) && !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (Ship_info[shipp->ship_info_index].flags2 & SIF2_SURFACE_SHIELDS)))	//if we're checking shields
 	{
 		quad = get_quadrant(&test_collide.hit_point);//find which quadrant we hit
 //mprintf(("the thing I hit was hit in quadrant %d\n", quad));
@@ -2675,22 +2680,29 @@ int beam_collide_ship(obj_pair *pair)
 		if(Objects[shipp->objnum].shield_quadrant[quad] < (bwi->damage * bwi->shield_factor * 2.0f))
 		//if(!(ship_is_shield_up(&Objects[shipp->objnum], get_quadrant(&test_collide.hit_point))))
 		{
-			//go through the shield and hit the hull -Bobboau
-			if(widest > pair->b->radius * BEAM_AREA_PERCENT)
-			{
-				test_collide.radius = beam_get_widest(b) * 0.5f;
-				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+			// _argv[-1], 16 Jan 2005: Don't do another model_collide for surface shields, since we just did this. Just a performance optimization.
+			if (test_collide.flags & MC_CHECK_SHIELD) {
+				//go through the shield and hit the hull -Bobboau
+				if(widest > pair->b->radius * BEAM_AREA_PERCENT)
+				{
+					test_collide.radius = beam_get_widest(b) * 0.5f;
+					test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+				}
+				else
+				{	
+					test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
+				}
+				model_collide(&test_collide);
 			}
-			else
-			{	
-				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
-			}
-			model_collide(&test_collide);
 		}
+
+		// _argv[-1], 16 Jan 2005: There was no point in doing this, and it breaks the surface shield code, so I've commented it out.
+		/*
 		else
 		{
 			quad = -1;
 		}
+		*/
 	}
 
 
@@ -2698,7 +2710,7 @@ int beam_collide_ship(obj_pair *pair)
 	if(test_collide.num_hits)
 	{
 		// add to the collision list
-		beam_add_collision(b, pair->b, &test_collide);
+		beam_add_collision(b, pair->b, &test_collide, quad);
 
 		// if we went through the shield
 		//Goober5000 - nope, not sure what I was thinking for this
@@ -3020,7 +3032,7 @@ int beam_collide_early_out(object *a, object *b)
 }
 
 // add a collision to the beam for this frame (to be evaluated later)
-void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
+void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad)
 {
 	beam_collision *bc;
 	int idx;
@@ -3050,11 +3062,15 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 //		decal_create_simple(hit_object, &dec, bwi->b_info.beam_glow_bitmap);//this is the old decals, not the new/better ones
 		decal_create(hit_object, &dec, bc->cinfo.hit_submodel, bwi->decal_texture, bwi->decal_backface_texture);
 */
-		
-		if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam shield hit code -Bobboau
-			bc->quadrant= quadrant_num = get_quadrant(&cinfo->hit_point);
+
+		// _argv[-1], 16 Jan 2005: Surface shield support.
+		if( ((cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits) || quad >= 0 ){ //beam shield hit code -Bobboau
+			bc->quadrant= quadrant_num = quad == -1 ? get_quadrant(&cinfo->hit_point) : quad;
 			if (!(hit_object->flags & SF_DYING) ) {
-				add_shield_point(hit_object-Objects, cinfo->shield_hit_tri, &cinfo->hit_point);
+				if (cinfo->flags & MC_CHECK_SHIELD) {
+					// Don't do this for surface shields.
+					add_shield_point(hit_object-Objects, cinfo->shield_hit_tri, &cinfo->hit_point);
+				}
 				hud_shield_quadrant_hit(hit_object, quadrant_num);
 			}
 		}

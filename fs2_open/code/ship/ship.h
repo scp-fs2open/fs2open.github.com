@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.76 $
- * $Date: 2005-01-16 23:18:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.77 $
+ * $Date: 2005-01-17 23:35:45 $
+ * $Author: argv $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2005/01/16 23:18:04  wmcoolmon
+ * Added "show ship" ship flag
+ *
  * Revision 2.75  2005/01/16 22:39:10  wmcoolmon
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
  *
@@ -1148,6 +1151,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_DEFAULT_IN_TECH_DATABASE_M		(1 << 1)	// ditto - Goober5000
 #define SIF2_FLASH							(1 << 2)	// makes a flash when it explodes
 #define SIF2_SHOW_SHIP_MODEL				(1 << 3)	// Show ship model even in first person view
+#define SIF2_SURFACE_SHIELDS                (1 << 4)    // _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
 
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
