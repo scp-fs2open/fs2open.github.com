@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-02-22 04:14:21 $
- * $Author: wmcoolmon $
+ * $Revision: 2.6 $
+ * $Date: 2003-03-02 06:01:55 $
+ * $Author: penguin $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/02/22 04:14:21  wmcoolmon
+ * Added "os_app_activate_set"
+ *
  * Revision 2.4  2003/01/07 00:02:08  phreak
  * fixed problem in win32_create_window() that disabled OpenGL from running in windowed mode
  *
@@ -709,6 +712,18 @@ void os_poll()
 void debug_int3()
 {
 	gr_activate(0);
+#ifdef _WIN32
+#if defined _MSC_VER
 	_asm { int 3 };
+#elif defined __GNUC__
+	asm("int $3");
+#else
+#error debug_int3: unknown compiler
+#endif
+
+#else
+#error debug_int3: unknown OS
+#endif
+
 	gr_activate(1);
 }
