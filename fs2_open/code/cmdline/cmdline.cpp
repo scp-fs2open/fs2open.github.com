@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.89 $
- * $Date: 2005-01-21 08:29:04 $
- * $Author: taylor $
+ * $Revision: 2.90 $
+ * $Date: 2005-01-29 16:30:47 $
+ * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2005/01/21 08:29:04  taylor
+ * add -rlm cmdline option to switch to local viewpoint lighting calculations (OGL only for now)
+ *
  * Revision 2.88  2004/12/24 19:36:12  Goober5000
  * resorted command-line options and added an option for WMC's ballistic gauge
  * --Goober5000
@@ -702,6 +705,7 @@ Flag exe_params[] =
 	"-3dwarp",        "Enable 3d warp",                 true,   0,					EASY_DEFAULT,      "Gameplay",     "",
     "-tbpwarpeffects","Enable TBP Warp Effects",        true,   0,					EASY_DEFAULT,      "Gameplay",     "", // TBP warp effects -Et1
 	"-ballistic_gauge",	"Enable ballistic ammo gauge",	true,	0,					EASY_DEFAULT,		"Gameplay",		"",
+	"-smart_shields", "Enable Smart Shields",			true,	0,					EASY_DEFAULT,		"Gameplay",		"",
 
 	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.snd_preload",
 	"-noaudio",		  "Disable sound and music",		false,	0,					EASY_DEFAULT,		"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nosound",
@@ -813,6 +817,7 @@ cmdline_parm TBPWarpEffects( "-tbpwarpeffects", NULL ); // TBP warp effects -Et1
 cmdline_parm use_3dwarp("-3dwarp", NULL);
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL );
 cmdline_parm use_rlm("-rlm", NULL); // more realistic lighting model - taylor
+cmdline_parm smart_shields("-smart_shields", NULL);
 
 //Experimental
 cmdline_parm load_only_used("-loadonlyused", NULL);
@@ -859,6 +864,7 @@ int Cmdline_d3d_particle = 0;
 int Cmdline_orb_radar = 0;
 int Cmdline_TBPWarpEffects = 0; // TBP warp effects -Et1
 int Cmdline_3dwarp = 0;
+int Cmdline_smart_shields = 0;
 
 int Cmdline_window = 0;
 int Cmdline_allslev = 0;
@@ -1604,6 +1610,15 @@ bool SetCmdlineParams()
 		Cmdline_rlm = 1;
 	} else {
 		Cmdline_rlm = 0;
+	}
+
+	if ( smart_shields.found())
+	{
+		Cmdline_smart_shields = 1;
+	}
+	else
+	{
+		Cmdline_smart_shields = 0;
 	}
 
 	return true; 

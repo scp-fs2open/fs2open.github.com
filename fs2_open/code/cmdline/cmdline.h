@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.65 $
- * $Date: 2005-01-21 08:29:04 $
- * $Author: taylor $
+ * $Revision: 2.66 $
+ * $Date: 2005-01-29 16:30:46 $
+ * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2005/01/21 08:29:04  taylor
+ * add -rlm cmdline option to switch to local viewpoint lighting calculations (OGL only for now)
+ *
  * Revision 2.64  2004/12/24 19:36:12  Goober5000
  * resorted command-line options and added an option for WMC's ballistic gauge
  * --Goober5000
@@ -559,6 +562,7 @@ extern int Cmdline_env;
 extern int Cmdline_decals;
 
 extern int Cmdline_ballistic_gauge;
+extern int Cmdline_smart_shields;
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif
