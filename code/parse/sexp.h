@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.33 $
+ * $Revision: 2.34 $
  * $Author: Goober5000 $
- * $Date: 2003-03-20 09:17:16 $
+ * $Date: 2003-03-21 04:51:33 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/03/20 09:17:16  Goober5000
+ * implemented EMP as part of weapon-effect sexp
+ * --Goober5000
+ *
  * Revision 2.32  2003/03/20 04:27:10  Goober5000
  * extended sexps
  * --Goober5000
@@ -651,6 +655,9 @@
 #define OP_GET_OBJECT_X						(0x001f	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_Y						(0x0020	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_Z						(0x0021	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_OBJECT_RELATIVE_X			(0x0022 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_OBJECT_RELATIVE_Y			(0x0023 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_OBJECT_RELATIVE_Z			(0x0024 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
