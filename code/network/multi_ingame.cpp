@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-11-11 02:15:45 $
+ * $Revision: 2.10 $
+ * $Date: 2004-02-04 09:02:44 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/11/11 02:15:45  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.8  2003/09/24 19:35:59  Kazan
  * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
  *
@@ -1567,7 +1572,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 
 			// now, recreate all the ships needed
 			for (i = 0; i < current_count; i++ ) {
-				int which_one, team, slot_index, specific_instance;;
+				int which_one, team, slot_index, specific_instance;
 				ship *shipp;
 				object *objp;
 

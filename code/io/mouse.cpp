@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2004-02-04 09:02:44 $
+ * $Author: Goober5000 $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/29 20:12:31  penguin
  * added #ifdef _WIN32 around windows-specific system headers
  *
@@ -183,7 +186,7 @@ int Mouse_dz = 0;
 int Mouse_sensitivity = 4;
 int Use_mouse_to_fly = 0;
 int Mouse_hidden = 0;
-int Keep_mouse_centered = 0;;
+int Keep_mouse_centered = 0;
 
 #ifdef USE_DIRECTINPUT
 int di_init();

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrGlide.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-10-24 17:35:05 $
- * $Author: randomtiger $
+ * $Revision: 2.6 $
+ * $Date: 2004-02-04 09:02:45 $
+ * $Author: Goober5000 $
  *
  * Code that uses 3DFX's Glide graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/10/24 17:35:05  randomtiger
+ * Implemented support for 32bit TGA and JPG for D3D
+ * Also 32 bit PCX, but it still has some bugs to be worked out
+ * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
+ *
  * Revision 2.4  2003/07/04 02:27:48  phreak
  * added support for cloaking.
  * i will need to contact someone who knows d3d to get this to work
@@ -2420,13 +2425,13 @@ static int tga_copy_data(char *to, char *from, int pixels, int fromsize, int tos
 {
 	int rmask = 0xf800;
 	int rshift = 11;
-	int rscale = 8;;
+	int rscale = 8;
 	int gmask = 0x7e0;
 	int gshift = 5;
 	int gscale = 4;
 	int bmask = 0x1f;
 	int bshift = 0;
-	int bscale = 8;;
+	int bscale = 8;
 
 	if ( (fromsize == 2) && (tosize == 3) )	{
 		ushort *src = (ushort *)from;

@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.7 $
- * $Date: 2003-11-13 03:59:52 $
- * $Author: Kazan $
+ * $Revision: 1.8 $
+ * $Date: 2004-02-04 09:02:42 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2003/11/13 03:59:52  Kazan
+ * PXO_SID changed from unsigned to signed
+ *
  * Revision 1.6  2003/11/11 02:15:42  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -218,7 +221,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 	char PacketBuffer[16384]; // 16K should be enough i think..... I HOPE!
 	fs2open_pilot_reply *p_reply = (fs2open_pilot_reply *) PacketBuffer;
 	memset(PacketBuffer, 0, 16384);
-	fs2open_ship_typekill *type_kills = (fs2open_ship_typekill *) (PacketBuffer + sizeof(fs2open_pilot_reply) - sizeof(fs2open_ship_typekill *));;
+	fs2open_ship_typekill *type_kills = (fs2open_ship_typekill *) (PacketBuffer + sizeof(fs2open_pilot_reply) - sizeof(fs2open_ship_typekill *));
 
 	int CheckSize =  sizeof(fs2open_pilot_reply) - sizeof(fs2open_ship_typekill *) - 2; //2 for the weird stinking msvc stuff
 	int recvsize = 0, rs2;

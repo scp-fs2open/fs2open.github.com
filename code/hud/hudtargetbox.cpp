@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-02-04 08:41:04 $
+ * $Revision: 2.28 $
+ * $Date: 2004-02-04 09:02:45 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/02/04 08:41:04  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.26  2004/01/30 07:39:07  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -2063,7 +2068,7 @@ void hud_show_target_data(float frametime)
 // called at the start of each level
 void hud_targetbox_static_init()
 {
-	Target_static_next = 0;;
+	Target_static_next = 0;
 	Target_static_playing = 0;
 }
 

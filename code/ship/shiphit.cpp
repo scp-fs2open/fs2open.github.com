@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-01-30 07:39:06 $
+ * $Revision: 2.26 $
+ * $Date: 2004-02-04 09:02:43 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/01/30 07:39:06  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.24  2003/11/25 02:32:16  Goober5000
  * fixed an old omission
  * --Goober5000
@@ -1046,7 +1052,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 		//	missile has somehow missed its target.  It gets its lifeleft set to 0.1 and then it detonates.
 		//	Unfortunately, the shockwave damage was cut by 4 above.  So boost it back up here.
 		if ((dist < 10.0f) && ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE))) {	// Goober5000 check for NULL
-			damage_left *= 4.0f * Weapon_info[weapon_info_index].subsystem_factor;;
+			damage_left *= 4.0f * Weapon_info[weapon_info_index].subsystem_factor;
 		}
 
 //		if (damage_left > 100.0f)

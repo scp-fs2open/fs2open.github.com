@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-11-11 02:15:44 $
+ * $Revision: 2.19 $
+ * $Date: 2004-02-04 09:02:43 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/11/11 02:15:44  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.17  2003/09/13 06:02:06  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -3799,7 +3804,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 					// so return the "to" to the list before we move the "from"
 
 					// put to_bank back into list
-					Wl_pool[slot->wep[to_bank]] += slot->wep_count[to_bank];;		// return to list
+					Wl_pool[slot->wep[to_bank]] += slot->wep_count[to_bank];			// return to list
 					slot->wep[to_bank] = -1;											// remove from slot
 					slot->wep_count[to_bank] = 0;
 					*sound=SND_ICON_DROP;				// unless it changes later
@@ -3812,7 +3817,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 	if ( class_mismatch_flag )
 	{
 		// put from_bank back into list
-		Wl_pool[slot->wep[from_bank]] += slot->wep_count[from_bank];;		// return to list
+		Wl_pool[slot->wep[from_bank]] += slot->wep_count[from_bank];		// return to list
 		slot->wep[from_bank] = -1;														// remove from slot
 		slot->wep_count[from_bank] = 0;
 		*sound=SND_ICON_DROP;

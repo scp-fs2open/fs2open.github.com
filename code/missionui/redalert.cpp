@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-09-07 18:14:54 $
- * $Author: randomtiger $
+ * $Revision: 2.6 $
+ * $Date: 2004-02-04 09:02:43 $
+ * $Author: Goober5000 $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/07 18:14:54  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.4  2003/09/05 04:25:28  Goober5000
  * well, let's see here...
  *
@@ -747,7 +755,7 @@ void red_alert_store_wingman_status()
 	Red_alert_num_slots_used = 0;
 
 	// store the mission filename for the red alert precursor mission
-	strcpy(Red_alert_precursor_mission, Game_current_mission_filename);;
+	strcpy(Red_alert_precursor_mission, Game_current_mission_filename);
 
 	// store status for all existing ships
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {

@@ -9,13 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.12 $
+ * $Revision: 2.13 $
  * $Author: Goober5000 $
- * $Date: 2004-01-30 07:39:09 $
+ * $Date: 2004-02-04 09:02:43 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/01/30 07:39:09  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.11  2003/11/17 06:52:52  bobboau
  * got assert to work again
  *
@@ -528,7 +534,7 @@ int optional_string(char *pstr)
 
 int required_string_fred(char *pstr, char *end)
 {
-	char *backup = Mp;;
+	char *backup = Mp;
 
 	token_found = pstr;
 	if (fred_parse_flag)

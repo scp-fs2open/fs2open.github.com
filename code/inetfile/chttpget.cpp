@@ -9,13 +9,16 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/Chttpget.cpp $
-* $Revision: 2.2 $
-* $Date: 2002-08-01 01:41:06 $
-* $Author: penguin $
+* $Revision: 2.3 $
+* $Date: 2004-02-04 09:02:45 $
+* $Author: Goober5000 $
 *
 * HTTP Client class (get only)
 *
 * $Log: not supported by cvs2svn $
+* Revision 2.2  2002/08/01 01:41:06  penguin
+* The big include file move
+*
 * Revision 2.1  2002/07/07 19:55:59  penguin
 * Back-port to MSVC
 *
@@ -190,7 +193,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	m_DataSock = INVALID_SOCKET;
 	m_iBytesIn = 0;
 	m_iBytesTotal = 0;
-	m_State = HTTP_STATE_STARTUP;;
+	m_State = HTTP_STATE_STARTUP;
 	m_Aborting = false;
 	m_Aborted = false;
 

@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-19 20:37:25 $
- * $Author: randomtiger $
+ * $Revision: 2.12 $
+ * $Date: 2004-02-04 09:02:42 $
+ * $Author: Goober5000 $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/19 20:37:25  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.10  2003/11/17 04:25:58  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -520,7 +532,7 @@ void trail_render( trail * trailp )
 
 				vlist[nv] = &v_list[nv];
 				vlist[nv]->u = float(i);  vlist[nv]->v = 1.0f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l; vlist[nv]->spec_r=vlist[nv]->spec_g=vlist[nv]->spec_b=0;;
+				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l; vlist[nv]->spec_r=vlist[nv]->spec_g=vlist[nv]->spec_b=0;
 				nv++;
 				vlist[nv] = &v_list[nv];
 				vlist[nv]->u = float(i);  vlist[nv]->v = 0.0f; 

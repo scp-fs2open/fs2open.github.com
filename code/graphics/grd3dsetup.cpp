@@ -630,7 +630,7 @@ void d3d_fill_pixel_format(PIXELFORMAT *pixelf, D3DFORMAT tformat)
 			pixelf->dwRBitMask         = 0xf00;      
 			pixelf->dwGBitMask         = 0xf0;       
 			pixelf->dwBBitMask         = 0xf;        
-			pixelf->dwRGBAlphaBitMask  = 0xf000;;    
+			pixelf->dwRGBAlphaBitMask  = 0xf000;
 			pixelf->dw_is_alpha_mode   = true;
 			printf(("Using: D3DFMT_A4R4G4B4"));
 			break;

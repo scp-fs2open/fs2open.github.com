@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-08-27 01:36:22 $
+ * $Revision: 2.13 $
+ * $Date: 2004-02-04 09:02:45 $
  * $Author: Goober5000 $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/08/27 01:36:22  Goober5000
+ * fixed a strange thing that Bobboau inexplicably put in
+ * --Goober5000
+ *
  * Revision 2.11  2003/08/25 04:39:17  Goober5000
  * fixed unreachable code
  * --Goober5000
@@ -1023,7 +1027,7 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 		CFILE *cfp;
 		Cfile_block *cfbp;
 		cfbp = &Cfile_block_list[cfile_block_index];
-		cfp = &Cfile_list[cfile_block_index];;
+		cfp = &Cfile_list[cfile_block_index];
 		cfp->id = cfile_block_index;
 		cfp->version = 0;
 		cfbp->data = NULL;
