@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.6 $
- * $Date: 2005-02-04 20:06:04 $
- * $Author: taylor $
+ * $Revision: 1.7 $
+ * $Date: 2005-03-07 13:10:21 $
+ * $Author: bobboau $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/02/04 20:06:04  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 1.5  2005/02/04 10:12:29  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -254,4 +257,26 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 	}
 
 	return 0;
+}
+
+//gr_ogl_make_render_target: function makes a texture sutable for rendering to as close 
+//to the desiered resolution as posable in the specified texture slot, if the desiered 
+//resolution and the final resolution are diferent the function should change the input 
+//values (hence passing by reference). if for some reason a texture cannot be made in 
+//the specified slot it returns false, if everything goes ok, it returns true
+//
+//the three flags I have done so far that you will have to take care of
+//#define BMP_TEX_STATIC_RENDER_TARGET		(1<<7)				// a texture made for being rendered to infreqently
+//#define BMP_TEX_DYNAMIC_RENDER_TARGET		(1<<8)				// a texture made for being rendered to freqently
+//#define BMP_TEX_CUBEMAP						(1<<8)				// a texture made for cubic environment map
+//*****static render targets must be able to survive anything, includeing application minimiseation*****//
+bool gr_ogl_make_render_target(int n, int &x, int &y, int flags){
+	return -1;//the error code, this function doesn't do anything yet so return acordingly, this should return the texture index of the created render target
+}
+
+//sets rendering to the specified texture handle (note this is diferent that texture index)
+//returns true if it's able to do so, false if it is unable to do so
+//only textures created by gr_ogl_make_render_target may be used.
+bool gr_ogl_set_render_target(int handle, int face){
+	return false;//becase this is a stub, the render target doesn't change, this should be true on suceses once this function is implemented
 }

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.64 $
- * $Date: 2005-03-04 03:24:44 $
+ * $Revision: 2.65 $
+ * $Date: 2005-03-07 13:10:21 $
  * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2005/03/04 03:24:44  bobboau
+ * made all the gr_d3d_tmapper variants use dynamic a vertex buffer rather
+ * than drawprimitiveup, this also means that these functions can now
+ * handle as much poly data as you might want to through at them
+ *
  * Revision 2.63  2005/03/03 14:29:37  bobboau
  * fixed a small error from my earlier commit.
  *
@@ -764,7 +769,7 @@
 #include "debugconsole/dbugfile.h"
 
 #include <D3dx8tex.h>
-
+#include "graphics/2d.h"
 
 
 // Viewport used to change render between full screen and sub sections like the pilot animations
@@ -2457,9 +2462,10 @@ void gr_d3d_clear()
  *
  * @return void
  */
+extern float View_zoom;
 void gr_d3d_set_clip(int x,int y,int w,int h, bool resize)
 {
-	if(resize)
+	if(resize || gr_screen.rendering_to_texture != -1)
 	{
 		gr_resize_screen_pos(&x, &y);
 		gr_resize_screen_pos(&w, &h);
@@ -2514,6 +2520,7 @@ void gr_d3d_set_clip(int x,int y,int w,int h, bool resize)
 	{
   		mprintf(( "GR_D3D_SET_CLIP: SetViewport failed.\n" ));
 	}
+	gr_d3d_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 }
 
 /**
@@ -2545,6 +2552,7 @@ void gr_d3d_reset_clip()
 	{
   		mprintf(( "GR_D3D_SET_CLIP: SetViewport failed.\n" ));
 	}
+	gr_d3d_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 }
 
 /**
@@ -2733,7 +2741,7 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resi
 		int nw = x+w+gr_screen.offset_x;
 		int nh = y+h+gr_screen.offset_y;
 
-		if(resize)
+		if(resize || gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&nx, &ny);
 			gr_resize_screen_pos(&nw, &nh);
@@ -3156,7 +3164,7 @@ void gr_d3d_circle( int xc, int yc, int d, bool resize)
 {
 	int p,x, y, r;
 
-	if(resize)
+	if(resize || gr_screen.rendering_to_texture != -1)
 		gr_resize_screen_pos(&xc, &yc);
 
 	r = d/2;
@@ -3299,7 +3307,7 @@ void gr_d3d_curve( int xc, int yc, int r, int direction)
  */
 void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize)
 {
-	if(resize)
+	if(resize || gr_screen.rendering_to_texture != -1)
 	{
 		gr_resize_screen_pos(&x1, &y1);
 		gr_resize_screen_pos(&x2, &y2);
@@ -3326,7 +3334,7 @@ void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize)
 								fl2i(gr_screen.current_color.blue*alpha_val));
 	}
 
-	INT_CLIPLINE(x1,y1,x2,y2,gr_screen.clip_left,gr_screen.clip_top,gr_screen.clip_right,gr_screen.clip_bottom,return,clipped=1,swapped=1);
+//	INT_CLIPLINE(x1,y1,x2,y2,gr_screen.clip_left,gr_screen.clip_top,gr_screen.clip_right,gr_screen.clip_bottom,return,clipped=1,swapped=1);
 
 	D3DVERTEX2D d3d_verts[2];
 	D3DVERTEX2D *a = d3d_verts;
@@ -3852,3 +3860,28 @@ void gr_d3d_pop_texture_matrix(int unit)
 {}
 void gr_d3d_translate_texture_matrix(int unit, vector *shift)
 {}
+
+void gr_d3d_draw_line_list(colored_vector*lines, int num){
+	// Set up Render State - flat shading - alpha blending
+	d3d_set_initial_render_state();
+	if ((GlobalD3DVars::d3d_caps.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA) && 
+		(GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA)  )	{
+
+		gr_d3d_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+	} else {
+		// Matrox MGA-G200 doesn't support alpha-blended lines.
+		gr_d3d_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE );
+
+		float alpha_val = gr_screen.current_color.alpha/255.0f;
+		
+	}
+
+	num*=2;
+	uint FVF = D3DFVF_XYZRHW | D3DFVF_DIFFUSE;
+	render_buffer.allocate(num,FVF, sizeof(colored_vector));
+	ubyte *l;
+	render_buffer.lock(&l,FVF,sizeof(colored_vector));
+	memcpy(l,lines,num*sizeof(colored_vector));
+	render_buffer.unlock();
+	render_buffer.draw(D3DPT_LINELIST, num);
+}

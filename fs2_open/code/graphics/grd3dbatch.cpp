@@ -9,6 +9,10 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/03/01 06:55:40  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.19  2005/02/27 10:38:06  wmcoolmon
  * Nonstandard res stuff
  *
@@ -452,7 +456,7 @@ void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, i
 		int nw = x+w+gr_screen.offset_x;
 		int nh = y+h+gr_screen.offset_y;
 
-		if(resize)
+		if(resize || gr_screen.rendering_to_texture != -1)
 		{
 			if(x_resize)
 			{

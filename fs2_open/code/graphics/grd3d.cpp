@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.79 $
- * $Date: 2005-03-01 06:55:40 $
+ * $Revision: 2.80 $
+ * $Date: 2005-03-07 13:10:20 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2005/03/01 06:55:40  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.78  2005/02/18 09:51:06  wmcoolmon
  * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
  *
@@ -792,7 +796,7 @@ enum stage_state{
 	ENV = 12
 };
 
-LPDIRECT3DCUBETEXTURE8 cube_map;
+//LPDIRECT3DCUBETEXTURE8 cube_map;
 
 
 // External variables - booo!
@@ -1345,7 +1349,7 @@ bool set_stage_for_env_mapped(bool set){
 	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1, set, set);
 //	d3d_SetTexture(0, SPECMAP);
 
-	if(!set)d3d_SetTexture(1, cube_map);
+//	if(!set)d3d_SetTexture(1, cube_map);
 	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR, set, set);
 
@@ -2498,6 +2502,11 @@ void gr_d3d_render_buffer(int start, int n_prim, short* index_buffer)
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
 			if(Cmdline_env){
 				gr_zbias(2);
+
+				extern int Game_subspace_effect;
+				gr_screen.gf_set_bitmap((Game_subspace_effect)?gr_screen.dynamic_environment_map:gr_screen.static_environment_map, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
+				d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);
+
 				gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 				set_stage_for_env_mapped();
 				d3d_SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT3);
@@ -2732,7 +2741,7 @@ void gr_d3d_setup_background_fog(bool set){
 
 
 IDirect3DSurface8 *old_render_sten = NULL;
-
+/*
 extern D3DFORMAT d3d8_format;
 LPDIRECT3DSURFACE8 face;
 
@@ -2758,8 +2767,8 @@ void d3d_init_environment(){
 	for(int i = 0; i<6; i++){
 		cube_map->GetCubeMapSurface(_D3DCUBEMAP_FACES(i), 0, &face);
 		GlobalD3DVars::lpD3DDevice->SetRenderTarget(face , NULL);
-		int r = face->Release();
 		gr_d3d_clear();
+		int r = face->Release();
 	}
 	GlobalD3DVars::lpD3DDevice->SetRenderTarget(old_render_target, old_render_sten);
 
@@ -2802,3 +2811,5 @@ void d3d_render_to_env(int FACE){
 //	old_render_target = NULL;
 
 }
+*/
+

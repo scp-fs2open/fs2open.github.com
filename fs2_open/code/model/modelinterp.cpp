@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.104 $
- * $Date: 2005-03-01 06:55:41 $
+ * $Revision: 2.105 $
+ * $Date: 2005-03-07 13:10:22 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2005/03/01 06:55:41  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.103  2005/02/27 23:42:07  wmcoolmon
  * Added a white component to lightning so it isn't just a big blue block
  *
@@ -5589,6 +5593,8 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 		}
 
 		if(texture == -1)continue;
+//		extern int big_ole_honkin_hack_test;
+//		texture = big_ole_honkin_hack_test;
 
 // Goober5000 - this should fix replacement textures under HTL, but it doesn't... more work needed :(
 //		if (Interp_replacement_textures != NULL)

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.40 $
- * $Date: 2005-03-04 03:24:44 $
+ * $Revision: 2.41 $
+ * $Date: 2005-03-07 13:10:21 $
  * $Author: bobboau $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/03/04 03:24:44  bobboau
+ * made all the gr_d3d_tmapper variants use dynamic a vertex buffer rather
+ * than drawprimitiveup, this also means that these functions can now
+ * handle as much poly data as you might want to through at them
+ *
  * Revision 2.39  2005/03/01 06:55:40  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -622,9 +627,16 @@ struct dynamic_buffer{
 	~dynamic_buffer(){if(buffer)buffer->Release();}
 
 	void allocate(int n_verts, int type);
+	void allocate(int n_verts, uint _fvf, int _size);
 
 	void lock(ubyte**v, int v_type){
-		vtype = v_type;
+		fvf = vertex_types[v_type].fvf;
+		vsize = vertex_types[v_type].size;
+		buffer->Lock(0, 0, v, D3DLOCK_DISCARD);
+	}
+	void lock(ubyte**v, uint FVF, int SIZE){
+		fvf = FVF;
+		vsize = SIZE;
 		buffer->Lock(0, 0, v, D3DLOCK_DISCARD);
 	}
 	void unlock();
@@ -634,7 +646,8 @@ struct dynamic_buffer{
 		buffer = NULL;
 	}
 	void draw(_D3DPRIMITIVETYPE TYPE, int num);
-	int vtype;
+	uint fvf;
+	int vsize;
 	int size;
 	IDirect3DVertexBuffer8 *buffer;
 };

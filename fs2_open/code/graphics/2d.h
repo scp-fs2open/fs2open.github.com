@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.47 $
- * $Date: 2005-03-06 11:23:44 $
- * $Author: wmcoolmon $
+ * $Revision: 2.48 $
+ * $Date: 2005-03-07 13:10:20 $
+ * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/03/06 11:23:44  wmcoolmon
+ * RE-fixed stuff. Ogg support. Briefings.
+ *
  * Revision 2.46  2005/03/03 06:05:27  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -622,6 +625,13 @@ private:
 	int currently_allocated;
 };
 
+struct colored_vector{
+	colored_vector():pad(1.0f){};
+	vector vec;
+	float pad;	//needed so I can just memcpy it in d3d
+	ubyte color[4];
+};
+
 bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2);
 
 //finds the first occorence of a vertex within a poly list
@@ -668,6 +678,7 @@ struct light_data {
 typedef struct screen {
 	uint	signature;			// changes when mode or palette or width or height changes
 	int	max_w, max_h;		// Width and height
+	int	save_max_w, save_max_h;		// Width and height
 	int	res;					// GR_640 or GR_1024
 	int	mode;					// What mode gr_init was called with.
 	float	aspect;				// Aspect ratio
@@ -699,6 +710,11 @@ typedef struct screen {
 	void		*offscreen_buffer_base;			// Pointer to lowest address of offscreen buffer
 
 	int custom_size;
+	int		rendering_to_texture;		//wich texture we are rendering to, -1 if the back buffer
+	int		rendering_to_face;			//wich face of the texture we are rendering to, -1 if the back buffer
+
+	int static_environment_map;
+	int dynamic_environment_map;
 
 	//switch onscreen, offscreen
 	void (*gf_flip)();
@@ -872,6 +888,9 @@ typedef struct screen {
 	void (*gf_bm_page_in_start)();
 	int (*gf_bm_lock)(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
+	bool (*gf_make_render_target)(int n, int &x_res, int &y_res, int flags );
+	bool (*gf_set_render_target)(int n, int face=-1);
+
 	void (*gf_translate_texture_matrix)(int unit, vector *shift);
 	void (*gf_push_texture_matrix)(int unit);
 	void (*gf_pop_texture_matrix)(int unit);
@@ -918,7 +937,9 @@ typedef struct screen {
 	void (*gf_set_fill_mode)(int);
 	void (*gf_set_texture_panning)(float u, float v, bool enable);
 
-	void (*gf_set_environment_mapping)(int i);
+	void (*gf_draw_line_list)(colored_vector*lines, int num);
+
+//	void (*gf_set_environment_mapping)(int i);
 
 /*	void (*gf_begin_sprites)();//does prep work for sprites
 	void (*gf_draw_sprite)(vector*);//draws a sprite
@@ -1153,6 +1174,9 @@ __inline int gr_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL
 #define gr_bm_page_in_start			GR_CALL(*gr_screen.gf_bm_page_in_start)
 #define gr_bm_lock					GR_CALL(*gr_screen.gf_bm_lock)          
 
+#define gr_make_render_target					GR_CALL(*gr_screen.gf_make_render_target)          
+#define gr_set_render_target					GR_CALL(*gr_screen.gf_set_render_target)          
+
 #define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            
 
 #define gr_make_buffer					 GR_CALL(*gr_screen.gf_make_buffer)            
@@ -1189,9 +1213,11 @@ __inline int gr_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL
 #define	gr_set_fill_mode GR_CALL		(*gr_screen.gf_set_fill_mode)
 #define	gr_set_texture_panning GR_CALL	(*gr_screen.gf_set_texture_panning)
 
-#define	gr_set_environment_mapping GR_CALL	(*gr_screen.gf_set_environment_mapping)
+//#define	gr_set_environment_mapping GR_CALL	(*gr_screen.gf_set_environment_mapping)
 
 #define gr_setup_background_fog GR_CALL	(*gr_screen.gf_setup_background_fog)
+
+#define gr_draw_line_list GR_CALL	(*gr_screen.gf_draw_line_list)
 
 /*
 #define	gr_begin_sprites GR_CALL		(*gr_screen.gf_begin_sprites)
