@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-03-02 21:24:44 $
+ * $Revision: 2.18 $
+ * $Date: 2005-03-27 06:12:38 $
  * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.16  2005/02/23 04:51:56  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots
  *
@@ -1209,6 +1212,10 @@ void barracks_button_pressed(int n)
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 
 				} else {
+					// make sure we don't carry over the multi flag
+					if (Cur_pilot->flags & PLAYER_FLAGS_IS_MULTI)
+						Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
+
 					write_pilot_file();
 					mission_campaign_savefile_save();
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);

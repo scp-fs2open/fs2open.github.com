@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-03-13 23:07:35 $
+ * $Revision: 2.20 $
+ * $Date: 2005-03-27 06:12:38 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/03/13 23:07:35  taylor
+ * enable 32-bit to 16-bit TGA conversion with -tga16 cmdline option (experimental)
+ * fix crash when upgrading from original campaign stats file to current
+ *
  * Revision 2.18  2005/03/10 08:00:08  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -338,7 +342,7 @@ int Granted_ships[MAX_SHIP_TYPES];
 int Granted_weapons[MAX_WEAPON_TYPES];
 
 // variables to control the UI stuff for loading campaigns
-LOCAL int Campaign_ui_active = 0;
+//LOCAL int Campaign_ui_active = 0;
 LOCAL UI_WINDOW Campaign_window;
 LOCAL UI_LISTBOX Campaign_listbox;
 LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
@@ -936,6 +940,10 @@ int mission_campaign_savefile_save()
 
 	Assert( pl != NULL );
 
+	// if this is a multi pilot then we shouldn't even be here!!
+	if (pl->flags & PLAYER_FLAGS_IS_MULTI)
+		return 0;
+
 	// catch a case where the campaign hasn't been switched yet after being unavailable
 	if ( strlen(Campaign.filename) == 0 )
 		return 0;
@@ -1253,12 +1261,19 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 
 	Assert ( strlen(cfilename) != 0 );
 
+	if ( !strlen(cfilename) )
+		return 0;
+
 	if (pl == NULL) {
 		Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
 		pl = &Players[Player_num];
 	}
 
 	Assert( pl != NULL );
+
+	// if this pilot is multi then we shouldn't even be here!!
+	if (pl->flags & PLAYER_FLAGS_IS_MULTI)
+		return 0;
 
 	// little quick hackery to avoid overwriting current techroom/campaing data with what's in the campaign file
 	// if and only if this campaign is what's currently active (shouldn't do this from the pilotselect screen though)

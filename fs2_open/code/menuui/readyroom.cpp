@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-02-23 04:51:56 $
+ * $Revision: 2.15 $
+ * $Date: 2005-03-27 06:12:38 $
  * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/02/23 04:51:56  taylor
+ * some bm_unload() -> bm_release() changes to save bmpman slots
+ *
  * Revision 2.13  2005/02/18 20:50:40  wmcoolmon
  * Fixed line misalignment at nonstandard res in the campaign room
  *
@@ -1174,8 +1177,12 @@ void sim_room_init()
 	Scroll_offset = Selected_line = 0;
 
 	strcpy(Cur_campaign, Player->current_campaign);
-	mission_load_up_campaign();
-	mission_campaign_next_mission();
+	if ( !mission_load_up_campaign() ) {
+		mission_campaign_next_mission();
+	} else {
+		Campaign.filename[0] = 0;
+		Campaign.num_missions = 0;
+	}
 
 	Num_campaigns = Num_campaign_missions = 0;
 	Get_file_list_filter = sim_room_campaign_mission_filter;
@@ -1224,37 +1231,53 @@ void sim_room_close()
 {
 	int i;
 
-	for (i=0; i<Num_campaign_missions; i++)
-		if (Campaign_missions[i])
+	for (i=0; i<Num_campaign_missions; i++) {
+		if (Campaign_missions[i]) {
 			free(Campaign_missions[i]);
+			Campaign_missions[i] = NULL;
+		}
+	}
 
 	if (Background_bitmap >= 0)
 		bm_release(Background_bitmap);
 
 	if (Standalone_mission_names_inited){
 		for (i=0; i<Num_standalone_missions; i++){
-			if (Standalone_mission_names[i]){
+			if (Standalone_mission_names[i] != NULL){
 				free(Standalone_mission_names[i]);
+				Standalone_mission_names[i] = NULL;
 			}
 			Standalone_mission_flags[i] = 0;
 		}
 	}
 
-	if (Campaign_names_inited)
-		for (i=0; i<Num_campaigns; i++)
-			if (Campaign_names[i])
+	if (Campaign_names_inited) {
+		for (i=0; i<Num_campaigns; i++) {
+			if (Campaign_names[i] != NULL) {
 				free(Campaign_names[i]);
+				Campaign_names[i] = NULL;
+			}
+		}
+	}
 
-	if (Campaign_mission_names_inited)
-		for (i=0; i<Campaign.num_missions; i++)
-			if (Campaign_mission_names[i])
+	if (Campaign_mission_names_inited) {
+		for (i=0; i<Campaign.num_missions; i++) {
+			if (Campaign_mission_names[i]) {
 				free(Campaign_mission_names[i]);
+				Campaign_mission_names[i] = NULL;
+			}
+		}
+	}
 
-	for (i=0; i<Num_campaigns; i++)
+	for (i=0; i<Num_campaigns; i++) {
 		free(Campaign_file_names[i]);
+		Campaign_file_names[i] = NULL;
+	}
 
-	for (i=0; i<Num_standalone_missions; i++)
+	for (i=0; i<Num_standalone_missions; i++) {
 		free(Mission_filenames[i]);
+		Mission_filenames[i] = NULL;
+	}
 
 	// unload the overlay bitmap
 	help_overlay_unload(SIM_ROOM_OVERLAY);
@@ -1397,7 +1420,7 @@ void sim_room_do_frame(float frametime)
 		gr_force_fit_string(buf, 255, list_w1);
 		gr_printf(list_x1, Mission_list_coords[gr_screen.res][1], buf);
 
-		if (Campaign.filename) {			
+		if ( strlen(Campaign.filename) > 0 ) {			
 			sprintf(buf, NOX("%s%s"), Campaign.filename, FS_CAMPAIGN_FILE_EXT);
 			gr_force_fit_string(buf, 255, list_w2);
 			gr_printf(list_x2, Mission_list_coords[gr_screen.res][1], buf);		
@@ -1810,10 +1833,9 @@ void campaign_room_init()
 
 	Desc_scroll_offset = Scroll_offset = 0;
 	load_failed = mission_load_up_campaign();
-	if (!load_failed)
+	if (!load_failed) {
 		mission_campaign_next_mission();
-
-	else {
+	} else {
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
 	}
