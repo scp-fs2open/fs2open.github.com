@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.7 $
+ * $Date: 2003-03-19 06:22:58 $
+ * $Author: Goober5000 $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.5  2003/03/02 05:43:48  penguin
  * ANSI C++ - fixed non-compliant casts to unsigned short and unsigned char
  *  - penguin
@@ -1599,8 +1602,8 @@ void d3d_detect_texture_origin_32()
 	int test_bmp = -1;
 	ubyte data[32*32];
 	color ac;
-	uint pix1a, pix2a;
-	uint pix1b, pix2b;
+	uint pix1a(0), pix2a(0);
+	uint pix1b(0), pix2b(0);
 
 	mprintf(( "Detecting uv type...\n" ));
 
@@ -1668,8 +1671,8 @@ void d3d_detect_texture_origin_16()
 	int test_bmp = -1;
 	ubyte data[32*32];
 	color ac;
-	ushort pix1a, pix2a;
-	ushort pix1b, pix2b;
+	ushort pix1a(0), pix2a(0);
+	ushort pix1b(0), pix2b(0);
 
 	mprintf(( "Detecting uv type...\n" ));
 
@@ -1785,8 +1788,8 @@ void d3d_detect_line_offset_32()
 	extern float D3D_line_offset;
 
 	color ac;
-	uint pix1a, pix2a;
-	uint pix1b, pix2b;
+	uint pix1a(0), pix2a(0);
+	uint pix1b(0), pix2b(0);
 
 	mprintf(( "Detecting line offset...\n" ));
 
@@ -1847,8 +1850,8 @@ void d3d_detect_line_offset_16()
 	extern float D3D_line_offset;
 
 	color ac;
-	ushort pix1a, pix2a;
-	ushort pix1b, pix2b;
+	ushort pix1a(0), pix2a(0);
+	ushort pix1b(0), pix2b(0);
 
 	mprintf(( "Detecting line offset...\n" ));
 

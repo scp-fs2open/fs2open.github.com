@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-19 06:22:58 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2  2002/11/18 21:32:48  phreak
  * added some lines that makes ogl work in windowed mode for fullneb - phreak
  *
@@ -1372,9 +1375,9 @@ void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 		avg_count++;
 	}		
 
-	rv = ra / avg_count;
-	gv = ga / avg_count;
-	bv = ba / avg_count;	
+	rv = ra / (ubyte)avg_count;
+	gv = ga / (ubyte)avg_count;
+	bv = ba / (ubyte)avg_count;	
 
 	// return values
 	*r = (int)rv;
