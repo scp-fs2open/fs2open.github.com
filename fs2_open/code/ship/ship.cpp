@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.139 $
- * $Date: 2004-11-01 20:57:04 $
+ * $Revision: 2.140 $
+ * $Date: 2004-11-21 11:35:17 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.139  2004/11/01 20:57:04  taylor
+ * make use of Knossos_warp_ani_used flag - thanks Goober5000
+ *
  * Revision 2.138  2004/10/31 22:04:33  taylor
  * be sure to initialize splodeing_texture, fix issue that would cause loading problems for glows
  *
@@ -11588,71 +11591,44 @@ void ship_page_in()
 
 	// Mark any support ship types as used
 	// 
-	ship_info* sip;
 	for (i=0; i<Num_ship_types; i++ )	{
 		if ( Ship_info[i].flags & SIF_SUPPORT )	{
-			sip = &Ship_info[i];
-			nprintf(( "Paging", "Found support ship '%s'\n", sip->name ));
+			nprintf(( "Paging", "Found support ship '%s'\n", Ship_info[i].name ));
 			ship_class_used[i]++;
 
-			if(Cmdline_load_only_used)
-			{
-				//Add weapons to used_weapons
-				for(j = 0; j < sip->num_primary_banks; j++)
-					mark_weapon_used(sip->primary_bank_weapons[j]);
-				for(j = 0; j < sip->num_secondary_banks; j++)
-					mark_weapon_used(sip->secondary_bank_weapons[j]);
-				for(j = 0; j < sip->n_subsystems; j++)
-				{
-					for(k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
-					{
-						Assert(sip->subsystems[j].primary_banks[k] != -1);
-						mark_weapon_used(sip->subsystems[j].primary_banks[k]);
-					}
-					for(k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
-					{
-						mark_weapon_used(sip->subsystems[j].primary_banks[k]);
-					}
-				}
-
-				num_subsystems_needed += Ship_info[i].n_subsystems;
-			}
+			num_subsystems_needed += Ship_info[i].n_subsystems;
 		}
 	}
 	
 	// Mark any ships in the mission as used
 	//
-	ship* sjp;
 	for (i=0; i<MAX_SHIPS; i++)	{
 		if (Ships[i].objnum > -1)	{
-			sjp = &Ships[i];
-			nprintf(( "Paging","Found ship '%s'\n", sjp->ship_name ));
+			nprintf(( "Paging","Found ship '%s'\n", Ships[i].ship_name ));
 			ship_class_used[Ships[i].ship_info_index]++;
 
 			// check if we are going to use a Knossos device and make sure the special warp ani gets pre-loaded
 			if ( Ship_info[Ships[i].ship_info_index].flags & SIF_KNOSSOS_DEVICE )
 				Knossos_warp_ani_used = 1;
 
-			if(Cmdline_load_only_used)
-			{
-				//Add weapons to the used weapons list
-				//Main weapons
-				for(j = 0; j < sjp->weapons.num_primary_banks; j++)
-					mark_weapon_used(sjp->weapons.primary_bank_weapons[j]);
+			// mark any weapons as being used, saves memory and time if we don't load them all
+			if (Cmdline_load_only_used) {
+				ship_weapon *swp = &Ships[i].weapons;
 
-				for(j = 0; j < sjp->weapons.num_secondary_banks; j++)
-					mark_weapon_used(sjp->weapons.secondary_bank_weapons[j]);
+				for (j = 0; j < swp->num_primary_banks; j++)
+					weapon_mark_as_used(swp->primary_bank_weapons[j]);
 
-				//Subsystems
-				ship_subsys* sub;
-				for(sub = GET_FIRST(&sjp->subsys_list); sub != END_OF_LIST(&sjp->subsys_list); sub = GET_NEXT(sub))
-				{
-					for(j = 0; j < sub->weapons.num_primary_banks; j++)
-						mark_weapon_used(sub->weapons.primary_bank_weapons[j]);
+				for (j = 0; j < swp->num_secondary_banks; j++)
+					weapon_mark_as_used(swp->secondary_bank_weapons[j]);
 
-					for(j = 0; j < sub->weapons.num_secondary_banks; j++)
-						mark_weapon_used(sub->weapons.secondary_bank_weapons[j]);
+				for (j = 0; j < Ships[i].n_subsystems; j++) {
+					model_subsystem *msp = &Ships[i].subsystems[j];
 
+					for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
+						weapon_mark_as_used(msp->primary_banks[k]);
+
+					for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
+						weapon_mark_as_used(msp->secondary_banks[k]);
 				}
 			}
 
@@ -11666,19 +11642,6 @@ void ship_page_in()
 	for( p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp) )	{
 		nprintf(( "Paging","Found future arrival ship '%s'\n", p_objp->name ));
 		ship_class_used[p_objp->ship_class]++;
-
-		if(Cmdline_load_only_used)
-		{
-			//Get weapons
-			for(i = 0; i < p_objp->subsys_count; i++)
-			{
-				for(j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
-					mark_weapon_used(Subsys_status[p_objp->subsys_index + i].primary_banks[j]);
-				
-				for(j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
-					mark_weapon_used(Subsys_status[p_objp->subsys_index + i].secondary_banks[j]);
-			}
-		}
 
 		num_subsystems_needed += Ship_info[p_objp->ship_class].n_subsystems;
 	}
@@ -11756,54 +11719,15 @@ void ship_page_in()
 					}
 				#endif
 			}
-		}
-	}
 
-	for (i=0; i<MAX_SHIP_TYPES; i++ )	{
-		if ( ship_class_used[i]  )	{
-			ship_info *sip = &Ship_info[i];
-
-			if ( sip->modelnum > -1 )	{
+			// page in all of the textures if the model got loaded
+			if ( sip->modelnum > -1 ) {
 				nprintf(( "Paging", "Paging in textures for model '%s'\n", sip->pof_file ));
 
-				ship_page_in_model_textures(sip->modelnum);
+				ship_page_in_model_textures(sip->modelnum, sip);
 			} else {
 				nprintf(( "Paging", "Couldn't load model '%s'\n", sip->pof_file ));
 			}
-				if(strcmp(sip->thruster_bitmap1, "none"))sip->thruster_glow1 = bm_load(sip->thruster_bitmap1);
-				else sip->thruster_glow1 = -1;
-				if(strcmp(sip->thruster_bitmap1a, "none"))sip->thruster_glow1a = bm_load(sip->thruster_bitmap1a);
-				else sip->thruster_glow1a = -1;
-				if(strcmp(sip->thruster_bitmap2, "none"))sip->thruster_glow2 = bm_load(sip->thruster_bitmap2);
-				else sip->thruster_glow2 = -1;
-				if(strcmp(sip->thruster_bitmap2a, "none"))sip->thruster_glow2a = bm_load(sip->thruster_bitmap2a);
-				else sip->thruster_glow2a = -1;
-				if(strcmp(sip->thruster_bitmap3, "none"))sip->thruster_glow3 = bm_load(sip->thruster_bitmap3);
-				else sip->thruster_glow3 = -1;
-				if(strcmp(sip->thruster_bitmap3a, "none"))sip->thruster_glow3a = bm_load(sip->thruster_bitmap3a);
-				else sip->thruster_glow3a = -1;
-
-				bm_page_in_texture(sip->thruster_glow1);
-				bm_page_in_texture(sip->thruster_glow1a);
-				bm_page_in_texture(sip->thruster_glow2);
-				bm_page_in_texture(sip->thruster_glow2a);
-				bm_page_in_texture(sip->thruster_glow3);
-				bm_page_in_texture(sip->thruster_glow3a);
-				
-				if(strcmp(sip->splodeing_texture_name, "none"))sip->splodeing_texture = bm_load(sip->splodeing_texture_name);
-				else sip->splodeing_texture = -1;
-
-				int idontcare = 0;
-				for( k = 0; k<sip->n_thruster_particles; k++){
-					if(strcmp(sip->normal_thruster_particles[k].thruster_particle_bitmap01_name, "none"))sip->normal_thruster_particles[k].thruster_particle_bitmap01 = bm_load_animation(sip->normal_thruster_particles[k].thruster_particle_bitmap01_name, &sip->normal_thruster_particles[k].thruster_particle_bitmap01_nframes, &idontcare, 1);
-					else sip->normal_thruster_particles[k].thruster_particle_bitmap01 = -1;
-				}
-				for( k = 0; k<sip->n_thruster_particles; k++){
-					if(strcmp(sip->afterburner_thruster_particles[k].thruster_particle_bitmap01_name, "none"))sip->afterburner_thruster_particles[k].thruster_particle_bitmap01 = bm_load_animation(sip->afterburner_thruster_particles[k].thruster_particle_bitmap01_name, &sip->afterburner_thruster_particles[k].thruster_particle_bitmap01_nframes, &idontcare, 1);
-					else sip->afterburner_thruster_particles[k].thruster_particle_bitmap01 = -1;
-				}
-			sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
-			bm_page_in_texture(sip->ABbitmap);
 		}
 	}
 
@@ -11894,11 +11818,18 @@ void ship_page_in()
 }
 
 // Goober5000 - called from ship_page_in()
-void ship_page_in_model_textures(int modelnum)
+void ship_page_in_model_textures(int modelnum, ship_info *sip)
 {
 	int i, j;
-	polymodel *pm = model_get(modelnum);
-				
+	polymodel *pm;
+
+	pm = model_get(modelnum);
+
+	Assert( pm != NULL );
+
+	if (pm == NULL)
+		return;
+
 	for (i=0; i<pm->n_textures; i++ )
 	{
 		int bitmap_num = pm->original_textures[i];
@@ -11933,6 +11864,7 @@ void ship_page_in_model_textures(int modelnum)
 		}
 
 		if(pm->n_glows)
+		{
 			for(j = 0; j<pm->n_glows; j++){
 				glow_bank *bank = &pm->glows[j];
 				if(bank->glow_bitmap >-1)
@@ -11940,7 +11872,64 @@ void ship_page_in_model_textures(int modelnum)
 				if(bank->glow_neb_bitmap >-1)
 					bm_page_in_texture( bank->glow_neb_bitmap);
 			}
-}
+		}
+	}
+
+	if (sip == NULL)
+		return;
+
+	// afterburner
+	bm_page_in_texture(sip->ABbitmap);
+
+	// thruster bitmaps
+	if ( strcmp(sip->thruster_bitmap1, "none") ) {
+		sip->thruster_glow1 = bm_load(sip->thruster_bitmap1);
+		bm_page_in_texture(sip->thruster_glow1);
+	}
+
+	if ( strcmp(sip->thruster_bitmap1a, "none") ) {
+		sip->thruster_glow1a = bm_load(sip->thruster_bitmap1a);
+		bm_page_in_texture(sip->thruster_glow1a);
+	}
+
+	if ( strcmp(sip->thruster_bitmap2, "none") ) {
+		sip->thruster_glow2 = bm_load(sip->thruster_bitmap2);
+		bm_page_in_texture(sip->thruster_glow2);
+	}
+
+	if ( strcmp(sip->thruster_bitmap2a, "none") ) {
+		sip->thruster_glow2a = bm_load(sip->thruster_bitmap2a);
+		bm_page_in_texture(sip->thruster_glow2a);
+	}
+
+	if ( strcmp(sip->thruster_bitmap3, "none") ) {
+		sip->thruster_glow3 = bm_load(sip->thruster_bitmap3);
+		bm_page_in_texture(sip->thruster_glow3);
+	}
+
+	if ( strcmp(sip->thruster_bitmap3a, "none") ) {
+		sip->thruster_glow3a = bm_load(sip->thruster_bitmap3a);
+		bm_page_in_texture(sip->thruster_glow3a);
+	}
+
+	// splodeing bitmap
+	if ( strcmp(sip->splodeing_texture_name, "none") ) {
+		sip->splodeing_texture = bm_load(sip->splodeing_texture_name);
+		bm_page_in_texture(sip->splodeing_texture);
+	}
+
+	// thruster/particle bitmaps
+	for (i = 0; i<sip->n_thruster_particles; i++) {
+		if ( strcmp(sip->normal_thruster_particles[i].thruster_particle_bitmap01_name, "none") ) {
+			sip->normal_thruster_particles[i].thruster_particle_bitmap01 = bm_load_animation(sip->normal_thruster_particles[i].thruster_particle_bitmap01_name, &sip->normal_thruster_particles[i].thruster_particle_bitmap01_nframes, NULL, 1);
+			bm_page_in_texture(sip->normal_thruster_particles[i].thruster_particle_bitmap01, sip->normal_thruster_particles[i].thruster_particle_bitmap01_nframes);
+		}
+
+		if ( strcmp(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_name, "none") ) {
+			sip->afterburner_thruster_particles[i].thruster_particle_bitmap01 = bm_load_animation(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_name, &sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_nframes, NULL, 1);
+			bm_page_in_texture(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01, sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_nframes);
+		}
+	}
 }
 
 // function to return true if support ships are allowed in the mission for the given object.
