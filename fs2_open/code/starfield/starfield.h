@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.9 $
- * $Date: 2004-08-11 05:06:35 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-20 20:02:29 $
+ * $Author: phreak $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/08/11 05:06:35  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.8  2004/07/01 01:12:33  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -250,5 +253,8 @@ int stars_find_sun(char *name);
 
 // get the world coords of the sun pos on the unit sphere.
 void stars_get_sun_pos(int sun_n, vector *pos);
+
+void stars_generate_bitmap_instance_vertex_buffers();
+void starfield_kill_bitmap_buffer();
 
 #endif

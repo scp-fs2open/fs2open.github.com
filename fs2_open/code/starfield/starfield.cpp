@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-03-12 19:28:47 $
- * $Author: taylor $
+ * $Revision: 2.49 $
+ * $Date: 2005-03-20 20:02:29 $
+ * $Author: phreak $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/03/12 19:28:47  taylor
+ * helps to get the stupid check right
+ *
  * Revision 2.47  2005/03/10 21:16:16  taylor
  * fix screwed up stars coloring in OGL
  *
@@ -739,15 +742,23 @@ void stars_generate_bitmap_instance_vertex_buffers(){
 		stars_create_perspective_bitmap_buffer(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, 0, Starfield_bitmap_instance[idx].buffer.index_buffer);
 		stars_create_perspective_bitmap_buffer(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, 1, Starfield_bitmap_instance[idx].env_buffer.index_buffer);
 	}
+
 	if(perspective_bitmap_list.n_verts == 0)return;
 
-	if(perspective_bitmap_buffer != -1)gr_destroy_buffer(perspective_bitmap_buffer);
+	starfield_kill_bitmap_buffer();
+
 	perspective_bitmap_buffer = gr_make_buffer(&perspective_bitmap_list, VERTEX_FLAG_POSITION | VERTEX_FLAG_UV1);
+	
 	SAFEPOINT("leaveing stars_generate_bitmap_instance_vertex_buffers");
 }
 
-void kill_buffer(){
-	if(perspective_bitmap_buffer != -1)gr_destroy_buffer(perspective_bitmap_buffer);
+void starfield_kill_bitmap_buffer()
+{
+	if(perspective_bitmap_buffer != -1)
+	{
+		gr_destroy_buffer(perspective_bitmap_buffer);
+		perspective_bitmap_buffer=-1;
+	}
 }
 
 // call on game startup
@@ -1370,9 +1381,11 @@ int st___ = -1;
 // draw bitmaps
 void stars_draw_bitmaps( int show_bitmaps, int env )
 {
-	if(!Cmdline_nohtl)gr_set_lighting(false,false);
+	if(!Cmdline_nohtl)
+		gr_set_lighting(false,false);
 
-	if(perspective_bitmap_buffer == -1)return;	//we don't have anything to draw
+	if(perspective_bitmap_buffer == -1)
+		return;	//we don't have anything to draw
 
 	int idx;
 	int star_index;	
@@ -1392,7 +1405,8 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 	}
 	gr_set_cull(0);
 
-	if(st___ == -1)st___ = bm_load("subspacenode01a");
+	if(st___ == -1)
+		st___ = bm_load("subspacenode01a");
 
 	vector v = ZERO_VECTOR;
 
