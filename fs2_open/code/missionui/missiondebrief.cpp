@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-02-04 20:06:04 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2005-02-18 21:14:03 $
+ * $Author: wmcoolmon $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/02/04 20:06:04  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.26  2005/01/28 03:00:56  wmcoolmon
  * Better debrief memory handling
  *
@@ -1928,14 +1931,18 @@ void debrief_render_mission_time(int y_loc)
 // render out the debriefing text to the scroll window
 void debrief_render()
 {
-	int y, z, font_height;
+	int x, y, z, font_height;
 
 	if ( Num_stages <= 0 )
 		return;
 
 	font_height = gr_get_font_height();
 
-	gr_set_clip(Debrief_text_wnd_coords[gr_screen.res][0], Debrief_text_wnd_coords[gr_screen.res][1], Debrief_text_wnd_coords[gr_screen.res][2], Debrief_text_wnd_coords[gr_screen.res][3]);
+	x = Debrief_text_wnd_coords[gr_screen.res][0];
+	y = Debrief_text_wnd_coords[gr_screen.res][1];
+	gr_unsize_screen_pos(&x, &y);
+
+	gr_set_clip(x, y, Debrief_text_wnd_coords[gr_screen.res][2], Debrief_text_wnd_coords[gr_screen.res][3]);
 	y = 0;
 	z = Text_offset;
 	while (y + font_height <= Debrief_text_wnd_coords[gr_screen.res][3]) {
@@ -1961,10 +1968,15 @@ void debrief_render()
 //
 void debrief_stats_render()
 {	
-	int i, y, font_height;	
+	int i, x, y, font_height;	
 
 	gr_set_color_fast(&Color_blue);
-	gr_set_clip(Debrief_text_wnd_coords[gr_screen.res][0], Debrief_text_wnd_coords[gr_screen.res][1], Debrief_text_wnd_coords[gr_screen.res][2], Debrief_text_wnd_coords[gr_screen.res][3]);
+
+	x = Debrief_text_wnd_coords[gr_screen.res][0];
+	y = Debrief_text_wnd_coords[gr_screen.res][1];
+	gr_unsize_screen_pos(&x, &y);
+
+	gr_set_clip(x, y, Debrief_text_wnd_coords[gr_screen.res][2], Debrief_text_wnd_coords[gr_screen.res][3]);
 	gr_string(0, 0, Debrief_current_callsign);
 	font_height = gr_get_font_height();
 	y = 30;
