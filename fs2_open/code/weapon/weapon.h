@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/02/04 20:06:10  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.38  2005/02/03 01:26:45  phreak
  * revert to default d-missile behavior if the electroinics parameters aren't specified.
  * added an option to customize the old-style disruption calculation as well.
@@ -629,6 +632,7 @@ typedef struct weapon_info {
 	char	tech_anim_filename[NAME_LENGTH];	// weapon's tech room animation
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
 
+	char	tech_model[NAME_LENGTH];		//Image to display in the techroom (TODO) or the weapon selection screen if the ANI isn't specified/missing
 	char hud_filename[NAME_LENGTH];			//Name of image to display on HUD in place of text
 	int hud_image_index;					//teh index of the image
 
