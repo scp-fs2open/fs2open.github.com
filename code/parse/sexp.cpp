@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.110 $
- * $Date: 2004-09-23 05:53:00 $
+ * $Revision: 2.111 $
+ * $Date: 2004-09-23 22:51:07 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2004/09/23 05:53:00  Goober5000
+ * a bunch of work on the actual implementation of when-argument
+ * --Goober5000
+ *
  * Revision 2.109  2004/09/22 21:52:22  Goober5000
  * further work on ubersexp framework
  * --Goober5000
@@ -6340,27 +6344,149 @@ int eval_cond( int n )
 }
 
 // Goober5000
+int test_argument_list_for_condition(int n, int condition_node)
+{
+	int val, num_true;
+	Assert(n != -1 && condition_node != -1);
+
+	// ensure special argument list is empty
+	Sexp_applicable_argument_list->destroy();
+
+	// loop through all arguments
+	num_true = 0;
+	while (n >= 0)
+	{
+		// flush conditional to avoid short-circuiting
+		flush_sexp_tree(condition_node);
+
+		// evaluate conditional for current argument
+		Sexp_current_replacement_argument = Sexp_nodes[n].text;
+		val = eval_sexp(condition_node);
+
+		// true?
+		if (val)
+		{
+			num_true++;
+			Sexp_applicable_argument_list->add_data(Sexp_nodes[n].text);
+		}
+	}
+
+	// clear argument, but not list, as we'll need it later
+	Sexp_current_replacement_argument = NULL;
+
+	// return number of arguments for which conditional was true
+	return num_true;
+}
+
+// Goober5000
 int eval_any_of(int arg_handler_node, int condition_node)
 {
-	return 0;
+	int n, num_true;
+	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	// the arguments should just be data, not operators, so we can skip the CAR
+	n = CDR(arg_handler_node);
+
+	// test the whole argument list
+	num_true = test_argument_list_for_condition(n, condition_node);
+
+	// true if any argument is true
+	if (num_true > 0)
+		return SEXP_KNOWN_TRUE;
+	else
+		return SEXP_FALSE;
 }
 
 // Goober5000
 int eval_every_of(int arg_handler_node, int condition_node)
 {
-	return 0;
-}
+	int n, num_true;
+	Assert(arg_handler_node != -1 && condition_node != -1);
 
-// Goober5000
-int eval_random_of(int arg_handler_node, int condition_node)
-{
-	return 0;
+	// the arguments should just be data, not operators, so we can skip the CAR
+	n = CDR(arg_handler_node);
+
+	// test the whole argument list
+	num_true = test_argument_list_for_condition(n, condition_node);
+
+	// true if all arguments are true
+	if (num_true == query_sexp_args_count(arg_handler_node))
+		return SEXP_KNOWN_TRUE;
+	else
+		return SEXP_FALSE;
 }
 
 // Goober5000
 int eval_number_of(int arg_handler_node, int condition_node)
 {
-	return 0;
+	int n, num_true, threshold;
+	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	// the arguments should just be data, not operators, so we can skip the CAR
+	n = CDR(arg_handler_node);
+
+	// the first argument is the number threshold
+	threshold = sexp_get_val(n);
+	n = CDR(n);
+
+	// test the whole argument list
+	num_true = test_argument_list_for_condition(n, condition_node);
+
+	// true if at least threshold arguments are true
+	if (num_true >= threshold)
+		return SEXP_KNOWN_TRUE;
+	else
+		return SEXP_FALSE;
+}
+
+// Goober5000
+// this works a little differently... we randomly pick one argument to use
+// for our condition, but this argument must be saved among sexp calls...
+// so we select an argument and mark it as SEXP_KNOWN_TRUE
+int eval_random_of(int arg_handler_node, int condition_node)
+{
+	int n, i, val;
+	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	// find which argument we picked
+	n = CDR(arg_handler_node);
+	while (n != -1)
+	{
+		if (Sexp_nodes[n].value == SEXP_KNOWN_TRUE)
+			break;
+		n = CDR(n);
+	}
+
+	// if arg not found, we have to pick one
+	if (n == -1)
+	{
+		n = CDR(arg_handler_node);
+		for (i = 0; i < rand_internal(0, query_sexp_args_count(arg_handler_node) - 1); i++)
+		{
+			n = CDR(n);
+		}
+		Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
+	}
+
+	// flush stuff
+	Sexp_applicable_argument_list->destroy();
+	flush_sexp_tree(condition_node);
+
+	// evaluate conditional for current argument
+	Sexp_current_replacement_argument = Sexp_nodes[n].text;
+	val = eval_sexp(condition_node);
+
+	// true?
+	if (val)
+	{
+		Sexp_applicable_argument_list->add_data(Sexp_nodes[n].text);
+	}
+
+	// clear argument, but not list, as we'll need it later
+	Sexp_current_replacement_argument = NULL;
+
+	// true if our selected argument is true
+	return val;
 }
 
 // Goober5000 - added wing capability
