@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.84 $
- * $Date: 2004-03-30 08:30:38 $
- * $Author: taylor $
+ * $Revision: 2.85 $
+ * $Date: 2004-04-07 03:31:53 $
+ * $Author: righteous1 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2004/03/30 08:30:38  taylor
+ * handle movie file extensions better
+ *
  * Revision 2.83  2004/03/28 17:49:54  taylor
  * runtime language selection, mantis:0000133
  *
@@ -9679,5 +9682,21 @@ bool game_using_low_mem()
 		return false;
 	} else {
 		return true;
+	}
+}
+
+//  place calls here that need to take effect immediately when the game is
+//  minimized.  Called from osapi.cpp 
+
+void alt_tab_pause()
+{
+	// pause all game music
+	audiostream_pause_all();
+
+	//  Call pause_init immediately so pause screen will be drawn.
+	if (!(Game_mode & GM_MULTIPLAYER)){
+		if ( (gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active()) )	{
+			pause_init(0);
+		}
 	}
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-04-07 03:31:53 $
+ * $Author: righteous1 $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -352,6 +355,10 @@ int game_hacked_data();
 
 // show the oem upsell screens (end of campaign, or close of game
 void oem_upsell_show_screens();
+
+// function to handle pausing the game when the game is minimized
+// called from osapi.cpp
+void alt_tab_pause();
 
 #endif			// endif of #ifndef STAMPER_PROGRAM
 #endif 
