@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-03-06 23:28:24 $
- * $Author: bobboau $
+ * $Revision: 2.19 $
+ * $Date: 2004-04-08 20:13:17 $
+ * $Author: phreak $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/03/06 23:28:24  bobboau
+ * fixed motion debris
+ * animated laser textures
+ * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
+ *
  * Revision 2.17  2004/03/05 09:01:51  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -832,7 +837,9 @@ int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float
 	g3_transfer_vertex(&P[3], &p[0]);
 
 	for( i = 0; i<4; i++){
-		P[i].r = 255 * c; P[i].g = 255 * c; P[i].b = 255 * c; 
+		P[i].r = unsigned char(255 * c);
+		P[i].g = unsigned char(255 * c);
+		P[i].b = unsigned char(255 * c); 
 	}
 
 	//set up the UV coords
@@ -853,7 +860,7 @@ int g3_draw_bitmap_3d_volume(vertex *pnt,int orient, float rad,uint tmap_flags, 
 	float res = float(resolution);
 //	float total = 0.0f;
 	for(int i = 0; i <resolution; i++){
-		s = (1.0f - (float(i-1)/res))/6.5;
+		s = (1.0f - (float(i-1)/res))/6.5f;
 	//	total +=s;
 		float d = (float(i)/res);
 		g3_draw_bitmap_3d_v(pnt,orient, rad, tmap_flags, depth * d, s);
