@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-04-24 15:44:22 $
- * $Author: Kazan $
+ * $Revision: 2.27 $
+ * $Date: 2004-04-27 20:43:32 $
+ * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/04/24 15:44:22  Kazan
+ * Fixed Lobby screen showing up while exiting from non-tracker games
+ * Time dialiation up to 1/4
+ *
  * Revision 2.25  2004/04/03 06:22:32  Goober5000
  * fixed some stub functions and a bunch of compile warnings
  * --Goober5000
@@ -2996,17 +3000,17 @@ int Msg_rank_list_coords[GR_NUM_RESOLUTIONS][4] = {
 //#define MULTI_SG_NUM_BUTTONS	12
 
 #define MSG_OPEN_GAME			0
-#define MSG_CLOSED_GAME			1
-#define MSG_RESTRICTED_GAME		2
-#define MSG_PASSWD_GAME			3
-#define MSG_RANK_SET_GAME		4
-#define MSG_RANK_SCROLL_UP		5
-#define MSG_RANK_SCROLL_DOWN	6
-#define MSG_RANK_ABOVE			7
-#define MSG_RANK_BELOW			8
-#define MSG_HELP				9
-#define MSG_OPTIONS				10
-#define MSG_ACCEPT				11
+//#define MSG_CLOSED_GAME			1
+//#define MSG_RESTRICTED_GAME		2
+#define MSG_PASSWD_GAME			1
+#define MSG_RANK_SET_GAME		2
+#define MSG_RANK_SCROLL_UP		3
+#define MSG_RANK_SCROLL_DOWN	4
+#define MSG_RANK_ABOVE			5
+#define MSG_RANK_BELOW			6
+#define MSG_HELP				7
+#define MSG_OPTIONS				8
+#define MSG_ACCEPT				9
 
 UI_WINDOW Multi_sg_window;												// the window object for the join screen
 UI_BUTTON Multi_sg_rank_button;										// for selecting the rank marker
@@ -3377,7 +3381,7 @@ void multi_sg_button_pressed(int n)
 		}
 		break;
 
-		
+/*
 	// the open button was pressed
 	case MSG_CLOSED_GAME:		
 		// if the closed option is selected
@@ -3394,7 +3398,7 @@ void multi_sg_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+*/
 	// toggle password protection
 	case MSG_PASSWD_GAME:		
 		// if we selected it
@@ -3414,7 +3418,7 @@ void multi_sg_button_pressed(int n)
 		}			
 		break;
 
-
+/*
 	// toggle "restricted" on or off
 	case MSG_RESTRICTED_GAME:
 		if(Multi_sg_netgame->mode != NG_MODE_RESTRICTED){
@@ -3427,7 +3431,7 @@ void multi_sg_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+*/
 	// turn off all rank requirements
 	case MSG_RANK_SET_GAME:		
 		// if either is set, then turn then both off
@@ -3631,18 +3635,19 @@ void multi_sg_draw_radio_buttons()
 	case NG_MODE_OPEN:
 		Multi_sg_buttons[gr_screen.res][MSG_OPEN_GAME].button.draw_forced(2);
 		break;
-
+/*
 	case NG_MODE_CLOSED:
 		Multi_sg_buttons[gr_screen.res][MSG_CLOSED_GAME].button.draw_forced(2);
 		break;
-		
+*/	
 	case NG_MODE_PASSWORD:
 		Multi_sg_buttons[gr_screen.res][MSG_PASSWD_GAME].button.draw_forced(2);
 		break;
+/*
 	case NG_MODE_RESTRICTED:
 		Multi_sg_buttons[gr_screen.res][MSG_RESTRICTED_GAME].button.draw_forced(2);
 		break;
-		
+*/
 	case NG_MODE_RANK_ABOVE:
 		Multi_sg_buttons[gr_screen.res][MSG_RANK_SET_GAME].button.draw_forced(2);
 		Multi_sg_buttons[gr_screen.res][MSG_RANK_ABOVE].button.draw_forced(2);
