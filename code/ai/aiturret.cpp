@@ -163,7 +163,11 @@ int turret_select_best_weapon(ship_subsys *turret, object *target)
 	else if(turret->weapons.num_secondary_banks > 0)
 		return MAX_SHIP_PRIMARY_BANKS;
 	else
+	{
+		//WMC-if this happens, this is bad. It shouldn't happen.
+		Int3();
 		return -1;
+	}
 }
 
 //doesn't work for WIF2
@@ -1277,60 +1281,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	Assert(objp->type == OBJ_SHIP);
 	Assert( shipp->objnum == parent_objnum );
 
-	//No good anymore -WMC
-	/*
-	if ( tp->turret_weapon_type < 0 ){
-		return;
-	}*/
-
 	// Monitor number of calls to ai_fire_from_turret
 	Num_ai_firing++;
-
-	//turret_weapon_class = tp->turret_weapon_type;
-
-	// AL 09/14/97: ensure ss->turret_enemy_objnum != -1 before setting lep
-	/*
-	if ( (ss->turret_enemy_objnum >= 0 && ss->turret_enemy_objnum < MAX_OBJECTS) && (ss->turret_enemy_sig == Objects[ss->turret_enemy_objnum].signature)) {
-		lep = &Objects[ss->turret_enemy_objnum];
-
-		// MK -- here is where turret is targeting a bomb.  I simply return for now.  We should force
-		// a target change -- or better yet, never pick a weapon when this turret has a "huge" weapon
-		// loaded.
-
-		// we only care about targets which are ships.
-		//if ( lep->type != OBJ_SHIP )
-		//	return;
-
-		//	If targeted a small ship and have a huge weapon, don't fire.  But this shouldn't happen, as a small ship should not get selected.
-		if ( Weapon_info[turret_weapon_class].wi_flags & WIF_HUGE ) {
-			if ( lep->type != OBJ_SHIP ) {
-				return;
-			}
-			if ( !(Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
-				return;
-			}
-		}
-
-		// If targeting protected or beam protected ship, don't fire.  Reset enemy objnum
-		if (lep->type == OBJ_SHIP) {
-			// Check if we're targeting a protected ship
-			if (lep->flags & OF_PROTECTED) {
-				ss->turret_enemy_objnum = -1;
-				ss->turret_time_enemy_in_range = 0.0f;
-				return;
-			}
-
-			// Check if we're targeting a beam protected ship with a beam weapon
-			if ( (lep->flags & OF_BEAM_PROTECTED) && (Weapon_info[turret_weapon_class].wi_flags & WIF_BEAM) ) {
-				ss->turret_enemy_objnum = -1;
-				ss->turret_time_enemy_in_range = 0.0f;
-				return;
-			}
-		}
-	} else {
-		ss->turret_enemy_objnum = -1;
-		lep = NULL;
-	}*/
 
 	if ( (ss->turret_enemy_objnum < 0 || ss->turret_enemy_objnum >= MAX_OBJECTS) || (ss->turret_enemy_sig != Objects[ss->turret_enemy_objnum].signature))
 	{
@@ -1411,7 +1363,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		}
 		else
 		{
-			weapon_firing_range = min(wip->lifetime * wip->max_speed, wip->weapon_range);
+			weapon_firing_range = MIN(wip->lifetime * wip->max_speed, wip->weapon_range);
 			WeaponMinRange = wip->WeaponMinRange;
 		}
 
@@ -1467,70 +1419,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	//none of our guns can hit the enemy, so find a new one
 	if(num_valid < 1)
 		ss->turret_enemy_objnum = -1;
-/*
-
-    // *Weapon minimum firing range -Et1
-
-    WeaponMinRange = Weapon_info[tp->turret_weapon_type].WeaponMinRange;
-
-
-	if (Weapon_info[turret_weapon_class].wi_flags2 & WIF2_LOCAL_SSM)
-	{
-
-		weapon_firing_range=Weapon_info[turret_weapon_class].lssm_lock_range;
-
-
-        // *If weapon max range gets capped like this, ignore min range. Dunno if it's even
-        //  usable with local ssm   -Et1
-
-        WeaponMinRange = 0.0f;
-
-	}
-
-
-	// if beam weapon in nebula and target not tagged, decrase firing range
-	extern int Nebula_sec_range;
-	if (Weapon_info[turret_weapon_class].wi_flags & WIF_BEAM) {
-		if ( !((shipp->tag_left > 0) || (shipp->level2_tag_left > 0)) ) {
-			if (Nebula_sec_range)
-            {
-
-				weapon_firing_range *= BEAM_NEBULA_RANGE_REDUCE_FACTOR;
-
-
-                // *Scale minimum weapon range in nebula    -Et1
-
-                WeaponMinRange *= BEAM_NEBULA_RANGE_REDUCE_FACTOR;
-			}
-		}
-	}
-
-	if (ss->turret_enemy_objnum != -1) {
-		float dist_to_enemy = vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &gpos) - lep->radius;
-
-        // *Check both min and max range -Et1
-
-		if( dist_to_enemy > weapon_firing_range || dist_to_enemy < (WeaponMinRange - lep->radius) )
-        {
-
-			ss->turret_enemy_objnum = -1;		//	Force picking of new enemy.
-
-		}
-
-	}
-
-	// Turret spawn weapons are a special case.  They fire if there are enough enemies in the 
-	// immediate area (not necessarily in the turret fov).
-	if ( Weapon_info[turret_weapon_class].wi_flags & WIF_SPAWN ) {
-		int num_ships_nearby;
-		num_ships_nearby = num_nearby_fighters(get_enemy_team_mask(parent_objnum), &gpos, 1500.0f);
-		if (( num_ships_nearby >= 3 ) || ((num_ships_nearby >= 2) && (frand() < 0.1f))) {
-			turret_fire_weapon(ss, parent_objnum, &gpos, &ss->turret_last_fire_direction);
-		} else {
-			ss->turret_next_fire_stamp = timestamp(1000);	//	Regardless of firing rate, don't check whether should fire for awhile.
-		}
-		return;
-	}*/
 
 	//	Maybe pick a new enemy.
 	if ( turret_should_pick_new_target(ss) ) {
@@ -1600,6 +1488,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	// Ok, the turret is lined up... now line up a particular gun.
 	bool ok_to_fire = false;
+	bool something_was_ok_to_fire=false;
 	vector tv2e;	//so flak can get their jitter without screwing up other guns
 
 	if (dot > tp->turret_fov ) {
@@ -1651,6 +1540,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 			if ( ok_to_fire )
 			{
+				something_was_ok_to_fire = true;
 				Num_turrets_fired++;
 				
 				//Pass along which gun we are using
@@ -1658,98 +1548,15 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}
 		}
 
-		if(!ok_to_fire)
+		if(!something_was_ok_to_fire)
 		{
 			//Impose a penalty on turret accuracy for losing site of its goal, or just not being able to fire.
-			if(num_valid)
-				turret_update_enemy_in_range(ss, -4*Weapon_info[valid_weapons[0]].fire_wait);
-			else
-				turret_update_enemy_in_range(ss, -4.0f);
+			turret_update_enemy_in_range(ss, -4*Weapon_info[ss->turret_best_weapon].fire_wait);
 			ss->turret_next_fire_stamp = timestamp(500);
 		}
-#if 0	//commenting old turret code out -WMC
-		// if the weapon is a flak gun, add some jitter to its aim so it fires in a "cone" to make a cool visual effect
-		// and make them less lethal
-		if(Weapon_info[turret_weapon_class].wi_flags & WIF_FLAK){
-			flak_jitter_aim(&v2e, dist_to_enemy, ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS));
-		}
-
-		// Fire if:
-		//		dumbfire and nearly pointing at target.
-		//		heat seeking and target in a fairly wide cone.
-		//		aspect seeking and target is locked.
-		//turret_weapon_class = tp->turret_weapon_type;
-
-		// if dumbfire (lasers and non-homing missiles)
-		if ( !(Weapon_info[turret_weapon_class].wi_flags & WIF_HOMING) ) {
-			if ((dist_to_enemy < 75.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE )) {
-				turret_update_enemy_in_range(ss, 2*Weapon_info[turret_weapon_class].fire_wait);
-				ok_to_fire = 1;
-			}
-		} else if ( Weapon_info[turret_weapon_class].wi_flags & WIF_HOMING_HEAT ) {	// if heat seekers
-			if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_HEATSEEK_ANGLE )) {
-				turret_update_enemy_in_range(ss, 2*Weapon_info[turret_weapon_class].fire_wait);
-				ok_to_fire = 1;
-			}
-		} else if ( Weapon_info[turret_weapon_class].wi_flags & WIF_HOMING_ASPECT ) {	// if aspect seeker
-			if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE )) {
-				turret_update_enemy_in_range(ss, 2*Weapon_info[turret_weapon_class].fire_wait);
-			}
-			if ( turret_should_fire_aspect(ss, dot, turret_weapon_class) ) {
-				ok_to_fire = 1;
-			}
-		}
-
-		//start testing if your going to hit yourself-Bobboau
-		/* Goober5000 - commented this out because it screws up some stuff in the main campaign
-		{
-			polymodel *pm = model_get(shipp->modelnum);		
-			mc_info test_collide;
-			matrix or_t;
-			vm_vector_2_matrix(&or_t, &v2e, NULL, NULL);
-			vector start, end;
-
-			float r;
-			if(Weapon_info[tp->turret_weapon_type].model_num != -1)
-				r = model_get_radius(Weapon_info[tp->turret_weapon_type].model_num);
-			else
-				r = Weapon_info[tp->turret_weapon_type].laser_head_radius;
-
-
-			vm_vec_scale_add(&start,&gpos, &gvec, r*4);
-			vm_vec_scale_add(&end,&gpos, &gvec, model_get_radius(shipp->modelnum));
-	
-			test_collide.model_num = shipp->modelnum;
-			test_collide.submodel_num = pm->detail[0];
-			test_collide.orient = &objp->orient;
-			test_collide.pos = &objp->pos;
-			test_collide.p0 = &gpos;
-			test_collide.p1 = &end;
-			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
-
-		//	static int blocked = 0;
-		//	static int notblocked = 0;
-			if(model_collide(&test_collide)){
-				ok_to_fire = 0;
-			//	blocked++;
-			//	mprintf(( "blocked on ship class %s, turret %s ", Ship_info[shipp->ship_info_index].name, ss->system_info->name ));
-			}//else notblocked++;
-		}
-		//end testing if your going to hit yourself
-		*/
-
-//		mprintf(( "blocked:%d, not blocked:,%d,\n", blocked, notblocked ));
-
-		if ( ok_to_fire ) {
-			Num_turrets_fired++;
-			
-			turret_fire_weapon(ss, parent_objnum, &gpos, &v2e, &predicted_enemy_pos);						
-		} else {
-			turret_update_enemy_in_range(ss, -4*Weapon_info[tp->turret_weapon_type].fire_wait);
-			ss->turret_next_fire_stamp = timestamp(500);
-		}
-#endif
-	} else {
+	}
+	else
+	{
 		// Lost him!
 		ss->turret_enemy_objnum = -1;		//	Reset enemy objnum, find a new one next frame.
 		ss->turret_time_enemy_in_range = 0.0f;
