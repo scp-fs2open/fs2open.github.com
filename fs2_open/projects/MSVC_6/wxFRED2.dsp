@@ -42,10 +42,10 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release/Profile"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-SET WXWIN=C:/wxWindows-2.4.2
-WXWIN=C:/wxWindows-2.4.2
+
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /Zi /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GX /Zi /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /U "_DEBUG" /YX /FD /c
+# SUBTRACT CPP /Fr
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -79,8 +79,7 @@ SOURCE="$(InputPath)"
 # PROP Intermediate_Dir "Debug\Profile"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-SET WXWIN=C:/wxWindows-2.4.2
-WXWIN=C:/wxWindows-2.4.2
+
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
 # ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /U "NDEBUG" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
