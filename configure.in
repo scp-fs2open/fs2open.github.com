@@ -1,6 +1,6 @@
 dnl configure.in for fs2_open
 dnl
-dnl $Id: configure.in,v 2.1 2003-03-02 04:53:46 penguin Exp $
+dnl $Id: configure.in,v 2.2 2003-03-11 19:00:05 penguin Exp $
 
 AC_INIT(fs2_open, 3.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -119,6 +119,18 @@ AM_CONDITIONAL(FS2_GRSOFT,     test "$fs2_grsoft"     = "yes")
 
 dnl Check for programs
 AC_PROG_CXX
+
+dnl Check for headers
+
+dnl -- this isn't working...
+dnl if test "$fs2_os_win32" = "yes" ; then
+dnl        AC_SUBST(DX8_INCLUDE, [-I/dx8/include])
+dnl        AC_CHECK_HEADER([dshow.h], [], [echo dshow.h not found; exit 1])
+dnl fi
+
+dnl this is hardcoded until I can figure it out...
+AC_SUBST(DX8_INCLUDE, [-I/c/dx8/include])
+AC_SUBST(DX8_LIB,     [-L/c/dx8/lib])
 
 dnl The makefiles we create
 AC_OUTPUT([Makefile code/Makefile])

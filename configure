@@ -271,7 +271,7 @@ PACKAGE_STRING='fs2_open 3.5'
 PACKAGE_BUGREPORT=''
 
 ac_unique_file="code/freespace2/freespace.cpp"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO AMTAR install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM AWK SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os CXXFLAGS LDFLAGS FS2_OS_WIN32_TRUE FS2_OS_WIN32_FALSE FS2_OS_UNIX_TRUE FS2_OS_UNIX_FALSE FS2_JOYSTICK_TRUE FS2_JOYSTICK_FALSE FS2_NETWORKING_TRUE FS2_NETWORKING_FALSE FS2_SOUND_TRUE FS2_SOUND_FALSE FS2_GRSOFT_TRUE FS2_GRSOFT_FALSE CXX CPPFLAGS ac_ct_CXX EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO AMTAR install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM AWK SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os CXXFLAGS LDFLAGS FS2_OS_WIN32_TRUE FS2_OS_WIN32_FALSE FS2_OS_UNIX_TRUE FS2_OS_UNIX_FALSE FS2_JOYSTICK_TRUE FS2_JOYSTICK_FALSE FS2_NETWORKING_TRUE FS2_NETWORKING_FALSE FS2_SOUND_TRUE FS2_SOUND_FALSE FS2_GRSOFT_TRUE FS2_GRSOFT_FALSE CXX CPPFLAGS ac_ct_CXX EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE DX8_INCLUDE DX8_LIB LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -2545,6 +2545,13 @@ fi
 
 
 
+
+
+DX8_INCLUDE=-I/c/dx8/include
+
+DX8_LIB=-L/c/dx8/lib
+
+
                     ac_config_files="$ac_config_files Makefile code/Makefile"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -3303,6 +3310,8 @@ s,@AMDEPBACKSLASH@,$AMDEPBACKSLASH,;t t
 s,@CXXDEPMODE@,$CXXDEPMODE,;t t
 s,@am__fastdepCXX_TRUE@,$am__fastdepCXX_TRUE,;t t
 s,@am__fastdepCXX_FALSE@,$am__fastdepCXX_FALSE,;t t
+s,@DX8_INCLUDE@,$DX8_INCLUDE,;t t
+s,@DX8_LIB@,$DX8_LIB,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF

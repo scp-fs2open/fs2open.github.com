@@ -1,6 +1,6 @@
 # code/Makefile.am for fs2_open
 #
-# $Id: Makefile.am,v 1.1 2003-03-02 04:53:46 penguin Exp $
+# $Id: Makefile.am,v 1.2 2003-03-11 19:00:05 penguin Exp $
 
 noinst_PROGRAMS = fs2
 
@@ -257,6 +257,8 @@ endif # FS2_GRSOFT
 ## Win32-specific sources
 if FS2_OS_WIN32
 fs2_SOURCES += \
+ cutscene/movie.cpp \
+ directx/dx8show.cpp \
  ddsutils/ddsutils.cpp \
  globalincs/windebug.cpp \
  glide/glide.cpp \
@@ -283,16 +285,17 @@ endif # FS2_OS_UNIX
 
 
 ## compiler flags
-INCLUDES = -I.
-fs2_CXXFLAGS = -fno-exceptions
+# INCLUDES = -I.
+AM_CXXFLAGS = -fno-exceptions @DX8_INCLUDE@
+AM_LDFLAGS = -L/c/dx8/lib @DX8_LIB@
 
-fs2_LDADD = 
+LDADD = 
 
 if FS2_OS_WIN32
 ## Win32 libraries needed
-fs2_LDADD += \
- -lgdi32 -lole32 -lwsock32 -lwinmm -lmsacm32 -ldxguid -lopengl32 \
- -lcomctl32 -lddraw -ldinput
+LDADD += \
+ -lgdi32 -lole32 -lwsock32 -lwinmm -lmsacm32 -lopengl32 \
+ -lcomctl32 -lstrmiids -ldxguid -lddraw -ldinput
 endif
 
 
