@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.30 $
- * $Date: 2003-01-13 23:20:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2003-01-15 21:29:05 $
+ * $Author: anonymous $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/01/13 23:20:00  Goober5000
+ * bug hunting; fixed the beam whack effect bug
+ * --Goober5000
+ *
  * Revision 2.29  2003/01/10 04:14:19  Goober5000
  * I found these two beautiful functions in ship.cpp - ship_change_model
  * and change_ship_type - so I made them into sexps :)
@@ -818,8 +822,10 @@ char *HUD_gauge_text[NUM_HUD_GAUGES] =
 	"ATTACKING TARGET COUNT",
 	"TEXT FLASH",
 	"MESSAGE BOX",
+#ifndef FS2_DEMO
 	"SUPPORT GUAGE",
 	"LAG GUAGE"
+#endif
 };
 
 

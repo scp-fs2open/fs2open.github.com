@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-15 21:29:04 $
+ * $Author: anonymous $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:56:00  penguin
  * Back-port to MSVC
  *
@@ -200,8 +203,10 @@ int Medal_coords[GR_NUM_RESOLUTIONS][NUM_MEDALS][2] = {
 		{ 283, 91 },				// wings
 		{ 372, 76 },				// bronze kills badge
 		{ 403, 76 },				// silver kills badge
+#ifndef FS2_DEMO
 		{ 435, 76 },				// gold kills badge
 		{ 300, 152 },				// SOC unit crest
+#endif
 	},
 	{				// GR_1024
 		{ 143, 75 },				// eps. peg. lib
@@ -220,8 +225,10 @@ int Medal_coords[GR_NUM_RESOLUTIONS][NUM_MEDALS][2] = {
 		{ 453, 146 },				// wings
 		{ 595, 121 },				// bronze kills badge
 		{ 646, 121 },				// silver kills badge
+#ifndef FS2_DEMO
 		{ 696, 121 },				// gold kills badge
 		{ 480, 244 },				// SOC unit crest
+#endif
 	}
 };
 
@@ -349,10 +356,16 @@ void parse_medal_tbl()
 			Assert( bi < MAX_BADGES );
 			stuff_int( &Medals[num_medals].kills_needed );
 			Badge_index[bi] = num_medals;
-
+#ifdef FS2_DEMO
+			required_string("$Wavefile 1:");
+			stuff_string(Badge_info[bi].voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+			required_string("$Wavefile 2:");
+			stuff_string(Badge_info[bi].voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+			//stuff_string(Badge_info[bi].wave2, F_NAME, NULL, MAX_FILENAME_LEN);
+#else
 			required_string("$Wavefile Base:");
 			stuff_string(Badge_info[bi].voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
-
+#endif
 			//required_string("$Wavefile 2:");
 			//stuff_string(Badge_info[bi].wave2, F_NAME, NULL, MAX_FILENAME_LEN);
 
