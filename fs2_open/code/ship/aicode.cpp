@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.93 $
- * $Date: 2005-03-03 03:55:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.94 $
+ * $Date: 2005-03-03 06:41:40 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2005/03/03 03:55:03  wmcoolmon
+ * Turret AI code optimizations. If freaky stuff happens, call WMC()
+ *
  * Revision 2.92  2005/03/02 21:24:46  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -11144,7 +11147,8 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 
 	case REPAIR_INFO_ABORT:
 		// undock if necessary (we may be just waiting for a repair in which case we aren't docked)
-		if ((repair_objp != NULL) && dock_check_find_direct_docked_object(repair_objp, repaired_objp))
+		Assert((repair_objp != NULL) && (repaired_objp != NULL));
+		if (dock_check_find_direct_docked_object(repair_objp, repaired_objp))
 		{
 			ai_do_objects_undocked_stuff(repair_objp, repaired_objp);
 		}
@@ -16814,23 +16818,28 @@ void ai_ship_destroy(int shipnum, int method)
 
 		ai_info	*aip = &Ai_info[shipp->ai_index];
 
+/*	Goober5000 - this should not be needed with the new docking code.  So far all reports of the "error"
+	have been for support ships that were departing while docked to something, which doesn't satisfy
+	any of the conditions required to abort a repair.  The "error" should have actually been inside
+	the inner if block, but it seems to have served its purpose anyway.
 		//	If the destroyed ship was on its way to repair the current ship
 		if (aip->support_ship_objnum == objnum)
 		{
 			// just a check to see what's going on
 			Error(LOCATION, "Contact Goober5000 if you get this error.  Let him know whether any support ships left the area or were destroyed.  Check whether everything else keeps working properly.  Click OK to keep playing.\n");
 
-			if ( aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED) ) {
+			if ( aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED) )
+			{
 				int abort_reason;
 				if ( method == SEF_DEPARTED ) {
 					abort_reason = REPAIR_INFO_ABORT;
 				} else {
 					abort_reason = REPAIR_INFO_KILLED;
 				}
-				ai_do_objects_repairing_stuff( other_objp, NULL, abort_reason );
+				ai_do_objects_repairing_stuff( other_objp, &Objects[objnum], abort_reason );
 			}
 		}
-
+*/
 		if (aip->target_objnum == objnum) {
 			set_target_objnum(aip, -1);
 			//	If this ship had a dynamic goal of chasing the dead ship, clear the dynamic goal.
