@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-30 21:08:42 $
+ * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
  * DX8 branch commit
  *
@@ -293,14 +296,16 @@ int Cmd_image_wnd_coords[GR_NUM_RESOLUTIONS][4] = {
 
 #define NUM_BUTTONS	8
 
-#define FIRST_STAGE_BUTTON	0
-#define PREV_STAGE_BUTTON	1
-#define PAUSE_BUTTON			2
-#define NEXT_STAGE_BUTTON	3
-#define LAST_STAGE_BUTTON	4
-#define HELP_BUTTON			5
-#define OPTIONS_BUTTON		6
-#define ACCEPT_BUTTON		7
+#define CMD_BRIEF_BUTTON_FIRST_STAGE	0
+#define CMD_BRIEF_BUTTON_PREV_STAGE		1
+#define CMD_BRIEF_BUTTON_PAUSE			2
+#define CMD_BRIEF_BUTTON_NEXT_STAGE		3
+#define CMD_BRIEF_BUTTON_LAST_STAGE		4
+#define CMD_BRIEF_BUTTON_HELP			5
+#define CMD_BRIEF_BUTTON_OPTIONS		6
+#define CMD_BRIEF_BUTTON_ACCEPT			7
+#define CMD_BRIEF_BUTTON_SCROLL_UP		8
+#define CMD_BRIEF_BUTTON_SCROLL_DOWN	9
 
 // buttons
 ui_button_info Cmd_brief_buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
@@ -330,14 +335,14 @@ ui_button_info Cmd_brief_buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 #define CMD_BRIEF_NUM_TEXT		3
 UI_XSTR Cmd_brief_text[GR_NUM_RESOLUTIONS][CMD_BRIEF_NUM_TEXT] = {
 	{ // GR_640
-		{ "Help",		928,	500,	440,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[0][HELP_BUTTON].button },
-		{ "Options",	1036,	479,	464,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[0][OPTIONS_BUTTON].button },
-		{ "Continue",	1069,	564,	413,	UI_XSTR_COLOR_PINK,	-1,	&Cmd_brief_buttons[0][ACCEPT_BUTTON].button },
+		{ "Help",		928,	500,	440,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[0][CMD_BRIEF_BUTTON_HELP].button },
+		{ "Options",	1036,	479,	464,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[0][CMD_BRIEF_BUTTON_OPTIONS].button },
+		{ "Continue",	1069,	564,	413,	UI_XSTR_COLOR_PINK,	-1,	&Cmd_brief_buttons[0][CMD_BRIEF_BUTTON_ACCEPT].button },
 	},
 	{ // GR_1024
-		{ "Help",		928,	800,	704,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[1][HELP_BUTTON].button },
-		{ "Options",	1036,	797,	743,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[1][OPTIONS_BUTTON].button },
-		{ "Continue",	1069,	917,	661,	UI_XSTR_COLOR_PINK,	-1,	&Cmd_brief_buttons[1][ACCEPT_BUTTON].button },
+		{ "Help",		928,	800,	704,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_HELP].button },
+		{ "Options",	1036,	797,	743,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_OPTIONS].button },
+		{ "Continue",	1069,	917,	661,	UI_XSTR_COLOR_PINK,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_ACCEPT].button },
 	}
 };
 
@@ -516,17 +521,17 @@ void cmd_brief_unhold()
 void cmd_brief_button_pressed(int n)
 {
 	switch (n) {
-		case HELP_BUTTON:
+		case CMD_BRIEF_BUTTON_HELP:
 			launch_context_help();
 			gamesnd_play_iface(SND_HELP_PRESSED);
 			break;
 
-		case OPTIONS_BUTTON:
+		case CMD_BRIEF_BUTTON_OPTIONS:
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 			break;
 
-		case FIRST_STAGE_BUTTON:
+		case CMD_BRIEF_BUTTON_FIRST_STAGE:
 			if (Cur_stage) {
 				cmd_brief_new_stage(0);
 				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
@@ -536,7 +541,7 @@ void cmd_brief_button_pressed(int n)
 
 			break;
 
-		case PREV_STAGE_BUTTON:
+		case CMD_BRIEF_BUTTON_PREV_STAGE:
 			if (Cur_stage) {
 				cmd_brief_new_stage(Cur_stage - 1);
 				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
@@ -546,7 +551,7 @@ void cmd_brief_button_pressed(int n)
 
 			break;
 
-		case NEXT_STAGE_BUTTON:
+		case CMD_BRIEF_BUTTON_NEXT_STAGE:
 			if (Cur_stage < Cur_cmd_brief->num_stages - 1) {
 				cmd_brief_new_stage(Cur_stage + 1);
 				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
@@ -556,7 +561,7 @@ void cmd_brief_button_pressed(int n)
 
 			break;
 
-		case LAST_STAGE_BUTTON:
+		case CMD_BRIEF_BUTTON_LAST_STAGE:
 			if (Cur_stage < Cur_cmd_brief->num_stages - 1) {
 				cmd_brief_new_stage(Cur_cmd_brief->num_stages - 1);
 				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
@@ -565,12 +570,12 @@ void cmd_brief_button_pressed(int n)
 			}
 			break;
 
-		case ACCEPT_BUTTON:
+		case CMD_BRIEF_BUTTON_ACCEPT:
 			cmd_brief_exit();
 			gamesnd_play_iface(SND_COMMIT_PRESSED);
 			break;
 
-		case PAUSE_BUTTON:
+		case CMD_BRIEF_BUTTON_PAUSE:
 			gamesnd_play_iface(SND_USER_SELECT);
 			Player->auto_advance ^= 1;
 			break;
@@ -683,13 +688,13 @@ void cmd_brief_init(int team)
 	}
 
 	// set up readyrooms for buttons so we draw the correct animation frame when a key is pressed
-	Cmd_brief_buttons[gr_screen.res][FIRST_STAGE_BUTTON].button.set_hotkey(KEY_SHIFTED | KEY_LEFT);
-	Cmd_brief_buttons[gr_screen.res][LAST_STAGE_BUTTON].button.set_hotkey(KEY_SHIFTED | KEY_RIGHT);
-	Cmd_brief_buttons[gr_screen.res][PREV_STAGE_BUTTON].button.set_hotkey(KEY_LEFT);
-	Cmd_brief_buttons[gr_screen.res][NEXT_STAGE_BUTTON].button.set_hotkey(KEY_RIGHT);
-	Cmd_brief_buttons[gr_screen.res][ACCEPT_BUTTON].button.set_hotkey(KEY_CTRLED | KEY_ENTER);
-	Cmd_brief_buttons[gr_screen.res][HELP_BUTTON].button.set_hotkey(KEY_F1);
-	Cmd_brief_buttons[gr_screen.res][OPTIONS_BUTTON].button.set_hotkey(KEY_F2);
+	Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_FIRST_STAGE].button.set_hotkey(KEY_SHIFTED | KEY_LEFT);
+	Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_LAST_STAGE].button.set_hotkey(KEY_SHIFTED | KEY_RIGHT);
+	Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_PREV_STAGE].button.set_hotkey(KEY_LEFT);
+	Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_NEXT_STAGE].button.set_hotkey(KEY_RIGHT);
+	Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_ACCEPT].button.set_hotkey(KEY_CTRLED | KEY_ENTER);
+	Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_HELP].button.set_hotkey(KEY_F1);
+	Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_OPTIONS].button.set_hotkey(KEY_F2);
 
 	// load in help overlay bitmap	
 	help_overlay_load(CMD_BRIEF_OVERLAY);
@@ -755,7 +760,7 @@ void cmd_brief_do_frame(float frametime)
 	}
 
 	if ( help_overlay_active(CMD_BRIEF_OVERLAY) ) {
-		Cmd_brief_buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
+		Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_HELP].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
 
@@ -816,7 +821,7 @@ void cmd_brief_do_frame(float frametime)
 	Ui_window.draw();
 
 	if (!Player->auto_advance){
-		Cmd_brief_buttons[gr_screen.res][PAUSE_BUTTON].button.draw_forced(2);
+		Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_PAUSE].button.draw_forced(2);
 	}
 
 	gr_set_font(FONT1);
