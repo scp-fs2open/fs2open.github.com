@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.80 $
- * $Author: phreak $
- * $Date: 2004-12-23 15:57:42 $
+ * $Revision: 2.81 $
+ * $Author: Goober5000 $
+ * $Date: 2005-01-17 22:46:32 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2004/12/23 15:57:42  phreak
+ * commits for scramble-messages and unscramble-messages
+ * -phreak
+ *
  * Revision 2.79  2004/11/17 22:23:13  Goober5000
  * added two new sexps
  * --Goober5000
@@ -1420,7 +1424,9 @@ void flush_sexp_tree(int node);
 // sexp_variable
 void sexp_modify_variable(int);
 void sexp_modify_variable(char *text, int index);
-int get_index_sexp_variable_name(const char* temp_name);
+int get_index_sexp_variable_name(const char *temp_name);
+int get_index_sexp_variable_name_special(const char *text);	// Goober5000
+void sexp_replace_variable_names_with_values(char *text, int max_len);	// Goober5000
 int sexp_variable_count();
 int sexp_campaign_persistent_variable_count();	// Goober5000
 void sexp_variable_delete(int index);
