@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.53 $
- * $Date: 2004-01-17 21:59:53 $
+ * $Revision: 2.54 $
+ * $Date: 2004-01-18 13:17:55 $
  * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2004/01/17 21:59:53  randomtiger
+ * Some small changes to the main codebase that allow Fred_open OGL to compile.
+ *
  * Revision 2.52  2003/12/17 23:25:10  phreak
  * added a MAX_BUFFERS_PER_SUBMODEL define so it can be easily changed if we ever want to change the 16 texture limit
  *
@@ -1593,7 +1596,7 @@ void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, in
 	saved_zbuf = gr_zbuffer_get();
 	
 	// start the frame, no zbuffering, no culling
-#ifndef FRED
+#ifndef FRED_OGL
 	g3_start_frame(1);	
 #endif
 	gr_zbuffer_set(GR_ZBUFF_NONE);		
@@ -1651,7 +1654,7 @@ void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, in
 	// draw the polys
 	g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_ALPHA, 0.1f);		
 
-#ifndef FRED
+#ifndef FRED_OGL
  	g3_end_frame();
 #endif
 
@@ -4985,7 +4988,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	HWND wnd=(HWND)os_get_window();
 
-#ifndef FRED
+#ifndef FRED_OGL
 	Assert(wnd);
 	
 	dev_context=GetDC(wnd);
@@ -5059,7 +5062,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	glGetIntegerv(GL_MAX_LIGHTS, &max_gl_lights); //Get the max number of lights supported
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
-#ifndef FRED
+#ifndef FRED_OGL
 
 	if (!Cmdline_window)
 	{
@@ -5099,7 +5102,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	glEnable(GL_COLOR_SUM_EXT);
 	
 	
-#ifndef FRED
+#ifndef FRED_OGL
 
 	if (!reinit)
 		//start extension
