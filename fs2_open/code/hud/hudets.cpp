@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-04-29 01:03:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2003-08-06 17:50:01 $
+ * $Author: phreak $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/10 05:43:34  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -155,6 +159,7 @@
 #include "bmpman/bmpman.h"
 #include "weapon/emp.h"
 #include "localization/localize.h"
+#include "weapon/weapon.h"
 	
 #define ENERGY_DIVERT_DELTA				0.2f	// percentage of energy transferred in a shield->weapon or weapon->shield energy transfer
 #define INTIAL_SHIELD_RECHARGE_INDEX	4		// default shield charge rate (index in Energy_levels[])
@@ -249,6 +254,8 @@ hud_frames Ets_gauge;
 
 static int Hud_ets_inited = 0;
 
+extern tertiary_weapon_info Tertiary_weapon_info[MAX_TERTIARY_WEAPON_TYPES];
+
 void hud_init_ets()
 {
 	if ( Hud_ets_inited )
@@ -310,6 +317,8 @@ void update_ets(object* objp, float fl_frametime)
 
 	ship* ship_p = &Ships[objp->instance];
 	ship_info* sinfo_p = &Ship_info[ship_p->ship_info_index];
+	float max_g=sinfo_p->max_weapon_reserve,
+		  max_s=ship_p->ship_initial_shield_strength;
 
 	if ( ship_p->flags & SF_DYING ){
 		return;
@@ -319,10 +328,19 @@ void update_ets(object* objp, float fl_frametime)
 		return;
 	}
 
+	if (ship_p->tertiary_weapon_info_idx >=0)
+	{
+		if (Tertiary_weapon_info[ship_p->tertiary_weapon_info_idx].type == TWT_EXTRA_REACTOR)
+		{
+			max_g+=Tertiary_weapon_info[ship_p->tertiary_weapon_info_idx].reactor_add_weap_pwr;
+			max_s+=Tertiary_weapon_info[ship_p->tertiary_weapon_info_idx].reactor_add_shield_pwr;
+		}
+	}
+
 //	new_energy = fl_frametime * sinfo_p->power_output;
 
 	// update weapon energy
-	max_new_weapon_energy = fl_frametime * MAX_WEAPON_REGEN_PER_SECOND * sinfo_p->max_weapon_reserve;
+	max_new_weapon_energy = fl_frametime * MAX_WEAPON_REGEN_PER_SECOND * max_g;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * Skill_level_weapon_energy_scale[Game_skill_level];
 	} else {
@@ -334,7 +352,7 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	float shield_delta;
-	max_new_shield_energy = fl_frametime * MAX_SHIELD_REGEN_PER_SECOND * ship_p->ship_initial_shield_strength;
+	max_new_shield_energy = fl_frametime * MAX_SHIELD_REGEN_PER_SECOND * max_s;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * Skill_level_shield_energy_scale[Game_skill_level];
 	} else {
