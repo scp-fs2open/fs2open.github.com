@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-01-30 07:39:06 $
+ * $Revision: 2.24 $
+ * $Date: 2004-02-07 00:48:52 $
  * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/01/30 07:39:06  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.22  2003/12/16 20:55:13  phreak
  * disabled tertiary weapons support pending a rewrite of critical code
  *
@@ -500,7 +506,7 @@ void set_ship_submodel_as_blown_off(ship *shipp, char *name)
 	// go through list of ship subsystems and find name
 	ship_subsys	*pss = NULL;
 	for (pss=GET_FIRST(&shipp->subsys_list); pss!=END_OF_LIST(&shipp->subsys_list); pss=GET_NEXT(pss)) {
-		if ( stricmp(pss->system_info->name, name) == 0) {
+		if ( subsystem_stricmp(pss->system_info->name, name) == 0) {
 			found = TRUE;
 			break;
 		}

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.33 $
- * $Date: 2003-11-17 04:25:58 $
- * $Author: bobboau $
+ * $Revision: 2.34 $
+ * $Date: 2004-02-07 00:48:53 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/11/17 04:25:58  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.32  2003/11/16 04:09:20  Goober5000
  * language
  *
@@ -3479,7 +3485,7 @@ void beam_test(int whee)
 	orion_radar = NULL;
 	while(lookup != END_OF_LIST(&Ships[s1].subsys_list)){
 		// turret		
-		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !stricmp(lookup->system_info->subobj_name, "turret07")){
+		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !subsystem_stricmp(lookup->system_info->subobj_name, "turret07")){
 			orion_turret = lookup;			
 		}
 
@@ -3497,7 +3503,7 @@ void beam_test(int whee)
 	fenris_radar = NULL;
 	while(lookup != END_OF_LIST(&Ships[s2].subsys_list)){
 		// turret
-		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !stricmp(lookup->system_info->subobj_name, "turret07")){
+		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !subsystem_stricmp(lookup->system_info->subobj_name, "turret07")){
 			fenris_turret = lookup;			
 		}
 
@@ -3581,7 +3587,7 @@ void beam_test_new(int whee)
 	orion_radar = NULL;
 	while(lookup != END_OF_LIST(&Ships[s1].subsys_list)){
 		// turret		
-		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !stricmp(lookup->system_info->subobj_name, "turret07")){
+		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !subsystem_stricmp(lookup->system_info->subobj_name, "turret07")){
 			orion_turret = lookup;			
 		}
 
@@ -3599,7 +3605,7 @@ void beam_test_new(int whee)
 	fenris_radar = NULL;
 	while(lookup != END_OF_LIST(&Ships[s2].subsys_list)){
 		// turret
-		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !stricmp(lookup->system_info->subobj_name, "turret03")){
+		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !subsystem_stricmp(lookup->system_info->subobj_name, "turret03")){
 			fenris_turret = lookup;			
 		}
 

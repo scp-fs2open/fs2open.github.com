@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-11-11 18:06:49 $
- * $Author: phreak $
+ * $Revision: 2.28 $
+ * $Date: 2004-02-07 00:48:52 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/11/11 18:06:49  phreak
+ * made some functions that are there for 2d drawing not modify T&L matrices
+ *
  * Revision 2.26  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -1050,7 +1053,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 		source = &s_sp[i];
 		for ( j = 0; j < n_subsystems; j++ ) {
 			dest = &d_sp[j];
-			if ( !stricmp( source->subobj_name, dest->subobj_name) ) {
+			if ( !subsystem_stricmp( source->subobj_name, dest->subobj_name) ) {
 				dest->flags = source->flags;
 				dest->subobj_num = source->subobj_num;
 				dest->model_num = source->model_num;
@@ -1288,7 +1291,21 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 	for (i = 0; i < n_subsystems; i++ ) {
 		subsystemp = &slist[i];
-		if ( !stricmp(subobj_name, subsystemp->subobj_name) ) {
+
+#ifndef NDEBUG
+		// Goober5000 - notify if there's a mismatch
+		if ( !stricmp(subobj_name, subsystemp->subobj_name) && subsystem_stricmp(subobj_name, subsystemp->subobj_name) ||
+				stricmp(subobj_name, subsystemp->subobj_name) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
+		{
+			Warning(LOCATION, "Subsystem %s in model %s is represented as %s in ships.tbl.  "
+				"Although FS2_OPEN 3.6 and later will catch and correct this error, earlier "
+				"versions (as well as retail FS2) will not.  You are advised to fix this if "
+				"you plan to support earlier versions of Freespace.\n", subsystemp->subobj_name, model_get(model_num)->filename, subobj_name);
+
+		}
+#endif
+
+		if ( !subsystem_stricmp(subobj_name, subsystemp->subobj_name) ) {
 			subsystemp->flags = 0;
 			subsystemp->subobj_num = subobj_num;
 			subsystemp->turret_gun_sobj = -1;
@@ -1945,7 +1962,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							int table_error = 1;
 							bank->wash_info_index = -1;
 							for (int k=0; k<n_subsystems; k++) {
-								if ( 0 == stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
+								if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
 									bank->wash_info_index = subsystems[k].engine_wash_index;
 									if (bank->wash_info_index >= 0) {
 										table_error = 0;

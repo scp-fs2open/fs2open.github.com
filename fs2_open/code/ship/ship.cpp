@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.104 $
- * $Date: 2004-02-05 14:31:44 $
+ * $Revision: 2.105 $
+ * $Date: 2004-02-07 00:48:52 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2004/02/05 14:31:44  Goober5000
+ * fixed a few random bugs
+ * --Goober5000
+ *
  * Revision 2.103  2004/02/04 08:41:01  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -5657,7 +5661,7 @@ void ship_set_subsys_path_nums(ship_info *sip, polymodel *pm)
 		for ( j = 0; j < pm->n_paths; j++ ) {
 			if ( (sip->subsystems[i].subobj_num != -1) && (sip->subsystems[i].subobj_num == pm->paths[j].parent_submodel) ) {
 				found_path = 1;
-			} else if ( !stricmp(sip->subsystems[i].subobj_name, pm->paths[j].parent_name) ) {
+			} else if ( !subsystem_stricmp(sip->subsystems[i].subobj_name, pm->paths[j].parent_name) ) {
 				found_path = 1;
 			}
 	
@@ -8800,7 +8804,7 @@ int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass)
 	count = 0;
 	ss = GET_FIRST(&sp->subsys_list);
 	while ( ss != END_OF_LIST( &sp->subsys_list ) ) {
-		if ( !stricmp(ss->system_info->subobj_name, ss_name) )
+		if ( !subsystem_stricmp(ss->system_info->subobj_name, ss_name) )
 			return count;
 		count++;
 		ss = GET_NEXT( ss );
@@ -11769,7 +11773,7 @@ ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name)
 	lookup = GET_FIRST(&shipp->subsys_list);
 	while(lookup != END_OF_LIST(&shipp->subsys_list)){
 		// turret
-		if(!stricmp(lookup->system_info->subobj_name, subsys_name)){
+		if(!subsystem_stricmp(lookup->system_info->subobj_name, subsys_name)){
 			return lookup;
 		}
 
@@ -12116,7 +12120,7 @@ void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_c
 	while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
 	{
 		// if we found the subsystem
-		if ( !stricmp(ss->system_info->subobj_name, subsystem))
+		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsystem))
 		{
 			// set ai class
 			ss->weapons.ai_class = new_ai_class;
