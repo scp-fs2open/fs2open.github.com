@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.25 $
+ * $Date: 2004-11-18 00:05:37 $
+ * $Author: Goober5000 $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.23  2004/07/18 04:07:26  Kazan
  * nothing major
  *
@@ -1436,7 +1439,7 @@ void multi_do_frame()
 
 			bytes_read = FS2OpenPXO_Socket.GetData(packetbuffer, 256);
 
-			while (bytes_read>bytes_processed)
+			while (bytes_read > bytes_processed)
 			{
 				switch (*pid)
 				{
@@ -1452,7 +1455,7 @@ void multi_do_frame()
 
 					case PCKT_PINGREPLY:
 						// 8 bytes should never be segmented
-						itemp = (int) float(clock() - ((fs2open_pingreply*)(packetbuffer+bytes_processed))->time)/2.0;
+						itemp = (clock() - ((fs2open_pingreply *)(packetbuffer + bytes_processed))->time) / 2;
 						ml_printf("FS2netD received PONG: %d ms\n", itemp);
 
 						bytes_processed += 8;

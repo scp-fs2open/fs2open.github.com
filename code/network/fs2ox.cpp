@@ -9,13 +9,16 @@
 
 /*
  * $Logfile$
- * $Revision: 1.11 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 1.12 $
+ * $Date: 2004-11-18 00:05:37 $
+ * $Author: Goober5000 $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 1.10  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -54,8 +57,10 @@
  */
 
 
-#pragma warning(disable:4786)	// identifier truncated in the debug information
-#pragma warning(disable:4710)	// function not inlined
+// 4786 = identifier truncated in the debug information
+// 4710 = function not inlined
+// 4097 = something used as synonym for class
+#pragma warning(disable:4786 4710 4097)
 
 #include "globalincs/pstypes.h"
 #include "ui/ui.h"
