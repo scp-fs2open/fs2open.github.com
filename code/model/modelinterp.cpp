@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.65 $
- * $Date: 2004-02-06 05:55:46 $
- * $Author: matt $
+ * $Revision: 2.66 $
+ * $Date: 2004-02-06 23:00:29 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2004/02/06 05:55:46  matt
+ * Fix for bad ambient lighting in non-htl -Sticks
+ *
  * Revision 2.64  2004/02/04 10:14:58  Goober5000
  * commented a decal function that someone missed
  * --Goober5000
@@ -1324,7 +1327,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	// Goober5000
 	int tmap_num = w(p+40);
-	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
+	//mprintf(("model_interp_tmappoly tmap_num: %d\n", tmap_num));
+	//Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 
 	int is_invisible = 0;
 
@@ -2210,7 +2214,8 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 
 	// Goober5000
 	int tmap_num = w(p+40);
-	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
+	//mprintf(("model_interp_sub tmap_num: %d\n", tmap_num));
+	//Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 
 	
 	while ( chunk_type != OP_EOF )	{
