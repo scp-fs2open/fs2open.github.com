@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/version.h $
- * $Revision: 2.4 $
- * $Date: 2002-12-31 20:09:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-01-30 23:24:34 $
+ * $Author: phreak $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/12/31 20:09:14  Goober5000
+ * bumped to 3.4
+ * --Goober5000
+ *
  * Revision 2.3  2002/11/10 20:40:02  inquisitor
  * Bumped to 3.3
  *
@@ -132,7 +136,7 @@
 //   Major.Minor.Bugfix
 
 #define FS_VERSION_MAJOR 3					// major version
-#define FS_VERSION_MINOR 4					// increase by 1 for minor revs
+#define FS_VERSION_MINOR 50					// increase by 1 for minor revs
 #define FS_VERSION_BUILD 0					// bugfix release
 
 #define VERSION_LOC_FNAME			"version.nfo"
