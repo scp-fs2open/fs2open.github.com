@@ -20,6 +20,9 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/06/12 17:45:54  phreak
+ * local ssm warpin is now handled better than what i committed earlier
+ *
  * Revision 2.28  2003/06/12 16:54:06  phreak
  * fixed a minor bug where local ssms will warpin at 0,0,0 if their target was destroyed while in subspace
  *
@@ -2770,7 +2773,7 @@ void weapon_process_post(object * obj, float frame_time)
 	
 	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
 	{
-		if (wp->lssm_stage != 5)
+		if ((wp->lssm_stage != 5) && (wp->lssm_stage != 0))
 		{
 			wp->lifeleft += frame_time;
 		}
@@ -2923,6 +2926,13 @@ void weapon_process_post(object * obj, float frame_time)
 
 		if ((timestamp_elapsed(wp->lssm_warpout_time)) && (wp->lssm_stage==1))
 		{
+			//if we don't have a lock at this point, just stay in normal space
+			if (wp->target_num == -1)
+			{
+				wp->lssm_stage=0;
+				return;
+			}
+
 			vector warpout;
 			//create a warp effect
 			vm_vec_copy_scale(&warpout,&obj->phys_info.vel,3.0f);
@@ -2938,14 +2948,6 @@ void weapon_process_post(object * obj, float frame_time)
 		if ((fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <= wp->lssm_warp_pct) && (wp->lssm_stage==2))
 		{
 			uint flags=obj->flags & ~(OF_RENDERS | OF_COLLIDES);
-
-			//if we don't have a target at this point, blow it up. otherwise they will warp in at 0,0,0 and travel along the x-axis
-			if (wp->target_num == -1)
-			{
-				wp->weapon_flags |= WF_DESTROYED_BY_WEAPON;
-				weapon_detonate(obj);
-				return;
-			}
 
 			obj_set_flags(obj, flags);
 
