@@ -9,13 +9,27 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.9 $
+ * $Revision: 2.10 $
  * $Author: Goober5000 $
- * $Date: 2002-12-23 05:18:52 $
+ * $Date: 2002-12-24 07:38:59 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2002/12/23 05:18:52  Goober5000
+ * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
+ * one ship would return after only dealing with the first ship.
+ *
+ * Also added the following sexps:
+ * is-ship-stealthed
+ * ship-force-stealth
+ * ship-force-nostealth
+ * ship-remove-stealth-forcing
+ *
+ * They toggle the stealth flag on and off.  If a ship is forced stealthy, it won't even
+ * show up for friendly ships.
+ * --Goober5000
+ *
  * Revision 2.8  2002/12/14 17:09:28  Goober5000
  * removed mission flag for fighterbay damage; instead made damage display contingent on whether the fighterbay subsystem is assigned a damage percentage in ships.tbl
  * --Goober5000
@@ -289,7 +303,7 @@ typedef struct mission {
 // cargo defines
 // NOTE: MAX_CARGO MUST REMAIN <= 64 (CARGO_NO_DEPLETE) for NO_DEPLETE to work.
 #define CARGO_INDEX_MASK	0xBF
-#define CARGO_NO_DEPLETE	0x40
+#define CARGO_NO_DEPLETE	0x40		// CARGO_NO_DEPLETE + CARGO_INDEX_MASK must == FF
 #define MAX_CARGO				30
 
 extern mission The_mission;
