@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.9 $
- * $Date: 2002-08-28 10:51:04 $
- * $Author: randomtiger $
+ * $Revision: 2.10 $
+ * $Date: 2002-09-20 20:09:01 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+<<<<<<< freespace.cpp
+ *
+ *
+ * Revision 2.51 2002/08/04 2`:08:55 PhReAk
+ * Draw mem usage - will be needed for increasing original limits
+ *
+ * Revision 2.51 2002/08/04 20:04:35 PhReAk
+ * Draw FPS when running debug build
+ *
+=======
+ * Revision 2.9  2002/08/28 10:51:04  randomtiger
+ * Woh! I sure as hell didnt modify all these files it says I did.
+ * I will put this down to the branch! Note: I did start from a fresh checkout!
+ *
  * Revision 2.8  2002/08/27 13:38:57  penguin
  * Moved DirectX8 stuff to directx8 branch; reverted to previous
  *
@@ -23,6 +37,7 @@
  * 1. Disable CD checking
  * 2. Add CVS tag to version string
  *
+>>>>>>> 2.9
  * Revision 2.5  2002/08/04 05:11:05  penguin
  * Don't write version to registry; change way version string is formatted
  *
@@ -750,14 +765,16 @@ float frametimes[FRAME_FILTER];
 float frametotal = 0.0f;
 float flFrametime;
 
-#ifdef RELEASE_REAL
-	int	Show_framerate = 0;
-#else 
+#ifndef NDEBUG
 	int	Show_framerate = 1;
+	int	Show_mem = 1;
+#else 
+	int	Show_framerate = 0;
+	int	Show_mem = 0;
 #endif
 
 int	Framerate_cap = 120;
-int	Show_mem = 0;
+
 int	Show_cpu = 0;
 int	Show_target_debug_info = 0;
 int	Show_target_weapons = 0;
@@ -1271,6 +1288,7 @@ DCF(sn_glare, "")
 }
 
 float Supernova_last_glare = 0.0f;
+extern starfield_bitmap *stars_lookup_sun(starfield_bitmap_instance *s);
 void game_sunspot_process(float frametime)
 {
 	int n_lights, idx;
@@ -1338,6 +1356,7 @@ void game_sunspot_process(float frametime)
 		Sun_drew = 0;				
 	} else {
 		if ( Sun_drew )	{
+			starfield_bitmap* sbm;
 			// check sunspots for all suns
 			n_lights = light_get_global_count();
 
@@ -1349,10 +1368,17 @@ void game_sunspot_process(float frametime)
 					vector light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
-					float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
+					sbm=stars_lookup_sun(&Suns[idx]);
+					if (!sbm)
+						continue;
+					
+					//only do sunglare stuff if this sun has one
+					if (sbm->glare)
+					{
+						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
 
-					Sun_spot_goal += (float)pow(dot,85.0f);
-
+						Sun_spot_goal += (float)pow(dot,85.0f);
+					}
 					// draw the glow for this sun
 					stars_draw_sun_glow(idx);				
 				} else {
