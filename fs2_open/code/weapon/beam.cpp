@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.26 $
- * $Date: 2003-10-13 05:57:50 $
- * $Author: Kazan $
+ * $Revision: 2.27 $
+ * $Date: 2003-10-22 23:10:14 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/10/13 05:57:50  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  * Revision 2.25  2003/09/13 06:02:04  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -1495,7 +1501,7 @@ int poly_beam = 0;
 float U_offset =0.0f; // beam texture offset -Bobboau
 void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrink)
 {	
-	mprintf(("about to render a beam\n"));
+//	mprintf(("about to render a beam\n"));
 	int idx, s_idx;
 	vertex h1[4];				// halves of a beam section	
 	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
@@ -1582,7 +1588,7 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 	
 	// turn backface culling back on
 	gr_set_cull(1);	
-	mprintf(("it should have rendered\n"));
+//	mprintf(("it should have rendered\n"));
 }
 
 // generate particles for the muzzle glow
@@ -3014,16 +3020,16 @@ void beam_handle_collisions(beam *b)
 		if((target < 0) || (target >= MAX_OBJECTS)){
 			continue;
 		}
-mprintf(("object valid\n"));
+//mprintf(("object valid\n"));
 		// try and get a model to deal with		
 		model_num = beam_get_model(&Objects[target]);
 		if(model_num < 0){
 			continue;
 		}
-mprintf(("got a model\n"));
+//mprintf(("got a model\n"));
 		// add lighting
 		beam_add_light(b, target, 2, &b->f_collisions[idx].cinfo.hit_point_world);
-mprintf(("adding a light\n"));
+//mprintf(("adding a light\n"));
 		// add to the recent collision list
 		r_coll[r_coll_count].c_objnum = target;
 		r_coll[r_coll_count].c_sig = Objects[target].signature;
@@ -3041,18 +3047,18 @@ mprintf(("adding a light\n"));
 				first_hit = 0;
 			}
 		}
-mprintf(("de\n"));				
+//mprintf(("de\n"));				
 		// if the damage timestamp has expired or is not set yet, apply damage
 		if((r_coll[r_coll_count].c_stamp == -1) || timestamp_elapsed(r_coll[r_coll_count].c_stamp)){
 			do_damage = 1;
 			r_coll[r_coll_count].c_stamp = timestamp(BEAM_DAMAGE_TIME);
 		}
-mprintf(("ts elapsed\n"));
+//mprintf(("ts elapsed\n"));
 		// if no damage - don't even indicate it has been hit
 		if(wi->damage <= 0){
 			do_damage = 0;
 		}
-mprintf(("do nothing\n"));
+//mprintf(("do nothing\n"));
 		// increment collision count
 		r_coll_count++;		
 
@@ -3060,10 +3066,10 @@ mprintf(("do nothing\n"));
 		if(first_hit){
 			snd_play_3d( &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
-mprintf(("play the sound\n"));		
+//mprintf(("play the sound\n"));		
 		// do damage
 		if(do_damage && !physics_paused){
-			mprintf(("doing damage "));
+		//	mprintf(("doing damage "));
 			// maybe draw an explosion
 			if(wi->impact_weapon_expl_index >= 0){
 				int ani_handle = weapon_get_expl_handle(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
@@ -3072,13 +3078,13 @@ mprintf(("play the sound\n"));
 
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
-				mprintf(("beams hitting debris\n"));
+			//	mprintf(("beams hitting debris\n"));
 				// hit the debris - the debris hit code takes care of checking for MULTIPLAYER_CLIENT, etc
 				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, Weapon_info[b->weapon_info_index].damage);
 				break;
 
 			case OBJ_WEAPON:
-				mprintf(("beams hitting a weapon\n"));
+			//	mprintf(("beams hitting a weapon\n"));
 				// detonate the missile
 				Assert(Weapon_info[Weapons[Objects[target].instance].weapon_info_index].subtype == WP_MISSILE);
 #ifndef NO_NETWORK
@@ -3090,7 +3096,7 @@ mprintf(("play the sound\n"));
 				break;
 
 			case OBJ_ASTEROID:
-				mprintf(("beam hitting a asteroid\n"));
+			//	mprintf(("beam hitting a asteroid\n"));
 				// hit the asteroid
 #ifndef NO_NETWORK
 				if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER)
@@ -3100,7 +3106,7 @@ mprintf(("play the sound\n"));
 				}
 				break;
 			case OBJ_SHIP:	
-				mprintf(("beam hitting a ship %s, shield quadrant %d\n", Ships[Objects[target].instance].ship_name, b->f_collisions[idx].quadrant));
+			//	mprintf(("beam hitting a ship %s, shield quadrant %d\n", Ships[Objects[target].instance].ship_name, b->f_collisions[idx].quadrant));
 				// hit the ship - again, the innards of this code handle multiplayer cases
 				// maybe vaporize ship.
 				dam = beam_get_ship_damage(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
@@ -3118,7 +3124,7 @@ mprintf(("play the sound\n"));
 			}		
 			if(dam == 0)break;
 		}				
-mprintf(("out of handeling colisions\n"));
+//mprintf(("out of handeling colisions\n"));
 
 		// if the radius of the target is somewhat close to the radius of the beam, "stop" the beam here
 		// for now : if its smaller than about 1/3 the radius of the ship
@@ -3131,7 +3137,7 @@ mprintf(("out of handeling colisions\n"));
 			break;
 		}
 	}
-mprintf(("beam stopped\n"));
+//mprintf(("beam stopped\n"));
 	// store the new recent collisions
 	for(idx=0; idx<r_coll_count; idx++){
 		b->r_collisions[idx] = r_coll[idx];
