@@ -1,0 +1,650 @@
+# Anjuta Version 1.2.2 
+Compatibility Level: 1 
+
+<PROJECT_DESCRIPTION_START>
+FS2 Open: SCP<PROJECT_DESCRIPTION_END>
+<CONFIG_PROGS_START>
+<CONFIG_PROGS_END>
+<CONFIG_LIBS_START>
+<CONFIG_LIBS_END>
+<CONFIG_HEADERS_START>
+<CONFIG_HEADERS_END>
+<CONFIG_CHARACTERISTICS_START>
+<CONFIG_CHARACTERISTICS_END>
+<CONFIG_LIB_FUNCS_START>
+<CONFIG_LIB_FUNCS_END>
+<CONFIG_ADDITIONAL_START>
+<CONFIG_ADDITIONAL_END>
+<CONFIG_FILES_START>
+<CONFIG_FILES_END>
+<MAKEFILE_AM_START>
+<MAKEFILE_AM_END>
+
+props.file.type=project
+
+anjuta.version=1.2.2
+anjuta.compatibility.level=1
+
+project.name=FS2_Open
+project.type=GENERIC
+project.target.type=EXECUTABLE
+project.version=3.6
+project.author=Taylor Richards
+project.source.target=fs2_open
+project.has.gettext=0
+project.gui.command=
+project.programming.language=C++
+project.excluded.modules=intl
+
+project.config.extra.modules.before=
+project.config.extra.modules.after=
+project.config.blocked=1
+project.config.disable.overwriting=1 1 1 1 1 1 1 1 1 
+
+project.menu.entry=FS2_Open Version 3.6
+project.menu.group=Application
+project.menu.comment=FS2_Open Version 3.6
+project.menu.icon=
+project.menu.need.terminal=0
+
+project.configure.options=
+anjuta.program.arguments=
+preferences.build.option.jobs=0
+preferences.build.option.silent=0
+preferences.build.option.autosave=0
+preferences.anjuta.make.options=-k
+preferences.make=make
+preferences.build.option.keep.going=1
+preferences.build.option.warn.undef=0
+preferences.autoformat.custom.style= -i8 -sc -bli0 -bl0 -cbi0 -ss
+preferences.indent.opening=0
+preferences.autoformat.disable=0
+preferences.indent.automatic=1
+preferences.use.tabs=1
+preferences.indent.size=4
+preferences.tabsize=4
+preferences.indent.closing=0
+
+module.include.name=.
+module.include.type=
+module.include.files=\
+	code/anim/animplay.h\
+	code/anim/packunpack.h\
+	code/demo/demo.h\
+	code/asteroid/asteroid.h\
+	code/bmpman/bmpman.h\
+	code/cfile/cfile.h\
+	code/cfile/cfilearchive.h\
+	code/cfile/cfilesystem.h\
+	code/cmdline/cmdline.h\
+	code/cmeasure/cmeasure.h\
+	code/controlconfig/controlsconfig.h\
+	code/cutscene/cutscenes.h\
+	code/cutscene/movie.h\
+	code/ddsutils/ddsutils.h\
+	code/debris/debris.h\
+	code/debugconsole/dbugfile.h\
+	code/debugconsole/timerbar.h\
+	code/decals/decals.h\
+	code/directx/dx8show.h\
+	code/directx/vasync.h\
+	code/directx/vd3dtypes.h\
+	code/directx/vddraw.h\
+	code/directx/vdinput.h\
+	code/directx/vdplay.h\
+	code/directx/vdplobby.h\
+	code/directx/vdsetup.h\
+	code/directx/vdsound.h\
+	code/directx/vdvp.h\
+	code/exceptionhandler/exceptionhandler.h\
+	code/fireball/fireballs.h\
+	code/freespace2/freespace.h\
+	code/freespace2/freespaceresource.h\
+	code/freespace2/levelpaging.h\
+	code/gamehelp/contexthelp.h\
+	code/gamehelp/gameplayhelp.h\
+	code/gamesequence/gamesequence.h\
+	code/gamesnd/eventmusic.h\
+	code/gamesnd/gamesnd.h\
+	code/globalincs/alphacolors.h\
+	code/globalincs/crypt.h\
+	code/globalincs/linklist.h\
+	code/globalincs/pstypes.h\
+	code/globalincs/systemvars.h\
+	code/globalincs/version.h\
+	code/graphics/2d.h\
+	code/graphics/font.h\
+	code/graphics/grd3d.h\
+	code/graphics/grd3dbmpman.h\
+	code/graphics/grd3dinternal.h\
+	code/graphics/grinternal.h\
+	code/graphics/gropengl.h\
+	code/graphics/grzbuffer.h\
+	code/graphics/line.h\
+	code/graphics/tmapper.h\
+	code/graphics/gl/wglext.h\
+	code/graphics/gl/GLAUX.H\
+	code/graphics/gl/GLU.H\
+	code/graphics/gl/Gl.h\
+	code/graphics/gl/Glext.h\
+	code/graphics/grd3dsetup.h\
+	code/graphics/grd3dlight.h\
+	code/graphics/grd3dbatch.h\
+	code/graphics/GrD3DParticle.h\
+	code/hud/hudconfig.h\
+	code/hud/hud.h\
+	code/hud/hudartillery.h\
+	code/hud/hudbrackets.h\
+	code/hud/hudescort.h\
+	code/hud/hudets.h\
+	code/hud/hudgauges.h\
+	code/hud/hudlock.h\
+	code/hud/hudmessage.h\
+	code/hud/hudobserver.h\
+	code/hud/hudresource.h\
+	code/hud/hudreticle.h\
+	code/hud/hudshield.h\
+	code/hud/hudsquadmsg.h\
+	code/hud/hudtarget.h\
+	code/hud/hudtargetbox.h\
+	code/hud/hudwingmanstatus.h\
+	code/inetfile/cftp.h\
+	code/inetfile/chttpget.h\
+	code/inetfile/inetgetfile.h\
+	code/io/joy.h\
+	code/io/joy_ff.h\
+	code/io/key.h\
+	code/io/keycontrol.h\
+	code/io/mouse.h\
+	code/io/sw_error.hpp\
+	code/io/sw_force.h\
+	code/io/sw_guid.hpp\
+	code/io/timer.h\
+	code/jumpnode/jumpnode.h\
+	code/lighting/lighting.h\
+	code/localization/fhash.h\
+	code/localization/localize.h\
+	code/math/fix.h\
+	code/math/floating.h\
+	code/math/fvi.h\
+	code/math/spline.h\
+	code/math/staticrand.h\
+	code/math/vecmat.h\
+	code/menuui/barracks.h\
+	code/menuui/credits.h\
+	code/menuui/fishtank.h\
+	code/menuui/mainhallmenu.h\
+	code/menuui/mainhalltemp.h\
+	code/menuui/optionsmenu.h\
+	code/menuui/optionsmenumulti.h\
+	code/menuui/playermenu.h\
+	code/menuui/readyroom.h\
+	code/menuui/snazzyui.h\
+	code/menuui/techmenu.h\
+	code/menuui/trainingmenu.h\
+	code/mission/missionbriefcommon.h\
+	code/mission/missioncampaign.h\
+	code/mission/missiongoals.h\
+	code/mission/missiongrid.h\
+	code/mission/missionhotkey.h\
+	code/mission/missionload.h\
+	code/mission/missionlog.h\
+	code/mission/missionmessage.h\
+	code/mission/missionparse.h\
+	code/mission/missiontraining.h\
+	code/missionui/chatbox.h\
+	code/missionui/missionbrief.h\
+	code/missionui/missioncmdbrief.h\
+	code/missionui/missiondebrief.h\
+	code/missionui/missionloopbrief.h\
+	code/missionui/missionpause.h\
+	code/missionui/missionrecommend.h\
+	code/missionui/missionscreencommon.h\
+	code/missionui/missionshipchoice.h\
+	code/missionui/missionstats.h\
+	code/missionui/missionweaponchoice.h\
+	code/missionui/redalert.h\
+	code/mm/mmreg.h\
+	code/mm/msacm.h\
+	code/model/modelsinc.h\
+	code/model/model.h\
+	code/nebula/neb.h\
+	code/nebula/neblightning.h\
+	code/network/fs2ox.h\
+	code/network/multi.h\
+	code/network/multi_campaign.h\
+	code/network/multi_data.h\
+	code/network/multi_dogfight.h\
+	code/network/multi_endgame.h\
+	code/network/multi_ingame.h\
+	code/network/multi_kick.h\
+	code/network/multi_log.h\
+	code/network/multi_obj.h\
+	code/network/multi_observer.h\
+	code/network/multi_oo.h\
+	code/network/multi_options.h\
+	code/network/multi_pause.h\
+	code/network/multi_pinfo.h\
+	code/network/multi_ping.h\
+	code/network/multi_pmsg.h\
+	code/network/multi_rate.h\
+	code/network/multi_respawn.h\
+	code/network/multi_team.h\
+	code/network/multi_update.h\
+	code/network/multi_voice.h\
+	code/network/multi_xfer.h\
+	code/network/multilag.h\
+	code/network/multimsgs.h\
+	code/network/multiteamselect.h\
+	code/network/multiui.h\
+	code/network/multiutil.h\
+	code/network/psnet.h\
+	code/network/psnet2.h\
+	code/network/stand_gui.h\
+	code/object/objcollide.h\
+	code/object/object.h\
+	code/object/objectsnd.h\
+	code/observer/observer.h\
+	code/osapi/monopub.h\
+	code/osapi/osapi.h\
+	code/osapi/osregistry.h\
+	code/osapi/outwnd.h\
+	code/palman/palman.h\
+	code/parse/encrypt.h\
+	code/parse/parselo.h\
+	code/parse/sexp.h\
+	code/particle/particle.h\
+	code/pcxutils/pcxutils.h\
+	code/physics/physics.h\
+	code/playerman/managepilot.h\
+	code/playerman/player.h\
+	code/popup/popup.h\
+	code/popup/popupdead.h\
+	code/radar/radar.h\
+	code/render/3d.h\
+	code/render/3dinternal.h\
+	code/scramble/scramble.h\
+	code/ship/afterburner.h\
+	code/ship/ai.h\
+	code/ship/aibig.h\
+	code/ship/aigoals.h\
+	code/ship/ailocal.h\
+	code/ship/awacs.h\
+	code/ship/ship.h\
+	code/ship/shipcontrails.h\
+	code/ship/shipfx.h\
+	code/ship/shiphit.h\
+	code/ship/subsysdamage.h\
+	code/sound/acm.h\
+	code/sound/audiostr.h\
+	code/sound/channel.h\
+	code/sound/ds.h\
+	code/sound/ds3d.h\
+	code/sound/dscap.h\
+	code/sound/fsspeech.h\
+	code/sound/midifile.h\
+	code/sound/midiseq.h\
+	code/sound/rbaudio.h\
+	code/sound/rtvoice.h\
+	code/sound/sound.h\
+	code/sound/speech.h\
+	code/sound/winmidi.h\
+	code/starfield/nebula.h\
+	code/starfield/starfield.h\
+	code/starfield/supernova.h\
+	code/stats/medals.h\
+	code/stats/scoring.h\
+	code/stats/stats.h\
+	code/tgautils/tgautils.h\
+	code/ui/ui.h\
+	code/ui/uidefs.h\
+	code/vcodec/codec1.h\
+	code/weapon/beam.h\
+	code/weapon/corkscrew.h\
+	code/weapon/emp.h\
+	code/weapon/flak.h\
+	code/weapon/muzzleflash.h\
+	code/weapon/shockwave.h\
+	code/weapon/swarm.h\
+	code/weapon/trails.h\
+	code/weapon/weapon.h\
+	code/windows_stub/config.h\
+	code/species_defs/species_defs.h\
+	code/fs2open_pxo/Client.h\
+	code/fs2open_pxo/TCP_Socket.h\
+	code/fs2open_pxo/protocol.h\
+	code/fs2open_pxo/udpsocket.h\
+	code/openil/il_func.h\
+	code/globalincs/globals.h\
+	code/jpgutils/jpgutils.h\
+	code/graphics/grstub.h\
+	code/irc/irc.h\
+	code/graphics/grbatch.h\
+	code/graphics/gropengltnl.h\
+	code/graphics/gropengllight.h\
+	code/graphics/gropenglextension.h\
+	code/graphics/gropengltexture.h\
+	code/autopilot/autopilot.h\
+	code/hud/hudnavigation.h
+
+module.source.name=.
+module.source.type=
+module.source.files=\
+	code/anim/animplay.cpp\
+	code/anim/packunpack.cpp\
+	code/demo/demo.cpp\
+	code/asteroid/asteroid.cpp\
+	code/bmpman/bmpman.cpp\
+	code/cfile/cfile.cpp\
+	code/cfile/cfilearchive.cpp\
+	code/cfile/cfilelist.cpp\
+	code/cfile/cfilesystem.cpp\
+	code/cfilearchiver/cfilearchiver.cpp\
+	code/cmdline/cmdline.cpp\
+	code/cmeasure/cmeasure.cpp\
+	code/controlconfig/controlsconfig.cpp\
+	code/controlconfig/controlsconfigcommon.cpp\
+	code/cryptstring/cryptstring.cpp\
+	code/cutscene/cutscenes.cpp\
+	code/cutscene/movie.cpp\
+	code/ddsutils/ddsutils.cpp\
+	code/debris/debris.cpp\
+	code/debugconsole/console.cpp\
+	code/debugconsole/dbugfile.cpp\
+	code/debugconsole/timerbar.cpp\
+	code/decals/decals.cpp\
+	code/directx/dx8show.cpp\
+	code/exceptionhandler/exceptionhandler.cpp\
+	code/fireball/fireballs.cpp\
+	code/fireball/warpineffect.cpp\
+	code/freespace2/freespace.cpp\
+	code/freespace2/levelpaging.cpp\
+	code/gamehelp/contexthelp.cpp\
+	code/gamehelp/gameplayhelp.cpp\
+	code/gamesequence/gamesequence.cpp\
+	code/gamesnd/eventmusic.cpp\
+	code/gamesnd/gamesnd.cpp\
+	code/globalincs/alphacolors.cpp\
+	code/globalincs/crypt.cpp\
+	code/globalincs/systemvars.cpp\
+	code/globalincs/version.cpp\
+	code/globalincs/windebug.cpp\
+	code/graphics/2d.cpp\
+	code/graphics/font.cpp\
+	code/graphics/grd3d.cpp\
+	code/graphics/grd3dbmpman.cpp\
+	code/graphics/grd3dcalls.cpp\
+	code/graphics/grd3drender.cpp\
+	code/graphics/grd3dtexture.cpp\
+	code/graphics/gropengl.cpp\
+	code/graphics/grzbuffer.cpp\
+	code/graphics/grd3dsetup.cpp\
+	code/graphics/grd3dlight.cpp\
+	code/graphics/grd3dbatch.cpp\
+	code/graphics/GrD3DParticle.cpp\
+	code/hud/hud.cpp\
+	code/hud/hudartillery.cpp\
+	code/hud/hudbrackets.cpp\
+	code/hud/hudconfig.cpp\
+	code/hud/hudescort.cpp\
+	code/hud/hudets.cpp\
+	code/hud/hudlock.cpp\
+	code/hud/hudmessage.cpp\
+	code/hud/hudobserver.cpp\
+	code/hud/hudresource.cpp\
+	code/hud/hudreticle.cpp\
+	code/hud/hudshield.cpp\
+	code/hud/hudsquadmsg.cpp\
+	code/hud/hudtarget.cpp\
+	code/hud/hudtargetbox.cpp\
+	code/hud/hudwingmanstatus.cpp\
+	code/inetfile/cftp.cpp\
+	code/inetfile/chttpget.cpp\
+	code/inetfile/inetgetfile.cpp\
+	code/io/joy_ff.cpp\
+	code/io/joy.cpp\
+	code/io/joy-unix.cpp\
+	code/io/key.cpp\
+	code/io/keycontrol.cpp\
+	code/io/mouse.cpp\
+	code/io/swff_lib.cpp\
+	code/io/timer.cpp\
+	code/io/xmouse.cpp\
+	code/jumpnode/jumpnode.cpp\
+	code/lighting/lighting.cpp\
+	code/localization/fhash.cpp\
+	code/localization/localize.cpp\
+	code/math/floating.cpp\
+	code/math/fix.cpp\
+	code/math/fvi.cpp\
+	code/math/spline.cpp\
+	code/math/staticrand.cpp\
+	code/math/vecmat.cpp\
+	code/menuui/barracks.cpp\
+	code/menuui/credits.cpp\
+	code/menuui/fishtank.cpp\
+	code/menuui/mainhallmenu.cpp\
+	code/menuui/mainhalltemp.cpp\
+	code/menuui/optionsmenu.cpp\
+	code/menuui/optionsmenumulti.cpp\
+	code/menuui/playermenu.cpp\
+	code/menuui/readyroom.cpp\
+	code/menuui/snazzyui.cpp\
+	code/menuui/techmenu.cpp\
+	code/menuui/trainingmenu.cpp\
+	code/mission/missionbriefcommon.cpp\
+	code/mission/missioncampaign.cpp\
+	code/mission/missiongoals.cpp\
+	code/mission/missiongrid.cpp\
+	code/mission/missionhotkey.cpp\
+	code/mission/missionload.cpp\
+	code/mission/missionlog.cpp\
+	code/mission/missionmessage.cpp\
+	code/mission/missionparse.cpp\
+	code/mission/missiontraining.cpp\
+	code/missionui/chatbox.cpp\
+	code/missionui/missionbrief.cpp\
+	code/missionui/missioncmdbrief.cpp\
+	code/missionui/missiondebrief.cpp\
+	code/missionui/missionloopbrief.cpp\
+	code/missionui/missionpause.cpp\
+	code/missionui/missionrecommend.cpp\
+	code/missionui/missionscreencommon.cpp\
+	code/missionui/missionshipchoice.cpp\
+	code/missionui/missionstats.cpp\
+	code/missionui/missionweaponchoice.cpp\
+	code/missionui/redalert.cpp\
+	code/model/modelcollide.cpp\
+	code/model/modelinterp.cpp\
+	code/model/modeloctant.cpp\
+	code/model/modelread.cpp\
+	code/nebula/neb.cpp\
+	code/nebula/neblightning.cpp\
+	code/network/fs2ox.cpp\
+	code/network/multi.cpp\
+	code/network/multi_campaign.cpp\
+	code/network/multi_data.cpp\
+	code/network/multi_dogfight.cpp\
+	code/network/multi_endgame.cpp\
+	code/network/multi_ingame.cpp\
+	code/network/multi_kick.cpp\
+	code/network/multi_log.cpp\
+	code/network/multi_obj.cpp\
+	code/network/multi_observer.cpp\
+	code/network/multi_oo.cpp\
+	code/network/multi_options.cpp\
+	code/network/multi_pause.cpp\
+	code/network/multi_pinfo.cpp\
+	code/network/multi_ping.cpp\
+	code/network/multi_pmsg.cpp\
+	code/network/multi_rate.cpp\
+	code/network/multi_respawn.cpp\
+	code/network/multi_team.cpp\
+	code/network/multi_update.cpp\
+	code/network/multi_voice.cpp\
+	code/network/multi_xfer.cpp\
+	code/network/multilag.cpp\
+	code/network/multimsgs.cpp\
+	code/network/multiteamselect.cpp\
+	code/network/multiui.cpp\
+	code/network/multiutil.cpp\
+	code/network/psnet.cpp\
+	code/network/psnet2.cpp\
+	code/network/stand_gui.cpp\
+	code/network/stand_gui-unix.cpp\
+	code/object/collidedebrisship.cpp\
+	code/object/collidedebrisweapon.cpp\
+	code/object/collideshipship.cpp\
+	code/object/collideshipweapon.cpp\
+	code/object/collideweaponweapon.cpp\
+	code/object/objcollide.cpp\
+	code/object/object.cpp\
+	code/object/objectsnd.cpp\
+	code/object/objectsort.cpp\
+	code/observer/observer.cpp\
+	code/osapi/osapi.cpp\
+	code/osapi/osapi_unix.cpp\
+	code/osapi/osregistry.cpp\
+	code/osapi/osregistry_unix.cpp\
+	code/osapi/outwnd.cpp\
+	code/osapi/outwnd_unix.cpp\
+	code/palman/palman.cpp\
+	code/parse/encrypt.cpp\
+	code/parse/parselo.cpp\
+	code/parse/sexp.cpp\
+	code/particle/particle.cpp\
+	code/pcxutils/pcxutils.cpp\
+	code/physics/physics.cpp\
+	code/playerman/managepilot.cpp\
+	code/playerman/playercontrol.cpp\
+	code/popup/popup.cpp\
+	code/popup/popupdead.cpp\
+	code/radar/radar.cpp\
+	code/render/3ddraw.cpp\
+	code/render/3dclipper.cpp\
+	code/render/3dlaser.cpp\
+	code/render/3dmath.cpp\
+	code/render/3dsetup.cpp\
+	code/scramble/scramble.cpp\
+	code/ship/afterburner.cpp\
+	code/ship/ai.cpp\
+	code/ship/aibig.cpp\
+	code/ship/aicode.cpp\
+	code/ship/aigoals.cpp\
+	code/ship/awacs.cpp\
+	code/ship/shield.cpp\
+	code/ship/ship.cpp\
+	code/ship/shipcontrails.cpp\
+	code/ship/shipfx.cpp\
+	code/ship/shiphit.cpp\
+	code/sound/audiostr.cpp\
+	code/sound/acm.cpp\
+	code/sound/ds.cpp\
+	code/sound/ds3d.cpp\
+	code/sound/dscap.cpp\
+	code/sound/fsspeech.cpp\
+	code/sound/midifile.cpp\
+	code/sound/rbaudio.cpp\
+	code/sound/rtvoice.cpp\
+	code/sound/sound.cpp\
+	code/sound/speech.cpp\
+	code/sound/winmidi.cpp\
+	code/sound/winmidi_base.cpp\
+	code/sound/acm-unix.cpp\
+	code/starfield/nebula.cpp\
+	code/starfield/starfield.cpp\
+	code/starfield/supernova.cpp\
+	code/stats/medals.cpp\
+	code/stats/scoring.cpp\
+	code/stats/stats.cpp\
+	code/tgautils/tgautils.cpp\
+	code/ui/button.cpp\
+	code/ui/checkbox.cpp\
+	code/ui/gadget.cpp\
+	code/ui/icon.cpp\
+	code/ui/inputbox.cpp\
+	code/ui/keytrap.cpp\
+	code/ui/listbox.cpp\
+	code/ui/radio.cpp\
+	code/ui/scroll.cpp\
+	code/ui/slider.cpp\
+	code/ui/slider2.cpp\
+	code/ui/uidraw.cpp\
+	code/ui/uimouse.cpp\
+	code/ui/window.cpp\
+	code/vcodec/codec1.cpp\
+	code/weapon/beam.cpp\
+	code/weapon/corkscrew.cpp\
+	code/weapon/emp.cpp\
+	code/weapon/flak.cpp\
+	code/weapon/muzzleflash.cpp\
+	code/weapon/shockwave.cpp\
+	code/weapon/swarm.cpp\
+	code/weapon/trails.cpp\
+	code/weapon/weapons.cpp\
+	code/windows_stub/stubs.cpp\
+	code/species_defs/species_defs.cpp\
+	code/fs2open_pxo/Client.cpp\
+	code/fs2open_pxo/TCP_Client.cpp\
+	code/fs2open_pxo/TCP_Socket.cpp\
+	code/fs2open_pxo/udpsocket.cpp\
+	code/openil/il_func.cpp\
+	code/jpgutils/jpgutils.cpp\
+	code/irc/irc.cpp\
+	code/graphics/grbatch.cpp\
+	code/graphics/gropengltnl.cpp\
+	code/graphics/gropengllight.cpp\
+	code/graphics/gropenglextension.cpp\
+	code/graphics/gropengltexture.cpp\
+	code/sound/audiostr-unix.cpp\
+	code/autopilot/autopilot.cpp\
+	code/hud/hudnavigation.cpp
+
+module.pixmap.name=.
+module.pixmap.type=
+module.pixmap.files=\
+	code/freespace2/app_icon.ico\
+	code/freespace2/goal_com.bmp\
+	code/freespace2/goal_fail.bmp\
+	code/freespace2/goal_inc.bmp\
+	code/freespace2/goal_none.bmp\
+	code/freespace2/goal_ord.bmp
+
+module.data.name=.
+module.data.type=
+module.data.files=
+
+module.help.name=.
+module.help.type=
+module.help.files=
+
+module.doc.name=.
+module.doc.type=
+module.doc.files=\
+	AUTHORS\
+	ChangeLog\
+	COPYING\
+	INSTALL\
+	NEWS\
+	README
+
+module.po.files=
+
+compiler.options.supports=
+compiler.options.include.paths=\
+	.\
+	..
+compiler.options.library.paths=
+compiler.options.libraries=
+compiler.options.libraries.selected=
+compiler.options.defines=\
+	HAVE_CONFIG_H
+compiler.options.defines.selected=
+compiler.options.warning.buttons=0 0 1 1 0 1 0 0 0 0 0 0 0 1 0 0 
+compiler.options.optimize.buttons=0 0 1 0 
+compiler.options.other.buttons=1 0 
+compiler.options.other.c.flags=
+compiler.options.other.l.flags=
+compiler.options.other.l.libs=
+
+project.src.paths=
