@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2004/04/06 04:53:21  phreak
+ * Local SSMs now working again after the code for setting the jumpout/jumpin
+ * times for the missile were removed.
+ *
  * Revision 2.58  2004/03/20 14:47:14  randomtiger
  * Added base for a general dynamic batching solution.
  * Fixed NO_DSHOW_CODE code path bug.
@@ -3230,10 +3234,10 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 
 	//local ssm stuff
-
 	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
 	{
 
+		//go into subspace if the missile is locked and its time to warpout
 		if ((wp->lssm_stage==1) && (timestamp_elapsed(wp->lssm_warpout_time)))
 		{
 			//if we don't have a lock at this point, just stay in normal space
@@ -3243,25 +3247,35 @@ void weapon_process_post(object * obj, float frame_time)
 				return;
 			}
 
+			//point where to warpout
 			vector warpout;
+
 			//create a warp effect
 			vm_vec_copy_scale(&warpout,&obj->phys_info.vel,3.0f);
+
+			//set the time the warphole stays open, minimum of 7 seconds
 			wp->lssm_warp_time = ((obj->radius * 2) / (obj->phys_info.speed)) +1.5f;
 			wp->lssm_warp_time = max(wp->lssm_warp_time,7.0f);
+
+			//calculate the percerentage of the warpholes life at which the missile is fully in subspace.
 			wp->lssm_warp_pct = 1.0f - (3.0f/wp->lssm_warp_time);
+
+			//create the warphole
 			vm_vec_add2(&warpout,&obj->pos);
 			wp->lssm_warp_idx=fireball_create(&warpout, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,1,&vmd_zero_vector,wp->lssm_warp_time,0,&obj->orient);
 			wp->lssm_stage=2;
 		}
 
-		//its in subspace. don't collide or render
+		//its just entered subspace subspace. don't collide or render
 		if ((wp->lssm_stage==2) && (fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <= wp->lssm_warp_pct))
 		{
 			uint flags=obj->flags & ~(OF_RENDERS | OF_COLLIDES);
 
 			obj_set_flags(obj, flags);
-
-			wp->lssm_target_pos=Objects[wp->target_num].pos;
+		
+			//get the position of the target, and estimate its position when it warps out
+			//so we have an idea of where it will be.
+			vm_vec_scale_add(&wp->lssm_target_pos,&Objects[wp->target_num].pos,&Objects[wp->target_num].phys_info.vel,(float)wip->lssm_warpin_delay/1000.0f));
 
 			wp->lssm_stage=3;
 
@@ -3276,13 +3290,14 @@ void weapon_process_post(object * obj, float frame_time)
 			vector fvec;
 			matrix orient;
 
-			//ugh
+			//spawn the ssm at a random point in a circle around the target
 			vm_vec_random_in_circle(&warpin, &wp->lssm_target_pos, &target_objp->orient, wip->lssm_warpin_radius + target_objp->radius,1);
 	
+			//orient the missile properly
 			vm_vec_sub(&fvec,&wp->lssm_target_pos, &warpin);
-	
 			vm_vector_2_matrix(&orient,&fvec,NULL,NULL);
-	
+
+			//create a warpin effect
 			wp->lssm_warp_idx=fireball_create(&warpin, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,0,&vmd_zero_vector,wp->lssm_warp_time,0,&orient);
 
 			obj->orient=orient;
