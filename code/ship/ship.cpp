@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.158 $
- * $Date: 2005-01-30 01:34:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.159 $
+ * $Date: 2005-01-30 09:36:19 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.158  2005/01/30 01:34:39  wmcoolmon
+ * Made a bunch of ship.tbl variables optional
+ *
  * Revision 2.157  2005/01/29 08:11:41  wmcoolmon
  * When drawing the viewer_obj, temporarily clip less close up for in-cockpit models.
  *
@@ -2067,7 +2070,7 @@ int parse_ship(bool replace)
 	if(optional_string("$Expl Propagates:"))
 		stuff_boolean(&sip->explosion_propagates);
 	else
-		sip->explosion_propagates = 1;
+		sip->explosion_propagates = 0;
 
 	if(optional_string("$Shockwave Speed:"))
 		stuff_float( &sip->shockwave_speed );
