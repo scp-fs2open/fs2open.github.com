@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.32 $
- * $Date: 2003-06-11 03:03:16 $
+ * $Revision: 2.33 $
+ * $Date: 2003-06-12 16:53:16 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/06/11 03:03:16  phreak
+ * the ai can now use local ssms. they are able to use them at *very* long range
+ *
  * Revision 2.31  2003/06/04 15:31:49  phreak
  * fixed a small bug
  * ai_select_primary_weapon may have a null pointer passed to it.
@@ -2978,6 +2981,9 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 
 	tp = turret_subsys->system_info;
 	weapon_travel_dist = min(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
+
+	if (Weapon_info[tp->turret_weapon_type].wi_flags2 & WIF2_LOCAL_SSM)
+		weapon_travel_dist=100000.0f;
 
 	// Set flag based on strength of weapons subsystem.  If weapons subsystem is destroyed, don't let turrets fire at bombs
 	weapon_system_ok = 0;
@@ -11355,6 +11361,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	// Don't try to fire beyond weapon_limit_range
 	weapon_firing_range = min(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
+
+	if (Weapon_info[turret_weapon_class].wi_flags2 & WIF2_LOCAL_SSM)
+	{
+		weapon_firing_range=1000000.0f;
+	}
+
 
 	// if beam weapon in nebula and target not tagged, decrase firing range
 	extern int Nebula_sec_range;
