@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.35 $
- * $Date: 2003-03-05 09:17:15 $
+ * $Revision: 2.36 $
+ * $Date: 2003-03-05 12:38:01 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/03/05 09:17:15  Goober5000
+ * cleaned out Bobboau's buggy code - about to rewrite with new, bug-free code :)
+ * --Goober5000
+ *
  * Revision 2.34  2003/03/03 04:28:37  Goober5000
  * fixed the tech room bug!  yay!
  * --Goober5000
@@ -447,10 +451,12 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
              
 // Goober5000 - currently only used in ship_select_next_primary and ship_select_next_secondary
 // Goober5000 - now used in hudtarget.cpp->hud_get_best_primary_bank
+// Goober5000 - now also used in ship.cpp for weapon specific bank parsing
 #define MAX_SUPPORTED_PRIMARY_BANKS	2
 #define UPPER_BOUND_PRIMARY_BANK	(MAX_SUPPORTED_PRIMARY_BANKS - 1)
 #define MAX_SUPPORTED_SECONDARY_BANKS	3
 #define UPPER_BOUND_SECONDARY_BANK	(MAX_SUPPORTED_SECONDARY_BANKS - 1)
+// IMPORTANT: MAX_SUPPORTED_PRIMARY_BANKS+MAX_SUPPORTED_SECONDARY_BANKS must equal MAX_SHIP_WEAPONS
 
 // defines for 'direction' parameter of ship_select_next_primary()
 #define CYCLE_PRIMARY_NEXT		0
@@ -1001,6 +1007,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SHIP_TYPE_CORVETTE					18
 #define SHIP_TYPE_KNOSSOS_DEVICE			19
 
+#define REGULAR_WEAPON	(1<<0)
+#define DOGFIGHT_WEAPON (1<<1)
+
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
 	char		name[NAME_LENGTH];				// name for the ship
@@ -1084,9 +1093,12 @@ typedef struct ship_info {
 	vector	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)
 	float		closeup_zoom;					// zoom when using ship in closeup view (eg briefing and hud target monitor)
 
-	int		allowed_weapons[MAX_WEAPON_TYPES];
-	// array which specifies which weapons can be loaded out by the
-	// player during weapons loadout.
+	int		allowed_weapons[MAX_WEAPON_TYPES];	// array which specifies which weapons can be loaded out by the
+												// player during weapons loadout.
+
+	// Goober5000 - fix for restricted banks mod
+	int restricted_loadout_flag[MAX_SHIP_WEAPONS];
+	int allowed_bank_restricted_weapons[MAX_SHIP_WEAPONS][MAX_WEAPON_TYPES];
 
 	ubyte	shield_icon_index;				// index to locate ship-specific animation frames for the shield on HUD
 	char	icon_filename[NAME_LENGTH];	// filename for icon that is displayed in ship selection
