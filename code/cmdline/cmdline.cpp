@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.79 $
- * $Date: 2004-07-29 03:49:44 $
- * $Author: Kazan $
+ * $Revision: 2.80 $
+ * $Date: 2004-08-01 02:31:18 $
+ * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2004/07/29 03:49:44  Kazan
+ * fs2_open.exe was suffering the same problem as fred2 -- it was just a little less obvious
+ *
  * Revision 2.78  2004/07/26 20:47:25  Kazan
  * remove MCD complete
  *
@@ -654,7 +657,7 @@ Flag exe_params[] =
 	"-jpgtga",		  "Enable jpg,tga textures",		true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/JPG%20and%20TGA%20textures", 
 	"-d3dmipmap",	  "Enable mipmapping",				true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Mipmaping%2C%20blending%20textures%20over%20distance", 
 	"-cell",		  "Enable cell shading",			true,	0,				 EASY_DEFAULT,		"Graphics",		"", 
-	"-phreak", 		  "Enable Phreaks options",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
+	"-dualscanlines", "Another pair of lines when scanning", true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
 	"-ship_choice_3d","Enable models instead of ani",	true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
 	"-targetinfo",	  "Enable info next to target",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-targetinfo",
 	"-nomotiondebris","Disable motion debris",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-nomotiondebris",
@@ -725,7 +728,7 @@ cmdline_parm timeout("-timeout", NULL);
 cmdline_parm window("-window", NULL);
 cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
 cmdline_parm allslev_arg("-allslev", NULL); //Give access to all single player missions
-cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including new targetting code
+cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Change to phreaks options including new targetting code
 cmdline_parm targetinfo_arg("-targetinfo", NULL);	//Adds ship name/class to right of target box -C
 cmdline_parm dnoshowvid_arg("-dnoshowvid", NULL); // Allows video streaming
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
@@ -815,7 +818,7 @@ int Cmdline_d3d_particle = 0;
 
 int Cmdline_window = 0;
 int Cmdline_allslev = 0;
-int Cmdline_phreak	= 0;
+int Cmdline_dualscanlines	= 0;
 int Cmdline_targetinfo = 0;
 int Cmdline_dnoshowvid = 0;
 int Cmdline_show_fps = 0;
@@ -1246,8 +1249,8 @@ bool SetCmdlineParams()
 		Cmdline_allslev = 1;
 	}
 
-	if(phreak_arg.found() ) {
-		Cmdline_phreak = 1;
+	if(dualscanlines_arg.found() ) {
+		Cmdline_dualscanlines = 1;
 	}
 
 	if(targetinfo_arg.found())
@@ -1258,6 +1261,7 @@ bool SetCmdlineParams()
 	if(dnoshowvid_arg.found() ) {
 		Cmdline_dnoshowvid = 1;
 	}
+
 
 	if(mod_arg.found() ) {
 		Cmdline_mod = mod_arg.str();

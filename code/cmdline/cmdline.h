@@ -11,11 +11,17 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.58 $
- * $Date: 2004-07-25 18:46:28 $
- * $Author: Kazan $
+ * $Revision: 2.59 $
+ * $Date: 2004-08-01 02:31:18 $
+ * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2004/07/25 18:46:28  Kazan
+ * -fred_no_warn has become -no_warn and applies to both fred and fs2
+ * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
+ * fixed player ship speed bug w/ player-use-ai, now stays in formation correctly and manages speed
+ * made -radar_reduce ignore itself if no parameter is given (ignoring launcher bug)
+ *
  * Revision 2.57  2004/07/05 05:09:15  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -471,7 +477,7 @@ extern int Cmdline_window;
 extern char *Cmdline_almission;	//DTP for autoload mission
 extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
 extern int Cmdline_allslev;
-extern int Cmdline_phreak;
+extern int Cmdline_dualscanlines;
 extern int Cmdline_dnoshowvid;	//WMC Toggles movie playing support
 extern char *Cmdline_mod; //DTP for mod support
 extern int Cmdline_show_fps;//DTP moved here because it is the correct place for it to be.

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.38 $
- * $Date: 2004-07-26 20:47:33 $
- * $Author: Kazan $
+ * $Revision: 2.39 $
+ * $Date: 2004-08-01 02:30:52 $
+ * $Author: phreak $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2004/07/26 20:47:33  Kazan
+ * remove MCD complete
+ *
  * Revision 2.37  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1388,7 +1391,7 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 	gr_line(x1, y1, x2, y1);
 
 	// RT Changed this to be optional
-	if(Cmdline_phreak) {
+	if(Cmdline_dualscanlines) {
 		// added 2nd horizontal scan line - phreak
 		y1 = fl2i(Cargo_scan_coords[gr_screen.res][1] + Cargo_scan_coords[gr_screen.res][3] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][3] ));
 		gr_line(x1, y1, x2, y1);
@@ -1402,7 +1405,7 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 	gr_line(x1, y1-3, x1, y2-1);
 
 	// RT Changed this to be optional
-	if(Cmdline_phreak) {
+	if(Cmdline_dualscanlines) {
 		// added 2nd vertical scan line - phreak
 		x1 = fl2i(0.5f + Cargo_scan_coords[gr_screen.res][2] + Cargo_scan_coords[gr_screen.res][0] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][2] ));
 		gr_line(x1, y1-3, x1, y2-1);
