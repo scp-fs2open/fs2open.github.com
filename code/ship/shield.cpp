@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-08-20 05:13:08 $
- * $Author: Kazan $
+ * $Revision: 2.22 $
+ * $Date: 2004-10-09 17:51:23 $
+ * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/08/20 05:13:08  Kazan
+ * wakka wakka - fix minor booboo
+ *
  * Revision 2.20  2004/07/31 08:51:47  et1
  * Disabled ship shield load check for TBP
  *
@@ -378,7 +381,9 @@ void shield_hit_page_in()
 	}
 
 	for (i=0; i<MAX_SHIELD_ANIMS; i++ )	{
-		bm_page_in_xparent_texture( Shield_ani[i].first_frame, Shield_ani[i].nframes );
+		if ( Shield_ani[i].first_frame > -1 ) {
+			bm_page_in_xparent_texture( Shield_ani[i].first_frame, Shield_ani[i].nframes );
+		}
 	}
 }
 
@@ -721,37 +726,40 @@ void render_shield(int shield_num) //, matrix *orient, vector *centerp)
 	Assert( (n >=0) && (n<MAX_SPECIES_NAMES));
 	Assert( (n >=0) && (n<MAX_SHIELD_ANIMS));
 
-	frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) * Shield_ani[n].nframes);
-	if ( frame_num >= Shield_ani[n].nframes )	{
-		frame_num = Shield_ani[n].nframes - 1;
-	} else if ( frame_num < 0 )	{
-		mprintf(( "HEY! Missiontime went backwards! (Shield.cpp)\n" ));
-		frame_num = 0;
-	}
-	bitmap_id = Shield_ani[n].first_frame + frame_num;
-
-	float alpha = 0.9999f;
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
-		alpha *= 0.85f;
-	}
-	gr_set_bitmap(bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
-	
-	// UnknownPlayer : Those foo OGL people ensured this routine would always be executed by making OGL_inited
-	// evaluated via OR. So we fix this problem by evaluating by AND, which means that if we're not using
-	// either THEN do the low detail shield thing.
-	
-	if ( (!D3D_enabled && !OGL_inited) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
-		if ( bitmap_id != - 1 ) {
-			render_low_detail_shield_bitmap(&Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+	// don't try to draw if we don't have an ani
+	if ( Shield_ani[n].first_frame > -1 ) {
+		frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) * Shield_ani[n].nframes);
+		if ( frame_num >= Shield_ani[n].nframes )	{
+			frame_num = Shield_ani[n].nframes - 1;
+		} else if ( frame_num < 0 )	{
+			mprintf(( "HEY! Missiontime went backwards! (Shield.cpp)\n" ));
+			frame_num = 0;
 		}
-	} else {
+		bitmap_id = Shield_ani[n].first_frame + frame_num;
 
-		// AL 06/01/97 don't use Assert() until issue with Missiontime being reset to 0 are worked out
-		if ( bitmap_id != - 1 ) {
-			for (i=0; i<Shield_hits[shield_num].num_tris; i++) {
-				//if (Missiontime == Shield_hits[shield_num].start_time)
-				//	nprintf(("AI", "Frame %i: Render triangle %i.\n", Framecount, Global_tris[Shield_hits[shield_num].tri_list[i]].trinum));
-				render_shield_triangle(&Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+		float alpha = 0.9999f;
+		if(The_mission.flags & MISSION_FLAG_FULLNEB){
+			alpha *= 0.85f;
+		}
+		gr_set_bitmap(bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
+	
+		// UnknownPlayer : Those foo OGL people ensured this routine would always be executed by making OGL_inited
+		// evaluated via OR. So we fix this problem by evaluating by AND, which means that if we're not using
+		// either THEN do the low detail shield thing.
+	
+		if ( (!D3D_enabled && !OGL_inited) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
+			if ( bitmap_id != - 1 ) {
+				render_low_detail_shield_bitmap(&Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+			}
+		} else {
+
+			// AL 06/01/97 don't use Assert() until issue with Missiontime being reset to 0 are worked out
+			if ( bitmap_id != - 1 ) {
+				for (i=0; i<Shield_hits[shield_num].num_tris; i++) {
+					//if (Missiontime == Shield_hits[shield_num].start_time)
+					//	nprintf(("AI", "Frame %i: Render triangle %i.\n", Framecount, Global_tris[Shield_hits[shield_num].tri_list[i]].trinum));
+					render_shield_triangle(&Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+				}
 			}
 		}
 	}
