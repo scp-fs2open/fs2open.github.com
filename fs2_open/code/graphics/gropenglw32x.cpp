@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLw32x.cpp $
- * $Revision: 1.2 $
- * $Date: 2002-10-12 17:48:11 $
+ * $Revision: 1.3 $
+ * $Date: 2002-10-13 21:43:24 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/10/12 17:48:11  phreak
+ * fixed text
+ *
  * Revision 1.1  2002/10/11 21:31:17  phreak
  * first run at opengl for w32, only useful in main hall, barracks and campaign room
  *
@@ -302,6 +305,7 @@ won't crash due to an integer divide by 0 error in bm_set_components (another TO
 #include <windowsx.h>
 
 #include <GL/gl.h>
+#include <gl/glu.h>
 
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
@@ -324,6 +328,7 @@ static HGLRC rend_context = NULL;
 static ubyte *opengl_bmp_buffer = NULL;
 
 #pragma comment (lib, "opengl32")
+#pragma comment (lib, "glu32")
 
 typedef enum gr_texture_source {
 	TEXTURE_SOURCE_NONE,
@@ -554,7 +559,7 @@ void gr_opengl_flip()
 		error = glGetError();
 		
 		if (error != GL_NO_ERROR) {
-			nprintf(("Warning", "!!DEBUG!! OpenGL Error: %d (%d this frame)\n", error, ic));
+			nprintf(("Warning", "!!DEBUG!! OpenGL Error: %d (%d this frame)\n", gluErrorString(error), ic));
 		}
 		ic++;
 	} while (error != GL_NO_ERROR);
@@ -998,9 +1003,11 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	y2 = i2fl(y+h+gr_screen.offset_y);
 
 	if ( gr_screen.current_color.is_alphacolor )	{
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue,gr_screen.current_color.alpha);
+//		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue,gr_screen.current_color.alpha);
+		glColor3ub(255,255,255);
 	} else {
-		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+//		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+		glColor3ub(255,255,255);
 	}
 
 	glBegin (GL_QUADS);
@@ -2587,6 +2594,7 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 			t = t->data_sections[sx][sy];
 		}
 	}
+
 	// all other "normal" textures
 	else if((bitmap_id < 0) || (bitmap_id != t->bitmap_id)){
 		ret_val = opengl_create_texture( bitmap_id, bitmap_type, t, fail_on_full );
@@ -2898,43 +2906,76 @@ void gr_opengl_bitmap_ex(int x,int y,int w,int h,int sx,int sy)
   				x, y, w, h, 
  				bm_get_filename(gr_screen.current_bitmap)));
 
-	int i,j;
-	//unsigned int tex;			//gl texture number
-	
-	//glGenTextures(1, &tex);
-	bitmap * bmp;
+	int i,j,k;
+	unsigned int tex;			//gl texture number
 
+	bitmap * bmp;
+	unsigned char* data;
+	int size;
+
+
+	glGenTextures(1, &tex);
+
+	Assert(tex !=0);
   	Assert(opengl_screen != NULL);
 	Assert(opengl_bmp_buffer != NULL);
 
 	// mharris mod - not sure if this is right...
 	bmp = bm_lock( gr_screen.current_bitmap, 16, 0 );
-	ushort * sptr = (ushort *)( bmp->data + (sy*bmp->w+sx) );
+	size=w*h*4;
+	data= (unsigned char*)malloc(size);
+	
+	const ushort * sptr = (const ushort*)bmp->data;
 
-	// slow blit...
-	for (i=0; i<h; i++ )	{
-		for ( j=0; j<w; j++ )	{
-			ubyte * buffer = &opengl_bmp_buffer[(((h-i-1)*w) + j) * 4]; // 4bytes per pixel (RGBA)
-			// hack for now... hard-coded 16-bit values
-			if (sptr[j] == 0x07e0) {
+
+	//go to 32 bit color
+	for (i=h-1; i >= 0; i-- )
+	{
+		for (j=0; j < w; j++)
+		{
+			k=(i*w*4)+(j*4);
+			if (*sptr == 0x07e0)
+			{
 				// transparent color
-				buffer[0] = buffer[1] = buffer[2] = buffer[3] = 0x00;
-			} else {
-				buffer[0] = (((sptr[j] & 0xf800) >> 11) / (double)0x1f) * 255 ;		//red 
-				buffer[1] = (((sptr[j] & 0x07e0) >>  5) / (double)0x3f) * 255;		//green
-				buffer[2] = ((sptr[j] & 0x001f) / (double)0x1f) * 255;		//blue
-				buffer[3] = 0xff;									//alpha
-				
-			}
-		//		gr_set_color( gr_palette[sptr[j]*3+0], gr_palette[sptr[j]*3+1], gr_palette[sptr[j]*3+2] );
-  		//		gr_pixel( x+j, i+y );
+				data[k] = data[k+1] = data[k+2] = data[k+3] = 0x00;
+			} 
+			else 
+			{
+				data[k] = (((*sptr & 0xf800) >> 11) / (double)0x1f) * 255 ;		//red 
+				data[k+1] = (((*sptr & 0x07e0) >>  5) / (double)0x3f) * 255;		//green
+				data[k+2] = ((*sptr & 0x001f) / (double)0x1f) * 255;		//blue
+				data[k+3] = 0xff;									//alpha			
+			}		
+			sptr ++;
 		}
-		sptr += bmp->w;
 	}
+	
+/*	glBindTexture(GL_TEXTURE_2D,tex);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w,h,0,GL_RGBA,GL_UNSIGNED_BYTE, data);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,0);
+		glVertex2i(x,y);
+
+		glTexCoord2f(0,1);
+		glVertex2i(x,y+h);
+
+		glTexCoord2f(1,1);
+		glVertex2i(x+w,y+h);
+
+		glTexCoord2f(1,0);
+		glVertex2i(x+w,y);
+	glEnd();*/
+
 	bm_unlock(gr_screen.current_bitmap);
+
+	glDeleteTextures(1, &tex);
+
 
 	// set the raster pos
 	int gl_y_origin = y+h;
+
 	glRasterPos2i(gr_screen.offset_x + x, gl_y_origin);
 
 	// put the bitmap into the GL framebuffer
@@ -2942,9 +2983,9 @@ void gr_opengl_bitmap_ex(int x,int y,int w,int h,int sx,int sy)
 	glDrawPixels(w, h,					// width, height
 					 GL_RGBA,			// format
 					 GL_UNSIGNED_BYTE,	// type
-					 opengl_bmp_buffer);
-
+					 data);
 	
+	free(data);
 }
 
 void gr_opengl_bitmap(int x, int y)
@@ -3133,7 +3174,7 @@ void gr_opengl_init()
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, 0.0, 1.0);
+	glOrtho(0, gr_screen.max_w, gr_screen.max_h,0, 0.0, 1.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	
