@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.29 $
- * $Date: 2004-12-25 09:27:41 $
- * $Author: wmcoolmon $
+ * $Revision: 2.30 $
+ * $Date: 2004-12-26 20:46:34 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/12/25 09:27:41  wmcoolmon
+ * Fix to modular tables workaround with Fs2NetD + Sync to current NEW_HUD code
+ *
  * Revision 2.28  2004/12/24 05:07:05  wmcoolmon
  * NEW_HUD compiles now. :)
  *
@@ -1080,6 +1083,7 @@ void HUD_init()
 	// default to high contrast in the nebula
 	HUD_contrast = 0;
 	HUD_draw     = 1;
+	HUD_disable_except_messages = 0;
 
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
 		HUD_contrast = 1;
