@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.59 $
- * $Author: Kazan $
- * $Date: 2004-05-03 21:22:23 $
+ * $Revision: 2.60 $
+ * $Author: Goober5000 $
+ * $Date: 2004-05-10 10:51:52 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2004/05/03 21:22:23  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.58  2004/03/05 09:02:09  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -805,6 +810,7 @@ struct ship_subsys;
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
+#define OP_EVERY_TIME							(0x0001 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 // sexpressions with side-effects
 #define OP_CHANGE_IFF						(0x0000 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)

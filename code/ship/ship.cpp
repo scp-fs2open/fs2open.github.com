@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.119 $
- * $Date: 2004-05-10 08:03:31 $
+ * $Revision: 2.120 $
+ * $Date: 2004-05-10 10:51:51 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.119  2004/05/10 08:03:31  Goober5000
+ * fixored the handling of no lasers and no engines... the tests should check the ship,
+ * not the object
+ * --Goober5000
+ *
  * Revision 2.118  2004/05/02 03:05:23  Goober5000
  * added a comment
  * --Goober5000
@@ -1912,9 +1917,9 @@ strcpy(temp_error, parse_error_text);
 			bank++;
 
 			// make sure we don't specify more than we have banks for
-			if (bank > UPPER_BOUND_SUPPORTED_PRIMARY_BANK)
+			if (bank >= MAX_SHIP_PRIMARY_BANKS)
 			{
-				Warning(LOCATION, "$Allowed PBanks bank-specific loadout exceeds permissible number of primary banks.  Ignoring the rest...");
+				Warning(LOCATION, "$Allowed PBanks bank-specific loadout for %s exceeds permissible number of primary banks.  Ignoring the rest...", sip->name);
 				bank--;
 				break;
 			}
@@ -1953,9 +1958,9 @@ strcpy(parse_error_text, temp_error);
 			bank++;
 
 			// make sure we don't specify more than we have banks for
-			if (bank > UPPER_BOUND_SUPPORTED_PRIMARY_BANK)
+			if (bank >= MAX_SHIP_PRIMARY_BANKS)
 			{
-				Warning(LOCATION, "$Allowed Dogfight PBanks bank-specific loadout exceeds permissible number of primary banks.  Ignoring the rest...");
+				Warning(LOCATION, "$Allowed Dogfight PBanks bank-specific loadout for %s exceeds permissible number of primary banks.  Ignoring the rest...", sip->name);
 				bank--;
 				break;
 			}
@@ -1985,14 +1990,14 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	// Get default primary bank weapons
-	for ( i = 0; i < MAX_PRIMARY_BANKS; i++ )
+	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ )
 	{
 		sip->primary_bank_weapons[i] = -1;
 	}
 
 	required_string("$Default PBanks:");
 strcat(parse_error_text,"'s default primary banks");
-	sip->num_primary_banks = stuff_int_list(sip->primary_bank_weapons, MAX_PRIMARY_BANKS, WEAPON_LIST_TYPE);
+	sip->num_primary_banks = stuff_int_list(sip->primary_bank_weapons, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
 strcpy(parse_error_text, temp_error);
 
 	// error checking
@@ -2002,7 +2007,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	// set primary capacities to zero first - in case of bugs :) 
-	for (i = 0; i < MAX_PRIMARY_BANKS; i++)
+	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
 		sip->primary_bank_ammo_capacity[i] = 0;
 	}
@@ -2014,7 +2019,7 @@ strcpy(parse_error_text, temp_error);
 		pbank_capacity_specified = 1;
 		// get the capacity of each primary bank
 strcat(parse_error_text,"'s default primary banks' ammo");
-		pbank_capacity_count = stuff_int_list(sip->primary_bank_ammo_capacity, MAX_PRIMARY_BANKS, RAW_INTEGER_TYPE);
+		pbank_capacity_count = stuff_int_list(sip->primary_bank_ammo_capacity, MAX_SHIP_PRIMARY_BANKS, RAW_INTEGER_TYPE);
 strcpy(parse_error_text, temp_error);
 		if ( pbank_capacity_count != sip->num_primary_banks )
 		{
@@ -2032,9 +2037,9 @@ strcpy(parse_error_text, temp_error);
 			bank++;
 
 			// make sure we don't specify more than we have banks for
-			if (bank > UPPER_BOUND_SUPPORTED_SECONDARY_BANK)
+			if (bank >= MAX_SHIP_SECONDARY_BANKS)
 			{
-				Warning(LOCATION, "$Allowed SBanks bank-specific loadout exceeds permissible number of secondary banks.  Ignoring the rest...");
+				Warning(LOCATION, "$Allowed SBanks bank-specific loadout for %s exceeds permissible number of secondary banks.  Ignoring the rest...", sip->name);
 				bank--;
 				break;
 			}
@@ -2048,7 +2053,7 @@ strcpy(parse_error_text, temp_error);
 			{
 				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
 				{
-					sip->allowed_bank_restricted_weapons[MAX_SUPPORTED_PRIMARY_BANKS+bank][allowed_weapons[i]] |= REGULAR_WEAPON;
+					sip->allowed_bank_restricted_weapons[MAX_SHIP_PRIMARY_BANKS+bank][allowed_weapons[i]] |= REGULAR_WEAPON;
 				}
 			}
 		}
@@ -2058,7 +2063,7 @@ strcpy(parse_error_text, temp_error);
 		{
 			for (i=0; i<=bank; i++)
 			{
-				sip->restricted_loadout_flag[MAX_SUPPORTED_PRIMARY_BANKS+i] |= REGULAR_WEAPON;
+				sip->restricted_loadout_flag[MAX_SHIP_PRIMARY_BANKS+i] |= REGULAR_WEAPON;
 			}
 		}
 	}
@@ -2073,9 +2078,9 @@ strcpy(parse_error_text, temp_error);
 			bank++;
 
 			// make sure we don't specify more than we have banks for
-			if (bank > UPPER_BOUND_SUPPORTED_SECONDARY_BANK)
+			if (bank >= MAX_SHIP_SECONDARY_BANKS)
 			{
-				Warning(LOCATION, "$Allowed Dogfight SBanks bank-specific loadout exceeds permissible number of secondary banks.  Ignoring the rest...");
+				Warning(LOCATION, "$Allowed Dogfight SBanks bank-specific loadout for %s exceeds permissible number of secondary banks.  Ignoring the rest...", sip->name);
 				bank--;
 				break;
 			}
@@ -2089,7 +2094,7 @@ strcpy(parse_error_text, temp_error);
 			{
 				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
 				{
-					sip->allowed_bank_restricted_weapons[MAX_SUPPORTED_PRIMARY_BANKS+bank][allowed_weapons[i]] |= DOGFIGHT_WEAPON;
+					sip->allowed_bank_restricted_weapons[MAX_SHIP_PRIMARY_BANKS+bank][allowed_weapons[i]] |= DOGFIGHT_WEAPON;
 				}
 			}
 		}
@@ -2099,19 +2104,19 @@ strcpy(parse_error_text, temp_error);
 		{
 			for (i=0; i<=bank; i++)
 			{
-				sip->restricted_loadout_flag[MAX_SUPPORTED_PRIMARY_BANKS+i] |= DOGFIGHT_WEAPON;
+				sip->restricted_loadout_flag[MAX_SHIP_PRIMARY_BANKS+i] |= DOGFIGHT_WEAPON;
 			}
 		}
 	}
 
 	// Get default secondary bank weapons
-	for ( i = 0; i < MAX_SECONDARY_BANKS; i++ )
+	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ )
 	{
 		sip->secondary_bank_weapons[i] = -1;
 	}
 	required_string("$Default SBanks:");
 strcat(parse_error_text,"'s default secondary banks");
-	sip->num_secondary_banks = stuff_int_list(sip->secondary_bank_weapons, MAX_SECONDARY_BANKS, WEAPON_LIST_TYPE);
+	sip->num_secondary_banks = stuff_int_list(sip->secondary_bank_weapons, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
 strcpy(parse_error_text, temp_error);
 
 	// error checking
@@ -2127,7 +2132,7 @@ strcpy(parse_error_text, temp_error);
 	// Get the capacity of each secondary bank
 	required_string("$SBank Capacity:");
 strcat(parse_error_text,"'s secondary banks capacities");
-	sbank_capacity_count = stuff_int_list(sip->secondary_bank_ammo_capacity, MAX_SECONDARY_BANKS, RAW_INTEGER_TYPE);
+	sbank_capacity_count = stuff_int_list(sip->secondary_bank_ammo_capacity, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
 strcpy(parse_error_text, temp_error);
 	if ( sbank_capacity_count != sip->num_secondary_banks )
 	{
@@ -2250,6 +2255,18 @@ strcpy(parse_error_text, temp_error);
 	if (sip->flags & SIF_IN_TECH_DATABASE_M)
 		sip->flags2 |= SIF2_DEFAULT_IN_TECH_DATABASE_M;
 
+	// Goober5000 - ensure number of banks checks out
+	if ((sip->flags & SIF_PLAYER_SHIP) && (sip->num_primary_banks > MAX_PLAYER_PRIMARY_BANKS))
+	{
+		Warning(LOCATION, "Player-allowed ship %s has too many primary banks (%d).  Maximum for player-allowed ships is currently %d; maximum for all other ships is %d.\n", sip->name, sip->num_primary_banks, MAX_PLAYER_PRIMARY_BANKS, MAX_SHIP_PRIMARY_BANKS);
+	}
+
+	if ((sip->flags & SIF_PLAYER_SHIP) && (sip->num_secondary_banks > MAX_PLAYER_SECONDARY_BANKS))
+	{
+		Warning(LOCATION, "Player-allowed ship %s has too many secondary banks (%d).  Maximum for player-allowed ships is currently %d; maximum for all other ships is %d.\n", sip->name, sip->num_secondary_banks, MAX_PLAYER_SECONDARY_BANKS, MAX_SHIP_SECONDARY_BANKS);
+	}
+
+
 	// be friendly; ensure ballistic flags check out
 	if (pbank_capacity_specified)
 	{
@@ -2257,7 +2274,7 @@ strcpy(parse_error_text, temp_error);
 		{
 			Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\n", sip->name);
 
-			for (i = 0; i < MAX_PRIMARY_BANKS; i++)
+			for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 			{
 				sip->primary_bank_ammo_capacity[i] = 0;
 			}
@@ -2268,7 +2285,7 @@ strcpy(parse_error_text, temp_error);
 		if (sip->flags & SIF_BALLISTIC_PRIMARIES)
 		{
 			Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
-			for (i = 0; i < MAX_PRIMARY_BANKS; i++)
+			for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 			{
 				sip->primary_bank_ammo_capacity[i] = 1;
 			}
@@ -2555,11 +2572,11 @@ strcpy(parse_error_text, temp_error);
 				sp->turret_turning_rate = 0.0f;		
 			}
 
-			for (i=0; i<MAX_PRIMARY_BANKS; i++) {
+			for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++) {
 				sp->primary_banks[i] = -1;
 				sp->primary_bank_capacity[i] = 0;
 			}
-			for (i=0; i<MAX_SECONDARY_BANKS; i++) {
+			for (i=0; i<MAX_SHIP_SECONDARY_BANKS; i++) {
 				sp->secondary_banks[i] = -1;
 				sp->secondary_bank_capacity[i] = 0;
 			}
@@ -2567,28 +2584,28 @@ strcpy(parse_error_text, temp_error);
 			//	Get default primary bank weapons
 			if (optional_string("$Default PBanks:")){
 strcat(parse_error_text,"'s default primary banks");
-				stuff_int_list(sp->primary_banks, MAX_PRIMARY_BANKS, WEAPON_LIST_TYPE);
+				stuff_int_list(sp->primary_banks, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
 strcpy(parse_error_text, temp_error);
 			}
 
 			// get capacity of each primary bank - Goober5000
 			if (optional_string("$PBank Capacity:")){
 strcat(parse_error_text,"'s primary banks capacities");
-				stuff_int_list(sp->primary_bank_capacity, MAX_PRIMARY_BANKS, RAW_INTEGER_TYPE);
+				stuff_int_list(sp->primary_bank_capacity, MAX_SHIP_PRIMARY_BANKS, RAW_INTEGER_TYPE);
 strcpy(parse_error_text, temp_error);
 			}
 
 			//	Get default secondary bank weapons
 			if (optional_string("$Default SBanks:")){
 strcat(parse_error_text,"'s default secondary banks");
-				stuff_int_list(sp->secondary_banks, MAX_SECONDARY_BANKS, WEAPON_LIST_TYPE);
+				stuff_int_list(sp->secondary_banks, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
 strcpy(parse_error_text, temp_error);
 			}
 
 			// Get the capacity of each secondary bank
 			if (optional_string("$SBank Capacity:")){
 strcat(parse_error_text,"'s secondary banks capacities");
-				stuff_int_list(sp->secondary_bank_capacity, MAX_SECONDARY_BANKS, RAW_INTEGER_TYPE);
+				stuff_int_list(sp->secondary_bank_capacity, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
 strcpy(parse_error_text, temp_error);
 			}
 
@@ -3088,7 +3105,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->cmeasure_count = sip->cmeasure_max;
 
-	for ( i = 0; i < MAX_PRIMARY_BANKS; i++ )
+	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ )
 	{
 		swp->primary_bank_ammo[i] = 0;						// added by Goober5000
 		swp->next_primary_fire_stamp[i] = timestamp(0);	
@@ -3119,7 +3136,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	}
 
 	// conventional secondary banks
-	for ( i = 0; i < MAX_SECONDARY_BANKS; i++ )
+	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ )
 	{
 		if (Fred_running)
 		{
@@ -3437,7 +3454,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->weapons.flags = 0;
 
 		j = 0;
-		for (k=0; k<MAX_PRIMARY_BANKS; k++){
+		for (k=0; k<MAX_SHIP_PRIMARY_BANKS; k++){
 			if (sp->primary_banks[k] != -1) {
 				ship_system->weapons.primary_bank_weapons[j] = sp->primary_banks[k];
 				ship_system->weapons.primary_bank_capacity[j] = sp->primary_bank_capacity[k];	// added by Goober5000
@@ -3448,7 +3465,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->weapons.num_primary_banks = j;
 
 		j = 0;
-		for (k=0; k<MAX_SECONDARY_BANKS; k++){
+		for (k=0; k<MAX_SHIP_SECONDARY_BANKS; k++){
 			if (sp->secondary_banks[k] != -1) {
 				ship_system->weapons.secondary_bank_weapons[j] = sp->secondary_banks[k];
 				ship_system->weapons.secondary_bank_capacity[j] = sp->secondary_bank_capacity[k];
@@ -3460,14 +3477,14 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->weapons.current_primary_bank = -1;
 		ship_system->weapons.current_secondary_bank = -1;
 		
-		for (k=0; k<MAX_SECONDARY_BANKS; k++) {
+		for (k=0; k<MAX_SHIP_SECONDARY_BANKS; k++) {
 			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.secondary_bank_capacity[k]);
 
 			ship_system->weapons.secondary_next_slot[k] = 0;
 		}
 
 		// Goober5000
-		for (k=0; k<MAX_PRIMARY_BANKS; k++)
+		for (k=0; k<MAX_SHIP_PRIMARY_BANKS; k++)
 		{
 			ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.primary_bank_capacity[k]);
 		}
@@ -5364,7 +5381,7 @@ void ship_process_post(object * obj, float frametime)
 	if ( !(shipp->flags & SF_AMMO_COUNT_RECORDED) )
 	{
 		int max_missiles;
-		for ( int i=0; i<MAX_SECONDARY_BANKS; i++ ) {
+		for ( int i=0; i<MAX_SHIP_SECONDARY_BANKS; i++ ) {
 			if ( red_alert_mission() )
 			{
 				max_missiles = get_max_ammo_count_for_bank(shipp->ship_info_index, i, shipp->weapons.secondary_bank_weapons[i]);
@@ -5378,7 +5395,7 @@ void ship_process_post(object * obj, float frametime)
 
 		if ( sip->flags & SIF_BALLISTIC_PRIMARIES )
 		{
-			for ( int i=0; i<MAX_PRIMARY_BANKS; i++ )
+			for ( int i=0; i<MAX_SHIP_PRIMARY_BANKS; i++ )
 			{
 				if ( red_alert_mission() )
 				{
@@ -5556,11 +5573,11 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 	//	Copy primary and secondary weapons from ship_info to ship.
 	//	Later, this will happen in the weapon loadout screen.
-	for (i=0; i < MAX_PRIMARY_BANKS; i++){
+	for (i=0; i < MAX_SHIP_PRIMARY_BANKS; i++){
 		swp->primary_bank_weapons[i] = sip->primary_bank_weapons[i];
 	}
 
-	for (i=0; i < MAX_SECONDARY_BANKS; i++){
+	for (i=0; i < MAX_SHIP_SECONDARY_BANKS; i++){
 		swp->secondary_bank_weapons[i] = sip->secondary_bank_weapons[i];
 	}
 
@@ -5570,7 +5587,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 	// Primary banks
 	if ( po->n_guns > sip->num_primary_banks ) {
-		Assert(po->n_guns <= MAX_PRIMARY_BANKS);
+		Assert(po->n_guns <= MAX_SHIP_PRIMARY_BANKS);
 		Warning(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks in ships.tbl for %s\n", po->n_guns, sip->num_primary_banks, sip->name);
 		for ( i = sip->num_primary_banks; i < po->n_guns; i++ ) {
 			// Make unspecified weapon for bank be a Light Laser
@@ -5586,7 +5603,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 	// Secondary banks
 	if ( po->n_missiles > sip->num_secondary_banks ) {
-		Assert(po->n_missiles <= MAX_SECONDARY_BANKS);
+		Assert(po->n_missiles <= MAX_SHIP_SECONDARY_BANKS);
 		Warning(LOCATION, "There are %d secondary banks in model,\nbut only %d secondary banks in ships.tbl for %s\n", po->n_missiles, sip->num_secondary_banks, sip->name);
 		for ( i = sip->num_secondary_banks; i < po->n_missiles; i++ ) {
 			// Make unspecified weapon for bank be a Rockeye Missile
@@ -5631,11 +5648,11 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		swp->secondary_bank_capacity[i] = sip->secondary_bank_ammo_capacity[i];
 	}
 
-	for ( i = 0; i < MAX_PRIMARY_BANKS; i++ ){
+	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ ){
 		swp->next_primary_fire_stamp[i] = timestamp(0);
 	}
 
-	for ( i = 0; i < MAX_SECONDARY_BANKS; i++ ){
+	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ ){
 		swp->next_secondary_fire_stamp[i] = timestamp(0);
 	}
 }
@@ -8017,13 +8034,14 @@ int ship_select_next_primary(object *objp, int direction)
 		}
 		return 0;
 	}
-	else if ( swp->num_primary_banks > MAX_SUPPORTED_PRIMARY_BANKS )
+	else if ( swp->num_primary_banks > ((objp == Player_obj) ? MAX_PLAYER_PRIMARY_BANKS : MAX_SHIP_PRIMARY_BANKS) )
 	{
-		Error (LOCATION, "Exceeded supported number of primary banks.\n");
+		Int3();
+		return 0;
 	}
 	else
 	{
-		Assert((swp->current_primary_bank >= 0)/* && (swp->current_primary_bank <= UPPER_BOUND_PRIMARY_BANK)*/);//no idea what UPPER_BOUND_PRIMARY_BANK it's only refrence is in two asserts, commenting it out so we can compile
+		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank < swp->num_primary_banks));
 
 		// first check if linked
 		if ( shipp->flags & SF_PRIMARY_LINKED )
@@ -8035,7 +8053,7 @@ int ship_select_next_primary(object *objp, int direction)
 			}
 			else
 			{
-				swp->current_primary_bank = UPPER_BOUND_SUPPORTED_PRIMARY_BANK;
+				swp->current_primary_bank = MAX_PLAYER_PRIMARY_BANKS-1;
 			}
 		}
 		// now handle when not linked: cycle and constrain
@@ -8043,7 +8061,7 @@ int ship_select_next_primary(object *objp, int direction)
 		{
 			if ( direction == CYCLE_PRIMARY_NEXT )
 			{
-				if ( swp->current_primary_bank < UPPER_BOUND_SUPPORTED_PRIMARY_BANK )
+				if ( swp->current_primary_bank < MAX_PLAYER_PRIMARY_BANKS-1 )
 				{
 					swp->current_primary_bank++;
 				}
@@ -8084,7 +8102,7 @@ int ship_select_next_primary(object *objp, int direction)
 					}
 					else
 					{
-						swp->current_primary_bank = UPPER_BOUND_SUPPORTED_PRIMARY_BANK;
+						swp->current_primary_bank = MAX_PLAYER_PRIMARY_BANKS-1;
 					}
 					break;
 				}
@@ -8122,7 +8140,7 @@ int ship_select_next_primary(object *objp, int direction)
 		}
 		
 		// make sure we're okay
-		Assert((swp->current_primary_bank >= 0) /*&& (swp->current_primary_bank <= UPPER_BOUND_PRIMARY_BANK)*/);//no idea what UPPER_BOUND_PRIMARY_BANK it's only refrence is in two asserts, commenting it out so we can compile
+		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank < swp->num_primary_banks));
 
 		// if this ship is ballistics-equipped, and we cycled, then we had to verify some stuff,
 		// so we should check if we actually changed banks
@@ -8195,13 +8213,15 @@ int ship_select_next_secondary(object *objp)
 		}
 		return 0;
 	}
-	else if ( swp->num_secondary_banks > MAX_SUPPORTED_SECONDARY_BANKS )
+	else if ( swp->num_secondary_banks > ((objp == Player_obj) ? MAX_PLAYER_SECONDARY_BANKS : MAX_SHIP_SECONDARY_BANKS) )
 	{
-		Error (LOCATION, "Exceeded supported number of secondary banks.\n");
+		Int3();
+		return 0;
 	}
 	else
 	{
-		Assert(swp->current_secondary_bank < swp->num_secondary_banks);
+		Assert((swp->current_secondary_bank >= 0) && (swp->current_secondary_bank < swp->num_secondary_banks));
+
 		original_bank = swp->current_secondary_bank;
 
 		for ( i = 1; i < swp->num_secondary_banks; i++ ) {
@@ -10026,7 +10046,7 @@ int ship_secondary_bank_has_ammo(int shipnum)
 	if ( swp->current_secondary_bank == -1 )
 		return 0;
 
-	Assert(swp->current_secondary_bank >= 0 && swp->current_secondary_bank < MAX_SECONDARY_BANKS );
+	Assert(swp->current_secondary_bank >= 0 && swp->current_secondary_bank < MAX_SHIP_SECONDARY_BANKS );
 	if ( swp->secondary_bank_ammo[swp->current_secondary_bank] <= 0 )
 		return 0;
 
@@ -10051,7 +10071,7 @@ int ship_primary_bank_has_ammo(int shipnum)
 		return 0;
 	}
 
-	Assert(swp->current_primary_bank >= 0 && swp->current_primary_bank < MAX_PRIMARY_BANKS );
+	Assert(swp->current_primary_bank >= 0 && swp->current_primary_bank < MAX_SHIP_PRIMARY_BANKS );
 	
 	return ( primary_out_of_ammo(swp, swp->current_primary_bank) == 0 );
 }

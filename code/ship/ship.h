@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.62 $
- * $Date: 2004-05-10 08:03:31 $
+ * $Revision: 2.63 $
+ * $Date: 2004-05-10 10:51:51 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2004/05/10 08:03:31  Goober5000
+ * fixored the handling of no lasers and no engines... the tests should check the ship,
+ * not the object
+ * --Goober5000
+ *
  * Revision 2.61  2004/05/03 21:22:23  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -574,30 +579,30 @@ typedef struct ship_weapon {
 	int num_secondary_banks;				// Number of secondary banks (same as model)
 	int num_tertiary_banks;
 
-	int primary_bank_weapons[MAX_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
-	int secondary_bank_weapons[MAX_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
+	int primary_bank_weapons[MAX_SHIP_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
+	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
 	int tertiary_bank_weapon;							// Tertiary_Weapon_info[] index for the weapon in the bank
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
 	int current_tertiary_bank;
 
-	int next_primary_fire_stamp[MAX_PRIMARY_BANKS];			// next time this primary bank can fire
-	int next_secondary_fire_stamp[MAX_SECONDARY_BANKS];	// next time this secondary bank can fire
+	int next_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// next time this primary bank can fire
+	int next_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];	// next time this secondary bank can fire
 	int next_tertiary_fire_stamp;
 
 	// ballistic primary support - by Goober5000
-	int primary_bank_ammo[MAX_PRIMARY_BANKS];			// Number of missiles left in primary bank
-	int primary_bank_start_ammo[MAX_PRIMARY_BANKS];	// Number of missiles starting in primary bank
-	int primary_bank_capacity[MAX_PRIMARY_BANKS];		// Max number of projectiles in bank
-	int primary_next_slot[MAX_PRIMARY_BANKS];			// Next slot to fire in the bank
-	int primary_bank_rearm_time[MAX_PRIMARY_BANKS];	// timestamp which indicates when bank can get new projectile
+	int primary_bank_ammo[MAX_SHIP_PRIMARY_BANKS];			// Number of missiles left in primary bank
+	int primary_bank_start_ammo[MAX_SHIP_PRIMARY_BANKS];	// Number of missiles starting in primary bank
+	int primary_bank_capacity[MAX_SHIP_PRIMARY_BANKS];		// Max number of projectiles in bank
+	int primary_next_slot[MAX_SHIP_PRIMARY_BANKS];			// Next slot to fire in the bank
+	int primary_bank_rearm_time[MAX_SHIP_PRIMARY_BANKS];	// timestamp which indicates when bank can get new projectile
 
-	int secondary_bank_ammo[MAX_SECONDARY_BANKS];			// Number of missiles left in secondary bank
-	int secondary_bank_start_ammo[MAX_SECONDARY_BANKS];	// Number of missiles starting in secondary bank
-	int secondary_bank_capacity[MAX_SECONDARY_BANKS];		// Max number of missiles in bank
-	int secondary_next_slot[MAX_SECONDARY_BANKS];			// Next slot to fire in the bank
-	int secondary_bank_rearm_time[MAX_SECONDARY_BANKS];	// timestamp which indicates when bank can get new missile
+	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
+	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank
+	int secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];		// Max number of missiles in bank
+	int secondary_next_slot[MAX_SHIP_SECONDARY_BANKS];			// Next slot to fire in the bank
+	int secondary_bank_rearm_time[MAX_SHIP_SECONDARY_BANKS];	// timestamp which indicates when bank can get new missile
 
 	int tertiary_bank_ammo;			// Number of shots left tertiary bank
 	int tertiary_bank_start_ammo;	// Number of shots starting in tertiary bank
@@ -975,7 +980,7 @@ typedef struct ship {
 
 	ship_subsys fighter_beam_turret_data;		//a fake subsystem that pretends to be a turret for fighter beams
 	model_subsystem beam_sys_info;
-	int was_firing_last_frame[MAX_PRIMARY_BANKS];
+	int was_firing_last_frame[MAX_SHIP_PRIMARY_BANKS];
 
 	// Goober5000 - range of primitive sensors
 	int primitive_sensor_range;
@@ -1001,7 +1006,7 @@ typedef struct ship {
 	int cloak_alpha;
 	fix time_until_uncloak;
 
-	int last_fired_point[MAX_PRIMARY_BANKS]; //for fire point cylceing
+	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -1204,13 +1209,13 @@ typedef struct ship_info {
 
 	int num_primary_banks;										// Actual number of primary banks (property of model)
 	int num_secondary_banks;									//	Actual number of secondary banks (property of model)
-	int primary_bank_weapons[MAX_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
+	int primary_bank_weapons[MAX_SHIP_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
 	
 	// Goober5000's ballistic conversion
-	int primary_bank_ammo_capacity[MAX_PRIMARY_BANKS];	// Capacity of primary ballistic bank
+	int primary_bank_ammo_capacity[MAX_SHIP_PRIMARY_BANKS];	// Capacity of primary ballistic bank
 	
-	int secondary_bank_weapons[MAX_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
-	int secondary_bank_ammo_capacity[MAX_SECONDARY_BANKS];	// Capacity of bank (not number of missiles)
+	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
+	int secondary_bank_ammo_capacity[MAX_SHIP_SECONDARY_BANKS];	// Capacity of bank (not number of missiles)
 
 	float	initial_hull_strength;			// Initial hull strength of this class of ship.
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-03-31 05:42:27 $
+ * $Revision: 2.18 $
+ * $Date: 2004-05-10 10:51:52 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/03/31 05:42:27  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.16  2004/03/17 04:07:30  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -3024,7 +3029,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	aip = &Ai_info[shipp->ai_index];
 
 	current_bank = (ubyte)shipp->weapons.current_secondary_bank;
-	Assert( (current_bank >= 0) && (current_bank < MAX_SECONDARY_BANKS) );
+	Assert( (current_bank >= 0) && (current_bank < MAX_SHIP_SECONDARY_BANKS) );
 
 	// build up the header portion
 	BUILD_HEADER( SECONDARY_FIRED_AI );
@@ -3182,7 +3187,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 
 	// find out the current bank
 	current_bank = (ubyte)(sinfo & 0x3);
-	Assert( (current_bank >= 0) && (current_bank < MAX_SECONDARY_BANKS) );
+	Assert( (current_bank >= 0) && (current_bank < MAX_SHIP_SECONDARY_BANKS) );
 	shipp->weapons.current_secondary_bank = current_bank;
 
 	// make it so we can fire this ship's secondary bank immediately!!!
@@ -7612,7 +7617,7 @@ void process_NEW_primary_fired_packet(ubyte *data, header *hinfo)
 	// get the current primary bank
 	// current_bank = (ubyte)(banks_fired >> CURRENT_BANK_BIT);
 	// current_bank &= 0x3;
-	// Assert( (current_bank >= 0) && (current_bank < MAX_PRIMARY_BANKS) );
+	// Assert( (current_bank >= 0) && (current_bank < MAX_SHIP_PRIMARY_BANKS) );
 	// shipp->weapons.current_primary_bank = current_bank;
 
 	// strip off all remaining bits and just keep which banks were actually fired.

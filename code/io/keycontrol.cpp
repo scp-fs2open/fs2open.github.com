@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.30 $
- * $Date: 2004-05-10 06:11:47 $
+ * $Revision: 2.31 $
+ * $Date: 2004-05-10 10:51:53 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/05/10 06:11:47  Goober5000
+ * fixed warp decision
+ * --Goober5000
+ *
  * Revision 2.29  2004/05/03 21:22:21  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -873,7 +877,7 @@ void debug_max_secondary_weapons(object *objp)
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	ship_weapon *swp = &shipp->weapons;
 
-	for ( index = 0; index < MAX_SECONDARY_BANKS; index++ )
+	for ( index = 0; index < MAX_SHIP_SECONDARY_BANKS; index++ )
 	{
 		swp->secondary_bank_ammo[index] = sip->secondary_bank_ammo_capacity[index];
 	}
@@ -891,7 +895,7 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 
 	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
 	{
-		for ( index = 0; index < MAX_PRIMARY_BANKS; index++ )
+		for ( index = 0; index < MAX_SHIP_PRIMARY_BANKS; index++ )
 		{
 			wip = &Weapon_info[swp->primary_bank_weapons[index]];
 			if (wip->wi_flags2 & WIF2_BALLISTIC)

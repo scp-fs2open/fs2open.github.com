@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.2 $
- * $Date: 2004-03-05 09:01:52 $
+ * $Revision: 1.3 $
+ * $Date: 2004-05-10 10:51:54 $
  * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 1.1  2004/02/28 20:26:10  Goober5000
  * preliminary checking of globals.h
  * --Goober5000
@@ -81,15 +85,33 @@
 
 
 // from ship.h
-#define MAX_SHIP_WEAPONS	5
+#define MAX_PLAYER_PRIMARY_BANKS	2
+#define MAX_PLAYER_SECONDARY_BANKS	3
+#define MAX_PLAYER_WEAPONS			5
 
-#define MAX_SUPPORTED_PRIMARY_BANKS	2
-#define UPPER_BOUND_SUPPORTED_PRIMARY_BANK	(MAX_SUPPORTED_PRIMARY_BANKS - 1)
-#define MAX_SUPPORTED_SECONDARY_BANKS	3
-#define UPPER_BOUND_SUPPORTED_SECONDARY_BANK	(MAX_SUPPORTED_SECONDARY_BANKS - 1)
 
-#if (MAX_SUPPORTED_PRIMARY_BANKS+MAX_SUPPORTED_SECONDARY_BANKS != MAX_SHIP_WEAPONS)
-	#error MAX_SUPPORTED_PRIMARY_BANKS + MAX_SUPPORTED_SECONDARY_BANKS must equal MAX_SHIP_WEAPONS
+// from model.h
+#define MAX_SHIP_PRIMARY_BANKS		3
+#define MAX_SHIP_SECONDARY_BANKS	4	//	Lowered from 5 to 4 by MK on 3/25/98.  This needs to be <= MAX_WL_SECONDARY or you'll get stack overwrites.
+#define MAX_SHIP_WEAPONS			7
+
+
+// limit checks - Goober5000
+
+#if (MAX_PLAYER_PRIMARY_BANKS+MAX_PLAYER_SECONDARY_BANKS != MAX_PLAYER_WEAPONS)
+	#error MAX_PLAYER_PRIMARY_BANKS + MAX_PLAYER_SECONDARY_BANKS must equal MAX_PLAYER_WEAPONS
+#endif
+
+#if (MAX_SHIP_PRIMARY_BANKS+MAX_SHIP_SECONDARY_BANKS != MAX_SHIP_WEAPONS)
+	#error MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS must equal MAX_SHIP_WEAPONS
+#endif
+
+#if (MAX_PLAYER_PRIMARY_BANKS > MAX_SHIP_PRIMARY_BANKS)
+	#error MAX_PLAYER_PRIMARY_BANKS must be less than or equal to MAX_SHIP_PRIMARY_BANKS)
+#endif
+
+#if (MAX_PLAYER_SECONDARY_BANKS > MAX_SHIP_SECONDARY_BANKS)
+	#error MAX_PLAYER_SECONDARY_BANKS must be less than or equal to MAX_SHIP_SECONDARY_BANKS)
 #endif
 
 
@@ -114,8 +136,6 @@
 
 
 // from model.h
-#define MAX_PRIMARY_BANKS		3
-#define MAX_SECONDARY_BANKS	4	//	Lowered from 5 to 4 by MK on 3/25/98.  This needs to be <= MAX_WL_SECONDARY or you'll get stack overwrites.
 
 #define MAX_MODEL_TEXTURES	64
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.58 $
- * $Date: 2004-05-10 08:03:30 $
+ * $Revision: 2.59 $
+ * $Date: 2004-05-10 10:51:53 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2004/05/10 08:03:30  Goober5000
+ * fixored the handling of no lasers and no engines... the tests should check the ship,
+ * not the object
+ * --Goober5000
+ *
  * Revision 2.57  2004/05/03 21:22:22  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -2086,7 +2091,7 @@ int parse_create_object(p_object *objp)
 		if (!stricmp(sssp->name, NOX("Pilot"))) {
 			wp = &Ships[shipnum].weapons;
 			if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE) {
-				for (j=k=0; j<MAX_PRIMARY_BANKS; j++) {
+				for (j=k=0; j<MAX_SHIP_PRIMARY_BANKS; j++) {
 					if ( (sssp->primary_banks[j] >= 0) || Fred_running ){
 						wp->primary_bank_weapons[k] = sssp->primary_banks[j];						
 
@@ -2103,7 +2108,7 @@ int parse_create_object(p_object *objp)
 			}
 
 			if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE) {
-				for (j=k=0; j<MAX_SECONDARY_BANKS; j++) {
+				for (j=k=0; j<MAX_SHIP_SECONDARY_BANKS; j++) {
 					if ( (sssp->secondary_banks[j] >= 0) || Fred_running ){
 						wp->secondary_bank_weapons[k++] = sssp->secondary_banks[j];
 					}
@@ -2168,20 +2173,20 @@ int parse_create_object(p_object *objp)
 				}
 
 				if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
-					for (j=0; j<MAX_PRIMARY_BANKS; j++)
+					for (j=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
 						ptr->weapons.primary_bank_weapons[j] = sssp->primary_banks[j];
 
 				if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
-					for (j=0; j<MAX_SECONDARY_BANKS; j++)
+					for (j=0; j<MAX_SHIP_SECONDARY_BANKS; j++)
 						ptr->weapons.secondary_bank_weapons[j] = sssp->secondary_banks[j];
 
 				// Goober5000
-				for (j=0; j<MAX_PRIMARY_BANKS; j++)
+				for (j=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
 				{
 					ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
 				}
 
-				for (j=0; j<MAX_SECONDARY_BANKS; j++) {
+				for (j=0; j<MAX_SHIP_SECONDARY_BANKS; j++) {
 					// AL 3-5-98:  This is correct for FRED, but not for FreeSpace... but is this even used?
 					//					As far as I know, turrets cannot run out of ammo
 					ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];
@@ -2882,17 +2887,17 @@ void parse_common_object_data(p_object	*objp)
 			Subsys_status[i].ai_class = match_and_stuff(F_NAME, Ai_class_names, Num_ai_classes, "AI class");
 
 		if (optional_string("+Primary Banks:"))
-			stuff_int_list(Subsys_status[i].primary_banks, MAX_PRIMARY_BANKS, WEAPON_LIST_TYPE);
+			stuff_int_list(Subsys_status[i].primary_banks, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
 
 		// Goober5000
 		if (optional_string("+Pbank Ammo:"))
-			stuff_int_list(Subsys_status[i].primary_ammo, MAX_PRIMARY_BANKS, RAW_INTEGER_TYPE);
+			stuff_int_list(Subsys_status[i].primary_ammo, MAX_SHIP_PRIMARY_BANKS, RAW_INTEGER_TYPE);
 
 		if (optional_string("+Secondary Banks:"))
-			stuff_int_list(Subsys_status[i].secondary_banks, MAX_SECONDARY_BANKS, WEAPON_LIST_TYPE);
+			stuff_int_list(Subsys_status[i].secondary_banks, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
 
 		if (optional_string("+Sbank Ammo:"))
-			stuff_int_list(Subsys_status[i].secondary_ammo, MAX_SECONDARY_BANKS, RAW_INTEGER_TYPE);
+			stuff_int_list(Subsys_status[i].secondary_ammo, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
 
 	}
 }
@@ -5633,7 +5638,7 @@ int allocate_subsys_status()
 	Subsys_status[Subsys_index].primary_banks[0] = SUBSYS_STATUS_NO_CHANGE;
 	Subsys_status[Subsys_index].primary_ammo[0] = 100; // *
 	
-	for (i=1; i<MAX_PRIMARY_BANKS; i++)
+	for (i=1; i<MAX_SHIP_PRIMARY_BANKS; i++)
 	{
 		Subsys_status[Subsys_index].primary_banks[i] = -1;  // none
 		Subsys_status[Subsys_index].primary_ammo[i] = 100;	// *
@@ -5642,7 +5647,7 @@ int allocate_subsys_status()
 	Subsys_status[Subsys_index].secondary_banks[0] = SUBSYS_STATUS_NO_CHANGE;
 	Subsys_status[Subsys_index].secondary_ammo[0] = 100;
 	
-	for (i=1; i<MAX_SECONDARY_BANKS; i++)
+	for (i=1; i<MAX_SHIP_SECONDARY_BANKS; i++)
 	{
 		Subsys_status[Subsys_index].secondary_banks[i] = -1;
 		Subsys_status[Subsys_index].secondary_ammo[i] = 100;
@@ -6309,10 +6314,10 @@ void restore_default_weapons(char *ships_tbl)
 void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons)
 {
 	int i, count, original_weapon;
-	char weapon_list[MAX_PRIMARY_BANKS][NAME_LENGTH];
+	char weapon_list[MAX_SHIP_PRIMARY_BANKS][NAME_LENGTH];
 
 	// stuff weapon list
-	count = stuff_string_list(weapon_list, MAX_PRIMARY_BANKS);
+	count = stuff_string_list(weapon_list, MAX_SHIP_PRIMARY_BANKS);
 
 	// possibly replace Prometheus with Prometheus S
 	for (i = 0; i < count; i++)
@@ -6338,10 +6343,10 @@ void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_we
 void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons)
 {
 	int i, count, original_weapon;
-	char weapon_list[MAX_SECONDARY_BANKS][NAME_LENGTH];
+	char weapon_list[MAX_SHIP_SECONDARY_BANKS][NAME_LENGTH];
 
 	// stuff weapon list
-	count = stuff_string_list(weapon_list, MAX_SECONDARY_BANKS);
+	count = stuff_string_list(weapon_list, MAX_SHIP_SECONDARY_BANKS);
 
 	// check for default weapons - if same as default, overwrite with the one from the table
 	for (i = 0; i < count; i++)

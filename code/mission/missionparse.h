@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.40 $
+ * $Revision: 2.41 $
  * $Author: Goober5000 $
- * $Date: 2004-05-10 08:03:30 $
+ * $Date: 2004-05-10 10:51:53 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2004/05/10 08:03:30  Goober5000
+ * fixored the handling of no lasers and no engines... the tests should check the ship,
+ * not the object
+ * --Goober5000
+ *
  * Revision 2.39  2004/05/03 21:22:22  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -586,10 +591,10 @@ extern int    Current_file_length;
 typedef struct subsys_status {
 	char	name[NAME_LENGTH];
 	float	percent;  // percent damaged
-	int	primary_banks[MAX_PRIMARY_BANKS];
-	int primary_ammo[MAX_PRIMARY_BANKS];
-	int	secondary_banks[MAX_SECONDARY_BANKS];
-	int	secondary_ammo[MAX_SECONDARY_BANKS];
+	int	primary_banks[MAX_SHIP_PRIMARY_BANKS];
+	int primary_ammo[MAX_SHIP_PRIMARY_BANKS];
+	int	secondary_banks[MAX_SHIP_SECONDARY_BANKS];
+	int	secondary_ammo[MAX_SHIP_SECONDARY_BANKS];
 	int	ai_class;
 	int	subsys_cargo_name;
 } subsys_status;
