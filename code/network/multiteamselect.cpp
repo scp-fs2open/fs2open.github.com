@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-02-04 20:06:05 $
+ * $Revision: 2.9 $
+ * $Date: 2005-03-02 21:18:20 $
  * $Author: taylor $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/02/04 20:06:05  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.7  2004/12/14 14:46:13  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -196,6 +199,10 @@
  * Make sure observer HUD doesn't try to lock weapons. 
  *   
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "network/multiteamselect.h"
 #include "network/multi.h"
@@ -3191,3 +3198,5 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 		ss_recalc_multiplayer_slots();
 	}
 }
+
+#endif // !NO_NETWORK

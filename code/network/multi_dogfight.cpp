@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-02-04 10:12:31 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-02 21:18:19 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/04 10:12:31  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.6  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -81,6 +84,10 @@
  *   
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "network/multi_dogfight.h"
 #include "network/multi.h"
@@ -645,3 +652,5 @@ int multi_df_stuff_kills(char *kills, int player_x, int player_y)
 	sprintf(kills, "%d", s->stats.m_dogfight_kills[Multi_df_score[player_y].np_index]);
 	return s->stats.m_dogfight_kills[Multi_df_score[player_y].np_index];
 }
+
+#endif // !NO_NETWORK

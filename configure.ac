@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.3 2005-03-01 23:08:24 taylor Exp $
+dnl $Id: configure.ac,v 1.4 2005-03-02 21:18:18 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -154,6 +154,11 @@ if ! test "$fs2_joystick" = "yes" ; then
 	AC_DEFINE([NO_JOYSTICK])
 fi
 
+if test "$fs2_inferno" = "yes" ; then
+	AC_DEFINE([INF_BUILD])
+	fs2_networking=no
+fi
+
 if ! test "$fs2_networking" = "yes" ; then
 	AC_DEFINE([NO_NETWORK])
 	AC_DEFINE([NO_STANDALONE])
@@ -184,10 +189,6 @@ if test "$fs2_lite" = "yes" ; then
 	AC_DEFINE([SCP_LITE])
 fi
 
-if test "$fs2_inferno" = "yes" ; then
-	AC_DEFINE([INF_BUILD])
-fi
-
 if test "$fs2_gprof" = "yes" ; then
 	FS2_CXXFLAGS="$FS2_CXXFLAGS -pg"
 fi
@@ -199,7 +200,6 @@ AM_CONDITIONAL(FS2_OS_UNIX,    test "$fs2_os_unix"  = "yes" || test "$fs2_os_osx
 AM_CONDITIONAL(FS2_OS_OSX,     test "$fs2_os_osx"   = "yes")
 
 AM_CONDITIONAL(FS2_JOYSTICK,   test "$fs2_joystick"   = "yes")
-AM_CONDITIONAL(FS2_NETWORKING, test "$fs2_networking" = "yes")
 AM_CONDITIONAL(FS2_SOUND,      test "$fs2_sound"      = "yes")
 AM_CONDITIONAL(FS2_DEVIL,      test "$fs2_devil"      = "yes")
 AM_CONDITIONAL(FS2_SPEECH,     test "$fs2_speech"     = "yes")

@@ -7,6 +7,10 @@
  *
 */
 
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
+
 #include "network/multi_oo.h"
 #include "globalincs/globals.h"
 #include "freespace2/freespace.h"
@@ -2000,3 +2004,5 @@ void oo_display()
 	}
 	*/
 }
+
+#endif // !NO_NETWORK

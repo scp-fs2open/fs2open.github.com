@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.13 $
- * $Date: 2005-02-04 20:06:03 $
+ * $Revision: 1.14 $
+ * $Date: 2005-03-02 21:18:18 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/02/04 20:06:03  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 1.12  2004/11/18 00:05:36  Goober5000
  * #pragma'd a bunch of warnings
  * --Goober5000
@@ -61,6 +64,10 @@
  *
  *
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 // 4100 = unreferenced formal parameter
 // 4511 = copy constructor could not be generated
@@ -439,3 +446,4 @@ bool TCP_Socket::AcceptConnections(sproc server_process)
 
 #endif
 
+#endif // !NO_NETWORK

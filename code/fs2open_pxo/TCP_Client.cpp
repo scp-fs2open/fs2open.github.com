@@ -11,11 +11,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.25 $
- * $Date: 2005-02-23 13:17:04 $
+ * $Revision: 1.26 $
+ * $Date: 2005-03-02 21:18:18 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2005/02/23 13:17:04  taylor
+ * few more compiler warning fixes (didn't mean to commit iostream.h change)
+ * lower warning level to 3 to stop MSVC6 from complaining about C++ headers
+ *
  * Revision 1.24  2005/02/23 05:05:37  taylor
  * compiler warning fixes (for MSVC++ 6)
  * have the warp effect only load as many LODs as will get used
@@ -108,6 +112,9 @@
  *
  */
 
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 // 4018 = signed/unsigned mismatch
 // 4663 = new template specification syntax
@@ -865,3 +872,5 @@ void SendPingReply(TCP_Socket &Socket, int tstamp)
 
 	Socket.SendData((char*)&rping, sizeof(rping));
 }
+
+#endif // !NO_NETWORK

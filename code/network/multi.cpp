@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-02-04 20:06:04 $
+ * $Revision: 2.27 $
+ * $Date: 2005-03-02 21:18:19 $
  * $Author: taylor $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/02/04 20:06:04  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.25  2004/11/18 00:05:37  Goober5000
  * #pragma'd a bunch of warnings
  * --Goober5000
@@ -284,6 +287,10 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -2222,3 +2229,5 @@ void multi_display_netinfo()
 		}
 	}
 }
+
+#endif // !NO_NETWORK

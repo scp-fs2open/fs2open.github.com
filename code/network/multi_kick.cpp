@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_kick.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-02-04 10:12:31 $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-02 21:18:19 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/02/04 10:12:31  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.4  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -123,6 +126,10 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "globalincs/pstypes.h"
 #include "network/multi.h"
@@ -387,3 +394,5 @@ int multi_kick_can_kick(net_player *player)
 	// this guy cannot kick
 	return 0;
 }
+
+#endif // !NO_NETWORK

@@ -7,6 +7,10 @@
  *
 */
 
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
+
 #include "network/multi_oo.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
@@ -2097,3 +2101,5 @@ void multi_oo_update_server_rate()
 
 	
 #endif // #ifndef OO_NEW
+
+#endif // !NO_NETWORK

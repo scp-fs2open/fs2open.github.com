@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multilag.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-03-02 21:18:20 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -98,6 +101,10 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include <winsock.h>
 #include <wsipx.h>
@@ -762,3 +769,5 @@ DCF(lag_good, "")
 	Multi_streak_stamp = -1;
 	Multi_current_streak = -1;
 }
+
+#endif // !NO_NETWORK

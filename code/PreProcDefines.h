@@ -5,12 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.9 $
- * $Date: 2005-02-04 10:12:29 $
+ * $Revision: 1.10 $
+ * $Date: 2005-03-02 21:18:18 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/02/04 10:12:29  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 1.8  2005/01/01 13:14:19  argv
  * Since Taylor's asteroid targeting code does not use the
  * TURRETS_SHOOT_ASTEROIDS #define, remove it from preprocdefines.h. We can
@@ -83,7 +86,6 @@
 #define _REPORT_MEM_LEAKS	1
 #endif
 
-
 /*
 #ifndef FS2_SPEECH
 #define FS2_SPEECH			1
@@ -100,5 +102,19 @@
 #define NO_LINKED_PRIMARY_PENALTY 1
 #endif
 */
+
+/*
+#ifndef INF_BUILD
+#define INF_BUILD			1
+#ifndef NO_NETWORK // no networking with INF_BUILD
+#define NO_NETWORK			1
+#endif // NO_NETWORK
+#endif // INF_BUILD
+*/
+
+// INF_BUILD error check...
+#if defined(INF_BUILD) && !defined(NO_NETWORK)
+#error "Networking *must* be disabled with Inferno builds, define NO_NETWORK"
+#endif
 
 #endif // _pre_proc_defs_h_

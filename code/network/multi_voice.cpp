@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_voice.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-04 10:12:31 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-02 21:18:20 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/04 10:12:31  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.5  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -224,6 +227,10 @@
  *  
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "network/multi_voice.h"
 #include "io/timer.h"
@@ -2356,3 +2363,5 @@ int multi_voice_test_packet_tossed()
 {
 	return Multi_voice_test_packet_tossed;
 }
+
+#endif // !NO_NETWORK

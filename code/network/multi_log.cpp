@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_log.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-02 21:18:19 $
+ * $Author: taylor $
  *
  * Header file to support multiplayer logging functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -73,6 +76,10 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include <stdarg.h>
 #include "network/multi_log.h"
@@ -253,3 +260,5 @@ void ml_string(char *string, int add_time)
 	mprintf(("ML %s", tmp));
 #endif
 }
+
+#endif // !NO_NETWORK

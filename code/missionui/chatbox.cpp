@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/Chatbox.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-23 04:55:07 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-02 21:18:19 $
  * $Author: taylor $
  *
  * C module to handle all code for multiplayer chat windows
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.5  2005/02/04 10:12:31  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -293,6 +296,10 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "ui/ui.h"
 #include "missionui/chatbox.h"
@@ -1415,3 +1422,5 @@ void chatbox_reset_timestamps()
 		Chatbox_buttons[gr_screen.res][idx].button.reset_timestamps();
 	}
 }
+
+#endif // !NO_NETWORK

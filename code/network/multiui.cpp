@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-02-23 04:55:09 $
+ * $Revision: 2.35 $
+ * $Date: 2005-03-02 21:18:20 $
  * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/02/23 04:55:09  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.33  2005/02/04 20:06:05  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -551,6 +554,10 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #ifdef _WIN32
 #include <winsock.h>	// for inet_addr()
@@ -10055,3 +10062,5 @@ int multi_passwd_popup(char *passwd)
 
 	return Multi_passwd_done;
 }
+
+#endif // !NO_NETWORK

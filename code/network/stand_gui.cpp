@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-02-04 20:06:05 $
+ * $Revision: 2.14 $
+ * $Date: 2005-03-02 21:18:20 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/02/04 20:06:05  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.12  2004/07/26 20:47:44  Kazan
  * remove MCD complete
  *
@@ -362,6 +365,10 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #ifdef _WIN32
 #include <windows.h>
@@ -2423,3 +2430,4 @@ void std_deinit_standalone()
 	}
 }
 
+#endif // !NO_NETWORK
