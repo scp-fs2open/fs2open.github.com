@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.74 $
- * $Date: 2003-09-06 19:14:50 $
+ * $Revision: 2.75 $
+ * $Date: 2003-09-06 20:40:01 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2003/09/06 19:14:50  wmcoolmon
+ * Minor bugfix (changed an == to >=)
+ *
  * Revision 2.73  2003/09/06 19:07:31  wmcoolmon
  * Made it possible to limit how much support ships repair a ship's hull.
  *
@@ -8489,7 +8492,7 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 int ship_do_rearm_frame( object *objp, float frametime )
 {
 	int			i, banks_full, primary_banks_full, subsys_type, subsys_all_ok;
-	float			shield_str, repair_delta, repair_allocated, max_hull_repair;
+	float			shield_str, repair_delta, repair_allocated, max_hull_repair, max_subsys_repair;
 	ship			*shipp;
 	ship_weapon	*swp;
 	ship_info	*sip;
@@ -8568,8 +8571,10 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	subsys_all_ok = 1;
 	ssp = GET_FIRST(&shipp->subsys_list);
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
+		//Figure out how much we *can* repair the current subsystem -C
+		max_subsys_repair = ssp->max_hits * (The_mission.support_ships.max_subsys_repair_val * .01);
 
-		if ( ssp->current_hits < ssp->max_hits && repair_allocated > 0 ) {
+		if ( ssp->current_hits < max_subsys_repair && repair_allocated > 0 ) {
 			subsys_all_ok = 0;
 			subsys_type = ssp->system_info->type;
 
@@ -8577,7 +8582,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				player_maybe_start_repair_sound();
 			}
 			
-			repair_delta = ssp->max_hits - ssp->current_hits;
+			repair_delta = max_subsys_repair - ssp->current_hits;
 			if ( repair_delta > repair_allocated ) {
 				repair_delta = repair_allocated;
 			}
@@ -8586,17 +8591,14 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 			// add repair to current strength of single subsystem
 			ssp->current_hits += repair_delta;
-			if ( ssp->current_hits > ssp->max_hits ) {
-				ssp->current_hits = ssp->max_hits;
+			if ( ssp->current_hits > max_subsys_repair ) {
+				ssp->current_hits = max_subsys_repair;
 			}
 
 			// add repair to aggregate strength of subsystems of that type
 			shipp->subsys_info[subsys_type].current_hits += repair_delta;
 			if ( shipp->subsys_info[subsys_type].current_hits > shipp->subsys_info[subsys_type].total_hits )
 				shipp->subsys_info[subsys_type].current_hits = shipp->subsys_info[subsys_type].total_hits;
-
-			if ( ssp->current_hits > ssp->max_hits )
-				ssp->current_hits = ssp->max_hits;
 
 			// check to see if this subsystem was totally non functional before -- if so, then
 			// reset the flags
