@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/version.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-04 05:11:36 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-13 03:32:25 $
  * $Author: penguin $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/04 05:11:36  penguin
+ * Update version number to 3.1
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -123,7 +126,7 @@
 //   Major.Minor.Bugfix
 
 #define FS_VERSION_MAJOR 3					// major version
-#define FS_VERSION_MINOR 1					// increase by 1 for minor revs
+#define FS_VERSION_MINOR 2					// increase by 1 for minor revs
 #define FS_VERSION_BUILD 0					// bugfix release
 
 #define VERSION_LOC_FNAME			"version.nfo"
