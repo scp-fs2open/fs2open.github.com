@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.20 $
- * $Date: 2003-01-20 05:40:49 $
- * $Author: bobboau $
+ * $Revision: 2.21 $
+ * $Date: 2003-03-02 05:54:23 $
+ * $Author: penguin $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/01/20 05:40:49  bobboau
+ * added several sExps for turning glow points and glow maps on and off
+ *
  * Revision 2.19  2003/01/19 06:44:39  Goober5000
  * got rid of nameplate stuff (superceded by texture replacement)
  * --Goober5000
@@ -447,7 +450,7 @@ typedef struct ai_rotation {
 	float max;
 	float min;
 	int time;
-} ai_rotation;
+} ai_rotation_t;
 
 #define MSS_AI_DOCK			(1<<0)		//model that animates when docking
 #define MSS_AI_ENGINE		(1<<1)		//model that animates baised on wich direction you're turning 
@@ -484,7 +487,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	// Rotation specific info
 	float		turn_rate;								// The turning rate of this subobject, if MSS_FLAG_ROTATES is set.
 	stepped_rotation_t *stepped_rotation;			// turn rotation struct
-	ai_rotation ai_rotation;						// ai controlled rotation struct
+	ai_rotation_t ai_rotation;						// ai controlled rotation struct
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem
