@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-06-05 19:14:42 $
+ * $Author: phreak $
  *
  * header for Static Random functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -50,6 +53,7 @@ extern int static_rand(int num);
 extern float static_randf(int num);
 extern void static_randvec(int num, vector *vp);
 extern float static_randf_range(int num, float min, float max);
+void static_rand_cone(int num, vector *out, vector *in, float max_angle, matrix *orient);
 
 // Alternate random number generator that doesn't affect rand() sequence
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-06-05 19:14:42 $
+ * $Author: phreak $
  *
  * static random functions.  Return "random" number based on integer inut
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -105,6 +108,31 @@ void static_randvec(int num, vector *vp)
 	vp->xyz.z = static_randf(num+2) - 0.5f;
 
 	vm_vec_normalize_quick(vp);
+}
+
+// randomly perturb a vector around a given (normalized vector) or optional orientation matrix
+void static_rand_cone(int num, vector *out, vector *in, float max_angle, matrix *orient)
+{
+	vector t1, t2;
+	matrix *rot;
+	matrix m;
+
+	// get an orientation matrix
+	if(orient != NULL){
+		rot = orient;
+	} else {
+		vm_vector_2_matrix(&m, in, NULL, NULL);
+		rot = &m;
+	}
+	
+	// axis 1
+	vm_rot_point_around_line(&t1, in, fl_radian(static_randf_range(num,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.fvec);
+	
+	// axis 2
+	vm_rot_point_around_line(&t2, &t1, fl_radian(static_randf_range(num+1,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.rvec);
+
+	// axis 3
+	vm_rot_point_around_line(out, &t2, fl_radian(static_randf_range(num+2,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
 }
 
 /////////////////////////////////////////////////////////////////////
