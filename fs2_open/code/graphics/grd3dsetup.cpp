@@ -1062,8 +1062,8 @@ bool d3d_init_device()
 		}
 
 		GlobalD3DVars::d3dpp.MultiSampleType  = D3DMULTISAMPLE_NONE;
-		GlobalD3DVars::d3dpp.BackBufferWidth  = 1024;
-		GlobalD3DVars::d3dpp.BackBufferHeight = 768;
+		GlobalD3DVars::d3dpp.BackBufferWidth  = (UINT)gr_screen.max_w;
+		GlobalD3DVars::d3dpp.BackBufferHeight = (UINT)gr_screen.max_h;
 
 		GlobalD3DVars::d3dpp.FullScreen_RefreshRateInHz      = 0;
 		GlobalD3DVars::d3dpp.FullScreen_PresentationInterval = 0;
