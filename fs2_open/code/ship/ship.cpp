@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.63 $
- * $Date: 2003-06-16 03:36:08 $
+ * $Revision: 2.64 $
+ * $Date: 2003-06-25 03:19:40 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2003/06/16 03:36:08  phreak
+ * fixed a small bug where rotating subobjects wouldn't work on a player ship
+ * also changed "+PBank Capacity:" to "$PBank Capacity:" when parsing
+ * ballistic primaries. goob knows about this
+ *
  * Revision 2.62  2003/06/04 15:32:54  phreak
  * final fix (hopefully) to zero mass value bug
  *
@@ -4964,28 +4969,10 @@ void ship_process_post(object * obj, float frametime)
 		// maybe fire a corkscrew missile (just like swarmers)
 		cscrew_maybe_fire_missile(num);
 
+		//rotate player subobjects since its processed by the ai functions
 		// AL 2-19-98: Fire turret for player if it exists
 		if ( obj->flags & OF_PLAYER_SHIP ) {
-			player_maybe_fire_turret(obj);
-		}
 
-		// if single player, check player object is not too far from starting location
-		// DKA 5/17/99 check SINGLE and MULTI
-//		if ( !(Game_mode & GM_MULTIPLAYER) && (obj == Player_obj) )
-		if (obj == Player_obj) {
-			ship_check_player_distance();
-		}
-
-		// update ship lethality
-		if ( Ships[num].ai_index >= 0 ){
-			if (!physics_paused && !ai_paused){
-				lethality_decay(&Ai_info[Ships[num].ai_index]);
-			}
-		}
-
-		//rotate player subobjects since its processed by the ai functions
-		if (obj->flags & OF_PLAYER_SHIP)
-		{
 			model_subsystem	*psub;
 			ship_subsys	*pss;
 			
@@ -5003,15 +4990,30 @@ void ship_process_post(object * obj, float frametime)
 				}
 			}
 
-			return;
+			player_maybe_fire_turret(obj);
 		}
 
+		// if single player, check player object is not too far from starting location
+		// DKA 5/17/99 check SINGLE and MULTI
+//		if ( !(Game_mode & GM_MULTIPLAYER) && (obj == Player_obj) )
+		if (obj == Player_obj) {
+			ship_check_player_distance();
+		}
+
+		// update ship lethality
+		if ( Ships[num].ai_index >= 0 ){
+			if (!physics_paused && !ai_paused){
+				lethality_decay(&Ai_info[Ships[num].ai_index]);
+			}
+		}
+
+	
 		// if the ship is an observer ship don't need to do AI
 		if ( obj->type == OBJ_OBSERVER)  {
 			return;
 		}
 
-		if ( Ships[num].ai_index >= 0 ){
+		if ( (Ships[num].ai_index >= 0) && (!(obj->flags & OF_PLAYER_SHIP)) ){
 			if (!physics_paused && !ai_paused){
 				ai_process( obj, Ships[num].ai_index, frametime );
 			}
@@ -7087,7 +7089,14 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		if ( aip->current_target_is_locked <= 0 ) {
 			if ( obj == Player_obj ) {			
 				if ( !Weapon_energy_cheat ) {
-					if ((aip->target_objnum != -1) && (vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > wip->lifetime * wip->max_speed)) {
+					float max_dist;
+
+					max_dist = wip->lifetime * wip->max_speed;
+					if (wip->wi_flags2 & WIF2_LOCAL_SSM){
+						max_dist= wip->lssm_lock_range;
+					}
+
+					if ((aip->target_objnum != -1) && (vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > max_dist)) {
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Too far from target to acquire lock", 487));
 					} else {
 						char missile_name[NAME_LENGTH];
@@ -7112,6 +7121,35 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			}
 		}
 	}
+
+	if (wip->wi_flags2 & WIF2_TAGGED_ONLY)
+	{
+		if (!ship_is_tagged(&Objects[aip->target_objnum]))
+		{
+			if (obj==Player_obj)
+			{
+				if ( !Weapon_energy_cheat )
+				{
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Cannot fire %s if target is not tagged"),wip->name);
+					snd_play( &Snds[SND_OUT_OF_MISSLES] );
+					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
+					return 0;
+				}
+			}
+			else
+			{
+#ifndef NO_NETWORK
+				if ( !MULTIPLAYER_CLIENT )
+#endif
+				{
+					return 0;
+				}
+			}
+		}
+	}
+
+
+
 
 	// if trying to fire a swarm missile, make sure being called from right place
 	if ( (wip->wi_flags & WIF_SWARM) && !allow_swarm ) {
