@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-20 07:15:37 $
+ * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2  2003/01/17 07:59:08  Goober5000
  * fixed some really strange behavior with strings not being truncated at the
  * # symbol
@@ -1794,6 +1797,16 @@ void brief_do_frame(float frametime)
 	if ( !Brief_inited ){
 		brief_init();
 	}
+
+	// commit if skipping briefing, but not in multi - Goober5000
+#ifndef NO_NETWORK
+	if (!(Game_mode & GM_MULTIPLAYER))
+#endif
+		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
+		{
+			commit_pressed();
+			return;
+		}
 
 	int snazzy_action = -1;
 	brief_choice = snazzy_menu_do(BriefingMaskData, Briefing_mask_w, Briefing_mask_h, Num_briefing_regions, Briefing_select_region, &snazzy_action, 0);
