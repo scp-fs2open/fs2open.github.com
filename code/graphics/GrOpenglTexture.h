@@ -9,13 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 2.2 $
- * $Date: 2004-04-06 01:37:21 $
+ * $Revision: 2.3 $
+ * $Date: 2004-04-13 01:55:41 $
  * $Author: phreak $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
+ * $Log: not supported by cvs2svn $
  *
  * $NoKeywords: $
  */

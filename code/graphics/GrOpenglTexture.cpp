@@ -10,12 +10,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-04-06 01:37:21 $
+ * $Revision: 2.3 $
+ * $Date: 2004-04-13 01:55:41 $
  * $Author: phreak $
  *
  * source for texturing in OpenGL
  *
+ * $Log: not supported by cvs2svn $
  *
  * $NoKeywords: $
  */
@@ -917,6 +918,8 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 	}
 	else
 	{
+		opengl_switch_arb(1,0);
+		opengl_switch_arb(2,0);
 		r1=gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0);
 		r2=1;
 		r3=1;			

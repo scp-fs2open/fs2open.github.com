@@ -10,12 +10,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-04-06 01:37:21 $
+ * $Revision: 2.3 $
+ * $Date: 2004-04-13 01:55:41 $
  * $Author: phreak $
  *
  * source for extension implementation in OpenGL
  *
+ * $Log: not supported by cvs2svn $
  *
  * $NoKeywords: $
  */
