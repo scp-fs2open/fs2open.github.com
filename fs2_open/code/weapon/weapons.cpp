@@ -20,6 +20,9 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/06/11 03:06:07  phreak
+ * local subspace missiles are now in game. yay
+ *
  * Revision 2.25  2003/05/05 20:55:44  Goober5000
  * fixed small bug inadvertently added by Phreak affecting the custom hitpoints
  * mod; also fixed a small bug in the new disruption mod (disrupting all subsystems,
@@ -2919,7 +2922,7 @@ void weapon_process_post(object * obj, float frame_time)
 			vm_vec_copy_scale(&warpout,&obj->phys_info.vel,3.0f);
 			wp->lssm_warp_time = ((obj->radius * 2) / (obj->phys_info.speed)) +1.5f;
 			wp->lssm_warp_time = max(wp->lssm_warp_time,7.0f);
-			wp->lssm_warp_pct = 1.0 - (3.0/wp->lssm_warp_time);
+			wp->lssm_warp_pct = 1.0f - (3.0f/wp->lssm_warp_time);
 			vm_vec_add2(&warpout,&obj->pos);
 			wp->lssm_warp_idx=fireball_create(&warpout, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,1,&vmd_zero_vector,wp->lssm_warp_time,0,&obj->orient);
 			wp->lssm_stage=2;
