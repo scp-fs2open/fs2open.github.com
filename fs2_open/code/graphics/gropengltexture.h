@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.4 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 1.5 $
+ * $Date: 2005-01-01 11:24:23 $
+ * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.3  2004/07/17 18:43:46  taylor
  * don't use bitmap sections by default, openil_close()
  *
@@ -54,7 +57,7 @@ typedef struct tcache_slot_opengl {
 	float	u_scale, v_scale;
 	int	bitmap_id;
 	int	size;
-	char	used_this_frame;
+	//char	used_this_frame;
 	int	time_created;
 	ushort	w,h;
 	ubyte bpp;
@@ -97,7 +100,9 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_opengl *t, int reload, int fail_on_full);
 int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot, int fail_on_full);
 int opengl_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot, int sx, int sy, int fail_on_full);
-int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0);
+int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int stage = 0);
+void gr_opengl_set_additive_tex_env();
+void gr_opengl_set_modulate_tex_env();
 void gr_opengl_set_tex_env_scale(float scale);
 int gr_opengl_preload(int bitmap_num, int is_aabitmap);
 void gr_opengl_preload_init();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.31 $
- * $Date: 2004-09-26 16:24:51 $
+ * $Revision: 2.32 $
+ * $Date: 2005-01-01 11:24:22 $
  * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/09/26 16:24:51  taylor
+ * handle lost devices better, fix movie crash
+ *
  * Revision 2.30  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -528,7 +531,7 @@ void d3d_tcache_frame();
 
 void d3d_flush();
 
-int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_ratio, float *v_ratio, int fail_on_full=0, int sx = -1, int sy = -1, int force = 0);
+int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_ratio, float *v_ratio, int fail_on_full=0, int sx = -1, int sy = -1, int force = 0, int stage = 0);
 int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_ratio, float *v_ratio, int fail_on_full=0, int sx = -1, int sy = -1, int force = 0, int stage = 0);
 
 // Functions in GrD3DRender.cpp stuffed into gr_screen structure

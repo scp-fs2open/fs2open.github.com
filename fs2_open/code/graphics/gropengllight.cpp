@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.4 $
- * $Date: 2004-10-31 21:45:13 $
+ * $Revision: 1.5 $
+ * $Date: 2005-01-01 11:24:23 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/10/31 21:45:13  taylor
+ * Linux tree merge, single array for VBOs/HTL
+ *
  * Revision 1.3  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -76,9 +79,11 @@ extern double specular_exponent_value;
 int max_gl_lights;
 
 // OGL defaults
-static const float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
 static const float GL_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+static const float GL_light_spec[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+static const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 static float GL_light_ambient_value = 0.47f;
+static float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
 
 
 void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
@@ -240,46 +245,61 @@ void gr_opengl_reset_lighting()
 
 void opengl_init_light()
 {
-	if (!Cmdline_nospec) {
-//		glEnable(GL_COLOR_MATERIAL);
-//		glColorMaterial(GL_FRONT_AND_BACK,GL_EMISSION);
-		glDisable(GL_COLOR_MATERIAL);
-		glLightModeli( GL_LIGHT_MODEL_COLOR_CONTROL, GL_SEPARATE_SPECULAR_COLOR );
-	}
-
 	float amb_user = 0.0f;
 
 	amb_user = (float)((Cmdline_ambient_factor * 2) - 255) / 255.0f;
 
-	GL_light_ambient_value = GL_light_ambient[0] + amb_user;
+	GL_light_ambient_value += amb_user;
 		
 	if (GL_light_ambient_value > 1.0f) {
 		GL_light_ambient_value = 1.0f;
 	} else if (GL_light_ambient_value < 0.02f) {
 		GL_light_ambient_value = 0.02f;
 	}
+
+	// set the ambient light
+	GL_light_ambient[0] = GL_light_ambient[1] = GL_light_ambient[2] = GL_light_ambient_value;
+
+	// only on front, tends to be more believable
+	glMaterialf(GL_FRONT, GL_SHININESS, 80.0f );
 }
 
+void opengl_default_light_settings(int ambient = 1, int emission = 1, int specular = 1)
+{
+	if (!lighting_is_enabled)
+		return;
+
+	if (ambient) {
+		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, GL_light_color );
+	} else {
+		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
+	}
+
+	if (emission) {
+		glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, GL_light_ambient );
+	} else {
+		glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, GL_light_zero );
+	}
+
+	if (specular) {
+		// only on front, tends to be more believable
+		glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_spec );
+	} else {
+		glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, GL_light_zero );
+	}
+}
 
 void gr_opengl_set_lighting(bool set, bool state)
 {
 	lighting_is_enabled = set;
 
-	float amb[4] = { GL_light_ambient[0], GL_light_ambient[1], GL_light_ambient[2], GL_light_ambient[3] };
-	float col[4] = { GL_light_color[0], GL_light_color[1], GL_light_color[2], GL_light_color[3] };
-
-
-	glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, col);
-	glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, col);
-	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 100.0f);
+	opengl_default_light_settings();
 
 	if ( (gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set ) {
-		amb[0] = amb[1] = amb[2] = amb[3] = gr_screen.current_alpha;
+		float amb[4] = { gr_screen.current_alpha, gr_screen.current_alpha, gr_screen.current_alpha, gr_screen.current_alpha };
 		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, amb );
 	} else {
-		amb[0] = amb[1] = amb[2] = GL_light_ambient_value;
-		amb[3] = 1.0;
-		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, amb );
+		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, GL_light_ambient );
 	}
 
 	for(int i = 0; i<max_gl_lights; i++){

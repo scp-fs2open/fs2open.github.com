@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.10 $
- * $Date: 2004-10-31 21:45:13 $
+ * $Revision: 1.11 $
+ * $Date: 2005-01-01 11:24:23 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2004/10/31 21:45:13  taylor
+ * Linux tree merge, single array for VBOs/HTL
+ *
  * Revision 1.9  2004/07/29 09:35:29  taylor
  * fix NULL pointer and try to prevent in future, remove excess commands in opengl_cleanup()
  *
@@ -103,7 +106,9 @@ struct opengl_vertex_buffer
 	int n_prim;
 	int n_verts;
 	float *array_list;	// interleaved array
+	uv_pair *uv_list;	// texture coords
 	uint vbo;			// buffer for VBO
+	uint vbo_uv;		// buffer for VBO of only texture coords
 	uint flags;			// FVF
 };
 
@@ -252,6 +257,11 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		
 		memset(vbp->array_list, 0, list_size);
 
+		// for textures only, this fixes the VBO crash with some drivers
+		vbp->uv_list = (uv_pair*)malloc(list->n_verts * sizeof(uv_pair));
+		memset(vbp->uv_list, 0, list->n_verts * sizeof(uv_pair));
+		uv_pair *uvs = vbp->uv_list;
+
 		// generate the array
 		for (i=0; i<list->n_verts; i++) {
 			vertex *vl = &list->vert[i];
@@ -266,6 +276,9 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 			if (flags & VERTEX_FLAG_UV1) {
 				vbp->array_list[arsize++] = vl->u;
 				vbp->array_list[arsize++] = vl->v;
+				uvs->u = vl->u;
+				uvs->v = vl->v;
+				uvs++;
 			}
 
 			// normals
@@ -296,6 +309,13 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 			if (vbp->vbo) {
 				free(vbp->array_list);
 				vbp->array_list = NULL;
+			}
+
+			vbp->vbo_uv = opengl_create_vbo( (list->n_verts * sizeof(uv_pair)), (float*)vbp->uv_list );
+
+			if (vbp->vbo_uv) {
+				free(vbp->uv_list);
+				vbp->uv_list = NULL;
 			}
 		}
 	}
@@ -331,10 +351,13 @@ void gr_opengl_destroy_buffer(int idx)
 
 //#define DRAW_DEBUG_LINES
 extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
+extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
 void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 {
+#ifndef GL_NO_HTL
+
 	if (Cmdline_nohtl)
 		return;
 
@@ -343,17 +366,28 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 
 	TIMERBAR_PUSH(2);
 
-	float u_scale, v_scale;
-	int r, g, b, a, tmap_type;
+	float u_scale,v_scale;
+	int pass_one = 0;
+	int i, r, g, b, a, tmap_type;
+	bool use_spec = false;
 
 	opengl_vertex_buffer *vbp = g_vbp;
 
-	if (glIsEnabled(GL_CULL_FACE))
+	if ( glIsEnabled(GL_CULL_FACE) )
 		glFrontFace(GL_CW);
-	
-	glColor3ub(255,255,255);
 
-	glClientActiveTextureARB(GL_TEXTURE0_ARB);
+// -------- Begin 1st PASS ------------------------------------------------------- //
+	if (gr_screen.current_bitmap == CLOAKMAP) {
+		glBlendFunc(GL_ONE,GL_ONE);
+		r = g = b = Interp_cloakmap_alpha;
+		a = 255;
+	}
+
+	opengl_setup_render_states(r, g, b, a, tmap_type, TMAP_FLAG_TEXTURED, 0);
+	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
+
+	// basic setup of all data and first texture
+	glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
 	if (vbp->vbo) {
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 		glInterleavedArrays(vbp->format, 0, (void*)NULL);
@@ -361,55 +395,67 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 		glInterleavedArrays(vbp->format, 0, vbp->array_list);
 	}
 
+	// base texture
+	gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+
+	// increment texture count for this pass
+	pass_one++; // bump!
+
 	if ( (Interp_multitex_cloakmap > 0) && (vbp->flags & VERTEX_FLAG_UV1) ) {
 		SPECMAP = -1;	// don't add a spec map if we are cloaked
 		GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
 
-		glClientActiveTextureARB(GL_TEXTURE1_ARB);
+		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo) {
+		if (vbp->vbo_uv) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_uv);
+			glTexCoordPointer( 2, GL_FLOAT, 0, (void*)0 );
+		} else if (vbp->vbo) {
 			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)0 );
 		} else {
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
+
+		gr_opengl_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+
+		pass_one++; // bump!
 	}
 
+	// glowmaps!
 	if ( (GLOWMAP > -1) && !Cmdline_noglow && (vbp->flags & VERTEX_FLAG_UV1) ) {
-		glClientActiveTextureARB(GL_TEXTURE1_ARB);
+		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo) {
+		if (vbp->vbo_uv) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_uv);
+			glTexCoordPointer( 2, GL_FLOAT, 0, (void*)0 );
+		} else if (vbp->vbo) { // this may crash on some OGL drivers due to memory access violations with multitexture
 			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)0 );
 		} else {
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
+
+		// set glowmap on relevant ARB
+		gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+
+		opengl_switch_arb(pass_one, 1);
+		gr_opengl_set_additive_tex_env();
+
+		pass_one++; // bump!
 	}
-
-	if ( (SPECMAP > -1) && !Cmdline_nospec && (vbp->flags & VERTEX_FLAG_UV1) && (GL_supported_texture_units > 2) ) {
-		glClientActiveTextureARB(GL_TEXTURE2_ARB);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo) {
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
-		} else {
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
-		}
-	}
-
-	opengl_setup_render_states(r,g,b,a,tmap_type,TMAP_FLAG_TEXTURED,0);
-
-	if (gr_screen.current_bitmap==CLOAKMAP)
-	{
-		glBlendFunc(GL_ONE,GL_ONE);
-		r=g=b=Interp_cloakmap_alpha;
-		a=255;
-	}
-
-	gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
 
 	opengl_pre_render_init_lights();
 	opengl_change_active_lights(0);
+
+	// only change lights if we have a specmap
+	if ( (lighting_is_enabled) && (SPECMAP > -1) && !Cmdline_nospec && (vbp->flags & VERTEX_FLAG_UV1) ) {
+		use_spec = true;
+		opengl_default_light_settings(1, 1, 0); // don't render with spec lighting here
+	} else {
+		// reset to defaults
+		opengl_default_light_settings();
+	}
 
 	glLockArraysEXT( 0, vbp->n_verts);
 
@@ -420,12 +466,66 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	}
 
 	glUnlockArraysEXT();
+// -------- End 1st PASS --------------------------------------------------------- //
 
-	if((lighting_is_enabled)&&((n_active_gl_lights-1)/max_gl_lights > 0)) {
+// -------- Begin 2nd (specular) PASS -------------------------------------------- //
+	if ( use_spec ) {
+		// turn all arbs off before the specular pass
+		// this fixes the glowmap multitexture rendering problem - taylor
+		opengl_switch_arb(0, 0);
+		opengl_switch_arb(1, 0);
+		opengl_switch_arb(2, 0);
+
+		glClientActiveTextureARB(GL_TEXTURE0_ARB);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		if (vbp->vbo_uv) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_uv);
+			glTexCoordPointer( 2, GL_FLOAT, 0, (void*)0 );
+		} else if (vbp->vbo) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
+		} else {
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
+		}
+/*
+		gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0);
+
+		opengl_switch_arb(0, 1);
+
+		// render with spec lighting only
+		opengl_default_light_settings(0, 0, 1);
+
+		gr_opengl_set_modulate_tex_env();
+
+		glBlendFunc(GL_ONE, GL_ONE);
+		glDepthFunc(GL_EQUAL);
+		glDepthMask(GL_FALSE);
+*/
+		opengl_set_spec_mapping(tmap_type, &u_scale, &v_scale);
+
+		glLockArraysEXT( 0, vbp->n_verts );
+
+		if (index_list != NULL) {
+			glDrawRangeElements(GL_TRIANGLES, start, (n_prim * 3), (n_prim * 3), GL_UNSIGNED_SHORT, (ushort*)index_list);
+		} else {
+			glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
+		}
+
+		glUnlockArraysEXT();
+
+		opengl_reset_spec_mapping();
+	}
+// -------- End 2nd PASS --------------------------------------------------------- //
+
+	// reset lights to default values
+//	opengl_default_light_settings();
+
+	if ( (lighting_is_enabled) && ((n_active_gl_lights-1)/max_gl_lights > 0) ) {
 		gr_opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 		opengl_switch_arb(1,0);
 		opengl_switch_arb(2,0);
-		for(int i=1; i< (n_active_gl_lights-1)/max_gl_lights; i++)
+
+		for(i=1; i< (n_active_gl_lights-1)/max_gl_lights; i++)
 		{
 			opengl_change_active_lights(i);
 
@@ -440,8 +540,13 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	TIMERBAR_POP();
 
 	if (VBO_ENABLED) {
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB,0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	}
+
+	// make sure all arbs are off, fixes hud issue with spec lighting
+	opengl_switch_arb(0, 0);
+	opengl_switch_arb(1, 0);
+	opengl_switch_arb(2, 0);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_NORMAL_ARRAY );
@@ -463,7 +568,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	glEnd();
 #endif
 
-	
+#endif // GL_NO_HTL
 }
 
 void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)

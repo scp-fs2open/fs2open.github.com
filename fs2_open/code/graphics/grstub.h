@@ -2,8 +2,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.9 $
- * $Date: 2004-11-23 00:10:06 $
+ * $Revision: 2.10 $
+ * $Date: 2005-01-01 11:24:23 $
  * $Author: taylor $
  *
  * $NoKeywords: $
@@ -75,7 +75,7 @@ void stub_tcache_cleanup () {}
 void stub_tcache_frame () {}
 void stub_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out) {}
 int gr_stub_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int tex_unit = 0) {return 1;}
-int gr_stub_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0) {return 0;}
+int gr_stub_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int tex_unit = 0) {return 0;}
 void gr_stub_set_clear_color(int r, int g, int b) {}
 void gr_stub_flash(int r, int g, int b) {}
 int gr_stub_zbuffer_get() {return 0;}
