@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-10-19 19:29:27 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2002-10-22 23:02:40 $
+ * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/10/19 19:29:27  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.3  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -3085,6 +3088,12 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 		light_filter_pop();	
 	}
 	g3_done_instance();
+
+
+	// turn off fog after each model renders, RT This fixes HUD being fogged when debris is in target box
+	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+	}
 
 }
 

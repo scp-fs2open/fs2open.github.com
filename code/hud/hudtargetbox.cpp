@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-09-20 20:01:30 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2002-10-22 23:02:40 $
+ * $Author: randomtiger $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/09/20 20:01:30  phreak
+ * extra effects during cargo scan
+ *
  * Revision 2.2  2002/08/06 16:50:44  phreak
  * added wireframe targetbox feature
  *
@@ -240,6 +243,7 @@
 #include "network/multi.h"
 #include "weapon/emp.h"
 #include "localization/localize.h"
+#include "cmdline/cmdline.h"
 
 int Target_window_coords[GR_NUM_RESOLUTIONS][4] =
 {
@@ -1210,9 +1214,12 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 
 	gr_line(x1, y1, x2, y1);
 
-	// added 2nd horizontal scan line - phreak
-	y1 = fl2i(Cargo_scan_coords[gr_screen.res][1] + Cargo_scan_coords[gr_screen.res][3] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][3] ));
-	gr_line(x1, y1, x2, y1);
+	// RT Changed this to be optional
+	if(Cmdline_phreak) {
+		// added 2nd horizontal scan line - phreak
+		y1 = fl2i(Cargo_scan_coords[gr_screen.res][1] + Cargo_scan_coords[gr_screen.res][3] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][3] ));
+		gr_line(x1, y1, x2, y1);
+	}
 
 	// draw vertical scan line
 	x1 = fl2i(0.5f + Cargo_scan_coords[gr_screen.res][0] + ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][2] ));
@@ -1221,9 +1228,12 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 
 	gr_line(x1, y1-3, x1, y2-1);
 
-	// added 2nd vertical scan line - phreak
-	x1 = fl2i(0.5f + Cargo_scan_coords[gr_screen.res][2] + Cargo_scan_coords[gr_screen.res][0] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][2] ));
-	gr_line(x1, y1-3, x1, y2-1);
+	// RT Changed this to be optional
+	if(Cmdline_phreak) {
+		// added 2nd vertical scan line - phreak
+		x1 = fl2i(0.5f + Cargo_scan_coords[gr_screen.res][2] + Cargo_scan_coords[gr_screen.res][0] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][2] ));
+		gr_line(x1, y1-3, x1, y2-1);
+	}
 }
 
 // Get the eye position for an object at the origin, called from hud_render_target_ship()
@@ -1362,6 +1372,8 @@ void hud_render_target_ship(object *target_objp)
 	hud_blit_target_foreground();
 	hud_blit_target_integrity(0,OBJ_INDEX(target_objp));
 
+	hud_set_gauge_color(HUD_TARGET_MONITOR);
+
 	hud_render_target_ship_info(target_objp);
 	hud_maybe_render_cargo_scan(target_sip);
 }
@@ -1387,7 +1399,6 @@ void hud_render_target_debris(object *target_objp)
 	//target_sip = &Ship_info[debrisp->ship_info_index];
 	target_team = obj_team(target_objp);
 
-
 	if ( Detail.targetview_model )	{
 		// take the forward orientation to be the vector from the player to the current target
 		vm_vec_sub(&orient_vec, &target_objp->pos, &Player_obj->pos);
@@ -1412,6 +1423,8 @@ void hud_render_target_debris(object *target_objp)
 		}
 		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(debrisp->model_num);
+
+		// This calls the colour that doesnt get reset
 		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL );
 		hud_render_target_close();
 	}
@@ -1419,8 +1432,6 @@ void hud_render_target_debris(object *target_objp)
 	HUD_reset_clip();
 	hud_blit_target_foreground();
 	hud_blit_target_integrity(1);
-	// hud_set_default_color();
-	hud_set_gauge_color(HUD_TARGET_MONITOR);
 
 	// take ship "copies" into account before printing out ship class information
 	base_index = debrisp->ship_info_index;

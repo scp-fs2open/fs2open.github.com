@@ -23,7 +23,7 @@ void timerbar_set_draw_func(void (*new_draw_func_ptr)(int colour, float x, float
 
 #else
 
-#define TIMERBAR_SET_DRAW_FUNC() ;
+#define TIMERBAR_SET_DRAW_FUNC(f) ;
 #define TIMERBAR_START_FRAME()   ;
 #define TIMERBAR_END_FRAME()     ;
 #define TIMERBAR_SWITCH_TYPE(n)  ;

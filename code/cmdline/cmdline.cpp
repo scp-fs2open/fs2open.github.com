@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-10-19 03:50:28 $
+ * $Revision: 2.8 $
+ * $Date: 2002-10-22 23:02:39 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/10/19 03:50:28  randomtiger
+ * Added special pause mode for easier action screenshots.
+ * Added new command line parameter for accessing all single missions in tech room. - RT
+ *
  * Revision 2.6  2002/08/27 13:38:57  penguin
  * Moved DirectX8 stuff to directx8 branch; reverted to previous
  *
@@ -262,6 +266,7 @@ cmdline_parm d3d_window("-window", NULL);
 cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
 cmdline_parm gf4fix_arg("-GF4FIX", NULL); //DTP for random tigers GF4fix
 cmdline_parm allslev_arg("-ALLSLEV", NULL); //Give access to all single player missions
+cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including new targetting code
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -291,6 +296,8 @@ int Cmdline_timeout = -1;
 int Cmdline_window = 0;
 int Cmdline_gf4fix = 0; // DTP for randomstigers GF4 fix.
 int Cmdline_allslev = 0;
+int Cmdline_phreak	= 0;
+
 
 static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
@@ -655,11 +662,15 @@ int parse_cmdline(int argc, char *argv[])
 		Cmdline_start_netgame = 1;
 	}
 	if (gf4fix_arg.found() ) {
-	Cmdline_gf4fix = 1;
+		Cmdline_gf4fix = 1;
 	}
 
 	if (allslev_arg.found() ) {
-	Cmdline_allslev = 1;
+		Cmdline_allslev = 1;
+	}
+
+	if(phreak_arg.found() ) {
+		Cmdline_phreak = 1;
 	}
 
 	return 1;
