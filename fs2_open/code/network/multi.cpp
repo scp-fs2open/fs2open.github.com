@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-07 21:00:08 $
+ * $Revision: 2.21 $
+ * $Date: 2004-07-07 23:34:08 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/07 21:00:08  Kazan
+ * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
+ *
  * Revision 2.19  2004/07/06 19:59:37  Kazan
  * small multifix
  *
@@ -1450,7 +1453,7 @@ void multi_do_frame()
 						}
 						ml_printf("Fs2netD WALL received MSG: %s\n", ((fs2open_network_wall*)(packetbuffer+bytes_processed))->message);
 
-						sprintf(long_str, "FS2NETD SYSTEM MESAGE: %s", ((fs2open_network_wall*)(packetbuffer+bytes_processed))->message);
+						sprintf(long_str, "FS2NETD SYSTEM MESSAGE: %s", ((fs2open_network_wall*)(packetbuffer+bytes_processed))->message);
 						switch (Netgame.game_state)
 						{
 							case NETGAME_STATE_FORMING:
