@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-12-07 01:37:43 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2002-12-20 00:50:41 $
+ * $Author: DTP $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/12/07 01:37:43  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.5  2002/11/14 04:18:17  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -328,7 +334,7 @@
 // randomness factor - all beam weapon aiming is adjusted by +/- some factor within this range
 #define BEAM_RANDOM_FACTOR			0.4f
 
-#define MAX_BEAMS						40
+#define MAX_BEAMS						500
 #define BEAM_DAMAGE_TIME			170			// apply damage 
 #define MAX_SHOT_POINTS				30
 #define SHOT_POINT_TIME				200			// 5 arcs a second
@@ -2421,7 +2427,7 @@ int beam_collide_ship(obj_pair *pair)
 				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
 			}
 			model_collide(&test_collide);
-			Objects[shipp->objnum].shields[quad]=0.0f; //for good measure-Bobboau
+			//Objects[shipp->objnum].shields[quad]=0.0f; //for good measure-Bobboau
 		}
 	}
 
@@ -2770,6 +2776,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 //		decal_create_simple(hit_object, &dec, bwi->b_info.beam_glow_bitmap);//this is the old decals, not the new/better ones
 		decal_create(hit_object, &dec, bc->cinfo.hit_submodel, bwi->decal_texture, bwi->decal_backface_texture);
 
+		
 		if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam sheild hit code -Bobboau
 			quadrant_num = get_quadrant(&cinfo->hit_point);
 			if (!(hit_object->flags & SF_DYING) ) {
@@ -2780,6 +2787,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 		}
 
 		// done
+		
 		return;
 	}		
 
