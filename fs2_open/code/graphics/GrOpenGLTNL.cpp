@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-04-13 01:55:41 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-04-26 13:05:19 $
+ * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/04/13 01:55:41  phreak
+ * put in the correct fields for the CVS comments to register
+ * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
+ *
  *
  * $NoKeywords: $
  */
@@ -48,6 +52,7 @@
 extern int VBO_ENABLED;
 extern int GLOWMAP;
 extern int CLOAKMAP;
+extern int SPECMAP;
 extern vector G3_user_clip_normal;
 extern vector G3_user_clip_point;
 extern int Interp_multitex_cloakmap;
@@ -287,7 +292,26 @@ void gr_opengl_render_buffer(int idx)
 		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
 	}
 
-	if (GLOWMAP > -1)
+	if (Interp_multitex_cloakmap > 0)
+	{
+		SPECMAP = -1;	// don't add a spec map if we are cloaked
+		GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
+
+		glClientActiveTextureARB(GL_TEXTURE1_ARB);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		if (vbp->vbo_tex)
+		{
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
+			glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
+		}
+		else
+		{
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+		}
+	}
+
+	if ( (GLOWMAP > -1) && !Cmdline_noglow )
 	{
 		glClientActiveTextureARB(GL_TEXTURE1_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -303,7 +327,7 @@ void gr_opengl_render_buffer(int idx)
 		}
 	}
 
-	if ((Interp_multitex_cloakmap>0) && (GL_supported_texture_units > 2))
+	if ((SPECMAP > -1) && !Cmdline_nospec && (GL_supported_texture_units > 2))
 	{
 		glClientActiveTextureARB(GL_TEXTURE2_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -318,7 +342,6 @@ void gr_opengl_render_buffer(int idx)
 			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
 		}
 	}
-
 
 	int r,g,b,a,tmap_type;
 
