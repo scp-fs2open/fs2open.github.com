@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.19 $
- * $Date: 2003-01-19 06:44:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2003-01-20 05:40:49 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/01/19 06:44:39  Goober5000
+ * got rid of nameplate stuff (superceded by texture replacement)
+ * --Goober5000
+ *
  * Revision 2.18  2003/01/19 01:07:41  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -617,6 +621,7 @@ typedef struct glow_bank {  // glow bank struckture -Bobboau
 	int		off_time; 
 	int		disp_time; 
 	int		is_on; 
+	int		is_active; 
 	int		submodel_parent; 
 	int		LOD; 
 	int		num_slots; 

@@ -3,9 +3,10 @@
 #ifndef _DECAL_H
 #define _DECAL_H
 
-#define MAX_DECAL_POLY 40
+#define MAX_DECAL_POLY 20
+#define MAX_DECAL_POLY_POINT 10
 #define MAX_DECAL_DEFPOINTS 1000
-#define MAX_DECAL_POINT 40
+#define MAX_DECAL_POINT 10
 #define MAX_SHIP_DECALS 25
 #include "globalincs/pstypes.h"
 #include "object/object.h"
@@ -32,10 +33,13 @@ typedef struct decal_model{	//this will store a triangulated version of the ship
 typedef struct decal{
 	struct{
 		int backfaced;		//flag that this poly uses the backfaced texture
-		uv_pair uv[3];		//uv coordanants
-		int point[3];		//an index to the vert list-Bobboau
+		uv_pair uv[MAX_DECAL_POLY_POINT];		//uv coordanants
+		int point[MAX_DECAL_POLY_POINT];		//an index to the vert list-Bobboau
+		int n_poly;
 		vector norm;		//the normal used for lighting
 	}poly[MAX_DECAL_POLY];
+	vector position;
+	float radius;
 	int submodel_parent;	//the submodel this is part of
 	vector vert[1000];		//the defpoints-Bobboau
 	int frames;				//number of frames in an animation
