@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-12 03:04:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2004-07-12 14:38:13 $
+ * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/12 03:04:33  wmcoolmon
+ * ...
+ *
  * Revision 2.19  2004/07/12 03:04:03  wmcoolmon
  * Oops. :p
  *
@@ -3608,7 +3611,7 @@ void multi_update_valid_tables()
 	char full_name[MAX_FILENAME_LEN+1];
 	char wild_card[256];
 	int count, idx, i;
-	bool Found;
+	bool Found, Valid;
 	uint checksum = 0;
 //	FILE *out;
 
@@ -3646,22 +3649,24 @@ void multi_update_valid_tables()
 			cf_chksum_long(full_name, &checksum);
 			
 			Found = false;
+			Valid = false;
 
 			cfputs(full_name, tvalid_cfg);
 
-			for (i = 0; i < numFrecs && !Found; i++)
+			for (i = 0; i < numFrecs /*&& !Found*/; i++)
 			{
 				if (!strcmp(full_name, frecs[i].name))
 				{
 					// Found now becomes a valid/invalid specifier
 					if (checksum == frecs[i].crc32)
 					{
-						cfputs("   valid\n", tvalid_cfg);
+						//cfputs("   valid\n", tvalid_cfg);
+						Valid = true;
 						Found = true;
 					}
 					else
 					{
-						cfputs("   invalid\n", tvalid_cfg);
+						//cfputs("   invalid\n", tvalid_cfg);
 						Found = true;
 					}
 				}
@@ -3670,6 +3675,17 @@ void multi_update_valid_tables()
 			if (!Found)
 			{
 				cfputs("   valid\n", tvalid_cfg);
+			}
+			else
+			{
+				if (Valid)
+				{
+					cfputs("   valid\n", tvalid_cfg);
+				}
+				else
+				{
+					cfputs("   invalid\n", tvalid_cfg);
+				}
 			}
 			
 		}

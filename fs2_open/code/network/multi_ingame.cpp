@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-12 03:26:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.14 $
+ * $Date: 2004-07-12 14:38:12 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/12 03:26:03  wmcoolmon
+ * Only send ships on the player's team
+ *
  * Revision 2.12  2004/07/12 03:19:16  Kazan
  * removed a couple pointless useless messages from the debug console
  *
@@ -1375,7 +1378,9 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		// go ahead and create the parse object.  Set the network signature of this guy before
 		// creation
-		// multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
+
+		// multi_set_network_signature uncommented by Kazan on 11-04-2004
+		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
 		Objects[objnum].flags = oflags;
