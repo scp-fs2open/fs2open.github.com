@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.44 $
- * $Date: 2005-02-23 04:51:55 $
+ * $Revision: 2.45 $
+ * $Date: 2005-03-01 23:08:24 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/02/23 04:51:55  taylor
+ * some bm_unload() -> bm_release() changes to save bmpman slots
+ *
  * Revision 2.43  2005/02/12 10:44:10  taylor
  * fix possible crash in bm_get_section_size()
  * get jpeg_read_header() working properly
@@ -1143,13 +1146,19 @@ int bm_load( char * real_filename )
 	}
 
 	// make sure no one passed an extension
-	strcpy( filename, real_filename );
+	memset( filename, 0, MAX_FILENAME_LEN );
+	strncpy( filename, real_filename, MAX_FILENAME_LEN-1 );
 	char *p = strchr( filename, '.' );
 	if ( p ) {
 		mprintf(( "Someone passed an extension to bm_load for file '%s'\n", real_filename ));
 		//Int3();
 		*p = 0;
 	}
+
+	// safety catch for strcat...
+	// MAX_FILENAME_LEN-5 == '.' plus 3 letter ext plus NULL terminator
+	if (strlen(filename) > MAX_FILENAME_LEN-5)
+		Error( LOCATION, "Passed filename, '%s', is too long to support an extension!!\n\nMaximum length, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-5 );
 
 	// Lets find out what type it is
 	{
@@ -1430,13 +1439,19 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 
 	if ( !bm_inited ) bm_init();
 
-	strcpy( filename, real_filename );
+	memset( filename, 0, MAX_FILENAME_LEN );
+	strncpy( filename, real_filename, MAX_FILENAME_LEN-1 );
 	char *p = strchr( filename, '.' );
 	if ( p ) {
 		mprintf(( "Someone passed an extension to bm_load_animation for file '%s'\n", real_filename ));
 		//Int3();
 		*p = 0;
 	}
+
+	// safety catch for strcat...
+	// MAX_FILENAME_LEN-5 == '.' plus 3 letter ext plus NULL terminator
+	if (strlen(filename) > MAX_FILENAME_LEN-5)
+		Error( LOCATION, "Passed filename, '%s', is too long to support an extension!!\n\nMaximum length, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-5 );
 
 	// used later if EFF type
 	strcpy( clean_name, filename );

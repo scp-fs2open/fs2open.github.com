@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.2 2005-02-04 10:12:28 taylor Exp $
+dnl $Id: configure.ac,v 1.3 2005-03-01 23:08:24 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -185,7 +185,6 @@ if test "$fs2_lite" = "yes" ; then
 fi
 
 if test "$fs2_inferno" = "yes" ; then
-	AC_DEFINE([NO_NETWORKING])
 	AC_DEFINE([INF_BUILD])
 fi
 

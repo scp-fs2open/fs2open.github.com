@@ -97,6 +97,7 @@ void os_suspend();
 // resume message processing
 void os_resume();
 
-#endif
 
 extern bool stay_minimised_damnit;
+
+#endif // _OSAPI_H

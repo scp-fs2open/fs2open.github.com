@@ -9,16 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.23 $
- * $Date: 2005-02-08 23:49:58 $
+ * $Revision: 2.24 $
+ * $Date: 2005-03-01 23:08:24 $
  * $Author: taylor $
- * $Revision: 2.23 $
- * $Date: 2005-02-08 23:49:58 $
+ * $Revision: 2.24 $
+ * $Date: 2005-03-01 23:08:24 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/02/08 23:49:58  taylor
+ * update/add .cvsignore files for project file changes
+ * silence warning about depreciated strings.h stuff for MSVC 2005
+ * final model_unload() stuff for WMCoolmon, put in missionweaponchoice.cpp
+ * remove really old project files
+ *
  * Revision 2.22  2005/02/04 10:12:29  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -329,9 +335,9 @@
 //  	#define GAME_CD_CHECK
 //  #endif
 
-// Inferno build break multiplayer to just build without networking
+// Inferno builds break multiplayer so always build without networking
 #if defined(INF_BUILD)
-	#define NO_NETWORKING
+	#define NO_NETWORK
 #endif
 
 // 4127 is constant conditional (assert)
