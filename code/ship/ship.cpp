@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.61 $
- * $Date: 2003-05-15 19:08:24 $
+ * $Revision: 2.62 $
+ * $Date: 2003-06-04 15:32:54 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2003/05/15 19:08:24  phreak
+ * clarified an error message in subsys_set
+ *
  * Revision 2.60  2003/05/09 23:53:32  phreak
  * possible fix to ships with no mass values
  *
@@ -2457,9 +2460,15 @@ void physics_ship_init(object *objp)
 
 	if (pi->mass==0.0f)
 	{
-		nprintf(("Physics", "pi->mass==0.0f. setting to 10.0f"));
-		pi->mass=10.0f;
-		Warning(LOCATION, "%s (%s) has no mass! setting to 10", sinfo->name, sinfo->pof_file);
+		vector size;
+		vm_vec_sub(&size,&pm->maxs,&pm->mins);
+		float vmass=size.xyz.x*size.xyz.y*size.xyz.z;
+		float amass=4.65f*(float)pow(vmass,(2.0f/3.0f));
+
+		nprintf(("Physics", "pi->mass==0.0f. setting to %f",amass));
+		Warning(LOCATION, "%s (%s) has no mass! setting to %f", sinfo->name, sinfo->pof_file, amass);
+		pm->mass=amass;
+		pi->mass=amass*sinfo->density;
 	}
 
 	pi->I_body_inv = pm->moment_of_inertia;
