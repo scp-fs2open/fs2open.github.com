@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.41 $
- * $Date: 2003-09-11 19:27:30 $
- * $Author: argv $
+ * $Revision: 2.42 $
+ * $Date: 2003-09-12 01:12:49 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/09/11 19:27:30  argv
+ * All kinds of changes, from AI intelligence to singular shield support.
+ *
  * Revision 2.40  2003/08/28 20:42:18  Goober5000
  * implemented rotating barrels for firing primary weapons
  * --Goober5000
@@ -2944,14 +2947,17 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 		// return if we're over the cap
 		int max_turrets = 3 + Game_skill_level * Game_skill_level;
-		if (Game_skill_level < 2 && Player_obj->type == OBJ_SHIP && shipp->team == Ships[Player_obj->instance].team && num_att_turrets > max_turrets) {
+		//if (Game_skill_level < 2 && Player_obj->type == OBJ_SHIP && shipp->team == Ships[Player_obj->instance].team && num_att_turrets > max_turrets) {
+		//above commented by Goober5000
+		if (num_att_turrets > max_turrets) {
 			return;
 		}
 
 		// modify distance based on lethality of objp to my ship
 		float active_lethality = aip->lethality;
-		if (active_lethality < 1.0f)
+		/*if (active_lethality < 1.0f)
 			active_lethality = 1.0f; // _argv[-1] - make everything considered a threat to some degree.
+										Goober5000 - uh, no... this decays for a reason */
 		if (objp->flags & OF_PLAYER_SHIP) {
 			active_lethality += Player_lethality_bump[Game_skill_level];
 		}
@@ -8058,7 +8064,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		if (is_big_ship) {
 			// _argv[-1] - better priorities.
 			priority1 = WIF_HURTS_BIG_SHIPS;
-			priority2 = WIF_HUGE;
+			priority2 = /*WIF_HUGE*/ WIF_BOMBER_PLUS;	// Goober5000 - huge is included in WIF_HURTS_BIG_SHIPS
 		} else if ( (esip != NULL) && (esip->flags & SIF_BOMBER) ) {
 			priority1 = WIF_BOMBER_PLUS;
 			priority2 = WIF_HOMING;
