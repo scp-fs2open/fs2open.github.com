@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-03 06:05:28 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-11 01:28:23 $
  * $Author: wmcoolmon $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/03 06:05:28  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.6  2005/01/31 23:27:53  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -213,11 +216,11 @@ jump_node::jump_node(vector *pos)
 	{
 		Objects[obj].jnp = this;
 		m_objnum = obj;
-
-		//Add it
-		Jump_nodes.append(this);
-		Num_jump_nodes++;
 	}
+
+	//Add it
+	Jump_nodes.append(this);
+	Num_jump_nodes++;
 }
 
 jump_node::~jump_node()
