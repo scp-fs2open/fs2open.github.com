@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-07-18 09:55:26 $
+ * $Revision: 2.6 $
+ * $Date: 2002-07-18 14:36:53 $
  * $Author: unknownplayer $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/07/18 09:55:26  unknownplayer
+ *
+ * Revised AI primary selection code again to be more intelligent.
+ *
  * Revision 2.4  2002/07/18 05:38:28  unknownplayer
  *
  * Rewrote my original algorithm to search by proportional hull damage.
@@ -12348,7 +12352,11 @@ void ai_balance_shield(object *objp)
 				objp->shields[i] = shield_strength_avg;
 		}
 }
-
+/*
+ * Made a small change to how friendly AI's will manage their shields.
+ * They will now act as pro's rather then amateurs.
+ * Did this because we all know how long wingmen last :)
+ */
 //	Manage the shield for this ship.
 //	Try to max out the side that was most recently hit.
 void ai_manage_shield(object *objp, ai_info *aip)
@@ -12362,10 +12370,13 @@ void ai_manage_shield(object *objp, ai_info *aip)
 
 		//	Scale time until next manage shield based on Skill_level.
 		//	Ships on player's team are treated as if Skill_level is average.
-		if (Ships[objp->instance].team != Player_ship->team){
+		if (Ships[objp->instance].team != Player_ship->team)
+		{
 			delay = Shield_manage_delays[Game_skill_level];
-		} else {
-			delay = Shield_manage_delays[NUM_SKILL_LEVELS/2];
+		} 
+		else 
+		{
+			delay = Shield_manage_delays[NUM_SKILL_LEVELS/1];	// Changed from 2 - unknownplayer
 		}
 
 		//	Scale between 1x and 3x based on ai_class
