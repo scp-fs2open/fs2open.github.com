@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.6 $
- * $Date: 2004-03-05 09:02:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-05-28 23:37:30 $
+ * $Author: wmcoolmon $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/05 09:02:00  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.5  2003/08/25 04:46:53  Goober5000
  * added extra code to enable playing of FS1 music tracks
  * --Goober5000
@@ -229,7 +233,7 @@ void	event_music_enable();
 void	event_music_pause();
 void	event_music_unpause();
 void	event_music_set_volume_all(float volume);
-void	event_music_parse_musictbl();
+void	event_music_parse_musictbl(char* longname, bool is_chunk);
 void	event_music_change_pattern(int new_pattern);
 int	event_music_return_current_pattern();
 void	event_music_first_pattern();

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-05 09:02:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2004-05-28 23:37:30 $
+ * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/05 09:02:00  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.8  2004/02/08 03:35:08  Goober5000
  * fixed a small bug in FS1-compatible music
  * --Goober5000
@@ -393,7 +397,21 @@ void event_music_init()
 	if ( Event_music_inited == TRUE )
 		return;
 
-	event_music_parse_musictbl();
+	//MUST be called before parsing stuffzors.
+	Num_music_files = 0;
+	Num_soundtracks = 0;		// Global
+	event_music_reset_choices();
+
+	//Do teh parsing
+	event_music_parse_musictbl("music.tbl", false);
+	char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-msc.tbm", CF_SORT_REVERSE);
+	for(int i = 0; i < num_files; i++)
+	{
+		//HACK HACK HACK
+		strcat(tbl_files[i], ".tbm");
+		event_music_parse_musictbl(tbl_files[i], true);
+	}
 	Event_music_inited = TRUE;
 	Event_music_begun = FALSE;
 }
@@ -1132,17 +1150,77 @@ int event_music_player_respawn_as_observer()
 	return 0;
 }
 
+void parse_soundtrack()
+{
+	char fname[MAX_FILENAME_LEN];
+	char line_buf[128];
+	int num_patterns = 0;
+
+	required_string("#Soundtrack Start");
+	required_string("$SoundTrack Name:");
+	stuff_string(Soundtracks[Num_soundtracks].name, F_NAME, NULL);
+	while (required_string_either("#SoundTrack End","$Name:")) {
+		Assert( num_patterns < MAX_PATTERNS );
+		required_string("$Name:");
+		stuff_string(line_buf, F_NAME, NULL);
+
+		// line_buf holds 3 fields:  filename, num measures, bytes per measure
+
+		char *token;
+		int count = 0;
+		token = strtok( line_buf, NOX(" ,\t"));
+		strcpy(fname, token);
+		while ( token != NULL ) {
+			token = strtok( NULL, NOX(" ,\t") );
+			if ( token == NULL ) {
+				Assert(count == 2 );
+				break;
+			}
+
+			if ( count == 0 ) {
+				Pattern_num_measures[Num_soundtracks][num_patterns] = (float)atof(token);
+
+			} else {
+				Pattern_bytes_per_measure[Num_soundtracks][num_patterns] = atoi(token);
+			}
+
+			count++;
+		}	// end while
+
+		// convert from samples per measure to bytes per measure
+		Pattern_bytes_per_measure[Num_soundtracks][num_patterns] *= 2;
+		strcpy(Soundtracks[Num_soundtracks].pattern_fnames[num_patterns], fname);
+		num_patterns++;
+		}
+		required_string("#SoundTrack End");
+		Soundtracks[Num_soundtracks].num_patterns = num_patterns;
+		Num_soundtracks++;
+}
+void parse_menumusic()
+{
+	char fname[MAX_FILENAME_LEN];
+	required_string("$Name:");
+	stuff_string(fname, F_PATHNAME, NULL);
+	Assert( strlen(fname) < (NAME_LENGTH-1) );
+	strcpy( Spooled_music[Num_music_files].name, fname );
+
+	required_string("$Filename:");
+	stuff_string(fname, F_PATHNAME, NULL);
+	if ( stricmp(fname, NOX("none.wav"))  ) {
+		Assert( strlen(fname) < (MAX_FILENAME_LEN-1) );
+		strcpy( Spooled_music[Num_music_files].filename, fname );
+	}
+
+	Num_music_files++;	
+}
+
 // -------------------------------------------------------------------------------------------------
 // event_music_parse_musictbl() will parse the music.tbl file, and set up the Mission_songs[]
 // array
 //
-void event_music_parse_musictbl()
+void event_music_parse_musictbl(char* longname, bool is_chunk)
 {
-	char fname[MAX_FILENAME_LEN];
-	char line_buf[128];
 	int rval, i, j;
-
-	int num_patterns = 0;
 
 	// Goober5000 - clear all the filenames, so we're compatible with the extra NRMLs in FS1 music
 	for (i = 0; i < MAX_SOUNDTRACKS; i++)
@@ -1153,88 +1231,50 @@ void event_music_parse_musictbl()
 		}
 	}
 
-
-	Num_music_files = 0;
-	Num_soundtracks = 0;		// Global
-	event_music_reset_choices();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Unable to parse music.tbl!  Code = %i.\n", rval);
+		Error(LOCATION, "Unable to parse %sl!  Code = %i.\n", longname, rval);
 
 	} else {
 		// open localization
 		lcl_ext_open();
 
-		read_file_text("music.tbl");
+		read_file_text(longname);
 		reset_parse();		
 
-		// Loop through all the sound-tracks
-		while (required_string_either("#Menu Music Start","#SoundTrack Start")) {
-			Assert(Num_soundtracks < MAX_SOUNDTRACKS);
-			required_string("#SoundTrack Start");
-			required_string("$SoundTrack Name:");
-			stuff_string(Soundtracks[Num_soundtracks].name, F_NAME, NULL);
-			while (required_string_either("#SoundTrack End","$Name:")) {
-				Assert( num_patterns < MAX_PATTERNS );
-				required_string("$Name:");
-				stuff_string(line_buf, F_NAME, NULL);
-
-				// line_buf holds 3 fields:  filename, num measures, bytes per measure
-
-				char *token;
-				int count = 0;
-				token = strtok( line_buf, NOX(" ,\t"));
-				strcpy(fname, token);
-				while ( token != NULL ) {
-					token = strtok( NULL, NOX(" ,\t") );
-					if ( token == NULL ) {
-						Assert(count == 2 );
-						break;
-					}
-
-					if ( count == 0 ) {
-						Pattern_num_measures[Num_soundtracks][num_patterns] = (float)atof(token);
-
-					} else {
-						Pattern_bytes_per_measure[Num_soundtracks][num_patterns] = atoi(token);
-					}
-
-					count++;
-				}	// end while
-
-				// convert from samples per measure to bytes per measure
-				Pattern_bytes_per_measure[Num_soundtracks][num_patterns] *= 2;
-				strcpy(Soundtracks[Num_soundtracks].pattern_fnames[num_patterns], fname);
-				num_patterns++;
+		if(!is_chunk)
+		{
+			// Loop through all the sound-tracks
+			while (required_string_either("#Menu Music Start","#SoundTrack Start")) {
+				Assert(Num_soundtracks < MAX_SOUNDTRACKS);
+				parse_soundtrack();
 			}
 
-			required_string("#SoundTrack End");
-			Soundtracks[Num_soundtracks].num_patterns = num_patterns;
-			Num_soundtracks++;
-			num_patterns = 0;
+			// Parse the menu music section
+			required_string("#Menu Music Start");
+			while (required_string_either("#Menu Music End","$Name:")) {
+				Assert( Num_music_files < MAX_SPOOLED_MUSIC );
+				parse_menumusic();
+			}
+			required_string("#Menu Music End");
 		}
-
-		// Parse the menu music section
-		required_string("#Menu Music Start");
-		while (required_string_either("#Menu Music End","$Name:")) {
-			Assert( Num_music_files < MAX_SPOOLED_MUSIC );
-
-			required_string("$Name:");
-			stuff_string(fname, F_PATHNAME, NULL);
-			Assert( strlen(fname) < (NAME_LENGTH-1) );
-			strcpy( Spooled_music[Num_music_files].name, fname );
-
-			required_string("$Filename:");
-			stuff_string(fname, F_PATHNAME, NULL);
-			if ( stricmp(fname, NOX("none.wav"))  ) {
-				Assert( strlen(fname) < (MAX_FILENAME_LEN-1) );
-				strcpy( Spooled_music[Num_music_files].filename, fname );
+		else
+		{
+			// Loop through all the sound-tracks
+			while (required_string_either("#Menu Music Start","#SoundTrack Start")) {
+				Assert(Num_soundtracks < MAX_SOUNDTRACKS);
+				parse_soundtrack();
 			}
 
-			Num_music_files++;			
+			// Parse the menu music section
+			if(optional_string("#Menu Music Start"))
+			{
+				while (required_string_either("#Menu Music End","$Name:")) {
+					Assert( Num_music_files < MAX_SPOOLED_MUSIC );
+					parse_menumusic();
+				}
+				required_string("#Menu Music End");
+			}
 		}
-
-		required_string("#Menu Music End");
 
 		// close localization
 		lcl_ext_close();
