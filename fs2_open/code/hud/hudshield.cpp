@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-12-05 22:01:11 $
- * $Author: bobboau $
+ * $Revision: 2.20 $
+ * $Date: 2004-12-24 01:07:19 $
+ * $Author: wmcoolmon $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/12/05 22:01:11  bobboau
+ * sevral feature additions that WCS wanted,
+ * and the foundations of a submodel animation system,
+ * the calls to the animation triggering code (exept the procesing code,
+ * wich shouldn't do anything without the triggering code)
+ * have been commented out.
+ *
  * Revision 2.18  2004/09/05 19:23:24  Goober5000
  * fixed a few warnings
  * --Goober5000
@@ -389,7 +396,7 @@ void hud_shield_level_init()
 	}
 
 	Hud_shield_inited = 1;
-
+#ifndef NEW_HUD
 	if ( !Shield_mini_loaded ) {
 		Shield_mini_gauge.first_frame = bm_load_animation(current_hud->Shield_mini_fname, &Shield_mini_gauge.num_frames);
 		if ( Shield_mini_gauge.first_frame == -1 ) {
@@ -398,6 +405,7 @@ void hud_shield_level_init()
 		}
 		Shield_mini_loaded = 1;
 	}
+#endif
 }
 
 int hud_shield_maybe_flash(int gauge, int target_index, int shield_offset)
@@ -434,6 +442,7 @@ int hud_shield_maybe_flash(int gauge, int target_index, int shield_offset)
 bool damnit_you_told_me_already = false;
 void hud_shield_show(object *objp)
 {
+#ifndef NEW_HUD
 	float			max_shield;
 	int			hud_color_index, range;
 	int			sx, sy, i;
@@ -542,6 +551,7 @@ void hud_shield_show(object *objp)
 	}
 
 	// hud_set_default_color();
+#endif
 }
 
 // called at beginning of level to page in all ship icons
@@ -724,6 +734,7 @@ void hud_shield_assign_info(ship_info *sip, char *filename)
 
 void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 {
+#ifndef NEW_HUD
 	char	text_integrity[64];
 	int	numeric_integrity;
 	float p_target_integrity,initial_hull;
@@ -774,11 +785,13 @@ void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 	}	
 
 	gr_string(final_pos[0], final_pos[1], text_integrity);
+#endif
 }
 
 // Draw the miniature shield icon that is drawn near the reticle
 void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_offset, int y_hull_offset)
 {
+#ifndef NEW_HUD
 	float			max_shield;
 	int			hud_color_index, range, frame_offset;
 	int			sx, sy, i;
@@ -845,6 +858,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	}
 	
 	// hud_set_default_color();
+#endif
 }
 
 // reset the shield_hit_info data structure
