@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-17 20:04:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-18 03:25:10 $
+ * $Author: unknownplayer $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/17 20:04:00  wmcoolmon
+ * Added SSM code for Tag C from Bobboau. Note that strings.tbl may need to be updated.
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -2347,7 +2350,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 		}
 		wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 
-		// if its a leech weapon
+		// if its a leech weapon - NOTE - unknownplayer: Perhaps we should do something interesting like direct the leeched energy into the attacker ?
 		if(wip->wi_flags & WIF_ENERGY_SUCK){
 			// reduce afterburner fuel
 			shipp->afterburner_fuel -= wip->afterburner_reduce;
@@ -2541,7 +2544,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force
 
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage
 	if ( ship_obj == Player_obj ) {
-		// only show blast icon if playing on medium skill or lower
+		// only show blast icon if playing on medium skill or lower -> unknownplayer: why? I think this should be changed.
 		if ( Game_skill_level <= 2 ) {
 			hud_start_text_flash(XSTR("Blast", 1428), 2000);
 		}
