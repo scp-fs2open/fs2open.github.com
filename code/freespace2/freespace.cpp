@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.77 $
- * $Date: 2004-03-08 18:36:20 $
- * $Author: randomtiger $
+ * $Revision: 2.78 $
+ * $Date: 2004-03-08 22:02:38 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2004/03/08 18:36:20  randomtiger
+ * Added complete stub system to replace software.
+ *
  * Revision 2.76  2004/03/07 23:07:19  Kazan
  * [Incomplete] Readd of Software renderer so Standalone server works
  *
@@ -1019,6 +1022,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "network/multiui.h"
 #include "network/multiutil.h"
 extern int Om_tracker_flag; // needed for FS2OpenPXO config
+#include "network/fs2ox.h"
 #endif
 
 
@@ -5652,7 +5656,7 @@ void end_demo_campaign_do()
 // that you should change the state of the game.
 void game_process_event( int current_state, int event )
 {
-	mprintf(("Got event %s in state %s\n", GS_event_text[event], GS_state_text[current_state]));
+	mprintf(("Got event %s (%d) in state %s (%d)\n", GS_event_text[event], event, GS_state_text[current_state], event));
 
 	switch (event) {
 		case GS_EVENT_SIMULATOR_ROOM:
@@ -5884,6 +5888,9 @@ void game_process_event( int current_state, int event )
 			break;
 		
 	// multiplayer stuff follow these comments
+		case GS_EVENT_NET_CHAT:
+			gameseq_set_state( GS_STATE_NET_CHAT );
+			break;
 
 		case GS_EVENT_MULTI_JOIN_GAME:
 			gameseq_set_state( GS_STATE_MULTI_JOIN_GAME );
@@ -6291,6 +6298,10 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 #ifndef NO_NETWORK
+		case GS_STATE_NET_CHAT:
+			fs2ox_close();
+			break;
+
 		// join/start a game
 		case GS_STATE_MULTI_JOIN_GAME:
 			if(new_state != GS_STATE_OPTIONS_MENU){
@@ -6731,6 +6742,10 @@ void mouse_force_pos(int x, int y);
 			break;
 
 #ifndef NO_NETWORK
+		case GS_STATE_NET_CHAT:
+			fs2ox_init();
+			break;
+
 		case GS_STATE_MULTI_JOIN_GAME:
 			multi_join_clear_game_list();
 
@@ -7071,6 +7086,12 @@ void game_do_state(int state)
 			break;
 
 #ifndef NO_NETWORK
+		case GS_STATE_NET_CHAT:
+			game_set_frametime(GS_STATE_NET_CHAT);
+			fs2ox_do_frame();
+			break;
+
+
 		case GS_STATE_MULTI_JOIN_GAME:
 			game_set_frametime(GS_STATE_MULTI_JOIN_GAME);
 			multi_join_game_do_frame();

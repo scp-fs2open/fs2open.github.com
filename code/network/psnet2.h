@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.h $
- * $Revision: 2.5 $
- * $Date: 2003-11-14 22:47:37 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-08 22:02:39 $
  * $Author: Kazan $
  *
  * Header file for the application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/11/14 22:47:37  Kazan
+ * *WARNING* Multi Compatability with previous versions now in question *WARNING*
+ * [But that's ok, i incremented the multi version number the other day so that it will say "you don't have a compatable version"]
+ *
+ * I upped the MAX_PACKET_SIZE from 512 to 4096 -- try and bust multi with more than ?130? ships now :D
+ *
  * Revision 2.4  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -85,8 +91,8 @@
 #define NET_VMT		3
 
 // kazan - I think this should raise the ships limit across the network
-#define MAX_PACKET_SIZE 4096
-//#define MAX_PACKET_SIZE		512
+//#define MAX_PACKET_SIZE 4096
+#define MAX_PACKET_SIZE		512
 
 #ifdef FS2_DEMO
 	#define DEFAULT_GAME_PORT 7802

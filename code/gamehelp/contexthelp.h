@@ -38,6 +38,7 @@
 #define	SIM_ROOM_OVERLAY				13	// sim room help overlay
 #define	TECH_ROOM_OVERLAY				14	// tech room (general) help overlay
 #define	CMD_BRIEF_OVERLAY				15 // command briefing help overlay
+//#define FS2OX_OVERLAY					16 // Chat help overlay
 
 // other help overlay constants
 #define HELP_MAX_ITEM				50				// max number of screen elements per element type per overlay

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:01:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-08 22:02:38 $
+ * $Author: Kazan $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:01:58  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2004/02/20 04:29:54  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -390,7 +394,16 @@ void launch_context_help()
 				help_overlay_set_state(MULTI_START_OVERLAY, 0);
 			}
 			break;
-
+/*
+		case GS_STATE_NET_CHAT:
+			if (!help_overlay_active(FS2OX_OVERLAY) ) {
+				help_overlay_set_state(FS2OX_OVERLAY, 1);
+			}
+			else {
+				help_overlay_set_state(FS2OX_OVERLAY, 1);
+			}
+			break;
+*/
 		case GS_STATE_MULTI_JOIN_GAME:
 			if ( !help_overlay_active(MULTI_JOIN_OVERLAY) ) {
 				help_overlay_set_state(MULTI_JOIN_OVERLAY, 1);

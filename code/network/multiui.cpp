@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-03-08 15:06:24 $
+ * $Revision: 2.21 $
+ * $Date: 2004-03-08 22:02:39 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/03/08 15:06:24  Kazan
+ * Did, undo
+ *
  * Revision 2.19  2004/03/05 21:19:39  Kazan
  * Fixed mission validation (was returning false positives)
  *
@@ -1678,7 +1681,9 @@ void multi_join_game_do_frame()
 		if(help_overlay_active(MULTI_JOIN_OVERLAY)){
 			help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
 		} else {		
-			gameseq_post_event(GS_EVENT_MAIN_MENU);			
+			// #kazan# changed for chat
+			//gameseq_post_event(GS_EVENT_MAIN_MENU);
+			gameseq_post_event(GS_EVENT_NET_CHAT);
 			gamesnd_play_iface(SND_USER_SELECT);
 		}
 		break;
