@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.146 $
- * $Date: 2005-01-01 07:18:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.147 $
+ * $Date: 2005-01-03 18:47:06 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.146  2005/01/01 07:18:48  wmcoolmon
+ * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
+ *
  * Revision 2.145  2004/12/30 07:26:21  argv
  * Quick hack to remove the 50% rate-of-fire penalty when primary weapons are
  * linked. "#define NO_LINKED_PRIMARY_PENALTY" to enable this change; it's
@@ -11882,6 +11885,26 @@ void ship_page_in()
 				ship_page_in_model_textures(sip->modelnum, sip);
 			} else {
 				nprintf(( "Paging", "Couldn't load model '%s'\n", sip->pof_file ));
+			}
+
+			// more weapon marking, the weapon info in Ships[] and Ship_info[]
+			// can be different and we need to catch both sets
+			if (Cmdline_load_only_used) {
+				for (j = 0; j < sip->num_primary_banks; j++)
+					weapon_mark_as_used(sip->primary_bank_weapons[j]);
+
+				for (j = 0; j < sip->num_secondary_banks; j++)
+					weapon_mark_as_used(sip->secondary_bank_weapons[j]);
+
+				for (j = 0; j < sip->n_subsystems; j++) {
+					model_subsystem *msp = &sip->subsystems[j];
+
+					for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
+						weapon_mark_as_used(msp->primary_banks[k]);
+
+					for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
+						weapon_mark_as_used(msp->secondary_banks[k]);
+				}
 			}
 		}
 	}
