@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-11-23 19:29:13 $
+ * $Revision: 2.23 $
+ * $Date: 2005-01-01 19:47:26 $
  * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/11/23 19:29:13  taylor
+ * fix 2d warp in D3D, add cmdline option for 3d warp
+ *
  * Revision 2.21  2004/09/17 07:12:22  Goober5000
  * changed around the logic for the 3D warp effect
  * --Goober5000
@@ -212,8 +215,9 @@
 #include "render/3d.h"
 #include "fireball/fireballs.h"
 #include "mission/missionparse.h"
-#include "Nebula/Neb.h"
+#include "nebula/neb.h"
 #include "globalincs/pstypes.h"
+#include "model/model.h"
 
 
 extern int Warp_model;
@@ -337,7 +341,7 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 
 		model_set_detail_level((int)(dist / (radius * 10.0f)));
 		gr_set_cull(0);
-		model_render( Warp_model, orient, pos, MR_NO_LIGHTING | MR_NORMAL);
+		model_render( Warp_model, orient, pos, MR_NO_LIGHTING | MR_NORMAL | MR_NO_FOGGING);
 		gr_set_cull(1);
 
 //	Warp_Map = -1;//un sets the warp map
