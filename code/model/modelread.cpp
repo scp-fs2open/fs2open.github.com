@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-01-05 23:41:51 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2003-01-09 05:52:25 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/01/05 23:41:51  bobboau
+ * disabled decals (for now), removed the warp ray thingys,
+ * made some better error mesages while parseing weapons and ships tbls,
+ * and... oh ya, added glow mapping
+ *
  * Revision 2.6  2002/12/07 01:37:42  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -1319,6 +1324,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 	// reset insignia counts
 	pm->num_ins = 0;
+
+	// reset glow points!! - Goober5000
+	pm->n_glows = 0;
 
 	id = cfread_int(fp);
 	len = cfread_int(fp);
