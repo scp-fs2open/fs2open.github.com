@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-10-31 02:04:33 $
+ * $Revision: 2.18 $
+ * $Date: 2004-10-31 02:26:15 $
  * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/10/31 02:04:33  Goober5000
+ * added Knossos_warp_ani_used flag for taylor
+ * --Goober5000
+ *
  * Revision 2.16  2004/09/17 07:12:22  Goober5000
  * changed around the logic for the 3D warp effect
  * --Goober5000
@@ -407,6 +411,7 @@
 
 
 int Warp_model;
+int Knossos_warp_ani_used;
 
 #define WARPHOLE_GROW_TIME		(3.5f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
