@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.42 $
- * $Date: 2003-01-19 07:02:15 $
+ * $Revision: 2.43 $
+ * $Date: 2003-01-19 08:37:52 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/01/19 07:02:15  Goober5000
+ * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
+ * all ships, and all ships who have their departure anchor set to a capital ship
+ * should exit to that ship when told to depart
+ * --Goober5000
+ *
  * Revision 2.41  2003/01/19 01:07:42  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -10587,8 +10593,17 @@ void ship_page_in_model_textures(int modelnum)
 int is_support_allowed(object *objp)
 {
 	// check updated mission conditions to allow support
-	if (!(The_mission.support_ships.max_support_ships) && (The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships))
+
+	// none allowed
+	if (The_mission.support_ships.max_support_ships < 0)
 		return 0;
+
+	// restricted number allowed
+	if (The_mission.support_ships.max_support_ships > 0)
+	{
+		if (The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships)
+			return 0;
+	}
 
 	// make sure, if exiting from bay, that parent ship is in the mission!
 	if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
