@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.17 $
+ * $Date: 2004-12-14 14:46:13 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.15  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1875,7 +1878,7 @@ void multi_ingame_validate_players()
 
 	for ( i = 0; i < MAX_PLAYERS; i++ ) {
 		if( MULTI_CONNECTED(Net_players[i]) && (Net_player != &Net_players[i]) && !MULTI_STANDALONE(Net_players[i]) ) {
-			char *ship_name;
+			char ship_name[NAME_LENGTH];
 			int shipnum, objnum, player_objnum;
 
 			player_objnum = Net_players[i].player->objnum;
@@ -1883,7 +1886,7 @@ void multi_ingame_validate_players()
 				Int3();
 			}
 
-			ship_name = multi_ts_get_shipname( Net_players[i].p_info.team, Net_players[i].p_info.ship_index );
+			multi_ts_get_shipname( ship_name, Net_players[i].p_info.team, Net_players[i].p_info.ship_index );
 			Assert( ship_name != NULL );
 			shipnum = ship_name_lookup( ship_name );
 			if ( shipnum == -1 ) {

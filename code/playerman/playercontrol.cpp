@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-10-12 22:47:14 $
+ * $Revision: 2.19 $
+ * $Date: 2004-12-14 14:46:13 $
  * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/10/12 22:47:14  Goober5000
+ * added toggle-subsystem-scanning ship flag
+ * --Goober5000
+ *
  * Revision 2.17  2004/07/26 20:47:49  Kazan
  * remove MCD complete
  *
@@ -2108,7 +2112,7 @@ void player_set_next_all_alone_msg_timestamp()
 	Player->check_for_all_alone_msg=timestamp(30000);
 }
 
-// maybe play message from Terran Command 'You're all alone now Alpha 1'
+// maybe play message from Terran Command 'You're all alone now, pilot'
 void player_maybe_play_all_alone_msg()
 {
 	if ( Game_mode & GM_MULTIPLAYER ){

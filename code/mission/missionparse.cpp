@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.71 $
- * $Date: 2004-11-21 11:31:46 $
- * $Author: taylor $
+ * $Revision: 2.72 $
+ * $Date: 2004-12-14 14:46:13 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2004/11/21 11:31:46  taylor
+ * newline fix (got tired of seeing this)
+ *
  * Revision 2.70  2004/10/31 02:04:34  Goober5000
  * added Knossos_warp_ani_used flag for taylor
  * --Goober5000
@@ -934,14 +937,6 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 };
 
 
-
-char *Starting_wing_names[MAX_STARTING_WINGS+1] = {
-	"Alpha",
-	"Beta",
-	"Gamma",
-	"Zeta"
-};
-
 //XSTR:ON
 
 int Num_reinforcement_type_names = sizeof(Reinforcement_type_names) / sizeof(char *);
@@ -1189,28 +1184,70 @@ void parse_mission_info(mission *pm)
 	}
 
 	// possible squadron reassignment
-	strcpy(The_mission.squad_name, "");
-	strcpy(The_mission.squad_filename, "");
+	strcpy(pm->squad_name, "");
+	strcpy(pm->squad_filename, "");
 	if(optional_string("+SquadReassignName:")){
-		stuff_string(The_mission.squad_name, F_NAME, NULL);
+		stuff_string(pm->squad_name, F_NAME, NULL);
 		if(optional_string("+SquadReassignLogo:")){
-			stuff_string(The_mission.squad_filename, F_NAME, NULL);
+			stuff_string(pm->squad_filename, F_NAME, NULL);
 		}
 	}	
 	// always clear out squad reassignments if not single player
 	if(Game_mode & GM_MULTIPLAYER){
-		strcpy(The_mission.squad_name, "");
-		strcpy(The_mission.squad_filename, "");
+		strcpy(pm->squad_name, "");
+		strcpy(pm->squad_filename, "");
 		mprintf(("Ignoring squadron reassignment"));
 	}
 	// reassign the player
 	else {		
-		if(!Fred_running && (Player != NULL) && (strlen(The_mission.squad_name) > 0) && (Game_mode & GM_CAMPAIGN_MODE)){
-			mprintf(("Reassigning player to squadron %s\n", The_mission.squad_name));
-			player_set_squad(Player, The_mission.squad_name);
-			player_set_squad_bitmap(Player, The_mission.squad_filename);
+		if(!Fred_running && (Player != NULL) && (strlen(pm->squad_name) > 0) && (Game_mode & GM_CAMPAIGN_MODE)){
+			mprintf(("Reassigning player to squadron %s\n", pm->squad_name));
+			player_set_squad(Player, pm->squad_name);
+			player_set_squad_bitmap(Player, pm->squad_filename);
 		}
 	}
+
+	// wing stuff by Goober5000 ------------------------------------------
+	if (optional_string("$Starting wing names:"))
+	{
+		stuff_string_list(Starting_wing_names, MAX_STARTING_WINGS);
+	}
+	else
+	{
+		strcpy(Starting_wing_names[0], "Alpha");
+		strcpy(Starting_wing_names[1], "Beta");
+		strcpy(Starting_wing_names[2], "Gamma");
+	}
+
+	if (optional_string("$Squadron wing names:"))
+	{
+		stuff_string_list(Squadron_wing_names, MAX_SQUADRON_WINGS);
+	}
+	else
+	{
+		strcpy(Squadron_wing_names[0], "Alpha");
+		strcpy(Squadron_wing_names[1], "Beta");
+		strcpy(Squadron_wing_names[2], "Gamma");
+		strcpy(Squadron_wing_names[3], "Delta");
+		strcpy(Squadron_wing_names[4], "Epsilon");
+	}
+
+	if (optional_string("$Team-versus-team wing names:"))
+	{
+		stuff_string_list(TVT_wing_names, MAX_TVT_WINGS);
+	}
+	else
+	{
+		strcpy(TVT_wing_names[0], "Alpha");
+		strcpy(TVT_wing_names[1], "Zeta");
+	}
+
+	// minimal error checking
+	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]))
+	{
+		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
+	}
+	// end of wing stuff -------------------------------------------------
 
 	// set up the Num_teams variable accoriding to the game_type variable'
 	Num_teams = 1;				// assume 1
@@ -1222,36 +1259,36 @@ void parse_mission_info(mission *pm)
 	}
 
 	int found640=0, found1024=0;
-	strcpy(The_mission.loading_screen[GR_640],"");
-	strcpy(The_mission.loading_screen[GR_1024],"");
+	strcpy(pm->loading_screen[GR_640],"");
+	strcpy(pm->loading_screen[GR_1024],"");
 	//custom mission loading background
 	if (optional_string("$Load Screen 640:"))
 	{
 		found640=1;
-		stuff_string(The_mission.loading_screen[GR_640],F_NAME,NULL);	
+		stuff_string(pm->loading_screen[GR_640],F_NAME,NULL);	
 	}
 	if (optional_string("$Load Screen 1024:"))
 	{
 		found1024=1;
-		stuff_string(The_mission.loading_screen[GR_1024],F_NAME,NULL);
+		stuff_string(pm->loading_screen[GR_1024],F_NAME,NULL);
 	}
 
 	if (optional_string("$Skybox model:"))
 	{
-		stuff_string(The_mission.skybox_model,F_NAME,NULL);
+		stuff_string(pm->skybox_model,F_NAME,NULL);
 	}
 
 	//error testing
 	if ((found640) && !(found1024))
 	{
-		Warning(LOCATION, "Mission: %s\nhas no 1024 loading screen but a 640 loading screen!",The_mission.name);
-		strcpy(The_mission.loading_screen[GR_640],"");
+		Warning(LOCATION, "Mission: %s\nhas a 640 loading screen but no 1024 loading screen!",pm->name);
+		strcpy(pm->loading_screen[GR_640],"");
 	}
 
 	if (!(found640) && (found1024))
 	{
-		Warning(LOCATION, "Mission: %s\nhas no 640 loading screen but a 1024 loading screen!",The_mission.name);
-		strcpy(The_mission.loading_screen[GR_1024],"");
+		Warning(LOCATION, "Mission: %s\nhas a 1024 loading screen but no 640 loading screen!",pm->name);
+		strcpy(pm->loading_screen[GR_1024],"");
 	}	
 }
 
@@ -1286,7 +1323,7 @@ void parse_player_info2(mission *pm)
 	char str[NAME_LENGTH];
 	int nt, i, total, list[MAX_SHIP_TYPES * 2], list2[MAX_WEAPON_TYPES * 2], num_starting_wings;
 	team_data *ptr;
-	char starting_wings[MAX_PLAYER_WINGS][NAME_LENGTH];
+	char starting_wings[MAX_STARTING_WINGS][NAME_LENGTH];
 
 	// read in a ship/weapon pool for each team.
 	for ( nt = 0; nt < Num_teams; nt++ ) {
@@ -1325,7 +1362,7 @@ void parse_player_info2(mission *pm)
 
 		num_starting_wings = 0;
 		if (optional_string("+Starting Wings:"))
-			num_starting_wings = stuff_string_list(starting_wings, MAX_PLAYER_WINGS);
+			num_starting_wings = stuff_string_list(starting_wings, MAX_STARTING_WINGS);
 
 		ptr->default_ship = -1;
 		if (optional_string("+Default_ship:")) {
@@ -3262,9 +3299,11 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 #ifndef NO_NETWORK
 			// flag ship with SF_FROM_PLAYER_WING if a member of player starting wings
 			if ( (Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) ) {
-				// but for team vs. team games, then just check the alpha and zeta wings
-				if ( !(stricmp(Starting_wing_names[STARTING_WING_ALPHA], wingp->name)) || !(stricmp(Starting_wing_names[STARTING_WING_ZETA], wingp->name)) ) {
-					Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
+				// different for tvt -- Goober5000
+				for (int i = 0; i < MAX_TVT_WINGS; i++ ) {
+					if ( !stricmp(TVT_wing_names[i], wingp->name) ) {
+						Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
+					} 
 				}
 			} 
 			else
@@ -3547,17 +3586,28 @@ void parse_wing(mission *pm)
 
 #ifndef NO_NETWORK
 	// 7/13/98 -- MWA
-	// error checking against the player ship wings to be sure that wave count doesn't exceed one for
+	// error checking against the player ship wings (i.e. starting & tvt) to be sure that wave count doesn't exceed one for
 	// these wings.
 	if ( Game_mode & GM_MULTIPLAYER ) {
-		for (i = 0; i < MAX_STARTING_WINGS+1; i++ ) {
+		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
 			if ( !stricmp(Starting_wing_names[i], wingp->name) ) {
 				if ( wingp->num_waves > 1 ) {
 					// only end the game if we're the server - clients will eventually find out :)
 					if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 						multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_WAVE_COUNT);																
 					}
-					// Error(LOCATION, "Player wings Alpha, Beta, Gamma, or Zeta cannot have more than 1 wave.");
+					// Error(LOCATION, "Player wings cannot have more than 1 wave.");
+				}
+			}
+		}
+		for (i = 0; i < MAX_TVT_WINGS; i++ ) {
+			if ( !stricmp(TVT_wing_names[i], wingp->name) ) {
+				if ( wingp->num_waves > 1 ) {
+					// only end the game if we're the server - clients will eventually find out :)
+					if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+						multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_WAVE_COUNT);																
+					}
+					// Error(LOCATION, "Player wings cannot have more than 1 wave.");
 				}
 			}
 		}
@@ -4384,19 +4434,33 @@ void post_process_mission()
 	if ( Player_obj->phys_info.vel.xyz.z > 0.0f )
 		Player->ci.forward_cruise_percent = Player_obj->phys_info.vel.xyz.z / Player_ship->current_max_speed * 100.0f;
 
-#ifndef NO_NETWORK
-	// put in hard coded starting wing names.
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
-		Starting_wings[0] = wing_name_lookup(Starting_wing_names[0],1);
-		Starting_wings[1] = wing_name_lookup(Starting_wing_names[MAX_STARTING_WINGS],1);
+
+	// set up wing indexes
+	for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
+		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
 	}
-	else
-#endif
-	{
-		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
-			Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
+
+	for (i = 0; i < MAX_SQUADRON_WINGS; i++ ) {
+		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
+	}
+
+	for (i = 0; i < MAX_TVT_WINGS; i++ ) {
+		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
+	}
+
+#ifndef NO_NETWORK
+	// when TVT, hack starting wings to be team wings
+	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+		Assert(MAX_TVT_WINGS <= MAX_STARTING_WINGS);
+		for (i=0; i<MAX_STARTING_WINGS; i++)
+		{
+			if (i<MAX_TVT_WINGS)
+				Starting_wings[i] = TVT_wings[i];
+			else
+				Starting_wings[i] = -1;
 		}
 	}
+#endif
 
 	init_ai_system();
 
@@ -5438,17 +5502,18 @@ void mission_eval_arrivals()
 				{
 					// everything else
 					// see if this is a starting player wing
-					if ( i == Starting_wings[STARTING_WING_BETA] ) {					// this is the beta wing
+					// Goober5000 - we have to test the actual names here, because the voice files are scripted for certain wings
+					if ( !stricmp(wingp->name, "beta") ) {
 						rship = ship_get_random_ship_in_wing( i, SHIP_GET_NO_PLAYERS );
 						if ( rship != -1 ){
 							message_send_builtin_to_player( MESSAGE_BETA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1 );
 						}
-					} else if ( i == Starting_wings[STARTING_WING_GAMMA] ) {			// this is the gamma wing
+					} else if ( !stricmp(wingp->name, "gamma") ) {
 						rship = ship_get_random_ship_in_wing( i, SHIP_GET_NO_PLAYERS );
 						if ( rship != -1 ) {
 							message_send_builtin_to_player( MESSAGE_GAMMA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1 );
 						}
-					} else if ( !stricmp( wingp->name, "delta") ) {
+					} else if ( !stricmp(wingp->name, "delta") ) {
 						rship = ship_get_random_ship_in_wing( i, SHIP_GET_NO_PLAYERS );
 						if ( rship != -1 ) {
 							message_send_builtin_to_player( MESSAGE_DELTA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1 );

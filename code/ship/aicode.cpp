@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.74 $
- * $Date: 2004-12-05 22:01:12 $
- * $Author: bobboau $
+ * $Revision: 2.75 $
+ * $Date: 2004-12-14 14:46:11 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2004/12/05 22:01:12  bobboau
+ * sevral feature additions that WCS wanted,
+ * and the foundations of a submodel animation system,
+ * the calls to the animation triggering code (exept the procesing code,
+ * wich shouldn't do anything without the triggering code)
+ * have been commented out.
+ *
  * Revision 2.73  2004/10/31 22:06:42  taylor
  * compiler warning fixes, maybe fix issue that would cause cap ships to not fire beam weapons
  *
@@ -16537,8 +16544,8 @@ void cheat_fire_synaptic(object *objp, ship *shipp, ai_info *aip)
 //						fire a synaptic if they have one.
 void maybe_cheat_fire_synaptic(object *objp, ai_info *aip)
 {
-	//	Only do in subspace missions.
-	if ( The_mission.flags & MISSION_FLAG_SUBSPACE )	{
+	//	Only do in sm3-09a
+	if ( !strcmp(The_mission.name, "Good Luck") )	{
 		ship	*shipp;
 		int	num, time;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-07-31 08:52:45 $
- * $Author: et1 $
+ * $Revision: 2.27 $
+ * $Date: 2004-12-14 14:46:13 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/07/31 08:52:45  et1
+ * If weapon loadout anim is missing, warn instead of int3
+ *
  * Revision 2.25  2004/07/26 20:47:40  Kazan
  * remove MCD complete
  *
@@ -1739,7 +1742,7 @@ void wl_maybe_reset_selected_weapon_class()
 	// try to locate a weapon class to show animation for
 	// first check for a weapon on the ship
 	for (i=0; i<MAX_WL_WEAPONS; i++) {
-		// if alpha 1 has a weapon in bank i, set it as the selected type
+		// if player has a weapon in bank i, set it as the selected type
 		if (Wss_slots[0].wep_count[i] >= 0) {
 			Selected_wl_class = Wss_slots[0].wep[i];
 			return;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-11-21 11:29:53 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2004-12-14 14:46:12 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/11/21 11:29:53  taylor
+ * make hud_disabled_except_messages() do everything at once, add it to hud_show_radar() and hud_show_target_model() so those don't show up (bug #271)
+ *
  * Revision 2.24  2004/09/17 00:18:17  Goober5000
  * changed toggle-hud to hud-disable; added hud-disable-except-messages
  * --Goober5000
@@ -3190,8 +3193,8 @@ void hud_maybe_display_objective_message()
 	}
 }
 
-// return wing slot (0->3) based on name of ship.  Assumes ship is from Alpha,Beta, or 
-// Gamma wings
+// return wing slot (0->3) based on name of ship.
+// Assumes ship name is in the XXXX 1, XXXX 2, XXXX 3, XXXX 4 format
 int hud_wing_slot_from_name(char *name)
 {
 	int	rval;

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.141 $
- * $Date: 2004-12-05 22:01:12 $
- * $Author: bobboau $
+ * $Revision: 2.142 $
+ * $Date: 2004-12-14 14:46:12 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.141  2004/12/05 22:01:12  bobboau
+ * sevral feature additions that WCS wanted,
+ * and the foundations of a submodel animation system,
+ * the calls to the animation triggering code (exept the procesing code,
+ * wich shouldn't do anything without the triggering code)
+ * have been commented out.
+ *
  * Revision 2.140  2004/11/21 11:35:17  taylor
  * some weapon-only-used loading fixes and general page-in cleanup
  * page in all ship textures from one function rather than two
@@ -1366,8 +1373,18 @@ int	Num_reinforcements = 0;
 ship	Ships[MAX_SHIPS];
 ship	*Player_ship;
 wing	Wings[MAX_WINGS];
-int	Starting_wings[MAX_PLAYER_WINGS];  // wings player starts a mission with (-1 = none)
 int	ships_inited = 0;
+
+int	Starting_wings[MAX_STARTING_WINGS];  // wings player starts a mission with (-1 = none)
+
+// Goober5000
+int Squadron_wings[MAX_SQUADRON_WINGS];
+int TVT_wings[MAX_TVT_WINGS];
+
+// Goober5000
+char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
+char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
+char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 char get_engine_wash_index(char *engine_wash_name);
@@ -1562,39 +1579,23 @@ void ship_obj_list_reset_slot(int index)
 	Ship_objs[index].prev = (ship_obj*)-1;
 }
 
-// if the given ship is in alpha/beta/gamma/zeta wings
-int ship_in_abgz(ship *shipp)
+// if the given ship is in my squadron wings
+// Goober5000
+int ship_in_my_squadron(ship *shipp)
 {
-	if(!strcmp(shipp->ship_name, "Alpha 1")) return 1;
-	if(!strcmp(shipp->ship_name, "Alpha 2")) return 1;
-	if(!strcmp(shipp->ship_name, "Alpha 3")) return 1;
-	if(!strcmp(shipp->ship_name, "Alpha 4")) return 1;
+	int i;
 
-	if(!strcmp(shipp->ship_name, "Beta 1")) return 1;
-	if(!strcmp(shipp->ship_name, "Beta 2")) return 1;
-	if(!strcmp(shipp->ship_name, "Beta 3")) return 1;
-	if(!strcmp(shipp->ship_name, "Beta 4")) return 1;
+	for (i=0; i<MAX_STARTING_WINGS; i++)
+	{
+		if (shipp->wingnum == Starting_wings[i])
+			return 1;
+	}
 
-	if(!strcmp(shipp->ship_name, "Gamma 1")) return 1;
-	if(!strcmp(shipp->ship_name, "Gamma 2")) return 1;
-	if(!strcmp(shipp->ship_name, "Gamma 3")) return 1;
-	if(!strcmp(shipp->ship_name, "Gamma 4")) return 1;
-
-	if(!strcmp(shipp->ship_name, "Zeta 1")) return 1;
-	if(!strcmp(shipp->ship_name, "Zeta 2")) return 1;
-	if(!strcmp(shipp->ship_name, "Zeta 3")) return 1;
-	if(!strcmp(shipp->ship_name, "Zeta 4")) return 1;
-
-	// added by Goober5000 in case we change this in the future,
-	// and because Zeta wing might be a 6-fighter single-player wing
-	if(!strcmp(shipp->ship_name, "Alpha 5")) return 1;
-	if(!strcmp(shipp->ship_name, "Alpha 6")) return 1;
-	if(!strcmp(shipp->ship_name, "Beta 5")) return 1;
-	if(!strcmp(shipp->ship_name, "Beta 6")) return 1;
-	if(!strcmp(shipp->ship_name, "Gamma 5")) return 1;
-	if(!strcmp(shipp->ship_name, "Gamma 6")) return 1;
-	if(!strcmp(shipp->ship_name, "Zeta 5")) return 1;
-	if(!strcmp(shipp->ship_name, "Zeta 6")) return 1;
+	for (i=0; i<MAX_TVT_WINGS; i++)
+	{
+		if (shipp->wingnum == TVT_wings[i])
+			return 1;
+	}
 
 	// not in
 	return 0;
@@ -3092,8 +3093,19 @@ void ship_level_init()
 												// is unloaded (because they are part of the model)
 	}
 
-	for (i=0; i<MAX_PLAYER_WINGS; i++)
+	for (i=0; i<MAX_STARTING_WINGS; i++)
 		Starting_wings[i] = -1;
+
+	for (i=0; i<MAX_SQUADRON_WINGS; i++)
+		Squadron_wings[i] = -1;
+
+	for (i=0; i<MAX_TVT_WINGS; i++)
+		TVT_wings[i] = -1;
+
+	// Goober5000
+	memset(Starting_wing_names, 0, sizeof(char)*MAX_STARTING_WINGS*NAME_LENGTH);
+	memset(Squadron_wing_names, 0, sizeof(char)*MAX_SQUADRON_WINGS*NAME_LENGTH);
+	memset(TVT_wing_names, 0, sizeof(char)*MAX_TVT_WINGS*NAME_LENGTH);
 
 	// Empty the subsys list
 	memset( Ship_subsystems, 0, sizeof(ship_subsys)*MAX_SHIP_SUBOBJECTS );
@@ -4082,7 +4094,7 @@ void ship_render(object * obj)
 #endif
 		{
 			// if its an object in my squadron
-			if(ship_in_abgz(shipp)){
+			if(ship_in_my_squadron(shipp)) {
 				model_set_insignia_bitmap(Player->insignia_texture);
 			}
 
@@ -10201,24 +10213,27 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 
 		// multi-team?
 		if(multi_team >= 0){
-			if(!stricmp(Wings[i].name, multi_team == 0 ? "alpha" : "zeta")){
+			if( i == TVT_wings[multi_team] ) {
 				wingnum = i;
 			} else {
 				continue;
 			}
 		} else {
-			// first check for a player starting wing (alpha, beta, gamma)
-			for ( j = 0; j < MAX_PLAYER_WINGS; j++ ) {
+			// first check for a player starting wing
+			for ( j = 0; j < MAX_STARTING_WINGS; j++ ) {
 				if ( i == Starting_wings[j] ) {
 					wingnum = i;
 					break;
 				}
 			}
 
-			// if not found, the delta and epsilon count too
+			// if not found, then check all squad wings (Goober5000)
 			if ( wingnum == -1 ) {
-				if ( !stricmp(Wings[i].name, NOX("delta")) || !stricmp(Wings[i].name, NOX("epsilon")) ) {
-					wingnum = i;
+				for ( j = 0; j < MAX_SQUADRON_WINGS; j++ ) {
+					if ( i == Squadron_wings[j] ) {
+						wingnum = i;
+						break;
+					}
 				}
 			}
 
@@ -12935,4 +12950,40 @@ int ship_has_energy_weapons(ship *shipp)
 int ship_has_engine_power(ship *shipp)
 {
 	return (Ship_info[shipp->ship_info_index].max_speed > 0 );
+}
+
+// Goober5000
+int ship_starting_wing_lookup(char *wing_name)
+{
+	for (int i = 0; i < MAX_STARTING_WINGS; i++)
+	{
+		if (!stricmp(Starting_wing_names[i], wing_name))
+			return i;
+	}
+
+	return -1;
+}
+
+// Goober5000
+int ship_squadron_wing_lookup(char *wing_name)
+{
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
+	{
+		if (!stricmp(Squadron_wing_names[i], wing_name))
+			return i;
+	}
+
+	return -1;
+}
+
+// Goober5000
+int ship_tvt_wing_lookup(char *wing_name)
+{
+	for (int i = 0; i < MAX_TVT_WINGS; i++)
+	{
+		if (!stricmp(TVT_wing_names[i], wing_name))
+			return i;
+	}
+
+	return -1;
 }

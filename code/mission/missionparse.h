@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.51 $
+ * $Revision: 2.52 $
  * $Author: Goober5000 $
- * $Date: 2004-10-31 02:04:34 $
+ * $Date: 2004-12-14 14:46:13 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2004/10/31 02:04:34  Goober5000
+ * added Knossos_warp_ani_used flag for taylor
+ * --Goober5000
+ *
  * Revision 2.50  2004/10/12 22:47:14  Goober5000
  * added toggle-subsystem-scanning ship flag
  * --Goober5000
@@ -418,10 +422,6 @@ struct wing;
 // mission file format!
 #define	MISSION_VERSION 0.10f
 #define	FRED_MISSION_VERSION 0.10f
-
-// maximum number of starting wings for the player
-#define MAX_STARTING_WINGS		3
-extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 

@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.4 $
- * $Date: 2004-08-11 05:06:23 $
- * $Author: Kazan $
+ * $Revision: 1.5 $
+ * $Date: 2004-12-14 14:46:12 $
+ * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/08/11 05:06:23  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.3  2004/05/10 10:51:54  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -89,6 +92,11 @@
 	#define MAX_WINGS				25
 #endif
 
+#define MAX_SHIPS_PER_WING			6
+
+#define MAX_STARTING_WINGS			3	// number of wings player can start a mission with
+#define MAX_SQUADRON_WINGS			5	// number of wings in squadron (displayed on HUD)
+#define MAX_TVT_WINGS				2	// number of wings in a TVT game
 
 // from ship.h
 #define MAX_PLAYER_PRIMARY_BANKS	2
