@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-09-09 17:10:54 $
- * $Author: matt $
- * $Revision: 2.25 $
- * $Date: 2003-09-09 17:10:54 $
- * $Author: matt $
+ * $Revision: 2.26 $
+ * $Date: 2003-09-11 18:55:23 $
+ * $Author: argv $
+ * $Revision: 2.26 $
+ * $Date: 2003-09-11 18:55:23 $
+ * $Author: argv $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/09/09 17:10:54  matt
+ * Added -nospec cmd line param to disable specular -Sticks
+ *
  * Revision 2.24  2003/08/22 07:35:08  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -377,6 +380,11 @@ cmdline_parm fps_arg("-fps", NULL);
 cmdline_parm d3dlowmem_arg("-d3dlowmem", NULL); //DTP for random tigers GF4fix
 cmdline_parm d3dmipmap_arg("-d3dmipmap", NULL);
 cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// beams do not pierce shields - Goober5000
+cmdline_parm auto_ets_arg("-auto-ets", NULL); // _argv[-1] - auto ETS.
+cmdline_parm no_implicit_disable_auto_target("-no-implicit-disable-auto-target", NULL); // _argv[-1] - don't disable auto targeting when 'target nothing' command is used.
+cmdline_parm no_auto_target_turret("-no-auto-target-turret", NULL); // _argv[-1] - don't auto-target turrets.
+cmdline_parm sound_from_own_turrets("-sound-from-own-turrets", NULL); // _argv[-1] - play sounds when own turrets fire.
+cmdline_parm singular_shields("-singular-shields", NULL); // _argv[-1] - turn on singular shields for all ships.
 cmdline_parm fov_arg("-fov", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_exp_arg("-spec_exp", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_point_arg("-spec_point", NULL);	// comand line FOV -Bobboau
@@ -423,6 +431,8 @@ int Cmdline_d3dlowmem = 0;
 int Cmdline_d3dmipmap = 0;
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
+
+struct argv_options Argv_options; // _argv[-1] - options struct for my stuff, and maybe other people's too.
 
 static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
@@ -828,6 +838,33 @@ int parse_cmdline(int argc, char *argv[])
 
 	if ( beams_no_pierce_shields_arg.found() ) {
 		Cmdline_beams_no_pierce_shields = 1;
+	}
+
+	memset(&Argv_options, 0, sizeof(Argv_options));
+
+	// _argv[-1] - auto ETS.
+	if ( auto_ets_arg.found() ) {
+		Argv_options.auto_ets = 1;
+	}
+
+	// _argv[-1] - don't disable auto targeting when 'target nothing' command is used.
+	if ( no_implicit_disable_auto_target.found() ) {
+		Argv_options.no_implicit_disable_auto_target = 1;
+	}
+
+	// _argv[-1] - don't auto-target turrets.
+	if ( no_auto_target_turret.found() ) {
+		Argv_options.no_auto_target_turret = 1;
+	}
+
+	// _argv[-1] - play sounds when own turrets fire.
+	if ( sound_from_own_turrets.found() ) {
+		Argv_options.sound_from_own_turrets = 1;
+	}
+
+	// _argv[-1] - turn on singular shields for all ships.
+	if ( singular_shields.found() ) {
+		Argv_options.singular_shields = 1;
 	}
 
 	if ( fov_arg.found() ) {
