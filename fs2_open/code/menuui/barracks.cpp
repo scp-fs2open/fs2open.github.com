@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-08-20 08:11:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2004-02-10 21:47:47 $
+ * $Author: Goober5000 $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/08/20 08:11:00  wmcoolmon
+ * Added error screens to the barracks and start screens when a pilot file can't be deleted
+ *
  * Revision 2.3  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -132,7 +135,7 @@
 int delete_pilot_file( char *pilot_name, int single );		// manage_pilot.cpp
 
 // stats defines
-#define NUM_STAT_LINES 85
+#define NUM_STAT_LINES (21 + MAX_SHIP_TYPES)	// Goober5000
 #define STAT_COLUMN1_W 40
 #define STAT_COLUMN2_W 10
 
@@ -520,9 +523,19 @@ void barracks_init_stats(scoring_struct *stats)
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
+	// Goober5000 - make sure we have room for all ships
+	Assert(Num_stat_lines + Num_ship_types < NUM_STAT_LINES);
+
 	for (i=0; i<Num_ship_types; i++) {
 		if (stats->kills[i]) {
 			Assert(Num_stat_lines < NUM_STAT_LINES);
+
+			// Goober5000 - in case above Assert isn't triggered (such as in non-debug builds)
+			if (Num_stat_lines >= NUM_STAT_LINES)
+			{
+				break;
+			}
+
 			Assert(strlen(Ship_info[i].name) + 1 < STAT_COLUMN1_W);
 			sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), Ship_info[i].name);
 			sprintf(Stats[Num_stat_lines], "%d", stats->kills[i]);
