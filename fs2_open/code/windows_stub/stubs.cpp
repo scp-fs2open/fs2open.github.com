@@ -1,4 +1,18 @@
-// stub routines for porting
+
+/*
+ * $Logfile: $
+ * $Revision: 2.6 $
+ * $Date: 2005-01-30 18:32:42 $
+ * $Author: taylor $
+ *
+ * OS-dependent functions.
+ *
+ * $Log: not supported by cvs2svn $
+ *
+ * $NoKeywords: $
+ */
+
+#ifdef SCP_UNIX
 
 #include <stdarg.h>
 #include <errno.h>
@@ -6,53 +20,153 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <sys/time.h>
+#include "SDL.h"
 
 #include "globalincs/pstypes.h"
 
+bool env_enabled = false;
+bool cell_enabled = false;
+
+char *strnset( char* string, int fill, size_t count)
+{
+	char *p = string;
+
+ 	for(; *p; p++ ) {
+		if( count == 0 )
+			break;
+
+ 		*p = (char)fill;
+		count--;
+ 	}
+
+	return string;
+}
+
+// find the size of a file
+int filelength(int fd)
+{
+	struct stat buf;
+
+	if (fstat (fd, &buf) == -1)
+		return -1;
+
+	return buf.st_size;
+}
+
+// non-blocking process pause
+void Sleep(int mili)
+{
+	SDL_Delay( long(mili) );
+}
+
+// fatal assertion error
 void WinAssert(char * text, char *filename, int line)
 {
-	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d\n",
-			  text, filename, line);
+	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d\n", text, filename, line);
+
 	abort();
 }
 
-
-
+// standard warning message
 void Warning( char * filename, int line, char * format, ... )
 {
 	va_list args;
+	char buffer[200];
+	char buffer_tmp[200];
+	int i;
+	int slen = 0;
+
 	va_start(args, format);
-	fprintf (stderr, "WARNING: \"");
-	vfprintf(stderr, format, args);
-	fprintf (stderr, "\" at %s:%d\n", filename, line );
+	vsnprintf(buffer_tmp, 199, format, args);
 	va_end(args);
+
+	slen = strlen(buffer_tmp);
+
+	// strip out the newline char so the output looks better
+	for (i = 0; i < slen; i++){
+		if (buffer_tmp[i] == (char)0x0a) {
+			buffer[i] = ' ';
+		} else {
+			buffer[i] = buffer_tmp[i];
+		}
+	}
+
+	// kill off extra white space at end
+	if (buffer[slen-1] == (char)0x20) {
+		buffer[slen-1] = '\0';
+	} else {
+		// just being careful
+		buffer[slen] = '\0';
+	}
+
+	// Order UP!!
+	fprintf(stderr, "WARNING: \"%s\" at %s:%d\n", buffer, filename, line);
 }
 
-
+// fatal error message
 void Error( char * filename, int line, char * format, ... )
 {
 	va_list args;
+	char buffer[200];
+	char buffer_tmp[200];
+	int i;
+	int slen = 0;
+
 	va_start(args, format);
-	fprintf (stderr, "ERROR: \"");
-	vfprintf(stderr, format, args);
-	fprintf (stderr, "\" at %s:%d\n", filename, line );
+	vsnprintf(buffer_tmp, 199, format, args);
 	va_end(args);
+
+	slen = strlen(buffer_tmp);
+
+	// strip out the newline char so the output looks better
+	for (i = 0; i < slen; i++){
+		if (buffer_tmp[i] == (char)0x0a) {
+			buffer[i] = ' ';
+		} else {
+			buffer[i] = buffer_tmp[i];
+		}
+	}
+
+	// kill off extra white space at end
+	if (buffer[slen-1] == (char)0x20) {
+		buffer[slen-1] = '\0';
+	} else {
+		// just being careful
+		buffer[slen] = '\0';
+	}
+
+	// Order UP!!
+	fprintf(stderr, "ERROR: \"%s\" at %s:%d\n", buffer, filename, line);
+
 	abort();
 }
 
-
+// get a filename minus any leading path
 char *clean_filename(char *name)
 {
-	char *p = name+strlen(name)-1;
+	char *p = name + strlen(name)-1;
+
 	// Move p to point to first letter of EXE filename
-	while( (p > name) && (*p!='\\') && (*p!='/') && (*p!=':') )
+	while( (p > name) && (*p != '\\') && (*p != '/') && (*p != ':') )
 		p--;
+
 	p++;	
 
 	return p;	
 }
 
+// high precision timer
+bool QueryPerformanceCounter(LARGE_INTEGER *pcount)
+{
+	struct timeval timer_now;
 
+	gettimeofday(&timer_now, NULL);
+
+	pcount->QuadPart = (long long)timer_now.tv_usec;
+	
+	return 1;
+}
 
 #ifndef NDEBUG
 int TotalRam = 0;
@@ -60,7 +174,6 @@ int TotalRam = 0;
 
 int Watch_malloc = 0;
 DCF_BOOL(watch_malloc, Watch_malloc );
-
 
 
 #ifndef NDEBUG
@@ -71,64 +184,90 @@ void windebug_memwatch_init()
 }
 #endif
 
-
-int vm_init(int min_heap_size)
-{
-	#ifndef NDEBUG
-	TotalRam = 0;
-	#endif
-	return 1;
-}
-
+// retrieve the current working directory
 int _getcwd(char *buffer, unsigned int len)
 {
 	if (getcwd(buffer, len) == NULL) {
-		Error(__FILE__, __LINE__, 
-				"buffer overflow in getcwd (buf size = %u)", len);
+		Error(__FILE__, __LINE__, "buffer overflow in getcwd (buf size = %u)", len);
 	}
+
+	return 1;
 }
 
-
+// change directory to specified path
 int _chdir(const char *path)
 {
 	int status = chdir(path);
 
-	#ifndef NDEBUG
+#ifndef NDEBUG
 	if (status) {
-		Warning(__FILE__, __LINE__,
-				  "Cannot chdir to %s: %s", 
-				  path, sys_errlist[errno]);
+		Warning(__FILE__, __LINE__, "Cannot chdir to %s: %s", path, strerror(errno));
 	}
-	#endif
+#endif
 
 	return status;
 }
 
-
+// make specified directory
 int _mkdir(const char *path)
 {
 	int status = mkdir(path, 0777);
 
-	#ifndef NDEBUG
-	if (status) {
-		Warning(__FILE__, __LINE__,
-				  "Cannot mkdir %s: %s", 
-				  path, sys_errlist[errno]);
+#ifndef NDEBUG
+	int m_error = errno;
+
+	if (status && (m_error != EEXIST) ) {
+		Warning(__FILE__, __LINE__, "Cannot mkdir %s: %s", path, strerror(m_error));
 	}
-	#endif
+#endif
 
 	return status;
 }
 
+void _splitpath (char *path, char *drive, char *dir, char *fname, char *ext)
+{
+	if ( (path == NULL) || (fname == NULL) )
+		return;
 
+	// this is really just to get rid of compiler warnings
+	if ( (drive == NULL) && (dir == NULL) && (ext == NULL) ) 
+		mprintf(("_splitpath = path: %s, fname: %s\n", path, fname));
 
+	/* fs2 only uses fname */
+	if (fname != NULL) {
+		const char *ls = strrchr(path, '/');
 
+		if (ls != NULL) {
+			ls++;		// move past '/'
+		} else {
+			ls = path;
+		}
 
+		const char *lp = strrchr(path, '.');
+
+		if (lp == NULL) {
+			lp = ls + strlen(ls);	// move to the end
+		}
+
+		int dist = lp-ls;
+
+		if (dist > (_MAX_FNAME-1))
+			dist = _MAX_FNAME-1;
+
+		strncpy(fname, ls, dist);
+		fname[dist] = 0;	// add null, just in case
+	}
+}
+
+// some type of info message
 int MessageBox(HWND h, const char *s1, const char *s2, int i)
 {
-	Error(__FILE__, __LINE__,
-			"MessageBox called!\n  s1 = \"%s\"\n  s2 = \"%s\"",
-			s1, s2);
+	if ( (h != NULL) && (i > -1) ) {
+		// placeholder for some future time
+	}
+
+	fprintf(stderr, "%s: \"%s\"\n", s2, s1);
+
 	return 0;
 }
 
@@ -137,76 +276,83 @@ int MulDiv(int number, int numerator, int denominator)
 {
 	int result;
 
-#if defined(__i386__)
+	if (denominator == 0)
+		return 0;
+
+#if defined(__i386__) && !defined(_DEBUG)
 	__asm(
-		        "movl  %1,%%eax\n"
-		"        movl  %2,%%ebx\n"
-		"        imul  %%ebx\n"
-		"        movl  %3,%%ebx\n"
-		"        idiv  %%ebx\n"
+		"movl  %1,%%eax\n"
+		"movl  %2,%%ebx\n"
+		"imul  %%ebx\n"
+		"movl  %3,%%ebx\n"
+		"idiv  %%ebx\n"
 		: "=eax" (result)
 		: "m" (number), "m" (numerator), "m" (denominator)
 		: "ebx","edx");
 #else
-        longlong tmp;
-        tmp = ((longlong) number) * ((longlong) numerator);
-        tmp /= (longlong) denominator;
-        result = (int) tmp;
+	longlong tmp;
+	tmp = ((longlong) number) * ((longlong) numerator);
+	tmp /= (longlong) denominator;
+	result = (int) tmp;
 #endif
+
 	return result;
 }
 
-
+// lowercase a string
 void strlwr(char *s)
 {
 	if (s == NULL)
 		return;
+
 	while (*s) {
 		*s = tolower(*s);
 		s++;
 	}
 }
 
-
+// add value to string
 char *itoa(int value, char *str, int radix)
 {
 	Assert(radix == 10);
+
 	sprintf(str, "%d", value);
+
 	return str;
 }
 
-
-
-
-#ifdef unix
-void DeleteCriticalSection(CRITICAL_SECTION *mutex)
-{
-	pthread_mutex_destroy(mutex);
-}
-
-
-void InitializeCriticalSection(CRITICAL_SECTION *mutex)
-{
-	pthread_mutex_init(mutex, NULL);
-}
-
-
-void EnterCriticalSection(CRITICAL_SECTION *mutex)
-{
-	pthread_mutex_lock(mutex);
-}
-
-
-void LeaveCriticalSection(CRITICAL_SECTION *mutex)
-{
-	pthread_mutex_unlock(mutex);
-}
-
-
-
+// use system versions of this stuff rather than the vm_* versions
 #undef malloc
 #undef free
 #undef strdup
+
+
+/* *************************************
+ *
+ * memory handling functions
+ *
+ * *************************************/
+
+// RamTable stuff comes out of icculus.org
+#ifndef NDEBUG
+typedef struct RAM {
+	ptr_u addr;
+	int size;
+
+	RAM *next;
+} RAM;
+
+static RAM *RamTable;
+#endif
+
+int vm_init(int min_heap_size)
+{
+#ifndef NDEBUG
+	TotalRam = 0;
+#endif
+
+	return 1;
+}
 
 #ifndef NDEBUG
 void *vm_malloc( int size, char *filename, int line )
@@ -214,23 +360,57 @@ void *vm_malloc( int size, char *filename, int line )
 void *vm_malloc( int size )
 #endif
 {
-	#ifndef NDEBUG
-	TotalRam += size;
-	return malloc(size);
-	#endif
- 
-	void *ptr = malloc(size );
-	if ( ptr == NULL )	{
+	void *ptr = malloc( size );
+
+	if (!ptr)	{
 		Error(LOCATION, "Out of memory.");
 	}
 
-	#ifndef NDEBUG
-		if ( Watch_malloc )	{
-			mprintf(( "Malloc %d bytes [%s(%d)]\n", size, clean_filename(filename), line ));
-		}
-		TotalRam += size;
-	#endif
+#ifndef NDEBUG
+	if ( Watch_malloc )	{
+		mprintf(( "Malloc %d bytes [%s(%d)]\n", size, clean_filename(filename), line ));
+	}
+
+	RAM *next = (RAM *)malloc(sizeof(RAM));
+
+	next->addr = (ptr_u)ptr;
+	next->size = (size + sizeof(RAM));
+
+	next->next = RamTable;
+	RamTable = next;
+
+	TotalRam += size;
+#endif
+
 	return ptr;
+}
+
+#ifndef NDEBUG
+void *vm_realloc( void *ptr, int size, char *filename, int line )
+#else
+void *vm_realloc( const void *ptr, int size )
+#endif
+{
+	void *ret_ptr = realloc( ptr, size );
+
+	if (!ret_ptr)	{
+		Error(LOCATION, "Out of memory.");
+	}
+
+#ifndef NDEBUG
+	RAM *item = RamTable;
+
+	while (item != NULL) {
+		if (item->addr == (ptr_u)ret_ptr) {
+			TotalRam += (size - item->size);
+			item->size = size;
+			break;
+		}
+		item = item->next;
+    }
+#endif
+
+	return ret_ptr;
 }
 
 #ifndef NDEBUG
@@ -241,12 +421,18 @@ char *vm_strdup( const char *ptr )
 {
 	char *dst;
 	int len = strlen(ptr);
-	#ifndef NDEBUG
-		dst = (char *)vm_malloc( len+1, filename, line );
-	#else
-		dst = (char *)vm_malloc( len+1 );
-	#endif
+
+#ifndef NDEBUG
+	dst = (char *)vm_malloc( len+1, filename, line );
+#else
+	dst = (char *)vm_malloc( len+1 );
+#endif
+
+	if (!dst)
+		return NULL;
+
 	strcpy( dst, ptr );
+
 	return dst;
 }
 
@@ -257,23 +443,36 @@ void vm_free( void *ptr )
 #endif
 {
 	if ( !ptr ) {
-		#ifndef NDEBUG
-			mprintf(("Why are you trying to free a NULL pointer?  [%s(%d)]\n", clean_filename(filename), line));
-		#else
-			mprintf(("Why are you trying to free a NULL pointer?\n"));
-		#endif
+#ifndef NDEBUG
+		mprintf(("Why are you trying to free a NULL pointer?  [%s(%d)]\n", clean_filename(filename), line));
+#else
+		mprintf(("Why are you trying to free a NULL pointer?\n"));
+#endif
 		return;
 	}
 
-	#ifndef NDEBUG
-		#ifdef _WIN32
-		  _CrtMemBlockHeader *phd = pHdr(ptr);
-		  int nSize = phd->nDataSize;
-		  TotalRam -= nSize;
-      #else
-        // mharris TODO: figure out size of block...
-      #endif // ifdef WIN32
-	#endif // ifndef NDEBUG
+#ifndef NDEBUG
+	RAM *item = RamTable;
+    RAM **mark = &RamTable;
+
+	while (item != NULL) {
+		if (item->addr == (ptr_u)ptr) {
+			RAM *tmp = item;
+
+			*mark = item->next;
+
+			TotalRam -= tmp->size;
+
+			free(tmp);
+
+			break;
+		}
+
+		mark = &(item->next);
+
+		item = item->next;
+    }
+#endif // !NDEBUG
 
 	free(ptr);
 }
@@ -282,6 +481,4 @@ void vm_free_all()
 {
 }
 
-
-
-#endif
+#endif // SCP_UNIX

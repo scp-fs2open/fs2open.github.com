@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-01-30 12:50:08 $
+ * $Revision: 2.27 $
+ * $Date: 2005-01-30 18:32:41 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/01/30 12:50:08  taylor
+ * merge with Linux/OSX tree - p0130
+ *
  * Revision 2.25  2005/01/09 21:40:07  wmcoolmon
  * Fix for music directory parent
  *
@@ -1035,7 +1038,7 @@ int cfclose( CFILE * cfile )
 #elif defined SCP_UNIX
 		result = munmap(cb->data, cb->data_length);
 		Assert(result);
-		if ( cb->fp != NULL) {
+		if ( cb->fp != NULL)
 			result = fclose(cb->fp);
 #endif
 

@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:36 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-01-30 18:32:42 $
+ * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:36  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2003/03/02 06:25:31  penguin
  * Tweaked for gcc
  *  - penguin
@@ -22,10 +25,10 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include "PreProcDefines.h"
 
 #if defined _WIN32
 
@@ -43,248 +46,102 @@
 
 #else  // ! Win32
 
-#include <limits.h>
+
 #include <unistd.h>
-#include <pthread.h>
+#include "SDL.h"
+
+
+// don't verbose stub funtions unless we're debugging
+#define STUB_FUNCTION nprintf(( "Warning", "STUB: %s in "__FILE__" at line %d, thread %d\n", __FUNCTION__, __LINE__, getpid() ))
+#define DEBUGME(d1) nprintf(( "Warning", "DEBUGME: %s in "__FILE__" at line %d, msg \"%s\", thread %d\n", __FUNCTION__, __LINE__, d1, getpid() ))
 
 
 #define _cdecl
 #define __cdecl
 #define __stdcall
 #define PASCAL
+#define CALLBACK
+#define WINAPI
+#define FAR
 
-
-#ifndef _MAX_PATH
-#define _MAX_PATH PATH_MAX
-#endif
-
-#ifndef MAX_PATH
-#define MAX_PATH PATH_MAX
-#endif
-
-#ifndef MAX_PATH_LEN
-#define MAX_PATH_LEN PATH_MAX
-#endif
-
-#ifndef MAX_FILENAME_LEN
-#define MAX_FILENAME_LEN NAME_MAX
-#endif
-
-#ifndef _MAX_FNAME
-#define _MAX_FNAME NAME_MAX
-#endif
-
-
-
-
-// TODO -- make portable
-typedef unsigned char ubyte;
-typedef unsigned char byte;
-typedef unsigned int  DWORD;
-typedef bool          BOOL;
-typedef unsigned int  UINT;
-typedef unsigned short WORD;
-
-#define Sleep(t)  os_sleep(t)
-
-struct _EXCEPTION_POINTERS;
-
-
-// these a wrong...
-struct STARTUPINFO {
-	int cb;
-};
-struct PROCESS_INFORMATION { };
-struct MEMORYSTATUS { 
-	int dwLength;
-	int dwTotalPhys;
-	int dwTotalVirtual;
-};
-struct WIN32_FIND_DATA { 
-	int dwFileAttributes;
-	char * cFileName;
-	int nFileSizeLow;
-};
-typedef struct {
-	int attrib;
-	char *name;
-	int time_write;
-	unsigned int size;
-} _finddata_t;
-
-struct POINT {
-	int x, y;
-};
-
-
-typedef void * HWND;
-typedef void * HINSTANCE;
-typedef void * HANDLE;
-
-typedef char * LPSTR;
-
-#define MB_OK 0
-#define MB_TASKMODAL 0
-#define MB_SETFOREGROUND 0
-#define MB_OKCANCEL 0
-#define IDCANCEL 0
-
-#define CREATE_DEFAULT_ERROR_MODE 0
-
-#define FILE_ATTRIBUTE_NORMAL 0
-#define FILE_ATTRIBUTE_DIRECTORY 0
-
-#define INVALID_HANDLE_VALUE ((HANDLE) NULL)
-
-#define DRIVE_CDROM 0
-
-#define _A_SUBDIR 0
-#define _A_RDONLY 0
-
-#define GENERIC_READ 0
-#define FILE_SHARE_READ 0
-#define OPEN_EXISTING 0
-#define PAGE_READONLY 0
-#define FILE_MAP_READ 0
-
-
-#ifdef unix
-// -- socket stuff
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-typedef int SOCKET;
-typedef sockaddr SOCKADDR;
-typedef sockaddr_in SOCKADDR_IN;
-typedef SOCKADDR *LPSOCKADDR;
-typedef hostent HOSTENT;
-typedef servent SERVENT;
-
-#ifndef INVALID_SOCKET
-#define INVALID_SOCKET ((SOCKET) -1)
-#endif
-
-#define SOCKET_ERROR (-1)
-
-#ifdef unix
-typedef pthread_mutex_t CRITICAL_SECTION;
+// Standard data types
+typedef void *LPVOID;
+typedef const void *LPCVOID;
+typedef int BOOL, *PBOOL, *LPBOOL;
+typedef unsigned char BYTE, *PBYTE, *LPBYTE;
+typedef unsigned char UCHAR, *PUCHAR;
+typedef unsigned short WORD, *PWORD, *LPWORD;
+typedef unsigned short USHORT, *PUSHORT;
+typedef int INT, *PINT, *LPINT;
+typedef unsigned int UINT, *PUINT;
+typedef long *LPLONG;
+#ifdef IAM_64BIT
+// force 32-bit version of DWORD
+typedef unsigned int DWORD;
+typedef unsigned long *PDWORD, *LPDWORD;
 #else
-typedef void * CRITICAL_SECTION;
+typedef unsigned long DWORD, *PDWORD, *LPDWORD;
 #endif
+typedef unsigned long ULONG, *PULONG;
+typedef float FLOAT, *PFLOAT;
+typedef double DOUBLE;
+typedef double DATE;
+typedef unsigned char byte, *pbyte, *lpbyte;
+typedef unsigned short UINT16, *PUINT16;
+typedef unsigned int UINT32, *PUINT32;
+typedef void *HMMIO;
+typedef void *HACMSTREAM;
+typedef long LONG;
+typedef long HRESULT;
+typedef long HTASK;
+typedef unsigned long SEGPTR;
+typedef long LONG_PTR, *PLONG_PTR;
+typedef long LRESULT;
+typedef long LPARAM;
+typedef long (CALLBACK *FARPROC16)();
+typedef	unsigned int MMRESULT;
+typedef void *HWND;
+typedef void *HINSTANCE;
+typedef void *HANDLE;
+typedef char *LPSTR;
+#define __int64 long long
+#define __int32 int
 
+typedef struct _LARGE_INTEGER {
+	long long QuadPart;
+} LARGE_INTEGER;
 
-//  struct LARGE_INTEGER {
-//  	unsigned int LowPart, HighPart, QuadPart;
-//  };
+// DDS format stuff ...
+#define DDSD_LINEARSIZE		0x00080000
+#define DDSD_PITCH			0x00000008
+#define DDPF_ALPHAPIXELS	0x00000001
+#define DDPF_FOURCC			0x00000004
+#define DDPF_RGB			0x00000040
 
-// time & select
-#include <sys/time.h>
-typedef timeval TIMEVAL;
+typedef struct _DDCOLORKEY {
+	DWORD dwColorSpaceLowValue;
+	DWORD dwColorSpaceHighValue;
+} DDCOLORKEY;
 
-// ioctl stuff
-#include <sys/ioctl.h>
-#endif // ifdef unix
+typedef struct _DDPIXELFORMAT {
+	DWORD dwSize;
+	DWORD dwFlags;
+	DWORD dwFourCC;
+	DWORD dwRGBBitCount;
+	DWORD dwRBitMask;
+	DWORD dwGBitMask;
+	DWORD dwBBitMask;
+	DWORD dwRGBAlphaBitMask;
+} DDPIXELFORMAT;
 
-
-// just to keep the compiler from complaining...
-extern "C" {
-
-	#define stricmp(s1, s2)       strcasecmp((s1), (s2))
-	#define strnicmp(s1, s2, n)   strncasecmp((s1), (s2), (n))
-	#define _strnicmp(s1, s2, n)  strncasecmp((s1), (s2), (n))
-
-	void strlwr(char *);
-
-	#define _isnan(f)     isnan(f)
-	#define _hypot(x, y)  hypot(x, y)
-
-	int MulDiv(int number, int numerator, int denominator);
-
-//  	DWORD GetFileAttributes(const char *);
-//  	void SetFileAttributes(const char *, int);
-//  	int CopyFile(const char *, const char *, int);
-//  	void DeleteFile(const char *);
-//  	void RemoveDirectory(const char *);
-
-//  	HANDLE FindFirstFile(char *, WIN32_FIND_DATA *);
-//  	int FindNextFile(HANDLE, WIN32_FIND_DATA *);
-//  	void FindClose(HANDLE);
-
-//  	int _findfirst(const char *, _finddata_t *);
-//  	int _findnext(int, _finddata_t *);
-//  	void _findclose(int);
-
-
-
-//  	int _getdrive();
-//  	void _chdrive(int);
-
-	int filelength(int);
-
-	int _chdir(const char *);
-	#define SetCurrentDirectory(s) _chdir(s)
-
-	int _getcwd(char *, unsigned int);
-	#define GetCurrentDirectory(i, s) _getcwd((s), (i))
-
-	int _mkdir(const char *);
-
-
-	#define _strlwr(s)				 strlwr(s)
-
-//  	int GetDriveType(const char *);
-//  	int GetVolumeInformation(const char *, const char *, int, void *, void *, void *, void *, int);
-
-	void _splitpath(char *, char *, char *, char *, char *);
-
-	#define _unlink(s) unlink(s)
-
-	char *itoa(int, char *, int);
-
-
-//  	BOOL CreateProcess(const char *,
-//  							 const char *,
-//  							 void *,
-//  							 void *,
-//  							 BOOL,
-//  							 unsigned int,
-//  							 void *,
-//  							 const char *,
-//  							 STARTUPINFO *,
-//  							 PROCESS_INFORMATION *);
-
-//  	int MessageBox(HWND, const char *, const char *, int);
-//  	HWND FindWindow(const char *, void * );
-//  	void SetForegroundWindow(HWND);
-
-//  	int _access(const char *, int);
-
-//  	void timeBeginPeriod(int);
-//  	void timeEndPeriod(int);
-
-//  	void GlobalMemoryStatus(MEMORYSTATUS *);
-
-//  	int GetModuleFileName(HINSTANCE, const char *, int);
-
-//  	_EXCEPTION_POINTERS * GetExceptionInformation();
-
-//  	HANDLE CreateFile(const char *, int, int, void *, int, int, void *);
-//  	HANDLE CreateFileMapping(HANDLE, void *, int, int, int, void *);
-//  	ubyte * MapViewOfFile(HANDLE, int, int, int, int);
-//  	int UnmapViewOfFile(void *);
-//  	int CloseHandle(HANDLE);
-
-
-//  	void * _beginthread(void(*)(void *), int, void *);
-
-//  	void closesocket(SOCKET);
-
-//  	void OutputDebugString(const char *);
-
-//  	unsigned int inet_addr(const char *);
-//  	int WSAGetLastError();
-
+// networking/socket stuff
+#define SOCKET			int
+#define SOCKADDR		struct sockaddr
+#define SOCKADDR_IN		struct sockaddr_in
+#define LPSOCKADDR		struct sockaddr*
+#define HOSTENT			struct hostent
+#define SERVENT			struct servent
+#define closesocket(x)	close(x)
 #define WSAEALREADY     EALREADY
 #define WSAEINVAL       EINVAL
 #define WSAEWOULDBLOCK  EWOULDBLOCK
@@ -293,13 +150,119 @@ extern "C" {
 #define WSAECONNRESET   ECONNRESET
 #define WSAECONNABORTED ECONNABORTED
 #define WSAESHUTDOWN    ESHUTDOWN
+#define SOCKET_ERROR	(-1)
 
-	void DeleteCriticalSection(CRITICAL_SECTION *);
-	void InitializeCriticalSection(CRITICAL_SECTION *);
-	void EnterCriticalSection(CRITICAL_SECTION *);
-	void LeaveCriticalSection(CRITICAL_SECTION *);
-}
+#ifndef INVALID_SOCKET
+#define INVALID_SOCKET ((SOCKET) -1)
+#endif
 
+// sound defines/structs
+#define WAVE_FORMAT_PCM		1
+#define WAVE_FORMAT_ADPCM	2
+
+#pragma pack(1) // required to get proper values in ds_parse_wave()
+typedef struct {
+	WORD wFormatTag;
+	WORD nChannels;
+	DWORD nSamplesPerSec;
+	DWORD nAvgBytesPerSec;
+	WORD nBlockAlign;
+} WAVEFORMAT;
+
+typedef struct {
+	WAVEFORMAT wf;
+	WORD wBitsPerSample;
+} PCMWAVEFORMAT;
+
+typedef struct {
+	WORD  wFormatTag;
+	WORD  nChannels;
+	DWORD nSamplesPerSec;
+	DWORD nAvgBytesPerSec;
+	WORD  nBlockAlign;
+	WORD  wBitsPerSample;
+	WORD  cbSize;
+} WAVEFORMATEX;
+#pragma pack()
+
+// MessageBox-Codes and stuff
+#define MB_ABORTRETRYIGNORE 0
+#define MB_CANCELTRYCONTINUE 0
+#define MB_HELP 0
+#define MB_OK 0
+#define MB_OKCANCEL 0
+#define MB_RETRYCANCEL 0
+#define MB_YESNO 0
+#define MB_YESNOCANCEL 0
+#define MB_ICONEXCLAMATION 0
+#define MB_ICONWARNING 0
+#define MB_ICONINFORMATION 0
+#define MB_ICONASTERISK 0
+#define MB_ICONQUESTION 0
+#define MB_ICONSTOP 0
+#define MB_ICONERROR 0
+#define MB_ICONHAND 0
+#define MB_DEFBUTTON1 0
+#define MB_DEFBUTTON2 0
+#define MB_DEFBUTTON3 0
+#define MB_DEFBUTTON4 0
+#define MB_APPLMODAL 0
+#define MB_SYSTEMMODAL 0
+#define MB_TASKMODAL 0
+#define MB_DEFAULT_DESKTOP_ONLY 0
+#define MB_RIGHT 0
+#define MB_RTLREADING 0
+#define MB_SETFOREGROUND 0
+#define MB_TOPMOST 0
+#define MB_SERVICE_NOTIFICATION 0
+#define MB_SERVICE_NOTIFICATION_NT3X 0
+
+int MessageBox(HWND h, const char *s1, const char *s2, int i);
+
+// thread/process related stuff
+#define _beginthread(x, y, z)
+#define _endthread(x)
+
+typedef SDL_mutex* CRITICAL_SECTION;
+
+// timer stuff
+typedef timeval TIMEVAL;
+bool QueryPerformanceCounter(LARGE_INTEGER *pcount);
+
+// file related items
+#define _MAX_FNAME					255
+#define _MAX_PATH					255
+#define MAX_PATH					255
+#define SetCurrentDirectory(s)		_chdir(s)
+#define GetCurrentDirectory(i, s)	_getcwd((s), (i))
+#define _unlink(s)					unlink(s)
+
+int filelength(int fd);
+int _chdir(const char *path);
+int _getcwd(char *buffer, unsigned int len);
+int _mkdir(const char *path);
+void _splitpath(char *path, char *drive, char *dir, char *fname, char *ext);
+
+// string related
+#define stricmp(s1, s2)			strcasecmp((s1), (s2))
+#define strnicmp(s1, s2, n)		strncasecmp((s1), (s2), (n))
+#define _strnicmp(s1, s2, n)	strncasecmp((s1), (s2), (n))
+#define _strlwr(s)				strlwr(s)
+
+void strlwr(char *s);
+char *strnset( char *string, int fill, size_t count);
+
+// other stuff
+#define _isnan(f)     isnan(f)
+#define _hypot(x, y)  hypot(x, y)
+
+int MulDiv(int number, int numerator, int denominator);
+char *itoa(int value, char *str, int radix);
+void Sleep(int mili);
+
+struct POINT {
+	int x, y;
+};
 
 #endif  // if !defined (WINDOWS)
 
