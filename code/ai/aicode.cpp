@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.1 $
- * $Date: 2005-03-25 06:45:12 $
+ * $Revision: 1.2 $
+ * $Date: 2005-03-25 07:01:53 $
  * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/03/25 06:45:12  wmcoolmon
+ * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
+ *
  * Revision 2.99  2005/03/14 02:52:58  phreak
  * Got rid of the stealth check that only applied to cloaked ships.  This should
  * fix some errorneous behavior that caused the ai to target the player
@@ -6011,7 +6014,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	//not using the new AI, use the old version of this function instead.
 	if (!(The_mission.flags & MISSION_FLAG_USE_NEW_AI))
 	{
-		ai_select_primary_weapon_OLD(objp, other_objp, flags);
+		return ai_select_primary_weapon_OLD(objp, other_objp, flags);
 	}
 
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
