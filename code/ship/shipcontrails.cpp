@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-15 02:11:00 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -125,10 +128,10 @@ void ct_ship_process(ship *shipp)
 	Assert(shipp->objnum >= 0);
 	objp = &Objects[shipp->objnum];
 
-	// if not a fullneb mission - do nothing
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	// if ship trails are not enabled - do nothing
+	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
 		return;
-	}
+	} 
 
 	// if this is not a ship, we don't care
 	if((objp->type != OBJ_SHIP) || (Ship_info[Ships[objp->instance].ship_info_index].ct_count <= 0)){
@@ -200,10 +203,10 @@ void ct_update_contrails(ship *shipp)
 	ship_info *sip;
 	object *objp;
 
-	// if not a fullneb mission - do nothing
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	// if ship trails are not enabled - do nothing
+	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
 		return;
-	}
+	} 
 
 	// get object and ship info
 	Assert(shipp != NULL);
@@ -247,10 +250,10 @@ void ct_create_contrails(ship *shipp)
 	ship_info *sip;
 	object *objp;
 
-	// if not a fullneb mission - do nothing
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	// if ship trails are not enabled - do nothing
+	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
 		return;
-	}
+	} 
 
 	// get object and ship info
 	Assert(shipp != NULL);

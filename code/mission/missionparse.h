@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.0 $
- * $Author: penguin $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Author: wmcoolmon $
+ * $Date: 2002-07-15 02:09:19 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -221,6 +224,7 @@ extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 #define MISSION_FLAG_FULLNEB				(1<<2)	// mission is a full nebula mission
 #define MISSION_FLAG_NO_BUILTIN_MSGS	(1<<3)	// disables builtin msgs
 #define MISSION_FLAG_NO_TRAITOR			(1<<4)	// player cannot become a traitor
+#define MISSION_FLAG_SHIP_TRAILS		(1<<5)	//Enables ship trails
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
