@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-03-19 18:02:34 $
- * $Author: bobboau $
+ * $Revision: 2.36 $
+ * $Date: 2005-03-20 00:11:27 $
+ * $Author: phreak $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/03/19 18:02:34  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.34  2005/03/16 01:35:59  bobboau
  * added a geometry batcher and implemented it in sevral places
  * namely: lasers, thrusters, and particles,
@@ -2650,6 +2654,20 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 	gr_filter_set(1);
 
 	return ret;
+}
+
+void g3_draw_htl_line(vector *start, vector *end)
+{
+	if (Cmdline_nohtl) return;
+	gr_draw_htl_line(start,end);
+}
+
+void g3_draw_htl_sphere(vector* position, float radius)
+{
+	if (Cmdline_nohtl) return;
+	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
+	gr_draw_htl_sphere(radius);
+	g3_done_instance(true);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//

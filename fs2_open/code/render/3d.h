@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.12 $
- * $Date: 2005-03-19 18:02:34 $
- * $Author: bobboau $
+ * $Revision: 2.13 $
+ * $Date: 2005-03-20 00:11:27 $
+ * $Author: phreak $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/03/19 18:02:34  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.11  2005/03/09 03:23:32  bobboau
  * added a new interface render funtion
  *
@@ -384,6 +388,11 @@ ubyte g3_transfer_vertex(vertex *dest, vector *src);
 int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additional_tmap_flags);
 int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint additional_tmap_flags);
 
+//draw a line in HTL mode without having to go through the rotate/project stuff
+void g3_draw_htl_line(vector *start, vector *end);
+
+//draw a sphere mode without having to go through the rotate/project stuff
+void g3_draw_htl_sphere(vector *position, float radius);
 
 //flash ball
 // a neat looking ball of rays that move around and look all energetic and stuff
