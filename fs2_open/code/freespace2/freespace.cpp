@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.29 $
- * $Date: 2003-03-22 06:11:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.30 $
+ * $Date: 2003-03-29 08:52:59 $
+ * $Author: sesquipedalian $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/03/22 06:11:51  Goober5000
+ * added play-sound-from-table, play-sound-from-file, and close-sound-from-file
+ * --Goober5000
+ *
  * Revision 2.28  2003/03/18 10:07:01  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -7649,6 +7653,12 @@ void game_do_training_checks()
 		Players_targeted_subsys = Player_ai->targeted_subsys;
 		Players_target_timestamp = timestamp();
 	}
+	// following added by Sesquipedalian for is_missile_locked
+	if ((Players_mlocked == UNINITIALIZED) || (Player_ai->current_target_is_locked != Players_mlocked)) {
+		Players_mlocked = Player_ai->current_target_is_locked;
+		Players_mlocked_timestamp = timestamp();
+	}
+
 }
 
 /////////// Following is for event debug view screen

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.55 $
- * $Date: 2003-03-28 19:56:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.56 $
+ * $Date: 2003-03-29 08:52:59 $
+ * $Author: sesquipedalian $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2003/03/28 19:56:02  Goober5000
+ * got rid of an annoying compile warning
+ * --Goober5000
+ *
  * Revision 2.54  2003/03/22 08:17:34  Goober5000
  * argh - lol
  * --Goober5000
@@ -722,7 +726,8 @@ sexp_oper Operators[] = {
 	{ "team-score",					OP_TEAM_SCORE,					1,	1,	}, 
 	{ "was-promotion-granted",				OP_WAS_PROMOTION_GRANTED,			0, 1,			},
 	{ "was-medal-granted",					OP_WAS_MEDAL_GRANTED,				0, 1,			},
-
+	{ "is-missile-locked",				OP_IS_MISSILE_LOCKED,			1,	3			},	// Sesquipedalian
+	
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,	1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,	1,	1,	},
 	{ "time-ship-departed",		OP_TIME_SHIP_DEPARTED,	1,	1,	},
@@ -990,8 +995,10 @@ sexp_node Sexp_nodes[MAX_SEXP_NODES];
 sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 
 int Players_target = UNINITIALIZED;
+int Players_mlocked = UNINITIALIZED; // for is-missile-locked - Sesquipedalian
 ship_subsys *Players_targeted_subsys;
 int Players_target_timestamp;
+int Players_mlocked_timestamp;
 
 // for play-music - Goober5000
 int	Sexp_music_handle = -1;
@@ -9497,6 +9504,44 @@ int sexp_is_tagged(int node)
 	return 0;
 }
 
+// Sesquipedalian, with loads of help and education from Goober5000. =D
+// Returns true so long as the player has held a missile lock for the specified time.
+// If the optional ship and/or ship's subsystem are specified, returns true when that
+// has been locked onto, but otherwise returns as long as anything has been locked onto.
+int sexp_is_missile_locked(int node)
+{
+	int z;
+	ship_subsys *ptr;
+
+	z = sexp_get_val(node) * 1000;
+	if (!timestamp_has_time_elapsed(Players_mlocked_timestamp, z)){
+		return 0;
+	}
+
+	if (CDR(node) >= 0) {
+		z = ship_query_state(CTEXT(CDR(node)));
+		if (z == 1){
+			return SEXP_KNOWN_FALSE;  // ship isn't around, nor will it ever be
+		} else if (z == -1) {
+			return SEXP_CANT_EVAL;
+		}
+
+		z = ship_name_lookup(CTEXT(CDR(node)), 1);
+		if ((z < 0) || !Player_ai || (Ships[z].objnum != Player_ai->target_objnum) || !(Player_ai->current_target_is_locked)){
+			return 0;
+		}
+
+		if (CDR(CDR(node)) >= 0) {
+			ptr = Player_ai->targeted_subsys;
+			if (!ptr || stricmp(ptr->system_info->subobj_name, CTEXT(CDR(CDR(node))))){
+				return 0;
+			}
+		}
+	}
+
+	return 1;
+}
+
 int sexp_num_kills(int node)
 {
 	int sindex, np_index;
@@ -10721,6 +10766,10 @@ int eval_sexp(int cur_node)
 				sexp_val = SEXP_KNOWN_TRUE;  // only do it first time in repeating events.
 				break;
 
+			case OP_IS_MISSILE_LOCKED:
+				sexp_val = sexp_is_missile_locked(node);
+				break;
+
 			case OP_TARGETED:
 				sexp_val = sexp_targeted(node);
 				break;
@@ -11162,6 +11211,7 @@ int query_operator_return_type(int op)
 		case OP_IS_SHIP_STEALTHY:
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_IS_CARGO:
+		case OP_IS_MISSILE_LOCKED
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -11580,6 +11630,15 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUBSYSTEM;
 			else
 				Int3();		// shouldn't happen
+
+		// Sesquipedalian
+		case OP_IS_MISSILE_LOCKED:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else if (argnum == 1)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM;
 
 		case OP_TARGETED:
 			if (!argnum)
