@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-02-21 09:00:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2005-02-23 04:55:07 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/02/21 09:00:58  wmcoolmon
+ * Multi-res support
+ *
  * Revision 2.7  2004/07/26 20:47:40  Kazan
  * remove MCD complete
  *
@@ -333,7 +336,7 @@ void pause_close(int multi)
 		}
 
 		if (Pause_background_bitmap){
-			bm_unload(Pause_background_bitmap);
+			bm_release(Pause_background_bitmap);
 		}
 
 		Pause_win.destroy();		

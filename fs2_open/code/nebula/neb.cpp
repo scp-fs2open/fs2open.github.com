@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-02-04 20:06:04 $
+ * $Revision: 2.33 $
+ * $Date: 2005-02-23 04:55:08 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/02/04 20:06:04  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.31  2005/01/22 22:53:07  wmcoolmon
  * Instead of trying to allocate a ridiculously large buffer if the file is defined but doesn't exist, give a warning. Someone with nebula-code experience should probably double-check this; also added jpg and TGA support.
  *
@@ -683,7 +686,7 @@ void neb2_level_close()
 	// unload all nebula bitmaps
 	for(idx=0; idx<Neb2_poof_count; idx++){
 		if(Neb2_poofs[idx] >= 0){
-			bm_unload(Neb2_poofs[idx]);
+			bm_release(Neb2_poofs[idx]);
 			Neb2_poofs[idx] = -1;
 		}
 	}	
