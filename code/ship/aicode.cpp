@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-01-03 21:58:07 $
+ * $Revision: 2.13 $
+ * $Date: 2003-01-06 22:57:23 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/01/03 21:58:07  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.11  2002/12/31 18:59:42  Goober5000
  * if it ain't broke, don't fix it
  * --Goober5000
@@ -3899,7 +3906,20 @@ void ai_do_stay_near(object *objp, object *other_objp, float dist)
 	aip->stay_near_distance = dist;
 	aip->goal_objnum = other_objp-Objects;
 	aip->goal_signature = other_objp->signature;
+}
 
+//	Goober5000 - enter safety mode (used by support ships, now possibly by fighters too)
+void ai_do_safety(object *objp)
+{
+	ai_info	*aip;
+
+	Assert(objp->type == OBJ_SHIP);
+	Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
+
+	aip = &Ai_info[Ships[objp->instance].ai_index];
+
+	aip->mode = AIM_SAFETY;
+	aip->submode = AISS_1;
 }
 
 //	Make object *objp form on wing of object *goal_objp

@@ -9,11 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.4 $
- * $Date: 2003-01-03 21:58:07 $
+ * $Revision: 2.5 $
+ * $Date: 2003-01-06 22:57:23 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/03 21:58:07  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/10 05:43:33  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -694,6 +701,9 @@ extern ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, i
 extern void ai_rearm_repair( object *objp, object *goal_objp, int priority, int docker_index, int dockee_index );
 extern void ai_add_rearm_goal( object *requester_objp, object *support_objp );
 extern void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_path=0);
+
+// Goober5000
+extern void ai_do_safety(object *objp);
 
 // used to get path info for fighter bay emerging and departing
 int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vector *pos, vector *fvec);
