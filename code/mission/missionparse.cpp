@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-01-06 20:29:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2003-01-11 01:00:25 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/01/06 20:29:28  Goober5000
+ * nasssty bugs, we hates them, yesss we do, preciousssss
+ * :)
+ * --Goober5000
+ *
  * Revision 2.14  2003/01/06 17:19:14  Goober5000
  * hmm... moved +Squad Logo to immediately beneath $Name
  * --Goober5000
@@ -820,8 +825,9 @@ void parse_mission_info(mission *pm)
 		nebl_set_storm(Mission_parse_storm_name);
 	}
 
-	// hack: turn on ship trails if in nebula
-	if (pm->flags & MISSION_FLAG_FULLNEB)
+	// If ship trails are not explicitly defined and nebula is enabled
+	//enable ship trails as well -Coolmon
+	if (pm->flags & MISSION_FLAG_FULLNEB && !(pm->flags & MISSION_FLAG_ST_OVERRIDE_NEB))
 	{
 		pm->flags |= MISSION_FLAG_SHIP_TRAILS;
 	}
