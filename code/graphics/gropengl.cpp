@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.60 $
- * $Date: 2004-02-05 01:41:33 $
+ * $Revision: 2.61 $
+ * $Date: 2004-02-13 04:17:12 $
  * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2004/02/05 01:41:33  randomtiger
+ * Small changes, deleted old dshow stuff
+ *
  * Revision 2.59  2004/02/03 18:29:30  randomtiger
  * Fixed OGL fogging in HTL
  * Changed htl laser function to work in D3D, commented out until function flat bug is fixed
@@ -2011,6 +2014,23 @@ void gr_opengl_line(int x1,int y1,int x2,int y2)
 
 void gr_opengl_aaline(vertex *v1, vertex *v2)
 {
+#ifdef FRED_OGL_COMMENT_OUT_FOR_NOW
+	if(Fred_running && !Cmdline_nohtl)
+	{
+		glBegin (GL_LINES);
+			glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	  
+			ubyte zero[]={0,0,0};
+			glSecondaryColor3ubvEXT(zero);
+
+			glVertex3f (v1->x, v1->y, v1->z);
+			glVertex3f (v2->x, v2->y, v2->z);
+		glEnd ();
+
+		return;
+	}
+#endif
+
 	gr_opengl_line( fl2i(v1->sx), fl2i(v1->sy), fl2i(v2->sx), fl2i(v2->sy) );
 }
 
@@ -5123,7 +5143,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		
 
 	Gr_bitmap_poly = 1;
-	OGL_fogmode=1;
+	if(!Fred_running)
+		OGL_fogmode=1;
 
 	glEnable(GL_COLOR_SUM_EXT);
 	
@@ -5327,7 +5348,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	//if (GL_Extensions[GL_NV_RADIAL_FOG].enabled)
 	//	OGL_fogmode=3;
 	/*else*/
-	if (GL_Extensions[GL_FOG_COORDF].enabled)
+	if (GL_Extensions[GL_FOG_COORDF].enabled && !Fred_running)
 		OGL_fogmode=2;
 
 	glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max_multitex);

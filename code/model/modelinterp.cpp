@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.66 $
- * $Date: 2004-02-06 23:00:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.67 $
+ * $Date: 2004-02-13 04:17:14 $
+ * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2004/02/06 23:00:29  Goober5000
+ * commented my tmap_num Asserts
+ * --Goober5000
+ *
  * Revision 2.65  2004/02/06 05:55:46  matt
  * Fix for bad ambient lighting in non-htl -Sticks
  *
@@ -1280,7 +1284,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 
 		for (i=0; i<nv; i++ )	{
 			j = (i + 1) % nv;
-			g3_draw_line(Interp_list[i], Interp_list[j] );
+			g3_draw_line(Interp_list[i], Interp_list[j]);
 		}
 	}
 }
@@ -1625,7 +1629,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 		for (i=0; i<nv; i++ )	{
 			int j = (i + 1) % nv;
-			g3_draw_line(Interp_list[i], Interp_list[j] );
+	   		g3_draw_line(Interp_list[i], Interp_list[j]);
 		}
 	}
 
@@ -2216,7 +2220,6 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 	int tmap_num = w(p+40);
 	//mprintf(("model_interp_sub tmap_num: %d\n", tmap_num));
 	//Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
-
 	
 	while ( chunk_type != OP_EOF )	{
 
@@ -2227,6 +2230,8 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 		case OP_DEFPOINTS:		model_interp_defpoints(p,pm,sm); break;
 		case OP_FLATPOLY:		model_interp_flatpoly(p,pm); break;
 		case OP_TMAPPOLY:
+#ifndef FRED
+
 			// possible texture replacements - Goober5000
 			if (Interp_replacement_textures)
 			{
@@ -2236,6 +2241,7 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 			{
 				model_set_replacement_bitmap(-1);
 			}
+#endif
 			
 			model_interp_tmappoly(p,pm);
 			break;
@@ -3418,8 +3424,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		return;
 	}
 
-	bool is_outlines_only = !Cmdline_nohtl && (flags & MR_NO_POLYS) && 
-		((flags & MR_SHOW_OUTLINE_PRESET) || (flags & MR_SHOW_OUTLINE));  
+	bool is_outlines_only = !Cmdline_nohtl && (flags & MR_NO_POLYS) && ((flags & MR_SHOW_OUTLINE_PRESET) || (flags & MR_SHOW_OUTLINE));  
+
 
 	g3_start_instance_matrix(pos,orient, !is_outlines_only);
 
@@ -4730,6 +4736,24 @@ void parse_defpoint(int off, ubyte *bsp_data){
 
 }
 
+inline int check_values(vector *N)
+{
+	// Values equal to -1.#IND0
+	if((N->xyz.x * N->xyz.x) < 0 ||
+	   (N->xyz.y * N->xyz.y) < 0 ||
+	   (N->xyz.z * N->xyz.z) < 0)
+	{
+		N->xyz.x = 1;
+		N->xyz.y = 0;
+		N->xyz.z = 0;
+		return 1;
+	}
+
+	return 0;
+}
+
+int Parse_normal_problem_count = 0;
+
 void parse_tmap(int offset, ubyte *bsp_data){
 	int pof_tex = bsp_data[offset+40];
 	int n_vert = bsp_data[offset+36];
@@ -4745,6 +4769,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 	vector *v;
 	vector *N;
 
+	int problem_count = 0;
+
 	for(int i = 1; i<n_vert-1; i++){
 		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)];
 		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)];
@@ -4757,6 +4783,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		*N = *Interp_norms[(int)tverts[0].normnum];
 		if(IS_VEC_NULL(N))
 			*N = *vp(p+8);
+
+	  	problem_count += check_values(N);
 		vm_vec_normalize(N);
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+1];
@@ -4770,6 +4798,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		*N = *Interp_norms[(int)tverts[i].normnum];
 		if(IS_VEC_NULL(N))
 			*N = *vp(p+8);
+
+	 	problem_count += check_values(N);
 		vm_vec_normalize(N);
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+2];
@@ -4783,12 +4813,15 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		*N = *Interp_norms[(int)tverts[i+1].normnum];
 		if(IS_VEC_NULL(N))
 			*N = *vp(p+8);
+
+		problem_count += check_values(N);
 		vm_vec_normalize(N);
 
 		list[pof_tex].n_poly++;
 	
 	}
 
+	Parse_normal_problem_count += problem_count;
 }
 
 // Flat Poly

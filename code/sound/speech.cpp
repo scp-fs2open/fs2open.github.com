@@ -61,11 +61,18 @@ bool speech_play(char *text)
 		len = MAX_SPEECH_CHAR_LEN - 1;
 	}
 
+	int count = 0;
 	for(int i = 0; i < len; i++) {
-		Conversion_buffer[i] = (unsigned short) text[i];
+		if(text[i] == '$') {
+			i++;
+			continue;
+		}
+
+		Conversion_buffer[count] = (unsigned short) text[i];
+		count++;
 	}
 
-	Conversion_buffer[i] = '\0';
+	Conversion_buffer[count] = '\0';
 
 	return speech_play(Conversion_buffer);
 }

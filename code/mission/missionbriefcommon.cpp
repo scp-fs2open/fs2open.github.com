@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-01-24 12:47:48 $
+ * $Revision: 2.7 $
+ * $Date: 2004-02-13 04:17:13 $
  * $Author: randomtiger $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/01/24 12:47:48  randomtiger
+ * Font and other small changes for Fred
+ *
  * Revision 2.5  2003/11/16 04:08:47  Goober5000
  * fixed briefing scroll and display of "more"
  * --Goober5000
@@ -795,7 +798,12 @@ void brief_parse_icon_tbl()
 			if ( load_this_icon ) {
 				hf->first_frame = bm_load_animation(name, &hf->num_frames);
 				if ( hf->first_frame == -1 ) {
-					Int3();	// missing briefing icon
+					static bool error_already_shown = false;
+
+					if(error_already_shown == false) {
+						MessageBox(NULL,"Missing briefing icon","brief_parse_icon_tbl error", MB_OK);
+						error_already_shown = true;
+					}
 				}
 			}
 

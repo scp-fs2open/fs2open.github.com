@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-01-17 21:59:54 $
+ * $Revision: 2.15 $
+ * $Date: 2004-02-13 04:17:14 $
  * $Author: randomtiger $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/01/17 21:59:54  randomtiger
+ * Some small changes to the main codebase that allow Fred_open OGL to compile.
+ *
  * Revision 2.13  2003/11/16 04:09:27  Goober5000
  * language
  *
@@ -219,7 +222,7 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 
 //	mprintf(( "g3_start_frame called from %s, line %d\n", filename, lineno ));
 
-	Assert( G3_count == 0 );
+ 	Assert( G3_count == 0 );
 	G3_count++;
 
 	// Clear any user-defined clip planes
