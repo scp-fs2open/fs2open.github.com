@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.18 $
- * $Date: 2002-12-23 05:18:52 $
+ * $Revision: 2.19 $
+ * $Date: 2002-12-24 07:42:28 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2002/12/23 05:18:52  Goober5000
+ * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
+ * one ship would return after only dealing with the first ship.
+ *
+ * Also added the following sexps:
+ * is-ship-stealthed
+ * ship-force-stealth
+ * ship-force-nostealth
+ * ship-remove-stealth-forcing
+ *
+ * They toggle the stealth flag on and off.  If a ship is forced stealthy, it won't even
+ * show up for friendly ships.
+ * --Goober5000
+ *
  * Revision 2.17  2002/12/20 07:09:03  Goober5000
  * added capability of storing time_subsys_cargo_revealed
  * --Goober5000
@@ -10618,5 +10632,51 @@ float ship_get_length(ship* shipp)
 {
 	polymodel *pm = model_get(shipp->modelnum);
 	return (pm->maxs.xyz.z - pm->mins.xyz.z);
+}
+
+void ship_set_new_ai_class(int ship_num, int new_ai_class)
+{
+	Assert(ship_num >= 0);
+	Assert(new_ai_class >= 0);
+
+	ai_info *aip = &Ai_info[Ships[ship_num].ai_index];
+
+	// we hafta change a bunch of stuff here...
+	aip->ai_class = new_ai_class;
+	aip->behavior = new_ai_class;
+	aip->ai_courage = Ai_classes[new_ai_class].ai_courage[Game_skill_level];
+	aip->ai_patience = Ai_classes[new_ai_class].ai_patience[Game_skill_level];
+	aip->ai_evasion = Ai_classes[new_ai_class].ai_evasion[Game_skill_level];
+	aip->ai_accuracy = Ai_classes[new_ai_class].ai_accuracy[Game_skill_level];
+
+	Ship_info[Ships[ship_num].ship_info_index].ai_class = new_ai_class;
+	Ships[ship_num].weapons.ai_class = new_ai_class;
+
+	// I think that's everything!
+}
+
+void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_class)
+{
+	Assert(ship_num >= 0);
+	Assert(subsystem);
+	Assert(new_ai_class >= 0);
+
+	ship_subsys *ss;
+
+	// find the ship subsystem by searching ship's subsys_list
+	ss = GET_FIRST( &Ships[ship_num].subsys_list );
+	while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
+	{
+		// if we found the subsystem
+		if ( !stricmp(ss->system_info->subobj_name, subsystem))
+		{
+			// set ai class
+			ss->weapons.ai_class = new_ai_class;
+			return;
+		}
+
+		ss = GET_NEXT( ss );
+	}
+	Int3();	// subsystem not found
 }
 

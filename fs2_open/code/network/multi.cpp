@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-17 02:18:40 $
+ * $Revision: 2.4 $
+ * $Date: 2002-12-24 07:42:29 $
  * $Author: Goober5000 $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/17 02:18:40  Goober5000
+ * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -1038,6 +1042,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 
 		case CHANGE_IFF:
 			process_change_iff_packet(data, header_info);
+			break;
+
+		case CHANGE_AI_CLASS:
+			process_change_ai_class_packet(data, header_info);
 			break;
 
 		case PRIMARY_FIRED_NEW:

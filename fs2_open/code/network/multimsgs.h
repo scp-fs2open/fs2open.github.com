@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.1 $
- * $Date: 2002-12-17 02:18:40 $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-24 07:42:29 $
  * $Author: Goober5000 $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/12/17 02:18:40  Goober5000
+ * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -661,7 +665,11 @@ void process_reinforcement_avail( ubyte *data, header *hinfo );
 
 // change iff stuff
 void send_change_iff_packet(ushort net_signature, int new_team);
-void process_change_iff_packet( ubyte *data, header *hinfo);
+void process_change_iff_packet( ubyte *data, header *hinfo );
+
+// change ai class stuff
+void send_change_ai_class_packet(ushort net_signature, char *subsystem, int new_ai_class);
+void process_change_ai_class_packet( ubyte *data, header *hinfo );
 
 // new primary fired info
 void send_NEW_primary_fired_packet(ship *shipp, int banks_fired);

@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.13 $
+ * $Revision: 2.14 $
  * $Author: Goober5000 $
- * $Date: 2002-12-23 23:01:27 $
+ * $Date: 2002-12-24 07:42:29 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2002/12/23 23:01:27  Goober5000
+ * added set-cargo and is-cargo-x sexps
+ * --Goober5000
+ *
  * Revision 2.12  2002/12/23 05:18:52  Goober5000
  * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
  * one ship would return after only dealing with the first ship.
@@ -355,7 +359,8 @@
 #include "cfile/cfile.h"
 #include "ship/ship.h"
 
-#define	OPERATOR_LENGTH	24  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
+// bumped to 30 by Goober5000
+#define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
 #define	TOKEN_LENGTH		32
 
 #ifdef FS2_DEMO
@@ -411,6 +416,7 @@
 #define	OPF_AMBIGUOUS			36		// type used with variable
 #define	OPF_AWACS_SUBSYSTEM		37		// an awacs subsystem
 #define OPF_CARGO				38		// a cargo string (currently used for set-cargo)
+#define OPF_AI_CLASS			39
 
 // Operand return types
 #define	OPR_NUMBER		1	// returns number
@@ -476,6 +482,7 @@
 #define	OP_IS_IFF								(0x0008 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)
 #define	OP_HAS_TIME_ELAPSED					(0x0009 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)
 #define	OP_NOT									(0x000a | OP_CATEGORY_LOGICAL)
+#define OP_IS_AI_CLASS						(0x000b | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 #define	OP_GOAL_INCOMPLETE					(0x0000 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
 #define	OP_GOAL_TRUE_DELAY					(0x0001 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
@@ -540,10 +547,9 @@
 #define	OP_SPECIAL_WARP_DISTANCE			(0x0018 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_IS_SHIP_VISIBLE					(0x0019 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_TEAM_SCORE						(0x001a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define OP_PRIMARY_AMMO_PCT					(0x001b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define OP_IS_SHIP_STEALTHED				(0x001c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define OP_IS_CARGO_X						(0x001d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-
+#define OP_PRIMARY_AMMO_PCT					(0x001b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_SHIP_STEALTHED				(0x001c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_CARGO_X						(0x001d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -622,6 +628,7 @@
 #define OP_SHIP_FORCE_NOSTEALTH			(0x0065	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SHIP_REMOVE_STEALTH_FORCING	(0x0066	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_CARGO					(0x0067	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_CHANGE_AI_CLASS				(0x0068 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
@@ -685,7 +692,7 @@
 #define OP_SPECIAL_CHECK						(0x000b | OP_CATEGORY_TRAINING)
 #define OP_SECONDARIES_DEPLETED				(0x000c | OP_CATEGORY_TRAINING)
 #define OP_FACING2								(0x000d | OP_CATEGORY_TRAINING)
-#define OP_PRIMARIES_DEPLETED					(0x000e | OP_CATEGORY_TRAINING)
+#define OP_PRIMARIES_DEPLETED					(0x000e | OP_CATEGORY_TRAINING)	// Goober5000
 
 #define OP_SET_TRAINING_CONTEXT_FLY_PATH	(0x0080 | OP_CATEGORY_TRAINING)
 #define OP_SET_TRAINING_CONTEXT_SPEED		(0x0081 | OP_CATEGORY_TRAINING)
@@ -781,7 +788,7 @@ char *CTEXT(int n);
 
 // defines for check_sexp_syntax
 #define SEXP_CHECK_NONOP_ARGS			-1			// non-operator has arguments
-#define SEXP_CHECK_OP_EXPTECTED		-2			// operator expected, but found data instead
+#define SEXP_CHECK_OP_EXPECTED		-2			// operator expected, but found data instead
 #define SEXP_CHECK_UNKNOWN_OP			-3			// unrecognized operator
 #define SEXP_CHECK_TYPE_MISMATCH		-4			// return type or data type mismatch
 #define SEXP_CHECK_BAD_ARG_COUNT		-5			// argument count in incorrect
@@ -815,6 +822,8 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_GAUGE_NAME			-126
 #define SEXP_CHECK_INVALID_JUMP_NODE			-127
 #define SEXP_CHECK_INVALID_VARIABLE				-128
+#define SEXP_CHECK_INVALID_AI_CLASS				-129
+#define SEXP_CHECK_UNKNOWN_ERROR				-130
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)

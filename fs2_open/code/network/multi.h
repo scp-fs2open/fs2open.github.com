@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.3 $
- * $Date: 2002-12-17 02:18:40 $
+ * $Revision: 2.4 $
+ * $Date: 2002-12-24 07:42:29 $
  * $Author: Goober5000 $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/17 02:18:40  Goober5000
+ * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -537,7 +541,11 @@ struct CFILE;
 #define CHANGE_IFF					0xEC		// change iff (1.04+ only)
 
 #define CARGO_HIDDEN				0xED		// cargo is hidden
-#define SUBSYS_CARGO_HIDDEN			0XEE		// Capital ship cargo subsystem is hidden
+#define SUBSYS_CARGO_HIDDEN			0xEE		// Capital ship cargo subsystem is hidden
+
+#define CHANGE_AI_CLASS				0xEF		// change ai class
+#define NO_SUBSYS_STRING			"NO-SUBSYS"	// see change_ai_class - because same routine is used
+												// for both ships and subsystems
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 

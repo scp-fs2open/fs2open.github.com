@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-12-17 02:18:40 $
+ * $Revision: 2.5 $
+ * $Date: 2002-12-24 07:42:29 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/12/17 02:18:40  Goober5000
+ * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/09 08:26:24  Goober5000
  * fixed misspelling
  *
@@ -7387,6 +7391,62 @@ void process_change_iff_packet( ubyte *data, header *hinfo)
 	objp = multi_get_network_object(net_signature);
 	if((objp != NULL) && (objp->type == OBJ_SHIP) && (objp->instance >=0)){
 		Ships[objp->instance].team = new_team;
+	}	
+}
+
+void send_change_ai_class_packet(ushort net_signature, char *subsystem, int new_ai_class)
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+
+	if(Net_player == NULL){
+		return;
+	}
+	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+		return;
+	}
+
+	// build the packet and add the data
+	BUILD_HEADER(CHANGE_AI_CLASS);
+	ADD_DATA(net_signature);
+	if (subsystem)
+		ADD_STRING(subsystem);
+	else
+		ADD_STRING(NO_SUBSYS_STRING);
+	ADD_DATA(new_ai_class);
+
+	// send to all players	
+	multi_io_send_to_all_reliable(data, packet_size);
+}
+
+void process_change_ai_class_packet(ubyte *data, header *hinfo)
+{
+	int offset = HEADER_LENGTH;
+	ushort net_signature;
+	int new_ai_class;
+	char subsys_buf[255];
+	object *objp;
+
+	// get the data
+	GET_DATA(net_signature);
+	GET_STRING(subsys_buf);
+	GET_DATA(new_ai_class);
+	PACKET_SET_SIZE();
+
+	// lookup the object
+	objp = multi_get_network_object(net_signature);
+	if((objp != NULL) && (objp->type == OBJ_SHIP) && (objp->instance >=0))
+	{
+		// no subsystem?
+		if (!strcmp(subsys_buf, NO_SUBSYS_STRING))
+		{
+			ship_set_new_ai_class(objp->instance, new_ai_class);
+		}
+		// subsystem
+		else
+		{
+			ship_subsystem_set_new_ai_class(objp->instance, subsys_buf, new_ai_class);
+		}
 	}	
 }
 
