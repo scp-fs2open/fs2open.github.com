@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.32 $
- * $Date: 2003-01-10 04:14:18 $
+ * $Revision: 2.33 $
+ * $Date: 2003-01-13 23:20:00 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/01/10 04:14:18  Goober5000
+ * I found these two beautiful functions in ship.cpp - ship_change_model
+ * and change_ship_type - so I made them into sexps :)
+ * --Goober5000
+ *
  * Revision 2.31  2003/01/06 19:33:21  Goober5000
  * cleaned up some stuff with model_set_thrust and a commented Assert that
  * shouldn't have been
@@ -8684,7 +8689,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 			}
 
 			// see if ship is within max_dist units
-			if ( (max_dist > 0) && (multi_team < 0) ) {
+			if ( (max_dist > 1.0f) && (multi_team < 0) ) {
 				float dist;
 				dist = vm_vec_dist_quick(&Objects[Ships[ship_index].objnum].pos, &Player_obj->pos);
 				if ( dist > max_dist ) {

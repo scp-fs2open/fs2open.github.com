@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.29 $
- * $Date: 2003-01-10 04:14:19 $
+ * $Revision: 2.30 $
+ * $Date: 2003-01-13 23:20:00 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/01/10 04:14:19  Goober5000
+ * I found these two beautiful functions in ship.cpp - ship_change_model
+ * and change_ship_type - so I made them into sexps :)
+ * --Goober5000
+ *
  * Revision 2.28  2003/01/07 20:06:44  Goober5000
  * added ai-chase-any-except sexp
  * --Goober5000
@@ -8225,7 +8230,7 @@ void sexp_awacs_set_radius(int node)
 	awacs->awacs_radius = (float)atoi(CTEXT(CDR(CDR(node))));	
 }
 
-// Goober500
+// Goober5000
 void sexp_primitive_sensors_set_range(int n)
 {
 	char *ship_name = CTEXT(n);
