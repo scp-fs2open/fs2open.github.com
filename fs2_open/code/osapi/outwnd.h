@@ -23,7 +23,11 @@ void outwnd_printf2(char *format, ...);
 	extern int Log_debug_output_to_file;
 #endif
 
+#ifndef NDEBUG
 #define SAFEPOINT(s) safe_point(__FILE__,__LINE__,(s))
+#else
+#define SAFEPOINT(s)
+#endif
 
 extern char safe_string[512];
 

@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.16 $
- * $Date: 2004-11-21 16:07:22 $
- * $Author: Kazan $
+ * $Revision: 1.17 $
+ * $Date: 2005-02-04 20:06:03 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2004/11/21 16:07:22  Kazan
+ * dumbbugfix
+ *
  * Revision 1.15  2004/11/18 00:05:36  Goober5000
  * #pragma'd a bunch of warnings
  * --Goober5000
@@ -64,15 +67,20 @@
 // 4711 = function selected for automatic inline expansion
 #pragma warning(disable: 4711)
 
-#include "Client.h"
-//#include "protocol.h"
-#include "udpsocket.h"
 #include <iostream>
 #include <time.h>
+
+
+#include "fs2open_pxo/Client.h"
+//#include "fs2open_pxo/protocol.h"
+#include "fs2open_pxo/udpsocket.h"
 #include "network/multi_log.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
 
+PXO_Socket FS2OpenPXO_Socket;
+
+// NOTE: CLK_TCK is depreciated but available for compatibility, use CLOCKS_PER_SEC instead
 
 #define PXO_ADDINT(n)	*((int *)cur) = (n); cur += sizeof(int);
 #define PXO_ADDSTRING(x, y) memcpy(cur, x, y); cur += y;
@@ -83,7 +91,7 @@
 int CheckSingleMission(const char* mission, unsigned int crc32, UDP_Socket &Socket, const char* masterserver, int port, int timeout)
 {
 	
-	timeout = timeout * CLK_TCK;
+	timeout = timeout * CLOCKS_PER_SEC;
 	int starttime = clock();
 
 	std::string sender = masterserver;
@@ -97,7 +105,7 @@ int CheckSingleMission(const char* mission, unsigned int crc32, UDP_Socket &Sock
 
 
 	if (Socket.SendPacket((char *) &checkpack, sizeof(fs2open_file_check_single), sender, port) == -1)
-		return NULL;
+		return -1;
 
 
 	fs2open_fcheck_reply c_reply;
@@ -131,7 +139,7 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 
 	
 
-	timeout = timeout * CLK_TCK;
+	timeout = timeout * CLOCKS_PER_SEC;
 	int starttime = clock();
 
 
@@ -181,7 +189,7 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 
 	// send Packet
 	if (Socket.SendPacket(PacketBuffer, packet_size, sender, port) == -1)
-		return NULL;
+		return -1;
 
 
 	fs2open_pilot_updatereply u_reply;
@@ -216,7 +224,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 
 	fs2open_get_pilot prq_packet;
 
-	timeout = timeout * CLK_TCK;
+	timeout = timeout * CLOCKS_PER_SEC;
 	int starttime = clock();
 
 	memset((char *) &prq_packet, 0, sizeof(fs2open_get_pilot));
@@ -229,7 +237,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 
 	// send Packet
 	if (Socket.SendPacket((char *)&prq_packet, sizeof(fs2open_get_pilot), sender, port) == -1)
-		return NULL;
+		return -1;
 
 	char PacketBuffer[16384]; // 16K should be enough i think..... I HOPE!
 	fs2open_pilot_reply *p_reply = (fs2open_pilot_reply *) PacketBuffer;
@@ -301,7 +309,7 @@ file_record* GetTablesList(int &numTables, const char *masterserver, UDP_Socket 
 	fs2open_file_check fc_packet;
 	fc_packet.pid = PCKT_TABLES_RQST;
 
-	timeout = timeout * CLK_TCK;
+	timeout = timeout * CLOCKS_PER_SEC;
 	int starttime = clock();
 
 	std::string sender = masterserver;
@@ -355,7 +363,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, UDP_Soc
 	fs2open_file_check fc_packet;
 	fc_packet.pid = PCKT_MISSIONS_RQST;
 
-	timeout = timeout * CLK_TCK;
+	timeout = timeout * CLOCKS_PER_SEC;
 	int starttime = clock();
 
 	std::string sender = masterserver;
@@ -406,7 +414,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, UDP_Soc
 
 int Fs2OpenPXO_Login(const char* username, const char* password, UDP_Socket &Socket, const char* masterserver, int port, int timeout)
 {
-	timeout = timeout * CLK_TCK;
+	timeout = timeout * CLOCKS_PER_SEC;
 	int starttime = clock();
 
 	std::string sender = masterserver;
@@ -471,7 +479,7 @@ void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket,
 	hbpack.port = port;
 
 	std::string ms = masterserver;
-	Socket.SendPacket((char *) &hbpack, sizeof(serverlist_hb_packet), ms, targetport);
+	Socket.SendPacket((char *) &hbpack, (int)sizeof(serverlist_hb_packet), ms, targetport);
 }
 
 
@@ -484,7 +492,7 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, UDP_So
 
 	
 	
-	timeout = timeout * CLK_TCK;
+	timeout = timeout * CLOCKS_PER_SEC;
 	int starttime = clock();
 	// ---------- Prepair and send request packet ------------	
 	serverlist_request_packet rpack;

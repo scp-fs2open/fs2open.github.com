@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.19 $
- * $Author: Goober5000 $
- * $Date: 2005-01-25 22:47:37 $
+ * $Revision: 2.20 $
+ * $Author: taylor $
+ * $Date: 2005-02-04 20:06:06 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/01/25 22:47:37  Goober5000
+ * more cool parsing stuff
+ * --Goober5000
+ *
  * Revision 2.18  2005/01/25 22:21:45  Goober5000
  * separated one parsing function into two
  * --Goober5000
@@ -307,11 +311,12 @@
 #ifndef _PARSELO_H
 #define _PARSELO_H
 
-#include <setjmp.h>
-#include <stdio.h>
-#include "cfile/cfile.h"
+#include <csetjmp>
+#include <cstdio>
+
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "cfile/cfile.h"
 
 #define	MISSION_TEXT_SIZE	1000000
 

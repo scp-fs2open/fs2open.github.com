@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-01-30 09:27:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2005-02-04 20:06:06 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/01/30 09:27:40  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 2.29  2005/01/29 16:31:55  phreak
  * smart shield stuff.  enabled by command line for now, but this will be changed in the future, i just want people to test it.
  * -phreak
@@ -1274,9 +1278,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	}
 
 	// single player pilots, and all players in multiplayer take care of firing their own primaries
-#ifndef NO_NETWORK
 	if(!(Game_mode & GM_MULTIPLAYER) || (objp == Player_obj))
-#endif
 	{
 		if ( ci.fire_primary_count ) {
 			// flag the ship as having the trigger down
@@ -1295,10 +1297,10 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			}
 		}
 
-		if ( ci.fire_countermeasure_count ){
+		if ( ci.fire_countermeasure_count ) {
 			ship_launch_countermeasure( objp );
 		}
-	}else{
+	} else {
 //		ship_stop_fire_primary(objp);
 	}
 
@@ -1307,7 +1309,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	if ( !MULTIPLAYER_CLIENT ) 
 #endif
 	{		
-		if ( ci.fire_secondary_count ){
+		if ( ci.fire_secondary_count ) {
 			ship_fire_secondary( objp );
 
 			// kill the secondary count
@@ -1402,7 +1404,7 @@ void obj_move_call_physics(object *objp, float frametime)
 			}
 #endif
 
-			if ( (objp->type == OBJ_ASTEROID) && (Model_caching && (!D3D_enabled) ) )	{
+			if ( (objp->type == OBJ_ASTEROID) && (Model_caching && (!D3D_enabled || !OGL_enabled) ) )	{
 				// If we're doing model caching, don't rotate asteroids
 				vector tmp = objp->phys_info.rotvel;
 
@@ -2205,7 +2207,7 @@ void obj_client_simulate(float frametime)
 }
 #endif
 
-void obj_observer_move(float flFrametime)
+void obj_observer_move(float frame_time)
 {
 #ifndef NO_NETWORK
 	object *objp;
@@ -2225,7 +2227,7 @@ void obj_observer_move(float flFrametime)
 
 	ft = flFrametime;
 	obj_move_call_physics( objp, ft );
-	obj_move_all_post(objp, flFrametime);
+	obj_move_all_post(objp, frame_time);
    objp->flags &= ~OF_JUST_UPDATED;
 #endif
 }

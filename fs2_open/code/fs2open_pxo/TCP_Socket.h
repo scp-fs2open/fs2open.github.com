@@ -11,12 +11,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.h $
- * $Revision: 1.7 $
- * $Date: 2004-08-11 05:06:23 $
- * $Author: Kazan $
+ * $Revision: 1.8 $
+ * $Date: 2005-02-04 20:06:03 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/08/11 05:06:23  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.6  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -35,6 +38,9 @@
  *
  *
  */
+
+#if !defined(__TCP_SOCKET_H_)
+#define __TCP_SOCKET_H_
 
 #include "PreProcDefines.h"
 // Enable Multithread
@@ -65,31 +71,29 @@
 #endif
 
 #else
-// Unix Version
-#include <stdio.h>
+#include <cstdio>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <cerrno>
+#endif
 #include <string>
 
-#if !defined(STYPE)
-#define STYPE int
-#endif
+#include "globalincs/pstypes.h" // make sure _cdecl is defined correctly on *nix
+
+// Enable Multithread
+//#define MT_TCP_Socket
+
+// Enable MultiThreaded Receive - FreeSpace 2 TCP_Socket only!
+#define FS2_TCP_RMultithread
 
 #if !defined(CLOSEFUNC)
-#define CLOSEFUNC close
+#define CLOSEFUNC closesocket
 #endif
 
-
+#if !defined(STYPE)
+#define STYPE SOCKET
 #endif
 
-
-#if !defined(__TCP_SOCKET_H_)
-#define __TCP_SOCKET_H_
 
 // From UDP_Socket
 int startWinsock();
@@ -149,8 +153,9 @@ class TCP_Socket : public Generic_Socket
 #endif
 
 	public:
-		TCP_Socket(int aport = 0, bool WillbeServer = false) : ServerMode(WillbeServer), Generic_Socket() { port = aport; }
-		~TCP_Socket() 
+	//	TCP_Socket(int aport = 0, bool WillbeServer = false) : ServerMode(WillbeServer), Generic_Socket() { port = aport; }
+		TCP_Socket(int aport = 0, bool WillbeServer = false) { ServerMode = WillbeServer; Generic_Socket::SetPort(aport); }
+		virtual ~TCP_Socket() 
 			{ 
 
 #if defined(FS2_TCP_RMultithread)
@@ -213,4 +218,5 @@ class TCP_Socket : public Generic_Socket
 
 	//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-#endif
+
+#endif // __TCP_SOCKET_H_

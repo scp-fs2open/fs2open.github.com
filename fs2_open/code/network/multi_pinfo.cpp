@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 20:06:05 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -589,11 +592,11 @@ void multi_pinfo_blit_pilot_image()
 		gr_set_bitmap(Mp_pilot.bitmap);
 
 		// get width and heigh
-		int w, h;
-		bm_get_info(Mp_pilot.bitmap, &w, &h, NULL, NULL, NULL, NULL);
+		int bm_w, bm_h;
+		bm_get_info(Mp_pilot.bitmap, &bm_w, &bm_h, NULL, NULL, NULL, NULL);
 
-		gr_bitmap(Multi_pinfo_pilot_coords[gr_screen.res][0] + ((Multi_pinfo_pilot_coords[gr_screen.res][2] - w)/2), 
-					 Multi_pinfo_pilot_coords[gr_screen.res][1] + ((Multi_pinfo_pilot_coords[gr_screen.res][3] - h)/2));
+		gr_bitmap(Multi_pinfo_pilot_coords[gr_screen.res][0] + ((Multi_pinfo_pilot_coords[gr_screen.res][2] - bm_w)/2), 
+					 Multi_pinfo_pilot_coords[gr_screen.res][1] + ((Multi_pinfo_pilot_coords[gr_screen.res][3] - bm_h)/2));
 		// g3_draw_2d_poly_bitmap(Multi_pinfo_pilot_coords[gr_screen.res][0], Multi_pinfo_pilot_coords[gr_screen.res][1], Multi_pinfo_pilot_coords[gr_screen.res][2], Multi_pinfo_pilot_coords[gr_screen.res][3]);
 	}
 }
@@ -603,7 +606,7 @@ void multi_pinfo_blit_squadron_logo()
 {
 	char place_text[100];	
 	int w;
-	player *p = Multi_pinfo_popup_player->player;
+	player *p = Multi_pinfo_popup_player->m_player;
 
 	// if we don't have a bitmap handle, blit a placeholder
 	if(Mp_squad.bitmap == -1){
@@ -636,11 +639,11 @@ void multi_pinfo_blit_squadron_logo()
 		// gr_bitmap(MPI_SQUAD_X, MPI_SQUAD_Y);
 
 		// get width and heigh
-		int w, h;
-		bm_get_info(Mp_squad.bitmap, &w, &h, NULL, NULL, NULL, NULL);
+		int bm_w, bm_h;
+		bm_get_info(Mp_squad.bitmap, &bm_w, &bm_h, NULL, NULL, NULL, NULL);
 
-		gr_bitmap(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - w)/2), 
-					 Multi_pinfo_squad_coords[gr_screen.res][1] + ((Multi_pinfo_squad_coords[gr_screen.res][3] - h)/2));
+		gr_bitmap(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - bm_w)/2), 
+					 Multi_pinfo_squad_coords[gr_screen.res][1] + ((Multi_pinfo_squad_coords[gr_screen.res][3] - bm_h)/2));
 		// g3_draw_2d_poly_bitmap(Multi_pinfo_squad_coords[gr_screen.res][0], Multi_pinfo_squad_coords[gr_screen.res][1], Multi_pinfo_squad_coords[gr_screen.res][2], Multi_pinfo_squad_coords[gr_screen.res][3]);
 	}
 }
@@ -652,7 +655,7 @@ void multi_pinfo_blit_player_stats()
 
 	// blit the player's callsign and "all time stats"
 	gr_set_color_fast(&Color_bright);
-	gr_string(Multi_pinfo_stats_area_coords[gr_screen.res][0], Multi_pinfo_stats_area_coords[gr_screen.res][1], Multi_pinfo_popup_player->player->callsign);
+	gr_string(Multi_pinfo_stats_area_coords[gr_screen.res][0], Multi_pinfo_stats_area_coords[gr_screen.res][1], Multi_pinfo_popup_player->m_player->callsign);
 	gr_string(Multi_pinfo_stats_x[gr_screen.res], Multi_pinfo_stats_area_coords[gr_screen.res][1], XSTR("All Time Stats", 128));
 	
 	gr_set_color_fast(&Color_normal);
@@ -736,7 +739,7 @@ void multi_pinfo_do_medals()
 	int ret_code;
 
 	// initialize the medals screen
-	medal_main_init(Multi_pinfo_popup_player->player,MM_POPUP);
+	medal_main_init(Multi_pinfo_popup_player->m_player,MM_POPUP);
 
 	// run the medals screen until it says that it should be closed
 	do {
@@ -769,7 +772,7 @@ void multi_pinfo_build_stats()
 {
 	// int idx;
 	// int fighter_kills,other_kills;
-	scoring_struct *sc = &Multi_pinfo_popup_player->player->stats;
+	scoring_struct *sc = &Multi_pinfo_popup_player->m_player->stats;
 
 	// build alltime fighter and non-fighter kills
 	/*
@@ -799,7 +802,10 @@ void multi_pinfo_build_stats()
 	if(sc->last_flown == 0){
 		strcpy(Multi_pinfo_stats_vals[MPI_LAST_FLOWN],XSTR("No missions flown",693));
 	} else {
-		tm *tmr = gmtime(&sc->last_flown);
+		time_t last_flown_tmp;
+	//	tm *tmr = gmtime(&sc->last_flown);
+		tm *tmr = gmtime(&last_flown_tmp);
+		sc->last_flown = (_fs_time_t)last_flown_tmp;
 		if(tmr != NULL){
 			strftime(Multi_pinfo_stats_vals[MPI_LAST_FLOWN],MAX_LABEL_TEXT,"%m/%d/%y %H:%M",tmr);
 		} else {
@@ -908,12 +914,12 @@ void multi_pinfo_reset_player(net_player *np)
 	}	
 	
 	// try and load pilot pic/squad logo
-	if(strlen(np->player->image_filename) >= 0){
-		strcpy(Mp_pilot.filename, np->player->image_filename);
+	if(strlen(np->m_player->image_filename) > 0){
+		strcpy(Mp_pilot.filename, np->m_player->image_filename);
 		Mp_pilot.bitmap = bm_load_duplicate(Mp_pilot.filename);
 	}
-	if(strlen(np->player->squad_filename) >= 0){
-		strcpy(Mp_squad.filename, np->player->squad_filename);
+	if(strlen(np->m_player->squad_filename) > 0){
+		strcpy(Mp_squad.filename, np->m_player->squad_filename);
 		Mp_squad.bitmap = bm_load_duplicate(Mp_squad.filename);
 	}
 

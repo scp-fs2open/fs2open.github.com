@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:44 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-04 20:06:05 $
+ * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:44  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:58  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -130,19 +133,26 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <windowsx.h>
-#include <stdio.h>
 #include <winsock.h>
 #include <wsipx.h>
 #include <process.h>
 #include <ras.h>
 #include <raserror.h>
-#include <limits.h>
 #else
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/select.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <errno.h>
 
 #define WSAGetLastError()  (errno)
 #endif
+#include <stdio.h>
+#include <limits.h>
 
 #include "globalincs/pstypes.h"
 #include "network/psnet.h"
@@ -268,8 +278,7 @@ int Nettimeout = NETTIMEOUT;
 #define RNT_HEARTBEAT		6				// Heartbeat -- send every NETHEARTBEATTIME
 #define RNT_I_AM_HERE		7
 
-#pragma pack(push,r_udp)
-#pragma pack(1)
+#pragma pack(push, 1)
 typedef struct {
 	ubyte			type;					// packet type
 	ubyte			compressed;			//
@@ -333,7 +342,7 @@ float Last_sent_iamhere = 0;
 
 unsigned int Serverconn = 0xffffffff;
 
-#pragma pack(pop,r_udp)
+#pragma pack(pop)
 //*******************************
 
 // top layer buffers

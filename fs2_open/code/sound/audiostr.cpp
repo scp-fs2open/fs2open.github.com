@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-02-01 06:54:20 $
+ * $Revision: 2.9 $
+ * $Date: 2005-02-04 20:06:09 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/02/01 06:54:20  taylor
+ * OGG fix for streams
+ *
  * Revision 2.7  2005/01/18 01:14:17  wmcoolmon
  * OGG fixes, ship selection fixes
  *
@@ -457,14 +460,14 @@ const UINT DefBufferServiceInterval = 250;  // default buffer service interval i
 // Constructor
 AudioStream::AudioStream (void)
 {
-	InitializeCriticalSection( &write_lock );
+	INITIALIZE_CRITICAL_SECTION( write_lock );
 }
 
 
 // Destructor
 AudioStream::~AudioStream (void)
 {
-	DeleteCriticalSection( &write_lock );
+	DELETE_CRITICAL_SECTION( write_lock );
 }
 
 
@@ -579,7 +582,7 @@ BOOL AudioStream::Destroy (void)
 {
 	BOOL fRtn = SUCCESS;
 
-	EnterCriticalSection(&write_lock);
+	ENTER_CRITICAL_SECTION( write_lock );
 	
 	// Stop playback
 	Stop ();
@@ -600,7 +603,7 @@ BOOL AudioStream::Destroy (void)
 
 	status = ASF_FREE;
 
-	LeaveCriticalSection(&write_lock);
+	LEAVE_CRITICAL_SECTION( write_lock );
 
 	return fRtn;
 }
@@ -632,7 +635,7 @@ BOOL AudioStream::WriteWaveData (UINT size, UINT *num_bytes_written, int service
 	}
 
 	if ( service ) {
-		EnterCriticalSection(&Global_service_lock);
+		ENTER_CRITICAL_SECTION( Global_service_lock );
 	}
 		    
 	if ( service ) {
@@ -684,7 +687,7 @@ BOOL AudioStream::WriteWaveData (UINT size, UINT *num_bytes_written, int service
 	}
 
 	if ( service ) {
-		LeaveCriticalSection(&Global_service_lock);
+		LEAVE_CRITICAL_SECTION( Global_service_lock );
 	}
     
 	return (fRtn);
@@ -788,11 +791,11 @@ BOOL AudioStream::ServiceBuffer (void)
 	if ( status != ASF_USED )
 		return FALSE;
 
-	EnterCriticalSection(&write_lock);
+	ENTER_CRITICAL_SECTION( write_lock );
 
 	// status may have changed, so lets check once again
 	if ( status != ASF_USED ){
-		LeaveCriticalSection(&write_lock);
+		LEAVE_CRITICAL_SECTION( write_lock );
 		return FALSE;
 	}
 
@@ -816,7 +819,7 @@ BOOL AudioStream::ServiceBuffer (void)
 				m_bFade = 0;
 				m_lCutoffVolume = -10000;
 				if ( m_bDestroy_when_faded == TRUE ) {
-					LeaveCriticalSection(&write_lock);
+					LEAVE_CRITICAL_SECTION( write_lock );
 					Destroy();	
 					// Reset reentrancy semaphore
 					InterlockedExchange (&m_lInService, FALSE);
@@ -825,7 +828,7 @@ BOOL AudioStream::ServiceBuffer (void)
 				else {
 					Stop_and_Rewind();
 					// Reset reentrancy semaphore
-					LeaveCriticalSection(&write_lock);
+					LEAVE_CRITICAL_SECTION( write_lock );
 					InterlockedExchange (&m_lInService, FALSE);
 					return TRUE;
 				}
@@ -877,7 +880,7 @@ BOOL AudioStream::ServiceBuffer (void)
 							m_silence_written = 0;
 
 							if ( m_bDestroy_when_faded == TRUE ) {
-								LeaveCriticalSection(&write_lock);
+								LEAVE_CRITICAL_SECTION( write_lock );
 								Destroy();
 								// Reset reentrancy semaphore
 								InterlockedExchange (&m_lInService, FALSE);
@@ -909,7 +912,7 @@ BOOL AudioStream::ServiceBuffer (void)
 		fRtn = FALSE;
     }
 
-	LeaveCriticalSection(&write_lock);
+	LEAVE_CRITICAL_SECTION( write_lock );
 	return (fRtn);
 }
 
@@ -1711,7 +1714,7 @@ void audiostream_init()
 		Audio_streams[i].type = ASF_NONE;
 	}
 
-	InitializeCriticalSection( &Global_service_lock );
+	INITIALIZE_CRITICAL_SECTION( Global_service_lock );
 
 	Audiostream_inited = 1;
 }
@@ -1758,7 +1761,7 @@ void audiostream_close()
 		Compressed_service_buffer = NULL;
 	}
 
-	DeleteCriticalSection( &Global_service_lock );
+	DELETE_CRITICAL_SECTION( Global_service_lock );
 
 	Audiostream_inited = 0;
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-12-14 14:46:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.27 $
+ * $Date: 2005-02-04 20:06:05 $
+ * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/12/14 14:46:13  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.25  2004/11/26 08:41:11  taylor
  * couple of LAN game vs. FS2NetD fixes
  *
@@ -298,11 +302,16 @@
 #if defined _WIN32
 #include <winsock.h>
 #elif defined unix
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <errno.h>
 #endif
 #include <ctype.h>
 
+#include "globalincs/pstypes.h"
 #include "network/multiutil.h"
 #include "globalincs/linklist.h"
 #include "gamesequence/gamesequence.h"
@@ -338,14 +347,6 @@
 #include "cmdline/cmdline.h"
 #include "cfile/cfile.h"
 
-#pragma warning(push)
-// 4018 = signed/unsigned mismatch
-// 4663 = new template specification syntax
-// 4245 = signed/unsigned mismatch in conversion of const value
-#pragma warning(disable: 4663 4018 4663 4245)
-#include "fs2open_pxo/Client.h"
-#pragma warning(pop)
-
 #ifndef NO_NETWORK
 #include "network/multimsgs.h"
 #include "network/multi_xfer.h"
@@ -364,10 +365,23 @@
 #include "network/multi_pause.h"
 #include "network/multi_log.h"
 #include "network/multi_rate.h"
+#pragma warning(push)
+// 4018 = signed/unsigned mismatch
+// 4663 = new template specification syntax
+// 4245 = signed/unsigned mismatch in conversion of const value
+#pragma warning(disable: 4663 4018 4663 4245)
+#include "fs2open_pxo/Client.h"
+#pragma warning(pop)
 #endif
 
 
-
+// FIXME: don't know why this should be needed but it is, copied from pstypes.h
+#ifndef min
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef max
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#endif
 
 extern int MSG_WINDOW_X_START;	// used to position multiplayer text messages
 extern int MSG_WINDOW_Y_START;
@@ -375,12 +389,6 @@ extern int MSG_WINDOW_HEIGHT;
 
 extern int ascii_table[];
 extern int shifted_ascii_table[];
-
-#if !defined(PXO_TCP)
-extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
-#else
-extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
-#endif
 
 
 // network object management
@@ -821,7 +829,7 @@ int multi_find_player_by_object( object *objp )
 		if ( !MULTI_CONNECTED(Net_players[i])){
 			continue;
 		}
-		if ( objnum == Net_players[i].player->objnum ){
+		if ( objnum == Net_players[i].m_player->objnum ){
 			return i;
 		}
 	}
@@ -838,7 +846,7 @@ int multi_find_player_by_signature( int signature )
 
 	for(idx=0;idx<MAX_PLAYERS;idx++){
 		// compare against each player's object signature
-		if(MULTI_CONNECTED(Net_players[idx]) && (Objects[Net_players[idx].player->objnum].signature == signature)){
+		if(MULTI_CONNECTED(Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].signature == signature)){
 			// found the player
 			return idx;
 		}
@@ -855,7 +863,7 @@ int multi_find_player_by_net_signature(ushort net_signature)
 
 	for(idx=0;idx<MAX_PLAYERS;idx++){
 		// compare against each player's object signature
-		if(MULTI_CONNECTED(Net_players[idx]) && (Objects[Net_players[idx].player->objnum].net_signature == net_signature)){
+		if(MULTI_CONNECTED(Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].net_signature == net_signature)){
 			// found the player
 			return idx;
 		}
@@ -875,8 +883,8 @@ int multi_find_player_by_ship_name(char *ship_name)
 	}
 
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].player != NULL) && (Net_players[idx].player->objnum >= 0) && (Net_players[idx].player->objnum < MAX_OBJECTS) && (Objects[Net_players[idx].player->objnum].type == OBJ_SHIP) && 
-			(Objects[Net_players[idx].player->objnum].instance >= 0) && (Objects[Net_players[idx].player->objnum].instance < MAX_SHIPS) && !stricmp(ship_name, Ships[Objects[Net_players[idx].player->objnum].instance].ship_name) ){
+		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP) && 
+			(Objects[Net_players[idx].m_player->objnum].instance >= 0) && (Objects[Net_players[idx].m_player->objnum].instance < MAX_SHIPS) && !stricmp(ship_name, Ships[Objects[Net_players[idx].m_player->objnum].instance].ship_name) ){
 			return idx;
 		}
 	}
@@ -894,10 +902,10 @@ int multi_get_player_ship(int np_index)
 
 	// cool?
 	if(MULTI_CONNECTED(Net_players[np_index]) && !MULTI_OBSERVER(Net_players[np_index]) && !MULTI_STANDALONE(Net_players[np_index]) && 
-		(Net_players[np_index].player != NULL) && (Net_players[np_index].player->objnum >= 0) && (Net_players[np_index].player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].player->objnum].type == OBJ_SHIP) && 
-		(Objects[Net_players[np_index].player->objnum].instance >= 0) && (Objects[Net_players[np_index].player->objnum].instance < MAX_SHIPS) ){
+		(Net_players[np_index].m_player != NULL) && (Net_players[np_index].m_player->objnum >= 0) && (Net_players[np_index].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].m_player->objnum].type == OBJ_SHIP) && 
+		(Objects[Net_players[np_index].m_player->objnum].instance >= 0) && (Objects[Net_players[np_index].m_player->objnum].instance < MAX_SHIPS) ){
 
-		return Objects[Net_players[np_index].player->objnum].instance;
+		return Objects[Net_players[np_index].m_player->objnum].instance;
 	}
 
 	// nope
@@ -956,7 +964,7 @@ void stuff_netplayer_info( net_player *nplayer, net_addr *addr, int ship_class, 
 	nplayer->flags |= NETINFO_FLAG_CONNECTED;
 	nplayer->state = NETPLAYER_STATE_JOINING;
 	nplayer->p_info.ship_class = ship_class;
-	nplayer->player = pplayer;
+	nplayer->m_player = pplayer;
 	nplayer->p_info.options.obj_update_level = OBJ_UPDATE_HIGH;
 
 	// if setting up my net flags, then set the flag to say I can do networking.
@@ -976,7 +984,7 @@ void multi_assign_player_ship( int net_player, object *objp,int ship_class )
 
 	shipp = &Ships[objp->instance];
 
-	Net_players[net_player].player->objnum = OBJ_INDEX(objp);
+	Net_players[net_player].m_player->objnum = OBJ_INDEX(objp);
 	Net_players[net_player].p_info.ship_class = ship_class;
 
 	// check to see if we are assigning my player -- if so, then set Player_ship and Player_ai
@@ -1149,7 +1157,7 @@ void delete_player(int player_num,int kicked_reason)
 	}
 
 	// NETLOG
-	ml_printf(NOX("Deleting player %s"), Net_players[player_num].player->callsign);
+	ml_printf(NOX("Deleting player %s"), Net_players[player_num].m_player->callsign);
 	
 	psnet_rel_close_socket( &(Net_players[player_num].reliable_socket) );					// close out the reliable socket	
 
@@ -1160,7 +1168,7 @@ void delete_player(int player_num,int kicked_reason)
 	}
 	
 	Net_players[player_num].flags &= ~NETINFO_FLAG_CONNECTED;							// person not connected anymore
-	Net_players[player_num].player->flags &= ~(PLAYER_FLAGS_STRUCTURE_IN_USE);    // free up his player structure
+	Net_players[player_num].m_player->flags &= ~(PLAYER_FLAGS_STRUCTURE_IN_USE);    // free up his player structure
 
 	Net_players[player_num].s_info.reliable_connect_time = -1;
 
@@ -1224,13 +1232,13 @@ void delete_player(int player_num,int kicked_reason)
 	
 	// if this guy is an observer, we have to make sure we delete his observer object (only if we're the server however)
 	if( (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Net_players[player_num].flags & NETINFO_FLAG_OBSERVER) ) {
-		if ( Net_players[player_num].player->objnum != -1 ){
-			obj_delete(Net_players[player_num].player->objnum);			// maybe change this to set flag instead		
+		if ( Net_players[player_num].m_player->objnum != -1 ){
+			obj_delete(Net_players[player_num].m_player->objnum);			// maybe change this to set flag instead		
 		}
 	} else {
 		// otherwise mark it so that he can return to it later if possible
-		if ( (Net_players[player_num].player->objnum >= 0) && (Net_players[player_num].player->objnum < MAX_OBJECTS) && (Objects[Net_players[player_num].player->objnum].type == OBJ_SHIP) && (Objects[Net_players[player_num].player->objnum].instance >= 0) && (Objects[Net_players[player_num].player->objnum].instance < MAX_SHIPS)) {
-			multi_make_player_ai( &Objects[Net_players[player_num].player->objnum] );
+		if ( (Net_players[player_num].m_player->objnum >= 0) && (Net_players[player_num].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[player_num].m_player->objnum].type == OBJ_SHIP) && (Objects[Net_players[player_num].m_player->objnum].instance >= 0) && (Objects[Net_players[player_num].m_player->objnum].instance < MAX_SHIPS)) {
+			multi_make_player_ai( &Objects[Net_players[player_num].m_player->objnum] );
 		} else {
 			multi_respawn_player_leave(&Net_players[player_num]);
 		}
@@ -1262,8 +1270,8 @@ void delete_player(int player_num,int kicked_reason)
 	multi_rate_reset(player_num);
 
 	// display a message that this guy has left
-	if(Net_players[player_num].player->callsign){
-		sprintf(notify_string,XSTR("<%s has left>",901),Net_players[player_num].player->callsign);
+	if(Net_players[player_num].m_player->callsign){
+		sprintf(notify_string,XSTR("<%s has left>",901),Net_players[player_num].m_player->callsign);
 		multi_display_chat_msg(notify_string,0,0);
 	}
 	
@@ -1317,8 +1325,8 @@ void multi_cull_zombies()
 		}
 
 		if ( (current_time - Net_players[i].last_heard_time) > inactive_limit) {
-			HUD_printf(XSTR("Dumping %s after prolonged inactivity",902),Net_players[i].player->callsign);
-			nprintf(("Network", "Assuming %s is a zombie, removing from game\n", Net_players[i].player->callsign));
+			HUD_printf(XSTR("Dumping %s after prolonged inactivity",902),Net_players[i].m_player->callsign);
+			nprintf(("Network", "Assuming %s is a zombie, removing from game\n", Net_players[i].m_player->callsign));
 
 			multi_kick_player(i,0);			
 		}
@@ -1421,7 +1429,7 @@ void multi_unpack_orient_matrix(ubyte *data,matrix *m)
 	m->vec.fvec.xyz.y *= (data[16] & (1<<4)) ? -1.0f : 1.0f;
 }
 	                      
-void multi_do_client_warp(float flFrametime)
+void multi_do_client_warp(float frame_time)
 {
    ship_obj *moveup;
 	
@@ -1429,7 +1437,7 @@ void multi_do_client_warp(float flFrametime)
 	while(moveup!=END_OF_LIST(&Ship_obj_list)){
 		// do all _necessary_ ship warp in (arrival) processing
 		if ( Ships[Objects[moveup->objnum].instance].flags & SF_ARRIVING )	
-			shipfx_warpin_frame( &Objects[moveup->objnum], flFrametime );
+			shipfx_warpin_frame( &Objects[moveup->objnum], frame_time );
 		moveup = GET_NEXT(moveup);
 	}	
 }	
@@ -1576,7 +1584,7 @@ int multi_find_player_by_callsign(char *callsign)
 {
 	int idx;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && (strcmp(callsign,Net_players[idx].player->callsign)==0)){
+		if(MULTI_CONNECTED(Net_players[idx]) && (strcmp(callsign,Net_players[idx].m_player->callsign)==0)){
 			return idx;
 		}
 	}
@@ -1884,7 +1892,7 @@ void multi_create_standalone_object()
 	obj_set_flags(Player_obj, Player_obj->flags & (~OF_COLLIDES) );
 	//obj_set_flags(Player_obj, Player_obj->flags | OF_SHOULD_BE_DEAD);
 	obj_set_flags(Player_obj, Player_obj->flags & (~OF_PLAYER_SHIP));
-	Net_player->player->objnum = objnum;
+	Net_player->m_player->objnum = objnum;
 
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
 	pobj_num = parse_create_object(&Player_start_pobject);
@@ -2149,7 +2157,7 @@ int multi_can_message(net_player *p)
 	// only those of the highest rank can message
 	case MSO_SQUAD_RANK:
 		max_rank = multi_get_highest_rank();
-		if(p->player->stats.rank < max_rank){
+		if(p->m_player->stats.rank < max_rank){
 			return 0;
 		}
 		break;
@@ -2157,12 +2165,12 @@ int multi_can_message(net_player *p)
 	// only wing/team leaders can message
 	case MSO_SQUAD_LEADER:
 		// if the player has an invalid object #
-		if(p->player->objnum < 0){
+		if(p->m_player->objnum < 0){
 			return 0;
 		}
 
 		// check to see if he's a wingleader
-		sp = &Ships[Objects[p->player->objnum].instance];
+		sp = &Ships[Objects[p->m_player->objnum].instance];
 		if (sp->ship_name[strlen(sp->ship_name)-1] == '1') 
 		{
 			return 0;
@@ -2198,7 +2206,7 @@ int multi_can_end_mission(net_player *p)
 	// only those of the highest rank can end the mission
 	case MSO_END_RANK:
 		max_rank = multi_get_highest_rank();
-		if(p->player->stats.rank < max_rank){
+		if(p->m_player->stats.rank < max_rank){
 			return 0;
 		}
 		break;
@@ -2206,12 +2214,12 @@ int multi_can_end_mission(net_player *p)
 	// only wing/team leaders can end the mission
 	case MSO_END_LEADER:
 		// if the player has an invalid object #
-		if(p->player->objnum < 0){
+		if(p->m_player->objnum < 0){
 			return 0;
 		}
 
 		// check to see if he's a wingleader
-		sp = &Ships[Objects[p->player->objnum].instance];
+		sp = &Ships[Objects[p->m_player->objnum].instance];
 		if (sp->ship_name[strlen(sp->ship_name)-1] == '1') 
 		{
 			return 0;
@@ -2410,9 +2418,9 @@ void multi_warpout_all_players()
 		object *objp;
 
 		// only warpout player _ships_ which are not mine
-		if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && (Objects[Net_players[idx].player->objnum].type == OBJ_SHIP)){
+		if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP)){
 
-			objp = &Objects[Net_players[idx].player->objnum];
+			objp = &Objects[Net_players[idx].m_player->objnum];
 
 			obj_set_flags( objp, objp->flags & (~OF_COLLIDES) );
 			shipfx_warpout_start( objp );
@@ -2448,8 +2456,8 @@ int multi_get_highest_rank()
 	
 	// go through all the players
 	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].player->stats.rank > max_rank)){
-			max_rank = Net_players[idx].player->stats.rank;
+		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player->stats.rank > max_rank)){
+			max_rank = Net_players[idx].m_player->stats.rank;
 		}
 	}
 
@@ -2682,14 +2690,14 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 		// copy his pilot image filename
 		if(strlen(jr->image_filename) > 0){
-			strcpy(Net_players[net_player_num].player->image_filename, jr->image_filename);
+			strcpy(Net_players[net_player_num].m_player->image_filename, jr->image_filename);
 		} else {
-			strcpy(Net_players[net_player_num].player->image_filename, "");
+			strcpy(Net_players[net_player_num].m_player->image_filename, "");
 		}
 
 		// copy his pilot squad filename
-		Net_players[net_player_num].player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[net_player_num].player, jr->squad_filename);		
+		Net_players[net_player_num].m_player->insignia_texture = -1;
+		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename);		
 
 		// clear his multi_data info
 		multi_data_handle_join(net_player_num);
@@ -2728,14 +2736,14 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		
 		// copy his pilot image filename
 		if(strlen(jr->image_filename) > 0){
-			strcpy(Net_players[net_player_num].player->image_filename, jr->image_filename);
+			strcpy(Net_players[net_player_num].m_player->image_filename, jr->image_filename);
 		} else {
-			strcpy(Net_players[net_player_num].player->image_filename, "");
+			strcpy(Net_players[net_player_num].m_player->image_filename, "");
 		}
 
 		// copy his pilot squad filename		
-		Net_players[net_player_num].player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[net_player_num].player, jr->squad_filename);				
+		Net_players[net_player_num].m_player->insignia_texture = -1;
+		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename);				
 
 		// clear his multi_data info
 		multi_data_handle_join(net_player_num);
@@ -3137,7 +3145,7 @@ int multi_kill_limit_reached()
 	
 	// look through all active, non-observer players
 	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].player->stats.m_kill_count_ok >= Netgame.options.kill_limit)){
+		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player->stats.m_kill_count_ok >= Netgame.options.kill_limit)){
 			// someone reached the limit
 			return 1;
 		}
@@ -3261,6 +3269,9 @@ int multi_get_connection_speed()
 
 #ifdef _WIN32	
 	connection_speed = os_config_read_string(NULL, "ConnectionSpeed", "");	
+#else
+	connection_speed = os_config_read_string(NULL, "ConnectionSpeed", "Fast");
+#endif
 
 	if ( !stricmp(connection_speed, NOX("Slow")) ) {
 		cspeed = CONNECTION_SPEED_288;
@@ -3275,10 +3286,6 @@ int multi_get_connection_speed()
 	} else {
 		cspeed = CONNECTION_SPEED_NONE;
 	}
-#else
-	// mua ha ha
-	cspeed = CONNECTION_SPEED_T1;
-#endif
 
 	return cspeed;
 }
@@ -3931,8 +3938,8 @@ void multi_make_fake_players(int count)
 	
 	for(idx=0;idx<count;idx++){
 		if(!MULTI_CONNECTED(Net_players[idx])){
-			Net_players[idx].player = &Players[idx];
-			sprintf(Net_players[idx].player->callsign,"Player %d",idx);
+			Net_players[idx].m_player = &Players[idx];
+			sprintf(Net_players[idx].m_player->callsign,"Player %d",idx);
 			Net_players[idx].flags |= NETINFO_FLAG_CONNECTED;
 		}
 	}
@@ -4386,7 +4393,6 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vector *pos, 
 		return bitbuffer_write_flush(&buf);
 	} else {
 		// unpack velocity
-		float r, u, f;
 		a = bitbuffer_get_signed(&buf,10);
 		b = bitbuffer_get_signed(&buf,10);
 		c = bitbuffer_get_signed(&buf,10);

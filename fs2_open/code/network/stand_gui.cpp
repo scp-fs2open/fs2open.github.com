@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-26 20:47:44 $
- * $Author: Kazan $
+ * $Revision: 2.13 $
+ * $Date: 2005-02-04 20:06:05 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/26 20:47:44  Kazan
+ * remove MCD complete
+ *
  * Revision 2.11  2004/07/12 16:32:58  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -396,11 +399,6 @@
 #pragma warning(pop)
 
 
-#if !defined(PXO_TCP)
-extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
-#else
-extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
-#endif
 HANDLE Standalone_thread;
 DWORD Standalone_thread_id;
 static HWND Standalone_hwnd = NULL;
@@ -1407,7 +1405,7 @@ void std_pinfo_display_player_info(net_player *p)
 	std_pinfo_update_ping(p);
 	
 	// his alltime stats
-	scoring_struct *ptr = &p->player->stats;
+	scoring_struct *ptr = &p->m_player->stats;
 	STD_ADDSTRING(Player_stats[0],ptr->p_shots_fired);
    STD_ADDSTRING(Player_stats[1],ptr->p_shots_hit);
 	STD_ADDSTRING(Player_stats[2],ptr->p_bonehead_hits);
@@ -1458,7 +1456,7 @@ int std_pinfo_maybe_update_player_info(net_player *p)
 void std_pinfo_add_player_list_item(net_player *p)
 {	
    // add the item
-	SendMessage(Player_name_list,CB_ADDSTRING,(WPARAM)0,(LPARAM)(LPCTSTR)p->player->callsign);	
+	SendMessage(Player_name_list,CB_ADDSTRING,(WPARAM)0,(LPARAM)(LPCTSTR)p->m_player->callsign);	
 
 	// if this is the first item on the list, then select it and display it
 	if(SendMessage(Player_name_list,CB_GETCOUNT,(WPARAM)0,(LPARAM)0) == 1){
@@ -1476,7 +1474,7 @@ void std_pinfo_remove_player_list_item(net_player *p)
 	int loc;
 	
 	// lookup thie player
-	loc = SendMessage(Player_name_list,CB_FINDSTRINGEXACT,(WPARAM)-1,(LPARAM)(LPCTSTR)p->player->callsign);
+	loc = SendMessage(Player_name_list,CB_FINDSTRINGEXACT,(WPARAM)-1,(LPARAM)(LPCTSTR)p->m_player->callsign);
 
 	// if we found the entry, then delete it
 	if(loc!=CB_ERR){
@@ -1578,7 +1576,7 @@ int std_pinfo_player_is_active(net_player *p)
 	SendMessage(Player_name_list,CB_GETLBTEXT,(WPARAM)sel,(LPARAM)player);
 	
 	// if there is a valid player selected and he's the guy we want
-	return ((strlen(player) != 0) && (strcmp(p->player->callsign,player) == 0)) ? 1 : 0;
+	return ((strlen(player) != 0) && (strcmp(p->m_player->callsign,player) == 0)) ? 1 : 0;
 }
 
 // message handler for the player info tab
@@ -1658,7 +1656,7 @@ void std_gs_init_godstuff_controls(HWND hwndDlg);
 void std_gs_add_god_player(net_player *p)
 {
 	// add the item
-	SendMessage(God_player_list,CB_ADDSTRING,(WPARAM)0,(LPARAM)(LPCTSTR)p->player->callsign);	
+	SendMessage(God_player_list,CB_ADDSTRING,(WPARAM)0,(LPARAM)(LPCTSTR)p->m_player->callsign);	
 
 		// if this is the first item on the list, then select it
 	if(SendMessage(God_player_list,CB_GETCOUNT,(WPARAM)0,(LPARAM)0) == 1){
@@ -1673,7 +1671,7 @@ void std_gs_remove_god_player(net_player *p)
 	int loc;
 	
 	// lookup the player
-	loc = SendMessage(God_player_list,CB_FINDSTRINGEXACT,(WPARAM)-1,(LPARAM)(LPCTSTR)p->player->callsign);
+	loc = SendMessage(God_player_list,CB_FINDSTRINGEXACT,(WPARAM)-1,(LPARAM)(LPCTSTR)p->m_player->callsign);
 
 	// if we found him, them delete the item
 	if(loc!=CB_ERR){
@@ -2051,7 +2049,7 @@ void std_add_chat_text(char *text,int player_index,int add_id)
 		if(MULTI_STANDALONE(Net_players[player_index])){
 			sprintf(format,XSTR("<SERVER> %s",924),text);
 		} else {
-			sprintf(format,"%s: %s",Net_players[player_index].player->callsign,text);
+			sprintf(format,"%s: %s",Net_players[player_index].m_player->callsign,text);
 		}
 	} else {
 		strcpy(format,text);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:41 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 20:06:04 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:41  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -567,7 +570,7 @@ void nebl_render_all()
 				b->used = 0;
 				continue;
 			}
-			bi = &Bolt_types[b->type];
+			bi = &Bolt_types[(int)b->type];
 
 			// if this guy is still on a delay
 			if(b->delay != -1){
@@ -1338,7 +1341,7 @@ void nebl_jitter(l_bolt *b)
 	if((b->type < 0) || ((b->type >= Num_bolt_types) && (b->type != DEBUG_BOLT)) ){
 		return;		
 	}
-	bi = &Bolt_types[b->type];
+	bi = &Bolt_types[(int)b->type];
 
 	// get the bolt direction
 	vm_vec_sub(&temp, &b->strike, &b->start);

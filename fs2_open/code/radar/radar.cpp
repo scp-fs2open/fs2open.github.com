@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-08-02 22:54:07 $
- * $Author: phreak $
+ * $Revision: 2.12 $
+ * $Date: 2005-02-04 20:06:07 $
+ * $Author: taylor $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/08/02 22:54:07  phreak
+ * orb radar rendering style
+ *
  * Revision 2.10  2004/07/26 20:47:50  Kazan
  * remove MCD complete
  *
@@ -315,7 +318,6 @@ int radar_blip_color_std(object *objp)
 	return color;
 }
 
-extern int See_all;
 void radar_plot_object_std( object *objp )	
 {
 	vector	pos, tempv;

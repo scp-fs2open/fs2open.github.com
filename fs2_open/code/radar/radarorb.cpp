@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.2 $
- * $Date: 2004-08-23 07:48:09 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2005-02-04 20:06:07 $
+ * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/08/23 07:48:09  Goober5000
+ * fix0red some warnings
+ * --Goober5000
+ *
  * Revision 1.1  2004/08/02 22:42:45  phreak
  * orb radar rendering style
  *
@@ -178,7 +182,6 @@ int radar_blip_color_orb(object *objp)
 	return color;
 }
 
-extern int See_all;
 
 void radar_plot_object_orb( object *objp )	
 {

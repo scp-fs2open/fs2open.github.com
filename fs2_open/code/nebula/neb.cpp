@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-01-22 22:53:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.32 $
+ * $Date: 2005-02-04 20:06:04 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/01/22 22:53:07  wmcoolmon
+ * Instead of trying to allocate a ridiculously large buffer if the file is defined but doesn't exist, give a warning. Someone with nebula-code experience should probably double-check this; also added jpg and TGA support.
+ *
  * Revision 2.30  2005/01/10 06:58:12  wmcoolmon
  * Bug-guard
  *
@@ -602,11 +605,11 @@ void neb2_level_init()
 					switch(format)
 					{
 						case 0:
-							if(targa_read_bitmap_32(Neb2_texture_name, Neb2_htl_fog_data, NULL, Neb2_max_fog_value * 4) == TARGA_ERROR_NONE)
+							if(targa_read_bitmap(Neb2_texture_name, Neb2_htl_fog_data, NULL, 4) == TARGA_ERROR_NONE)
 								loaded = true;
 							break;
 						case 1:
-							if(jpeg_read_bitmap_32(Neb2_texture_name, Neb2_htl_fog_data, NULL, Neb2_max_fog_value * 4) == JPEG_ERROR_NONE)
+							if(jpeg_read_bitmap(Neb2_texture_name, Neb2_htl_fog_data, NULL, 4) == JPEG_ERROR_NONE)
 								loaded = true;
 							break;
 					/*	case 2:

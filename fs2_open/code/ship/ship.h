@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.78 $
- * $Date: 2005-01-27 04:23:18 $
- * $Author: wmcoolmon $
+ * $Revision: 2.79 $
+ * $Date: 2005-02-04 20:06:08 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2005/01/27 04:23:18  wmcoolmon
+ * Ship autorepair, requested by TBP
+ *
  * Revision 2.77  2005/01/17 23:35:45  argv
  * Surface shields.
  *
@@ -566,9 +569,10 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _SHIP_H
 #define _SHIP_H
+
+#include "PreProcDefines.h"
 
 #include "globalincs/globals.h"		// for defintions of token lengths -- maybe move this elsewhere later (Goober5000 - moved to globals.h)
 #include "graphics/2d.h"			// for color def
@@ -1772,7 +1776,10 @@ int ship_get_texture(int bitmap);
 void ship_page_in();
 
 // Goober5000 - helper for above
-void ship_page_in_model_textures(int modelnum, ship_info *sip = NULL);
+void ship_page_in_model_textures(int modelnum, int ship_index = -1);
+
+// fixer for above - taylor
+void ship_page_out_model_textures(int modelnum, int ship_index = -1);
 
 // update artillery lock info
 void ship_update_artillery_lock();

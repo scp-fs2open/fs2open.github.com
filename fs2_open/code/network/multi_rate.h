@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-02-04 20:06:05 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/04/03 06:22:32  Goober5000
  * fixed some stub functions and a bunch of compile warnings
  * --Goober5000
@@ -70,10 +73,10 @@ void multi_rate_display(int np_index, int x, int y);
 #else
 
 // stubs using #defines (c.f. NO_SOUND)
-#define multi_rate_reset(np_index) ((void) (np_index))
-#define multi_rate_add(np_index, type, size) ((np_index), (type), (size), 0)
+#define multi_rate_reset(np_index)
+#define multi_rate_add(np_index, type, size) (0)
 #define multi_rate_process()
-#define multi_rate_display(np_index, x, y) ((void) ((np_index), (x), (y)))
+#define multi_rate_display(np_index, x, y)
 
 #endif
 

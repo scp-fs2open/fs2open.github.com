@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.6 $
- * $Date: 2004-08-11 05:06:25 $
- * $Author: Kazan $
+ * $Revision: 1.7 $
+ * $Date: 2005-02-04 20:06:04 $
+ * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/08/11 05:06:25  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.5  2004/05/25 00:24:00  wmcoolmon
  * Updated to use <fstream> instead of <fstream.h> and fixed an un/signed disagreement
  *
@@ -41,7 +44,6 @@
 #if !defined(_IRC_H_)
 #define _IRC_H_
 
-#include "fs2open_pxo/TCP_Socket.h"
 
 #pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <string>
@@ -49,6 +51,9 @@
 #pragma warning(pop)
 
 #include <fstream>
+
+#include "fs2open_pxo/TCP_Socket.h"
+
 
 struct irc_user
 {
@@ -196,7 +201,6 @@ class irc_client
 		irc_chan_link* FindChan(std::string chan);
 		void UnloadChanList();
 };
-
 
 
 

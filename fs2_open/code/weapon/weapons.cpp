@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2005/02/03 01:26:45  phreak
+ * revert to default d-missile behavior if the electroinics parameters aren't specified.
+ * added an option to customize the old-style disruption calculation as well.
+ *
  * Revision 2.83  2005/01/28 04:05:05  phreak
  * shockwave weapons now work properly with the electronics (d-missible) tag
  * added in a "randomness factor" for electronics parameters.  This adds or subtracts
@@ -2571,9 +2575,7 @@ void weapon_render(object *obj)
                 // *Tail point "getting bigger" as well as headpoint isn't being taken into consideration, so
                 //  it caused uneven glow between the head and tail, which really shows in big lasers. So...fixed!    -Et1
 
-				vector headp2;			
-
-                vector tailp;
+				vector headp2, tailp;
 
 				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
 
@@ -3166,7 +3168,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 								pnum = multi_find_player_by_object( &Objects[obj->parent] );
 								if ( pnum != -1 ){
-									pp = Net_players[pnum].player;
+									pp = Net_players[pnum].m_player;
 								}
 							}
 #endif
@@ -3195,7 +3197,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 				wp->homing_pos = target_pos;
 				Assert( !vm_is_vec_nan(&wp->homing_pos) );
-				// nprintf(("AI", "Attack point = %7.3f %7.3f %7.3f\n", target_pos.x, target_pos.y, target_pos.z));
+				// nprintf(("AI", "Attack point = %7.3f %7.3f %7.3f\n", target_pos.xyz.x, target_pos.xyz.y, target_pos.xyz.z));
 			} else
 				target_pos = wp->homing_pos;
 		}
@@ -3290,7 +3292,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		// a different vector to turn towards, this is done in swarm_update_direction().
 //		if ( !(wip->wi_flags & WIF_SWARM) ) {
 		if ( wp->swarm_index < 0 ) {
-			// nprintf(("AI", "Dot, dist = %7.3f, %7.3f, target pos = %7.3f %7.3f %7.3f\n", old_dot, vm_vec_dist_quick(&obj->pos, &target_pos), target_pos.x, target_pos.y, target_pos.z));
+			// nprintf(("AI", "Dot, dist = %7.3f, %7.3f, target pos = %7.3f %7.3f %7.3f\n", old_dot, vm_vec_dist_quick(&obj->pos, &target_pos), target_pos.xyz.x, target_pos.xyz.y, target_pos.xyz.z));
 			ai_turn_towards_vector(&target_pos, obj, frame_time, wip->turn_time, NULL, NULL, 0.0f, 0, NULL);
 			vel = vm_vec_mag(&obj->phys_info.desired_vel);
 

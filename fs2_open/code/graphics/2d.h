@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.41 $
- * $Date: 2005-01-29 08:04:15 $
- * $Author: wmcoolmon $
+ * $Revision: 2.42 $
+ * $Date: 2005-02-04 20:06:04 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/01/29 08:04:15  wmcoolmon
+ * Ahh, the sweet smell of optimized code
+ *
  * Revision 2.40  2005/01/14 05:28:57  wmcoolmon
  * gr_curve
  *
@@ -981,6 +984,7 @@ void gr_string_win(int x, int y, char *s );
 #define GR_CURSOR_LOCK		1
 #define GR_CURSOR_UNLOCK	2
 void gr_set_cursor_bitmap(int n, int lock = 0);
+void gr_unset_cursor_bitmap(int n);
 int gr_get_cursor_bitmap();
 extern int Web_cursor_bitmap;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:53 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-04 20:06:09 $
+ * $Author: taylor $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:53  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:33:07  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -533,7 +536,7 @@ void scoring_do_accept(scoring_struct *score)
 	// add in mission time
 	score->flight_time += (unsigned int)f2fl(Missiontime);
 	score->last_backup = score->last_flown;
-	score->last_flown = time(NULL);
+	score->last_flown = (_fs_time_t)time(NULL);
 	score->missions_flown++;
 }
 
@@ -613,7 +616,7 @@ void scoring_level_close(int accepted)
 			for(idx=0;idx<MAX_PLAYERS;idx++){
 				if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx])){
 					// get the scoring struct
-					sc = &Net_players[idx].player->stats;
+					sc = &Net_players[idx].m_player->stats;
 					scoring_do_accept( sc );
 				}
 			}
@@ -780,8 +783,8 @@ void scoring_eval_kill(object *ship_obj)
 	if(Game_mode & GM_MULTIPLAYER){
 		net_player_num = multi_find_player_by_object(ship_obj);
 		if(net_player_num != -1){
-			Net_players[net_player_num].player->stats.m_player_deaths++;
-			nprintf(("Network","Setting player %s deaths to %d\n",Net_players[net_player_num].player->callsign,Net_players[net_player_num].player->stats.m_player_deaths));
+			Net_players[net_player_num].m_player->stats.m_player_deaths++;
+			nprintf(("Network","Setting player %s deaths to %d\n",Net_players[net_player_num].m_player->callsign,Net_players[net_player_num].m_player->stats.m_player_deaths));
 			dead_plr = &Net_players[net_player_num];
 		}
 	}
@@ -858,7 +861,7 @@ void scoring_eval_kill(object *ship_obj)
 		if(Game_mode & GM_MULTIPLAYER){
 			net_player_num = multi_find_player_by_signature(killer_sig);
 			if(net_player_num != -1){
-				plr = Net_players[net_player_num].player;
+				plr = Net_players[net_player_num].m_player;
 				net_plr = &Net_players[net_player_num];
 			}
 		}
@@ -931,7 +934,7 @@ void scoring_eval_kill(object *ship_obj)
 						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[dead_ship->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
 							for (i=0; i<MAX_PLAYERS; i++) {
 								if (MULTI_CONNECTED(Net_players[i]) && (Net_players[i].p_info.team == net_plr->p_info.team) && (&Net_players[i] != net_plr)) {
-									Net_players[i].player->stats.m_score += (int)(dead_ship->score * scoring_get_scale_factor() * 0.5f);
+									Net_players[i].m_player->stats.m_score += (int)(dead_ship->score * scoring_get_scale_factor() * 0.5f);
 /*
 #if !defined(RELEASE_REAL)
 									// DEBUG CODE TO TEST NEW SCORING
@@ -949,10 +952,10 @@ void scoring_eval_kill(object *ship_obj)
 						}
 
 						// death message
-						if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (net_plr != NULL) && (dead_plr != NULL) && (net_plr->player != NULL) && (dead_plr->player != NULL)){
+						if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (net_plr != NULL) && (dead_plr != NULL) && (net_plr->m_player != NULL) && (dead_plr->m_player != NULL)){
 							char dead_text[1024] = "";
 
-							sprintf(dead_text, "%s gets the kill for %s", net_plr->player->callsign, dead_plr->player->callsign);							
+							sprintf(dead_text, "%s gets the kill for %s", net_plr->m_player->callsign, dead_plr->m_player->callsign);							
 							send_game_chat_packet(Net_player, dead_text, MULTI_MSG_ALL, NULL, NULL, 2);
 							HUD_printf(dead_text);
 						}
@@ -1049,7 +1052,7 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 			if(Game_mode & GM_MULTIPLAYER){
 				int net_player_num = multi_find_player_by_signature(sp->damage_ship_id[idx]);
 				if(net_player_num != -1){
-					plr = Net_players[net_player_num].player;
+					plr = Net_players[net_player_num].m_player;
 				}
 			}
 			// single player
@@ -1145,9 +1148,9 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 					switch(sub_type) {
 					case WP_LASER : 
 						if(is_bonehead){
-							Net_players[player_num].player->stats.mp_bonehead_hits++;
+							Net_players[player_num].m_player->stats.mp_bonehead_hits++;
 						} else {
-							Net_players[player_num].player->stats.mp_shots_hit++; 
+							Net_players[player_num].m_player->stats.mp_shots_hit++; 
 						}
 
 						// Assert( Net_players[player_num].player->stats.mp_shots_hit <= Net_players[player_num].player->stats.mp_shots_fired );
@@ -1156,7 +1159,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 						// friendly hit, once it hits a friendly, its done
 						if(is_bonehead){					
 							if(!from_blast){
-								Net_players[player_num].player->stats.ms_bonehead_hits++;
+								Net_players[player_num].m_player->stats.ms_bonehead_hits++;
 							}					
 						}
 						// hostile hit
@@ -1164,12 +1167,12 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 							// if its a bomb, count every bit of damage it does
 							if(Weapons[other_obj->instance].weapon_flags & WIF_BOMB){
 								// once we get impact damage, stop keeping track of it
-								Net_players[player_num].player->stats.ms_shots_hit++;
+								Net_players[player_num].m_player->stats.ms_shots_hit++;
 							}
 							// if its not a bomb, only count impact damage
 							else {
 								if(!from_blast){
-									Net_players[player_num].player->stats.ms_shots_hit++;
+									Net_players[player_num].m_player->stats.ms_shots_hit++;
 								}	
 							}				
 						}
@@ -1276,6 +1279,10 @@ DCF(rank, "changes scoring vars")
 	dc_printf("7 : Rear Admiral\n8 : Vice Admiral\n9 : Admiral");
 }
 
-void scoreing_close(){
-	for(int i = 0; i<NUM_RANKS; i++)if(Ranks[i].promotion_text)free(Ranks[i].promotion_text);
+void scoreing_close()
+{
+	for(int i = 0; i<NUM_RANKS; i++) {
+		if(Ranks[i].promotion_text)
+			free(Ranks[i].promotion_text);
+	}
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-11-21 11:33:23 $
+ * $Revision: 2.10 $
+ * $Date: 2005-02-04 20:06:06 $
  * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/11/21 11:33:23  taylor
+ * page in all frames at once rather than separately (old code that wasn't updated)
+ *
  * Revision 2.8  2004/07/26 20:47:47  Kazan
  * remove MCD complete
  *
@@ -253,7 +256,7 @@ static int Particles_enabled = 1;
 // Reset everything between levels
 void particle_init()
 {
-	int i;
+	int i, fps;
 
 //	Particles_enabled = os_config_read_uint( NULL, "UseParticles", 0 );
 
@@ -265,19 +268,16 @@ void particle_init()
 	}
 
 	if ( Anim_bitmap_id_fire == -1 )	{
-		int fps;
 		Anim_bitmap_id_fire = bm_load_animation( "particleexp01", &Anim_num_frames_fire, &fps, 0 );
 	}
 		//Anim_bitmap_id = bm_load( "particleglow01" );
 		//Anim_num_frames = 1;
 
 	if ( Anim_bitmap_id_smoke == -1 )	{
-		int fps;
 		Anim_bitmap_id_smoke = bm_load_animation( "particlesmoke01", &Anim_num_frames_smoke, &fps, 0 );
 	}
 
 	if ( Anim_bitmap_id_smoke2 == -1 )	{
-		int fps;
 		Anim_bitmap_id_smoke2 = bm_load_animation( "particlesmoke02", &Anim_num_frames_smoke2, &fps, 0 );
 	}
 

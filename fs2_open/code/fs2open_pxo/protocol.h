@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/protocol.h $
- * $Revision: 1.14 $
- * $Date: 2004-08-11 05:06:23 $
- * $Author: Kazan $
+ * $Revision: 1.15 $
+ * $Date: 2005-02-04 20:06:03 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2004/08/11 05:06:23  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.13  2004/07/09 22:05:32  Kazan
  * fs2netd 1.0 RC5 full support - Rank and Medal updates
  *
@@ -47,9 +50,12 @@
  *
  */
 
-#include "PreProcDefines.h"
 #if !defined(__pxo_protocol_h_)
 #define __pxo_protocol_h_
+
+#include "PreProcDefines.h"
+
+#include "globalincs/pstypes.h" // for _fs_time_t
 
 #pragma warning(disable:4663)	// new template specification syntax
 
