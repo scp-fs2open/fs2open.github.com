@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.113 $
- * $Date: 2004-09-24 02:12:59 $
+ * $Revision: 2.114 $
+ * $Date: 2004-10-13 10:46:49 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2004/09/24 02:12:59  Goober5000
+ * some ubersexp fixes
+ * --Goober5000
+ *
  * Revision 2.112  2004/09/23 23:52:58  Goober5000
  * fixed two bugs... still more bugs to be found :p
  * --Goober5000
@@ -1346,7 +1350,7 @@ void arg_item::expunge()
 	// contiually delete first item of list
 	while (this->next != NULL)
 	{
-		ptr = this->next;
+		ptr = this->next->next;
 		delete this->next;
 		this->next = ptr;
 	}
@@ -6401,7 +6405,7 @@ int eval_any_of(int arg_handler_node, int condition_node)
 
 	// true if any argument is true
 	if (num_true > 0)
-		return SEXP_KNOWN_TRUE;
+		return SEXP_TRUE;	// SEXP_KNOWN_TRUE; ?????
 	else
 		return SEXP_FALSE;
 }
@@ -6420,7 +6424,7 @@ int eval_every_of(int arg_handler_node, int condition_node)
 
 	// true if all arguments are true
 	if (num_true == query_sexp_args_count(arg_handler_node))
-		return SEXP_KNOWN_TRUE;
+		return SEXP_TRUE;	// SEXP_KNOWN_TRUE; ?????
 	else
 		return SEXP_FALSE;
 }
@@ -6443,7 +6447,7 @@ int eval_number_of(int arg_handler_node, int condition_node)
 
 	// true if at least threshold arguments are true
 	if (num_true >= threshold)
-		return SEXP_KNOWN_TRUE;
+		return SEXP_TRUE;	// SEXP_KNOWN_TRUE; ?????
 	else
 		return SEXP_FALSE;
 }
@@ -11971,22 +11975,22 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// Goober5000
 			case OP_ANY_OF:
-				sexp_val = eval_any_of( node, referenced_node );
+				sexp_val = eval_any_of( cur_node, referenced_node );
 				break;
 
 			// Goober5000
 			case OP_EVERY_OF:
-				sexp_val = eval_every_of( node, referenced_node );
+				sexp_val = eval_every_of( cur_node, referenced_node );
 				break;
 
 			// Goober5000
 			case OP_RANDOM_OF:
-				sexp_val = eval_random_of( node, referenced_node );
+				sexp_val = eval_random_of( cur_node, referenced_node );
 				break;
 
 			// Goober5000
 			case OP_NUMBER_OF:
-				sexp_val = eval_number_of( node, referenced_node );
+				sexp_val = eval_number_of( cur_node, referenced_node );
 				break;
 
 			// sexpressions with side effects
