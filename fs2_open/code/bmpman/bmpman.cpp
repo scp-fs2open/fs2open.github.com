@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.49 $
- * $Date: 2005-03-07 13:10:19 $
+ * $Revision: 2.50 $
+ * $Date: 2005-03-08 02:31:51 $
  * $Author: bobboau $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/03/07 13:10:19  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.48  2005/03/03 14:29:37  bobboau
  * fixed a small error from my earlier commit.
  *
@@ -3274,6 +3278,19 @@ bool bm_set_render_target(int handle, int face){
 	if(gr_set_render_target(handle, face)){
 
 		int n = handle % MAX_BITMAPS;
+		if(gr_screen.rendering_to_texture == -1){
+			//if we are moveing from the back buffer to a texture save whatever the current settings are
+			gr_screen.save_max_w = gr_screen.max_w;
+			gr_screen.save_max_h = gr_screen.max_h;
+		}
+		if(handle == -1){
+			gr_screen.max_w = gr_screen.save_max_w;
+			gr_screen.max_h = gr_screen.save_max_h;
+		}else{
+			gr_screen.max_w = bm_bitmaps[n].bm.w;
+			gr_screen.max_h = bm_bitmaps[n].bm.h;
+		}
+
 		gr_screen.rendering_to_face = face;
 		gr_screen.rendering_to_texture = n;
 
