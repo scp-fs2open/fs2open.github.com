@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2005/02/20 23:11:51  wmcoolmon
+ * Fix0r3d trails
+ *
  * Revision 2.89  2005/02/20 07:39:14  wmcoolmon
  * Trails update: Better, faster, stronger, but not much more reliable
  *
@@ -1217,6 +1220,22 @@ int parse_weapon(int subtype, bool replace)
 	required_string("$Model file:");
 	stuff_string(wip->pofbitmap_name, F_NAME, NULL);
 	diag_printf ("Model pof file -- %s\n", wip->pofbitmap_name );
+
+		if (optional_string("$External Model File:")) {
+			stuff_string(wip->external_model_name, F_NAME, NULL);	
+		}else{
+			strcpy(wip->external_model_name,"");
+		}
+		wip->external_model_num = -1;
+
+	wip->weapon_submodel_rotate_accell = 10.0f;
+	wip->weapon_submodel_rotate_vel = 0.0f;
+
+	if (optional_string("$Submodel Rotation Speed:"))
+		stuff_float(&wip->weapon_submodel_rotate_vel);
+	if (optional_string("$Submodel Rotation Acceleration:"))
+		stuff_float(&wip->weapon_submodel_rotate_accell);
+
 	if ( stricmp(wip->pofbitmap_name, NOX("none")) ) {
 		wip->model_num = -1;				
 		wip->render_type = WRT_POF;
@@ -4748,6 +4767,9 @@ void weapons_page_in()
 				Int3();	// Invalid weapon rendering type.
 		}
 
+		wip->external_model_num = -1;
+		if(strcmp(wip->external_model_name,""))wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
+		if(wip->external_model_num == -1)wip->external_model_num = wip->model_num;
 		// If this has an impact vclip page it in.
 //		if ( wip->impact_explosion_ani > -1 )	{
 //			int nframes, fps;

@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.20 $
- * $Author: taylor $
- * $Date: 2005-02-04 20:06:06 $
+ * $Revision: 2.21 $
+ * $Author: bobboau $
+ * $Date: 2005-03-01 06:55:43 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/02/04 20:06:06  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.19  2005/01/25 22:47:37  Goober5000
  * more cool parsing stuff
  * --Goober5000
@@ -464,4 +467,5 @@ extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_l
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);
 
+inline void parse_advance(int s){Mp+=s;}
 #endif

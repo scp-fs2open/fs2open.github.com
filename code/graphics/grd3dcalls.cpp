@@ -174,6 +174,7 @@ HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_
 	}
 #endif
 
+
 	HRESULT hr = D3D_OK;
 	if(set)
 	hr = GlobalD3DVars::lpD3DDevice->SetRenderState(render_state_type, render_state );
@@ -381,6 +382,7 @@ HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWO
 	}
 #endif
 
+
 	HRESULT hr = D3D_OK;
 	if(set)
 	hr = GlobalD3DVars::lpD3DDevice->SetTextureStageState(stage, type, value);
@@ -436,8 +438,10 @@ extern IDirect3DIndexBuffer8 *global_index_buffer;
 // Returns:
 //   TRUE  = the device is lost and cannot be recovered yet
 //   FALSE = the device is fine or has been successfully reset
-BOOL d3d_lost_device()
+BOOL d3d_lost_device(bool force)
 {
+
+
 	// if we can't reset the device yet then back out but only after Sleep()ing a little
 	if ( GlobalD3DVars::lpD3DDevice->TestCooperativeLevel() == D3DERR_DEVICELOST ) {
 		Sleep(5);
@@ -448,9 +452,14 @@ BOOL d3d_lost_device()
 	// from video memory, and all state information to be lost. Before calling the Reset method for a 
 	// device, an application should release any explicit render targets, depth stencil surfaces, 
 	// additional swap chains and D3DPOOL_DEFAULT resources associated with the device.
-	if ( GlobalD3DVars::lpD3DDevice->TestCooperativeLevel() == D3DERR_DEVICENOTRESET ) {
+	if (force || GlobalD3DVars::lpD3DDevice->TestCooperativeLevel() == D3DERR_DEVICENOTRESET ) {
 		// Set states to what they will be after reset
-		gr_d3d_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
+
+		extern int In_frame;
+		if(In_frame){
+			GlobalD3DVars::lpD3DDevice->EndScene();
+			In_frame--;
+		}
 
 		if (global_index_buffer != NULL) {
 			int m = 1;
@@ -462,7 +471,55 @@ BOOL d3d_lost_device()
 			global_index_buffer = NULL;
 		}
 
-		GlobalD3DVars::lpD3DDevice->Reset(&GlobalD3DVars::d3dpp);
+		extern IDirect3DIndexBuffer8 *global_index_buffer;
+//		extern IDirect3DTexture8 *background_render_target;
+		extern LPDIRECT3DCUBETEXTURE8 cube_map;
+		extern IDirect3DSurface8 *old_render_sten;
+		extern IDirect3DSurface8 *old_render_target;
+
+//		if(background_render_target){background_render_target->Release();background_render_target=NULL;}
+		int r = 0;
+		if(cube_map){
+/*			LPDIRECT3DSURFACE8 face;
+			for(int i = 0; i<6; i++){
+				cube_map->GetCubeMapSurface(_D3DCUBEMAP_FACES(i), 0, &face);
+				r = face->Release();
+			}
+*/
+			r = cube_map->Release();
+			cube_map=NULL;
+		}
+		if(old_render_sten){old_render_sten->Release();old_render_sten=NULL;}
+		if(old_render_target){old_render_target->Release();old_render_target=NULL;}
+		if(global_index_buffer){global_index_buffer->Release();global_index_buffer=NULL;}
+
+		extern bool cube_map_drawen;
+		cube_map_drawen = false;
+		
+
+
+		gr_d3d_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
+
+		void d3d_kill_state_blocks();
+		d3d_kill_state_blocks();
+
+		HRESULT hr = GlobalD3DVars::lpD3DDevice->Reset(&GlobalD3DVars::d3dpp);
+		if(hr != D3D_OK)return true;
+
+//		In_frame = 0;
+
+		if ( GlobalD3DVars::lpD3DDevice->TestCooperativeLevel() == D3DERR_DEVICELOST ) {
+			Sleep(5);
+			return TRUE;
+		}
+
+
+
+		extern void d3d_init_environment();
+		d3d_init_environment();
+
+		void d3d_generate_state_blocks();
+		d3d_generate_state_blocks();
 
 		d3d_reset_render_states();
 		d3d_reset_texture_stage_states();	 
@@ -472,6 +529,9 @@ BOOL d3d_lost_device()
 		d3d_set_initial_render_state();
 
 		D3D_vertex_type = 0;
+
+		GlobalD3DVars::lpD3DDevice->BeginScene();
+		if(!In_frame)In_frame++;
 	}
 
 	return FALSE;

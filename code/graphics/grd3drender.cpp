@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.60 $
- * $Date: 2005-02-27 10:38:06 $
- * $Author: wmcoolmon $
+ * $Revision: 2.61 $
+ * $Date: 2005-03-01 06:55:40 $
+ * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/02/27 10:38:06  wmcoolmon
+ * Nonstandard res stuff
+ *
  * Revision 2.59  2005/02/23 05:11:13  taylor
  * more consolidation of various graphics variables
  * some header cleaning
@@ -2475,6 +2478,7 @@ void gr_d3d_set_clip(int x,int y,int w,int h, bool resize)
  */
 void gr_d3d_reset_clip()
 {
+	if(d3d_lost_device())return;
 	gr_screen.offset_x = 0;
 	gr_screen.offset_y = 0;
 	gr_screen.clip_left = 0;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.80 $
- * $Date: 2005-02-19 07:57:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.81 $
+ * $Date: 2005-03-01 06:55:45 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2005/02/19 07:57:03  wmcoolmon
+ * Removed trails limit
+ *
  * Revision 2.79  2005/02/04 20:06:08  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -688,6 +691,10 @@ typedef struct ship_weapon {
 	int ai_class;
 
 	int flags;								// see SW_FLAG_* defines above
+	bool primary_animation_position[MAX_SHIP_PRIMARY_BANKS];
+	bool secondary_animation_position[MAX_SHIP_SECONDARY_BANKS];
+	int primary_animation_done_time[MAX_SHIP_PRIMARY_BANKS];
+	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
 
 
@@ -1088,6 +1095,23 @@ typedef struct ship {
 #endif
 
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
+
+	bool bay_doors_open;			//are the bay doors open right now
+	int bay_number_wanting_open;	//the number of fighters that want my bay doors open
+	bool bay_doors_want_open;		//when this value changes I tell my parent
+	int bay_doors_open_time;		//the time when the bay doors will be open
+	bool bay_doors_open_last_frame;	//start moveing as soon as the bay doors are totaly open
+	int launched_from;				//wich bay path I launched from
+
+	//ok, when a fighter is made in a fighter bay it will add one to bay_number_wanting_open
+	//when a fighter reaches the second point on a bay path it will subtract one from this variable
+	//when nobody wants the bay doors open anymore, the parent ship will close them
+
+	float secondary_point_reload_pct[MAX_SHIP_SECONDARY_BANKS][MAX_SLOTS];	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
+	float reload_time[MAX_SHIP_SECONDARY_BANKS]; //how many seconds it will take for any point in a bank to reload
+	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
+	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
+
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -1369,6 +1393,10 @@ typedef struct ship_info {
 	char splodeing_texture_name[NAME_LENGTH];
 	int max_decals;
 
+	bool draw_primary_models[MAX_SHIP_PRIMARY_BANKS];
+	bool draw_secondary_models[MAX_SHIP_SECONDARY_BANKS];
+	bool draw_models; //any weapon mode will be drawn
+	float weapon_model_draw_distance;
 } ship_info;
 
 extern int num_wings;
@@ -1841,9 +1869,11 @@ extern int ship_has_energy_weapons(ship *shipp);
 extern int ship_has_engine_power(ship *shipp);
 
 //starts an animation of a certan type that may be assosiated with a submodel of a ship
-void ship_start_animation_type(ship *shipp, int animation_type, int direction);
+void ship_start_animation_type(ship *shipp, int animation_type, int subtype, int direction);
 //how long untill the animation is done
-int ship_get_animation_time_type(ship *shipp, int animation_type);
+int ship_get_animation_time_type(ship *shipp, int animation_type, int subtype);
+
+void ship_animation_set_inital_states(ship *shipp);
 
 // Goober5000
 int ship_starting_wing_lookup(char *wing_name);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.90 $
- * $Date: 2005-02-28 00:29:52 $
- * $Author: wmcoolmon $
+ * $Revision: 2.91 $
+ * $Date: 2005-03-01 06:55:43 $
+ * $Author: bobboau $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2005/02/28 00:29:52  wmcoolmon
+ * Removed unneccessary variable
+ *
  * Revision 2.89  2005/02/20 23:13:00  wmcoolmon
  * Trails stuff, moved ship docking func declaration so FRED could get to it.
  *
@@ -11510,7 +11513,7 @@ void ai_dock()
 				if (Pl_objp->phys_info.speed > goal_objp->phys_info.speed + 1.5f) {
 					set_accel_for_target_speed(Pl_objp, goal_objp->phys_info.speed);
 				} else {
-				//	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKING, 1);
+			//		ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKING, aip->dock_index, 1);
 					aip->submode = AIS_DOCK_2;
 					aip->submode_start_time = Missiontime;
 				}
@@ -11597,8 +11600,8 @@ void ai_dock()
 
 				ai_do_objects_docked_stuff( Pl_objp, docker_index, goal_objp, dockee_index );
 
-				if (aip->submode == AIS_DOCK_3)
-				{
+				if (aip->submode == AIS_DOCK_3) {
+				//	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKED, aip->dockee_index, 1);
 				//	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKED, 1);
 					snd_play_3d( &Snds[SND_DOCK_ATTACH], &Pl_objp->pos, &View_position );
 					hud_maybe_flash_docking_text(Pl_objp);
@@ -11717,7 +11720,7 @@ void ai_dock()
 					// Assumes that the submode_start_time is not used for AIS_UNDOCK_1 anymore
 			if ( aip->submode_start_time != 0 ){
 				snd_play_3d( &Snds[SND_DOCK_DEPART], &Pl_objp->pos, &View_position );
-			//	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKED, -1);
+			//	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKED, aip->dockee_index, -1);
 			}
 			aip->submode_start_time = 0;
 		}
@@ -11775,7 +11778,7 @@ void ai_dock()
 		Assert(dist != UNINITIALIZED_VALUE);
 
 		if (dist < Pl_objp->radius/2 + 5.0f) {
-//			ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKING, -1);
+		//	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKING, aip->dockee_index, -1);
 			aip->submode = AIS_UNDOCK_4;
 		}
 
@@ -14092,6 +14095,59 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 	}
 }
 
+
+//does all the stuff regarding fighterbay doors
+//returns weather or not the opening animation is done playing
+bool bay_process_doors(object *pl_objp, int dir){
+	ai_info		*aip = &Ai_info[Ships[pl_objp->instance].ai_index];
+	ship *parent_ship = &Ships[Objects[aip->goal_objnum].instance];
+
+	bool open = false;
+	if(dir > 0)open = (aip->path_cur <= aip->path_start + 1);
+		else open = true;
+
+	if(open){
+		//we're at the end of the path
+		if(!Ships[pl_objp->instance].bay_doors_want_open){
+			//for emergeing this should never actualy be reached
+
+			//I have yet to tell my parent that I want the bay doors open
+			//so i should probly do that now
+			parent_ship->bay_number_wanting_open++;	//open the pod bay doors Hal
+			Ships[pl_objp->instance].bay_doors_want_open = true; //I'm sorry dave I can't do that
+		}
+	}else{
+		//alright I want the doors to close now
+		if(Ships[pl_objp->instance].bay_doors_want_open){
+			//mommy still thinks I want them open though, better set her straight
+
+			parent_ship->bay_number_wanting_open--;
+			Ships[pl_objp->instance].bay_doors_want_open = false;
+		}
+	}
+
+	if(!parent_ship->bay_doors_open){
+	//if the parent ship's bay doors are closed 
+		if(parent_ship->bay_number_wanting_open > 0){
+			//but they should be open, open them
+			ship_start_animation_type(parent_ship, TRIGGER_TYPE_DOCK_BAY_DOOR, Ships[pl_objp->instance].launched_from, 1);
+			parent_ship->bay_doors_open = true;
+
+			parent_ship->bay_doors_open_time = ship_get_animation_time_type(parent_ship, TRIGGER_TYPE_DOCK_BAY_DOOR, Ships[pl_objp->instance].launched_from);
+		}
+	}else{
+	//if the parent ship's bay doors are open 
+		if(parent_ship->bay_number_wanting_open <= 0){
+			//but they should be closed, close them
+			ship_start_animation_type(parent_ship, TRIGGER_TYPE_DOCK_BAY_DOOR, Ships[pl_objp->instance].launched_from, -1);
+			parent_ship->bay_doors_open = false;
+		}
+	}
+
+	return parent_ship->bay_doors_open_time < timestamp();;
+
+}
+
 // determine what path to use when emerging from a fighter bay
 // input:	pl_objp	=>	pointer to object for ship that is arriving
 //				pos		=>	output parameter, it is the starting world pos for path choosen
@@ -14138,8 +14194,12 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vector *pos, vect
 	}
 
 	path_index = sb->paths[sb_path_index];
+	Ships[pl_objp->instance].launched_from = sb_path_index;
 	if ( path_index == -1 ) 
 		return -1;
+
+	parent_sp->bay_number_wanting_open++;//one more ship wants the bay open
+	Ships[pl_objp->instance].bay_doors_want_open = true;//my parent knows that I want the bay open
 
 	// create the path for pl_objp to follow
 	create_model_exit_path(pl_objp, &Objects[parent_objnum], path_index, pm->paths[path_index].nverts);
@@ -14165,6 +14225,8 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vector *pos, vect
 	aip->submode_start_time = Missiontime;
 
 	// set up starting vel
+	/*
+	//moved to the emerge handeling code
 	vector vel;
 	float speed;
 	speed = Ship_info[Ships[pl_objp->instance].ship_info_index].max_speed;
@@ -14175,6 +14237,15 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vector *pos, vect
 	pl_objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 	pl_objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 	pl_objp->phys_info.prev_ramp_vel.xyz.z = speed;
+	pl_objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
+	*/
+	//due to the door animations the ship has to remain still untill the doors are open
+	vector vel = ZERO_VECTOR;
+	pl_objp->phys_info.vel = vel;
+	pl_objp->phys_info.desired_vel = vel;
+	pl_objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
+	pl_objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
+	pl_objp->phys_info.prev_ramp_vel.xyz.z = 0.0f;
 	pl_objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
 
 	return 0;	
@@ -14225,8 +14296,32 @@ void ai_bay_emerge()
 		return;
 	}
 
-	// follow the path to the final point
-	ai_path();
+
+	if(bay_process_doors(Pl_objp, 1)){
+		if(!Ships[Objects[aip->goal_objnum].instance].bay_doors_open_last_frame){
+			vector vel;
+			float speed;
+			speed = Ship_info[Ships[Pl_objp->instance].ship_info_index].max_speed;
+			vel = Pl_objp->orient.vec.fvec;
+			vm_vec_scale( &vel, speed );
+			Pl_objp->phys_info.vel = vel;
+			Pl_objp->phys_info.desired_vel = vel;
+			Pl_objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
+			Pl_objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
+			Pl_objp->phys_info.prev_ramp_vel.xyz.z = speed;
+			Pl_objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
+			Ships[Objects[aip->goal_objnum].instance].bay_doors_open_last_frame = true;
+		}
+		// follow the path to the final point
+		ai_path();
+	}else{
+		Ships[Objects[aip->goal_objnum].instance].bay_doors_open_last_frame = false;
+
+		Pl_objp->pos = Path_points[aip->path_start].pos; // drag it along untill it's time to launch
+	}
+	//if we are on the last segment of the path and the bay doors are not open, ope  them
+	//if we are on any other segment of the path, close them
+
 
 	// New test: must have been in AI_EMERGE mode for at least 10 seconds, and be a minimum distance from the start point
 	if ( ( (Missiontime - aip->submode_start_time) > 10*F1_0 ) && (vm_vec_dist_quick(&Pl_objp->pos, &Objects[aip->goal_objnum].pos) > 0.75f * Objects[aip->goal_objnum].radius)) {
@@ -14413,11 +14508,32 @@ void ai_bay_depart()
 		return;
 	}
 
+	bay_process_doors(Pl_objp, -1);
 	// follow the path to the final point
 	ai_path();
+	//if we are on the last segment of the path and the bay doors are not open, ope  them
+	//if we are on any other segment of the path, close them
 
 	// if the final point is reached, let default AI take over
 	if ( aip->path_cur >= (aip->path_start+aip->path_length) ) {
+		//ok, I'm in so close the doors now
+		ship* parent_ship = &Ships[Objects[aip->goal_objnum].instance];
+
+		parent_ship->bay_number_wanting_open--;//one less ship wants the bay open
+		Ships[Pl_objp->instance].bay_doors_want_open = false;//my parent knows that I want the bay closed
+
+		if(parent_ship->bay_doors_open){
+		//if the parent ship's bay doors are open 
+			if(parent_ship->bay_number_wanting_open <= 0){
+				//but they should be closed, close them
+				ship_start_animation_type(parent_ship, TRIGGER_TYPE_DOCK_BAY_DOOR, Ships[Pl_objp->instance].launched_from, -1);
+				parent_ship->bay_doors_open = false;
+			}
+		}
+
+
+
+
 		polymodel	*pm;
 		ship_bay		*sb;
 

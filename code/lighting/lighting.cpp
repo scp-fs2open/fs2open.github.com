@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-07-26 20:47:35 $
- * $Author: Kazan $
+ * $Revision: 2.16 $
+ * $Date: 2005-03-01 06:55:41 $
+ * $Author: bobboau $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/07/26 20:47:35  Kazan
+ * remove MCD complete
+ *
  * Revision 2.14  2004/07/12 16:32:52  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -555,6 +558,8 @@ void light_add_directional( vector *dir, float intensity, float r, float g, floa
 
 void light_add_point( vector * pos, float rad1, float rad2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
 {
+	Assert(rad1 >0);
+	Assert(rad2 >0);
 	if(!specular){
 		spec_r = r;
 		spec_g = g;
@@ -604,6 +609,8 @@ void light_add_point( vector * pos, float rad1, float rad2, float intensity, flo
 
 void light_add_point_unique( vector * pos, float rad1, float rad2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
 {
+	Assert(rad1 >0);
+	Assert(rad2 >0);
 	if(!specular){
 		spec_r = r;
 		spec_g = g;
@@ -653,6 +660,8 @@ void light_add_point_unique( vector * pos, float rad1, float rad2, float intensi
 // for now, tube lights only affect one ship (to keep the filter stuff simple)
 void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
 {
+	Assert(r1 >0);
+	Assert(r2 >0);
 	if(!specular){
 		spec_r = r;
 		spec_g = g;

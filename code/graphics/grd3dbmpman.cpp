@@ -46,7 +46,12 @@ void gr_d3d_bm_free_data(int n)
 	int rc = 0;
 
 	if (d3d_bitmap_entry[n].tinterface != NULL) {
-		do { rc = d3d_bitmap_entry[n].tinterface->Release(); } while ( rc > 0 );
+		do { 
+			rc = d3d_bitmap_entry[n].tinterface->Release(); 
+			if(rc > 1)Int3();
+		} while ( rc > 0 );
+	//	} while ( rc > 1 );
+	//	d3d_bitmap_entry[n].tinterface->Release();
 
 		d3d_bitmap_entry[n].tinterface = NULL;
 	}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-02-20 23:13:01 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2005-03-01 06:55:45 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/02/20 23:13:01  wmcoolmon
+ * Trails stuff, moved ship docking func declaration so FRED could get to it.
+ *
  * Revision 2.19  2005/02/20 08:22:48  wmcoolmon
  * Smartified shipcontrails
  *
@@ -388,7 +391,7 @@ void ct_ship_process_ABtrails(ship *shipp)
 
 	if(!(objp->phys_info.flags & PF_AFTERBURNER_ON)){ //if the after burners aren't on -Bobboau
 		for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-			trail_object_died(shipp->ABtrail_ptr[idx]);
+			if(shipp->ABtrail_ptr[idx])trail_object_died(shipp->ABtrail_ptr[idx]);
 			shipp->ABtrail_ptr[idx] = NULL;
 		}
 

@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-02-04 20:06:06 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2005-03-01 06:55:42 $
+ * $Author: bobboau $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/02/04 20:06:06  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.22  2004/07/26 20:47:46  Kazan
  * remove MCD complete
  *
@@ -501,6 +504,8 @@ void os_app_activate_set(bool state)
 
 void change_window_active_state()
 {
+	
+
 	if(os_app_activate_hook_on == false)
 	{
 		return;
@@ -530,13 +535,21 @@ void change_window_active_state()
 			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
 #endif
 		}
-		gr_activate(fAppActive);
+		if(!stay_minimised_damnit){
+			ShowCursor(!fAppActive);
+			gr_activate(fAppActive);
+		}else{
+			gr_activate(0);
+			ClipCursor(NULL);
+			ShowCursor(true);
+		}
 	}
 
 	fOldAppActive = fAppActive;
 }
 
 int Got_message = 0;
+bool stay_minimised_damnit = false;
 // message handler for the main thread
 LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
 {
@@ -804,8 +817,6 @@ BOOL win32_create_window()
 	}
 
 	// Hack!! Turn off Window's cursor.
-	ShowCursor(0);
-	ClipCursor(NULL);
 
 	main_window_inited = 1;
 	#ifndef NDEBUG
@@ -817,6 +828,8 @@ BOOL win32_create_window()
 		UpdateWindow( hwndApp );
 	}
 
+	ShowCursor(false);
+	ClipCursor(NULL);
 	return TRUE;
 }
 
@@ -843,7 +856,7 @@ void os_poll()
 
 void debug_int3()
 {
-/*
+
 	gr_activate(0);
 #ifdef _WIN32
 #if defined _MSC_VER
@@ -859,5 +872,5 @@ void debug_int3()
 #endif
 
 	gr_activate(1);
-*/
+
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.38 $
- * $Date: 2005-02-27 10:38:06 $
- * $Author: wmcoolmon $
+ * $Revision: 2.39 $
+ * $Date: 2005-03-01 06:55:40 $
+ * $Author: bobboau $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/02/27 10:38:06  wmcoolmon
+ * Nonstandard res stuff
+ *
  * Revision 2.37  2005/02/23 05:11:13  taylor
  * more consolidation of various graphics variables
  * some header cleaning
@@ -595,7 +598,7 @@ HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_
 HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pvertices, DWORD vertex_count);
 void d3d_reset_texture_stage_states();
 HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value, bool set = true, bool init = false);
-BOOL d3d_lost_device();
+BOOL d3d_lost_device(bool force = false);
 HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr);
 HRESULT d3d_SetVertexShader(uint vertex_type);
 HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **buffer);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.163 $
- * $Date: 2005-02-19 07:57:02 $
- * $Author: wmcoolmon $
+ * $Revision: 2.164 $
+ * $Date: 2005-03-01 06:55:45 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.163  2005/02/19 07:57:02  wmcoolmon
+ * Removed trails limit
+ *
  * Revision 2.162  2005/02/15 00:03:35  taylor
  * don't try and draw starfield bitmaps if they aren't valid
  * make AB thruster stuff in ship_create() a little less weird
@@ -1638,6 +1641,8 @@ static int Thrust_anim_inited = 0;
 // a global definition of the IFF colors
 color IFF_colors[MAX_IFF_COLORS][2];	// AL 1-2-97: Create two IFF colors, regular and bright
 
+void ship_fix_reverse_times(ship_info *sip);
+
 void ship_iff_init_colors()
 {
 	int i, alpha;
@@ -1831,12 +1836,12 @@ void parse_engine_wash(bool replace)
 }
 
 int match_type(char *p){
-	if(!strncmp(p,"\"docking\"",9)){
-		return TRIGGER_TYPE_DOCKING;
-	}
-	if(!strncmp(p,"\"docked\"",8)){
-		return TRIGGER_TYPE_DOCKED;
-	}
+	
+	for(int i = 0; i<MAX_TRIGGER_ANIMATION_TYPES; i++){
+		if(!strncmp(p,animation_type_names[i],strlen(animation_type_names[i]))){
+			return i;
+		}
+	}	
 	return-1;
 	
 }
@@ -2129,6 +2134,9 @@ strcpy(temp_error, parse_error_text);
 
 	// Goober5000 - fixed Bobboau's implementation of restricted banks
 	int bank;
+	if (optional_string("$Weapon Model Draw Distance:"))
+	stuff_float( &sip->weapon_model_draw_distance );
+	else sip->weapon_model_draw_distance = 200.0f;
 
 	// Set the weapons filter used in weapons loadout (for primary weapons)
 	if (optional_string("$Allowed PBanks:"))
@@ -2250,6 +2258,25 @@ strcpy(parse_error_text, temp_error);
 		}
 	}
 
+	sip->draw_models = false;
+
+	for(i=0; i<MAX_SHIP_PRIMARY_BANKS; i++)sip->draw_primary_models[i] = false;
+	if(optional_string("$Show Weapon Models:"))
+	{
+		sip->draw_models = true;
+		required_string("(");
+		if(optional_string("yes") || optional_string("Yes") || optional_string("YES"))sip->draw_primary_models[0] = true;
+		else {required_string_3("no","NO","No"); parse_advance(2);}
+
+		i = 1;
+		while(optional_string(",") && i<sip->num_primary_banks){
+		if(optional_string("yes") || optional_string("Yes") || optional_string("YES"))sip->draw_primary_models[i] = true;
+			else {required_string_3("no","NO","No"); parse_advance(2);}
+			i++;
+		}
+		required_string(")");
+	}
+
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
 	if (optional_string("$Allowed SBanks:"))
 	{
@@ -2368,7 +2395,24 @@ strcpy(parse_error_text, temp_error);
 	{
 		sip->num_secondary_banks = 0;
 	}
+    
+	for(i=0; i<MAX_SHIP_SECONDARY_BANKS; i++)sip->draw_secondary_models[i] = false;
+	if(optional_string("$Show Weapon Models:"))
+	{
 
+		sip->draw_models = true;
+		required_string("(");
+		if(optional_string("yes") || optional_string("Yes") || optional_string("YES"))sip->draw_secondary_models[0] = true;
+		else {required_string_3("no","NO","No"); parse_advance(2);}		
+		
+		i = 1;
+		while(optional_string(",") && i<sip->num_secondary_banks){
+			if(optional_string("yes") || optional_string("Yes") || optional_string("YES"))sip->draw_secondary_models[i] = true;
+			else {required_string_3("no","NO","No"); parse_advance(2);}
+			i++;
+		}
+		required_string(")");
+	}
 	// copy to regular allowed_weapons array
 	for (i=0; i<MAX_SHIP_WEAPONS; i++)
 	{
@@ -2905,15 +2949,15 @@ strcpy(parse_error_text, temp_error);
 			else
 				sp->targetable = 1;
 
-			trigger_instance *old_triggers = NULL;
+			queued_animation *old_triggers = NULL;
 			sp->n_triggers = 0;
 			sp->triggers = NULL;
 			while(optional_string("$animation=triggered")){
-				trigger_instance *current_trigger;
+				queued_animation *current_trigger;
 
 				old_triggers = sp->triggers;
-				sp->triggers = (trigger_instance*)malloc(sizeof(trigger_instance)*(sp->n_triggers+1));
-				if(sp->n_triggers)memcpy(sp->triggers,old_triggers,sizeof(trigger_instance)*sp->n_triggers);
+				sp->triggers = (queued_animation*)malloc(sizeof(queued_animation)*(sp->n_triggers+1));
+				if(sp->n_triggers)memcpy(sp->triggers,old_triggers,sizeof(queued_animation)*sp->n_triggers);
 				if(sp->n_triggers)free(old_triggers);
 				current_trigger = &sp->triggers[sp->n_triggers];
 				sp->n_triggers++;
@@ -2924,43 +2968,120 @@ strcpy(parse_error_text, temp_error);
 				stuff_string(atype, F_NAME, NULL);
 				current_trigger->type = match_type(atype);
 
-				required_string("+delay:");
-				stuff_int(&current_trigger->properties.start); 
-
-				if(optional_string("+absolute_angle:")){
-					current_trigger->properties.absolute = true;
-					stuff_vector(&current_trigger->properties.angle );
-
-					current_trigger->properties.angle.xyz.x = fl_radian(current_trigger->properties.angle.xyz.x);
-					current_trigger->properties.angle.xyz.y = fl_radian(current_trigger->properties.angle.xyz.y);
-					current_trigger->properties.angle.xyz.y = fl_radian(current_trigger->properties.angle.xyz.z);
+				if(optional_string("+sub_type:")){
+					stuff_int(&current_trigger->subtype);
 				}else{
-					current_trigger->properties.absolute = false;
-					required_string("+relative_angle:");
-					stuff_vector(&current_trigger->properties.angle );
-
-					current_trigger->properties.angle.xyz.x = fl_radian(current_trigger->properties.angle.xyz.x);
-					current_trigger->properties.angle.xyz.y = fl_radian(current_trigger->properties.angle.xyz.y);
-					current_trigger->properties.angle.xyz.z = fl_radian(current_trigger->properties.angle.xyz.z);
+					current_trigger->subtype = ANIMATION_SUBTYPE_ALL;
 				}
 
-				required_string("+velocity:");
-				stuff_vector(&current_trigger->properties.vel );
-				current_trigger->properties.vel.xyz.x = fl_radian(current_trigger->properties.vel.xyz.x);
-				current_trigger->properties.vel.xyz.y = fl_radian(current_trigger->properties.vel.xyz.y);
-				current_trigger->properties.vel.xyz.z = fl_radian(current_trigger->properties.vel.xyz.z);
 
-				required_string("+acceleration:");
-				stuff_vector(&current_trigger->properties.accel );
-				current_trigger->properties.accel.xyz.x = fl_radian(current_trigger->properties.accel.xyz.x);
-				current_trigger->properties.accel.xyz.y = fl_radian(current_trigger->properties.accel.xyz.y);
-				current_trigger->properties.accel.xyz.z = fl_radian(current_trigger->properties.accel.xyz.z);
+				if(current_trigger->type == TRIGGER_TYPE_INITAL){
+					//the only thing inital animation type needs is the angle, 
+					//so to save space lets just make everything optional in this case
 
-				required_string("+time:");
-				stuff_int(&current_trigger->properties.end );
+					if(optional_string("+delay:"))
+						stuff_int(&current_trigger->start); 
+					else
+						current_trigger->start = 0;
+	
+					if(optional_string("+absolute_angle:")){
+						current_trigger->absolute = true;
+						stuff_vector(&current_trigger->angle );
+	
+						current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
+						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
+						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.z);
+					}else{
+						current_trigger->absolute = false;
+						required_string("+relative_angle:");
+						stuff_vector(&current_trigger->angle );
+	
+						current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
+						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
+						current_trigger->angle.xyz.z = fl_radian(current_trigger->angle.xyz.z);
+					}
+	
+					if(optional_string("+velocity:")){
+						stuff_vector(&current_trigger->vel );
+						current_trigger->vel.xyz.x = fl_radian(current_trigger->vel.xyz.x);
+						current_trigger->vel.xyz.y = fl_radian(current_trigger->vel.xyz.y);
+						current_trigger->vel.xyz.z = fl_radian(current_trigger->vel.xyz.z);
+					}
+	
+					if(optional_string("+acceleration:")){
+						stuff_vector(&current_trigger->accel );
+						current_trigger->accel.xyz.x = fl_radian(current_trigger->accel.xyz.x);
+						current_trigger->accel.xyz.y = fl_radian(current_trigger->accel.xyz.y);
+						current_trigger->accel.xyz.z = fl_radian(current_trigger->accel.xyz.z);
+					}
+
+					if(optional_string("+time:"))
+						stuff_int(&current_trigger->end );
+					else
+						current_trigger->end = 0;
+				}else{
+
+					required_string("+delay:");
+					stuff_int(&current_trigger->start); 
+
+					current_trigger->reverse_start = -1;	//have some code figure this out for us
+
+					if(optional_string("+reverse_delay:"))stuff_int(&current_trigger->reverse_start);
+	
+					if(optional_string("+absolute_angle:")){
+						current_trigger->absolute = true;
+						stuff_vector(&current_trigger->angle );
+	
+						current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
+						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
+						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.z);
+					}else{
+						current_trigger->absolute = false;
+						required_string("+relative_angle:");
+						stuff_vector(&current_trigger->angle );
+	
+						current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
+						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
+						current_trigger->angle.xyz.z = fl_radian(current_trigger->angle.xyz.z);
+					}
+	
+					required_string("+velocity:");
+					stuff_vector(&current_trigger->vel );
+					current_trigger->vel.xyz.x = fl_radian(current_trigger->vel.xyz.x);
+					current_trigger->vel.xyz.y = fl_radian(current_trigger->vel.xyz.y);
+					current_trigger->vel.xyz.z = fl_radian(current_trigger->vel.xyz.z);
+	
+					required_string("+acceleration:");
+					stuff_vector(&current_trigger->accel );
+					current_trigger->accel.xyz.x = fl_radian(current_trigger->accel.xyz.x);
+					current_trigger->accel.xyz.y = fl_radian(current_trigger->accel.xyz.y);
+					current_trigger->accel.xyz.z = fl_radian(current_trigger->accel.xyz.z);
+
+					if(optional_string("+time:"))
+						stuff_int(&current_trigger->end );
+					else
+						current_trigger->end = 0;
+
+					if(optional_string("$Sound:")){
+						required_string("+Start:");
+						stuff_int(&current_trigger->start_sound );
+						required_string("+Loop:");
+						stuff_int(&current_trigger->loop_sound );
+						required_string("+End:");
+						stuff_int(&current_trigger->end_sound );
+						required_string("+Radius:");
+						stuff_float(&current_trigger->snd_rad );
+					}else{
+						current_trigger->start_sound = -1;
+						current_trigger->loop_sound = -1;
+						current_trigger->end_sound = -1;
+						current_trigger->snd_rad = 0;
+					}
+				}
 
 				current_trigger->corect();
 				//makes sure that the amount of time it takes to accelerate up and down doesn't make it go farther than the angle
+
 			}
 			if(optional_string("$animation=linked")){
 			}
@@ -2997,6 +3118,8 @@ strcpy(parse_error_text, temp_error);
 		sip->subsystems[i] = subsystems[i];
 	}
 
+	ship_fix_reverse_times(sip);
+
 	// if we have a ship copy, then check to be sure that our base ship exists
 	if ( sip->flags & SIF_SHIP_COPY ) {
 		int index;
@@ -3012,6 +3135,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	strcpy(parse_error_text, "");
+
 
 	return rtn;
 }
@@ -3507,6 +3631,17 @@ int ship_get_default_orders_accepted( ship_info *sip )
 		return 0;
 }
 
+vector get_submodel_offset(int model, int submodel){
+	polymodel*pm = model_get(model);
+	if(pm->submodel[submodel].parent == -1)
+		return pm->submodel[submodel].offset;
+	vector ret = pm->submodel[submodel].offset;
+	vector v = get_submodel_offset(model,pm->submodel[submodel].parent);
+	vm_vec_add2(&ret, &v);
+	return ret;
+
+}
+
 void ship_set(int ship_index, int objnum, int ship_type)
 {
 	int i;
@@ -3610,6 +3745,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		swp->primary_bank_ammo[i] = 0;						// added by Goober5000
 		swp->next_primary_fire_stamp[i] = timestamp(0);	
 		swp->primary_bank_rearm_time[i] = timestamp(0);		// added by Goober5000
+
+		swp->primary_animation_position[i] = false;
+		swp->secondary_animation_position[i] = false;
+		swp->primary_animation_done_time[i] = 0;
+		swp->secondary_animation_done_time[i] = 0;
 	}
 
 	shipp->cmeasure_fire_stamp = timestamp(0);
@@ -3801,6 +3941,37 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->ship_decal_system.decals_modified = false;
 	shipp->ship_decal_system.max_decals = sip->max_decals;
 #endif
+
+	shipp->bay_doors_open = false;
+	shipp->bay_number_wanting_open = 0;
+	shipp->bay_doors_want_open = false;
+	shipp->bay_doors_open_time = -1;
+
+	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
+		for(int k = 0; k<MAX_SLOTS; k++){
+			shipp->secondary_point_reload_pct[i][k] = 1.0f;
+		}
+	}
+	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
+		if(Weapon_info[swp->secondary_bank_weapons[i]].fire_wait == 0.0){
+			shipp->reload_time[i] = 1.0f;
+		}else{
+			shipp->reload_time[i] = 1.0f/Weapon_info[swp->secondary_bank_weapons[i]].fire_wait;
+		}
+	}
+	for(i = 0; i<MAX_SHIP_PRIMARY_BANKS; i++){
+		shipp->primary_rotate_rate[i] = 0.0f;
+		shipp->primary_rotate_ang[i] = 0.0f;
+	}
+
+	for(i = 0; i < sip->n_subsystems; i++){
+		model_subsystem* ms = &sip->subsystems[i];
+		
+		if(ms->subobj_num > -1)ms->trigger.snd_pnt = get_submodel_offset(sip->modelnum, ms->subobj_num);
+		else ms->trigger.snd_pnt = ms->pnt;
+		ms->trigger.obj_num = objnum;
+	}
+
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -3845,6 +4016,7 @@ void ship_recalc_subsys_strength( ship *shipp )
 		shipp->flags |= SF_DISARMED;
 	}
 	*/
+
 }
 
 // routine to possibly fixup the model subsystem information for this ship pointer.  Needed when
@@ -4250,14 +4422,14 @@ void ship_render(object * obj)
 
 //	if((shipp->end_death_time - shipp->death_time) <= 0)shipp->end_death_time = 0;
 //	if((timestamp() - shipp->death_time) <= 0)shipp->end_death_time = 0;
-	if( !( shipp->large_ship_blowup_index > -1 ) && timestamp_elapsed(shipp->death_time) && shipp->end_death_time){
+/*	if( !( shipp->large_ship_blowup_index > -1 ) && timestamp_elapsed(shipp->death_time) && shipp->end_death_time){
 		splodeingtexture = si->splodeing_texture;
 		splodeing = true;
 		splode_level = ((float)timestamp() - (float)shipp->death_time) / ((float)shipp->end_death_time - (float)shipp->death_time);
 		//splode_level *= 2.0f;
 		model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->replacement_textures );
 		splodeing = false;
-	}
+	}*/
 //	if(splode_level<=0.0f)shipp->end_death_time = 0;
 
 	if ( shipp->large_ship_blowup_index > -1 )	{
@@ -4301,6 +4473,7 @@ void ship_render(object * obj)
 				shipp->secondary_thruster_bitmap, shipp->tertiary_thruster_bitmap,
 				&Objects[shipp->objnum].phys_info.rotvel, si->thruster01_rad_factor,
 				si->thruster02_rad_factor, si->thruster02_len_factor, si->thruster02_rad_factor );
+
 			render_flags |= MR_SHOW_THRUSTERS;
 		}
 
@@ -4389,6 +4562,63 @@ void ship_render(object * obj)
 			{
 				model_setup_cloak(&shipp->current_translation,0,255);
 			}
+		}
+
+		//draw weapon models
+		if(si->draw_models){
+			ship_weapon *swp = &shipp->weapons;
+			g3_start_instance_matrix(&obj->pos, &obj->orient, true);
+		
+			int save_flags = render_flags;
+	
+			render_flags &= ~MR_SHOW_THRUSTERS;
+	//primary weapons
+			int i,k;
+			for(i = 0; i<swp->num_primary_banks; i++){
+				if(Weapon_info[swp->primary_bank_weapons[i]].external_model_num == -1 || !si->draw_primary_models[i])continue;
+				for(k = 0; k<model_get(shipp->modelnum)->gun_banks[i].num_slots; k++){	
+					polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
+					pm->gun_submodel_rotation = shipp->primary_rotate_ang[i];
+					model_render(Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &model_get(shipp->modelnum)->gun_banks[i].pnt[k], render_flags);
+					pm->gun_submodel_rotation = 0.0f;
+				}
+			}
+
+	//secondary weapons
+	
+			for(i = 0; i<swp->num_secondary_banks; i++){
+				if(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !si->draw_secondary_models[i])continue;
+				for(k = 0; k<model_get(shipp->modelnum)->missile_banks[i].num_slots; k++){
+	
+				vector secondary_waepon_pos = model_get(shipp->modelnum)->missile_banks[i].pnt[k];
+			//	vm_vec_add(&secondary_waepon_pos, &obj->pos, &model_get(shipp->modelnum)->missile_banks[i].pnt[k]);
+	
+			//	if(shipp->secondary_point_reload_pct[i][k] != 1.0)vm_vec_scale_add2(&secondary_waepon_pos, &obj->orient.vec.fvec, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].model_num)->rad);
+				if(shipp->secondary_point_reload_pct[i][k] <= 0.0)continue;
+	
+				vector dir = ZERO_VECTOR;
+				dir.xyz.z = 1.0;
+	
+				bool clipping = false;
+	
+				extern int G3_user_clip;
+	
+			/*	if(!G3_user_clip){
+					vector clip_pnt;
+					vm_vec_rotate(&clip_pnt, &model_get(shipp->modelnum)->missile_banks[i].pnt[k], &obj->orient);
+					vm_vec_add2(&clip_pnt, &obj->pos);
+					g3_start_user_clip_plane(&clip_pnt,&obj->orient.vec.fvec);
+					clipping = true;
+				}
+	*/
+				vm_vec_scale_add2(&secondary_waepon_pos, &dir, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+
+				model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_waepon_pos, render_flags);
+				if(clipping)g3_stop_user_clip_plane();
+				}
+			}
+			g3_done_instance(true);
+			render_flags = save_flags;
 		}
 
 		// small ships
@@ -6387,9 +6617,11 @@ void ship_set_bay_path_nums(ship_info *sip, polymodel *pm)
 	}
 
 	// currently only capital ships have fighter bays
-	if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+/*	if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
 		return;
 	}
+*/
+	//tbp have been haveing crashes useing bombers with fighter bays, this might explaine why
 
 	// malloc out storage for the path information
 	pm->ship_bay = (ship_bay*)malloc(sizeof(ship_bay));
@@ -6783,6 +7015,7 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	// call the contrail system
 	ct_ship_create(shipp);
 
+	ship_animation_set_inital_states(shipp);
 
 	return objnum;
 }
@@ -7023,6 +7256,26 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			}
 		}
 	}//end AB trails -Bobboau
+
+	ship_weapon	*swp;
+	swp = &sp->weapons;
+
+	for(int i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
+			swp->primary_animation_position[i] = false;
+	}
+	for( i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
+			swp->secondary_animation_position[i] = false;
+	}
+	ship_animation_set_inital_states(sp);
+
+	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
+		if(Weapon_info[swp->secondary_bank_weapons[i]].fire_wait == 0.0){
+			sp->reload_time[i] = 1.0f;
+		}else{
+			sp->reload_time[i] = 1.0f/Weapon_info[swp->secondary_bank_weapons[i]].fire_wait;
+		}
+	}
+
 }
 
 #ifndef NDEBUG
@@ -7296,15 +7549,22 @@ int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 
 //	mprintf(("stoping weapon on ship %s\n", shipp->ship_name));
 
+	swp = &shipp->weapons;
+	if(Ship_info[shipp->ship_info_index].draw_primary_models[bank_to_stop]){
+		if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
+			shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
+		if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
+		shipp->primary_rotate_ang[bank_to_stop] += shipp->primary_rotate_rate[bank_to_stop]*flFrametime;
+		if(shipp->primary_rotate_ang[bank_to_stop] > PI2)shipp->primary_rotate_ang[bank_to_stop] -= PI2;
+		if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)shipp->primary_rotate_ang[bank_to_stop] += PI2;
+	}
 	if(shipp->was_firing_last_frame[bank_to_stop] == 0)return 0;
 
-	swp = &shipp->weapons;
 
 		shipp->was_firing_last_frame[bank_to_stop] = 0;
 
 //		int weapon = swp->primary_bank_weapons[bank_to_stop];
 //		weapon_info* winfo_p = &Weapon_info[weapon];
-
 /*
 	if ( obj == Player_obj ){
 		gr_printf(10, 20 + (bank_to_stop*10), "stoped bank %d", bank_to_stop);
@@ -7353,10 +7613,10 @@ int ship_stop_fire_primary(object * obj)
 		// Goober5000 - allow more than two banks
 		bank_to_stop = (swp->current_primary_bank+i) % swp->num_primary_banks;
 		//only stop if it was fireing last frame
-		if(shipp->was_firing_last_frame[bank_to_stop] ){
-			ship_stop_fire_primary_bank(obj, bank_to_stop);
-		}
+		ship_stop_fire_primary_bank(obj, bank_to_stop);
 	}
+	for(i; i<swp->num_primary_banks+num_primary_banks;i++)
+		ship_stop_fire_primary_bank(obj, i%swp->num_primary_banks);
 
 /*	if ( obj == Player_obj ){
 		gr_printf(10, 10, "stoped all");
@@ -7462,9 +7722,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		return 0;
 	}
 
+	if(num_primary_banks == 1)
+		for(i = 0; i<swp->num_primary_banks; i++){
+			if(i!=swp->current_primary_bank)ship_stop_fire_primary_bank(obj, i);
+		}
+
 	for ( i = 0; i < num_primary_banks; i++ ) {		
 		// Goober5000 - allow more than two banks
 		bank_to_fire = (swp->current_primary_bank+i) % swp->num_primary_banks;
+
 		
 		weapon = swp->primary_bank_weapons[bank_to_fire];
 		Assert( weapon >= 0 && weapon < MAX_WEAPONS );		
@@ -7472,8 +7738,22 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			Int3();		// why would a ship try to fire a weapon that doesn't exist?
 			continue;
 		}		
+
+		if(swp->primary_animation_done_time[bank_to_fire] > timestamp())continue;
+
 		weapon_info* winfo_p = &Weapon_info[weapon];
 
+
+		if(sip->draw_primary_models[bank_to_fire]){
+			if(shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
+				shipp->primary_rotate_rate[bank_to_fire] += winfo_p->weapon_submodel_rotate_accell*flFrametime;
+			if(shipp->primary_rotate_rate[bank_to_fire] > winfo_p->weapon_submodel_rotate_vel)shipp->primary_rotate_rate[bank_to_fire] = winfo_p->weapon_submodel_rotate_vel;
+			shipp->primary_rotate_ang[bank_to_fire] += shipp->primary_rotate_rate[bank_to_fire]*flFrametime;
+			if(shipp->primary_rotate_ang[bank_to_fire] > PI2)shipp->primary_rotate_ang[bank_to_fire] -= PI2;
+			if(shipp->primary_rotate_ang[bank_to_fire] < 0.0f)shipp->primary_rotate_ang[bank_to_fire] += PI2;
+
+			if(shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)continue;
+		}
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
 		if((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->tag_level == 3) && (shipp->flags & SF_TRIGGER_DOWN) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
 			ship_start_targeting_laser(shipp);
@@ -7782,56 +8062,66 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 //mprintf(("fireing from %d\n",j));
 					}
 
-					pnt = po->gun_banks[bank_to_fire].pnt[pt];
-
-					vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
-					vm_vec_add(&firing_pos, &gun_point, &obj->pos);
-			
-					// create the weapon -- the network signature for multiplayer is created inside
-					// of weapon_create
-					weapon_objnum = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj),0, new_group_id );
-
-					weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
-
-					if (winfo_p->wi_flags & WIF_FLAK)
-					{
-						object* target=&Objects[aip->target_objnum];
-						vector predicted_pos;
-						float flak_range=(winfo_p->lifetime)*(winfo_p->max_speed);
-						float range_to_target;
-						float wepstr=ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
-												
-						set_predicted_enemy_pos(&predicted_pos,obj,target,aip);
-						
-						range_to_target=vm_vec_dist(&predicted_pos, &obj->pos);
-
-						//if we have a target and its in range
-						if ((target) && (range_to_target < flak_range))
-						{
-							//set flak range to range of ship
-							flak_pick_range(&Objects[weapon_objnum],&predicted_pos,wepstr);
-						}
-						else
-						{
-							flak_set_range(&Objects[weapon_objnum],&firing_pos,flak_range-20);
-						}
-
-						if ((winfo_p->muzzle_flash>=0) && (((shipp==Player_ship) && (vm_vec_mag(&Player_obj->phys_info.vel)>=45)) || (shipp!=Player_ship)))
-						{
-							flak_muzzle_flash(&firing_pos,&obj->orient.vec.fvec, swp->primary_bank_weapons[bank_to_fire]);
-						}
+					int sub_shots = 1;
+					polymodel *weapon_model = NULL;
+					if(winfo_p->external_model_num > -1){
+						weapon_model = model_get(winfo_p->external_model_num);
+						if(weapon_model->n_guns)sub_shots = weapon_model->gun_banks[0].num_slots;
 					}
-					// create the muzzle flash effect
-					shipfx_flash_create( obj, shipp, &pnt, &obj->orient.vec.fvec, 1, weapon );
+
+					for(int s = 0; s<sub_shots; s++){
+						pnt = po->gun_banks[bank_to_fire].pnt[pt];
+						if(weapon_model && weapon_model->n_guns)vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
 	
-					// maybe shudder the ship - if its me
-					if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
-						// calculate some arbitrary value between 100
-						// (mass * velocity) / 10
-						game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) / 10.0f);
+						vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
+						vm_vec_add(&firing_pos, &gun_point, &obj->pos);
+				
+						// create the weapon -- the network signature for multiplayer is created inside
+						// of weapon_create
+						weapon_objnum = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj),0, new_group_id );
+	
+						weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
+	
+						if (winfo_p->wi_flags & WIF_FLAK)
+						{
+							object* target=&Objects[aip->target_objnum];
+							vector predicted_pos;
+							float flak_range=(winfo_p->lifetime)*(winfo_p->max_speed);
+							float range_to_target;
+							float wepstr=ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
+												
+							set_predicted_enemy_pos(&predicted_pos,obj,target,aip);
+							
+							range_to_target=vm_vec_dist(&predicted_pos, &obj->pos);
+	
+							//if we have a target and its in range
+							if ((target) && (range_to_target < flak_range))
+							{
+								//set flak range to range of ship
+								flak_pick_range(&Objects[weapon_objnum],&predicted_pos,wepstr);
+							}
+							else
+							{
+								flak_set_range(&Objects[weapon_objnum],&firing_pos,flak_range-20);
+							}
+	
+							if ((winfo_p->muzzle_flash>=0) && (((shipp==Player_ship) && (vm_vec_mag(&Player_obj->phys_info.vel)>=45)) || (shipp!=Player_ship)))
+							{
+								flak_muzzle_flash(&firing_pos,&obj->orient.vec.fvec, swp->primary_bank_weapons[bank_to_fire]);
+							}
+						}
+						// create the muzzle flash effect
+						shipfx_flash_create( obj, shipp, &pnt, &obj->orient.vec.fvec, 1, weapon );
+	
+						// maybe shudder the ship - if its me
+						if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+							// calculate some arbitrary value between 100
+							// (mass * velocity) / 10
+							game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) / 10.0f);
+						}
+	
+						num_fired++;
 					}
-
-					num_fired++;
 				}
 				shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;
 				}
@@ -8226,6 +8516,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		return 0;
 	}
 
+	if(swp->secondary_animation_done_time[bank] > timestamp())return 0;
+
 	weapon = swp->secondary_bank_weapons[bank];
 	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
 	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= MAX_WEAPON_TYPES)){
@@ -8442,6 +8734,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			if ( pnt_index >= num_slots ){
 				pnt_index = 0;
 			}
+			shipp->secondary_point_reload_pct[bank][pnt_index] = 0.0f;
 			pnt = po->missile_banks[bank].pnt[pnt_index++];
 			vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
 			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
@@ -8456,6 +8749,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			// of weapon_create
 			weapon_num = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj), 0, -1, aip->current_target_is_locked);
 			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
+
 
 			// create the muzzle flash effect
 			shipfx_flash_create( obj, shipp, &pnt, &obj->orient.vec.fvec, 0, weapon );
@@ -9592,7 +9886,6 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		}
 		swp->num_primary_banks = sip->num_primary_banks;
 	}
-	
 	// AL 12-30-97: Repair broken warp drive
 	if ( shipp->flags & SF_WARP_BROKEN ) {
 		// TODO: maybe do something here like informing player warp is fixed?
@@ -11812,15 +12105,47 @@ void ship_maybe_tell_about_rearm(ship *sp)
 // input:	sp			=>	pointer to ship that modified primaries
 void ship_primary_changed(ship *sp)
 {
-#if 0
 	ship_weapon	*swp;
+	swp = &sp->weapons;
+
+
+	if(sp->flags & SF_PRIMARY_LINKED){
+		//if we are linked now find any body who is down and flip them up
+		for(int i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
+			if(!swp->primary_animation_position[i]){
+				swp->primary_animation_position[i] = true;
+				ship_start_animation_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, 1);
+				if(swp->primary_animation_done_time[i])swp->primary_animation_done_time[i] = ship_get_animation_time_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i);
+				else swp->primary_animation_done_time[i] = 1;
+			}
+		}
+	}else{
+		//find anything that is up that shouldn't be
+		for(int i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
+			if(i == swp->current_primary_bank){
+				//if the current bank is down raise it up
+				if(!swp->primary_animation_position[i]){
+					swp->primary_animation_position[i] = true;
+					ship_start_animation_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, 1);
+					if(swp->primary_animation_done_time[i])swp->primary_animation_done_time[i] = ship_get_animation_time_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i);
+					else swp->primary_animation_done_time[i] = 1;
+				}
+			}else{
+				//everyone else should be down, if they are not make them so
+				if(swp->primary_animation_position[i]){
+					swp->primary_animation_position[i] = false;
+					ship_start_animation_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, -1);
+				}
+			}
+		}
+	}
+#if 0
 
 	// we only need to deal with multiplayer issues for now, so bail it not multiplayer
 	if ( !(Game_mode & GM_MULTIPLAYER) )
 		return;
 
 	Assert(sp);
-	swp = &sp->weapons;
 
 	
 	if ( MULTIPLAYER_MASTER )
@@ -11833,8 +12158,29 @@ void ship_primary_changed(ship *sp)
 // input:	sp					=>	pointer to ship that modified secondaries
 void ship_secondary_changed(ship *sp)
 {
-#if 0
 	ship_weapon	*swp;
+	swp = &sp->weapons;
+
+		//find anything that is up that shouldn't be
+	if(timestamp() > 10)
+	for(int i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
+		if(i == swp->current_secondary_bank){
+			//if the current bank is down raise it up
+			if(!swp->secondary_animation_position[i]){
+				swp->secondary_animation_position[i] = true;
+				ship_start_animation_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i, 1);
+				if(swp->secondary_animation_done_time[i])swp->secondary_animation_done_time[i] = ship_get_animation_time_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i);
+				else swp->secondary_animation_done_time[i] = 1;
+			}
+		}else{
+			//everyone else should be down, if they are not make them so
+			if(swp->secondary_animation_position[i]){
+				swp->secondary_animation_position[i] = false;
+				ship_start_animation_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i, -1);
+			}
+		}
+	}
+#if 0
 
 	// we only need to deal with multiplayer issues for now, so bail it not multiplayer
 	if ( !(Game_mode & GM_MULTIPLAYER) ){
@@ -11842,7 +12188,6 @@ void ship_secondary_changed(ship *sp)
 	}
 
 	Assert(sp);
-	swp = &sp->weapons;
 
 	if ( MULTIPLAYER_MASTER )
 		send_ship_weapon_change( sp, MULTI_SECONDARY_CHANGED, swp->current_secondary_bank, (sp->flags & SF_SECONDARY_DUAL_FIRE)?1:0 );
@@ -12124,7 +12469,7 @@ void ship_page_in()
 	//
 	int num_ship_types_used = 0;
 
-	for (i=0; i<MAX_SHIP_TYPES; i++ )	{
+	for (i=0; i<Num_ship_types; i++ )	{//Num_ship_types not MAX_SHIPTYPES ship_class_used is dynamicly allocated to Num_ship_types -Bobboau
 		if ( ship_class_used[i]  )	{
 			ship_info *sip = &Ship_info[i];
 
@@ -12136,7 +12481,7 @@ void ship_page_in()
 			// See if this model was previously loaded by another ship
 			int model_previously_loaded = -1;
 			int ship_previously_loaded = -1;
-			for (j=0; j<MAX_SHIP_TYPES; j++ )	{
+			for (j=0; j<Num_ship_types; j++ )	{
 				if ( (Ship_info[j].modelnum > -1) && !stricmp(sip->pof_file, Ship_info[j].pof_file) )	{
 					// Model already loaded
 					model_previously_loaded = Ship_info[j].modelnum;
@@ -13298,7 +13643,7 @@ int ship_fire_tertiary(object *objp)
 	return 1;
 }
 
-void ship_start_animation_type(ship *shipp, int animation_type, int direction){
+void ship_start_animation_type(ship *shipp, int animation_type, int subtype, int direction){
 
 	ship_subsys	*pss;
 	model_subsystem	*psub;
@@ -13310,12 +13655,14 @@ void ship_start_animation_type(ship *shipp, int animation_type, int direction){
 			continue;
 		if(psub->flags & MSS_FLAG_TRIGGERED){
 			for(int i = 0; i<psub->n_triggers; i++){
-				if(psub->triggers[i].type == animation_type){
-					queued_animation var =psub->triggers[i].properties;
+				if(psub->triggers[i].type == animation_type && (psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL || psub->triggers[i].subtype == subtype)){
+/*					queued_animation var =psub->triggers[i];
 					var.angle.xyz.x *= direction;
 					var.angle.xyz.y *= direction;
 					var.angle.xyz.z *= direction;
-					psub->trigger.add_queue(&var);
+					*/
+					psub->triggers[i].instance = i;
+					psub->trigger.add_queue(&psub->triggers[i], direction);
 				}
 			}
 		}
@@ -13324,9 +13671,109 @@ void ship_start_animation_type(ship *shipp, int animation_type, int direction){
 
 }
 
+//this finds the actual amount of time that motion of an animation type will take to stop, 
+//not for gameplay purposes but for stuff that is involved in coordenateing the animation it'self
+
+//the time it takes to speed up or slow down is v/a
+//in this time the animation covers an angle = to (v^2)/(2a) (for both directions so v^2/a)
+//so wee need the time it takes for the angle moveing at a constant velosity to cover theda - v^2/a
+//v*t = theda - (v^2)/(2*a) => t = -(v^2 - 2*a*theda)/(2*a*v)
+//so finaly v/a * 2 - (v^2 - 2*a*theda)/(2*a*v) => (3*v^2 + 2*a*theda)/(2*a*v)
+
+//time = (3*v^2 + 2*a*theda)/(2*a*v)
+
+int animation_instance_actual_time(queued_animation *properties){
+	int ret = 0;
+	int temp = 0;
+	for(int a = 0; a<3; a++){
+		temp = int(
+			(3.0f*properties->vel.a1d[a]*properties->vel.a1d[a] + 2.0f*properties->accel.a1d[a]*fabs(properties->angle.a1d[a]))
+			/
+			(2*properties->accel.a1d[a]*properties->vel.a1d[a]) 
+			*1000.0f) + properties->start;
+		if(temp > ret)ret = temp;
+	}
+	return ret;
+}
+
+int ship_get_actual_animation_time_type(ship *shipp, int animation_type, int subtype){
+
+	ship_subsys	*pss;
+	model_subsystem	*psub;
+	int ret = 0;
+	int temp_ret = 0;;
+	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+		psub = pss->system_info;
+
+		// Don't process destroyed objects
+		if ( pss->current_hits <= 0.0f ) 
+			continue;
+		if(psub->flags & MSS_FLAG_TRIGGERED){
+			for(int i = 0; i<psub->n_triggers; i++){
+				if(psub->triggers[i].type == animation_type && (psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL || psub->triggers[i].subtype == subtype)){
+					temp_ret = animation_instance_actual_time(&psub->triggers[i]);
+					if(temp_ret > ret)ret = temp_ret;
+				}
+			}
+		}
+		//
+	}
+	return ret;
+
+}
+
+
+int ship_get_actual_animation_time_type(ship_info *sip, int animation_type, int subtype){
+
+	int ret = 0;
+	int temp_ret = 0;;
+	for ( int s = 0; s<sip->n_subsystems; s++) {
+
+		for(int i = 0; i<sip->subsystems[s].n_triggers; i++){
+			if(sip->subsystems[s].triggers[i].type == animation_type && (sip->subsystems[s].triggers[i].subtype == ANIMATION_SUBTYPE_ALL || sip->subsystems[s].triggers[i].subtype == subtype)){
+				for(int a = 0; a<3; a++){
+					temp_ret = animation_instance_actual_time(&sip->subsystems[s].triggers[i]);
+					
+					if(temp_ret > ret)ret = temp_ret;
+				}
+			}
+		}
+		//
+	}
+	return ret;
+
+}
+
+void ship_fix_reverse_times(ship_info *sip){
+
+	int ani_time = 0;
+	for(int animation_type = 0; animation_type<MAX_TRIGGER_ANIMATION_TYPES; animation_type++){
+		//for each animation type
+		ani_time = ship_get_actual_animation_time_type(sip, animation_type, -1);
+		//figure out how long it's going to take for the animation to get done with
+
+		for ( int s = 0; s<sip->n_subsystems; s++) {
+			//for each subsystem
+
+			for(int i = 0; i<sip->subsystems[s].n_triggers; i++){
+				//for each trigger
+				if(sip->subsystems[s].triggers[i].type == animation_type){
+					//if the trigger is of the current type
+					if(sip->subsystems[s].triggers[i].reverse_start == -1)
+						//if there isn't a user defined overide already present
+						sip->subsystems[s].triggers[i].reverse_start = ani_time - animation_instance_actual_time(&sip->subsystems[s].triggers[i]);
+					sip->subsystems[s].triggers[i].real_end_time = animation_instance_actual_time(&sip->subsystems[s].triggers[i]);
+				}
+			}
+			//
+		}
+	}
+}
+
 //this tells you how long an animation is going to take to get done with
 //this is for things that can't happen untill animations are done
-int ship_get_animation_time_type(ship *shipp, int animation_type){
+//this is for gameplay purposes, this isn't the actual time
+int ship_get_animation_time_type(ship *shipp, int animation_type, int subtype){
 
 	ship_subsys	*pss;
 	model_subsystem	*psub;
@@ -13339,18 +13786,96 @@ int ship_get_animation_time_type(ship *shipp, int animation_type){
 			continue;
 		if(psub->flags & MSS_FLAG_TRIGGERED){
 			for(int i = 0; i<psub->n_triggers; i++){
-				if(psub->triggers[i].type == animation_type){
-					if(psub->triggers[i].properties.end)ret = psub->triggers[i].properties.start + psub->triggers[i].properties.end;
+				if(psub->triggers[i].type == animation_type && (psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL || psub->triggers[i].subtype == subtype)){
+
+					int ani_time = 0;
+
+					if(psub->trigger.current_vel.a1d[0] != 0.0f || psub->trigger.current_vel.a1d[1] != 0.0f || psub->trigger.current_vel.a1d[2] != 0.0f){
+						//if the subobject is moveing then things get realy complecated
+
+						int a_time = 0;
+						int real_time = animation_instance_actual_time(&psub->triggers[i]);
+						int pad = real_time - psub->triggers[i].end;
+						for(int a = 0; a<3; a++){
+							float direction = psub->trigger.direction.a1d[a];
+
+							if(psub->trigger.current_ang.a1d[a] * direction > psub->trigger.slow_angle.a1d[a] * direction){
+								//if it's in the final slowdown phase then it realy isn't _that_ bad
+								a_time = int( ( (sqrt(2.0f*psub->trigger.rot_accel.a1d[a]*(psub->trigger.end_angle.a1d[a] - psub->trigger.current_ang.a1d[a])+psub->trigger.current_vel.a1d[a]*psub->trigger.current_vel.a1d[a])-psub->trigger.current_vel.a1d[a])/psub->trigger.rot_accel.a1d[a] ) * 1000.0f);
+								if(ani_time < a_time)ani_time = a_time;
+							}else{
+								if(psub->trigger.current_vel.a1d[a] * direction > psub->trigger.rot_vel.a1d[a] * direction){
+									//if vi is greater than v
+									a_time = int((psub->trigger.current_vel.a1d[a]*(psub->trigger.current_vel.a1d[a]+2))/(2.0f*psub->trigger.rot_accel.a1d[a]) * 1000.0f);
+									if(ani_time < a_time)ani_time = a_time;
+								}else{
+									//if vi  is lessthan or equil to v
+									a_time = int( ((3.0f*psub->trigger.rot_vel.a1d[a])/(2.0f*psub->trigger.rot_accel.a1d[a]) + 
+										(psub->trigger.current_vel.a1d[a]*psub->trigger.current_vel.a1d[a])/(4.0f*psub->trigger.rot_accel.a1d[a]*psub->trigger.rot_vel.a1d[a]) +
+										(psub->trigger.end_angle.a1d[a] - psub->trigger.current_ang.a1d[a])/(psub->trigger.current_vel.a1d[a]*direction) -
+										(psub->trigger.current_vel.a1d[a]/(psub->trigger.rot_accel.a1d[a]*direction))) * 1000.0f);
+									if(ani_time < a_time)ani_time = a_time;
+								}
+							}
+						}
+						if(ani_time) ani_time += pad;
+					}else{
+						//if it isn't moveing then it's trivial
+						//no currently playing animation
+						ani_time = psub->triggers[i].end + psub->triggers[i].start;
+					}
+					if(ret < ani_time)ret = ani_time;
 				}
 			}
 		}
 		//
 	}
-	return ret;
+	return ret + timestamp();
 
 }
 
+void ship_animation_set_inital_states(ship *shipp){
+
+	ship_weapon	*swp = &shipp->weapons;
+	for(int i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
+		swp->primary_animation_done_time[i] = 0;
+	}
+	for( i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
+		swp->secondary_animation_done_time[i] = 0;
+	}
+
+	ship_primary_changed(shipp);
+	ship_secondary_changed(shipp);
+
+	ship_subsys	*pss;
+	model_subsystem	*psub;
+	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+		psub = pss->system_info;
+
+			for(int i = 0; i<psub->n_triggers; i++){
+				if(psub->type == SUBSYSTEM_TURRET){
+					//specal case for turrets
+					pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
+					pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
+				}else{
+					if(
+						psub->triggers[i].type == TRIGGER_TYPE_INITAL
+						){
+						psub->trigger.set_to_end(&psub->triggers[i]);
+					}
+				}
+			}
+		//
+
+	}
+
+}
+
+//int test_hack_time = 4000;
+//int test_hack_direction = 1;
+
 void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii);
+
 // Goober5000
 void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss)
 {
@@ -13364,7 +13889,13 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 	}
 
 	if(psub->flags & MSS_FLAG_TRIGGERED){
-
+/*		if(test_hack_time < timestamp()){
+			ship_start_animation_type(shipp, TRIGGER_TYPE_DOCK_BAY_DOOR, test_hack_direction);
+			test_hack_direction *=-1;
+			test_hack_time = timestamp() + 4000;
+			if(test_hack_direction == 1)test_hack_time += 3000;
+		}
+*/
 		psub->trigger.proces_queue();
 		submodel_trigger_rotate(psub, &pss->submodel_info_1 );
 		return;
