@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/openil/il_func.cpp $
- * $Revision: 1.2 $
- * $Date: 2004-07-12 16:32:59 $
- * $Author: Kazan $
+ * $Revision: 1.3 $
+ * $Date: 2004-07-17 18:38:04 $
+ * $Author: taylor $
  *
  * Callback functions for OpenIL (DevIL) to use CFILE
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/07/12 16:32:59  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 1.1  2004/04/26 02:05:17  taylor
  * initial checkin
  *
@@ -133,6 +136,10 @@ void openil_init()
 	
 	// setup the read callbacks
 	ilSetRead(icfOpen, icfClose, icfEof, icfGetc, icfRead, icfSeek, icfTell);
+
+	// force origin to upper left on all images - our OpenGL stuff requires this
+	ilEnable(IL_ORIGIN_SET);
+	ilOriginFunc(IL_ORIGIN_UPPER_LEFT);
 
 	il_inited = 1;
 }
