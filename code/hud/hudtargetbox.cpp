@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-01-15 16:52:27 $
+ * $Revision: 2.10 $
+ * $Date: 2003-01-15 20:49:10 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/01/15 16:52:27  Goober5000
+ * oops, that'll introduce a bug - naming it just plain "Turret" instead
+ * --Goober5000
+ *
  * Revision 2.8  2003/01/15 16:48:59  Goober5000
  * capship ballistic weapon displays "Cannon" on HUD instead of "Laser Turret"
  * --Goober5000
@@ -939,7 +943,7 @@ void get_turret_subsys_name(model_subsystem *system_info, char *outstr)
 				// ballistic too! - Goober5000
 				if (Weapon_info[system_info->turret_weapon_type].wi_flags2 & WIF2_BALLISTIC)
 				{
-					sprintf(outstr, "%s", XSTR("Turret", -1));
+					sprintf(outstr, "%s", XSTR("Turret", 1487));
 				}
 				else
 				{
@@ -950,7 +954,7 @@ void get_turret_subsys_name(model_subsystem *system_info, char *outstr)
 			} else {
 				// Illegal subtype
 				Int3();
-				sprintf(outstr, "%s", NOX("Turret"));
+				sprintf(outstr, "%s", XSTR("Turret", 1487));
 			}
 		}
 	} else {
