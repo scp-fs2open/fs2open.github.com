@@ -43,6 +43,9 @@ int GlobalD3DVars::D3D_rendition_uvs = 0;
 int GlobalD3DVars::D3D_custom_size   = -1;
 int GlobalD3DVars::D3D_zbias         = 1;
 
+float GlobalD3DVars::texture_adjust_u = 0;
+float GlobalD3DVars::texture_adjust_v = 0;
+
 ID3DXMatrixStack *world_matrix_stack, *view_matrix_stack, *proj_matrix_stack;
 
 const int MULTISAMPLE_MAX = 16;
@@ -725,7 +728,7 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 	}
 
 	if(	d3d_get_mode_bit(mode->Format) < 32)
-		Cmdline_32bit_textures = 0;
+		Cmdline_pcx32 = 0;
 }
 
 /**
@@ -1085,7 +1088,14 @@ bool d3d_init_device()
 			gr_screen.clip_bottom = gr_screen.max_h - 1;
 			gr_screen.clip_width  = gr_screen.max_w;
 			gr_screen.clip_height = gr_screen.max_h;
+		}
 
+		// Calculate texture pullback values
+		if(GlobalD3DVars::D3D_custom_size != -1)
+		{
+			GlobalD3DVars::texture_adjust_u = 0.0044f;
+			GlobalD3DVars::texture_adjust_v = 0.0044f;
+			gr_d3d_unsize_screen_posf(&GlobalD3DVars::texture_adjust_u, &GlobalD3DVars::texture_adjust_v);
 		}
 
 		GlobalD3DVars::d3dpp.FullScreen_RefreshRateInHz      = D3DPRESENT_RATE_DEFAULT;

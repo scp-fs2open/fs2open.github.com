@@ -9,11 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.46 $
- * $Date: 2003-11-19 20:37:23 $
+ * $Revision: 2.47 $
+ * $Date: 2003-11-29 10:52:09 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/11/19 20:37:23  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.44  2003/11/15 18:09:33  randomtiger
  * Put TGA and JPG stuff on -t32 flag
  * Put 32 bit PCX stuff on -pcx32 (still has bugs)
@@ -479,7 +491,9 @@ cmdline_parm no_set_gamma_arg("-no_set_gamma",NULL);
 cmdline_parm d3d_no_vsync_arg("-d3d_no_vsync", NULL);
 cmdline_parm pcx32_arg("-pcx32",NULL);
 cmdline_parm timerbar_arg("-timerbar", NULL);
+cmdline_parm stats_arg("-stats", NULL);
 
+int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -912,6 +926,10 @@ void SetCmdlineParams()
 
 	if( d3dmipmap_arg.found() ) {
 		Cmdline_d3dmipmap = 1;
+	}
+
+	if( stats_arg.found() ) {
+		Cmdline_show_stats = 1;
 	}
 
 	if ( beams_no_pierce_shields_arg.found() ) {

@@ -9,6 +9,18 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/11/19 20:37:24  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  */
 
 #include "globalincs/pstypes.h"
@@ -379,6 +391,13 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 		y2 = i2fl(nh);
 	}
 
+#if 1
+	if(GlobalD3DVars::D3D_custom_size != -1)
+	{
+		u1 -= GlobalD3DVars::texture_adjust_u;
+		v1 -= GlobalD3DVars::texture_adjust_v;
+	}
+#endif
 
 	// 0
 	src_v->sz = 0.99f;
@@ -444,7 +463,6 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 	src_v->sy = y2;
 	src_v->tu = u0;
 	src_v->tv = v1;
-
 }	 
 
 bool d3d_batch_string_init()

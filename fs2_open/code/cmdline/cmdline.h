@@ -11,11 +11,23 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.39 $
- * $Date: 2003-11-19 20:37:23 $
+ * $Revision: 2.40 $
+ * $Date: 2003-11-29 10:52:09 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/11/19 20:37:23  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.38  2003/11/15 18:09:33  randomtiger
  * Put TGA and JPG stuff on -t32 flag
  * Put 32 bit PCX stuff on -pcx32 (still has bugs)
@@ -375,6 +387,7 @@ extern int Cmdline_phreak;
 extern int Cmdline_dnoshowvid;	//WMC Toggles movie playing support
 extern char *Cmdline_mod; //DTP for mod support
 extern int Cmdline_show_fps;//DTP moved here because it is the correct place for it to be.
+extern int Cmdline_show_stats;
 extern int Cmdline_safeloading;
 extern int Cmdline_nospec;
 

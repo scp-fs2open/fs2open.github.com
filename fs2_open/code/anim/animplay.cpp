@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-11-11 02:15:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2003-11-29 10:52:08 $
+ * $Author: randomtiger $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/11/11 02:15:41  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.2  2003/03/18 10:07:00  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -919,7 +924,7 @@ anim *anim_load(char *real_filename, int file_mapped)
 	// Unless told otherwise in D3D everything is loaded for speed, lets make use of all that memory
 	// people have
 	if(gr_screen.mode == GR_DIRECT3D && Cmdline_d3dlowmem == 0) {
-		file_mapped = 0;
+	 //	file_mapped = 0;
 	}
 
 	Assert ( real_filename != NULL );

@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.62 $
- * $Date: 2003-11-19 20:37:23 $
+ * $Revision: 2.63 $
+ * $Date: 2003-11-29 10:52:09 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2003/11/19 20:37:23  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.61  2003/11/17 06:52:51  bobboau
  * got assert to work again
  *
@@ -2565,7 +2577,8 @@ void game_init()
 
 #ifdef _WIN32
 	movie_play( NOX("intro.avi"));
-	movie_set_shutdown_fgx(true);
+	movie_play( NOX("intro.mve"));
+	movie_set_shutdown_fgx(true);									 
 
 #endif
 
@@ -2945,8 +2958,18 @@ MONITOR(NumVerts);
 MONITOR(BmpUsed);
 MONITOR(BmpNew);
 
+
+int Mem_starttime_phys;
+int Mem_starttime_pagefile;
+int Mem_starttime_virtual;
+
 void game_get_framerate()
 {	
+ //	if(The_mission.flags & MISSION_FLAG_FULLNEB)
+ //		gr_set_color(0,0,255);
+ //	else
+	gr_set_color_fast(&HUD_color_debug);
+
 	char text[128] = "";
 
 	if ( frame_int == -1 )	{
@@ -2974,8 +2997,35 @@ void game_get_framerate()
 	Framecount++;
 
 	if ((Show_framerate) || (Cmdline_show_fps))	{
-		gr_set_color_fast(&HUD_color_debug);
 		gr_string( 20, 100, text );
+	}
+
+	if(Cmdline_show_stats)
+	{
+		char mem_buffer[50];
+
+		if(gr_screen.mode == GR_DIRECT3D)
+		{
+			extern void d3d_string_mem_use(int x, int y);
+			d3d_string_mem_use(20, 110);
+		}
+
+		MEMORYSTATUS mem_stats;
+		GlobalMemoryStatus(&mem_stats);
+
+		sprintf(mem_buffer,"Using Physical: %d Meg",(Mem_starttime_phys - mem_stats.dwAvailPhys)/1024/1024);
+		gr_string( 20, 120, mem_buffer);
+		sprintf(mem_buffer,"Using Pagefile: %d Meg",(Mem_starttime_pagefile - mem_stats.dwAvailPageFile)/1024/1024);
+		gr_string( 20, 130, mem_buffer);
+		sprintf(mem_buffer,"Using Virtual:  %d Meg",(Mem_starttime_virtual - mem_stats.dwAvailVirtual)/1024/1024);
+		gr_string( 20, 140, mem_buffer);
+
+		sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.dwAvailPhys/1024/1024, mem_stats.dwTotalPhys/1024/1024);
+		gr_string( 20, 160, mem_buffer);
+		sprintf(mem_buffer,"Pagefile Free: %d / %d Meg",mem_stats.dwAvailPageFile/1024/1024, mem_stats.dwTotalPageFile/1024/1024);
+		gr_string( 20, 170, mem_buffer);
+		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
+		gr_string( 20, 180, mem_buffer);
 	}
 }
 
@@ -7384,6 +7434,10 @@ int WinMainSub(int argc, char *argv[])
 	ms.dwLength = sizeof(MEMORYSTATUS);
 	GlobalMemoryStatus(&ms);
 	Freespace_total_ram = ms.dwTotalPhys;
+
+	Mem_starttime_phys      = ms.dwAvailPhys;
+	Mem_starttime_pagefile  = ms.dwAvailPageFile;
+	Mem_starttime_virtual   = ms.dwAvailVirtual;
 
 	if ( game_do_ram_check(Freespace_total_ram) == -1 ) {
 		return 0;

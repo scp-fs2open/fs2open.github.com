@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-11-19 20:37:24 $
+ * $Revision: 2.14 $
+ * $Date: 2003-11-29 10:52:10 $
  * $Author: randomtiger $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/11/19 20:37:24  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.12  2003/11/17 04:25:57  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -175,6 +187,7 @@
 #include "sound/sound.h"
 #include "gamesnd/gamesnd.h"
 #include "graphics/grinternal.h"
+#include "pcxutils/pcxutils.h"
 
 #include "globalincs/alphacolors.h"
 
@@ -187,6 +200,11 @@ extern int Cmdline_nohtl;
 unsigned char Neb2_fog_colour_r = 0;
 unsigned char Neb2_fog_colour_g = 0;
 unsigned char Neb2_fog_colour_b = 0;
+
+ubyte *Neb2_htl_fog_data = NULL;
+int Neb2_max_fog_value = 0;
+int Neb2_cur_fog_value = 0;
+const int Neb2_cur_fog_factor = 20;
 
 // #define NEB2_THUMBNAIL
 
@@ -489,6 +507,8 @@ void neb2_level_init()
 		Neb2_render_mode = NEB2_RENDER_POF;
 		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
 	} else {
+#if 0
+
 		// RT - This is not very good coding practice but it allows the nebula stuff
 		// to be  back compatible. 
 		// Perviously the software fog used a bitmap background to optain a colour 
@@ -532,6 +552,34 @@ void neb2_level_init()
 			Neb2_fog_colour_r =   1;
 			Neb2_fog_colour_g =   1;
 			Neb2_fog_colour_b =   1;
+		}
+#endif
+		// Set a default colour just incase something goes wrong
+		Neb2_fog_colour_r =  30;
+		Neb2_fog_colour_g =  52;
+		Neb2_fog_colour_b = 157;
+
+		// OK, lets try something a bit more interesting
+		int width, height;
+		pcx_read_header(Neb2_texture_name, &width, &height, NULL);
+
+		Neb2_max_fog_value = width * height;
+		Neb2_htl_fog_data = (ubyte *) malloc(Neb2_max_fog_value * 4);
+
+		if(Neb2_htl_fog_data)
+		{
+			// Always read in 32 bit, bypass normal bitmap code to avoid D3D locking issues
+			int result = pcx_read_bitmap_32(Neb2_texture_name, Neb2_htl_fog_data);
+			if(result == PCX_ERROR_NONE)
+			{
+				Neb2_fog_colour_r = Neb2_htl_fog_data[2];
+				Neb2_fog_colour_g = Neb2_htl_fog_data[1];
+				Neb2_fog_colour_b = Neb2_htl_fog_data[0];
+			} else 
+			{
+				free(Neb2_htl_fog_data);
+				Neb2_htl_fog_data = NULL;
+			}
 		}
 
 		Neb2_render_mode = NEB2_RENDER_HTL;
@@ -603,6 +651,12 @@ void neb2_level_close()
 
 	// unflag the mission as being fullneb so stuff doesn't fog in the techdata room :D
 	The_mission.flags &= ~MISSION_FLAG_FULLNEB;
+
+	if(Neb2_htl_fog_data)
+	{
+		free(Neb2_htl_fog_data);
+		Neb2_htl_fog_data = NULL;
+	}
 }
 
 // call before beginning all rendering
@@ -619,6 +673,20 @@ void neb2_render_setup(vector *eye_pos, matrix *eye_orient)
 	}
 
 	if(Neb2_render_mode == NEB2_RENDER_HTL) {
+
+
+		if(Neb2_htl_fog_data)
+		{
+		  	Neb2_cur_fog_value++;
+				
+			if(Neb2_cur_fog_value >= (Neb2_max_fog_value*Neb2_cur_fog_factor))
+				Neb2_cur_fog_value = 0;
+
+			Neb2_fog_colour_r = (ubyte) (((Neb2_fog_colour_r + Neb2_htl_fog_data[Neb2_cur_fog_value/Neb2_cur_fog_factor*4+2])/2) & 0xff);
+			Neb2_fog_colour_g = (ubyte) (((Neb2_fog_colour_g + Neb2_htl_fog_data[Neb2_cur_fog_value/Neb2_cur_fog_factor*4+1])/2) & 0xff);
+			Neb2_fog_colour_b = (ubyte) (((Neb2_fog_colour_b + Neb2_htl_fog_data[Neb2_cur_fog_value/Neb2_cur_fog_factor*4+0])/2) & 0xff);
+		}
+
 		// RT The background needs to be the same colour as the fog and this seems
 		// to be the ideal place to do it
 		unsigned char tr = gr_screen.current_clear_color.red;  
@@ -635,6 +703,7 @@ void neb2_render_setup(vector *eye_pos, matrix *eye_orient)
 		gr_screen.current_clear_color.red   = tr;
 		gr_screen.current_clear_color.green = tg;
 		gr_screen.current_clear_color.blue  = tb;
+
 		return;	 
 	}
 
@@ -1244,7 +1313,7 @@ void neb2_render_player()
 //				if(!Cmdline_nohtl)gr_set_lighting(false,false);
 //				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 		 	  //	if(Cmdline_nohtl)
-					g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
+	 				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 		 	  //	else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 //#endif
 			}

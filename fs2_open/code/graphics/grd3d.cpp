@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.45 $
- * $Date: 2003-11-19 20:37:24 $
+ * $Revision: 2.46 $
+ * $Date: 2003-11-29 10:52:09 $
  * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/11/19 20:37:24  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.44  2003/11/17 06:52:52  bobboau
  * got assert to work again
  *
@@ -671,6 +683,14 @@ void shift_active_lights(int pos);
 void pre_render_lights_init();
 const char *d3d_error_string(HRESULT error);
 
+void d3d_string_mem_use(int x, int y)
+{
+	char mem_buffer[50];
+	sprintf(mem_buffer,"Texture mem free: %d Meg", GlobalD3DVars::lpD3DDevice->GetAvailableTextureMem()/1024/1024);
+	gr_string( x, y, mem_buffer);
+}
+
+
 
 /**
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
@@ -726,6 +746,31 @@ bool gr_d3d_unsize_screen_pos(int *x, int *y)
 	return true;
 }
 
+/**
+ *
+ * @param int *x - x value (width to be unsacled), can be NULL
+ * @param int *y - y value (height to be unsacled), can be NULL
+ * @return always true
+ */
+bool gr_d3d_unsize_screen_posf(float *x, float *y)
+{
+	if(GlobalD3DVars::D3D_custom_size < 0)	return false;
+
+	float mult_by_x = (float) ((GlobalD3DVars::D3D_custom_size == GR_1024) ? 1024 : 640);
+	float mult_by_y = (float) ((GlobalD3DVars::D3D_custom_size == GR_1024) ?  768 : 480);
+			
+	if(x) {
+		(*x) *= mult_by_x;
+		(*x) /= (float) GlobalD3DVars::d3dpp.BackBufferWidth;
+	}
+
+	if(y) {
+		(*y) *= mult_by_y;
+		(*y) /= (float) GlobalD3DVars::d3dpp.BackBufferHeight;
+	}
+
+	return true;
+}
 
 void d3d_fill_pixel_format(PIXELFORMAT *pixelf, D3DFORMAT tformat);
 
