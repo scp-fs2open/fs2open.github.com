@@ -9,16 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapons.cpp $
- * Revision 2.4  2002/11/11 20:18:30  phreak
- * updated parse_weapon to parse custom corkscrew missiles
- *
- * Revision 2.3  2002/11/06 23:22:05  phreak
- * Parser error handling for fighter flak, it didn't want flak on player weapons, now it doesn't care
- *
- * Revision 2.2  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/11/22 10:36:31  fryday
+ * Changed default alpha value for lasers in OpenGL to be like in D3D
+ * Fixed Glowmaps being rendered with GL_NEAREST instead of GL_LINEAR.
+ * Dynamic Lighting almost there. It looks like some normals are fudged or something.
+ *
  * Revision 2.44  2003/11/11 02:15:41  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -132,6 +130,14 @@
  * Revision 2.18  2003/03/18 10:07:06  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
+ * Revision 2.4  2002/11/11 20:18:30  phreak
+ * updated parse_weapon to parse custom corkscrew missiles
+ *
+ * Revision 2.3  2002/11/06 23:22:05  phreak
+ * Parser error handling for fighter flak, it didn't want flak on player weapons, now it doesn't care
+ *
+ * Revision 2.2  2002/10/19 19:29:29  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  * Revision 2.1.2.2  2002/09/28 22:13:43  randomtiger
  * Sorted out some bits and pieces. The background nebula blends now which is nice. – RT
  *
