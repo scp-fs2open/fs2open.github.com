@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-01 07:27:32 $
+ * $Author: taylor $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -241,7 +244,7 @@ void ml_update_recent_missions(char *filename)
 	}
 
 	// get a pointer to just the basename of the filename (including extension)
-	p = strrchr(filename, '\\');
+	p = strrchr(filename, DIR_SEPARATOR_CHAR);
 	if ( p == NULL ) {
 		p = filename;
 	} else {
