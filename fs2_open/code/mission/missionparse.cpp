@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-01-13 02:09:12 $
- * $Author: wmcoolmon $
+ * $Revision: 2.18 $
+ * $Date: 2003-01-14 06:13:23 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/01/13 02:09:12  wmcoolmon
+ * Added MISSION_FLAG_NO_NEB_TRAILS and removed MISSION_FLAG_ST_OVERRIDE_NEB. Also changed code to set flags as necessary
+ *
  * Revision 2.16  2003/01/11 01:00:25  wmcoolmon
  * Added code for "Ship Trails override Nebula"
  *
@@ -2283,7 +2286,9 @@ int parse_object(mission *pm, int flag, p_object *objp)
 			mprintf((" but it failed :(\n"));
 
 	} else {
-		objp->persona_index = -1;
+		// ARGH!!! STUPID BUG! BOBBOAU, CHECK YOUR CODE!!!!!  Nameplates and personas are very
+		// different things!!!!!!
+		objp->nameplate = -1;
 	}
 
 
