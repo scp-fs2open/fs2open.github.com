@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-12 16:26:39 $
+ * $Author: phreak $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:01:59  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2003/10/25 20:42:19  phreak
  * added an INF_BUILD option to bump max sounds to 400 if INF_BUILD is defined
  *
@@ -216,7 +220,7 @@
 #include "globalincs/pstypes.h"
 
 #ifdef INF_BUILD
-#define MAX_SOUNDS 400
+#define MAX_SOUNDS 450
 #else
 #define MAX_SOUNDS	256
 #endif
