@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.48 $
- * $Date: 2005-01-11 21:38:50 $
+ * $Revision: 2.49 $
+ * $Date: 2005-01-27 11:26:23 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/01/11 21:38:50  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.47  2005/01/01 19:45:32  taylor
  * add MR_NO_FOGGING flag to easily render models without fog (warp model, targetbox models)
  *
@@ -1211,6 +1216,10 @@ extern void submodel_rotate(model_subsystem *psub, submodel_instance_info * sii 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.  Does this for stepped rotations
 void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii);
+
+// Goober5000
+// For a submodel, return its overall offset from the main model.
+extern void model_find_submodel_offset(vector *outpnt, int model_num, int sub_model_num);
 
 // Given a point (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
