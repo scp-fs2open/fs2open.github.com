@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.h $
- * $Revision: 2.6 $
- * $Date: 2005-02-20 07:39:14 $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-20 23:11:51 $
  * $Author: wmcoolmon $
  *
  * External defs for missile trail stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/20 07:39:14  wmcoolmon
+ * Trails update: Better, faster, stronger, but not much more reliable
+ *
  * Revision 2.5  2005/02/19 07:54:33  wmcoolmon
  * Removed trails limit
  *
@@ -88,8 +91,8 @@ typedef struct trail_info {
 typedef struct trail {
 	int		head, tail;						// pointers into the queue for the trail points
 	vector	pos[NUM_TRAIL_SECTIONS];	// positions of trail points
-	float		val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
-	bool		object_died;					// set to zero as long as object	
+	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
+	bool	object_died;					// set to zero as long as object	
 	int		trail_stamp;					// trail timestamp	
 
 	// trail info

@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2005/02/20 07:39:14  wmcoolmon
+ * Trails update: Better, faster, stronger, but not much more reliable
+ *
  * Revision 2.88  2005/02/19 07:54:33  wmcoolmon
  * Removed trails limit
  *
@@ -2724,6 +2727,7 @@ void weapon_delete(object *obj)
 
 	if (wp->trail_ptr != NULL) {
 		trail_object_died(wp->trail_ptr);
+		wp->trail_ptr = NULL;
 	}
 
 	wp->objnum = -1;
