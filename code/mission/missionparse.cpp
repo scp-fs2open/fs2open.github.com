@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.74 $
- * $Date: 2004-12-22 21:48:21 $
- * $Author: taylor $
+ * $Revision: 2.75 $
+ * $Date: 2005-01-03 01:05:08 $
+ * $Author: phreak $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2004/12/22 21:48:21  taylor
+ * safety check against very large missions
+ *
  * Revision 2.73  2004/12/15 17:32:19  Goober5000
  * move wing name initialization to ship_level_init
  * --Goober5000
@@ -1271,14 +1274,11 @@ void parse_mission_info(mission *pm)
 	//error testing
 	if ((found640) && !(found1024))
 	{
-		Warning(LOCATION, "Mission: %s\nhas a 640 loading screen but no 1024 loading screen!",pm->name);
-		strcpy(pm->loading_screen[GR_640],"");
+		Warning(LOCATION, "Mission: %s\nhas a 640x480 loading screen but no 1024x768 loading screen!",pm->name);
 	}
-
 	if (!(found640) && (found1024))
 	{
-		Warning(LOCATION, "Mission: %s\nhas a 1024 loading screen but no 640 loading screen!",pm->name);
-		strcpy(pm->loading_screen[GR_1024],"");
+		Warning(LOCATION, "Mission: %s\nhas a 1024x768 loading screen but no 640x480 loading screen!",pm->name);
 	}	
 }
 
