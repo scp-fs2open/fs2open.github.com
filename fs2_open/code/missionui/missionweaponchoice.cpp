@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-03-31 12:43:51 $
+ * $Revision: 2.46 $
+ * $Date: 2005-03-31 12:45:22 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/03/31 12:43:51  Goober5000
+ * implemented the apply-to-all wing loadout button
+ * --Goober5000
+ *
  * Revision 2.44  2005/03/31 11:11:56  Goober5000
  * changed a bunch of literal constants to their #define'd keywords
  * --Goober5000
@@ -4643,7 +4647,8 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 	slot->wep_count[to_bank] = max_fit;
 
 	*sound=SND_ICON_DROP_ON_WING;
-	return 1;
+
+	return update;
 }
 
 // exit: 0 -> no data changed
