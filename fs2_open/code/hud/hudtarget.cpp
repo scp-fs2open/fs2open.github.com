@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-03-06 23:28:23 $
- * $Author: bobboau $
+ * $Revision: 2.27 $
+ * $Date: 2004-03-31 04:24:49 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/03/06 23:28:23  bobboau
+ * fixed motion debris
+ * animated laser textures
+ * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
+ *
  * Revision 2.25  2004/03/05 09:02:04  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1002,7 +1007,6 @@ void hud_reticle_list_update(object *objp, float measure, int dot_flag)
 //
 object *hud_reticle_pick_target()
 {
-	SAFEPOINT("entering hud_reticle_pick_target");
 	reticle_list	*cur_rl, *save_rl, *new_rl;
 	object			*return_objp;
 	int				in_save_list, i;
@@ -1030,7 +1034,6 @@ object *hud_reticle_pick_target()
 			continue;
 		}
 	}
-	SAFEPOINT("debris looking done");
 
 	if ( ship_in_list && debris_in_list ) {
 		// cull debris
@@ -1046,7 +1049,6 @@ object *hud_reticle_pick_target()
 			rl = next;
 		}
 	}
-	SAFEPOINT("debris culled");
 	
 	for ( cur_rl = GET_FIRST(&Reticle_cur_list); cur_rl != END_OF_LIST(&Reticle_cur_list); cur_rl = GET_NEXT(cur_rl) ) {
 		in_save_list = 0;
@@ -1076,7 +1078,6 @@ object *hud_reticle_pick_target()
 			break;
 		}
 	}	// end for
-	SAFEPOINT("list looking");
 
 	if ( return_objp == NULL && !EMPTY(&Reticle_cur_list) ) {
 			i = hud_reticle_list_find_free();
@@ -1089,10 +1090,8 @@ object *hud_reticle_pick_target()
 			hud_reticle_clear_list(&Reticle_save_list);
 			list_append(&Reticle_save_list, new_rl);
 	}
-	SAFEPOINT("empty finding");
 
 	return return_objp;
-	SAFEPOINT("leaveng hud_reticle_pick_target");
 }
 
 // hud_target_hotkey_add_remove takes as its parameter which hotkey (1-0) to add/remove the current
