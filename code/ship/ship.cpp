@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.94 $
- * $Date: 2003-11-21 22:30:45 $
+ * $Revision: 2.95 $
+ * $Date: 2003-12-15 21:36:42 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2003/11/21 22:30:45  phreak
+ * changed PLAYER_MAX_DIST_WARNING to 700000 (700km)
+ * changed PLAYER_MAX_DIST_END to 750000           (750km)
+ *
+ * this makes the playing field much bigger
+ * this way you don't get the "return to the field of battle messages"
+ * in the future we should have the mission designer set this limit
+ *
  * Revision 2.93  2003/11/19 20:37:25  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -2382,7 +2390,11 @@ strcpy(parse_error_text, temp_error);
 	sip->ct_count = 0;
 	while(optional_string("$Trail:")){
 		// this means you've reached the max # of contrails for a ship
-		Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
+		if (sip->ct_count <= MAX_SHIP_CONTRAILS)
+		{
+			Warning(LOCATION, "%s has more contrails than the max of %d", sip->name, MAX_SHIP_CONTRAILS);
+			break;
+		}
 
 		ci = &sip->ct_info[sip->ct_count++];
 		
@@ -2510,10 +2522,14 @@ strcpy(parse_error_text, temp_error);
 			Int3();	// Impossible return value from required_string_3.
 		}
 	}	
-	Assert( hull_percentage_of_hits > 0.0f );		// must be > 0//no it doesn't :P -Bobboau
-													// yes it does! - Goober5000
-													// (we don't want a div-0 error)
 
+	// must be > 0//no it doesn't :P -Bobboau
+	// yes it does! - Goober5000
+	// (we don't want a div-0 error)
+	if (hull_percentage_of_hits > 0.0f )
+	{
+		Warning(LOCATION, "THe subsystems defined for the %s can take more combined damage than	the ship itself. Adjust the tables so that the percentages add up to less than 100", sip->name);
+	}
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	sip->n_subsystems = n_subsystems;
 	if ( n_subsystems > 0 ) {
@@ -3606,7 +3622,11 @@ void ship_render(object * obj)
 			*/
 			//had a conflict, had to chose one, and I don't like ^that^ one
 			//model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
-			model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise, (obj->phys_info.flags & PF_AFTERBURNER_ON || obj->phys_info.flags & PF_BOOSTER_ON), shipp->secondary_thruster_bitmap, shipp->tertiary_thruster_bitmap, &Objects[shipp->objnum].phys_info.rotvel, si->thruster01_rad_factor, si->thruster02_rad_factor, si->thruster02_len_factor, si->thruster02_rad_factor );
+			model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap,
+				shipp->thruster_glow_noise, (obj->phys_info.flags & PF_AFTERBURNER_ON || obj->phys_info.flags & PF_BOOSTER_ON),
+				shipp->secondary_thruster_bitmap, shipp->tertiary_thruster_bitmap,
+				&Objects[shipp->objnum].phys_info.rotvel, si->thruster01_rad_factor,
+				si->thruster02_rad_factor, si->thruster02_len_factor, si->thruster02_rad_factor );
 			render_flags |= MR_SHOW_THRUSTERS;
 		}
 
