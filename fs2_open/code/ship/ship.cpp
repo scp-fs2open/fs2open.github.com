@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.160 $
- * $Date: 2005-02-04 20:06:08 $
+ * $Revision: 2.161 $
+ * $Date: 2005-02-10 14:38:50 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.160  2005/02/04 20:06:08  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.159  2005/01/30 09:36:19  Goober5000
  * optional flags default to false I should think
  * --Goober5000
@@ -1428,6 +1431,8 @@ extern bool splodeing;
 extern float splode_level;
 
 extern int splodeingtexture;
+
+extern int Cmdline_nohtl;
 
 //#define MIN_COLLISION_MOVE_DIST		5.0
 //#define COLLISION_VEL_CONST			0.1
@@ -4177,8 +4182,15 @@ void ship_render(object * obj)
 		}
 
 		//For in-ship cockpits. This is admittedly something of a hack
-		reset_proj_when_done = true;
-		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.05f, Max_draw_distance);
+		if (!Cmdline_nohtl) {
+			reset_proj_when_done = true;
+
+			gr_end_view_matrix();
+			gr_end_proj_matrix();
+
+			gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.05f, Max_draw_distance);
+			gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		}
 	}
 
 	MONITOR_INC( NumShipsRend, 1 );	
@@ -4450,8 +4462,13 @@ void ship_render(object * obj)
 #endif
 //	mprintf(("ship rendered\n"));
 
-	if(reset_proj_when_done)
+	if (!Cmdline_nohtl && reset_proj_when_done) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
 		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 }
 
 void ship_subsystem_delete(ship *shipp)

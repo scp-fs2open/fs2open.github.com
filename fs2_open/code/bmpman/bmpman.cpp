@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.41 $
- * $Date: 2005-02-04 23:29:31 $
+ * $Revision: 2.42 $
+ * $Date: 2005-02-10 14:38:50 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/02/04 23:29:31  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
  * Revision 2.40  2005/01/22 20:29:05  wmcoolmon
  * Fix0red the ext error. Always make sure you have room for the string terminator. :)
  *
@@ -2731,6 +2734,7 @@ int bm_get_cache_slot( int bitmap_id, int separate_ani_frames )
 }
 
 void (*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
+void (*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 /*
 void bm_set_components_argb(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
@@ -2755,7 +2759,7 @@ void bm_set_components_d3d(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte 
 	}
 }
 */
-void bm_set_components_argb_d3d_16_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
+void bm_set_components_argb_16_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
 	*((ushort*)pixel) |= (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
 	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
@@ -2765,7 +2769,7 @@ void bm_set_components_argb_d3d_16_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ub
 	}			
 }
 
-void bm_set_components_argb_d3d_32_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
+void bm_set_components_argb_32_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
 	*((uint*)pixel) |= (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
 	*((uint*)pixel) |= (uint)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
@@ -2775,7 +2779,7 @@ void bm_set_components_argb_d3d_32_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ub
 	}
 }
 
-void bm_set_components_argb_d3d_16_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
+void bm_set_components_argb_16_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
 	*((ushort*)pixel) |= (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
 	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
@@ -2788,7 +2792,7 @@ void bm_set_components_argb_d3d_16_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte
 	}
 }
 
-void bm_set_components_argb_d3d_32_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
+void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
 	*((uint*)pixel) |= (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
 	*((uint*)pixel) |= (uint)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
@@ -2800,23 +2804,6 @@ void bm_set_components_argb_d3d_32_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte
 		*((uint*)pixel) = 0;
 	}
 }
-/*
-void bm_set_components_opengl(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
-{
-	// rgba 
-	*((ushort*)pixel) |= (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	*((ushort*)pixel) &= ~(0x8000);
-	if (*((ushort*)pixel) == (ushort)Gr_current_green->mask) {
-		*((ushort*)pixel) = 0;
-	} else {
-		if(*av){
-			*((ushort*)pixel) |= 0x8000;
-		}
-	}
-}
-*/
 
 // for selecting pixel formats
 void BM_SELECT_SCREEN_FORMAT()
@@ -2827,22 +2814,9 @@ void BM_SELECT_SCREEN_FORMAT()
 	Gr_current_alpha = &Gr_alpha;
 
 	// setup pointers
-#ifndef NO_DIRECT3D
-	if (gr_screen.mode == GR_DIRECT3D) {
-		if (gr_screen.bits_per_pixel == 32) {
-			bm_set_components = bm_set_components_argb_d3d_32_screen;
-		} else {
-			bm_set_components = bm_set_components_argb_d3d_16_screen;
-		}
-	} else
-#endif // !NO_DIRECT3D
-	if (gr_screen.mode == GR_OPENGL) {
-		if (gr_screen.bits_per_pixel == 32) {
-			bm_set_components = bm_set_components_argb_d3d_32_screen;
-		} else {
-			bm_set_components = bm_set_components_argb_d3d_16_screen;
-		}
-	}
+	bm_set_components_32 = bm_set_components_argb_32_screen;
+	// should always assume that 16-bit is the default request
+	bm_set_components = bm_set_components_argb_16_screen;
 }
 
 void BM_SELECT_TEX_FORMAT()
@@ -2853,22 +2827,9 @@ void BM_SELECT_TEX_FORMAT()
 	Gr_current_alpha = &Gr_t_alpha;
 
 	// setup pointers
-#ifndef NO_DIRECT3D
-	if (gr_screen.mode == GR_DIRECT3D) {
-		if (gr_screen.bits_per_pixel == 32) {
-			bm_set_components = bm_set_components_argb_d3d_32_tex;
-		} else {
-			bm_set_components = bm_set_components_argb_d3d_16_tex;
-		}
-	} else
-#endif // !NO_DIRECT3D
-	if (gr_screen.mode == GR_OPENGL) {
-		if (gr_screen.bits_per_pixel == 32) {
-			bm_set_components = bm_set_components_argb_d3d_32_tex;
-		} else {
-			bm_set_components = bm_set_components_argb_d3d_16_tex;
-		}
-	}
+	bm_set_components_32 = bm_set_components_argb_32_tex;
+	// should always assume that 16-bit is the default request
+	bm_set_components = bm_set_components_argb_16_tex;
 }
 
 void BM_SELECT_ALPHA_TEX_FORMAT()
@@ -2879,22 +2840,9 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 	Gr_current_alpha = &Gr_ta_alpha;
 
 	// setup pointers
-#ifndef NO_DIRECT3D
-	if(gr_screen.mode == GR_DIRECT3D){
-		if (gr_screen.bits_per_pixel == 32) {
-			bm_set_components = bm_set_components_argb_d3d_32_tex;
-		} else {
-			bm_set_components = bm_set_components_argb_d3d_16_tex;
-		}
-	} else
-#endif // !NO_DIRECT3D
-	if (gr_screen.mode == GR_OPENGL) {
-		if (gr_screen.bits_per_pixel == 32) {
-			bm_set_components = bm_set_components_argb_d3d_32_tex;
-		} else {
-			bm_set_components = bm_set_components_argb_d3d_16_tex;
-		}
-	}
+	bm_set_components_32 = bm_set_components_argb_32_tex;
+	// should always assume that 16-bit is the default request
+	bm_set_components = bm_set_components_argb_16_tex;
 }
 
 // set the rgba components of a pixel, any of the parameters can be -1
