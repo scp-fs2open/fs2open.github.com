@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.24 $
- * $Date: 2002-12-31 19:35:14 $
+ * $Revision: 2.25 $
+ * $Date: 2003-01-02 03:09:00 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2002/12/31 19:35:14  Goober5000
+ * tweaked stuff
+ * --Goober5000
+ *
  * Revision 2.23  2002/12/31 18:59:42  Goober5000
  * if it ain't broke, don't fix it
  * --Goober5000
@@ -8485,6 +8489,7 @@ int ship_docking_valid(int docker, int dockee)
 			|| (dockee_type == SHIP_TYPE_SUPERCAP) || (dockee_type == SHIP_TYPE_DRYDOCK)
 			|| (dockee_type == SHIP_TYPE_CORVETTE) || (dockee_type == SHIP_TYPE_GAS_MINER)
 			|| (dockee_type == SHIP_TYPE_AWACS) || (dockee_type == SHIP_TYPE_FIGHTER_BOMBER)
+			|| (dockee_type == SHIP_TYPE_FIGHTER) || (dockee_type == SHIP_TYPE_BOMBER)
 			|| (dockee_type == SHIP_TYPE_STEALTH) )
 		{
 				return 1;
