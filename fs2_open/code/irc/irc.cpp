@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.13 $
- * $Date: 2005-03-27 21:06:31 $
+ * $Revision: 1.14 $
+ * $Date: 2005-03-27 21:13:05 $
  * $Author: mrduckman $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/03/27 21:06:31  mrduckman
+ * Added /kill IRC Command
+ *
  * Revision 1.12  2005/03/02 21:18:19  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -668,7 +671,7 @@ void irc_client::Oper(std::string user, std::string pass)
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 
-void irc_client::Kill(std::string nick, std::string message);
+void irc_client::Kill(std::string nick, std::string message)
 //KILL <nick> <cause>
 {
 	std::string command = "KILL " + nick + " " + message;
