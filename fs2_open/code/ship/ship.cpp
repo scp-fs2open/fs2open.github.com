@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.76 $
- * $Date: 2003-09-11 19:33:07 $
- * $Author: argv $
+ * $Revision: 2.77 $
+ * $Date: 2003-09-12 03:17:33 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2003/09/11 19:33:07  argv
+ * New energy system, singular shield support, some new ship table flags, no draw of thrusters when they are off, fixes.
+ *
  * Revision 2.75  2003/09/06 20:40:01  wmcoolmon
  * Added ability to limit subsystem repairs
  *
@@ -1551,8 +1554,10 @@ int parse_ship()
 
 	// calculate the max speed from max_velocity
 	// _argv[-1] - whaaaaaaat?! This screws with max oclk speed. Badly.
-	//sip->max_speed = vm_vec_mag(&sip->max_vel);
-	sip->max_speed = sip->max_vel.xyz.z;
+	// Goober5000 - it's always worked before, and suppose a ship moves in
+	// multiple dimensions?
+	sip->max_speed = vm_vec_mag(&sip->max_vel);
+	//sip->max_speed = sip->max_vel.xyz.z;
 
 	required_string("$Rotation Time:");
 	stuff_vector(&sip->rotation_time);
@@ -1924,11 +1929,13 @@ strcpy(parse_error_text, temp_error);
 			sip->flags |= SIF_CARGO;
 		else if ( !stricmp( NOX("fighter"), ship_strings[i])) {
 			sip->flags |= SIF_FIGHTER;
-			sip->flags2 |= SIF2_BEAM_FREE_BY_DEFAULT; // _argv[-1] - free beam turrets on fighters by default.
+			//sip->flags2 |= SIF2_BEAM_FREE_BY_DEFAULT; // _argv[-1] - free beam turrets on fighters by default.
+			// Goober5000 - no, because this is inconsistent with other stuff
 		}
 		else if ( !stricmp( NOX("bomber"), ship_strings[i])) {
 			sip->flags |= SIF_BOMBER;
-			sip->flags2 |= SIF2_BEAM_FREE_BY_DEFAULT; // _argv[-1] - free beam turrets on bombers by default.
+			//sip->flags2 |= SIF2_BEAM_FREE_BY_DEFAULT; // _argv[-1] - free beam turrets on bombers by default.
+			// Goober5000 - no, because this is inconsistent with other stuff
 		}
 		else if ( !stricmp( NOX("transport"), ship_strings[i]))
 			sip->flags |= SIF_TRANSPORT;
@@ -1946,7 +1953,8 @@ strcpy(parse_error_text, temp_error);
 			sip->flags |= SIF_NAVBUOY;
 		else if ( !stricmp( NOX("sentrygun"), ship_strings[i])) {
 			sip->flags |= SIF_SENTRYGUN;
-			sip->flags2 |= SIF2_BEAM_FREE_BY_DEFAULT; // _argv[-1] - free beam turrets on sentry guns by default.
+			//sip->flags2 |= SIF2_BEAM_FREE_BY_DEFAULT; // _argv[-1] - free beam turrets on sentry guns by default.
+			// Goober5000 - no, because this is inconsistent with other stuff
 		}
 		else if ( !stricmp( NOX("escapepod"), ship_strings[i]))
 			sip->flags |= SIF_ESCAPEPOD;
@@ -2647,8 +2655,10 @@ int ship_get_default_orders_accepted( ship_info *sip )
 		return CRUISER_MESSAGES;
 	else if ( ship_info_flag & SIF_FREIGHTER )
 		return FREIGHTER_MESSAGES;
-	else if ( ship_info_flag & (SIF_CAPITAL | SIF_SUPERCAP) )
+	else if ( ship_info_flag & (SIF_CAPITAL) )
 		return CAPITAL_MESSAGES;
+	else if ( ship_info_flag & (SIF_SUPERCAP) )
+		return SUPERCAP_MESSAGES;
 	else if ( ship_info_flag & SIF_TRANSPORT )
 		return TRANSPORT_MESSAGES;
 	else if ( ship_info_flag & SIF_SUPPORT )
@@ -3084,7 +3094,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->turret_next_enemy_check_stamp = timestamp(0);
 		ship_system->turret_enemy_objnum = -1;
 		// _argv[-1] - gah! delaying turret fire for up to 500 seconds?!?
-		//ship_system->turret_next_fire_stamp = timestamp((int) frand_range(1.0f, 500.0f));	// next time this turret can fire
+		// Goober5000 - that's milliseconds
+		ship_system->turret_next_fire_stamp = timestamp((int) frand_range(1.0f, 500.0f));	// next time this turret can fire
 		ship_system->turret_last_fire_direction = sp->turret_norm;
 		ship_system->turret_next_fire_pos = 0;
 		ship_system->turret_time_enemy_in_range = 0.0f;
@@ -9881,7 +9892,7 @@ float ship_quadrant_shield_strength(object *hit_objp, vector *hitpos)
 	if ( quadrant_num < 0 )
 		quadrant_num = 0;
 
-	max_quadrant = Ships[hit_objp->instance].ship_initial_shield_strength /*/ 4.0f*/;
+	max_quadrant = Ships[hit_objp->instance].ship_initial_shield_strength / (1.0f*(Ship_info[Ships[hit_objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)?1:MAX_SHIELD_SECTIONS));
 	if ( max_quadrant <= 0 ) {
 		return 0.0f;
 	}
