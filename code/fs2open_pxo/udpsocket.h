@@ -3,14 +3,22 @@
 // Derek Meek
 // 2-14-2003
 
+// ############## ATTENTION ##########
+// Licensed under the Academic Free License version 2.0
+// View License at http://www.opensource.org/licenses/afl-2.0.php
+// ###################################
+
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.h $
- * $Revision: 1.2 $
- * $Date: 2003-10-13 06:02:50 $
+ * $Revision: 1.3 $
+ * $Date: 2004-02-21 00:59:43 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2003/10/13 06:02:50  Kazan
+ * Added Log Comment Thingy to these files
+ *
  *
  *
  */

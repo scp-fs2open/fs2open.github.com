@@ -3,14 +3,23 @@
 // Derek Meek
 // 2-14-2003
 
+// ############## ATTENTION ##########
+// Licensed under the Academic Free License version 2.0
+// View License at http://www.opensource.org/licenses/afl-2.0.php
+// ###################################
+
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.8 $
- * $Date: 2004-02-04 09:02:42 $
- * $Author: Goober5000 $
+ * $Revision: 1.9 $
+ * $Date: 2004-02-21 00:59:43 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/02/04 09:02:42  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 1.7  2003/11/13 03:59:52  Kazan
  * PXO_SID changed from unsigned to signed
  *

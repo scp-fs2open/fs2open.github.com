@@ -3,14 +3,23 @@
 // Derek Meek
 // 2-14-2003
 
+// ############## ATTENTION ##########
+// Licensed under the Academic Free License version 2.0
+// View License at http://www.opensource.org/licenses/afl-2.0.php
+// ###################################
+
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.10 $
- * $Date: 2004-02-04 09:02:42 $
- * $Author: Goober5000 $
+ * $Revision: 1.11 $
+ * $Date: 2004-02-21 00:59:43 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2004/02/04 09:02:42  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 1.9  2003/11/11 02:15:42  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
