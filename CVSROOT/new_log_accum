@@ -20,7 +20,7 @@
 # Script to accumulate log messages for an entire tree and send them along
 # with the diffs; deals correctly with all manner of branching (I hope)
 #
-# $Id: new_log_accum,v 1.2 2003-05-22 15:14:39 drevil Exp $
+# $Id: new_log_accum,v 1.3 2003-09-07 12:46:59 drevil Exp $
 #
 
 use strict;
@@ -334,7 +334,7 @@ sub build_header ($@) {
 	$boundary = "----=MIME." . unpack("H*", $digest->digest());
 	
 	# Build the mail header
-	push(@text, "From: $user");
+	push(@text, 'From: fs2source@warpcore.org');
 	push(@text, "To: " . join(' ', @mailto));
 	push(@text, "Subject: $subject");
 	push(@text, "MIME-Version: 1.0");
