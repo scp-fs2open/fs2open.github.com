@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-18 20:07:49 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/18 20:07:49  penguin
+ * Fixed bug (potential access of unitialized pointer) in hud_config_render_gauges() -- thanks to DTP for finding it!
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -248,26 +251,26 @@
  *
 */
 
-#include "hud.h"
-#include "hudconfig.h"
-#include "freespace.h"
-#include "gamesequence.h"
-#include "player.h"
-#include "2d.h"
+#include "hud/hud.h"
+#include "hud/hudconfig.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "playerman/player.h"
+#include "graphics/2d.h"
 
-#include "key.h"
-#include "timer.h"
+#include "io/key.h"
+#include "io/timer.h"
 #include "math.h"
-#include "mouse.h"
-#include "ui.h"
-#include "bmpman.h"
-#include "palman.h"
-#include "hudobserver.h"
-#include "ui.h"
-#include "missionshipchoice.h"
-#include "gamesnd.h"
-#include "alphacolors.h"
-#include "popup.h"
+#include "io/mouse.h"
+#include "ui/ui.h"
+#include "bmpman/bmpman.h"
+#include "palman/palman.h"
+#include "hud/hudobserver.h"
+#include "ui/ui.h"
+#include "missionui/missionshipchoice.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "popup/popup.h"
 
 
 //////////////////////////////////////////////////////////////////////////////

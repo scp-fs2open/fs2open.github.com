@@ -24,9 +24,9 @@
 
 #define FX_GLIDE_NO_FUNC_PROTO
 
-#include "3dfx.h"
-#include "sst1vid.h"
-#include "glidesys.h"
+#include "glide/3dfx.h"
+#include "glide/sst1vid.h"
+#include "glide/glidesys.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -1088,7 +1088,7 @@ grHints(GrHint_t hintType, FxU32 hintMask);
 }
 #endif
 
-#include "glideutl.h"
+#include "glide/glideutl.h"
 
 #endif /* __GLIDE_H__ */
 

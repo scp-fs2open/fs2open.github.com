@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-29 19:04:48 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/29 19:04:48  penguin
+ * added #ifdef _WIN32 around windows-specific system headers
+ *
  * Revision 2.1  2002/07/07 19:55:58  penguin
  * Back-port to MSVC
  *
@@ -203,15 +206,15 @@
 #include <sys/mman.h>
 #endif
 
-#include "pstypes.h"
-#include "cfile.h"
-#include "encrypt.h"
+#include "globalincs/pstypes.h"
+#include "cfile/cfile.h"
+#include "parse/encrypt.h"
 //#include "outwnd.h"
 //#include "vecmat.h"
 //#include "timer.h"
-#include "cfilesystem.h"
-#include "cfilearchive.h"
-#include "osapi.h"
+#include "cfile/cfilesystem.h"
+#include "cfile/cfilearchive.h"
+#include "osapi/osapi.h"
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 

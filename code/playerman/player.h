@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/Player.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  *  Header file for player information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:09  mharris
  * got some stuff to compile
  *
@@ -156,15 +159,15 @@
 #ifndef _PLAYER_H
 #define _PLAYER_H
 
-#include "object.h"
-#include "physics.h"
-#include "missionload.h"
-#include "hudtarget.h"				// for targeting hotkey lists
-#include "ship.h"						// for targeting subobjects
-#include "missioncampaign.h"		// for mission/campaign stuff
-#include "scoring.h"             // for scoring/stats
-#include "keycontrol.h"				// for button_info
-#include "multi_options.h"
+#include "object/object.h"
+#include "physics/physics.h"
+#include "mission/missionload.h"
+#include "hud/hudtarget.h"				// for targeting hotkey lists
+#include "ship/ship.h"						// for targeting subobjects
+#include "mission/missioncampaign.h"		// for mission/campaign stuff
+#include "stats/scoring.h"             // for scoring/stats
+#include "io/keycontrol.h"				// for button_info
+#include "network/multi_options.h"
 
 
 #define CALLSIGN_LEN					28		//	shortened from 32 to allow .plr to be attached without exceeding MAX_FILENAME_LEN

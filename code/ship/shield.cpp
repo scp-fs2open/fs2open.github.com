@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-25 04:50:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:10 $
+ * $Author: penguin $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/25 04:50:07  wmcoolmon
+ * Added Bobboau's fighter-beam code.
+ *
  * Revision 2.1  2002/07/18 03:26:35  unknownplayer
  *
  * Added some commentry to the low detail shield function.
@@ -167,26 +170,26 @@
 
 #include <math.h>
 
-#include "2d.h"
-#include "3d.h"
-#include "model.h"
-#include "tmapper.h"
-#include "floating.h"
-#include "fvi.h"
-#include "lighting.h"
-#include "fireballs.h"
-#include "fix.h"
-#include "bmpman.h"
-#include	"object.h"
-#include "player.h"		//	#include of "player.h" is only for debugging!
-#include "timer.h"
-#include "freespace.h"
-#include "packunpack.h"
-#include "animplay.h"
-#include "shiphit.h"
-#include "missionparse.h"
-#include "multimsgs.h"
-#include "multi.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "model/model.h"
+#include "graphics/tmapper.h"
+#include "math/floating.h"
+#include "math/fvi.h"
+#include "lighting/lighting.h"
+#include "fireball/fireballs.h"
+#include "math/fix.h"
+#include "bmpman/bmpman.h"
+#include	"object/object.h"
+#include "playerman/player.h"		//	#include of "player.h" is only for debugging!
+#include "io/timer.h"
+#include "freespace2/freespace.h"
+#include "anim/packunpack.h"
+#include "anim/animplay.h"
+#include "ship/shiphit.h"
+#include "mission/missionparse.h"
+#include "network/multimsgs.h"
+#include "network/multi.h"
 
 int	New_shield_system = 1;
 int	Show_shield_mesh = 0;

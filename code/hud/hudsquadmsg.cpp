@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -231,36 +234,36 @@
 */
  
 
-#include "freespace.h"
-#include "2d.h"
-#include "hud.h"
-#include "ship.h"
-#include "player.h"
-#include "key.h"
-#include "hudtarget.h"
-#include "timer.h"
-#include "hudsquadmsg.h"
-#include "controlsconfig.h"
-#include "parselo.h"
-#include "aigoals.h"
-#include "missionparse.h"
-#include "sexp.h"
-#include "linklist.h"
-#include "missionlog.h"
-#include "missionmessage.h"
-#include "hudtarget.h"
-#include "gamesnd.h"
-#include "sound.h"
-#include "missionparse.h"
-#include "bmpman.h"
-#include "hudtargetbox.h"
-#include "subsysdamage.h"
-#include "emp.h"
+#include "freespace2/freespace.h"
+#include "graphics/2d.h"
+#include "hud/hud.h"
+#include "ship/ship.h"
+#include "playerman/player.h"
+#include "io/key.h"
+#include "hud/hudtarget.h"
+#include "io/timer.h"
+#include "hud/hudsquadmsg.h"
+#include "controlconfig/controlsconfig.h"
+#include "parse/parselo.h"
+#include "ship/aigoals.h"
+#include "mission/missionparse.h"
+#include "parse/sexp.h"
+#include "globalincs/linklist.h"
+#include "mission/missionlog.h"
+#include "mission/missionmessage.h"
+#include "hud/hudtarget.h"
+#include "gamesnd/gamesnd.h"
+#include "sound/sound.h"
+#include "mission/missionparse.h"
+#include "bmpman/bmpman.h"
+#include "hud/hudtargetbox.h"
+#include "ship/subsysdamage.h"
+#include "weapon/emp.h"
 
 #ifndef NO_NETWORK
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "multi_pmsg.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "network/multi_pmsg.h"
 #endif
 
 // defines for different modes in the squad messaging system

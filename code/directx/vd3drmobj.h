@@ -13,8 +13,8 @@
 #include <objbase.h> /* Use Windows header files */
 #define VIRTUAL
 
-#include "vd3drmdef.h"
-#include "vd3d.h"
+#include "directx/vd3drmdef.h"
+#include "directx/vd3d.h"
 
 #ifdef __cplusplus
 extern "C" {

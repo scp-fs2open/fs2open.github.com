@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -152,22 +155,22 @@
 
 #include <stdlib.h>
 
-#include "gamesequence.h"
-#include "font.h"
-#include "key.h"
-#include "bmpman.h"
-#include "2d.h"
-#include "timer.h"
-#include "gamesnd.h"
-#include "audiostr.h"
-#include "eventmusic.h"	/* for Master_event_music_volume */
-#include "cfile.h"
-#include "ui.h"
-#include "missionscreencommon.h"
-#include "player.h"
-#include "freespace.h"
-#include "alphacolors.h"
-#include "localize.h"
+#include "gamesequence/gamesequence.h"
+#include "graphics/font.h"
+#include "io/key.h"
+#include "bmpman/bmpman.h"
+#include "graphics/2d.h"
+#include "io/timer.h"
+#include "gamesnd/gamesnd.h"
+#include "sound/audiostr.h"
+#include "gamesnd/eventmusic.h"	/* for Master_event_music_volume */
+#include "cfile/cfile.h"
+#include "ui/ui.h"
+#include "missionui/missionscreencommon.h"
+#include "playerman/player.h"
+#include "freespace2/freespace.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
 
 #define CREDITS_MUSIC_DELAY	2000
 #define CREDITS_SCROLL_RATE	15.0f

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -166,15 +169,15 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "freespace.h"
-#include "linklist.h"
-#include "3d.h" 
-#include "bmpman.h"
-#include "particle.h"
-#include "osapi.h"
-#include "object.h"
-#include "timer.h"
+#include "globalincs/pstypes.h"
+#include "freespace2/freespace.h"
+#include "globalincs/linklist.h"
+#include "render/3d.h" 
+#include "bmpman/bmpman.h"
+#include "particle/particle.h"
+#include "osapi/osapi.h"
+#include "object/object.h"
+#include "io/timer.h"
 
 typedef struct particle {
 	// old style data

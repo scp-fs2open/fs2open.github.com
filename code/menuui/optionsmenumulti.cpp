@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenuMulti.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/10 06:08:08  mharris
  * Porting... added ifndef NO_SOUND
  *
@@ -203,27 +206,27 @@
  * $NoKeywords: $
  */
 
-#include "ui.h"
-#include "bmpman.h"
-#include "cfile.h"
-#include "key.h"
-#include "font.h"
-#include "gamesnd.h"
-#include "freespace.h"
-#include "player.h"
-#include "multi.h"
-#include "multi_voice.h"
-#include "rtvoice.h"
-#include "mouse.h"
-#include "optionsmenu.h"
-#include "optionsmenumulti.h"
-#include "popup.h"
-#include "osregistry.h"
-#include "alphacolors.h"
-#include "timer.h"
+#include "ui/ui.h"
+#include "bmpman/bmpman.h"
+#include "cfile/cfile.h"
+#include "io/key.h"
+#include "graphics/font.h"
+#include "gamesnd/gamesnd.h"
+#include "freespace2/freespace.h"
+#include "playerman/player.h"
+#include "network/multi.h"
+#include "network/multi_voice.h"
+#include "sound/rtvoice.h"
+#include "io/mouse.h"
+#include "menuui/optionsmenu.h"
+#include "menuui/optionsmenumulti.h"
+#include "popup/popup.h"
+#include "osapi/osregistry.h"
+#include "globalincs/alphacolors.h"
+#include "io/timer.h"
 
 #ifndef NO_SOUND
- #include "ds.h"
+ #include "sound/ds.h"
 #endif
 
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -370,33 +373,33 @@
  * $NoKeywords: $
  */
 
-#include "linklist.h"
-#include "missionmessage.h"
-#include "missiontraining.h"
-#include "hudmessage.h"
-#include "hudtarget.h"
-#include "sexp.h"
-#include "timer.h"
-#include "parselo.h"
-#include "gamesnd.h"
-#include "sound.h"
-#include "freespace.h"
-#include "gamesequence.h"
-#include "animplay.h"
-#include "controlsconfig.h"
-#include "audiostr.h"
-#include "hudsquadmsg.h"
-#include "hud.h"
-#include "subsysdamage.h"
-#include "emp.h"
-#include "localize.h"
-#include "demo.h"
-#include "hudconfig.h"
+#include "globalincs/linklist.h"
+#include "mission/missionmessage.h"
+#include "mission/missiontraining.h"
+#include "hud/hudmessage.h"
+#include "hud/hudtarget.h"
+#include "parse/sexp.h"
+#include "io/timer.h"
+#include "parse/parselo.h"
+#include "gamesnd/gamesnd.h"
+#include "sound/sound.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "anim/animplay.h"
+#include "controlconfig/controlsconfig.h"
+#include "sound/audiostr.h"
+#include "hud/hudsquadmsg.h"
+#include "hud/hud.h"
+#include "ship/subsysdamage.h"
+#include "weapon/emp.h"
+#include "localization/localize.h"
+#include "demo/demo.h"
+#include "hud/hudconfig.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiutil.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
 #endif
 
 // here is a text list of the builtin message names.  These names are used to match against

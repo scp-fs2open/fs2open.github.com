@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_options.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-22 01:22:25 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/22 01:22:25  penguin
+ * Linux port -- added NO_STANDALONE ifdefs
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -188,16 +191,16 @@
  */
 
 #include <windows.h>
-#include "cmdline.h"
-#include "osregistry.h"
-#include "multi.h"
-#include "multimsgs.h"
-#include "freespace.h"
-#include "stand_gui.h"
-#include "multiutil.h"
-#include "multi_voice.h"
-#include "multi_options.h"
-#include "multi_team.h"
+#include "cmdline/cmdline.h"
+#include "osapi/osregistry.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "freespace2/freespace.h"
+#include "network/stand_gui.h"
+#include "network/multiutil.h"
+#include "network/multi_voice.h"
+#include "network/multi_options.h"
+#include "network/multi_team.h"
 
 // ----------------------------------------------------------------------------------
 // MULTI OPTIONS DEFINES/VARS

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.0 $
+ * $Revision: 2.1 $
  * $Author: penguin $
- * $Date: 2002-06-03 04:02:27 $
+ * $Date: 2002-08-01 01:41:09 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/21 15:46:58  mharris
  * Reformat some debug strings
  *
@@ -104,15 +107,15 @@
 #include <stdarg.h>
 #include <setjmp.h>
 
-#include "pstypes.h"
-#include "parselo.h"
-#include "sexp.h"
-#include "cfile.h"
-#include "missionparse.h"
+#include "globalincs/pstypes.h"
+#include "parse/parselo.h"
+#include "parse/sexp.h"
+#include "cfile/cfile.h"
+#include "mission/missionparse.h"
 #include "ctype.h"
-#include "encrypt.h"
-#include "localize.h"
-#include "fhash.h"
+#include "parse/encrypt.h"
+#include "localization/localize.h"
+#include "localization/fhash.h"
 
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5

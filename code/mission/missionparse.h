@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.2 $
- * $Author: wmcoolmon $
- * $Date: 2002-07-30 17:35:22 $
+ * $Revision: 2.3 $
+ * $Author: penguin $
+ * $Date: 2002-08-01 01:41:07 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/30 17:35:22  wmcoolmon
+ * Added mission flag "MISSION_FLAG_SUPPORT_REPAIRS_HULL" for toggling Support Ship hull repair on and off
+ *
  * Revision 2.1  2002/07/15 02:09:19  wmcoolmon
  * Added support for toggling ship trails
  *
@@ -173,11 +176,11 @@
 #define _PARSE_H
 
 #include <setjmp.h>
-#include "parselo.h"
-#include "ship.h"
-#include "ai.h"
-#include "missionbriefcommon.h"
-#include "weapon.h"
+#include "parse/parselo.h"
+#include "ship/ship.h"
+#include "ship/ai.h"
+#include "mission/missionbriefcommon.h"
+#include "weapon/weapon.h"
 
 #define NUM_NEBULAS			3				// how many background nebulas we have altogether
 #define NUM_NEBULA_COLORS	9

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.1 $
- * $Date: 2002-07-13 09:16:18 $
- * $Author: wmcoolmon $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:09 $
+ * $Author: penguin $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/13 09:16:18  wmcoolmon
+ * Added initial code for "ship-lights-on" and "ship-lights-off" SEXPs
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -306,46 +309,46 @@
 #include <assert.h>
 #include <limits.h>
 
-#include "parselo.h"
-#include "sexp.h"
-#include "ship.h"
-#include "freespace.h"
-#include "fix.h"
-#include "weapon.h"
-#include "missionlog.h"
-#include "missionparse.h"		// for p_object definition
-#include "missionmessage.h"
-#include "missiontraining.h"
-#include "vecmat.h"
-#include "linklist.h"
-#include "model.h"				// for subsystem types
-#include "aigoals.h"
-#include "missioncampaign.h"
-#include "missiongoals.h"
-#include "controlsconfig.h"
-#include "timer.h"
-#include "shiphit.h"
-#include "gamesequence.h"
-#include "scoring.h"
-#include "medals.h"
-#include "player.h"
-#include "hudmessage.h"
-#include "hud.h"
-#include "redalert.h"
-#include "jumpnode.h"
-#include "hudshield.h"
-#include "hudescort.h"
-#include "beam.h"
-#include "supernova.h"
-#include "hudets.h"
-#include "fvi.h"
-#include "awacs.h"
+#include "parse/parselo.h"
+#include "parse/sexp.h"
+#include "ship/ship.h"
+#include "freespace2/freespace.h"
+#include "math/fix.h"
+#include "weapon/weapon.h"
+#include "mission/missionlog.h"
+#include "mission/missionparse.h"		// for p_object definition
+#include "mission/missionmessage.h"
+#include "mission/missiontraining.h"
+#include "math/vecmat.h"
+#include "globalincs/linklist.h"
+#include "model/model.h"				// for subsystem types
+#include "ship/aigoals.h"
+#include "mission/missioncampaign.h"
+#include "mission/missiongoals.h"
+#include "controlconfig/controlsconfig.h"
+#include "io/timer.h"
+#include "ship/shiphit.h"
+#include "gamesequence/gamesequence.h"
+#include "stats/scoring.h"
+#include "stats/medals.h"
+#include "playerman/player.h"
+#include "hud/hudmessage.h"
+#include "hud/hud.h"
+#include "missionui/redalert.h"
+#include "jumpnode/jumpnode.h"
+#include "hud/hudshield.h"
+#include "hud/hudescort.h"
+#include "weapon/beam.h"
+#include "starfield/supernova.h"
+#include "hud/hudets.h"
+#include "math/fvi.h"
+#include "ship/awacs.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "multi_team.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "network/multi_team.h"
 #endif
 
 #define TRUE	1

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -102,17 +105,17 @@
  * $NoKeywords: $
  */
 
-#include "hud.h"
-#include "hudwingmanstatus.h"
-#include "ship.h"
-#include "2d.h"
-#include "bmpman.h"
-#include "timer.h"
-#include "hudtargetbox.h"
-#include "linklist.h"
-#include "systemvars.h"
-#include "multi.h"
-#include "emp.h"
+#include "hud/hud.h"
+#include "hud/hudwingmanstatus.h"
+#include "ship/ship.h"
+#include "graphics/2d.h"
+#include "bmpman/bmpman.h"
+#include "io/timer.h"
+#include "hud/hudtargetbox.h"
+#include "globalincs/linklist.h"
+#include "globalincs/systemvars.h"
+#include "network/multi.h"
+#include "weapon/emp.h"
 
 #define HUD_WINGMAN_STATUS_NUM_FRAMES	5
 #define BACKGROUND_LEFT						0

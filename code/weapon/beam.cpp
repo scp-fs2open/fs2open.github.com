@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-26 03:11:24 $
- * $Author: wmcoolmon $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:10 $
+ * $Author: penguin $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/26 03:11:24  wmcoolmon
+ * Added Bobboau's beam tiling code
+ *
  * Revision 2.1  2002/07/25 04:50:48  wmcoolmon
  * Added Bobboau's fighter-beam code.
  *
@@ -272,30 +275,30 @@
  * $NoKeywords: $
  */
 
-#include "linklist.h"
-#include "object.h"
-#include "objcollide.h"
-#include "ship.h"
-#include "freespace.h"
-#include "3d.h"
-#include "model.h"
-#include "alphacolors.h"
-#include "timer.h"
-#include "fireballs.h"
-#include "debris.h"
-#include "asteroid.h"
-#include "multi.h"
-#include "multimsgs.h"
-#include "bmpman.h"
-#include "particle.h"
-#include "shiphit.h"
-#include "flak.h"
-#include "3d.h"
-#include "gamesnd.h"
-#include "beam.h"
-#include "hudmessage.h"
-#include "key.h"
-#include "lighting.h"
+#include "globalincs/linklist.h"
+#include "object/object.h"
+#include "object/objcollide.h"
+#include "ship/ship.h"
+#include "freespace2/freespace.h"
+#include "render/3d.h"
+#include "model/model.h"
+#include "globalincs/alphacolors.h"
+#include "io/timer.h"
+#include "fireball/fireballs.h"
+#include "debris/debris.h"
+#include "asteroid/asteroid.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "bmpman/bmpman.h"
+#include "particle/particle.h"
+#include "ship/shiphit.h"
+#include "weapon/flak.h"
+#include "render/3d.h"
+#include "gamesnd/gamesnd.h"
+#include "weapon/beam.h"
+#include "hud/hudmessage.h"
+#include "io/key.h"
+#include "lighting/lighting.h"
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON DEFINES/VARS

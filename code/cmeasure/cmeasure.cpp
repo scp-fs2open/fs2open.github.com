@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:08  mharris
  * got some stuff to compile
  *
@@ -205,26 +208,26 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "systemvars.h"
-#include "cmeasure.h"
-#include "freespace.h"
-#include "vecmat.h"
-#include "2d.h"
-#include "3d.h"
-#include "model.h"
-#include "physics.h"
-#include "floating.h"
-#include "model.h"
-#include "ship.h"
-#include "timer.h"
-#include "fireballs.h"
-#include "radar.h"
-#include "missionparse.h"		// For MAX_SPECIES_NAMES
-#include "gamesnd.h"
-#include "objectsnd.h"
-#include "sound.h"
-#include "staticrand.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
+#include "cmeasure/cmeasure.h"
+#include "freespace2/freespace.h"
+#include "math/vecmat.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "model/model.h"
+#include "physics/physics.h"
+#include "math/floating.h"
+#include "model/model.h"
+#include "ship/ship.h"
+#include "io/timer.h"
+#include "fireball/fireballs.h"
+#include "radar/radar.h"
+#include "mission/missionparse.h"		// For MAX_SPECIES_NAMES
+#include "gamesnd/gamesnd.h"
+#include "object/objectsnd.h"
+#include "sound/sound.h"
+#include "math/staticrand.h"
 
 cmeasure_info Cmeasure_info[MAX_CMEASURE_TYPES];
 cmeasure Cmeasures[MAX_CMEASURES];

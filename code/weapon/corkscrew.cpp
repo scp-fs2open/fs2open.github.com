@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Corkscrew.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:11 $
  * $Author: penguin $
  *
  * C module for managing corkscrew missiles
@@ -18,12 +18,12 @@
  * $NoKeywords: $
  */
 
-#include "corkscrew.h"
-#include "weapon.h"
-#include "ship.h"
-#include "timer.h"
-#include "freespace.h"	// for Missiontime
-#include "trails.h"
+#include "weapon/corkscrew.h"
+#include "weapon/weapon.h"
+#include "ship/ship.h"
+#include "io/timer.h"
+#include "freespace2/freespace.h"	// for Missiontime
+#include "weapon/trails.h"
 
 // corkscrew structure flags
 #define CS_FLAG_USED						(1<<0)		// this structure is in use

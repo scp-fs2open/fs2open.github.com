@@ -17,7 +17,7 @@
 #endif
 
 #include <float.h>
-#include "vddraw.h"
+#include "directx/vddraw.h"
 
 #pragma pack(4)
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -91,26 +94,26 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "barracks.h"
-#include "managepilot.h"
-#include "ui.h"
-#include "font.h"
-#include "key.h"
-#include "gamesnd.h"
-#include "osapi.h"
-#include "popup.h"
-#include "playermenu.h"
-#include "gamesequence.h"
-#include "contexthelp.h"
-#include "2d.h"
+#include "globalincs/pstypes.h"
+#include "menuui/barracks.h"
+#include "playerman/managepilot.h"
+#include "ui/ui.h"
+#include "graphics/font.h"
+#include "io/key.h"
+#include "gamesnd/gamesnd.h"
+#include "osapi/osapi.h"
+#include "popup/popup.h"
+#include "menuui/playermenu.h"
+#include "gamesequence/gamesequence.h"
+#include "gamehelp/contexthelp.h"
+#include "graphics/2d.h"
 #include "ctype.h"
-#include "freespace.h"
-#include "systemvars.h"
-#include "bmpman.h"
-#include "mouse.h"
-#include "osregistry.h"
-#include "alphacolors.h"
+#include "freespace2/freespace.h"
+#include "globalincs/systemvars.h"
+#include "bmpman/bmpman.h"
+#include "io/mouse.h"
+#include "osapi/osregistry.h"
+#include "globalincs/alphacolors.h"
 
 void delete_pilot_file( char *pilot_name, int single );		// manage_pilot.cpp
 

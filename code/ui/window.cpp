@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/WINDOW.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * Routines to handle UI windows.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -127,19 +130,19 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "osapi.h"
-#include "uidefs.h"
-#include "ui.h"
-#include "freespace.h"
-#include "bmpman.h"
-#include "palman.h"
-#include "parselo.h"
-#include "timer.h"
-#include "alphacolors.h"
-#include "font.h"
-#include "localize.h"
-#include "cmdline.h"
+#include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
+#include "ui/uidefs.h"
+#include "ui/ui.h"
+#include "freespace2/freespace.h"
+#include "bmpman/bmpman.h"
+#include "palman/palman.h"
+#include "parse/parselo.h"
+#include "io/timer.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
+#include "localization/localize.h"
+#include "cmdline/cmdline.h"
 
 // global xstr colors
 color *Xstr_colors[UI_NUM_XSTR_COLORS][3] = {

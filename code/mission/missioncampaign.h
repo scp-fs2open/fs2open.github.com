@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -258,11 +261,11 @@
 #ifndef _MISSION_CAMPAIGN_H
 #define _MISSION_CAMPAIGN_H
 
-#include "parselo.h"
-#include "cfile.h"
-#include "ship.h"
-#include "weapon.h"
-#include "scoring.h"
+#include "parse/parselo.h"
+#include "cfile/cfile.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
+#include "stats/scoring.h"
 
 // name of the builtin campaign.
 #if defined(FS2_DEMO)

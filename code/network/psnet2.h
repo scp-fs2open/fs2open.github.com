@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.h $
- * $Revision: 2.3 $
- * $Date: 2002-07-26 16:12:05 $
+ * $Revision: 2.4 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * Header file for the application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/07/26 16:12:05  penguin
+ * fixed bug where winsock.h wasn't defined
+ *
  * Revision 2.2  2002/07/22 01:22:26  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -63,7 +66,7 @@
 #ifndef _PSNET2_H
 #define _PSNET2_H
 
-#include "pstypes.h"
+#include "globalincs/pstypes.h"
 
 #ifdef _WIN32
 #include <winsock.h>

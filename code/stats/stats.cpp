@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-29 20:12:31 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/29 20:12:31  penguin
+ * added #ifdef _WIN32 around windows-specific system headers
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -191,19 +194,19 @@
 #include <winsock.h>
 #endif
 
-#include "freespace.h"
-#include "gamesequence.h"
-#include "key.h"
-#include "2d.h"
-#include "ui.h"
-#include "timer.h"
-#include "player.h"
-#include "stats.h"
-#include "hud.h"
-#include "font.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "io/key.h"
+#include "graphics/2d.h"
+#include "ui/ui.h"
+#include "io/timer.h"
+#include "playerman/player.h"
+#include "stats/stats.h"
+#include "hud/hud.h"
+#include "graphics/font.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
+#include "network/multi.h"
 #endif
 
 #define MISSION_STATS_START_Y 80

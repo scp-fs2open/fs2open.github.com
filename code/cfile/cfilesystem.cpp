@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-29 19:52:48 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/29 19:52:48  penguin
+ * added #ifdef _WIN32 around windows-specific system headers
+ *
  * Revision 2.1  2002/07/07 19:55:58  penguin
  * Back-port to MSVC
  *
@@ -120,10 +123,10 @@
 #include <sys/stat.h>
 #endif
 
-#include "pstypes.h"
-#include "cfile.h"
-#include "cfilesystem.h"
-#include "localize.h"
+#include "globalincs/pstypes.h"
+#include "cfile/cfile.h"
+#include "cfile/cfilesystem.h"
+#include "localization/localize.h"
 
 #define CF_ROOTTYPE_PATH 0
 #define CF_ROOTTYPE_PACK 1

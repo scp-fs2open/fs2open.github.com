@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pause.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-22 01:22:25 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/22 01:22:25  penguin
+ * Linux port -- added NO_STANDALONE ifdefs
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -113,24 +116,24 @@
  */
 
 #include <windows.h>
-#include "chatbox.h"
-#include "ui.h"
-#include "freespace.h"
-#include "key.h"
-#include "popup.h"
-#include "gamesequence.h"
-#include "stand_gui.h"
-#include "gamesnd.h"
-#include "multiutil.h"
-#include "multiui.h"
-#include "multimsgs.h"
-#include "multi_pause.h"
-#include "multi_endgame.h"
-#include "multi_pmsg.h"
-#include "multi.h"
-#include "alphacolors.h"
-#include "timer.h"
-#include "osapi.h"
+#include "missionui/chatbox.h"
+#include "ui/ui.h"
+#include "freespace2/freespace.h"
+#include "io/key.h"
+#include "popup/popup.h"
+#include "gamesequence/gamesequence.h"
+#include "network/stand_gui.h"
+#include "gamesnd/gamesnd.h"
+#include "network/multiutil.h"
+#include "network/multiui.h"
+#include "network/multimsgs.h"
+#include "network/multi_pause.h"
+#include "network/multi_endgame.h"
+#include "network/multi_pmsg.h"
+#include "network/multi.h"
+#include "globalincs/alphacolors.h"
+#include "io/timer.h"
+#include "osapi/osapi.h"
 
 // ----------------------------------------------------------------------------------
 // PAUSE DEFINES/VARS

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/10 20:42:43  mharris
  * use "ifndef NO_NETWORK" all over the place
  *
@@ -263,29 +266,29 @@
  * $NoKeywords: $
  */
 
-#include "asteroid.h"
-#include "object.h"
-#include "objcollide.h"
-#include "freespace.h"
-#include "timer.h"
-#include "3d.h"
-#include "fireballs.h"
-#include "gamesnd.h"
-#include "bmpman.h"
-#include "particle.h"
-#include "linklist.h"
-#include "hudescort.h"
-#include "shiphit.h"
-#include "staticrand.h"
-#include "systemvars.h"
-#include "localize.h"
-#include "scoring.h"
-#include "hudtarget.h"
+#include "asteroid/asteroid.h"
+#include "object/object.h"
+#include "object/objcollide.h"
+#include "freespace2/freespace.h"
+#include "io/timer.h"
+#include "render/3d.h"
+#include "fireball/fireballs.h"
+#include "gamesnd/gamesnd.h"
+#include "bmpman/bmpman.h"
+#include "particle/particle.h"
+#include "globalincs/linklist.h"
+#include "hud/hudescort.h"
+#include "ship/shiphit.h"
+#include "math/staticrand.h"
+#include "globalincs/systemvars.h"
+#include "localization/localize.h"
+#include "stats/scoring.h"
+#include "hud/hudtarget.h"
 
 #ifndef NO_NETWORK
-#include "multiutil.h"
-#include "multimsgs.h"
-#include "multi.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
+#include "network/multi.h"
 #endif
 
 #ifndef FS2_DEMO

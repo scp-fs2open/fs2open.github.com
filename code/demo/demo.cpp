@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Demo/Demo.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:58 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:58  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -44,21 +47,21 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "demo.h"
-#include "missionload.h"
-#include "ship.h"
-#include "linklist.h"
-#include "freespace.h"
-#include "object.h"
-#include "timer.h"
-#include "gamesequence.h"
-#include "systemvars.h"
-#include "cfile.h"
-#include "missionmessage.h"
-#include "missionparse.h"
-#include "shipfx.h"
-#include "shiphit.h"
+#include "globalincs/pstypes.h"
+#include "demo/demo.h"
+#include "mission/missionload.h"
+#include "ship/ship.h"
+#include "globalincs/linklist.h"
+#include "freespace2/freespace.h"
+#include "object/object.h"
+#include "io/timer.h"
+#include "gamesequence/gamesequence.h"
+#include "globalincs/systemvars.h"
+#include "cfile/cfile.h"
+#include "mission/missionmessage.h"
+#include "mission/missionparse.h"
+#include "ship/shipfx.h"
+#include "ship/shiphit.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------
 // DEMO DEFINES/VARS

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/16 06:06:23  mharris
  * ifndef NO_JOYSTICK
  *
@@ -300,33 +303,33 @@
  *
 */
 
-#include "freespace.h"
-#include "controlsconfig.h"
-#include "gamesequence.h"
-#include "player.h"
-#include "2d.h"
-#include "hudsquadmsg.h"
-#include "key.h"
-#include "timer.h"
+#include "freespace2/freespace.h"
+#include "controlconfig/controlsconfig.h"
+#include "gamesequence/gamesequence.h"
+#include "playerman/player.h"
+#include "graphics/2d.h"
+#include "hud/hudsquadmsg.h"
+#include "io/key.h"
+#include "io/timer.h"
 #include "math.h"
-#include "mouse.h"
-#include "ui.h"
-#include "joy.h"
-#include "bmpman.h"
-#include "sound.h"
-#include "gamesnd.h"
-#include "missionscreencommon.h"
-#include "font.h"
-#include "hud.h"
-#include "managepilot.h"
-#include "contexthelp.h"
-#include "popup.h"
-#include "uidefs.h"
-#include "alphacolors.h"
+#include "io/mouse.h"
+#include "ui/ui.h"
+#include "io/joy.h"
+#include "bmpman/bmpman.h"
+#include "sound/sound.h"
+#include "gamesnd/gamesnd.h"
+#include "missionui/missionscreencommon.h"
+#include "graphics/font.h"
+#include "hud/hud.h"
+#include "playerman/managepilot.h"
+#include "gamehelp/contexthelp.h"
+#include "popup/popup.h"
+#include "ui/uidefs.h"
+#include "globalincs/alphacolors.h"
 
 #ifndef NO_NETWORK
-#include "multi_pmsg.h"
-#include "multiutil.h"
+#include "network/multi_pmsg.h"
+#include "network/multiutil.h"
 #endif
 
 #define NUM_SYSTEM_KEYS			14

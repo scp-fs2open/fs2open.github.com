@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -397,32 +400,32 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "hud.h"
-#include "hudmessage.h"
-#include "hudtarget.h"
-#include "freespace.h"
-#include "gamesequence.h"
-#include "2d.h"
-#include "key.h"
-#include "timer.h"
+#include "hud/hud.h"
+#include "hud/hudmessage.h"
+#include "hud/hudtarget.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "graphics/2d.h"
+#include "io/key.h"
+#include "io/timer.h"
 #include "math.h"
-#include "mouse.h"
-#include "winmidi.h"
-#include "player.h"
-#include "linklist.h"
-#include "missionlog.h"
-#include "ui.h"
-#include "missionscreencommon.h"
-#include "bmpman.h"
-#include "font.h"
-#include "gamesnd.h"
-#include "missiongoals.h"
-#include "alphacolors.h"
-#include "beam.h"
-#include "audiostr.h"
+#include "io/mouse.h"
+#include "sound/winmidi.h"
+#include "playerman/player.h"
+#include "globalincs/linklist.h"
+#include "mission/missionlog.h"
+#include "ui/ui.h"
+#include "missionui/missionscreencommon.h"
+#include "bmpman/bmpman.h"
+#include "graphics/font.h"
+#include "gamesnd/gamesnd.h"
+#include "mission/missiongoals.h"
+#include "globalincs/alphacolors.h"
+#include "weapon/beam.h"
+#include "sound/audiostr.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
+#include "network/multi.h"
 #endif
 
 /* replaced with those static ints that follow

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.5  2002/05/16 06:07:38  mharris
  * more ifndef NO_SOUND
  *
@@ -285,39 +288,39 @@
  */
 
 #include <limits.h>
-#include "freespace.h"
-#include "eventmusic.h"
-#include "key.h"
-#include "missionscreencommon.h"
-#include "missionshipchoice.h"
-#include "missionweaponchoice.h"
-#include "missionbrief.h"
-#include "timer.h"
-#include "sound.h"
-#include "gamesequence.h"
-#include "bmpman.h"
+#include "freespace2/freespace.h"
+#include "gamesnd/eventmusic.h"
+#include "io/key.h"
+#include "missionui/missionscreencommon.h"
+#include "missionui/missionshipchoice.h"
+#include "missionui/missionweaponchoice.h"
+#include "missionui/missionbrief.h"
+#include "io/timer.h"
+#include "sound/sound.h"
+#include "gamesequence/gamesequence.h"
+#include "bmpman/bmpman.h"
 // #include "movie.h"
-#include "gamesnd.h"
-#include "palman.h"
-#include "mouse.h"
-#include "contexthelp.h"
+#include "gamesnd/gamesnd.h"
+#include "palman/palman.h"
+#include "io/mouse.h"
+#include "gamehelp/contexthelp.h"
 #include "time.h"
-#include "joy.h"
-#include "cmdline.h"
-#include "linklist.h"
-#include "staticrand.h"	// for rand_alt()
-#include "popup.h"
-#include "hudwingmanstatus.h"
-#include "uidefs.h"
-#include "animplay.h"
+#include "io/joy.h"
+#include "cmdline/cmdline.h"
+#include "globalincs/linklist.h"
+#include "math/staticrand.h"	// for rand_alt()
+#include "popup/popup.h"
+#include "hud/hudwingmanstatus.h"
+#include "ui/uidefs.h"
+#include "anim/animplay.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "multiteamselect.h"
-#include "multi_endgame.h"
-#include "chatbox.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "network/multiteamselect.h"
+#include "network/multi_endgame.h"
+#include "missionui/chatbox.h"
 #endif
 
 //////////////////////////////////////////////////////////////////

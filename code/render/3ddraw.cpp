@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -165,17 +168,17 @@
  * $NoKeywords: $
  */
 
-#include "3dinternal.h"
-#include "tmapper.h"
-#include "scaler.h"
-#include "2d.h"
-#include "floating.h"
-#include "physics.h"		// For Physics_viewer_bank for g3_draw_rotated_bitmap
-#include "bmpman.h"
-#include "systemvars.h"
-#include "alphacolors.h"
+#include "render/3dinternal.h"
+#include "graphics/tmapper.h"
+#include "graphics/scaler.h"
+#include "graphics/2d.h"
+#include "math/floating.h"
+#include "physics/physics.h"		// For Physics_viewer_bank for g3_draw_rotated_bitmap
+#include "bmpman/bmpman.h"
+#include "globalincs/systemvars.h"
+#include "globalincs/alphacolors.h"
 
-#include "key.h"
+#include "io/key.h"
 
 //deal with a clipped line
 int must_clip_line(vertex *p0,vertex *p1,ubyte codes_or, uint flags)
@@ -989,7 +992,7 @@ float g3_draw_rotated_bitmap_area(vertex *pnt,float angle, float rad,uint tmap_f
 
 
 
-#include "2d.h"
+#include "graphics/2d.h"
 typedef struct horz_pt {
 	float x, y;
 	int edge;

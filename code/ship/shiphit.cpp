@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-07-29 20:48:51 $
+ * $Revision: 2.5 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/07/29 20:48:51  penguin
+ * Moved extern declaration of ssm_create outside of block (it wouldn't compile w/ gcc)
+ *
  * Revision 2.3  2002/07/29 08:19:41  DTP
  * Bumped MAX_SUBSYS_LIST from 32 to 200
  *
@@ -434,65 +437,65 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "object.h"
-#include "fvi.h"
-#include "physics.h"
-#include "vecmat.h"
-#include "ship.h"
-#include "model.h"
-#include "key.h"
-#include "weapon.h"
-#include "radar.h"
-#include "2d.h"
-#include "3d.h"
-#include "floating.h"
-#include "ai.h"
-#include "ailocal.h"
-#include "fireballs.h"
-#include "debris.h"
-#include "hud.h"
-#include "timer.h"
-#include "cfile.h"
-#include "missionlog.h"
-#include "missionparse.h"
-#include "bmpman.h"
-#include "joy.h"
-#include "joy_ff.h"
-#include "player.h"
-#include "parselo.h"
-#include "freespace.h"
-#include "sound.h"
-#include "linklist.h"
-#include "hudets.h"
-#include "hudtarget.h"
-#include "aigoals.h"
-#include "gamesnd.h"
-#include "eventmusic.h"
-#include "shipfx.h"
-#include "sexp.h"
-#include "gamesequence.h"
-#include "objectsnd.h"
-#include "cmeasure.h"
-#include "animplay.h"
-#include "controlsconfig.h"
-#include "afterburner.h"
-#include "shockwave.h"
-#include "hudsquadmsg.h"
-#include "swarm.h"
-#include "shiphit.h"
-#include "particle.h"
-#include "popup.h"
-#include "emp.h"
-#include "beam.h"
-#include "demo.h"
+#include "globalincs/pstypes.h"
+#include "object/object.h"
+#include "math/fvi.h"
+#include "physics/physics.h"
+#include "math/vecmat.h"
+#include "ship/ship.h"
+#include "model/model.h"
+#include "io/key.h"
+#include "weapon/weapon.h"
+#include "radar/radar.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "math/floating.h"
+#include "ship/ai.h"
+#include "ship/ailocal.h"
+#include "fireball/fireballs.h"
+#include "debris/debris.h"
+#include "hud/hud.h"
+#include "io/timer.h"
+#include "cfile/cfile.h"
+#include "mission/missionlog.h"
+#include "mission/missionparse.h"
+#include "bmpman/bmpman.h"
+#include "io/joy.h"
+#include "io/joy_ff.h"
+#include "playerman/player.h"
+#include "parse/parselo.h"
+#include "freespace2/freespace.h"
+#include "sound/sound.h"
+#include "globalincs/linklist.h"
+#include "hud/hudets.h"
+#include "hud/hudtarget.h"
+#include "ship/aigoals.h"
+#include "gamesnd/gamesnd.h"
+#include "gamesnd/eventmusic.h"
+#include "ship/shipfx.h"
+#include "parse/sexp.h"
+#include "gamesequence/gamesequence.h"
+#include "object/objectsnd.h"
+#include "cmeasure/cmeasure.h"
+#include "anim/animplay.h"
+#include "controlconfig/controlsconfig.h"
+#include "ship/afterburner.h"
+#include "weapon/shockwave.h"
+#include "hud/hudsquadmsg.h"
+#include "weapon/swarm.h"
+#include "ship/shiphit.h"
+#include "particle/particle.h"
+#include "popup/popup.h"
+#include "weapon/emp.h"
+#include "weapon/beam.h"
+#include "demo/demo.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multiutil.h"
-#include "multimsgs.h"
-#include "multi_respawn.h"
-#include "multi_pmsg.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
+#include "network/multi_respawn.h"
+#include "network/multi_pmsg.h"
 #endif
 
 //#pragma optimize("", off)

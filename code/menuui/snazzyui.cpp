@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/SnazzyUI.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  *  Code to drive the Snazzy User Interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -182,25 +185,25 @@
 
 #include <stdlib.h>
 
-#include "pstypes.h"
-#include "2d.h"
-#include "pcxutils.h"
-#include "key.h"
-#include "optionsmenu.h"	// need the #defines for the menu choices
-#include "techmenu.h"		// need the #defines for the menu choices
-#include "trainingmenu.h"	// need the #defines for the menu choices
-#include "font.h"
-#include "mouse.h"
-#include "snazzyui.h"
-#include "cfile.h"
-#include "hudconfig.h"
-#include "gamesequence.h"
-#include "hud.h"
-#include "sound.h"
-#include "gamesnd.h"
-#include "freespace.h"
-#include "alphacolors.h"
-#include "localize.h"
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
+#include "pcxutils/pcxutils.h"
+#include "io/key.h"
+#include "menuui/optionsmenu.h"	// need the #defines for the menu choices
+#include "menuui/techmenu.h"		// need the #defines for the menu choices
+#include "menuui/trainingmenu.h"	// need the #defines for the menu choices
+#include "graphics/font.h"
+#include "io/mouse.h"
+#include "menuui/snazzyui.h"
+#include "cfile/cfile.h"
+#include "hud/hudconfig.h"
+#include "gamesequence/gamesequence.h"
+#include "hud/hud.h"
+#include "sound/sound.h"
+#include "gamesnd/gamesnd.h"
+#include "freespace2/freespace.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
 
 
 extern int ascii_table[];

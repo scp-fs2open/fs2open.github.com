@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/09 23:02:57  mharris
  * Not using default values for audiostream functions, since they may
  * be macros (if NO_SOUND is defined)
@@ -144,35 +147,35 @@
  * $NoKeywords: $
  */
 
-#include "freespace.h"
-#include "ship.h"
-#include "key.h"
-#include "2d.h"
-#include "3d.h"
-#include "line.h"
-#include "timer.h"
+#include "freespace2/freespace.h"
+#include "ship/ship.h"
+#include "io/key.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "graphics/line.h"
+#include "io/timer.h"
 #include "math.h"
-#include "linklist.h"
-#include "mouse.h"
-#include "hud.h"
-#include "osapi.h"
-#include "object.h"
-#include "multi.h"
-#include "bmpman.h"
-#include "missionbrief.h"
-#include "missiongrid.h"
-#include "missionbriefcommon.h"
-#include "animplay.h"
-#include "fvi.h"
+#include "globalincs/linklist.h"
+#include "io/mouse.h"
+#include "hud/hud.h"
+#include "osapi/osapi.h"
+#include "object/object.h"
+#include "network/multi.h"
+#include "bmpman/bmpman.h"
+#include "missionui/missionbrief.h"
+#include "mission/missiongrid.h"
+#include "mission/missionbriefcommon.h"
+#include "anim/animplay.h"
+#include "math/fvi.h"
 #include "float.h"
-#include "gamesnd.h"
-#include "cmdline.h"
-#include "parselo.h"
-#include "audiostr.h"
-#include "missioncmdbrief.h"
-#include "missiondebrief.h"
-#include "alphacolors.h"
-#include "localize.h"
+#include "gamesnd/gamesnd.h"
+#include "cmdline/cmdline.h"
+#include "parse/parselo.h"
+#include "sound/audiostr.h"
+#include "missionui/missioncmdbrief.h"
+#include "missionui/missiondebrief.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
 
 // --------------------------------------------------------------------------------------
 // briefing icons

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/RBAudio.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * source file for redbook audio playback
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -56,7 +59,7 @@
 */
 
 #if 0
-#include "pstypes.h"
+#include "globalincs/pstypes.h"
 
 #include <windows.h>
 #include <mmsystem.h>
@@ -65,11 +68,11 @@
 #include <string.h>
 
 
-#include "monopub.h"
+#include "osapi/monopub.h"
 //#include "error.h"
-#include "rbaudio.h"
-#include "fix.h"
-#include "timer.h"
+#include "sound/rbaudio.h"
+#include "math/fix.h"
+#include "io/timer.h"
 //#include "winapp.h"
 
 

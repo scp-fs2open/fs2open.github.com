@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -208,9 +211,9 @@
 #ifndef _MISSIONMESSAGE_H
 #define _MISSIONMESSAGE_H
 
-#include "ship.h"
-#include "parselo.h"			// include so that we can gets defs for lengths of tokens
-#include "animplay.h"
+#include "ship/ship.h"
+#include "parse/parselo.h"			// include so that we can gets defs for lengths of tokens
+#include "anim/animplay.h"
 
 
 #define MAX_MISSION_MESSAGES	300

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/scramble/scramble.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Module for file scrambler
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -55,8 +58,8 @@
 #include <io.h>
 #include <string.h>
 
-#include "encrypt.h"
-#include "scramble.h"
+#include "parse/encrypt.h"
+#include "scramble/scramble.h"
 
 #define MAX_LINE_LEN	512
 

@@ -8,7 +8,7 @@
 #ifndef __DPLOBBY_INCLUDED__
 #define __DPLOBBY_INCLUDED__
 
-#include "vdplay.h"
+#include "directx/vdplay.h"
 
 #ifdef __cplusplus
 extern "C" {

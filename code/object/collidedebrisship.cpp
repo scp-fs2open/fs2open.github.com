@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -158,14 +161,14 @@
  */
 
 
-#include "objcollide.h"
-#include "ship.h"
-#include "debris.h"
-#include "player.h"
-#include "shiphit.h"
-#include "timer.h"
-#include "asteroid.h"
-#include "hud.h"
+#include "object/objcollide.h"
+#include "ship/ship.h"
+#include "debris/debris.h"
+#include "playerman/player.h"
+#include "ship/shiphit.h"
+#include "io/timer.h"
+#include "asteroid/asteroid.h"
+#include "hud/hud.h"
 
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 

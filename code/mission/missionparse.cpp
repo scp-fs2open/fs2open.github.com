@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * main upper level code for pasring stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/10 20:42:44  mharris
  * use "ifndef NO_NETWORK" all over the place
  *
@@ -322,60 +325,60 @@
 #include <stdarg.h>
 #include <setjmp.h>
 
-#include "freespace.h"
-#include "parselo.h"
-#include "missionparse.h"
-#include "missiongoals.h"
-#include "missionlog.h"
-#include "missionmessage.h"
-#include "sexp.h"
-#include "linklist.h"
-#include "timer.h"
-#include "ship.h"
-#include "ai.h"
-#include "aigoals.h"
-#include "player.h"
-#include "starfield.h"
-#include "bmpman.h"
-#include "lighting.h"
-#include "eventmusic.h"
-#include "missionbriefcommon.h"
-#include "shipfx.h"
-#include "debris.h"
-#include "cfile.h"
-#include "fireballs.h"
-#include "gamesnd.h"
-#include "gamesequence.h"
-#include "medals.h"
-#include "nebula.h"
-#include "palman.h"
-#include "hudets.h"
-#include "missionhotkey.h"
-#include "hudescort.h"
-#include "asteroid.h"
-#include "shiphit.h"
-#include "staticrand.h"
-#include "missioncmdbrief.h"
-#include "redalert.h"
-#include "hudwingmanstatus.h"
-#include "jumpnode.h"
-#include "localize.h"
-#include "neb.h"
-#include "demo.h"
-#include "neblightning.h"
-#include "fvi.h"
+#include "freespace2/freespace.h"
+#include "parse/parselo.h"
+#include "mission/missionparse.h"
+#include "mission/missiongoals.h"
+#include "mission/missionlog.h"
+#include "mission/missionmessage.h"
+#include "parse/sexp.h"
+#include "globalincs/linklist.h"
+#include "io/timer.h"
+#include "ship/ship.h"
+#include "ship/ai.h"
+#include "ship/aigoals.h"
+#include "playerman/player.h"
+#include "starfield/starfield.h"
+#include "bmpman/bmpman.h"
+#include "lighting/lighting.h"
+#include "gamesnd/eventmusic.h"
+#include "mission/missionbriefcommon.h"
+#include "ship/shipfx.h"
+#include "debris/debris.h"
+#include "cfile/cfile.h"
+#include "fireball/fireballs.h"
+#include "gamesnd/gamesnd.h"
+#include "gamesequence/gamesequence.h"
+#include "stats/medals.h"
+#include "starfield/nebula.h"
+#include "palman/palman.h"
+#include "hud/hudets.h"
+#include "mission/missionhotkey.h"
+#include "hud/hudescort.h"
+#include "asteroid/asteroid.h"
+#include "ship/shiphit.h"
+#include "math/staticrand.h"
+#include "missionui/missioncmdbrief.h"
+#include "missionui/redalert.h"
+#include "hud/hudwingmanstatus.h"
+#include "jumpnode/jumpnode.h"
+#include "localization/localize.h"
+#include "nebula/neb.h"
+#include "demo/demo.h"
+#include "nebula/neblightning.h"
+#include "math/fvi.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multiutil.h"
-#include "multimsgs.h"
-#include "multi_respawn.h"
-#include "multi_endgame.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
+#include "network/multi_respawn.h"
+#include "network/multi_endgame.h"
 #else
   // mharris FIXME: temp until I figure out if needed...
   //extern ushort netmisc_calc_checksum( void * vptr, int len );
   //extern ushort multi_assign_network_signature( int what_kind );
-  #include "multiutil.h"
+  #include "network/multiutil.h"
 #endif
 
 LOCAL struct {

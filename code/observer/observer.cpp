@@ -9,18 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Observer/Observer.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * $NoKeywords: $
  */
 
-#include "observer.h"
-#include "object.h"
-#include "vecmat.h"
-#include "systemvars.h"
-#include "player.h"
+#include "observer/observer.h"
+#include "object/object.h"
+#include "math/vecmat.h"
+#include "globalincs/systemvars.h"
+#include "playerman/player.h"
 
 observer Observers[MAX_OBSERVER_OBS];
 

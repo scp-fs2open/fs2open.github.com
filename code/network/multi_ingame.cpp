@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -298,43 +301,43 @@
 
 #include <limits.h>
 
-#include "ai.h"
-#include "object.h"
-#include "ship.h"
-#include "multi.h"
-#include "multiutil.h"
-#include "multimsgs.h"
-#include "multiui.h"
-#include "missionparse.h"
-#include "freespace.h"
-#include "gamesequence.h"
-#include "2d.h"
-#include "ui.h"
-#include "key.h"
-#include "gamesnd.h"
-#include "linklist.h"
-#include "multi_ingame.h"
-#include "missionscreencommon.h"
-#include "popup.h"
-#include "bmpman.h"
-#include "mouse.h"
-#include "multi_observer.h"
-#include "multi_xfer.h"
-#include "multi_kick.h"
-#include "missiongoals.h"
-#include "mainhallmenu.h"
-#include "stats.h"
-#include "multiteamselect.h"
-#include "missionweaponchoice.h"
-#include "multi_endgame.h"
-#include "hudescort.h"
-#include "hudshield.h"
-#include "objcollide.h"
-#include "missionhotkey.h"
-#include "multi_campaign.h"
-#include "multi_obj.h"
-#include "alphacolors.h"
-#include "timer.h"
+#include "ship/ai.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
+#include "network/multiui.h"
+#include "mission/missionparse.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "graphics/2d.h"
+#include "ui/ui.h"
+#include "io/key.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
+#include "network/multi_ingame.h"
+#include "missionui/missionscreencommon.h"
+#include "popup/popup.h"
+#include "bmpman/bmpman.h"
+#include "io/mouse.h"
+#include "network/multi_observer.h"
+#include "network/multi_xfer.h"
+#include "network/multi_kick.h"
+#include "mission/missiongoals.h"
+#include "menuui/mainhallmenu.h"
+#include "stats/stats.h"
+#include "network/multiteamselect.h"
+#include "missionui/missionweaponchoice.h"
+#include "network/multi_endgame.h"
+#include "hud/hudescort.h"
+#include "hud/hudshield.h"
+#include "object/objcollide.h"
+#include "mission/missionhotkey.h"
+#include "network/multi_campaign.h"
+#include "network/multi_obj.h"
+#include "globalincs/alphacolors.h"
+#include "io/timer.h"
 
 // --------------------------------------------------------------------------------------------------
 // DAVE's BIGASS INGAME JOIN WARNING/DISCLAIMER

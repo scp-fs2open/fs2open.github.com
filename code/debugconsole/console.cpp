@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/DebugConsole/Console.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Routines for managing the debug console window.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -101,14 +104,14 @@
 #include <setjmp.h>
 #include <string.h>
 
-#include "pstypes.h"
-#include "freespace.h"
-#include "font.h"
-#include "timer.h"
-#include "2d.h"
-#include "key.h"
-#include "alphacolors.h"
-#include "osapi.h"
+#include "globalincs/pstypes.h"
+#include "freespace2/freespace.h"
+#include "graphics/font.h"
+#include "io/timer.h"
+#include "graphics/2d.h"
+#include "io/key.h"
+#include "globalincs/alphacolors.h"
+#include "osapi/osapi.h"
 
 #define MAX_COMMANDS 300
 

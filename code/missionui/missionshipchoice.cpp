@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/10 20:42:44  mharris
  * use "ifndef NO_NETWORK" all over the place
  *
@@ -366,51 +369,51 @@
  *
 */
 
-#include "missionscreencommon.h"
-#include "missionshipchoice.h"
-#include "missionparse.h"
-#include "missionbrief.h"
-#include "freespace.h"
-#include "gamesequence.h"
-#include "ship.h"
-#include "key.h"
-#include "2d.h"
-#include "line.h"
-#include "3d.h"
-#include "model.h"
-#include "timer.h"
+#include "missionui/missionscreencommon.h"
+#include "missionui/missionshipchoice.h"
+#include "mission/missionparse.h"
+#include "missionui/missionbrief.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "ship/ship.h"
+#include "io/key.h"
+#include "graphics/2d.h"
+#include "graphics/line.h"
+#include "render/3d.h"
+#include "model/model.h"
+#include "io/timer.h"
 #include "math.h"
-#include "linklist.h"
-#include "mouse.h"
-#include "weapon.h"
-#include "ui.h"
-#include "ailocal.h"
-#include "player.h"
-#include "audiostr.h"
-#include "bmpman.h"
-#include "palman.h"
-#include "snazzyui.h"
-#include "animplay.h"
-#include "packunpack.h"
-#include "missionweaponchoice.h"
-#include "contexthelp.h"
-#include "gamesnd.h"
-#include "sound.h"
-#include "missionhotkey.h"
-#include "missionload.h"
-#include "eventmusic.h"
-#include "chatbox.h"
-#include "popup.h"
-#include "hudwingmanstatus.h"
-#include "alphacolors.h"
-#include "localize.h"
+#include "globalincs/linklist.h"
+#include "io/mouse.h"
+#include "weapon/weapon.h"
+#include "ui/ui.h"
+#include "ship/ailocal.h"
+#include "playerman/player.h"
+#include "sound/audiostr.h"
+#include "bmpman/bmpman.h"
+#include "palman/palman.h"
+#include "menuui/snazzyui.h"
+#include "anim/animplay.h"
+#include "anim/packunpack.h"
+#include "missionui/missionweaponchoice.h"
+#include "gamehelp/contexthelp.h"
+#include "gamesnd/gamesnd.h"
+#include "sound/sound.h"
+#include "mission/missionhotkey.h"
+#include "mission/missionload.h"
+#include "gamesnd/eventmusic.h"
+#include "missionui/chatbox.h"
+#include "popup/popup.h"
+#include "hud/hudwingmanstatus.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiui.h"
-#include "multiteamselect.h"
-#include "multiutil.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiui.h"
+#include "network/multiteamselect.h"
+#include "network/multiutil.h"
 #endif
 
 //////////////////////////////////////////////////////

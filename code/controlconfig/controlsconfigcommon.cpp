@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -372,10 +375,10 @@
  *
 */
 
-#include "controlsconfig.h"
-#include "key.h"
-#include "joy.h"
-#include "localize.h"
+#include "controlconfig/controlsconfig.h"
+#include "io/key.h"
+#include "io/joy.h"
+#include "localization/localize.h"
 
 #define TARGET_TAB			0
 #define SHIP_TAB				1

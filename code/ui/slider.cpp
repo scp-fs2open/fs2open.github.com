@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/slider.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * C++ file for controlling and displaying a horizontal slider
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -83,14 +86,14 @@
  */
 
 
-#include "uidefs.h"
-#include "ui.h"
-#include "timer.h"
+#include "ui/uidefs.h"
+#include "ui/ui.h"
+#include "io/timer.h"
 
-#include "missionscreencommon.h"
-#include "bmpman.h"
-#include "gamesnd.h"
-#include "alphacolors.h"
+#include "missionui/missionscreencommon.h"
+#include "bmpman/bmpman.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
 
 /// DOT_SLIDER class down here
 void UI_DOT_SLIDER_NEW::create(UI_WINDOW *wnd, int _x, int _y, int _num_pos, char *bm_slider, int slider_mask,

@@ -97,8 +97,8 @@ typedef struct IDirect3DViewport2	*LPDIRECT3DVIEWPORT2;
 
 #endif
 
-#include "vd3dtypes.h"
-#include "vd3dcaps.h"
+#include "directx/vd3dtypes.h"
+#include "directx/vd3dcaps.h"
 
 #ifdef __cplusplus
 extern "C" {

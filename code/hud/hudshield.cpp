@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-20 23:51:59 $
- * $Author: DTP $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:05 $
+ * $Author: penguin $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/20 23:51:59  DTP
+ * Bumped Max Shield Icons to 80
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -175,23 +178,23 @@
  * $NoKeywords: $
  */
 
-#include "2d.h"
-#include "object.h"
-#include "hud.h"
-#include "hudtarget.h"
-#include "hudtargetbox.h"
-#include "hudets.h"
-#include "player.h"
-#include "gamesnd.h"
-#include "freespace.h"
-#include "bmpman.h"
-#include "timer.h"
-#include "hudshield.h"
-#include "hudescort.h"
-#include "emp.h"
+#include "graphics/2d.h"
+#include "object/object.h"
+#include "hud/hud.h"
+#include "hud/hudtarget.h"
+#include "hud/hudtargetbox.h"
+#include "hud/hudets.h"
+#include "playerman/player.h"
+#include "gamesnd/gamesnd.h"
+#include "freespace2/freespace.h"
+#include "bmpman/bmpman.h"
+#include "io/timer.h"
+#include "hud/hudshield.h"
+#include "hud/hudescort.h"
+#include "weapon/emp.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
+#include "network/multi.h"
 #endif
 
 #define NUM_SHIELD_LEVELS		8

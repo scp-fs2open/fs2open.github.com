@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -111,22 +114,22 @@
  */
 
 
-#include	"pstypes.h"
-#include "eventmusic.h"
-#include "object.h"
-#include "ship.h"
-#include "linklist.h"
-#include "missionload.h"	/* for Builtin_mission_names[] */
-#include "missionparse.h"
-#include "timer.h"
-#include "freespace.h"
-#include "audiostr.h"
-#include "missioncampaign.h"
-#include "sound.h"
+#include	"globalincs/pstypes.h"
+#include "gamesnd/eventmusic.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "globalincs/linklist.h"
+#include "mission/missionload.h"	/* for Builtin_mission_names[] */
+#include "mission/missionparse.h"
+#include "io/timer.h"
+#include "freespace2/freespace.h"
+#include "sound/audiostr.h"
+#include "mission/missioncampaign.h"
+#include "sound/sound.h"
 #include "time.h"
-#include "cmdline.h"
-#include "missiongoals.h"
-#include "localize.h"
+#include "cmdline/cmdline.h"
+#include "mission/missiongoals.h"
+#include "localization/localize.h"
 
 #pragma optimize("", off)
 

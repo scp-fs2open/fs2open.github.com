@@ -38,12 +38,12 @@
 #undef INITGUIDS
 
 #include "sw_guid.hpp"
-#include "vdinput.h"
+#include "directx/vdinput.h"
 #include "sw_error.hpp"
 
 /*
 #include "sw_guid.h"
-#include "vdinput.h"
+#include "directx/vdinput.h"
 #include "sw_error.h"
 */
 

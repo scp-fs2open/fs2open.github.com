@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds3d.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:56:00 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * C file for interface to DirectSound3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:56:00  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -98,16 +101,16 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
+#include "globalincs/pstypes.h"
 #include <windows.h>
 #include <mmreg.h>
-#include "vdsound.h"
+#include "directx/vdsound.h"
 
-#include "ds3d.h"
-#include "ds.h"
-#include "channel.h"
-#include "sound.h"
-#include "object.h"
+#include "sound/ds3d.h"
+#include "sound/ds.h"
+#include "sound/channel.h"
+#include "sound/sound.h"
+#include "object/object.h"
 
 typedef enum 
 {

@@ -13,8 +13,8 @@
 #include <d3d8.h>
 #include <d3dx8.h>			// This is the Dx8.1 utility library. Automates some functions and
 							// provides the D3D_OVERLOADS functionality
-#include "2d.h"
-#include "grinternal.h"
+#include "graphics/2d.h"
+#include "graphics/grinternal.h"
 
 /*				!!! All of these need to be replaced with up to date versions
 extern LPDIRECTDRAW			lpDD1;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -184,27 +187,27 @@
  *
 */
 
-#include "2d.h"
+#include "graphics/2d.h"
 
-#include "hudreticle.h"
-#include "hud.h"
-#include "pixel.h"
+#include "hud/hudreticle.h"
+#include "hud/hud.h"
+#include "graphics/pixel.h"
 #include "math.h"
-#include "player.h"
-#include "ship.h"
-#include "freespace.h"
-#include "ai.h"
-#include "bmpman.h"
-#include "key.h"
-#include "timer.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "freespace2/freespace.h"
+#include "ship/ai.h"
+#include "bmpman/bmpman.h"
+#include "io/key.h"
+#include "io/timer.h"
 #include "math.h"
-#include "gamesnd.h"
-#include "hudtargetbox.h"
-#include "emp.h"
-#include "localize.h"
+#include "gamesnd/gamesnd.h"
+#include "hud/hudtargetbox.h"
+#include "weapon/emp.h"
+#include "localization/localize.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
+#include "network/multi.h"
 #endif
 
 static int Reticle_inited = 0;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -157,8 +160,8 @@
 #ifndef _FIREBALLS_H
 #define _FIREBALLS_H
 
-#include "object.h"
-#include "cfile.h"
+#include "object/object.h"
+#include "cfile/cfile.h"
 
 // these values correspond to the fireball.tbl entries
 #define FIREBALL_EXPLOSION_MEDIUM	0				// Used for the 4 little explosions before a ship explodes

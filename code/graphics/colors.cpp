@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Colors.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Functions to deal with colors & alphacolors
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/26 14:10:29  mharris
  * More testing
  *
@@ -175,13 +178,13 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "2d.h"
-#include "grinternal.h"
-#include "colors.h"
-#include "palman.h"
-#include "cfile.h"
-#include "systemvars.h"
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
+#include "graphics/grinternal.h"
+#include "graphics/colors.h"
+#include "palman/palman.h"
+#include "cfile/cfile.h"
+#include "globalincs/systemvars.h"
 
 //#define MAX_ALPHACOLORS 36
 #define MAX_ALPHACOLORS 256

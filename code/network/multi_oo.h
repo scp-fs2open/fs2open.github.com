@@ -10,12 +10,12 @@
 #ifndef _MULTIPLAYER_OBJECT_UPDATE_HEADER_FILE
 #define _MULTIPLAYER_OBJECT_UPDATE_HEADER_FILE
 
-#include "vecmat.h"
+#include "math/vecmat.h"
 
 #define OO_NEW
 
 #ifdef OO_NEW
-	#include "multi_obj.h"
+	#include "network/multi_obj.h"
 #else 
 
 // ---------------------------------------------------------------------------------------------------

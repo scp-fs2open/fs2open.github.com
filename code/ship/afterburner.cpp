@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/13 21:09:28  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -138,21 +141,21 @@
  * $NoKeywords: $
  */
 
-#include "afterburner.h"
-#include "key.h"
-#include "joy.h"
-#include "joy_ff.h"
-#include "gamesnd.h"
-#include "ship.h"
-#include "controlsconfig.h"
-#include "timer.h"
-#include "systemvars.h"
-#include "linklist.h"
-#include "multimsgs.h"
-#include "3d.h"			// needed for View_position, which is used when playing a 3D sound
-#include "hudets.h"
-#include "freespace.h"
-#include "multi.h"
+#include "ship/afterburner.h"
+#include "io/key.h"
+#include "io/joy.h"
+#include "io/joy_ff.h"
+#include "gamesnd/gamesnd.h"
+#include "ship/ship.h"
+#include "controlconfig/controlsconfig.h"
+#include "io/timer.h"
+#include "globalincs/systemvars.h"
+#include "globalincs/linklist.h"
+#include "network/multimsgs.h"
+#include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
+#include "hud/hudets.h"
+#include "freespace2/freespace.h"
+#include "network/multi.h"
 
 // ----------------------------------------------------------
 // Global to file

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapons.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:11 $
  * $Author: penguin $
  *
  * Code to handle the weapon systems
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -348,56 +351,56 @@
 
 #include <stdlib.h>
 
-#include "pstypes.h"
-#include "systemvars.h"
-#include "vecmat.h"
-#include "tmapper.h"
-#include "2d.h"
-#include "3d.h"
-#include "bmpman.h"
-#include "model.h"
-#include "key.h"
-#include "physics.h"
-#include "floating.h"
-#include "model.h"
-#include "lighting.h"
-#include "object.h"
-#include "weapon.h"
-#include "ship.h"
-#include "fireballs.h"
-#include "player.h"
-#include "hudtarget.h"
-#include "freespace.h"
-#include "radar.h"
-#include "ai.h"
-#include "sound.h"
-#include "linklist.h"
-#include "timer.h"
-#include "gamesnd.h"
-#include "cmeasure.h"
-#include "shockwave.h"
-#include "model.h"
-#include "staticrand.h"
-#include "swarm.h"
-#include "shiphit.h"
-#include "trails.h"
-#include "hud.h"
-#include "objcollide.h"
-#include "aibig.h"
-#include "particle.h"
-#include "asteroid.h"
-#include "joy_ff.h"
-#include "corkscrew.h"
-#include "emp.h"
-#include "localize.h"
-#include "flak.h"
-#include "muzzleflash.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
+#include "math/vecmat.h"
+#include "graphics/tmapper.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "bmpman/bmpman.h"
+#include "model/model.h"
+#include "io/key.h"
+#include "physics/physics.h"
+#include "math/floating.h"
+#include "model/model.h"
+#include "lighting/lighting.h"
+#include "object/object.h"
+#include "weapon/weapon.h"
+#include "ship/ship.h"
+#include "fireball/fireballs.h"
+#include "playerman/player.h"
+#include "hud/hudtarget.h"
+#include "freespace2/freespace.h"
+#include "radar/radar.h"
+#include "ship/ai.h"
+#include "sound/sound.h"
+#include "globalincs/linklist.h"
+#include "io/timer.h"
+#include "gamesnd/gamesnd.h"
+#include "cmeasure/cmeasure.h"
+#include "weapon/shockwave.h"
+#include "model/model.h"
+#include "math/staticrand.h"
+#include "weapon/swarm.h"
+#include "ship/shiphit.h"
+#include "weapon/trails.h"
+#include "hud/hud.h"
+#include "object/objcollide.h"
+#include "ship/aibig.h"
+#include "particle/particle.h"
+#include "asteroid/asteroid.h"
+#include "io/joy_ff.h"
+#include "weapon/corkscrew.h"
+#include "weapon/emp.h"
+#include "localization/localize.h"
+#include "weapon/flak.h"
+#include "weapon/muzzleflash.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "multi_obj.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "network/multi_obj.h"
 #endif
 
 #ifndef NDEBUG

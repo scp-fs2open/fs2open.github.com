@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -156,11 +159,11 @@
 #ifndef _AI_H
 #define _AI_H
 
-#include "pstypes.h"
-#include "object.h"
-#include "parselo.h"
-#include "cfile.h"
-#include "systemvars.h"
+#include "globalincs/pstypes.h"
+#include "object/object.h"
+#include "parse/parselo.h"
+#include "cfile/cfile.h"
+#include "globalincs/systemvars.h"
 
 #define	AI_DEFAULT_CLASS 3  // default AI class for new ships (Fred)
 
@@ -265,7 +268,7 @@ typedef struct ai_goals {
 
 } ai_goal;
 
-#include "ship.h"  // ai_goal must be declared before including this.
+#include "ship/ship.h"  // ai_goal must be declared before including this.
 
 #define	MAX_AI_CLASSES		10
 #define	MAX_GOAL_SHIP_NAMES	100

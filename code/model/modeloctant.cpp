@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -95,14 +98,14 @@
 
 #define MODEL_LIB
 
-#include "2d.h"
-#include "3d.h"
-#include "model.h"
-#include "tmapper.h"
-#include "floating.h"
-#include "fvi.h"
-#include "lighting.h"
-#include "modelsinc.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "model/model.h"
+#include "graphics/tmapper.h"
+#include "math/floating.h"
+#include "math/fvi.h"
+#include "lighting/lighting.h"
+#include "model/modelsinc.h"
 
 
 // returns 1 if a point is in an octant.

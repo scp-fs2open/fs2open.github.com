@@ -9,13 +9,16 @@
 
  /*
  * $Logfile: /Freespace2/code/Inetfile/inetgetfile.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * InternetGetFile Class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/08 02:35:09  mharris
  * porting
  *
@@ -46,11 +49,11 @@
 #include <direct.h>
 #include <string.h>
 
-#include "pstypes.h"
-#include "cftp.h"
-#include "chttpget.h"
+#include "globalincs/pstypes.h"
+#include "inetfile/cftp.h"
+#include "inetfile/chttpget.h"
 
-#include "inetgetfile.h"
+#include "inetfile/inetgetfile.h"
 
 #define INET_STATE_CONNECTING		1
 #define INET_STATE_ERROR			2

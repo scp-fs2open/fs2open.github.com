@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -224,30 +227,30 @@
  *
  */
 
-#include "gamesequence.h"
-#include "techmenu.h"
-#include "2d.h"
-#include "3d.h"
-#include "snazzyui.h"
-#include "managepilot.h"
-#include "key.h"
-#include "bmpman.h"
-#include "timer.h"
-#include "missioncampaign.h"
-#include "missionshipchoice.h"
-#include "freespace.h"
-#include "mainhallmenu.h"
-#include "missionscreencommon.h"
-#include "gamesnd.h"
-#include "font.h"
-#include "vecmat.h"
-#include "mouse.h"
-#include "uidefs.h"
-#include "contexthelp.h"
-#include "alphacolors.h"
-#include "animplay.h"
-#include "localize.h"
-#include "lighting.h"
+#include "gamesequence/gamesequence.h"
+#include "menuui/techmenu.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "menuui/snazzyui.h"
+#include "playerman/managepilot.h"
+#include "io/key.h"
+#include "bmpman/bmpman.h"
+#include "io/timer.h"
+#include "mission/missioncampaign.h"
+#include "missionui/missionshipchoice.h"
+#include "freespace2/freespace.h"
+#include "menuui/mainhallmenu.h"
+#include "missionui/missionscreencommon.h"
+#include "gamesnd/gamesnd.h"
+#include "graphics/font.h"
+#include "math/vecmat.h"
+#include "io/mouse.h"
+#include "ui/uidefs.h"
+#include "gamehelp/contexthelp.h"
+#include "globalincs/alphacolors.h"
+#include "anim/animplay.h"
+#include "localization/localize.h"
+#include "lighting/lighting.h"
 
 #define REVOLUTION_RATE	5.2f
 

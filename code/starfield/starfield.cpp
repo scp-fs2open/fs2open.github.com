@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/21 15:48:21  mharris
  * Changed "char *name" to "char name[]" since we modify the string (and
  * modifying a constant string breaks unix)
@@ -210,24 +213,24 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "floating.h"
-#include "vecmat.h"
-#include "3d.h"
-#include "2d.h"
-#include "starfield.h"
-#include "bmpman.h"
-#include "key.h"
-#include "freespace.h"	
-#include "timer.h"
-#include "nebula.h"
-#include "linklist.h"
-#include "lighting.h"
-#include "asteroid.h"
-#include "missionparse.h"
-#include "neb.h"
-#include "alphacolors.h"
-#include "supernova.h"
+#include "globalincs/pstypes.h"
+#include "math/floating.h"
+#include "math/vecmat.h"
+#include "render/3d.h"
+#include "graphics/2d.h"
+#include "starfield/starfield.h"
+#include "bmpman/bmpman.h"
+#include "io/key.h"
+#include "freespace2/freespace.h"	
+#include "io/timer.h"
+#include "starfield/nebula.h"
+#include "globalincs/linklist.h"
+#include "lighting/lighting.h"
+#include "asteroid/asteroid.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
+#include "globalincs/alphacolors.h"
+#include "starfield/supernova.h"
 
 #define MAX_DEBRIS_VCLIPS	4
 #define DEBRIS_ROT_MIN				10000
@@ -548,7 +551,7 @@ void stars_level_init()
 }
 
 
-#include "object.h"
+#include "object/object.h"
 extern object * Player_obj;
 
 #define STAR_AMOUNT_DEFAULT 0.75f

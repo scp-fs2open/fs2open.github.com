@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_observer.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -92,17 +95,17 @@
  * $NoKeywords: $
  */
 
-#include "freespace.h"
-#include "multi.h"
-#include "multiutil.h"
-#include "object.h"
-#include "observer.h"
-#include "hudconfig.h"
-#include "hudobserver.h"
-#include "managepilot.h"
-#include "multi_observer.h"
-#include "missionparse.h"
-#include "timer.h"
+#include "freespace2/freespace.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "object/object.h"
+#include "observer/observer.h"
+#include "hud/hudconfig.h"
+#include "hud/hudobserver.h"
+#include "playerman/managepilot.h"
+#include "network/multi_observer.h"
+#include "mission/missionparse.h"
+#include "io/timer.h"
 
 // ---------------------------------------------------------------------------------------
 // MULTI OBSERVER DEFINES/VARS

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -50,7 +53,7 @@
 #ifndef _FREESPACE_CUTSCENES_SCREEN_HEADER_FILE
 #define _FREESPACE_CUTSCENES_SCREEN_HEADER_FILE
 
-#include "parselo.h"
+#include "parse/parselo.h"
 
 #define MAX_CUTSCENES	10
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/10 06:08:08  mharris
  * Porting... added ifndef NO_SOUND
  *
@@ -320,8 +323,8 @@
 #ifndef __GAMESND_H__
 #define __GAMESND_H__
 
-#include "sound.h"
-#include "missionparse.h"
+#include "sound/sound.h"
+#include "mission/missionparse.h"
 
 #ifndef NO_SOUND
 

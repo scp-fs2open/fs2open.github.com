@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/13 21:09:28  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -424,37 +427,37 @@
  * $NoKeywords: $
 */
 
-#include "pstypes.h"
-#include "physics.h"
-#include "key.h"
-#include "joy.h"
-#include "joy_ff.h"
-#include "mouse.h"
-#include "fix.h"
-#include "floating.h"
-#include "object.h"
-#include "player.h"
-#include "hud.h"
-#include "hudtarget.h"
-#include "hudtargetbox.h"
-#include "ship.h"
-#include "freespace.h"
-#include "controlsconfig.h"
-#include "sound.h"
-#include "gamesnd.h"
-#include "missionshipchoice.h"
-#include "afterburner.h"
-#include "timer.h"
-#include "gamesequence.h"
-#include "missionmessage.h"
-#include "linklist.h"
-#include "missiongoals.h"
-#include "hudsquadmsg.h"
-#include "observer.h"
+#include "globalincs/pstypes.h"
+#include "physics/physics.h"
+#include "io/key.h"
+#include "io/joy.h"
+#include "io/joy_ff.h"
+#include "io/mouse.h"
+#include "math/fix.h"
+#include "math/floating.h"
+#include "object/object.h"
+#include "playerman/player.h"
+#include "hud/hud.h"
+#include "hud/hudtarget.h"
+#include "hud/hudtargetbox.h"
+#include "ship/ship.h"
+#include "freespace2/freespace.h"
+#include "controlconfig/controlsconfig.h"
+#include "sound/sound.h"
+#include "gamesnd/gamesnd.h"
+#include "missionui/missionshipchoice.h"
+#include "ship/afterburner.h"
+#include "io/timer.h"
+#include "gamesequence/gamesequence.h"
+#include "mission/missionmessage.h"
+#include "globalincs/linklist.h"
+#include "mission/missiongoals.h"
+#include "hud/hudsquadmsg.h"
+#include "observer/observer.h"
 
 #ifndef NO_NETWORK
-#include "multiutil.h"
-#include "multi_obj.h"
+#include "network/multiutil.h"
+#include "network/multi_obj.h"
 #endif
 
 ////////////////////////////////////////////////////////////

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Tmapper.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Routines to draw a texture map.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -283,15 +286,15 @@
 #include <conio.h>
 #include <stdlib.h>
 
-#include "2d.h"
-#include "grinternal.h"
-#include "3d.h"
-#include "tmapper.h"
-#include "bmpman.h"
-#include "tmapscanline.h"
-#include "key.h"
-#include "floating.h"
-#include "palman.h"
+#include "graphics/2d.h"
+#include "graphics/grinternal.h"
+#include "render/3d.h"
+#include "graphics/tmapper.h"
+#include "bmpman/bmpman.h"
+#include "graphics/tmapscanline.h"
+#include "io/key.h"
+#include "math/floating.h"
+#include "palman/palman.h"
 
 typedef void (* pscanline)();
 

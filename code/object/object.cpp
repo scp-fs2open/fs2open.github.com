@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/13 21:43:38  mharris
  * A little more network and sound cleanup
  *
@@ -409,40 +412,40 @@
 #include <string.h>	// for memset
 #include <stdio.h>
 
-#include "pstypes.h"
-#include "object.h"
-#include "weapon.h"
-#include "ship.h"
-#include "fireballs.h"
-#include "debris.h"
-#include "fvi.h"
-#include "physics.h"
-#include "model.h"
-#include "linklist.h"
-#include "freespace.h"
-#include	"ai.h"
-#include "objectsnd.h"
-#include "gamesnd.h"
-#include "player.h"
-#include "cmeasure.h"
-#include "timer.h"
-#include "systemvars.h"
-#include "3d.h"
-#include "shockwave.h"
-#include "afterburner.h"
-#include "timer.h"
-#include "multi.h"
-#include "multiutil.h"
-#include "objcollide.h"
-#include "lighting.h"
-#include "observer.h"
-#include "asteroid.h"
-#include "radar.h"
-#include "jumpnode.h"
-#include "neb.h"
-#include "beam.h"
-#include "swarm.h"
-#include "demo.h"
+#include "globalincs/pstypes.h"
+#include "object/object.h"
+#include "weapon/weapon.h"
+#include "ship/ship.h"
+#include "fireball/fireballs.h"
+#include "debris/debris.h"
+#include "math/fvi.h"
+#include "physics/physics.h"
+#include "model/model.h"
+#include "globalincs/linklist.h"
+#include "freespace2/freespace.h"
+#include	"ship/ai.h"
+#include "object/objectsnd.h"
+#include "gamesnd/gamesnd.h"
+#include "playerman/player.h"
+#include "cmeasure/cmeasure.h"
+#include "io/timer.h"
+#include "globalincs/systemvars.h"
+#include "render/3d.h"
+#include "weapon/shockwave.h"
+#include "ship/afterburner.h"
+#include "io/timer.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "object/objcollide.h"
+#include "lighting/lighting.h"
+#include "observer/observer.h"
+#include "asteroid/asteroid.h"
+#include "radar/radar.h"
+#include "jumpnode/jumpnode.h"
+#include "nebula/neb.h"
+#include "weapon/beam.h"
+#include "weapon/swarm.h"
+#include "demo/demo.h"
 
 /*
  *  Global variables

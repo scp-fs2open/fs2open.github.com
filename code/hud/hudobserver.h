@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDObserver.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * $NoKeywords: $
@@ -20,7 +20,7 @@
 #ifndef _HUD_OBSERVER_FILE
 #define _HUD_OBSERVER_FILE
 
-#include "hud.h"
+#include "hud/hud.h"
 
 // prototypes
 struct ship;

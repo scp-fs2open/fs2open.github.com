@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-15 02:11:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:10 $
+ * $Author: penguin $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/15 02:11:00  wmcoolmon
+ * Added support for toggling ship trails
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -44,15 +47,15 @@
  * $NoKeywords: $
  */
 
-#include "shipcontrails.h"
-#include "object.h"
-#include "ship.h"
-#include "linklist.h"
-#include "3d.h"
-#include "alphacolors.h"
-#include "trails.h"
-#include "bmpman.h"
-#include "missionparse.h"
+#include "ship/shipcontrails.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "globalincs/linklist.h"
+#include "render/3d.h"
+#include "globalincs/alphacolors.h"
+#include "weapon/trails.h"
+#include "bmpman/bmpman.h"
+#include "mission/missionparse.h"
 
 // ----------------------------------------------------------------------------------------------
 // CONTRAIL DEFINES/VARS

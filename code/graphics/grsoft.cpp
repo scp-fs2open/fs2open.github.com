@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrSoft.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Code for our software renderer using standard Win32 functions.  (Dibsections, etc)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -364,31 +367,31 @@
 #include <windows.h>
 #include <windowsx.h>
 
-#include "osapi.h"
-#include "2d.h"
-#include "bmpman.h"
-#include "key.h"
-#include "floating.h"
-#include "palman.h"
-#include "grsoft.h"
-#include "grinternal.h"
+#include "osapi/osapi.h"
+#include "graphics/2d.h"
+#include "bmpman/bmpman.h"
+#include "io/key.h"
+#include "math/floating.h"
+#include "palman/palman.h"
+#include "graphics/grsoft.h"
+#include "graphics/grinternal.h"
 
 // Headers for 2d functions
-#include "pixel.h"
-#include "line.h"
-#include "scaler.h"
-#include "tmapper.h"
-#include "circle.h"
-#include "shade.h"
-#include "rect.h"
-#include "gradient.h"
-#include "pcxutils.h"
-#include "osapi.h"
-#include "mouse.h"
-#include "font.h"
-#include "timer.h"
-#include "colors.h"
-#include "bitblt.h"
+#include "graphics/pixel.h"
+#include "graphics/line.h"
+#include "graphics/scaler.h"
+#include "graphics/tmapper.h"
+#include "graphics/circle.h"
+#include "graphics/shade.h"
+#include "graphics/rect.h"
+#include "graphics/gradient.h"
+#include "pcxutils/pcxutils.h"
+#include "osapi/osapi.h"
+#include "io/mouse.h"
+#include "graphics/font.h"
+#include "io/timer.h"
+#include "graphics/colors.h"
+#include "graphics/bitblt.h"
 
 #ifdef _WIN32
  // Windows specific

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -172,19 +175,19 @@
 #define VC_EXTRALEAN
 #define STRICT
 
-#include "pstypes.h"
+#include "globalincs/pstypes.h"
 
 #include <windows.h>
 #include <mmsystem.h>
 #include <mmreg.h>
 #include <msacm.h>
-#include "vdsound.h"
-#include "audiostr.h"
-#include "cfile.h"		// needed for cf_get_path
-#include "timer.h"
-#include "sound.h"		/* for Snd_sram */
-#include "acm.h"
-#include "ds.h"
+#include "directx/vdsound.h"
+#include "sound/audiostr.h"
+#include "cfile/cfile.h"		// needed for cf_get_path
+#include "io/timer.h"
+#include "sound/sound.h"		/* for Snd_sram */
+#include "sound/acm.h"
+#include "sound/ds.h"
 
 // Constants
 #ifndef SUCCESS

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.2 $
- * $Date: 2002-07-22 01:04:37 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/22 01:04:37  penguin
+ * took out GAME_CD_CHECK define
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -229,7 +232,7 @@
 #include <malloc.h>
 #include <string.h>
 
-#include "config.h"
+#include "windows_stub/config.h"
 
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
@@ -358,7 +361,7 @@ extern void _cdecl WinAssert(char * text,char *filename, int line);
 extern void _cdecl Error( char * filename, int line, char * format, ... );
 extern void _cdecl Warning( char * filename, int line, char * format, ... );
 
-#include "outwnd.h"
+#include "osapi/outwnd.h"
 
 // To debug printf do this:
 // mprintf(( "Error opening %s\n", filename ));
@@ -533,8 +536,8 @@ void dc_printf( char *format, ... );
 //======================================================================================
 
 
-#include "fix.h"
-#include "floating.h"
+#include "math/fix.h"
+#include "math/floating.h"
 
 // Some constants for stuff
 #ifdef _WIN32

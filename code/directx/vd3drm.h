@@ -10,8 +10,8 @@
 #ifndef __D3DRM_H__
 #define __D3DRM_H__
 
-#include "vddraw.h"
-#include "vd3drmobj.h"
+#include "directx/vddraw.h"
+#include "directx/vd3drmobj.h"
 
 #ifdef __cplusplus
 extern "C" {

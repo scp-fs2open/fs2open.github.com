@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:08  mharris
  * got some stuff to compile
  *
@@ -321,24 +324,24 @@
 
 #include <stdlib.h>
 
-#include "vecmat.h"
-#include "tmapper.h"
-#include "2d.h"
-#include "3d.h"
-#include "bmpman.h"
-#include "model.h"
-#include "key.h"
-#include "physics.h"
-#include "floating.h"
-#include "model.h"
-#include "lighting.h"
-#include "object.h"
-#include "ship.h"
-#include "systemvars.h"
-#include "fireballs.h"
-#include "linklist.h"
-#include "gamesnd.h"
-#include "localize.h"
+#include "math/vecmat.h"
+#include "graphics/tmapper.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "bmpman/bmpman.h"
+#include "model/model.h"
+#include "io/key.h"
+#include "physics/physics.h"
+#include "math/floating.h"
+#include "model/model.h"
+#include "lighting/lighting.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "globalincs/systemvars.h"
+#include "fireball/fireballs.h"
+#include "globalincs/linklist.h"
+#include "gamesnd/gamesnd.h"
+#include "localization/localize.h"
 
 #define WARPHOLE_GROW_TIME		(1.5f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-07-29 08:05:20 $
- * $Author: DTP $
+ * $Revision: 2.4 $
+ * $Date: 2002-08-01 01:41:08 $
+ * $Author: penguin $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/07/29 08:05:20  DTP
+ * -almission(autoload mission) commandline arguement handling implemented
+ *
  * Revision 2.2  2002/07/28 15:07:43  DTP
  * FIX -stargame commandline arguement will now let you quit, a thing not possible before when using the startgame arguement
  *
@@ -444,57 +447,57 @@
 #include <arpa/inet.h>
 #endif
 
-#include "multi.h"
-#include "multiui.h"
-#include "multiutil.h"
-#include "multimsgs.h"
-#include "multi.h"
-#include "ui.h"
-#include "2d.h"
-#include "key.h"
-#include "timer.h"
-#include "gamesequence.h"
-#include "freespace.h"
-#include "contexthelp.h"
-#include "psnet.h"
-#include "player.h"
-#include "cfile.h"
-#include "ship.h"
-#include "missionshipchoice.h"
-#include "multi_xfer.h"
-#include "cmdline.h"
-#include "stand_gui.h"
-#include "linklist.h"
-#include "multiteamselect.h"
-#include "missioncampaign.h"
-#include "bmpman.h"
-#include "font.h"
-#include "mouse.h"
-#include "gamesnd.h"
-#include "chatbox.h"
-#include "popup.h"
-#include "missiondebrief.h"
-#include "multi_ingame.h"
-#include "multi_kick.h"
-#include "multi_data.h"
-#include "multi_campaign.h"
-#include "multi_team.h"
-#include "multi_pinfo.h"
-#include "multi_observer.h"
-#include "multi_voice.h"
-#include "multi_endgame.h"
-#include "managepilot.h"
-#include "stats.h"
-#include "object.h"
-#include "objcollide.h"
-#include "palman.h"
-#include "multi_pmsg.h"
-#include "multi_obj.h"
-#include "multi_log.h"
-#include "alphacolors.h"
-#include "animplay.h"
-#include "multi_dogfight.h"
-#include "missionpause.h"
+#include "network/multi.h"
+#include "network/multiui.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
+#include "network/multi.h"
+#include "ui/ui.h"
+#include "graphics/2d.h"
+#include "io/key.h"
+#include "io/timer.h"
+#include "gamesequence/gamesequence.h"
+#include "freespace2/freespace.h"
+#include "gamehelp/contexthelp.h"
+#include "network/psnet.h"
+#include "playerman/player.h"
+#include "cfile/cfile.h"
+#include "ship/ship.h"
+#include "missionui/missionshipchoice.h"
+#include "network/multi_xfer.h"
+#include "cmdline/cmdline.h"
+#include "network/stand_gui.h"
+#include "globalincs/linklist.h"
+#include "network/multiteamselect.h"
+#include "mission/missioncampaign.h"
+#include "bmpman/bmpman.h"
+#include "graphics/font.h"
+#include "io/mouse.h"
+#include "gamesnd/gamesnd.h"
+#include "missionui/chatbox.h"
+#include "popup/popup.h"
+#include "missionui/missiondebrief.h"
+#include "network/multi_ingame.h"
+#include "network/multi_kick.h"
+#include "network/multi_data.h"
+#include "network/multi_campaign.h"
+#include "network/multi_team.h"
+#include "network/multi_pinfo.h"
+#include "network/multi_observer.h"
+#include "network/multi_voice.h"
+#include "network/multi_endgame.h"
+#include "playerman/managepilot.h"
+#include "stats/stats.h"
+#include "object/object.h"
+#include "object/objcollide.h"
+#include "palman/palman.h"
+#include "network/multi_pmsg.h"
+#include "network/multi_obj.h"
+#include "network/multi_log.h"
+#include "globalincs/alphacolors.h"
+#include "anim/animplay.h"
+#include "network/multi_dogfight.h"
+#include "missionui/missionpause.h"
 
 // -------------------------------------------------------------------------------------------------------------
 // 

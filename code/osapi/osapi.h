@@ -10,7 +10,7 @@
 #ifndef _OSAPI_H
 #define _OSAPI_H
 
-#include "pstypes.h"
+#include "globalincs/pstypes.h"
 
 
 // --------------------------------------------------------------------------------------------------

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-22 01:22:26 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/22 01:22:26  penguin
+ * Linux port -- added NO_STANDALONE ifdefs
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -327,41 +330,41 @@
 #include <fcntl.h>
 #include <stdarg.h>
 
-#include "vecmat.h"
-#include "tmapper.h"
-#include "2d.h"
-#include "3d.h"
-#include "model.h"
-#include "bmpman.h"
-#include "lighting.h"
-#include "linklist.h"
-#include "freespace.h"
+#include "math/vecmat.h"
+#include "graphics/tmapper.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "model/model.h"
+#include "bmpman/bmpman.h"
+#include "lighting/lighting.h"
+#include "globalincs/linklist.h"
+#include "freespace2/freespace.h"
 
-#include "stand_gui.h"
-#include "pstypes.h"
-#include "osapi.h"
-#include "key.h"
-#include "palman.h"
-#include "mouse.h"
-#include "outwnd.h"
-#include "2d.h"
-#include "cfile.h"
-#include "sound.h"
-#include "freespaceresource.h"
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "missiongoals.h"
-#include "systemvars.h"
-#include "cmdline.h"
-#include "multi_kick.h"
-#include "multi_pmsg.h"
-#include "chatbox.h"
-#include "multi_endgame.h"
-#include "gamesequence.h"
-#include "osregistry.h"
-#include "timer.h"
-#include "version.h"
+#include "network/stand_gui.h"
+#include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
+#include "io/key.h"
+#include "palman/palman.h"
+#include "io/mouse.h"
+#include "osapi/outwnd.h"
+#include "graphics/2d.h"
+#include "cfile/cfile.h"
+#include "sound/sound.h"
+#include "freespace2/freespaceresource.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "mission/missiongoals.h"
+#include "globalincs/systemvars.h"
+#include "cmdline/cmdline.h"
+#include "network/multi_kick.h"
+#include "network/multi_pmsg.h"
+#include "missionui/chatbox.h"
+#include "network/multi_endgame.h"
+#include "gamesequence/gamesequence.h"
+#include "osapi/osregistry.h"
+#include "io/timer.h"
+#include "globalincs/version.h"
 
 HANDLE Standalone_thread;
 DWORD Standalone_thread_id;

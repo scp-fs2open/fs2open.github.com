@@ -11,7 +11,7 @@
 #define __D3DRMDEFS_H__
 
 #include <stddef.h>
-#include "vd3dtypes.h"
+#include "directx/vd3dtypes.h"
 
 #ifdef _WIN32
 #define D3DRMAPI  __stdcall

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -79,26 +82,26 @@
  */
 
 #include <ctype.h>
-#include "2d.h"
-#include "font.h"
-#include "ui.h"
-#include "uidefs.h"
-#include "key.h"
-#include "bmpman.h"
-#include "gamesequence.h"
-#include "missioncampaign.h"
-#include "sound.h"
-#include "gamesnd.h"
-#include "missionscreencommon.h"
-#include "freespace.h"
-#include "missionparse.h"
-#include "player.h"
-#include "managepilot.h"
-#include "popup.h"
-#include "contexthelp.h"
-#include "cfilesystem.h"
-#include "freespace.h"
-#include "alphacolors.h"
+#include "graphics/2d.h"
+#include "graphics/font.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
+#include "io/key.h"
+#include "bmpman/bmpman.h"
+#include "gamesequence/gamesequence.h"
+#include "mission/missioncampaign.h"
+#include "sound/sound.h"
+#include "gamesnd/gamesnd.h"
+#include "missionui/missionscreencommon.h"
+#include "freespace2/freespace.h"
+#include "mission/missionparse.h"
+#include "playerman/player.h"
+#include "playerman/managepilot.h"
+#include "popup/popup.h"
+#include "gamehelp/contexthelp.h"
+#include "cfile/cfilesystem.h"
+#include "freespace2/freespace.h"
+#include "globalincs/alphacolors.h"
 
 #define MAX_MISSIONS	1024
 

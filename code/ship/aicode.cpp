@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-07-18 14:36:53 $
- * $Author: unknownplayer $
+ * $Revision: 2.7 $
+ * $Date: 2002-08-01 01:41:09 $
+ * $Author: penguin $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/07/18 14:36:53  unknownplayer
+ * no message
+ *
  * Revision 2.5  2002/07/18 09:55:26  unknownplayer
  *
  * Revised AI primary selection code again to be more intelligent.
@@ -434,58 +437,58 @@
 // ai slots and linking them to ships.
 
 //#include "config.h"
-#include "pstypes.h"
-#include "fix.h"
-#include "linklist.h"
-#include "object.h"
-#include "physics.h"
-#include "vecmat.h"
-#include "ship.h"
-#include "model.h"
-#include "2d.h"
-#include "3d.h"
-#include "ai.h"
-#include "floating.h"
-#include "player.h"
-#include "freespace.h"
-#include "weapon.h"
-#include "missiongoals.h"
-#include "missionlog.h"
-#include "timer.h"
-#include "sound.h"
-#include "aigoals.h"
-#include "gamesnd.h"
-#include "hudmessage.h"
-#include "missionmessage.h"
-#include "cmeasure.h"
-#include "staticrand.h"
-#include "afterburner.h"
-#include "hudets.h"
-#include "shipfx.h"
-#include "shiphit.h"
-#include "aibig.h"
-#include "hud.h"
-#include "objcollide.h"
-#include "asteroid.h"
-#include "hudlock.h"
-#include "missiontraining.h"
-#include "gamesequence.h"
-#include "joy_ff.h"
-#include "localize.h"
-#include "flak.h"
-#include "beam.h"
-#include "swarm.h"
-#include "awacs.h"
-#include "fvi.h"
+#include "globalincs/pstypes.h"
+#include "math/fix.h"
+#include "globalincs/linklist.h"
+#include "object/object.h"
+#include "physics/physics.h"
+#include "math/vecmat.h"
+#include "ship/ship.h"
+#include "model/model.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "ship/ai.h"
+#include "math/floating.h"
+#include "playerman/player.h"
+#include "freespace2/freespace.h"
+#include "weapon/weapon.h"
+#include "mission/missiongoals.h"
+#include "mission/missionlog.h"
+#include "io/timer.h"
+#include "sound/sound.h"
+#include "ship/aigoals.h"
+#include "gamesnd/gamesnd.h"
+#include "hud/hudmessage.h"
+#include "mission/missionmessage.h"
+#include "cmeasure/cmeasure.h"
+#include "math/staticrand.h"
+#include "ship/afterburner.h"
+#include "hud/hudets.h"
+#include "ship/shipfx.h"
+#include "ship/shiphit.h"
+#include "ship/aibig.h"
+#include "hud/hud.h"
+#include "object/objcollide.h"
+#include "asteroid/asteroid.h"
+#include "hud/hudlock.h"
+#include "mission/missiontraining.h"
+#include "gamesequence/gamesequence.h"
+#include "io/joy_ff.h"
+#include "localization/localize.h"
+#include "weapon/flak.h"
+#include "weapon/beam.h"
+#include "weapon/swarm.h"
+#include "ship/awacs.h"
+#include "math/fvi.h"
 
 #ifndef NO_NETWORK
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "multi_team.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "network/multi_team.h"
 #endif
 
   // still need this...
-  #include "multi.h"
+  #include "network/multi.h"
 
 
 #pragma optimize("", off)

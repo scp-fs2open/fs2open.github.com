@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -48,11 +51,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "pstypes.h"
-#include "tgautils.h"
-#include "cfile.h"
-#include "bmpman.h"
-#include "palman.h"
+#include "globalincs/pstypes.h"
+#include "tgautils/tgautils.h"
+#include "cfile/cfile.h"
+#include "bmpman/bmpman.h"
+#include "palman/palman.h"
 
 // -----------------
 //

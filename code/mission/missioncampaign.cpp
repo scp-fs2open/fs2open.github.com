@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-29 20:12:31 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/29 20:12:31  penguin
+ * added #ifdef _WIN32 around windows-specific system headers
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -192,25 +195,25 @@
 #include <glob.h>
 #endif
 
-#include "key.h"
-#include "ui.h"
-#include "missioncampaign.h"
-#include "gamesequence.h"
-#include "2d.h"
-#include "parselo.h"
-#include "missionload.h"
-#include "freespace.h"
-#include "sexp.h"
-#include "cfile.h"
-#include "player.h"
-#include "missiongoals.h"
+#include "io/key.h"
+#include "ui/ui.h"
+#include "mission/missioncampaign.h"
+#include "gamesequence/gamesequence.h"
+#include "graphics/2d.h"
+#include "parse/parselo.h"
+#include "mission/missionload.h"
+#include "freespace2/freespace.h"
+#include "parse/sexp.h"
+#include "cfile/cfile.h"
+#include "playerman/player.h"
+#include "mission/missiongoals.h"
 // #include "movie.h"
-#include "multi.h"
-#include "techmenu.h"
-#include "eventmusic.h"
-#include "alphacolors.h"
-#include "localize.h"
-#include "supernova.h"
+#include "network/multi.h"
+#include "menuui/techmenu.h"
+#include "gamesnd/eventmusic.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
+#include "starfield/supernova.h"
 
 // mission disk stuff
 #define CAMPAIGN_SAVEFILE_MAX_SHIPS_OLD						75

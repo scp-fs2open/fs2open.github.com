@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  * 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/10 20:42:44  mharris
  * use "ifndef NO_NETWORK" all over the place
  *
@@ -35,23 +38,23 @@
  * $NoKeywords: $
  */
 
-#include "missionpause.h"
-#include "ui.h"
-#include "popup.h"
-#include "2d.h"
-#include "bmpman.h"
-#include "key.h"
-#include "audiostr.h"
-#include "gamesequence.h"
-#include "freespace.h"
-#include "hud.h"
-#include "object.h"
-#include "font.h"
-#include "alphacolors.h"
-#include "beam.h"
+#include "missionui/missionpause.h"
+#include "ui/ui.h"
+#include "popup/popup.h"
+#include "graphics/2d.h"
+#include "bmpman/bmpman.h"
+#include "io/key.h"
+#include "sound/audiostr.h"
+#include "gamesequence/gamesequence.h"
+#include "freespace2/freespace.h"
+#include "hud/hud.h"
+#include "object/object.h"
+#include "graphics/font.h"
+#include "globalincs/alphacolors.h"
+#include "weapon/beam.h"
 
 #ifndef NO_NETWORK
-#include "multi_pause.h"
+#include "network/multi_pause.h"
 #endif
 
 // ----------------------------------------------------------------------------------------------------------------

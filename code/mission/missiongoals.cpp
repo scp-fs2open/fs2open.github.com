@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/13 21:43:38  mharris
  * A little more network and sound cleanup
  *
@@ -329,36 +332,36 @@
  *
 */
 
-#include "freespace.h"
-#include "object.h"
-#include "missiongoals.h"
-#include "missionparse.h"
-#include "missionlog.h"
-#include "missiontraining.h"
-#include "missionscreencommon.h"
-#include "gamesequence.h"
-#include "hud.h"
-#include "key.h"
-#include "2d.h"
-#include "timer.h"
-#include "linklist.h"
-#include "ship.h"
-#include "ai.h"
-#include "parselo.h"
-#include "sexp.h"
-#include "eventmusic.h"
-#include "stand_gui.h"
-#include "ui.h"
-#include "bmpman.h"
-#include "sound.h"
-#include "gamesnd.h"
-#include "alphacolors.h"
-#include "player.h"
+#include "freespace2/freespace.h"
+#include "object/object.h"
+#include "mission/missiongoals.h"
+#include "mission/missionparse.h"
+#include "mission/missionlog.h"
+#include "mission/missiontraining.h"
+#include "missionui/missionscreencommon.h"
+#include "gamesequence/gamesequence.h"
+#include "hud/hud.h"
+#include "io/key.h"
+#include "graphics/2d.h"
+#include "io/timer.h"
+#include "globalincs/linklist.h"
+#include "ship/ship.h"
+#include "ship/ai.h"
+#include "parse/parselo.h"
+#include "parse/sexp.h"
+#include "gamesnd/eventmusic.h"
+#include "network/stand_gui.h"
+#include "ui/ui.h"
+#include "bmpman/bmpman.h"
+#include "sound/sound.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "playerman/player.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multimsgs.h"
-#include "multi_team.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multi_team.h"
 #endif
 
 // timestamp stuff for evaluating mission goals

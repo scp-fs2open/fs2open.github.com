@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Bitblt.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Code to do software bitblt type stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:08  mharris
  * got some stuff to compile
  *
@@ -40,18 +43,18 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "osapi.h"
-#include "2d.h"
-#include "bmpman.h"
-#include "key.h"
-#include "floating.h"
-#include "palman.h"
-#include "grsoft.h"
-#include "grinternal.h"
+#include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
+#include "graphics/2d.h"
+#include "bmpman/bmpman.h"
+#include "io/key.h"
+#include "math/floating.h"
+#include "palman/palman.h"
+#include "graphics/grsoft.h"
+#include "graphics/grinternal.h"
 
 // Headers for 2d functions
-#include "bitblt.h"
+#include "graphics/bitblt.h"
 
 MONITOR( Num2dBitmaps );	
 

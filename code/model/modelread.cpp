@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-10 18:42:14 $
- * $Author: wmcoolmon $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:07 $
+ * $Author: penguin $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/10 18:42:14  wmcoolmon
+ * Added  Bobboau's glow code; all comments include "-Bobboau"
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -686,20 +689,20 @@
 
 #define MODEL_LIB
 
-#include "cfile.h"
-#include "model.h"
-#include "bmpman.h"
-#include "floating.h"
-#include "3d.h"
-#include "ship.h"
-#include "modelsinc.h"
-#include "key.h"
-#include "2d.h"
-#include "3dinternal.h"
-#include "linklist.h"
-#include "timer.h"
-#include "freespace.h"		// For flFrameTime
-#include "fvi.h"
+#include "cfile/cfile.h"
+#include "model/model.h"
+#include "bmpman/bmpman.h"
+#include "math/floating.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "model/modelsinc.h"
+#include "io/key.h"
+#include "graphics/2d.h"
+#include "render/3dinternal.h"
+#include "globalincs/linklist.h"
+#include "io/timer.h"
+#include "freespace2/freespace.h"		// For flFrameTime
+#include "math/fvi.h"
 
 #define MAX_SUBMODEL_COLLISION_ROT_ANGLE (PI / 6.0f)	// max 30 degrees per frame
 

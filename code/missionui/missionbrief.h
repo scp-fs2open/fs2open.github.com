@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Header file for code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -132,7 +135,7 @@
 #ifndef _MISSIONBRIEF_H
 #define _MISSIONBRIEF_H
 
-#include "ui.h"
+#include "ui/ui.h"
 
 // #defines to identify which screen we are on
 #define ON_BRIEFING_SELECT			1

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.6  2002/05/28 20:24:12  mharris
  * Changed alphacolor (in hud_auto_speed_match_icon) to static
  *
@@ -208,48 +211,48 @@
  * 
  */
 
-#include "hud.h"
-#include "hudlock.h"
-#include "hudtarget.h"
-#include "hudreticle.h"
-#include "object.h"
-#include "ship.h"
-#include "2d.h"
-#include "3d.h"
-#include "3dinternal.h"
-#include "line.h"
-#include "linklist.h"
-#include "model.h"
+#include "hud/hud.h"
+#include "hud/hudlock.h"
+#include "hud/hudtarget.h"
+#include "hud/hudreticle.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "render/3dinternal.h"
+#include "graphics/line.h"
+#include "globalincs/linklist.h"
+#include "model/model.h"
 #include "math.h"
-#include "weapon.h"
-#include "player.h"
-#include "freespace.h"	// for flFrametime
-#include "ai.h"
-#include "timer.h"
-#include "sound.h"
-#include "missionparse.h"
-#include "player.h"	// for MAX_PLAYERS
-#include "hudets.h"
-#include "hudbrackets.h"
-#include "gamesnd.h"
-#include "eventmusic.h"
-#include "debris.h"
-#include "missionmessage.h"
-#include "key.h"
-#include "ai.h"
-#include "hudtargetbox.h"
-#include "bmpman.h"
-#include "subsysdamage.h"
-#include "hudshield.h"
-#include "missionhotkey.h"
-#include "asteroid.h"
-#include "jumpnode.h"
-#include "multi.h"
-#include "emp.h"
-#include "alphacolors.h"
-#include "localize.h"
-#include "awacs.h"
-#include "hudartillery.h"
+#include "weapon/weapon.h"
+#include "playerman/player.h"
+#include "freespace2/freespace.h"	// for flFrametime
+#include "ship/ai.h"
+#include "io/timer.h"
+#include "sound/sound.h"
+#include "mission/missionparse.h"
+#include "playerman/player.h"	// for MAX_PLAYERS
+#include "hud/hudets.h"
+#include "hud/hudbrackets.h"
+#include "gamesnd/gamesnd.h"
+#include "gamesnd/eventmusic.h"
+#include "debris/debris.h"
+#include "mission/missionmessage.h"
+#include "io/key.h"
+#include "ship/ai.h"
+#include "hud/hudtargetbox.h"
+#include "bmpman/bmpman.h"
+#include "ship/subsysdamage.h"
+#include "hud/hudshield.h"
+#include "mission/missionhotkey.h"
+#include "asteroid/asteroid.h"
+#include "jumpnode/jumpnode.h"
+#include "network/multi.h"
+#include "weapon/emp.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
+#include "ship/awacs.h"
+#include "hud/hudartillery.h"
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);

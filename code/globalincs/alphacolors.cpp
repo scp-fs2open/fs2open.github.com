@@ -7,8 +7,8 @@
  *
 */ 
 
-#include "2d.h"
-#include "alphacolors.h"
+#include "graphics/2d.h"
+#include "globalincs/alphacolors.h"
 
 // -----------------------------------------------------------------------------------
 // ALPHA DEFINES/VARS

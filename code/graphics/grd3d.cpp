@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-30 14:29:15 $
- * $Author: unknownplayer $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:05 $
+ * $Author: penguin $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/30 14:29:15  unknownplayer
+ *
+ * Started work on DX8.1 implementation. Updated the project files to encompass
+ * the new files. Disable the compiler tag to use old DX code (THERE IS NO
+ * NEW CODE YET!)
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -185,24 +191,24 @@
 
 #include <math.h>
 
-#include "grd3dinternal.h"
+#include "graphics/grd3dinternal.h"
 
-#include "osapi.h"
-#include "2d.h"
-#include "bmpman.h"
-#include "key.h"
-#include "floating.h"
-#include "palman.h"
-#include "osregistry.h"
-#include "grd3d.h"
-#include "line.h"
-#include "font.h"
-#include "grinternal.h"
-#include "mouse.h"
-#include "alphacolors.h"
-#include "systemvars.h"
-#include "cfile.h"
-#include "cmdline.h"
+#include "osapi/osapi.h"
+#include "graphics/2d.h"
+#include "bmpman/bmpman.h"
+#include "io/key.h"
+#include "math/floating.h"
+#include "palman/palman.h"
+#include "osapi/osregistry.h"
+#include "graphics/grd3d.h"
+#include "graphics/line.h"
+#include "graphics/font.h"
+#include "graphics/grinternal.h"
+#include "io/mouse.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/systemvars.h"
+#include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 
 
 LPDIRECTDRAW			lpDD1 = NULL;
