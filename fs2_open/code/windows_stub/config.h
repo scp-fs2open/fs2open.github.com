@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.6 $
- * $Date: 2005-03-27 06:17:54 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-27 08:51:25 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/03/27 06:17:54  taylor
+ * fill in some stuff for timer and mmio calls, not 100% but it works ok
+ *
  * Revision 2.5  2005/01/30 18:32:42  taylor
  * merge with Linux/OSX tree - p0130
  * remove extra brace in cfile.cpp
@@ -238,7 +241,12 @@ typedef SDL_mutex* CRITICAL_SECTION;
 typedef timeval TIMEVAL;
 bool QueryPerformanceCounter(LARGE_INTEGER *pcount);
 
-SDL_TimerID timeSetEvent(DWORD uDelay, uint uResolution, DWORD *lpTimeProc,  DWORD *dwUser, uint fuEvent);
+// ummph, I need to do a better job with this
+#ifdef IAM_64BIT
+SDL_TimerID timeSetEvent(DWORD uDelay, uint uResolution, unsigned __int64 lpTimeProc,  DWORD *dwUser, uint fuEvent);
+#else
+SDL_TimerID timeSetEvent(DWORD uDelay, uint uResolution, unsigned int lpTimeProc,  DWORD *dwUser, uint fuEvent);
+#endif
 SDL_bool timeKillEvent(SDL_TimerID uTimerID);
 #define TIME_PERIODIC	0
 

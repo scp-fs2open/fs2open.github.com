@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.1 $
- * $Date: 2005-03-27 05:48:58 $
+ * $Revision: 1.2 $
+ * $Date: 2005-03-27 08:51:24 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/03/27 05:48:58  taylor
+ * initial import of OpenAL streaming (many thanks to Pierre Willenbrock for the missing parts)
+ *
  *
  * $NoKeywords: $
  */
@@ -49,7 +52,7 @@
 	int i = alGetError();			\
 	if (i != AL_NO_ERROR) {			\
 		while(i != AL_NO_ERROR) {	\
-			nprintf(("Warning", "%s/%s:%d - OpenAL error %s\n", __FUNCTION__, __FILE__, __LINE__, alGetString(i)));
+			nprintf(("Warning", "%s/%s:%d - OpenAL error %s\n", __FUNCTION__, __FILE__, __LINE__, alGetString(i)));	\
 			i = alGetError();	\
 		}				\
 		return onerr;	\
@@ -290,7 +293,7 @@ BOOL Timer::Create (UINT nPeriod, UINT nRes, DWORD dwUser, TIMERCALLBACK pfnCall
 	m_dwUser = dwUser;
 	m_pfnCallback = pfnCallback;
 
-	if ((m_nIDTimer = timeSetEvent (m_nPeriod, m_nRes, (DWORD *)TimeProc, (DWORD *)this, TIME_PERIODIC)) == NULL) {
+	if ((m_nIDTimer = timeSetEvent (m_nPeriod, m_nRes, (ptr_u)TimeProc, (DWORD *)this, TIME_PERIODIC)) == NULL) {
 	  bRtn = FAILURE;
 	}
 
