@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "..\Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /I "c:\mssdk\include\\" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENGL" /D "MORE_SPECIES" /U "_DEBUG" /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENGL" /D "MORE_SPECIES" /D "TIMERBAR_ON" /U "_DEBUG" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -638,17 +638,16 @@ SOURCE=.\Graphics\GrGlideTexture.cpp
 # Begin Group "D3D8Gr"
 
 # PROP Default_Filter ""
-# Begin Source File
+# Begin Group "Headers"
 
-SOURCE=.\Graphics\GrD3D.cpp
-# End Source File
+# PROP Default_Filter ""
 # Begin Source File
 
 SOURCE=.\Graphics\GrD3D.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\GrD3DBmpman.cpp
+SOURCE=.\graphics\grd3dbatch.h
 # End Source File
 # Begin Source File
 
@@ -656,19 +655,36 @@ SOURCE=.\graphics\GrD3DBmpman.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\GrD3DCalls.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\Graphics\GrD3DInternal.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\grd3dlight.cpp
+SOURCE=.\graphics\grd3dlight.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\grd3dlight.h
+SOURCE=.\graphics\grd3dsetup.h
+# End Source File
+# End Group
+# Begin Source File
+
+SOURCE=.\Graphics\GrD3D.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\grd3dbatch.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrD3DBmpman.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrD3DCalls.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\grd3dlight.cpp
 # End Source File
 # Begin Source File
 
@@ -677,10 +693,6 @@ SOURCE=.\Graphics\GrD3DRender.cpp
 # Begin Source File
 
 SOURCE=.\graphics\GrD3Dsetup.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\graphics\grd3dsetup.h
 # End Source File
 # Begin Source File
 

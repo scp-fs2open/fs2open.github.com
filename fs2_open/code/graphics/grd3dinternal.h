@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.12 $
- * $Date: 2003-11-01 21:59:21 $
- * $Author: bobboau $
+ * $Revision: 2.13 $
+ * $Date: 2003-11-06 21:10:26 $
+ * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/11/01 21:59:21  bobboau
+ * new matrix handeling code, and fixed some problems with 3D lit verts,
+ * several other small fixes
+ *
  * Revision 2.11  2003/10/24 17:35:05  randomtiger
  * Implemented support for 32bit TGA and JPG for D3D
  * Also 32 bit PCX, but it still has some bugs to be worked out
@@ -439,6 +443,7 @@ void d3d_lost_device();
 HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr);
 HRESULT d3d_SetVertexShader(int vertex_type);
 HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **buffer);
+int d3d_get_num_prims(int vertex_count, D3DPRIMITIVETYPE prim_type);
 
 // GrD3Dtexture
 void *d3d_lock_32_pcx(char *real_filename, float *u, float *v);

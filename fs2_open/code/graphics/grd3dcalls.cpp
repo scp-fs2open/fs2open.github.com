@@ -191,24 +191,9 @@ HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **bu
 		(IDirect3DVertexBuffer8**) buffer);
 }
 
-
-
-/**
- * This is a wrapper function for the D3D8.1 call DrawPrimitveUP, it also handles the vertex shader
- *
- * @param int vertex_type - This should be one of D3DVT_TLVERTEX, D3DVT_LVERTEX or D3DVT_VERTEX,
- * @param D3DPRIMITIVETYPE prim_type - Look at DX docs
- * @param LPVOID pvertices - Pointer to the vertex data, must match the vertex_type chosen 
- * @param DWORD vertex_count - Number of vertices in the array to render
- *
- * @return HRESULT - directx error code
- */
-HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pvertices, DWORD vertex_count)
+int d3d_get_num_prims(int vertex_count, D3DPRIMITIVETYPE prim_type)
 {
-	HRESULT hr;
-	Assert( vertex_type < D3DVT_MAX);
-	int prim_count = 0; 
-
+	int prim_count;
 	switch( prim_type)
 	{
 		case D3DPT_POINTLIST:
@@ -228,8 +213,59 @@ HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pv
 			prim_count = vertex_count - 2; 
 			break;
 		default:
-			mprintf(("Prim type not known, primitive will not be drawn"));
-			return !S_OK;
+			return -1;
+	}
+
+	return prim_count;
+}
+
+int d3d_get_num_vertex(int prim_count, D3DPRIMITIVETYPE prim_type)
+{
+	int vertex_count;
+	switch( prim_type)
+	{
+		case D3DPT_POINTLIST:
+			vertex_count = prim_count; 
+			break;
+		case D3DPT_LINELIST:       
+			vertex_count = prim_count * 2; 
+			break;
+		case D3DPT_LINESTRIP:      
+			vertex_count = prim_count + 1; 
+			break;
+		case D3DPT_TRIANGLELIST:   
+			vertex_count = prim_count * 3; 
+			break;
+		case D3DPT_TRIANGLESTRIP: 
+		case D3DPT_TRIANGLEFAN:    
+			vertex_count = prim_count + 2; 
+			break;
+		default:
+			return -1;
+	}
+
+	return vertex_count;
+}
+
+/**
+ * This is a wrapper function for the D3D8.1 call DrawPrimitveUP, it also handles the vertex shader
+ *
+ * @param int vertex_type - This should be one of D3DVT_TLVERTEX, D3DVT_LVERTEX or D3DVT_VERTEX,
+ * @param D3DPRIMITIVETYPE prim_type - Look at DX docs
+ * @param LPVOID pvertices - Pointer to the vertex data, must match the vertex_type chosen 
+ * @param DWORD vertex_count - Number of vertices in the array to render
+ *
+ * @return HRESULT - directx error code
+ */
+HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pvertices, DWORD vertex_count)
+{
+	HRESULT hr;
+	Assert( vertex_type < D3DVT_MAX);
+	
+	int prim_count = d3d_get_num_prims(vertex_count, prim_type);
+
+	if(prim_count == -1) {
+		return !S_OK;
 	}
 
 	hr = d3d_SetVertexShader(vertex_type);

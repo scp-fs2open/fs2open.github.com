@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.33 $
- * $Date: 2003-11-02 05:50:08 $
- * $Author: bobboau $
+ * $Revision: 2.34 $
+ * $Date: 2003-11-06 21:10:26 $
+ * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/11/02 05:50:08  bobboau
+ * modified trails to render with tristrips now rather than with stinky old trifans,
+ * MUCH faster now, at least one order of magnatude.
+ *
  * Revision 2.32  2003/11/01 21:59:21  bobboau
  * new matrix handeling code, and fixed some problems with 3D lit verts,
  * several other small fixes
@@ -603,6 +607,7 @@
 
 #include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
+#include "graphics/grd3dbatch.h"
 #include "graphics/2d.h"
 #include "globalincs/pstypes.h"
 #include "bmpman/bmpman.h"
@@ -2203,7 +2208,9 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 
 	d3d_set_initial_render_state();
 
+	TIMERBAR_PUSH(6);
 	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
+	TIMERBAR_POP();
 }
 
 /**
@@ -2339,79 +2346,57 @@ void gr_d3d_aabitmap(int x, int y)
  */
 void gr_d3d_string( int sx, int sy, char *s)
 {
-	int width, spacing, letter;
-	int x, y;
+
+//	mprintf(("<%s>\n", s));
 
 	if ( !Current_font )	{
 		return;
 	}
 
+	TIMERBAR_PUSH(5);
+
+
+	if ( !gr_screen.current_color.is_alphacolor ) return;
+
 	gr_set_bitmap(Current_font->bitmap_id);
 
-	x = sx;
-	y = sy;
+	// Get this now rather than inside the loop
+	int bw, bh;
+	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
+	gr_d3d_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 
-	if (sx==0x8000) {			//centered
-		x = get_centered_x(s);
+	float u_scale, v_scale;
+	if ( !gr_tcache_set( gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale ) )	{
+		// Couldn't set texture
+		TIMERBAR_POP();
+		return;
+	}
+
+	uint color;
+
+	if ( gr_screen.current_color.is_alphacolor )	{
+		if( GlobalD3DVars::d3d_caps.TextureOpCaps & D3DTEXOPCAPS_MODULATEALPHA_ADDCOLOR) {
+			color = D3DCOLOR_ARGB(
+				gr_screen.current_color.alpha,
+				gr_screen.current_color.red, 
+				gr_screen.current_color.green, 
+				gr_screen.current_color.blue);
+		} else {
+			int r = (gr_screen.current_color.red*gr_screen.current_color.alpha)/255;
+			int g = (gr_screen.current_color.green*gr_screen.current_color.alpha)/255;
+			int b = (gr_screen.current_color.blue*gr_screen.current_color.alpha)/255;
+		
+			color = D3DCOLOR_ARGB(255, r,g,b);
+		}
 	} else {
-		x = sx;
+		color = D3DCOLOR_XRGB(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 	}
-	
-	spacing = 0;
 
-	while (*s)	{
-		x += spacing;
 
-		while (*s== '\n' )	{
-			s++;
-			y += Current_font->h;
-			if (sx==0x8000) {			//centered
-				x = get_centered_x(s);
-			} else {
-				x = sx;
-			}
-		}
-		if (*s == 0 ) break;
+	d3d_set_initial_render_state();
+	d3d_batch_string(sx, sy, s, bw, bh, u_scale, v_scale, color);
 
-		letter = get_char_width(s[0],s[1],&width,&spacing);
-		s++;
-
-		//not in font, draw as space
-		if (letter<0)	{
-			continue;
-		}
-
-		int xd, yd, xc, yc;
-		int wc, hc;
-
-		// Check if this character is totally clipped
-		if ( x + width < gr_screen.clip_left ) continue;
-		if ( y + Current_font->h < gr_screen.clip_top ) continue;
-		if ( x > gr_screen.clip_right ) continue;
-		if ( y > gr_screen.clip_bottom ) continue;
-
-		xd = yd = 0;
-		if ( x < gr_screen.clip_left ) xd = gr_screen.clip_left - x;
-		if ( y < gr_screen.clip_top ) yd = gr_screen.clip_top - y;
-		xc = x+xd;
-		yc = y+yd;
-
-		wc = width - xd; hc = Current_font->h - yd;
-		if ( xc + wc > gr_screen.clip_right ) wc = gr_screen.clip_right - xc;
-		if ( yc + hc > gr_screen.clip_bottom ) hc = gr_screen.clip_bottom - yc;
-
-		if ( wc < 1 ) continue;
-		if ( hc < 1 ) continue;
-
-		font_char *ch;
-	
-		ch = &Current_font->char_data[letter];
-
-		int u = Current_font->bm_u[letter];
-		int v = Current_font->bm_v[letter];
-
-		gr_d3d_aabitmap_ex_internal( xc, yc, wc, hc, u+xd, v+yd );
-	}
+	TIMERBAR_POP();
 }
 
 /**
@@ -2498,7 +2483,9 @@ void gr_d3d_flash(int r, int g, int b)
 
 		d3d_set_initial_render_state();
 
+	TIMERBAR_PUSH(6);
 		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
+	TIMERBAR_POP();
 	}
 }
 
@@ -3112,8 +3099,8 @@ void d3d_render_timer_bar(int colour, float x, float y, float w, float h)
 		0xff0ffff0, 
 		0xfffff000, 
 		0xffff00ff,
+		0xffffffff,
 		0xffff0f0f,
-		0xffffffff
 	};
 
 	D3DTLVERTEX d3d_verts[4];
@@ -3146,6 +3133,7 @@ void d3d_render_timer_bar(int colour, float x, float y, float w, float h)
 	d3d_set_initial_render_state();
 
  	d3d_DrawPrimitive(D3DVT_TLVERTEX,D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
+
 }
 
 void gr_d3d_push_texture_matrix(int unit)
