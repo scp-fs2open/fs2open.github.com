@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.112 $
- * $Date: 2004-09-23 23:52:58 $
+ * $Revision: 2.113 $
+ * $Date: 2004-09-24 02:12:59 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2004/09/23 23:52:58  Goober5000
+ * fixed two bugs... still more bugs to be found :p
+ * --Goober5000
+ *
  * Revision 2.111  2004/09/23 22:51:07  Goober5000
  * ubersexp implementation complete
  * --Goober5000
@@ -1317,50 +1321,40 @@ int num_eval(int node);
 
 // Goober5000
 char *Sexp_current_replacement_argument;
-arg_item *Sexp_applicable_argument_list;
+arg_item Sexp_applicable_argument_list;
 
 
-// Goober5000 - arg_item class stuff, mostly borrowed from sexp_list_item class stuff -------------
-void arg_item::set_data(char *str)
-{
-	text = str;
-}
-
+// Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
 {
 	arg_item *item, *ptr;
 
+	// create item
 	item = new arg_item;
-	ptr = this;
-	while (ptr->next != NULL)
-		ptr = ptr->next;
+	item->text = str;
 
-	ptr->next = item;
-	item->set_data(str);
+	// prepend item to existing list
+	ptr = this->next;
+	this->next = item;
+	item->next = ptr;
 }
 
-void arg_item::add_list(arg_item *list)
+void arg_item::expunge()
 {
 	arg_item *ptr;
 
-	ptr = this;
-	while (ptr->next != NULL)
-		ptr = ptr->next;
-
-	ptr->next = list;
+	// contiually delete first item of list
+	while (this->next != NULL)
+	{
+		ptr = this->next;
+		delete this->next;
+		this->next = ptr;
+	}
 }
 
-void arg_item::destroy()
+int arg_item::empty()
 {
-	arg_item *ptr, *ptr2;
-
-	ptr = this;
-	while (ptr != NULL)
-	{
-		ptr2 = ptr->next;
-		delete ptr;
-		ptr = ptr2;
-	}
+	return (this->next == NULL);
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -1370,7 +1364,7 @@ void init_sexp()
 
 	// Goober5000
 	Sexp_current_replacement_argument = NULL;
-	Sexp_applicable_argument_list = NULL;
+	Sexp_applicable_argument_list.expunge();
 
 	for (i=0; i<MAX_SEXP_NODES; i++) {
 		if ( !(Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT) ){
@@ -6221,7 +6215,7 @@ void do_action_for_each_special_argument( int cur_node )
 	arg_item *ptr;
 
 	// loop through all the supplied arguments
-	ptr = Sexp_applicable_argument_list;
+	ptr = Sexp_applicable_argument_list.next;
 	while (ptr != NULL)
 	{
 		// acquire argument to be used
@@ -6308,7 +6302,7 @@ int eval_when(int n, int use_arguments)
 
 	// clean up any special sexp stuff
 	Sexp_current_replacement_argument = NULL;
-	Sexp_applicable_argument_list->destroy();
+	Sexp_applicable_argument_list.expunge();
 
 	if (Sexp_nodes[cond].value == SEXP_KNOWN_FALSE)
 		return SEXP_KNOWN_FALSE;  // no need to waste time on this anymore
@@ -6362,7 +6356,7 @@ int test_argument_list_for_condition(int n, int condition_node)
 	Assert(n != -1 && condition_node != -1);
 
 	// ensure special argument list is empty
-	Sexp_applicable_argument_list->destroy();
+	Sexp_applicable_argument_list.expunge();
 
 	// loop through all arguments
 	num_true = 0;
@@ -6379,7 +6373,7 @@ int test_argument_list_for_condition(int n, int condition_node)
 		if (val)
 		{
 			num_true++;
-			Sexp_applicable_argument_list->add_data(Sexp_nodes[n].text);
+			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
 		}
 
 		// continue along argument list
@@ -6485,7 +6479,7 @@ int eval_random_of(int arg_handler_node, int condition_node)
 	}
 
 	// flush stuff
-	Sexp_applicable_argument_list->destroy();
+	Sexp_applicable_argument_list.expunge();
 	flush_sexp_tree(condition_node);
 
 	// evaluate conditional for current argument
@@ -6495,7 +6489,7 @@ int eval_random_of(int arg_handler_node, int condition_node)
 	// true?
 	if (val)
 	{
-		Sexp_applicable_argument_list->add_data(Sexp_nodes[n].text);
+		Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
 	}
 
 	// clear argument, but not list, as we'll need it later
