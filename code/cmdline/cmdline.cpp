@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.8 $
- * $Date: 2002-10-22 23:02:39 $
- * $Author: randomtiger $
+ * $Revision: 2.9 $
+ * $Date: 2002-10-27 23:55:36 $
+ * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/10/22 23:02:39  randomtiger
+ * Made Phreaks alternative scanning style optional under the command line tag "-phreak"
+ * Fixed bug that changes HUD colour when targetting debris in a full nebula. - RT
+ *
  * Revision 2.7  2002/10/19 03:50:28  randomtiger
  * Added special pause mode for easier action screenshots.
  * Added new command line parameter for accessing all single missions in tech room. - RT
@@ -267,6 +271,7 @@ cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
 cmdline_parm gf4fix_arg("-GF4FIX", NULL); //DTP for random tigers GF4fix
 cmdline_parm allslev_arg("-ALLSLEV", NULL); //Give access to all single player missions
 cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including new targetting code
+cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -285,6 +290,7 @@ char *Cmdline_rank_above= NULL;
 char *Cmdline_rank_below = NULL;
 char *Cmdline_connect_addr = NULL;
 char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
+char *Cmdline_mod = NULL; //DTP for mod arguement
 int Cmdline_multi_log = 0;
 int Cmdline_server_firing = 0;
 int Cmdline_client_dodamage = 0;
@@ -297,6 +303,8 @@ int Cmdline_window = 0;
 int Cmdline_gf4fix = 0; // DTP for randomstigers GF4 fix.
 int Cmdline_allslev = 0;
 int Cmdline_phreak	= 0;
+char *Hold_mod = NULL;
+
 
 
 static cmdline_parm Parm_list(NULL, NULL);
@@ -671,6 +679,11 @@ int parse_cmdline(int argc, char *argv[])
 
 	if(phreak_arg.found() ) {
 		Cmdline_phreak = 1;
+	}
+
+	if(mod_arg.found() ) {
+		Cmdline_mod = mod_arg.str();
+		Hold_mod = mod_arg.str();
 	}
 
 	return 1;
