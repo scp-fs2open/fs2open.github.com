@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.5 $
- * $Date: 2002-12-02 20:49:14 $
+ * $Revision: 2.6 $
+ * $Date: 2002-12-02 23:56:12 $
  * $Author: Goober5000 $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/02 20:49:14  Goober5000
+ * fixed misspelling of "category" as "catagory"
+ *
  * Revision 2.4  2002/08/06 01:49:08  penguin
  * Renamed ccode members to cc_or and cc_and
  *

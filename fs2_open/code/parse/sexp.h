@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.5 $
+ * $Revision: 2.6 $
  * $Author: Goober5000 $
- * $Date: 2002-12-02 20:37:26 $
+ * $Date: 2002-12-02 23:56:12 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/02 20:37:26  Goober5000
+ * fixed misspelling of "category" as "catagory"
+ *
  * Revision 2.4  2002/11/28 00:00:37  sesquipedalian
  * end-mission sexp added
  *
