@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.26 $
+ * $Revision: 2.27 $
  * $Author: Goober5000 $
- * $Date: 2003-01-21 17:24:16 $
+ * $Date: 2003-01-25 04:17:39 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/01/21 17:24:16  Goober5000
+ * fixed a few bugs in Bobboau's implementation of the glow sexps; also added
+ * help for the sexps in sexp_tree
+ * --Goober5000
+ *
  * Revision 2.25  2003/01/20 05:40:50  bobboau
  * added several sExps for turning glow points and glow maps on and off
  *
@@ -481,6 +486,7 @@
 #define OPF_ARRIVAL_ANCHOR_ALL	42		// Goober5000
 #define OPF_DEPARTURE_LOCATION	43		// Goober5000
 #define OPF_SHIP_WITH_BAY		44		// Goober5000
+#define OPF_MUSIC_SELECTION		45		// Goober5000
 
 
 // Operand return types
@@ -713,6 +719,7 @@
 #define OP_ACTIVATE_GLOW_MAPS				(0x0077	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
 #define OP_DEACTIVATE_GLOW_POINT_BANK		(0x0078	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
 #define OP_ACTIVATE_GLOW_POINT_BANK			(0x0079	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
+#define OP_CHANGE_MUSIC						(0x0080	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // debugging sexpressions
@@ -915,6 +922,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_ARRIVAL_LOCATION		-133
 #define SEXP_CHECK_INVALID_DEPARTURE_LOCATION	-134
 #define SEXP_CHECK_INVALID_ARRIVAL_ANCHOR_ALL	-135
+#define SEXP_CHECK_INVALID_MUSIC_SELECTION		-136
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
