@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-19 09:05:25 $
+ * $Author: Goober5000 $
  *
  * Low-level code for reading data out of large archive files or normal files.  All
  * reads/seeks come through here.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/29 19:17:21  penguin
  * added #ifdef _WIN32 around windows-specific system headers
  *
@@ -119,7 +122,8 @@ void cf_init_lowlevel_read_code( CFILE * cfile, int offset, int size )
 		}
 
 		#if defined(CHECK_POSITION) && !defined(NDEBUG)
-			int raw_position = ftell(cb->fp) - cb->lib_offset;
+			int raw_position;
+			raw_position = ftell(cb->fp) - cb->lib_offset;
 			Assert(raw_position == cb->raw_position);
 		#endif
 	}
@@ -151,8 +155,9 @@ int cfeof(CFILE *cfile)
 	Assert(cb->fp != NULL);
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
-	int raw_position = ftell(cb->fp) - cb->lib_offset;
-	Assert(raw_position == cb->raw_position);
+		int raw_position;
+		raw_position = ftell(cb->fp) - cb->lib_offset;
+		Assert(raw_position == cb->raw_position);
 	#endif
 		
 	if (cb->raw_position >= cb->size ) {
@@ -182,8 +187,9 @@ int cftell( CFILE * cfile )
 	Assert(cb->fp != NULL);
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
-	int raw_position = ftell(cb->fp) - cb->lib_offset;
-	Assert(raw_position == cb->raw_position);
+		int raw_position;
+		raw_position = ftell(cb->fp) - cb->lib_offset;
+		Assert(raw_position == cb->raw_position);
 	#endif
 
 	return cb->raw_position;
@@ -231,7 +237,8 @@ int cfseek( CFILE *cfile, int offset, int where )
 	cb->raw_position = goal_position - cb->lib_offset;
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
-		int tmp_offset = ftell(cb->fp) - cb->lib_offset;
+		int tmp_offset;
+		tmp_offset = ftell(cb->fp) - cb->lib_offset;
 		Assert(tmp_offset==cb->raw_position);
 	#endif
 
@@ -277,7 +284,8 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 	}		
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
-		int tmp_offset = ftell(cb->fp) - cb->lib_offset;
+		int tmp_offset;
+		tmp_offset = ftell(cb->fp) - cb->lib_offset;
 		Assert(tmp_offset==cb->raw_position);
 	#endif
 

@@ -894,7 +894,8 @@ void bm_d3d_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, 
 
 	Assert( &be->bm == bmp );
 	
-	int tga_error=targa_read_bitmap( be->filename, data, NULL, (bpp == 16) ? 2 : 1);
+//	int tga_error=
+	targa_read_bitmap( be->filename, data, NULL, (bpp == 16) ? 2 : 1);
 
 	bmp->flags = 0;	
 	bm_d3d_convert_format( bitmapnum, bmp, bpp, flags );
