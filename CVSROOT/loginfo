@@ -25,4 +25,4 @@
 # or
 #DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
 
-DEFAULT /home/fs2source/devel/cvsroot/syncmail --cvsroot /home/fs2source/cvsroot -u %{sVv} fs2source-dev@warpcore.org
+DEFAULT /home/fs2source/devel/cvsroot/syncmail --cvsroot=/home/fs2source/cvsroot -u %{sVv} fs2source-dev@warpcore.org
