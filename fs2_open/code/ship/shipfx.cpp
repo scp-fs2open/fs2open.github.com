@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-05-04 20:08:04 $
+ * $Revision: 2.11 $
+ * $Date: 2003-05-21 20:28:53 $
  * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/05/04 20:08:04  phreak
+ * ships that are disrupted now have arcs around them much like the emp effect
+ *
  * Revision 2.9  2003/04/29 01:03:21  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -893,8 +896,11 @@ void shipfx_warpin_frame( object *objp, float frametime )
 // fx.
 void shipfx_actually_warpout( ship *shipp, object *objp )
 {
+	//disabled ships should stay on the battlefield if they were disabled during warpout
+	//phreak 5/22/03
+	if (shipp->flags & SF_DISABLED) return;
+	
 	// Once we get through effect, make the ship go away
-
 	if ( objp == Player_obj )	{
 		// Normally, this will never get called for the player. If it
 		// does, it is because some error (like the warpout effect
@@ -1190,6 +1196,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 	shipp = &Ships[objp->instance];
 
 	if ( shipp->flags & SF_DYING ) return;
+	if ( shipp->flags & SF_DISABLED ) return;
 
 	vector tempv;
 	float warp_pos;	// position of warp effect in object's frame of reference
