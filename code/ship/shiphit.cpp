@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-11-11 02:15:41 $
+ * $Revision: 2.24 $
+ * $Date: 2003-11-25 02:32:16 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/11/11 02:15:41  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.22  2003/09/26 14:37:16  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -2457,7 +2462,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 						if (sip->flags & (SIF_SMALL_SHIP)) {
 							if ((other_obj != NULL) && (other_obj->type == OBJ_BEAM)) {
 								int beam_weapon_info_index = beam_get_weapon_info_index(other_obj);
-								if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_HUGE)) ) {								
+								if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_BEAM|WIF_HUGE)) ) {
 									// Flag as vaporized
 									shipp->flags |= SF_VAPORIZE;								
 								}
