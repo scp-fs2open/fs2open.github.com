@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.27 $
- * $Date: 2004-04-26 12:44:54 $
+ * $Revision: 2.28 $
+ * $Date: 2004-04-26 15:51:26 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/04/26 12:44:54  taylor
+ * 32-bit targa and jpeg loaders, bug fixes, some preload stuff
+ *
  * Revision 2.26  2004/04/09 20:32:31  phreak
  * moved an assignment statement inside an #ifdef block so dds works in release mode
  *
@@ -990,18 +993,6 @@ int bm_load_sub(char *real_filename, char *ext, int *handle)
 	for (i=0; i<(int)strlen(filename); i++ ){
 		filename[i] = char(tolower(filename[i]));
 	}		
-
-	// some checks to avoid endless strands of spaghetti later on
-	// this sucks --
-#if !defined(USE_DEVIL_JPG)
-	if ( !stricmp(ext, NOX(".jpg")) )
-		return -1;
-#endif // !USE_DEVIL_JPG
-#if !defined(USE_DEVIL_TGA)
-	if ( !stricmp(ext, NOX(".tga")) )
-		return -1;
-#endif // !USE_DEVIL_TGA
-	// -- end suckage
 
 	// try to find given filename to see if it has been loaded before
 	if(!Bm_ignore_duplicates){
