@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.72 $
- * $Date: 2004-02-27 04:09:55 $
- * $Author: bobboau $
+ * $Revision: 2.73 $
+ * $Date: 2004-03-05 04:16:20 $
+ * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2004/02/27 04:09:55  bobboau
+ * fixed a Z buffer error in HTL submodel rendering,
+ * and glow points,
+ * and other stuff
+ *
  * Revision 2.71  2004/02/20 21:45:41  randomtiger
  * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
  * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
@@ -2115,7 +2120,7 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 	vm_vec_sub2(&Interp_offset,&pm->submodel[mn].offset);
 
 
-	g3_done_instance((gr_screen.mode == GR_DIRECT3D));
+	g3_done_instance(true);
 }
 
 // Returns one of the following
@@ -3383,9 +3388,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 
 	bool is_outlines_only = !Cmdline_nohtl && (flags & MR_NO_POLYS) && ((flags & MR_SHOW_OUTLINE_PRESET) || (flags & MR_SHOW_OUTLINE));  
+	bool use_api = (!is_outlines_only || (gr_screen.mode == GR_DIRECT3D)) || (gr_screen.mode == GR_OPENGL);
 
-
-	g3_start_instance_matrix(pos,orient, !is_outlines_only || (gr_screen.mode == GR_DIRECT3D));
+	g3_start_instance_matrix(pos,orient, use_api);
 
 	if ( Interp_flags & MR_SHOW_RADIUS )	{
 		if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
@@ -4097,12 +4102,12 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 
 	if((Interp_flags & MR_AUTOCENTER) && (pm->flags & PM_FLAG_AUTOCEN)){
-		g3_done_instance(!is_outlines_only || (gr_screen.mode == GR_DIRECT3D));
+		g3_done_instance(use_api);
 	}
 
 //	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
-	g3_done_instance(!is_outlines_only || (gr_screen.mode == GR_DIRECT3D));
+	g3_done_instance(use_api);
 	
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
@@ -4157,7 +4162,8 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 		light_filter_push( -1, pos, pm->submodel[submodel_num].rad );
 	}
 
-	g3_start_instance_matrix(pos,orient, (gr_screen.mode == GR_DIRECT3D));
+	//set to true since D3d and OGL need the api matrices set
+	g3_start_instance_matrix(pos,orient, true);
 
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_rotate_all();
