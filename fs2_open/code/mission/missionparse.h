@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.1 $
+ * $Revision: 2.2 $
  * $Author: wmcoolmon $
- * $Date: 2002-07-15 02:09:19 $
+ * $Date: 2002-07-30 17:35:22 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/15 02:09:19  wmcoolmon
+ * Added support for toggling ship trails
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -220,11 +223,12 @@ extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 #define MISSION_TYPE_MULTI_DOGFIGHT	(1<<5)
 
 #define MISSION_FLAG_SUBSPACE				(1<<0)	// mission takes place in subspace
-#define MISSION_FLAG_NO_PROMOTION		(1<<1)	// cannot get promoted or badges in this mission
+#define MISSION_FLAG_NO_PROMOTION			(1<<1)	// cannot get promoted or badges in this mission
 #define MISSION_FLAG_FULLNEB				(1<<2)	// mission is a full nebula mission
-#define MISSION_FLAG_NO_BUILTIN_MSGS	(1<<3)	// disables builtin msgs
-#define MISSION_FLAG_NO_TRAITOR			(1<<4)	// player cannot become a traitor
-#define MISSION_FLAG_SHIP_TRAILS		(1<<5)	//Enables ship trails
+#define MISSION_FLAG_NO_BUILTIN_MSGS		(1<<3)	// disables builtin msgs
+#define MISSION_FLAG_NO_TRAITOR				(1<<4)	// player cannot become a traitor
+#define MISSION_FLAG_SHIP_TRAILS			(1<<5)	// Enables ship trails
+#define MISSION_FLAG_SUPPORT_REPAIRS_HULL	(1<<6)	// Toggles support ship repair of ship hulls
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
