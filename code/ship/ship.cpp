@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.96 $
- * $Date: 2003-12-16 20:55:13 $
+ * $Revision: 2.97 $
+ * $Date: 2003-12-18 15:35:52 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2003/12/16 20:55:13  phreak
+ * disabled tertiary weapons support pending a rewrite of critical code
+ *
  * Revision 2.95  2003/12/15 21:36:42  phreak
  * replaced asserts in parse_ship with more descriptive warnings
  *
@@ -2393,10 +2396,9 @@ strcpy(parse_error_text, temp_error);
 	sip->ct_count = 0;
 	while(optional_string("$Trail:")){
 		// this means you've reached the max # of contrails for a ship
-		if (sip->ct_count <= MAX_SHIP_CONTRAILS)
+		if (sip->ct_count >= MAX_SHIP_CONTRAILS)
 		{
 			Warning(LOCATION, "%s has more contrails than the max of %d", sip->name, MAX_SHIP_CONTRAILS);
-			break;
 		}
 
 		ci = &sip->ct_info[sip->ct_count++];
@@ -2529,7 +2531,7 @@ strcpy(parse_error_text, temp_error);
 	// must be > 0//no it doesn't :P -Bobboau
 	// yes it does! - Goober5000
 	// (we don't want a div-0 error)
-	if (hull_percentage_of_hits > 0.0f )
+	if (hull_percentage_of_hits < 0.0f )
 	{
 		Warning(LOCATION, "THe subsystems defined for the %s can take more combined damage than	the ship itself. Adjust the tables so that the percentages add up to less than 100", sip->name);
 	}
