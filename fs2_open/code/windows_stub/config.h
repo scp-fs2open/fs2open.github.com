@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.5 $
- * $Date: 2005-01-30 18:32:42 $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-27 06:17:54 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/01/30 18:32:42  taylor
+ * merge with Linux/OSX tree - p0130
+ * remove extra brace in cfile.cpp
+ *
  * Revision 2.4  2004/08/11 05:06:36  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -78,8 +82,10 @@ typedef long *LPLONG;
 #ifdef IAM_64BIT
 // force 32-bit version of DWORD
 typedef unsigned int DWORD;
+typedef unsigned int FOURCC;
 typedef unsigned long *PDWORD, *LPDWORD;
 #else
+typedef unsigned long FOURCC;
 typedef unsigned long DWORD, *PDWORD, *LPDWORD;
 #endif
 typedef unsigned long ULONG, *PULONG;
@@ -89,7 +95,8 @@ typedef double DATE;
 typedef unsigned char byte, *pbyte, *lpbyte;
 typedef unsigned short UINT16, *PUINT16;
 typedef unsigned int UINT32, *PUINT32;
-typedef void *HMMIO;
+//typedef void *HMMIO;
+typedef SDL_RWops *HMMIO;
 typedef void *HACMSTREAM;
 typedef long LONG;
 typedef long HRESULT;
@@ -104,6 +111,8 @@ typedef void *HWND;
 typedef void *HINSTANCE;
 typedef void *HANDLE;
 typedef char *LPSTR;
+typedef char *HPSTR;
+typedef void *LPMMIOPROC;
 #define __int64 long long
 #define __int32 int
 
@@ -229,6 +238,10 @@ typedef SDL_mutex* CRITICAL_SECTION;
 typedef timeval TIMEVAL;
 bool QueryPerformanceCounter(LARGE_INTEGER *pcount);
 
+SDL_TimerID timeSetEvent(DWORD uDelay, uint uResolution, DWORD *lpTimeProc,  DWORD *dwUser, uint fuEvent);
+SDL_bool timeKillEvent(SDL_TimerID uTimerID);
+#define TIME_PERIODIC	0
+
 // file related items
 #define _MAX_FNAME					255
 #define _MAX_PATH					255
@@ -236,6 +249,43 @@ bool QueryPerformanceCounter(LARGE_INTEGER *pcount);
 #define SetCurrentDirectory(s)		_chdir(s)
 #define GetCurrentDirectory(i, s)	_getcwd((s), (i))
 #define _unlink(s)					unlink(s)
+
+// mmio stuff
+typedef struct { 
+	DWORD		dwFlags; 
+	FOURCC		fccIOProc; 
+	LPMMIOPROC	pIOProc; 
+	UINT		wErrorRet; 
+	HTASK		hTask; 
+	LONG		cchBuffer; 
+	HPSTR		pchBuffer; 
+	HPSTR		pchNext; 
+	HPSTR		pchEndRead; 
+	HPSTR		pchEndWrite; 
+	LONG		lBufOffset; 
+	LONG		lDiskOffset; 
+	DWORD		adwInfo[4]; 
+	DWORD		dwReserved1; 
+	DWORD		dwReserved2; 
+	HMMIO		hmmio; 
+} MMIOINFO;
+
+typedef MMIOINFO *LPMMIOINFO;
+
+#define FOURCC_MEM	0
+
+#define MMIO_READ		0
+#define MMIO_READWRITE	1
+#define MMIO_WRITE		2
+#define MMIO_ALLOCBUF	3
+
+#define MMIOERR_CANNOTWRITE		1
+
+HMMIO mmioOpen(LPSTR szFilename, LPMMIOINFO lpmmioinfo, DWORD dwOpenFlags);
+long mmioSeek(HMMIO hmmio, long lOffset, int iOrigin);
+long mmioRead(HMMIO hmmio, HPSTR pch, long cch);
+MMRESULT mmioClose(HMMIO hmmio, uint wFlags);
+
 
 int filelength(int fd);
 int _chdir(const char *path);
