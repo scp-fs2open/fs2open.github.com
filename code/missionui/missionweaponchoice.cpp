@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-03-03 10:21:08 $
+ * $Revision: 2.9 $
+ * $Date: 2003-03-03 10:29:39 $
  * $Author: bobboau $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/03/03 10:21:08  bobboau
+ * fixed a bug in the bank specific loadout relaiting to secondaries
+ *
  * Revision 2.7  2003/02/25 06:22:48  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -1908,7 +1911,7 @@ void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_co
 }
 
 // ensure that there aren't any bogus weapons assigned by default
-void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count, int bank)
+void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 {
 	int i;
 	for ( i=0; i < MAX_WL_WEAPONS; i++ ) {
@@ -1916,9 +1919,11 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count, int bank)
 			continue;
 		}
 
-		if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep[i]][bank]) ) {
+		for ( int k = 0; k < MAX_SECONDARY_BANKS; k++ ){//bank specific loadouts-Bobboau
+		if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep[i]][k]) ) {
 //			wep[i] = -1;
 			wep_count[i] = 0;
+		}
 		}
 	}
 }
@@ -1963,7 +1968,7 @@ void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_cou
 	}
 
 	// ensure that there aren't any bogus weapons assigned by default
-	wl_cull_illegal_weapons(ship_class, wep, wep_count, slot_num);	
+	wl_cull_illegal_weapons(ship_class, wep, wep_count);	
 }
 
 // function to add a weapon_class to ui lists
