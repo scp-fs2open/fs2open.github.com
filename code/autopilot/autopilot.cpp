@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.13 $
- * $Date: 2004-09-28 22:51:41 $
+ * $Revision: 1.14 $
+ * $Date: 2004-10-03 21:41:10 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2004/09/28 22:51:41  Kazan
+ * fix autopilot formation bug
+ *
  * Revision 1.12  2004/09/28 19:54:31  Kazan
  * | is binary or, || is boolean or - please use the right one
  * autopilot velocity ramping biasing
@@ -271,14 +274,15 @@ void StartAutopilot()
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
 					
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, AIF_FORMATION_WING, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, -1, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index] );
 					
 					//fixup has to wait until after wing goals
 				}
 				else
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, AIF_FORMATION_WING, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, -1, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
 				}
+
 			}
 		}
 	}
@@ -332,6 +336,10 @@ void StartAutopilot()
 						Ai_info[Ships[i].ai_index].goals[j].ai_mode == AIM_WAYPOINTS)
 					{
 						autopilot_ai_waypoint_goal_fixup( &(Ai_info[Ships[i].ai_index].goals[j]) );
+
+						
+						// formation fixup
+						//ai_form_on_wing(&Objects[Ships[i].objnum], &Objects[Player_ship->objnum]);
 					}
 				}
 		}

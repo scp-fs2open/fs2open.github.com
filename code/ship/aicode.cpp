@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.70 $
- * $Date: 2004-09-28 22:51:41 $
+ * $Revision: 2.71 $
+ * $Date: 2004-10-03 21:41:11 $
  * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2004/09/28 22:51:41  Kazan
+ * fix autopilot formation bug
+ *
  * Revision 2.69  2004/09/10 13:54:21  et1
  * Implemented "+WeaponMinRange" token. Fixed a crash issue with fighter launch checks
  *
@@ -4169,6 +4172,7 @@ void ai_start_fly_to_ship(object *objp, char *target_obj)
 	aip->ai_flags |= AIF_FORMATION_WING;
 	aip->ai_flags &= ~AIF_FORMATION_OBJECT;
 
+
 	// we're going to assume that this search succeededs
 
 	for (int i = 0; i < MAX_SHIPS; i++)
@@ -4267,6 +4271,7 @@ void ai_form_on_wing(object *objp, object *goal_objp)
 		nprintf(("AI", "Warning: Ship %s tried to form on player's wing, but not fighter or bomber.\n", shipp->ship_name));
 		return;
 	}
+
 
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
@@ -5112,9 +5117,56 @@ void ai_fly_to_ship()
 		scale = 1;
 	}
 
-	if (dist_to_goal > 0.1f) {
-		ai_turn_towards_vector(target_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+
+
+	// ----------------------------------------------
+	// if in autopilot mode make sure to not collide
+	// and "keep reasonable distance" if a capship
+	// ----------------------------------------------
+
+	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) // capital ship and AutoPilotEngaged
+	{
+		
+		int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, target_pos, // current point, destination point
+											model_get_core_radius( sip->modelnum ) * 1.5, // radius w/ buffer
+											Pl_objp, NULL, 0);
+		// fly parrel to collider - so figure out vector between collider and radius
+		if (collide_objnum != -1)
+		{
+			/*
+			vector col_vec, col_direct;
+			vm_vec_copy_normalize(&col_vec, &Objects[collide_objnum].phys_info.vel);
+			vm_vec_sub(&col_direct, &col_vec, &Objects[collide_objnum].orient.vec.fvec);
+			*/
+
+			
+			vector tmp, proj_pos;
+			
+			//vm_vec_scale
+			memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vector));
+			vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
+									  // this makes tmp a displacement
+			vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
+			
+
+			ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+
+		}
+		else
+		{
+			if (dist_to_goal > 0.1f) {
+				ai_turn_towards_vector(target_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+			}
+		}
 	}
+	else
+	{
+		if (dist_to_goal > 0.1f) {
+			ai_turn_towards_vector(target_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+		}
+	}
+
+	// ----------------------------------------------
 
 	prev_dot_to_goal = aip->prev_dot_to_goal;
 	dot = vm_vec_dot_to_point(&nvel_vec, &Pl_objp->pos, target_pos);
@@ -5305,9 +5357,56 @@ void ai_waypoints()
 		scale = 1;
 	}
 
-	if (dist_to_goal > 0.1f) {
-		ai_turn_towards_vector(wp_cur, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+	// ----------------------------------------------
+	// if in autopilot mode make sure to not collide
+	// and "keep reasonable distance" if a capship
+	// ----------------------------------------------
+
+	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) // capital ship and AutoPilotEngaged
+	{
+		
+		int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, wp_cur, // current point, destination point
+											model_get_core_radius( sip->modelnum ) * 1.5, // radius w/ buffer
+											Pl_objp, NULL, 0);
+		// fly parrel to collider - so figure out vector between collider and radius
+		if (collide_objnum != -1)
+		{
+
+			/*
+			vector col_vec, col_direct;
+			vm_vec_copy_normalize(&col_vec, &Objects[collide_objnum].phys_info.vel);
+			vm_vec_sub(&col_direct, &col_vec, &Objects[collide_objnum].orient.vec.fvec);
+			*/
+
+			
+			vector tmp, proj_pos;
+			
+			//vm_vec_scale
+			memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vector));
+			vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
+									  // this makes tmp a displacement
+			vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
+
+			ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+
+		}
+		else
+		{
+			if (dist_to_goal > 0.1f) {
+				ai_turn_towards_vector(wp_cur, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+			}
+		}
 	}
+	else
+	{
+		if (dist_to_goal > 0.1f) {
+			ai_turn_towards_vector(wp_cur, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+		}
+	}
+
+
+	
+	// ----------------------------------------------
 
 	prev_dot_to_goal = aip->prev_dot_to_goal;
 	dot = vm_vec_dot_to_point(&nvel_vec, &Pl_objp->pos, wp_cur);
@@ -15160,12 +15259,12 @@ void ai_process( object * obj, int ai_index, float frametime )
 //			rfc = 0;
 //		break;
 #if defined(ENABLE_AUTO_PILOT)
-		// Kazan -- disable afterburning during thses
+/*		// Kazan -- disable afterburning during thses
 	case AIM_WAYPOINTS:
 	case AIM_FLY_TO_SHIP:
 		if (AutoPilotEngaged)
 			AI_ci.afterburner_stop = 1;
-		break;
+		break;*/
 #endif
 
 	default:

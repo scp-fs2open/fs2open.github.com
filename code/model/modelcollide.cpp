@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:41 $
+ * $Revision: 2.7 $
+ * $Date: 2004-10-03 21:41:10 $
  * $Author: Kazan $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:41  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:56  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -518,7 +521,7 @@ static void mc_check_sphereline_face( int nv, vector ** verts, vector * plane_pn
 			temp_dist = vm_vec_dist( &temp_sphere, &hit_point );
 			if ( (temp_dist - DIST_TOL > Mc->radius) || (temp_dist + DIST_TOL < Mc->radius) ) {
 				// get Andsager
-				mprintf(("Estimated radius error: Estimate %f, actual %f Mc->radius\n", temp_dist, Mc->radius));
+				//mprintf(("Estimated radius error: Estimate %f, actual %f Mc->radius\n", temp_dist, Mc->radius));
 			}
 			vm_vec_sub( &temp_dir, &hit_point, &temp_sphere );
 			// Assert( vm_vec_dotprod( &temp_dir, &Mc_direction ) > 0 );
@@ -551,7 +554,7 @@ static void mc_check_sphereline_face( int nv, vector ** verts, vector * plane_pn
 			temp_dist = vm_vec_dist( &temp_sphere, &hit_point );
 			if ( (temp_dist - DIST_TOL > Mc->radius) || (temp_dist + DIST_TOL < Mc->radius) ) {
 				// get Andsager
-				mprintf(("Estimated radius error: Estimate %f, actual %f Mc->radius\n", temp_dist, Mc->radius));
+				//mprintf(("Estimated radius error: Estimate %f, actual %f Mc->radius\n", temp_dist, Mc->radius));
 			}
 			vm_vec_sub( &temp_dir, &hit_point, &temp_sphere );
 //			Assert( vm_vec_dotprod( &temp_dir, &Mc_direction ) > 0 );
