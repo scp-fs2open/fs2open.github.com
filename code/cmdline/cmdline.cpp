@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.62 $
- * $Date: 2004-03-20 14:47:12 $
+ * $Revision: 2.63 $
+ * $Date: 2004-04-02 18:25:16 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2004/03/20 14:47:12  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.61  2004/03/19 14:51:54  randomtiger
  * New command line parameter: -d3d_lesstmem causes D3D to bypass V's secondry texture system.
  *
@@ -589,16 +593,16 @@ Flag exe_params[] =
 	"-pofspew",		  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 	"-tablecrcs",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 	"-missioncrcs",   "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-missioncrcs",   "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 																
 	"-oldfire",		  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
-	"-nohtl",		  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
-	"-nosound",		  "",								false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
-	"-nomusic",		  "",								false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
-	"-no_set_gamma",  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
-	"-dnoshowvid", 	  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-nohtl",		  "Software mode (very slow)",		true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-nosound",		  "No sound or music",				false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-nomusic",		  "No music",						false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-no_set_gamma",  "Disable D3D gamma",				true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-dnoshowvid", 	  "Disable video playback",			true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-safeloading",	  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-query_speech",  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"",
+	"-d3d_bad_tsys",  "Enable inefficient textures",	false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"",	
 																
 	"-standalone",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
 	"-startgame",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
@@ -607,7 +611,6 @@ Flag exe_params[] =
 	"-multilog",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
 	"-clientdamage",  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"",	
 	
-	"-d3d_lesstmem",  "Remove secondry texture system",	false,	0,				 EASY_DEFAULT,		"Experimental",	"",	
 	"-batch_3dunlit", "Batch dynamic data (in dev)",	false,	0,				 EASY_DEFAULT,		"Experimental",	"",	
 };
 
@@ -667,7 +670,7 @@ cmdline_parm rt_arg("-rt",NULL);
 cmdline_parm start_mission_arg("-start_mission",NULL);
 cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
 cmdline_parm get_flags_arg("-get_flags",NULL);
-cmdline_parm d3d_lesstmem_arg("-d3d_lesstmem",NULL);
+cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys",NULL);
 cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
 
 int Cmdline_show_stats = 0;
@@ -1277,10 +1280,7 @@ bool SetCmdlineParams()
 		return false; 
 	}
 
-	if(d3d_lesstmem_arg.found())
-	{
-		Cmdline_d3d_lesstmem = 1;
-	}
+	Cmdline_d3d_lesstmem = !d3d_lesstmem_arg.found();
 
 	if(batch_3dunlit_arg.found())
 	{
