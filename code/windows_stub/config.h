@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.2 $
- * $Date: 2002-07-22 01:06:04 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-02 06:25:31 $
  * $Author: penguin $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/22 01:06:04  penguin
+ * More defines for winsock compatibility
+ *
  * Revision 2.1  2002/07/07 19:56:00  penguin
  * Back-port to MSVC
  *
@@ -26,7 +29,7 @@
  #define LITTLE_ENDIAN 1234
  #define BIG_ENDIAN    4321
 
- #if defined _M_IX86
+ #if defined _M_IX86 || defined _X86_
   #define BYTE_ORDER   LITTLE_ENDIAN
  #else
   #error unknown byte order
