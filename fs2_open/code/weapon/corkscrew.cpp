@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Corkscrew.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:11 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-11-11 20:09:12 $
+ * $Author: phreak $
  *
  * C module for managing corkscrew missiles
  * 
@@ -105,7 +105,7 @@ void cscrew_maybe_fire_missile(int shipnum)
 	}
 
 	if ( timestamp_elapsed(sp->next_corkscrew_fire) ) {
-		sp->next_corkscrew_fire = timestamp(Corkscrew_missile_delay);
+		sp->next_corkscrew_fire = timestamp(Weapon_info[weapon_info_index].cs_delay);
 		ship_fire_secondary( &Objects[sp->objnum], 1 );
 		sp->num_corkscrew_to_fire--;
 	}
@@ -120,6 +120,9 @@ int cscrew_create(object *obj)
 {
 	int			i;
 	cscrew_info	*cscrewp = NULL;	
+	weapon_info *wip;
+
+	wip = &Weapon_info[Weapons[obj->instance].weapon_info_index];
 	
 	for ( i = 0; i < MAX_CORKSCREW_MISSILES; i++ ) {
 		cscrewp = &Corkscrew_missiles[i];
@@ -137,7 +140,7 @@ int cscrew_create(object *obj)
 	cscrewp->flags = CS_FLAG_USED;
 
 	// determine if he is counterrotating
-	if(Corkscrew_counterrotate){
+	if(wip->cs_crotate){
 		if(frand_range(0.0f, 1.0f) < 0.5f){
 			cscrewp->flags |= CS_FLAG_COUNTER;
 		}		
@@ -149,7 +152,7 @@ int cscrew_create(object *obj)
 	if(Corkscrew_down_first){
 		vm_vec_negate(&neg);
 	}
-	vm_vec_scale_add2(&cscrewp->cen_p, &neg, Corkscrew_radius);	
+	vm_vec_scale_add2(&cscrewp->cen_p, &neg, wip->cs_radius);	
 
 	// move the missile up so that the corkscrew point is at the muzzle of the gun
 	// vm_vec_scale_add2(&obj->pos, &obj->orient.vec.uvec, Corkscrew_radius);
@@ -178,7 +181,7 @@ void cscrew_delete(int i)
 void cscrew_process_pre(object *objp)
 {		
 	cscrew_info *ci;
-
+	
 	// check stuff
 	Assert(objp->type == OBJ_WEAPON);	
 	Assert(Weapons[objp->instance].cscrew_index >= 0);
@@ -222,7 +225,7 @@ void cscrew_process_post(object *objp)
 	vm_vec_add2(&objp->pos, &neg);		
 
 	// determine what direction (clockwise or counterclockwise) the missile will spin	
-	twist_val = ci->flags & CS_FLAG_COUNTER ? -Corkscrew_twist : Corkscrew_twist;
+	twist_val = ci->flags & CS_FLAG_COUNTER ? -wip->cs_twist : wip->cs_twist;
 	twist_val *= flFrametime;	
 	
 	// rotate the missile position
