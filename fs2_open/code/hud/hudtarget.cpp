@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-12-13 08:13:30 $
+ * $Revision: 2.5 $
+ * $Date: 2002-12-19 10:46:14 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/12/13 08:13:30  Goober5000
+ * small tweaks and bug fixes for the ballistic primary conversion
+ * ~Goober5000~
+ *
  * Revision 2.3  2002/12/10 05:42:42  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -293,6 +297,8 @@ float Max_front_seperation[GR_NUM_RESOLUTIONS] = {
 // This means the variables are not player-specific
 static int Target_in_reticle = 0;
 
+static int ballistic_hud_index = 0;	// Goober5000
+
 extern object obj_used_list;		// dummy node in linked list of active objects
 extern char *Cargo_names[];
 
@@ -491,47 +497,97 @@ static int Toggle_text_alpha = 255;
 
 // animation files for the weapons gauge
 #define NUM_WEAPON_GAUGES	5
-hud_frames Weapon_gauges[NUM_WEAPON_GAUGES];
+#define NUM_HUD_SETTINGS	2
+hud_frames Weapon_gauges[NUM_HUD_SETTINGS][NUM_WEAPON_GAUGES];
 int Weapon_gauges_loaded = 0;
 // for primaries
-int Weapon_gauge_primary_coords[GR_NUM_RESOLUTIONS][3][2] = {
-	{ // GR_640
-		// based on the # of primaries
-		{509, 273},				// top of weapon gauge, first frame, always
-		{497, 293},				// for the first primary
-		{497, 305}				// for the second primary
+int Weapon_gauge_primary_coords[NUM_HUD_SETTINGS][GR_NUM_RESOLUTIONS][3][2] =
+{
+	{ // normal HUD
+		{ // GR_640
+			// based on the # of primaries
+			{509, 273},				// top of weapon gauge, first frame, always
+			{497, 293},				// for the first primary
+			{497, 305}				// for the second primary
+		},
+		{ // GR_1024
+			// based on the # of primaries
+			{892, 525},				// top of weapon gauge, first frame, always
+			{880, 545},				// for the first primary
+			{880, 557}				// for the second primary
+		}
 	},
-	{ // GR_1024
-		// based on the # of primaries
-		{892, 525},				// top of weapon gauge, first frame, always
-		{880, 545},				// for the first primary
-		{880, 557}				// for the second primary
+	{ // ballistic HUD - slightly different alignment
+		{ // GR_640
+			// based on the # of primaries
+			{485, 273},				// top of weapon gauge, first frame, always
+			{485, 293},				// for the first primary
+			{485, 305}				// for the second primary
+		},
+		{ // GR_1024
+			// based on the # of primaries
+			{869, 525},				// top of weapon gauge, first frame, always
+			{869, 545},				// for the first primary
+			{869, 557}				// for the second primary
+		}
 	}
 };
-int Weapon_gauge_secondary_coords[GR_NUM_RESOLUTIONS][5][2] = {
-	{ // GR_640
-		// based on the # of secondaries
-		{497, 318},				// bottom of gauge, 0 secondaries
-		{497, 318},				// bottom of gauge, 1 secondaries
-		{497, 317},				// middle of gauge, 2 secondaries AND middle of gauge, 3 secondaries
-		{497, 326},				// bottom of gauge, 2 secondaries AND middle of gauge, 3 secondaries
-		{497, 335}				// bottom of gauge, 3 secondaries
+int Weapon_gauge_secondary_coords[NUM_HUD_SETTINGS][GR_NUM_RESOLUTIONS][5][2] =
+{
+	{ // normal HUD
+		{ // GR_640
+			// based on the # of secondaries
+			{497, 318},				// bottom of gauge, 0 secondaries
+			{497, 318},				// bottom of gauge, 1 secondaries
+			{497, 317},				// middle of gauge, 2 secondaries AND middle of gauge, 3 secondaries
+			{497, 326},				// bottom of gauge, 2 secondaries AND middle of gauge, 3 secondaries
+			{497, 335}				// bottom of gauge, 3 secondaries
+		},
+		{ // GR_1024
+			// based on the # of secondaries
+			{880, 570},				// bottom of gauge, 0 secondaries
+			{880, 570},				// bottom of gauge, 1 secondaries
+			{880, 569},				// middle of gauge, 2 secondaries AND middle of gauge, 3 secondaries
+			{880, 578},				// bottom of gauge, 2 secondaries AND middle of gauge, 3 secondaries
+			{880, 587}				// bottom of gauge, 3 secondaries
+		}
 	},
-	{ // GR_1024
-		// based on the # of secondaries
-		{880, 570},				// bottom of gauge, 0 secondaries
-		{880, 570},				// bottom of gauge, 1 secondaries
-		{880, 569},				// middle of gauge, 2 secondaries AND middle of gauge, 3 secondaries
-		{880, 578},				// bottom of gauge, 2 secondaries AND middle of gauge, 3 secondaries
-		{880, 587}				// bottom of gauge, 3 secondaries
+	{ // ballistic HUD - slightly different alignment
+		{ // GR_640
+			// based on the # of secondaries
+			{485, 318},				// bottom of gauge, 0 secondaries
+			{485, 318},				// bottom of gauge, 1 secondaries
+			{485, 317},				// middle of gauge, 2 secondaries AND middle of gauge, 3 secondaries
+			{485, 326},				// bottom of gauge, 2 secondaries AND middle of gauge, 3 secondaries
+			{485, 335}				// bottom of gauge, 3 secondaries
+		},
+		{ // GR_1024
+			// based on the # of secondaries
+			{869, 570},				// bottom of gauge, 0 secondaries
+			{869, 570},				// bottom of gauge, 1 secondaries
+			{869, 569},				// middle of gauge, 2 secondaries AND middle of gauge, 3 secondaries
+			{869, 578},				// bottom of gauge, 2 secondaries AND middle of gauge, 3 secondaries
+			{869, 587}				// bottom of gauge, 3 secondaries
+		}
 	}
 };
-int Weapon_title_coords[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		518, 275
+int Weapon_title_coords[NUM_HUD_SETTINGS][GR_NUM_RESOLUTIONS][2] =
+{
+	{ // normal HUD
+		{ // GR_640
+			518, 274
+		},
+		{ // GR_1024
+			901, 527
+		}
 	},
-	{ // GR_1024
-		901, 527
+	{ // ballistic HUD - slightly different alignment
+		{ // GR_640
+			487, 274
+		},
+		{ // GR_1024
+			871, 527
+		}
 	}
 };
 int Weapon_plink_coords[GR_NUM_RESOLUTIONS][2][2] = {
@@ -600,22 +656,40 @@ int Weapon_secondary_reload_x[GR_NUM_RESOLUTIONS] = {
 	615,							// x location of where to draw the weapon reload time
 	998
 };
-char *Weapon_gauge_fnames[GR_NUM_RESOLUTIONS][NUM_WEAPON_GAUGES] = 
+char *Weapon_gauge_fnames[NUM_HUD_SETTINGS][GR_NUM_RESOLUTIONS][NUM_WEAPON_GAUGES] = 
 {
 //XSTR:OFF
-	{ // GR_640
-		"weapons1",
-		"weapons2",
-		"weapons3",
-		"weapons4",
-		"weapons5"
-	}, 
-	{ // GR_1024
-		"weapons1",
-		"weapons2",
-		"weapons3",
-		"weapons4",
-		"weapons5"
+	{ // normal HUD
+		{ // GR_640
+			"weapons1",
+			"weapons2",
+			"weapons3",
+			"weapons4",
+			"weapons5"
+		}, 
+		{ // GR_1024
+			"weapons1",
+			"weapons2",
+			"weapons3",
+			"weapons4",
+			"weapons5"
+		}
+	},
+	{ // ballistic HUD - slightly different alignment
+		{ // GR_640
+			"weapons1_b",
+			"weapons2_b",
+			"weapons3_b",
+			"weapons4_b",
+			"weapons5_b"
+		}, 
+		{ // GR_1024
+			"weapons1_b",
+			"weapons2_b",
+			"weapons3_b",
+			"weapons4_b",
+			"weapons5_b"
+		}
 	}
 //XSTR:ON
 };
@@ -1179,7 +1253,7 @@ void hud_keyed_targets_clear()
 // Init data used for the weapons display on the HUD
 void hud_weapons_init()
 {
-	int i;
+	int i, j, k, hud_index, gauge_index, hud_warned;
 
 	Weapon_flash_info.is_bright = 0;
 	for ( i = 0; i < MAX_WEAPON_FLASH_LINES; i++ ) {
@@ -1187,13 +1261,65 @@ void hud_weapons_init()
 		Weapon_flash_info.flash_next[i] = 1;
 	}
 
-	if ( !Weapon_gauges_loaded ) {
-		for ( i = 0; i < NUM_WEAPON_GAUGES; i++ ) {
-			Weapon_gauges[i].first_frame = bm_load_animation(Weapon_gauge_fnames[gr_screen.res][i], &Weapon_gauges[i].num_frames);
-			if ( Weapon_gauges[i].first_frame < 0 ) {
-				Warning(LOCATION,"Cannot load hud ani: %s\n",Weapon_gauge_fnames[gr_screen.res][i]);
+	if ( !Weapon_gauges_loaded )
+	{
+		hud_warned = 0;
+
+		for (hud_index = 0; hud_index < NUM_HUD_SETTINGS; hud_index++)
+		{
+			for ( gauge_index = 0; gauge_index < NUM_WEAPON_GAUGES; gauge_index++ )
+			{
+				Weapon_gauges[hud_index][gauge_index].first_frame = bm_load_animation(Weapon_gauge_fnames[hud_index][gr_screen.res][gauge_index], &Weapon_gauges[hud_index][gauge_index].num_frames);
+
+				// file not found?
+				if ( Weapon_gauges[hud_index][gauge_index].first_frame < 0 )
+				{
+					// if this is the ballistic hud setting, load the conventional ani
+					if (hud_index)
+					{
+						// give a single warning
+						if (!hud_warned)
+						{
+							Warning(LOCATION, "Warning: Ballistic HUD graphics not found.  Defaulting to original graphics.\n");
+							hud_warned = 1;
+						}
+
+						Weapon_gauges[hud_index][gauge_index].first_frame = bm_load_animation(Weapon_gauge_fnames[0][gr_screen.res][gauge_index], &Weapon_gauges[hud_index][gauge_index].num_frames);
+
+						// and test again
+						if ( Weapon_gauges[hud_index][gauge_index].first_frame < 0 )
+						{
+							Warning(LOCATION,"Cannot load hud ani: %s\n",Weapon_gauge_fnames[hud_index][gr_screen.res][gauge_index]);
+						}
+					}
+				}
 			}
 		}
+
+		// reset the old coordinates if hud_warned
+		if (hud_warned)
+		{
+			// don't reset the first one, but reset all others
+			for (hud_index = 1; hud_index < NUM_HUD_SETTINGS; hud_index++)
+			{
+				for (i = 0; i < GR_NUM_RESOLUTIONS; i++)
+				{
+					for (k = 0; k < 2; k++)
+					{
+						for (j = 0; j < 3; j++)
+						{
+							Weapon_gauge_primary_coords[hud_index][i][j][k] = Weapon_gauge_primary_coords[0][i][j][k];
+						}
+						for (j = 0; j < 5; j++)
+						{
+							Weapon_gauge_secondary_coords[hud_index][i][j][k] = Weapon_gauge_secondary_coords[0][i][j][k];
+						}
+						Weapon_title_coords[hud_index][i][k] = Weapon_title_coords[0][i][k];
+					}
+				}
+			}
+		}
+
 		Weapon_gauges_loaded = 1;
 	}
 }
@@ -1212,6 +1338,19 @@ void hud_init_homing_beep()
 void hud_init_targeting()
 {
 	Assert(Player_ai != NULL);
+
+	int i;
+
+	// decide whether to realign HUD for ballistic primaries
+	ballistic_hud_index = 0;
+	for (i = 0; i <	Player_ship->weapons.num_primary_banks; i++)
+	{
+		if (Weapon_info[Player_ship->weapons.primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC)
+		{
+			ballistic_hud_index = 1;
+			break;
+		}
+	}
 
 	// make sure there is no current target
 	set_target_objnum( Player_ai, -1 );
@@ -1278,8 +1417,6 @@ void hud_init_targeting()
 	} else {
 		Toggle_text_alpha = 160;
 	}
-
-
 }
 
 //	Target the next or previous subobject on the currently selected ship, based on next_flag.
@@ -4939,14 +5076,14 @@ void hud_show_weapons()
 	hud_set_gauge_color(HUD_WEAPONS_GAUGE);
 
 	// draw top of primary display
-	GR_AABITMAP(Weapon_gauges[0].first_frame, Weapon_gauge_primary_coords[gr_screen.res][0][0], Weapon_gauge_primary_coords[gr_screen.res][0][1]);	
+	GR_AABITMAP(Weapon_gauges[ballistic_hud_index][0].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][0][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][0][1]);	
 	
-	emp_hud_string(Weapon_title_coords[gr_screen.res][0], Weapon_title_coords[gr_screen.res][1], EG_WEAPON_TITLE, XSTR( "weapons", 328));		
+	emp_hud_string(Weapon_title_coords[ballistic_hud_index][gr_screen.res][0], Weapon_title_coords[ballistic_hud_index][gr_screen.res][1], EG_WEAPON_TITLE, XSTR( "weapons", 328));		
 
 	switch ( np ) {
 	case 0:		
 		// draw bottom of border		
-		GR_AABITMAP(Weapon_gauges[2].first_frame, Weapon_gauge_primary_coords[gr_screen.res][1][0], Weapon_gauge_primary_coords[gr_screen.res][1][1]);		
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][1]);		
 
 		emp_hud_string(Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1], EG_WEAPON_P1, XSTR( "<none>", 329));		
 
@@ -4955,7 +5092,7 @@ void hud_show_weapons()
 
 	case 1:
 		// draw bottom of border
-		GR_AABITMAP(Weapon_gauges[2].first_frame, Weapon_gauge_primary_coords[gr_screen.res][1][0], Weapon_gauge_primary_coords[gr_screen.res][1][1]);
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][1]);
 
 		strcpy(name, Weapon_info[sw->primary_bank_weapons[0]].name);
 		if (Lcl_gr) {
@@ -4982,10 +5119,10 @@ void hud_show_weapons()
 
 	case 2:
 		// draw border to accomodate second primary weapon
-		GR_AABITMAP(Weapon_gauges[1].first_frame, Weapon_gauge_primary_coords[gr_screen.res][1][0], Weapon_gauge_primary_coords[gr_screen.res][1][1]);		
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][1].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][1]);		
 
 		// draw bottom of border
-		GR_AABITMAP(Weapon_gauges[2].first_frame, Weapon_gauge_primary_coords[gr_screen.res][2][0], Weapon_gauge_primary_coords[gr_screen.res][2][1]);
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][2][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][2][1]);
 
 		strcpy(name, Weapon_info[sw->primary_bank_weapons[0]].name);
 		if (Lcl_gr) {
@@ -5040,37 +5177,37 @@ void hud_show_weapons()
 	switch ( ns ) {
 	case 0:
 		// draw the bottom of the secondary weapons
-		GR_AABITMAP(Weapon_gauges[4].first_frame, Weapon_gauge_secondary_coords[gr_screen.res][0][0], Weapon_gauge_secondary_coords[gr_screen.res][0][1] - 12*np - 1);		
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][0][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][0][1] - 12*np - 1);		
 
 		emp_hud_string(Weapon_pname_coords[gr_screen.res][0][0], Weapon_secondary_y[gr_screen.res][0] - np*12, EG_WEAPON_S1, XSTR( "<none>", 329));		
 		break;
 
 	case 1:
 		// draw the bottom of the secondary weapons
-		GR_AABITMAP(Weapon_gauges[4].first_frame, Weapon_gauge_secondary_coords[gr_screen.res][1][0], Weapon_gauge_secondary_coords[gr_screen.res][1][1] - 12*np - 1);		
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][1][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][1][1] - 12*np - 1);		
 
 		hud_show_secondary_weapon(1, sw, Player_ship->flags & SF_SECONDARY_DUAL_FIRE);
 		break;
 
 	case 2:
 		// draw the middle border, only present when there are 2 or more secondaries
-		GR_AABITMAP(Weapon_gauges[3].first_frame, Weapon_gauge_secondary_coords[gr_screen.res][2][0], Weapon_gauge_secondary_coords[gr_screen.res][2][1] - np*12);		
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][3].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][2][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][2][1] - np*12);		
 
 		// draw the bottom of the secondary weapons
-		GR_AABITMAP(Weapon_gauges[4].first_frame, Weapon_gauge_secondary_coords[gr_screen.res][3][0], Weapon_gauge_secondary_coords[gr_screen.res][3][1] - 12*np);		
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][3][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][3][1] - 12*np);		
 
 		hud_show_secondary_weapon(2, sw, Player_ship->flags & SF_SECONDARY_DUAL_FIRE);
 		break;
 
 	case 3:
 		// draw the middle border, only present when there are 2 or more secondaries
-		GR_AABITMAP(Weapon_gauges[3].first_frame, Weapon_gauge_secondary_coords[gr_screen.res][2][0], Weapon_gauge_secondary_coords[gr_screen.res][2][1] - np*12);		
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][3].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][2][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][2][1] - np*12);		
 
 		// draw the bottm border, only present when there are 3 secondaries
-		GR_AABITMAP(Weapon_gauges[3].first_frame, Weapon_gauge_secondary_coords[gr_screen.res][3][0], Weapon_gauge_secondary_coords[gr_screen.res][3][1] - np*12);		
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][3].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][3][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][3][1] - np*12);		
 
 		// draw the bottom of the secondary weapons
-		GR_AABITMAP(Weapon_gauges[4].first_frame, Weapon_gauge_secondary_coords[gr_screen.res][4][0], Weapon_gauge_secondary_coords[gr_screen.res][4][1] - 12*np);		
+		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][4][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][4][1] - 12*np);		
 
 		hud_show_secondary_weapon(3, sw, Player_ship->flags & SF_SECONDARY_DUAL_FIRE);
 		break;
@@ -5754,7 +5891,7 @@ void hudtarget_page_in()
 	int i;
 
 	for ( i = 0; i < NUM_WEAPON_GAUGES; i++ ) {
-		bm_page_in_aabitmap( Weapon_gauges[i].first_frame, Weapon_gauges[i].num_frames);
+		bm_page_in_aabitmap( Weapon_gauges[ballistic_hud_index][i].first_frame, Weapon_gauges[ballistic_hud_index][i].num_frames);
 	}
 	bm_page_in_aabitmap( Lead_indicator_gauge.first_frame, Lead_indicator_gauge.num_frames);
 	bm_page_in_aabitmap( Energy_bar_gauges.first_frame, Energy_bar_gauges.num_frames);
