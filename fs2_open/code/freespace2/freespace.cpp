@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.107 $
- * $Date: 2004-07-26 20:47:28 $
- * $Author: Kazan $
+ * $Revision: 2.108 $
+ * $Date: 2004-07-26 21:19:05 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.107  2004/07/26 20:47:28  Kazan
+ * remove MCD complete
+ *
  * Revision 2.106  2004/07/26 17:54:04  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
  * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
@@ -2623,12 +2626,12 @@ DCF(gamma,"Sets Gamma factor")
 
 void run_launcher()
 {
-	const char *launcher_link = "explorer.exe \"http://www.randomtiger.pwp.blueyonder.co.uk/freespace/Launcher4.rar\"";
+	const char *launcher_link = "explorer.exe \"http://www.randomtiger.pwp.blueyonder.co.uk/freespace/Launcher5.rar\"";
 
 	int download = MessageBox((HWND)os_get_window(), 
 		"Run the fs2_open launcher to fix your problem. "
 		"Would you like to download the latest version of the launcher? "
-		"You must have at least v4.0 to run OGL and v3.0 to run D3D8.", 
+		"You must have at least version 5.0 to run fs2_open versions above 3.6.", 
 		"Question", MB_YESNO | MB_ICONQUESTION);
 
 	if(download == IDYES)
@@ -2664,7 +2667,7 @@ void run_launcher()
 	if (!launcher_ran) 
 	{
 		download = MessageBox((HWND)os_get_window(), 
-			"The Launcher could not be started, you cant run fs2_open without it. "
+			"The Launcher could not be started. You cannot run fs2_open without it. "
 			"Would you like to download it?", "FS2_Open Startup Error", MB_YESNO | MB_ICONQUESTION);
 
 		if(download == IDYES)
