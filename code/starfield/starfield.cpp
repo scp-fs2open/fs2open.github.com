@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-01-18 14:03:23 $
+ * $Revision: 2.23 $
+ * $Date: 2004-01-19 00:56:10 $
  * $Author: randomtiger $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/01/18 14:03:23  randomtiger
+ * A couple of FRED_OGL changes.
+ *
  * Revision 2.21  2004/01/17 21:59:56  randomtiger
  * Some small changes to the main codebase that allow Fred_open OGL to compile.
  *
@@ -716,7 +719,9 @@ void stars_level_init()
 		}
 		vm_vec_copy_normalize(&Stars[i].pos, &v);
 
+#ifndef FRED_OGL
 		if (!Fred_running)
+#endif
 		{
 			red= (ubyte)(myrand() % 63 +192);		//192-255
 			green= (ubyte)(myrand() % 63 +192);		//192-255
@@ -1071,11 +1076,14 @@ void stars_draw_bitmaps( int show_bitmaps )
 			continue;
 		}
 	
+#ifndef FRED_OGL
 		// set the bitmap				
 		if(Fred_running){
 			gr_set_bitmap(Starfield_bitmaps[star_index].bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
 			g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);
-		} else {
+		} else 
+#endif
+		{
 			
 			if(Starfield_bitmaps[star_index].xparent){
 				if(Starfield_bitmaps[star_index].fps){
@@ -1456,14 +1464,19 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 			}
 
 			if ( (Star_flags & STAR_FLAG_ANTIALIAS) || (D3D_enabled) )	{
+#ifndef FRED_OGL
 				if (!Fred_running)
+#endif
+
 				{
 					gr_set_color_fast( &sp->col );
 				}
+#ifndef FRED_OGL
 				else
 				{
 					gr_set_color_fast( &star_aacolors[color] );
 				}
+#endif
 
 				/* if the two points are the same, fudge it, since some D3D cards (G200 and G400) are lame.				
 				if( (fl2i(p1.sx) == fl2i(p2.sx)) && (fl2i(p1.sy) == fl2i(p2.sy)) ){					
@@ -1484,15 +1497,20 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 				}
 				gr_aaline(&p1,&p2);
 			} else {
+#ifndef FRED_OGL
+
 				// use alphablended line so that dark stars don't look bad on top of nebulas
 				if (!Fred_running)
+#endif
 				{
 					gr_set_color_fast( &sp->col );
 				}
+#ifndef FRED_OGL
 				else
 				{
 					gr_set_color_fast( &star_aacolors[color] );
 				}
+#endif
 
 				if ( Star_flags & STAR_FLAG_TAIL )	{
 					gr_line(fl2i(p1.sx),fl2i(p1.sy),fl2i(p2.sx),fl2i(p2.sy));

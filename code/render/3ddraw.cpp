@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-25 15:04:46 $
- * $Author: fryday $
+ * $Revision: 2.12 $
+ * $Date: 2004-01-19 00:56:10 $
+ * $Author: randomtiger $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/25 15:04:46  fryday
+ * Got lasers to work in HT&L OpenGL
+ * Messed a bit with opengl_tmapper_internal3d, draw_laser functions, and added draw_laser_htl
+ *
  * Revision 2.10  2003/11/17 04:25:57  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -292,11 +296,10 @@ int g3_draw_line(vertex *p0,vertex *p1)
 //		return 1;
 		return must_clip_line(p0,p1,codes_or,0);
 
-	
 //	gr_line(fl2i(p0->sx),fl2i(p0->sy),fl2i(p1->sx),fl2i(p1->sy));
 //	gr_line_float(p0->sx,p0->sy,p1->sx,p1->sy);
 
-	gr_aaline( p0, p1 );
+  	gr_aaline( p0, p1 );
 
 	return 0;
 }
@@ -1910,10 +1913,12 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	// turn off culling
 	gr_set_cull(0);
 
+#ifndef FRED_OGL
 	// draw the bitmap
 	if(Fred_running){
 		tmap_flags &= ~(TMAP_FLAG_CORRECT);
 	}
+#endif
 	// render all polys
 	for(idx=0; idx<div_x; idx++){
 		for(s_idx=0; s_idx<div_y; s_idx++){						
