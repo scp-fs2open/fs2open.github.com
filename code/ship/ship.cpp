@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.95 $
- * $Date: 2003-12-15 21:36:42 $
+ * $Revision: 2.96 $
+ * $Date: 2003-12-16 20:55:13 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2003/12/15 21:36:42  phreak
+ * replaced asserts in parse_ship with more descriptive warnings
+ *
  * Revision 2.94  2003/11/21 22:30:45  phreak
  * changed PLAYER_MAX_DIST_WARNING to 700000 (700km)
  * changed PLAYER_MAX_DIST_END to 750000           (750km)
@@ -3180,8 +3183,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->current_translation=vmd_zero_vector;
 	shipp->time_until_full_cloak=timestamp(0);
 	shipp->cloak_alpha=255;
-
-	shipp->tertiary_weapon_info_idx=-1;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -5249,11 +5250,11 @@ void ship_process_post(object * obj, float frametime)
 
 	ship_chase_shield_energy_targets(shipp, obj, frametime);
 
-	if (timestamp_elapsed(shipp->boost_finish_stamp))
+/*	if (timestamp_elapsed(shipp->boost_finish_stamp))
 	{
 		shipp->boost_pod_engaged=0;
 		obj->phys_info.flags &= ~(PF_BOOSTER_ON);
-	}
+	}*/
 
 	// AL 1-6-98: record the initial ammo counts for ships, which is used as the max limit for rearming
 	// Goober5000 - added ballistics support
@@ -7762,7 +7763,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 			// subtract the number of missiles fired
 			if ( Weapon_energy_cheat == 0 ){
-				if (shipp->tertiary_weapon_info_idx >= 0)
+				/*if (shipp->tertiary_weapon_info_idx >= 0)
 				{
 					tertiary_weapon_info *twip=&Tertiary_weapon_info[shipp->tertiary_weapon_info_idx];
 					if ((twip->type == TWT_AMMO_POD) && (shipp->ammopod_current_secondary==bank) && (shipp->ammopod_current_ammo > 0))
@@ -7773,11 +7774,11 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 					{
 						swp->secondary_bank_ammo[bank]--;
 					}
-				}
-				else
-				{
+				}*/
+			//	else
+			//	{
 					swp->secondary_bank_ammo[bank]--;
-				}
+			//	}
 			}
 		}
 	}
@@ -12240,49 +12241,59 @@ int ship_subsys_takes_damage(ship_subsys *ss)
 //phreak
 int ship_fire_tertiary(object *objp)
 {
+	return 1;
+	Assert(objp->type == OBJ_SHIP);
 	ship *shipp=&Ships[objp->instance];
+	ship_weapon *sw=&shipp->weapons;
 	tertiary_weapon_info* twip;
+	
+	
 
-	if (!shipp) Int3();
+	Assert(shipp);
+	Assert(twip);
+	Assert(sw);
 
-	if (shipp->tertiary_weapon_info_idx < 0)
+	if (sw->tertary_bank_weapon < 0)
 		return 0;
 
-	twip=&Tertiary_weapon_info[shipp->tertiary_weapon_info_idx];
+	twip=&Tertiary_weapon_info[sw->tertary_bank_weapon];
 
-	if (twip->type==TWT_CLOAK_DEVICE)
+	switch (twip->type)
 	{
-		if (shipp->cloak_stage==0)
-			shipfx_start_cloak(shipp,twip->cloak_warmup,1,1);
-
-		if (shipp->cloak_stage==2)
-			shipfx_stop_cloak(shipp,twip->cloak_cooldown);
-	}
-	if (twip->type==TWT_BOOST_POD)
-	{
-		if (shipp->boost_pod_engaged)
+		case TWT_CLOAK_DEVICE:
 		{
-			return 1;
-		}
+			if (shipp->cloak_stage==0)
+				shipfx_start_cloak(shipp,twip->cloak_warmup,1,1);
 
-		if (shipp->boost_shots_remaining==0)
+			if (shipp->cloak_stage==2)
+				shipfx_stop_cloak(shipp,twip->cloak_cooldown);
+		}
+	
+		case TWT_BOOST_POD:
 		{
-			HUD_printf("No booster shots remaining");
-			return 1;
+		//	if (shipp->boost_pod_engaged)
+		//	{
+		//		return 1;
+		//	}
+
+			if (sw->tertiary_bank_ammo==0)
+			{
+				HUD_printf("No booster shots remaining");
+				return 1;
+			}	
+
+		//	shipp->boost_pod_engaged=1;
+			sw->tertiary_bank_ammo--;
+		//	shipp->boost_finish_stamp=timestamp(twip->boost_lifetime);
+
+			objp->phys_info.booster_max_vel.xyz.z=twip->boost_speed;
+			objp->phys_info.booster_forward_accel_time_const=twip->boost_acceleration;
+			
+			objp->phys_info.flags &= ~(PF_AFTERBURNER_ON);
+			objp->phys_info.flags |= PF_BOOSTER_ON;
+
+			HUD_printf("Booster engaged.");
 		}
-
-		shipp->boost_pod_engaged=1;
-		shipp->boost_shots_remaining--;
-		shipp->boost_finish_stamp=timestamp(twip->boost_lifetime);
-
-		objp->phys_info.booster_max_vel.xyz.z=twip->boost_speed;
-		objp->phys_info.booster_forward_accel_time_const=twip->boost_acceleration;
-		
-		objp->phys_info.flags &= ~(PF_AFTERBURNER_ON);
-		objp->phys_info.flags |= PF_BOOSTER_ON;
-
-		HUD_printf("Booster engaged. %d shots remaining", shipp->boost_shots_remaining);
-				
 	}
 
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.53 $
- * $Date: 2003-11-11 02:15:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.54 $
+ * $Date: 2003-12-16 20:55:13 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2003/11/11 02:15:41  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.52  2003/10/25 06:56:06  bobboau
  * adding FOF stuff,
  * and fixed a small error in the matrix code,
@@ -562,15 +567,19 @@ typedef struct {
 typedef struct {
 	int num_primary_banks;					// Number of primary banks (same as model)
 	int num_secondary_banks;				// Number of secondary banks (same as model)
+	int num_tertiary_banks;
 
 	int primary_bank_weapons[MAX_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
 	int secondary_bank_weapons[MAX_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
+	int tertary_bank_weapon;							// Tertiary_Weapon_info[] index for the weapon in the bank
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
+	int current_tertiary_bank;
 
 	int next_primary_fire_stamp[MAX_PRIMARY_BANKS];			// next time this primary bank can fire
-	int next_secondary_fire_stamp[MAX_SECONDARY_BANKS];	// next time this secondary bank can fire	
+	int next_secondary_fire_stamp[MAX_SECONDARY_BANKS];	// next time this secondary bank can fire
+	int next_tertiary_fire_stamp;
 
 	// ballistic primary support - by Goober5000
 	int primary_bank_ammo[MAX_PRIMARY_BANKS];			// Number of missiles left in primary bank
@@ -584,6 +593,11 @@ typedef struct {
 	int secondary_bank_capacity[MAX_SECONDARY_BANKS];		// Max number of missiles in bank
 	int secondary_next_slot[MAX_SECONDARY_BANKS];			// Next slot to fire in the bank
 	int secondary_bank_rearm_time[MAX_SECONDARY_BANKS];	// timestamp which indicates when bank can get new missile
+
+	int tertiary_bank_ammo;			// Number of shots left tertiary bank
+	int tertiary_bank_start_ammo;	// Number of shots starting in tertiary bank
+	int tertiary_bank_capacity;		// Max number of shots in bank
+	int tertiary_bank_rearm_time;	// timestamp which indicates when bank can get new something (used for ammopod or boostpod)
 
 	int last_fired_weapon_index;		//	Index of last fired secondary weapon.  Used for remote detonates.
 	int last_fired_weapon_signature;	//	Signature of last fired weapon.
@@ -984,18 +998,6 @@ typedef struct ship {
 	fix time_until_full_cloak;
 	int cloak_alpha;
 	fix time_until_uncloak;
-
-	int tertiary_weapon_info_idx;		//the tertiary weapon that this thing carries
-
-	int boost_pod_engaged;
-	int boost_shots_remaining;
-	fix boost_finish_stamp;
-
-	int ammopod_current_secondary;		//-1 if using this to carry primary ammo
-	int ammopod_current_primary;		//-1 if using this to carry missiles
-	int ammopod_current_ammo;
-
-	int jammer_engaged;
 
 	int last_fired_point[MAX_PRIMARY_BANKS]; //for fire point cylceing
 } ship;
