@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-10-04 22:42:22 $
+ * $Revision: 2.10 $
+ * $Date: 2003-11-06 20:22:13 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/04 22:42:22  Kazan
+ * fs2netd now TCP
+ *
  * Revision 2.8  2003/09/25 21:12:24  Kazan
  * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
  * Also D3D8 Screenshots work now.
@@ -274,6 +277,8 @@
 #include "globalincs/alphacolors.h"
 
 
+#pragma warning(push)
+#pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
 #if !defined(PXO_TCP)
 extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
@@ -283,6 +288,8 @@ extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
 extern unsigned int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[];
 extern int PXO_port;
+
+#pragma warning(pop)
 // ----------------------------------------------------------------------------------------
 // Basic module scope defines
 //

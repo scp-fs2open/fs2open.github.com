@@ -37,6 +37,8 @@ void gr_activate(int);
 #include "debugconsole/dbugfile.h"
 #include "sound/fsspeech.h"
 
+#pragma warning(disable:4711)
+
 const int MAX_SPEECH_BUFFER_LEN = 4096;
 
 bool FSSpeech_play_from[FSSPEECH_FROM_MAX];

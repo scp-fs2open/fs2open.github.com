@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-10-13 05:57:49 $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-06 20:22:13 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/10/13 05:57:49  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  * Revision 2.9  2003/10/04 22:42:23  Kazan
  * fs2netd now TCP
  *
@@ -473,6 +479,7 @@
 #endif
 
 #include "fs2open_pxo/Client.h"
+
 
 #include "network/multi.h"
 #include "network/multiui.h"

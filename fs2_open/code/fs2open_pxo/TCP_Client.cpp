@@ -6,21 +6,30 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.3 $
- * $Date: 2003-10-13 05:57:47 $
+ * $Revision: 1.4 $
+ * $Date: 2003-11-06 20:22:05 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2003/10/13 05:57:47  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  *
  *
  */
 
+
+#pragma warning(disable: 4663 4018 4663 4245)
 #include "Client.h"
 #include "protocol.h"
 #include "TCP_Socket.h"
 #include <iostream.h>
 #include <time.h>
 #include "network/multi_log.h"
+
 
 #define PXO_ADDINT(n)	*((int *)cur) = (n); cur += sizeof(int);
 #define PXO_ADDSTRING(x, y) memcpy(cur, x, y); cur += y;
