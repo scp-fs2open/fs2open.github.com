@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.53 $
- * $Date: 2003-10-29 02:09:17 $
- * $Author: randomtiger $
+ * $Revision: 2.54 $
+ * $Date: 2003-11-06 22:47:37 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2003/10/29 02:09:17  randomtiger
+ * Updated timerbar code to work properly, also added support for it in OGL.
+ * In D3D red is general processing (and generic graphics), green is 2D rendering, dark blue is 3D unlit, light blue is HT&L renders and yellow is the presentation of the frame to D3D. OGL is all red for now. Use compile flag TIMERBAR_ON with code lib to activate it.
+ * Also updated some more D3D device stuff that might get a bit more speed out of some cards.
+ *
  * Revision 2.52  2003/10/27 23:04:21  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -4030,6 +4035,10 @@ extern void ai_debug_render_stuff();
 int Game_subspace_effect = 0;
 DCF_BOOL( subspace, Game_subspace_effect );
 
+//stuff for ht&l. vars and such
+extern float View_zoom, Canv_h2, Canv_w2;
+extern int Cmdline_nohtl;
+
 // Does everything needed to render a frame
 void game_render_frame( vector * eye_pos, matrix * eye_orient )
 {
@@ -4037,7 +4046,7 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 
 	g3_start_frame(game_zbuffer);
 	g3_set_view_matrix( eye_pos, eye_orient, Viewer_zoom );
-
+	
 	// maybe offset the HUD (jitter stuff)
 #ifndef NO_NETWORK
 	dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
@@ -4060,6 +4069,9 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	} else {
 		stars_draw(1,1,1,0);
 	}
+
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, Canv_w2/Canv_h2, 0.1f,30000);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	obj_render_all(obj_render);
 	beam_render_all();						// render all beam weapons
@@ -4093,6 +4105,8 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 #endif
 #endif
 
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
 	//================ END OF 3D RENDERING STUFF ====================
 
 	hud_show_radar();
