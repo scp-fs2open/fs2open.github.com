@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.39 $
- * $Date: 2004-08-01 02:30:52 $
- * $Author: phreak $
+ * $Revision: 2.40 $
+ * $Date: 2005-01-01 19:47:26 $
+ * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2004/08/01 02:30:52  phreak
+ * -phreak command line changed to -dualscanlines
+ *
  * Revision 2.38  2004/07/26 20:47:33  Kazan
  * remove MCD complete
  *
@@ -1005,7 +1008,7 @@ void hud_render_target_asteroid(object *target_objp)
 				flags |=MR_NO_POLYS;
 		}
 
-		model_render(Asteroid_info[asteroidp->type].model_num[subtype], &target_objp->orient, &obj_pos, flags |MR_NO_LIGHTING | MR_LOCK_DETAIL );
+		model_render(Asteroid_info[asteroidp->type].model_num[subtype], &target_objp->orient, &obj_pos, flags |MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_FOGGING );
 		hud_render_target_close();
 	}
 
@@ -1511,9 +1514,9 @@ void hud_render_target_ship(object *target_objp)
 		}
 		// maybe render a special hud-target-only model
 		if(target_sip->modelnum_hud >= 0){
-			model_render( target_sip->modelnum_hud, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
+			model_render( target_sip->modelnum_hud, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 		} else {
-			model_render( target_shipp->modelnum, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER, -1, -1, target_shipp->replacement_textures);
+			model_render( target_shipp->modelnum, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, target_shipp->replacement_textures);
 		}
 		ship_model_stop( target_objp );
 
@@ -1603,7 +1606,7 @@ void hud_render_target_debris(object *target_objp)
 		model_clear_instance(debrisp->model_num);
 
 		// This calls the colour that doesnt get reset
-		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL );
+		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_FOGGING );
 		hud_render_target_close();
 	}
 
@@ -1719,7 +1722,7 @@ void hud_render_target_weapon(object *target_objp)
 		hud_render_target_setup(&camera_eye, &camera_orient, View_zoom/3 * Hud_target_object_factor);
 		model_clear_instance(viewed_model_num);
 
-		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER, -1, -1, replacement_textures);
+		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, replacement_textures);
 		hud_render_target_close();
 	}
 
