@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.62 $
- * $Date: 2005-03-03 02:39:14 $
+ * $Revision: 2.63 $
+ * $Date: 2005-03-03 14:29:37 $
  * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/03/03 02:39:14  bobboau
+ * added trilist suport to the poly rendering functions
+ * and a gr_bitmap_list function that uses it
+ *
  * Revision 2.61  2005/03/01 06:55:40  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -1173,7 +1177,7 @@ float flCAP( float x, float minx, float maxx)
 static float Interp_fog_level;
 int w_factor = 256;
 
-#define MAX_INTERNAL_POLY_VERTS 1024
+#define MAX_INTERNAL_POLY_VERTS 2048
 
 /**
  * This will be used to render the 3D parts the of FS2 engine

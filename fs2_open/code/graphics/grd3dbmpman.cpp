@@ -518,3 +518,7 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 
 	return false;
 }
+
+
+void gr_d3d_bm_make_render_target(int x, int y, int flags){
+}
