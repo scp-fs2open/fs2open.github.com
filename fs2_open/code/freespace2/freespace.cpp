@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.115 $
- * $Date: 2004-12-25 09:24:54 $
+ * $Revision: 2.116 $
+ * $Date: 2004-12-25 09:28:41 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2004/12/25 09:24:54  wmcoolmon
+ * Fix to modular tables workaround with Fs2NetD
+ *
  * Revision 2.114  2004/12/10 17:21:00  taylor
  * dymanic allocation of Personas
  *
@@ -6918,7 +6921,11 @@ void game_enter_state( int old_state, int new_state )
 			player_restore_target_and_weapon_link_prefs();
 
 			//Set the current hud
+#ifdef NEW_HUD
 			set_current_hud(Player_ship);
+#else
+			set_current_hud(Player_ship->ship_info_index);
+#endif
 
 			Game_mode |= GM_IN_MISSION;
 
