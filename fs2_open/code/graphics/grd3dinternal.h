@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.37 $
- * $Date: 2005-02-23 05:11:13 $
- * $Author: taylor $
+ * $Revision: 2.38 $
+ * $Date: 2005-02-27 10:38:06 $
+ * $Author: wmcoolmon $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/02/23 05:11:13  taylor
+ * more consolidation of various graphics variables
+ * some header cleaning
+ * only one tmapper_internal for OGL, don't use more than two tex/pass now
+ * seperate out 2d matrix mode to allow -2d_poof in OGL and maybe fix missing
+ *    interface when set 3d matrix stuff doesn't have corresponding end
+ * add dump_frame stuff for OGL, mostly useless but allows trailer recording
+ *
  * Revision 2.36  2005/02/18 09:51:06  wmcoolmon
  * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
  *
@@ -552,8 +560,8 @@ void gr_d3d_get_color( int * r, int * g, int * b );
 void gr_d3d_set_color_fast(color *dst);
 void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx=-1, int sy=-1 );
 void gr_d3d_bitmap(int x, int y);
-void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy);
-void gr_d3d_aabitmap(int x, int y);
+void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize);
+void gr_d3d_aabitmap(int x, int y, bool resize);
 void gr_d3d_rect(int x,int y,int w,int h,bool resize);
 void gr_d3d_create_shader(shader * shade, float r, float g, float b, float c );
 void gr_d3d_set_shader( shader * shade );

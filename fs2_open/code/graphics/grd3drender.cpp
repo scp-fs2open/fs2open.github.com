@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-02-23 05:11:13 $
- * $Author: taylor $
+ * $Revision: 2.60 $
+ * $Date: 2005-02-27 10:38:06 $
+ * $Author: wmcoolmon $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/02/23 05:11:13  taylor
+ * more consolidation of various graphics variables
+ * some header cleaning
+ * only one tmapper_internal for OGL, don't use more than two tex/pass now
+ * seperate out 2d matrix mode to allow -2d_poof in OGL and maybe fix missing
+ *    interface when set 3d matrix stuff doesn't have corresponding end
+ * add dump_frame stuff for OGL, mostly useless but allows trailer recording
+ *
  * Revision 2.58  2005/02/18 09:51:06  wmcoolmon
  * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
  *
@@ -2615,7 +2623,7 @@ void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, fl
  *
  * @return void
  */
-void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
+void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resize)
 {
 	if ( w < 1 ) return;
 	if ( h < 1 ) return;
@@ -2676,8 +2684,11 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 		int nw = x+w+gr_screen.offset_x;
 		int nh = y+h+gr_screen.offset_y;
 
-		gr_resize_screen_pos(&nx, &ny);
-		gr_resize_screen_pos(&nw, &nh);
+		if(resize)
+		{
+			gr_resize_screen_pos(&nx, &ny);
+			gr_resize_screen_pos(&nw, &nh);
+		}
 
 		x1 = i2fl(nx);
 		y1 = i2fl(ny);
@@ -2758,7 +2769,7 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
  *
  * @return void
  */
-void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy)
+void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 {
 	int reclip;
 	#ifndef NDEBUG
@@ -2836,7 +2847,7 @@ void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy)
 	d3d_set_initial_render_state();
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	gr_d3d_aabitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
+	gr_d3d_aabitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize);
 }
 
 /**
@@ -2845,11 +2856,12 @@ void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy)
  *
  * @return void
  */
-void gr_d3d_aabitmap(int x, int y)
+void gr_d3d_aabitmap(int x, int y, bool resize)
 {
 	int w, h;
 
 	bm_get_info( gr_screen.current_bitmap, &w, &h, NULL );
+
 	int dx1=x, dx2=x+w-1;
 	int dy1=y, dy2=y+h-1;
 	int sx=0, sy=0;
@@ -2869,7 +2881,7 @@ void gr_d3d_aabitmap(int x, int y)
 	d3d_set_initial_render_state();
 
 	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-	gr_aabitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
+	gr_aabitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize);
 }
 
 /**
