@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-08-09 06:07:23 $
+ * $Revision: 2.22 $
+ * $Date: 2003-08-12 03:18:33 $
  * $Author: bobboau $
- * $Revision: 2.21 $
- * $Date: 2003-08-09 06:07:23 $
+ * $Revision: 2.22 $
+ * $Date: 2003-08-12 03:18:33 $
  * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/08/09 06:07:23  bobboau
+ * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
+ *
  * Revision 2.20  2003/03/29 09:42:05  Goober5000
  * made beams default shield piercing again
  * also added a beam no pierce command line flag
@@ -351,6 +354,10 @@ cmdline_parm d3dlauncher_arg("-d3dlauncher", NULL);
 cmdline_parm d3dmipmap_arg("-d3dmipmap", NULL);
 cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// beams do not pierce shields - Goober5000
 cmdline_parm fov_arg("-fov", NULL);	// comand line FOV -Bobboau
+cmdline_parm spec_exp_arg("-spec_exp", NULL);	// comand line FOV -Bobboau
+cmdline_parm spec_point_arg("-spec_point", NULL);	// comand line FOV -Bobboau
+cmdline_parm spec_static_arg("-spec_static", NULL);	// comand line FOV -Bobboau
+cmdline_parm spec_tube_arg("-spec_tube", NULL);	// comand line FOV -Bobboau
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -806,6 +813,24 @@ int parse_cmdline(int argc, char *argv[])
 
 	if ( fov_arg.found() ) {
 		Viewer_zoom = VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
+	}
+
+
+//specular comand lines
+	if ( spec_exp_arg.found() ) {
+		specular_exponent_value = spec_exp_arg.get_float();
+	}
+
+	if ( spec_point_arg.found() ) {
+		static_point_factor = spec_point_arg.get_float();
+	}
+
+	if ( spec_static_arg.found() ) {
+		static_light_factor = spec_static_arg.get_float();
+	}
+
+	if ( spec_tube_arg.found() ) {
+		static_tube_factor = spec_tube_arg.get_float();
 	}
 
 	return 1;

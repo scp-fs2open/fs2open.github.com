@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.13 $
- * $Date: 2003-06-07 21:08:09 $
- * $Author: phreak $
+ * $Revision: 2.14 $
+ * $Date: 2003-08-12 03:18:32 $
+ * $Author: bobboau $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/06/07 21:08:09  phreak
+ * bmp_gfx_get_components now works with 32 bit opengl
+ *
  * Revision 2.12  2003/03/18 10:07:00  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -558,6 +561,7 @@
 extern int Texture_compression_enabled;
 
 int GLOWMAP = -1;
+int SPECMAP = -1;
 
 #define MAX_BMAP_SECTION_SIZE 256
 
