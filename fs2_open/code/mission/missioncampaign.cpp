@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-01-14 04:00:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-02-23 03:13:03 $
+ * $Author: wmcoolmon $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/01/14 04:00:16  Goober5000
+ * allowed for up to 256 main halls
+ * --Goober5000
+ *
  * Revision 2.5  2002/08/27 13:38:58  penguin
  * Moved DirectX8 stuff to directx8 branch; reverted to previous
  *
@@ -213,7 +217,7 @@
 #include "cfile/cfile.h"
 #include "playerman/player.h"
 #include "mission/missiongoals.h"
-// #include "movie.h"
+#include "cutscene/movie.h"
 #include "network/multi.h"
 #include "menuui/techmenu.h"
 #include "gamesnd/eventmusic.h"
@@ -1769,8 +1773,7 @@ void mission_campaign_maybe_play_movie(int type)
 	if ( !filename )
 		return;
 
-	// no soup for you!
-	// movie_play( filename );
+	movie_play( filename );	//Play the movie!
 }
 
 // return nonzero if the passed filename is a multiplayer campaign, 0 otherwise
