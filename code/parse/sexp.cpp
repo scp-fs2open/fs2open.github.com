@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.16 $
- * $Date: 2002-12-24 07:42:29 $
+ * $Revision: 2.17 $
+ * $Date: 2002-12-25 01:22:23 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2002/12/24 07:42:29  Goober5000
+ * added change-ai-class and is-ai-class, and I think I may also have nailed the
+ * is-iff bug; did some other bug hunting as well
+ * --Goober5000
+ *
  * Revision 2.15  2002/12/23 23:01:27  Goober5000
  * added set-cargo and is-cargo-x sexps
  * --Goober5000
@@ -498,7 +503,7 @@ sexp_oper Operators[] = {
 	{ "is-cargo-known",						OP_IS_CARGO_KNOWN,					1, INT_MAX,	},
 	{ "is-cargo-known-delay",				OP_CARGO_KNOWN_DELAY,				2, INT_MAX,	},
 	{ "cap-subsys-cargo-known-delay",	OP_CAP_SUBSYS_CARGO_KNOWN_DELAY,	3, INT_MAX,	},
-	{ "is-cargo-x",						OP_IS_CARGO_X,						2, 3 },
+	{ "is-cargo",						OP_IS_CARGO,						2, 3 },
 	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,			1, 1, },
 	{ "is-ship-stealthed",				OP_IS_SHIP_STEALTHED,	1, 1, },
 	{ "is_tagged",								OP_IS_TAGGED,							1, 1			},
@@ -1437,7 +1442,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 					case OP_DISTANCE_SUBSYSTEM:
 					case OP_SET_CARGO:
-					case OP_IS_CARGO_X:
+					case OP_IS_CARGO:
 					case OP_CHANGE_AI_CLASS:
 					case OP_IS_AI_CLASS:
 						ship_index = Sexp_nodes[Sexp_nodes[op_index].rest].rest;
@@ -5561,7 +5566,7 @@ void sexp_change_goal_validity( int n, int flag )
 
 // Goober5000
 // yeesh - be careful of the cargo-no-deplete flag :p
-int sexp_is_cargo_x(int n)
+int sexp_is_cargo(int n)
 {
 	char *cargo, *ship, *subsystem;
 	int ship_num, cargo_index;
@@ -8749,8 +8754,8 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
-			case OP_IS_CARGO_X:
-				sexp_val = sexp_is_cargo_x(node);
+			case OP_IS_CARGO:
+				sexp_val = sexp_is_cargo(node);
 				break;
 
 			case OP_CHANGE_AI_CLASS:
@@ -9316,7 +9321,7 @@ int query_operator_return_type(int op)
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_IS_PRIMARY_SELECTED:
 		case OP_IS_SHIP_STEALTHED:
-		case OP_IS_CARGO_X:
+		case OP_IS_CARGO:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -9765,7 +9770,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_AI_GOAL;
 
 		case OP_SET_CARGO:
-		case OP_IS_CARGO_X:
+		case OP_IS_CARGO:
 			if (argnum == 0)
 				return OPF_CARGO;
 			else if (argnum == 1)

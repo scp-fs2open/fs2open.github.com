@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.14 $
+ * $Revision: 2.15 $
  * $Author: Goober5000 $
- * $Date: 2002-12-24 07:42:29 $
+ * $Date: 2002-12-25 01:22:23 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2002/12/24 07:42:29  Goober5000
+ * added change-ai-class and is-ai-class, and I think I may also have nailed the
+ * is-iff bug; did some other bug hunting as well
+ * --Goober5000
+ *
  * Revision 2.13  2002/12/23 23:01:27  Goober5000
  * added set-cargo and is-cargo-x sexps
  * --Goober5000
@@ -549,7 +554,7 @@
 #define	OP_TEAM_SCORE						(0x001a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define OP_PRIMARY_AMMO_PCT					(0x001b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_SHIP_STEALTHED				(0x001c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_IS_CARGO_X						(0x001d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_CARGO						(0x001d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
