@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-09-09 05:51:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2003-09-11 19:06:27 $
+ * $Author: argv $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/09 05:51:14  Goober5000
+ * if player has primitive sensors, hud will not display shield icons or message sender brackets
+ * --Goober5000
+ *
  * Revision 2.4  2003/04/29 01:03:23  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -448,7 +452,8 @@ void hud_shield_show(object *objp)
 	// draw the four quadrants
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = sp->ship_initial_shield_strength/4.0f;
+	// _argv[-1] - singular shield.
+	max_shield = sp->ship_initial_shield_strength / (sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1.0f : 4.0f);
 
 	for ( i = 0; i < 4; i++ ) {
 
@@ -456,12 +461,16 @@ void hud_shield_show(object *objp)
 			break;
 		}
 
-		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		if ( objp->shield_quadrant[sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 
 		range = max(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
-		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
+		if (!ship_is_shield_up(objp, sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i]))
+			// sometimes, this will draw something even with the shield down. this is not informative, so don't do that!
+			hud_color_index = 0;
+		else
+			hud_color_index = fl2i( (objp->shield_quadrant[sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i]] / max_shield) * range + 0.5);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 
 		if ( hud_color_index < 0 ) {
@@ -553,6 +562,10 @@ void hud_shield_equalize(object *objp, player *pl)
 		return;
 	}
 
+	// _argv[-1] - singular shield.
+	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
+		return;
+
 	// are all quadrants equal?
 	for(idx=0; idx<MAX_SHIELD_SECTIONS-1; idx++){
 		if(objp->shield_quadrant[idx] != objp->shield_quadrant[idx+1]){
@@ -604,6 +617,10 @@ void hud_shield_equalize(object *objp, player *pl)
 //
 void hud_augment_shield_quadrant(object *objp, int direction)
 {
+	// _argv[-1] - singular shield.
+	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
+		return;
+
 	float	full_shields, xfer_amount, energy_avail, percent_to_take, delta;
 	float	max_quadrant_val;
 	int	i;
@@ -755,7 +772,8 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = sp->ship_initial_shield_strength/4.0f;
+	// _argv[-1] - singular shield.
+	max_shield = sp->ship_initial_shield_strength / (sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1.0f : 4.0f);
 
 	for ( i = 0; i < 4; i++ ) {
 
@@ -763,7 +781,8 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 			break;
 		}
 
-		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		//if ( objp->shield_quadrant[sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i]] < 0.1f ) {
+		if (!ship_is_shield_up(objp, sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i])) {
 			continue;
 		}
 
@@ -774,7 +793,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
+		hud_color_index = fl2i( (objp->shield_quadrant[sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : Quadrant_xlate[i]] / max_shield) * range + 0.5);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {
