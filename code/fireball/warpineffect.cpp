@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-07-12 16:32:46 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-07-17 09:29:13 $
+ * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/07/12 16:32:46  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.16  2004/07/05 05:09:18  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -202,6 +205,7 @@
 #include "mcd/mcd.h"
 
 extern int Warp_model;
+extern int Cmdline_nohtl;
 
 DCF(norm,"normalize a zero length vector")
 {
@@ -227,7 +231,7 @@ void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 		vertlist[2] = v3;
 	}
 
-	g3_draw_poly( 3, vertlist, TMAP_FLAG_TEXTURED );
+	g3_draw_poly( 3, vertlist, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 
 }
 
@@ -256,7 +260,12 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 
 	vecs[4] = center;		//this is for the warp glow-Bobboau
 	verts[4].u = 0.5f; verts[4].v = 0.5f; 
-	g3_rotate_vertex( &verts[4], &vecs[4] );
+
+	if (Cmdline_nohtl) {
+		g3_rotate_vertex( &verts[4], &vecs[4] );
+	} else {
+		g3_transfer_vertex( &verts[4], &vecs[4] );
+	}
 
 	if ( Warp_glow_bitmap != -1 )	{
 		gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (The_mission.flags & MISSION_FLAG_FULLNEB)?(1.0f - neb2_get_fog_intensity(obj)):1.0f );
@@ -298,7 +307,7 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 
 			r *= (0.40f + Noise[noise_frame]*0.30f);
 						
-			g3_draw_bitmap( &verts[4], 0,r, TMAP_FLAG_TEXTURED );
+			g3_draw_bitmap( &verts[4], 0,r, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 			gr_zbuffer_set(saved_gr_zbuffering);
 		}
 	}
@@ -394,7 +403,11 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 		verts[4].u = 0.5f; verts[4].v = 0.5f; 
 
 		for (i=0; i<5; i++ )	{
-			g3_rotate_vertex( &verts[i], &vecs[i] );
+			if (Cmdline_nohtl) {
+				g3_rotate_vertex( &verts[i], &vecs[i] );
+			} else {
+				g3_transfer_vertex( &verts[i], &vecs[i] );
+			}
 		}
 
 		draw_face( &verts[0], &verts[4], &verts[1] );
