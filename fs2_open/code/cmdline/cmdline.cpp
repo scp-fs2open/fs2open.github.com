@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.64 $
- * $Date: 2004-04-03 18:11:20 $
+ * $Revision: 2.65 $
+ * $Date: 2004-04-06 01:11:41 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2004/04/03 18:11:20  Kazan
+ * FRED fixes
+ *
  * Revision 2.63  2004/04/02 18:25:16  randomtiger
  * Changed D3D secondry texture system to be off by default to save mem.
  * Added some friendly names for parameters.
@@ -511,6 +514,7 @@
 #include "globalincs/systemvars.h"
 #include "network/multi.h"
 #include "species_defs/species_defs.h"
+#include "hud/hudconfig.h"
 
 // variables
 class cmdline_parm {
@@ -679,6 +683,7 @@ cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys",NULL);
 cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
 cmdline_parm fred2_htl_arg("-fredhtl",NULL);
 cmdline_parm fred2_nowarn_arg("-fred_no_warn", NULL);
+cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -974,6 +979,12 @@ bool SetCmdlineParams()
 // Sets externed variables used for communication cmdline information
 {
 	//getcwd(FreeSpace_Directory, 256); // set the directory to our fs2 root
+
+
+	if (Radar_Range_Clamp.found())
+	{
+		Radar_ranges[RR_MAX_RANGES-1] = Radar_Range_Clamp.get_float();
+	}
 
 	if (fred2_nowarn_arg.found())
 	{

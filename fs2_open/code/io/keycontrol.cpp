@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-03-05 09:02:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2004-04-06 01:11:41 $
+ * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/03/05 09:02:04  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.20  2004/01/30 07:39:07  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -2470,7 +2474,9 @@ int button_function_demo_valid(int n)
 
 	case TIME_SPEED_UP:
 		if ( Game_mode & GM_NORMAL ) {
-			if ( Game_time_compression < (F1_0*4) ) {
+			//if ( Game_time_compression < (F1_0*4) ) {
+			// Let's see how high I can get this -- kazan
+			if ( Game_time_compression < (F1_0*64) ) {
 				Game_time_compression *= 2;
 			} else {
 				gamesnd_play_error_beep();

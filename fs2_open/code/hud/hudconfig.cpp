@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-03-31 05:42:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-04-06 01:11:41 $
+ * $Author: Kazan $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/31 05:42:27  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.5  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -308,10 +313,12 @@ HUD_CONFIG_TYPE HUD_config;	// Player HUD configuration
 
 // specify the max distance that the radar should detect objects
 // See RR_ #defines in HUDconfig.h.
+// Kazan - Clamp "Infinity" radar range by assigning Radar_ranges[RR_MAX_RANGES-1]=<clamp distance>
 float Radar_ranges[RR_MAX_RANGES] = {
 	2000.0f,			// short
 	10000.0f,		// med
 	10000000.0f,	// infinity
+
 };
 
 char *Radar_range_text(int n)
