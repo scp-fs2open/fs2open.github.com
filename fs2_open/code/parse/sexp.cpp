@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.105 $
- * $Date: 2004-09-17 07:12:23 $
+ * $Revision: 2.106 $
+ * $Date: 2004-09-17 08:07:52 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2004/09/17 07:12:23  Goober5000
+ * changed around the logic for the 3D warp effect
+ * --Goober5000
+ *
  * Revision 2.104  2004/09/17 00:28:31  Goober5000
  * removed player-not-use-ai and changed player-use-ai to take an argument
  * --Goober5000
@@ -14718,7 +14722,6 @@ int get_subcategory(int sexp_id)
 		case OP_SET_SUPPORT_SHIP:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
-		case OP_RADAR_SET_MAXRANGE: //Kazan
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_HUD_DISABLE:
@@ -14728,6 +14731,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
+		case OP_RADAR_SET_MAXRANGE: //Kazan
 			return CHANGE_SUBCATEGORY_HUD;
 		
 		default:
