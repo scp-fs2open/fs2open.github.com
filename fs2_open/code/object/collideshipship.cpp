@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-04-29 01:03:22 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-05 09:01:57 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/04/29 01:03:22  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.4  2003/01/24 03:48:11  Goober5000
  * aw, nuts - fixed a dumb bug with my new don't-collide-invisible code :p
  * --Goober5000
@@ -522,19 +526,18 @@
 
 #include "object/objcollide.h"
 #include "object/object.h"
-#include "model/model.h"
-#include "ship/ai.h"
 #include "ship/ship.h"
-#include "network/multi.h"
 #include "freespace2/freespace.h"
 #include "ship/shiphit.h"
 #include "gamesnd/gamesnd.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing 3d sound
 #include "gamesequence/gamesequence.h"
 #include "hud/hudshield.h"
+#include "hud/hudmessage.h"
 #include "io/joy_ff.h"
 #include "io/timer.h"
 #include "asteroid/asteroid.h"
+#include "playerman/player.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -1392,7 +1395,7 @@ void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient)
 #define	PLANET_DAMAGE_RANGE	3		//	If within this factor of radius, apply damage.
 
 fix	Last_planet_damage_time = 0;
-extern void hud_start_text_flash(char *txt);
+extern void hud_start_text_flash(char *txt, int t);
 
 //	Procss player_ship:planet damage.
 //	If within range of planet, apply damage to ship.

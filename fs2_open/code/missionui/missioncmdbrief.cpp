@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-11-16 04:08:47 $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-05 09:01:55 $
  * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/11/16 04:08:47  Goober5000
+ * fixed briefing scroll and display of "more"
+ * --Goober5000
+ *
  * Revision 2.7  2003/09/07 18:14:54  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -258,16 +262,14 @@
  * $NoKeywords: $
  */
 
-#include "ui/ui.h"
+#include "missionui/missioncmdbrief.h"
+#include "missionui/missionscreencommon.h"
 #include "ui/uidefs.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesequence/gamesequence.h"
-#include "missionui/missionscreencommon.h"
 #include "io/key.h"
-#include "bmpman/bmpman.h"
 #include "graphics/font.h"
 #include "mission/missionbriefcommon.h"
-#include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
 #include "sound/audiostr.h"
 #include "io/timer.h"
@@ -275,8 +277,8 @@
 #include "playerman/player.h"
 #include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
+#include "anim/packunpack.h"
 #include "anim/animplay.h"
-#include "debugconsole/dbugfile.h"
 #include "sound/fsspeech.h"
 
 #define NUM_CMD_SETTINGS	2

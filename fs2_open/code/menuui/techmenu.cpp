@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-12-16 20:47:21 $
- * $Author: phreak $
+ * $Revision: 2.17 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/12/16 20:47:21  phreak
+ * made gr_set_proj_matrix use the MIN/MAX_DRAW_DISTANCE constants
+ *
  * Revision 2.15  2003/11/17 04:25:56  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -306,31 +309,26 @@
  */
 
 #include "gamesequence/gamesequence.h"
+#include "ui/ui.h"
 #include "menuui/techmenu.h"
-#include "graphics/2d.h"
 #include "render/3d.h"
-#include "menuui/snazzyui.h"
-#include "playerman/managepilot.h"
 #include "io/key.h"
-#include "bmpman/bmpman.h"
-#include "io/timer.h"
-#include "mission/missioncampaign.h"
-#include "missionui/missionshipchoice.h"
-#include "freespace2/freespace.h"
-#include "menuui/mainhallmenu.h"
 #include "missionui/missionscreencommon.h"
 #include "gamesnd/gamesnd.h"
 #include "graphics/font.h"
-#include "math/vecmat.h"
 #include "io/mouse.h"
 #include "ui/uidefs.h"
 #include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
 #include "anim/animplay.h"
+#include "anim/packunpack.h"
 #include "localization/localize.h"
 #include "lighting/lighting.h"
 #include "sound/fsspeech.h"
-#include "debugconsole/dbugfile.h"
+#include "playerman/player.h"
+#include "parse/parselo.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 
 #define REVOLUTION_RATE	5.2f
 

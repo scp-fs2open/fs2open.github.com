@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-11-11 02:15:46 $
+ * $Revision: 2.7 $
+ * $Date: 2004-03-05 09:02:10 $
  * $Author: Goober5000 $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/11/11 02:15:46  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.5  2003/09/13 06:02:07  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -379,12 +384,8 @@
 #include <math.h>
 
 #include "physics/physics.h"
-#include "math/floating.h"
-#include "playerman/player.h"
 #include "freespace2/freespace.h"
-#include "globalincs/linklist.h"
 #include "io/timer.h"
-#include "io/key.h"
 
 // defines for physics functions
 #define	MAX_TURN_LIMIT	0.2618f		// about 15 degrees

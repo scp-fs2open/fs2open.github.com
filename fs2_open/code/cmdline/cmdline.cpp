@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.57 $
- * $Date: 2004-02-27 04:09:55 $
- * $Author: bobboau $
+ * $Revision: 2.58 $
+ * $Date: 2004-03-05 09:01:57 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2004/02/27 04:09:55  bobboau
+ * fixed a Z buffer error in HTL submodel rendering,
+ * and glow points,
+ * and other stuff
+ *
  * Revision 2.56  2004/02/20 21:58:07  randomtiger
  * Added * to - conversion for start mission code to allow launcher missions with '-' in them.
  * Currently the parsing code counts that as a flag and messes it up.
@@ -481,7 +486,6 @@
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
 #include "network/multi.h"
-#include "cfile/cfile.h"
 #include "species_defs/species_defs.h"
 
 // variables

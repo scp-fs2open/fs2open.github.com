@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-02-04 08:41:04 $
+ * $Revision: 2.11 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/02/04 08:41:04  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.9  2003/09/13 08:27:29  Goober5000
  * added some minor things, such as code cleanup and the following:
  * --turrets will not fire at cargo
@@ -207,20 +212,18 @@
  * $NoKeywords: $
  */
 
+#include "hud/hudshield.h"
 #include "graphics/2d.h"
 #include "object/object.h"
 #include "hud/hud.h"
-#include "hud/hudtarget.h"
 #include "hud/hudtargetbox.h"
-#include "hud/hudets.h"
 #include "playerman/player.h"
 #include "gamesnd/gamesnd.h"
-#include "freespace2/freespace.h"
-#include "bmpman/bmpman.h"
 #include "io/timer.h"
-#include "hud/hudshield.h"
 #include "hud/hudescort.h"
 #include "weapon/emp.h"
+#include "parse/parselo.h"
+#include "ship/ship.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

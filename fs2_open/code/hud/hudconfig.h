@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.h $
- * $Revision: 2.2 $
- * $Date: 2004-02-04 09:02:45 $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * Header file for HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/02/04 09:02:45  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -139,7 +143,10 @@
 #define _HUDCONFIG_H
 
 #include "hud/hud.h"
-#include "playerman/player.h"
+
+struct player;
+struct ship;
+struct ai_info;
 
 #define HUD_COLOR_GREEN		0
 #define HUD_COLOR_BLUE		1

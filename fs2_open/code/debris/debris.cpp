@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-10-15 22:03:24 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:01:59 $
+ * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/10/15 22:03:24  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.3  2003/04/29 01:03:22  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -231,24 +234,20 @@
  * $NoKeywords: $
  */
 
-#include "render/3d.h"
-#include "bmpman/bmpman.h"
-#include "object/object.h"
 #include "debris/debris.h"
+#include "render/3d.h"
 #include "fireball/fireballs.h"
 #include "radar/radar.h"
 #include "mission/missionparse.h"		// For MAX_SPECIES_NAMES
 #include "gamesnd/gamesnd.h"
 #include "object/objectsnd.h"
 #include "globalincs/linklist.h"
-#include "globalincs/systemvars.h"
 #include "particle/particle.h"
 #include "freespace2/freespace.h"
 #include "object/objcollide.h"
 #include "io/timer.h"
-#include "fireball/fireballs.h"
-#include "cmdline/cmdline.h"
 #include "species_defs/species_defs.h"
+#include "ship/ship.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

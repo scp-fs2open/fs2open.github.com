@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-01-30 07:39:07 $
+ * $Revision: 2.21 $
+ * $Date: 2004-03-05 09:02:04 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/01/30 07:39:07  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.19  2004/01/14 06:38:41  Goober5000
  * fixx0red a bug
  * --Goober5000
@@ -372,6 +378,7 @@
  */
 
 #include "globalincs/pstypes.h"
+#include "globalincs/globals.h"
 #include "globalincs/linklist.h"
 #include "io/key.h"
 #include "io/joy.h"
@@ -380,61 +387,39 @@
 #include "playerman/player.h"
 #include "weapon/weapon.h"
 #include "hud/hud.h"
-#include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
-#include "osapi/osapi.h"
 #include "mission/missiongoals.h"
-#include "hud/hud.h"
-#include "hud/hudtarget.h"
-#include "menuui/optionsmenu.h"
-#include "freespace2/freespace.h"
-#include "controlconfig/controlsconfig.h"
-#include "io/mouse.h"
 #include "hud/hudets.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
-#include "sound/sound.h"
 #include "gamesnd/gamesnd.h"
-#include "bmpman/bmpman.h"
-#include "sound/rbaudio.h"
 #include "hud/hudsquadmsg.h"
 #include "gamesnd/eventmusic.h"
-#include "anim/animplay.h"
 #include "freespace2/freespace.h"
-#include "cmeasure/cmeasure.h"
 #include "mission/missionhotkey.h"
-#include "ship/afterburner.h"
-#include "mission/missionparse.h"
 #include "hud/hudescort.h"
 #include "hud/hudshield.h"
-#include "network/multiutil.h"
 #include "network/multimsgs.h"
 #include "io/keycontrol.h"
 #include "ship/shiphit.h"
 #include "ship/shipfx.h"
-#include "hud/hud.h"
-#include "hud/hudobserver.h"
 #include "mission/missionlog.h"
 #include "hud/hudtargetbox.h"
 #include "popup/popup.h"
 #include "object/objcollide.h"
+#include "object/object.h"
 #include "hud/hudconfig.h"
-#include "mission/missioncampaign.h"
-#include "sound/rtvoice.h"
-#include "network/multi_respawn.h"
+#include "hud/hudmessage.h"
 #include "network/multi_pmsg.h"
 #include "globalincs/crypt.h"
-#include "ui/ui.h"
 #include "network/multi_pause.h"
 #include "network/multi_observer.h"
 #include "network/multi_endgame.h"
-#include "weapon/beam.h"
-#include "nebula/neblightning.h"
 #include "starfield/supernova.h"
 #include "mission/missionmessage.h"
 #include "menuui/mainhallmenu.h"
-#include "ship/aigoals.h"
 #include "missionui/missionpause.h"
+#include "hud/hudgauges.h"
 
 // --------------------------------------------------------------
 // Global to file 

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-01-30 07:39:08 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:07 $
  * $Author: Goober5000 $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/01/30 07:39:08  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/07 01:37:42  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -284,19 +290,13 @@
  */
 
 
-#include <math.h>
-
 #define MODEL_LIB
 
-#include "graphics/2d.h"
-#include "render/3d.h"
 #include "model/model.h"
+#include "math/vecmat.h"
 #include "graphics/tmapper.h"
-#include "math/floating.h"
 #include "math/fvi.h"
-#include "lighting/lighting.h"
 #include "model/modelsinc.h"
-#include "object/objcollide.h"
 
 #define TOL		1E-4
 #define DIST_TOL	1.0

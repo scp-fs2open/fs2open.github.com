@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.5 $
- * $Date: 2003-08-25 04:46:53 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-05 09:02:00 $
  * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/08/25 04:46:53  Goober5000
+ * added extra code to enable playing of FS1 music tracks
+ * --Goober5000
+ *
  * Revision 2.4  2003/03/29 05:18:17  Goober5000
  * yay for limit bumping!
  * bumped number of battle tracks and briefing/mainhall/credits tracks, both to 30
@@ -143,7 +147,8 @@
 #ifndef __EVENT_MUSIC_H__
 #define __EVENT_MUSIC_H__
 
-#include "parse/parselo.h"
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 // Identifies songs in the Soundtrack_filenames[] structure.  The order matches up with
 // what is in music.tbl.  Do not modify without synching music.tbl.

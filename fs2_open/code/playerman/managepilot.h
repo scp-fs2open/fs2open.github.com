@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:05 $
+ * $Author: Goober5000 $
  *
  * ManagePilot.h is a header file for code to load and save pilot files, and
  * to select and manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -110,9 +113,10 @@
  *
  */
 
-#include "cfile/cfile.h"
-#include "controlconfig/controlsconfig.h"
-#include "playerman/player.h"
+#include "globalincs/pstypes.h"
+
+struct CFILE;
+struct player;
 
 #define VALID_PILOT_CHARS	" _-"
 

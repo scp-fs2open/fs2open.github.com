@@ -9,13 +9,16 @@
 
 /*
  * $Logfile$
- * $Revision: 1.2 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 1.3 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 1.1  2002/07/29 22:24:26  penguin
  * First attempt at "fs2_open exchange" (PXO substitute) screen
  *
@@ -23,7 +26,6 @@
  */
 
 #include "globalincs/pstypes.h"
-#include "graphics/2d.h"
 #include "ui/ui.h"
 #include "bmpman/bmpman.h"
 #include "gamesnd/gamesnd.h"

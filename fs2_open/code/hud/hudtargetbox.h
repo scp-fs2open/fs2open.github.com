@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-06 16:50:13 $
- * $Author: phreak $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:04 $
+ * $Author: Goober5000 $
  *
  * Header file for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/06 16:50:13  phreak
+ * added Targetbox_wire variable to check what mode the
+ * hud targetbox uses
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -123,6 +127,10 @@
 
 #ifndef __FREESPACE_HUDTARGETBOX_H__
 #define __FREESPACE_HUDTARGETBOX_H__
+
+#include "graphics/2d.h"
+
+struct object;
 
 #define TBOX_FLASH_DURATION	1400
 #define TBOX_FLASH_INTERVAL	200

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.2 $
- * $Date: 2003-08-22 07:35:09 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:54 $
+ * $Author: Goober5000 $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/08/22 07:35:09  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move
  *
@@ -88,8 +93,9 @@
 #ifndef __SHOCKWAVE_H__
 #define __SHOCKWAVE_H__
 
-#include "cfile/cfile.h"
-#include "object/object.h"
+#include "globalincs/pstypes.h"
+
+struct object;
 
 #define	SW_USED				(1<<0)
 #define	SW_WEAPON			(1<<1)

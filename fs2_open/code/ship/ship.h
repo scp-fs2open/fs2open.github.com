@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.58 $
- * $Date: 2004-02-20 04:29:56 $
- * $Author: bobboau $
+ * $Revision: 2.59 $
+ * $Date: 2004-03-05 09:01:52 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2004/02/20 04:29:56  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.57  2004/01/31 04:06:29  phreak
  * commented out decal references
  *
@@ -479,13 +484,14 @@
 #ifndef _SHIP_H
 #define _SHIP_H
 
-#include "parse/parselo.h"		// for defintions of token lengths -- maybe move this elsewhere later
-#include "model/model.h"
+#include "globalincs/globals.h"		// for defintions of token lengths -- maybe move this elsewhere later (Goober5000 - moved to globals.h)
 #include "graphics/2d.h"			// for color def
-#include "weapon/trails.h"
+#include "model/model.h"
 #include "palman/palman.h"
+#include "weapon/trails.h"
+#include "ship/ai.h"
 #ifndef NO_NETWORK
-#include "network/multi_obj.h"
+#include "network/multi_oo.h"
 #endif
 
 struct object;
@@ -498,19 +504,6 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 #define	PDS_DIED		2
 #define	PDS_EJECTED	3
 
-#ifdef NDEBUG
-	#ifdef FRED
-		#define	MAX_SHIPS					400			// max number of ship instances there can be. DTP; bumped from 100 to 400
-		#define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode), DTP bumped from 100 to 400
-	#else
-		#define	MAX_SHIPS					400			// max number of ship instances there can be. /DTP bumped from 100 to 400
-		#define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); DTP bumped from 100 to 400
-	#endif
-#else
-#define MAX_SHIPS					400			// max number of ship instances there can be.DTP; bumped from 200 to 400
-#define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400
-#endif
-
 #define	HULL_DAMAGE_THRESHOLD_PERCENT	0.25f	//	Apply damage to hull, not shield if shield < this
 
 // the #defines below are to avoid round-off errors
@@ -522,25 +515,6 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 #define	MAX_SHIP_DETAIL_LEVELS	5				// maximum detail levels that a ship can render at
 #define	MAX_REINFORCEMENTS		10
 
-#define MAX_ESCORT_SHIPS	3
-#define MAX_SHIP_WEAPONS	5
-#define MAX_OBJECT_STATUS	10
-
-#define	MAX_PRIMARY_WEAPON_TYPES	10
-#define	MAX_SECONDARY_WEAPON_TYPES	10
-
-// Goober5000 - moved from hudescort.cpp
-// size of complete escort list, including all those wanting to get onto list but without space
-#define MAX_COMPLETE_ESCORT_LIST	20
-             
-// Goober5000 - currently only used in ship_select_next_primary and ship_select_next_secondary
-// Goober5000 - now used in hudtarget.cpp->hud_get_best_primary_bank
-// Goober5000 - now also used in ship.cpp for weapon specific bank parsing
-#define MAX_SUPPORTED_PRIMARY_BANKS	2
-#define UPPER_BOUND_SUPPORTED_PRIMARY_BANK	(MAX_SUPPORTED_PRIMARY_BANKS - 1)
-#define MAX_SUPPORTED_SECONDARY_BANKS	3
-#define UPPER_BOUND_SUPPORTED_SECONDARY_BANK	(MAX_SUPPORTED_SECONDARY_BANKS - 1)
-// IMPORTANT: MAX_SUPPORTED_PRIMARY_BANKS+MAX_SUPPORTED_SECONDARY_BANKS must equal MAX_SHIP_WEAPONS
 
 // defines for 'direction' parameter of ship_select_next_primary()
 #define CYCLE_PRIMARY_NEXT		0
@@ -579,7 +553,7 @@ typedef struct {
 #define SW_FLAG_TURRET_LOCK				(1<<1)							//	is this turret is free to fire or locked
 #define SW_FLAG_TAGGED_ONLY				(1<<2)							// only fire if target is tagged
 
-typedef struct {
+typedef struct ship_weapon {
 	int num_primary_banks;					// Number of primary banks (same as model)
 	int num_secondary_banks;				// Number of secondary banks (same as model)
 	int num_tertiary_banks;
@@ -706,9 +680,6 @@ typedef struct shield_ani {
 // reference an array to store the different IFF colors
 extern color IFF_colors[MAX_IFF_COLORS][2];
 	
-#include "ship/ai.h"  // ship_subsys must be declared before we include this.
-#include "weapon/weapon.h"		// ship_subsys must be declared before we include this.
-
 //#define	MAX_SHIP_SUBOBJECTS		50
 
 //extern ship_subobj	Ship_subsystems[MAX_SHIP_SUBOBJECTS];
@@ -1026,7 +997,7 @@ typedef struct ship {
 #define SEF_BEEN_TAGGED			(1<<4)
 #define SEF_RED_ALERT_CARRY	(1<<5)
 
-#define MAX_EXITED_SHIPS	800 //DTP changed for MAX_SHIPS sake. double of max_ships.
+#define MAX_EXITED_SHIPS	(2*MAX_SHIPS) //DTP changed for MAX_SHIPS sake. double of max_ships.
 
 typedef struct exited_ship {
 	char		ship_name[NAME_LENGTH];
@@ -1314,23 +1285,7 @@ typedef struct engine_wash_info
 #define MAX_ENGINE_WASH_TYPES	20
 extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 
-// ****************************************************************
-// DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
-// TALK TO DAVE B FIRST
-// ****************************************************************
-#ifdef INF_BUILD
-#define MAX_SHIP_TYPES		250		//DTP bumped from 130 to 200
-#else
-#define MAX_SHIP_TYPES		130		//DTP bumped from 130 to 200
-#endif
-
 #define MAX_SHIPS_PER_WING	6
-
-#ifdef FS2_DEMO
-	#define MAX_WINGS				15
-#else
-	#define MAX_WINGS				25
-#endif
 
 #define MAX_PLAYER_WINGS	3  // number of wings player can start a mission with
 

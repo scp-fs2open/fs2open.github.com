@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_respawn.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -110,24 +113,24 @@
  * $NoKeywords: $
  */
 
-#include "network/multi.h"
-#include "globalincs/systemvars.h"
+#include "network/multi_respawn.h"
 #include "network/multi.h"
 #include "object/object.h"
 #include "globalincs/linklist.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "missionui/missionweaponchoice.h"
-#include "observer/observer.h"
 #include "gamesequence/gamesequence.h"
 #include "hud/hudconfig.h"
 #include "hud/hudobserver.h"
 #include "hud/hudmessage.h"
-#include "network/multi_respawn.h"
 #include "network/multi_observer.h"
 #include "network/multi_team.h"
 #include "hud/hudwingmanstatus.h"
 #include "mission/missionparse.h"
+#include "ship/ship.h"
+#include "playerman/player.h"
+#include "missionui/missionscreencommon.h"
 #include "network/multiteamselect.h"
 #include "io/timer.h"
 

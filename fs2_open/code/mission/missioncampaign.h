@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.4 $
- * $Date: 2003-09-05 04:25:29 $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:02:06 $
  * $Author: Goober5000 $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/09/05 04:25:29  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/03 04:28:36  Goober5000
  * fixed the tech room bug!  yay!
  * --Goober5000
@@ -272,12 +284,9 @@
 #ifndef _MISSION_CAMPAIGN_H
 #define _MISSION_CAMPAIGN_H
 
-#include "parse/parselo.h"
-#include "cfile/cfile.h"
-#include "ship/ship.h"
-#include "weapon/weapon.h"
 #include "stats/scoring.h"
-#include "parse/sexp.h"
+
+struct sexp_variable;
 
 // name of the builtin campaign.
 #if defined(FS2_DEMO)

@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-05 04:25:28 $
+ * $Revision: 2.8 $
+ * $Date: 2004-03-05 09:01:53 $
  * $Author: Goober5000 $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/05 04:25:28  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.6  2003/04/06 03:56:54  Goober5000
  * fixed some scrolling issues; added scroll bar to mission select
  * --Goober5000
@@ -115,30 +127,25 @@
  * $NoKeywords: $
  */
 
-#include <ctype.h>
-#include "graphics/2d.h"
+#include "menuui/readyroom.h"
 #include "graphics/font.h"
 #include "ui/ui.h"
 #include "ui/uidefs.h"
 #include "io/key.h"
-#include "bmpman/bmpman.h"
 #include "gamesequence/gamesequence.h"
 #include "mission/missioncampaign.h"
-#include "sound/sound.h"
 #include "gamesnd/gamesnd.h"
 #include "missionui/missionscreencommon.h"
 #include "freespace2/freespace.h"
-#include "mission/missionparse.h"
 #include "playerman/player.h"
 #include "playerman/managepilot.h"
 #include "popup/popup.h"
 #include "gamehelp/contexthelp.h"
-#include "cfile/cfilesystem.h"
-#include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
 #include "cmdline/cmdline.h"
 #include "menuui/techmenu.h"	// for tech menu reset stuff
-#include "debugconsole/dbugfile.h"
+#include "cfile/cfile.h"
+#include "parse/parselo.h"
 
 #define MAX_MISSIONS	1024
 

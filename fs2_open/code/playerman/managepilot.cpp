@@ -9,14 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-05 04:25:28 $
+ * $Revision: 2.8 $
+ * $Date: 2004-03-05 09:02:05 $
  * $Author: Goober5000 $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/05 04:25:28  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.6  2003/08/20 08:11:28  wmcoolmon
  * Added error screens to the barracks and start screens when a pilot file can't be deleted
  *
@@ -242,9 +254,7 @@
  *
 */
 
-#include <errno.h>
 #include "playerman/managepilot.h"
-#include "graphics/2d.h"
 #include "freespace2/freespace.h"
 #include "hud/hudsquadmsg.h"
 #include "sound/sound.h"
@@ -261,7 +271,14 @@
 #include "io/joy.h"
 #include "io/mouse.h"
 #include "cutscene/cutscenes.h"
-#include "bmpman/bmpman.h"
+#include "missionui/missionscreencommon.h"
+#include "mission/missionbriefcommon.h"
+#include "mission/missioncampaign.h"
+#include "mission/missionload.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
+#include "cfile/cfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

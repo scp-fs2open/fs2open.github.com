@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.5 $
- * $Date: 2003-11-11 02:15:41 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-05 09:01:54 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/11/11 02:15:41  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.4  2002/11/14 04:18:17  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -119,11 +124,10 @@
 #ifndef __FS2_BEAM_WEAPON_HEADER_FILE
 #define __FS2_BEAM_WEAPON_HEADER_FILE
 
-#include "model/model.h"
-
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON DEFINES/VARS
 //
+#include "model/model.h"
 
 // prototypes
 struct object;

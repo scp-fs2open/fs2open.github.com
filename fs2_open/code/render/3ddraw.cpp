@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-02-27 04:09:56 $
- * $Author: bobboau $
+ * $Revision: 2.17 $
+ * $Date: 2004-03-05 09:01:51 $
+ * $Author: Goober5000 $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/02/27 04:09:56  bobboau
+ * fixed a Z buffer error in HTL submodel rendering,
+ * and glow points,
+ * and other stuff
+ *
  * Revision 2.15  2004/02/14 00:18:35  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -242,11 +247,8 @@
 
 #include "render/3dinternal.h"
 #include "graphics/tmapper.h"
-#include "graphics/2d.h"
-#include "math/floating.h"
 #include "physics/physics.h"		// For Physics_viewer_bank for g3_draw_rotated_bitmap
 #include "bmpman/bmpman.h"
-#include "globalincs/systemvars.h"
 #include "globalincs/alphacolors.h"
 #include "cmdline/cmdline.h"
 

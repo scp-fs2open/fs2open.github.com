@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/PopupDead.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:11 $
+ * $Author: Goober5000 $
  *
  * C module for the death popup
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -122,15 +125,14 @@
 
 #include "ui/ui.h"
 #include "io/key.h"
-#include "io/mouse.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
-#include "io/keycontrol.h"
 #include "playerman/player.h"
 #include "popup/popupdead.h"
 #include "globalincs/alphacolors.h"
 #include "gamesequence/gamesequence.h"
 #include "popup/popup.h"
+#include "mission/missioncampaign.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.34 $
- * $Date: 2004-02-07 00:48:53 $
+ * $Revision: 2.35 $
+ * $Date: 2004-03-05 09:01:53 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2004/02/07 00:48:53  Goober5000
+ * made FS2 able to account for subsystem mismatches between ships.tbl and the
+ * model file - e.g. communication vs. communications
+ * --Goober5000
+ *
  * Revision 2.33  2003/11/17 04:25:58  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -394,32 +399,27 @@
  * $NoKeywords: $
  */
 
+#include "weapon/beam.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
 #include "object/objcollide.h"
 #include "ship/ship.h"
 #include "freespace2/freespace.h"
 #include "render/3d.h"
-#include "model/model.h"
-#include "globalincs/alphacolors.h"
 #include "io/timer.h"
-#include "fireball/fireballs.h"
 #include "debris/debris.h"
 #include "asteroid/asteroid.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-#include "bmpman/bmpman.h"
 #include "particle/particle.h"
 #include "ship/shiphit.h"
-#include "weapon/flak.h"
-#include "render/3d.h"
 #include "gamesnd/gamesnd.h"
-#include "weapon/beam.h"
 #include "hud/hudmessage.h"
-#include "io/key.h"
 #include "lighting/lighting.h"
 #include "hud/hudshield.h"
-//#include "decals/decals.h"	//shouldn't need it becase it's in ship.h
+#include "playerman/player.h"
+#include "weapon/weapon.h"
+#include "parse/parselo.h"
 
 extern int Cmdline_nohtl;
 // ------------------------------------------------------------------------------------------------

@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.2 $
- * $Date: 2003-10-14 17:39:16 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:07 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/10/14 17:39:16  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.1  2003/09/26 14:37:15  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -56,10 +66,11 @@
 // --------------------------------------------------------------------------------------------------------
 // NEBULA DEFINES/VARS
 //
+#include "globalincs/pstypes.h"
+#include "globalincs/globals.h"
 
 struct ship;
 struct object;
-struct vector;
 
 // fog near and far values for rendering the background nebula
 extern float Neb_backg_fog_near;

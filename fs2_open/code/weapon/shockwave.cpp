@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-01-30 07:39:09 $
+ * $Revision: 2.8 $
+ * $Date: 2004-03-05 09:01:54 $
  * $Author: Goober5000 $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/01/30 07:39:09  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.6  2003/10/23 18:03:25  randomtiger
  * Bobs changes (take 2)
  *
@@ -242,19 +248,16 @@
  * $NoKeywords: $
  */
 
-#include "graphics/2d.h"
-#include	"render/3d.h"
+#include "weapon/shockwave.h"
+#include "render/3d.h"
 #include "weapon/weapon.h"
 #include "ship/ship.h"
-#include "freespace2/freespace.h"	// for colors
-#include "weapon/shockwave.h"
 #include "io/timer.h"
-#include "anim/animplay.h"
-#include "bmpman/bmpman.h"
 #include "globalincs/linklist.h"
 #include "ship/shiphit.h"
 #include "gamesnd/gamesnd.h"
 #include "asteroid/asteroid.h"
+#include "object/object.h"
 
 // -----------------------------------------------------------
 // Data structures

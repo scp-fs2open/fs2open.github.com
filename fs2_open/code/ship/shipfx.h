@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.3 $
- * $Date: 2003-08-06 17:37:08 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:52 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/08/06 17:37:08  phreak
+ * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
+ *
  * Revision 2.2  2003/07/15 02:51:43  phreak
  * cloaked ships will reduce brightness with distance
  *
@@ -141,6 +144,9 @@
 struct object;
 struct ship;
 struct ship_subsys;
+struct shockwave_create_info;
+struct vector;
+struct matrix;
 
 // Make sparks fly off of ship n
 // sn = spark number to spark, corrosponding to element in

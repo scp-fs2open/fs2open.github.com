@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.6 $
- * $Date: 2004-02-21 00:59:43 $
- * $Author: Kazan $
+ * $Revision: 1.7 $
+ * $Date: 2004-03-05 09:01:56 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/02/21 00:59:43  Kazan
+ * FS2NETD License Comments
+ *
  * Revision 1.5  2003/11/11 02:15:42  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -42,8 +45,8 @@
 #pragma warning(disable:4711)
 
 #include "TCP_Socket.h"
-#include <process.h>
-#include <iostream.h>
+//#include <process.h>
+//#include <iostream.h>
 
 
 //**************************************************************************

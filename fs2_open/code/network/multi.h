@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.6 $
- * $Date: 2003-11-12 00:31:45 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/11/12 00:31:45  Kazan
+ * A few multi tweaks - fixed a couple warning-killing collisions between goober and me (kazan)
+ *
  * Revision 2.5  2003/09/23 02:42:54  Kazan
  * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
  *
@@ -302,18 +305,21 @@
 #ifndef _MULTI_H
 #define _MULTI_H
 
-#include "network/psnet.h"					// for PSNET_SOCKET		
-#include "playerman/player.h"
+#include "globalincs/pstypes.h"
+#include "network/psnet2.h"					// for PSNET_SOCKET		
 #include "network/multi_ping.h"
-#include "mission/missionparse.h"
 #include "network/multi_options.h"
+#include "io/keycontrol.h"
+#include "globalincs/globals.h"
+
+struct p_object;
+struct CFILE;
+struct player;
 
 // ----------------------------------------------------------------------------------------
 // Basic defines
 //
 //
-
-struct CFILE;
 
 // defines for checking PXO valid missions
 #ifdef NDEBUG		
@@ -736,7 +742,7 @@ typedef struct net_player_info {
 
 // NETPLAYER COMMON INFORMATION
 typedef struct net_player {
-	player_t			*player;								// stuff pertaining directly to the player (callsign, etc).
+	player			*player;								// stuff pertaining directly to the player (callsign, etc).
 	short				player_id;							// player id (always use this instead of ip address for identification purposes)
 	int				tracker_player_id;            // the tracker id for this player, only matters in
 																// tracker games.	

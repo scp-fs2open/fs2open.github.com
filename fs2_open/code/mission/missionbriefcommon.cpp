@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-02-14 00:18:33 $
- * $Author: randomtiger $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-05 09:02:06 $
+ * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/02/14 00:18:33  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.7  2004/02/13 04:17:13  randomtiger
  * Turned off fog in OGL for Fred.
  * Simulated speech doesnt say tags marked by $ now.
@@ -181,30 +192,20 @@
  * $NoKeywords: $
  */
 
-#include "freespace2/freespace.h"
+#include "mission/missionbriefcommon.h"
+#include "mission/missionparse.h"
+#include "parse/parselo.h"
+#include "playerman/player.h"
 #include "ship/ship.h"
-#include "io/key.h"
-#include "graphics/2d.h"
 #include "render/3d.h"
-#include "graphics/line.h"
 #include "io/timer.h"
-#include "math.h"
 #include "globalincs/linklist.h"
 #include "io/mouse.h"
-#include "hud/hud.h"
-#include "osapi/osapi.h"
-#include "object/object.h"
-#include "network/multi.h"
-#include "bmpman/bmpman.h"
 #include "missionui/missionbrief.h"
 #include "mission/missiongrid.h"
-#include "mission/missionbriefcommon.h"
 #include "anim/animplay.h"
 #include "math/fvi.h"
-#include "float.h"
 #include "gamesnd/gamesnd.h"
-#include "cmdline/cmdline.h"
-#include "parse/parselo.h"
 #include "sound/audiostr.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missiondebrief.h"
@@ -212,6 +213,7 @@
 #include "localization/localize.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
+
 
 // --------------------------------------------------------------------------------------
 // briefing icons

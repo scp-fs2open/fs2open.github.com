@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-19 12:29:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:03 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/19 12:29:02  unknownplayer
+ * Woohoo! Killed two birds with one stone!
+ * Fixed the 'black screen around dialog boxes' problem and also the much more serious freezing problem experienced by Goober5000. It wasn't a crash, just an infinite loop. DX8 merge is GO! once again :)
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -53,10 +57,16 @@
 
 #include "hud/hudartillery.h"
 #include "ship/ai.h"
-#include "playerman/player.h"
-#include "graphics/2d.h"
 #include "globalincs/alphacolors.h"
+#include "parse/parselo.h"
+#include "weapon/weapon.h"
+#include "globalincs/linklist.h"
+#include "io/timer.h"
+#include "network/multi.h"
 #include "fireball/fireballs.h"
+#include "object/object.h"
+#include "math/vecmat.h"
+
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS
@@ -66,13 +76,6 @@
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY FUNCTIONS
 //
-
-#include "globalincs/linklist.h"
-#include "io/timer.h"
-#include "parse/parselo.h"
-#include "network/multi.h"
-#include "fireball/fireballs.h"
-#include "freespace2/freespace.h"
 
 // test code for subspace missile strike -------------------------------------------
 

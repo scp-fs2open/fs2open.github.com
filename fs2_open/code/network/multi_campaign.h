@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -55,12 +58,13 @@
 #ifndef _MULTIPLAYER_CAMPAIGN_HEADER_FILE
 #define _MULTIPLAYER_CAMPAIGN_HEADER_FILE
 
+#include "globalincs/pstypes.h"
 
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER CAMPAIGN DEFINES/VARS
 //
-
 struct net_player;
+struct header;
 
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER CAMPAIGN FUNCTIONS
@@ -108,7 +112,7 @@ void multi_campaign_send_pool_status();
 void multi_campaign_send_debrief_info();
 
 // send a "start campaign" packet
-void multi_campaign_send_start(net_player *pl = NULL);
+void multi_campaign_send_start(net_player *pl = /*NULL*/ 0);
 
 // campaign information for ingame joiners
 void multi_campaign_send_ingame_start(net_player *pl);

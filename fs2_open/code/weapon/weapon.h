@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/12/17 16:41:25  phreak
+ * "small only" weapons flag added. weapon shoots at small ships like fighters
+ *
  * Revision 2.26  2003/12/15 21:30:24  phreak
  * upped MAX_WEAPON_TYPES to 300 when INF_BUILD is defined
  *
@@ -385,25 +388,13 @@
 #ifndef _WEAPON_H
 #define _WEAPON_H
 
-// use this to extend a beam to "infinity"
-#define BEAM_FAR_LENGTH				30000.0f
-
-// define moved to before includes so that we can have it available when ship.h is included below
-#ifdef INF_BUILD
-#define MAX_WEAPON_TYPES				300
-#else
-#define MAX_WEAPON_TYPES				200
-#endif
-
-// define to compile corkscrew missiles in
-
-#include "object/object.h"
-#include "parse/parselo.h"
-#include "ship/ship.h"		/* needed for ship_subsys* */
-#include "graphics/2d.h"		// needed for color
-#include "weapon/shockwave.h"
+#include "globalincs/systemvars.h"
+#include "graphics/2d.h"
+#include "globalincs/globals.h"
 #include "weapon/trails.h"
-#include "ship/ai.h"
+
+struct object;
+struct ship_subsys;
 
 #define	WP_UNUSED	-1
 #define	WP_LASER		0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
@@ -535,13 +526,6 @@ typedef struct weapon {
 } weapon;
 
 
-#ifdef FS2_DEMO
-	#define MAX_WEAPONS	100
-#else
-	// upped 5/6/98 from 200 - DB
-	#define MAX_WEAPONS	350
-#endif
-
 // info specific to beam weapons
 #define MAX_BEAM_SECTIONS				5
 typedef struct beam_weapon_section_info {
@@ -579,6 +563,10 @@ typedef struct beam_weapon_info {
 	float			range;				//how far it will shoot-Bobboau
 	float			damage_threshold;	//point at wich damage will start being atenuated from 0.0 to 1.0
 } beam_weapon_info;
+
+// use this to extend a beam to "infinity"
+#define BEAM_FAR_LENGTH				30000.0f
+
 
 extern weapon Weapons[MAX_WEAPONS];
 

@@ -4,9 +4,7 @@
 #include "directx/dx8show.h"
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"	
-#include "graphics/2d.h"
 #include "debugconsole/dbugfile.h" 
-#include "graphics/gropengl.h"
 
 // This module links freespace movie calls to the actual API calls the play the movie.
 // This module handles all the different requires of OS and gfx API and finding the file to play

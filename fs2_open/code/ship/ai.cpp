@@ -11,17 +11,9 @@
 // ai slots and linking them to ships.
 // See AiCode.cpp for the actual AI code.
 
-#include "globalincs/pstypes.h"
-#include "object/object.h"
-#include "physics/physics.h"
-#include "math/vecmat.h"
-#include "ship/ship.h"
-#include "model/model.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
 #include "ship/ai.h"
-#include "math/floating.h"
-#include "ship/ailocal.h"
+#include "object/object.h"
+#include "ship/ship.h"
 
 int Total_goal_ship_names = 0;
 char Goal_ship_names[MAX_GOAL_SHIP_NAMES][NAME_LENGTH];

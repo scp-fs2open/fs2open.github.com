@@ -9,13 +9,16 @@
 
  /*
  * $Logfile: /Freespace2/code/Inetfile/CFtp.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-03-05 09:01:55 $
+ * $Author: Goober5000 $
  *
  * FTP Client class (get only)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -33,6 +36,9 @@
 #ifndef _CFTP_HEADER_
 #define _CFTP_HEADER_
 
+#include <stdio.h>
+#include <winsock.h>
+ 
 #define FTP_STATE_INTERNAL_ERROR		0
 #define FTP_STATE_SOCKET_ERROR		1
 #define FTP_STATE_URL_PARSING_ERROR	2

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-02-28 14:14:57 $
- * $Author: randomtiger $
+ * $Revision: 2.15 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/02/28 14:14:57  randomtiger
+ * Removed a few uneeded if DIRECT3D's.
+ * Set laser function to only render the effect one sided.
+ * Added some stuff to the credits.
+ * Set D3D fogging to fall back to vertex fog if table fog not supported.
+ *
  * Revision 2.13  2004/02/16 11:47:33  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -387,16 +393,13 @@
  *
  */
 
-#include "globalincs/pstypes.h"
 #include "menuui/mainhallmenu.h"
 #include "palman/palman.h"
-#include "bmpman/bmpman.h"
-#include "graphics/2d.h"
 #include "gamesequence/gamesequence.h"
 #include "anim/animplay.h"
+#include "anim/packunpack.h"
 #include "io/key.h"
 #include "io/timer.h"
-#include "ui/ui.h"
 #include "menuui/snazzyui.h"
 #include "playerman/player.h"
 #include "sound/audiostr.h"
@@ -405,23 +408,25 @@
 #include "io/mouse.h"
 #include "gamehelp/contexthelp.h"
 #include "cmdline/cmdline.h"
-#include "network/psnet.h"
 #include "popup/popup.h"
-#include "sound/rtvoice.h"
-#include "osapi/osapi.h"
 #include "menuui/playermenu.h"
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
-#include "demo/demo.h"
 #include "menuui/fishtank.h"
-#include "cutscene/movie.h"
-#include "debugconsole/dbugfile.h"
+#include "mission/missioncampaign.h"
+#include "parse/parselo.h"
 
 #ifndef NO_NETWORK
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "network/multi_voice.h"
 #include "network/multi.h"
+#endif
+
+#ifndef NDEBUG
+#include "cutscene/movie.h"
+#include "demo/demo.h"
+#include "mission/missionload.h"
 #endif
 
 // ----------------------------------------------------------------------------

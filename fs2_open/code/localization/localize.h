@@ -9,12 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.h $
- * $Revision: 2.2 $
- * $Date: 2003-09-28 21:22:59 $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:05 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/09/28 21:22:59  Goober5000
+ * added the option to import FSM missions, added a replace function, spruced
+ * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
+ * --Goober5000
+ *
  * Revision 2.1  2003/08/22 07:01:57  Goober5000
  * implemented $callsign to add the player callsign in a briefing, message, or whatever
  * --Goober5000
@@ -59,6 +64,8 @@
 
 #ifndef __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE
 #define __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE
+
+#include "globalincs/pstypes.h"
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS

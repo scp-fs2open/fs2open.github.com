@@ -13,6 +13,8 @@
 // ---------------------------------------------------------------------------------------------------
 // OBJECT UPDATE DEFINES/VARS
 //
+#include "globalincs/pstypes.h"
+
 struct interp_info;
 struct object;
 struct header;

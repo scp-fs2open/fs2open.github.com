@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:05 $
+ * $Author: Goober5000 $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/29 20:12:31  penguin
  * added #ifdef _WIN32 around windows-specific system headers
  *
@@ -194,16 +197,10 @@
 #include <winsock.h>
 #endif
 
-#include "freespace2/freespace.h"
-#include "gamesequence/gamesequence.h"
-#include "io/key.h"
-#include "graphics/2d.h"
-#include "ui/ui.h"
-#include "io/timer.h"
+#include "globalincs/systemvars.h"
 #include "playerman/player.h"
 #include "stats/stats.h"
 #include "hud/hud.h"
-#include "graphics/font.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

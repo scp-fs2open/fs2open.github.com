@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-09-16 11:56:46 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:57 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/09/16 11:56:46  unknownplayer
+ * Changed the ship selection window to load the 3D FS2 ship models instead
+ * of the custom *.ani files. It just does a techroom rotation for now, but I'll add
+ * more features later - tell me of any problems or weirdness caused by it, or if
+ * you don't like it and want it as an option only.
+ *
  * Revision 2.1  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -75,9 +81,9 @@
 
 
 #include "object/objcollide.h"
-#include "freespace2/freespace.h"
 #include "object/object.h"
 #include "weapon/weapon.h"
+#include "ship/ship.h"
 
 #ifndef NDEBUG
 //XSTR:OFF

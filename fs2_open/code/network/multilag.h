@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multilag.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/07 03:02:07  mharris
  * #ifndef WINDOWS should be #ifdef
  *
@@ -96,9 +99,11 @@
 	// #define MULTI_USE_LAG								
 #endif
 
-#ifdef WINDOWS
+#include "globalincs/pstypes.h"
+
+//#ifdef WINDOWS
 struct fd_set;
-#endif
+//#endif
 struct timeval;
 
 // initialize multiplayer lagloss. in non-debug situations, this call does nothing

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.4 $
- * $Date: 2003-03-19 06:23:27 $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:02:00 $
  * $Author: Goober5000 $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/19 06:23:27  Goober5000
+ * added warp-effect sexp
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/02 05:12:39  penguin
  * Moved "extern int wm" declaration inside the header #ifdef block
  *  - penguin
@@ -172,8 +176,9 @@
 #ifndef _FIREBALLS_H
 #define _FIREBALLS_H
 
-#include "object/object.h"
-#include "cfile/cfile.h"
+#include "globalincs/pstypes.h"
+
+struct object;
 
 // these values correspond to the fireball.tbl entries
 #define FIREBALL_EXPLOSION_MEDIUM	0				// Used for the 4 little explosions before a ship explodes

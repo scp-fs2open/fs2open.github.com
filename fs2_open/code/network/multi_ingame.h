@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -71,6 +74,13 @@
 
 #ifndef _MULTI_INGAME_JOIN_HEADER_FILE
 #define _MULTI_INGAME_JOIN_HEADER_FILE
+
+#include "globalincs/pstypes.h"
+
+struct ship;
+struct wing;
+struct net_player;
+struct header;
 
 // --------------------------------------------------------------------------------------------------
 // DAVE's BIGASS INGAME JOIN WARNING/DISCLAIMER
@@ -217,7 +227,7 @@ void send_ingame_wings_packet(net_player *pl);
 void process_ingame_wings_packet(ubyte *data, header *hinfo);
 
 // send respawn points information to the ingame joiner
-void send_ingame_respawn_points_packet(net_player *pl = NULL);
+void send_ingame_respawn_points_packet(net_player *pl = /*NULL*/ 0);
 
 // process respawn points information for the mission
 void process_ingame_respawn_points_packet(ubyte *data, header *hinfo);

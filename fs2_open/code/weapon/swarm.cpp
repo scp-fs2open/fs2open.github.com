@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Swarm.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-30 04:34:38 $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:54 $
  * $Author: Goober5000 $
  *
  * C module for managing swarm missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/30 04:34:38  Goober5000
+ * preliminary work on ai facing sexp
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move
  *
@@ -110,9 +114,8 @@
 #include "weapon/weapon.h"
 #include "ship/ship.h"
 #include "io/timer.h"
-#include "freespace2/freespace.h"	// for Missiontime
 #include "globalincs/linklist.h"
-#include "ship/ai.h"
+#include "object/object.h"
 
 #define SWARM_DIST_OFFSET			2.0		// distance swarm missile should vary from original path
 #define SWARM_CONE_LENGTH			10000.0f	// used to pick a target point far in the distance

@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-02-14 00:18:36 $
- * $Author: randomtiger $
+ * $Revision: 2.26 $
+ * $Date: 2004-03-05 09:01:52 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/02/14 00:18:36  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.24  2004/02/07 00:48:52  Goober5000
  * made FS2 able to account for subsystem mismatches between ships.tbl and the
  * model file - e.g. communication vs. communications
@@ -318,37 +329,33 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
-#include "globalincs/systemvars.h"
+#include "ship/shipfx.h"
 #include "ship/ship.h"
+#include "object/object.h"
 #include "fireball/fireballs.h"
 #include "debris/debris.h"
-#include "hud/hudtarget.h"
-#include "ship/shipfx.h"
+#include "weapon/weapon.h"
 #include "gamesnd/gamesnd.h"
 #include "io/timer.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
-#include "hud/hud.h"
+#include "hud/hudmessage.h"
 #include "math/fvi.h"
 #include "gamesequence/gamesequence.h"
 #include "lighting/lighting.h"
 #include "globalincs/linklist.h"
 #include "particle/particle.h"
-#include "bmpman/bmpman.h"
-#include "freespace2/freespace.h"
 #include "weapon/muzzleflash.h"
 #include "demo/demo.h"
 #include "ship/shiphit.h"
-#include "nebula/neblightning.h"
 #include "object/objectsnd.h"
 #include "playerman/player.h"
-#include "fireball/fireballs.h"
+#include "weapon/shockwave.h"
+#include "parse/parselo.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
-#include "network/multiutil.h"
 #endif
 
 #ifndef NDEBUG

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-01-30 07:39:07 $
+ * $Revision: 2.25 $
+ * $Date: 2004-03-05 09:02:04 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/01/30 07:39:07  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.23  2003/12/16 21:06:21  phreak
  * disabled tertiary weapons support pending a rewrite of critical code
  *
@@ -295,36 +301,24 @@
  */
 
 #include "hud/hud.h"
+#include "hud/hudartillery.h"
 #include "hud/hudlock.h"
+#include "hud/hudmessage.h"
 #include "hud/hudtarget.h"
 #include "hud/hudreticle.h"
+#include "hud/hudbrackets.h"
 #include "object/object.h"
 #include "ship/ship.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
 #include "render/3dinternal.h"
-#include "graphics/line.h"
 #include "globalincs/linklist.h"
-#include "model/model.h"
-#include "math.h"
 #include "weapon/weapon.h"
 #include "playerman/player.h"
 #include "freespace2/freespace.h"	// for flFrametime
-#include "ship/ai.h"
 #include "io/timer.h"
-#include "sound/sound.h"
-#include "mission/missionparse.h"
-#include "playerman/player.h"	// for MAX_PLAYERS
-#include "hud/hudets.h"
-#include "hud/hudbrackets.h"
 #include "gamesnd/gamesnd.h"
-#include "gamesnd/eventmusic.h"
 #include "debris/debris.h"
 #include "mission/missionmessage.h"
-#include "io/key.h"
-#include "ship/ai.h"
 #include "hud/hudtargetbox.h"
-#include "bmpman/bmpman.h"
 #include "ship/subsysdamage.h"
 #include "hud/hudshield.h"
 #include "mission/missionhotkey.h"
@@ -335,7 +329,7 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "ship/awacs.h"
-#include "hud/hudartillery.h"
+#include "parse/parselo.h"
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-10-15 22:03:24 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:00 $
+ * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/10/15 22:03:24  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -173,12 +176,10 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
 #include "gamesnd/gamesnd.h"
-#include "sound/sound.h"
-#include "parse/parselo.h"
 #include "localization/localize.h"
 #include "species_defs/species_defs.h"
+#include "parse/parselo.h"
 
 // Global array that holds data about the gameplay sound effects.
 game_snd Snds[MAX_GAME_SOUNDS];

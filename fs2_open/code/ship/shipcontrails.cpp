@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-11-11 02:15:41 $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-05 09:01:52 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/11/11 02:15:41  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.7  2003/05/04 20:51:14  phreak
  * ABtrails are only processed if they are using a bitmap.
  *
@@ -57,13 +62,7 @@
  */
 
 #include "Ship/ShipContrails.h"
-#include "object/object.h"
 #include "Ship/Ship.h"
-#include "globalincs/LinkList.h"
-#include "render/3d.h"
-#include "globalincs/AlphaColors.h"
-#include "weapon/Trails.h"
-#include "bmpman/Bmpman.h"
 #include "mission/MissionParse.h"
 
 // ----------------------------------------------------------------------------------------------

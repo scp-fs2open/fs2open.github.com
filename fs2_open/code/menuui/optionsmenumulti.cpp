@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenuMulti.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-09-23 02:42:53 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/09/23 02:42:53  Kazan
+ * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -210,23 +213,21 @@
  */
 
 #include "ui/ui.h"
-#include "bmpman/bmpman.h"
-#include "cfile/cfile.h"
 #include "io/key.h"
 #include "graphics/font.h"
 #include "gamesnd/gamesnd.h"
-#include "freespace2/freespace.h"
 #include "playerman/player.h"
 #include "network/multi.h"
 #include "network/multi_voice.h"
 #include "sound/rtvoice.h"
-#include "io/mouse.h"
 #include "menuui/optionsmenu.h"
 #include "menuui/optionsmenumulti.h"
 #include "popup/popup.h"
 #include "osapi/osregistry.h"
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
+#include "cfile/cfile.h"
+#include "parse/parselo.h"
 
 #ifndef NO_SOUND
  #include "sound/ds.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.2 $
- * $Date: 2002-12-17 01:56:36 $
- * $Author: DTP $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:04 $
+ * $Author: Goober5000 $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/17 01:56:36  DTP
+ * Bumped MAX JUMP-nodes to 50. if anybody wants a Jump-node forest
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -42,7 +45,12 @@
 #ifndef __JUMPNODE_H__
 #define __JUMPNODE_H__
 
-#include "parse/parselo.h"
+#include <stdlib.h>
+
+#include "globalincs/globals.h"
+
+struct vector;
+struct object;
 
 #define MAX_JUMP_NODES	50
 

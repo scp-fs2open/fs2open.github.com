@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.6 $
- * $Date: 2004-02-16 11:47:33 $
- * $Author: randomtiger $
+ * $Revision: 2.7 $
+ * $Date: 2004-03-05 09:02:01 $
+ * $Author: Goober5000 $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/02/16 11:47:33  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.5  2004/02/15 06:02:32  bobboau
  * fixed sevral asorted matrix errors,
  * OGL people make sure I didn't break anything,
@@ -114,6 +121,10 @@
 
 #ifndef _TMAPPER_H
 #define _TMAPPER_H
+
+#include "globalincs/pstypes.h"
+
+struct vertex;
 
 // call this to reinit the scanline function pointers.
 extern void tmapper_setup();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.1 $
- * $Date: 2003-10-25 20:42:19 $
- * $Author: phreak $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:01:59 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/10/25 20:42:19  phreak
+ * added an INF_BUILD option to bump max sounds to 400 if INF_BUILD is defined
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -209,6 +212,8 @@
 
 #ifndef __SOUND_H__
 #define __SOUND_H__
+
+#include "globalincs/pstypes.h"
 
 #ifdef INF_BUILD
 #define MAX_SOUNDS 400

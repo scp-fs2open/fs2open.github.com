@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-01-30 07:39:06 $
+ * $Revision: 2.8 $
+ * $Date: 2004-03-05 09:01:52 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/01/30 07:39:06  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.6  2003/04/29 01:03:21  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -113,11 +119,11 @@
  * $NoKeywords: $
  */
 
+#include "ship/awacs.h"
 #include "io/timer.h"
 #include "ship/ship.h"
 #include "globalincs/linklist.h"
 #include "nebula/neb.h"
-#include "ship/awacs.h"
 #include "mission/missionparse.h"
 #include "network/multi.h"
 

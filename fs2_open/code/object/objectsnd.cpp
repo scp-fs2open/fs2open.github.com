@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 01:44:31 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:57 $
  * $Author: Goober5000 $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 01:44:31  Goober5000
+ * fixed some misspellings
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -252,6 +256,7 @@
  */
 
 
+#include "globalincs/pstypes.h"
 #include "object/object.h"
 #include "object/objectsnd.h"
 #include "globalincs/linklist.h"

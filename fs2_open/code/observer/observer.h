@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Observer/Observer.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:08 $
+ * $Author: Goober5000 $
  *
  * $NoKeywords: $
  */
@@ -19,8 +19,9 @@
 #ifndef _OBSERVER_HEADER_FILE
 #define _OBSERVER_HEADER_FILE
 
-#include "object/object.h"
-#include "math/vecmat.h"
+struct object;
+struct vector;
+struct matrix;
 
 #define OBS_MAX_VEL_X     (85.0f) // side to side
 #define OBS_MAX_VEL_Y     (85.0f) // side to side

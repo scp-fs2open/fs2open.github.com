@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-27 07:46:33 $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/27 07:46:33  Goober5000
+ * finished up my fighterbay code - ships will not be able to arrive from or depart into
+ * fighterbays that have been destroyed (but you have to explicitly say in the tables
+ * that the fighterbay takes damage in order to enable this)
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/14 17:09:28  Goober5000
  * removed mission flag for fighterbay damage; instead made damage display contingent on whether the fighterbay subsystem is assigned a damage percentage in ships.tbl
  * --Goober5000
@@ -232,13 +238,10 @@
 #include "playerman/player.h"
 #include "hud/hudtarget.h"
 #include "render/3d.h"
-#include "debris/debris.h"
-#include "ship/ai.h"
-#include "freespace2/freespace.h"
-#include "bmpman/bmpman.h"
 #include "globalincs/linklist.h"
 #include "weapon/emp.h"
-#include "mission/missionparse.h"
+#include "ship/ship.h"
+#include "object/object.h"
 
 #define FADE_FACTOR	2			// how much the bounding brackets get faded
 #define LOWEST_RED	50			// lowest r value for bounding bracket

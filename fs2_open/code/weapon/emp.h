@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-03-05 09:01:54 $
+ * $Author: Goober5000 $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -50,6 +53,7 @@
 // ----------------------------------------------------------------------------------------------------
 // EMP EFFECT DEFINES/VARS
 //
+struct vector;
 
 // default EMP effect values for weapons which do not specify them
 // NOTE : anything aboce intensity max or time max will be capped

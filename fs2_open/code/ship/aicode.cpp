@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.54 $
- * $Date: 2004-02-28 01:36:20 $
+ * $Revision: 2.55 $
+ * $Date: 2004-03-05 09:01:51 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2004/02/28 01:36:20  Goober5000
+ * commented a slide_face_ship that I missed before
+ * --Goober5000
+ *
  * Revision 2.53  2004/02/27 04:09:56  bobboau
  * fixed a Z buffer error in HTL submodel rendering,
  * and glow points,
@@ -624,34 +628,24 @@
 // to objects.   The code in Ai.cpp is just for bookeeping, allocating
 // ai slots and linking them to ships.
 
-//#include "config.h"
-#include "globalincs/pstypes.h"
-#include "math/fix.h"
+#include "ship/ai.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
 #include "physics/physics.h"
-#include "math/vecmat.h"
 #include "ship/ship.h"
 #include "model/model.h"
-#include "graphics/2d.h"
 #include "render/3d.h"
-#include "ship/ai.h"
-#include "math/floating.h"
 #include "playerman/player.h"
 #include "freespace2/freespace.h"
-#include "weapon/weapon.h"
 #include "mission/missiongoals.h"
 #include "mission/missionlog.h"
 #include "io/timer.h"
-#include "sound/sound.h"
 #include "ship/aigoals.h"
 #include "gamesnd/gamesnd.h"
-#include "hud/hudmessage.h"
 #include "mission/missionmessage.h"
 #include "cmeasure/cmeasure.h"
 #include "math/staticrand.h"
 #include "ship/afterburner.h"
-#include "hud/hudets.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "ship/aibig.h"
@@ -663,16 +657,18 @@
 #include "gamesequence/gamesequence.h"
 #include "io/joy_ff.h"
 #include "localization/localize.h"
+#include "weapon/weapon.h"
 #include "weapon/flak.h"
 #include "weapon/beam.h"
 #include "weapon/swarm.h"
 #include "ship/awacs.h"
 #include "math/fvi.h"
+#include "parse/parselo.h"
 
 #ifndef NO_NETWORK
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "network/multi_team.h"
+//#include "network/multi_team.h"
 #endif
 
   // still need this...

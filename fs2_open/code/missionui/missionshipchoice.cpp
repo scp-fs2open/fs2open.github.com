@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-02-04 09:02:43 $
+ * $Revision: 2.19 $
+ * $Date: 2004-03-05 09:01:55 $
  * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/02/04 09:02:43  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.17  2004/01/21 17:37:04  phreak
  * added MAX_DRAW_DISTANCE to the ship selection display.  This will only take effect if the ani isn't there
  *
@@ -456,40 +460,24 @@
 #include "gamesequence/gamesequence.h"
 #include "ship/ship.h"
 #include "io/key.h"
-#include "graphics/2d.h"
-#include "graphics/line.h"
 #include "render/3d.h"
-#include "model/model.h"
-#include "io/timer.h"
-#include "math.h"
 #include "globalincs/linklist.h"
 #include "io/mouse.h"
-#include "weapon/weapon.h"
-#include "ui/ui.h"
-#include "ship/ailocal.h"
 #include "playerman/player.h"
-#include "sound/audiostr.h"
-#include "bmpman/bmpman.h"
-#include "palman/palman.h"
 #include "menuui/snazzyui.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "missionui/missionweaponchoice.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesnd/gamesnd.h"
-#include "sound/sound.h"
 #include "mission/missionhotkey.h"
-#include "mission/missionload.h"
-#include "gamesnd/eventmusic.h"
-#include "missionui/chatbox.h"
 #include "popup/popup.h"
 #include "hud/hudwingmanstatus.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
-#include "debugconsole/dbugfile.h"
-#include "menuui/techmenu.h"
 #include "lighting/lighting.h"
 #include "cmdline/cmdline.h"
+#include "cfile/cfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -531,8 +519,8 @@ typedef struct ss_icon_info
 {
 	int				icon_bmaps[NUM_ICON_FRAMES];
 	int				current_icon_bitmap;
-	anim_t			*anim;
-	anim_instance_t *anim_instance;
+	anim			*anim;
+	anim_instance	*anim_instance;
 } ss_icon_info;
 
 typedef struct ss_slot_info
@@ -2111,7 +2099,7 @@ void start_ship_animation(int ship_class, int play_sound)
 	{
 	if (ship_class < 0)
 	{
-		DBUGFILE_OUTPUT_0("No ship class passed in to start_ship_animation - why?");
+		mprintf(("No ship class passed in to start_ship_animation - why?"));
 		ShipSelectModelNum = -1;
 		return;
 	}
@@ -2126,7 +2114,7 @@ void start_ship_animation(int ship_class, int play_sound)
 	
 	if (sip->modelnum < 0)
 	{
-		DBUGFILE_OUTPUT_0("Couldn't load model file in missionshipchoice.cpp - tell UnknownPlayer");
+		mprintf(("Couldn't load model file in missionshipchoice.cpp - tell UnknownPlayer"));
 	}
 	} else {
 

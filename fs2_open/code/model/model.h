@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.37 $
- * $Date: 2004-01-21 17:37:48 $
- * $Author: phreak $
+ * $Revision: 2.38 $
+ * $Date: 2004-03-05 09:02:07 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2004/01/21 17:37:48  phreak
+ * bumped MAX_POLYGON_MODELS to 300 if INF_BUILD is defined.
+ *
  * Revision 2.36  2003/12/17 23:24:24  phreak
  * added a MAX_BUFFERS_PER_SUBMODEL define so it can be easily changed if we ever want to change the 16 texture limit
  *
@@ -433,12 +436,9 @@
 #define _MODEL_H
 
 #include "globalincs/pstypes.h"
-#include "decals/decals.h"
-#include "parse/parselo.h"	// for NAME_LENGTH
-struct object;
+#include "globalincs/globals.h"	// for NAME_LENGTH
 
-#define MAX_PRIMARY_BANKS		3
-#define MAX_SECONDARY_BANKS	4	//	Lowered from 5 to 4 by MK on 3/25/98.  This needs to be <= MAX_WL_SECONDARY or you'll get stack overwrites.
+struct object;
 
 #ifdef INF_BUILD
 #define MAX_POLYGON_MODELS  300
@@ -447,8 +447,6 @@ struct object;
 #endif
 
 #define MAX_DEBRIS_OBJECTS	32
-#define MAX_MODEL_TEXTURES	64
-#define FILENAME_LEN			64
 #define MAX_MODEL_DETAIL_LEVELS	8
 #define MAX_PROP_LEN			256
 #define MAX_NAME_LEN			32
@@ -844,7 +842,7 @@ typedef struct insignia {
 typedef struct polymodel {
 	int			id;				// what the polygon model number is.  (Index in Polygon_models)
 	int			version;
-	char			filename[FILENAME_LEN];
+	char			filename[FILESPEC_LENGTH];
 
 	uint			flags;			// 1=allow tiling
 	int			n_detail_levels;

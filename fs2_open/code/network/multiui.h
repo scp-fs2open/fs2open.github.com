@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * Header file for the UI of the various multiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -313,10 +316,11 @@
 #ifndef MULTI_UI_H
 #define MULTI_UI_H
 
+#include "globalincs/globals.h"
 #include "ui/ui.h"
-#include "mission/missionparse.h"
 
 struct net_player;
+struct net_addr;
 
 void multi_common_add_text(char *txt,int auto_scroll = 0);
 void multi_common_set_text(char *str,int auto_scroll = 0);

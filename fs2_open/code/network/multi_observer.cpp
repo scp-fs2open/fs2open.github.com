@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_observer.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -95,16 +98,16 @@
  * $NoKeywords: $
  */
 
-#include "freespace2/freespace.h"
+#include "network/multi_observer.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
+#include "ship/ship.h"
 #include "object/object.h"
 #include "observer/observer.h"
 #include "hud/hudconfig.h"
-#include "hud/hudobserver.h"
 #include "playerman/managepilot.h"
-#include "network/multi_observer.h"
 #include "mission/missionparse.h"
+#include "playerman/player.h"
 #include "io/timer.h"
 
 // ---------------------------------------------------------------------------------------

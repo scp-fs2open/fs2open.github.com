@@ -9,7 +9,6 @@
 #define MAX_DECAL_POINT 10
 #define MAX_SHIP_DECALS 25
 #include "globalincs/pstypes.h"
-#include "object/object.h"
 
 #define DP_EOF 			0
 #define DP_DEFPOINTS 	1

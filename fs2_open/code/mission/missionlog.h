@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-03-05 09:02:06 $
+ * $Author: Goober5000 $
  *
  * Header file to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/10 20:42:44  mharris
  * use "ifndef NO_NETWORK" all over the place
  *
@@ -112,6 +115,9 @@
 
 #ifndef _MISSIONLOG_H
 #define _MISSIONLOG_H
+
+#include "globalincs/pstypes.h"
+#include "globalincs/globals.h"
 
 // defined for different mission log entries
 

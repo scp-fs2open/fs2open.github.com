@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.84 $
- * $Date: 2004-02-14 04:26:58 $
+ * $Revision: 2.85 $
+ * $Date: 2004-03-05 09:02:08 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2004/02/14 04:26:58  Goober5000
+ * hmph... fixed some bugs
+ * --Goober5000
+ *
  * Revision 2.83  2004/02/07 00:48:52  Goober5000
  * made FS2 able to account for subsystem mismatches between ships.tbl and the
  * model file - e.g. communication vs. communications
@@ -680,26 +684,21 @@
 #include "parse/sexp.h"
 #include "ship/ship.h"
 #include "freespace2/freespace.h"
-#include "math/fix.h"
 #include "weapon/weapon.h"
 #include "mission/missionlog.h"
 #include "mission/missionparse.h"		// for p_object definition
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
-#include "math/vecmat.h"
 #include "globalincs/linklist.h"
-#include "model/model.h"				// for subsystem types
 #include "ship/aigoals.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
-#include "controlconfig/controlsconfig.h"
+#include "mission/missionbriefcommon.h"
 #include "io/timer.h"
 #include "ship/shiphit.h"
 #include "gamesequence/gamesequence.h"
-#include "stats/scoring.h"
 #include "stats/medals.h"
 #include "playerman/player.h"
-#include "hud/hudmessage.h"
 #include "hud/hud.h"
 #include "missionui/redalert.h"
 #include "jumpnode/jumpnode.h"
@@ -713,22 +712,24 @@
 #include "hud/hudsquadmsg.h"		// for the order sexp
 #include "gamesnd/eventmusic.h"		// for change-soundtrack
 #include "menuui/techmenu.h"		// for intel stuff
-#include "fireball/fireballs.h"	// for explosion stuff
+#include "fireball/fireballs.h"		// for explosion stuff
 #include "gamesnd/gamesnd.h"
 #include "render/3d.h"
 #include "asteroid/asteroid.h"
-#include "ship/shipfx.h"
 #include "weapon/shockwave.h"
 #include "weapon/emp.h"
 #include "sound/audiostr.h"
 #include "cmdline/cmdline.h"
-#include "ship/ai.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "network/multi_team.h"
+#endif
+
+#ifndef NDEBUG
+#include "hud/hudmessage.h"
 #endif
 
 #define TRUE	1
@@ -5175,7 +5176,7 @@ int sexp_last_order_time( int n )
 	int instance, i;
 	fix time;
 	char *name;
-	ai_goals *aigp;
+	ai_goal *aigp;
 
 	time = i2f(sexp_get_val(n));
 	Assert ( time >= 0 );

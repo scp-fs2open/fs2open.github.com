@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:03 $
+ * $Author: Goober5000 $
  *
  * File to control Game Sequencing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -243,8 +246,8 @@
  *  States should always be referred to using the macros.
 */
 
-#include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
+#include "globalincs/pstypes.h"
 
 // local defines
 #define MAX_GAMESEQ_EVENTS		20		// maximum number of events on the game sequencing queue

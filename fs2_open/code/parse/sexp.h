@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.57 $
+ * $Revision: 2.58 $
  * $Author: Goober5000 $
- * $Date: 2004-01-20 22:20:41 $
+ * $Date: 2004-03-05 09:02:09 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2004/01/20 22:20:41  Goober5000
+ * bumped MAX_SEXP_NODES to 3000
+ * --Goober5000
+ *
  * Revision 2.56  2003/10/28 23:59:02  Goober5000
  * tweakage
  * --Goober5000
@@ -530,8 +534,7 @@
 #ifndef _SEXP_H
 #define _SEXP_H
 
-#include "cfile/cfile.h"
-#include "ship/ship.h"
+struct ship_subsys;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -1193,7 +1196,7 @@ extern int is_sexp_top_level( int node );
 extern int identify_operator(char *token);
 extern int find_operator(char *token);
 extern int query_sexp_args_count(int index);
-extern int check_sexp_syntax(int index, int return_type = OPR_BOOL, int recursive = 0, int *bindex = NULL, int mode = 0);
+extern int check_sexp_syntax(int index, int return_type = OPR_BOOL, int recursive = 0, int *bindex = 0 /*NULL*/, int mode = 0);
 extern int get_sexp_main(void);	//	Returns start node
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int index);

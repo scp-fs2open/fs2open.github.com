@@ -5,11 +5,16 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.6 $
- * $Date: 2004-02-20 04:29:56 $
- * $Author: bobboau $
+ * $Revision: 1.7 $
+ * $Date: 2004-03-05 09:02:13 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/02/20 04:29:56  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 1.5  2003/11/11 02:15:46  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -40,11 +45,12 @@
 
 #pragma warning(disable:4710)
 
-#include "CFile/CFile.h"
+#include "species_defs/species_defs.h"
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
-#include <memory.h>
+#include "cfile/cfile.h"
+//#include <memory.h>
 
 
 // from shield.cpp

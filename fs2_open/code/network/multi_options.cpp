@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_options.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/22 01:22:25  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -190,17 +193,22 @@
  * $NoKeywords: $
  */
 
-#include <windows.h>
 #include "cmdline/cmdline.h"
 #include "osapi/osregistry.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
+#include "network/multi_oo.h"
 #include "freespace2/freespace.h"
 #include "network/stand_gui.h"
 #include "network/multiutil.h"
 #include "network/multi_voice.h"
 #include "network/multi_options.h"
 #include "network/multi_team.h"
+#include "mission/missioncampaign.h"
+#include "mission/missionparse.h"
+#include "parse/parselo.h"
+#include "playerman/player.h"
+#include "cfile/cfile.h"
 
 // ----------------------------------------------------------------------------------
 // MULTI OPTIONS DEFINES/VARS

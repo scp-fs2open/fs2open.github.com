@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/SnazzyUI.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-02-14 00:18:33 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  *  Code to drive the Snazzy User Interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/02/14 00:18:33  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.2  2003/10/27 23:04:22  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -194,28 +205,15 @@
 */
 
 
-#include <stdlib.h>
-
-#include "globalincs/pstypes.h"
-#include "graphics/2d.h"
-#include "pcxutils/pcxutils.h"
+#include "menuui/snazzyui.h"
 #include "io/key.h"
-#include "menuui/optionsmenu.h"	// need the #defines for the menu choices
-#include "menuui/techmenu.h"		// need the #defines for the menu choices
-#include "menuui/trainingmenu.h"	// need the #defines for the menu choices
 #include "graphics/font.h"
 #include "io/mouse.h"
-#include "menuui/snazzyui.h"
-#include "cfile/cfile.h"
-#include "hud/hudconfig.h"
-#include "gamesequence/gamesequence.h"
-#include "hud/hud.h"
-#include "sound/sound.h"
 #include "gamesnd/gamesnd.h"
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
+#include "cfile/cfile.h"
 #include "localization/localize.h"
-#include "graphics/2d.h"
 
 
 extern int ascii_table[];

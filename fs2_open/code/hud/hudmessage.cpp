@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:03 $
+ * $Author: Goober5000 $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
  * DX8 branch commit
  *
@@ -411,28 +414,23 @@
 
 #include "hud/hud.h"
 #include "hud/hudmessage.h"
-#include "hud/hudtarget.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
-#include "graphics/2d.h"
 #include "io/key.h"
 #include "io/timer.h"
-#include "math.h"
-#include "io/mouse.h"
-#include "sound/winmidi.h"
 #include "playerman/player.h"
 #include "globalincs/linklist.h"
 #include "mission/missionlog.h"
 #include "ui/ui.h"
 #include "missionui/missionscreencommon.h"
-#include "bmpman/bmpman.h"
 #include "graphics/font.h"
 #include "gamesnd/gamesnd.h"
 #include "mission/missiongoals.h"
 #include "globalincs/alphacolors.h"
 #include "weapon/beam.h"
 #include "sound/audiostr.h"
-#include "debugconsole/dbugfile.h"
+#include "ship/ship.h"
+#include "parse/parselo.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

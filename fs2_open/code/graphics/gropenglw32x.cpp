@@ -2,13 +2,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLw32x.cpp $
- * $Revision: 1.8 $
- * $Date: 2003-10-13 05:57:48 $
- * $Author: Kazan $
+ * $Revision: 1.9 $
+ * $Date: 2004-03-05 09:02:01 $
+ * $Author: Goober5000 $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2003/10/13 05:57:48  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  * Revision 1.7  2002/12/05 00:49:25  phreak
  * extension framework implemented(no extensions work YET) -phreak
  *
@@ -316,7 +322,6 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #include "nebula/neb.h"
 #include "io/mouse.h"
 #include "osapi/osregistry.h"
-#include "cfile/cfile.h"
 #include "io/timer.h"
 
 #pragma comment (lib, "opengl32")

@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-02-16 16:15:04 $
- * $Author: phreak $
+ * $Revision: 2.17 $
+ * $Date: 2004-03-05 09:02:08 $
+ * $Author: Goober5000 $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/02/16 16:15:04  phreak
+ * grr fixed a warning message i didn't see
+ *
  * Revision 2.15  2004/02/16 16:09:59  phreak
  * made the window command line tag recognize non-standard resolutions
  *
@@ -179,8 +182,6 @@
 #include "palman/palman.h"
 #include "io/mouse.h"
 #include "osapi/outwnd.h"
-#include "graphics/2d.h"
-#include "cfile/cfile.h"
 #include "sound/sound.h"
 #include "freespace2/freespaceresource.h"
 #include "playerman/managepilot.h"

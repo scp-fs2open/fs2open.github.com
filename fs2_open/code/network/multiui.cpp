@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-03-04 05:57:45 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/03/04 05:57:45  Kazan
+ * LAN works A1 Supar!
+ *
  * Revision 2.16  2004/02/04 09:02:44  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -498,39 +501,27 @@
  */
 
 #ifdef _WIN32
-#include <io.h>
 #include <winsock.h>	// for inet_addr()
 #else
 #include <arpa/inet.h>
 #endif
 
-#include "fs2open_pxo/Client.h"
-
-
-#include "network/multi.h"
 #include "network/multiui.h"
+#include "fs2open_pxo/Client.h"
+#include "freespace2/freespace.h"
+#include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
-#include "network/multi.h"
-#include "ui/ui.h"
-#include "graphics/2d.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "gamesequence/gamesequence.h"
-#include "freespace2/freespace.h"
 #include "gamehelp/contexthelp.h"
-#include "network/psnet.h"
 #include "playerman/player.h"
-#include "cfile/cfile.h"
-#include "ship/ship.h"
-#include "missionui/missionshipchoice.h"
 #include "network/multi_xfer.h"
 #include "cmdline/cmdline.h"
 #include "network/stand_gui.h"
-#include "globalincs/linklist.h"
 #include "network/multiteamselect.h"
 #include "mission/missioncampaign.h"
-#include "bmpman/bmpman.h"
 #include "graphics/font.h"
 #include "io/mouse.h"
 #include "gamesnd/gamesnd.h"
@@ -548,19 +539,18 @@
 #include "network/multi_endgame.h"
 #include "playerman/managepilot.h"
 #include "stats/stats.h"
-#include "object/object.h"
-#include "object/objcollide.h"
-#include "palman/palman.h"
 #include "network/multi_pmsg.h"
-#include "network/multi_obj.h"
+#include "network/multi_oo.h"
 #include "network/multi_log.h"
 #include "globalincs/alphacolors.h"
 #include "anim/animplay.h"
 #include "network/multi_dogfight.h"
 #include "missionui/missionpause.h"
-#include "debugconsole/dbugfile.h"
+#include "ship/ship.h"
 #include "osapi/osregistry.h"
-
+#include "mission/missionbriefcommon.h"
+#include "parse/parselo.h"
+#include "cfile/cfile.h"
 
 extern int Om_tracker_flag; // needed to know whether or not to use FS2OpenPXO
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-02-20 04:29:56 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:05 $
+ * $Author: Goober5000 $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/02/20 04:29:56  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.2  2003/01/27 01:12:15  DTP
  * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still cant join. narrowing it down.
  *
@@ -200,16 +205,18 @@
  * $NoKeywords: $
  */
 
+#include "stats/scoring.h"
 #include "freespace2/freespace.h"
-#include "globalincs/pstypes.h"
 #include "object/object.h"
 #include "ship/ship.h"
-#include "stats/scoring.h"
 #include "playerman/player.h"
 #include "parse/parselo.h"
 #include "stats/medals.h"
 #include "localization/localize.h"
 #include "mission/missionparse.h"
+#include "hud/hud.h"
+#include "hud/hudmessage.h"
+#include "weapon/weapon.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-11-11 02:15:45 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:02 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/11/11 02:15:45  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -168,8 +173,6 @@
  * $NoKeywords: $
  */
 
-#include <limits.h>
-
 #include "gamesequence/gamesequence.h"
 #include "network/multi.h"
 #include "network/multiui.h"
@@ -177,11 +180,16 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "popup/popup.h"
-#include "network/multi_xfer.h"
 #include "network/multi_campaign.h"
 #include "network/multi_endgame.h"
 #include "network/stand_gui.h"
 #include "mission/missiongoals.h"
+#include "mission/missioncampaign.h"
+#include "mission/missionparse.h"
+
+#ifndef NDEBUG
+#include <limits.h>
+#endif
 
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER CAMPAIGN DEFINES/VARS

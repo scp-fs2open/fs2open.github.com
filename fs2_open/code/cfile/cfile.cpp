@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-02-04 09:02:45 $
+ * $Revision: 2.14 $
+ * $Date: 2004-03-05 09:01:54 $
  * $Author: Goober5000 $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/02/04 09:02:45  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.12  2003/08/27 01:36:22  Goober5000
  * fixed a strange thing that Bobboau inexplicably put in
  * --Goober5000
@@ -247,16 +251,10 @@
 #include <sys/mman.h>
 #endif
 
-#include "cmdline/cmdline.h"
-#include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 #include "parse/encrypt.h"
-//#include "outwnd.h"
-//#include "vecmat.h"
-//#include "timer.h"
 #include "cfile/cfilesystem.h"
 #include "cfile/cfilearchive.h"
-#include "osapi/osapi.h"
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 

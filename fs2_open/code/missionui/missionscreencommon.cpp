@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-11-11 02:15:44 $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:01:55 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/11/11 02:15:44  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.3  2003/09/13 06:02:06  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -294,8 +299,6 @@
  *
  */
 
-#include <limits.h>
-#include "freespace2/freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "io/key.h"
 #include "missionui/missionscreencommon.h"
@@ -303,23 +306,18 @@
 #include "missionui/missionweaponchoice.h"
 #include "missionui/missionbrief.h"
 #include "io/timer.h"
-#include "sound/sound.h"
 #include "gamesequence/gamesequence.h"
-#include "bmpman/bmpman.h"
-// #include "movie.h"
 #include "gamesnd/gamesnd.h"
 #include "palman/palman.h"
 #include "io/mouse.h"
 #include "gamehelp/contexthelp.h"
-#include "time.h"
-#include "io/joy.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
-#include "math/staticrand.h"	// for rand_alt()
 #include "popup/popup.h"
 #include "hud/hudwingmanstatus.h"
 #include "ui/uidefs.h"
 #include "anim/animplay.h"
+#include "ship/ship.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -328,6 +326,10 @@
 #include "network/multiteamselect.h"
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
+#endif
+
+#ifndef NDEBUG
+#include <limits.h>
 #endif
 
 //////////////////////////////////////////////////////////////////

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.h $
- * $Revision: 2.2 $
- * $Date: 2003-01-27 00:51:08 $
- * $Author: DTP $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:05 $
+ * $Author: Goober5000 $
  *
  * Scoring system structures, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/27 00:51:08  DTP
+ * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still cant join. narrowing it down.
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -178,20 +181,13 @@
 #ifndef _SCORING_HEADER_FILE
 #define _SCORING_HEADER_FILE
 
-#include "ship/ship.h"
-#include "weapon/weapon.h"
+#include <time.h>
+#include "globalincs/pstypes.h"
+#include "globalincs/globals.h"
 
 struct player;
-
-// ARGH. IMPORTANT : do not change NUM_MEDALS without talking to DaveB first. It will affect the size of the scoring struct and hence, will break
-// a lot of PXO related stuff. SEE ALSO : MAX_SHIP_TYPES
-#ifdef FS2_DEMO
-	#define NUM_MEDALS			16
-	#define NUM_MEDALS_FS1		16
-#else 
-	#define NUM_MEDALS			18
-	#define NUM_MEDALS_FS1		16
-#endif
+struct ship;
+struct object;
 
 #define NUM_RANKS				10
 

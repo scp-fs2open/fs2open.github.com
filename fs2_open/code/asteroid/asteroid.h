@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.3 $
- * $Date: 2003-10-15 22:03:23 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/10/15 22:03:23  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.2  2003/04/29 01:03:22  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -132,8 +135,8 @@
 #ifndef __ASTEROID_H__
 #define __ASTEROID_H__
 
-#include "ship/ship.h"
-#include "parse/parselo.h"		// for NAME_LENGTH
+#include "globalincs/pstypes.h"
+#include "globalincs/globals.h"		// for NAME_LENGTH
 
 struct object;
 struct polymodel;
@@ -229,11 +232,14 @@ extern debris_struct Field_debris_info[];
 
 #define	AF_USED					(1<<0)			//	Set means used.
 
+// Goober5000 - currently same as MAX_SHIP_DETAIL_LEVELS (put here to avoid an #include)
+#define MAX_ASTEROID_DETAIL_LEVELS	5
+
 typedef struct asteroid_info {
 	char			name[NAME_LENGTH];									// name for the asteroid
 	char			pof_files[MAX_ASTEROID_POFS][NAME_LENGTH];	// POF files to load/associate with ship
 	int			num_detail_levels;									// number of detail levels for this ship
-	int			detail_distance[MAX_SHIP_DETAIL_LEVELS];		// distance to change detail levels at
+	int			detail_distance[MAX_ASTEROID_DETAIL_LEVELS];		// distance to change detail levels at
 	float			max_speed;												// cap on speed for asteroid
 	float			inner_rad;												// radius within which maximum area effect damage is applied
 	float			outer_rad;												// radius at which no area effect damage is applied

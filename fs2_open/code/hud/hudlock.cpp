@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-09-09 17:18:24 $
- * $Author: matt $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-05 09:02:03 $
+ * $Author: Goober5000 $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/09 17:18:24  matt
+ * Broke stars last commit, fixed -Sticks
+ *
  * Revision 2.4  2003/09/09 17:10:55  matt
  * Added -nospec cmd line param to disable specular -Sticks
  *
@@ -293,21 +296,18 @@
 
 #include "hud/hud.h"
 #include "hud/hudlock.h"
-#include "hud/hudtarget.h"
-#include "hud/hudreticle.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
-#include "sound/sound.h"
 #include "io/timer.h"
-#include "freespace2/freespace.h"
-#include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "ship/ai.h"
-#include "bmpman/bmpman.h"
 #include "render/3d.h"
 #include "globalincs/linklist.h"
 #include "weapon/emp.h"
+#include "graphics/2d.h"
+#include "object/object.h"
+#include "mission/missionparse.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

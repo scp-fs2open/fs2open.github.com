@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-02-04 09:02:43 $
+ * $Revision: 2.20 $
+ * $Date: 2004-03-05 09:01:55 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/02/04 09:02:43  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.18  2003/11/11 02:15:44  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -514,27 +518,20 @@
 
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionweaponchoice.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 #include "missionui/missionshipchoice.h"
-#include "io/timer.h"
-#include "io/key.h"
 #include "io/mouse.h"
-#include "bmpman/bmpman.h"
-#include "graphics/2d.h"
 #include "menuui/snazzyui.h"
 #include "anim/animplay.h"
-#include "freespace2/freespace.h"
-#include "gamesequence/gamesequence.h"
+#include "anim/packunpack.h"
 #include "missionui/missionbrief.h"
-#include "ui/ui.h"
 #include "gamesnd/gamesnd.h"
-#include "anim/animplay.h"
 #include "gamehelp/contexthelp.h"
-#include "globalincs/linklist.h"
 #include "popup/popup.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
-#include "playerman/player.h"
-#include "debugconsole/dbugfile.h"
+#include "cfile/cfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -544,14 +541,11 @@
 #include "missionui/chatbox.h"
 #endif
 
-//#define MAX_PRIMARY_BANKS		3
-//#define MAX_SECONDARY_BANKS	3	//	Lowered from 5 to 3 by MK on 3/25/98.  This needs to be <= MAX_WL_SECONDARY or you'll get stack overwrites.
+#define IS_BANK_PRIMARY(x)			(x <= MAX_SUPPORTED_PRIMARY_BANKS)
+#define IS_BANK_SECONDARY(x)		(x > MAX_SUPPORTED_PRIMARY_BANKS)
 
-#define IS_BANK_PRIMARY(x)			(x<3?1:0)
-#define IS_BANK_SECONDARY(x)		(x>2?1:0)
-
-#define IS_LIST_PRIMARY(x)			(Weapon_info[x].subtype==WP_MISSILE?0:1)
-#define IS_LIST_SECONDARY(x)		(Weapon_info[x].subtype==WP_MISSILE?1:0)
+#define IS_LIST_PRIMARY(x)			(Weapon_info[x].subtype != WP_MISSILE)
+#define IS_LIST_SECONDARY(x)		(Weapon_info[x].subtype == WP_MISSILE)
 
 //XSTR:OFF
 #if (MAX_PRIMARY_BANKS > MAX_WL_PRIMARY)
@@ -795,8 +789,8 @@ static int Wl_ship_name_coords[GR_NUM_RESOLUTIONS][2] = {
 typedef struct wl_ship_class_info
 {
 	int				overhead_bitmap;
-	anim_t			*anim;
-	anim_instance_t	*anim_instance;
+	anim			*anim;
+	anim_instance	*anim_instance;
 } wl_ship_class_info;
 
 wl_ship_class_info	Wl_ships[MAX_SHIP_TYPES];
@@ -806,8 +800,8 @@ typedef struct wl_icon_info
 	int				icon_bmaps[NUM_ICON_FRAMES];
 	int				current_icon_bmap;
 	int				can_use;
-	anim_t			*anim;
-	anim_instance_t	*anim_instance;
+	anim			*anim;
+	anim_instance	*anim_instance;
 } wl_icon_info;
 
 wl_icon_info	Wl_icons_teams[MAX_TEAMS][MAX_WEAPON_TYPES];

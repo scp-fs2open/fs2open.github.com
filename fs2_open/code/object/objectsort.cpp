@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-10-14 17:39:17 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:57 $
+ * $Author: Goober5000 $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/10/14 17:39:17  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -153,12 +163,8 @@
  */
 
 
-#include "globalincs/pstypes.h"
 #include "object/object.h"
 #include "render/3d.h"
-#include "graphics/2d.h"
-#include "globalincs/systemvars.h"
-#include "fireball/fireballs.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 

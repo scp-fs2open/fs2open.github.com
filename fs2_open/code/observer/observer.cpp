@@ -9,16 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Observer/Observer.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:08 $
+ * $Author: Goober5000 $
  *
  * $NoKeywords: $
  */
 
 #include "observer/observer.h"
 #include "object/object.h"
-#include "math/vecmat.h"
 #include "globalincs/systemvars.h"
 #include "playerman/player.h"
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-01-31 03:54:50 $
- * $Author: phreak $
+ * $Revision: 2.10 $
+ * $Date: 2004-03-05 09:01:57 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/01/31 03:54:50  phreak
+ * commented out decal references
+ *
  * Revision 2.8  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -184,14 +187,14 @@
  */
 
 #include "object/objcollide.h"
-#include "model/model.h"
+#include "object/object.h"
+#include "weapon/weapon.h"
+#include "ship/ship.h"
 #include "ship/shiphit.h"
 #include "playerman/player.h"
 #include "hud/hudshield.h"
-#include "hud/hud.h"
 #include "hud/hudwingmanstatus.h"
 #include "io/timer.h"
-#include "freespace2/freespace.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

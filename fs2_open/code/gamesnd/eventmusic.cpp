@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-02-08 03:35:08 $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-05 09:02:00 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/02/08 03:35:08  Goober5000
+ * fixed a small bug in FS1-compatible music
+ * --Goober5000
+ *
  * Revision 2.7  2004/01/30 07:39:06  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -143,22 +147,18 @@
  */
 
 
-#include	"globalincs/pstypes.h"
 #include "gamesnd/eventmusic.h"
 #include "object/object.h"
 #include "ship/ship.h"
 #include "globalincs/linklist.h"
-#include "mission/missionload.h"	/* for Builtin_mission_names[] */
 #include "mission/missionparse.h"
 #include "io/timer.h"
-#include "freespace2/freespace.h"
 #include "sound/audiostr.h"
-#include "mission/missioncampaign.h"
 #include "sound/sound.h"
-#include "time.h"
 #include "cmdline/cmdline.h"
 #include "mission/missiongoals.h"
 #include "localization/localize.h"
+#include "parse/parselo.h"
 
 #pragma optimize("", off)
 

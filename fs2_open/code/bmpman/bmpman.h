@@ -10,13 +10,20 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.10 $
- * $Date: 2003-12-04 20:39:08 $
- * $Author: randomtiger $
+ * $Revision: 2.11 $
+ * $Date: 2004-03-05 09:01:54 $
+ * $Author: Goober5000 $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/12/04 20:39:08  randomtiger
+ * Added DDS image support for D3D
+ * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
+ * Hopefully have fixed D3D text batching bug that caused old values to appear
+ * Added Hud_target_object_factor variable to control 3D object sizes of zoom in HUD target
+ * Fixed jump nodes not showing
+ *
  * Revision 2.9  2003/11/19 20:37:22  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -268,6 +275,8 @@
 
 #ifndef _BMPMAN_H
 #define _BMPMAN_H
+
+#include "globalincs/pstypes.h"
 
 #ifndef NDEBUG
 #define BMPMAN_NDEBUG

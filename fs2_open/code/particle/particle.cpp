@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-01-24 14:31:27 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:09 $
+ * $Author: Goober5000 $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/01/24 14:31:27  randomtiger
+ * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
+ * Its optional and off by default, use -d3d_particle to activiate.
+ * Also bumped up D3D ambient light setting, it was way too dark.
+ * Its now set to something similar to the original game.
+ *
  * Revision 2.2  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -175,16 +181,17 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
-#include "freespace2/freespace.h"
-#include "globalincs/linklist.h"
+#include "globalincs/systemvars.h"
+#include "graphics/2d.h"
 #include "render/3d.h" 
 #include "bmpman/bmpman.h"
 #include "particle/particle.h"
-#include "osapi/osapi.h"
 #include "object/object.h"
-#include "io/timer.h"
 #include "cmdline/cmdline.h"
+
+#ifndef NDEBUG
+#include "io/timer.h"
+#endif
 
 typedef struct particle {
 	// old style data

@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-02-04 09:02:44 $
+ * $Revision: 2.11 $
+ * $Date: 2004-03-05 09:02:02 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/02/04 09:02:44  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.9  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -337,11 +341,10 @@
  * $NoKeywords: $
  */
 
-#include <limits.h>
-
-#include "ship/ai.h"
+#include "globalincs/globals.h"
 #include "object/object.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
@@ -349,36 +352,29 @@
 #include "mission/missionparse.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
-#include "graphics/2d.h"
-#include "ui/ui.h"
 #include "io/key.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "network/multi_ingame.h"
 #include "missionui/missionscreencommon.h"
 #include "popup/popup.h"
-#include "bmpman/bmpman.h"
-#include "io/mouse.h"
 #include "network/multi_observer.h"
 #include "network/multi_xfer.h"
 #include "network/multi_kick.h"
-#include "mission/missiongoals.h"
 #include "menuui/mainhallmenu.h"
 #include "stats/stats.h"
 #include "network/multiteamselect.h"
 #include "missionui/missionweaponchoice.h"
 #include "network/multi_endgame.h"
-#include "hud/hudescort.h"
 #include "hud/hudshield.h"
-#include "object/objcollide.h"
 #include "mission/missionhotkey.h"
-#include "network/multi_campaign.h"
-#include "network/multi_obj.h"
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
-#include "debugconsole/dbugfile.h"
+#include "playerman/player.h"
 
-
+#ifndef NDEBUG
+#include <limits.h>
+#endif
 
 // --------------------------------------------------------------------------------------------------
 // DAVE's BIGASS INGAME JOIN WARNING/DISCLAIMER

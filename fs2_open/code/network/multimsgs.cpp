@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-02-04 08:41:03 $
+ * $Revision: 2.15 $
+ * $Date: 2004-03-05 09:02:02 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/02/04 08:41:03  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.13  2003/11/13 03:59:54  Kazan
  * PXO_SID changed from unsigned to signed
  *
@@ -396,45 +401,27 @@
  * $NoKeywords: $
  */
 
-#include <limits.h>
-#include <io.h>         // for findfirst/findnext, etc
-#include "globalincs/pstypes.h"
-#include "osapi/osapi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "network/multiui.h"
 #include "network/multi.h"
-#include "network/multiteamselect.h"
 #include "globalincs/linklist.h"
 #include "gamesequence/gamesequence.h"
 #include "hud/hudmessage.h"
 #include "hud/hudsquadmsg.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
-#include "network/psnet.h"
-#include "playerman/player.h"
 #include "mission/missiongoals.h"
-#include "mission/missionparse.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
-#include "missionui/missionbrief.h"
-#include "physics/physics.h"
-#include "cmeasure/cmeasure.h"
-#include "model/model.h"				// for some limits
-#include "ship/afterburner.h"
 #include "network/stand_gui.h"
-#include "network/multi_xfer.h"
 #include "gamesnd/gamesnd.h"
-#include "parse/sexp.h"
 #include "ship/shiphit.h"
-#include "missionui/chatbox.h"
 #include "render/3d.h"
-#include "playerman/managepilot.h"
-#include "hud/hudsquadmsg.h"
+#include "playerman/player.h"
 #include "debris/debris.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/missionshipchoice.h"
-#include "fireball/fireballs.h"
 #include "ship/shipfx.h"
 #include "popup/popup.h"
 #include "network/multi_ingame.h"
@@ -444,17 +431,15 @@
 #include "network/multi_team.h"
 #include "network/multi_respawn.h"
 #include "network/multi_observer.h"
-#include "network/multi_voice.h"
 #include "asteroid/asteroid.h"
 #include "network/multi_pmsg.h"
-#include "network/multi_data.h"
-#include "network/multi_options.h"
-#include "object/objcollide.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 #include "hud/hudreticle.h"
 #include "network/multi_pause.h"
 #include "network/multi_endgame.h"
 #include "missionui/missiondebrief.h"
-#include "network/multi_obj.h"
 #include "network/multi_log.h"
 #include "weapon/emp.h"
 #include "network/multi_kick.h"
@@ -463,7 +448,9 @@
 #include "weapon/beam.h"
 #include "network/multi_rate.h"
 #include "nebula/neblightning.h"
-#include "hud/hudescort.h"
+#include "hud/hud.h"
+#include "missionui/missionscreencommon.h"
+#include "mission/missionbriefcommon.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4663 4018 4663 4245)

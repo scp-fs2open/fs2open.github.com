@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-02-14 00:18:32 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:03 $
+ * $Author: Goober5000 $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/02/14 00:18:32  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -190,19 +201,11 @@
  *
 */
 
-#include "graphics/2d.h"
-
 #include "hud/hudreticle.h"
 #include "hud/hud.h"
-#include "math.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
-#include "freespace2/freespace.h"
-#include "ship/ai.h"
-#include "bmpman/bmpman.h"
-#include "io/key.h"
 #include "io/timer.h"
-#include "math.h"
 #include "gamesnd/gamesnd.h"
 #include "hud/hudtargetbox.h"
 #include "weapon/emp.h"

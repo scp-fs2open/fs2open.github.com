@@ -10,6 +10,8 @@
 #ifndef _GLOBAL_ALPHACOLORS_HEADER_FILE
 #define _GLOBAL_ALPHACOLORS_HEADER_FILE
 
+#include "graphics/2d.h"
+
 // -----------------------------------------------------------------------------------
 // ALPHA DEFINES/VARS
 //

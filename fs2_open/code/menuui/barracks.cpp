@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-02-14 00:18:33 $
- * $Author: randomtiger $
+ * $Revision: 2.7 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/02/14 00:18:33  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.5  2004/02/10 21:47:47  Goober5000
  * fixed the barracks crash bug
  * --Goober5000
@@ -113,27 +124,24 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
 #include "menuui/barracks.h"
 #include "playerman/managepilot.h"
 #include "ui/ui.h"
 #include "graphics/font.h"
 #include "io/key.h"
 #include "gamesnd/gamesnd.h"
-#include "osapi/osapi.h"
 #include "popup/popup.h"
 #include "menuui/playermenu.h"
 #include "gamesequence/gamesequence.h"
 #include "gamehelp/contexthelp.h"
-#include "graphics/2d.h"
-#include "ctype.h"
 #include "freespace2/freespace.h"
-#include "globalincs/systemvars.h"
-#include "bmpman/bmpman.h"
 #include "io/mouse.h"
 #include "osapi/osregistry.h"
 #include "globalincs/alphacolors.h"
-#include "debugconsole/dbugfile.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "cfile/cfile.h"
+#include "parse/parselo.h"
 
 //Returns 0 on failure, 1 on success
 int delete_pilot_file( char *pilot_name, int single );		// manage_pilot.cpp
