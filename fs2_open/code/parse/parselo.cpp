@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.23 $
- * $Author: Goober5000 $
- * $Date: 2004-09-05 19:23:24 $
+ * $Revision: 2.24 $
+ * $Author: taylor $
+ * $Date: 2004-10-31 21:57:30 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/09/05 19:23:24  Goober5000
+ * fixed a few warnings
+ * --Goober5000
+ *
  * Revision 2.22  2004/07/26 20:47:47  Kazan
  * remove MCD complete
  *
@@ -222,7 +226,7 @@ jmp_buf	parse_abort;
 
 char	Mission_text[MISSION_TEXT_SIZE];
 char	Mission_text_raw[MISSION_TEXT_SIZE];
-char	*Mp;
+char	*Mp, *ex_Mp;
 char	*token_found;
 
 //	Return true if this character is white space, else false.
@@ -245,10 +249,26 @@ void ignore_white_space()
 		Mp++;
 }
 
+// same as ignore_white_space() but with specific text
+void ignore_white_space_ex()
+{
+	if (ex_Mp == NULL)
+		return;
+
+	while ((*ex_Mp != EOF_CHAR) && is_white_space(*ex_Mp))
+		ex_Mp++;
+}
+
 void ignore_gray_space()
 {
 	while ((*Mp != EOF_CHAR) && is_gray_space(*Mp))
 		Mp++;
+}
+
+void ignore_gray_space_ex()
+{
+	while ((*ex_Mp != EOF_CHAR) && is_gray_space(*ex_Mp))
+		ex_Mp++;
 }
 
 //	Truncate *str, eliminating all trailing white space.
@@ -313,6 +333,15 @@ void skip_token()
 
 	while ((*Mp != EOF_CHAR) && !is_white_space(*Mp))
 		Mp++;
+}
+
+//	Advances ex_Mp past current token.
+void skip_token_ex()
+{
+	ignore_white_space_ex();
+
+	while ((*ex_Mp != EOF_CHAR) && !is_white_space(*ex_Mp))
+		ex_Mp++;
 }
 
 //	Display a diagnostic message if Verbose is set.
@@ -436,6 +465,24 @@ void advance_to_eoln(char *more_terminators)
 		Mp++;
 }
 
+//	Advance external Mp to the next eoln character.
+void advance_to_eoln_ex(char *more_terminators)
+{
+	char	terminators[128];
+
+	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
+
+	terminators[0] = EOLN;
+	terminators[1] = (char)EOF_CHAR;
+	if (more_terminators != NULL)
+		strcpy(&terminators[2], more_terminators);
+	else
+		terminators[2] = 0;
+
+	while (strchr(terminators, *ex_Mp) == NULL)
+		ex_Mp++;
+}
+
 // Advance Mp to the next white space (ignoring white space inside of " marks)
 void advance_to_next_white()
 {
@@ -542,6 +589,36 @@ int required_string(char *pstr)
 	return 1;
 }
 
+// Find a required string
+// same as required_string() above but you must pass the text to be evaluated in ex_Mp.
+int required_string_ex(char *pstr)
+{
+	int	count = 0;
+
+	if (ex_Mp == NULL)
+		return 1;
+
+	ignore_white_space_ex();
+
+	while (strnicmp(pstr, ex_Mp, strlen(pstr)) && (count < RS_MAX_TRIES)) {
+	//	error_display(1, "Required token = [%s], found [%.32s] %s.\n", pstr, next_tokens(), parse_error_text);
+		advance_to_eoln_ex(NULL);
+		ignore_white_space_ex();
+		count++;
+	}
+
+	if (count == RS_MAX_TRIES) {
+	//	nprintf(("Error", "Error: Unable to find required token [%s] %s\n", pstr, parse_error_text));
+	//	Warning(LOCATION, "Error: Unable to find required token [%s] %s\n", pstr, parse_error_text);
+		nprintf(("Error", "Error: Unable to find required token [%s]\n", pstr));
+	//	longjmp(parse_abort, 1);
+	}
+
+	ex_Mp += strlen(pstr);
+//	diag_printf("Found required string [%s]\n", token_found = pstr);
+	return 1;
+}
+
 // similar to optional_string, but just checks if next token is a match.
 // It doesn't advance Mp.
 //
@@ -575,6 +652,22 @@ int optional_string(char *pstr)
 
 	if (!strnicmp(pstr, Mp, strlen(pstr))) {
 		Mp += strlen(pstr);
+//		mprintf((", found it\n"));
+		return 1;
+	}
+//	mprintf((", didin't find it it\n"));
+
+	return 0;
+}
+
+// ex_Mp version of optional_string()
+int optional_string_ex(char *pstr)
+{
+	ignore_white_space_ex();
+//	mprintf(("lookint for optional string %s",pstr));
+
+	if (!strnicmp(pstr, ex_Mp, strlen(pstr))) {
+		ex_Mp += strlen(pstr);
 //		mprintf((", found it\n"));
 		return 1;
 	}
@@ -924,6 +1017,101 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 			advance_to_eoln(terminators);
 			break;		
 
+		default:
+			Assert(0);
+	}
+
+	// now we want to do any final localization
+	lcl_ext_localize(read_str, pstr, final_len, &tag_id);
+
+	// if the hash localized text hash table is active and we have a valid external string - hash it
+	if(fhash_active() && (tag_id > -2)){
+		fhash_add_str(pstr, tag_id);
+	}
+
+	diag_printf("Stuffed string = [%.30s]\n", pstr);
+}
+
+// stuff a string from a given source rather than global
+void stuff_string_ex(char *pstr, int type, char *terminators, int len)
+{	
+	char read_str[PARSE_BUF_SIZE] = "";
+	int read_len = PARSE_BUF_SIZE;
+	int final_len = len;
+	int tag_id;
+
+	switch (type) {
+		case F_NAME:
+			if (!len){
+				final_len = NAME_LENGTH;
+			}
+			ignore_gray_space_ex();
+			copy_to_eoln(read_str, terminators, ex_Mp, read_len);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln_ex(terminators);
+			break;
+/*
+		case F_DATE:
+			ignore_gray_space_ex(ex_Mp);			
+			final_len = DATE_LENGTH;
+			copy_to_eoln(read_str, terminators, ex_Mp, read_len);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln_ex(ex_Mp, terminators);
+			break;
+
+		case F_NOTES:
+			ignore_white_space_ex(ex_Mp);
+			final_len = NOTES_LENGTH;
+			copy_text_until(read_str, Mp, "$End Notes:", read_len);
+			ex_Mp += strlen(read_str);
+			required_string("$End Notes:");
+			break;
+
+		case F_FILESPEC:
+			ignore_gray_space();
+			final_len = FILESPEC_LENGTH;
+			copy_to_eoln(read_str, terminators, Mp, read_len);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+		// F_MULTITEXTOLD keeping for backwards compatability with old missions
+		// can be deleted once all missions are using new briefing format
+
+		case F_MULTITEXTOLD:		
+			ignore_white_space();
+			final_len = NOTES_LENGTH;
+			copy_text_until(read_str, Mp, "$End Briefing Text:", read_len);
+			Mp += strlen(read_str);
+			required_string("$End Briefing Text:");
+			break;
+
+		case F_MULTITEXT:		
+			if (!len){
+				final_len = MULTITEXT_LENGTH;
+			}
+			ignore_white_space();
+			copy_text_until(read_str, Mp, "$end_multi_text", read_len);
+			Mp += strlen(read_str);
+			drop_trailing_white_space(read_str);
+			required_string("$end_multi_text");
+			break;
+
+		case F_PATHNAME:
+			ignore_gray_space();
+			final_len = PATHNAME_LENGTH;
+			copy_to_eoln(read_str, terminators, Mp, read_len);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
+		case F_MESSAGE:
+			ignore_gray_space();
+			final_len = MESSAGE_LENGTH;
+			copy_to_eoln(read_str, terminators, Mp, read_len);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;		
+*/
 		default:
 			Assert(0);
 	}
@@ -1384,6 +1572,24 @@ int atoi2()
 
 }
 
+int atoi2_ex()
+{
+	char	ch;
+
+//	my_errno = 0;
+
+	ignore_white_space_ex();
+
+	ch = *ex_Mp;
+
+	if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
+//		error_display(1, "Expecting int, found [%.32s].\n", next_tokens());
+//		my_errno = 1;
+		return 0;
+	} else
+		return atoi(ex_Mp);
+
+}
 
 //	Stuff a floating point value pointed at by Mp.
 //	Advances past float characters.
@@ -1419,6 +1625,18 @@ void stuff_int(int *i)
 	diag_printf("Stuffed int: %i\n", *i);
 }
 
+// Stuff an integer value pointed at by ex_Mp.
+void stuff_int_ex(int *i)
+{
+	*i = atoi2_ex();
+
+	ex_Mp += strspn(ex_Mp, "+-0123456789");
+
+	if (*ex_Mp ==',')
+		ex_Mp++;
+
+//	diag_printf("Stuffed int: %i\n", *i);
+}
 
 // Stuffs a boolean value pointed at by Mp.  
 // YES/NO (supporting 1/0 now as well)
@@ -1838,6 +2056,11 @@ void reset_parse()
 
 	Warning_count = 0;
 	Error_count = 0;
+}
+
+void reset_parse_ex(char *text)
+{
+	ex_Mp = text;
 }
 
 // Display number of warnings and errors at the end of a parse.
