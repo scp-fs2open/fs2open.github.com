@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.31 $
- * $Date: 2004-08-23 03:34:34 $
+ * $Revision: 2.32 $
+ * $Date: 2004-08-31 23:36:28 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/08/23 03:34:34  Goober5000
+ * modularized tag stuff in preparation for sexp
+ * --Goober5000
+ *
  * Revision 2.30  2004/07/26 20:47:52  Kazan
  * remove MCD complete
  *
@@ -2469,6 +2473,14 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 					case OBJ_BEAM://give kills for fighter beams-Bobboau
 					  {
 						int bobjn = beam_get_parent(other_obj);
+
+						// Goober5000 - only count beams fired by fighters or bombers
+						if (bobjn >= 0)
+						{
+							if (!(Ships[Objects[bobjn].instance].flags & SIF_FIGHTER) && !(Ships[Objects[bobjn].instance].flags & SIF_BOMBER))
+								bobjn = -1;
+						}
+
 						if(bobjn == -1){
 							scoring_add_damage(ship_obj, NULL, damage);
 						} else {
