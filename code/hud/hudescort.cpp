@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-07 23:34:08 $
- * $Author: Kazan $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-09 05:53:05 $
+ * $Author: wmcoolmon $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/07 23:34:08  Kazan
+ * fixed a typo in one of the fs2netd strings
+ * played with WMCoolmon's hacked up escort list
+ *
  * Revision 2.11  2004/07/07 21:00:07  Kazan
  * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
  *
@@ -707,7 +711,7 @@ void hud_escort_show_icon_dogfight(int x, int y, int index)
 	// print out player name
 	strcpy(buf, Net_players[np_index].player->callsign);
 	gr_force_fit_string(buf, 255, 100 - stat_shift);
-	emp_hud_string( x + current_hud->Escort_name[0], x + current_hud->Escort_name[1], EG_ESCORT1 + index, buf);	
+	emp_hud_string( x + current_hud->Escort_name[0], y + current_hud->Escort_name[1], EG_ESCORT1 + index, buf);	
 
 	// can we get the player object?
 	objp = NULL;
@@ -795,7 +799,7 @@ void hud_escort_show_icon(int x, int y, int index)
 // Display the data on ships in the escort list
 void hud_display_escort()
 {
-	int			i;
+	int	i = 0;
 
 	if ( !Show_escort_view ) {
 		return;
@@ -815,14 +819,12 @@ void hud_display_escort()
 	int x = current_hud->Escort_coords[0] + current_hud->Escort_list[0];
 	int y = current_hud->Escort_coords[1] + current_hud->Escort_list[1];
 
-//	if(Num_escort_ships > 1)
-	{
 	//This is temporary
 	Num_escort_ships--;
 
 	if(Num_escort_ships > 1)
 	{
-		for(i = 0; i < Num_escort_ships; i++)
+		for(; i < Num_escort_ships; i++)
 		{
 			if(i != 0)
 			{
@@ -834,18 +836,18 @@ void hud_display_escort()
 			//Now we just show the ships info
 			hud_escort_show_icon(x, y, i);
 		}
+
+		//Increment for last entry
+		x += current_hud->Escort_entry_last[0];
+		y += current_hud->Escort_entry_last[1];
 	}
 
 	//Back to right #
 	Num_escort_ships++;
 
-	//Last one
-	x += current_hud->Escort_entry_last[0];
-	y += current_hud->Escort_entry_last[1];
+	//Show the last escort entry
 	GR_AABITMAP(Escort_gauges[2].first_frame, x, y);
-	// Kazan - I is invalid here
-	hud_escort_show_icon(x, y, 0);
-	}
+	hud_escort_show_icon(x, y, i);
 
 /*
 	if ( Num_escort_ships >= 2 ) {
