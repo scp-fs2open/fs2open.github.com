@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2004/05/26 03:52:08  wmcoolmon
+ * Ship & weapon modular table files
+ *
  * Revision 2.61  2004/04/06 05:28:07  phreak
  * oops, hanging ')'
  *
@@ -683,7 +686,7 @@ extern int Max_allowed_player_homers[];
 extern int compute_num_homing_objects(object *target_objp);
 
 // 
-void parse_weapon_expl_tbl()
+void parse_weapon_expl_tbl(char* longname)
 {
 	int	rval, idx;
 	char base_filename[256] = "";
@@ -692,14 +695,13 @@ void parse_weapon_expl_tbl()
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Unable to parse weapon_expl.tbl!  Code = %i.\n", rval);
+		Error(LOCATION, "Unable to parse %s!  Code = %i.\n", rval, longname);
 	}
 	else {
-		read_file_text(NOX("weapon_expl.tbl"));
+		read_file_text(NOX(longname));
 		reset_parse();		
 	}
 
-	Num_weapon_expl = 0;
 	required_string("#Start");
 	while (required_string_either("#End","$Name:")) {
 		Assert( Num_weapon_expl < MAX_Weapon_expl_info);
@@ -2246,7 +2248,17 @@ void weapon_init()
 	if ( !Weapons_inited ) {
 #ifndef FS2_DEMO
 		// parse weapon_exp.tbl
-		parse_weapon_expl_tbl();
+		Num_weapon_expl = 0;
+		parse_weapon_expl_tbl("weapon_expl.tbl");
+		char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+		int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-wxp.tbm", CF_SORT_REVERSE);
+		for(int i = 0; i < num_files; i++)
+		{
+			//HACK HACK HACK
+			strcat(tbl_files[i], ".tbm");
+			parse_weapon_expl_tbl(tbl_files[i]);
+		}
+
 #endif
 
 
@@ -2262,7 +2274,7 @@ void weapon_init()
 			parse_weaponstbl("weapons.tbl", false);
 
 			char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-wep.tbm");
+			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-wep.tbm", CF_SORT_REVERSE);
 			for(int i = 0; i < num_files; i++)
 			{
 				//HACK HACK HACK

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-05-03 21:22:19 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-05-26 21:02:26 $
+ * $Author: wmcoolmon $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,11 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/05/03 21:22:19  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.16  2004/05/01 21:47:43  Kazan
  * bah! stupid me "NULL" not "null" - i hate when i do that
  *
@@ -1046,13 +1051,20 @@ int cf_matches_spec(char *filespec, char *filename)
 {
 	char *src_ext, *dst_ext;
 
-	src_ext = strchr(filespec, '.');
-	if (!src_ext)
-		return 1;
-	if (*src_ext == '*')
-		return 1;
+	src_ext = strrchr(filespec, '*');
+	if(!src_ext)
+	{
+		src_ext = strchr(filespec, '.');
+		if (!src_ext)
+			return 1;
+	}
 
-	dst_ext = strchr(filename, '.');
+	if(strlen(filespec) > strlen(filename))
+	{
+		return 0;
+	}
+
+	dst_ext = filename + strlen(filename) - ((filespec + strlen(filespec)) - src_ext);
 	if (!dst_ext)
 		return 1;
 	
@@ -1276,7 +1288,9 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 		for (i=0; i<max; i++)	{
 			list[i] = arr[i];
 		}
-	} else {
+	}
+	else if(!list && sort != CF_SORT_REVERSE)
+	{
 		sort = CF_SORT_NONE;  // sorting of array directly not supported.  Sorting done on list only
 	}
 
@@ -1405,9 +1419,27 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 		}
 	}
 
-	if (sort != CF_SORT_NONE) {
+	if (sort == CF_SORT_NAME) {
 		Assert(list);
 		cf_sort_filenames( num_files, list, sort, info );
+	}
+	else if(sort == CF_SORT_REVERSE)
+	{
+		int num_loops = num_files / 2;
+		char* back_str;
+		char buffer[MAX_FILENAME_LEN];
+
+		for(i = 0; i < num_loops; i++)
+		{
+			back_str = arr[num_files - 1 - i];
+
+			if(arr[i] != back_str)
+			{
+				strcpy(buffer, arr[i]);
+				strcpy(arr[i], back_str);
+				strcpy(back_str, buffer);
+			}
+		}
 	}
 
 	if (own_flag)	{
