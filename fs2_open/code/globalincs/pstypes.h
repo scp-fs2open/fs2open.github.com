@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.20 $
- * $Date: 2004-10-31 21:32:27 $
- * $Author: taylor $
- * $Revision: 2.20 $
- * $Date: 2004-10-31 21:32:27 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2004-12-15 15:14:03 $
+ * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2004-12-15 15:14:03 $
+ * $Author: Goober5000 $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/10/31 21:32:27  taylor
+ * no networking with Inferno builds, basic 64-bit OS support
+ *
  * Revision 2.19  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -524,6 +527,12 @@ void gr_activate(int);
 #define Assert(x) do { if (!(x)){ gr_activate(0); WinAssert(#x,__FILE__,__LINE__); gr_activate(1); } } while (0)
 #endif
 /*******************NEVER UNCOMMENT Assert ************************************************/
+
+// Goober5000 - shouldn't the above be never COMMENT (that is, never DISABLE) Assert?
+
+// Goober5000 - define Verify for use in both release and debug mode
+#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } } while(0)
+
 
 //#define Int3() _asm { int 3 }
 
