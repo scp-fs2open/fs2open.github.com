@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.70 $
- * $Date: 2004-03-29 02:24:20 $
+ * $Revision: 2.71 $
+ * $Date: 2004-04-03 20:27:57 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2004/03/29 02:24:20  phreak
+ * fixed a minor bug where the version checker
+ * would complain even if the correct version of OpenGL was present
+ *
  * Revision 2.69  2004/03/20 14:47:13  randomtiger
  * Added base for a general dynamic batching solution.
  * Fixed NO_DSHOW_CODE code path bug.
@@ -573,17 +577,6 @@
  *
  * $NoKeywords: $
  */
-
-/*
-This file combines penguin's, phreak's and the Icculus OpenGL code
-
-		--STUFF WE STILL NEED TO DO--
-		-----------------------------
-1. Switch to true 3d graphics (not ortho)
-2. Start extenstion implentation (last)
-
-*/
-
 #ifdef WIN32
 
 #define STUB_FUNCTION 0
@@ -615,6 +608,11 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #include "model/model.h"
 #include "debugconsole/timerbar.h"
 #include "debugconsole/dbugfile.h"
+#include "graphics/gropengllight.h"
+#include "graphics/gropengltexture.h"
+#include "graphics/gropenglextension.h"
+#include "graphics/gropengltnl.h"
+
 
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")
@@ -637,163 +635,12 @@ static HDC dev_context = NULL;
 static HGLRC rend_context = NULL;
 static PIXELFORMATDESCRIPTOR pfd;
 
-//EXTENSIONS!!!!
-//be sure to check for this at startup and handle not finding it gracefully
 
-//to add extensions:
-//define an index after the last one
-//increment GL_NUM_EXTENSIONS
-//add function macro
-//add function info to GL_Extensions struct
-//I included three as examples
-
-typedef struct ogl_extension
-{
-	int enabled;					//is this extension enabled
-	uint func_pointer;				//address of function
-	const char* function_name;		//name passed to wglGetProcAddress()
-	const char* extension_name;		//name found in extension string
-	int required_to_run;			//is this extension required for use	
-} ogl_extension;
-
-#define GL_FOG_COORDF					0			// for better looking fog
-#define GL_FOG_COORD_POINTER			1			// used with vertex arrays
-#define GL_MULTITEXTURE_COORD2F			2			// multitex coordinates
-#define GL_ACTIVE_TEX					3			// currenly active multitexture
-#define GL_TEXTURE_ENV_ADD				4			// additive texture environment
-#define GL_COMP_TEX						5			// texture compression
-#define GL_TEX_COMP_S3TC				6			// S3TC/DXTC compression format
-#define GL_TEX_FILTER_ANSIO				7			// anisotrophic filtering
-#define GL_NV_RADIAL_FOG				8			// for better looking fog
-#define GL_SECONDARY_COLOR_3FV			9			// for better looking fog
-#define GL_SECONDARY_COLOR_3UBV			10			// specular
-#define GL_ARB_ENV_COMBINE				11			// spec mapping
-#define GL_EXT_ENV_COMBINE				12			// spec mapping
-#define GL_LOCK_ARRAYS					13			// HTL
-#define GL_UNLOCK_ARRAYS				14			// HTL
-#define GL_LOAD_TRANSPOSE				15			
-#define GL_MULT_TRANSPOSE				16
-#define GL_CLIENT_ACTIVE_TEX			17
-
-
-//GL_ARB_vertex_buffer_object FUNCTIONS
-#define GL_ARB_VBO_BIND_BUFFER			18			
-#define GL_ARB_VBO_DEL_BUFFER			19
-#define GL_ARB_VBO_GEN_BUFFER			20
-#define GL_ARB_VBO_BUFFER_DATA			21
-//#define GL_ARB_VBO_MAP_BUFFER			22
-//#define GL_ARB_VBO_UNMAP_BUFFER			23
-
-
-#define GL_NUM_EXTENSIONS				22
-
-/*
-Assorted Functions for GL_ARB_vertex_buffer_object
-
-void BindBufferARB(enum target, uint buffer);
-void DeleteBuffersARB(sizei n, const uint *buffers);
-void GenBuffersARB(sizei n, uint *buffers);
-boolean IsBufferARB(uint buffer);
-
-void BufferDataARB(enum target, sizeiptrARB size, const void *data,
-                       enum usage);
-void BufferSubDataARB(enum target, intptrARB offset, sizeiptrARB size,
-                          const void *data);
-void GetBufferSubDataARB(enum target, intptrARB offset,
-                             sizeiptrARB size, void *data);
-
-void *MapBufferARB(enum target, enum access);
-boolean UnmapBufferARB(enum target);
-
-void GetBufferParameterivARB(enum target, enum pname, int *params);
-void GetBufferPointervARB(enum target, enum pname, void **params);
-
-  */
-
-static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
-{
-	{0, NULL, "glFogCoordfEXT", "GL_EXT_fog_coord",0},
-	{0, NULL, "glFogCoordPointerEXT", "GL_EXT_fog_coord",0},
-	{0, NULL, "glMultiTexCoord2fARB", "GL_ARB_multitexture",1},		//required for glow maps
-	{0, NULL, "glActiveTextureARB", "GL_ARB_multitexture",1},		//required for glow maps
-	{0, NULL, NULL, "GL_ARB_texture_env_add", 1},					//required for glow maps
-	{0, NULL, "glCompressedTexImage2D", "GL_ARB_texture_compression",0},
-	{0, NULL, NULL, "GL_EXT_texture_compression_s3tc",0},
-	{0, NULL, NULL, "GL_EXT_texture_filter_anisotropic", 0},
-	{0, NULL, NULL, "GL_NV_fog_distance", 0},
-	{0, NULL, "glSecondaryColor3fvEXT", "GL_EXT_secondary_color", 0},
-	{0, NULL, "glSecondaryColor3ubvEXT", "GL_EXT_secondary_color", 0},
-	{0, NULL, NULL, "GL_ARB_texture_env_combine",0},
-	{0, NULL, NULL, "GL_EXT_texture_env_combine",0},
-	{0, NULL, "glLockArraysEXT", "GL_EXT_compiled_vertex_array",0},
-	{0, NULL, "glUnlockArraysEXT", "GL_EXT_compiled_vertex_array",0},
-	{0, NULL,"glLoadTransposeMatrixfARB","GL_ARB_transpose_matrix",	1},
-	{0, NULL, "glMultTransposeMatrixfARB", "GL_ARB_transpose_matrix",1},
-	{0, NULL, "glClientActiveTextureARB", "GL_ARB_multitexture",1},
-	{0, NULL, "glBindBufferARB", "GL_ARB_vertex_buffer_object",0},
-	{0, NULL, "glDeleteBuffersARB", "GL_ARB_vertex_buffer_object",0},
-	{0, NULL, "glGenBuffersARB", "GL_ARB_vertex_buffer_object",0},
-	{0, NULL, "glBufferDataARB", "GL_ARB_vertex_buffer_object",0}
-//	{0, NULL, "glMapBufferARB", "GL_ARB_vertex_buffer_object",0},
-//	{0, NULL, "glUnmapBufferARB", "GL_ARB_vertex_buffer_object",0}
-};
-
-#define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
-							((x)GL_Extensions[i].func_pointer)
-
-#define glFogCoordfEXT GLEXT_CALL(PFNGLFOGCOORDFEXTPROC, GL_FOG_COORDF)
-
-#define glFogCoordPointerEXT GLEXT_CALL(PFNGLFOGCOORDPOINTEREXTPROC, GL_FOG_COORD_POINTER);
-
-#define glMultiTexCoord2fARB GLEXT_CALL(PFNGLMULTITEXCOORD2FARBPROC, GL_MULTITEXTURE_COORD2F)
-
-#define glActiveTextureARB GLEXT_CALL(PFNGLACTIVETEXTUREARBPROC, GL_ACTIVE_TEX)
-
-#define glCompressedTexImage2D GLEXT_CALL(PFNGLCOMPRESSEDTEXIMAGE2DPROC, GL_COMP_TEX)
-
-#define glSecondaryColor3fvEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3FVEXTPROC, GL_SECONDARY_COLOR_3FV)
-
-#define glSecondaryColor3ubvEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3UBVEXTPROC, GL_SECONDARY_COLOR_3UBV)
-
-#define glLockArraysEXT GLEXT_CALL(PFNGLLOCKARRAYSEXTPROC, GL_LOCK_ARRAYS)
-
-#define glUnlockArraysEXT GLEXT_CALL(PFNGLUNLOCKARRAYSEXTPROC, GL_UNLOCK_ARRAYS)
-									 
-#define glLoadTransposeMatrixfARB GLEXT_CALL(PFNGLLOADTRANSPOSEMATRIXFARBPROC, GL_LOAD_TRANSPOSE)
-
-#define glMultTransposeMatrixfARB GLEXT_CALL(PFNGLMULTTRANSPOSEMATRIXFARBPROC, GL_MULT_TRANSPOSE)
-
-#define glClientActiveTextureARB GLEXT_CALL(PFNGLCLIENTACTIVETEXTUREARBPROC, GL_CLIENT_ACTIVE_TEX)
-
-#define glBindBufferARB GLEXT_CALL(PFNGLBINDBUFFERARBPROC, GL_ARB_VBO_BIND_BUFFER)
-#define glDeleteBuffersARB GLEXT_CALL(PFNGLDELETEBUFFERSARBPROC, GL_ARB_VBO_DEL_BUFFER)
-#define glGenBuffersARB GLEXT_CALL(PFNGLGENBUFFERSARBPROC, GL_ARB_VBO_GEN_BUFFER)
-#define glBufferDataARB GLEXT_CALL(PFNGLBUFFERDATAARBPROC, GL_ARB_VBO_BUFFER_DATA)
-
-static int VBO_ENABLED = 0;
+int VBO_ENABLED = 0;
 
 extern int Texture_compression_enabled;
 
-typedef enum gr_texture_source {
-	TEXTURE_SOURCE_NONE=0,
-	TEXTURE_SOURCE_DECAL,
-	TEXTURE_SOURCE_NO_FILTERING,
-	TEXTURE_SOURCE_MODULATE4X,
-} gr_texture_source;
 
-typedef enum gr_alpha_blend {
-        ALPHA_BLEND_NONE=0,			// 1*SrcPixel + 0*DestPixel
-        ALPHA_BLEND_ALPHA_ADDITIVE,             // Alpha*SrcPixel + 1*DestPixel
-        ALPHA_BLEND_ALPHA_BLEND_ALPHA,          // Alpha*SrcPixel + (1-Alpha)*DestPixel
-        ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,      // Alpha*SrcPixel + (1-SrcPixel)*DestPixel
-} gr_alpha_blend;
-
-typedef enum gr_zbuffer_type {
-        ZBUFFER_TYPE_NONE=0,
-        ZBUFFER_TYPE_READ,
-        ZBUFFER_TYPE_WRITE,
-        ZBUFFER_TYPE_FULL,
-} gr_zbuffer_type;
                         
 #define NEBULA_COLORS 20
 
@@ -818,25 +665,13 @@ extern int Interp_cloakmap_alpha;
 
 static const char* OGL_extensions;
 
-static int arb0_enabled=1;
-static int arb1_enabled=1;
-static int arb2_enabled=1;
-
-static int max_multitex;
-
 static float max_aniso=1.0f;			//max anisotropic filtering ratio
-
-static vector tex_shift;
 
 void (*gr_opengl_tmapper_internal)( int nv, vertex ** verts, uint flags, int is_scaler ) = NULL;
 void (*gr_opengl_set_tex_src)(gr_texture_source ts);
 
-float *specular_color;
-
 extern vector G3_user_clip_normal;
 extern vector G3_user_clip_point;
-
-int depth = 0;
 
 //some globals
 extern matrix View_matrix;
@@ -848,352 +683,8 @@ extern matrix Object_matrix;
 extern float	Canv_w2;				// Canvas_width / 2
 extern float	Canv_h2;				// Canvas_height / 2
 extern float	View_zoom;
-static int n_active_lights = 0;
-const int MAX_OPENGL_LIGHTS = 8; //temporary - will change to dynamic allocation and get rid of this later -Fry_Day
-
-enum
-{
-	LT_DIRECTIONAL,		// A light like a sun
-	LT_POINT,			// A point light, like an explosion
-	LT_TUBE,			// A tube light, like a fluorescent light
-};
-
-// Structures
-struct opengl_light{
-	opengl_light():occupied(false), priority(1){};
-	struct {
-		float r,g,b,a;
-	} Diffuse, Specular, Ambient;
-	struct {
-		float x,y,z,w;
-	} Position;
-	float ConstantAtten, LinearAtten, QuadraticAtten;
-	bool occupied;
-	int priority;
-};
-
-// Variables
-
-opengl_light opengl_lights[MAX_LIGHTS];
-bool active_light_list[MAX_LIGHTS];
-int currently_enabled_lights[MAX_OPENGL_LIGHTS] = {-1};
-
-bool lighting_is_enabled = true;
-extern float static_point_factor;
-extern float static_light_factor;
-extern float static_tube_factor;
-
-int max_gl_lights;
-
-void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
-
-	GLLight->Diffuse.r = FSLight->r;// * FSLight->intensity;
-	GLLight->Diffuse.g = FSLight->g;// * FSLight->intensity;
-	GLLight->Diffuse.b = FSLight->b;// * FSLight->intensity;
-	GLLight->Specular.r = FSLight->spec_r;// * FSLight->intensity;
-	GLLight->Specular.g = FSLight->spec_g;// * FSLight->intensity;
-	GLLight->Specular.b = FSLight->spec_b;// * FSLight->intensity;
-	GLLight->Ambient.r = 0.0f;
-	GLLight->Ambient.g = 0.0f;
-	GLLight->Ambient.b = 0.0f;
-	GLLight->Ambient.a = 1.0f;
-	GLLight->Specular.a = 1.0f;
-	GLLight->Diffuse.a = 1.0f;
 
 
-	//If the light is a directional light
-	if(FSLight->type == LT_DIRECTIONAL) {
-		GLLight->Position.x = -FSLight->vec.xyz.x;
-		GLLight->Position.y = -FSLight->vec.xyz.y;
-		GLLight->Position.z = -FSLight->vec.xyz.z;
-		GLLight->Position.w = 0.0f; //Directional lights in OpenGL have w set to 0 and the direction vector in the position field
-
-		GLLight->Specular.r *= static_light_factor;
-		GLLight->Specular.g *= static_light_factor;
-		GLLight->Specular.b *= static_light_factor;
-	}
-
-	//If the light is a point or tube type
-	if((FSLight->type == LT_POINT) || (FSLight->type == LT_TUBE)) {
-
-		if(FSLight->type == LT_POINT){
-			GLLight->Specular.r *= static_point_factor;
-			GLLight->Specular.g *= static_point_factor;
-			GLLight->Specular.b *= static_point_factor;
-		}else{
-			GLLight->Specular.r *= static_tube_factor;
-			GLLight->Specular.g *= static_tube_factor;
-			GLLight->Specular.b *= static_tube_factor;
-		}
-
-		GLLight->Position.x = FSLight->vec.xyz.x;
-		GLLight->Position.y = FSLight->vec.xyz.y;
-		GLLight->Position.z = FSLight->vec.xyz.z; //flipped axis for FS2
-		GLLight->Position.w = 1.0f;		
-
-		//They also have almost no radius...
-//		GLLight->Range = FSLight->radb +FSLight->rada; //No range function in OpenGL that I'm aware of
-		GLLight->ConstantAtten = 0.0f;
-		GLLight->LinearAtten = 0.1f;
-		GLLight->QuadraticAtten = 0.0f; 
-	}
-
-}
-
-void set_opengl_light(int light_num, opengl_light *light)
-{
-	Assert(light_num < max_gl_lights);
-	glLightfv(GL_LIGHT0+light_num, GL_POSITION, &light->Position.x);
-	glLightfv(GL_LIGHT0+light_num, GL_AMBIENT, &light->Ambient.r);
-	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, &light->Diffuse.r);
-	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, &light->Specular.r);
-	glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, light->ConstantAtten);
-	glLightf(GL_LIGHT0+light_num, GL_LINEAR_ATTENUATION, light->LinearAtten);
-	glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, light->QuadraticAtten);
-}
-//finds the first unocupyed light
-
-void pre_render_init_lights(){
-	for(int i = 0; i<max_gl_lights; i++){
-		if(currently_enabled_lights[i] > -1) glDisable(GL_LIGHT0+i);
-		currently_enabled_lights[i] = -1;
-	}
-}
-
-
-void change_active_lights(int pos){
-	int k = 0;
-	int l = 0;
-	if(!lighting_is_enabled)return;
-	bool move = false;
-	glMatrixMode(GL_MODELVIEW); 
-	glPushMatrix();				
-	glLoadIdentity();
-
-//straight cut'n'paste out of gr_opengl_set_view_matrix, but I couldn't use that, since it messes up with the stack depth var
-	vector fwd;
-	vector *uvec=&Eye_matrix.vec.uvec;
-
-	vm_vec_add(&fwd, &Eye_position, &Eye_matrix.vec.fvec);
-
-	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,-Eye_position.xyz.z,
-	fwd.xyz.x,fwd.xyz.y,-fwd.xyz.z,
-	uvec->xyz.x, uvec->xyz.y,-uvec->xyz.z);
-
-	glScalef(1,1,-1);
-	
-	for(int i = 0; (i < max_gl_lights) && ((pos * max_gl_lights)+i < n_active_lights); i++){
-		glDisable(GL_LIGHT0+i);
-		move = false;
-		for(k; k<MAX_LIGHTS && !move; k++){
-			int slot = (pos * max_gl_lights)+l;
-			if(active_light_list[slot]){
-				if(opengl_lights[slot].occupied){
-					set_opengl_light(i,&opengl_lights[slot]);
-					glEnable(GL_LIGHT0+i);
-					currently_enabled_lights[i] = slot;
-					move = true;
-					l++;
-				}
-			}
-		}
-	}
-	
-
-	glPopMatrix();
-
-}
-
-int	gr_opengl_make_light(light_data* light, int idx, int priority)
-{
-//Stub
-	return idx;
-}
-
-void gr_opengl_modify_light(light_data* light, int idx, int priority)
-{
-//Stub
-}
-
-void gr_opengl_destroy_light(int idx)
-{
-//Stub
-}
-
-void gr_opengl_set_light(light_data *light)
-{
-	//Init the light
-	FSLight2GLLight(&opengl_lights[n_active_lights],light);
-	opengl_lights[n_active_lights].occupied = true;
-	active_light_list[n_active_lights++] = true;
-}
-
-void gr_opengl_reset_lighting()
-{
-	for(int i = 0; i<MAX_LIGHTS; i++){
-		opengl_lights[i].occupied = false;
-	}
-	for(i=0; i<max_gl_lights; i++){
-		glDisable(GL_LIGHT0+i);
-		active_light_list[i] = false;
-	}
-	n_active_lights =0;
-}
-
-
-void gr_opengl_set_lighting(bool set, bool state)
-{
-	struct {
-			float r,g,b,a;
-	} ambient, col;
-
-	lighting_is_enabled = set;
-
-	col.r = col.g = col.b = col.a = set ? 1.0f : 0.0f;  //Adunno why the ambient and diffuse need to be set to 0.0 when lighting is disabled
-														//They just do, and that should suffice as an answer
-	glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE, &col.r); //changed to GL_FRONT_AND_BACK, just to make sure
-	glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR, &col.r); //changed to GL_FRONT_AND_BACK, just to make sure
-	glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,(float)specular_exponent_value);
-	if((gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set){
-		ambient.r = ambient.g = ambient.b = ambient.a = gr_screen.current_alpha;
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &ambient.r);
-	}else{
-		ambient.r = ambient.g = ambient.b = 0.125; // 1/16th of the max value, just like D3D
-		ambient.a = 1.0f;
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &ambient.r);
-	}
-
-	for(int i = 0; i<max_gl_lights; i++){
-		if(currently_enabled_lights[i] > -1)glDisable(GL_LIGHT0+i);
-		currently_enabled_lights[i] = -1;
-	}
-
-	if(state) {
-		glEnable(GL_LIGHTING);
-	}
-	else {
-		glDisable(GL_LIGHTING);
-	}
-
-}
-//End of lighting stuff
-inline static void opengl_switch_arb0(int state)
-{
-	if (state)
-	{
-		if (arb0_enabled)	return;
-
-		glActiveTextureARB(GL_TEXTURE0_ARB);
-		glEnable(GL_TEXTURE_2D);
-		arb0_enabled=1;
-	}
-
-	else
-	{
-		if (!arb0_enabled)	return;
-
-		glActiveTextureARB(GL_TEXTURE0_ARB);
-		glDisable(GL_TEXTURE_2D);
-		arb0_enabled=0;
-	}
-}
-
-inline static void opengl_switch_arb1(int state)
-{
-	if (state)
-	{
-		if (arb1_enabled)	return;
-
-		glActiveTextureARB(GL_TEXTURE1_ARB);
-		glEnable(GL_TEXTURE_2D);
-		arb1_enabled=1;
-	}
-
-	else
-	{
-		if (!arb1_enabled)	return;
-
-		glActiveTextureARB(GL_TEXTURE1_ARB);
-		glDisable(GL_TEXTURE_2D);
-		arb1_enabled=0;
-	}
-}
-
-inline static void opengl_switch_arb2(int state)
-{
-	if (max_multitex == 2)
-		return;
-
-	if (state)
-	{
-		if (arb2_enabled)	return;
-
-		glActiveTextureARB(GL_TEXTURE2_ARB);
-		glEnable(GL_TEXTURE_2D);
-		arb2_enabled=1;
-	}
-
-	else
-	{
-		if (!arb2_enabled)	return;
-
-		glActiveTextureARB(GL_TEXTURE2_ARB);
-		glDisable(GL_TEXTURE_2D);
-		arb2_enabled=0;
-	}
-}
-
-//tries to find a certain extension
-inline static int opengl_find_extension(const char* ext_to_find)
-{
-	return (strstr(OGL_extensions,ext_to_find)!=NULL);
-}
-
-
-//finds OGL extension functions
-//returns number found
-static int opengl_get_extensions()
-{
-	int num_found=0;
-	ogl_extension *cur=NULL;
-
-	for (int i=0; i < GL_NUM_EXTENSIONS; i++)
-	{
-		cur=&GL_Extensions[i];
-		if (opengl_find_extension(cur->extension_name))
-		{
-			//some extensions do not have functions
-			if (cur->function_name==NULL)
-			{
-				mprintf(("found extension %s\n", cur->extension_name));
-				cur->enabled=1;
-				num_found++;
-				continue;
-			}
-			
-			cur->func_pointer=(uint)wglGetProcAddress(cur->function_name);
-			if (cur->func_pointer)
-			{
-				cur->enabled=1;
-				mprintf(("found extension function: %s -- extension: %s\n", cur->function_name, cur->extension_name));
-				num_found++;
-			}
-			else
-			{
-				mprintf(("found extension, but not function: %s -- extension:%s\n", cur->function_name, cur->extension_name));
-			}
-		}
-		else
-		{
-			mprintf(("did not find extension: %s\n", cur->extension_name));
-			if (cur->required_to_run)
-			{
-				Error(__FILE__,__LINE__,"The required OpenGL extension %s is not supported by your graphics card, please use the Glide or Direct3D rendering engines.\n\n",cur->extension_name);
-			}
-		}
-	}
-	return num_found;
-}
 
 void opengl_go_fullscreen(HWND wnd)
 {
@@ -1248,9 +739,9 @@ void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
 		case TEXTURE_SOURCE_NONE:
 		
 			//glBindTexture(GL_TEXTURE_2D, 0);
-			opengl_switch_arb0(0);
-			opengl_switch_arb1(0);
-			opengl_switch_arb2(0);
+			opengl_switch_arb(0,0);
+			opengl_switch_arb(1,0);
+			opengl_switch_arb(2,0);
 	
 			gr_tcache_set(-1, -1, NULL, NULL );
 			break;
@@ -1267,7 +758,7 @@ void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
 		break;
 		
 		case TEXTURE_SOURCE_NO_FILTERING:
-			opengl_switch_arb0(1);
+			opengl_switch_arb(0,1);
 			if(gr_screen.custom_size < 0) {
 				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1292,9 +783,9 @@ void gr_opengl_set_tex_state_combine_ext(gr_texture_source ts)
 		case TEXTURE_SOURCE_NONE:
 		
 			//glBindTexture(GL_TEXTURE_2D, 0);
-			opengl_switch_arb0(0);
-			opengl_switch_arb1(0);
-			opengl_switch_arb2(0);
+			opengl_switch_arb(0,0);
+			opengl_switch_arb(1,0);
+			opengl_switch_arb(2,0);
 	
 			gr_tcache_set(-1, -1, NULL, NULL );
 			break;
@@ -1311,7 +802,7 @@ void gr_opengl_set_tex_state_combine_ext(gr_texture_source ts)
 		break;
 		
 		case TEXTURE_SOURCE_NO_FILTERING:
-			opengl_switch_arb0(1);
+			opengl_switch_arb(0,1);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		
@@ -1331,9 +822,9 @@ void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
 		case TEXTURE_SOURCE_NONE:
 		
 			//glBindTexture(GL_TEXTURE_2D, 0);
-			opengl_switch_arb0(0);
-			opengl_switch_arb1(0);
-			opengl_switch_arb2(0);
+			opengl_switch_arb(0,0);
+			opengl_switch_arb(1,0);
+			opengl_switch_arb(2,0);
 	
 			gr_tcache_set(-1, -1, NULL, NULL );
 			break;
@@ -1346,7 +837,7 @@ void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
 			break;
 		
 		case TEXTURE_SOURCE_NO_FILTERING:
-			opengl_switch_arb0(1);
+			opengl_switch_arb(0,1);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -1356,43 +847,6 @@ void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
 	}
 	GL_current_tex_src=ts;
 }
-
-void gr_opengl_set_additive_tex_env()
-{
-	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled)
-	{
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
-		glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_ADD);
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
-	}
-	else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled)
-	{
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
-		glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_ADD);
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 1.0f);
-	}
-	else {
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
-	}
-}
-
-void gr_opengl_set_tex_env_scale(float scale)
-{
-	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled)
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, scale);
-	else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled)
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, scale);
-	else
-	{}
-}
-
-
 
 void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
 {
@@ -1459,45 +913,6 @@ void gr_opengl_activate(int active)
 		opengl_minimize();
 	}
 	
-}
-
-
-void opengl_tcache_flush ();
-
-void gr_opengl_preload_init()
-{
-	if (gr_screen.mode != GR_OPENGL) {
-		return;
-	}
-
-	opengl_tcache_flush ();
-}
-
-int GL_should_preload = 0;
-int gr_opengl_preload(int bitmap_num, int is_aabitmap)
-{
-	if ( gr_screen.mode != GR_OPENGL) {
-		return 0;
-	}
-
-	if ( !GL_should_preload )      {
-		return 0;
-	}
-
-	float u_scale, v_scale;
-
-	int retval;
-	if ( is_aabitmap )      {
-		retval = gr_tcache_set(bitmap_num, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale, 1 );
-	} else {
-		retval = gr_tcache_set(bitmap_num, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 1 );
-	}
-
-	if ( !retval )  {
-		mprintf(("Texture upload failed!\n" ));
-	}
-
-	return retval;
 }
 
 void gr_opengl_pixel(int x, int y)
@@ -1626,10 +1041,6 @@ void gr_opengl_set_clip(int x,int y,int w,int h)
 	
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(x, gr_screen.max_h-y-h, w, h);
-
-	if (!Cmdline_nohtl)
-		glViewport(x, gr_screen.max_h-y-h, w, h);
-
 }
 
 void gr_opengl_reset_clip()
@@ -1644,10 +1055,6 @@ void gr_opengl_reset_clip()
 	gr_screen.clip_height = gr_screen.max_h;
 
 	glDisable(GL_SCISSOR_TEST);
-
-	
-	if (!Cmdline_nohtl)
-		glViewport(0,0, gr_screen.max_w, gr_screen.max_h);
 }
 
 void gr_opengl_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx, int sy )
@@ -2379,7 +1786,7 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,tu,tv);
 			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,tu,tv);
 			
-			if (max_multitex>2)			glMultiTexCoord2fARB(GL_TEXTURE2_ARB,tu,tv);
+			if (GL_supported_texture_units>2)			glMultiTexCoord2fARB(GL_TEXTURE2_ARB,tu,tv);
 			
 		}
 		
@@ -2438,8 +1845,6 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 		r = gr_screen.current_color.red;
 		g = gr_screen.current_color.green;
 		b = gr_screen.current_color.blue;
-//		opengl_switch_arb0(0);
-//		opengl_switch_arb1(0);
 	}
 
 	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER )        
@@ -2570,41 +1975,6 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 		return;
 	}
 
-	if (Interp_multitex_cloakmap==1)
-	{
-	
-		GLOWMAP=-1;
-
-		gr_screen.gf_set_bitmap(CLOAKMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
-
-		//maybe draw a cloakmap, using a multipass technique
-		if ( !gr_tcache_set(CLOAKMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-		{
-			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			return;
-		}
-
-		glActiveTextureARB(GL_TEXTURE0_ARB);
-		glMatrixMode(GL_TEXTURE);
-		glPushMatrix();
-		glTranslated(tex_shift.xyz.x,tex_shift.xyz.y, tex_shift.xyz.z);
-		glMatrixMode(GL_MODELVIEW);
-
-
-		glBlendFunc(GL_ZERO,GL_SRC_COLOR);
-		glDepthMask(GL_FALSE);
-		glDepthFunc(GL_EQUAL);
-	
-		opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha);
-
-
-		glMatrixMode(GL_TEXTURE);
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);
-		glDepthMask(GL_TRUE);
-		glDepthFunc(GL_LESS);
-	}
-
 	//maybe do a spec map
 	if (SPECMAP > -1)
 	{
@@ -2724,7 +2094,7 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 
 	if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 	{
-		mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 		return;
 	}
 
@@ -3117,866 +2487,6 @@ void gr_opengl_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, 
 		gr_set_bitmap(bmap2);
 		gr_bitmap(x2, y2);
 	}		
-}
-
-
-typedef struct tcache_slot_opengl {
-	GLuint	texture_handle;
-	float	u_scale, v_scale;
-	int	bitmap_id;
-	int	size;
-	char	used_this_frame;
-	int	time_created;
-	ushort	w,h;
-
-	// sections
-	tcache_slot_opengl	*data_sections[MAX_BMAP_SECTIONS_X][MAX_BMAP_SECTIONS_Y];
-	tcache_slot_opengl	*parent;
-} tcache_slot_opengl;
-
-static void *Texture_sections = NULL;
-static tcache_slot_opengl *Textures = NULL;
-
-int GL_texture_sections = 0;
-int GL_texture_ram = 0;
-int GL_frame_count = 0;
-int GL_min_texture_width = 0;
-int GL_max_texture_width = 0;
-int GL_min_texture_height = 0;
-int GL_max_texture_height = 0;
-int GL_square_textures = 0;
-int GL_textures_in = 0;
-int GL_textures_in_frame = 0;
-int GL_last_bitmap_id = -1;
-int GL_last_detail = -1;
-int GL_last_bitmap_type = -1;
-int GL_last_section_x = -1;
-int GL_last_section_y = -1;
-
-extern int vram_full;
-
-void opengl_tcache_init (int use_sections)
-{
-	int i, idx, s_idx;
-
-	// DDOI - FIXME skipped a lot of stuff here
-	GL_should_preload = 0;
-
-	//uint tmp_pl = os_config_read_uint( NULL, NOX("D3DPreloadTextures"), 255 );
-	uint tmp_pl = 1;
-
-	if ( tmp_pl == 0 )      {
-		GL_should_preload = 0;
-	} else if ( tmp_pl == 1 )       {
-		GL_should_preload = 1;
-	} else {
-		GL_should_preload = 1;
-	}
-
-	GL_min_texture_width = 16;
-	GL_min_texture_height = 16;
-	
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &GL_max_texture_width);
-
-	GL_max_texture_height=GL_max_texture_width;
-
-	mprintf(("max texture size is: %dx%d\n", GL_max_texture_width,GL_max_texture_height));
-
-	GL_square_textures = 0;
-
-	Textures = (tcache_slot_opengl *)malloc(MAX_BITMAPS*sizeof(tcache_slot_opengl));
-	if ( !Textures )        {
-		exit(1);
-	}
-
-	if(use_sections){
-		Texture_sections = (tcache_slot_opengl*)malloc(MAX_BITMAPS * MAX_BMAP_SECTIONS_X * MAX_BMAP_SECTIONS_Y * sizeof(tcache_slot_opengl));
-		if(!Texture_sections){
-			exit(1);
-		}
-		memset(Texture_sections, 0, MAX_BITMAPS * MAX_BMAP_SECTIONS_X * MAX_BMAP_SECTIONS_Y * sizeof(tcache_slot_opengl));
-	}
-
-	// Init the texture structures
-	int section_count = 0;
-	for( i=0; i<MAX_BITMAPS; i++ )  {
-		/*
-		Textures[i].vram_texture = NULL;
-		Textures[i].vram_texture_surface = NULL;
-		*/
-		Textures[i].texture_handle = 0;
-
-		Textures[i].bitmap_id = -1;
-		Textures[i].size = 0;
-		Textures[i].used_this_frame = 0;
-
-		Textures[i].parent = NULL;
-
-		// allocate sections
-		if(use_sections){
-			for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-				for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-					Textures[i].data_sections[idx][s_idx] = &((tcache_slot_opengl*)Texture_sections)[section_count++];
-					Textures[i].data_sections[idx][s_idx]->parent = &Textures[i];
-					/*
-					Textures[i].data_sections[idx][s_idx]->vram_texture = NULL;
-					Textures[i].data_sections[idx][s_idx]->vram_texture_surface = NULL;
-					*/
-					Textures[i].data_sections[idx][s_idx]->texture_handle = 0;
-					Textures[i].data_sections[idx][s_idx]->bitmap_id = -1;
-					Textures[i].data_sections[idx][s_idx]->size = 0;
-					Textures[i].data_sections[idx][s_idx]->used_this_frame = 0;
-				}
-			}
-		} else {
-			for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-				for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-					Textures[i].data_sections[idx][s_idx] = NULL;
-				}
-			}
-		}
-	}
-
-	GL_texture_sections = use_sections;
-
-	//GL_last_detail = Detail.hardware_textures;
-	GL_last_bitmap_id = -1;
-	GL_last_bitmap_type = -1;
-
-	GL_last_section_x = -1;
-	GL_last_section_y = -1;
-
-	GL_textures_in = 0;
-	GL_textures_in_frame = 0;
-}
-
-int opengl_free_texture (tcache_slot_opengl *t);
-
-void opengl_free_texture_with_handle(int handle)
-{
-	for(int i=0; i<MAX_BITMAPS; i++ )  {
-		if (Textures[i].bitmap_id == handle) {
-			Textures[i].used_this_frame = 0; // this bmp doesn't even exist any longer...
-			opengl_free_texture ( &Textures[i] );
-		}
-	}
-}
-
-void opengl_tcache_flush ()
-{
-	int i;
-
-	for( i=0; i<MAX_BITMAPS; i++ )  {
-		opengl_free_texture ( &Textures[i] );
-	}
-	if (GL_textures_in != 0) {
-		mprintf(( "WARNING: VRAM is at %d instead of zero after flushing!\n", GL_textures_in ));
-		GL_textures_in = 0;
-	}
-
-	GL_last_bitmap_id = -1;
-	GL_last_section_x = -1;
-	GL_last_section_y = -1;
-}
-
-void opengl_tcache_cleanup ()
-{
-	opengl_tcache_flush ();
-
-	GL_textures_in = 0;
-	GL_textures_in_frame = 0;
-
-	if ( Textures ) {
-		free(Textures);
-		Textures = NULL;
-	}
-
-	if( Texture_sections != NULL ){
-		free(Texture_sections);
-		Texture_sections = NULL;
-	}
-}
-
-void opengl_tcache_frame ()
-{
-	int idx, s_idx;
-
-	GL_last_bitmap_id = -1;
-	GL_textures_in_frame = 0;
-
-	GL_frame_count++;
-
-	int i;
-	for( i=0; i<MAX_BITMAPS; i++ )  {
-		Textures[i].used_this_frame = 0;
-
-		// data sections
-		if(Textures[i].data_sections[0][0] != NULL){
-			Assert(GL_texture_sections);
-			if(GL_texture_sections){
-				for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-					for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-						if(Textures[i].data_sections[idx][s_idx] != NULL){
-							Textures[i].data_sections[idx][s_idx]->used_this_frame = 0;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if ( vram_full )        {
-		opengl_tcache_flush();
-		vram_full = 0;
-	}
-}
-
-int opengl_free_texture ( tcache_slot_opengl *t )
-{
-	int idx, s_idx;
-	
-
-	// Bitmap changed!!     
-	if ( t->bitmap_id > -1 )        {
-		// if I, or any of my children have been used this frame, bail  
-		if(t->used_this_frame){
-			return 0;
-		}
-		for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-			for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-				if((t->data_sections[idx][s_idx] != NULL) && (t->data_sections[idx][s_idx]->used_this_frame)){
-					return 0;
-				}
-			}
-		}
-
-		// ok, now we know its legal to free everything safely
-		glDeleteTextures (1, &t->texture_handle);
-		t->texture_handle = 0;
-
-		if ( GL_last_bitmap_id == t->bitmap_id )       {
-			GL_last_bitmap_id = -1;
-		}
-
-		// if this guy has children, free them too, since the children
-		// actually make up his size
-		for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-			for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-				if(t->data_sections[idx][s_idx] != NULL){
-					opengl_free_texture(t->data_sections[idx][s_idx]);
-				}
-			}
-		}
-
-		t->bitmap_id = -1;
-		t->used_this_frame = 0;
-		GL_textures_in -= t->size;
-	}
-
-	return 1;
-}
-
-void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out)
-{
-	int tex_w, tex_h;
-
-	// bogus
-	if((w_out == NULL) ||  (h_out == NULL)){
-		return;
-	}
-
-	// starting size
-	tex_w = w_in;
-	tex_h = h_in;
-
-	if (1)        {
-		int i;
-		for (i=0; i<16; i++ )   {
-			if ( (tex_w > (1<<i)) && (tex_w <= (1<<(i+1))) )        {
-				tex_w = 1 << (i+1);
-				break;
-			}
-		}
-
-		for (i=0; i<16; i++ )   {
-			if ( (tex_h > (1<<i)) && (tex_h <= (1<<(i+1))) )        {
-				tex_h = 1 << (i+1);
-				break;
-			}
-		}
-	}
-
-	if ( tex_w < GL_min_texture_width ) {
-		tex_w = GL_min_texture_width;
-	} else if ( tex_w > GL_max_texture_width )     {
-		tex_w = GL_max_texture_width;
-	}
-
-	if ( tex_h < GL_min_texture_height ) {
-		tex_h = GL_min_texture_height;
-	} else if ( tex_h > GL_max_texture_height )    {
-		tex_h = GL_max_texture_height;
-	}
-
-	if ( GL_square_textures )      {
-		int new_size;
-		// Make the both be equal to larger of the two
-		new_size = max(tex_w, tex_h);
-		tex_w = new_size;
-		tex_h = new_size;
-	}
-
-	// store the outgoing size
-	*w_out = tex_w;
-	*h_out = tex_h;
-}
-
-// data == start of bitmap data
-// sx == x offset into bitmap
-// sy == y offset into bitmap
-// src_w == absolute width of section on source bitmap
-// src_h == absolute height of section on source bitmap
-// bmap_w == width of source bitmap
-// bmap_h == height of source bitmap
-// tex_w == width of final texture
-// tex_h == height of final texture
-int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_opengl *t, int reload, int fail_on_full)
-{
-	int ret_val = 1;
-
-	// bogus
-	if(t == NULL){
-		return 0;
-	}
-
-	if ( t->used_this_frame )       {
-		mprintf(( "ARGHH!!! Texture already used this frame!  Cannot free it!\n" ));
-		return 0;
-	}
-	if ( !reload )  {
-		// gah
-		if(!opengl_free_texture(t)){
-			return 0;
-		}
-	}
-
-	// get final texture size
-	opengl_tcache_get_adjusted_texture_size(tex_w, tex_h, &tex_w, &tex_h);
-
-	if ( (tex_w < 1) || (tex_h < 1) )       {
-		mprintf(("Bitmap is to small at %dx%d.\n", tex_w, tex_h ));
-		return 0;
-	}
-
-	if ( bitmap_type == TCACHE_TYPE_AABITMAP )      {
-		t->u_scale = (float)bmap_w / (float)tex_w;
-		t->v_scale = (float)bmap_h / (float)tex_h;
-	} else if(bitmap_type == TCACHE_TYPE_BITMAP_SECTION){
-		t->u_scale = (float)src_w / (float)tex_w;
-		t->v_scale = (float)src_h / (float)tex_h;
-	} else {
-		t->u_scale = 1.0f;
-		t->v_scale = 1.0f;
-	}
-
-	if (!reload) {
-		glGenTextures (1, &t->texture_handle);
-	}
-	
-	if (t->texture_handle == 0) {
-		nprintf(("Error", "!!DEBUG!! t->texture_handle == 0"));
-		return 0;
-	}
-	
-	glBindTexture (GL_TEXTURE_2D, t->texture_handle);
-
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	
-	//compression takes precedence
-	if (bitmap_type & TCACHE_TYPE_COMPRESSED)
-	{
-		GLenum ctype(0);
-		switch (bm_is_compressed(texture_handle))
-		{
-			case 1:
-				ctype=GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-				break;
-
-			case 2:
-				ctype=GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-				break;
-
-			case 3:
-				ctype=GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-				break;
-
-			default:
-				Assert(0);
-		}
-		glCompressedTexImage2D(GL_TEXTURE_2D, 0, ctype, tex_w, tex_h,0, bm_get_size(texture_handle), (ubyte*)data);
-	}
-	else
-	{
-
-		switch (bitmap_type) {
-	
-			case TCACHE_TYPE_AABITMAP:
-			{
-				int i,j;
-				ubyte *bmp_data = ((ubyte*)data);
-				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
-				ubyte *texmemp = texmem;
-				ubyte xlat[256];
-			
-				for (i=0; i<16; i++) {
-					xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
-				}	
-				xlat[15] = xlat[1];
-				for ( ; i<256; i++ )    {
-					xlat[i] = xlat[0];
-				}
-			
-				for (i=0;i<tex_h;i++)
-				{
-					for (j=0;j<tex_w;j++)
-					{
-					if (i < bmap_h && j < bmap_w) {
-							*texmemp++ = 0xff;
-							*texmemp++ = xlat[bmp_data[i*bmap_w+j]];
-						} else {
-							*texmemp++ = 0;
-							*texmemp++ = 0;
-						}
-					}
-				}
-
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_w, tex_h, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
-				free (texmem);
-			}
-			break;
-
-
-		case TCACHE_TYPE_BITMAP_SECTION:
-			{
-				int i,j;
-				ubyte *bmp_data = ((ubyte*)data);
-				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
-				ubyte *texmemp = texmem;
-				
-				for (i=0;i<tex_h;i++)
-				{
-					for (j=0;j<tex_w;j++)
-					{
-						if (i < src_h && j < src_w) {
-							*texmemp++ = bmp_data[((i+sy)*bmap_w+(j+sx))*2+0];
-							*texmemp++ = bmp_data[((i+sy)*bmap_w+(j+sx))*2+1];
-						} else {
-							*texmemp++ = 0;
-							*texmemp++ = 0;
-						}
-					}
-				}
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA,GL_UNSIGNED_SHORT_1_5_5_5_REV, texmem);
-				free(texmem);
-				break;
-			}
-		default:
-			{
-				int i,j;
-				ubyte *bmp_data = ((ubyte*)data);
-				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
-				ubyte *texmemp = texmem;
-				
-				fix u, utmp, v, du, dv;
-				
-				u = v = 0;
-				
-				du = ( (bmap_w-1)*F1_0 ) / tex_w;
-				dv = ( (bmap_h-1)*F1_0 ) / tex_h;
-				
-				for (j=0;j<tex_h;j++)
-				{
-					utmp = u;
-					for (i=0;i<tex_w;i++)
-					{
-						*texmemp++ = bmp_data[(f2i(v)*bmap_w+f2i(utmp))*2+0];
-						*texmemp++ = bmp_data[(f2i(v)*bmap_w+f2i(utmp))*2+1];
-						utmp += du;
-					}
-					v += dv;
-				}
-
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA,GL_UNSIGNED_SHORT_1_5_5_5_REV, texmem);
-				free(texmem);
-				break;
-			}
-		}//end switch
-	}//end else
-	
-	t->bitmap_id = texture_handle;
-	t->time_created = GL_frame_count;
-	t->used_this_frame = 0;
-	if (bitmap_type & TCACHE_TYPE_COMPRESSED) t->size=bm_get_size(texture_handle);
-	else	t->size = tex_w * tex_h * 2;
-	t->w = (ushort)tex_w;
-	t->h = (ushort)tex_h;
-	GL_textures_in_frame += t->size;
-	if (!reload) {
-		GL_textures_in += t->size;
-	}
-
-	return ret_val;
-}
-
-int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot, int fail_on_full)
-{
-	ubyte flags;
-	bitmap *bmp;
-	int final_w, final_h;
-	ubyte bpp = 16;
-	int reload = 0;
-
-	// setup texture/bitmap flags
-	flags = 0;
-	switch(bitmap_type){
-		case TCACHE_TYPE_AABITMAP:
-			flags |= BMP_AABITMAP;
-			bpp = 8;
-			break;
-		case TCACHE_TYPE_NORMAL:
-			flags |= BMP_TEX_OTHER;
-		case TCACHE_TYPE_XPARENT:
-			flags |= BMP_TEX_XPARENT;
-			break;
-		case TCACHE_TYPE_NONDARKENING:
-			Int3();
-			flags |= BMP_TEX_NONDARK;
-			break;
-	}
-	
-	switch (bm_is_compressed(bitmap_handle))
-	{
-		case 1:				//dxt1
-			bpp=24;
-			flags |=BMP_TEX_DXT1;
-			bitmap_type|=TCACHE_TYPE_COMPRESSED;
-			break;
-
-		case 2:				//dxt3
-			bpp=32;
-			flags |=BMP_TEX_DXT3;
-			bitmap_type|=TCACHE_TYPE_COMPRESSED;
-			break;
-
-		case 3:				//dxt5
-			bpp=32;
-			flags |=BMP_TEX_DXT5;
-			bitmap_type|=TCACHE_TYPE_COMPRESSED;
-			break;
-		
-		default:
-			break;
-	}
-
-	// lock the bitmap into the proper format
-	bmp = bm_lock(bitmap_handle, bpp, flags);
-	if ( bmp == NULL ) {
-		mprintf(("Couldn't lock bitmap %d.\n", bitmap_handle ));
-		return 0;
-	}
-
-	int max_w = bmp->w;
-	int max_h = bmp->h;
-
-	
-	   // DDOI - TODO
-	if ( bitmap_type != TCACHE_TYPE_AABITMAP )      {
-		// max_w /= D3D_texture_divider;
-		// max_h /= D3D_texture_divider;
-
-		// Detail.debris_culling goes from 0 to 4.
-		max_w /= (16 >> Detail.hardware_textures);
-		max_h /= (16 >> Detail.hardware_textures);
-	}
-	
-
-	// get final texture size as it will be allocated as a DD surface
-	opengl_tcache_get_adjusted_texture_size(max_w, max_h, &final_w, &final_h); 
-
-	// if this tcache slot has no bitmap
-	if ( tslot->bitmap_id < 0) {
-		reload = 0;
-	}
-	// different bitmap altogether - determine if the new one can use the old one's slot
-	else if (tslot->bitmap_id != bitmap_handle)     {
-		if((final_w == tslot->w) && (final_h == tslot->h)){
-			reload = 1;
-			//ml_printf("Reloading texture %d\n", bitmap_handle);
-		} else {
-			reload = 0;
-		}
-	}
-
-	// call the helper
-	int ret_val = opengl_create_texture_sub(bitmap_type, bitmap_handle, (ushort*)bmp->data, 0, 0, bmp->w, bmp->h, bmp->w, bmp->h, max_w, max_h, tslot, reload, fail_on_full);
-
-	// unlock the bitmap
-	bm_unlock(bitmap_handle);
-
-	return ret_val;
-}
-
-int opengl_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot, int sx, int sy, int fail_on_full)
-{
-	ubyte flags;
-	bitmap *bmp;
-	int final_w, final_h;
-	int section_x, section_y;
-	int reload = 0;
-
-	// setup texture/bitmap flags
-	Assert(bitmap_type == TCACHE_TYPE_BITMAP_SECTION);
-	if(bitmap_type != TCACHE_TYPE_BITMAP_SECTION){
-		bitmap_type = TCACHE_TYPE_BITMAP_SECTION;
-	}
-	flags = BMP_TEX_XPARENT;
-
-	// lock the bitmap in the proper format
-	bmp = bm_lock(bitmap_handle, 16, flags);
-	if ( bmp == NULL ) {
-		mprintf(("Couldn't lock bitmap %d.\n", bitmap_handle ));
-		return 0;
-	}
-	// determine the width and height of this section
-	bm_get_section_size(bitmap_handle, sx, sy, &section_x, &section_y);
-
-	// get final texture size as it will be allocated as an opengl texture
-	opengl_tcache_get_adjusted_texture_size(section_x, section_y, &final_w, &final_h);
-
-	// if this tcache slot has no bitmap
-	if ( tslot->bitmap_id < 0) {
-		reload = 0;
-	}
-	// different bitmap altogether - determine if the new one can use the old one's slot
-	else if (tslot->bitmap_id != bitmap_handle)     {
-		if((final_w == tslot->w) && (final_h == tslot->h)){
-			reload = 1;
-		} else {
-			reload = 0;
-		}
-	}
-
-	// call the helper
-	int ret_val = opengl_create_texture_sub(bitmap_type, bitmap_handle, (ushort*)bmp->data, bmp->sections.sx[sx], bmp->sections.sy[sy], section_x, section_y, bmp->w, bmp->h, section_x, section_y, tslot, reload, fail_on_full);
-
-	// unlock the bitmap
-	bm_unlock(bitmap_handle);
-
-	return ret_val;
-}
-
-int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int tex_unit = 0)
-{
-	bitmap *bmp = NULL;
-
-	int idx, s_idx;
-	int ret_val = 1;
-
-	if ( GL_last_detail != Detail.hardware_textures )      {
-		GL_last_detail = Detail.hardware_textures;
-		opengl_tcache_flush();
-	}
-
-	if (vram_full) {
-		return 0;
-	}
-
-	int n = bm_get_cache_slot (bitmap_id, 1);
-	tcache_slot_opengl *t = &Textures[n];
-
-	if ( (GL_last_bitmap_id == bitmap_id) && (GL_last_bitmap_type==bitmap_type) && (t->bitmap_id == bitmap_id) && (GL_last_section_x == sx) && (GL_last_section_y == sy))       {
-		t->used_this_frame++;
-
-		// mark all children as used
-		if(GL_texture_sections){
-			for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-				for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-					if(t->data_sections[idx][s_idx] != NULL){
-						t->data_sections[idx][s_idx]->used_this_frame++;
-					}
-				}
-			}
-		}
-
-		*u_scale = t->u_scale;
-		*v_scale = t->v_scale;
-		return 1;
-	}
-
-
-	glActiveTextureARB(GL_TEXTURE0_ARB+tex_unit);
-
-	opengl_set_max_anistropy();
-
-	if (bitmap_type == TCACHE_TYPE_BITMAP_SECTION){
-		Assert((sx >= 0) && (sy >= 0) && (sx < MAX_BMAP_SECTIONS_X) && (sy < MAX_BMAP_SECTIONS_Y));
-		if(!((sx >= 0) && (sy >= 0) && (sx < MAX_BMAP_SECTIONS_X) && (sy < MAX_BMAP_SECTIONS_Y))){
-			return 0;
-		}
-
-		ret_val = 1;
-
-		// if the texture sections haven't been created yet
-		if((t->bitmap_id < 0) || (t->bitmap_id != bitmap_id)){
-
-			// lock the bitmap in the proper format
-			bmp = bm_lock(bitmap_id, 16, BMP_TEX_XPARENT);
-			bm_unlock(bitmap_id);
-
-			// now lets do something for each texture
-
-			for(idx=0; idx<bmp->sections.num_x; idx++){
-				for(s_idx=0; s_idx<bmp->sections.num_y; s_idx++){
-					// hmm. i'd rather we didn't have to do it this way...
-					if(!opengl_create_texture_sectioned(bitmap_id, bitmap_type, t->data_sections[idx][s_idx], idx, s_idx, fail_on_full)){
-						ret_val = 0;
-					}
-
-					// not used this frame
-					t->data_sections[idx][s_idx]->used_this_frame = 0;
-				}
-			}
-
-			// zero out pretty much everything in the parent struct since he's just the root
-			t->bitmap_id = bitmap_id;
-			t->texture_handle = 0;
-			t->time_created = t->data_sections[sx][sy]->time_created;
-			t->used_this_frame = 0;
-			/*
-			t->vram_texture = NULL;
-			t->vram_texture_surface = NULL
-			*/
-		}
-
-		// argh. we failed to upload. free anything we can
-		if(!ret_val){
-			opengl_free_texture(t);
-		}
-		// swap in the texture we want
-		else {
-			t = t->data_sections[sx][sy];
-		}
-	}
-
-	// all other "normal" textures
-	else if((bitmap_id < 0) || (bitmap_id != t->bitmap_id)){
-		ret_val = opengl_create_texture( bitmap_id, bitmap_type, t, fail_on_full );
-	}
-
-	// everything went ok
-	if(ret_val && (t->texture_handle) && !vram_full){
-		*u_scale = t->u_scale;
-		*v_scale = t->v_scale;
-
-		
-		glBindTexture (GL_TEXTURE_2D, t->texture_handle );
-
-		GL_last_bitmap_id = t->bitmap_id;
-		GL_last_bitmap_type = bitmap_type;
-		GL_last_section_x = sx;
-		GL_last_section_y = sy;
-		t->used_this_frame++;
-	}
-	// gah
-	else {
-		glBindTexture (GL_TEXTURE_2D, 0);	// test - DDOI
-		return 0;
-	}
-
-	return 1;
-}
-//extern int bm_get_cache_slot( int bitmap_id, int separate_ani_frames );
-int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0)
-{
-	int r1=0,r2=1,r3=1;
-
-	if (bitmap_id < 0)
-	{
-		GL_last_bitmap_id = -1;
-		return 0;
-	}
-
-	//make sure textuing is on
-	opengl_switch_arb0(1);
-
-	if (GLOWMAP>-1)
-	{
-		opengl_switch_arb1(1);
-		
-		r1=gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0);
-		r2=gr_opengl_tcache_set_internal(GLOWMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 1);
-	
-		//set the glowmap stuff
-		glActiveTextureARB(GL_TEXTURE1_ARB);
-		gr_opengl_set_additive_tex_env();
-
-		if ((Interp_multitex_cloakmap>0) && (max_multitex > 2))
-		{
-			opengl_switch_arb2(1);
-			glActiveTextureARB(GL_TEXTURE2_ARB);
-			gr_opengl_set_additive_tex_env();
-			r3=gr_opengl_tcache_set_internal(CLOAKMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 2);
-		}
-		else 
-		{
-			opengl_switch_arb2(0);
-			r3=1;
-		}
-	}
-	else
-	{
-		r1=gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0);
-		if (Interp_multitex_cloakmap>0)
-		{	
-			opengl_switch_arb1(1);
-			ogl_maybe_pop_arb1=1;
-			gr_push_texture_matrix(1);
-			
-			glActiveTextureARB(GL_TEXTURE1_ARB);
-			gr_opengl_set_additive_tex_env();
-
-			if (max_multitex == 2)
-			{
-				gr_translate_texture_matrix(1,&tex_shift);
-			}
-			else
-			{
-				GLfloat arb2_matrix[16];
-				glActiveTextureARB(GL_TEXTURE2_ARB);
-				glGetFloatv(GL_TEXTURE_MATRIX, arb2_matrix);
-				glActiveTextureARB(GL_TEXTURE1_ARB);
-				glMatrixMode(GL_TEXTURE);
-				glLoadMatrixf(arb2_matrix);
-				glMatrixMode(GL_MODELVIEW);
-				opengl_switch_arb2(0);
-			}
-			r2=gr_opengl_tcache_set_internal(CLOAKMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 1);
-
-		}
-		else 
-		{
-			r2=1;
-			opengl_switch_arb1(0);
-			opengl_switch_arb2(0);
-		}
-		r3=1;
-	}
-
-	return ((r1) && (r2) && (r3));
-
 }
 
 void gr_opengl_set_clear_color(int r, int g, int b)
@@ -4449,7 +2959,7 @@ void gr_opengl_bitmap(int x, int y)
 
 void gr_opengl_push_texture_matrix(int unit)
 {
-	if (unit > max_multitex) return;
+	if (unit > GL_supported_texture_units) return;
 	GLint current_matrix;
 	glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
 	glActiveTextureARB(GL_TEXTURE0_ARB+unit);
@@ -4460,7 +2970,7 @@ void gr_opengl_push_texture_matrix(int unit)
 
 void gr_opengl_pop_texture_matrix(int unit)
 {
-	if (unit > max_multitex) return;
+	if (unit > GL_supported_texture_units) return;
 	GLint current_matrix;
 	glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
 	glActiveTextureARB(GL_TEXTURE0_ARB+unit);
@@ -4471,494 +2981,18 @@ void gr_opengl_pop_texture_matrix(int unit)
 
 void gr_opengl_translate_texture_matrix(int unit, vector *shift)
 {
-	if (unit > max_multitex){ tex_shift=*shift; return;}
+	if (unit > GL_supported_texture_units){ /*tex_shift=*shift;*/ return;}
 	GLint current_matrix;
 	glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
 	glActiveTextureARB(GL_TEXTURE0_ARB+unit);
 	glMatrixMode(GL_TEXTURE);
 	glTranslated(shift->xyz.x, shift->xyz.y, shift->xyz.z);	
 	glMatrixMode(current_matrix);
-	tex_shift=vmd_zero_vector;
+//	tex_shift=vmd_zero_vector;
 }
 
 
-struct opengl_vertex_buffer
-{
-	int n_poly;
-	vector *vertex_array;
-	uv_pair *texcoord_array;
-	vector *normal_array;
 
-	int used;
-
-	uint vbo_vert;
-	uint vbo_norm;
-	uint vbo_tex;
-
-};
-
-#define MAX_SUBOBJECTS 64
-
-#ifdef INF_BUILD
-#define MAX_BUFFERS_PER_SUBMODEL 24
-#else
-#define MAX_BUFFERS_PER_SUBMODEL 16
-#endif
-
-#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*MAX_BUFFERS_PER_SUBMODEL
-
-opengl_vertex_buffer vertex_buffers[MAX_BUFFERS];
-
-//zeros everything out
-void opengl_init_vertex_buffers()
-{
-	memset(vertex_buffers,0,sizeof(opengl_vertex_buffer)*MAX_BUFFERS);
-}
-
-int opengl_find_first_free_buffer()
-{
-	for (int i=0; i < MAX_BUFFERS; i++)
-	{
-		if (!vertex_buffers[i].used)
-			return i;
-	}
-	
-	return -1;
-}
-
-int opengl_check_for_errors()
-{
-#ifdef _DEBUG
-	int error=0;
-	if ((error=glGetError()) != GL_NO_ERROR)
-	{
-		mprintf(("!!ERROR!!: %s\n", gluErrorString(error)));
-		return 1;
-	}
-#endif
-	return 0;
-}
-
-int opengl_mod_depth()
-{
-	int mv;
-	glGetIntegerv(GL_MODELVIEW_STACK_DEPTH, &mv);
-	return mv;
-}
-
-uint opengl_create_vbo(uint size, void** data)
-{
-	if (!data)
-		return 0;
-
-	if (!*data)
-		return 0;
-
-	if (size == 0)
-		return 0;
-
-
-	// Kazan: A) This makes that if (buffer_name) work correctly (false = 0, true = anything not 0)
-	//				if glGenBuffersARB() doesn't initialized it for some reason
-	//        B) It shuts up MSVC about may be used without been initalized
-	uint buffer_name=0;
-
-	glGenBuffersARB(1, &buffer_name);
-	
-	//make sure we have one
-	if (buffer_name)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer_name);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, size, *data, GL_STATIC_DRAW_ARB );
-				
-		//just in case
-		if (opengl_check_for_errors())
-		{
-			return 0;
-		}
-		else
-		{
-			free(*data);
-			*data = NULL;
-		//	mprintf(("VBO Created: %d\n", buffer_name));
-		}
-	}
-
-	return buffer_name;
-}
-
-int gr_opengl_make_buffer(poly_list *list)
-{
-	int buffer_num=opengl_find_first_free_buffer();
-
-	//we have a valid buffer
-	if (buffer_num > -1)
-	{
-		opengl_vertex_buffer *vbp=&vertex_buffers[buffer_num];
-
-		vbp->used=1;
-
-		vbp->n_poly=list->n_poly;
-
-		vbp->texcoord_array=(uv_pair*)malloc(list->n_poly * 3 * sizeof(uv_pair));	
-		memset(vbp->texcoord_array,0,list->n_poly*sizeof(uv_pair));
-
-		vbp->normal_array=(vector*)malloc(list->n_poly * 3 * sizeof(vector));
-		memset(vbp->normal_array,0,list->n_poly*sizeof(vector));
-
-		vbp->vertex_array=(vector*)malloc(list->n_poly * 3 * sizeof(vector));
-		memset(vbp->vertex_array,0,list->n_poly*sizeof(vector));
-
-		vector *n=vbp->normal_array;
-		vector *v=vbp->vertex_array;
-		uv_pair *t=vbp->texcoord_array;
-	
-		vertex *vl;
-
-		memcpy(n,list->norm,list->n_poly*sizeof(vector)*3);
-				
-
-		for (int i=0; i < list->n_poly*3; i++)
-		{
-				vl=&list->vert[i];
-				v->xyz.x=vl->x; 
-				v->xyz.y=vl->y;
-				v->xyz.z=vl->z;
-				v++;
-				
-				t->u=vl->u;
-				t->v=vl->v;
-				t++;
-
-		}
-
-		//maybe load it into a vertex buffer object
-		if (VBO_ENABLED)
-		{
-			vbp->vbo_vert=opengl_create_vbo(vbp->n_poly*9*sizeof(float),(void**)&vbp->vertex_array);
-			vbp->vbo_norm=opengl_create_vbo(vbp->n_poly*9*sizeof(float),(void**)&vbp->normal_array);
-			vbp->vbo_tex=opengl_create_vbo(vbp->n_poly*6*sizeof(float),(void**)&vbp->texcoord_array);
-		}
-
-	}
-	
-
-	return buffer_num;
-}
-	
-void gr_opengl_destroy_buffer(int idx)
-{
-	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
-	if (vbp->normal_array)		free(vbp->normal_array);
-	if (vbp->texcoord_array)	free(vbp->texcoord_array);
-	if (vbp->vertex_array)		free(vbp->vertex_array);
-
-	if (vbp->vbo_norm)			glDeleteBuffersARB(1,&vbp->vbo_norm);
-	if (vbp->vbo_vert)			glDeleteBuffersARB(1,&vbp->vbo_vert);
-	if (vbp->vbo_tex)			glDeleteBuffersARB(1,&vbp->vbo_tex);
-
-	memset(vbp,0,sizeof(opengl_vertex_buffer));
-}
-
-//#define DRAW_DEBUG_LINES
-extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
-void gr_opengl_render_buffer(int idx)
-{
-	TIMERBAR_PUSH(2);
-	float u_scale,v_scale;
-
-	if (glIsEnabled(GL_CULL_FACE))	glFrontFace(GL_CW);
-	
-	glColor3ub(255,255,255);
-	
-	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	if (vbp->vbo_vert)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_vert);
-		glVertexPointer(3,GL_FLOAT,0, (void*)NULL);
-	}
-	else
-	{
-		glVertexPointer(3,GL_FLOAT,0,vbp->vertex_array);
-	}
-
-	glEnableClientState(GL_NORMAL_ARRAY);
-	if (vbp->vbo_norm)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_norm);
-		glNormalPointer(GL_FLOAT,0, (void*)NULL);
-	}
-	else
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-		glNormalPointer(GL_FLOAT,0,vbp->normal_array);
-	}
-
-	glClientActiveTextureARB(GL_TEXTURE0_ARB);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	if (vbp->vbo_tex)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
-		glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
-	}
-	else
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
-	}
-
-	if (GLOWMAP > -1)
-	{
-		glClientActiveTextureARB(GL_TEXTURE1_ARB);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo_tex)
-		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
-			glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
-		}
-		else
-		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
-		}
-	}
-
-	if ((Interp_multitex_cloakmap>0) && (max_multitex > 2))
-	{
-		glClientActiveTextureARB(GL_TEXTURE2_ARB);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo_tex)
-		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
-			glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
-		}
-		else
-		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
-		}
-	}
-
-
-	int r,g,b,a,tmap_type;
-
-	opengl_setup_render_states(r,g,b,a,tmap_type,TMAP_FLAG_TEXTURED,0);
-
-	if (gr_screen.current_bitmap==CLOAKMAP)
-	{
-		glBlendFunc(GL_ONE,GL_ONE);
-		r=g=b=Interp_cloakmap_alpha;
-		a=255;
-	}
-
-	gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
-	
-	glLockArraysEXT(0,vbp->n_poly*3);
-	
-	pre_render_init_lights();
-	change_active_lights(0);
-
-   	glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3);
-
-	if((lighting_is_enabled)&&((n_active_lights-1)/max_gl_lights > 0)) {
-		gr_opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
-		opengl_switch_arb1(0);
-		opengl_switch_arb2(0);
-		for(int i=1; i< (n_active_lights-1)/max_gl_lights; i++)
-		{
-			change_active_lights(i);
-			glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3); 
-		}
-	}
-
-	glUnlockArraysEXT();
-
-
-	if (ogl_maybe_pop_arb1)
-	{
-		gr_pop_texture_matrix(1);
-		ogl_maybe_pop_arb1=0;
-	}
-
-	TIMERBAR_POP();
-
-	if (VBO_ENABLED)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB,0);
-	}
-
-
-#if defined(DRAW_DEBUG_LINES) && defined(_DEBUG)
-	glBegin(GL_LINES);
-		glColor3ub(255,0,0);
-		glVertex3d(0,0,0);
-		glVertex3d(20,0,0);
-
-		glColor3ub(0,255,0);
-		glVertex3d(0,0,0);
-		glVertex3d(0,20,0);
-
-		glColor3ub(0,0,255);
-		glVertex3d(0,0,0);
-		glVertex3d(0,0,20);
-	glEnd();
-#endif
-
-	
-}
-
-void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
-{
-	if (!offset)
-		offset = &vmd_zero_vector;
-	if (!rotation)
-		rotation = &vmd_identity_matrix;	
-
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-
-	vector axis;
-	float ang;
-	vm_matrix_to_rot_axis_and_angle(rotation,&ang,&axis);
-	glTranslatef(offset->xyz.x,offset->xyz.y,offset->xyz.z);
-	glRotatef(fl_degrees(ang),axis.xyz.x,axis.xyz.y,axis.xyz.z);
-	depth++;
-}
-
-void gr_opengl_start_instance_angles(vector *pos, angles* rotation)
-{
-	matrix m;
-	vm_angles_2_matrix(&m,rotation);
-	gr_opengl_start_instance_matrix(pos,&m);
-}
-
-void gr_opengl_end_instance_matrix()
-{
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
-	depth--;
-}
-
-//the projection matrix; fov, aspect ratio, near, far
-void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, float z_far)
-{
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	gluPerspective(fl_degrees(fov),aspect,z_near,z_far);
-	glMatrixMode(GL_MODELVIEW);
-}
-
-void gr_opengl_end_projection_matrix()
-{
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
-}
-
-void gr_opengl_set_view_matrix(vector *pos, matrix* orient)
-{
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	glPushMatrix();
-	
-	vector fwd;
-	vector *uvec=&orient->vec.uvec;
-
-	vm_vec_add(&fwd, pos, &orient->vec.fvec);
-
-	gluLookAt(pos->xyz.x,pos->xyz.y,-pos->xyz.z,
-	fwd.xyz.x,fwd.xyz.y,-fwd.xyz.z,
-	uvec->xyz.x, uvec->xyz.y,-uvec->xyz.z);
-
-	glScalef(1,1,-1);
-	
-	depth=2;
-
-	glViewport(gr_screen.offset_x,gr_screen.max_h-gr_screen.offset_y-gr_screen.clip_height,gr_screen.clip_width,gr_screen.clip_height);
-}
-
-void gr_opengl_end_view_matrix()
-{
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
-	glLoadIdentity();
-	depth=1;
-
-	glViewport(0,0,gr_screen.max_w, gr_screen.max_h);
-	
-}
-
-void gr_opengl_push_scale_matrix(vector *scale_factor)
-{
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	depth++;
-	glScalef(scale_factor->xyz.x,scale_factor->xyz.y,scale_factor->xyz.z);
-}
-
-void gr_opengl_pop_scale_matrix()
-{
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
-	depth--;
-}
-/*
-int gr_opengl_make_light(light_data* light, int idx, int priority)
-{
-	//stubb
-	return -1;
-}
-
-void gr_opengl_modify_light(light_data* light, int idx, int priority)
-{
-	//stubb
-}
-
-void gr_opengl_destroy_light(int idx)
-{
-	//stubb
-}
-
-void gr_opengl_set_light(light_data *light)
-{
-	//stubb
-}
-
-void gr_opengl_set_lighting(bool set, bool state)
-{
-
-}
-
-void gr_opengl_reset_lighting()
-{
-
-}
-*/
-void gr_opengl_end_clip_plane()
-{
-	glDisable(GL_CLIP_PLANE0);
-}
-
-void gr_opengl_start_clip_plane()
-{	
-	double clip_equation[4];
-	vector n;
-	vector p;
-
-	n=G3_user_clip_normal;	
-	p=G3_user_clip_point;
-
-	clip_equation[0]=n.xyz.x;
-	clip_equation[1]=n.xyz.y;
-	clip_equation[2]=n.xyz.z;
-	clip_equation[3]=-vm_vec_dot(&p, &n);
-	glClipPlane(GL_CLIP_PLANE0, clip_equation);
-	glEnable(GL_CLIP_PLANE0);
-}
 
 void opengl_render_timer_bar(int colour, float x, float y, float w, float h)
 {
@@ -5453,7 +3487,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	glActiveTextureARB(GL_TEXTURE0_ARB);
 	glEnable(GL_TEXTURE_2D);
-	arb0_enabled=1;
 
 	//setup the best fog function found
 	//start with NV Radial Fog (GeForces only)  -- needs t&l, will have to wait
@@ -5463,9 +3496,9 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	if (GL_Extensions[GL_FOG_COORDF].enabled && !Fred_running)
 		OGL_fogmode=2;
 
-	glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max_multitex);
+	glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &GL_supported_texture_units);
 
-	if (max_multitex > 2)	gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_3multitex;
+	if (GL_supported_texture_units > 2)	gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_3multitex;
 	else					gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_2multitex;
 
 	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled)
