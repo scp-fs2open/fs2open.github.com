@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.43 $
- * $Date: 2004-12-24 19:36:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.44 $
+ * $Date: 2004-12-25 17:02:18 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2004/12/24 19:36:12  Goober5000
+ * resorted command-line options and added an option for WMC's ballistic gauge
+ * --Goober5000
+ *
  * Revision 2.42  2004/12/24 05:07:05  wmcoolmon
  * NEW_HUD compiles now. :)
  *
@@ -400,6 +404,7 @@
 #include "localization/localize.h"
 #include "ship/awacs.h"
 #include "parse/parselo.h"
+#include "cmdline/cmdline.h"
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting

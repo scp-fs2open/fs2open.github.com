@@ -1,5 +1,5 @@
 //Define or undefine NEW_HUD here so you don't have to recompile everything.
-#define NEW_HUD
+//#define NEW_HUD
 
 #include "PreProcDefines.h"
 #pragma once
