@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.113 $
- * $Date: 2004-03-20 21:17:13 $
+ * $Revision: 2.114 $
+ * $Date: 2004-03-21 10:34:05 $
  * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2004/03/20 21:17:13  bobboau
+ * fixed -spec comand line option,
+ * probly some other stuf
+ *
  * Revision 2.112  2004/03/17 04:07:32  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -11506,7 +11510,21 @@ void ship_page_in_model_textures(int modelnum)
 				bm_page_in_texture( bitmap_num, pm->num_frames[i] );
 			}
 		}
-	}
+
+		bitmap_num = pm->glow_original_textures[i];
+
+		if ( bitmap_num > -1 )
+		{
+				bm_page_in_texture( bitmap_num, pm->glow_numframes[i] );
+		}
+
+		bitmap_num = pm->specular_original_textures[i];
+
+		if ( bitmap_num > -1 )
+		{
+				bm_page_in_texture( bitmap_num, 1 );
+		}
+}
 }
 
 // function to return true if support ships are allowed in the mission for the given object.

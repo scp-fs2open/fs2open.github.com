@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.35 $
- * $Date: 2004-03-20 21:17:13 $
+ * $Revision: 2.36 $
+ * $Date: 2004-03-21 10:34:05 $
  * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2004/03/20 21:17:13  bobboau
+ * fixed -spec comand line option,
+ * probly some other stuf
+ *
  * Revision 2.34  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -2426,6 +2430,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	if(Cmdline_nospec){
 		pm->specular_textures[i] = -1;
+		pm->specular_original_textures[i] = -1;
 		return;
 	}
 	strcpy(tmp_name, file);
