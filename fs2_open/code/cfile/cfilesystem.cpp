@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-10-30 06:26:11 $
+ * $Revision: 2.5 $
+ * $Date: 2002-10-30 06:29:45 $
  * $Author: DTP $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/10/30 06:26:11  DTP
+ * DTP Implemented basic VP files handling. mission and campaign files inside VP files found in mod dir still not supported, cheking / creating directories not implented either
+ *
  * Revision 2.3  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -126,7 +129,7 @@
 #include <sys/stat.h>
 #endif
 
-#include "Cmdline/cmdline.h"
+#include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"
