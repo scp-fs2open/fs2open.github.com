@@ -26,6 +26,7 @@ bool movie_play(char *name, int unknown_value)
 	/*
 	** Check file exists
 	*/
+	// Ok - this should be replaced with FS2 cfopen or something - UP
 	FILE *fp = fopen(name,"rb");
 	DBUGFILE_OUTPUT_1("About to play: %s",name);
 		
