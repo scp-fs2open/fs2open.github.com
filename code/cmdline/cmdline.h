@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:58 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-29 06:35:15 $
+ * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:58  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -194,5 +197,7 @@ extern int Cmdline_mouse_coords;
 extern int Cmdline_timeout;
 
 extern int Cmdline_window;
+extern char *Cmdline_almission;	//DTP for autoload mission
+
 
 #endif

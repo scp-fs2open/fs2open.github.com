@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:58 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-29 06:35:15 $
+ * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:58  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -244,6 +247,9 @@ cmdline_parm d3d_32bit("-32bit", NULL);
 cmdline_parm mouse_coords("-coords", NULL);
 cmdline_parm timeout("-timeout", NULL);
 cmdline_parm d3d_window("-window", NULL);
+cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
+
+
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -261,6 +267,7 @@ char *Cmdline_game_password = NULL;
 char *Cmdline_rank_above= NULL;
 char *Cmdline_rank_below = NULL;
 char *Cmdline_connect_addr = NULL;
+char *Cmdline_almission = NULL;	//DTP FOR AUTO-LOAD Multi MISSION
 int Cmdline_multi_log = 0;
 int Cmdline_server_firing = 0;
 int Cmdline_client_dodamage = 0;
@@ -627,6 +634,11 @@ int parse_cmdline(int argc, char *argv[])
 	// d3d windowed
 	if(d3d_window.found()){
 		Cmdline_window = 1;
+	}
+	if(almission_arg.found()){//DTP for autoload mission // developer oritentated
+		Cmdline_almission = almission_arg.str();
+		Cmdline_use_last_pilot = 1;
+		Cmdline_start_netgame = 1;
 	}
 
 	return 1;
