@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-03-10 15:35:21 $
- * $Author: bobboau $
+ * $Revision: 2.33 $
+ * $Date: 2005-03-13 08:38:05 $
+ * $Author: wmcoolmon $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/03/10 15:35:21  bobboau
+ * fixed a local/global conflict
+ *
  * Revision 2.31  2005/03/10 08:00:13  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -866,7 +869,7 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 	vm_vec_crossprod(&uvec, &fvec, &rvec);
 
 	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
-	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
+//	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
 
 	vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
 	vm_vec_scale_add(&p[0], &PNT, &rvec, rad);
@@ -1183,8 +1186,8 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 		angle += PI2;
 	else if ( angle > PI2 )
 		angle -= PI2;
-	float sa = (float)sin(angle);
-	float ca = (float)cos(angle);
+//	float sa = (float)sin(angle);
+//	float ca = (float)cos(angle);
 
 //	rad*=3.0f;
 
@@ -1205,7 +1208,7 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	vm_vec_crossprod(&uvec, &fvec, &rvec);
 
 	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
-	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
+//	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
 
 	vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
 	vm_vec_scale_add(&p[0], &PNT, &rvec, rad);
