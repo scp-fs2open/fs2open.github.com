@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.29 $
- * $Date: 2004-05-06 22:35:25 $
+ * $Revision: 2.30 $
+ * $Date: 2004-05-11 23:08:55 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/05/06 22:35:25  taylor
+ * DDS mipmap reading, remove unneeded bm_unlock() during page in
+ *
  * Revision 2.28  2004/04/26 15:51:26  taylor
  * forgot to remove some safety checks that aren't needed anymore
  *
@@ -2574,6 +2577,7 @@ void bm_gfx_page_in_stop()
 {	
 	int i;	
 	int ship_info_index;
+	int unlock = 0;
 
 	nprintf(( "BmpInfo","BMPMAN: Loading all used bitmaps.\n" ));
 
@@ -2605,13 +2609,19 @@ void bm_gfx_page_in_stop()
 				// if preloaded == 3, load it as an xparent texture				
 				if(bm_bitmaps[i].used_flags == BMP_AABITMAP){
 					bm_lock( bm_bitmaps[i].handle, 8, bm_bitmaps[i].used_flags );
+					unlock = 1;
 				} else if (bm_bitmaps[i].used_flags == BMP_TEX_XPARENT) {
-					if (!gr_preload(bm_bitmaps[i].handle, 0))
+					if (!gr_preload(bm_bitmaps[i].handle, 0)) {
 						bm_lock( bm_bitmaps[i].handle, 16, bm_bitmaps[i].used_flags );
+						unlock = 1;
+					}
 				} else {
 					bm_lock( bm_bitmaps[i].handle, 16, bm_bitmaps[i].used_flags );
+					unlock = 1;
 				}
-			//	bm_unlock( bm_bitmaps[i].handle ); // this really isn't needed
+
+				if (unlock)
+					bm_unlock( bm_bitmaps[i].handle ); // don't do this with gr_preload()
 
 				n++;
 				#ifdef BMPMAN_NDEBUG
