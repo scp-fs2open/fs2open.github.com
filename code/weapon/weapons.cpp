@@ -1427,7 +1427,7 @@ int parse_weapon()
 		{
 			stuff_float(&wip->b_info.range);
 		}
-		if (optional_string("+Atenuation:"))
+		if (optional_string("+Attenuation:"))
 		{
 			stuff_float(&wip->b_info.damage_threshold);
 		}
