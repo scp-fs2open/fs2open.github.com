@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.108 $
- * $Date: 2005-03-16 01:35:58 $
- * $Author: bobboau $
+ * $Revision: 2.109 $
+ * $Date: 2005-03-20 20:01:15 $
+ * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2005/03/16 01:35:58  bobboau
+ * added a geometry batcher and implemented it in sevral places
+ * namely: lasers, thrusters, and particles,
+ * these have been the primary botle necks for some time,
+ * and this seems to have smoothed them out quite a bit.
+ *
  * Revision 2.107  2005/03/10 08:00:10  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -2010,10 +2016,8 @@ void model_draw_paths( int model_num )
 					gr_set_color( 255, 0, 0 );
 				}
 
-//				g3_draw_sphere( &tmp, pm->paths[i].verts[j].radius );
 				g3_draw_sphere( &tmp, 0.5f );
 
-				gr_set_color( 255, 0, 0 );
 				if (j){
 					g3_draw_line(&prev_pnt, &tmp);
 				}
@@ -2022,6 +2026,101 @@ void model_draw_paths( int model_num )
 			}
 		}
 	}
+}
+
+// Debug code to show all the paths of a model
+void model_draw_paths_htl( int model_num )
+{
+	int i,j;
+	vector pnt;
+	vector prev_pnt;
+	polymodel * pm;	
+
+	if ( Interp_flags & MR_SHOW_OUTLINE_PRESET )	{
+		return;
+	}
+
+	pm = model_get(model_num);
+
+	if (pm->n_paths<1){
+		return;
+	}	
+
+	gr_set_cull(0);
+	for (i=0; i<pm->n_paths; i++ )	{
+		for (j=0; j<pm->paths[i].nverts; j++ )
+		{
+			// Rotate point into world coordinates			
+			pnt = pm->paths[i].verts[j].pos;
+
+			// Pnt is now the x,y,z world coordinates of this vert.
+			// For this example, I am just drawing a sphere at that
+			// point.
+
+			vertex tmp;
+			g3_rotate_vertex(&tmp,&pnt);
+
+			if ( pm->paths[i].verts[j].nturrets > 0 ){
+				gr_set_color( 0, 0, 255 );						// draw points covered by turrets in blue
+			} else {
+				gr_set_color( 255, 0, 0 );
+			}
+
+			g3_draw_htl_sphere(&pnt, 0.5f);
+			
+			if (j)
+			{
+				g3_draw_htl_line(&prev_pnt, &pnt);
+			}
+
+			prev_pnt = pnt;
+		}
+	}
+
+	gr_set_cull(1);
+}
+
+// docking bay and fighter bay paths
+void model_draw_bay_paths_htl(int model_num)
+{
+	int idx, s_idx;
+	vector v1, v2;
+
+	polymodel *pm = model_get(model_num);
+	if(pm == NULL){
+		return;
+	}
+
+	gr_set_cull(0);
+	// render docking bay normals
+	gr_set_color(0, 255, 0);
+	for(idx=0; idx<pm->n_docks; idx++){
+		for(s_idx=0; s_idx<pm->docking_bays[idx].num_slots; s_idx++){
+			v1 = pm->docking_bays[idx].pnt[s_idx];
+			vm_vec_scale_add(&v2, &v1, &pm->docking_bays[idx].norm[s_idx], 10.0f);
+
+			// draw the point and normal
+			g3_draw_htl_sphere(&v1, 2.0);
+			g3_draw_htl_line(&v1, &v2);
+		}
+	}
+
+	// render figher bay paths
+	gr_set_color(0, 255, 255);
+		
+	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
+	for (idx = 0; idx<pm->n_paths; idx++) {
+		if ( !strnicmp(pm->paths[idx].name, NOX("$bay"), 4) ) {						
+			for(s_idx=0; s_idx<pm->paths[idx].nverts-1; s_idx++){
+				v1 = pm->paths[idx].verts[s_idx].pos;
+				v2 = pm->paths[idx].verts[s_idx+1].pos;
+
+				g3_draw_htl_line(&v1, &v2);
+			}
+		}
+	}	
+
+	gr_set_cull(1);
 }
 
 
@@ -4260,11 +4359,13 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	gr_set_cull(1);	
 
 	if ( Interp_flags & MR_SHOW_PATHS ){
-		model_draw_paths(model_num);
+		if (Cmdline_nohtl) model_draw_paths(model_num);
+		else model_draw_paths_htl(model_num);
 	}
 
 	if (Interp_flags & MR_BAY_PATHS ){
-		model_draw_bay_paths(model_num);
+		if (Cmdline_nohtl) model_draw_bay_paths(model_num);
+		else model_draw_bay_paths_htl(model_num);
 	}
 
 	if((Interp_flags & MR_AUTOCENTER) && (pm->flags & PM_FLAG_AUTOCEN)){
