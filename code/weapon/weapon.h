@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/05/03 23:47:04  phreak
+ * added multipliers for beam turrets and sensors for disruptor missiles
+ *
  * Revision 2.11  2003/05/03 16:44:18  phreak
  * changed around the way disruptor weapons work
  *
@@ -394,6 +397,7 @@
 #define WIF2_BALLISTIC					(1 << 0)	// ballistic primaries - Goober5000
 #define WIF2_PIERCE_SHIELDS				(1 << 1)	// shield pierceing -Bobboau
 #define WIF2_DEFAULT_IN_TECH_DATABASE	(1 << 2)	// default in tech database - Goober5000
+#define WIF2_LOCAL_SSM					(1 << 3)	// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
@@ -453,6 +457,15 @@ typedef struct weapon {
 	short flak_index;							// flak info index
 	int frame;				//for animated laser bitmaps
 	int gframe;				//for animated laser glow bitmaps
+
+	//local ssm stuff		
+	fix lssm_warpout_time;		//time at which the missile warps out
+	fix lssm_warpin_time;		//time at which the missile warps back in
+	int lssm_stage;				//what stage its in 1=just launched, 2=warping out. 3=warped out, 4=warping back in, 5=terminal dive						
+	int lssm_warp_idx;			//warphole index
+	float lssm_warp_time;		//length of time warphole stays open		
+	float lssm_warp_pct;		//how much of the warphole's life should be dedicated to stage 2
+
 } weapon;
 
 
@@ -626,6 +639,12 @@ typedef struct weapon_info {
 	float elec_weap_mult;		//multiplier on weapon subsystem and turrets
 	float elec_beam_mult;		//used instead of elec_weap_mult if turret is a beam turret
 	float elec_sensors_mult;	//multiplier on sensors and awacs
+
+	//local ssm info
+	int lssm_warpout_delay;			//delay between launch and warpout (ms)
+	int lssm_warpin_delay;			//delay between warpout and warpin (ms)
+	float lssm_stage5_vel;			//velocity during final stage
+	float lssm_warpin_radius;
 
 
 } weapon_info;

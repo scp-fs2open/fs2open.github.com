@@ -20,6 +20,12 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/05/05 20:55:44  Goober5000
+ * fixed small bug inadvertently added by Phreak affecting the custom hitpoints
+ * mod; also fixed a small bug in the new disruption mod (disrupting all subsystems,
+ * as opposed to only those within the weapon radius)
+ * --Goober5000
+ *
  * Revision 2.24  2003/05/04 19:51:28  phreak
  * fixed mispelling
  *
@@ -792,6 +798,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_PIERCE_SHIELDS;
 		else if (!stricmp(NOX("no pierce shields"), weapon_strings[i]))	// only for beams
 			weaponp->wi_flags2 &= ~WIF2_PIERCE_SHIELDS;
+		else if (!stricmp(NOX("local ssm"), weapon_strings[i]))
+			weaponp->wi_flags2 |=WIF2_LOCAL_SSM;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 
@@ -1407,6 +1415,27 @@ int parse_weapon()
 		stuff_float(&wip->elec_sensors_mult);
 	}
 
+	//	int lssm_warpout_delay;			//delay between launch and warpout (ms)
+	//int lssm_warpin_delay;			//delay between warpout and warpin (ms)
+	//float lssm_stage5_vel;			//velocity during final stage
+	//float lssm_warpin_radius;
+
+	if (optional_string("$Local SSM:"))
+	{
+		required_string("+Warpout Delay:");
+		stuff_int(&wip->lssm_warpout_delay);
+
+		required_string("+Warpin Delay:");
+		stuff_int(&wip->lssm_warpin_delay);
+
+		required_string("+Stage 5 Velocity:");
+		stuff_float(&wip->lssm_stage5_vel);
+
+		required_string("+Warpin Radius:");
+		stuff_float(&wip->lssm_warpin_radius);
+	}
+
+
 	// beam weapon optional stuff
 	wip->b_info.beam_type = -1;
 	wip->b_info.beam_life = -1.0f;
@@ -1945,8 +1974,31 @@ void weapon_render(object *obj)
 					render_flags |= MR_SHOW_THRUSTERS;
 				}
 
+
+				//don't render local ssm's when they are still in subspace
+				if (wp->lssm_stage==3)
+					break;
+
+				int clip_plane=0;
+				
+				//start a clip plane
+				if ((wp->lssm_stage==2))
+				{
+					object *wobj=&Objects[wp->lssm_warp_idx];		//warphole object
+					clip_plane=1;
+
+
+					g3_start_user_clip_plane(&wobj->pos,&wobj->orient.vec.fvec);
+				
+				}
+
+
 				model_render(wip->model_num, &obj->orient, &obj->pos, render_flags);
 
+				if (clip_plane)
+				{
+					g3_stop_user_clip_plane();
+				}
 				// render a missile plume as well
 				/*
 				static int plume = -1;	
@@ -2113,6 +2165,13 @@ void find_homing_object(object *weapon_objp, int num)
 					}
 				}
 
+				//don't look for local ssms that are gone for the time being
+				if (objp->type == OBJ_WEAPON)
+				{
+					if (Weapons[objp->instance].lssm_stage==3)
+						continue;
+				}
+
 				dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
 
 				if (objp->type == OBJ_CMEASURE)
@@ -2273,6 +2332,17 @@ void weapon_home(object *obj, int num, float frame_time)
 	wip = &Weapon_info[wp->weapon_info_index];
 	hobjp = Weapons[num].homing_object;
 
+	//local ssms home only in stages 1,2,5
+	if ((wp->lssm_stage==3) || (wp->lssm_stage==4))
+		return;
+
+	float max_speed;
+
+	if ((wip->wi_flags2 & WIF2_LOCAL_SSM) && (wp->lssm_stage==5))
+		max_speed=wip->lssm_stage5_vel;
+	else
+		max_speed=wip->max_speed;
+
 	//	If not 1/2 second gone by, don't home yet.
 	if ((hobjp == &obj_used_list) || ( f2fl(Missiontime - wp->creation_time) < 0.25f )) {
 		//	If this is a heat seeking homing missile and 1/2 second has elapsed since firing
@@ -2281,11 +2351,11 @@ void weapon_home(object *obj, int num, float frame_time)
 			if ( f2fl(Missiontime - wp->creation_time) > 0.5f )
 				find_homing_object(obj, num);
 
-		if (obj->phys_info.speed > wip->max_speed) {
+		if (obj->phys_info.speed > max_speed) {
 			obj->phys_info.speed -= frame_time * 4;
 			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
-		} else if ((obj->phys_info.speed < wip->max_speed/4) && (wip->wi_flags & WIF_HOMING_HEAT)) {
-			obj->phys_info.speed = wip->max_speed/4;
+		} else if ((obj->phys_info.speed < max_speed/4) && (wip->wi_flags & WIF_HOMING_HEAT)) {
+			obj->phys_info.speed = max_speed/4;
 			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 		}
 
@@ -2492,7 +2562,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		float	dist_to_target, time_to_target;
 		
 		dist_to_target = vm_vec_normalized_dir(&vec_to_goal, &target_pos, &obj->pos);
-		time_to_target = dist_to_target/wip->max_speed;
+		time_to_target = dist_to_target/max_speed;
 
 		vector	tvec;
 		tvec = obj->phys_info.vel;
@@ -2551,10 +2621,10 @@ void weapon_home(object *obj, int num, float frame_time)
 		//	at max speed, else move slower based on how far from ahead.
 		if (old_dot < 0.90f) {
 			obj->phys_info.speed = max(0.2f, old_dot* (float) fabs(old_dot));
-			if (obj->phys_info.speed < wip->max_speed*0.75f)
-				obj->phys_info.speed = wip->max_speed*0.75f;
+			if (obj->phys_info.speed < max_speed*0.75f)
+				obj->phys_info.speed = max_speed*0.75f;
 		} else
-			obj->phys_info.speed = wip->max_speed;
+			obj->phys_info.speed = max_speed;
 
 		//	For first second of weapon's life, it doesn't fly at top speed.  It ramps up.
 		if (Missiontime - wp->creation_time < i2f(1)) {
@@ -2685,7 +2755,18 @@ void weapon_process_post(object * obj, float frame_time)
 	wp = &Weapons[num];
 
 	wp->lifeleft -= frame_time;
+
 	wip = &Weapon_info[wp->weapon_info_index];
+
+	
+	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
+	{
+		if (wp->lssm_stage != 5)
+		{
+			wp->lifeleft += frame_time;
+		}
+	}
+
 
 	// check life left.  Multiplayer client code will go through here as well.  We must be careful in weapon_hit
 	// when killing a missile that spawn child weapons!!!!
@@ -2725,7 +2806,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 	// trail missiles
 	if ((wip->wi_flags & WIF_TRAIL) && !(wip->wi_flags & WIF_CORKSCREW)) {
-		if ( wp->trail_num > -1 )	{
+		if ( (wp->trail_num > -1 ) && (wp->lssm_stage!=3))	{
 			if (trail_stamp_elapsed(wp->trail_num)) {
 
 				trail_add_segment( wp->trail_num, &obj->pos );
@@ -2825,6 +2906,75 @@ void weapon_process_post(object * obj, float frame_time)
 			cscrew_process_post(obj);			
 		}
 	}
+
+	//local ssm stuff
+
+	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
+	{
+
+		if ((timestamp_elapsed(wp->lssm_warpout_time)) && (wp->lssm_stage==1))
+		{
+			vector warpout;
+			//create a warp effect
+			vm_vec_copy_scale(&warpout,&obj->phys_info.vel,3.0f);
+			wp->lssm_warp_time = ((obj->radius * 2) / (obj->phys_info.speed)) +1.5f;
+			wp->lssm_warp_time = max(wp->lssm_warp_time,7.0f);
+			wp->lssm_warp_pct = 1.0 - (3.0/wp->lssm_warp_time);
+			vm_vec_add2(&warpout,&obj->pos);
+			wp->lssm_warp_idx=fireball_create(&warpout, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,1,&vmd_zero_vector,wp->lssm_warp_time,0,&obj->orient);
+			wp->lssm_stage=2;
+		}
+
+		//its in subspace. don't collide or render
+		if ((fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <= wp->lssm_warp_pct) && (wp->lssm_stage==2))
+		{
+			uint flags=obj->flags & ~(OF_RENDERS | OF_COLLIDES);
+			obj_set_flags(obj, flags);
+			wp->lssm_stage=3;
+		}
+
+		//time to warp in.
+		if ((timestamp_elapsed(wp->lssm_warpin_time)) && (wp->lssm_stage==3))
+		{
+			vector warpin;
+			object* target_objp=wp->homing_object;
+			vector fvec;
+			matrix orient;
+
+			//ugh
+			vm_vec_random_in_circle(&warpin, &target_objp->pos, &target_objp->orient, wip->lssm_warpin_radius + target_objp->radius,1);
+
+			vm_vec_sub(&fvec,&wp->homing_object->pos, &warpin);
+
+			vm_vector_2_matrix(&orient,&fvec,NULL,NULL);
+
+			wp->lssm_warp_idx=fireball_create(&warpin, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,0,&vmd_zero_vector,wp->lssm_warp_time,0,&orient);
+
+			obj->orient=orient;
+			obj->pos=warpin;
+			obj->phys_info.speed=0;
+			obj->phys_info.desired_vel = vmd_zero_vector;
+			obj->phys_info.vel = obj->phys_info.desired_vel;
+		
+			wp->lssm_stage=4;
+
+		}
+
+		//done warping in.  render and collide it. let the fun begin
+		if ((fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <=0.5f) && (wp->lssm_stage==4))
+		{
+			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, wip->lssm_stage5_vel );
+			obj->phys_info.vel = obj->phys_info.desired_vel;
+			obj->phys_info.speed = vm_vec_mag(&obj->phys_info.desired_vel);
+
+			wp->lssm_stage=5;
+
+			uint flags=obj->flags | OF_RENDERS | OF_COLLIDES;
+
+			obj_set_flags(obj,flags);
+		}
+	}
+
 }
 
 //	Update weapon tracking information.
@@ -3097,6 +3247,20 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
 	}
+
+	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
+	{
+
+		Assert(parent_objp);		//local ssms must have a parent
+
+		wp->lssm_warpout_time=timestamp(wip->lssm_warpout_delay);
+		wp->lssm_warpin_time=timestamp(wip->lssm_warpout_delay + wip->lssm_warpin_delay);
+		wp->lssm_stage=1;
+	}
+	else{
+		wp->lssm_stage=-1;
+	}
+
 
 	// create the corkscrew
 	if ( wip->wi_flags & WIF_CORKSCREW ) {
