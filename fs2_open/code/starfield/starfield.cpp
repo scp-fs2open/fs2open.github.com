@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-01-19 01:07:42 $
- * $Author: bobboau $
+ * $Revision: 2.6 $
+ * $Date: 2003-05-03 16:58:40 $
+ * $Author: phreak $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/01/19 01:07:42  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.4  2003/01/06 19:33:21  Goober5000
  * cleaned up some stuff with model_set_thrust and a commented Assert that
  * shouldn't have been
@@ -298,6 +301,7 @@ color star_aacolors[8];
 typedef struct star {
 	vector pos;
 	vector last_star_pos;
+	color col;
 } star;
 
 star Stars[MAX_STARS];
@@ -517,6 +521,7 @@ void stars_level_init()
 	int i;
 	vector v;
 	float dist, dist_max;
+	ubyte red,green,blue,alpha;
 
 	// reset to -1 so we reload it each mission (if we need to)
 	Nmodel_num = -1;		
@@ -543,12 +548,20 @@ void stars_level_init()
 			dist = v.xyz.x * v.xyz.x + v.xyz.y * v.xyz.y + v.xyz.z * v.xyz.z;
 		}
 		vm_vec_copy_normalize(&Stars[i].pos, &v);
+		red= (ubyte)(myrand() % 63 +192);		//192-255
+		green= (ubyte)(myrand() % 63 +192);		//192-255
+		blue= (ubyte)(myrand() % 63 +192);		//192-255
+		alpha = (ubyte)(myrand () % 192 + 24);	//24-216
+
+		gr_init_alphacolor(&Stars[i].col, red, green, blue, alpha, AC_TYPE_BLEND);
+
 	}
 
 	for (i=0; i<MAX_DEBRIS; i++) {
 		odebris[i].active = 0;
 	}
 
+	
 	for (i=0; i<8; i++ )	{
 		ubyte intensity = (ubyte)((i + 1) * 24);
 		gr_init_alphacolor(&star_aacolors[i], 255, 255, 255, intensity, AC_TYPE_BLEND );
@@ -1217,7 +1230,7 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 			}
 
 			if ( (Star_flags & STAR_FLAG_ANTIALIAS) || (D3D_enabled) )	{
-				gr_set_color_fast( &star_aacolors[color] );
+				gr_set_color_fast( &sp->col );
 
 				// if the two points are the same, fudge it, since some D3D cards (G200 and G400) are lame.				
 				if( (fl2i(p1.sx) == fl2i(p2.sx)) && (fl2i(p1.sy) == fl2i(p2.sy)) ){					
@@ -1226,7 +1239,7 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 				gr_aaline(&p1,&p2);
 			} else {
 				// use alphablended line so that dark stars don't look bad on top of nebulas
-				gr_set_color_fast( &star_aacolors[color] );
+				gr_set_color_fast( &sp->col );
 				if ( Star_flags & STAR_FLAG_TAIL )	{
 					gr_line(fl2i(p1.sx),fl2i(p1.sy),fl2i(p2.sx),fl2i(p2.sy));
 				} else {
