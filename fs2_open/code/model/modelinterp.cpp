@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.29 $
- * $Date: 2003-08-22 07:35:09 $
+ * $Revision: 2.30 $
+ * $Date: 2003-08-31 06:00:41 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/08/22 07:35:09  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.28  2003/08/16 03:52:24  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -878,6 +883,9 @@ void interp_compute_environment_mapping( vector *nrm, vertex * pnt)
 	pnt->env_v = 1.0f - (float)atan2( a, R.xyz.y) / 3.14159f;
 }
 
+extern int spec;
+extern int cell;
+extern bool cell_enabled;
 
 
 // Flat Poly
@@ -920,7 +928,11 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 			} else {
 				Interp_list[i]->b = 191;
 			}
-		} else {
+		} else if(cell){
+			Interp_list[i]->r = 0;
+			Interp_list[i]->g = 0;
+			Interp_list[i]->b = 0;
+		}else{
 			int vertnum = verts[i*2+0];
 			int norm = verts[i*2+1];
 	
@@ -1011,9 +1023,6 @@ float Interp_subspace_offset_v = 0.0f;
 ubyte Interp_subspace_r = 255;
 ubyte Interp_subspace_g = 255;
 ubyte Interp_subspace_b = 255;
-extern int spec;
-extern int cell;
-extern bool cell_enabled;
 
 void model_interp_tmappoly(ubyte * p,polymodel * pm)
 {
@@ -1089,6 +1098,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				
 				if((Interp_flags & MR_EDGE_ALPHA))model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, false);
 				if((Interp_flags & MR_CENTER_ALPHA))model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, true);
+				SPECMAP = -1;
 			} else {
 
 				int vertnum = verts[i].vertnum;
@@ -1097,7 +1107,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
 					if ( D3D_enabled || OGL_inited )	{
 						light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-						if((Detail.lighting > 2) && (model_current_LOD < 2) && !cell)
+						if((Detail.lighting > 2) && (model_current_LOD < 2) && !cell )
 							light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
 					//	interp_compute_environment_mapping(vp(p+8), Interp_list[i]);
 					} else {
@@ -1109,7 +1119,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 						if ( D3D_enabled || OGL_inited )	{
 							light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-							if((Detail.lighting > 2) && (model_current_LOD < 2) && !cell)
+							if((Detail.lighting > 2) && (model_current_LOD < 2) && !cell )
 								light_apply_specular( &Interp_lighting->spec_r[norm], &Interp_lighting->spec_g[norm], &Interp_lighting->spec_b[norm], Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 						//	interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 
@@ -3136,7 +3146,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		//mprintf(( "Depth = %.2f, detail = %d\n", depth, detail_level ));
 
 	} else {
-		detail_level = 0;
+		model_current_LOD = detail_level = 0;
 	}
 
 #ifndef NDEBUG

@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-03-19 23:06:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2003-08-31 06:00:41 $
+ * $Author: bobboau $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/03/19 23:06:40  Goober5000
+ * bit o' housecleaning
+ * --Goober5000
+ *
  * Revision 2.6  2003/03/19 22:49:32  Goober5000
  * added some mission flags
  * --Goober5000
@@ -219,7 +223,7 @@ void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float ra
 	if(wm > -1 && !force_old && !(The_mission.flags & MISSION_FLAG_OLD_WARP_EFFECT)){
 		float model_Interp_scale_x = radius /20;
 		float model_Interp_scale_y = radius /20;
-		float model_Interp_scale_z = max_radius /20;
+		float model_Interp_scale_z = radius /20;
 
 		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, texture_bitmap_num, (radius/max_radius) );
 		

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-06-11 03:15:17 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2003-08-31 06:00:41 $
+ * $Author: bobboau $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/06/11 03:15:17  phreak
+ * i hate to update again so soon, but i forgot to mark hostile local ssms that
+ * were in stages 2 or 4 as warping so their blip color would then be blue
+ *
  * Revision 2.3  2003/06/11 03:01:27  phreak
  * the radar will not show stage 3 local ssms
  *
@@ -901,6 +905,9 @@ void radar_frame_render(float frametime)
 
 void radar_blit_gauge()
 {
+	SPECMAP = -1;
+	GLOWMAP = -1;
+
 	gr_set_bitmap(Radar_gauge.first_frame+1);
 	gr_aabitmap( Radar_coords[gr_screen.res][0], Radar_coords[gr_screen.res][1] );
 } 
