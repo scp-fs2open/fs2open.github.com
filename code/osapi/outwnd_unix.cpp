@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:05 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 17:50:02 $
+ * $Author: Goober5000 $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:05  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2.2.1  2002/11/04 21:25:00  randomtiger
  *
  * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
@@ -140,6 +143,8 @@
  *
  * $NoKeywords: $
  */
+
+#ifndef WIN32	// Goober5000
 
 #ifndef NDEBUG
 
@@ -492,5 +497,4 @@ void outwnd_close()
 
 #endif //NDEBUG
 
-
-
+#endif		// Goober5000 - #ifndef WIN32

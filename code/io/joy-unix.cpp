@@ -6,6 +6,9 @@
  * the source.
  */
 
+
+#ifndef WIN32	// Goober5000
+
 #include "globalincs/pstypes.h"
 #include "io/joy.h"
 #include "math/fix.h"
@@ -495,3 +498,5 @@ void joy_ff_stop_effects()
 {
 	joy_ff_afterburn_off();
 }
+
+#endif		// Goober5000 - #ifndef WIN32
