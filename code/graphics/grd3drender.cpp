@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-09-23 02:42:53 $
+ * $Revision: 2.21 $
+ * $Date: 2003-09-25 21:12:24 $
  * $Author: Kazan $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/09/23 02:42:53  Kazan
+ * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
+ *
  * Revision 2.19  2003/09/14 19:01:35  wmcoolmon
  * Changed "cell" to "Cmdline_cell" -C
  *
@@ -2907,6 +2910,15 @@ int tga_compress(char *out, char *in, int bytecount, int pixsize )
  * @param char *filename - Filename of BMP to save
  * @return void
  */
+
+// From Michael Fötsch.
+#ifdef __BORLANDC__
+#define BITMAP_FILE_SIGNATURE 'BM'
+#else
+#define BITMAP_FILE_SIGNATURE 'MB'
+#endif
+
+
 void gr_d3d_print_screen(char *filename)
 {
 	IDirect3DSurface8 *pDestSurface = NULL;
@@ -2918,7 +2930,7 @@ void gr_d3d_print_screen(char *filename)
 		return;
 	}
 
-
+	
 	if(FAILED(lpD3DDevice->GetFrontBuffer(pDestSurface)))
 	{
 		pDestSurface->Release();
@@ -2930,10 +2942,107 @@ void gr_d3d_print_screen(char *filename)
 	strcpy(pic_name, filename);
 	strcat(pic_name, ".bmp");
 	
-	/*if(FAILED(D3DXSaveSurfaceToFile(pic_name, D3DXIFF_BMP, pDestSurface, NULL, NULL)))
+	/* --- We need the Direct X 8.1 headers for this function !
+
+	if(FAILED(D3DXSaveSurfaceToFile(pic_name, D3DXIFF_BMP, pDestSurface, NULL, NULL)))
 	{
 		mprintf(("Failed to save file %s", pic_name));
 	}*/
+
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// The Following code was borrowed from Michael Fötsch.
+	// With slight modification of course
+	// http://www.geocities.com/foetsch/d3d8screenshot/Screenshot.cpp.html
+	// we can use this until we get the Dx 8.1 headers
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	BITMAPINFOHEADER bmih;
+    bmih.biSize = sizeof(bmih);
+    bmih.biWidth = gr_screen.max_w;
+    bmih.biHeight = gr_screen.max_h;
+    bmih.biPlanes = 1;
+    bmih.biBitCount = 24;
+    bmih.biCompression = BI_RGB;
+    bmih.biSizeImage = gr_screen.max_w * gr_screen.max_h * 3;
+    bmih.biXPelsPerMeter = 0;
+    bmih.biYPelsPerMeter = 0;
+    bmih.biClrUsed = 0;
+    bmih.biClrImportant = 0;
+
+    // reserve memory for the DIB's bitmap bits
+    // (The extra byte is needed because the bitmap is 24-bit but we're
+    // going to write 32 bits (a DWORD) at a time. When we write the
+    // last pixel, we'll exceed the array's limit if we don't reserve an
+    // extra byte.)
+    unsigned char *Bits = new unsigned char[bmih.biSizeImage + 1];
+    if (!Bits)
+    {
+        return;
+    }
+
+    // lock the surface for reading
+    D3DLOCKED_RECT LockedRect;
+    if (FAILED(pDestSurface->LockRect(&LockedRect, NULL, D3DLOCK_READONLY)))
+    {
+        return;
+    }
+
+    // flip the bitmap vertically (because that's how DIBs are stored)
+    // and convert it from 32-bits to 24-bits (some bitmap viewers can't
+    // handle 32-bit bitmaps, although it's a valid format)
+
+    LPDWORD lpSrc;
+    LPBYTE lpDest = Bits;
+
+    // read pixels beginning with the bottom scan line
+    for (int y = gr_screen.max_h - 1; y >= 0; y--)
+    {
+        // calculate address of the current source scan line
+        lpSrc = reinterpret_cast<LPDWORD>(LockedRect.pBits) + y * gr_screen.max_w;
+        for (int x = 0; x < gr_screen.max_w; x++)
+        {
+            // store the source pixel in the bitmap bits array
+            *reinterpret_cast<LPDWORD>(lpDest) = *lpSrc;
+            lpSrc++;        // increment source pointer by 1 DWORD
+            lpDest += 3;    // increment destination pointer by 3 bytes
+        }
+    }
+
+    // we can unlock and release the surface
+    pDestSurface->UnlockRect();
+
+
+    // prepare the bitmap file header
+    BITMAPFILEHEADER bmfh;
+    bmfh.bfType = BITMAP_FILE_SIGNATURE;
+    bmfh.bfSize = sizeof(bmfh) + sizeof(bmih) + bmih.biSizeImage;
+    bmfh.bfReserved1 = bmfh.bfReserved2 = 0;
+    bmfh.bfOffBits = sizeof(bmfh) + sizeof(bmih);
+
+    // create the BMP file
+    FILE *f = fopen(pic_name, "wb");
+    if (f)
+    {
+		// dump the file header
+		fwrite(reinterpret_cast<void*>(&bmfh), sizeof(bmfh), 1, f);
+		// dump the info header
+		fwrite(reinterpret_cast<void*>(&bmih), sizeof(bmih), 1, f);
+		// dump the bitmap bits
+		fwrite(reinterpret_cast<void*>(Bits), sizeof(char), bmih.biSizeImage, f);
+
+		// close the file
+		fclose(f);
+	}
+
+
+    // free the memory for the bitmap bits
+    delete[] Bits;
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// End of code borrowed from Michael Fötsch.
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 	pDestSurface->Release();
 }

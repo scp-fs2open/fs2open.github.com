@@ -32,6 +32,7 @@ struct net_server
 int SendPlayerData(int SID, const char* player_name, const char* user, player *pl, const char* masterserver, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
 int GetPlayerData(int SID, const char* player_name, player *pl, const char* masterserver, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, bool CanCreate=false, int timeout=15);
 
+
 net_server* GetServerList(const char* masterserver, int &numServersFound, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
 int Ping(const char* target, UDP_Socket &Socket);
 void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
@@ -39,6 +40,7 @@ int Fs2OpenPXO_Login(const char* username, const char* password, UDP_Socket &Soc
 
 
 // longer timeouts - mySQL operations
+file_record* GetTablesList(int &numTables, const char *masterserver, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
 file_record* GetMissionsList(int &numMissions, const char *masterserver, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
 
 #endif

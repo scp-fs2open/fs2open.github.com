@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-24 19:35:58 $
+ * $Revision: 2.8 $
+ * $Date: 2003-09-25 21:12:24 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/24 19:35:58  Kazan
+ * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
+ *
  * Revision 2.6  2003/09/23 02:42:54  Kazan
  * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
  *
@@ -1778,13 +1781,13 @@ void standalone_main_init()
 	Netgame.server = Net_player; 
 
 	// maybe flag the game as having a hacked ships.tbl
-	if(!Game_ships_tbl_valid){
+	/*if(!Game_ships_tbl_valid){
 		Netgame.flags |= NG_FLAG_HACKED_SHIPS_TBL;
 	}
 	// maybe flag the game as having a hacked weapons.tbl
 	if(!Game_weapons_tbl_valid){
 		Netgame.flags |= NG_FLAG_HACKED_WEAPONS_TBL;
-	}
+	}*/
 
 	// hacked data
 	if(game_hacked_data()){

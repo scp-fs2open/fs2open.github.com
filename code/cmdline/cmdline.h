@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.28 $
- * $Date: 2003-09-23 02:42:52 $
+ * $Revision: 2.29 $
+ * $Date: 2003-09-25 21:12:22 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/09/23 02:42:52  Kazan
+ * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
+ *
  * Revision 2.27  2003/09/14 19:00:02  wmcoolmon
  * Changed "nospec" and "cell" to "Cmdline_nospec" and "Cmdline_cell"
  *
@@ -312,6 +315,7 @@ extern int Cmdline_force_32bit;
 extern int Cmdline_mouse_coords;
 extern int Cmdline_timeout;
 extern int Cmdline_SpewMission_CRCs;
+extern int Cmdline_SpewTable_CRCs;
 
 extern int Cmdline_window;
 extern char *Cmdline_almission;	//DTP for autoload mission
