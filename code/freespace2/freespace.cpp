@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.94 $
- * $Date: 2004-06-18 04:59:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.95 $
+ * $Date: 2004-06-19 12:45:47 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2004/06/18 04:59:53  wmcoolmon
+ * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
+ *
  * Revision 2.93  2004/05/30 08:04:48  wmcoolmon
  * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
  *
@@ -2579,6 +2582,9 @@ void run_launcher()
 		return;
 	}
 
+	// This now crashes the launcher since fs2_open is still open
+	return;
+
 	// fire up the UpdateLauncher executable
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
@@ -2789,7 +2795,24 @@ void game_init()
 			bool is_640x480 = strstr(ptr, "640") && strstr(ptr, "480"); 
 			int res = (!is_640x480 && has_sparky_hi) ? GR_1024 : GR_640;
 			
-			if (strstr(ptr, NOX("D3D8-") ))	
+			// D3D9 should run on a seperate path to D3D8
+			// This will allow users to play D3D8 while we develope D3D9
+			if (strstr(ptr, NOX("D3D9-") ))	
+			{
+				int adapter, aatype;
+
+				if(sscanf(ptr, "D3D9-(%dx%d)x%d bit ad%d aa%d", &width, &height, &cdepth, &adapter, &aatype)  != 5) 
+					strcpy(Device_init_error, "Cant understand 'videocardFs2open' D3D9 reg entry.");
+				else
+				{
+					sprintf(Device_init_error, 
+						"This build does not support D3D9.\n\n"
+						"Adapter num: %d\n"
+						"Mode:        %dx%dx%d\n"
+						"AA type:     %d\n", adapter, width, height, cdepth, aatype);
+				}
+			}
+			else if (strstr(ptr, NOX("D3D8-") ))	
 			{
 				if(sscanf(ptr, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) 
 					strcpy(Device_init_error, "Cant understand 'videocardFs2open' D3D8 reg entry.");
