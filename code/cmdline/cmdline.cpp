@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.73 $
- * $Date: 2004-06-26 00:28:05 $
+ * $Revision: 2.74 $
+ * $Date: 2004-06-29 06:00:45 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2004/06/26 00:28:05  wmcoolmon
+ * Added "-targetinfo" to toggle info next to targeted object.
+ *
  * Revision 2.72  2004/06/19 22:15:48  wmcoolmon
  * Added -nomotion debris command line option; also re-ordered categories.
  *
@@ -644,6 +647,8 @@ Flag exe_params[] =
 	"-multilog",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
 	"-clientdamage",  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"",	
 
+	"-loadonlyused",  "Loads only used weapons",		true,	0,				 EASY_DEFAULT,		"Experimental", "",
+
 	"-oldfire",		  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-nohtl",		  "Software mode (very slow)",		true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-nosound",		  "No sound or music",				false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
@@ -730,6 +735,9 @@ cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
 cmdline_parm fred2_htl_arg("-fredhtl",NULL);
 cmdline_parm fred2_nowarn_arg("-fred_no_warn", NULL);
 
+//Experimental
+cmdline_parm load_only_used("-loadonlyused", NULL);
+
 cmdline_parm poof_2d_arg("-2d_poof", NULL);
 cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
 
@@ -803,6 +811,9 @@ int Cmdline_d3d_lesstmem = 0;
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
 int CmdLine_FRED2_NoWarn = 0; // turn warnings off in FRED
+
+//Experimental
+int Cmdline_load_only_used;
 
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_snd_preload = 0; // preload game sounds during mission load
@@ -1044,6 +1055,11 @@ bool SetCmdlineParams()
 	if (no_fpscap.found())
 	{
 		Cmdline_NoFPSCap = 1;
+	}
+
+	if(load_only_used.found())
+	{
+		Cmdline_load_only_used = 1;
 	}
 
 	if(poof_2d_arg.found())
