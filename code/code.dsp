@@ -207,6 +207,14 @@ SOURCE=.\Cutscene\Cutscenes.cpp
 
 SOURCE=.\Cutscene\Cutscenes.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\cutscene\movie.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\cutscene\movie.h
+# End Source File
 # End Group
 # Begin Group "Debris"
 
@@ -247,6 +255,14 @@ SOURCE=.\debugconsole\timerbar.h
 # Begin Group "DirectX"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\directx\dx8show.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\directx\dx8show.h
+# End Source File
 # Begin Source File
 
 SOURCE=.\DirectX\vasync.h
