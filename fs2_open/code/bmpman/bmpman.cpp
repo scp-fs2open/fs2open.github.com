@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.34 $
- * $Date: 2004-10-31 21:26:27 $
+ * $Revision: 2.35 $
+ * $Date: 2004-11-04 08:33:44 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2004/10/31 21:26:27  taylor
+ * bmpman merge, EFF animation support, better page in stuff, dozen or so smaller fixes and cleanup
+ *
  * Revision 2.33  2004/07/26 20:47:24  Kazan
  * remove MCD complete
  *
@@ -1535,7 +1538,7 @@ void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int 
 	if (w) *w = bmp->w;
 	if (h) *h = bmp->h;
 	if (flags) *flags = bmp->flags;
-	if ( bm_bitmaps[bitmapnum].type == BM_TYPE_ANI )	{
+	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_ANI) || (bm_bitmaps[bitmapnum].type == BM_TYPE_EFF) )	{
 		if (nframes) {
 			*nframes = bm_bitmaps[bitmapnum].info.ani.num_frames;
 		} 
