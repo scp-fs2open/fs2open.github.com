@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-08-16 03:52:24 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2003-08-22 03:39:35 $
+ * $Author: phreak $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/08/16 03:52:24  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.9  2003/07/15 16:05:33  phreak
  * the game handles colored laser lighting for opengl now.
  * this used to be exclusive to d3d
@@ -1530,6 +1539,7 @@ void obj_clear_weapon_group_id_list()
 int Arc_light = 1;		// If set, electrical arcs on debris cast light
 DCF_BOOL(arc_light, Arc_light)	
 extern int OGL_inited;
+extern fireball Fireballs[];
 
 void obj_move_all_post(object *objp, float frametime)
 {
@@ -1612,6 +1622,36 @@ void obj_move_all_post(object *objp, float frametime)
 			fireball_process_post(objp,frametime);
 		}
 		if ( Detail.lighting > 3 ) {
+			float r,g,b;
+
+			switch(Fireballs[objp->instance].fireball_info_index)
+			{
+				case FIREBALL_EXPLOSION_LARGE1:
+				case FIREBALL_EXPLOSION_LARGE2:
+				case FIREBALL_EXPLOSION_MEDIUM:
+				case FIREBALL_ASTEROID:
+					r=1.0f;
+					g=.5f;
+					b=.125f;
+					break;
+
+				case FIREBALL_WARP_EFFECT:
+					r=.75f;
+					g=.75f;
+					b=1.0f;
+					break;
+
+
+				case FIREBALL_KNOSSOS_EFFECT:
+					r=.75f;
+					g=1.0f;
+					b=.75f;
+					break;
+
+				default:
+					r=g=b=1.0f;
+					break;
+			}
 			// Make explosions cast light
 			float p = fireball_lifeleft_percent(objp);
 			if ( p > 0.5f )	{
@@ -1621,9 +1661,10 @@ void obj_move_all_post(object *objp, float frametime)
 			// P goes from 0 to 1 to 0 over the life of the explosion
 			float rad = p*(1.0f+frand()*0.05f)*objp->radius;
 
-			light_add_point( &objp->pos, rad*2.0f, rad*5.0f, 1.0f, 0.5f, 0.2f, 1.0f, -1 );
+			light_add_point( &objp->pos, rad*2.0f, rad*5.0f, 1.0f, r, g, b, -1 );
 		}
 		break;
+
 	case OBJ_SHOCKWAVE:
 		// all shockwaves are moved via shockwave_move_all()
 		break;
