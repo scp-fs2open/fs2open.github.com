@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-03-08 22:02:39 $
+ * $Revision: 2.22 $
+ * $Date: 2004-03-09 00:02:16 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/03/08 22:02:39  Kazan
+ * Lobby GUI screen restored
+ *
  * Revision 2.20  2004/03/08 15:06:24  Kazan
  * Did, undo
  *
@@ -1301,6 +1304,47 @@ int multi_join_autojoin_do()
 	return -1;
 }
 
+void fs2netd_maybe_init()
+{
+		if (PXO_port == -1)
+		{
+			CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
+			if(file == NULL){
+				ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
+				return;
+			}
+				
+
+			char Port[32];
+			if (cfgets(PXO_Server, 32, file) == NULL)
+			{
+				ml_printf("Network", "No Masterserver definition!\n");
+				return;
+			}
+
+			if (strstr(PXO_Server, "\n"))
+				*strstr(PXO_Server, "\n") = '\0';
+
+			if (cfgets(Port, 32, file) != NULL)
+				PXO_port = atoi(Port);
+			else
+				PXO_port = 12000;
+		}
+
+		// FS2OpenPXO code
+		if (!FS2OpenPXO_Socket.isInitialized())
+		{
+#if !defined(PXO_TCP)
+				if (!FS2OpenPXO_Socket.InitSocket())
+#else
+				if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
+#endif
+				{
+					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+				}
+		}
+}
+
 void multi_join_game_init()
 {
 	int idx;
@@ -1391,57 +1435,8 @@ void multi_join_game_init()
 			}
 
 		}
-		Kaz_NoBackGround_DrawString("Requesting Server List");
-	}
 
-	// do TCP and VMT specific initialization
-	if(Multi_options_g.protocol == NET_TCP){		
-		// if this is a TCP (non tracker) game, we'll load up our default address list right now		
-		multi_join_load_tcp_addrs();		
-	}	
-
-
-
-
-	if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
-	{
-		if (PXO_port == -1)
-		{
-			CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
-			if(file == NULL){
-				ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
-				return;
-			}
-				
-
-			char Port[32];
-			if (cfgets(PXO_Server, 32, file) == NULL)
-			{
-				ml_printf("Network", "No Masterserver definition!\n");
-				return;
-			}
-
-			if (strstr(PXO_Server, "\n"))
-				*strstr(PXO_Server, "\n") = '\0';
-
-			if (cfgets(Port, 32, file) != NULL)
-				PXO_port = atoi(Port);
-			else
-				PXO_port = 12000;
-		}
-
-		// FS2OpenPXO code
-		if (!FS2OpenPXO_Socket.isInitialized())
-		{
-#if !defined(PXO_TCP)
-				if (!FS2OpenPXO_Socket.InitSocket())
-#else
-				if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
-#endif
-				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
-				}
-		}
+		fs2netd_maybe_init();
 
 		// ---------------------- validate tables ----------------------------------
 
@@ -1518,22 +1513,23 @@ void multi_join_game_init()
 
 		}
 	
+		
+		Kaz_NoBackGround_DrawString("Requesting Server List");
 
 	}
-	
+
+	// do TCP and VMT specific initialization
+	if(Multi_options_g.protocol == NET_TCP){		
+		// if this is a TCP (non tracker) game, we'll load up our default address list right now		
+		multi_join_load_tcp_addrs();		
+	}	
+
 	// this isn't fs2open PXO explicitly -- i've just cleaned it up a bit and it's _compatable_ with fs2openPXO
 	char textbuffer[17];
 	memset(textbuffer, 0, 17);
 	ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
-	active_game *Cur = Active_game_head;
-	if (Cur != NULL)
-	{
-		do {
-			ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n",  psnet_addr_to_string(textbuffer, &Cur->server_addr));
-			send_server_query(&Cur->server_addr);
-			Cur = Cur->next;
-		} while (Cur != Active_game_head);
-	}
+
+	multi_servers_query();
 	
 	// initialize any and all timestamps	
 	Multi_join_glr_stamp = -1;
@@ -1810,8 +1806,6 @@ void multi_join_check_buttons()
 
 void multi_join_button_pressed(int n)
 {
-	active_game *Cur;
-	char textbuffer[17];
 
 	switch(n){
 	case MJ_CANCEL :
@@ -1893,23 +1887,9 @@ void multi_join_button_pressed(int n)
 	// refresh the game/server list
 	case MJ_REFRESH:	
 		multi_join_load_tcp_addrs();
-
+		multi_servers_query();
 
 		gamesnd_play_iface(SND_USER_SELECT);
-		broadcast_game_query();	
-		
-		
-		memset(textbuffer, 0, 17);
-		ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
-		if (Active_game_head != NULL)
-			{
-			Cur = Active_game_head;
-			do {
-				ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n", psnet_addr_to_string(textbuffer, &Cur->server_addr));
-				send_server_query(&Cur->server_addr);
-				Cur = Cur->next;
-			} while (Cur != Active_game_head);
-		}
 		break;
 
 	// join a game as an observer
@@ -2111,6 +2091,38 @@ void multi_join_blit_game_status(active_game *game, int y)
 
 
 // load in a list of active games from our tcp.cfg file
+
+void multi_servers_query()
+{
+	
+	broadcast_game_query();	
+	/*
+	active_game *Cur = Active_game_head;
+	if (Cur != NULL)
+	{
+		do {
+			ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n",  psnet_addr_to_string(textbuffer, &Cur->server_addr));
+			send_server_query(&Cur->server_addr);
+			Cur = Cur->next;
+		} while (Cur != Active_game_head);
+	}*/
+
+	server_item *cur = Game_server_head;
+	
+	char textbuffer[17];
+	memset(textbuffer, 0, 17);
+	ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
+
+	if (cur != NULL)
+		do
+		{
+			ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n", psnet_addr_to_string(textbuffer, &cur->server_addr));
+			send_server_query(&cur->server_addr);
+			cur = cur->next;
+		}
+		while (cur != Game_server_head);
+}
+
 void multi_join_load_tcp_addrs()
 {
 	char line[MAX_IP_STRING];
@@ -2123,51 +2135,10 @@ void multi_join_load_tcp_addrs()
 	if (Om_tracker_flag) // official straight from the config! ooh.. coolness :D
 	{
 
-		if (PXO_port == -1)
-		{
-			ml_printf("Network (FS2OpenPXO): Attempting to load config file\n");
-			// load the multi.cfg file
-			file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
-			if(file == NULL){
-				ml_printf("Network (FS2OpenPXO): Error loading fs2open_pxo.cfg file!\n");
-				return;
-			}
-			
-			char Port[32];
+		fs2netd_maybe_init();
 
-			if (cfgets(PXO_Server, 32, file) == NULL)
-			{
-				ml_printf("Network (FS2OpenPXO): No Masterserver definition!\n");
-				return;
-			}
-
-			if (strstr(PXO_Server, "\n"))
-				*strstr(PXO_Server, "\n") = '\0';
-
-			if (cfgets(Port, 32, file) != NULL)
-				PXO_port = atoi(Port);
-			else
-				PXO_port = 12000;
-
-		    cfclose(file);
-		}
-
-		//FS2OpenPXO code
-		if (!FS2OpenPXO_Socket.isInitialized())
-		{
-#if !defined(PXO_TCP)
-					if (!FS2OpenPXO_Socket.InitSocket())
-#else
-					if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
-#endif
-				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
-				}
-		}
 		// free up any existing server list
 		multi_free_server_list();
-		multi_free_active_games();
-
 
 		net_server *servers;
 		int numServersFound;
@@ -2178,11 +2149,12 @@ void multi_join_load_tcp_addrs()
 		
 		ml_printf("Network (FS2OpenPXO): Got %d servers.\n", numServersFound);
 
-		active_game ag;
+		//active_game ag;
 		for (int i = 0; i < numServersFound; i++)
 		{
 
 				// *************** New Way 3/6/04 ********************
+				/*
 				memset(&ag, 0, sizeof(active_game));
 
 				ag.heard_from_timer = time(NULL);
@@ -2196,17 +2168,27 @@ void multi_join_load_tcp_addrs()
 				
 				ag.num_players = servers[i].players;
 				ag.flags = servers[i].flags;
-				ag.comp_version = ag.version = MULTI_FS_SERVER_VERSION;
+				ag.comp_version = ag.version = MULTI_FS_SERVER_VERSION;*/
 
 				memset(&addr,0,sizeof(net_addr));
 				addr.type = NET_TCP;
 				psnet_string_to_addr(&addr,servers[i].ip);
 				addr.port = (short) servers[i].port;
 
-				ag.server_addr = addr;
+				if ( addr.port == 0 ){
+					addr.port = DEFAULT_GAME_PORT;
+				}
+
+				// create a new server item on the list
+				item = multi_new_server_item();
+				if(item != NULL){
+					memcpy(&item->server_addr,&addr,sizeof(net_addr));
+				}
+
+				//ag.server_addr = addr;
 				
 			
-				multi_update_active_games(&ag);
+				//multi_update_active_games(&ag);
 
 				// ############### Old way of doing it ###############
 				// copy the server ip address
@@ -2310,18 +2292,11 @@ void multi_join_do_netstuff()
 
 	if (Om_tracker_flag && (last_pxo_refresh == -1 || clock() - last_pxo_refresh > 15000))
 	{
+		
+		//multi_join_load_tcp_addrs();
+
 		last_pxo_refresh = clock();
-		memset(textbuffer, 0, 17);
-		ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
-		if (Active_game_head != NULL)
-		{
-			Cur = Active_game_head;
-			do {
-				ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n", psnet_addr_to_string(textbuffer, &Cur->server_addr));
-				send_server_query(&Cur->server_addr);
-				Cur = Cur->next;
-			} while (Cur != Active_game_head);
-		}
+		multi_servers_query();
 
 	}
 

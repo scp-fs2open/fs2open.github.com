@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-03-08 22:02:39 $
+ * $Revision: 2.16 $
+ * $Date: 2004-03-09 00:02:16 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/03/08 22:02:39  Kazan
+ * Lobby GUI screen restored
+ *
  * Revision 2.14  2004/03/08 15:06:24  Kazan
  * Did, undo
  *
@@ -1362,44 +1365,7 @@ void multi_do_frame()
 	static int LastSend = -1;
 	if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
 	{
-		// full initialization of datadata
-		if (PXO_port == -1)
-		{
-			CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
-			if(file == NULL){
-				ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
-				return;
-			}
-				
-
-			char Port[32];
-			if (cfgets(PXO_Server, 32, file) == NULL)
-			{
-				ml_printf("Network", "No Masterserver definition!\n");
-				return;
-			}
-
-			if (strstr(PXO_Server, "\n"))
-				*strstr(PXO_Server, "\n") = '\0';
-
-			if (cfgets(Port, 32, file) != NULL)
-				PXO_port = atoi(Port);
-			else
-				PXO_port = 12000;
-		}
-
-		//FS2OpenPXO code
-		if (!FS2OpenPXO_Socket.isInitialized())
-		{
-#if !defined(PXO_TCP)
-				if (!FS2OpenPXO_Socket.InitSocket())
-#else
-				if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
-#endif
-				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize Socket!!\n");
-				}
-		}
+		fs2netd_maybe_init();
 
 		// -------------------- send
 		if ((clock() - LastSend) >= 60000 || LastSend == -1)
@@ -1414,6 +1380,7 @@ void multi_do_frame()
 				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, Netgame.mission_name, Netgame.title, Netgame.flags, Netgame.server_addr.port, Netgame.max_players);
 			}
 
+			/*
 			if (FS2OpenPXO_Socket.DataReady())
 			{
 
@@ -1421,6 +1388,7 @@ void multi_do_frame()
 			}
 
 			Ping(PXO_Server, FS2OpenPXO_Socket);
+			*/
 
 		}
 	}

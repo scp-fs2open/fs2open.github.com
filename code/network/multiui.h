@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-09 00:02:16 $
+ * $Author: Kazan $
  *
  * Header file for the UI of the various multiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -463,5 +467,9 @@ void multi_common_add_notify(char *str);
 
 // bring up the password string popup, fill in passwd (return 1 if accept was pressed, 0 if cancel was pressed)
 int multi_passwd_popup(char *passwd);
+
+// #Kazan#
+void multi_servers_query();
+void fs2netd_maybe_init();
 
 #endif
