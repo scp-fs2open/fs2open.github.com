@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.12 $
- * $Author: Goober5000 $
- * $Date: 2004-05-11 02:52:11 $
+ * $Revision: 2.13 $
+ * $Author: wmcoolmon $
+ * $Date: 2004-05-26 03:52:07 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/05/11 02:52:11  Goober5000
+ * completed the FRED import conversion stuff that I started ages ago
+ * --Goober5000
+ *
  * Revision 2.11  2004/03/05 09:02:08  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -315,6 +319,9 @@ extern jmp_buf parse_abort;
 #define	F_MULTITEXT				10
 
 #define PARSE_BUF_SIZE			4096
+
+//For modular TBL files -C
+#define MAX_TBL_PARTS 32
 
 // 1K on the stack? seems to work...
 // JH: 1k isn't enough!  Command briefs can be 16k max, so changed this.

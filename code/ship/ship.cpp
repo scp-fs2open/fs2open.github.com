@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.122 $
- * $Date: 2004-05-26 02:31:39 $
+ * $Revision: 2.123 $
+ * $Date: 2004-05-26 03:52:07 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122  2004/05/26 02:31:39  wmcoolmon
+ * Modular ship table support. Uses *-shp.tbm , with the same structure as a normal ships.tbl. Individual sections are optional and entries with the same name will override previous settings. -C
+ *
  * Revision 2.121  2004/05/10 13:07:22  Goober5000
  * fixed the AWACS help message
  * --Goober5000
@@ -1645,7 +1648,7 @@ void parse_engine_wash(bool replace)
 	{
 		if(replace)
 		{
-			Warning(LOCATION, "More than one version of engine wash %s exists; using newer version.", ewp->name);
+			nprintf(("Warning", "More than one version of engine wash %s exists; using newer version.", ewp->name));
 			ewp = &Engine_wash_info[e_w_id];
 		}
 		else
@@ -1742,7 +1745,7 @@ int parse_ship(bool replace)
 	{
 		if(replace)
 		{
-			Warning(LOCATION, "More than one version of ship %s exists; using newer version.", sip->name);
+			nprintf(("Warning", "More than one version of ship %s exists; using newer version.", sip->name));
 			sip = &Ship_info[ship_id];
 		}
 		else
@@ -2744,13 +2747,13 @@ char get_engine_wash_index(char *engine_wash_name)
 }
 
 char current_ship_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
-void parse_shiptbl(char* longname, bool is_chunk, int location)
+void parse_shiptbl(char* longname, bool is_chunk)
 {
 	strcpy(current_ship_table, longname);
 	// open localization
 	lcl_ext_open();
 	
-	read_file_text(longname, location);
+	read_file_text(longname);
 	reset_parse();
 
 	// parse default ship
@@ -2868,17 +2871,16 @@ void ship_init()
 			Num_ship_types = 0;
 
 			//Parse main TBL first
-			parse_shiptbl("ships.tbl", false, CF_TYPE_ANY);
+			parse_shiptbl("ships.tbl", false);
 
 			//Then other ones
-			const int MAX_TBL_PARTS = 10;
 			char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
 			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-shp.tbm");
 			for(int i = 0; i < num_files; i++)
 			{
 				//HACK HACK HACK
 				strcat(tbl_files[i], ".tbm");
-				parse_shiptbl(tbl_files[i], true, CF_TYPE_TABLES);
+				parse_shiptbl(tbl_files[i], true);
 			}
 			ships_inited = 1;
 		}
