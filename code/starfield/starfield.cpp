@@ -9,14 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-02-15 00:03:34 $
+ * $Revision: 2.42 $
+ * $Date: 2005-02-23 04:57:29 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/02/15 00:03:34  taylor
+ * don't try and draw starfield bitmaps if they aren't valid
+ * make AB thruster stuff in ship_create() a little less weird
+ * replace an Int3() with debug warning and fix crash in docking code
+ * make D3D Textures[] allocate on use like OGL does, can only use one anyway
+ *
  * Revision 2.40  2005/02/04 20:06:09  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -957,7 +963,7 @@ void stars_level_init()
 	// reset to -1 so we reload it each mission (if we need to)
 	Nmodel_num = -1;		
 	if(Nmodel_bitmap != -1){
-		bm_unload(Nmodel_bitmap);
+		bm_release(Nmodel_bitmap);
 		Nmodel_bitmap = -1;
 	}
 
