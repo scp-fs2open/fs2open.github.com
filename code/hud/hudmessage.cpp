@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-01-31 10:34:38 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-13 08:37:57 $
+ * $Author: wmcoolmon $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/31 10:34:38  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.5  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -677,6 +680,7 @@ void hud_init_msg_window()
 
 	MSG_WINDOW_FONT_HEIGHT = h;
 	MSG_WINDOW_HEIGHT = MSG_WINDOW_FONT_HEIGHT * (ACTIVE_BUFFER_LINES-1);
+	gr_resize_screen_pos(NULL, &MSG_WINDOW_HEIGHT);
 
 	// starting a mission, free the scroll-back buffers, but only if we've been
 	// through this function once already
@@ -714,7 +718,7 @@ void hud_show_msg_window()
 	hud_set_default_color();
 	gr_set_font(FONT1);
 
-	HUD_set_clip(MSG_WINDOW_X_START,MSG_WINDOW_Y_START, MSG_WINDOW_WIDTH, MSG_WINDOW_HEIGHT+2);
+	HUD_set_clip(MSG_WINDOW_X_START,MSG_WINDOW_Y_START, MSG_WINDOW_WIDTH, MSG_WINDOW_HEIGHT+2, false);
 
 	if ( OLD_ACTIVE_BUFFER_LINES != ACTIVE_BUFFER_LINES ) {
 		// the size of the message window has changed, the best thing to do is to put all
@@ -1025,7 +1029,11 @@ void hud_sourced_print(int source, char *msg)
 	x = 0;
 	t = timestamp();
 	str = msg;
-	while ((ptr = split_str_once(str, MSG_WINDOW_WIDTH - x - 7)) != NULL) {		// the 7 is a fudge hack
+
+	//Because functions to get font size don't compensate for *actual* screen size
+	int pretend_width = gr_screen.res == 0 ? 780 : 1004;
+
+	while ((ptr = split_str_once(str, pretend_width - x - 7)) != NULL) {		// the 7 is a fudge hack
 		HUD_printf_line(str, source, t, x);
 		str = ptr;
 		x = offset;
@@ -1106,6 +1114,7 @@ void hud_add_msg_to_scrollback(char *text, int source, int t)
 	int msg_len, w, max_width, x, offset = 0;
 
 	max_width = Hud_mission_log_list2_coords[gr_screen.res][2];
+	gr_resize_screen_pos(&max_width, NULL);
 	msg_len = strlen(text);
 	if (msg_len == 0)
 		return;
@@ -1117,6 +1126,7 @@ void hud_add_msg_to_scrollback(char *text, int source, int t)
 	if (ptr) {
 		gr_get_string_size(&w, NULL, buf, ptr - buf);
 	}
+	gr_unsize_screen_pos(&w, NULL);
 
 //	if (ptr) {
 //		gr_get_string_size(&w, NULL, buf, ptr - buf + 2);
