@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-01-30 07:39:06 $
+ * $Revision: 2.8 $
+ * $Date: 2004-02-08 03:35:08 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/01/30 07:39:06  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.6  2003/10/14 16:47:34  Goober5000
  * tweaked a thingy with FS1-style music to make deciding the style less of a hack
  * --Goober5000
@@ -622,7 +628,12 @@ void event_music_level_init(int force_soundtrack)
 	strack = &Soundtracks[Current_soundtrack_num];
 
 	// open the pattern files, and get ready to play them
-	for ( i = 0; i < strack->num_patterns; i++ ) {
+	// Goober5000 - changed from strack->num_patterns to MAX_PATTERNS so that *all*
+	// patterns would be checked; the behavior is the same because they were previously
+	// set to none.wav in event_music_parse_musictbl, but this change was needed because
+	// the NRML_2 and NRML_3 at the end of the pattern array kept getting spurious music
+	// tracks because their patterns weren't -1
+	for ( i = 0; i < MAX_PATTERNS; i++ ) {
 		if ( !stricmp(NOX("none.wav"), strack->pattern_fnames[i]) ) {
 			Patterns[i].handle = -1;	
 			continue;
@@ -1133,7 +1144,7 @@ void event_music_parse_musictbl()
 
 	int num_patterns = 0;
 
-	// clear all the filenames, so we're compatible with the extra NRMLs in FS1 music
+	// Goober5000 - clear all the filenames, so we're compatible with the extra NRMLs in FS1 music
 	for (i = 0; i < MAX_SOUNDTRACKS; i++)
 	{
 		for (j = 0; j < MAX_PATTERNS; j++)
