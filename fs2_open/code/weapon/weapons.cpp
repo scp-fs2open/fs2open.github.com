@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2005/01/11 04:05:23  taylor
+ * fully working (??) -loadonlyused, allocate used_weapons[] and ship_class_used[] only when needed
+ *
  * Revision 2.81  2005/01/05 23:17:38  taylor
  * make sure we're not loading weapons that are left over from larger missions
  *
@@ -1738,6 +1741,7 @@ int parse_weapon(int subtype, bool replace)
 	wip->elec_weap_mult=1.0f;
 	wip->elec_beam_mult=1.0f;
 	wip->elec_sensors_mult=1.0f;
+	wip->elec_randomness=4000;
 
 
 	if (optional_string("$Electronics:"))
@@ -1759,6 +1763,9 @@ int parse_weapon(int subtype, bool replace)
 
 		required_string("+Sensors Multiplier:");
 		stuff_float(&wip->elec_sensors_mult);
+
+		required_string("+Randomness Time:");
+		stuff_int(&wip->elec_randomness);
 	}
 
 
@@ -4242,9 +4249,9 @@ void weapon_do_electronics_affect(object *ship_objp, vector *blast_pos, int wi_i
 				sub_time*=wip->elec_sensors_mult;
 			}
 	
-			//disrupt this subsystem for the predicted time, plus or minus 4 seconds
+			//disrupt this subsystem for the predicted time, plus or minus some time
 			//if it turns out to be less than 0 seconds, don't bother
-			sub_time+=frand_range(-1.0f, 1.0f) *4000.0f;
+			sub_time+=frand_range(-1.0f, 1.0f) * wip->elec_randomness;
 		
 			if (sub_time > 0)
 			{
@@ -4393,7 +4400,7 @@ void weapon_do_area_effect(object *wobjp, vector *pos, object *other_obj)
 		switch ( objp->type ) {
 		case OBJ_SHIP:
 			ship_apply_global_damage(objp, wobjp, pos, damage);
-			weapon_area_apply_blast(NULL, objp, pos, blast, 0);			
+			weapon_area_apply_blast(NULL, objp, pos, blast, 0);
 			break;
 		case OBJ_ASTEROID:
 			asteroid_hit(objp, NULL, NULL, damage);
@@ -4406,11 +4413,11 @@ void weapon_do_area_effect(object *wobjp, vector *pos, object *other_obj)
 	}	// end for
 
 	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
-	if ( (other_obj != NULL) && (wip->wi_flags & WIF_ELECTRONICS) ) {
-		if ( other_obj->type == OBJ_SHIP ) {
-			weapon_do_electronics_affect(other_obj, pos, Weapons[wobjp->instance].weapon_info_index);
-		}
-	}
+//	if ( (other_obj != NULL) && (wip->wi_flags & WIF_ELECTRONICS) ) {
+//		if ( other_obj->type == OBJ_SHIP ) {
+//			weapon_do_electronics_affect(other_obj, pos, Weapons[wobjp->instance].weapon_info_index);
+//		}
+//	}
 }
 
 
@@ -4485,6 +4492,27 @@ void weapon_hit( object * weapon_obj, object * other_obj, vector * hitpos )
 		}
 		else {
 			weapon_do_area_effect(weapon_obj, hitpos, other_obj);
+		}
+	}
+
+	if (wip->wi_flags & WIF_ELECTRONICS)
+	{
+		float blast,damage;
+		for ( object *objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+		{
+			if (objp->type != OBJ_SHIP)
+			{
+				continue;
+			}
+			if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY )
+			{
+				continue;
+			}
+			if ( weapon_area_calc_damage(objp, hitpos, wip->inner_radius, wip->outer_radius, wip->blast_force, wip->damage, &blast, &damage, wip->outer_radius) == -1 ){
+				continue;
+			}
+
+			weapon_do_electronics_affect(objp, hitpos, Weapons[weapon_obj->instance].weapon_info_index);
 		}
 	}
 
