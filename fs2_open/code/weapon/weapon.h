@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/06/25 03:21:03  phreak
+ * added support for weapons that only fire when tagged
+ * also added limited firing range for local ssms
+ *
  * Revision 2.14  2003/06/12 17:45:54  phreak
  * local ssm warpin is now handled better than what i committed earlier
  *
@@ -658,6 +662,98 @@ typedef struct weapon_info {
 
 } weapon_info;
 
+//tertiary weapon types. cannot combine these (can't have a cloaking device and super jammer in one)
+#define TWT_CLOAK_DEVICE	1			//cloaking device
+#define TWT_AMMO_POD		2			//additional stuff for primary or secondary ammo
+#define TWT_BOOST_POD		3			//one-shot (or multi-shot) hella fast afterburner
+#define TWT_RADAR_JAMMER	4			//makes your ship untargetable on radar. unless there is an awacs. effectiveness increased at range
+#define TWT_SUPER_JAMMER	5			//scrambles all hostile's radars within a certain range. awacs effectiveness limited
+#define TWT_CAPACITOR		6			//stores extra energy to quickly replenish afterburner, shield, and laser energy. unused energy will replenish the pod
+#define TWT_TURBOCHARGER	7			//souped up engine. top speed will increase. afterburner will replenish faster.  now i need a 6" exhaust pipe :p
+#define TWT_EXTRA_REACTOR	8			//energy output is increased
+
+#define MAX_TERTIARY_WEAPON_TYPES	25	//number of allowed tertiary weapons. this allows for variations of same effect
+
+//tertiary weapon flags - since the types are exclusive, then its safe to reuse values
+
+//cloaking:
+#define TWF_CLOAK_DECLOAK_FIRING	(1<<0)	//cloak effect is neutralized when firing
+#define TWF_CLOAK_DECLOAK_ABURN		(1<<1)	//cloak effect is neutralized when afterburners engaged
+#define TWF_CLOAK_NO_FIRING			(1<<2)	//can't fire when cloaked
+#define TWF_CLOAK_NO_ABURN			(1<<3)	//can't afterburn when cloaked
+#define TWF_CLOAK_NO_SHIELDS		(1<<4)	//shields down when cloaked (yikes!)
+#define TWF_CLOAK_INFINITE_CLOAK	(1<<5)	//uncloaks when pilot says so -- granted it isn't effected by firing or afterburners
+
+//ammo pod
+#define TWF_AMMO_NO_BOMBS			(1<<0)	//can't put bombs in this pod
+#define TWF_AMMO_BOMBS_ONLY			(1<<1)	//can only put bombs in this pod
+#define TWF_AMMO_PRIMARY			(1<<2)	//can only put primary ammo in this pod
+#define TWF_AMMO_SECONDARY			(1<<3)  //can only put secondary ammo in this pod
+#define TWF_AMMO_COMBINED			(1<<4)  //can use either primary or secondary ammo in this pod
+#define TWF_AMMO_FREE_REFILLS		(1<<5)	//able to be refilled by a support ship
+
+//boost pod
+#define TWF_BOOST_TOGGLE			(1<<0)	//able to toggle the pod until it runs out of juice
+#define TWF_BOOST_REFILL			(1<<1)	//boost pod can be refilled by support ship
+
+
+//jammer and super jammer -- none
+
+//capcitor
+#define TWF_CAP_CHARGE_STILL		(1<<0)  //capacitor recharges only when ship isn't moving
+#define TWF_CAP_CHARGE_SUPPORT		(1<<1)	//capacitor can be quickly recharged by support ship
+
+//turbocharger
+#define TWF_TURBO_DISABLE_ABURN		(1<<0)	//disable the afterburner ???
+#define TWF_TURBO_RICER				(1<<1)	//play a ricer flyby sound. like a lawnmower. this will be hidden
+
+//reactor -- none
+
+
+
+typedef struct tertiary_weapon_info {
+	char name[NAME_LENGTH];
+	int type;	//one of the above TWT_* defines
+	int flags;	//various flags. TWF_(type)_*
+
+	//cloak info
+	int cloak_warmup;				//time it takes to cloak (ms)
+	int cloak_cooldown;				//time it takes to decloak (ms)
+	int cloak_decloak_fire_delay;	//time it takes to recloak when ship has fired (ms)
+	int cloak_decloak_ab_delay;		//time it takes to recloak when ship has engaged afterburners (ms)
+	int cloak_lifetime;				//time for cloak device to lose power, -1 for infinite
+
+	//ammo pod info
+	int ammopod_capacity;
+
+	//boost pod info
+	int boost_lifetime;
+	int boost_num_shots;
+	float boost_speed;
+	float boost_acceleration;
+	
+	//jammer and super-jammer info
+	float jammer_min_effectiveness;	//distance where jammed ship is always targetable
+	float jammer_max_range;			//distance where jammed ship is always blurred
+	float jammer_awacs_multiplier;	//how awacs effect this. should be less than 1
+
+	//capacitor
+	float capacitor_capacity;		//how much energy this thing stores
+
+	//turbocharger
+	float turbo_speed_multiplier;	//how much more speed is gained in normal flight
+	float turbo_speed_accel_mult;	//how much faster the ship accelerates in normal flight
+	float turbo_aburn_multiplier;	//how much more speed is gained when using afterburners
+	float turbo_aburn_accel_mult;   //how much faster the ship accelerates under afterburners
+	float turbo_aburn_rech_mult;	//how much faster the ship's afterburner recharges.
+
+	//reactor
+	float reactor_add_weap_pwr;		//additional weapon power
+	float reactor_add_shield_pwr;	//additional shield power
+
+} tertiary_weapon_info;
+
+
 // Data structure to track the active missiles
 typedef struct missile_obj {
 	missile_obj *next, *prev;
@@ -671,6 +767,8 @@ extern int Num_weapon_types;			// number of weapons in the game
 extern int First_secondary_index;
 extern int Num_weapons;
 
+extern tertiary_weapon_info Tertiary_weapon_info[MAX_TERTIARY_WEAPON_TYPES];
+extern int Num_tertiary_weapon_types;
 
 extern int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
 extern int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection
@@ -678,6 +776,7 @@ extern char	*Weapon_names[MAX_WEAPON_TYPES];
 
 #define WEAPON_INDEX(wp)				(wp-Weapons)
 #define WEAPON_INFO_INDEX(wip)		(wip-Weapon_info)
+#define TERTIARY_WEAPON_INFO_INDEX(twip)	(twip-Tertiary_weapon_info)
 
 
 int weapon_info_lookup(char *name);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-07-15 16:06:24 $
+ * $Revision: 2.16 $
+ * $Date: 2003-08-06 17:37:08 $
  * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/07/15 16:06:24  phreak
+ * higher particle limits for opengl. now matched d3d
+ *
  * Revision 2.14  2003/07/15 02:51:43  phreak
  * cloaked ships will reduce brightness with distance
  *
@@ -3086,7 +3089,7 @@ void shipfx_stop_engine_wash_sound()
 	}
 }
 
-void shipfx_start_cloak(ship *shipp, int warmup, int recalc_matrix)
+void shipfx_start_cloak(ship *shipp, int warmup, int recalc_matrix, int device)
 {
 
 	//get a random vector to translate the texture matrix
@@ -3101,6 +3104,17 @@ void shipfx_start_cloak(ship *shipp, int warmup, int recalc_matrix)
 
 	shipp->time_until_full_cloak=timestamp(warmup);
 	shipp->cloak_stage=1;
+
+	//this will be true if we aren't cheating ;)
+	if (device)
+	{
+		shipp->time_until_uncloak=timestamp(Tertiary_weapon_info[shipp->tertiary_weapon_info_idx].cloak_lifetime);
+	}
+	else
+	{
+		shipp->time_until_uncloak=0;
+	}
+
 }
 
 float shipfx_calc_visibility(object *obj, vector *view_pt)
@@ -3151,6 +3165,12 @@ void shipfx_cloak_frame(ship *shipp, float frametime)
 		
 		case 2:
 		{
+
+			if (timestamp_elapsed(shipp->time_until_uncloak) && (shipp->time_until_uncloak != 0))
+			{
+				shipfx_stop_cloak(shipp,Tertiary_weapon_info[shipp->tertiary_weapon_info_idx].cloak_cooldown);
+				break;
+			}
 			//uncloak if departing or arriving
 			if (shipp->flags & (SF_DEPART_WARP | SF_ARRIVING))
 			{

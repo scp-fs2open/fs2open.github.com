@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.66 $
- * $Date: 2003-07-15 02:52:40 $
+ * $Revision: 2.67 $
+ * $Date: 2003-08-06 17:37:08 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2003/07/15 02:52:40  phreak
+ * ships now decloak when firing
+ *
  * Revision 2.65  2003/07/04 02:30:54  phreak
  * support for cloaking added.  needs a cloakmap.pcx
  * to cloak the players ship, activate cheats and press tilde + x
@@ -1911,7 +1914,6 @@ strcpy(parse_error_text, temp_error);
 		else
 			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 	}
-	sip->flags2 = SIF2_DEFAULT_VALUE;
 
 	// set original status of tech database flags - Goober5000
 	if (sip->flags & SIF_IN_TECH_DATABASE)
@@ -2835,6 +2837,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->current_translation=vmd_zero_vector;
 	shipp->time_until_full_cloak=timestamp(0);
 	shipp->cloak_alpha=255;
+
+	shipp->tertiary_weapon_info_idx=-1;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -4376,7 +4380,12 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	if ( objp->phys_info.flags & PF_AFTERBURNER_ON )	{
 		anim_index++;		//	select afterburner anim.
 		rate = 1.5f;		// go at 1.5x faster when afterburners on
-	} else {
+	} 
+	else if (objp->phys_info.flags & PF_BOOSTER_ON)
+	{
+		anim_index++;		//	select afterburner anim.
+		rate = 2.5f;		// go at 2.5x faster when booster pod on
+	}else {
 		// If thrust at 0, go at half as fast, full thrust; full framerate
 		// so set rate from 0.5 to 1.0, depending on thrust from 0 to 1
 		// rate = 0.5f + objp->phys_info.forward_thrust / 2.0f;
@@ -4874,6 +4883,12 @@ void ship_process_post(object * obj, float frametime)
 	shipfx_cloak_frame(shipp, frametime);
 
 	ship_chase_shield_energy_targets(shipp, obj, frametime);
+
+	if (timestamp_elapsed(shipp->boost_finish_stamp))
+	{
+		shipp->boost_pod_engaged=0;
+		obj->phys_info.flags &= ~(PF_BOOSTER_ON);
+	}
 
 	// AL 1-6-98: record the initial ammo counts for ships, which is used as the max limit for rearming
 	// Goober5000 - added ballistics support
@@ -7328,7 +7343,22 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 			// subtract the number of missiles fired
 			if ( Weapon_energy_cheat == 0 ){
-				swp->secondary_bank_ammo[bank]--;
+				if (shipp->tertiary_weapon_info_idx >= 0)
+				{
+					tertiary_weapon_info *twip=&Tertiary_weapon_info[shipp->tertiary_weapon_info_idx];
+					if ((twip->type == TWT_AMMO_POD) && (shipp->ammopod_current_secondary==bank) && (shipp->ammopod_current_ammo > 0))
+					{
+						shipp->ammopod_current_ammo--;
+					}
+					else
+					{
+						swp->secondary_bank_ammo[bank]--;
+					}
+				}
+				else
+				{
+					swp->secondary_bank_ammo[bank]--;
+				}
 			}
 		}
 	}
@@ -11716,3 +11746,57 @@ int ship_subsys_takes_damage(ship_subsys *ss)
 
 	return (ss->max_hits > SUBSYS_MAX_HITS_THRESHOLD);
 }
+
+//phreak
+int ship_fire_tertiary(object *objp)
+{
+	ship *shipp=&Ships[objp->instance];
+	tertiary_weapon_info* twip;
+
+	if (!shipp) Int3();
+
+	if (shipp->tertiary_weapon_info_idx < 0)
+		return 0;
+
+	twip=&Tertiary_weapon_info[shipp->tertiary_weapon_info_idx];
+
+	if (twip->type==TWT_CLOAK_DEVICE)
+	{
+		if (shipp->cloak_stage==0)
+			shipfx_start_cloak(shipp,twip->cloak_warmup,1,1);
+
+		if (shipp->cloak_stage==2)
+			shipfx_stop_cloak(shipp,twip->cloak_cooldown);
+	}
+	if (twip->type==TWT_BOOST_POD)
+	{
+		if (shipp->boost_pod_engaged)
+		{
+			return 1;
+		}
+
+		if (shipp->boost_shots_remaining==0)
+		{
+			HUD_printf("No booster shots remaining");
+			return 1;
+		}
+
+		shipp->boost_pod_engaged=1;
+		shipp->boost_shots_remaining--;
+		shipp->boost_finish_stamp=timestamp(twip->boost_lifetime);
+
+		objp->phys_info.booster_max_vel.xyz.z=twip->boost_speed;
+		objp->phys_info.booster_forward_accel_time_const=twip->boost_acceleration;
+		
+		objp->phys_info.flags &= ~(PF_AFTERBURNER_ON);
+		objp->phys_info.flags |= PF_BOOSTER_ON;
+
+		HUD_printf("Booster engaged. %d shots remaining", shipp->boost_shots_remaining);
+				
+	}
+
+
+	return 1;
+}
+
+	
