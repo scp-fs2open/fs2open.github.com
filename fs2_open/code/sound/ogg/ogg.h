@@ -7,9 +7,7 @@
 
 //Setup the OGG stuff to use cfile
 extern ov_callbacks cfile_callbacks;
-#ifdef WIN32
 extern ov_callbacks mmio_callbacks;
-#endif
 
 //Init the ogg system
 int OGG_init();
