@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-13 09:16:18 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/10 20:42:44  mharris
  * use "ifndef NO_NETWORK" all over the place
  *
@@ -512,6 +515,8 @@ sexp_oper Operators[] = {
 	{ "ship-guardian",				OP_SHIP_GUARDIAN,					1, INT_MAX	},
 	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,				1, INT_MAX	},
 	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
+	{ "ship-lights-on",					OP_SHIP_LIGHTS_ON,					1, 1			}, //-WMCoolmon
+	{ "ship-lights-off",					OP_SHIP_LIGHTS_OFF,					1, 1			}, //-WMCoolmon
 	{ "turret-tagged-only",			OP_TURRET_TAGGED_ONLY_ALL,		1,	1			},
 	{ "turret-tagged-clear",		OP_TURRET_TAGGED_CLEAR_ALL,	1,	1			},
 	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
@@ -5896,6 +5901,18 @@ void sexp_ship_vanish( int n )
 	}
 }
 
+
+void sexp_ship_lights_on(int node)	//-WMCoolmon
+{
+	//Insert sexp here
+}
+
+void sexp_ship_lights_off(int node) //-WMCoolmon
+{
+	//Insert sexp here
+}
+
+
 int sexp_key_pressed(int node)
 {
 	int z, t;
@@ -7632,6 +7649,14 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_SHIP_LIGHTS_ON: //-WMCoolmon
+				sexp_val = 1;
+				sexp_ship_lights_on(node);
+
+			case OP_SHIP_LIGHTS_OFF: //-WMCoolmon
+				sexp_val = 1;
+				sexp_ship_lights_off(node);
+
 			case OP_SEND_MESSAGE:
 				sexp_send_message( node );
 				sexp_val = 1;
@@ -8257,6 +8282,8 @@ int query_operator_return_type(int op)
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_VANISH:
+		case OP_SHIP_LIGHTS_ON:
+		case OP_SHIP_LIGHTS_OFF:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_RED_ALERT:
 		case OP_MODIFY_VARIABLE:
@@ -8402,6 +8429,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_VULNERABLE:
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_VANISH:
+		case OP_SHIP_LIGHTS_ON:
+		case OP_SHIP_LIGHTS_OFF:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SECONDARIES_DEPLETED:
 		case OP_SPECIAL_WARP_DISTANCE:
