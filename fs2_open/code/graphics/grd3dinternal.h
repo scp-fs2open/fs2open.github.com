@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.13 $
- * $Date: 2003-11-06 21:10:26 $
+ * $Revision: 2.14 $
+ * $Date: 2003-11-07 18:31:02 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/11/06 21:10:26  randomtiger
+ * Added my batching solution for more efficient d3d_string.
+ * Its part of the new grd3dbatch module, most of this isnt in use but it might help out later so I've left it in.
+ *
  * Revision 2.12  2003/11/01 21:59:21  bobboau
  * new matrix handeling code, and fixed some problems with 3D lit verts,
  * several other small fixes
@@ -448,6 +452,6 @@ int d3d_get_num_prims(int vertex_count, D3DPRIMITIVETYPE prim_type);
 // GrD3Dtexture
 void *d3d_lock_32_pcx(char *real_filename, float *u, float *v);
 bool d3d_read_header_d3dx(char *file, int type, int *w, int *h);
-void *d3d_lock_d3dx_types(char *file, int type, int bitmapnum, ubyte flags );
+void *d3d_lock_d3dx_types(char *file, int type, ubyte flags );
 
 #endif //_GRD3DINTERNAL_H

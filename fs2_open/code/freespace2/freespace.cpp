@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.54 $
- * $Date: 2003-11-06 22:47:37 $
- * $Author: phreak $
+ * $Revision: 2.55 $
+ * $Date: 2003-11-07 18:31:02 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2003/11/06 22:47:37  phreak
+ * added gr_start_**_matrix() and gr_end_**_matrix() around where 3d stuff is rendered
+ *
  * Revision 2.53  2003/10/29 02:09:17  randomtiger
  * Updated timerbar code to work properly, also added support for it in OGL.
  * In D3D red is general processing (and generic graphics), green is 2D rendering, dark blue is 3D unlit, light blue is HT&L renders and yellow is the presentation of the frame to D3D. OGL is all red for now. Use compile flag TIMERBAR_ON with code lib to activate it.
@@ -2942,7 +2945,7 @@ void game_get_framerate()
 
 	if ((Show_framerate) || (Cmdline_show_fps))	{
 		gr_set_color_fast(&HUD_color_debug);
-		gr_string( 570, 2, text );
+		gr_string( 20, 100, text );
 	}
 }
 

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.47 $
- * $Date: 2003-11-06 20:22:11 $
- * $Author: Kazan $
+ * $Revision: 2.48 $
+ * $Date: 2003-11-07 18:31:02 $
+ * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/11/06 20:22:11  Kazan
+ * slight change to .dsp - leave the damn release target as fs2_open_r.exe already
+ * added myself to credit
+ * killed some of the stupid fscking warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * Release builds should have warning level set no higher than 2 (default is 1)
+ * Why the hell are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
+ *
  * Revision 2.46  2003/11/02 05:50:08  bobboau
  * modified trails to render with tristrips now rather than with stinky old trifans,
  * MUCH faster now, at least one order of magnatude.
@@ -3501,8 +3509,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		model_interp_subcall(pm,pm->detail[detail_level],detail_level);
 	}
 
-	gr_reset_lighting();
-	gr_set_lighting(false,false);
+	if(!Cmdline_nohtl) {
+		gr_reset_lighting();
+		gr_set_lighting(false,false);
+	}
 
 	if (Interp_flags & MR_SHOW_PIVOTS )	{
 		model_draw_debug_points( pm, NULL );
