@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-07-26 20:47:38 $
- * $Author: Kazan $
+ * $Revision: 2.17 $
+ * $Date: 2004-11-24 20:12:25 $
+ * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/07/26 20:47:38  Kazan
+ * remove MCD complete
+ *
  * Revision 2.15  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1158,13 +1161,15 @@ void brief_set_default_closeup()
 // which shouldn't get shown
 void brief_compact_stages()
 {
-	int num, result, i;
+	int num, before, result, i;
 
 	/*
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.campaign_mode == MP_CAMPAIGN) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 		Game_mode |= GM_CAMPAIGN_MODE;
 	}
 	*/
+
+	before = Briefing->num_stages;
 
 	num = 0;
 	while ( num < Briefing->num_stages ) {
@@ -1194,6 +1199,13 @@ void brief_compact_stages()
 			continue;
 		}
 		num++;
+	}
+
+	// completely clear out the old entries (if any) so we don't access them by mistake - taylor
+	if ( before > Briefing->num_stages ) {
+		for ( i = Briefing->num_stages; i < before; i++ ) {
+			memset( &Briefing->stages[i], 0, sizeof(brief_stage) );
+		}
 	}
 
 	/*
