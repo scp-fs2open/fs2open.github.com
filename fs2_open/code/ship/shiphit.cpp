@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-09-13 06:02:04 $
+ * $Revision: 2.21 $
+ * $Date: 2003-09-13 08:27:28 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/09/13 06:02:04  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.16  2003/04/29 01:03:21  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -2680,9 +2684,9 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage
 	if ( ship_obj == Player_obj ) {
 		// only show blast icon if playing on medium skill or lower -> unknownplayer: why? I think this should be changed.
-		if ( Game_skill_level <= 2 ) {
+		//if ( Game_skill_level <= 2 ) {
 			hud_start_text_flash(XSTR("Blast", 1428), 2000);
-		}
+		//}
 	}
 
 	// evaluate any player stats scoring conditions (specifically, blasts from remotely detonated secondary weapons)
@@ -2707,9 +2711,9 @@ void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage)
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage
 	if ( ship_obj == Player_obj ) {
 		// only show blast icon if playing on medium skill or lower
-		if ( Game_skill_level <= 2 ) {
+		//if ( Game_skill_level <= 2 ) {
 			hud_start_text_flash(XSTR("Engine Wash", 1429), 2000);
-		}
+		//}
 	}
 
 	// evaluate any player stats scoring conditions (specifically, blasts from remotely detonated secondary weapons)

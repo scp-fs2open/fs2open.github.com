@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-09-13 06:02:05 $
+ * $Revision: 2.19 $
+ * $Date: 2003-09-13 08:27:29 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.15  2003/08/21 08:31:24  Goober5000
  * fixed turret text display for non-laser weapons
  * --Goober5000
@@ -1057,6 +1061,7 @@ void hud_render_target_ship_info(object *target_objp)
 	emp_hud_printf(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, temp_name);
 
 	ship_integrity = 1.0f;
+	shield_strength = 1.0f;
 	hud_get_target_strength(target_objp, &shield_strength, &ship_integrity);
 
 	// convert to values of 0->100

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.43 $
- * $Date: 2003-09-13 06:02:03 $
+ * $Revision: 2.44 $
+ * $Date: 2003-09-13 08:27:28 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/09/13 06:02:03  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.40  2003/08/28 20:42:18  Goober5000
  * implemented rotating barrels for firing primary weapons
  * --Goober5000
@@ -2703,6 +2707,13 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 
 		// don't fire at ships with protected bit set!!!
 		if ( objp->flags & OF_PROTECTED ) {
+			return 0;
+		}
+
+		// Goober5000 - don't fire at cargo containers, otherwise you have the absurd
+		// possibility of a transport firing at a cargo container it's docking with,
+		// which happened to me on one mission
+		if ( Ship_info[shipp->ship_info_index].flags & SIF_CARGO ) {
 			return 0;
 		}
 

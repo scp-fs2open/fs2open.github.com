@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-09-13 06:02:03 $
+ * $Revision: 2.20 $
+ * $Date: 2003-09-13 08:27:28 $
  * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/09/13 06:02:03  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.17  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -1060,7 +1064,8 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vector 
 	*speed = shipfx_calculate_warp_speed(objp);
 
 	if ( objp == Player_obj )	{
-		*speed = 0.8f*objp->phys_info.max_vel.xyz.z;
+		// Goober5000 - cap at 65
+		*speed = min(0.8f*objp->phys_info.max_vel.xyz.z, 65.0f);
 	}
 
 	// Now we know our speed. Figure out how far the warp effect will be from here.  
@@ -1198,7 +1203,7 @@ void shipfx_warpout_start( object *objp )
 	// This should actually be an AI that flies from the current
 	// position through 'shipp->warp_effect_pos' in 'warp_time'
 	// and keeps going 
-	if ( objp != Player_obj )	{
+	if ( objp != Player_obj && !Player_use_ai )	{
 		vector vel;
 		vel = objp->orient.vec.fvec;
 		vm_vec_scale( &vel, speed );
