@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-07-26 20:47:51 $
- * $Author: Kazan $
+ * $Revision: 2.20 $
+ * $Date: 2004-07-31 08:51:47 $
+ * $Author: et1 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/07/26 20:47:51  Kazan
+ * remove MCD complete
+ *
  * Revision 2.18  2004/07/12 16:33:05  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -345,10 +348,17 @@ void load_shield_hit_bitmap()
 
 	Shield_bitmaps_loaded = 1;
 
-	for (i=0; i<MAX_SHIELD_ANIMS && i<True_NumSpecies; i++ )	{
+	for (i=0; i<MAX_SHIELD_ANIMS && i<True_NumSpecies; i++ )	
+    {
+
 		Shield_ani[i].first_frame = bm_load_animation(Shield_ani[i].filename, &Shield_ani[i].nframes,NULL, 1);
+
+        // *This is disabled for TBP    -Et1
+
+        /*
 		if ( Shield_ani[i].first_frame < 0 )
 			Int3();
+        */
 	}
 
 	#endif
