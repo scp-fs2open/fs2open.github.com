@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-03-03 06:05:32 $
+ * $Revision: 2.14 $
+ * $Date: 2005-03-14 06:33:38 $
  * $Author: wmcoolmon $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/03/03 06:05:32  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.12  2005/02/02 10:36:23  taylor
  * merge with Linux/OSX tree - p0202
  *
@@ -345,6 +348,7 @@
 #include <windows.h>
 #endif
 #include <limits.h>
+#include <vector>
 
 
 #include "render/3d.h"
@@ -380,7 +384,14 @@ typedef struct sound	{
 	int				duration;
 } sound;
 
-sound	Sounds[MAX_SOUNDS];
+//sound	Sounds[MAX_SOUNDS];
+std::vector<sound> Sounds;
+int Num_sounds=0;
+
+void GetSoundSize()
+{
+	int testsize = sizeof(Sounds);
+}
 
 int Sound_enabled = TRUE;				// global flag to turn sound on/off
 int Snd_sram;								// mem (in bytes) used up by storing sounds in system memory
@@ -413,14 +424,15 @@ int ds_priority(int priority)
 
 void snd_clear()
 {
-	int i;
+//	int i;
 
 	// flag all Sounds[] as free
+	/*
 	for (i=0; i<MAX_SOUNDS; i++ )	{
 		Sounds[i].flags &=  ~SND_F_USED;
 		Sounds[i].sid = -1;
 		Sounds[i].hid = -1;
-	}
+	}*/
 
 	// reset how much storage sounds are taking up in memory
 	Snd_sram = 0;
@@ -512,7 +524,7 @@ void snd_spew_info()
 	cfwrite_string("Sounds loaded :\n", out);
 
 	// spew info for all sounds
-	for(idx=0; idx<MAX_SOUNDS; idx++){
+	for(idx=0; idx<Num_sounds; idx++){
 		if(!(Sounds[idx].flags & SND_F_USED)){
 			continue;
 		}
@@ -551,7 +563,7 @@ void snd_spew_debug_info()
 	}
 
 	// count up game, interface and message sounds
-	for(int idx=0; idx<MAX_SOUNDS; idx++){
+	for(int idx=0; idx<Num_sounds; idx++){
 		if(!Sounds[idx].flags & SND_F_USED){
 			continue;
 		}
@@ -612,7 +624,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	if ( gs->filename == NULL || gs->filename[0] == 0 )
 		return -1;
 
-	for (n=0; n<MAX_SOUNDS; n++ )	{
+	for (n=0; n<Num_sounds; n++ )	{
 		if (!(Sounds[n].flags & SND_F_USED))
 			break;
 		else if ( !stricmp( Sounds[n].filename, gs->filename )) {
@@ -620,7 +632,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 			return n;
 		}
 	}
-
+/*
 	if ( n == MAX_SOUNDS ) {
 #ifndef NDEBUG
 		// spew sound info
@@ -629,9 +641,19 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 
 		Int3();
 		return -1;
+	}*/
+	if(n==Num_sounds)
+	{
+		Sounds.resize(n + 1);
+		snd = &Sounds[n];
+		snd->sid = -1;
+		snd->hid = -1;
+		snd->flags &=  ~SND_F_USED;
 	}
-
-	snd = &Sounds[n];
+	else
+	{
+		snd = &Sounds[n];
+	}
 
 	if ( !ds_initialized )
 		return -1;
@@ -708,12 +730,16 @@ int snd_unload( int n )
 {
 	if (!ds_initialized)
 		return 0;
-
+/*
 	if ( (n < 0) || ( n >= MAX_SOUNDS) )
-		return 0;
+		return 0;*/
 
 	if ( !(Sounds[n].flags & SND_F_USED) )
+	{
+		if(n==Num_sounds-1)
+			Sounds.pop_back();
 		return 0;
+	}
 	
 	ds_unload_buffer(Sounds[n].sid, Sounds[n].hid);
 	if ( Sounds[n].sid != -1 ) {
@@ -722,6 +748,10 @@ int snd_unload( int n )
 	if ( Sounds[n].hid != -1 ) {
 		Snd_hram -= Sounds[n].uncompressed_size;
 	}
+
+	//If this sound is at the end of the array, we might as well get rid of it
+	if(n==Num_sounds-1)
+		Sounds.pop_back();
 
 	Sounds[n].flags &= ~SND_F_USED;
 
@@ -737,8 +767,8 @@ int snd_unload( int n )
 void snd_unload_all()
 {
 	int i;
-	for (i=0; i<MAX_SOUNDS; i++ )	{
-		if ( Sounds[i].flags & SND_F_USED )
+	for (i=Num_sounds-1; i>=0; i-- )
+	{
 			snd_unload(i);
 	}
 }
@@ -1483,7 +1513,7 @@ void snd_stop_any_sound()
 //				!0	=>	fail
 int snd_get_data(int handle, char *data)
 {
-	Assert(handle >= 0 && handle < MAX_SOUNDS);
+	Assert(handle >= 0 && handle < Num_sounds);
 	if ( ds_get_data(Sounds[handle].sid, data) ) {
 		return -1;
 	}
@@ -1494,7 +1524,7 @@ int snd_get_data(int handle, char *data)
 // return the size of the sound data associated with the sound handle
 int snd_size(int handle, int *size)
 {
-	Assert(handle >= 0 && handle < MAX_SOUNDS);
+	Assert(handle >= 0 && handle < Num_sounds);
 	if ( ds_get_size(Sounds[handle].sid, size) ) {
 		return -1;
 	}
@@ -1505,7 +1535,7 @@ int snd_size(int handle, int *size)
 // retrieve the bits per sample and frequency for a given sound
 void snd_get_format(int handle, int *bits_per_sample, int *frequency)
 {
-	Assert(handle >= 0 && handle < MAX_SOUNDS);
+	Assert(handle >= 0 && handle < Num_sounds);
 	*bits_per_sample = Sounds[handle].info.bits;
 	*frequency = Sounds[handle].info.sample_rate;
 }

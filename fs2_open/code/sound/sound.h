@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.6 $
- * $Date: 2005-01-08 09:59:10 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-14 06:33:38 $
  * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/08 09:59:10  wmcoolmon
+ * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ *
  * Revision 2.5  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -228,13 +231,14 @@
 #define __SOUND_H__
 
 #include "globalincs/pstypes.h"
-
+/*
 #ifdef INF_BUILD
 #define MAX_SOUNDS 450
 #else
-#define MAX_SOUNDS	256
+//#define MAX_SOUNDS	256
+#define MAX_SOUNDS 512		//bumped to 512 on march 13, 2005 -WMC
 #endif
-
+*/
 // Used for keeping track which low-level sound library is being used
 #define SOUND_LIB_DIRECTSOUND		0
 #define SOUND_LIB_RSX				1
