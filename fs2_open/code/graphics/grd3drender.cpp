@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-03 19:42:17 $
+ * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -1494,11 +1497,11 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 		u1 = u_scale*(i2fl(sx+w)+0.5f)/i2fl(bw);
 		v1 = v_scale*(i2fl(sy+h)+0.5f)/i2fl(bh);
 	} else {
-		u0 = u_scale*i2fl(sx)/i2fl(bw);
-		v0 = v_scale*i2fl(sy)/i2fl(bh);
+		u0 = u_scale*i2fl((sx)-0.5f)/i2fl(bw);
+		v0 = v_scale*i2fl((sy)-0.5f)/i2fl(bh);
 
-		u1 = u_scale*i2fl(sx+w)/i2fl(bw);
-		v1 = v_scale*i2fl(sy+h)/i2fl(bh);
+		u1 = u_scale*i2fl((sx+w)-0.5f)/i2fl(bw);
+		v1 = v_scale*i2fl((sy+h)-0.5f)/i2fl(bh);
 	}
 
 	x1 = i2fl(x+gr_screen.offset_x);
