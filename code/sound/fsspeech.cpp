@@ -6,30 +6,9 @@
  *
 */ 
 
-#include <windows.h>
-	
-/*
- * This stuff is for voice select which we are not ready for yet
- *
-#if FS2_SPEECH
+// This module contains freespace specific stuff leaving the speech module to handle generic stuff.
 
-// Have to do this to let sphelper.h compile OK
-#undef Assert
-
-#include <atlbase.h>
-#include <sapi.h>
-#include <sphelper.h>
-
-#if defined(NDEBUG)
-#define Assert(x) do {} while (0)
-#else
-void gr_activate(int);
-#define Assert(x) do { if (!(x)){ gr_activate(0); WinAssert(#x,__FILE__,__LINE__); gr_activate(1); } } while (0)
-#endif
-
-#endif
-  */
-  
+#include <windows.h>  
 
 #include "sound/speech.h"
 #include "osapi/osregistry.h"
@@ -66,6 +45,9 @@ bool fsspeech_init()
 
 	int volume = os_config_read_uint(NULL, "SpeechVolume", 100);
 	speech_set_volume(volume);
+
+	int voice = os_config_read_uint(NULL, "SpeechVoice", 0);
+	speech_set_voice(voice);
 
 	return true;
 }

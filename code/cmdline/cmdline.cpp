@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.43 $
- * $Date: 2003-11-11 03:56:10 $
- * $Author: bobboau $
+ * $Revision: 2.44 $
+ * $Date: 2003-11-15 18:09:33 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/11/11 03:56:10  bobboau
+ * shit load of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.42  2003/11/09 06:31:38  Kazan
  * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
  * conflicts in cmdline and timerbar.h log entries
@@ -466,8 +469,8 @@ cmdline_parm cell_arg("-cell", NULL);
 cmdline_parm textures_32bit("-t32",NULL);
 cmdline_parm no_set_gamma("-no_set_gamma",NULL);
 cmdline_parm d3d_no_vsync("-d3d_no_vsync", NULL);
+cmdline_parm pcx32("-pcx32",NULL);
 cmdline_parm timerbar("-timerbar", NULL);
-
 
 int Cmdline_timerbar = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
@@ -514,6 +517,7 @@ int Cmdline_nohtl = 0;
 int Cmdline_32bit_textures = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_d3d_no_vsync = 0;
+int Cmdline_pcx32 = 0;
 
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
@@ -632,7 +636,11 @@ void os_validate_parms(char *cmdline)
 			}
 
 			if (parm_found == 0) {
-				Error(LOCATION,"Unrecogzined command line parameter %s", token);
+				// Changed this to MessageBox, this is a user error not a developer
+				char buffer[128];
+				sprintf(buffer,"Unrecogzined command line parameter %s, continue?",token);
+				if( MessageBox(NULL, buffer, "Warning", MB_OKCANCEL | MB_ICONQUESTION) == IDCANCEL)
+					exit(0);
 			}
 		}
 
@@ -659,7 +667,7 @@ void os_init_cmdline(char *cmdline)
 
 		fgets(buf, 1024, fp);
 
-		// replace the newline character with a NUL:
+		// replace the newline character with a NULL
 		if ( (p = strrchr(buf, '\n')) != NULL ) {
 			*p = '\0';
 		}
@@ -668,7 +676,6 @@ void os_init_cmdline(char *cmdline)
 		os_validate_parms(buf);
 		fclose(fp);
 	}
-
 
 	os_parse_parms(cmdline);
 	os_validate_parms(cmdline);
@@ -959,6 +966,11 @@ void SetCmdlineParams()
 	if(d3d_no_vsync.found() )
 	{
 		Cmdline_d3d_no_vsync = 1;
+	}
+
+	if(pcx32.found() )
+	{
+		Cmdline_pcx32 = 1;
 	}
 }
 
