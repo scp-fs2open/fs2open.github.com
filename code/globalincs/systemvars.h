@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.5 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2004-10-31 21:33:05 $
+ * $Author: taylor $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.4  2004/02/20 04:29:54  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -322,6 +325,8 @@ extern float Noise[NOISE_NUM_FRAMES];
 // If true, then we are using Direct3D hardware.  This is used for game type stuff
 // that changes when you're using hardware.
 extern int D3D_enabled;
+// for OGL
+extern int OGL_enabled;
 
 // game skill levels 
 #define	NUM_SKILL_LEVELS	5

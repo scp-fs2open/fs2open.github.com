@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:31 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2004-10-31 21:33:05 $
+ * $Author: taylor $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:31  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:47  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -245,8 +248,8 @@ int Fred_found_unknown_ship_during_parsing = 0;
 // If true, then we are using Direct3D hardware.  This is used for game type stuff
 // that changes when you're using hardware.
 int D3D_enabled = 0;
-
-int OGL_inited=0;			
+// for OGL
+int OGL_enabled = 0;		
 
 // Values used for noise for thruster animations
 float Noise[NOISE_NUM_FRAMES] = { 
