@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-11-17 04:25:57 $
- * $Author: bobboau $
+ * $Revision: 2.13 $
+ * $Date: 2003-12-16 20:48:41 $
+ * $Author: phreak $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/11/17 04:25:57  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.11  2003/11/16 04:08:47  Goober5000
  * fixed briefing scroll and display of "more"
  * --Goober5000
@@ -1451,7 +1457,7 @@ void brief_render_closeup(int ship_class, float frametime)
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
 
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1f,30000);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	
 	model_clear_instance( Closeup_icon->modelnum );

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-11-17 04:25:56 $
- * $Author: bobboau $
+ * $Revision: 2.16 $
+ * $Date: 2003-12-16 20:47:21 $
+ * $Author: phreak $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/11/17 04:25:56  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.14  2003/11/16 04:09:21  Goober5000
  * language
  *
@@ -844,7 +850,7 @@ void techroom_ships_render(float frametime)
 	g3_start_frame(1);
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1f,30000);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	// lighting for techroom
