@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-05-06 22:26:52 $
+ * $Revision: 1.1 $
+ * $Date: 2004-05-24 07:25:32 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/05/06 22:26:52  taylor
+ * fix DDS textures
+ *
  * Revision 2.4  2004/04/26 12:43:58  taylor
  * minor fixes, HTL lines, 32-bit texture support
  *

@@ -5,10 +5,13 @@
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.h $
  * $Revision: 1.1 $
- * $Date: 2004-05-07 23:50:14 $
- * $Author: Kazan $
+ * $Date: 2004-05-24 07:23:09 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/07 23:50:14  Kazan
+ * Sorry Guys!
+ *
  *
  *
  *

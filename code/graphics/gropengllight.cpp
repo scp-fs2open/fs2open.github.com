@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-05-13 00:17:20 $
+ * $Revision: 1.1 $
+ * $Date: 2004-05-24 07:25:32 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/05/13 00:17:20  taylor
+ * disable COLOR_MATERIAL, for nvidia drivers
+ *
  * Revision 2.6  2004/05/12 23:24:35  phreak
  * got rid of the color material call, nebulas should blind the player
  *

@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-04-13 01:55:41 $
- * $Author: phreak $
+ * $Revision: 1.1 $
+ * $Date: 2004-05-24 07:25:32 $
+ * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/04/13 01:55:41  phreak
+ * put in the correct fields for the CVS comments to register
+ * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
+ *
  *
  * $NoKeywords: $
  */

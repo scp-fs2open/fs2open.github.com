@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-04-26 13:05:19 $
+ * $Revision: 1.1 $
+ * $Date: 2004-05-24 07:25:32 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/04/26 13:05:19  taylor
+ * respect -glow and -spec
+ *
  * Revision 2.3  2004/04/13 01:55:41  phreak
  * put in the correct fields for the CVS comments to register
  * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
