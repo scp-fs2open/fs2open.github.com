@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-02-25 06:22:49 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2003-03-20 23:30:03 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/02/25 06:22:49  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.5  2003/02/16 05:14:29  bobboau
  * added glow map nebula bug fix for d3d, someone should add a fix for glide too
  * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
@@ -1792,7 +1798,7 @@ void obj_move_all(float frametime)
 	// update artillery locking info now
 	ship_update_artillery_lock();
 
-	mprintf(("moved all objects\n"));
+//	mprintf(("moved all objects\n"));
 }
 
 
