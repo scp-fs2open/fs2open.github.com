@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.77 $
- * $Date: 2005-01-18 00:14:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.78 $
+ * $Date: 2005-01-21 08:56:50 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2005/01/18 00:14:37  Goober5000
+ * clarified a bunch of sexp stuff and fixed a bug
+ * --Goober5000
+ *
  * Revision 2.76  2005/01/11 21:38:50  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -763,8 +767,11 @@ p_object *Arriving_support_ship;
 char Arriving_repair_targets[MAX_AI_GOALS][NAME_LENGTH];
 int Num_arriving_repair_targets;
 
-subsys_status Subsys_status[MAX_SUBSYS_STATUS];
-int		Subsys_index;
+//subsys_status Subsys_status[MAX_SUBSYS_STATUS]; // it's dynamic now - taylor
+#define MIN_SUBSYS_STATUS_SIZE		25
+subsys_status *Subsys_status = NULL;
+int Subsys_index;
+int Subsys_status_size;
 
 char Mission_parse_storm_name[NAME_LENGTH] = "none";
 
@@ -4372,7 +4379,14 @@ void parse_mission(mission *pm, int flag)
 	list_init( &ship_arrival_list );		// init lists for arrival objects and wings
 
 	init_parse();
+
 	Subsys_index = 0;
+	Subsys_status_size = 0;
+
+	if (Subsys_status != NULL) {
+		free( Subsys_status );
+		Subsys_status = NULL;
+	}
 
 	Num_texture_replacements = 0;
 	Fred_num_texture_replacements = 0;
@@ -5755,8 +5769,19 @@ int allocate_subsys_status()
 	int i;
 	// set primary weapon ammunition here, but does it actually matter? - Goober5000
 
-	Assert(Subsys_index >= 0 && Subsys_index < MAX_SUBSYS_STATUS);
-	Verify( Subsys_index < MAX_SUBSYS_STATUS );
+	Assert(Subsys_index >= 0 /*&& Subsys_index < MAX_SUBSYS_STATUS*/);
+
+	// we allocate in blocks of MIN_SUBSYS_STATUS_SIZE so if we need more then make more
+	if ( (Subsys_status == NULL) || (Subsys_index >= (Subsys_status_size - 1)) ) {
+		Assert( MIN_SUBSYS_STATUS_SIZE > 0 );
+
+		Subsys_status_size += MIN_SUBSYS_STATUS_SIZE;
+		Subsys_status = (subsys_status*)realloc(Subsys_status, sizeof(subsys_status) * Subsys_status_size );
+	}
+
+	Verify( Subsys_status != NULL );
+
+	memset( &Subsys_status[Subsys_index], 0, sizeof(subsys_status) );
 
 	Subsys_status[Subsys_index].percent = 0.0f;
 

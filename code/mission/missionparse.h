@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.54 $
- * $Author: wmcoolmon $
- * $Date: 2005-01-16 22:39:09 $
+ * $Revision: 2.55 $
+ * $Author: taylor $
+ * $Date: 2005-01-21 08:56:50 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/01/16 22:39:09  wmcoolmon
+ * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
+ *
  * Revision 2.53  2005/01/11 21:38:50  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -590,11 +593,13 @@ extern int Mission_alt_type_count;
 #define	SPECIES_NONE			3
 #endif
 
+/* -- it's dynamic now - taylor
 #ifdef FS2_DEMO
 	#define MAX_SUBSYS_STATUS		125
 #else
 	#define MAX_SUBSYS_STATUS		300
 #endif
+*/
 
 #define MAX_SPECIAL_ARRIVAL_ANCHORS	6
 extern char *Special_arrival_anchor_names[MAX_SPECIAL_ARRIVAL_ANCHORS];
@@ -822,7 +827,8 @@ typedef struct {
 #define TOKEN_LENGTH	32
 
 extern team_data Team_data[MAX_TEAMS];
-extern subsys_status Subsys_status[MAX_SUBSYS_STATUS];
+//extern subsys_status Subsys_status[MAX_SUBSYS_STATUS]; // it's dynamic now - taylor
+extern subsys_status *Subsys_status;
 extern int Subsys_index;
 
 extern vector Parse_viewer_pos;
