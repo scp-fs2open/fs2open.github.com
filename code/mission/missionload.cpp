@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-01 07:27:32 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-01 07:31:10 $
  * $Author: taylor $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/01 07:27:32  taylor
+ * some minor Linux fixage
+ *
  * Revision 2.6  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
