@@ -11,7 +11,13 @@ typedef struct hud_info
 {
 	bool loaded;
 	int resolution[2];
-
+#ifdef NEW_HUD
+	int num_gauges;
+	gauge_data gauges[MAX_HUD_GAUGES];
+	//Who's hud is this??
+	ship *owner;
+	color hud_color;
+#endif
 	//"Int Row"
 	//*Main Gauges*
 	//Hudshield
@@ -56,6 +62,10 @@ typedef struct hud_info
 //	int gauge_frame_sexp_vars[MAX_HUD_GAUGE_TYPES];
 
 	hud_info();
+#ifdef NEW_HUD
+	ubyte get_preset_alpha(int preset_id);
+	gauge_data* add_gauge(char* name, int def_x_coord, int def_y_coord, gauge_data* new_gauge_parent = NULL);
+#endif
 } hud_info;
 
 typedef struct gauge_info
@@ -92,4 +102,8 @@ extern int Num_custom_gauges;
 int hud_get_gauge_index(char* name);
 gauge_info* hud_get_gauge(char* name);
 void hud_positions_init();
+#ifdef NEW_HUD
+void set_current_hud(int player_ship_num, ship* owner = Player_ship);
+#else
 void set_current_hud(int player_ship_num);
+#endif
