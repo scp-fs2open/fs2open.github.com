@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 03:50:29 $
+ * $Revision: 2.3 $
+ * $Date: 2002-10-22 17:42:09 $
  * $Author: randomtiger $
  * 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 03:50:29  randomtiger
+ * Added special pause mode for easier action screenshots.
+ * Added new command line parameter for accessing all single missions in tech room. - RT
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -242,6 +246,11 @@ void pause_do(int multi)
 			// otherwise process the ui window here
 			k = Pause_win.process() & ~KEY_DEBUGGED;
 			switch (k) {  
+
+			case KEY_TAB:
+				hud_toggle_draw();
+				break;
+
 		   //	case VIEW_EXTERNAL:
 		   	case KEY_ENTER:
 				if(Pause_type != PAUSE_TYPE_VIEWER)	{
