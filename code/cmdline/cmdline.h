@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.10 $
- * $Date: 2002-10-30 20:22:30 $
- * $Author: inquisitor $
+ * $Revision: 2.11 $
+ * $Date: 2002-10-31 21:14:16 $
+ * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2002/10/30 20:22:30  inquisitor
+ * Bad Committ, Rolling back
+ *
  * Revision 2.7  2002/10/22 23:02:39  randomtiger
  * Made Phreaks alternative scanning style optional under the command line tag "-phreak"
  * Fixed bug that changes HUD colour when targetting debris in a full nebula. - RT
@@ -219,5 +222,7 @@ extern char *Cmdline_almission;	//DTP for autoload mission
 extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
 extern int Cmdline_allslev;
 extern int Cmdline_phreak;
+extern char *Cmdline_mod; //DTP for mod support
+extern char *Hold_mod;	//DTP for mod support.
 
 #endif
