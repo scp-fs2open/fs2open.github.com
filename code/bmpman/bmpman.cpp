@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.12 $
- * $Date: 2003-03-18 10:07:00 $
- * $Author: unknownplayer $
+ * $Revision: 2.13 $
+ * $Date: 2003-06-07 21:08:09 $
+ * $Author: phreak $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/03/18 10:07:00  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  *
  * Revision 2.11  2003/01/19 01:07:41  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
@@ -2710,12 +2713,10 @@ void bm_gfx_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 {
 	int bit_32 = 0;
 
-#ifndef NO_DIRECT3D
-	// pick a byte size - 32 bits only if 32 bit mode d3d and screen format
-	if(D3D_32bit && (Gr_current_red == &Gr_red)){
+	if((gr_screen.bits_per_pixel==32) && (Gr_current_red == &Gr_red)){
 		bit_32 = 1;
 	}
-#endif
+
 
 	if(r != NULL){
 		if(bit_32){
