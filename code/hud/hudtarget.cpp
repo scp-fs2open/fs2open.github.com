@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-03-31 04:24:49 $
+ * $Revision: 2.28 $
+ * $Date: 2004-05-07 19:06:45 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/03/31 04:24:49  Goober5000
+ * got rid of Bobboau's SAFEPOINTs in hudtarget.cpp
+ * --Goober5000
+ *
  * Revision 2.26  2004/03/06 23:28:23  bobboau
  * fixed motion debris
  * animated laser textures
@@ -1035,22 +1039,36 @@ object *hud_reticle_pick_target()
 		}
 	}
 
-	if ( ship_in_list && debris_in_list ) {
-		// cull debris
-		reticle_list	*rl, *next;
-		
-		rl = GET_FIRST(&Reticle_cur_list);
-		while ( rl != &Reticle_cur_list ) {
-			next = rl->next;
-			if ( (rl->objp->type == OBJ_DEBRIS) || (rl->objp->type == OBJ_ASTEROID) ){
-				list_remove(&Reticle_cur_list,rl);
-				rl->flags = 0;
-			}
-			rl = next;
-		}
-	}
+//  Commented out to correct 'Y' bug.  Current theory is that
+//  debris gets targeted during the previous pass.  When the
+//  command is executed again, the target is culled.
+
+//	if ( ship_in_list && debris_in_list ) {
+//		// cull debris
+//		reticle_list	*rl, *next;
+//		
+//		rl = GET_FIRST(&Reticle_cur_list);
+//		while ( rl != &Reticle_cur_list ) {
+//			next = rl->next;
+//			if ( (rl->objp->type == OBJ_DEBRIS) || (rl->objp->type == OBJ_ASTEROID) ){
+//				list_remove(&Reticle_cur_list,rl);
+//				rl->flags = 0;
+//			}
+//			rl = next;
+//		}
+//	}
 	
 	for ( cur_rl = GET_FIRST(&Reticle_cur_list); cur_rl != END_OF_LIST(&Reticle_cur_list); cur_rl = GET_NEXT(cur_rl) ) {
+
+//      The following was added to replace the culling method used above.  Rather than
+//      cull the debris, just skip to the next object if there's ships in the FOV.
+
+		if ( ship_in_list && debris_in_list ) {
+			if ( (cur_rl->objp->type == OBJ_DEBRIS) || (cur_rl->objp->type == OBJ_ASTEROID) ){
+				continue;
+			}
+		}
+
 		in_save_list = 0;
 		for ( save_rl = GET_FIRST(&Reticle_save_list); save_rl != END_OF_LIST(&Reticle_save_list); save_rl = GET_NEXT(save_rl) ) {
 			if ( cur_rl->objp == save_rl->objp ) {
@@ -1084,7 +1102,26 @@ object *hud_reticle_pick_target()
 			if ( i == -1 ) 
 				return NULL;
 			new_rl = &Reticle_list[i];
-			cur_rl = GET_FIRST(&Reticle_cur_list);
+
+			// if there are ships and debris present,  loop through to find the ship(s)
+			// otherwise, pick the first object
+
+			if ( ship_in_list && debris_in_list ) {
+
+				for ( cur_rl = GET_FIRST(&Reticle_cur_list); cur_rl != END_OF_LIST(&Reticle_cur_list); cur_rl = GET_NEXT(cur_rl) ) {
+
+					if ( (cur_rl->objp->type == OBJ_DEBRIS) || (cur_rl->objp->type == OBJ_ASTEROID) ){
+						continue;
+					} else {
+						break;
+					}
+				}
+
+			} else {
+
+				cur_rl = GET_FIRST(&Reticle_cur_list);
+			}
+
 			*new_rl = *cur_rl;
 			return_objp = cur_rl->objp;
 			hud_reticle_clear_list(&Reticle_save_list);
