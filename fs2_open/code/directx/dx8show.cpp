@@ -1,5 +1,3 @@
-#ifndef NO_DSHOW_CODE
-
 #include <dshow.h>
 #include <stdio.h>
 
@@ -71,12 +69,11 @@ IBasicAudio   *pBA = NULL;
 IBasicVideo   *pBV = NULL;
 IMediaSeeking *pMS = NULL;
 IMediaPosition *pMP = NULL;
-IVideoFrameStep *pFS = NULL;
 
 void PassMsgToVideoWindow(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (pVW)
-        pVW->NotifyOwnerMessage((LONG_PTR) hWnd, message, wParam, lParam);
+        pVW->NotifyOwnerMessage((long) hWnd, message, wParam, lParam);
 }
 
 void SetCurrentState(PLAYSTATE state)
@@ -281,7 +278,6 @@ void CloseInterfaces(void)
     SAFE_RELEASE(pBA);
     SAFE_RELEASE(pBV);
     SAFE_RELEASE(pVW);
-    SAFE_RELEASE(pFS);
     SAFE_RELEASE(pGB);
 }
 
@@ -312,8 +308,7 @@ bool dx8show_stream_movie(void)
 	}
 
 	// Process all queued events
-	while(SUCCEEDED(pME->GetEvent(&evCode, (LONG_PTR *) &evParam1,
-	                (LONG_PTR *) &evParam2, 0))) {
+	while(SUCCEEDED(pME->GetEvent(&evCode, &evParam1,&evParam2, 0))) {
 	    // Free memory associated with callback, since we're not using it
 	    hr = pME->FreeEventParams(evCode, evParam1, evParam2);
 	
@@ -327,15 +322,3 @@ bool dx8show_stream_movie(void)
     return false;
 }
 
-#else
-
-#pragma message( "WARNING: You have not compiled the movie code into this build (remove NO_DSHOW_CODE)" )
-
-#include "windows.h"
-
-bool OpenClip(HWND ghApp, char *g_szFileName) {return false;};
-void CloseClip(HWND ghApp) {};
-bool dx8show_stream_movie(void) {return true;};
-void PassMsgToVideoWindow(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {};
-
-#endif
