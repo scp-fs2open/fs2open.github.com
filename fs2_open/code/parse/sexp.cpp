@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.129 $
- * $Date: 2005-01-18 01:20:03 $
+ * $Revision: 2.130 $
+ * $Date: 2005-01-18 06:15:33 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.129  2005/01/18 01:20:03  Goober5000
+ * variables can be specified in training messages too now
+ * --Goober5000
+ *
  * Revision 2.128  2005/01/18 00:14:37  Goober5000
  * clarified a bunch of sexp stuff and fixed a bug
  * --Goober5000
@@ -1764,18 +1768,18 @@ int find_sexp_list(int num)
 	return -1;
 }
 
-// find index of operator that item is an argument of.
-int find_parent_operator(int num)
+// find node of operator that item is an argument of.
+int find_parent_operator(int node)
 {
 	int i;
 
-	if (Sexp_nodes[num].subtype == SEXP_ATOM_OPERATOR){
-		num = find_sexp_list(num);
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR){
+		node = find_sexp_list(node);
 	}
 
-	while (Sexp_nodes[num].subtype != SEXP_ATOM_OPERATOR) {
+	while (Sexp_nodes[node].subtype != SEXP_ATOM_OPERATOR) {
 		for (i=0; i<MAX_SEXP_NODES; i++){
-			if (Sexp_nodes[i].rest == num){
+			if (Sexp_nodes[i].rest == node){
 				break;
 			}
 		}
@@ -1784,10 +1788,10 @@ int find_parent_operator(int num)
 			return -1;  // not found, probably at top node already.
 		}
 
-		num = i;
+		node = i;
 	}
 
-	return num;
+	return node;
 }
 
 // function to determine if an sexpression node is the top level node of an sexpression tree.  Top
@@ -13352,11 +13356,11 @@ int eval_sexp(int cur_node, int referenced_node)
 		// now, reconcile positive and negative - Goober5000
 		if (sexp_val < 0)
 		{
-			int parent = find_parent_operator(cur_node);
-			int arg = find_argnum(parent, cur_node);
+			int parent_node = find_parent_operator(cur_node);
+			int arg_num = find_argnum(parent_node, cur_node);
 
 			// make sure everything works okay
-			if (arg == -1)
+			if (arg_num == -1)
 			{
 				char sexp_text[8192];
 				convert_sexp_to_string(cur_node, sexp_text, SEXP_ERROR_CHECK_MODE);
@@ -13364,7 +13368,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			}
 
 			// if we need a positive value, make it positive
-			if (query_operator_argument_type(parent, arg) == OPF_POSITIVE)
+			if (query_operator_argument_type(get_operator_index(CTEXT(parent_node)), arg_num) == OPF_POSITIVE)
 			{
 				sexp_val *= -1;
 			}
@@ -13779,6 +13783,8 @@ int query_operator_argument_type(int op, int argnum)
 		op = Operators[index].value;
 
 	} else {
+		Warning(LOCATION, "Possible unnecessary search for operator index.  Trace out and see if this is necessary.\n");
+
 		for (index=0; index<Num_operators; index++)
 			if (Operators[index].value == op)
 				break;
