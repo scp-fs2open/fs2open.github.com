@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.40 $
- * $Date: 2003-08-28 20:42:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2003-09-11 19:27:30 $
+ * $Author: argv $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/08/28 20:42:18  Goober5000
+ * implemented rotating barrels for firing primary weapons
+ * --Goober5000
+ *
  * Revision 2.39  2003/08/03 23:38:08  phreak
  * ai now properly uses rapid fire dumbfires
  *
@@ -612,6 +616,7 @@
 #include "weapon/swarm.h"
 #include "ship/awacs.h"
 #include "math/fvi.h"
+#include "cmdline/cmdline.h" // _argv[-1] - for command line options.
 
 #ifndef NO_NETWORK
 #include "network/multimsgs.h"
@@ -1602,6 +1607,9 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 //	(rvec defaults to NULL)
 void ai_turn_towards_vector(vector *dest, object *objp, float frametime, float turn_time, vector *slide_vec, vector *rel_pos, float bank_override, int flags, vector *rvec, int sexp_flags)
 {
+	// _argv[-1] - FIXME: This does not respect rotdamp. As a result, supercaps look VERY unrealistic when turning!
+	// Probably should use desired_rotvel and some fancy damping calculations to turn instead of poking the orient directly.
+
 	//matrix	goal_orient;
 	matrix	curr_orient;
 	vector	vel_in, vel_out, desired_fvec, src;
@@ -2702,6 +2710,10 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 			return 0;
 		}
 
+		// _argv[-1] - ignore cargo and nav buoys.
+		if (Ship_info[shipp->ship_info_index].flags & (SIF_CARGO | SIF_NAVBUOY))
+			return 0;
+
 		if ( !(Ship_info[shipp->ship_info_index].flags & SIF_DO_COLLISION_CHECK)) {
 			return 0;
 		}
@@ -2858,6 +2870,10 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			}
 		}
 
+		// _argv[-1] - don't fire small weapons at big ships.
+		if (Ship_info[shipp->ship_info_index].flags & (SIF_BIG_DAMAGE) && !(Weapon_info[tp->turret_weapon_type].wi_flags & WIF_HURTS_BIG_SHIPS))
+			return;
+
 		// check if	turret flagged to only target tagged ships
 		if ( (eeo->turret_subsys->weapons.flags & SW_FLAG_TAGGED_ONLY) && !ship_is_tagged(objp) ) {
 			return;
@@ -2928,12 +2944,14 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 		// return if we're over the cap
 		int max_turrets = 3 + Game_skill_level * Game_skill_level;
-		if (num_att_turrets > max_turrets) {
+		if (Game_skill_level < 2 && Player_obj->type == OBJ_SHIP && shipp->team == Ships[Player_obj->instance].team && num_att_turrets > max_turrets) {
 			return;
 		}
 
 		// modify distance based on lethality of objp to my ship
 		float active_lethality = aip->lethality;
+		if (active_lethality < 1.0f)
+			active_lethality = 1.0f; // _argv[-1] - make everything considered a threat to some degree.
 		if (objp->flags & OF_PLAYER_SHIP) {
 			active_lethality += Player_lethality_bump[Game_skill_level];
 		}
@@ -2955,13 +2973,27 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 		// maybe update nearest attacker
 		if ( dist < eeo->nearest_attacker_dist ) {
-			if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, tp, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
+			// _argv[-1] - don't consider parent ship's target. This is highly counterproductive.
+			if ( /*(eeo->current_enemy == -1) ||*/ object_in_turret_fov(objp, tp, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
 				// nprintf(("AI", "Nearest enemy = %s, dist = %7.3f, dot = %6.3f, fov = %6.3f\n", Ships[objp->instance].ship_name, dist, vm_vec_dot(&v2e, tvec), tp->turret_fov));
 				eeo->nearest_attacker_dist = dist;
 				eeo->nearest_attacker_objnum = OBJ_INDEX(objp);
 			}
 		}
 	} // end ship section
+
+	if (objp->type == OBJ_ASTEROID) {
+		dist *= 1.2f; // rocks are relatively unimportant.
+
+		if (eeo->turret_parent_objnum == asteroid_collide_objnum(objp) && dist < eeo->nearest_attacker_dist) {
+			eeo->nearest_attacker_dist = dist;
+			eeo->nearest_attacker_objnum = OBJ_INDEX(objp);
+		}
+		if (dist < eeo->nearest_dist) {
+			eeo->nearest_dist = dist;
+			eeo->nearest_objnum = OBJ_INDEX(objp);
+		}
+	}
 }
 
 // return 0 only if objnum is beam protected and turret is beam turret
@@ -2970,11 +3002,11 @@ int is_target_beam_valid(ship_subsys *turret_subsys, int objnum)
 	// check if turret has beam weapon
 	model_subsystem *tp = turret_subsys->system_info;
 
-	if (Weapon_info[tp->turret_weapon_type].wi_flags & WIF_BEAM) {
-		if (Objects[objnum].flags & OF_BEAM_PROTECTED) {
-			return 0;
-		}
+	if (Objects[objnum].flags & OF_BEAM_PROTECTED && Weapon_info[tp->turret_weapon_type].wi_flags & WIF_BEAM) {
+		return 0;
+	}
 
+	if (Weapon_info[tp->turret_weapon_type].wi_flags & WIF_BEAM) {
 		if (Weapon_info[tp->turret_weapon_type].wi_flags & WIF_HUGE) {
 			if (Objects[objnum].type == OBJ_SHIP && !(Ship_info[Ships[Objects[objnum].instance].ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) ) {
 				return 0;
@@ -3156,6 +3188,8 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vector *tpos, vect
 	ai_info	*aip = &Ai_info[Ships[Objects[objnum].instance].ai_index];
 	sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 
+	// _argv[-1] - trying to improve this...
+	/*
 	if ((sip->flags & SIF_SMALL_SHIP) && (aip->target_objnum != -1)) {
 		int target_objnum = aip->target_objnum;
 
@@ -3171,7 +3205,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vector *tpos, vect
 			aip->target_signature = -1;
 		}
 	// Not small or small with target objnum
-	} else {
+	} else { */
 		// maybe use aip->target_objnum as next target
 		if ((frand() < 0.8f) && (aip->target_objnum != -1) && Use_parent_target) {
 
@@ -3179,11 +3213,49 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vector *tpos, vect
 			int target_flags = Objects[aip->target_objnum].flags;
 			if ( target_flags & OF_PROTECTED ) {
 				// AL 2-27-98: why is a protected ship being targeted?
-				set_target_objnum(aip, -1);
-				return -1;
+				//set_target_objnum(aip, -1);
+				//return -1;
+				goto newtarget; // _argv[-1] - pick a new target.
 			}
 
 			// maybe use ship target_objnum if valid for turret
+
+			// check beam protection.
+			if (target_flags & OF_BEAM_PROTECTED && Weapon_info[tp->turret_weapon_type].wi_flags & WIF_BEAM)
+				goto newtarget;
+
+			if (Objects[aip->target_objnum].type == OBJ_SHIP) {
+				if (Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) {
+					if (!(Weapon_info[tp->turret_weapon_type].wi_flags & WIF_HURTS_BIG_SHIPS))
+						goto newtarget;
+				}
+				else {
+					if (big_only_flag)
+						goto newtarget;
+
+					if (Weapon_info[tp->turret_weapon_type].wi_flags & WIF_HUGE)
+						goto newtarget;
+				}
+
+				// check for tagged only.
+				if (turret_subsys->weapons.flags & SW_FLAG_TAGGED_ONLY && !ship_is_tagged(&Objects[aip->target_objnum]))
+					goto newtarget;
+			}
+
+			vector v2e;
+			float dot, dist;
+			dist = vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, tpos);
+			dot = vm_vec_dot(&v2e, tvec);
+			//	MODIFY FOR ATTACKING BIG SHIP
+			// dot += (0.5f * Objects[aip->target_objnum].radius / dist);
+
+			// check for if it's in the field of view for this turret.
+			if (dot <= fov)
+				goto newtarget;
+
+			return aip->target_objnum;
+
+			/*
 			// check for beam weapon and beam protected
 			if ( !((target_flags & OF_BEAM_PROTECTED) && (Weapon_info[tp->turret_weapon_type].wi_flags & WIF_BEAM)) ) {
 				if ( Objects[aip->target_objnum].type == OBJ_SHIP ) {
@@ -3205,12 +3277,16 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vector *tpos, vect
 					}
 				}
 			}
+			*/
 		}
-	}
+	//}
 
+newtarget:
 	enemy_objnum = get_nearest_turret_objnum(objnum, turret_subsys, enemy_team_mask, tpos, tvec, current_enemy, big_only_flag);
 	if ( enemy_objnum >= 0 ) {
-		Assert( !((Objects[enemy_objnum].flags & OF_BEAM_PROTECTED) && (Weapon_info[tp->turret_weapon_type].wi_flags & WIF_BEAM)) );
+		//Assert( !((Objects[enemy_objnum].flags & OF_BEAM_PROTECTED) && (Weapon_info[tp->turret_weapon_type].wi_flags & WIF_BEAM)) );
+		if ( Objects[enemy_objnum].flags & OF_BEAM_PROTECTED && Weapon_info[tp->turret_weapon_type].wi_flags & WIF_BEAM)
+			Int3();
 		if ( Objects[enemy_objnum].flags & OF_PROTECTED ) {
 			Int3();
 			enemy_objnum = aip->target_objnum;
@@ -5737,7 +5813,8 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		{
 			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
+				// _argv[-1] - select weapons that hurt big ships if necessary.
+				if ((!(Ship_info[Ships[other_objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) || (Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_HURTS_BIG_SHIPS)) && (((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
 				{
 					// This weapon is the new candidate
 					i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
@@ -5761,7 +5838,8 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 
 			bank_index = swp->current_primary_bank;
 
-			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags2 & WIF2_PIERCE_SHIELDS) 
+			// _argv[-1] - select weapons that hurt big ships if necessary.
+			if ((!(Ship_info[Ships[other_objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) || (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags & WIF_HURTS_BIG_SHIPS)) && Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags2 & WIF2_PIERCE_SHIELDS) 
 			{
 				return swp->current_primary_bank;
 			}
@@ -5774,7 +5852,8 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 
 			if (weapon_info_index > -1)
 			{
-				if (Weapon_info[weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS) 
+				// _argv[-1] - select weapons that hurt big ships if necessary.
+				if ((!(Ship_info[Ships[other_objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) || (Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_HURTS_BIG_SHIPS)) && Weapon_info[weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS) 
 				{
 					swp->current_primary_bank = i;
 					return i;
@@ -5795,7 +5874,8 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		{
 			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev )
+				// _argv[-1] - select weapons that hurt big ships if necessary.
+				if ((!(Ship_info[Ships[other_objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) || (Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_HURTS_BIG_SHIPS)) && (((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev )
 				{
 					// This weapon is the new candidate
 					i_hullfactor_prev = ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait));
@@ -5821,7 +5901,8 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		{
 			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev )
+				// _argv[-1] - select weapons that hurt big ships if necessary.
+				if ((!(Ship_info[Ships[other_objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) || (Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_HURTS_BIG_SHIPS)) && (((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev )
 				{
 					// This weapon is the new candidate
 					i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
@@ -5986,12 +6067,15 @@ int ai_fire_primary_weapon(object *objp)
 	aip = &Ai_info[shipp->ai_index];
 
 	//	If low on slots, fire a little less often.
+	// _argv[-1] - allow this to be disabled, but only at build time. This uses the same #define as removing this penalty for players, so it's not unfair against AI ships.
+#ifndef FS2_NO_LINKED_ROF_PENALTY
 	if (Num_weapons > (int) (0.9f * MAX_WEAPONS)) {
 		if (frand() > 0.5f) {
 			nprintf(("AI", "Frame %i, %s not fire.\n", Framecount, shipp->ship_name));
 			return 0;
 		}
 	}
+#endif
 
 	if (!Ai_firing_enabled){
 		return 0;
@@ -6000,7 +6084,9 @@ int ai_fire_primary_weapon(object *objp)
 	if (aip->target_objnum != -1){
 		enemy_objp = &Objects[aip->target_objnum];
 	} else {
-		enemy_objp = NULL;
+		//enemy_objp = NULL;
+		// _argv[-1] - if we have nothing to shoot at, what are we doing here?
+		return 0;
 	}
 
 	if ( (swp->current_primary_bank < 0) || (swp->current_primary_bank >= swp->num_primary_banks) || timestamp_elapsed(aip->primary_select_timestamp)) {
@@ -6189,7 +6275,10 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		ignore_mask |= WIF_HOMING;
 
 	//	If didn't find anything above, then pick any secondary weapon.
-	if (i == num_weapon_types) {
+	// _argv[-1] - give up if we can't find a usable weapon.
+	if (i == num_weapon_types && (WIF_HURTS_BIG_SHIPS & (priority1 | priority2)))
+		swp->current_secondary_bank = -1;
+	else if (i == num_weapon_types) {
 		swp->current_secondary_bank = priority2_index;	//	Assume we won't find anything.
 		if (priority2_index == -1) {
 			for (i=0; i<num_weapon_types; i++) {
@@ -6788,6 +6877,18 @@ void set_predicted_enemy_pos(vector *predicted_enemy_pos, object *pobjp, object 
 	} else {
 		scale = (1.0f - aip->ai_accuracy) * 4.0f * (1.0f + 4.0f * (1.0f - aip->time_enemy_in_range/(2*range_time)));
 	}
+
+	// _argv[-1] - triple this for fighter beams (which are very hard to keep on target, for humans).
+	if (shipp->flags & SF_PRIMARY_LINKED) {
+		for (int i = 0; i < MAX_PRIMARY_BANKS; i++) {
+			if (Weapon_info[shipp->weapons.primary_bank_weapons[i]].wi_flags & WIF_BEAM) {
+				scale *= 3.0f;
+				break;
+			}
+		}
+	}
+	else if (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags & WIF_BEAM)
+		scale *= 3.0f;
 
 	// if this ship is under the effect of an EMP blast, throw his aim off a bit
 	if (shipp->emp_intensity > 0.0f) {
@@ -7781,7 +7882,8 @@ void ai_set_guard_object(object *objp, object *other_objp)
 		aip->guard_wingnum = -1;
 
 		aip->mode = AIM_GUARD;
-		aip->submode = AIS_GUARD_STATIC;
+		//aip->submode = AIS_GUARD_STATIC;
+		aip->submode = SM_BIG_PARALLEL;
 
 		Assert(other_objnum >= 0);	//	Hmm, bogus object and we need its position for guard_vec.
 
@@ -7954,8 +8056,9 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		}
 
 		if (is_big_ship) {
-			priority1 = WIF_HUGE;
-			priority2 = WIF_BOMBER_PLUS;
+			// _argv[-1] - better priorities.
+			priority1 = WIF_HURTS_BIG_SHIPS;
+			priority2 = WIF_HUGE;
 		} else if ( (esip != NULL) && (esip->flags & SIF_BOMBER) ) {
 			priority1 = WIF_BOMBER_PLUS;
 			priority2 = WIF_HOMING;
@@ -8136,6 +8239,7 @@ void ai_cruiser_chase_set_goal_pos(vector *goal_pos, object *pl_objp, object *en
 
 	switch (aip->submode) {
 	case SM_BIG_APPROACH:
+	case SM_BIG_FACE: // _argv[-1] - same logic applies to this mode.
 		// do approach stuff;
 		ai_chase_big_approach_set_goal(goal_pos, pl_objp, en_objp, &accel);
 		break;
@@ -8171,6 +8275,18 @@ int maybe_hack_cruiser_chase_abort()
 			//}
 		}
 	}
+
+	// _argv[-1] - there is no need for a hack here. sathanas/beast/whatnot shouldn't swerve away because their big guns are in front.
+	// this can, of course, be easily determined by a ship flag. so we detect that here.
+	// we have to leave the above hack in to keep compatibility with existing ships.tbl.
+
+	// _argv[-1] - FIXME: verify that the big frontal guns are operational. would require flagging individual subsystems.
+	// if the ship has primary/secondary weapons, they are operational as long as the weapons subsystem is operational.
+	// it is assumed that, if the big ship has primary/secondary weapons and big frontal guns, the primary/secondary weapons
+	// are those big frontal guns.
+
+	if (Ship_info[shipp->ship_info_index].flags2 & SIF2_BIG_GUNS_IN_FRONT && (shipp->weapons.num_primary_banks == 0 || (ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS) > 0 && !ship_subsys_disrupted(shipp, SUBSYSTEM_WEAPONS))))
+		return 1;
 
 	return 0;
 }
@@ -8236,6 +8352,7 @@ void ai_cruiser_chase()
 
 		switch (aip->submode) {
 		case SM_BIG_APPROACH:
+		case SM_BIG_FACE: // _argv[-1] - same logic applies to this mode.
 			// do approach stuff;
 			ai_chase_big_approach_set_goal(&goal_pos, Pl_objp, En_objp, &accel);
 			// maybe set rvec
@@ -8257,7 +8374,8 @@ void ai_cruiser_chase()
 
 		// now move as desired
 		ai_turn_towards_vector(&goal_pos, Pl_objp, flFrametime, turn_time, NULL, NULL, 0.0f, 0, rvecp);
-		accelerate_ship(aip, accel);
+		if (aip->submode != SM_BIG_FACE) // _argv[-1] - don't accelerate when we should just sit.
+			accelerate_ship(aip, accel);
 
 
 		// maybe switch to new mode
@@ -8268,6 +8386,11 @@ void ai_cruiser_chase()
 		dist_to_enemy = vm_vec_mag_quick(&vec_to_enemy);
 
 		switch (aip->submode) {
+		case SM_BIG_FACE: // _argv[-1] - added.
+			if (dist_to_enemy >= (Pl_objp->radius + En_objp->radius)*1.25f + 200.0f)
+				aip->submode = SM_BIG_APPROACH; // got too far away, so approach again.
+			break;
+
 		case SM_BIG_APPROACH:
 			if ( dist_to_enemy < (Pl_objp->radius + En_objp->radius)*1.25f + 200.0f ) {
 				// moving
@@ -8281,6 +8404,11 @@ void ai_cruiser_chase()
 				// otherwise cirle
 				if ( !maybe_hack_cruiser_chase_abort() ) {
 					aip->submode = SM_BIG_CIRCLE;
+				}
+
+				// _argv[-1] - big forward guns, so stop, face, and shoot.
+				else {
+					aip->submode = SM_BIG_FACE;
 				}
 			}
 			break;
@@ -11199,6 +11327,13 @@ void turret_fire_weapon(ship_subsys *turret, int parent_objnum, vector *turret_p
 			}
 
 		} else {
+			// _argv[-1] - turret fire now consumes weapon energy off parent ship! whee!
+			if (Weapon_info[turret_weapon_class].wi_flags2 & WIF2_USE_ENERGY_ON_TURRET) {
+				if (parent_ship->weapon_energy < Weapon_info[turret_weapon_class].energy_consumed)
+					return;
+				else if (Weapon_info[turret_weapon_class].energy_consumed > 0)
+					parent_ship->weapon_energy -= Weapon_info[turret_weapon_class].energy_consumed;
+			}
 
 			// don't fire swarm, but set up swarm info
 			if (Weapon_info[turret_weapon_class].wi_flags & WIF_SWARM) {
@@ -11217,7 +11352,8 @@ void turret_fire_weapon(ship_subsys *turret, int parent_objnum, vector *turret_p
 
 				if ( Weapon_info[turret_weapon_class].launch_snd != -1 ) {
 					// Don't play turret firing sound if turret sits on player ship... it gets annoying.
-					if ( parent_objnum != OBJ_INDEX(Player_obj) ) {						
+					// _argv[-1] - command line option to allow it anyway.
+					if ( parent_objnum != OBJ_INDEX(Player_obj) || Argv_options.sound_from_own_turrets ) {						
 						snd_play_3d( &Snds[Weapon_info[turret_weapon_class].launch_snd], turret_pos, &View_position );						
 					}
 				}		
@@ -12641,6 +12777,10 @@ void ai_chase_circle(object *objp)
 //	Transfer shield energy to most recently hit section from others.
 void ai_transfer_shield(object *objp, int quadrant_num)
 {
+	// _argv[-1] - singular shield.
+	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
+		return;
+
 	int	i;
 	float	transfer_amount;
 	float	transfer_delta;
@@ -12670,6 +12810,10 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 
 void ai_balance_shield(object *objp)
 {
+	// _argv[-1] - singular shield.
+	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
+		return;
+
 	int	i;
 	float	shield_strength_avg;
 	float	delta;
@@ -12699,6 +12843,10 @@ void ai_balance_shield(object *objp)
 //	Try to max out the side that was most recently hit.
 void ai_manage_shield(object *objp, ai_info *aip)
 {
+	// _argv[-1] - singular shield.
+	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
+		return;
+
 	ship_info *sip;
 
 	sip = &Ship_info[Ships[objp->instance].ship_info_index];
