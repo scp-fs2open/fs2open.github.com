@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-03-03 06:05:28 $
+ * $Revision: 2.53 $
+ * $Date: 2005-03-06 11:23:45 $
  * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/03/03 06:05:28  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.51  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -5094,6 +5097,7 @@ void hud_show_weapon_energy_gauge()
 			max_w = 60;
 		}
 
+		gr_resize_screen_pos(&currentx, &currenty);
 		for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
 		{
 			//Draw the weapon bright or normal depending if it's active or not.
@@ -5105,7 +5109,7 @@ void hud_show_weapon_energy_gauge()
 			{
 				hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_NORMAL);
 			}
-			gr_string(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);
+			gr_string(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name, false);
 
 			//Next 'line'
 			currenty += 10;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-03-03 07:32:55 $
+ * $Revision: 1.13 $
+ * $Date: 2005-03-06 11:23:45 $
  * $Author: wmcoolmon $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/03/03 07:32:55  wmcoolmon
+ * Oops
+ *
  * Revision 1.11  2005/03/03 06:05:28  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -57,7 +60,7 @@
 #include <setjmp.h>
 
 extern "C" {
-	#include <jpeglib.h>
+	#include <libjpeg/jpeglib.h>
 }
 
 #undef LOCAL // fix from a jpeg header, pstypes.h will define it again

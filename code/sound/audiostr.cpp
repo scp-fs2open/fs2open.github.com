@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-03-03 07:30:15 $
+ * $Revision: 2.14 $
+ * $Date: 2005-03-06 11:23:45 $
  * $Author: wmcoolmon $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/03/03 07:30:15  wmcoolmon
+ * Removed my Assert(true)s :p
+ *
  * Revision 2.12  2005/02/28 01:24:02  taylor
  * uugh, missed the initial tree move (WMC: probable locking problem)
  *
@@ -1279,6 +1282,15 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 		// Skip the "RIFF" tag and file size (8 bytes)
 		// Skip the "WAVE" tag (4 bytes)
 		mmioSeek( cfp, 12+FileOffset, SEEK_SET );
+		/*char buf[4];
+		mmioRead(cfp, buf, sizeof(char)*4);
+		if(strnicmp("RIFF", buf, 4))
+			goto OPEN_ERROR;
+		//Skip file length
+		mmioSeek( cfp, 4, SEEK_CUR);
+		mmioRead(cfp, buf, sizeof(char)*4);
+		if(strnicmp("WAVE", buf, 4))
+			goto OPEN_ERROR;*/
 
 		// Now read RIFF tags until the end of file
 		uint tag, size, next_chunk;
@@ -1415,7 +1427,8 @@ BOOL WaveFile::Cue (void)
 	//Ogg is special...
 	if(m_wave_format == OGG_FORMAT_VORBIS)
 	{
-		ov_raw_seek( &m_ogg_info, m_data_offset );
+		mmioSeek((HMMIO)m_ogg_info.datasource, m_data_offset, SEEK_SET);
+		//ov_raw_seek( &m_ogg_info, m_data_offset );
 		m_data_bytes_left = m_nDataSize;
 		m_abort_next_read = FALSE;
 
@@ -1532,7 +1545,8 @@ int WaveFile::Read(BYTE *pbDest, UINT cbSize, int service)
 			}
 
 			//OGG is trying to read the next file!
-			m_data_bytes_left = (m_data_offset + m_nDataSize) - (int)ov_raw_tell( &m_ogg_info );
+			//m_data_bytes_left = (m_data_offset + m_nDataSize) - (int)ov_raw_tell( &m_ogg_info );
+			m_data_bytes_left = (m_data_offset + m_nDataSize) - mmioSeek((HMMIO) m_ogg_info.datasource, 0, SEEK_CUR);
 			if(m_data_bytes_left <= 0)
 			{
 				m_abort_next_read = TRUE;
