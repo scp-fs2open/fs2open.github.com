@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-11-13 03:59:54 $
- * $Author: Kazan $
+ * $Revision: 2.16 $
+ * $Date: 2004-02-04 09:02:44 $
+ * $Author: Goober5000 $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/11/13 03:59:54  Kazan
+ * PXO_SID changed from unsigned to signed
+ *
  * Revision 2.14  2003/11/12 00:44:52  Kazan
  * (Kazan) /me slaps forehead... make sure things compile before committing.. sorry guys
  *
@@ -1246,7 +1249,7 @@ void multi_join_blit_protocol();
 
 DCF(mj_make, "")
 {
-	active_game ag, *newitem;;
+	active_game ag, *newitem;
 	int idx;
 
 	dc_get_arg(ARG_INT);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-18 10:07:05 $
- * $Author: unknownplayer $
+ * $Revision: 2.6 $
+ * $Date: 2004-02-04 09:02:44 $
+ * $Author: Goober5000 $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/18 10:07:05  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.4  2003/03/02 06:04:00  penguin
  * Added versions of _outp() and _inp() for gcc.
  * Revision 2.1.2.3  2002/11/09 19:28:15  randomtiger
@@ -1197,7 +1200,7 @@ BOOL outwnd_create(int display_under_freespace_window)
 		return FALSE;
 
 	if (display_under_freespace_window)	{
-		style = WS_OVERLAPPEDWINDOW;;
+		style = WS_OVERLAPPEDWINDOW;
 
 		RECT client_rect;
 		client_rect.left = client_rect.top = 0;
@@ -1224,7 +1227,7 @@ BOOL outwnd_create(int display_under_freespace_window)
 			rect.bottom = 400;
 		}	
 	} else {
-		style = WS_OVERLAPPEDWINDOW | WS_MINIMIZE;;
+		style = WS_OVERLAPPEDWINDOW | WS_MINIMIZE;
 		rect.top = rect.bottom = rect.left = rect.right = CW_USEDEFAULT;
 	}
 	

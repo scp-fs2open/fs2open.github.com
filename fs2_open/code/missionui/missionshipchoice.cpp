@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-01-21 17:37:04 $
- * $Author: phreak $
+ * $Revision: 2.18 $
+ * $Date: 2004-02-04 09:02:43 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/01/21 17:37:04  phreak
+ * added MAX_DRAW_DISTANCE to the ship selection display.  This will only take effect if the ani isn't there
+ *
  * Revision 2.16  2003/12/05 18:17:06  randomtiger
  * D3D now supports loading for DXT1-5 into the texture itself, defaults to on same as OGL.
  * Fixed bug in old ship choice screen that stopped ani repeating.
@@ -3629,7 +3632,7 @@ void ss_recalc_multiplayer_slots()
 	
 	// no wings
 	if ( Wss_num_wings <= 0 ) {
-		Wss_slots[0].ship_class = Team_data[Common_team].default_ship;;
+		Wss_slots[0].ship_class = Team_data[Common_team].default_ship;
 		return;
 	}
 
