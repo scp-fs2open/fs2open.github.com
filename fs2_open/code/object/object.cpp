@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-02-05 14:31:44 $
+ * $Revision: 2.18 $
+ * $Date: 2004-02-06 22:58:18 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/02/05 14:31:44  Goober5000
+ * fixed a few random bugs
+ * --Goober5000
+ *
  * Revision 2.16  2004/02/04 08:41:02  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -714,6 +718,9 @@ float get_hull_pct(object *objp)
 	Assert(total_strength > 0.0f);	// unlike shield, no ship can have 0 hull
 
 	if (total_strength == 0.0f)
+		return 0.0f;
+
+	if (objp->hull_strength < 0.0f)	// this sometimes happens when a ship is being destroyed
 		return 0.0f;
 
 	return objp->hull_strength / total_strength;
