@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-03-19 22:49:32 $
+ * $Revision: 2.7 $
+ * $Date: 2003-03-19 23:06:40 $
  * $Author: Goober5000 $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/03/19 22:49:32  Goober5000
+ * added some mission flags
+ * --Goober5000
+ *
  * Revision 2.5  2003/03/19 06:23:27  Goober5000
  * added warp-effect sexp
  * --Goober5000
@@ -156,7 +160,8 @@
 #include "fireball/fireballs.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
-#include "Weapon/Beam.h"
+#include "weapon/beam.h"
+#include "mission/missionparse.h"
 
 extern int wm;
 

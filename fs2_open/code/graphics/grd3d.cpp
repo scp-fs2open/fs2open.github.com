@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-03-19 12:29:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.11 $
+ * $Date: 2003-03-19 23:06:39 $
+ * $Author: Goober5000 $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/03/19 12:29:02  unknownplayer
+ * Woohoo! Killed two birds with one stone!
+ * Fixed the 'black screen around dialog boxes' problem and also the much more serious freezing problem experienced by Goober5000. It wasn't a crash, just an infinite loop. DX8 merge is GO! once again :)
+ *
  * Revision 2.9  2003/03/19 09:05:26  Goober5000
  * more housecleaning, this time for debug warnings
  * --Goober5000
@@ -2103,7 +2107,7 @@ void d3d_update_adapter_mode_list(HWND hwnd)
 	// be forced to run a 1024x768 image by default
 	
 	// Setup a variable to do bit depth comparions between modes against
-	uint askedbitdepth;
+	int askedbitdepth;
 	
 	if (Cmdline_force_32bit == 1)
 	{

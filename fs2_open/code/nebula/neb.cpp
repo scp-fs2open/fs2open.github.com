@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-19 09:05:26 $
+ * $Revision: 2.6 $
+ * $Date: 2003-03-19 23:06:40 $
  * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/19 09:05:26  Goober5000
+ * more housecleaning, this time for debug warnings
+ * --Goober5000
+ *
  * Revision 2.4  2003/03/19 06:22:58  Goober5000
  * added typecasting to get rid of some build warnings
  * --Goober5000
@@ -1379,9 +1383,9 @@ void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 		avg_count++;
 	}		
 
-	rv = ra / avg_count;
-	gv = ga / avg_count;
-	bv = ba / avg_count;
+	rv = (ubyte)(ra / (int)avg_count);
+	gv = (ubyte)(ga / (int)avg_count);
+	bv = (ubyte)(ba / (int)avg_count);
 
 	// return values
 	*r = (int)rv;
