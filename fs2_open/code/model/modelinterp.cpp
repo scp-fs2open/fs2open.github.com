@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.42 $
- * $Date: 2003-10-25 06:56:06 $
- * $Author: bobboau $
+ * $Revision: 2.43 $
+ * $Date: 2003-10-26 00:31:59 $
+ * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/10/25 06:56:06  bobboau
+ * adding FOF stuff,
+ * and fixed a small error in the matrix code,
+ * I told you it was indeed suposed to be gr_start_instance_matrix
+ * in g3_done_instance,
+ * g3_start_instance_angles needs to have an gr_ API abstraction version of it made
+ *
  * Revision 2.41  2003/10/25 03:27:50  phreak
  * fixed some old bugs that reappeared after RT committed his texture code
  *
@@ -3468,8 +3475,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
 	}
 	else {
-
+		// Putting this in on Phreaks advise so we get hulls drawn again.
+		model_interp_subcall(pm,pm->detail[detail_level],detail_level);
 	}
+
 	if (Interp_flags & MR_SHOW_PIVOTS )	{
 		model_draw_debug_points( pm, NULL );
 		model_draw_debug_points( pm, &pm->submodel[pm->detail[detail_level]] );

@@ -980,7 +980,8 @@ bool d3d_init_device()
 		GlobalD3DVars::d3dpp.BackBufferHeight = mode.Height;
 
 		// Determine if we are using a custom size
-		if(mode.Width != 1024 && mode.Height != 768) {
+		if((mode.Width != 1024 && mode.Height != 768) &&
+		   (mode.Width !=  640 && mode.Height != 480) ) {
 			GlobalD3DVars::D3D_custom_size = GR_1024;
 
 			// Override these values

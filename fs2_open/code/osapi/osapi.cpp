@@ -9,13 +9,21 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-10-16 00:17:18 $
+ * $Revision: 2.11 $
+ * $Date: 2003-10-26 00:31:59 $
  * $Author: randomtiger $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/10/16 00:17:18  randomtiger
+ * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
+ * As well as initialised in a different mode, bitmaps are stretched and for these modes
+ * previously point filtered textures now use linear to keep them smooth.
+ * I also had to shuffle some of the GR_1024 a bit.
+ * Put my HT&L flags in ready for my work to sort out some of the render order issues.
+ * Tided some other stuff up.
+ *
  * Revision 2.9  2003/08/21 20:54:38  randomtiger
  * Fixed switching - RT
  *
@@ -713,8 +721,8 @@ BOOL win32_create_window()
 									style,   
 									CW_USEDEFAULT,
 									CW_USEDEFAULT,
-									hires ? 1024 : 640 + x_add,
-									hires ? 768 : 480 + y_add,
+									(hires ? 1024 : 640) + x_add,
+									(hires ? 768 : 480) + y_add,
 									NULL, (HMENU)NULL, hInst, (LPSTR)NULL);	
 	} 
 	else 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-10-24 17:35:05 $
+ * $Revision: 2.12 $
+ * $Date: 2003-10-26 00:31:58 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/10/24 17:35:05  randomtiger
+ * Implemented support for 32bit TGA and JPG for D3D
+ * Also 32 bit PCX, but it still has some bugs to be worked out
+ * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
+ *
  * Revision 2.10  2003/10/17 17:18:42  randomtiger
  * Big restructure for D3D and new modules grd3dlight and grd3dsetup
  *
@@ -954,13 +959,12 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 		return 0;
 	}
 
-  	if(d3d_lock_and_set_internal_texture(stage, bitmap_id, 16, BMP_TEX_XPARENT, u_scale, v_scale) == true) 
+	if(d3d_lock_and_set_internal_texture(stage, bitmap_id, 16, bitmap_type, u_scale, v_scale) == true) 
 	{
-	//	D3D_last_bitmap_type = BMP_TEX_XPARENT;
-	 //	D3D_last_section_x = -1;
-	//	D3D_last_section_y = -1;
+	 	D3D_last_section_x = -1;
+		D3D_last_section_y = -1;
 
-	 //	D3D_last_bitmap_id = -1;
+	 	D3D_last_bitmap_id = -1;
 	 	return 1;
 	}
 
@@ -997,6 +1001,7 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 	if(bitmap_type == TCACHE_TYPE_BITMAP_SECTION){	 
 		int result = (sx >= 0) && (sy >= 0) && (sx < MAX_BMAP_SECTIONS_X) && (sy < MAX_BMAP_SECTIONS_Y);
 
+		// Bad section
 		Assert(result);
 		if(!result){
 			return 0;
@@ -1046,26 +1051,21 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 
 	}
 
-	// everything went ok
-	if(ret_val)
-	{
-		*u_scale = t->u_scale;
-		*v_scale = t->v_scale;
-
-		d3d_SetTexture(stage, t->d3d8_thandle);
-		
-		D3D_last_bitmap_id = t->bitmap_id;
-		D3D_last_bitmap_type = bitmap_type;
-		D3D_last_section_x = sx;
-		D3D_last_section_y = sy;
-
-		t->used_this_frame++;		
-	}
-	// gah
-	else {	
+	if(!ret_val) {
 	 	return 0;
-   	}	
+	}
+	
+	*u_scale = t->u_scale;
+	*v_scale = t->v_scale;
 
+	d3d_SetTexture(stage, t->d3d8_thandle);
+	
+	D3D_last_bitmap_id = t->bitmap_id;
+	D3D_last_bitmap_type = bitmap_type;
+	D3D_last_section_x = sx;
+	D3D_last_section_y = sy;
+
+	t->used_this_frame++;		
 	return 1;
 }
 
@@ -1421,7 +1421,7 @@ void *d3d_lock_32_pcx(char *real_filename, float *u, float *v)
 	// OK, we are ready to go, lets get some D3D texture space
 	if(FAILED(GlobalD3DVars::lpD3DDevice->CreateTexture(
 			dst_xsize, dst_ysize,
-			0, // No mipmapping for now
+			0, 
 			0,
 			D3DFMT_A8R8G8B8, 
 			D3DPOOL_MANAGED, &p_texture)))
@@ -1522,9 +1522,6 @@ void *d3d_lock_d3dx_types(char *file, int type, int bitmapnum, ubyte flags )
 		default: return NULL;
 	}
 
-	// If its a 16 bit texture we will want to dither
-	DWORD load_filter = D3DX_FILTER_TRIANGLE;
-
 	CFILE *targa_file = cfopen( filename , "rb" );
 
 	if (targa_file == NULL){
@@ -1570,8 +1567,9 @@ void *d3d_lock_d3dx_types(char *file, int type, int bitmapnum, ubyte flags )
 		0, 
 		use_format,
 		D3DPOOL_MANAGED, 
-		load_filter, 
-		D3DX_DEFAULT,
+		D3DX_FILTER_LINEAR, 
+	 	D3DX_DEFAULT,
+	  //	D3DX_FILTER_NONE,
 		0, 
 		&source_desc, 
 		NULL, &ptexture);

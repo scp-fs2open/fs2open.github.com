@@ -841,7 +841,12 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 
 
 	// Turn off 32bit PCX for now, its still buggy
-	int valid_pcx	= 0;//bm_bitmaps[bitmapnum].type == BM_TYPE_PCX && bpp != 8 && Cmdline_32bit_textures;
+	int valid_pcx	= 
+#ifdef PCX_32
+		bm_bitmaps[bitmapnum].type == BM_TYPE_PCX && Cmdline_32bit_textures;
+#else
+	0;
+#endif
 	int valid_other = bm_bitmaps[bitmapnum].type == BM_TYPE_TGA || bm_bitmaps[bitmapnum].type == BM_TYPE_JPG;
 
 
@@ -851,8 +856,16 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 		bm_d3d_lock(handle, bpp, flags );
 		bm_unlock(handle);	
 
-	 	if(u_scale) *u_scale = 1.0;//d3d_bitmap_entry[bitmapnum].uscale;
-	 	if(v_scale) *v_scale = 1.0;//d3d_bitmap_entry[bitmapnum].vscale;
+		if(bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32)
+		{
+		  	if(u_scale) *u_scale = d3d_bitmap_entry[bitmapnum].uscale;
+	   	  	if(v_scale) *v_scale = d3d_bitmap_entry[bitmapnum].vscale;
+		}
+	  	else
+		{
+	 		if(u_scale) *u_scale = 1.0;
+	 		if(v_scale) *v_scale = 1.0;
+		}
 	}
 
 	if(bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32 || valid_other)
@@ -898,11 +911,9 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 	// 8 bit images are likcy to be masks, data needs to be passed back
 	if(be->type == BM_TYPE_PCX && bpp != 8 && Cmdline_32bit_textures)
 	{
-//   	 	be->type = BM_TYPE_PCX_32;
-
-		// No texture sections
-	 //	bmp->sections.num_x = bmp->sections.num_y = 0;
-	 //	bmp->sections.sx[0] = bmp->sections.sy[0] = 0;
+#ifdef PCX_32
+   	 	be->type = BM_TYPE_PCX_32;
+#endif
 	}
 
 	// If you hit this assert, chances are that someone freed the
