@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.44 $
- * $Date: 2004-12-25 17:02:18 $
+ * $Revision: 2.45 $
+ * $Date: 2004-12-25 19:17:23 $
  * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2004/12/25 17:02:18  wmcoolmon
+ * Fixed a couple of blonde moments.
+ *
  * Revision 2.43  2004/12/24 19:36:12  Goober5000
  * resorted command-line options and added an option for WMC's ballistic gauge
  * --Goober5000
@@ -5447,7 +5450,7 @@ void hud_show_weapons()
 		}
 		
 		emp_hud_printf(Weapon_plink_coords[gr_screen.res][0][0], Weapon_plink_coords[gr_screen.res][0][1], EG_NULL, "%c", Lcl_special_chars + 2);
-		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -2)
+		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -1)
 		{
 			GR_AABITMAP(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index, Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1]);
 		}
