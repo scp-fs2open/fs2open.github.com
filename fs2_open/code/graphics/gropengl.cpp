@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.84 $
- * $Date: 2004-07-29 09:35:29 $
+ * $Revision: 2.85 $
+ * $Date: 2004-09-24 22:40:23 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2004/07/29 09:35:29  taylor
+ * fix NULL pointer and try to prevent in future, remove excess commands in opengl_cleanup()
+ *
  * Revision 2.83  2004/07/26 20:47:31  Kazan
  * remove MCD complete
  *
@@ -1493,32 +1496,6 @@ void gr_opengl_string( int sx, int sy, char *s )
 	TIMERBAR_POP();
 }
 
-// this is fsckin' stupid but doesn't appear to hurt performance a noticable amount
-// don't use any g3_* stuff here or the framerate will get shot in the head, and die
-void gr_opengl_line_htl(float sx1, float sy1, float sx2, float sy2)
-{
-	ubyte zero[]={0,0,0};
-
-	extern float View_zoom;
-
-	gr_end_proj_matrix();
-	gr_end_view_matrix();
-
-	glBegin (GL_LINES);
-		glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-		glSecondaryColor3ubvEXT(zero);
-
-		glVertex3f (sx2, sy2, -0.99f);
-		glVertex3f (sx1, sy1, -0.99f);
-	glEnd ();
-
-	// this is the basic call used for everything but HudTargetBox.
-	// HTB ends it's proj matrix just after this is called so it's not bad, just be aware
-	gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-}
-
 void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 {
 	if(resize)
@@ -1543,6 +1520,22 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 	sy2 = i2fl(y2 + gr_screen.offset_y);
 	
 	if ( x1 == x2 && y1 == y2 ) {
+		if ( !Cmdline_nohtl ) {
+			glMatrixMode( GL_PROJECTION );
+			glPushMatrix();
+			glLoadIdentity();
+
+			// the top and bottom positions are reversed on purpose
+			glOrtho( 0, gr_screen.max_w, gr_screen.max_h, 0, 0, 1 );
+
+			glMatrixMode( GL_MODELVIEW );
+			glPushMatrix();
+			glLoadIdentity();
+
+			// the viewport needs to be the full screen size since glOrtho() is relative to it
+			glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+		}
+
 		glBegin (GL_POINTS);
 		  glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 		 
@@ -1550,7 +1543,14 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 
 		  glVertex3f (sx1, sy1, -0.99f);
 		glEnd ();
-		
+
+		if ( !Cmdline_nohtl ) {
+			glMatrixMode( GL_PROJECTION );
+			glPopMatrix();
+			glMatrixMode( GL_MODELVIEW );
+			glPopMatrix();
+		}
+
 		return;
 	}
 
@@ -1568,12 +1568,20 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 		}
 	}
 
-	// prepare to lose brain cells - then find a better fix
-	// don't use this with Fred since it hides models
-	extern int GL_htl_projection_matrix_set;
-	if (!Cmdline_nohtl && !Fred_running && GL_htl_projection_matrix_set) {
-		gr_opengl_line_htl(sx1, sy1, sx2, sy2);
-		return;
+	if ( !Cmdline_nohtl ) {
+		glMatrixMode( GL_PROJECTION );
+		glPushMatrix();
+		glLoadIdentity();
+
+		// the top and bottom positions are reversed on purpose
+		glOrtho( 0, gr_screen.max_w, gr_screen.max_h, 0, 0, 1 );
+
+		glMatrixMode( GL_MODELVIEW );
+		glPushMatrix();
+		glLoadIdentity();
+
+		// the viewport needs to be the full screen size since glOrtho() is relative to it
+		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 	}
 
 	glBegin (GL_LINES);
@@ -1584,6 +1592,13 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 	  glVertex3f (sx2, sy2, -0.99f);
 	  glVertex3f (sx1, sy1, -0.99f);
 	glEnd ();
+
+	if ( !Cmdline_nohtl ) {
+		glMatrixMode( GL_PROJECTION );
+		glPopMatrix();
+		glMatrixMode( GL_MODELVIEW );
+		glPopMatrix();
+	}
 }
 
 void gr_opengl_aaline(vertex *v1, vertex *v2)
