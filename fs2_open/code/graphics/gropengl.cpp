@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.83 $
- * $Date: 2004-07-26 20:47:31 $
- * $Author: Kazan $
+ * $Revision: 2.84 $
+ * $Date: 2004-07-29 09:35:29 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2004/07/26 20:47:31  Kazan
+ * remove MCD complete
+ *
  * Revision 2.82  2004/07/17 18:46:07  taylor
  * various OGL and memory leak fixes
  *
@@ -2443,20 +2446,15 @@ void opengl_tcache_cleanup ();
 void gr_opengl_cleanup(int minimize)
 {	
 	HWND wnd=(HWND)os_get_window();
-	if ( !OGL_inited )	return;
 
-#ifndef FRED
-	gr_reset_clip();
-	gr_clear();
-	gr_flip();
+	if ( !OGL_inited )
+		return;
 
-
-	if ( !OGL_inited )	return;
-	
-	gr_reset_clip();
-	gr_clear();
-	gr_flip();
-#endif
+	if ( !Fred_running ) {
+		gr_reset_clip();
+		gr_clear();
+		gr_flip();
+	}
 
 	OGL_inited = 0;
 
@@ -3173,7 +3171,11 @@ void gr_opengl_center_alpha( int type){
 void gr_opengl_set_texture_addressing(int mode){
 }
 
-void gr_opengl_setup_background_fog(bool set){
+void gr_opengl_setup_background_fog(bool set)
+{
+	if (Cmdline_nohtl)
+		return;
+
 }
 
 void gr_opengl_render_to_env(int FACE);
@@ -3569,56 +3571,44 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.gf_set_fill_mode = gr_opengl_set_fill_mode;
 	gr_screen.gf_set_texture_panning = gr_opengl_set_texture_panning;
 
-	if(!Cmdline_nohtl) {
-		gr_screen.gf_make_buffer = gr_opengl_make_buffer;
-		gr_screen.gf_destroy_buffer = gr_opengl_destroy_buffer;
-		gr_screen.gf_render_buffer = gr_opengl_render_buffer;
-		gr_screen.gf_set_buffer = gr_opengl_set_buffer;
+	gr_screen.gf_make_buffer = gr_opengl_make_buffer;
+	gr_screen.gf_destroy_buffer = gr_opengl_destroy_buffer;
+	gr_screen.gf_render_buffer = gr_opengl_render_buffer;
+	gr_screen.gf_set_buffer = gr_opengl_set_buffer;
 
-		gr_screen.gf_start_instance_matrix = gr_opengl_start_instance_matrix;
-		gr_screen.gf_end_instance_matrix = gr_opengl_end_instance_matrix;
-		gr_screen.gf_start_angles_instance_matrix = gr_opengl_start_instance_angles;
+	gr_screen.gf_start_instance_matrix = gr_opengl_start_instance_matrix;
+	gr_screen.gf_end_instance_matrix = gr_opengl_end_instance_matrix;
+	gr_screen.gf_start_angles_instance_matrix = gr_opengl_start_instance_angles;
 
+	gr_screen.gf_make_light = gr_opengl_make_light;
+	gr_screen.gf_modify_light = gr_opengl_modify_light;
+	gr_screen.gf_destroy_light = gr_opengl_destroy_light;
+	gr_screen.gf_set_light = gr_opengl_set_light;
+	gr_screen.gf_reset_lighting = gr_opengl_reset_lighting;
 
-		gr_screen.gf_make_light = gr_opengl_make_light;
-		gr_screen.gf_modify_light = gr_opengl_modify_light;
-		gr_screen.gf_destroy_light = gr_opengl_destroy_light;
-		gr_screen.gf_set_light = gr_opengl_set_light;
-		gr_screen.gf_reset_lighting = gr_opengl_reset_lighting;
+	gr_screen.gf_start_clip_plane = gr_opengl_start_clip_plane;
+	gr_screen.gf_end_clip_plane = gr_opengl_end_clip_plane;
 
-		gr_screen.gf_start_clip_plane = gr_opengl_start_clip_plane;
-		gr_screen.gf_end_clip_plane = gr_opengl_end_clip_plane;
+	gr_screen.gf_lighting = gr_opengl_set_lighting;
 
-		gr_screen.gf_lighting = gr_opengl_set_lighting;
+	gr_screen.gf_set_proj_matrix=gr_opengl_set_projection_matrix;
+	gr_screen.gf_end_proj_matrix=gr_opengl_end_projection_matrix;
 
-		gr_screen.gf_set_proj_matrix=gr_opengl_set_projection_matrix;
-		gr_screen.gf_end_proj_matrix=gr_opengl_end_projection_matrix;
+	gr_screen.gf_set_view_matrix=gr_opengl_set_view_matrix;
+	gr_screen.gf_end_view_matrix=gr_opengl_end_view_matrix;
 
-		gr_screen.gf_set_view_matrix=gr_opengl_set_view_matrix;
-		gr_screen.gf_end_view_matrix=gr_opengl_end_view_matrix;
+	gr_screen.gf_push_scale_matrix = gr_opengl_push_scale_matrix;
+	gr_screen.gf_pop_scale_matrix = gr_opengl_pop_scale_matrix;
+	gr_screen.gf_center_alpha = gr_opengl_center_alpha;
 
-		gr_screen.gf_push_scale_matrix = gr_opengl_push_scale_matrix;
-		gr_screen.gf_pop_scale_matrix = gr_opengl_pop_scale_matrix;
-		gr_screen.gf_center_alpha = gr_opengl_center_alpha;
-
-		gr_screen.gf_setup_background_fog = gr_opengl_setup_background_fog;
-		gr_screen.gf_set_environment_mapping = gr_opengl_render_to_env;;
+	gr_screen.gf_setup_background_fog = gr_opengl_setup_background_fog;
+	gr_screen.gf_set_environment_mapping = gr_opengl_render_to_env;;
 		
-//		glEnable(GL_NORMALIZE);
-	}
-	else	//use some function stubs
-	{
-		gr_screen.gf_make_light = gr_opengl_make_light;
-		gr_screen.gf_modify_light = gr_opengl_modify_light;
-		gr_screen.gf_destroy_light = gr_opengl_destroy_light;
-		gr_screen.gf_set_light = gr_opengl_set_light;
-		gr_screen.gf_reset_lighting = gr_opengl_reset_lighting;
+	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
+	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
+	// *****************************************************************************
 
-
-		gr_screen.gf_lighting = gr_opengl_set_lighting;
-
-	}
-
+	
 	Mouse_hidden++;
 	gr_reset_clip();
 	gr_clear();
