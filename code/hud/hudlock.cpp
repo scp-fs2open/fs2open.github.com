@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2004-11-27 10:45:36 $
+ * $Author: taylor $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -838,7 +841,7 @@ void hud_draw_lock_triangles_old(int center_x, int center_y, int radius)
 		ang += PI/12;
 	}
 
-	for (ang; ang <= end_ang; ang += PI/2.0f) {
+	for (; ang <= end_ang; ang += PI/2.0f) {
 
 		// draw the orbiting triangles
 

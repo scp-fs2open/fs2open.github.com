@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-10-15 13:10:06 $
- * $Author: phreak $
+ * $Revision: 2.12 $
+ * $Date: 2004-11-27 10:45:36 $
+ * $Author: taylor $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/10/15 13:10:06  phreak
+ * Made WMCoolmon's hud target info brackets recognize alt-names
+ * --phreak
+ *
  * Revision 2.10  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -769,6 +773,10 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 	}
 		
 	draw_brackets_square(x1-w_correction, y1-h_correction, x2+w_correction, y2+h_correction);
+
+	// *** everything blow is taken care of with this unsize ***
+	gr_unsize_screen_pos(&x1, &y1);
+	gr_unsize_screen_pos(&x2, &y2);
 
 	// draw distance to target in lower right corner of box
 	if ( distance > 0 ) {

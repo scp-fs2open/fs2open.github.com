@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.37 $
- * $Date: 2004-11-23 00:10:06 $
+ * $Revision: 2.38 $
+ * $Date: 2004-11-27 10:48:03 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2004/11/23 00:10:06  taylor
+ * try and protect the bitmap_entry stuff a bit better
+ * fix the transparent support ship, again, but correctly this time
+ *
  * Revision 2.36  2004/10/31 21:36:39  taylor
  * s/fisrt/first/g, bmpman merge
  *
@@ -570,7 +574,7 @@ struct index_list{
 //a list of triangles and there assosiated normals
 
 struct poly_list{
-	poly_list():currently_allocated(0),n_verts(0), n_prim(0),vert(NULL),norm(NULL){};
+	poly_list(): n_prim(0), n_verts(0), vert(NULL), norm(NULL), currently_allocated(0) {};
 	~poly_list();
 	void allocate(int size);
 	void make_index_buffer();
@@ -928,6 +932,7 @@ extern screen gr_screen;
 bool gr_unsize_screen_pos(int *x, int *y);
 bool gr_resize_screen_pos(int *x, int *y);
 bool gr_unsize_screen_posf(float *x, float *y);
+bool gr_resize_screen_posf(float *x, float *y);
 
 // Returns -1 if couldn't init font, otherwise returns the
 // font id number.  If you call this twice with the same typeface,

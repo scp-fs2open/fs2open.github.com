@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:33 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2004-11-27 10:45:36 $
+ * $Author: taylor $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:33  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:50  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -650,7 +653,8 @@ void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wing
 {
 	int i, sx, sy, is_bright, bitmap = -1, screen_pos;
 
-	Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame;
+	// yeah... somebody must have been drunk
+	//Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame;
 
 	if ( Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame < 0 ) {
 		return;

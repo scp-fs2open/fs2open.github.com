@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.37 $
- * $Date: 2004-10-31 21:48:42 $
+ * $Revision: 2.38 $
+ * $Date: 2004-11-27 10:45:36 $
  * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2004/10/31 21:48:42  taylor
+ * faster setting of 0 spec values (Kazan), comment out second (dumbfire?) lead indicator since it just looked wierd constantly being offset
+ *
  * Revision 2.36  2004/10/18 17:13:36  taylor
  * make sure all spec colors are set to 0 in hud_tri()
  *
@@ -3073,8 +3076,8 @@ void hud_render_orientation_tee(object *from_objp, object *to_objp, matrix *from
 	y4 = y1 - T_BASE_LENGTH * (float)cos(dot_product);
 
 	// HACK! Should be antialiased!
-	gr_line(fl2i(x3),fl2i(y3),fl2i(x4),fl2i(y4));	// bottom of T
-	gr_line(fl2i(x1),fl2i(y1),fl2i(x2),fl2i(y2));	// part of T pointing towards center
+	gr_line(fl2i(x3),fl2i(y3),fl2i(x4),fl2i(y4),true);	// bottom of T
+	gr_line(fl2i(x1),fl2i(y1),fl2i(x2),fl2i(y2),true);	// part of T pointing towards center
 
 }
 
@@ -3113,6 +3116,9 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3)
 	verts[1].sx = x2;	verts[1].sy = y2;
 	verts[2].sx = x3;	verts[2].sy = y3;
 
+	for (i=0; i<3; i++)
+		gr_resize_screen_posf(&verts[i].sx, &verts[i].sy);
+
 	uint saved_mode = gr_zbuffer_get();
 	
 	gr_zbuffer_set( GR_ZBUFF_NONE );
@@ -3125,9 +3131,9 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3)
 
 void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3)
 {
-	gr_line(fl2i(x1),fl2i(y1),fl2i(x2),fl2i(y2));
-	gr_line(fl2i(x2),fl2i(y2),fl2i(x3),fl2i(y3));
-	gr_line(fl2i(x3),fl2i(y3),fl2i(x1),fl2i(y1));
+	gr_line(fl2i(x1),fl2i(y1),fl2i(x2),fl2i(y2),true);
+	gr_line(fl2i(x2),fl2i(y2),fl2i(x3),fl2i(y3),true);
+	gr_line(fl2i(x3),fl2i(y3),fl2i(x1),fl2i(y1),true);
 }
 
 
@@ -3193,7 +3199,7 @@ void hud_render_tail_missile_triangle(float ang, float xpos, float ypos, float c
 
 	// draw the tail indicating length
 	if ( tail_len > 0 ) {
-		gr_line(fl2i(xpos), fl2i(ypos), fl2i(xtail), fl2i(ytail));
+		gr_line(fl2i(xpos), fl2i(ypos), fl2i(xtail), fl2i(ytail), true);
 	}
 }
 
@@ -3291,7 +3297,7 @@ void hud_render_split_missile_triangle(float ang, float xpos, float ypos, float 
 			hud_tri_empty(x3,y3,x2,y2,x1,y1);
 			hud_tri_empty(x4,y4,x5,y5,x6,y6);
 		}
-		gr_line(fl2i(x2+0.5f),fl2i(y2+0.5f),fl2i(x5+0.5f),fl2i(y5+0.5f));
+		gr_line(fl2i(x2+0.5f),fl2i(y2+0.5f),fl2i(x5+0.5f),fl2i(y5+0.5f),true);
 	}
 }
 
@@ -4416,6 +4422,7 @@ void hud_show_lead_indicator(vector *target_world_pos)
 			}
 
 			if ( indicator_frame >= 0 ) {
+				gr_unsize_screen_posf(&lead_target_vertex.sx, &lead_target_vertex.sy);
 				GR_AABITMAP(indicator_frame, fl2i(lead_target_vertex.sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(lead_target_vertex.sy - Lead_indicator_half[gr_screen.res][1]));				
 			}
 		}
@@ -4868,6 +4875,9 @@ void hud_draw_offscreen_indicator(vertex* target_point, vector *tpos, float dist
 	//
 	//
 
+	// we need it unsized here and it will be fixed when things are acutally drawn
+	gr_unsize_screen_posf(&xpos, &ypos);
+
 	xpos = (float)floor(xpos);
 	ypos = (float)floor(ypos);
 
@@ -4939,11 +4949,11 @@ void hud_draw_offscreen_indicator(vertex* target_point, vector *tpos, float dist
 	hud_tri(x3,y3,x2,y2,x1,y1);
 	hud_tri(x4,y4,x5,y5,x6,y6);
 	if (on_right || on_bottom){
-		gr_line(fl2i(x2),fl2i(y2),fl2i(x5),fl2i(y5));
+		gr_line(fl2i(x2),fl2i(y2),fl2i(x5),fl2i(y5),true);
 	} else if (on_left) {
-		gr_line(fl2i(x2-1),fl2i(y2),fl2i(x5-1),fl2i(y5));
+		gr_line(fl2i(x2-1),fl2i(y2),fl2i(x5-1),fl2i(y5),true);
 	} else {
-		gr_line(fl2i(x2),fl2i(y2-1),fl2i(x5),fl2i(y5-1));
+		gr_line(fl2i(x2),fl2i(y2-1),fl2i(x5),fl2i(y5-1),true);
 	}
 
 }
