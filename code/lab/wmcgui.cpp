@@ -213,9 +213,6 @@ int GUISystem::OnFrame(float frametime, bool doevents, bool clearandflip)
 
 	if(NOT_EMPTY(&Guiobjects) && doevents)
 	{
-		if(mouse_down(MOUSE_LEFT_BUTTON))
-			Assert(true);
-
 		GUIObject* cgp = (GUIObject*)GET_LAST(&Guiobjects);
 		
 		KeyPressed = game_check_key();
