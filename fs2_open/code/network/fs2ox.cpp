@@ -9,13 +9,17 @@
 
 /*
  * $Logfile$
- * $Revision: 1.8 $
- * $Date: 2004-04-03 06:22:32 $
- * $Author: Goober5000 $
+ * $Revision: 1.9 $
+ * $Date: 2004-04-03 18:11:21 $
+ * $Author: Kazan $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/04/03 06:22:32  Goober5000
+ * fixed some stub functions and a bunch of compile warnings
+ * --Goober5000
+ *
  * Revision 1.7  2004/03/31 05:42:27  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -456,6 +460,7 @@ void fs2ox_do_frame()
 		IRCConn.ParseForCommand(text);
 	}
 
+	/*
 	std::vector<std::string> lines = IRCConn.Maybe_GetRawLines();
 
 	if (lines.size() != 0)
@@ -475,9 +480,22 @@ void fs2ox_do_frame()
 
 		}
 	}
+	*/
 
+	
+	IRCConn.Interpret_Commands_Do();
 
+	ListBoxen[LIST_MESGS].clear_all_items();
+
+	int start = IRCConn.GetCurrentChannel()->NumMessages() - ListBoxen[LIST_MESGS].MaxSize();
+	if (start < 0)
+		start = 0;
+
+	for (int i = start; i < IRCConn.GetCurrentChannel()->NumMessages(); i++)
+		ListBoxen[LIST_MESGS].add_string((char *)IRCConn.GetCurrentChannel()->GetMessage(i).c_str());
+	ListBoxen[LIST_MESGS].ScrollEnd();
 #endif
+
 	int k = fs2ox_window.process();
 
 	// process any keypresses
@@ -530,6 +548,7 @@ void fs2ox_check_buttons()
 
 void fs2ox_button_pressed(int n)
 {
+	std::string partmsg;
 	switch(n){
 	// help overlay
   	case FS2OX_HELP:
@@ -543,7 +562,16 @@ void fs2ox_button_pressed(int n)
 	// go to the games list
 	case FS2OX_ACCEPT:
 #if !defined(RATHAVEN)
-		IRCConn.Disconnect(std::string("Going to play game (With Mod \"") + Cmdline_mod + "\")");
+		partmsg = "Going to play game";
+
+		if (Cmdline_mod)
+		{
+			partmsg += " (With Mod \"";
+			partmsg += Cmdline_mod;
+			partmsg += "\")";
+		}
+
+		IRCConn.Disconnect(partmsg);
 #endif
 		gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
 		break;

@@ -10,11 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.3 $
- * $Date: 2004-03-31 05:42:28 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2004-04-03 18:11:21 $
+ * $Author: Kazan $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/03/31 05:42:28  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 1.2  2004/03/10 20:51:16  Kazan
  * irc
  *
@@ -43,16 +48,40 @@ struct irc_user
 {
 	std::string user;
 	std::string pass;
-	std::string host;
-	std::string ident;
+
+	std::string hostmask;
 
 	std::string modes;
 };
 
+
 class irc_channel
+// generic channel holder - will also be used for the server window
 {
 	public:
-		std::string GetName() { return chan_name; }	
+		irc_channel(std::string logfile, int nummessages=512);
+		~irc_channel() { EndLogging(); }
+
+		// Accessors
+		const std::string& GetName() const { return chan_name; }	
+		const std::string& GetTopic() const { return topic; }
+
+		const std::string& GetModeline(int i) const { return channel_modes[i]; }
+		int NumModlines() const { return channel_modes.size(); }
+		
+
+		const std::string& GetMessage(int i) const { return messages[i]; }
+		int NumMessages() const{ return cur_messages; }
+		int MaxMessages() const { return max_messages; }
+
+		// Modifiers
+		void SetName(const std::string& name) { chan_name = name; }
+		void SetTopic(const std::string& atopic) { topic = atopic; }
+		void AddMessage(const std::string& message);
+		
+
+		
+
 	private:
 		std::string chan_name;
 		std::string topic;
@@ -61,11 +90,18 @@ class irc_channel
 		std::vector<std::string> messages;
 
 		int max_messages;
+		int cur_messages;
 
 		// logging
 		bool Log;
 		std::vector<std::string> logfile;
 		ofstream LogStream;
+
+		// utility functions
+		void RemoveFirstMessage();
+
+		bool StartLogging(std::string file);
+		void EndLogging();
 };
 
 
@@ -73,17 +109,29 @@ class irc_channel
 struct irc_command
 {
 	std::string source;
+	std::string target;
 	std::string command;
+
 	std::string params;
 };
+
+// used for the channels linked list
+struct irc_chan_link
+{
+	irc_channel *chan;
+	irc_chan_link* next;
+	irc_chan_link* prev;
+
+};
+
 
 class irc_client
 {
 	public:
-		irc_client() : bisConnected(false), current_channel(0) {}
-		irc_client(std::string user, std::string pass, std::string server, int port) : bisConnected(false), current_channel(0)
+		irc_client() : bisConnected(false), channels(NULL), current_channel(NULL) { AddChan("server"); }
+		irc_client(std::string user, std::string pass, std::string server, int port) : bisConnected(false), channels(NULL), current_channel(NULL)
 				{ connect(user, pass, server, port); }
-		~irc_client() { Disconnect(); }
+		~irc_client() { Disconnect(); UnloadChanList(); }
 
 		bool connect(std::string user, std::string pass, std::string server, int port);
 		void Disconnect(std::string goodbye = "Bye!");
@@ -111,13 +159,22 @@ class irc_client
 		void Interpret_Commands_Do();
 		std::vector<std::string> Maybe_GetRawLines();
 
+		// channel functions
+		irc_channel* GetCurrentChannel() { return current_channel->chan; }
+		
+		void SetCurrentChannel(std::string chan);
+
+		int NumChans();
+		irc_channel* GetChan(std::string chan);
+
 	private:
 		TCP_Socket mySocket;
 		irc_user MyUser;
 		bool bisConnected;
 
-		std::vector<irc_channel> channels;
-		int current_channel;
+		// index 0 is _always_ the server window
+		irc_chan_link *channels;
+		irc_chan_link *current_channel;
 
 		void PutRaw(std::string command);
 		std::vector<std::string> ExtractParams(std::string UserInput, int params);
@@ -126,8 +183,14 @@ class irc_client
 
 		void Interpret_Command(std::string command);
 		bool StrIcmp(std::string one, std::string two);
-		
+
+		// Misc internal functions
+		void AddChan(std::string chan);
+		void PartChan(std::string chan);
+		irc_chan_link* FindChan(std::string chan);
+		void UnloadChanList();
 };
+
 
 
 

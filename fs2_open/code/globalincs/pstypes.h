@@ -9,16 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.16 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
- * $Revision: 2.16 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2004-04-03 18:11:20 $
+ * $Author: Kazan $
+ * $Revision: 2.17 $
+ * $Date: 2004-04-03 18:11:20 $
+ * $Author: Kazan $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.15  2003/11/19 20:37:23  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -666,6 +670,7 @@ void dc_printf( char *format, ... );
 // Some constants for stuff
 #ifdef _WIN32
 #define MAX_FILENAME_LEN	32			// Length for filenames, ie "title.pcx"
+
 #define MAX_PATH_LEN			128		// Length for pathnames, ie "c:\bitmaps\title.pcx"
 #endif
 

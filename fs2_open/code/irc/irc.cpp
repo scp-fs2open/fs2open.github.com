@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.4 $
- * $Date: 2004-04-03 06:22:33 $
- * $Author: Goober5000 $
+ * $Revision: 1.5 $
+ * $Date: 2004-04-03 18:11:21 $
+ * $Author: Kazan $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/04/03 06:22:33  Goober5000
+ * fixed some stub functions and a bunch of compile warnings
+ * --Goober5000
+ *
  * Revision 1.3  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -35,29 +39,245 @@
 #pragma warning(disable:4710)	// function not inlined
 #pragma warning(disable:4711)	// function inlined
 #include "irc.h"
+#include "direct.h"
 
+//************************************************************************************
+// irc_channel implementation
+//************************************************************************************
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 
+irc_channel::irc_channel(std::string logfile, int nummessages) : messages(nummessages), max_messages(nummessages),  cur_messages(0)
+{
+
+	LogStream.open(logfile.c_str(), ios::out | ios::app);  
+
+	if (!LogStream)
+		Log = false;
+	else
+		Log = true;
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+void irc_channel::RemoveFirstMessage()
+{
+	for (int i = 0; i < max_messages-1; i++)
+		messages[i] = messages[i+1];
+
+	cur_messages--;
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+void irc_channel::AddMessage(const std::string& message)
+{
+	while (cur_messages >= max_messages-1)
+	{
+		RemoveFirstMessage();
+	}
+
+	messages[cur_messages] = message;
+
+	if (Log)
+		LogStream << message.c_str() << endl;
+
+	cur_messages++;
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+bool irc_channel::StartLogging(std::string file)
+{
+	if (!Log)
+	{
+	
+		
+		/*ofstream test;
+		test.open(file.c_str(), std::ios_base::out | std::ios_base::app);
+
+		if (!test)
+			return false;*/
+
+		LogStream.open(file.c_str(), std::ios_base::out | std::ios_base::app);
+
+		if (!LogStream)
+			return false;
+
+		Log = true;
+	}
+
+	return true;
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+void irc_channel::EndLogging()
+{
+	if (Log)
+	{
+		LogStream.close();
+		Log = false;
+	}
+}
 
 
 //************************************************************************************
 // irc_client implementation
 //************************************************************************************
 
-/*struct irc_command
+
+
+void irc_client::SetCurrentChannel(std::string chan)
 {
-	std::string source;
-	std::string command;
-	std::string params;
-};*/
+	irc_chan_link *cur = channels;
+
+	while (cur)
+	{
+		if (cur->chan->GetName() == chan)
+		{
+			current_channel = cur;
+			return;
+		}
+		cur = cur->next;
+	}
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+int irc_client::NumChans()
+{
+	int i = 0;
+
+	irc_chan_link *cur = channels;
+
+	while (cur)
+	{
+		i++;
+		cur = cur->next;
+	}
+
+	return i;
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+	
+irc_channel* irc_client::GetChan(std::string chan)
+{
+	irc_chan_link *c = FindChan(chan);
+
+	if (c)
+		return c->chan;
+
+	return NULL;
+
+
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+void irc_client::AddChan(std::string chan)
+{
+	irc_chan_link *nchan = new irc_chan_link;
+
+	nchan->next = nchan->prev = NULL;
+	std::string logfile = chan + ".txt";
+
+	nchan->chan = new irc_channel(logfile);
+	nchan->chan->SetName(chan);
+
+	if (channels == NULL)
+	{
+		channels = nchan;
+	}
+	else
+	{
+		nchan->next = channels;
+		channels->prev = nchan;
+		channels = nchan;
+	}
+
+	current_channel = nchan;
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+void irc_client::PartChan(std::string chan)
+{
+	irc_chan_link *pchan = FindChan(chan);
+
+	if (pchan)
+	{
+		if (pchan == channels)
+		{
+			channels = pchan->next;
+		}
+		else
+		{
+			if (pchan->prev)
+				pchan->prev->next = pchan->next;
+
+			if (pchan->next)
+				pchan->next->prev = pchan->prev;
+
+		}
+
+		
+		delete pchan->chan;
+		delete pchan;
+	}
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+irc_chan_link* irc_client::FindChan(std::string chan)
+{
+	irc_chan_link *cur = channels;
+
+	while (cur)
+	{
+ 		if (cur->chan->GetName() == chan)
+			return cur;
+		cur = cur->next;
+	}
+	
+
+	return NULL;
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+void irc_client::UnloadChanList()
+{
+	irc_chan_link *cur = channels, *prev;
+
+	while (cur)
+	{
+		prev = cur;
+		cur = cur->next;
+		delete prev->chan;
+		delete prev;
+	}
+
+	channels = NULL;
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
 
 bool irc_client::StrIcmp(std::string one, std::string two)
 {
 	return !stricmp(one.c_str(), two.c_str());
 }
 
-
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+/*struct irc_command
+{
+	std::string source;
+	std::string target;
+	std::string command;
 
+	std::string params;
+};*/
 void irc_client::Interpret_Command(std::string command)
 {
 	// [:sourcemask] <command> [params]
@@ -70,9 +290,10 @@ void irc_client::Interpret_Command(std::string command)
 		parts[0].erase(0, 1);
 		cmd.source = parts[0];
 
-		params = ExtractParams(parts[1], 2);
+		params = ExtractParams(parts[1], 3);
 		cmd.command = params[0];
-		cmd.params = params[1];
+		cmd.target = params[1];
+		cmd.params = params[2];
 
 	}
 	else
@@ -80,16 +301,42 @@ void irc_client::Interpret_Command(std::string command)
 		// prefix _not_ specified, assume it was from the server
 		cmd.source = ""; // fix this with the server's ID
 		cmd.command = parts[0];
-		cmd.params = parts[1];
+
+		params = ExtractParams(parts[1], 2);
+		cmd.target = params[1];
+		cmd.params = params[1];
 	}
 
 	// let's do something with this command
-	if (StrIcmp(cmd.command, "PING"))
+	if (StrIcmp(cmd.command, "001")) //RPL_WELCOME
+	{
+		//:irc.maxgaming.net 001 kazan :Welcome to the MGOirc IRC Network kazan!~kazan@12-216-14-64.client.mchsi.com
+
+		params = SplitOnStr(cmd.params, " ");
+		MyUser.hostmask = params[params.size()-1];
+
+		cmd.params.erase(0,1);
+
+		command="";
+
+		// it's safe to assume "server" exists
+		GetChan("server")->AddMessage(cmd.params);
+		//channels[0].AddMessage(cmd.params);
+	}
+	else if (StrIcmp(cmd.command, "002") || StrIcmp(cmd.command, "003") || StrIcmp(cmd.command, "004") || StrIcmp(cmd.command, "005"))
+	{
+		if (cmd.params[0] == ':')
+			cmd.params.erase(0, 1);
+		
+		command="";
+		GetChan("server")->AddMessage(cmd.params);
+	}
+	else if (StrIcmp(cmd.command, "PING"))
 	{
 		if (cmd.params[0] == ':')
 		{
 			cmd.params.erase(0,1);
-			std::string pong = "PONG " + MyUser.host + " " + cmd.params;
+			std::string pong = "PONG " + cmd.params;
 			PutRaw(pong);
 		}
 	}
@@ -105,26 +352,15 @@ void irc_client::Interpret_Command(std::string command)
 		// params[1] = :user!ident@host
 
 		params[1].erase(0,1);
-		// params[1] = user!ident@host
+		// params[1] = nick=ident@host
 
-		int firstbreak = params[1].find("!");
-		int secondbreak = params[1].find("@");
-		std::string user = params[1].substr(0, firstbreak);
-		std::string ident = params[1].substr(firstbreak+1, secondbreak-firstbreak-1);
-		std::string host = params[1].substr(secondbreak+1, params[1].length()-secondbreak-1);
-
-		if (user == MyUser.user)
-		{
-			MyUser.ident = ident;
-			MyUser.host = host;
-		}
-		else
-		{
-			// we looked up another user
-		}
 
 		
 	}
+
+	// for debugging
+	if (command != "")
+		current_channel->chan->AddMessage(command);
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
@@ -134,8 +370,9 @@ void irc_client::Interpret_Commands_Do()
 {
 	std::vector<std::string> raw_input = Maybe_GetRawLines();
 
-	if (raw_input.size() > 0)
+	for (int i = 0; i < raw_input.size(); i++)
 	{
+		Interpret_Command(raw_input[i]);
 	}
 }
 
@@ -155,6 +392,8 @@ bool irc_client::connect(std::string user, std::string pass, std::string server,
 		MyUser.user = user;
 		MyUser.pass = pass;
 		MyUser.modes = "+i";
+		
+		//channels[0].StartLogging("irc_server_log.txt");
 		return true;
 	}
 	return false;
@@ -165,7 +404,7 @@ bool irc_client::connect(std::string user, std::string pass, std::string server,
 void irc_client::Disconnect(std::string goodbye)
 {
 	Quit(goodbye);
-	mySocket.Close();
+	//mySocket.Close();
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
@@ -237,8 +476,8 @@ void irc_client::ParseForCommand(std::string UserInput)
 	else
 	{
 		// it's a message to the current channel
-		if (channels.size() >= 1)
-			PrivateMessage(channels[current_channel].GetName(), UserInput);
+		//if (NumChannels() >= 1)
+		//	PrivateMessage(channels[current_channel].GetName(), UserInput);
 	}
 
 }
@@ -366,7 +605,7 @@ void irc_client::Quit(std::string message)
 		command += " :" + message;
 
 	PutRaw(command);
-	mySocket.Close();
+	//mySocket.Close();
 	bisConnected = false;
 }
 
@@ -388,7 +627,7 @@ void irc_client::PutRaw(std::string command)
 {
 	std::string to_put = command + "\r\n";
 	if (mySocket.isInitialized())
-		mySocket.SendData((char *)command.c_str(), command.length());
+		mySocket.SendData((char *)to_put.c_str(), to_put.length());
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-

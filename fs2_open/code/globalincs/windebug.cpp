@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-02-25 05:53:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2004-04-03 18:11:20 $
+ * $Author: Kazan $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/02/25 05:53:32  Goober5000
+ * added DONT_SHOW_WARNINGS compile branch
+ * --Goober5000
+ *
  * Revision 2.6  2004/02/16 21:22:15  randomtiger
  * Use _REPORT_MEM_LEAKS compile flag in code.lib to get a report of memory leaks from malloc calls.
  *
@@ -879,6 +883,11 @@ void dump_text_to_clipboard(char *text)
 
 void _cdecl WinAssert(char * text, char * filename, int linenum )
 {
+#ifdef FRED
+	if (CmdLine_FRED2_NoWarn)
+		return;
+#endif
+
 	int val;
 
 	gr_force_windowed();
@@ -903,13 +912,13 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 	if (val == IDCANCEL)
 		exit(1);
-
+#ifndef FRED
 #ifndef INTERPLAYQA
 	Int3();
 #else
 	AsmInt3();
 #endif
-
+#endif
 
 } 
 
@@ -956,31 +965,33 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 {
 #ifdef FRED
 
-	va_list args;
-	static bool show_warnings = true;
-
-	if(show_warnings == false) return;
-
-	char *explanation = 
-		"This warning system is new to release Fred2_open. The following issue will not prevent "
-		"your mission from loading in FS2 but it could cause instablility (i.e. crashes), please fix it.";
-
-	char *end = "Continue with warnings?";//\n\nYes: continue with warnings\nNo: continue without\nCancel: shutdown Fred";
-
-	va_start(args, format);
-	vsprintf(AssertText1,format,args);
-	va_end(args);
-	sprintf(AssertText2,"%s\n\nWarning: %s\r\nFile:%s\r\nLine: %d\n\n%s", 
-		explanation, AssertText1, filename, line, end);
-
-	int result = MessageBox((HWND) os_get_window(), AssertText2, "Fred Warning", MB_ICONWARNING | MB_YESNO);//CANCEL);
-
-	switch(result)
+	if (!CmdLine_FRED2_NoWarn)
 	{
-		case IDNO: show_warnings = false; break;
-		case IDCANCEL: exit(1);
-	}
+		va_list args;
+		static bool show_warnings = true;
 
+		if(show_warnings == false) return;
+
+		char *explanation = 
+			"This warning system is new to release Fred2_open. The following issue will not prevent "
+			"your mission from loading in FS2 but it could cause instablility (i.e. crashes), please fix it.";
+
+		char *end = "Continue with warnings?";//\n\nYes: continue with warnings\nNo: continue without\nCancel: shutdown Fred";
+
+		va_start(args, format);
+		vsprintf(AssertText1,format,args);
+		va_end(args);
+		sprintf(AssertText2,"%s\n\nWarning: %s\r\nFile:%s\r\nLine: %d\n\n%s", 
+			explanation, AssertText1, filename, line, end);
+
+		int result = MessageBox((HWND) os_get_window(), AssertText2, "Fred Warning", MB_ICONWARNING | MB_YESNO);//CANCEL);
+
+		switch(result)
+		{
+			case IDNO: show_warnings = false; break;
+			case IDCANCEL: exit(1);
+		}
+	}
 #else
 
 #ifndef NDEBUG
