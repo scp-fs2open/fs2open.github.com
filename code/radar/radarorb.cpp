@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.4 $
- * $Date: 2005-03-02 21:24:46 $
- * $Author: taylor $
+ * $Revision: 1.5 $
+ * $Date: 2005-03-12 06:03:07 $
+ * $Author: phreak $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/03/02 21:24:46  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 1.3  2005/02/04 20:06:07  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -462,31 +465,35 @@ void radar_draw_circle_orb( int x, int y, int rad )
 // radar is damaged, so make blips dance around
 void radar_blip_draw_distorted_orb(blip *b)
 {
-	int xdiff, ydiff,zdiff;
 	float scale;
-	xdiff = -10 + rand()%20;
-	ydiff = -10 + rand()%20;
-	zdiff = -10 + rand()%20;
-
-	// maybe scale the effect if EMP is active
+	float dist=vm_vec_normalize(&b->position);
+	vector out;
+	float distortion_angle=20;
+	
+	// maybe alter the effect if EMP is active
 	if(emp_active_local()){
 		scale = emp_current_intensity();
+		distortion_angle *= frand_range(-3.0f,3.0f)*frand_range(0.0f, scale);
+		dist *= frand_range(max(0.75f, 0.75f*scale), min(1.25f, 1.25f*scale));
 
-		xdiff = (int)((float)xdiff * scale);
-		ydiff = (int)((float)ydiff * scale);
-		zdiff = (int)((float)zdiff * scale);
+		if (dist > 1.25f) dist = 1.25f;
+		if (dist < 0.75f) dist = 0.75f;
 	}
 
-	vector pnt = {b->position.xyz.x + xdiff,b->position.xyz.y + ydiff,b->position.xyz.z + zdiff};
+	vm_vec_random_cone(&out,&b->position,distortion_angle);
+	vm_vec_scale(&out,dist);
 
-	radar_orb_draw_contact(&pnt,b->rad);
-	//radar_draw_circle( b->x+xdiff, b->y+ydiff, b->rad ); 
+	radar_orb_draw_contact(&out,b->rad);
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
 void radar_blip_draw_flicker_orb(blip *b)
 {
-	int xdiff=0, ydiff=0, zdiff=0, flicker_index;
+	int flicker_index;
+
+	float dist=vm_vec_normalize(&b->position);
+	vector out;
+	float distortion_angle=20;
 
 	if ( (b-Blips) & 1 ) {
 		flicker_index=0;
@@ -504,16 +511,18 @@ void radar_blip_draw_flicker_orb(blip *b)
 	}
 
 	if ( rand() & 1 ) {
-		xdiff = -2 + rand()%4;
-		ydiff = -2 + rand()%4;
-		zdiff = -2 + rand()%4;
-		
+
+		distortion_angle *= frand_range(-2.0f,2.0f)*frand_range(0.0f, 10.0f);
+		dist *= frand_range(0.75f, 1.25f);
+
+		if (dist > 1.25f) dist = 1.25f;
+		if (dist < 0.75f) dist = 0.75f;
 	}
 	
-	vector pnt = {b->position.xyz.x + xdiff,b->position.xyz.y + ydiff,b->position.xyz.z + zdiff};
+	vm_vec_random_cone(&out,&b->position,distortion_angle);
+	vm_vec_scale(&out,dist);
 
-	radar_orb_draw_contact(&pnt,b->rad);
-//	radar_draw_circle( b->x+xdiff, b->y+ydiff, b->rad ); 
+	radar_orb_draw_contact(&out,b->rad);
 }
 
 // Draw all the active radar blips
@@ -640,7 +649,13 @@ void radar_orb_setup_view()
 
 	HUD_set_clip(Current_radar_global->Radar_coords[gr_screen.res][0], Current_radar_global->Radar_coords[gr_screen.res][1],209,170);
 	g3_start_frame(1);
+	
+	float old_zoom=View_zoom;
+	View_zoom=.75;
+
 	g3_set_view_matrix( &eye, &vmd_identity_matrix, View_zoom);
+
+	View_zoom=old_zoom;
 }
 
 void radar_orb_done_drawing()
