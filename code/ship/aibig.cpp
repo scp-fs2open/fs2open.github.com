@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-26 20:47:50 $
- * $Author: Kazan $
+ * $Revision: 2.11 $
+ * $Date: 2004-11-27 10:49:14 $
+ * $Author: taylor $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/26 20:47:50  Kazan
+ * remove MCD complete
+ *
  * Revision 2.9  2004/07/12 16:33:04  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1934,6 +1937,14 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 			if ( aip->target_objnum != OBJ_INDEX(parent_objp) ) {
 				return;
 			}
+		}
+	} else { // everything that's not a beam is handled the original way
+		if ( (parent_objp->signature != weapon_objp->parent_sig) || (parent_objp->type != OBJ_SHIP) ) {
+			return;
+		}
+		
+		if ( aip->target_objnum != OBJ_INDEX(parent_objp) ) {
+			return;
 		}
 	}
 
