@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.56 $
- * $Date: 2003-03-29 08:52:59 $
+ * $Revision: 2.57 $
+ * $Date: 2003-03-29 11:23:46 $
  * $Author: sesquipedalian $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2003/03/29 08:52:59  sesquipedalian
+ * Added is-missile-locked sexp
+ *
  * Revision 2.55  2003/03/28 19:56:02  Goober5000
  * got rid of an annoying compile warning
  * --Goober5000
@@ -726,7 +729,7 @@ sexp_oper Operators[] = {
 	{ "team-score",					OP_TEAM_SCORE,					1,	1,	}, 
 	{ "was-promotion-granted",				OP_WAS_PROMOTION_GRANTED,			0, 1,			},
 	{ "was-medal-granted",					OP_WAS_MEDAL_GRANTED,				0, 1,			},
-	{ "is-missile-locked",				OP_IS_MISSILE_LOCKED,			1,	3			},	// Sesquipedalian
+	//bleh { "is-missile-locked",				OP_IS_MISSILE_LOCKED,			1,	3			},	// Sesquipedalian
 	
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,	1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,	1,	1,	},
@@ -10766,9 +10769,9 @@ int eval_sexp(int cur_node)
 				sexp_val = SEXP_KNOWN_TRUE;  // only do it first time in repeating events.
 				break;
 
-			case OP_IS_MISSILE_LOCKED:
-				sexp_val = sexp_is_missile_locked(node);
-				break;
+			//case OP_IS_MISSILE_LOCKED: //bleh
+			//	sexp_val = sexp_is_missile_locked(node);
+			//	break;
 
 			case OP_TARGETED:
 				sexp_val = sexp_targeted(node);
@@ -11211,7 +11214,7 @@ int query_operator_return_type(int op)
 		case OP_IS_SHIP_STEALTHY:
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_IS_CARGO:
-		case OP_IS_MISSILE_LOCKED
+		//case OP_IS_MISSILE_LOCKED //bleh
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -11632,13 +11635,13 @@ int query_operator_argument_type(int op, int argnum)
 				Int3();		// shouldn't happen
 
 		// Sesquipedalian
-		case OP_IS_MISSILE_LOCKED:
-			if (argnum == 0)
-				return OPF_POSITIVE;
-			else if (argnum == 1)
-				return OPF_SHIP;
-			else
-				return OPF_SUBSYSTEM;
+		//case OP_IS_MISSILE_LOCKED:
+		//	if (argnum == 0)
+		//		return OPF_POSITIVE;
+		//	else if (argnum == 1)
+		//		return OPF_SHIP;
+		//	else
+		//		return OPF_SUBSYSTEM;
 
 		case OP_TARGETED:
 			if (!argnum)

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.36 $
+ * $Revision: 2.37 $
  * $Author: sesquipedalian $
- * $Date: 2003-03-29 08:52:59 $
+ * $Date: 2003-03-29 11:23:46 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/03/29 08:52:59  sesquipedalian
+ * Added is-missile-locked sexp
+ *
  * Revision 2.35  2003/03/22 06:11:51  Goober5000
  * added play-sound-from-table, play-sound-from-file, and close-sound-from-file
  * --Goober5000
@@ -670,7 +673,7 @@
 #define OP_GET_OBJECT_RELATIVE_X			(0x0022 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_RELATIVE_Y			(0x0023 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_RELATIVE_Z			(0x0024 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_IS_MISSILE_LOCKED				(0x0025 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Sesquipedalian
+//bleh #define OP_IS_MISSILE_LOCKED				(0x0025 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Sesquipedalian
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
