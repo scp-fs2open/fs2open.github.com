@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-03-27 04:16:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.47 $
+ * $Date: 2005-03-27 12:28:33 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/03/27 04:16:19  wmcoolmon
+ * Fixed possible infinite loop problem
+ * ----------------------------------------------------------------------
+ *
  * Revision 2.45  2005/03/25 06:57:34  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -1143,7 +1147,7 @@ void process_debug_keys(int k)
 				case OBJ_SHIP:
 					
 					// remove guardian flag -- kazan
-					objp->flags &= ~OF_GUARDIAN;
+					Ships[objp->instance].ship_guardian_threshold = 0;
 					
 					ship_apply_local_damage( objp, Player_obj, &objp->pos, 100000.0f, MISS_SHIELDS, CREATE_SPARKS);
 					ship_apply_local_damage( objp, Player_obj, &objp->pos, 1.0f, MISS_SHIELDS, CREATE_SPARKS);
@@ -1216,7 +1220,7 @@ void process_debug_keys(int k)
 				object	*objp = &Objects[Player_ai->target_objnum];
 
 				if (objp->type == OBJ_SHIP) {
-					ship_apply_local_damage( objp, Player_obj, &objp->pos, Ships[objp->instance].ship_initial_hull_strength * 0.1f + 10.0f, MISS_SHIELDS, CREATE_SPARKS);
+					ship_apply_local_damage( objp, Player_obj, &objp->pos, Ships[objp->instance].ship_max_hull_strength * 0.1f + 10.0f, MISS_SHIELDS, CREATE_SPARKS);
 				}
 			}
 			break;

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-03-10 08:00:15 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-03-27 12:28:35 $
+ * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/03/10 08:00:15  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.25  2005/03/02 21:24:47  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1299,7 +1308,7 @@ int ship_is_shield_up( object *obj, int quadrant )
 		// Check all quadrants
 		float strength = get_shield_strength(obj);
 
-		if ( strength > MAX(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength ))	{
+		if ( strength > MAX(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_max_shield_strength ))	{
 			return 1;
 		}
 	}

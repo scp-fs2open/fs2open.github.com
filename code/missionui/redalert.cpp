@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-03-24 23:29:33 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2005-03-27 12:28:34 $
+ * $Author: Goober5000 $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/03/24 23:29:33  taylor
+ * (re)move some uneeded variables to fix compiler warnings
+ *
  * Revision 2.11  2005/02/23 04:55:08  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -1102,7 +1105,7 @@ void red_alert_start_mission()
 	if (Player_obj->type == OBJ_SHIP) {
 		if (Player_obj->hull_strength > 0) {
 			// make sure we don't die
-			Player_obj->flags |= OF_GUARDIAN;
+			Player_ship->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 
 			// do normal red alert stuff
 			Red_alert_new_mission_timestamp = timestamp(RED_ALERT_WARN_TIME);

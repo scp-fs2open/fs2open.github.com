@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-02 21:24:43 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-03-27 12:28:32 $
+ * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/02 21:24:43  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.10  2005/01/30 09:27:39  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -868,7 +871,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vecto
 	// -- No long need shield: bset_shield_strength(obj, 100.0f);		//	Hey!  Set to some meaningful value!
 
 	if (source_obj->type == OBJ_SHIP) {
-		obj->hull_strength = Ships[source_obj->instance].ship_initial_hull_strength/8.0f;
+		obj->hull_strength = Ships[source_obj->instance].ship_max_hull_strength/8.0f;
 	} else
 		obj->hull_strength = 10.0f;
 

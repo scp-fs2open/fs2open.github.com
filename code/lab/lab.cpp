@@ -178,8 +178,8 @@ void set_ship_variables_ship(ship_info *sip)
 	SVW_SET_SI_VAR(max_vel.xyz.y);
 	SVW_SET_SI_VAR(max_vel.xyz.z);
 
-	SVW_SET_SI_VAR(initial_shield_strength);
-	SVW_SET_SI_VAR(initial_hull_strength);
+	SVW_SET_SI_VAR(max_shield_strength);
+	SVW_SET_SI_VAR(max_hull_strength);
 	SVW_SET_SI_VAR(subsys_repair_rate_percent);
 	SVW_SET_SI_VAR(hull_repair_rate_percent);
 	SVW_SET_SI_VAR(cmeasure_max);

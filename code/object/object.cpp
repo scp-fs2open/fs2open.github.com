@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-03-25 06:57:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.36 $
+ * $Date: 2005-03-27 12:28:32 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.34  2005/03/03 06:05:30  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -767,7 +770,7 @@ float get_max_shield_quad(object *objp)
 	Assert(objp);
 	Assert(objp->type == OBJ_SHIP);
 
-	return Ships[objp->instance].ship_initial_shield_strength / MAX_SHIELD_SECTIONS;
+	return Ships[objp->instance].ship_max_shield_strength / MAX_SHIELD_SECTIONS;
 }
 
 // Goober5000
@@ -776,7 +779,7 @@ float get_hull_pct(object *objp)
 	Assert(objp);
 	Assert(objp->type == OBJ_SHIP);
 
-	float total_strength = Ships[objp->instance].ship_initial_hull_strength;
+	float total_strength = Ships[objp->instance].ship_max_hull_strength;
 
 	Assert(total_strength > 0.0f);	// unlike shield, no ship can have 0 hull
 
@@ -798,7 +801,7 @@ float get_shield_pct(object *objp)
 	if (objp->type != OBJ_SHIP)
 		return 0.0f;
 
-	float total_strength = Ships[objp->instance].ship_initial_shield_strength;
+	float total_strength = Ships[objp->instance].ship_max_shield_strength;
 
 	if (total_strength == 0.0f)
 		return 0.0f;
@@ -829,7 +832,7 @@ void set_shield_strength(object *objp, float strength)
 {
 	int	i;
 
-	if ( (strength - Ships[objp->instance].ship_initial_shield_strength) > 0.1 ){
+	if ( (strength - Ships[objp->instance].ship_max_shield_strength) > 0.1 ){
 		Int3();
 	}
 

@@ -442,7 +442,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	// hull info
 	if ( oo_flags & OO_HULL_NEW ){
 		// add the hull value for this guy		
-		temp = (objp->hull_strength  / shipp->ship_initial_hull_strength);		
+		temp = get_hull_pct(objp);
 		PACK_PERCENT(temp);				
 		multi_rate_add(NET_PLAYER_NUM(pl), "hul", 1);	
 
@@ -862,7 +862,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	// hull info
 	if ( oo_flags & OO_HULL_NEW ){
 		UNPACK_PERCENT(fpct);
-		pobjp->hull_strength = fpct * Ships[pobjp->instance].ship_initial_hull_strength;		
+		pobjp->hull_strength = fpct * Ships[pobjp->instance].ship_max_hull_strength;		
 
 		float shield_0, shield_1, shield_2, shield_3;
 		

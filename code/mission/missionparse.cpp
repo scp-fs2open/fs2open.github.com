@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.85 $
- * $Date: 2005-03-25 06:57:35 $
- * $Author: wmcoolmon $
+ * $Revision: 2.86 $
+ * $Date: 2005-03-27 12:28:33 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2005/03/25 06:57:35  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.84  2005/03/08 03:50:22  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -1926,14 +1929,14 @@ int parse_create_object(p_object *objp)
 
 	// Goober5000
 	Ships[shipnum].special_hitpoint_index = objp->special_hitpoint_index;
-	Ships[shipnum].ship_initial_shield_strength = objp->ship_initial_shield_strength;
-	Ships[shipnum].ship_initial_hull_strength = objp->ship_initial_hull_strength;
+	Ships[shipnum].ship_max_shield_strength = objp->ship_max_shield_strength;
+	Ships[shipnum].ship_max_hull_strength = objp->ship_max_hull_strength;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
 	if (shipp->special_hitpoint_index >= 0)
 	{
-		float hull_factor = shipp->ship_initial_hull_strength / sip->initial_hull_strength;
+		float hull_factor = shipp->ship_max_hull_strength / sip->max_hull_strength;
 		ship_subsys *ss;
 
 		for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list) && ss != NULL; ss = GET_NEXT(ss) )
@@ -1950,7 +1953,7 @@ int parse_create_object(p_object *objp)
 	}
 
 	// Goober5000 - this is also stupid; this is in ship_set but it needs to be done here because of the special hitpoints mod
-	Objects[objnum].hull_strength = shipp->ship_initial_hull_strength;
+	Objects[objnum].hull_strength = shipp->ship_max_hull_strength;
 
 
 	Ships[shipnum].respawn_priority = objp->respawn_priority;
@@ -2076,7 +2079,7 @@ int parse_create_object(p_object *objp)
 	if ( objp->flags & P_SF_REINFORCEMENT )
 		Ships[shipnum].flags |= SF_REINFORCEMENT;
 
-	if (objp->flags & P_OF_NO_SHIELDS || objp->ship_initial_shield_strength == 0.0f )
+	if (objp->flags & P_OF_NO_SHIELDS || objp->ship_max_shield_strength == 0.0f )
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 
 	if (objp->flags & P_SF_ESCORT)
@@ -2180,7 +2183,7 @@ int parse_create_object(p_object *objp)
 	}
 
 	if ( objp->flags & P_SF_GUARDIAN ) {
-		Objects[objnum].flags |= OF_GUARDIAN;
+		Ships[shipnum].ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 	}
 
 	if ( objp->flags & P_SF_SCANNABLE )
@@ -2297,7 +2300,7 @@ int parse_create_object(p_object *objp)
 					ptr->current_hits = sssp->percent;
 					ptr->max_hits = 100.0f;
 				} else {
-					ptr->max_hits = ptr->system_info->max_subsys_strength * (Ships[shipnum].ship_initial_hull_strength / sip->initial_hull_strength);
+					ptr->max_hits = ptr->system_info->max_subsys_strength * (Ships[shipnum].ship_max_hull_strength / sip->max_hull_strength);
 
 					float new_hits;
 					new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
@@ -2356,7 +2359,7 @@ int parse_create_object(p_object *objp)
 		polymodel *pm;
 
 		// Ships[shipnum].hull_hit_points_taken = (float)objp->initial_hull * sip->max_hull_hit_points / 100.0f;
-		Objects[objnum].hull_strength = objp->initial_hull * Ships[shipnum].ship_initial_hull_strength / 100.0f;
+		Objects[objnum].hull_strength = objp->initial_hull * Ships[shipnum].ship_max_hull_strength / 100.0f;
 		for (i = 0; i<MAX_SHIELD_SECTIONS; i++)
 			Objects[objnum].shield_quadrant[i] = (float)(objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 
@@ -2700,15 +2703,15 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	// get hitpoint values
 	if (objp->special_hitpoint_index != -1)
 	{
-		objp->ship_initial_shield_strength = (float) atoi(Sexp_variables[objp->special_hitpoint_index+SHIELD_STRENGTH].text);
-		objp->ship_initial_hull_strength = (float) atoi(Sexp_variables[objp->special_hitpoint_index+HULL_STRENGTH].text);
+		objp->ship_max_shield_strength = (float) atoi(Sexp_variables[objp->special_hitpoint_index+SHIELD_STRENGTH].text);
+		objp->ship_max_hull_strength = (float) atoi(Sexp_variables[objp->special_hitpoint_index+HULL_STRENGTH].text);
 	}
 	else
 	{
-		objp->ship_initial_shield_strength = Ship_info[objp->ship_class].initial_shield_strength;
-		objp->ship_initial_hull_strength = Ship_info[objp->ship_class].initial_hull_strength;
+		objp->ship_max_shield_strength = Ship_info[objp->ship_class].max_shield_strength;
+		objp->ship_max_hull_strength = Ship_info[objp->ship_class].max_hull_strength;
 	}
-	Assert(objp->ship_initial_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	Assert(objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
 
 	// if the kamikaze flag is set, we should have the next flag
 	if ( optional_string("+Kamikaze Damage:") ) {
@@ -6059,8 +6062,8 @@ void mission_bring_in_support_ship( object *requester_objp )
 	}
 
 	// set support ship hitpoints
-	pobj->ship_initial_hull_strength = Ship_info[i].initial_hull_strength;
-	pobj->ship_initial_shield_strength = Ship_info[i].initial_shield_strength;
+	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
+	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
 
 	pobj->team = requester_shipp->team;
 

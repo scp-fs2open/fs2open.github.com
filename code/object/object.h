@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.11 $
- * $Date: 2005-03-25 06:57:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-03-27 12:28:32 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.10  2005/03/03 06:05:30  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -458,9 +461,8 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_WAS_RENDERED				(1<<10)	// Set if this object was rendered this frame.  Only gets set if OF_RENDERS set.  Gets cleared or set in obj_render_all().
 #define OF_NOT_IN_COLL				(1<<11)	// object has not been added to collision list
 #define OF_BEAM_PROTECTED			(1<<12)	// don't fire beam weapons at this type of object, probably mission critical.
-#define OF_GUARDIAN					(1<<13)	// Don't allow ship to die, keep at least 1% hull
-#define OF_SPECIAL_WARP				(1<<14)	// Object has special warp-in enabled.
-#define OF_DOCKED_ALREADY_HANDLED	(1<<15)	// Goober5000 - a docked object that we already moved
+#define OF_SPECIAL_WARP				(1<<13)	// Object has special warp-in enabled.
+#define OF_DOCKED_ALREADY_HANDLED	(1<<14)	// Goober5000 - a docked object that we already moved
 
 // Flags used by Fred
 #define OF_MARKED			(1<<17)	// Object is marked (Fred).  Can be reused in Freespace for anything that won't be used by Fred.

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.174 $
- * $Date: 2005-03-25 06:57:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.175 $
+ * $Date: 2005-03-27 12:28:35 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174  2005/03/25 06:57:37  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.173  2005/03/24 23:27:26  taylor
  * make sounds.tbl dynamic
  * have snd_time_remaining() be less stupid
@@ -2468,9 +2471,9 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if(optional_string("$Shields:"))
-		stuff_float(&sip->initial_shield_strength);
+		stuff_float(&sip->max_shield_strength);
 	else
-		sip->initial_shield_strength = 0.0f;
+		sip->max_shield_strength = 0.0f;
 
 	// optional shield color
 	sip->shield_color[0] = 255;
@@ -2493,11 +2496,11 @@ strcpy(parse_error_text, temp_error);
 	stuff_float(&sip->max_weapon_reserve);
 
 	required_string("$Hitpoints:");
-	stuff_float(&sip->initial_hull_strength);
-	if (sip->initial_hull_strength == 0.0f)
+	stuff_float(&sip->max_hull_strength);
+	if (sip->max_hull_strength == 0.0f)
 	{
-		Warning(LOCATION, "Initial hull strength on ship %s cannot be 0.  Defaulting to 100.\n", sip->name);
-		sip->initial_hull_strength = 100.0f;
+		Warning(LOCATION, "Max hull strength on ship %s cannot be 0.  Defaulting to 100.\n", sip->name);
+		sip->max_hull_strength = 100.0f;
 	}
 
 	if(optional_string("+Hull Repair Rate:"))
@@ -2918,7 +2921,7 @@ strcpy(parse_error_text, temp_error);
 
 			stuff_float(&turning_rate);
 			hull_percentage_of_hits -= percentage_of_hits;
-			sp->max_subsys_strength = sip->initial_hull_strength * (percentage_of_hits / 100.0f);
+			sp->max_subsys_strength = sip->max_hull_strength * (percentage_of_hits / 100.0f);
 			sp->type = SUBSYSTEM_UNKNOWN;
 			// specified as how long to turn 360 degrees in ships.tbl
 			if ( turning_rate > 0.0f ){
@@ -3777,11 +3780,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->last_targeted_subobject[i] = NULL;
 
 	if (Fred_running){
-		shipp->ship_initial_hull_strength = 100.0f;
+		shipp->ship_max_hull_strength = 100.0f;
 	} else {
-		shipp->ship_initial_hull_strength = sip->initial_hull_strength;
+		shipp->ship_max_hull_strength = sip->max_hull_strength;
 	}
-	objp->hull_strength = shipp->ship_initial_hull_strength;
+	objp->hull_strength = shipp->ship_max_hull_strength;
 	
 	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
@@ -3887,13 +3890,13 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	physics_ship_init(objp);
 	if (Fred_running) {
-		shipp->ship_initial_shield_strength = 100.0f;
-		shipp->ship_initial_hull_strength = 100.0f;
+		shipp->ship_max_shield_strength = 100.0f;
+		shipp->ship_max_hull_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
-		shipp->ship_initial_shield_strength = sip->initial_shield_strength;
-		shipp->ship_initial_hull_strength = sip->initial_hull_strength;
-		set_shield_strength(objp, shipp->ship_initial_shield_strength);
+		shipp->ship_max_shield_strength = sip->max_shield_strength;
+		shipp->ship_max_hull_strength = sip->max_hull_strength;
+		set_shield_strength(objp, shipp->ship_max_shield_strength);
 	}
 
 	shipp->target_shields_delta = 0.0f;
@@ -3903,6 +3906,9 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->weapons.ai_class = Ai_info[shipp->ai_index].ai_class;
 	shipp->shield_integrity = NULL;
 //	shipp->sw.blast_duration = -1;	// init shockwave struct
+
+	shipp->ship_guardian_threshold = 0.0f;
+
 	subsys_set(objnum);
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
 	shipp->num_swarm_missiles_to_fire = 0;	
@@ -4152,10 +4158,12 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->system_info = sp;						// set the system_info pointer to point to the data read in from the model
 
+		ship_system->subsys_guardian_threshold = 0.0f;
+
 		// Goober5000 - this has to be moved outside back to parse_create_object, because
 		// a lot of the ship creation code is duplicated in several points and overwrites
 		// previous things... ugh.
-		ship_system->max_hits = sp->max_subsys_strength;	// * shipp->ship_initial_hull_strength / sinfo->initial_hull_strength;
+		ship_system->max_hits = sp->max_subsys_strength;	// * shipp->ship_max_hull_strength / sinfo->max_hull_strength;
 
 		if ( !Fred_running ){
 			ship_system->current_hits = ship_system->max_hits;		// set the current hits
@@ -5250,7 +5258,7 @@ void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 	vector impulse_norm, impulse_vec, pos;
 
 	// damage applied to each docked object
-	damage = 0.2f * dying_shipp->ship_initial_hull_strength;
+	damage = 0.2f * dying_shipp->ship_max_hull_strength;
 
 	// mass of the whole assembly
 	total_docked_mass = dock_calc_total_docked_mass(dying_objp);
@@ -5607,7 +5615,7 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 
 	sip = &Ship_info[shipp->ship_info_index];
 
-	delta = frametime * ETS_RECHARGE_RATE * shipp->ship_initial_shield_strength / 100.0f;
+	delta = frametime * ETS_RECHARGE_RATE * shipp->ship_max_shield_strength / 100.0f;
 
 	//	Chase target_shields and target_weapon_energy
 	if (shipp->target_shields_delta > 0.0f) {
@@ -5914,13 +5922,13 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 	objp = &Objects[sp->objnum];
 
 	//Repair the hull...or maybe unrepair?
-	if(sip->hull_repair_rate_percent != 0.0f && objp->hull_strength < sp->ship_initial_hull_strength)
+	if(sip->hull_repair_rate_percent != 0.0f && objp->hull_strength < sp->ship_max_hull_strength)
 	{
-		objp->hull_strength += sp->ship_initial_hull_strength * sip->hull_repair_rate_percent * frametime;
+		objp->hull_strength += sp->ship_max_hull_strength * sip->hull_repair_rate_percent * frametime;
 
-		if(objp->hull_strength > sp->ship_initial_hull_strength)
+		if(objp->hull_strength > sp->ship_max_hull_strength)
 		{
-			objp->hull_strength = sp->ship_initial_hull_strength;
+			objp->hull_strength = sp->ship_max_hull_strength;
 		}
 	}
 
@@ -7218,43 +7226,43 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// set the correct hull strength
 	if (Fred_running) {
-		sp->ship_initial_hull_strength = 100.0f;
+		sp->ship_max_hull_strength = 100.0f;
 		objp->hull_strength = 100.0f;
 	} else {
 		if (sp->special_hitpoint_index != -1) {
-			sp->ship_initial_hull_strength = (float) atoi(Sexp_variables[sp->special_hitpoint_index+HULL_STRENGTH].text);
+			sp->ship_max_hull_strength = (float) atoi(Sexp_variables[sp->special_hitpoint_index+HULL_STRENGTH].text);
 		} else {
-			sp->ship_initial_hull_strength = sip->initial_hull_strength;
+			sp->ship_max_hull_strength = sip->max_hull_strength;
 		}
 
 		// Goober5000: don't set hull strength if called by sexp
 		if (!by_sexp)
 		{
-			objp->hull_strength = sp->ship_initial_hull_strength;
+			objp->hull_strength = sp->ship_max_hull_strength;
 		}
 	}
 
 	// set the correct shields strength
 	if (Fred_running) {
-		if (sp->ship_initial_shield_strength)
-			sp->ship_initial_shield_strength = 100.0f;
+		if (sp->ship_max_shield_strength)
+			sp->ship_max_shield_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
 		if (sp->special_hitpoint_index != -1) {
-			sp->ship_initial_shield_strength = (float) atoi(Sexp_variables[sp->special_hitpoint_index+SHIELD_STRENGTH].text);
+			sp->ship_max_shield_strength = (float) atoi(Sexp_variables[sp->special_hitpoint_index+SHIELD_STRENGTH].text);
 		} else {
-			sp->ship_initial_shield_strength = sip->initial_shield_strength;
+			sp->ship_max_shield_strength = sip->max_shield_strength;
 		}
 
 		// Goober5000: don't set shield strength if called by sexp
 		if (!by_sexp)
 		{
-			set_shield_strength(objp, sp->ship_initial_shield_strength);
+			set_shield_strength(objp, sp->ship_max_shield_strength);
 		}
 	}
 
 	// Goober5000: div-0 checks
-	Assert(sp->ship_initial_hull_strength > 0.0f);
+	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
 
 	// subsys stuff done only after hull stuff is set
@@ -9980,13 +9988,13 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( !(objp->flags & OF_NO_SHIELDS) )
 	{
 		shield_str = get_shield_strength(objp);
-		if ( shield_str < shipp->ship_initial_shield_strength ) {
+		if ( shield_str < shipp->ship_max_shield_strength ) {
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
 			}
-			shield_str += shipp->ship_initial_shield_strength * frametime * SHIELD_REPAIR_RATE;
-			if ( shield_str > shipp->ship_initial_shield_strength ) {
-				 shield_str = shipp->ship_initial_shield_strength;
+			shield_str += shipp->ship_max_shield_strength * frametime * SHIELD_REPAIR_RATE;
+			if ( shield_str > shipp->ship_max_shield_strength ) {
+				 shield_str = shipp->ship_max_shield_strength;
 			}
 			set_shield_strength(objp, shield_str);
 		}
@@ -9995,14 +10003,14 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	// Repair the ship integrity (subsystems + hull).  This works by applying the repair points
 	// to the subsystems.  Ships integrity is stored is objp->hull_strength, so that always is 
 	// incremented by repair_allocated
-	repair_allocated = shipp->ship_initial_hull_strength * frametime * HULL_REPAIR_RATE;
+	repair_allocated = shipp->ship_max_hull_strength * frametime * HULL_REPAIR_RATE;
 
 
 //	AL 11-24-97: remove increase to hull integrity
 //	Comments removed by PhReAk; Note that this is toggled on/off with a mission flag
 
 	//Figure out how much of the ship's hull we can repair
-	max_hull_repair = shipp->ship_initial_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
+	max_hull_repair = shipp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	
 	if(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
 	{
@@ -10011,10 +10019,10 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			objp->hull_strength = max_hull_repair;
 		}
 
-		if ( objp->hull_strength > shipp->ship_initial_hull_strength )
+		if ( objp->hull_strength > shipp->ship_max_hull_strength )
 		{
-			objp->hull_strength = shipp->ship_initial_hull_strength;
-			repair_allocated -= ( shipp->ship_initial_hull_strength - objp->hull_strength);
+			objp->hull_strength = shipp->ship_max_hull_strength;
+			repair_allocated -= ( shipp->ship_max_hull_strength - objp->hull_strength);
 		}
 	}
 
@@ -10198,12 +10206,12 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( (objp->flags & OF_NO_SHIELDS) ) {
 		shields_full = 1;
 	} else {
-		if ( get_shield_strength(objp) >= shipp->ship_initial_shield_strength ) 
+		if ( get_shield_strength(objp) >= shipp->ship_max_shield_strength ) 
 			shields_full = 1;
 	}
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
-//	if ( ((ssp = END_OF_LIST(&shipp->subsys_list)) != NULL )&&(objp->hull_strength == shipp->ship_initial_hull_strength)&&(shields_full) ) {
+//	if ( ((ssp = END_OF_LIST(&shipp->subsys_list)) != NULL )&&(objp->hull_strength == shipp->ship_max_hull_strength)&&(shields_full) ) {
 	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength >= max_hull_repair) ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
 	{
 		if ( objp == Player_obj ) {
@@ -10526,7 +10534,7 @@ DCF(set_shield,"Change player ship shield strength")
 				Dc_arg_float = 0.0f;
 			if ( Dc_arg_float > 1.0 )
 				Dc_arg_float = 1.0f;
-			set_shield_strength(Player_obj, Dc_arg_float * Player_ship->ship_initial_shield_strength);
+			set_shield_strength(Player_obj, Dc_arg_float * Player_ship->ship_max_shield_strength);
 			dc_printf("Shields set to %.2f\n", get_shield_strength(Player_obj) );
 		}
 	}
@@ -10561,7 +10569,7 @@ DCF(set_hull, "Change player ship hull strength")
 				Dc_arg_float = 0.0f;
 			if ( Dc_arg_float > 1.0 )
 				Dc_arg_float = 1.0f;
-			Player_obj->hull_strength = Dc_arg_float * Player_ship->ship_initial_hull_strength;
+			Player_obj->hull_strength = Dc_arg_float * Player_ship->ship_max_hull_strength;
 			dc_printf("Hull set to %.2f\n", Player_obj->hull_strength );
 		}
 	}
@@ -11918,13 +11926,13 @@ void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 	int message = -1;
 	objp = &Objects[sp->objnum];
 
-	if ( objp->hull_strength < ( (AWACS_HELP_HULL_LOW + 0.01f *(static_rand(objp-Objects) & 5)) * sp->ship_initial_hull_strength) ) {
+	if ( objp->hull_strength < ( (AWACS_HELP_HULL_LOW + 0.01f *(static_rand(objp-Objects) & 5)) * sp->ship_max_hull_strength) ) {
 		// awacs ship below 25 + (0-4) %
 		if (!(sp->awacs_warning_flag & AWACS_WARN_25)) {
 			message = MESSAGE_AWACS_25;
 			sp->awacs_warning_flag |=  AWACS_WARN_25;
 		}
-	} else if ( objp->hull_strength < ( (AWACS_HELP_HULL_HI + 0.01f*(static_rand(objp-Objects) & 5)) * sp->ship_initial_hull_strength) ) {
+	} else if ( objp->hull_strength < ( (AWACS_HELP_HULL_HI + 0.01f*(static_rand(objp-Objects) & 5)) * sp->ship_max_hull_strength) ) {
 		// awacs ship below 75 + (0-4) %
 		if (!(sp->awacs_warning_flag & AWACS_WARN_75)) {
 			message = MESSAGE_AWACS_75;
@@ -11989,7 +11997,7 @@ void ship_maybe_ask_for_help(ship *sp)
 	}
 
 	// first check if hull is at a critical level
-	if ( objp->hull_strength < ASK_HELP_HULL_PERCENT * sp->ship_initial_hull_strength ) {
+	if ( objp->hull_strength < ASK_HELP_HULL_PERCENT * sp->ship_max_hull_strength ) {
 		goto play_ask_help;
 	}
 
@@ -11998,7 +12006,7 @@ void ship_maybe_ask_for_help(ship *sp)
 		return;	// no shields on ship, no don't check shield levels
 	}
 
-	if ( get_shield_strength(objp) > (ASK_HELP_SHIELD_PERCENT * sp->ship_initial_shield_strength) ) {
+	if ( get_shield_strength(objp) > (ASK_HELP_SHIELD_PERCENT * sp->ship_max_shield_strength) ) {
 		return;
 	}
 
@@ -12113,7 +12121,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 
 	int message_type = -1;
 	int heavily_damaged = 0;
-	if ( Objects[sp->objnum].hull_strength/sp->ship_initial_hull_strength < 0.4 ) {
+	if ( get_hull_pct(sp->objnum) < 0.4 ) {
 		heavily_damaged = 1;
 	}
 

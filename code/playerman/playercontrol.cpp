@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-03-25 06:57:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.26 $
+ * $Date: 2005-03-27 12:28:34 $
+ * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/03/25 06:57:37  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.24  2005/03/10 08:00:13  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -1723,7 +1726,7 @@ int player_process_pending_praise()
 		ship_index = ship_get_random_player_wing_ship( SHIP_GET_NO_PLAYERS, 1000.0f );
 		if ( ship_index >= 0 ) {
 			// Only praise if above 50% integrity
-			if ( Objects[Ships[ship_index].objnum].hull_strength/Ships[ship_index].ship_initial_hull_strength > 0.5f ) {
+			if ( get_hull_pct(&Objects[Ships[ship_index].objnum]) > 0.5f ) {
 				message_send_builtin_to_player(MESSAGE_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 				Player->allow_praise_timestamp = timestamp(PLAYER_ALLOW_PRAISE_INTERVAL*(Game_skill_level+1) );
 				Player->allow_scream_timestamp = timestamp(20000);		// prevent death scream following praise

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-10 08:00:11 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-27 12:28:32 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/10 08:00:11  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.6  2004/07/26 20:47:45  Kazan
  * remove MCD complete
  *
@@ -265,7 +274,7 @@ int collide_debris_ship( obj_pair * pair )
 			// supercaps cap damage at 10-20% max hull ship damage
 			if (Ship_info[Ships[pship->instance].ship_info_index].flags & SIF_SUPERCAP) {
 				float cap_percent_damage = frand_range(0.1f, 0.2f);
-				ship_damage = MIN(ship_damage, cap_percent_damage * Ships[pship->instance].ship_initial_hull_strength);
+				ship_damage = MIN(ship_damage, cap_percent_damage * Ships[pship->instance].ship_max_hull_strength);
 			}
 
 			// apply damage to debris
@@ -399,16 +408,16 @@ int collide_asteroid_ship( obj_pair * pair )
 			if (ship_damage > 5.0f)
 				ship_damage = 5.0f + (ship_damage - 5.0f)/2.0f;
 
-			if ((ship_damage > 500.0f) && (ship_damage > Ships[pship->instance].ship_initial_hull_strength/8.0f)) {
-				ship_damage = Ships[pship->instance].ship_initial_hull_strength/8.0f;
-				nprintf(("AI", "Pinning damage to %s from asteroid at %7.3f (%7.3f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_initial_hull_strength));
+			if ((ship_damage > 500.0f) && (ship_damage > Ships[pship->instance].ship_max_hull_strength/8.0f)) {
+				ship_damage = Ships[pship->instance].ship_max_hull_strength/8.0f;
+				nprintf(("AI", "Pinning damage to %s from asteroid at %7.3f (%7.3f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_max_hull_strength));
 			}
 
 			//	Decrease damage during warp out because it's annoying when your escoree dies during warp out.
 			if (Ai_info[Ships[pship->instance].ai_index].mode == AIM_WARP_OUT)
 				ship_damage /= 3.0f;
 
-			//nprintf(("AI", "Asteroid damage on %s = %7.3f (%6.2f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_initial_hull_strength));
+			//nprintf(("AI", "Asteroid damage on %s = %7.3f (%6.2f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_max_hull_strength));
 
 			// calculate asteroid damage and set asteroid damage to greater or asteroid and ship
 			// asteroid damage is needed since we can really whack some small asteroid with afterburner and not do

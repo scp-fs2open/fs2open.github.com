@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-03-25 06:57:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.48 $
+ * $Date: 2005-03-27 12:28:33 $
+ * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/03/25 06:57:34  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.46  2005/03/06 11:23:45  wmcoolmon
  * RE-fixed stuff. Ogg support. Briefings.
  *
@@ -2012,7 +2015,7 @@ void hud_show_target_data(float frametime)
 			sy += dy;
 			
 			// data can be found in target montior
-			// gr_printf(TARGET_WINDOW_X1+TARGET_WINDOW_WIDTH+3, TARGET_WINDOW_Y1+5*h, "Shields: %d", (int) Players[Player_num].current_target->ship_initial_shield_strength);
+			// gr_printf(TARGET_WINDOW_X1+TARGET_WINDOW_WIDTH+3, TARGET_WINDOW_Y1+5*h, "Shields: %d", (int) Players[Player_num].current_target->ship_max_shield_strength);
 			if (aip->target_objnum != -1) {
 				char	target_str[32];
 				float	dot, dist;

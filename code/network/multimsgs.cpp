@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-03-25 06:57:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.29 $
+ * $Date: 2005-03-27 12:28:34 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.27  2005/03/02 21:18:20  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -7250,12 +7253,7 @@ void send_client_update_packet(net_player *pl)
 
 		// hull strength and shield mesh information are floats (as a percentage).  Pass the integer
 		// percentage value since that should be close enough
-		float temp = (objp->hull_strength  / shipp->ship_initial_hull_strength * 100.0f);		
-		if(temp < 0.0f){
-			percent = 0;
-		} else {
-			percent = (ubyte)temp;
-		}
+		percent = (ubyte) (get_hull_pct(objp) * 100.0f);
 		ADD_DATA( percent );
 
 		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
@@ -7374,7 +7372,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			objp = Player_obj;
 			sip = &Ship_info[shipp->ship_info_index];
 
-			fl_val = hull_percent * shipp->ship_initial_hull_strength / 100.0f;
+			fl_val = hull_percent * shipp->ship_max_hull_strength / 100.0f;
 			objp->hull_strength = fl_val;
 
 			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {

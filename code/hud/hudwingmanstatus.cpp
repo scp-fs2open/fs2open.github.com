@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-03-02 21:24:44 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-27 12:28:33 $
+ * $Author: Goober5000 $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.9  2005/01/31 10:34:38  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -424,16 +427,6 @@ void hud_set_wingman_status_alive( int wing_index, int wing_pos)
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_ALIVE;
 }
 
-// get the hull percent for a specific ship, return value 0.0 -> 1.0
-float hud_get_ship_hull_percent(int ship_index)
-{
-	object		*ship_objp;
-
-	ship_objp = &Objects[Ships[ship_index].objnum];
-
-	return (ship_objp->hull_strength / Ships[ship_index].ship_initial_hull_strength);
-}
-
 void hud_wingman_status_init_late_wings()
 {
 /*
@@ -541,7 +534,7 @@ void hud_wingman_status_update()
 				if (!(shipp->flags & SF_DEPARTING) ) {
 					HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_ALIVE;	
 				}
-				HUD_wingman_status[wing_index].hull[wing_pos] = hud_get_ship_hull_percent(ship_objp->instance);
+				HUD_wingman_status[wing_index].hull[wing_pos] = get_hull_pct(ship_objp);
 				if ( HUD_wingman_status[wing_index].hull[wing_pos] <= 0 ) {
 					HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_DEAD;
 				}

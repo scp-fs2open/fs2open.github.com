@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.141 $
- * $Date: 2005-03-25 06:57:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.142 $
+ * $Date: 2005-03-27 12:28:34 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.141  2005/03/25 06:57:37  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.140  2005/03/15 07:26:52  Goober5000
  * *fixed some sexp declaration formatting
  * *implemented string comparison sexps
@@ -4803,7 +4806,7 @@ int sexp_shields_left(int n)
 	}
 
 	// Goober5000: in case ship has no shields
-	if (Ships[shipnum].ship_initial_shield_strength == 0.0f)
+	if (Ships[shipnum].ship_max_shield_strength == 0.0f)
 	{
 		return 0;
 	}
@@ -4836,7 +4839,7 @@ int sexp_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = (int) (100.0f * objp->hull_strength / shipp->ship_initial_hull_strength);
+	percent = (int) (100.0f * get_hull_pct(objp));
 	return percent;
 }
 
@@ -8137,7 +8140,7 @@ void sexp_sabotage_subsystem( int n )
 		float ihs;
 		object *objp;
 
-		ihs = shipp->ship_initial_hull_strength;
+		ihs = shipp->ship_max_hull_strength;
 		sabotage_hits = ihs * ((float)percentage / 100.0f);
 		objp = &Objects[shipp->objnum];
 		objp->hull_strength -= sabotage_hits;
@@ -8199,7 +8202,7 @@ void sexp_repair_subsystem( int n )
 		float ihs;
 		object *objp;
 
-		ihs = shipp->ship_initial_hull_strength;
+		ihs = shipp->ship_max_hull_strength;
 		repair_hits = ihs * ((float)percentage / 100.0f);
 		objp = &Objects[shipp->objnum];
 		objp->hull_strength += repair_hits;
@@ -8265,7 +8268,7 @@ void sexp_set_subsystem_strength( int n )
 		if ( percentage == 0 ) {
 			ship_self_destruct( objp );
 		} else {
-			ihs = shipp->ship_initial_hull_strength;
+			ihs = shipp->ship_max_hull_strength;
 			objp->hull_strength = ihs * ((float)percentage / 100.0f);
 		}
 
@@ -9723,7 +9726,6 @@ void sexp_ships_invulnerable( int n, int invulnerable )
 void sexp_ships_guardian( int n, int guardian )
 {
 	char *ship_name;
-	object *objp;
 	int num;
 
 	for ( ; n != -1; n = CDR(n) ) {
@@ -9737,11 +9739,7 @@ void sexp_ships_guardian( int n, int guardian )
 		// in a list until created
 		num = ship_name_lookup(ship_name);
 		if ( num != -1 ) {
-			objp = &Objects[Ships[num].objnum];
-			if ( guardian )
-				objp->flags |= OF_GUARDIAN;
-			else
-				objp->flags &= ~OF_GUARDIAN;
+			Ships[num].ship_guardian_threshold = guardian ? SHIP_GUARDIAN_THRESHOLD_DEFAULT : 0;
 		} else {
 			p_object *parse_obj;
 
@@ -11306,7 +11304,7 @@ void sexp_damage_escort_list(int node)
 		shipp=&Ships[shipnum];
 
 		//calc hull integrity and compare
-		current_hull_pct=Objects[shipp->objnum].hull_strength/shipp->ship_initial_hull_strength;
+		current_hull_pct = get_hull_pct(&Objects[Ships[shipnum].objnum]);
 
 		if (current_hull_pct < smallest_hull_pct)
 		{
@@ -11473,7 +11471,7 @@ void sexp_damage_escort_list_all(int n)
 		escort_ship[num_escort_ships].index = i;
 
 		// calc and set hull integrity
-		escort_ship[num_escort_ships].hull = Objects[shipp->objnum].hull_strength / shipp->ship_initial_hull_strength;
+		escort_ship[num_escort_ships].hull = get_hull_pct(&Objects[shipp->objnum]);
 
 		num_escort_ships++;
 	}

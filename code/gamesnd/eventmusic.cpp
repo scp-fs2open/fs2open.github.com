@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-02-23 05:05:39 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2005-03-27 12:28:32 $
+ * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/02/23 05:05:39  taylor
+ * compiler warning fixes (for MSVC++ 6)
+ * have the warp effect only load as many LODs as will get used
+ * head off strange bug in release when corrupt soundtrack number gets used
+ *    (will still Assert in debug)
+ * don't ever try and save a campaign savefile in multi or standalone modes
+ * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
+ *
  * Revision 2.17  2005/01/18 01:14:17  wmcoolmon
  * OGG fixes, ship selection fixes
  *
@@ -495,8 +503,8 @@ void event_music_force_switch()
 			// AL 06-24-99: maybe switch to battle 2 if hull is less than 70%
 			if (Player_obj != NULL && Player_ship != NULL) {
 				Assert(Player_ship->ship_info_index >= 0);
-				Assert(Player_ship->ship_initial_hull_strength != 0);
-				float integrity = Player_obj->hull_strength / Player_ship->ship_initial_hull_strength;
+				Assert(Player_ship->ship_max_hull_strength != 0);
+				float integrity = Player_obj->hull_strength / Player_ship->ship_max_hull_strength;
 				if (integrity < HULL_VALUE_TO_PLAY_INTENSE_BATTLE_MUSIC) {
 					new_pattern = SONG_BTTL_2;
 				}
@@ -898,8 +906,8 @@ int event_music_enemy_arrival()
 	bool play_intense_battle_music = false;
 	if (Player_obj != NULL && Player_ship != NULL) {
 		Assert(Player_ship->ship_info_index >= 0);
-		Assert(Player_ship->ship_initial_hull_strength != 0);
-		float integrity = Player_obj->hull_strength / Player_ship->ship_initial_hull_strength;
+		Assert(Player_ship->ship_max_hull_strength != 0);
+		float integrity = Player_obj->hull_strength / Player_ship->ship_max_hull_strength;
 		if (integrity < HULL_VALUE_TO_PLAY_INTENSE_BATTLE_MUSIC) {
 			play_intense_battle_music = true;
 		}
