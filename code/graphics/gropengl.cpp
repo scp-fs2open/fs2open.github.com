@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-12-16 23:28:52 $
+ * $Revision: 2.7 $
+ * $Date: 2002-12-23 17:52:51 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/12/16 23:28:52  phreak
+ * optimized fullscreen/minimized functions.. alot faster
+ *
  * Revision 2.5  2002/12/15 18:59:57  DTP
  * fixed a minor glitch, replaced <> with ", so that it takes project glXXX.h, and not compilers glXXX.h
  *
@@ -327,6 +330,9 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")
+
+
+#define REQUIRED_GL_VERSION 1.2f
 
 extern int OGL_inited;
 
@@ -3047,6 +3053,8 @@ void gr_opengl_init()
 {
 	char *extlist;
 	char *curext;
+	char *ver;
+	char curver[3];
 	int bpp = gr_screen.bits_per_pixel;
 
 
@@ -3212,12 +3220,13 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		exit(1);
 	}
 
+	ver=(char*)glGetString(GL_VERSION);
 	OGL_inited = 1;
 	mprintf(("OPENGL INITED!\n"));
 	mprintf(("\n"));
 	mprintf(( "Vendor     : %s\n", glGetString( GL_VENDOR ) ));
 	mprintf(( "Renderer   : %s\n", glGetString( GL_RENDERER ) ));
-	mprintf(( "Version    : %s\n", glGetString( GL_VERSION ) ));
+	mprintf(( "Version    : %s\n", ver ));
 	mprintf(( "Extensions : \n" ));
 
 	//print out extensions
@@ -3225,6 +3234,13 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	extlist=(char*)malloc(strlen(OGL_extensions));
 	memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
+	memcpy(curver, ver,3);
+
+	float version_float=(float)atof(curver);
+	if (version_float < REQUIRED_GL_VERSION)
+	{
+		Error(LOCATION,"Current GL Version of %f is less than required version of 1.4\nSwitch video modes or update drivers", version_float, REQUIRED_GL_VERSION);
+	}
 	
 	curext=strtok(extlist, " ");
 	while (curext)
