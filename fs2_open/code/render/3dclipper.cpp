@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dClipper.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-06 01:49:08 $
  * $Author: penguin $
  *
  * Polygon clipping functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -259,7 +262,8 @@ int clip_plane(int plane_flag,vertex **src,vertex **dest,int *nv,ccodes *cc,uint
 	src[*nv] = src[0];
 	src[*nv+1] = src[1];
 
-	cc->and = 0xff; cc->or = 0;
+	cc->cc_and = 0xff;
+	cc->cc_or = 0;
 
 	for (i=1;i<=*nv;i++) {
 
@@ -268,16 +272,16 @@ int clip_plane(int plane_flag,vertex **src,vertex **dest,int *nv,ccodes *cc,uint
 			if (! (src[i-1]->codes & plane_flag)) {	//prev not off?
 
 				*dest = clip_edge(plane_flag,src[i-1],src[i],flags);
-				cc->or  |= (*dest)->codes;
-				cc->and &= (*dest)->codes;
+				cc->cc_or  |= (*dest)->codes;
+				cc->cc_and &= (*dest)->codes;
 				dest++;
 			}
 
 			if (! (src[i+1]->codes & plane_flag)) {
 
 				*dest = clip_edge(plane_flag,src[i+1],src[i],flags);
-				cc->or  |= (*dest)->codes;
-				cc->and &= (*dest)->codes;
+				cc->cc_or  |= (*dest)->codes;
+				cc->cc_and &= (*dest)->codes;
 				dest++;
 			}
 
@@ -290,8 +294,8 @@ int clip_plane(int plane_flag,vertex **src,vertex **dest,int *nv,ccodes *cc,uint
 
 			*dest++ = src[i];
 
-			cc->or  |= src[i]->codes;
-			cc->and &= src[i]->codes;
+			cc->cc_or  |= src[i]->codes;
+			cc->cc_and &= src[i]->codes;
 		}
 	}
 
@@ -306,11 +310,11 @@ vertex **clip_polygon(vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags)
 
 	for (plane_flag=1;plane_flag<=CC_OFF_USER;plane_flag<<=1)
 
-		if (cc->or & plane_flag) {
+		if (cc->cc_or & plane_flag) {
 
 			*nv = clip_plane(plane_flag,src,dest,nv,cc,flags);
 
-			if (cc->and)		//clipped away
+			if (cc->cc_and)		//clipped away
 				return dest;
 
 			t = src; src = dest; dest = t;
