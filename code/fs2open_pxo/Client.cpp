@@ -10,12 +10,20 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-02-23 05:05:37 $
+ * $Revision: 1.19 $
+ * $Date: 2005-02-23 13:17:04 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/02/23 05:05:37  taylor
+ * compiler warning fixes (for MSVC++ 6)
+ * have the warp effect only load as many LODs as will get used
+ * head off strange bug in release when corrupt soundtrack number gets used
+ *    (will still Assert in debug)
+ * don't ever try and save a campaign savefile in multi or standalone modes
+ * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
+ *
  * Revision 1.17  2005/02/04 20:06:03  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -70,7 +78,7 @@
 // 4711 = function selected for automatic inline expansion
 #pragma warning(disable: 4711)
 
-#include <iostream.h>
+#include <iostream>
 #include <time.h>
 
 
