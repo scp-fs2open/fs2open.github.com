@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-11-10 16:28:08 $
- * $Author: DTP $
+ * $Revision: 2.7 $
+ * $Date: 2003-08-20 08:14:50 $
+ * $Author: wmcoolmon $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/11/10 16:28:08  DTP
+ * -DTP reworked mod support,
+ *
  * Revision 2.5  2002/10/30 06:29:45  DTP
  * doh!, used upper case in include, dont know how much it matters for *nix systems, but here it is
  *
@@ -619,8 +622,7 @@ void cf_search_root_pack(int root_index)
 
 	//mprintf(( "Searching root pack '%s'\n", root->path ));
 
-	// Open data
-		
+	// Open data		
 	FILE *fp = fopen( root->path, "rb" );
 	// Read the file header
 	if (!fp) {
@@ -832,27 +834,39 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 		}
 	}
 
+#if defined WIN32
+	long findhandle;
+	_finddata_t findstruct;
+#endif
+
 	for (i=0; i<num_search_dirs; i++ )	{
 		char longname[MAX_PATH_LEN];
 
 		cf_create_default_path_string( longname, search_order[i], filespec, localize );
-
-		FILE *fp = fopen(longname, "rb" );
-		if (fp)	{
-			if ( size ) {
 #if defined _WIN32
-				*size = filelength(fileno(fp));
+		findhandle = _findfirst(longname, &findstruct);
+		if (findhandle != -1)	{
+			if ( size ) {
+				*size = findstruct.size;
+			}
+			
+			_findclose(findhandle);
 #elif defined unix
+		FILE *fp = fopen(longname, "rb" );
+		if (fp) {
+			if ( size ) {
 				struct stat statbuf;
 				fstat(fileno(fp), &statbuf);
 				*size = statbuf.st_size;
-#endif
 			}
+
+			fclose(fp);
+				
+#endif
 			if ( offset ) *offset = 0;
 			if ( pack_filename ) {
 				strcpy( pack_filename, longname );
-			}				
-			fclose(fp);
+			}	
 			return 1;		
 		}
 	} 
