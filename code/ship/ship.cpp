@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.62 $
- * $Date: 2003-06-04 15:32:54 $
+ * $Revision: 2.63 $
+ * $Date: 2003-06-16 03:36:08 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2003/06/04 15:32:54  phreak
+ * final fix (hopefully) to zero mass value bug
+ *
  * Revision 2.61  2003/05/15 19:08:24  phreak
  * clarified an error message in subsys_set
  *
@@ -1666,7 +1669,7 @@ strcpy(parse_error_text, temp_error);
 
 	// optional ballistic primary imformation (Goober5000)......
 	pbank_capacity_specified = 0;
-	if(optional_string("+Pbank Capacity:"))
+	if(optional_string("$Pbank Capacity:"))
 	{
 		pbank_capacity_specified = 1;
 		// get the capacity of each primary bank
@@ -4980,8 +4983,31 @@ void ship_process_post(object * obj, float frametime)
 			}
 		}
 
-		// if the ship is a player ship or an observer ship don't need to do AI
-		if ( (obj->flags & OF_PLAYER_SHIP) || (obj->type == OBJ_OBSERVER) ) {
+		//rotate player subobjects since its processed by the ai functions
+		if (obj->flags & OF_PLAYER_SHIP)
+		{
+			model_subsystem	*psub;
+			ship_subsys	*pss;
+			
+			for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) )
+			{
+				psub = pss->system_info;
+
+				// do solar/radar/gas/activator rotation here
+				if ( psub->flags & MSS_FLAG_ROTATES )	{
+					if (psub->flags & MSS_FLAG_STEPPED_ROTATE	) {
+						submodel_stepped_rotate(psub, &pss->submodel_info_1);
+					} else {
+						submodel_rotate(psub, &pss->submodel_info_1 );
+					}
+				}
+			}
+
+			return;
+		}
+
+		// if the ship is an observer ship don't need to do AI
+		if ( obj->type == OBJ_OBSERVER)  {
 			return;
 		}
 
