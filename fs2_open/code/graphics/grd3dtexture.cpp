@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.37 $
- * $Date: 2004-06-06 12:25:20 $
- * $Author: randomtiger $
+ * $Revision: 2.38 $
+ * $Date: 2004-07-01 01:12:31 $
+ * $Author: bobboau $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2004/06/06 12:25:20  randomtiger
+ * Added new compression option -pcx32dds, build posted in RSB forum.
+ * Changed flag because of launcher bug, have fixed launcher bug, will distribute later.
+ * Also removed experimental flag from launcher flag list, stupid people were reporting bugs on unfinished code.
+ *
  * Revision 2.36  2004/04/03 06:22:32  Goober5000
  * fixed some stub functions and a bunch of compile warnings
  * --Goober5000
@@ -1474,5 +1479,22 @@ void gr_d3d_set_texture_addressing(int address){
 	}else if(address == TMAP_ADDRESS_CLAMP){
 	d3d_SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP  );
 	d3d_SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP  );
+	}
+}
+
+
+void d3d_set_texture_panning(float u, float v, bool enable){
+
+	if(enable){
+		d3d_SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
+		D3DXMATRIX world(
+			1, 0, 0, 0,
+			0, 1, 0, 0,
+			u, v, 0, 0,
+			0, 0, 0, 1);
+
+		GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_TEXTURE0, &world);
+	}else{
+		d3d_SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
 	}
 }

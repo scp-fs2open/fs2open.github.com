@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-06-28 02:13:07 $
+ * $Revision: 2.24 $
+ * $Date: 2004-07-01 01:12:31 $
  * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/06/28 02:13:07  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.22  2004/04/26 13:00:56  taylor
  * DevIL stuff
  *
@@ -1517,6 +1521,46 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 	gr_set_cull(1);		
 }
 
+
+bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2){
+	return(
+		(v1->x == v2->x) &&
+		(v1->y == v2->y) &&
+		(v1->z == v2->z) &&
+		(v1->u == v2->u) &&
+		(v1->v == v2->v) &&
+		(n1->xyz.x == n2->xyz.x) &&
+		(n1->xyz.y == n2->xyz.y) &&
+		(n1->xyz.z == n2->xyz.z) 
+		);
+}
+
+//finds the first occorence of a vertex within a poly list
+short find_fisrt_index(poly_list *plist, int idx){
+	vector norm = plist->norm[idx];
+	vertex vert = plist->vert[idx];
+	int missed = 0;
+	for(short i = 0; i<plist->n_verts; i++){
+		if(same_vert(&plist->vert[i+ missed], &vert, &plist->norm[i+missed], &norm)){
+			return i;
+		}
+	}
+	return -1;
+}
+//index_buffer[j] = find_fisrt_index_vb(&list[i], j, &model_list);
+
+//given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
+short find_fisrt_index_vb(poly_list *plist, int idx, poly_list *v){
+	for(short i = 0; i<v->n_verts; i++){
+		if(same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx])){
+			return i;
+		}
+	}
+	return -1;
+}
+
+
+
 void poly_list::allocate(int virts){
 		if(virts <= currently_allocated)return;
 		if(vert!=NULL){delete[] vert; vert = NULL;}
@@ -1532,3 +1576,40 @@ poly_list::~poly_list(){
 	if(norm!=NULL)delete[] norm;
 }
 
+poly_list poly_list_index_bufer_internal_list;
+
+void poly_list::make_index_buffer(){
+
+
+		int nverts = 0;
+		for( int j = 0; j<n_verts; j++){
+			if((find_fisrt_index(this, j)) == j)nverts++;
+		}
+
+		poly_list_index_bufer_internal_list.n_verts = 0;
+		int z = 0;
+		poly_list_index_bufer_internal_list.allocate(nverts);
+		for(int k = 0; k<n_verts; k++){
+			if(find_fisrt_index(this, k) != k){
+				continue;
+			}
+			poly_list_index_bufer_internal_list.vert[z] = vert[k];
+			poly_list_index_bufer_internal_list.norm[z] = norm[k];
+			poly_list_index_bufer_internal_list.n_verts++;
+			Assert(find_fisrt_index(&poly_list_index_bufer_internal_list, z) == z);
+			z++;
+		}
+		Assert(nverts == poly_list_index_bufer_internal_list.n_verts);
+
+		(*this) = poly_list_index_bufer_internal_list;
+
+}
+
+poly_list& poly_list::operator = (poly_list &other_list){
+	allocate(other_list.n_verts);
+	memcpy(norm, other_list.norm, sizeof(vector) * other_list.n_verts);
+	memcpy(vert, other_list.vert, sizeof(vertex) * other_list.n_verts);
+	n_verts = other_list.n_verts;
+	n_prim = other_list.n_prim;
+	return *this;
+}

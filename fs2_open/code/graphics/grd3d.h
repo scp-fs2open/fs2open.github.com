@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.12 $
- * $Date: 2004-06-28 02:13:07 $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-01 01:12:31 $
  * $Author: bobboau $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/06/28 02:13:07  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.11  2004/03/17 04:07:29  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -193,6 +197,8 @@ void gr_d3d_end_scale_matrix();
 void gr_d3d_start_instance_matrix(vector*, matrix*);
 void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient);
 void gr_d3d_end_instance_matrix();
+
+void d3d_set_texture_panning(float u, float v, bool enable);
 
 void gr_d3d_start_clip();
 void gr_d3d_end_clip();

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.1 $
- * $Date: 2004-05-24 07:25:32 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-07-01 01:12:31 $
+ * $Author: bobboau $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/24 07:25:32  taylor
+ * filename case change
+ *
  * Revision 2.5  2004/05/06 22:26:52  taylor
  * fix DDS textures
  *
@@ -1062,3 +1065,5 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 	return retval;
 }
 
+void gr_opengl_set_texture_panning(float u, float v, bool enable){
+}

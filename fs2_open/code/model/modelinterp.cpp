@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.82 $
- * $Date: 2004-06-28 02:13:08 $
+ * $Revision: 2.83 $
+ * $Date: 2004-07-01 01:12:32 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2004/06/28 02:13:08  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.81  2004/05/12 22:50:31  phreak
  * don't fog the warp model if its being rendered
  *
@@ -3614,6 +3618,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// render model insignias
 	gr_zbias(1);
 
+	if (!Cmdline_nohtl)	gr_set_texture_panning(0.0, 0.0, false);
+
 	gr_zbuffer_set(GR_ZBUFF_READ);
 	model_render_insignias(pm, detail_level);	
 
@@ -4224,6 +4230,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 		}
 
 		model_render_buffers(&pm->submodel[submodel_num], pm);
+			//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
 	} else {
 		model_interp_sub( pm->submodel[submodel_num].bsp_data, pm, &pm->submodel[submodel_num], 0 );
 	}
@@ -5005,10 +5012,6 @@ void alocate_poly_list(){
 	}
 }
 
-void model_make_index_buffer(poly_list *plist);
-short find_fisrt_index_vb(poly_list *list, int idx, poly_list *v);
-short find_fisrt_index(poly_list *plist, int idx);
-bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2);
 poly_list model_list;
 void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 	for(int i =0; i<MAX_MODEL_TEXTURES; i++){
@@ -5051,18 +5054,18 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		model_list.n_verts += list[i].n_verts;
 	}
 
-	model_make_index_buffer(&model_list);
+	model_list.make_index_buffer();
 
 	model->indexed_vertex_buffer = gr_make_buffer(&model_list);
 
 	for(i=0; i<MAX_MODEL_TEXTURES; i++){
 		if(model->n_buffers>=MAX_MODEL_TEXTURES)Error(LOCATION, "BSP buffer generation overflow, there are %d buffers",model->n_buffers);
 		if(!list[i].n_verts)continue;
-		model->buffer[model->n_buffers].allocate_index_buffer(list[i].n_verts);
+		model->buffer[model->n_buffers].index_buffer.allocate_index_buffer(list[i].n_verts);
 		for(int j = 0; j < list[i].n_verts; j++){
-			model->buffer[model->n_buffers].index_buffer[j] = find_fisrt_index_vb(&list[i], j, &model_list);
-			Assert(model->buffer[model->n_buffers].index_buffer[j] != -1);
-			Assert(same_vert(&model_list.vert[model->buffer[model->n_buffers].index_buffer[j]], &list[i].vert[j], &model_list.norm[model->buffer[model->n_buffers].index_buffer[j]], &list[i].norm[j]));
+			model->buffer[model->n_buffers].index_buffer.index_buffer[j] = find_fisrt_index_vb(&list[i], j, &model_list);
+			Assert(model->buffer[model->n_buffers].index_buffer.index_buffer[j] != -1);
+			Assert(same_vert(&model_list.vert[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].vert[j], &model_list.norm[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].norm[j]));
 		//	Assert(find_fisrt_index_vb(&model_list, j, &list[i]) == j);//there should never ever be any redundant verts
 		}
 		model->buffer[model->n_buffers].n_prim = tri_count[i];
@@ -5332,7 +5335,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 		else if((Interp_flags & MR_CENTER_ALPHA))gr_center_alpha(1);
 		else gr_center_alpha(0);
 		
-		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer);		
+		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer.index_buffer);		
 	}
 	GLOWMAP = -1;
 	SPECMAP = -1;
@@ -5348,80 +5351,3 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 }
 
 
-bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2){
-	return(
-		(v1->x == v2->x) &&
-		(v1->y == v2->y) &&
-		(v1->z == v2->z) &&
-		(v1->u == v2->u) &&
-		(v1->v == v2->v) &&
-		(n1->xyz.x == n2->xyz.x) &&
-		(n1->xyz.y == n2->xyz.y) &&
-		(n1->xyz.z == n2->xyz.z) 
-		);
-}
-
-//finds the first occorence of a vertex within a poly list
-short find_fisrt_index(poly_list *plist, int idx){
-	vector norm = plist->norm[idx];
-	vertex vert = plist->vert[idx];
-	int missed = 0;
-	for(short i = 0; i<plist->n_verts; i++){
-		if(same_vert(&plist->vert[i+ missed], &vert, &plist->norm[i+missed], &norm)){
-			return i;
-		}
-	}
-	return -1;
-}
-//index_buffer[j] = find_fisrt_index_vb(&list[i], j, &model_list);
-
-//given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
-short find_fisrt_index_vb(poly_list *plist, int idx, poly_list *v){
-	int missed = 0;
-	for(short i = 0; i<v->n_verts; i++){
-		if(same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx])){
-			return i;
-		}
-	}
-	return -1;
-}
-
-
-poly_list model_index_bufer_internal_list;
-
-void model_make_index_buffer(poly_list *plist){
-
-
-		int n_verts = 0;
-		int missed = 0;
-		int first = 0;
-		for( int j = 0; j<plist->n_verts; j++){
-			if((find_fisrt_index(plist, j)) == j)n_verts++;
-		}
-
-		vertex *L;
-		vector *N;
-
-		model_index_bufer_internal_list.n_verts = 0;
-		int z = 0, a = 0;
-		model_index_bufer_internal_list.allocate(n_verts);
-		for(int k = 0; k<plist->n_verts; k++){
-			if(find_fisrt_index(plist, k) != k){
-				continue;
-			}
-			model_index_bufer_internal_list.vert[z] = plist->vert[k];
-			model_index_bufer_internal_list.norm[z] = plist->norm[k];
-			model_index_bufer_internal_list.n_verts++;
-			Assert(find_fisrt_index(&model_index_bufer_internal_list, z) == z);
-			z++;
-		}
-		Assert(n_verts == model_index_bufer_internal_list.n_verts);
-
-		memcpy(plist->norm, model_index_bufer_internal_list.norm, sizeof(vector) * model_index_bufer_internal_list.n_verts);
-		memcpy(plist->vert, model_index_bufer_internal_list.vert, sizeof(vertex) * model_index_bufer_internal_list.n_verts);
-		plist->n_verts = model_index_bufer_internal_list.n_verts;
-
-		for(k = 0; k<plist->n_verts; k++){
-			Assert(find_fisrt_index(&model_index_bufer_internal_list, k) == k);
-		}
-}

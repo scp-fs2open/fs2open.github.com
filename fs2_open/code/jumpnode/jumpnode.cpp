@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-11-17 04:25:56 $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-01 01:12:32 $
  * $Author: bobboau $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/11/17 04:25:56  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -113,7 +119,7 @@ void jumpnode_render(object *jumpnode_objp, vector *pos, vector *view_pos)
 }
 
 // create a jump node object and return index to it.
-int jumpnode_create(vector *pos)
+int jumpnode_create(vector *pos, char* file_name)
 {
 	int obj;
 

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.30 $
- * $Date: 2004-06-19 22:16:20 $
- * $Author: wmcoolmon $
+ * $Revision: 2.31 $
+ * $Date: 2004-07-01 01:12:33 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/06/19 22:16:20  wmcoolmon
+ * Added support for -nomotiondebris
+ *
  * Revision 2.29  2004/04/01 15:28:42  taylor
  * don't load all starfield bitmaps on level load
  *
@@ -435,12 +438,6 @@ starfield_bitmap *stars_lookup_sun(starfield_bitmap_instance *s)
 
 void stars_load_debris()
 {
-	//We don't need to load debris if it isn't enabled
-	if(Cmdline_nomotiondebris)
-	{
-		return;
-	}
-
 	int i;
 
 	// if we're in nebula mode
@@ -466,10 +463,217 @@ void stars_load_debris()
 }
 
 
+poly_list perspective_bitmap_list;
+int perspective_bitmap_buffer = -1;
+//alocates the poly list for the current decal list
+void perspective_bitmap_alocate_poly_list(int x, int y){
+	perspective_bitmap_list.allocate(x*y*6);
+}
+
+
+// draw a perspective bitmap based on angles and radius
+#define MAX_PERSPECTIVE_DIVISIONS			5
+void stars_project_2d_onto_sphere( vector *pnt, float rho, float phi, float theta );
+void stars_create_perspective_bitmap_buffer(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags, int env, short *index_buffer)
+{
+	float p_phi = 10.0f;
+	float p_theta = 10.0f;
+
+	vector s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
+	vector t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
+
+	vertex v;
+	matrix m, m_bank;
+	int idx, s_idx;	
+	float ui, vi;	
+	angles bank_first;		
+
+	// cap division values
+	div_x = div_x > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_x;
+//	div_x = 1;
+	div_y = div_y > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_y;	
+
+	// texture increment values
+	ui = 1.0f / (float)div_x;
+	vi = 1.0f / (float)div_y;	
+
+	// adjust for aspect ratio
+	if(env)
+		scale_x *= 1.0;
+	else
+		scale_x *= ((float)gr_screen.max_w / (float)gr_screen.max_h) + 0.55f;		// fudge factor
+
+	float s_phi = 0.5f + (((p_phi * scale_x) / 360.0f) / 2.0f);
+	float s_theta = (((p_theta * scale_y) / 360.0f) / 2.0f);	
+	float d_phi = -(((p_phi * scale_x) / 360.0f) / (float)(div_x));
+	float d_theta = -(((p_theta * scale_y) / 360.0f) / (float)(div_y));
+
+	// bank matrix
+	bank_first.p = 0.0f;
+	bank_first.b = a->b;
+	bank_first.h = 0.0f;
+	vm_angles_2_matrix(&m_bank, &bank_first);
+
+	// convert angles to matrix
+	float b_save = a->b;
+	a->b = 0.0f;
+	vm_angles_2_matrix(&m, a);
+	a->b = b_save;	
+
+	// generate the bitmap points	
+	for(idx=0; idx<=div_x; idx++){
+		for(s_idx=0; s_idx<=div_y; s_idx++){				
+			// get world spherical coords			
+			stars_project_2d_onto_sphere(&s_points[idx][s_idx], 1000.0f, s_phi + ((float)idx*d_phi), s_theta + ((float)s_idx*d_theta));			
+			
+			// bank the bitmap first
+			vm_vec_rotate(&t_points[idx][s_idx], &s_points[idx][s_idx], &m_bank);
+
+			// rotate on the sphere
+			vm_vec_rotate(&s_points[idx][s_idx], &t_points[idx][s_idx], &m);					
+		}
+	}		
+
+	int start = perspective_bitmap_list.n_verts;
+	int s = 0;
+	// render all polys
+	/*
+						y_dim		y_dim*2				y_dim*n
+1	(0*y_dim+0)----(1*y_dim+0)----(2*y_dim+0)-- ... --(y_dim*n+0)
+	  |					  |
+	  |					  |
+2	(0*y_dim+1)----(1*y_dim+1)----(2*y_dim+1)-- ... --(y_dim*n+1)
+	  |					  |
+	  |					  |
+3	(0*y_dim+2)----(1*y_dim+2)----(2*y_dim+2)-- ... --(y_dim*n+2)
+	  |					  |					  |
+	  .					  .					  .
+	  .					  .					  .
+	  |					  |					  |
+	(y_dim-1)------(1*y_dim*2-1)---(y_dim*3-1)-- ... --(y_dim*(n+1)-1)
+
+  (x_pos*y_dim+y_pos) until (y_pos = y_dim)
+
+  */
+	for(idx=0; idx<div_x+1; idx++){
+		for(s_idx=0; s_idx<div_y+1; s_idx++){						
+			// stuff texture coords
+
+			v.u = ui * float(idx);
+			v.v = vi * float(s_idx);
+			v.spec_r=v.spec_g=v.spec_b=0;
+			g3_transfer_vertex(&v, &s_points[idx][s_idx]);			
+			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts++] = v;
+
+			if((idx != div_x) && (s_idx != div_y)){
+
+			//	memset(&index_buffer[s], 0, sizeof(short) * 6);
+
+				index_buffer[s++] = short((idx		* (div_y + 1)) + s_idx +		start);	//0
+				index_buffer[s++] = short(((idx+1)	* (div_y + 1)) + s_idx +		start);	//2
+				index_buffer[s++] = short(((idx+1)	* (div_y + 1)) + s_idx + 1 +	start);	//3
+
+				index_buffer[s++] = short((idx		* (div_y + 1)) + s_idx +		start);	//0
+				index_buffer[s++] = short(((idx+1)	* (div_y + 1)) + s_idx + 1 +	start);	//3
+				index_buffer[s++] = short((idx		* (div_y + 1)) + s_idx + 1 +	start);	//1		
+
+			}
+
+/*			v[0].u = ui * float(idx);
+			v[0].v = vi * float(s_idx);
+			v[0].spec_r=v[2].spec_g=v[3].spec_b=0;
+			
+			v[1].u = ui * float(idx+1);
+			v[1].v = vi * float(s_idx);
+			v[1].spec_r=v[2].spec_g=v[3].spec_b=0;
+
+			v[2].u = ui * float(idx+1);
+			v[2].v = vi * float(s_idx+1);
+			v[2].spec_r=v[2].spec_g=v[3].spec_b=0;
+
+
+			v[3].u = ui * float(idx);
+			v[3].v = vi * float(s_idx+1);
+			v[3].spec_r=v[2].spec_g=v[3].spec_b=0;
+
+			v[0].flags = 0;
+			v[1].flags = 0;
+			v[2].flags = 0;
+			v[3].flags = 0;
+			verts[0] = &v[0];
+			verts[1] = &v[1];
+			verts[2] = &v[2];
+			verts[3] = &v[3];
+
+			g3_transfer_vertex(verts[0], &s_points[idx][s_idx]);			
+			g3_transfer_vertex(verts[1], &s_points[idx+1][s_idx]);			
+			g3_transfer_vertex(verts[2], &s_points[idx+1][s_idx+1]);						
+			g3_transfer_vertex(verts[3], &s_points[idx][s_idx+1]);						
+
+			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts] = *verts[0];
+			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 1] = *verts[1];
+			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 2] = *verts[2];
+			perspective_bitmap_list.n_verts += 3;
+			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts] = *verts[0];
+			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 1] = *verts[2];
+			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 2] = *verts[3];
+			perspective_bitmap_list.n_verts += 3;
+*/
+		}
+	}
+	start += perspective_bitmap_list.n_verts;
+//	Assert(perspective_bitmap_list.n_verts == div_x * div_y * 6);
+
+	SAFEPOINT("buffer filled, createing");
+
+}
+
+//take the Starfield_bitmap_instance[] and make all the vertex buffers that you'll need to draw it 
+void stars_generate_bitmap_instance_vertex_buffers(){
+
+	SAFEPOINT("entering stars_generate_bitmap_instance_vertex_buffers");
+
+	int vert_count = 0;
+	for(int idx=0; idx<Num_starfield_bitmaps; idx++){
+		// lookup the info index
+		int star_index = stars_find_bitmap(Starfield_bitmap_instance[idx].filename);
+		if(star_index < 0){
+			continue;
+		}
+		int nverts = Starfield_bitmap_instance[idx].div_x * Starfield_bitmap_instance[idx].div_y * 6;
+		vert_count += nverts * 2;
+		Starfield_bitmap_instance[idx].buffer.allocate_index_buffer(nverts);
+		Starfield_bitmap_instance[idx].env_buffer.allocate_index_buffer(nverts);
+		Starfield_bitmap_instance[idx].n_prim = nverts / 3;
+	}
+
+	perspective_bitmap_list.allocate(vert_count);
+	perspective_bitmap_list.n_verts = 0;
+
+	for(idx=0; idx<Num_starfield_bitmaps; idx++){
+		// lookup the info index
+		int star_index = stars_find_bitmap(Starfield_bitmap_instance[idx].filename);
+		if(star_index < 0){
+			continue;
+		}
+		stars_create_perspective_bitmap_buffer(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, 0, Starfield_bitmap_instance[idx].buffer.index_buffer);
+		stars_create_perspective_bitmap_buffer(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, 1, Starfield_bitmap_instance[idx].env_buffer.index_buffer);
+	}
+	if(perspective_bitmap_list.n_verts == 0)return;
+
+	if(perspective_bitmap_buffer != -1)gr_destroy_buffer(perspective_bitmap_buffer);
+	perspective_bitmap_buffer = gr_make_buffer(&perspective_bitmap_list);
+	SAFEPOINT("leaveing stars_generate_bitmap_instance_vertex_buffers");
+}
+
+void kill_buffer(){
+	if(perspective_bitmap_buffer != -1)gr_destroy_buffer(perspective_bitmap_buffer);
+}
 
 // call on game startup
 void stars_init()
 {
+	
 	starfield_bitmap *bm;	
 	int count, idx;
 	char filename[MAX_FILENAME_LEN+1] = "";
@@ -666,12 +870,6 @@ void stars_init()
 		}
 	}	
 
-	//Don't parse motion debris if we don't have to.
-	if(Cmdline_nomotiondebris)
-	{
-		return;
-	}
-
 	// normal debris pieces
 	count = 0;
 	while(!optional_string("#end")){
@@ -772,7 +970,9 @@ void stars_level_init()
 
 		// one sun
 		Num_suns = 1;
-	}		
+	}
+	
+	stars_generate_bitmap_instance_vertex_buffers();
 }
 
 
@@ -937,7 +1137,7 @@ void stars_get_sun_pos(int sun_n, vector *pos)
 }
 
 // draw sun
-void stars_draw_sun( int show_sun )
+void stars_draw_sun( int show_sun, int env )
 {	
 	int idx;
 	vector sun_pos;
@@ -967,7 +1167,7 @@ void stars_draw_sun( int show_sun )
 		vm_vec_normalize(&sun_dir);
 
 		// add the light source corresponding to the sun
-		light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b, bm->spec_r, bm->spec_g, bm->spec_b, true);
+		if(!env)light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b, bm->spec_r, bm->spec_g, bm->spec_b, true);
 
 		// if supernova
 		if(supernova_active()){
@@ -1060,11 +1260,13 @@ void stars_draw_sun_glow(int sun_n)
 
 
 
-
-
+extern float View_zoom;
+int st___ = -1;
 // draw bitmaps
-void stars_draw_bitmaps( int show_bitmaps )
+void stars_draw_bitmaps( int show_bitmaps, int env )
 {
+	if(!Cmdline_nohtl)gr_set_lighting(false,false);
+
 	int idx;
 	int star_index;	
 
@@ -1077,8 +1279,20 @@ void stars_draw_bitmaps( int show_bitmaps )
 	if(!Detail.planets_suns){
 		return;
 	}
-	
+	gr_set_cull(0);
+
+	if(st___ == -1)st___ = bm_load("subspacenode01a");
+
+	vector v = ZERO_VECTOR;
+	if (!Cmdline_nohtl) 
+		if(env == 1)
+			gr_set_proj_matrix( (PI/2.0f), 1.0f, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		else
+			gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&v, &Eye_matrix);
 	// render all bitmaps
+	gr_set_buffer(perspective_bitmap_buffer);
 	for(idx=0; idx<Num_starfield_bitmaps; idx++){
 		// lookup the info index
 		star_index = stars_find_bitmap(Starfield_bitmap_instance[idx].filename);
@@ -1094,7 +1308,17 @@ void stars_draw_bitmaps( int show_bitmaps )
 				}else{
 					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap);
 				}
-				g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
+				if(Cmdline_nohtl){
+		//			g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, env);
+				}else{
+//					g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
+					gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
+			/*		gr_set_fill_mode(GR_FILL_MODE_WIRE);
+					gr_set_bitmap(st___);
+					gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
+					gr_set_fill_mode(GR_FILL_MODE_SOLID);
+					*/
+				}
 			} else {				
 				if(Starfield_bitmaps[star_index].fps){
 					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps) % Starfield_bitmaps[star_index].n_frames)), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
@@ -1102,7 +1326,18 @@ void stars_draw_bitmaps( int show_bitmaps )
 					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
 				}
 					
-				g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);
+				if(Cmdline_nohtl){
+		//			g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT, env);
+				}else{
+//					g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
+					gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
+				/*	some debugging code, it draws green lines along the tri edges
+					gr_set_fill_mode(GR_FILL_MODE_WIRE);
+					gr_set_bitmap(st___);
+					gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
+					gr_set_fill_mode(GR_FILL_MODE_SOLID);
+					*/
+				}
 			}
 		}
 	}
@@ -1209,7 +1444,7 @@ DCF(subspace_set,"Set parameters for subspace effect")
 }
 //XSTR:ON
 
-void subspace_render()
+void subspace_render(int env)
 {
 	if ( Subspace_model_inner == -1 )	{
 		Subspace_model_inner = model_load( "subspace_small.pof", 0, NULL );
@@ -1225,37 +1460,38 @@ void subspace_render()
 		Subspace_glow_bitmap = bm_load( NOX("SunGlow01"));
 		Assert(Subspace_glow_bitmap>-1);
 	}
+	int framenum = 0;
+	if(!env){
+		Subspace_glow_frame += flFrametime * 1.0f;
 
-	Subspace_glow_frame += flFrametime * 1.0f;
+		float total_time = i2fl(NOISE_NUM_FRAMES) / 15.0f;
 
-	float total_time = i2fl(NOISE_NUM_FRAMES) / 15.0f;
+		// Sanity checks
+		if ( Subspace_glow_frame < 0.0f )	Subspace_glow_frame = 0.0f;
+		if ( Subspace_glow_frame > 100.0f ) Subspace_glow_frame = 0.0f;
 
-	// Sanity checks
-	if ( Subspace_glow_frame < 0.0f )	Subspace_glow_frame = 0.0f;
-	if ( Subspace_glow_frame > 100.0f ) Subspace_glow_frame = 0.0f;
+		while ( Subspace_glow_frame > total_time )	{
+			Subspace_glow_frame -= total_time;
+		}
+		framenum = fl2i( (Subspace_glow_frame*NOISE_NUM_FRAMES) / total_time );
+		if ( framenum < 0 ) framenum = 0;
+		if ( framenum >= NOISE_NUM_FRAMES ) framenum = NOISE_NUM_FRAMES-1;
 
-	while ( Subspace_glow_frame > total_time )	{
-		Subspace_glow_frame -= total_time;
+		subspace_offset_u += flFrametime*subspace_u_speed;
+		if (subspace_offset_u > 1.0f )	{
+			subspace_offset_u -= 1.0f;
+		}
+
+		subspace_offset_u_inner += flFrametime*subspace_u_speed*3.0f;
+		if (subspace_offset_u > 1.0f )	{
+			subspace_offset_u -= 1.0f;
+		}
+
+		subspace_offset_v += flFrametime*subspace_v_speed;
+		if (subspace_offset_v > 1.0f )	{
+			subspace_offset_v -= 1.0f;
+		}
 	}
-	int framenum = fl2i( (Subspace_glow_frame*NOISE_NUM_FRAMES) / total_time );
-	if ( framenum < 0 ) framenum = 0;
-	if ( framenum >= NOISE_NUM_FRAMES ) framenum = NOISE_NUM_FRAMES-1;
-
-	subspace_offset_u += flFrametime*subspace_u_speed;
-	if (subspace_offset_u > 1.0f )	{
-		subspace_offset_u -= 1.0f;
-	}
-
-	subspace_offset_u_inner += flFrametime*subspace_u_speed*3.0f;
-	if (subspace_offset_u > 1.0f )	{
-		subspace_offset_u -= 1.0f;
-	}
-
-	subspace_offset_v += flFrametime*subspace_v_speed;
-	if (subspace_offset_v > 1.0f )	{
-		subspace_offset_v -= 1.0f;
-	}
-
 	
 
 	matrix tmp;
@@ -1282,7 +1518,16 @@ void subspace_render()
 		temp.xyz.z = 1.0f;
 		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
+		model_set_alpha(1.0f);	
+		if (!Cmdline_nohtl) 
+			if(env == 1)
+				gr_set_proj_matrix( (PI/2.0f), 1.0f, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+			else
+				gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		if (!Cmdline_nohtl)	gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 		model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
+		if (!Cmdline_nohtl)	gr_set_texture_panning(0, 0, false);
 
 	} else {
 
@@ -1300,7 +1545,16 @@ void subspace_render()
 
 		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
+		model_set_alpha(1.0f);	
+		if (!Cmdline_nohtl) 
+			if(env == 1)
+				gr_set_proj_matrix( (PI/2.0f), 1.0f, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+			else
+				gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		if (!Cmdline_nohtl)	gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 		model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
+		if (!Cmdline_nohtl)	gr_set_texture_panning(0, 0, false);
 		
 		Interp_subspace = 1;	
 		Interp_subspace_offset_u = 1.0f - subspace_offset_u_inner;
@@ -1320,14 +1574,23 @@ void subspace_render()
 		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
 
+		model_set_alpha(1.0f);	
+		if (!Cmdline_nohtl) 
+			if(env == 1)
+				gr_set_proj_matrix( (PI/2.0f), 1.0f, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+			else
+				gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		if (!Cmdline_nohtl)	gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 		model_render( Subspace_model_inner, &tmp, &Eye_position, render_flags  );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
+		if (!Cmdline_nohtl)	gr_set_texture_panning(0, 0, false);
 	}
 
 	Interp_subspace = 0;
 	gr_zbuffer_set(saved_gr_zbuffering);
 }
 
-extern void stars_draw_background();
+extern void stars_draw_background(int);
 
 void stars_draw_stars()
 {
@@ -1464,11 +1727,6 @@ void stars_draw_stars()
 
 void stars_draw_debris()
 {
-	if(Cmdline_nomotiondebris)
-	{
-		return;
-	}
-
 	int i;
 	float vdist;
 	vector tmp;
@@ -1517,7 +1775,7 @@ void stars_draw_debris()
 			if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 				gr_set_bitmap( debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.3f);	
 			} else {
-				gr_set_bitmap( debris_vclips[d->vclip].bm + frame );						
+				gr_set_bitmap( debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);	
 			}
 					
 			vm_vec_add( &tmp, &d->last_pos, &Eye_position );
@@ -1539,13 +1797,13 @@ void stars_draw_debris()
 }
 
 
-void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subspace )
+void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subspace, int env )
 {
 	int gr_zbuffering_save = gr_zbuffer_get();
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	if ( show_subspace )	{
-		subspace_render();
+		subspace_render(env);
 	}
 
 	
@@ -1567,15 +1825,16 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 		// semi-hack, do we don't fog the background
 		int neb_save = Neb2_render_mode;
 		Neb2_render_mode = NEB2_RENDER_NONE;
-		stars_draw_background();
+		stars_draw_background(env);
 		Neb2_render_mode = neb_save;
 	}
 	else if (!show_subspace)		//dont render the background pof when rendering subspace
 	{
-		stars_draw_background();
+		stars_draw_background(env);
 	}
 	else{}
 
+	if(env != 1)
 	if (show_stars && ( Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags & MISSION_FLAG_FULLNEB) && (supernova_active() < 3))	{
 		stars_draw_stars();
 	}
@@ -1588,14 +1847,15 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 #endif
 	
 
+	if(!env)
 	if ( (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) )	{
 		stars_draw_debris();
 	}
 
 	//if we're not drawing them, quit here
 	if (show_suns){
-		stars_draw_sun( show_suns );	
-		stars_draw_bitmaps( show_suns );
+		stars_draw_sun( show_suns, env );	
+		stars_draw_bitmaps( show_suns, env );
 	}
 
 	gr_zbuffer_set( gr_zbuffering_save );
@@ -1681,12 +1941,6 @@ void stars_page_in()
 		idx++;
 	}
 
-	//Don't page in motion debris if we don't have to
-	if(Cmdline_nomotiondebris)
-	{
-		return;
-	}
-
 	for (i=0; i<MAX_DEBRIS_VCLIPS; i++ )	{
 		for (j=0; j<debris_vclips[i].nframes; j++ )	{
 			bm_page_in_xparent_texture(debris_vclips[i].bm + j);
@@ -1694,10 +1948,8 @@ void stars_page_in()
 	}	
 }
 
-extern float View_zoom;
-
 // background nebula models and planets
-void stars_draw_background()
+void stars_draw_background(int env)
 {	
 	int flags = MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING;
 
@@ -1713,7 +1965,11 @@ void stars_draw_background()
 
 	// draw the model at the player's eye wif no z-buffering
 	model_set_alpha(1.0f);	
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		if (!Cmdline_nohtl) 
+			if(env == 1)
+				gr_set_proj_matrix( (PI/2.0f), 1.0f, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+			else
+				gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
