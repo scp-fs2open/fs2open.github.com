@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.65 $
- * $Date: 2003-07-04 02:30:54 $
+ * $Revision: 2.66 $
+ * $Date: 2003-07-15 02:52:40 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2003/07/04 02:30:54  phreak
+ * support for cloaking added.  needs a cloakmap.pcx
+ * to cloak the players ship, activate cheats and press tilde + x
+ * some more work can be done to smooth out the animation.
+ *
  * Revision 2.64  2003/06/25 03:19:40  phreak
  * added support for weapons that only fire when tagged
  *
@@ -2312,7 +2317,11 @@ void ship_init()
 	}
 
 	//loadup the cloaking map
-	CLOAKMAP = bm_load("cloakmap");
+//	CLOAKMAP = bm_load_animation("cloakmap",&CLOAKFRAMES, &CLOAKFPS,1);
+	if (CLOAKMAP == -1)
+	{
+		CLOAKMAP = bm_load("cloakmap");
+	}
 
 	ship_level_init();	// needed for FRED
 }
@@ -2820,6 +2829,12 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		(shipp->glows_active |= (1 << i));
 	}
 	shipp->glowmaps_active = 1;
+
+	shipp->cloak_stage = 0;
+	shipp->texture_translation_key=vmd_zero_vector;
+	shipp->current_translation=vmd_zero_vector;
+	shipp->time_until_full_cloak=timestamp(0);
+	shipp->cloak_alpha=255;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -3331,11 +3346,13 @@ void ship_render(object * obj)
 			//cloaking
 			if (shipp->cloak_stage==2)
 			{
-				model_setup_cloak(&shipp->current_translation,1);
-				model_set_forced_texture(CLOAKMAP);
+				model_setup_cloak(&shipp->current_translation,1,shipp->cloak_alpha);
 				render_flags |= MR_FORCE_TEXTURE | MR_NO_LIGHTING;
 			}
-			else model_setup_cloak(&shipp->current_translation,0);
+			else
+			{
+				model_setup_cloak(&shipp->current_translation,0,255);
+			}
 		}
 
 		// small ships
@@ -3369,12 +3386,6 @@ void ship_render(object * obj)
 			g3_stop_user_clip_plane();
 		}
 	} 
-
-//	if (shipp->cloak_stage>0)
-//	{
-///		int full_cloak=shipp->cloak_stage==2;
-//		model_finish_cloak(full_cloak);
-//	}
 
 /*	if (Mc.shield_hit_tri != -1) {
 		//render_shield_explosion(model_num, orient, pos, &Hit_point, Hit_tri);
@@ -6679,6 +6690,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					}
 
 					num_fired++;
+
+					if (shipp->cloak_stage ==2)
+					{
+						shipfx_start_cloak(shipp,500);
+					}
 				}
 			}						
 
@@ -6864,14 +6880,18 @@ void ship_process_targeting_lasers()
 			fire_info.targeting_laser_offset = m->gun_banks[shipp->targeting_laser_bank].pnt[0];			
 			shipp->targeting_laser_objnum = beam_fire_targeting(&fire_info);			
 
+			if (shipp->cloak_stage ==2)
+			{
+				shipfx_start_cloak(shipp,500);
+			}
+
 			// hmm, why didn't it fire?
 			if(shipp->targeting_laser_objnum < 0){
 				Int3();
 				ship_stop_targeting_laser(shipp);
 			}
 		}
-	}
-}
+	}}
 
 //	Attempt to detonate weapon last fired by *shipp.
 //	Only used for weapons that support remote detonation.
@@ -7370,6 +7390,11 @@ done_secondary:
 				Player->stats.ms_shots_fired += num_fired;
 			}
 		}
+
+		if ((shipp->cloak_stage > 0) && (shipp->cloak_stage < 3))
+		{
+			shipfx_start_cloak(shipp,500);
+		}
 		
 		// maybe announce a shockwave weapon
 		ai_maybe_announce_shockwave_weapon(obj, weapon);
@@ -7401,6 +7426,7 @@ done_secondary:
 				snd_play( &Snds[SND_SECONDARY_CYCLE] );		
 			}
 		}
+
 	}	
 
 	return num_fired;
