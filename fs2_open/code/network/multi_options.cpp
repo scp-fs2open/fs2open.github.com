@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_options.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:25 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -277,6 +280,7 @@ void multi_options_read_config()
 			continue;
 		}		
 
+#ifndef NO_STANDALONE
 		// all possible options
 		// only standalone cares about the following options
 		if(Is_standalone){
@@ -320,9 +324,14 @@ void multi_options_read_config()
 				if(tok != NULL){
 					strncpy(Multi_options_g.std_passwd, tok, STD_PASSWD_LEN);
 
+#ifdef _WIN32
 					// yuck
 					extern HWND Multi_std_host_passwd;
 					SetWindowText(Multi_std_host_passwd, Multi_options_g.std_passwd);
+#else
+					// TODO: get password ?
+					// argh, gonna have to figure out how to do this - mharris 07/07/2002
+#endif
 				}
 			} else 
 			if(SETTING("+low_update")){
@@ -342,6 +351,7 @@ void multi_options_read_config()
 				Multi_options_g.std_datarate = OBJ_UPDATE_LAN;
 			} 
 		}
+#endif
 
 		// common to all modes
 		if(SETTING("+user_server")){
@@ -655,9 +665,11 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			break;
 		}
 
+#ifndef NO_STANDALONE
 		// update standalone stuff
 		std_connect_set_gamename(Netgame.name);
 		std_multi_update_netgame_info_controls();
+#endif
 		break;
 
 	// get mission choice options
@@ -706,6 +718,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 			Netgame.campaign_mode = 1;
 
+#ifndef NO_STANDALONE
 			// put brackets around the campaign name
 			if(Game_mode & GM_STANDALONE_SERVER){
 				strcpy(str,"(");
@@ -713,6 +726,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 				strcat(str,")");
 				std_multi_set_standalone_mission_name(str);
 			}
+#endif
 		}
 		// non-campaign mode
 		else {
@@ -731,10 +745,12 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 			Netgame.campaign_mode = 0;
 
+#ifndef NO_STANDALONE
 			// set the mission name
 			if(Game_mode & GM_STANDALONE_SERVER){
 				std_multi_set_standalone_mission_name(Netgame.mission_name);			
 			}
+#endif
 		}
 		
 		send_netgame_update_packet();	   

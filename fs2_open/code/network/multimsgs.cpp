@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:25 $
  * $Author: penguin $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/09 23:01:24  mharris
  * porting
  *
@@ -1883,6 +1886,7 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 		*/
 	delete_player(player_num);	
 
+#ifndef NO_STANDALONE
 	// OSAPI GUI stuff (if standalone)
 	if (Game_mode & GM_STANDALONE_SERVER) {
       // returns true if we should reset the standalone
@@ -1895,6 +1899,7 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 		std_connect_set_host_connect_status();
 		std_connect_set_connect_count();
 	}
+#endif
 }
 
 // send information about this currently active game to the specified address
@@ -1921,7 +1926,11 @@ void send_game_active_packet(net_addr* addr)
 	
 	// add the proper flags
 	flags = 0;
+#ifndef NO_STANDALONE
 	if((Netgame.mode == NG_MODE_PASSWORD) || ((Game_mode & GM_STANDALONE_SERVER) && (multi_num_players() == 0) && (std_is_host_passwd()))){
+#else
+	if(Netgame.mode == NG_MODE_PASSWORD){
+#endif
 		flags |= AG_FLAG_PASSWD;
 	}
 
@@ -3425,11 +3434,13 @@ void process_pong_packet(ubyte *data, header *hinfo)
 		// evaluate the ping
 		multi_ping_eval_pong(&Net_players[lookup].s_info.ping);
 			
+#ifndef NO_STANDALONE
 		// put in calls to any functions which may want to know about the ping times from 
 		// this guy
 		if(Game_mode & GM_STANDALONE_SERVER){
 		   std_update_player_ping(p);	
 		}
+#endif
 
 		// mark his socket as still alive (extra precaution)
 		psnet_mark_received(Net_players[lookup].reliable_socket);

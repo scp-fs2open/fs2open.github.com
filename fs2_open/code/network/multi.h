@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:25 $
  * $Author: penguin $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:09  mharris
  * got some stuff to compile
  *
@@ -1078,6 +1081,7 @@ void multi_pause_do_frame();
 void multi_process_reliable_details();
 
 
+#ifndef NO_STANDALONE
 // standalone handling functions ---------------
 
 // initialize the standalone
@@ -1109,5 +1113,8 @@ void multi_standalone_postgame_do();
 
 // close for the standalone postgame state (when players are in the debriefing_
 void multi_standalone_postgame_close();
+
+#endif  // ifndef NO_STANDALONE
+
 
 #endif

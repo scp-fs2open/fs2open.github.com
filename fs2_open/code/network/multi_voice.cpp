@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_voice.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:25 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -514,7 +517,7 @@ void multi_voice_init()
 		} 
 
 		// attempt to copy in the "pre" voice sound
-		pre_sound = snd_load(&Snds[MULTI_VOICE_PRE_SOUND]);
+		pre_sound = snd_load(&Snds[MULTI_VOICE_PRE_SOUND], 0);
 		if(pre_sound != -1){
 			// get the pre-sound size
 			if((snd_size(pre_sound,&pre_size) != -1) && (pre_size < MULTI_VOICE_MAX_BUFFER_SIZE)){
@@ -832,7 +835,7 @@ void multi_voice_player_process()
 				multi_voice_flush_old_stream(0);
 
 				// start the recording process with the appropriate callback function
-				if(rtvoice_start_recording(multi_voice_process_next_chunk)){
+				if(rtvoice_start_recording(multi_voice_process_next_chunk, 175)){
 					nprintf(("Network","MULTI VOICE : Error initializing recording!\n"));					
 					return;
 				}
@@ -1270,7 +1273,7 @@ void multi_voice_player_send_stream()
 	Assert(Multi_voice_can_record);
 
 	// get the data	
-	rtvoice_get_data((unsigned char**)&Multi_voice_record_buffer,&sound_size,&uncompressed_size,&d_gain);		
+	rtvoice_get_data((unsigned char**)&Multi_voice_record_buffer,&sound_size,&uncompressed_size,&d_gain, NULL, NULL);
 	gain = (float)d_gain;
 
 	msg_mode = (ubyte)Multi_voice_send_mode;
@@ -1608,7 +1611,7 @@ int multi_voice_mix(int post_sound,char *data,int cur_size,int max_size)
 	
 	// post sound
 	if(post_sound >= 0){
-		post_sound = snd_load(&Snds[post_sound]);
+		post_sound = snd_load(&Snds[post_sound], 0);
 		if(post_sound >= 0){
 			if(snd_size(post_sound,&post_size) == -1){
 				post_size = 0;
@@ -1684,7 +1687,7 @@ void multi_voice_process_next_chunk()
 	Assert(Multi_voice_can_record);
 
 	// get the data	
-	rtvoice_get_data((unsigned char**)&Multi_voice_record_buffer,&sound_size,&uncompressed_size,&d_gain);		
+	rtvoice_get_data((unsigned char**)&Multi_voice_record_buffer,&sound_size,&uncompressed_size,&d_gain, NULL, NULL);		
 	gain = (float)d_gain;
 
 	// if we've reached the max # of packets for this stream, bail
@@ -2291,7 +2294,7 @@ void multi_voice_test_record_start()
 	Multi_voice_test_record_stamp = timestamp(MV_TEST_RECORD_TIME);
 
 	// start the recording of voice
-	rtvoice_start_recording(multi_voice_test_process_next_chunk);
+	rtvoice_start_recording(multi_voice_test_process_next_chunk, 175);
 }
 
 // force stop any recording voice test

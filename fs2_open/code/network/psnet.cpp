@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/PsNet.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:26 $
  * $Author: penguin $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -778,6 +781,8 @@ void psnet_init( int protocol, int port_num )
 	if ( Network_status == NETWORK_STATUS_RUNNING )
 		return;
 
+// sort of a hack; assume unix users are always on LAN :)
+#ifdef _WIN32
 	internet_connection = os_config_read_string(NULL, "NetworkConnection", "none");
 	if ( !stricmp(internet_connection, NOX("dialup")) ) {
 		Psnet_connection = NETWORK_CONNECTION_DIALUP;
@@ -786,6 +791,9 @@ void psnet_init( int protocol, int port_num )
 	} else {
 		Psnet_connection = NETWORK_CONNECTION_NONE;
 	}
+#else
+	Psnet_connection = NETWORK_CONNECTION_LAN;
+#endif
 
 	Network_status = NETWORK_STATUS_NO_WINSOCK;
 	if (WSAStartup(0x101, &wsa_data )){
