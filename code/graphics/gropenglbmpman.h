@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.h $
- * $Revision: 1.3 $
- * $Date: 2005-03-07 13:10:21 $
- * $Author: bobboau $
+ * $Revision: 1.4 $
+ * $Date: 2005-03-24 23:42:21 $
+ * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/03/07 13:10:21  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 1.2  2004/11/23 00:10:06  taylor
  * try and protect the bitmap_entry stuff a bit better
  * fix the transparent support ship, again, but correctly this time
@@ -63,7 +67,7 @@ void gr_opengl_bm_page_in_start();
 // Lock an image files data into memory
 int gr_opengl_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
-bool gr_ogl_make_render_target(int n, int &x, int &y, int flags);
-bool gr_ogl_set_render_target(int handle, int face);
+bool gr_opengl_make_render_target(int n, int &x, int &y, int flags);
+bool gr_opengl_set_render_target(int handle, int face);
 
 #endif // _OGL_BMPMAN_H

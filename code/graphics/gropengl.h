@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.7 $
- * $Date: 2005-03-20 00:09:07 $
- * $Author: phreak $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-24 23:42:21 $
+ * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/20 00:09:07  phreak
+ * Added gr_draw_htl_line and gr_draw_htl sphere
+ * There still needs to be D3D versions implemented, but OGL is done.
+ * Follow that or ask phreak about how its implemented/
+ *
  * Revision 2.6  2005/02/23 05:11:13  taylor
  * more consolidation of various graphics variables
  * some header cleaning
@@ -76,7 +81,6 @@
 	#include "graphics/gl/gl.h"
 	#include "graphics/gl/glu.h"
 	#include "graphics/gl/glext.h"
-	#include "graphics/gl/glaux.h"
 
 	#define STUB_FUNCTION 0
 #elif defined(SCP_UNIX)
@@ -91,12 +95,14 @@
 	#include <GL/gl.h>
 	#include <GL/glu.h>
 	#include <GL/glext.h>
-	#include <GL/glaux.h>
 #endif // SDL_VERSION check
 #endif
 
 #include "globalincs/pstypes.h"
 #include "graphics/grinternal.h"
+
+const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
+
 
 void gr_opengl_init(int reinit=0);
 void gr_opengl_cleanup(int minimize=1);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.9 $
- * $Date: 2005-03-19 20:35:45 $
- * $Author: wmcoolmon $
+ * $Revision: 1.10 $
+ * $Date: 2005-03-24 23:42:21 $
+ * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/03/19 20:35:45  wmcoolmon
+ * small bool fix
+ *
  * Revision 1.8  2005/03/11 14:11:53  taylor
  * apparently this change never got in
  *
@@ -279,13 +282,15 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 //#define BMP_TEX_DYNAMIC_RENDER_TARGET		(1<<8)				// a texture made for being rendered to freqently
 //#define BMP_TEX_CUBEMAP						(1<<8)				// a texture made for cubic environment map
 //*****static render targets must be able to survive anything, includeing application minimiseation*****//
-bool gr_ogl_make_render_target(int n, int &x, int &y, int flags){
+bool gr_opengl_make_render_target(int n, int &x, int &y, int flags)
+{
 	return false;//the error code, this function doesn't do anything yet so return acordingly, this should return the texture index of the created render target
 }
 
 //sets rendering to the specified texture handle (note this is diferent that texture index)
 //returns true if it's able to do so, false if it is unable to do so
 //only textures created by gr_ogl_make_render_target may be used.
-bool gr_ogl_set_render_target(int handle, int face){
-	return false;//becase this is a stub, the render target doesn't change, this should be true on suceses once this function is implemented
+bool gr_opengl_set_render_target(int handle, int face)
+{
+	return false;	//becase this is a stub, the render target doesn't change, this should be true on suceses once this function is implemented
 }
