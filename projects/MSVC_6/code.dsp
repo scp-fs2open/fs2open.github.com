@@ -80,6 +80,84 @@ LIB32=link.exe -lib
 
 # Name "code - Win32 Release"
 # Name "code - Win32 Debug"
+# Begin Group "AI"
+# Begin Source File
+
+SOURCE=..\..\code\ai\ai.cpp
+
+!IF  "$(CFG)" == "code - Win32 Release"
+
+# ADD CPP /Od
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ai\ai.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ai\AiBig.cpp
+
+!IF  "$(CFG)" == "code - Win32 Release"
+
+# ADD CPP /Od
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ai\AiBig.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ai\AiCode.cpp
+
+!IF  "$(CFG)" == "code - Win32 Release"
+
+# ADD CPP /Od
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ai\AiGoals.cpp
+
+!IF  "$(CFG)" == "code - Win32 Release"
+
+# ADD CPP /Od
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\AiGoals.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\AiInternal.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\AiLocal.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\AiTurret.cpp
+# End Source File
+# End Group
 # Begin Group "Anim"
 
 # PROP Default_Filter ""
@@ -1648,7 +1726,7 @@ SOURCE=..\..\code\Render\3dSetup.cpp
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\Ship\Afterburner.cpp
+SOURCE=..\..\code\ship\Afterburner.cpp
 
 !IF  "$(CFG)" == "code - Win32 Release"
 
@@ -1661,11 +1739,15 @@ SOURCE=..\..\code\Ship\Afterburner.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\Afterburner.h
+SOURCE=..\..\code\ship\Afterburner.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\ai.cpp
+SOURCE=..\..\code\ship\AWACS.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\AWACS.cpp
 
 !IF  "$(CFG)" == "code - Win32 Release"
 
@@ -1678,11 +1760,7 @@ SOURCE=..\..\code\Ship\ai.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\ai.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ship\AiBig.cpp
+SOURCE=..\..\code\ship\Shield.cpp
 
 !IF  "$(CFG)" == "code - Win32 Release"
 
@@ -1695,11 +1773,7 @@ SOURCE=..\..\code\Ship\AiBig.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\AiBig.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ship\AiCode.cpp
+SOURCE=..\..\code\ship\Ship.cpp
 
 !IF  "$(CFG)" == "code - Win32 Release"
 
@@ -1712,7 +1786,11 @@ SOURCE=..\..\code\Ship\AiCode.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\AiGoals.cpp
+SOURCE=..\..\code\ship\Ship.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\ShipContrails.cpp
 
 !IF  "$(CFG)" == "code - Win32 Release"
 
@@ -1725,15 +1803,11 @@ SOURCE=..\..\code\Ship\AiGoals.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\AiGoals.h
+SOURCE=..\..\code\ship\ShipContrails.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\AiLocal.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ship\AWACS.cpp
+SOURCE=..\..\code\ship\ShipFX.cpp
 
 !IF  "$(CFG)" == "code - Win32 Release"
 
@@ -1746,11 +1820,11 @@ SOURCE=..\..\code\Ship\AWACS.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\AWACS.h
+SOURCE=..\..\code\ship\ShipFX.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\Shield.cpp
+SOURCE=..\..\code\ship\ShipHit.cpp
 
 !IF  "$(CFG)" == "code - Win32 Release"
 
@@ -1763,75 +1837,11 @@ SOURCE=..\..\code\Ship\Shield.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\Ship.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
+SOURCE=..\..\code\ship\ShipHit.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Ship\Ship.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ship\ShipContrails.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ship\ShipContrails.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ship\ShipFX.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ship\ShipFX.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ship\ShipHit.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ship\ShipHit.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ship\SubsysDamage.h
+SOURCE=..\..\code\ship\SubsysDamage.h
 # End Source File
 # End Group
 # Begin Group "Sound"
