@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/openil/il_func.cpp $
- * $Revision: 1.4 $
- * $Date: 2004-07-26 20:47:46 $
- * $Author: Kazan $
+ * $Revision: 1.5 $
+ * $Date: 2004-10-31 22:00:56 $
+ * $Author: taylor $
  *
  * Callback functions for OpenIL (DevIL) to use CFILE
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/07/26 20:47:46  Kazan
+ * remove MCD complete
+ *
  * Revision 1.3  2004/07/17 18:38:04  taylor
  * force image orientation in DevIL
  *
@@ -29,6 +32,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 
 #include "openil/il_func.h"
 #include "globalincs/pstypes.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/openil/il_func.h $
- * $Revision: 1.2 $
- * $Date: 2004-08-11 05:06:30 $
- * $Author: Kazan $
+ * $Revision: 1.3 $
+ * $Date: 2004-10-31 22:00:56 $
+ * $Author: taylor $
  *
  * Callback functions for OpenIL (DevIL) to use CFILE
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/08/11 05:06:30  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.1  2004/04/26 02:04:30  taylor
  * initial checkin
  *
@@ -23,10 +26,10 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _IL_FUNC_H
 #define _IL_FUNC_H
 
+#include "PreProcDefines.h"
 
 extern int il_inited;
 

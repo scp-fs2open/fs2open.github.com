@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:48 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2004-10-31 22:00:57 $
+ * $Author: taylor $
  *
  * code to deal with pcx files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:48  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:33:02  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -141,6 +144,7 @@
 #include "pcxutils/pcxutils.h"
 #include "palman/palman.h"
 #include "bmpman/bmpman.h"
+#include "openil/il_func.h"
 
 
 
@@ -165,25 +169,49 @@ typedef struct	{
 } PCXHeader;
 
 // reads header information from the PCX file into the bitmap pointer
-int pcx_read_header(char *real_filename, int *w, int *h, ubyte *pal )
+int pcx_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, ubyte *pal )
 {
 	PCXHeader header;
 	CFILE * PCXfile;
 	char filename[MAX_FILENAME_LEN];
-		
-	strcpy( filename, real_filename );
-	char *p = strchr( filename, '.' );
-	if ( p ) *p = 0;
-	strcat( filename, ".pcx" );
+	int i, j;
 
-	PCXfile = cfopen( filename , "rb" );
-	if ( !PCXfile )
-		return PCX_ERROR_OPENING;
+	if (img_cfp == NULL) {
+		strcpy( filename, real_filename );
+		char *p = strchr( filename, '.' );
+		if ( p ) *p = 0;
+		strcat( filename, ".pcx" );
+
+		PCXfile = cfopen( filename , "rb" );
+		if ( !PCXfile )
+			return PCX_ERROR_OPENING;
+	} else {
+		PCXfile = img_cfp;
+	}
 
 	// read 128 char PCX header
 	if (cfread( &header, sizeof(PCXHeader), 1, PCXfile )!=1)	{
 		cfclose( PCXfile );
 		return PCX_ERROR_NO_HEADER;
+	}
+
+	header.Xmin = INTEL_SHORT( header.Xmin );
+	header.Ymin = INTEL_SHORT( header.Ymin );
+	header.Xmax = INTEL_SHORT( header.Xmax );
+	header.Ymax = INTEL_SHORT( header.Ymax );
+	header.Hdpi = INTEL_SHORT( header.Hdpi );
+	header.Vdpi = INTEL_SHORT( header.Vdpi );
+
+	for (i=0; i<16; i++ ){
+		for (j=0; j<3; j++){
+			header.ColorMap[i][j] = INTEL_INT( header.ColorMap[i][j] );
+		}
+	}
+
+	header.BytesPerLine = INTEL_SHORT( header.BytesPerLine );
+
+	for (i=0; i<60; i++ ){
+		header.filler[i] = INTEL_INT( header.filler[i] );
 	}
 
 	// Is it a 256 color PCX file?
@@ -200,7 +228,9 @@ int pcx_read_header(char *real_filename, int *w, int *h, ubyte *pal )
 		cfread( pal, 3, 256, PCXfile );
 	}
 
-	cfclose(PCXfile);
+	if (img_cfp == NULL)
+		cfclose(PCXfile);
+
 	return PCX_ERROR_NONE;
 }
 
@@ -211,7 +241,8 @@ int pcx_read_header(char *real_filename, int *w, int *h, ubyte *pal )
 // #define GET_BUF()			do { buffer = &Pcx_load[Pcx_load_offset]; if(Pcx_load_offset + buffer_size > Pcx_load_size) { buffer_size = Pcx_load_size - Pcx_load_offset; } } while(0);
 int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette )
 {
-		PCXHeader header;
+#ifndef USE_DEVIL_PCX
+	PCXHeader header;
 	CFILE * PCXfile;
 	int row, col, count, xsize, ysize;
 	ubyte data=0;
@@ -235,6 +266,14 @@ int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette 
 		return PCX_ERROR_NO_HEADER;
 	}
 
+	header.Xmin = INTEL_SHORT( header.Xmin );
+	header.Ymin = INTEL_SHORT( header.Ymin );
+	header.Xmax = INTEL_SHORT( header.Xmax );
+	header.Ymax = INTEL_SHORT( header.Ymax );
+	header.Hdpi = INTEL_SHORT( header.Hdpi );
+	header.Vdpi = INTEL_SHORT( header.Vdpi );
+	header.BytesPerLine = INTEL_SHORT( header.BytesPerLine );
+
 	// Is it a 256 color PCX file?
 	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{
 		cfclose( PCXfile );
@@ -250,6 +289,11 @@ int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette 
 
 	cfseek( PCXfile, -768, CF_SEEK_END );
 	cfread( palette, 3, 256, PCXfile );
+
+	for ( int i=0; i<256; i++ ){				//tigital
+		palette[i] = INTEL_INT( palette[i] );
+	}
+
 	cfseek( PCXfile, sizeof(PCXHeader), CF_SEEK_SET );
 	
 	buffer_size = 1024;
@@ -288,12 +332,44 @@ int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette 
 		org_data += xsize;
 	}
 	cfclose(PCXfile);
+#else
+	char filename[MAX_FILENAME_LEN];
+	ILuint imagedata;
+	ILint ilw, ilh, ilbpp, ilformat, ilsize;
+
+	strcpy( filename, real_filename );
+	char *p = strchr( filename, '.' );
+	if ( p ) *p = 0;
+	strcat( filename, ".pcx" );
+
+	ilGenImages(1,&imagedata);
+	ilBindImage(imagedata);
+
+	if (ilLoadImage(filename) == IL_FALSE) {
+		mprintf(("Couldn't open '%s -- some kind of devIL-error: %d\n", filename, ilGetError()));
+		ilDeleteImages(1,&imagedata);
+		return PCX_ERROR_OPENING;
+	}
+
+	printf("PCX-8bpp loading with DevIL... '%s'\n", filename);
+
+	ilGetIntegerv(IL_IMAGE_FORMAT,&ilformat);
+	ilGetIntegerv(IL_IMAGE_SIZE_OF_DATA,&ilsize);
+
+	if (palette && (ilformat == IL_COLOUR_INDEX))
+		memcpy(palette, ilGetPalette(), 256 * 3);
+
+	memcpy(org_data, ilGetData(), ilsize);
+
+	ilDeleteImages(1,&imagedata);
+#endif
+
 	return PCX_ERROR_NONE;
 }
 
 int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 {
-	
+	// NOTE: DevIL doesn't support 16-bit pcx at this time
 	PCXHeader header;
 	CFILE * PCXfile;
 	int row, col, count, xsize, ysize;
@@ -325,6 +401,14 @@ int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 	
 		return PCX_ERROR_NO_HEADER;
 	}
+
+	header.Xmin = INTEL_SHORT( header.Xmin );
+	header.Ymin = INTEL_SHORT( header.Ymin );
+	header.Xmax = INTEL_SHORT( header.Xmax );
+	header.Ymax = INTEL_SHORT( header.Ymax );
+	header.Hdpi = INTEL_SHORT( header.Hdpi );
+	header.Vdpi = INTEL_SHORT( header.Vdpi );
+	header.BytesPerLine = INTEL_SHORT( header.BytesPerLine );
 
 	// Is it a 256 color PCX file?
 	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{
@@ -417,7 +501,8 @@ int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 }
 
 int pcx_read_bitmap_16bpp_aabitmap( char * real_filename, ubyte *org_data )
-{	
+{
+	// NOTE: DevIL doesn't support 16-bit pcx at this time
 	PCXHeader header;
 	CFILE * PCXfile;
 	int row, col, count, xsize, ysize;
@@ -444,6 +529,14 @@ int pcx_read_bitmap_16bpp_aabitmap( char * real_filename, ubyte *org_data )
 		cfclose( PCXfile );
 		return PCX_ERROR_NO_HEADER;
 	}
+
+	header.Xmin = INTEL_SHORT( header.Xmin );
+	header.Ymin = INTEL_SHORT( header.Ymin );
+	header.Xmax = INTEL_SHORT( header.Xmax );
+	header.Ymax = INTEL_SHORT( header.Ymax );
+	header.Hdpi = INTEL_SHORT( header.Hdpi );
+	header.Vdpi = INTEL_SHORT( header.Vdpi );
+	header.BytesPerLine = INTEL_SHORT( header.BytesPerLine );
 
 	// Is it a 256 color PCX file?
 	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{
@@ -506,11 +599,13 @@ int pcx_read_bitmap_16bpp_aabitmap( char * real_filename, ubyte *org_data )
 		org_data += (xsize * 2);
 	}
 	cfclose(PCXfile);
+
 	return PCX_ERROR_NONE;
 }
 
 int pcx_read_bitmap_16bpp_nondark( char * real_filename, ubyte *org_data )
-{	
+{
+	// NOTE: DevIL doesn't support 16-bit pcx at this time
 	PCXHeader header;
 	CFILE * PCXfile;
 	int row, col, count, xsize, ysize;
@@ -538,6 +633,14 @@ int pcx_read_bitmap_16bpp_nondark( char * real_filename, ubyte *org_data )
 		cfclose( PCXfile );
 		return PCX_ERROR_NO_HEADER;
 	}
+
+	header.Xmin = INTEL_SHORT( header.Xmin );
+	header.Ymin = INTEL_SHORT( header.Ymin );
+	header.Xmax = INTEL_SHORT( header.Xmax );
+	header.Ymax = INTEL_SHORT( header.Ymax );
+	header.Hdpi = INTEL_SHORT( header.Hdpi );
+	header.Vdpi = INTEL_SHORT( header.Vdpi );
+	header.BytesPerLine = INTEL_SHORT( header.BytesPerLine );
 
 	// Is it a 256 color PCX file?
 	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{
@@ -615,11 +718,13 @@ int pcx_read_bitmap_16bpp_nondark( char * real_filename, ubyte *org_data )
 		org_data += (xsize * 2);
 	}
 	cfclose(PCXfile);
+
 	return PCX_ERROR_NONE;
 }
 
 int pcx_read_bitmap_32(char *real_filename, ubyte *org_data )
 {
+#ifndef USE_DEVIL_PCX
 	PCXHeader header;
 	CFILE * PCXfile;
 	ubyte data=0;
@@ -721,6 +826,37 @@ int pcx_read_bitmap_32(char *real_filename, ubyte *org_data )
 	}
 	
 	cfclose(PCXfile);
+#else
+	char filename[MAX_FILENAME_LEN];
+	ILuint imagedata;
+	ILint ilw, ilh, ilbpp, iltype, ilsize;
+//	ubyte *pixdata = org_data;
+		
+	strcpy( filename, real_filename );
+	char *p = strchr( filename, '.' );
+	if ( p ) *p = 0;
+	strcat( filename, ".pcx" );
+
+	ilGenImages(1, &imagedata);
+	ilBindImage(imagedata);
+
+	if (ilLoadImage(filename) == IL_FALSE) {
+		mprintf(("Couldn't open '%s' -- some kind of devIL-error: %d\n", filename, ilGetError()));
+		ilDeleteImages(1, &imagedata);
+		return PCX_ERROR_OPENING;
+	}
+
+	printf("PCX32 loading with DevIL... '%s'\n", filename);
+
+	ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
+
+	ilGetIntegerv(IL_IMAGE_SIZE_OF_DATA,&ilsize);
+
+	memcpy(org_data, ilGetData(), ilsize);
+//	org_data = (ubyte*)ilGetData();
+
+	ilDeleteImages(1, &imagedata);
+#endif
 
 	return PCX_ERROR_NONE;
 }

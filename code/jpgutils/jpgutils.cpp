@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.5 $
- * $Date: 2004-10-10 16:59:37 $
+ * $Revision: 1.6 $
+ * $Date: 2004-10-31 22:00:56 $
  * $Author: taylor $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/10/10 16:59:37  taylor
+ * holy crap at the copy-paste error
+ *
  * Revision 1.4  2004/07/26 20:47:35  Kazan
  * remove MCD complete
  *
@@ -56,7 +59,7 @@
 //
 // returns - JPEG_ERROR_NONE if successful, otherwise error code
 //
-int jpeg_read_header(char *real_filename, int *w, int *h, int *bpp, ubyte *palette)
+int jpeg_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette)
 {
 #ifndef USE_DEVIL_JPG
 	// non-DevIL stuff...
