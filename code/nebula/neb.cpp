@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.29 $
- * $Date: 2004-10-31 21:56:09 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2005-01-10 06:58:12 $
+ * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/10/31 21:56:09  taylor
+ * new bmpman support, new OGL fixes don't need the freaky neb lighting fix anymore
+ *
  * Revision 2.28  2004/07/26 20:47:41  Kazan
  * remove MCD complete
  *
@@ -568,25 +571,28 @@ void neb2_level_init()
 		Neb2_fog_colour_b = 157;
 
 		// OK, lets try something a bit more interesting
-		int width, height;
-		pcx_read_header(Neb2_texture_name, NULL, &width, &height, NULL);
-
-		Neb2_max_fog_value = width * height;
-		Neb2_htl_fog_data = (ubyte *) malloc(Neb2_max_fog_value * 4);
-
-		if(Neb2_htl_fog_data)
+		if(strlen(Neb2_texture_name))
 		{
-			// Always read in 32 bit, bypass normal bitmap code to avoid D3D locking issues
-			int result = pcx_read_bitmap_32(Neb2_texture_name, Neb2_htl_fog_data);
-			if(result == PCX_ERROR_NONE)
+			int width, height;
+			pcx_read_header(Neb2_texture_name, NULL, &width, &height, NULL);
+
+			Neb2_max_fog_value = width * height;
+			Neb2_htl_fog_data = (ubyte *) malloc(Neb2_max_fog_value * 4);
+
+			if(Neb2_htl_fog_data)
 			{
-				Neb2_fog_colour_r = Neb2_htl_fog_data[2];
-				Neb2_fog_colour_g = Neb2_htl_fog_data[1];
-				Neb2_fog_colour_b = Neb2_htl_fog_data[0];
-			} else 
-			{
-				free(Neb2_htl_fog_data);
-				Neb2_htl_fog_data = NULL;
+				// Always read in 32 bit, bypass normal bitmap code to avoid D3D locking issues
+				int result = pcx_read_bitmap_32(Neb2_texture_name, Neb2_htl_fog_data);
+				if(result == PCX_ERROR_NONE)
+				{
+					Neb2_fog_colour_r = Neb2_htl_fog_data[2];
+					Neb2_fog_colour_g = Neb2_htl_fog_data[1];
+					Neb2_fog_colour_b = Neb2_htl_fog_data[0];
+				} else 
+				{
+					free(Neb2_htl_fog_data);
+					Neb2_htl_fog_data = NULL;
+				}
 			}
 		}
 
