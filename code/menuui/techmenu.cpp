@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-01-28 10:00:59 $
+ * $Revision: 2.24 $
+ * $Date: 2005-01-28 13:26:14 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/01/28 10:00:59  taylor
+ * little cleanup to get rid of compiler warnings
+ * add some memory management to help keep size of techroom down
+ * new hotkey Ctrl-Shift-S to show all ships rather than just viewable
+ * make Weapon_list allocate on load just like Ship_list
+ * unload all textures and models on techroom_close()
+ *
  * Revision 2.22  2005/01/28 02:57:59  wmcoolmon
  * Fixed crash bug in techroom
  *
@@ -585,8 +592,6 @@ static int Intel_list_size = 0;
 static tech_list_entry *Current_list;								// points to currently valid display list
 static int Current_list_size = 0;
 
-static int loaded_tech_models;	// number of currently loaded ship models
-
 // slider stuff
 static UI_SLIDER2 Tech_slider;
 
@@ -641,32 +646,19 @@ void techroom_select_new_entry()
 	if (Tab == SHIPS_DATA_TAB) {
 		ship_info *sip = &Ship_info[Cur_entry_index];
 
-		// little memory management, kinda hacky but it should keep the techroom under 100meg
-		// rather than the 700+ it can get to with all ships loaded - taylor
-		if ( loaded_tech_models > 10 ) {
-			for (int i=0; i<Current_list_size; i++) {
-				if ((Current_list[i].model_num > -1) && (Current_list[i].textures_loaded)) {
-					// skip unloading of current entry, duh
-					if (i == Cur_entry_index)
-						continue;
+		// little memory management, kinda hacky but it should keep the techroom at around
+		// 100meg rather than the 700+ it can get to with all ships loaded - taylor
+		for (int i=0; i<Current_list_size; i++) {
+			if ((Current_list[i].model_num > -1) && (Current_list[i].textures_loaded)) {
+				// don't unload any spot within 5 of current
+				if ( (i < Cur_entry + 5) && (i > Cur_entry - 5) )
+					continue;
 
-					// skip previous two entries, in case be go back
-					if (i == (Cur_entry_index-1) || i == (Cur_entry_index-2))
-						continue;
+				mprintf(("TECH ROOM: Dumping excess ship textures...\n"));
 
-					// skip next two entries, in case we went back
-					if (i == (Cur_entry_index+1) || i == (Cur_entry_index+2))
-						continue;
+				model_page_out_textures(Current_list[i].model_num);
 
-					mprintf(("TECH ROOM: Dumping excess ship textures...\n"));
-
-					model_page_out_textures(Current_list[i].model_num);
-
-					Current_list[i].textures_loaded = 0;
-					loaded_tech_models--;
-
-					break;
-				}
+				Current_list[i].textures_loaded = 0;
 			}
 		}
 
@@ -694,7 +686,6 @@ void techroom_select_new_entry()
 
 		Current_list[Cur_entry].textures_loaded = 1;
 #endif
-		loaded_tech_models++;
 	} else {
 		Techroom_ship_modelnum = -1;
 		Trackball_mode = 0;
@@ -1532,8 +1523,6 @@ void techroom_init()
 	Ships_loaded = 0;
 	Weapons_loaded = 0;
 	Intel_loaded = 0;
-
-	loaded_tech_models = 0;
 
 	// Tech_room_ask_for_cd = 1;
 
