@@ -25,6 +25,8 @@ void process_messages()
 // Play one movie
 bool movie_play(char *name)
 {
+	extern int Is_standalone;
+	if(Is_standalone) return false;
  	if(Cmdline_dnoshowvid) return false;
 
 	char full_name[MAX_PATH];
@@ -57,7 +59,7 @@ bool movie_play(char *name)
 		d3d_lost_device();
 	}
 
-	process_messages();
+  	process_messages();
 
 	if(OpenClip((HWND) os_get_window(), full_name))
 	{
