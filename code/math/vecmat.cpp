@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-02-25 06:22:48 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-02 07:39:34 $
+ * $Author: penguin $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/02/25 06:22:48  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.2  2002/12/07 01:37:41  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -658,7 +664,7 @@ float vm_vec_dist_quick(vector *v0,vector *v1)
 //normalize a vector. returns mag of source vec
 float vm_vec_copy_normalize(vector *dest,vector *src)
 {
-	static ben_warned = false;//added this so the warning could be sounded and you can still get on with playing-Bobboau
+	static int ben_warned = false;//added this so the warning could be sounded and you can still get on with playing-Bobboau
 	float m;
 
 	m = vm_vec_mag(src);
