@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-17 02:18:40 $
+ * $Author: Goober5000 $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/22 01:22:25  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -532,6 +535,9 @@ struct CFILE;
 #define DEBRIEF_INFO					0xEA		// end of mission debriefing information
 #define EMP_EFFECT					0xEB		// EMP effect (mission disk only)
 #define CHANGE_IFF					0xEC		// change iff (1.04+ only)
+
+#define CARGO_HIDDEN				0xED		// cargo is hidden
+#define SUBSYS_CARGO_HIDDEN			0XEE		// Capital ship cargo subsystem is hidden
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 

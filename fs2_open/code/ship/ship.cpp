@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.15 $
- * $Date: 2002-12-15 06:29:24 $
- * $Author: DTP $
+ * $Revision: 2.16 $
+ * $Date: 2002-12-17 02:18:39 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2002/12/15 06:29:24  DTP
+ * Bumped fire_dealy on_empty_secondary to 1000
+ *
  * Revision 2.14  2002/12/14 17:09:27  Goober5000
  * removed mission flag for fighterbay damage; instead made damage display contingent on whether the fighterbay subsystem is assigned a damage percentage in ships.tbl
  * --Goober5000
@@ -9784,6 +9787,7 @@ void ship_do_cargo_revealed( ship *shipp, int from_network )
 
 void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int from_network )
 {
+	// don't do anything if we already know the cargo
 	if ( subsys->subsys_cargo_revealed ) {
 		return;
 	}
@@ -9807,6 +9811,53 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 	}	
 }
 
+// function which gets called when the cargo of a ship is hidden by the sexp.  Need to send stuff
+// to clients in multiplayer game.
+void ship_do_cargo_hidden( ship *shipp, int from_network )
+{
+	// don't do anything if the cargo is already hidden
+	if ( !(shipp->flags & SF_CARGO_REVEALED) )
+	{
+		return;
+	}
+	
+	nprintf(("Network", "Hiding cargo for %s\n", shipp->ship_name));
+
+#ifndef NO_NETWORK
+	// send the packet if needed
+	if ( (Game_mode & GM_MULTIPLAYER) && !from_network ){
+		send_cargo_hidden_packet( shipp );		
+	}
+#endif
+
+	shipp->flags &= ~SF_CARGO_REVEALED;
+
+	// don't log that the cargo was hidden and don't reset the time cargo revealed
+}
+
+void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from_network )
+{
+	// don't do anything if the cargo is already hidden
+	if ( !subsys->subsys_cargo_revealed )
+	{
+		return;
+	}
+
+	
+	nprintf(("Network", "Hiding cap ship subsys cargo for %s\n", shipp->ship_name));
+
+#ifndef NO_NETWORK
+	// send the packet if needed
+	if ( (Game_mode & GM_MULTIPLAYER) && !from_network ){
+		int subsystem_index = ship_get_index_from_subsys(subsys, shipp->objnum);
+		send_subsystem_cargo_hidden_packet( shipp, subsystem_index );		
+	}
+#endif
+
+	subsys->subsys_cargo_revealed = 0;
+
+	// don't log that the cargo was hidden
+}
 
 // Return the range of the currently selected secondary weapon
 // NOTE: If there is no missiles left in the current bank, range returned is 0

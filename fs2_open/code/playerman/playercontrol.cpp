@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 19:29:28 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-17 02:18:40 $
+ * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 19:29:28  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -1824,7 +1827,6 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		sprintf(outstr,XSTR( "cargo: inspecting", 88));
 
 		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
-			void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int from_network );
 			ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
 			snd_play( &Snds[SND_CARGO_REVEAL], 0.0f );
 			Player->cargo_inspect_time = 0;

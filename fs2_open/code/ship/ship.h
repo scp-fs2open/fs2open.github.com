@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.10 $
- * $Date: 2002-12-14 17:09:27 $
+ * $Revision: 2.11 $
+ * $Date: 2002-12-17 02:18:39 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2002/12/14 17:09:27  Goober5000
+ * removed mission flag for fighterbay damage; instead made damage display contingent on whether the fighterbay subsystem is assigned a damage percentage in ships.tbl
+ * --Goober5000
+ *
  * Revision 2.9  2002/12/13 08:13:28  Goober5000
  * small tweaks and bug fixes for the ballistic primary conversion
  * ~Goober5000~
@@ -1277,6 +1281,9 @@ void ship_secondary_changed(ship *sp);
 int ship_get_SIF(ship *shipp);
 int ship_get_SIF(int sh);
 extern void ship_do_cargo_revealed( ship *shipp, int from_network = 0 );
+extern void ship_do_cargo_hidden( ship *shipp, int from_network = 0 );
+extern void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int from_network = 0);
+extern void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from_network = 0);
 
 float ship_get_secondary_weapon_range(ship *shipp);
 

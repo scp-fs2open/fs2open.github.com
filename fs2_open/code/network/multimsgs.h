@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-12-17 02:18:40 $
+ * $Author: Goober5000 $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -398,6 +401,10 @@ void process_cargo_revealed_packet( ubyte *data, header *hinfo );
 
 void process_subsystem_cargo_revealed_packet( ubyte *data, header *hinfo );
 
+void process_cargo_hidden_packet( ubyte *data, header *hinfo );
+
+void process_subsystem_cargo_hidden_packet( ubyte *data, header *hinfo );
+
 void process_mission_goal_info_packet( ubyte *data, header *hinfo );
 
 void process_player_kick_packet(ubyte *data, header *hinfo);
@@ -593,6 +600,10 @@ void send_sh_transfer_complete_packet(int code);
 void send_cargo_revealed_packet(ship *shipp);
 
 void send_subsystem_cargo_revealed_packet(ship *shipp, int index);
+
+void send_cargo_hidden_packet(ship *shipp);
+
+void send_subsystem_cargo_hidden_packet(ship *shipp, int index);
 
 void send_mission_goal_info_packet(int goal_num, int new_status, int valid);
 
