@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.30 $
- * $Date: 2003-04-29 01:03:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2003-06-04 15:31:49 $
+ * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/04/29 01:03:21  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.29  2003/03/30 04:34:37  Goober5000
  * preliminary work on ai facing sexp
  * --Goober5000
@@ -5621,7 +5625,12 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	ship_info *sip;
 
 	// Debugging
-	//Assert( other_objp != NULL );
+	if (other_objp==NULL)
+	{
+		Int3();
+		return -1;
+	}
+
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
 	// Debugging //
 	
