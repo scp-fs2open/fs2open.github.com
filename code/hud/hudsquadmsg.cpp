@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-10 08:00:06 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-03-25 06:57:34 $
+ * $Author: wmcoolmon $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/10 08:00:06  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.10  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -282,7 +291,7 @@
 #include "io/key.h"
 #include "io/timer.h"
 #include "hud/hudsquadmsg.h"
-#include "ship/aigoals.h"
+#include "ai/aigoals.h"
 #include "parse/sexp.h"
 #include "globalincs/linklist.h"
 #include "mission/missionlog.h"

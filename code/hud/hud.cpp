@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-03-10 08:00:06 $
- * $Author: taylor $
+ * $Revision: 2.42 $
+ * $Date: 2005-03-25 06:57:34 $
+ * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/03/10 08:00:06  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.40  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -508,7 +517,7 @@
 #include "playerman/player.h"
 #include "radar/radar.h"
 #include "render/3d.h"
-#include "ship/aigoals.h"
+#include "ai/aigoals.h"
 #include "ship/ship.h"
 #include "starfield/supernova.h"
 #include "weapon/emp.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-03-12 04:44:24 $
+ * $Revision: 2.43 $
+ * $Date: 2005-03-25 06:57:36 $
  * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/03/12 04:44:24  wmcoolmon
+ * Fixx0red odd drag problems
+ *
  * Revision 2.41  2005/03/10 08:00:09  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -3480,7 +3483,7 @@ void weapon_select_do(float frametime)
 
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, zoom);
 		model_set_detail_level(0);
-		if (!Cmdline_nohtl) gr_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+		if (!Cmdline_nohtl) gr_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.05f, 1000.0f);
 		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		light_reset();

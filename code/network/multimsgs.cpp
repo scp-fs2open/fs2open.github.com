@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-03-02 21:18:20 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2005-03-25 06:57:36 $
+ * $Author: wmcoolmon $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/03/02 21:18:20  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.26  2005/02/04 20:06:05  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -478,7 +483,7 @@
 #include "popup/popup.h"
 #include "network/multi_ingame.h"
 #include "network/multiteamselect.h"
-#include "ship/aigoals.h"
+#include "ai/aigoals.h"
 #include "network/multi_campaign.h"
 #include "network/multi_team.h"
 #include "network/multi_respawn.h"
@@ -3552,7 +3557,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	// local setup -- be sure we are actually passing a weapon!!!!
 	objp = &Objects[weapon_objnum];
 	Assert ( objp->type == OBJ_WEAPON );
-	if(Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_MISSILE){
+	if(Weapon_info[Weapons[weapon_objnum].weapon_info_index].subtype == WP_MISSILE){
 		has_sig = 1;
 	}
 
@@ -3579,6 +3584,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	ADD_SHORT( val );
 	val = (short)ssp->submodel_info_2.angs.p;
 	ADD_SHORT( val );	
+	ADD_INT(Weapons[weapon_objnum].weapon_info_index);	//Break multiplayer! -WMC:D
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -3613,6 +3619,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	GET_DATA( turret_index );
 	GET_SHORT( heading );
 	GET_SHORT( pitch );	
+	GET_INT( wid );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// find the object
@@ -3637,7 +3644,6 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	if(ssp == NULL){
 		return;
 	}
-	wid = ssp->system_info->turret_weapon_type;
 
 	// bash the position and orientation of the turret
 	ssp->submodel_info_1.angs.h = (float)heading;
@@ -8225,6 +8231,7 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	val = (short)ssp->submodel_info_2.angs.p;
 	ADD_SHORT( val );	
 	ADD_FLOAT( flak_range );
+	ADD_INT(Weapons[Objects[weapon_objnum].instance].weapon_info_index);
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -8253,6 +8260,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	GET_SHORT( heading );
 	GET_SHORT( pitch );	
 	GET_FLOAT( flak_range );
+	GET_INT(wid);
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// find the object
@@ -8277,7 +8285,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	if(ssp == NULL){
 		return;
 	}
-	wid = ssp->system_info->turret_weapon_type;
+
 	if((wid < 0) || !(Weapon_info[wid].wi_flags & WIF_FLAK)){
 		return;
 	}

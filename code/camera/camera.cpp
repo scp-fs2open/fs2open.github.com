@@ -176,7 +176,7 @@ void camera::set_rotation_facing(vector *in_target, float in_rotation_time, floa
 
 void camera::set_rotation_velocity(vector *in_rotation_rate)
 {
-	if(in_rotation_rate == NULL)
+	if(in_rotation_rate != NULL)
 		rotation_rate = *in_rotation_rate;
 	else
 		vm_vec_zero(&rotation_rate);

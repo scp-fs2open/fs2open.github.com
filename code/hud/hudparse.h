@@ -5,7 +5,7 @@
 #pragma once
 #include "globalincs/globals.h"
 #include "hud/hudescort.h"
-#include "ship/ai.h"
+#include "ai/ai.h"
 
 //Teh hud_info struct...maybe class
 #define MAX_CUSTOM_HUD_GAUGES 32

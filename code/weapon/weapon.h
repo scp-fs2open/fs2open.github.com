@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/03/08 03:50:19  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.43  2005/03/03 16:40:29  taylor
  * animated beam muzzle glows
  *
@@ -512,6 +516,7 @@ struct ship_subsys;
 #define WIF2_BEAM_NO_WHACK				(1 << 5)	// this beam doesn't "whack" -- Kazan
 #define WIF2_CYCLE						(1 << 6)	// will only fire from (shots (defalts to 1)) points at a time
 #define WIF2_SMALL_ONLY					(1 << 7)	// can only be used against small ships like fighters or bombers
+#define WIF2_SAME_TURRET_COOLDOWN		(1 << 8)	// the weapon has the same cooldown time on turrets
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
@@ -893,7 +898,6 @@ extern missile_obj Missile_obj_list;
 extern weapon_info Weapon_info[MAX_WEAPON_TYPES];
 
 extern int Num_weapon_types;			// number of weapons in the game
-extern int First_secondary_index;
 extern int Num_weapons;
 
 extern tertiary_weapon_info Tertiary_weapon_info[MAX_TERTIARY_WEAPON_TYPES];

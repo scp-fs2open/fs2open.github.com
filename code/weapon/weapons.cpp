@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2005/03/24 23:24:01  taylor
+ * use SWARM_MISSILE_DELAY again so that it's easier to keep up with
+ * fix compiler warnings
+ *
  * Revision 2.99  2005/03/19 18:02:35  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -720,7 +724,7 @@
 #include "ship/shiphit.h"
 #include "hud/hud.h"
 #include "object/objcollide.h"
-#include "ship/aibig.h"
+#include "ai/aibig.h"
 #include "particle/particle.h"
 #include "asteroid/asteroid.h"
 #include "io/joy_ff.h"
@@ -790,8 +794,6 @@ int laser_model_outer = -1;
 int missile_model = -1;
 
 char	*Weapon_names[MAX_WEAPON_TYPES];
-
-int	First_secondary_index = -1;
 
 extern int Cmdline_load_only_used;
 static int *used_weapons = NULL;
@@ -1109,6 +1111,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_CYCLE;
 		else if (!stricmp(NOX("small only"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_SMALL_ONLY;
+		else if (!stricmp(NOX("same turret cooldown"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_SAME_TURRET_COOLDOWN;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 
@@ -1135,11 +1139,6 @@ void parse_wi_flags(weapon_info *weaponp)
 	}
 	if (weaponp->wi_flags2 & WIF2_LOCAL_SSM)
 	{
-		if (First_secondary_index == -1)
-		{
-			Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
-		}
-
 		if (!(weaponp->wi_flags & WIF_HOMING))
 		{
 			Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
@@ -2386,7 +2385,6 @@ void parse_weaponstbl(char* longname, bool is_chunk)
 
 
 		required_string("#Secondary Weapons");
-		First_secondary_index = Num_weapon_types;
 		while (required_string_either("#End", "$Name:")) {
 			Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
 			// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
@@ -2436,10 +2434,6 @@ void parse_weaponstbl(char* longname, bool is_chunk)
 
 		if(optional_string("#Secondary Weapons"))
 		{
-			if(First_secondary_index == -1)
-			{
-				First_secondary_index = Num_weapon_types;
-			}
 			while (required_string_either("#End", "$Name:")) {
 				Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
 				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
@@ -2552,7 +2546,6 @@ void weapon_init()
 		else
 		{	
 			Num_weapon_types = 0;
-			First_secondary_index = -1;
 			Num_spawn_types = 0;
 			parse_weaponstbl("weapons.tbl", false);
 
@@ -3895,7 +3888,6 @@ int weapon_create( vector * pos, matrix * porient, int weapon_id, int parent_obj
 	Weapons_created++;
 	objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, OF_RENDERS | OF_COLLIDES | OF_PHYSICS );
 	Assert(objnum >= 0);
-	Assert(First_secondary_index != -1);
 	objp = &Objects[objnum];
 
 	parent_objp = NULL;
@@ -4078,6 +4070,11 @@ int weapon_create( vector * pos, matrix * porient, int weapon_id, int parent_obj
 			trail_add_segment( wp->trail_ptr, &objp->pos );
 			trail_add_segment( wp->trail_ptr, &objp->pos );
 		}
+	}
+	else
+	{
+		//If a weapon has no trails, make sure we don't try to do anything with them.
+		wp->trail_ptr = NULL;
 	}
 
 	// Ensure weapon flyby sound doesn't get played for player lasers
@@ -4312,7 +4309,7 @@ const float weapon_electronics_scale[MAX_SHIP_TYPES]=
 	0.10f,	//SHIP_TYPE_KNOSSOS_DEVICE
 };
 
-
+extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
 
 // distrupt any subsystems that fall into damage sphere of this Electronics missile
 //
@@ -4361,7 +4358,11 @@ void weapon_do_electronics_affect(object *ship_objp, vector *blast_pos, int wi_i
 				if ((psub->type==SUBSYSTEM_TURRET) || (psub->type==SUBSYSTEM_WEAPONS))
 				{
 					//disrupt beams
-					if ((psub->type==SUBSYSTEM_TURRET)&&(Weapon_info[psub->turret_weapon_type].wi_flags & WIF_BEAM))
+					//WMC - do this even if there are other types of weapons on the turret.
+					//I figure, the big fancy electronics on beams will be used for the other
+					//weapons as well. No reason having two targeting computers on a turret.
+					//Plus, it's easy and fast to code. :)
+					if ((psub->type==SUBSYSTEM_TURRET)&& turret_weapon_has_flags(&ss->weapons, WIF_BEAM))
 					{
 						sub_time*=wip->elec_beam_mult;
 					}

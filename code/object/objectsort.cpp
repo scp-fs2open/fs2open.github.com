@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-03-16 01:35:59 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-25 06:57:37 $
+ * $Author: wmcoolmon $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/03/16 01:35:59  bobboau
+ * added a geometry batcher and implemented it in sevral places
+ * namely: lasers, thrusters, and particles,
+ * these have been the primary botle necks for some time,
+ * and this seems to have smoothed them out quite a bit.
+ *
  * Revision 2.5  2004/07/26 20:47:45  Kazan
  * remove MCD complete
  *
@@ -177,6 +183,7 @@
 #include "render/3d.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
+#include "ship/ship.h"
 
 
 
@@ -267,11 +274,17 @@ int obj_in_view_cone( object * objp )
 
 // Sorts all the objects by Z and renders them
 extern int Fred_active;
-void obj_render_all(void (*render_function)(object *objp) )
+extern float View_zoom;
+extern int Cmdline_nohtl;
+void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_last )
 {
 	object *objp;
 	int i, j, incr;
 	float fog_near, fog_far;
+#ifdef DYN_CLIP_DIST
+	float closest_obj = Max_draw_distance;
+	float farthest_obj = Min_draw_distance;
+#endif
 
 	objp = Objects;
 	Num_sorted_objects = 0;
@@ -301,9 +314,33 @@ void obj_render_all(void (*render_function)(object *objp) )
 					
 				osp->min_z = osp->z - objp->radius;
 				osp->max_z = osp->z + objp->radius;
+#ifdef DYN_CLIP_DIST
+				if(objp != Viewer_obj)
+				{
+					if(osp->min_z < closest_obj)
+						closest_obj = osp->min_z;
+					if(osp->max_z > farthest_obj)
+						farthest_obj = osp->max_z;
+				}
+#endif
 			}
 		}	
 	}
+
+	if(!Num_sorted_objects)
+		return;
+
+#ifdef DYN_CLIP_DIST
+	if (!Cmdline_nohtl)
+	{
+		if(closest_obj < Min_draw_distance)
+			closest_obj = Min_draw_distance;
+		if(farthest_obj > Max_draw_distance)
+			farthest_obj = Max_draw_distance;
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, closest_obj, farthest_obj);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
+#endif
 
 
 	// Sort them by their maximum z value
@@ -336,6 +373,12 @@ void obj_render_all(void (*render_function)(object *objp) )
  	for (i=0; i<Num_sorted_objects; i++)	{
 		sorted_obj * os = &Sorted_objects[Object_sort_order[i]];
 		os->obj->flags |= OF_WAS_RENDERED;
+		//This is for ship cockpits. Bobb, feel free to optimize this any way you see fit
+		if(os->obj == Viewer_obj && os->obj->type == OBJ_SHIP && (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY)) && (Ship_info[Ships[os->obj->instance].ship_info_index].flags2 & SIF2_SHOW_SHIP_MODEL))
+		{
+			(*draw_viewer_last) = true;
+			continue;
+		}
 
 		// if we're fullneb, fire up the fog - this also generates a fog table
 		if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.83 $
- * $Date: 2005-03-19 18:02:34 $
- * $Author: bobboau $
+ * $Revision: 2.84 $
+ * $Date: 2005-03-25 06:57:38 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2005/03/19 18:02:34  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.82  2005/03/03 07:13:17  wmcoolmon
  * Made HUD shield icon auto-generation off unless "generate icon" ship flag is specified for the ship.
  *
@@ -592,7 +596,7 @@
 #include "model/model.h"
 #include "palman/palman.h"
 #include "weapon/trails.h"
-#include "ship/ai.h"
+#include "ai/ai.h"
 #ifndef NO_NETWORK
 #include "network/multi_oo.h"
 #endif
@@ -716,13 +720,22 @@ typedef	struct ship_subsys {
 	float		max_hits;
 
 	// turret info
+	//Important -WMC
+	//With the new turret code, indexes run from 0 to MAX_SHIP_WEAPONS; a value of MAX_SHIP_PRIMARY_WEAPONS
+	//or higher, an index into the turret weapons is considered to be an index into the secondary weapons
+	//for much of the code. See turret_next_weap_fire_stamp.
+
+	//Note that turret_next_weap_fire_stamp is officially a hack, because turrets use all this crap
+	//ideally, they should make use of the ship_weapon structure below
+	//int		turret_next_weap_fire_stamp[MAX_SHIP_WEAPONS];	//Fire stamps for all weapons on this turret
+	int		turret_best_weapon;				// best weapon for current target; index into prim/secondary banks
 	vector	turret_last_fire_direction;		//	direction pointing last time this turret fired
 	int		turret_next_enemy_check_stamp;	//	time at which to next look for a new enemy.
 	int		turret_next_fire_stamp;				// next time this turret can fire
 	int		turret_enemy_objnum;					//	object index of ship this turret is firing upon
 	int		turret_enemy_sig;						//	signature of object ship this turret is firing upon
 	int		turret_next_fire_pos;				// counter which tells us which gun position to fire from next
-	float		turret_time_enemy_in_range;		//	Number of seconds enemy in view cone, accuracy improves over time.
+	float	turret_time_enemy_in_range;		//	Number of seconds enemy in view cone, accuracy improves over time.
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
@@ -1150,6 +1163,8 @@ typedef struct exited_ship {
 } exited_ship;
 
 extern exited_ship Ships_exited[MAX_EXITED_SHIPS];
+extern float Ship_fire_delay_scale_friendly[NUM_SKILL_LEVELS];
+extern float Ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS];
 
 // a couple of functions to get at the data
 extern void ship_add_exited_ship( ship *shipp, int reason );

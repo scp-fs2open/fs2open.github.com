@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-03-14 06:38:06 $
+ * $Revision: 2.39 $
+ * $Date: 2005-03-25 06:57:36 $
  * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/03/14 06:38:06  wmcoolmon
+ * Commented out now-unneccessary Int3()
+ *
  * Revision 2.37  2005/03/12 04:44:24  wmcoolmon
  * Fixx0red odd drag problems
  *
@@ -1693,9 +1696,12 @@ void ship_select_blit_ship_info()
 	if(ShipSelectModelNum)
 	{
 		int num_turrets = 0;
-		int x, y;
+		int x;
 		for(x = 0; x < sip->n_subsystems; x++)
 		{
+			if(sip->subsystems[x].type == SUBSYSTEM_TURRET)
+				num_turrets++;
+			/*
 			for(y = 0; y < MAX_SHIP_PRIMARY_BANKS || y < MAX_SHIP_SECONDARY_BANKS; y++)
 			{
 				if(y < MAX_SHIP_PRIMARY_BANKS)
@@ -1716,6 +1722,7 @@ void ship_select_blit_ship_info()
 					}
 				}
 			}
+			*/
 		}
 		if(num_turrets)
 		{

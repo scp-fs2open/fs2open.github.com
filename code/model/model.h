@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.57 $
- * $Date: 2005-03-03 06:05:30 $
+ * $Revision: 2.58 $
+ * $Date: 2005-03-25 06:57:36 $
  * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/03/03 06:05:30  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.56  2005/03/01 06:55:41  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -725,7 +728,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
 	char		crewspot[MAX_NAME_LEN];				// unique identifying name for this turret -- used to assign AI class and multiplayer people
-	int		turret_weapon_type;					// index in Weapon_info of weapon this fires
+	//int		turret_weapon_type;					// index in Weapon_info of weapon this fires
 	vector	turret_norm;							//	direction this turret faces
 	matrix	turret_matrix;							// turret_norm converted to a matrix.
 	float		turret_fov;								//	dot of turret_norm:vec_to_enemy > this means can see

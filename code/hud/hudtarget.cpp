@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-03-13 08:32:28 $
+ * $Revision: 2.56 $
+ * $Date: 2005-03-25 06:57:34 $
  * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/03/13 08:32:28  wmcoolmon
+ * Hud fixing goodness. I also removed some obsolete code for displaying HUD weapons.
+ *
  * Revision 2.54  2005/03/10 08:00:06  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -2157,8 +2160,8 @@ int sort_turret_func(const void *e1, const void *e2)
 	}
 }
 
-extern bool turret_weapon_has_flags(model_subsystem* tp, int flags);
-extern bool turret_weapon_has_subtype(model_subsystem* tp, int subtype);
+extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
+extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
 // target the next/prev live turret on the current target
 // auto_advance from hud_update_closest_turret
 void hud_target_live_turret(int next_flag, int auto_advance, int only_player_target)
@@ -2197,7 +2200,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 	int last_subsys_turret = FALSE;
 	if (Player_ai->targeted_subsys != NULL) {
 		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET) {
-			if (Player_ai->targeted_subsys->system_info->primary_banks[0] >= 0 || Player_ai->targeted_subsys->system_info->secondary_banks[0] >= 0) {
+			if (Player_ai->targeted_subsys->weapons.num_primary_banks >= 0 || Player_ai->targeted_subsys->weapons.num_secondary_banks >= 0) {
 				last_subsys_turret = TRUE;
 			}
 		}
@@ -2215,7 +2218,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 		// get a turret
 		if (A->system_info->type == SUBSYSTEM_TURRET) {
 			// check turret has hit points and has a weapon
-			if ( (A->current_hits > 0) && (A->system_info->primary_banks[0] >= 0 || A->system_info->secondary_banks[0] >= 0) ) {
+			if ( (A->current_hits > 0) && (A->weapons.num_primary_banks > 0 || A->weapons.num_secondary_banks > 0) ) {
 				if ( !only_player_target || (A->turret_enemy_objnum == OBJ_INDEX(Player_obj)) ) {
 					vector gsubpos, vec_to_subsys;
 					float distance, dot;
@@ -2236,14 +2239,14 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 					}
 
 					// set weapon_type to allow sort of ent on type
-					if (turret_weapon_has_flags(A->system_info, WIF_BEAM)) {
+					if (turret_weapon_has_flags(&A->weapons, WIF_BEAM)) {
 						ent[num_live_turrets].type = TYPE_FACING_BEAM;
-					} else  if (turret_weapon_has_flags(A->system_info, WIF_FLAK)) {
+					} else  if (turret_weapon_has_flags(&A->weapons, WIF_FLAK)) {
 						ent[num_live_turrets].type = TYPE_FACING_FLAK;
 					} else {
-						if (turret_weapon_has_subtype(A->system_info, WP_MISSILE)) {
+						if (turret_weapon_has_subtype(&A->weapons, WP_MISSILE)) {
 							ent[num_live_turrets].type = TYPE_FACING_MISSILE;
-						} else if (turret_weapon_has_subtype(A->system_info, WP_LASER)) {
+						} else if (turret_weapon_has_subtype(&A->weapons, WP_LASER)) {
 							ent[num_live_turrets].type = TYPE_FACING_LASER;
 						} else {
 							Int3();

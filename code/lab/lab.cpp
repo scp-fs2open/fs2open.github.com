@@ -13,7 +13,7 @@
 
 //All sorts of globals
 
-GUISystem *LAB_GUI_System;
+static GUIScreen *Lab_screen = NULL;
 
 static Window* DescWin = NULL;
 static Text* DescText = NULL;
@@ -79,7 +79,7 @@ void ship_options_window(Button *caller)
 	if(ShipOptWin != NULL)
 		return;
 
-	GUIObject* cwp = LAB_GUI_System->Add(new Window("Ship options", gr_screen.max_w - 200, 200));
+	GUIObject* cwp = Lab_screen->Add(new Window("Ship options", gr_screen.max_w - 200, 200));
 	ShipOptWin = (Window*)cwp;
 	unsigned int i=0;
 	int y = 0;
@@ -155,8 +155,11 @@ void ship_options_window(Button *caller)
 #define NUM_SHIP_VARIABLES		25
 Text *svt[NUM_SHIP_OPTIONS];
 
-#define SVW_SET_VAR(var)	svt[i]->SetText(sip->var);	\
+#define SVW_SET_SI_VAR(var)	svt[i]->SetText(sip->var);	\
 	svt[i++]->SetSaveLoc(&sip->var, T_ST_ONENTER)
+
+#define SVW_SET_VAR(var)	svt[i]->SetText(var);	\
+	svt[i++]->SetSaveLoc(&var, T_ST_ONENTER)
 
 extern int Hud_shield_filename_count;
 extern int True_NumSpecies;
@@ -168,41 +171,49 @@ void set_ship_variables_ship(ship_info *sip)
 	svt[i]->SetText(sip->species);
 	svt[i++]->SetSaveLoc(&sip->species, T_ST_ONENTER, True_NumSpecies-1, 0);
 
-	SVW_SET_VAR(density);
-	SVW_SET_VAR(damp);
-	SVW_SET_VAR(rotdamp);
-	SVW_SET_VAR(max_vel.xyz.x);
-	SVW_SET_VAR(max_vel.xyz.y);
-	SVW_SET_VAR(max_vel.xyz.z);
+	SVW_SET_SI_VAR(density);
+	SVW_SET_SI_VAR(damp);
+	SVW_SET_SI_VAR(rotdamp);
+	SVW_SET_SI_VAR(max_vel.xyz.x);
+	SVW_SET_SI_VAR(max_vel.xyz.y);
+	SVW_SET_SI_VAR(max_vel.xyz.z);
 
-	SVW_SET_VAR(initial_shield_strength);
-	SVW_SET_VAR(initial_hull_strength);
-	SVW_SET_VAR(subsys_repair_rate_percent);
-	SVW_SET_VAR(hull_repair_rate_percent);
-	SVW_SET_VAR(cmeasure_max);
+	SVW_SET_SI_VAR(initial_shield_strength);
+	SVW_SET_SI_VAR(initial_hull_strength);
+	SVW_SET_SI_VAR(subsys_repair_rate_percent);
+	SVW_SET_SI_VAR(hull_repair_rate_percent);
+	SVW_SET_SI_VAR(cmeasure_max);
 	svt[i]->SetText(sip->shield_icon_index);
 	svt[i++]->SetSaveLoc(&sip->shield_icon_index, T_ST_ONENTER, Hud_shield_filename_count-1, 0);
 
-	SVW_SET_VAR(power_output);
-	SVW_SET_VAR(max_overclocked_speed);
-	SVW_SET_VAR(max_weapon_reserve);
+	SVW_SET_SI_VAR(power_output);
+	SVW_SET_SI_VAR(max_overclocked_speed);
+	SVW_SET_SI_VAR(max_weapon_reserve);
 
-	SVW_SET_VAR(afterburner_fuel_capacity);
-	SVW_SET_VAR(afterburner_burn_rate);
-	SVW_SET_VAR(afterburner_recover_rate);
+	SVW_SET_SI_VAR(afterburner_fuel_capacity);
+	SVW_SET_SI_VAR(afterburner_burn_rate);
+	SVW_SET_SI_VAR(afterburner_recover_rate);
 
-	SVW_SET_VAR(inner_rad);
-	SVW_SET_VAR(outer_rad);
-	SVW_SET_VAR(damage);
-	SVW_SET_VAR(blast);
-	SVW_SET_VAR(explosion_propagates);
-	SVW_SET_VAR(shockwave_speed);
-	SVW_SET_VAR(shockwave_count);
+	SVW_SET_SI_VAR(inner_rad);
+	SVW_SET_SI_VAR(outer_rad);
+	SVW_SET_SI_VAR(damage);
+	SVW_SET_SI_VAR(blast);
+	SVW_SET_SI_VAR(explosion_propagates);
+	SVW_SET_SI_VAR(shockwave_speed);
+	SVW_SET_SI_VAR(shockwave_count);
 
-	SVW_SET_VAR(closeup_zoom);
-	SVW_SET_VAR(closeup_pos.xyz.x);
-	SVW_SET_VAR(closeup_pos.xyz.y);
-	SVW_SET_VAR(closeup_pos.xyz.z);
+	SVW_SET_SI_VAR(closeup_zoom);
+	SVW_SET_SI_VAR(closeup_pos.xyz.x);
+	SVW_SET_SI_VAR(closeup_pos.xyz.y);
+	SVW_SET_SI_VAR(closeup_pos.xyz.z);
+
+	SVW_SET_VAR(Objects[Ships[0].objnum].pos.xyz.x);
+	SVW_SET_VAR(Objects[Ships[0].objnum].pos.xyz.y);
+	SVW_SET_VAR(Objects[Ships[0].objnum].pos.xyz.z);
+
+	SVW_SET_VAR(Objects[Ships[0].objnum].phys_info.vel.xyz.x);
+	SVW_SET_VAR(Objects[Ships[0].objnum].phys_info.vel.xyz.y);
+	SVW_SET_VAR(Objects[Ships[0].objnum].phys_info.vel.xyz.z);
 
 	//ShipOptWin->SetCaption
 }
@@ -215,10 +226,10 @@ void zero_ship_var_win(GUIObject *caller)
 {
 	ShipVarWin = NULL;
 }
-#define SVW_ADD_TEXT_HEADER(name) y += (cwp->AddChild(new Text(name, SVW_RIGHTX/2, y + 10, SVW_RIGHTWIDTH))->GetHeight() + 15)
+#define SVW_ADD_TEXT_HEADER(name) y += (cwp->AddChild(new Text(name, name, SVW_RIGHTX/2, y + 10, SVW_RIGHTWIDTH))->GetHeight() + 15)
 
-#define SVW_ADD_TEXT(name) cwp->AddChild(new Text(name, 0, y, SVW_LEFTWIDTH));			\
-	svt[i] = (Text*) cwp->AddChild(new Text("", SVW_RIGHTX, y, SVW_RIGHTWIDTH, 12, T_EDITTABLE));	\
+#define SVW_ADD_TEXT(name) cwp->AddChild(new Text(name, name, 0, y, SVW_LEFTWIDTH));			\
+	svt[i] = (Text*) cwp->AddChild(new Text(std::string (name, "Editbox"), "", SVW_RIGHTX, y, SVW_RIGHTWIDTH, 12, T_EDITTABLE));	\
 	y += svt[i++]->GetHeight() + 5														\
 
 void ship_variables_window(Button *caller)
@@ -226,13 +237,13 @@ void ship_variables_window(Button *caller)
 	if(ShipVarWin != NULL)
 		return;
 
-	GUIObject* cwp = LAB_GUI_System->Add(new Window("Ship variables", gr_screen.max_w - (SVW_RIGHTX + SVW_RIGHTWIDTH + 25), 200));
+	GUIObject* cwp = Lab_screen->Add(new Window("Ship variables", gr_screen.max_w - (SVW_RIGHTX + SVW_RIGHTWIDTH + 25), 200));
 	ShipVarWin = (Window*)cwp;
 	unsigned int i = 0;
 	int y = 0;
 
-	cwp->AddChild(new Text("Name", 0, y, SVW_LEFTWIDTH));
-	svt[i] = (Text*) cwp->AddChild(new Text("<None>", SVW_RIGHTX, y, SVW_RIGHTWIDTH, 12));
+	cwp->AddChild(new Text("Name", "", y, SVW_LEFTWIDTH));
+	svt[i] = (Text*) cwp->AddChild(new Text("Ship name", "<None>", SVW_RIGHTX, y, SVW_RIGHTWIDTH, 12));
 	y += svt[i++]->GetHeight() + 5;
 	SVW_ADD_TEXT("Species");
 
@@ -280,6 +291,15 @@ void ship_variables_window(Button *caller)
 	SVW_ADD_TEXT("Closeup pos (y)");
 	SVW_ADD_TEXT("Closeup pos (z)");
 
+	//Test
+	SVW_ADD_TEXT_HEADER(Ships[0].ship_name);
+	SVW_ADD_TEXT("Mission pos (x)");
+	SVW_ADD_TEXT("Mission pos (y)");
+	SVW_ADD_TEXT("Mission pos (z)");
+	SVW_ADD_TEXT("Mission vel (x)");
+	SVW_ADD_TEXT("Mission vel (y)");
+	SVW_ADD_TEXT("Mission vel (z)");
+
 	if(ShipSelectShipIndex != -1)
 		set_ship_variables_ship(&Ship_info[ShipSelectShipIndex]);
 
@@ -291,7 +311,7 @@ void ship_variables_window(Button *caller)
 void make_options_window(Button *caller)
 {
 	GUIObject* ccp;
-	GUIObject* cwp = LAB_GUI_System->Add(new Window("Options", gr_screen.max_w - 300, 200));
+	GUIObject* cwp = Lab_screen->Add(new Window("Options", gr_screen.max_w - 300, 200));
 	int y = 0;
 	ccp = cwp->AddChild(new Checkbox("No lighting", 0,  y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_LIGHTING);
@@ -375,10 +395,10 @@ void make_new_window(Button* caller)
 
 	std::string caption = "Ship list ";
 	caption += buf;
-	cgp = LAB_GUI_System->Add(new Window(caption, 50 + total*15, 50 + total*15));
+	cgp = Lab_screen->Add(new Window(caption, 50 + total*15, 50 + total*15));
 	total++;
 
-	Tree* cmp = (Tree*)cgp->AddChild(new Tree(0, 0));
+	Tree* cmp = (Tree*)cgp->AddChild(new Tree("Ship tree", 0, 0));
 	TreeItem *ctip;
 	int j;
 	for(int i = 0; i < Num_ship_types; i++)
@@ -407,8 +427,8 @@ void make_another_window(Button* caller)
 	if(DescWin != NULL)
 		return;
 
-	DescWin = (Window*)LAB_GUI_System->Add(new Window("Description", gr_screen.max_w - gr_screen.max_w/3 - 50, gr_screen.max_h - gr_screen.max_h/6 - 50, gr_screen.max_w/3, gr_screen.max_h/6));
-	DescText = (Text*)DescWin->AddChild(new Text("No ship selected.", 0, 0));
+	DescWin = (Window*)Lab_screen->Add(new Window("Description", gr_screen.max_w - gr_screen.max_w/3 - 50, gr_screen.max_h - gr_screen.max_h/6 - 50, gr_screen.max_w/3, gr_screen.max_h/6));
+	DescText = (Text*)DescWin->AddChild(new Text("Description Text", "No ship selected.", 0, 0));
 	if(ShipSelectShipIndex != -1)
 	{
 		DescText->SetText(Ship_info[ShipSelectShipIndex].tech_desc);
@@ -549,7 +569,6 @@ void get_out_of_lab(Button* caller)
 void lab_init()
 {
 	beam_pause_sounds();
-	gr_init_alphacolor(&Color_dark_blue, 46, 46, 128, 255);
 
 	//If we were viewing a ship, load 'er up
 	if(ShipSelectShipIndex != -1)
@@ -557,11 +576,11 @@ void lab_init()
 		ShipSelectModelNum = model_load(Ship_info[ShipSelectShipIndex].pof_file, 0, NULL);
 	}
 
-	//We start by creating the GUI system and the toolbar
-	LAB_GUI_System = new GUISystem("Lab");
+	//We start by creating the screen/toolbar
+	Lab_screen = GUI_system->PushScreen(new GUIScreen("Lab"));
 	GUIObject *cwp;
 	GUIObject *cbp;
-	cwp = LAB_GUI_System->Add(new Window("Toolbar", 0, 0, -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
+	cwp = Lab_screen->Add(new Window("Toolbar", 0, 0, -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
 //	cwp->AddChild(new Button("File", 0, 0, file_menu));
 	int x = 0;
 	cbp = cwp->AddChild(new Button("Show ships", 0, 0, make_new_window));
@@ -579,11 +598,23 @@ void lab_init()
 	cbp->SetPosition(gr_screen.clip_right - cbp->GetWidth() - 2, 1);
 }
 
+extern void game_render_frame_setup(vector *eye_pos, matrix *eye_orient);
+extern void game_render_frame(vector *eye_pos, matrix *eye_orient);
 void lab_do_frame(float frametime)
 {
 	gr_clear();
-	show_ship(frametime);
-	if(LAB_GUI_System->OnFrame(frametime, Trackball_active==0 ? true : false, false) == GSDF_NOTHINGPRESSED && mouse_down(MOUSE_LEFT_BUTTON))
+	if(gameseq_get_pushed_state() == GS_STATE_GAME_PLAY)
+	{
+		vector eye_pos;
+		matrix eye_orient;
+		game_render_frame_setup(&eye_pos, &eye_orient);
+		game_render_frame( &eye_pos, &eye_orient );
+	}
+	else
+	{
+		show_ship(frametime);
+	}
+	if(GUI_system->OnFrame(frametime, Trackball_active==0 ? true : false, false) == GSOF_NOTHINGPRESSED && mouse_down(MOUSE_LEFT_BUTTON))
 	{
 		Trackball_active = 1;
 		Trackball_mode = 1;
@@ -597,7 +628,7 @@ void lab_do_frame(float frametime)
 
 void lab_close()
 {
-	delete LAB_GUI_System;
+	delete Lab_screen;
 
 	if(ShipSelectModelNum != -1)
 	{

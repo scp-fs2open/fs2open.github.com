@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-03-24 23:29:33 $
- * $Author: taylor $
+ * $Revision: 1.9 $
+ * $Date: 2005-03-25 06:57:37 $
+ * $Author: wmcoolmon $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/03/24 23:29:33  taylor
+ * (re)move some uneeded variables to fix compiler warnings
+ *
  * Revision 1.7  2005/03/21 23:19:55  phreak
  * Orb correctly displays in 640x480
  *
@@ -304,7 +307,8 @@ void radar_plot_object_orb( object *objp )
 
 	if ( N_blips >= MAX_BLIPS ) {
 		// out of blips, don't plot
-		Int3();
+		//Gahhh, this is bloody annoying -WMC
+		//Int3();
 		return;
 	}
 

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-03-12 04:44:24 $
+ * $Revision: 2.17 $
+ * $Date: 2005-03-25 06:57:36 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/03/12 04:44:24  wmcoolmon
+ * Fixx0red odd drag problems
+ *
  * Revision 2.15  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1729,6 +1732,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	if(sip != NULL)
 	{
 		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
+			if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 	}
 	else
 	{
@@ -1767,10 +1771,10 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		}
 //		weap_closeup.xyz.x = bs->min.xyz.x + (bs->max.xyz.x - bs->min.xyz.x)/2.0f;
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, zoom);
+			if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.05f, 1000.0f);
 	}
 
 	model_set_detail_level(0);
-	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	if(!(flags & MR_NO_LIGHTING))

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-03-20 21:07:10 $
- * $Author: phreak $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-25 06:57:34 $
+ * $Author: wmcoolmon $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/03/20 21:07:10  phreak
+ * Add a function to check whether any duplicate jumpnode names exist
+ *
  * Revision 2.8  2005/03/11 01:28:23  wmcoolmon
  * Oops, gotta remember to commit main codebase stuff when fixing FRED
  *
@@ -93,15 +96,15 @@ int Num_jump_nodes = 0;
 #include "hud/hud.h"
 #include "globalincs/linklist.h"
 
-linked_list Jump_nodes;
+linked_list<jump_node> Jump_nodes;
 
 void jumpnode_level_close()
 {
 	jump_node *jnp;
 	jump_node *next_node;
 
-	for ( jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = next_node ) {	
-		next_node = (jump_node *)jnp->get_next();
+	for ( jnp = Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = next_node ) {	
+		next_node = jnp->get_next();
 		delete jnp;
 		Num_jump_nodes--;
 	}
@@ -239,7 +242,7 @@ jump_node *jumpnode_get_by_name(char* name)
 {
 	jump_node *jnp;
 
-	for ( jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() ) {	
+	for ( jnp = Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = jnp->get_next() ) {	
 		if(!stricmp(jnp->get_name_ptr(), name)) return jnp;
 	}
 
@@ -251,7 +254,7 @@ void jumpnode_render_all()
 {
 	jump_node *jnp;
 
-	for ( jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() ) {	
+	for ( jnp = Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = jnp->get_next() ) {	
 		jnp->render(&jnp->get_obj()->pos);
 	}
 }
@@ -261,7 +264,7 @@ jump_node *jumpnode_get_which_in(object *objp)
 	jump_node *jnp;
 	float radius, dist;
 
-	for ( jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() )
+	for ( jnp = Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = jnp->get_next() )
 	{	
 		radius = model_get_radius( jnp->get_modelnum() );
 		dist = vm_vec_dist( &objp->pos, &jnp->get_obj()->pos );

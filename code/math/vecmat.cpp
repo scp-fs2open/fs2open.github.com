@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-03-24 23:36:13 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2005-03-25 06:57:35 $
+ * $Author: wmcoolmon $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/03/24 23:36:13  taylor
+ * fix compiler warnings with mismatched types and unused variables
+ * cleanup some debug messages so they can be turned off if needed
+ * get rid of extra strstr() check for thrusters since it should never get that far anyway
+ * page_in/page_out of model glows should be better now
+ * removed a bunch of unneeded casts and get type specific math functions right
+ *
  * Revision 2.20  2005/03/19 18:02:34  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -2038,7 +2045,7 @@ float approach(float w_in, float w_max, float theta_goal, float aa, float delta_
 				// reaches wp this frame
 				float wp = fl_sqrt(wp_sqr);
 				float time_to_wp = (wp - w_in) / aa;
-				Assert(time_to_wp > 0);
+				//Assert(time_to_wp > 0);	//WMC - this is not needed, right?
 
 				// accel
 				*w_out = wp;

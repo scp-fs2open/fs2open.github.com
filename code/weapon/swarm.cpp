@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Swarm.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-31 08:56:47 $
- * $Author: et1 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-25 06:57:38 $
+ * $Author: wmcoolmon $
  *
  * C module for managing swarm missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/31 08:56:47  et1
+ * Implemented "+SwarmWait:"-token
+ *
  * Revision 2.5  2004/07/26 20:47:56  Kazan
  * remove MCD complete
  *
@@ -163,18 +166,6 @@ typedef struct swarm_info {
 	float		last_dist;			// last distance to target
 } swarm_info;
 
-typedef struct turret_swarm_info {
-	int				flags;
-	int				num_to_launch;
-	int				parent_objnum;
-	int				parent_sig;
-	int				target_objnum;
-	int				target_sig;
-	ship_subsys*	turret;
-	ship_subsys*	target_subsys;
-	int				time_to_fire;
-} turret_swarm_info;
-
 
 #define MAX_SWARM_MISSILES	50
 swarm_info	Swarm_missiles[MAX_SWARM_MISSILES];
@@ -205,6 +196,7 @@ void swarm_level_init()
 	for (i=0; i<MAX_TURRET_SWARM_INFO; i++) {
 		tswarmp = &Turret_swarm_info[i];
 		tswarmp->flags = 0;
+		tswarmp->weapon_class = -1;
 		tswarmp->num_to_launch = 0;
 		tswarmp->parent_objnum = -1;
 		tswarmp->parent_sig	  = -1;
@@ -522,6 +514,7 @@ int turret_swarm_create()
 	}
 
 	tswarmp->flags = 0;
+	tswarmp->weapon_class = -1;
 	tswarmp->num_to_launch = 0;
 	tswarmp->parent_objnum = -1;
 	tswarmp->parent_sig = -1;
@@ -553,20 +546,21 @@ void turret_swarm_delete(int i)
 }
 
 // Set up turret swarm info struct
-void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, int turret_weapon_class)
+void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_info *wip)
 {
 	turret_swarm_info	*tsi;
 	object *parent_obj, *target_obj;
 	ship *shipp;
 	int tsi_index;
-	weapon_info *wip;
 
 	// weapon info pointer
+	//Removed check in the interests of speed -WMC
+	/*
 	Assert((turret_weapon_class >= 0) && (turret_weapon_class < Num_weapon_types));
 	if((turret_weapon_class < 0) || (turret_weapon_class >= Num_weapon_types)){
 		return;
 	}
-	wip = &Weapon_info[turret_weapon_class];
+	*/
 
 	// get ship pointer	
 	Assert((parent_objnum >= 0) && (parent_objnum < MAX_OBJECTS));
@@ -619,6 +613,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, int turret
 
     */
 	// initialize tsi
+	tsi->weapon_class = WEAPON_INFO_INDEX(wip);
 	tsi->num_to_launch = wip->swarm_count;
 	tsi->parent_objnum = parent_objnum;
 	tsi->parent_sig    = parent_obj->signature;
@@ -629,7 +624,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, int turret
 	tsi->time_to_fire = 1;	// first missile next frame
 }
 
-void turret_swarm_fire_from_turret(ship_subsys *turret, int parent_objnum, int target_objnum, ship_subsys *target_subsys);
+void turret_swarm_fire_from_turret(turret_swarm_info *tsi);
 // check if ship has turret ready to fire swarm type missiles
 void turret_swarm_maybe_fire_missile(int shipnum)
 {
@@ -685,11 +680,11 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 
 					// make sure turret is still alive and fire swarmer
 					if (subsys->current_hits > 0) {
-						turret_swarm_fire_from_turret(tsi->turret, tsi->parent_objnum, target_objnum, tsi->target_subsys);
+						turret_swarm_fire_from_turret(tsi);
 					}
 
                     // *Get timestamp from weapon info's -Et1
-                    tsi->time_to_fire = timestamp( Weapon_info[subsys->system_info->turret_weapon_type].SwarmWait );
+					tsi->time_to_fire = timestamp( Weapon_info[tsi->weapon_class].SwarmWait );
 
 
 					// do book keeping

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.10 $
- * $Date: 2005-03-03 06:05:30 $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-25 06:57:36 $
  * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/03 06:05:30  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.9  2005/02/04 10:12:32  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -553,7 +556,7 @@ int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vector 
 void obj_render(object *obj);
 
 //Sorts and renders all the ojbects
-void obj_render_all(void (*render_function)(object *objp) );
+void obj_render_all(void (*render_function)(object *objp), bool* render_viewer_last );
 
 //move all objects for the current frame
 void obj_move_all(float frametime);		// moves all objects

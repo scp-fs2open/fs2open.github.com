@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-03-10 08:00:13 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2005-03-25 06:57:37 $
+ * $Author: wmcoolmon $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/03/10 08:00:13  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.23  2005/03/03 06:05:31  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -2110,7 +2119,8 @@ void player_show_death_message()
 	HUD_fixed_printf(30.0f, death_text);
 }
 
-
+/*
+//WMC - commented this out in favor of process_subobjects, see ship_process_post
 extern void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum);
 
 // maybe fire a turret that is on a player ship (single or multi)
@@ -2123,10 +2133,10 @@ void player_maybe_fire_turret(object *objp)
 	ai_info			*aip = &Ai_info[shipp->ai_index];
 
 	// do a quick out if this isn't a bomber
-	/* Goober5000 - removed this restriction
-	if ( !(Ship_info[shipp->ship_info_index].flags & SIF_BOMBER) ) {
-		return;
-	}*/
+	// Goober5000 - removed this restriction
+	//if ( !(Ship_info[shipp->ship_info_index].flags & SIF_BOMBER) ) {
+	//	return;
+	//}
 
 	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED))
 	{
@@ -2151,7 +2161,7 @@ void player_maybe_fire_turret(object *objp)
 			}
 		}
 	}
-}
+}*/
 
 void player_set_next_all_alone_msg_timestamp()
 {

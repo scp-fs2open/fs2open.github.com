@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-03-06 11:23:45 $
+ * $Revision: 2.47 $
+ * $Date: 2005-03-25 06:57:34 $
  * $Author: wmcoolmon $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/03/06 11:23:45  wmcoolmon
+ * RE-fixed stuff. Ogg support. Briefings.
+ *
  * Revision 2.45  2005/03/03 06:05:28  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -1074,27 +1077,32 @@ void hud_render_target_asteroid(object *target_objp)
 #endif
 }
 
-void get_turret_subsys_name(model_subsystem *system_info, char *outstr)
+//from aicode.cpp. Less include...problems...this way.
+extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
+extern bool turret_weapon_has_flags2(ship_weapon *swp, int flags);
+extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
+void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 {
-	Assert(system_info);	// Goober5000
-	Assert(system_info->type == SUBSYSTEM_TURRET);
+	Assert(swp != NULL);	// Goober5000 //WMC
+	//Assert(system_info->type == SUBSYSTEM_TURRET);
 
-	if (system_info->turret_weapon_type >= 0) {
+	//WMC - find the first weapon, if there is one
+	if (swp->num_primary_banks || swp->num_secondary_banks) {
 		// check if beam or flak using weapon flags
-		if (Weapon_info[system_info->turret_weapon_type].wi_flags & WIF_FLAK) {
-			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
-		} else if (Weapon_info[system_info->turret_weapon_type].wi_flags & WIF_BEAM) {
+		if (turret_weapon_has_flags(swp, WIF_BEAM)) {
 			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
+		}else if (turret_weapon_has_flags(swp, WIF_FLAK)) {
+			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
 		} else {
 
-			if (Weapon_info[system_info->turret_weapon_type].subtype == WP_LASER) {
+			if (!turret_weapon_has_subtype(swp, WP_MISSILE) && turret_weapon_has_subtype(swp, WP_LASER)) {
 				// ballistic too! - Goober5000
-				if (Weapon_info[system_info->turret_weapon_type].wi_flags2 & WIF2_BALLISTIC)
+				if (turret_weapon_has_flags2(swp, WIF2_BALLISTIC))
 				{
 					sprintf(outstr, "%s", XSTR("Turret", 1487));
 				}
 				// the TVWP has some primaries flagged as bombs
-				else if (Weapon_info[system_info->turret_weapon_type].wi_flags & WIF_BOMB)
+				else if (turret_weapon_has_flags(swp, WIF_BOMB))
 				{
 					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 				}
@@ -1102,7 +1110,7 @@ void get_turret_subsys_name(model_subsystem *system_info, char *outstr)
 				{
 					sprintf(outstr, "%s", XSTR("Laser turret", 1568));
 				}
-			} else if (Weapon_info[system_info->turret_weapon_type].subtype == WP_MISSILE) {
+			} else if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
 				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 			} else {
 				// Illegal subtype
@@ -1110,6 +1118,9 @@ void get_turret_subsys_name(model_subsystem *system_info, char *outstr)
 				sprintf(outstr, "%s", XSTR("Turret", 1487));
 			}
 		}
+	} else if(swp->num_tertiary_banks) {
+		//TODO: add tertiary turret code stuff here
+		sprintf(outstr, "%s", NOX("Unknown"));
 	} else {
 		// This should not happen
 		sprintf(outstr, "%s", NOX("Unused"));
@@ -1230,7 +1241,7 @@ void hud_render_target_ship_info(object *target_objp)
 		// hud_set_default_color();
 		// get turret subsys name
 		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET) {
-			get_turret_subsys_name(Player_ai->targeted_subsys->system_info, outstr);
+			get_turret_subsys_name(&Player_ai->targeted_subsys->weapons, outstr);
 		} else {
 			sprintf(outstr, "%s", Player_ai->targeted_subsys->system_info->name);
 		}
@@ -1561,7 +1572,8 @@ void hud_render_target_ship(object *target_objp)
 					hud_set_iff_color( target_objp, 1 );
 				}
 
-				gr_unsize_screen_pos(&sx, &sy);
+				//This only sort of works. -C
+				gr_resize_screen_pos(&sx, &sy);
 				if ( subsys_in_view ) {
 					draw_brackets_square_quick(sx - 10, sy - 10, sx + 10, sy + 10);
 				} else {

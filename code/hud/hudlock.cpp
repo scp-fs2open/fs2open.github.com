@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-02 21:24:44 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-03-25 06:57:34 $
+ * $Author: wmcoolmon $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.10  2005/02/13 08:36:51  wmcoolmon
  * Lockon should now work properly in nonstandard resolutions
  *
@@ -320,7 +323,7 @@
 #include "weapon/weapon.h"
 #include "io/timer.h"
 #include "gamesnd/gamesnd.h"
-#include "ship/ai.h"
+#include "ai/ai.h"
 #include "render/3d.h"
 #include "globalincs/linklist.h"
 #include "weapon/emp.h"

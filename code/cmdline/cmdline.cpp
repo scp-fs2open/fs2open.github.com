@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.98 $
- * $Date: 2005-03-13 23:07:35 $
- * $Author: taylor $
+ * $Revision: 2.99 $
+ * $Date: 2005-03-25 06:57:33 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2005/03/13 23:07:35  taylor
+ * enable 32-bit to 16-bit TGA conversion with -tga16 cmdline option (experimental)
+ * fix crash when upgrading from original campaign stats file to current
+ *
  * Revision 2.97  2005/03/12 03:09:55  wmcoolmon
  * New commandline option "-noparseerrors"
  *
@@ -781,6 +785,8 @@ Flag exe_params[] =
 	"-pofspew",		  "",								false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pofspew", 
 	"-tablecrcs",	  "",								true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.tablecrcs", 
 	"-missioncrcs",   "",								true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.missioncrcs", 
+	"-dis_collisions","Disable collisions",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"", 
+	"-dis_weapons",   "Disable weapon rendering",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"", 
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -864,6 +870,8 @@ cmdline_parm use_3dwarp("-3dwarp", NULL);
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL );
 cmdline_parm use_rlm("-rlm", NULL); // more realistic lighting model - taylor
 cmdline_parm smart_shields("-smart_shields", NULL);
+cmdline_parm dis_collisions("-dis_collisions", NULL);
+cmdline_parm dis_weapons("-dis_weapons", NULL);
 #ifdef WIN32
 cmdline_parm fix_bugs("-fixbugs", NULL);
 cmdline_parm disable_crashing("-nocrash", NULL);
@@ -916,6 +924,8 @@ int Cmdline_orb_radar = 0;
 int Cmdline_TBPWarpEffects = 0; // TBP warp effects -Et1
 int Cmdline_3dwarp = 0;
 int Cmdline_smart_shields = 0;
+int Cmdline_dis_collisions = 0;
+int Cmdline_dis_weapons = 0;
 
 int Cmdline_window = 0;
 int Cmdline_allslev = 0;
@@ -1748,6 +1758,12 @@ bool SetCmdlineParams()
 	{
 		Cmdline_smart_shields = 0;
 	}
+
+	if(dis_collisions.found())
+		Cmdline_dis_collisions = 1;
+
+	if(dis_weapons.found())
+		Cmdline_dis_weapons = 1;
 
 	if ( tga16_arg.found() ) {
 		Cmdline_tga16 = 1;

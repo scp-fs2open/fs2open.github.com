@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.84 $
- * $Date: 2005-03-08 03:50:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.85 $
+ * $Date: 2005-03-25 06:57:35 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2005/03/08 03:50:22  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.83  2005/03/03 06:05:29  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -696,7 +700,7 @@
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "ship/ship.h"
-#include "ship/aigoals.h"
+#include "ai/aigoals.h"
 #include "playerman/player.h"
 #include "starfield/starfield.h"
 #include "bmpman/bmpman.h"
@@ -2331,7 +2335,7 @@ int parse_create_object(p_object *objp)
 				if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
 					ptr->weapons.ai_class = sssp->ai_class;
 
-				ai_turret_select_default_weapon(ptr);
+				ptr->turret_best_weapon = -1;
 			}
 
 			ptr = GET_NEXT(ptr);
