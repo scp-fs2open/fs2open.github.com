@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-09-26 14:37:16 $
- * $Author: bobboau $
+ * $Revision: 2.6 $
+ * $Date: 2003-10-23 18:03:25 $
+ * $Author: randomtiger $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/26 14:37:16  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.4  2003/08/31 06:00:42  bobboau
  * an asortment of bugfixes, mostly with the specular code,
  * HUD flickering should be completly gone now
@@ -537,6 +547,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 //
 //	input:	objp	=>		pointer to shockwave object
 //
+extern int Cmdline_nohtl;
 bool rendering_shockwave = false;
 void shockwave_render(object *objp)
 {
@@ -588,10 +599,12 @@ void shockwave_render(object *objp)
 
 		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, -1.0f);
 	}else{
-		g3_rotate_vertex(&p, &sw->pos );
+		if(!Cmdline_nohtl)g3_transfer_vertex(&p, &sw->pos );
+		else g3_rotate_vertex(&p, &sw->pos );
 	
 		gr_set_bitmap(sw->current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-		g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angle), sw->radius, TMAP_FLAG_TEXTURED);	
+		if(Cmdline_nohtl)g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angle), sw->radius, TMAP_FLAG_TEXTURED);	
+		else g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angle), sw->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);	
 	}
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.3 $
- * $Date: 2003-10-18 02:45:39 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2003-10-23 18:03:24 $
+ * $Author: randomtiger $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/10/18 02:45:39  phreak
+ * edited gr_d3d_start_instance_matrix to make it take a vector* and a matrix*, but it doesn't do anything yet
+ *
  * Revision 2.2  2003/10/17 17:18:42  randomtiger
  * Big restructure for D3D and new modules grd3dlight and grd3dsetup
  *
@@ -131,7 +134,7 @@ void gr_d3d_get_region(int front, int w, int h, ubyte *data);
 int gr_d3d_make_buffer(poly_list *list);
 void gr_d3d_destroy_buffer(int idx);
 void gr_d3d_render_buffer(int idx);
-void gr_d3d_start_instance_matrix(vector *, matrix*);
+void gr_d3d_start_instance_matrix();
 void gr_d3d_end_instance_matrix();
 void d3d_start_clip();
 void d3d_end_clip();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-10-23 18:03:24 $
+ * $Author: randomtiger $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -288,7 +291,7 @@ int g3_draw_rod(vector *p0,float width1,vector *p1,float width2, vertex * verts,
 // If bitmap is not square, rad will be the 3d size of the smallest dimension.
 // orient flips the bitmap in some way.  Pass 0 for normal or else pass a 
 // random nuber between 0 and 7, inclusive.
-int g3_draw_bitmap(vertex *pos,int orient, float radius, uint tmap_flags);
+int g3_draw_bitmap(vertex *pos,int orient, float radius, uint tmap_flags, float depth = 0.0f);
 
 // get bitmap dims onscreen as if g3_draw_bitmap() had been called
 int g3_get_bitmap_dims(int bitmap, vertex *pos, float radius, int *x, int *y, int *w, int *h, int *size);
@@ -311,7 +314,7 @@ float g3_draw_laser_rgb(vector *headp, float head_width, vector *tailp, float ta
 
 // Draw a bitmap that is always facing, but rotates.
 // If bitmap is not square, rad will be the 3d size of the smallest dimension.
-int g3_draw_rotated_bitmap(vertex *pnt,float angle, float radius, uint tmap_flags);
+int g3_draw_rotated_bitmap(vertex *pnt,float angle, float radius, uint tmap_flags, float depth = 0.0f);
 
 // draw a perspective bitmap based on angles and radius
 int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags);
@@ -339,6 +342,6 @@ void g3_start_user_clip_plane( vector *plane_point, vector *plane_normal );
 // Stops arbritary plane clipping
 void g3_stop_user_clip_plane();
 
-
+ubyte g3_transfer_vertex(vertex *dest, vector *src);
 
 #endif

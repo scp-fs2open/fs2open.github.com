@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.38 $
- * $Date: 2003-10-20 22:32:37 $
- * $Author: phreak $
+ * $Revision: 2.39 $
+ * $Date: 2003-10-23 18:03:24 $
+ * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/10/20 22:32:37  phreak
+ * cleaned up a bunch of repeated code
+ *
  * Revision 2.37  2003/10/19 01:10:05  phreak
  * clipping planes now work
  *
@@ -4146,53 +4149,56 @@ extern float	Canv_w2;				// Canvas_width / 2
 extern float	Canv_h2;				// Canvas_height / 2
 extern float	View_zoom;
 static int n_active_lights = 0;
-void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
+void gr_opengl_start_instance_matrix()
 {
-	if (!offset)
-		offset = &vmd_zero_vector;
-	if (!rotation)
-		rotation = &vmd_identity_matrix;
-
-
-	if (depth == 0)
-	{
-		//change the projection matrix
+	if (depth==0){
+		//change the viewport
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
 		glLoadIdentity();
 
 		//fov, aspect ratio, z_near, z_far
-		//gluPerspective(fl_degrees(View_zoom), (float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1, z_far);
-		gluPerspective( fl_degrees( (4.0f/9.0f)*3.14159*View_zoom ), Canv_w2/Canv_h2, ZNEAR, ZFAR);
+		gluPerspective(45.0, (float)gr_screen.max_w/(float)gr_screen.max_h, 0.1, 100000.0);
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glViewport(gr_screen.offset_x,gr_screen.max_h-gr_screen.offset_y-gr_screen.clip_height,gr_screen.clip_width,gr_screen.clip_height);
-
-		vector fwd;
-		vector *uvec=&Eye_matrix.vec.uvec;
-
-		vm_vec_scale_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec,(float)ZFAR);
-
-		gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,-Eye_position.xyz.z,
-		fwd.xyz.x,fwd.xyz.y,-fwd.xyz.z,
-		uvec->xyz.x, uvec->xyz.y,-uvec->xyz.z);
-
-		glScalef(1,1,-1);
 
 	}
 	
-
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
+	glLoadIdentity();
+
+	vector fwd;
+	vector *uvec=&Eye_matrix.vec.uvec;
+
+	vm_vec_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec);
+
+	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,Eye_position.xyz.z,
+			fwd.xyz.x,fwd.xyz.y,fwd.xyz.z,
+			uvec->xyz.x, uvec->xyz.y,uvec->xyz.z);
+
+	glTranslatef(Object_position.xyz.x,Object_position.xyz.y,Object_position.xyz.z);
 
 	vector axis;
 	float ang;
-	vm_matrix_to_rot_axis_and_angle(rotation,&ang,&axis);
-	glTranslatef(offset->xyz.x,offset->xyz.y,offset->xyz.z);
-	glRotatef(fl_degrees(ang),axis.xyz.x,axis.xyz.y,axis.xyz.z);
 
-	glScalef(Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z);
+	vm_matrix_to_rot_axis_and_angle(&Object_matrix,&ang,&axis);
+
+	glRotatef(fl_degrees(ang),axis.xyz.x,-axis.xyz.y,-axis.xyz.z);
+
+	glScalef(-Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z);
+
+/*	vector fwd;
+	vector *uvec=&Eye_matrix.vec.uvec;
+
+	vm_vec_scale_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec,30000);
+
+	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,Eye_position.xyz.z,
+			fwd.xyz.x,fwd.xyz.y,fwd.xyz.z,
+			uvec->xyz.x, uvec->xyz.y,uvec->xyz.z);
+*/
+
 
 	depth++;
 
@@ -4272,7 +4278,7 @@ void gr_opengl_start_clip_plane()
 //	p.xyz.z*=-1;
 
 	if (depth==0)
-		gr_opengl_start_instance_matrix(NULL,NULL);
+		gr_opengl_start_instance_matrix();
 
 	clip_equation[0]=n.xyz.x;
 	clip_equation[1]=n.xyz.y;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.9 $
- * $Date: 2003-10-21 18:23:15 $
- * $Author: phreak $
+ * $Revision: 2.10 $
+ * $Date: 2003-10-23 18:03:24 $
+ * $Author: randomtiger $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/21 18:23:15  phreak
+ * added gr_flip_window back in.  its used in FRED
+ *
  * Revision 2.8  2003/10/18 02:46:45  phreak
  * changed gr_start_instance_matrix(void) to gr_start_instance_matrix((vector*, matrix*)
  *
@@ -698,7 +701,7 @@ typedef struct screen {
 	void (*gf_destroy_buffer)(int);
 	void (*gf_render_buffer)(int);
 
-	void (*gf_start_instance_matrix)(vector *, matrix*);
+ 	void (*gf_start_instance_matrix)();
 	void (*gf_end_instance_matrix)();
 
 	int	 (*gf_make_light)(light_data*, int, int );

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-10-23 18:03:24 $
+ * $Author: randomtiger $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -501,6 +504,7 @@ void particle_kill_all()
 }
 
 MONITOR( NumParticlesRend );	
+extern int Cmdline_nohtl;
 
 void particle_render_all()
 {
@@ -535,7 +539,7 @@ void particle_render_all()
 
 		// calculate the alpha to draw at
 		alpha = 1.0f;	
-			
+		vertex POS;
 		// if this is a tracer style particle, calculate tracer vectors
 		if(p->tracer_length > 0.0f){			
 			ts = p->pos;
@@ -550,9 +554,11 @@ void particle_render_all()
 		else if(p->attached_objnum >= 0){
 			// offset the vector, and transform to view coords
 			// vm_vec_add(&te, &Objects[p->attached_objnum].pos, &p->pos);
+
 			vm_vec_unrotate(&temp, &p->pos, &Objects[p->attached_objnum].orient);
 			vm_vec_add2(&temp, &Objects[p->attached_objnum].pos);
 
+			if(!Cmdline_nohtl)g3_transfer_vertex(&POS, &temp);
 			flags = g3_rotate_vertex(&pos, &temp);
 			if(flags){				
 				nclipped++;
@@ -565,6 +571,7 @@ void particle_render_all()
 
 		// rotate the vertex
 		if(rotate){
+			if(!Cmdline_nohtl)g3_transfer_vertex(&POS, &p->pos);
 			flags = g3_rotate_vertex( &pos, &p->pos );
 			if ( flags )	{
 				nclipped++;
@@ -602,7 +609,8 @@ void particle_render_all()
 					}
 					// draw as a regular bitmap
 					else {
-						g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
 				}
@@ -631,7 +639,8 @@ void particle_render_all()
 					}
 					// draw as a regular bitmap
 					else {
-						g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
 				}
@@ -660,7 +669,8 @@ void particle_render_all()
 					}
 					// draw as a regular bitmap
 					else {
-						g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
 				}
@@ -689,7 +699,8 @@ void particle_render_all()
 					}
 					// draw as a regular bitmap
 					else {						
-						g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
 				}

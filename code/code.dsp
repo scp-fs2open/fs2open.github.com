@@ -588,10 +588,6 @@ SOURCE=.\Graphics\Tmapper.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\Graphics\TMAPPER.H
-# End Source File
-# Begin Source File
-
 SOURCE=.\Graphics\TmapScanline.cpp
 # End Source File
 # Begin Source File
@@ -734,6 +730,10 @@ SOURCE=.\Graphics\GrInternal.h
 # Begin Source File
 
 SOURCE=.\Graphics\TmapGenericScans.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\TMAPPER.H
 # End Source File
 # End Group
 # Begin Group "Hud"

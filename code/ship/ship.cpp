@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.85 $
- * $Date: 2003-10-15 22:03:26 $
- * $Author: Kazan $
+ * $Revision: 2.86 $
+ * $Date: 2003-10-23 18:03:25 $
+ * $Author: randomtiger $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2003/10/15 22:03:26  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.84  2003/10/12 03:46:23  Kazan
  * #Kazan# FS2NetD client code gone multithreaded, some Fred2 Open -mod stuff [obvious code.lib] including a change in cmdline.cpp, changed Stick's "-nohtl" to "-htl" - HTL is _OFF_ by default here (Bobboau and I decided this was a better idea for now)
  *
@@ -3561,7 +3564,8 @@ void ship_render(object * obj)
 			}
 			*/
 			//had a conflict, had to chose one, and I don't like ^that^ one
-			model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
+			//model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
+			model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise, (obj->phys_info.flags & PF_AFTERBURNER_ON || obj->phys_info.flags & PF_BOOSTER_ON), shipp->secondary_thruster_bitmap, shipp->tertiary_thruster_bitmap, &Objects[shipp->objnum].phys_info.rotvel, si->thruster01_rad_factor, si->thruster02_rad_factor, si->thruster02_len_factor, si->thruster02_rad_factor );
 			render_flags |= MR_SHOW_THRUSTERS;
 		}
 
