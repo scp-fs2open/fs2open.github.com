@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2004/09/10 13:48:34  et1
+ * Implemented "+WeaponMinRange" token
+ *
  * Revision 2.74  2004/07/31 08:58:07  et1
  * Implemented "+SwarmWait:"-token and fixed weapon glow tails
  *
@@ -2453,8 +2456,8 @@ void weapon_render(object *obj)
 			if (wip->laser_bitmap >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
 				if(wip->laser_bitmap_nframes > 1){
-//					wp->frame += ((timestamp() / (int)(wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes);
-					wp->frame = (int)(wp->frame + ((int)(flFrametime * 1000) / wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
+					wp->frame = ((timestamp() / (int)(wip->laser_bitmap_fps)) % (wip->laser_bitmap_nframes-1));
+				//	wp->frame = (int)(wp->frame + ((int)(flFrametime * 1000) / wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
 		//			HUD_printf("frame %d", wp->frame);
 					gr_set_bitmap(wip->laser_bitmap + wp->frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 				}else{
@@ -2490,8 +2493,8 @@ void weapon_render(object *obj)
 
 
 				if(wip->laser_glow_bitmap_nframes > 1){//set the proper bitmap
-//					wp->gframe += ((timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes);
-					wp->gframe = (int)(wp->gframe + ((int)(flFrametime * 1000) / wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
+					wp->gframe = ((timestamp() / (int)(wip->laser_glow_bitmap_fps)) % (wip->laser_glow_bitmap_nframes-1));
+				//	wp->gframe = (int)(wp->gframe + ((int)(flFrametime * 1000) / wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
 					gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 				}else{
 					gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
@@ -4775,11 +4778,7 @@ void weapon_maybe_spew_particle(object *obj)
 			if(wip->Weapon_particle_spew_bitmap < 0){
 				particle_create(&particle_pos, &vel, wip->Weapon_particle_spew_lifetime, wip->Weapon_particle_spew_radius, PARTICLE_SMOKE);
 			}else{
-				int frame = 0;
-				if(wip->Weapon_particle_spew_nframes < 1){
-					frame = ((timestamp() - wp->particle_spew_time)/wip->Weapon_particle_spew_fps)%wip->Weapon_particle_spew_nframes;
-				}
-				particle_create(&particle_pos, &vel, wip->Weapon_particle_spew_lifetime, wip->Weapon_particle_spew_radius, PARTICLE_BITMAP, (wip->Weapon_particle_spew_bitmap + frame));
+				particle_create(&particle_pos, &vel, wip->Weapon_particle_spew_lifetime, wip->Weapon_particle_spew_radius, PARTICLE_BITMAP, wip->Weapon_particle_spew_bitmap);
 			}
 		}
 	}
