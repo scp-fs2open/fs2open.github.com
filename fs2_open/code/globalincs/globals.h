@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.5 $
- * $Date: 2004-12-14 14:46:12 $
+ * $Revision: 1.6 $
+ * $Date: 2004-12-30 21:41:24 $
  * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/12/14 14:46:12  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 1.4  2004/08/11 05:06:23  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -121,11 +125,11 @@
 #endif
 
 #if (MAX_PLAYER_PRIMARY_BANKS > MAX_SHIP_PRIMARY_BANKS)
-	#error MAX_PLAYER_PRIMARY_BANKS must be less than or equal to MAX_SHIP_PRIMARY_BANKS)
+	#error MAX_PLAYER_PRIMARY_BANKS must be less than or equal to MAX_SHIP_PRIMARY_BANKS
 #endif
 
 #if (MAX_PLAYER_SECONDARY_BANKS > MAX_SHIP_SECONDARY_BANKS)
-	#error MAX_PLAYER_SECONDARY_BANKS must be less than or equal to MAX_SHIP_SECONDARY_BANKS)
+	#error MAX_PLAYER_SECONDARY_BANKS must be less than or equal to MAX_SHIP_SECONDARY_BANKS
 #endif
 
 
