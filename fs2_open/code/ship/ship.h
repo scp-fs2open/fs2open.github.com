@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-12 16:59:04 $
  * $Author: penguin $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/10 20:42:45  mharris
  * use "ifndef NO_NETWORK" all over the place
  *
@@ -458,6 +461,10 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 #define	SF_DEPARTING				(SF_DEPART_WARP | SF_DEPART_DOCKBAY)				// ship is departing
 #define	SF_CANNOT_WARP				(SF_WARP_BROKEN | SF_WARP_NEVER | SF_DISABLED)	// ship cannot warp out
 
+// Bits for ship.flags2
+// None are in FRED
+#define	SF2_LIGHTS_ON				(1<<0)		// ship has 'GLOW' lights turned on (Bobboau's lights)
+
 #define MAX_DAMAGE_SLOTS	32
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
@@ -560,6 +567,7 @@ typedef struct ship {
 	int	next_manage_ets;					// timestamp for when ai can next modify ets ( -1 means never )
 
 	uint	flags;								// flag variable to contain ship state (see SF_ #defines)
+	uint	flags2;								// another flag variable (see SF2_ #defines)
 	int	reinforcement_index;				// index into reinforcement struct or -1
 	
 	float	afterburner_fuel;					// amount of afterburner fuel remaining (capacity is stored
