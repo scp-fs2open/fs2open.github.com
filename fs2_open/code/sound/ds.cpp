@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:52 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2004-08-23 07:48:08 $
+ * $Author: Goober5000 $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:52  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/12 16:33:06  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -731,7 +734,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 	uint	src_bytes_used;				// number of source bytes actually converted (should always be equal to original size)
 	//Stuff for ogg
 	unsigned long pos = 0;
-	int garbage;
+//	int garbage;
 
 	// Ensure DirectSound initialized
 	if (!ds_initialized) {
@@ -751,7 +754,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 	final_sound_size = si->size;	// assume this format will be used, may be over-ridded by convert_len
 
 //	Assert(WaveFormat.nChannels == 1);
-	FILE* ofp;
+//	FILE* ofp;
 
 	switch ( si->format ) {
 		case WAVE_FORMAT_PCM:

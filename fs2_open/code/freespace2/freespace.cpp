@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.109 $
- * $Date: 2004-08-05 02:15:27 $
- * $Author: phreak $
+ * $Revision: 2.110 $
+ * $Date: 2004-08-23 07:48:08 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.109  2004/08/05 02:15:27  phreak
+ * forgot to commit orb change
+ *
  * Revision 2.108  2004/07/26 21:19:05  Goober5000
  * updated launcher link
  * --Goober5000
@@ -2792,8 +2795,8 @@ void game_init()
 
 	if (!Is_standalone)
 	{
-		unsigned int UserSampleRate = os_config_read_uint(NULL, "SoundSampleRate", 22050);
-		unsigned int UserSampleBits = (unsigned short) os_config_read_uint(NULL, "SoundSampleBits", 16);
+		unsigned short UserSampleRate = (unsigned short) os_config_read_uint(NULL, "SoundSampleRate", 22050);
+		unsigned short UserSampleBits = (unsigned short) os_config_read_uint(NULL, "SoundSampleBits", 16);
 		snd_init(use_a3d, use_eax, UserSampleRate, UserSampleBits);
 	}
 

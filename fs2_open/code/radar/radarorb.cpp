@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.1 $
- * $Date: 2004-08-02 22:42:45 $
- * $Author: phreak $
+ * $Revision: 1.2 $
+ * $Date: 2004-08-23 07:48:09 $
+ * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/08/02 22:42:45  phreak
+ * orb radar rendering style
+ *
 
  *
  * $NoKeywords: $
@@ -646,7 +649,7 @@ void radar_orb_draw_outlines()
 {
 	int i;
 	vertex center;
-	vertex extents[6];
+//	vertex extents[6];
 	vertex proj_orb_lines_xy[25];
 	vertex proj_orb_lines_xz[25];
 	vertex proj_orb_lines_yz[25];
