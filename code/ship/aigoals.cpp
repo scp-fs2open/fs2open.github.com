@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-01-13 01:10:33 $
+ * $Revision: 2.20 $
+ * $Date: 2005-01-13 03:33:07 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/01/13 01:10:33  Goober5000
+ * forgot to remove a comment
+ * --Goober5000
+ *
  * Revision 2.18  2005/01/12 23:38:42  Goober5000
  * fixed another nasty bug
  * --Goober5000
@@ -1293,7 +1297,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
 		// store the name of the subsystem in the docker.name field for now -- this field must get
 		// fixed up when the goal is valid since we need to locate the subsystem on the ship's model
 		aigp->docker.name = ai_get_goal_ship_name(CTEXT(CDR(CDR(node))), &dummy);
-		aigp->flags &= ~AIGF_SUBSYS_INDEX_VALID;
+		aigp->flags |= AIGF_SUBSYS_NEEDS_FIXUP;
 		aigp->priority = atoi( CTEXT(CDR(CDR(CDR(node)))) );
 		break;
 
@@ -1704,7 +1708,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		// can't determine the status of this goal if ship not valid
 		// or we haven't found a valid subsystem index yet
-		if ( (shipnum == -1) || !(aigp->flags & AIGF_SUBSYS_INDEX_VALID) ) {
+		if ( (shipnum == -1) || (aigp->flags & AIGF_SUBSYS_NEEDS_FIXUP) ) {
 			status = 0;
 			break;
 		}
@@ -1933,13 +1937,13 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		// if the ship has arrived, and the goal is destroy subsystem, then check to see that we
 		// have fixed up the subsystem name (of the subsystem to destroy) into an index into
 		// the ship's subsystem list
-		if ( !(aigp->flags & AIGF_SUBSYS_INDEX_VALID) ) {
+		if ( aigp->flags & AIGF_SUBSYS_NEEDS_FIXUP ) {
 			int shipnum;			
 
 			shipnum = ship_name_lookup( aigp->ship_name );
 			if ( shipnum != -1 ) {
 				aigp->ai_submode = ship_get_subsys_index( &Ships[shipnum], aigp->docker.name );
-				aigp->flags |= AIGF_SUBSYS_INDEX_VALID;
+				aigp->flags &= ~AIGF_SUBSYS_NEEDS_FIXUP;
 			} else {
 				Int3();
 				return AI_GOAL_NOT_ACHIEVABLE;			// force this goal to be invalid
