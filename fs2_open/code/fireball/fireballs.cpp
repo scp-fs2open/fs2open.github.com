@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-07-26 20:47:28 $
- * $Author: Kazan $
+ * $Revision: 2.15 $
+ * $Date: 2004-08-23 04:32:39 $
+ * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/26 20:47:28  Kazan
+ * remove MCD complete
+ *
  * Revision 2.13  2004/07/12 16:32:45  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -659,7 +662,7 @@ void fireball_render(object * obj)
 //				obj->alt_rad = rad;
 
 
-				warpin_render(obj, &obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_FORCE_OLD) );
+				warpin_render(obj, &obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_BOBBOAU) );
 			}
 			break;
 

@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-07-26 20:47:28 $
- * $Author: Kazan $
+ * $Revision: 2.20 $
+ * $Date: 2004-08-23 04:32:39 $
+ * $Author: Goober5000 $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/07/26 20:47:28  Kazan
+ * remove MCD complete
+ *
  * Revision 2.18  2004/07/17 09:29:13  taylor
  * make old warpmap and new glow bitmap 3D unlit to render right in OGL
  *
@@ -240,7 +243,7 @@ void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 #define wR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
 #define wP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 
-void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int force_old)
+void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int bobboau_effect)
 {
 	int i;
 
@@ -313,7 +316,8 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 		}
 	}
 
-	if(Warp_model > -1 && !force_old && !(The_mission.flags & MISSION_FLAG_OLD_WARP_EFFECT)){
+	if(Warp_model > -1 && (bobboau_effect || (The_mission.flags & MISSION_FLAG_BOBBOAU_WARP_EFFECT)))
+	{
 		float model_Interp_scale_x = radius /20;
 		float model_Interp_scale_y = radius /20;
 		float model_Interp_scale_z = radius /20;
