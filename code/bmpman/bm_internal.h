@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/bmpman/bm_internal.h $
- * $Revision: 2.1 $
- * $Date: 2004-11-23 00:10:06 $
- * $Author: taylor $
+ * $Revision: 2.2 $
+ * $Date: 2005-03-03 14:29:37 $
+ * $Author: bobboau $
  *
  * bmpman info that's internal to bmpman related files only
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/11/23 00:10:06  taylor
+ * try and protect the bitmap_entry stuff a bit better
+ * fix the transparent support ship, again, but correctly this time
+ *
  * 
  * $NoKeywords: $
  */
@@ -50,6 +54,7 @@
 #define BM_TYPE_DXT3			9		// 32 bit with 4 bit alpha			(compressed)
 #define BM_TYPE_DXT5			10		// 32 bit with 8 bit alpha			(compressed)
 #define BM_TYPE_JPG				11		// 32 bit jpeg
+#define BM_TYPE_RENDER_TARGET	12		// 32 bit setup internaly as a render target
 
 
 /// Moved from cpp file ///////////////////

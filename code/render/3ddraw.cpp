@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-03-03 02:39:14 $
+ * $Revision: 2.29 $
+ * $Date: 2005-03-03 14:29:39 $
  * $Author: bobboau $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/03/03 02:39:14  bobboau
+ * added trilist suport to the poly rendering functions
+ * and a gr_bitmap_list function that uses it
+ *
  * Revision 2.27  2005/03/01 06:55:43  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -2435,55 +2439,61 @@ int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additiona
 		// stuff coords	
 
 		//tri one
-		v[i].sx = (float)b_list[i].x;
-		v[i].sy = (float)b_list[i].y;	
-		v[i].sw = 0.0f;
-		v[i].u = 0.0f;
-		v[i].v = 0.0f;
-		v[i].flags = PF_PROJECTED;
-		v[i].codes = 0;
+		vertex *V = &v[i*6];
+		V->sx = (float)b_list[i].x;
+		V->sy = (float)b_list[i].y;	
+		V->sw = 0.0f;
+		V->u = 0.0f;
+		V->v = 0.0f;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
 
-		v[i+1].sx = (float)(b_list[i].x + b_list[i].w);
-		v[i+1].sy = (float)b_list[i].y;	
-		v[i+1].sw = 0.0f;
-		v[i+1].u = 1.0f;
-		v[i+1].v = 0.0f;
-		v[i+1].flags = PF_PROJECTED;
-		v[i+1].codes = 0;
+		V++;
+		V->sx = (float)(b_list[i].x + b_list[i].w);
+		V->sy = (float)b_list[i].y;	
+		V->sw = 0.0f;
+		V->u = 1.0f;
+		V->v = 0.0f;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
 
-		v[i+2].sx = (float)(b_list[i].x + b_list[i].w);
-		v[i+2].sy = (float)(b_list[i].y + b_list[i].h);	
-		v[i+2].sw = 0.0f;
-		v[i+2].u = 1.0f;
-		v[i+2].v = 1.0f;
-		v[i+2].flags = PF_PROJECTED;
-		v[i+2].codes = 0;
+		V++;
+		V->sx = (float)(b_list[i].x + b_list[i].w);
+		V->sy = (float)(b_list[i].y + b_list[i].h);	
+		V->sw = 0.0f;
+		V->u = 1.0f;
+		V->v = 1.0f;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
 	
 
 		//tri two
-		v[i+3].sx = (float)b_list[i].x;
-		v[i+3].sy = (float)b_list[i].y;	
-		v[i+3].sw = 0.0f;
-		v[i+3].u = 0.0f;
-		v[i+3].v = 0.0f;
-		v[i+3].flags = PF_PROJECTED;
-		v[i+3].codes = 0;
+		V++;
+		V->sx = (float)b_list[i].x;
+		V->sy = (float)b_list[i].y;	
+		V->sw = 0.0f;
+		V->u = 0.0f;
+		V->v = 0.0f;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
 
-		v[i+4].sx = (float)(b_list[i].x + b_list[i].w);
-		v[i+4].sy = (float)(b_list[i].y + b_list[i].h);	
-		v[i+4].sw = 0.0f;
-		v[i+4].u = 1.0f;
-		v[i+4].v = 1.0f;
-		v[i+4].flags = PF_PROJECTED;
-		v[i+4].codes = 0;
-	
-		v[i+5].sx = (float)b_list[i].x;
-		v[i+5].sy = (float)(b_list[i].y + b_list[i].h);	
-		v[i+5].sw = 0.0f;
-		v[i+5].u = 0.0f;
-		v[i+5].v = 1.0f;
-		v[i+5].flags = PF_PROJECTED;
-		v[i+5].codes = 0;	
+		V++;
+		V->sx = (float)(b_list[i].x + b_list[i].w);
+		V->sy = (float)(b_list[i].y + b_list[i].h);	
+		V->sw = 0.0f;
+		V->u = 1.0f;
+		V->v = 1.0f;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		V->sx = (float)b_list[i].x;
+		V->sy = (float)(b_list[i].y + b_list[i].h);	
+		V->sw = 0.0f;
+		V->u = 0.0f;
+		V->v = 1.0f;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;	
 	}
 	
 	// no filtering

@@ -1002,7 +1002,7 @@ void Window::DoDraw(float frametime)
 			b2l.w = w;
 			b2l.h = h;
 			b2l.x = Coords[0];
-			for(unsigned int i = 0; i < 50; i++)
+			for(unsigned int i = 0; i < num; i++)
 			{
 				b2l.y = Coords[1] + BorderSizes[1] + h*i;
 				bmlist.push_back(b2l);

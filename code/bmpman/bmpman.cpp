@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.47 $
- * $Date: 2005-03-03 07:30:14 $
- * $Author: wmcoolmon $
+ * $Revision: 2.48 $
+ * $Date: 2005-03-03 14:29:37 $
+ * $Author: bobboau $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/03/03 07:30:14  wmcoolmon
+ * Removed my Assert(true)s :p
+ *
  * Revision 2.46  2005/03/03 06:05:26  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -2170,6 +2173,11 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	if ( !bm_inited ) bm_init();
 
 	int bitmapnum = handle % MAX_BITMAPS;
+/*	if(bm_bitmaps[bitmapnum].type == BM_TYPE_RENDER_TARGET){
+		gr_bm_lock
+		return NULL;
+	}*/
+
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
 
 //	flags &= (~BMP_RLE);
@@ -3188,3 +3196,65 @@ void bm_print_bitmaps()
 	nprintf(("BMP DEBUG", "BMPMAN = LOCKED memory usage: %.3fM\n", ((float)bm_texture_ram/1024.0f)/1024.0f));
 #endif
 }
+
+/*
+int bm_get_render_target( int x_res, int y_res, int flags )
+{
+	int i, n, first_slot = MAX_BITMAPS;
+	int bm_size = 0, mm_lvl = 0;
+	int handle = -1;
+	ubyte type = BM_TYPE_NONE;
+	ubyte c_type = BM_TYPE_NONE;
+	bool found = false;
+
+	if ( !bm_inited ) bm_init();
+
+
+
+	// Find an open slot
+	for (i = 0; i < MAX_BITMAPS; i++) {
+		if ( (bm_bitmaps[i].type == BM_TYPE_NONE) && (first_slot == MAX_BITMAPS) ){
+			first_slot = i;
+		}
+	}
+
+	n = first_slot;
+	Assert( n < MAX_BITMAPS );	
+
+	if ( n == MAX_BITMAPS ) return -1;
+
+
+//	gr_bm_load( type, n, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size );
+	//API render target function gets called here
+
+
+	// ensure fields are cleared out from previous bitmap
+	memset( &bm_bitmaps[n], 0, sizeof(bitmap_entry) );
+	
+	// Mark the slot as filled, because cf_read might load a new bitmap
+	// into this slot.
+	bm_bitmaps[n].type = BM_TYPE_RENDER_TARGET;
+	bm_bitmaps[n].signature = Bm_next_signature++;
+	strncpy(bm_bitmaps[n].filename, "**RENDER_TARGET**", MAX_FILENAME_LEN-1 );
+	bm_bitmaps[n].bm.w = short(x_res);
+	bm_bitmaps[n].bm.rowsize = short(y_res);
+	bm_bitmaps[n].bm.h = short(y_res);
+	bm_bitmaps[n].bm.bpp = 0;
+	bm_bitmaps[n].bm.true_bpp = 32;
+	bm_bitmaps[n].bm.flags = 0;
+	bm_bitmaps[n].bm.data = 0;
+	bm_bitmaps[n].bm.palette = NULL;
+	bm_bitmaps[n].num_mipmaps = mm_lvl;
+	bm_bitmaps[n].mem_taken = 4*x_res*y_res;
+	bm_bitmaps[n].dir_type = CF_TYPE_ANY;
+
+	bm_bitmaps[n].palette_checksum = 0;
+	bm_bitmaps[n].handle = bm_get_next_handle()*MAX_BITMAPS + n;
+	bm_bitmaps[n].last_used = -1;
+
+	// fill in section info
+	bm_calc_sections(&bm_bitmaps[n].bm);
+
+	return bm_bitmaps[n].handle;
+}
+*/
