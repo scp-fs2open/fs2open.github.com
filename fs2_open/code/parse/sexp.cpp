@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.70 $
- * $Date: 2003-09-05 02:15:34 $
- * $Author: phreak $
+ * $Revision: 2.71 $
+ * $Date: 2003-09-05 04:48:03 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2003/09/05 02:15:34  phreak
+ * fixed a small bug in num-ships-in-battle-team
+ * added an option to loop sounds played by play-sound-from-file
+ *
  * Revision 2.69  2003/08/30 21:59:48  phreak
  * added num-ships-in-battle and num-ships-in-battle-team sexp
  *
@@ -822,6 +826,8 @@ sexp_oper Operators[] = {
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
 	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
 	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
+	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
+	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
 
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
 	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,				3, 3,			},
@@ -873,6 +879,7 @@ sexp_oper Operators[] = {
 
 	{ "red-alert",						OP_RED_ALERT,						0, 0			},
 	{ "end-mission",			OP_END_MISSION,			0, 0,			}, //-Sesquipedalian
+	{ "force-jump",				OP_FORCE_JUMP,			0, 0,			}, // Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,					1, 1,			},
 	{ "end-campaign",					OP_END_CAMPAIGN,					0, 0,			},
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,				0, 0,			},
@@ -1462,6 +1469,26 @@ int is_sexp_top_level( int node )
 	return 1;
 }
 
+// Goober5000
+int find_argnum(int parent, int arg)
+{
+	int n, tally;
+
+	n = Sexp_nodes[parent].rest;
+	tally = 0;
+	
+	while (n != arg)
+	{
+		if (n == -1)
+			return -1;
+
+		tally++;
+		n = CADR(n);
+	}
+
+	return tally;
+}
+
 int identify_operator(char *token)
 {
 	int	i;
@@ -1538,6 +1565,10 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 		if (z == OPR_POSITIVE && return_type == OPR_NUMBER)
 		{
 			// positive data type can map to number data type just fine
+		}
+		else if (z == OPR_NUMBER && return_type == OPR_POSITIVE)
+		{
+			// this isn't kosher, but we hack it to make it work
 		}
 		else if (z != return_type)
 		{
@@ -1657,7 +1688,9 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 			case OPF_POSITIVE:
 				if (type2 == OPR_NUMBER){
-					return SEXP_CHECK_NEGATIVE_NUM;
+					// Goober5000's number hack
+					break;
+					// return SEXP_CHECK_NEGATIVE_NUM;
 				}
 
 				if (type2 != OPR_POSITIVE){
@@ -2069,7 +2102,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if (Fred_running) {
 					int ship_num, ship2, i, w = 0, z;
 
-					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_index].rest));
+					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_index].rest), 1);	// Goober5000 - include players
 					if (ship_num < 0) {
 						w = wing_name_lookup(CTEXT(Sexp_nodes[op_index].rest));
 						if (w < 0) {
@@ -2099,7 +2132,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					}
 
 					if ((z == OP_AI_DOCK) && (Sexp_nodes[index].rest >= 0)) {
-						ship2 = ship_name_lookup(CTEXT(Sexp_nodes[index].rest));
+						ship2 = ship_name_lookup(CTEXT(Sexp_nodes[index].rest), 1);	// Goober5000 - include players
 						if ((ship_num < 0) || !ship_docking_valid(ship_num, ship2)){
 							return SEXP_CHECK_DOCKING_NOT_ALLOWED;
 						}
@@ -2670,6 +2703,7 @@ int stuff_sexp_variable_list()
 	char var_name[TOKEN_LENGTH];
 	char default_value[TOKEN_LENGTH];
 	char str_type[TOKEN_LENGTH];
+	char persistent[TOKEN_LENGTH];
 	int index;
 	int type;
 
@@ -2705,7 +2739,7 @@ int stuff_sexp_variable_list()
 		get_string(str_type);
 		ignore_white_space();
 
-
+		// determine type
 		if (!stricmp(str_type, "number")) {
 			type = SEXP_VARIABLE_NUMBER;
 		} else if (!stricmp(str_type, "string")) {
@@ -2717,10 +2751,36 @@ int stuff_sexp_variable_list()
 			Int3();
 		}
 
+		// possibly get player-persistent
+		if (check_for_string("\"player-persistent\"")) {
+			// eat it
+			get_string(persistent);
+			ignore_white_space();
+
+			// set type
+			type |= SEXP_VARIABLE_PLAYER_PERSISTENT;
+		// possibly get campaign-persistent
+		} else if (check_for_string("\"campaign-persistent\"")) {
+			// eat it
+			get_string(persistent);
+			ignore_white_space();
+
+			// set type
+			type |= SEXP_VARIABLE_CAMPAIGN_PERSISTENT;
+		// trap error
+		} else if (check_for_string("\"")) {
+			// eat garbage
+			get_string(persistent);
+			ignore_white_space();
+
+			// notify of error
+			Error(LOCATION, "Error parsing sexp variables - unknown persistence type encountered.  You can continue from here without trouble.");
+		}
+
 		count++;
 
 		// check if variable name already exists
-		if ( (type == SEXP_VARIABLE_NUMBER) || (type == SEXP_VARIABLE_STRING) ) {
+		if ( (type & SEXP_VARIABLE_NUMBER) || (type & SEXP_VARIABLE_STRING) ) {
 			Assert(get_index_sexp_variable_name(var_name) == -1);
 		}
 
@@ -6086,7 +6146,7 @@ void sexp_add_ship_goal( int n )
 
 	Assert ( n >= 0 );
 	ship_name = CTEXT(n);
-	num = ship_name_lookup(ship_name);
+	num = ship_name_lookup(ship_name, 1);	// Goober5000 - including player
 	if ( num < 0 )									// ship not around anymore???? then forget it!
 		return;
 
@@ -6123,7 +6183,7 @@ void sexp_add_goal( int n )
 
 	// first, look for ship name -- if found, then add ship goal.  else look for wing name -- if
 	// found, add wing goal
-	if ( (num = ship_name_lookup(name)) != -1 )
+	if ( (num = ship_name_lookup(name, 1)) != -1 )	// Goober5000 - include players
 		ai_add_ship_goal_sexp( sindex, AIG_TYPE_EVENT_SHIP, &(Ai_info[Ships[num].ai_index]) );
 	else if ( (num = wing_name_lookup(name)) != -1 )
 		ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, num );
@@ -6137,7 +6197,7 @@ void sexp_clear_ship_goals( int n )
 
 	Assert ( n >= 0 );
 	ship_name = CTEXT(n);
-	num = ship_name_lookup(ship_name);
+	num = ship_name_lookup(ship_name, 1);	// Goober5000 - include players
 	ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
 }
 
@@ -6164,7 +6224,7 @@ void sexp_clear_goals( int n )
 	Assert ( n >= 0 );
 	while ( n != -1 ) {
 		name = CTEXT(n);
-		if ( (num = ship_name_lookup(name)) != -1 )
+		if ( (num = ship_name_lookup(name, 1)) != -1 )	// Goober5000 - include players
 			ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
 		else if ( (num = wing_name_lookup(name)) != -1 )
 			ai_clear_wing_goals( num );
@@ -6255,6 +6315,13 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 void sexp_toggle_hud()
 {
 	hud_toggle_draw();
+}
+
+// Goober5000
+// trigger whether player uses the game AI for stuff
+void sexp_player_use_ai(int use_ai)
+{
+	Player_use_ai = use_ai;
 }
 
 // Goober5000
@@ -7343,6 +7410,13 @@ void sexp_cargo_no_deplete( int n )
 
 }
 
+// Goober5000
+void sexp_force_jump()
+{
+	// forced warp, taken from training failure code
+	gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
+}
+
 // sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
 void sexp_end_mission( int n )
 {
@@ -7466,6 +7540,7 @@ void sexp_tech_add_weapon(int node)
 	}
 }
 
+// Goober5000
 void sexp_tech_add_intel(int node)
 {
 	int i;
@@ -7633,8 +7708,8 @@ void sexp_good_secondary_time( int n )
 // or goal incomplete event
 int sexp_previous_goal_status( int n, int status )
 {
-	char rval = 0, *mission_name;
-	char *goal_name;
+	int rval = 0;
+	char *goal_name, *mission_name;
 	int i, mission_num, default_value = 0, use_defaults = 1;
 
 	mission_name = CTEXT(n);
@@ -7712,8 +7787,8 @@ int sexp_previous_goal_status( int n, int status )
 // for an event_true, event_false, or event_incomplete status
 int sexp_previous_event_status( int n, int status )
 {
-	char rval = 0, *mission_name;
-	char *name;
+	int rval = 0;
+	char *name, *mission_name;
 	int i, mission_num, default_value = 0, use_defaults = 1;
 
 	mission_name = CTEXT(n);
@@ -11041,11 +11116,20 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			// Goober5000
+			case OP_PLAYER_USE_AI:
+			case OP_PLAYER_NOT_USE_AI:
+				sexp_player_use_ai(op_num == OP_PLAYER_USE_AI);
+				sexp_val = 1;
+				break;
+
+			// Goober5000
 			case OP_EXPLOSION_EFFECT:
 				sexp_explosion_effect(node);
 				sexp_val = 1;
 				break;
 
+			// Goober5000
 			case OP_WARP_EFFECT:
 				sexp_warp_effect(node);
 				sexp_val = 1;
@@ -11142,6 +11226,12 @@ int eval_sexp(int cur_node)
 			//-Sesquipedalian
 			case OP_END_MISSION:
 				sexp_end_mission( node );
+				sexp_val = 1;
+				break;
+
+			// Goober5000
+			case OP_FORCE_JUMP:
+				sexp_force_jump();
 				sexp_val = 1;
 				break;
 
@@ -11558,7 +11648,7 @@ int eval_sexp(int cur_node)
 				break;
 		}
 
-		Assert(sexp_val != UNINITIALIZED);
+		Assert(sexp_val != UNINITIALIZED);		
 
 		// if we haven't returned, check the sexp value of the sexpression evaluation.  A special
 		// value of known true or known false means that we should set the sexp.value field for
@@ -11592,6 +11682,25 @@ int eval_sexp(int cur_node)
 		if ( Sexp_nodes[cur_node].value == SEXP_NAN ) {	// if we had a nan, but now don't, reset the value
 			Sexp_nodes[cur_node].value = SEXP_UNKNOWN;
 			return sexp_val;
+		}
+
+		// now, reconcile positive and negative - Goober5000
+		if (sexp_val < 0)
+		{
+			int parent = find_parent_operator(cur_node);
+			int arg = find_argnum(parent, cur_node);
+
+			// make sure everything works okay
+			if (arg == -1)
+			{
+				Error(LOCATION, "Error finding sexp argument.");
+			}
+
+			// if we need a positive value, make it positive
+			if (query_operator_argument_type(parent, arg) == OPF_POSITIVE)
+			{
+				sexp_val *= -1;
+			}
 		}
 
 		if ( sexp_val ){
@@ -11830,6 +11939,7 @@ int query_operator_return_type(int op)
 		case OP_SET_TRAINING_CONTEXT_FLY_PATH:
 		case OP_SET_TRAINING_CONTEXT_SPEED:
 		case OP_END_MISSION:
+		case OP_FORCE_JUMP:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_GOOD_REARM_TIME:
 		case OP_GRANT_PROMOTION:
@@ -11911,6 +12021,8 @@ int query_operator_return_type(int op)
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 		case OP_LOCK_ROTATING_SUBSYSTEM:
 		case OP_FREE_ROTATING_SUBSYSTEM:
+		case OP_PLAYER_USE_AI:
+		case OP_PLAYER_NOT_USE_AI:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -11977,6 +12089,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_WAS_PROMOTION_GRANTED:
 		case OP_RED_ALERT:
 		case OP_END_MISSION:
+		case OP_FORCE_JUMP:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -12333,6 +12446,10 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_BOOL;
 
 		case OP_TOGGLE_HUD:
+			return OPF_NONE;
+
+		case OP_PLAYER_USE_AI:
+		case OP_PLAYER_NOT_USE_AI:
 			return OPF_NONE;
 
 		case OP_EXPLOSION_EFFECT:
@@ -13093,8 +13210,8 @@ int sexp_query_type_match(int opf, int opr)
 			return ((opr == OPR_NUMBER) || (opr == OPR_POSITIVE));
 
 		case OPF_POSITIVE:
-			// Goober5000: uncomment the following for the number hack
-			return ((opr == OPR_POSITIVE) /*|| (opr == OPR_NUMBER)*/);
+			// Goober5000's number hack
+			return ((opr == OPR_POSITIVE) || (opr == OPR_NUMBER));
 
 		case OPF_BOOL:
 			return (opr == OPR_BOOL);
@@ -13452,6 +13569,19 @@ int sexp_variable_count()
 	return count;
 }
 
+// counts number of campaign-persistent sexp_variables that are set
+int sexp_campaign_persistent_variable_count()
+{
+	int count = 0;
+
+	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
+		if ( (Sexp_variables[i].type & SEXP_VARIABLE_SET) && !(Sexp_variables[i].type & SEXP_VARIABLE_BLOCK) && (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) ) {
+			count++;
+		}
+	}
+
+	return count;
+}
 
 // deletes sexp_variable from active
 void sexp_variable_delete(int index)
@@ -13616,6 +13746,8 @@ int get_subcategory(int sexp_id)
 		case OP_BEAM_UNPROTECT_SHIP:
 		case OP_KAMIKAZE:
 		case OP_NOT_KAMIKAZE:
+		case OP_PLAYER_USE_AI:
+		case OP_PLAYER_NOT_USE_AI:
 			return CHANGE_SUBCATEGORY_AI_AND_IFF;
 			
 		case OP_SABOTAGE_SUBSYSTEM:
@@ -13667,6 +13799,7 @@ int get_subcategory(int sexp_id)
 
 		case OP_RED_ALERT:
 		case OP_END_MISSION:
+		case OP_FORCE_JUMP:
 		case OP_END_CAMPAIGN:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
