@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.1 $
- * $Date: 2002-07-12 16:59:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-29 08:24:42 $
+ * $Author: DTP $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/12 16:59:04  penguin
+ * Added flags2 (ran out of bits in flags!) to ship struct; bit 0 will be used
+ * to toggle Bobboau's lights.
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -248,15 +252,15 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 
 #ifdef NDEBUG
 	#ifdef FRED
-		#define	MAX_SHIPS					100			// max number of ship instances there can be.
-		#define	SHIPS_LIMIT					100			// what MAX_SHIPS will be at release time (for error checking in debug mode)
+		#define	MAX_SHIPS					400			// max number of ship instances there can be. DTP; bumped from 100 to 400
+		#define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode), DTP bumped from 100 to 400
 	#else
-		#define	MAX_SHIPS					150			// max number of ship instances there can be.
-		#define	SHIPS_LIMIT					150			// what MAX_SHIPS will be at release time (for error checking in debug mode)
+		#define	MAX_SHIPS					400			// max number of ship instances there can be. /DTP bumped from 100 to 400
+		#define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); DTP bumped from 100 to 400
 	#endif
 #else
-#define	MAX_SHIPS					200			// max number of ship instances there can be.
-#define	SHIPS_LIMIT					200			// what MAX_SHIPS will be at release time (for error checking in debug mode)
+#define	MAX_SHIPS					400			// max number of ship instances there can be.DTP; bumped from 200 to 400
+#define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400
 #endif
 
 #define	HULL_DAMAGE_THRESHOLD_PERCENT	0.25f	//	Apply damage to hull, not shield if shield < this
@@ -894,7 +898,7 @@ extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 // DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
 // TALK TO DAVE B FIRST
 // ****************************************************************
-#define MAX_SHIP_TYPES		130
+#define MAX_SHIP_TYPES		200	//DTP bumped from 130 to 200
 
 #define MAX_SHIPS_PER_WING	6
 
