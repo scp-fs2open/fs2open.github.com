@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2003-08-20 08:11:00 $
+ * $Author: wmcoolmon $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2.2.1  2002/09/24 18:56:43  randomtiger
  * DX8 branch commit
  *
@@ -125,7 +128,8 @@
 #include "globalincs/alphacolors.h"
 #include "debugconsole/dbugfile.h"
 
-void delete_pilot_file( char *pilot_name, int single );		// manage_pilot.cpp
+//Returns 0 on failure, 1 on success
+int delete_pilot_file( char *pilot_name, int single );		// manage_pilot.cpp
 
 // stats defines
 #define NUM_STAT_LINES 85
@@ -864,6 +868,26 @@ void barracks_delete_pilot()
 	}
 
 	strcpy(buf, Pilots[Selected_line]);
+
+	//Try to delete the file
+	int del_rval;
+	do {
+		del_rval = delete_pilot_file(buf, Player_sel_mode == PLAYER_SELECT_MODE_SINGLE ? 1 : 0);
+
+		if(!del_rval) {
+			popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Retry", -1), XSTR("&Cancel",-1),
+				XSTR("Error\nFailed to delete pilot file.  File may be read-only.\n", -1));
+		}
+
+		//Abort
+		if(popup_rval)
+		{
+			return;
+		}
+
+		//Try again
+	} while (!del_rval);
+
 	for (int i=Selected_line; i<Num_pilots-1; i++) {
 		strcpy(Pilots[i], Pilots[i + 1]);
 		Pilot_ranks[i] = Pilot_ranks[i + 1];
@@ -882,7 +906,6 @@ void barracks_delete_pilot()
 		}
 	}
 
-	delete_pilot_file(buf, Player_sel_mode == PLAYER_SELECT_MODE_SINGLE ? 1 : 0);
 	gamesnd_play_iface(SND_USER_SELECT);
 }
 
