@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.16 $
- * $Author: wmcoolmon $
- * $Date: 2003-01-13 02:09:12 $
+ * $Revision: 2.17 $
+ * $Author: Goober5000 $
+ * $Date: 2003-01-15 05:24:23 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/01/13 02:09:12  wmcoolmon
+ * Added MISSION_FLAG_NO_NEB_TRAILS and removed MISSION_FLAG_ST_OVERRIDE_NEB. Also changed code to set flags as necessary
+ *
  * Revision 2.15  2003/01/11 01:00:25  wmcoolmon
  * Added code for "Ship Trails override Nebula"
  *
@@ -498,6 +501,7 @@ typedef struct p_object {
 
 	char	alt_type_index;					// optional alt type index
 	int		nameplate;						// optional nameplate -Bobboau
+	int texture_replace_index;				//
 } p_object;
 
 // defines for flags used for p_objects when they are created.  Used to help create special
