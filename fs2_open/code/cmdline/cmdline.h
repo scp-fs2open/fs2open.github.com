@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.66 $
- * $Date: 2005-01-29 16:30:46 $
- * $Author: phreak $
+ * $Revision: 2.67 $
+ * $Date: 2005-01-30 12:50:08 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2005/01/29 16:30:46  phreak
+ * smart shield command line stuff.  this will be changed in the future, but i want people to test it.
+ * -phreak
+ *
  * Revision 2.65  2005/01/21 08:29:04  taylor
  * add -rlm cmdline option to switch to local viewpoint lighting calculations (OGL only for now)
  *
@@ -530,6 +534,10 @@ extern int Cmdline_pcx32;
 extern int Cmdline_pcx32dds;
 extern int Cmdline_nomotiondebris;
 extern int Cmdline_rlm;
+
+#ifdef SCP_UNIX
+	extern int Cmdline_no_grab;
+#endif
 
 extern int Cmdline_noglow;
 extern int Cmdline_timerbar;

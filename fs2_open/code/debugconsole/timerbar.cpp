@@ -16,9 +16,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <winbase.h>
+#endif
 
 #include "timerbar.h"
-#include "globalincs\pstypes.h"
+#include "globalincs/pstypes.h"
 
 
 // Internal structure for handling frame data
@@ -39,7 +40,7 @@ LARGE_INTEGER timerbar_ultimate_start_value;
 LARGE_INTEGER timerbar_last_start_value;
 
 // Data needed for push and pop functionality
-const MAX_TB_STACK_SIZE = 100;
+const int MAX_TB_STACK_SIZE = 100;
 
 int timerbar_stack[MAX_TB_STACK_SIZE];
 int timerbar_current_stack_layer = 0;
@@ -223,4 +224,3 @@ void timerbar_set_draw_func(void (*new_draw_func_ptr)(int colour, float x, float
   	draw_func_ptr = new_draw_func_ptr;
 }
 
-#endif
