@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.30 $
- * $Date: 2004-02-07 05:11:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2004-02-10 05:07:38 $
+ * $Author: matt $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/02/07 05:11:08  Goober5000
+ * fix for undestroyable subsystems
+ * --Goober5000
+ *
  * Revision 2.29  2004/02/06 23:17:43  Goober5000
  * tweakage
  * --Goober5000
@@ -740,8 +744,8 @@ void hud_render_target_setup(vector *camera_eye, matrix *camera_orient, float zo
 	g3_set_view_matrix( camera_eye, camera_orient, zoom);	
 	model_set_detail_level(1);		// use medium detail level
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(camera_eye, camera_orient);
 
 	HUD_set_clip(Target_window_coords[gr_screen.res][0],Target_window_coords[gr_screen.res][1],Target_window_coords[gr_screen.res][2],Target_window_coords[gr_screen.res][3]);
 
