@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.114 $
- * $Date: 2004-03-21 10:34:05 $
+ * $Revision: 2.115 $
+ * $Date: 2004-04-03 02:55:50 $
  * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.114  2004/03/21 10:34:05  bobboau
+ * fixed a texture loading bug
+ *
  * Revision 2.113  2004/03/20 21:17:13  bobboau
  * fixed -spec comand line option,
  * probly some other stuf
@@ -6082,6 +6085,7 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	sip->thruster_glow3 = bm_load(sip->thruster_bitmap3);
 	sip->thruster_glow3a = bm_load(sip->thruster_bitmap3a);
 	
+	if(strlen(sip->ABtrail_bitmap_name))
 	sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
 
 	trail_info *ci;
@@ -7008,6 +7012,19 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					continue;
 				}			
 
+				int points = 0, numtimes = 1;
+
+				if (winfo_p->wi_flags2 & WIF2_CYCLE){
+					if (winfo_p->shots > num_slots){
+						points = num_slots;
+					}else{
+						points = winfo_p->shots;
+					}
+				}else{
+					numtimes = winfo_p->shots;
+					points = num_slots;
+				}
+
 				// ballistics support for primaries - Goober5000
 				if ( winfo_p->wi_flags2 & WIF2_BALLISTIC )
 				{
@@ -7054,7 +7071,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					// deplete ammo
 					if ( Weapon_energy_cheat == 0 )
 					{
-						swp->primary_bank_ammo[bank_to_fire] -= num_slots;
+						swp->primary_bank_ammo[bank_to_fire] -= points;
 
 						// make sure we don't go below zero; any such error is excusable
 						// because it only happens when the bank is depleted in one shot
@@ -7071,8 +7088,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				
 				// Mark all these weapons as in the same group
 				int new_group_id = weapon_create_group_id();
-
-				int points = 0, numtimes = 1;
 
 				//ok if this is a cycleing weapon use shots as the number of points to fire from at a time
 				//otherwise shots is the number of times all points will be fired (used mostly for the 'shotgun' effect)
@@ -11383,6 +11398,13 @@ void ship_page_in()
 				else sip->thruster_glow3 = -1;
 				if(strcmp(sip->thruster_bitmap3a, "none"))sip->thruster_glow3a = bm_load(sip->thruster_bitmap3a);
 				else sip->thruster_glow3a = -1;
+
+				bm_page_in_texture(sip->thruster_glow1);
+				bm_page_in_texture(sip->thruster_glow1a);
+				bm_page_in_texture(sip->thruster_glow2);
+				bm_page_in_texture(sip->thruster_glow2a);
+				bm_page_in_texture(sip->thruster_glow3);
+				bm_page_in_texture(sip->thruster_glow3a);
 				
 				if(strcmp(sip->splodeing_texture_name, "none"))sip->splodeing_texture = bm_load(sip->splodeing_texture_name);
 				else sip->splodeing_texture = -1;
@@ -11397,6 +11419,7 @@ void ship_page_in()
 					else sip->afterburner_thruster_particles[k].thruster_particle_bitmap01 = -1;
 				}
 			sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
+			bm_page_in_texture(sip->ABbitmap);
 		}
 	}
 
@@ -11524,6 +11547,15 @@ void ship_page_in_model_textures(int modelnum)
 		{
 				bm_page_in_texture( bitmap_num, 1 );
 		}
+
+		if(pm->n_glows)
+			for(int i = 0; i<pm->n_glows; i++){
+				glow_bank *bank = &pm->glows[i];
+				if(bank->glow_bitmap >-1)
+					bm_page_in_texture( bank->glow_bitmap);
+				if(bank->glow_neb_bitmap >-1)
+					bm_page_in_texture( bank->glow_neb_bitmap);
+			}
 }
 }
 
