@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.0 $
- * $Author: penguin $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Author: wmcoolmon $
+ * $Date: 2002-07-13 09:16:18 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -523,6 +526,8 @@
 #define OP_CARGO_NO_DEPLETE					(0x0053 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SET_SPECIAL_WARPOUT_NAME			(0X0054 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SHIP_VANISH							(0X0055 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SHIP_LIGHTS_ON						(0x0056 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-WMCoolmon
+#define OP_SHIP_LIGHTS_OFF						(0x0057 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-WMCoolmon
 
 
 // debugging sexpressions
