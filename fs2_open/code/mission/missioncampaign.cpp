@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2004-03-27 22:27:07 $
+ * $Author: randomtiger $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.10  2003/09/05 04:25:29  Goober5000
  * well, let's see here...
  *
@@ -264,6 +268,7 @@
 #include "weapon/weapon.h"
 #include "cfile/cfile.h"
 #include "starfield/supernova.h"
+#include "Cutscene/Cutscenes.h"
 
 // mission disk stuff
 #define CAMPAIGN_SAVEFILE_MAX_SHIPS_OLD						75
@@ -1917,6 +1922,7 @@ void mission_campaign_maybe_play_movie(int type)
 		return;
 
 	movie_play( filename );	//Play the movie!
+	cutscene_mark_viewable( filename );
 }
 
 // return nonzero if the passed filename is a multiplayer campaign, 0 otherwise
