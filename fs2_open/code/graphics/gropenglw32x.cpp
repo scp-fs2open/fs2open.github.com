@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLw32x.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-10-11 21:31:17 $
+ * $Revision: 1.2 $
+ * $Date: 2002-10-12 17:48:11 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2002/10/11 21:31:17  phreak
+ * first run at opengl for w32, only useful in main hall, barracks and campaign room
+ *
  * Revision 1.1.1.1  2002/06/06 06:25:26  drevil
  * initial import of June 6th, 2002 sources
  *
@@ -399,7 +402,7 @@ void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_typ
 		case TEXTURE_SOURCE_NO_FILTERING:
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			break;
 		default:
 			break;
