@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-12-14 16:14:52 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2002-12-15 18:59:57 $
+ * $Author: DTP $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/12/14 16:14:52  phreak
+ * copied from grgpenglw32x.cpp.
+ *
  * Revision 1.7  2002/12/05 00:49:25  phreak
  * extension framework implemented(no extensions work YET) -phreak
  *
@@ -298,9 +301,9 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #include <windows.h>
 #include <windowsx.h>
 
-#include <gl/gl.h>
-#include <gl/glu.h>
-#include <gl/glext.h>
+#include "gl/gl.h"
+#include "gl/glu.h"
+#include "gl/glext.h"
 
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
