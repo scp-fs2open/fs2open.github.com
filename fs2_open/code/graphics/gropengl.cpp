@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.87 $
- * $Date: 2004-11-04 22:49:13 $
+ * $Revision: 2.88 $
+ * $Date: 2004-12-02 11:18:15 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2004/11/04 22:49:13  taylor
+ * don't set gamma ramp while running FRED
+ *
  * Revision 2.86  2004/10/31 21:42:31  taylor
  * Linux tree merge, use linear mag filter, small FRED fix, AA lines (disabled), use rgba colors for 3dunlit, proper gamma adjustment, bmpman merge
  *
@@ -2503,6 +2506,9 @@ void gr_opengl_cleanup(int minimize)
 
 	OGL_enabled = 0;
 
+	// reset gamma to default
+	gr_set_gamma(1.0f);
+
 	DBUGFILE_OUTPUT_0("");
 	if (rend_context)
 	{
@@ -2713,7 +2719,7 @@ void gr_opengl_set_gamma(float gamma)
 	}
 
 	// new way - but not while running FRED
-	if (!Fred_running) {
+	if (!Fred_running && !Cmdline_no_set_gamma) {
 		// Create the Gamma lookup table
 		for (i = 0; i < 256; i++) {
 			g = ogl_ramp_val(i, gamma);
@@ -3724,7 +3730,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_aniso);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
 	}
-
 
 	//allow VBOs to be used
 	if ( (!Cmdline_nohtl) && (!Cmdline_novbo) && (GL_Extensions[GL_ARB_VBO_BIND_BUFFER].enabled))
