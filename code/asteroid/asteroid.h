@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.2 $
- * $Date: 2003-04-29 01:03:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2003-10-15 22:03:23 $
+ * $Author: Kazan $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/04/29 01:03:22  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -138,23 +142,73 @@ struct collision_info_struct;
 #define	MAX_ASTEROIDS			256
 
 // DEBRIS TYPES
-#define	MAX_DEBRIS_TYPES			12
+
+
+#if defined(MORE_SPECIES)
+#define DEBRIS_NAME_MASK 0x000f
+// -----------------------------------
+// Kazan Extended Species version
+// -----------------------------------
+#define	MAX_DEBRIS_TYPES		27
+
 #define	ASTEROID_TYPE_SMALL		0
-#define	ASTEROID_TYPE_MEDIUM		1
-#define	ASTEROID_TYPE_BIG			2
+#define	ASTEROID_TYPE_MEDIUM	1
+#define	ASTEROID_TYPE_BIG		2
+// terran
+#define	DEBRIS_TERRAN_SMALL		3
+#define	DEBRIS_TERRAN_MEDIUM	4
+#define	DEBRIS_TERRAN_LARGE		5
+// vasudan
+#define	DEBRIS_VASUDAN_SMALL	6
+#define	DEBRIS_VASUDAN_MEDIUM	7
+#define	DEBRIS_VASUDAN_LARGE	8
+// shivan
+#define	DEBRIS_SHIVAN_SMALL		9
+#define	DEBRIS_SHIVAN_MEDIUM	10
+#define	DEBRIS_SHIVAN_LARGE		11
+// ancient
+#define	DEBRIS_ANCIENT_SMALL	12
+#define	DEBRIS_ANCIENT_MEDIUM	13
+#define	DEBRIS_ANCIENT_LARGE	14
+// user1
+#define	DEBRIS_USER1_SMALL		15
+#define	DEBRIS_USER1_MEDIUM		16
+#define	DEBRIS_USER1_LARGE		17
+// user2
+#define	DEBRIS_USER2_SMALL		18
+#define	DEBRIS_USER2_MEDIUM		19
+#define	DEBRIS_USER2_LARGE		20
+// user3
+#define	DEBRIS_USER3_SMALL		21
+#define	DEBRIS_USER3_MEDIUM		22
+#define	DEBRIS_USER3_LARGE		23
+// user4
+#define	DEBRIS_USER4_SMALL		24
+#define	DEBRIS_USER4_MEDIUM		25
+#define	DEBRIS_USER4_LARGE		26
+#else
+// -----------------------------------
+// Old Volition Version
+// -----------------------------------
+#define	MAX_DEBRIS_TYPES		12
+//
+#define	ASTEROID_TYPE_SMALL		0
+#define	ASTEROID_TYPE_MEDIUM	1
+#define	ASTEROID_TYPE_BIG		2
 //
 #define	DEBRIS_TERRAN_SMALL		3
-#define	DEBRIS_TERRAN_MEDIUM		4
+#define	DEBRIS_TERRAN_MEDIUM	4
 #define	DEBRIS_TERRAN_LARGE		5
 //
-#define	DEBRIS_VASUDAN_SMALL		6
+#define	DEBRIS_VASUDAN_SMALL	6
 #define	DEBRIS_VASUDAN_MEDIUM	7
-#define	DEBRIS_VASUDAN_LARGE		8
+#define	DEBRIS_VASUDAN_LARGE	8
 //
 #define	DEBRIS_SHIVAN_SMALL		9
-#define	DEBRIS_SHIVAN_MEDIUM		10
+#define	DEBRIS_SHIVAN_MEDIUM	10
 #define	DEBRIS_SHIVAN_LARGE		11
 // END DEBRIS TYPES
+#endif
 
 typedef struct debris_struct {
 	int index;
@@ -206,8 +260,13 @@ typedef	struct asteroid {
 
 // TYPEDEF FOR SPECIES OF DEBRIS - BITFIELD
 #define DS_TERRAN		0x01
-#define DS_VASUDAN	0x02
+#define DS_VASUDAN		0x02
 #define DS_SHIVAN		0x04
+#define DS_ANCIENT		0x08
+#define DS_USER1		0x10
+#define DS_USER2		0x20
+#define DS_USER3		0x40
+#define DS_USER4		0x80
 
 // TYPEDEF FOR DEBRIS TYPE
 typedef enum {

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-09-13 06:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2003-10-15 22:03:26 $
+ * $Author: Kazan $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/09/13 06:02:03  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.6  2003/04/29 01:03:21  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -207,6 +211,7 @@
 #include "mission/missionparse.h"
 #include "network/multimsgs.h"
 #include "network/multi.h"
+#include "species_defs/species_defs.h"
 
 int	New_shield_system = 1;
 int	Show_shield_mesh = 0;
@@ -266,19 +271,34 @@ int	Num_tris;								//	Number of triangles in current shield.  Would be a local
 
 shield_hit	Shield_hits[MAX_SHIELD_HITS];
 
-typedef struct shield_ani {
-	char		*filename;
-	int		first_frame;
-	int		nframes;
-} shield_ani;
+
 
 //XSTR:OFF
-#define MAX_SHIELD_ANIMS MAX_SPECIES_NAMES
+
+
+
+#if defined(MORE_SPECIES)
+shield_ani Sheild_ani[MAX_SHIELD_ANIMS];
+
+/*
+shield_ani Sheild_ani[MAX_SHIELD_ANIMS] = {
+	{ "shieldhit01a", -1, -1 },
+	{ "shieldhit01a", -1, -1 },
+	{ "shieldhit01a", -1, -1 },
+	{ "shieldhit01a", -1, -1 },
+	{ "shieldhit01a", -1, -1 },
+	{ "shieldhit01a", -1, -1 },
+	{ "shieldhit01a", -1, -1 },
+	{ "shieldhit01a", -1, -1 },
+};*/
+
+#else
 shield_ani Sheild_ani[MAX_SHIELD_ANIMS] = {
 	{ "shieldhit01a", -1, -1 },
 	{ "shieldhit01a", -1, -1 },
 	{ "shieldhit01a", -1, -1 },
 };
+#endif
 //XSTR:ON
 
 int Shield_bitmaps_loaded = 0;
@@ -299,7 +319,7 @@ void load_shield_hit_bitmap()
 
 	Shield_bitmaps_loaded = 1;
 
-	for (i=0; i<MAX_SHIELD_ANIMS; i++ )	{
+	for (i=0; i<MAX_SHIELD_ANIMS && i<True_NumSpecies; i++ )	{
 		Sheild_ani[i].first_frame = bm_load_animation(Sheild_ani[i].filename, &Sheild_ani[i].nframes,NULL, 1);
 		if ( Sheild_ani[i].first_frame < 0 )
 			Int3();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-10-15 22:03:24 $
+ * $Author: Kazan $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -175,6 +178,7 @@
 #include "sound/sound.h"
 #include "parse/parselo.h"
 #include "localization/localize.h"
+#include "species_defs/species_defs.h"
 
 // Global array that holds data about the gameplay sound effects.
 game_snd Snds[MAX_GAME_SOUNDS];
@@ -364,6 +368,16 @@ void gamesnd_parse_soundstbl()
 	// parse flyby sound section	
 	required_string("#Flyby Sounds Start");
 
+#if defined(MORE_SPECIES)
+	char cstrtemp[SPECIES_NAME_MAXLEN+3];
+
+	for (int i = 0; i < True_NumSpecies; i++)
+	{
+		sprintf(cstrtemp, "$%s:", Species_names[i]);
+		gamesnd_parse_line(&Snds_flyby[i][0], cstrtemp);
+		gamesnd_parse_line(&Snds_flyby[i][1], cstrtemp);	
+	}
+#else
 	// read 2 terran sounds
 	gamesnd_parse_line(&Snds_flyby[SPECIES_TERRAN][0], "$Terran:");
 	gamesnd_parse_line(&Snds_flyby[SPECIES_TERRAN][1], "$Terran:");
@@ -374,6 +388,7 @@ void gamesnd_parse_soundstbl()
 
 	gamesnd_parse_line(&Snds_flyby[SPECIES_SHIVAN][0], "$Shivan:");
 	gamesnd_parse_line(&Snds_flyby[SPECIES_SHIVAN][1], "$Shivan:");
+#endif
 	
 	required_string("#Flyby Sounds End");
 

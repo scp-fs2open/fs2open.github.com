@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.34 $
- * $Author: Goober5000 $
- * $Date: 2003-09-30 04:05:09 $
+ * $Revision: 2.35 $
+ * $Author: Kazan $
+ * $Date: 2003-10-15 22:03:25 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/09/30 04:05:09  Goober5000
+ * updated FRED to import FS1 default weapons loadouts as well as missions
+ * --Goober5000
+ *
  * Revision 2.33  2003/09/28 21:22:59  Goober5000
  * added the option to import FSM missions, added a replace function, spruced
  * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
@@ -463,11 +467,38 @@ extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
 
 // These species defines must match the contents of the Species_names[MAX_SPECIES_NAMES] array.
+#if defined(MORE_SPECIES)
+//-------------------------------------------
+// Kazan: Extended Species Support
+//-------------------------------------------
+
+// some defines moved here since it's needed in several modules
+#define MAX_SHIELD_ANIMNAME_LEN	64
+#define MAX_SHIELD_ANIMS MAX_SPECIES_NAMES
+#define SPECIES_NAME_MAXLEN		32
+#define MAX_DEBRIS_TNAME_LEN	64
+
+#define	MAX_SPECIES_NAMES		8
+#define	SPECIES_TERRAN			0
+#define	SPECIES_VASUDAN			1
+#define	SPECIES_SHIVAN			2
+#define SPECIES_ANCIENTS		3
+#define SPECIES_USER1			4
+#define SPECIES_USER2			5
+#define SPECIES_USER3			6
+#define SPECIES_USER4			7
+// Volition has this set to 3
+#define	SPECIES_NONE			8
+#else
+//-------------------------------------------
+// Volition basic Species Support
+//-------------------------------------------
 #define	MAX_SPECIES_NAMES		3
 #define	SPECIES_TERRAN			0
-#define	SPECIES_VASUDAN		1
+#define	SPECIES_VASUDAN			1
 #define	SPECIES_SHIVAN			2
 #define	SPECIES_NONE			3
+#endif
 
 #ifdef FS2_DEMO
 	#define MAX_SUBSYS_STATUS		125
@@ -490,7 +521,13 @@ extern char *Status_target_names[MAX_STATUS_NAMES];
 extern char *Arrival_location_names[MAX_ARRIVAL_NAMES];
 extern char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
+
+#if defined(MORE_SPECIES)
+extern char Species_names[MAX_SPECIES_NAMES][SPECIES_NAME_MAXLEN+1];
+#else
 extern char *Species_names[MAX_SPECIES_NAMES];
+#endif
+
 extern char *Reinforcement_type_names[];
 extern char *Object_flags[];
 extern char *Parse_object_flags[];
