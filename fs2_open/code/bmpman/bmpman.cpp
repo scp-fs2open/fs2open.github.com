@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.39 $
- * $Date: 2005-01-21 08:20:44 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2005-01-22 20:29:05 $
+ * $Author: wmcoolmon $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/01/21 08:20:44  taylor
+ * make sure we can still use TGAs (16-bit) when Cmdline_jpgtga is not set, PCX still takes precedence per retail
+ *
  * Revision 2.38  2004/11/27 22:08:21  taylor
  * more EFF fixes - can't believe I forgot all this crap
  *
@@ -1324,7 +1327,7 @@ void reset_parse_ex(char *text);
 int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps, ubyte *type)
 {
 	int frames = 0, fps = 30;
-	char ext[3];
+	char ext[8];
 	ubyte c_type = BM_TYPE_NONE;
 	char file_text[50];
 	char file_text_raw[50];
