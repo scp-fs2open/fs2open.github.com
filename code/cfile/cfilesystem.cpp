@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-04-26 00:26:37 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2004-05-01 17:10:37 $
+ * $Author: Kazan $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/04/26 00:26:37  taylor
+ * use absolute moddir path, faster cfilesystem searching
+ *
  * Revision 2.10  2004/04/03 18:11:19  Kazan
  * FRED fixes
  *
@@ -462,23 +465,31 @@ void cf_build_root_list(char *cdrom_dir)
 	Num_roots = 0;
 
 	cf_root	*root;
+	char *str_temp, *cur_pos;
 
 	if(Cmdline_mod) {
-		strcat(Cmdline_mod, DIR_SEPARATOR_STR);
-		root = cf_create_root();
+		// stackable Mod support -- Kazan
+		//This for statement is a work of art :D
+		for (cur_pos=Cmdline_mod; strlen(cur_pos) != 0; cur_pos+= (strlen(cur_pos)+1))
+		{
+			str_temp = strdup(cur_pos);
+		
+			strcat(str_temp, DIR_SEPARATOR_STR);
+			root = cf_create_root();
 
-		if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
-			Error(LOCATION, "Can't get current working directory -- %d", errno );
+			if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
+				Error(LOCATION, "Can't get current working directory -- %d", errno );
+			}
+
+			// do we already have a slash? as in the case of a root directory install
+			if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+				strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+			}
+
+			strcat(root->path, str_temp);
+			root->roottype = CF_ROOTTYPE_PATH;
+			cf_build_pack_list(root);
 		}
-
-		// do we already have a slash? as in the case of a root directory install
-		if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
-			strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
-		}
-
-		strcat(root->path, Cmdline_mod);
-		root->roottype = CF_ROOTTYPE_PATH;
-		cf_build_pack_list(root);
 	}
 
 	root = cf_create_root();
