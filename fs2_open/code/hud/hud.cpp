@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-01-01 07:18:47 $
- * $Author: wmcoolmon $
+ * $Revision: 2.33 $
+ * $Date: 2005-01-11 21:38:49 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/01/01 07:18:47  wmcoolmon
+ * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
+ *
  * Revision 2.31  2004/12/26 22:45:58  taylor
  * fix some hud stuff getting drawn multiple times, don't show target data if HUD_disabled_except_messages is set
  *
@@ -455,6 +458,7 @@
 #include "hud/hudtargetbox.h"
 #include "hud/hudwingmanstatus.h"
 #include "hud/hudparse.h"
+#include "object/objectdock.h"
 
 #if defined(ENABLE_AUTO_PILOT)
 #include "hud/hudnavigation.h"	//kazan
@@ -2533,22 +2537,18 @@ void hud_support_view_abort()
 // return the number of seconds until repair ship will dock with player, return -1 if error
 // 
 // mwa made this function more general purpose
+// Goober5000 made clearer
 //
-// NOTE: This function is pretty stupid now.  It just assumes the player is sitting still, and
-//		   the support ship is moving directly to the player.
-int hud_support_get_dock_time( int objnum )
+// NOTE: This function is pretty stupid now.  It just assumes the dockee is sitting still, and
+//		   the docker is moving directly to the dockee.
+int hud_get_dock_time( object *docker_objp )
 {
 	ai_info	*aip;
-	object	*support_objp, *other_objp;
-	float		dist, rel_speed, support_speed;
+	object	*dockee_objp;
+	float		dist, rel_speed, docker_speed;
 	vector	rel_vel;
 
-	support_objp = &Objects[objnum];
-	aip = &Ai_info[Ships[support_objp->instance].ai_index];
-
-	// if the ship is docked, return 0
-	if ( aip->ai_flags & AIF_DOCKED )
-		return 0;
+	aip = &Ai_info[Ships[docker_objp->instance].ai_index];
 
 	// get the dockee object pointer
 	if (aip->goal_objnum == -1) {
@@ -2556,17 +2556,21 @@ int hud_support_get_dock_time( int objnum )
 		return 0;
 	}
 
-	other_objp = &Objects[aip->goal_objnum];
+	dockee_objp = &Objects[aip->goal_objnum];
 
-	vm_vec_sub(&rel_vel, &support_objp->phys_info.vel, &other_objp->phys_info.vel);
+	// if the ship is docked, return 0
+	if ( dock_check_find_direct_docked_object(docker_objp, dockee_objp) )
+		return 0;
+
+	vm_vec_sub(&rel_vel, &docker_objp->phys_info.vel, &dockee_objp->phys_info.vel);
 	rel_speed = vm_vec_mag_quick(&rel_vel);
 
-	dist = vm_vec_dist_quick(&other_objp->pos, &support_objp->pos);
+	dist = vm_vec_dist_quick(&dockee_objp->pos, &docker_objp->pos);
 
-	support_speed = support_objp->phys_info.speed;
+	docker_speed = docker_objp->phys_info.speed;
 
-	if ( rel_speed <= support_speed/2.0f) {	//	This means the player is moving away fast from the support ship.
-		return (int) (dist/support_speed);
+	if ( rel_speed <= docker_speed/2.0f) {	//	This means the player is moving away fast from the support ship.
+		return (int) (dist/docker_speed);
 	} else {
 		float	d1;
 		float	d = dist;
@@ -2577,7 +2581,7 @@ int hud_support_get_dock_time( int objnum )
 
 		//	When faraway, use max speed, not current speed.  Might not have sped up yet.
 		if (d > 100.0f) {
-			time += (d - 100.0f)/support_objp->phys_info.max_vel.xyz.z;
+			time += (d - 100.0f)/docker_objp->phys_info.max_vel.xyz.z;
 		}
 
 		//	For mid-range, use current speed.
@@ -2760,7 +2764,7 @@ void hud_support_view_blit()
 			hud_support_view_stop(1);
 			seconds = 0;
 		} else {
-			seconds = hud_support_get_dock_time( Hud_support_objnum );
+			seconds = hud_get_dock_time( &Objects[Hud_support_objnum] );
 		}
 
 		if ( seconds >= 0 ) {

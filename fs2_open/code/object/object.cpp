@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-10-31 22:02:47 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2005-01-11 21:38:49 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/10/31 22:02:47  taylor
+ * little cleanup
+ *
  * Revision 2.23  2004/07/26 20:47:45  Kazan
  * remove MCD complete
  *
@@ -535,6 +538,7 @@
 #include "weapon/swarm.h"
 #include "demo/demo.h"
 #include "radar/radarsetup.h"
+#include "object/objectdock.h"
 
 
 
@@ -1114,6 +1118,9 @@ void obj_delete_all_that_should_be_dead()
 	// Move all objects
 	objp = GET_FIRST(&obj_used_list);
 	while( objp !=END_OF_LIST(&obj_used_list) )	{
+		// Goober5000 - HACK HACK HACK - see obj_move_all
+		objp->flags &= ~OF_DOCKED_ALREADY_HANDLED;
+
 		temp = GET_NEXT(objp);
 		if ( objp->flags&OF_SHOULD_BE_DEAD )
 			obj_delete( OBJ_INDEX(objp) );			// MWA says that john says that let obj_delete handle everything because of the editor
@@ -1148,68 +1155,34 @@ void obj_merge_created_list(void)
 
 int physics_paused = 0, ai_paused = 0;
 
-extern void call_doa(object *obj1, object *obj2, ship_info *sip1);
 
-//	If this is a cargo container or a repair ship, move it along with the ship it's docked to.
-void move_docked_objects(object *objp)
+// Goober5000
+void move_one_docked_object(object *objp, object *parent_objp)
 {
-	ai_info		*aip;
-	ai_info *other_aip;
-
-	if (objp->type != OBJ_SHIP)
-		return;
-
-	Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
-
-	aip = &Ai_info[Ships[objp->instance].ai_index];
-
-	if (aip->ai_flags & AIF_DOCKED) {
-		ship_info	*sip;
-		sip = &Ship_info[Ships[objp->instance].ship_info_index];
-		if ((sip->flags & SIF_SUPPORT) || (sip->flags & SIF_CARGO)) {
-			Assert(!((sip->flags & SIF_SUPPORT) && (sip->flags & SIF_CARGO)));	//	Ship can't be both repair and cargo
-			if (aip->dock_objnum != -1) {
-				if (aip->mode == AIM_DOCK) {
-					if (aip->submode < AIS_UNDOCK_1)
-						call_doa(objp, &Objects[aip->dock_objnum], sip);
-				} else {
-					// if I am not in dock mode then I need to check the guy that I'm docked with
-					// and only move with him if he isn't undocking.
-					other_aip = &Ai_info[Ships[Objects[aip->dock_objnum].instance].ai_index];
-					if ( other_aip->mode == AIM_DOCK ) {
-						if (other_aip->submode < AIS_UNDOCK_1 )
-							call_doa(objp, &Objects[aip->dock_objnum], sip);
-					} else {
-						call_doa(objp, &Objects[aip->dock_objnum], sip);
-					}
-				}
-			}
-		} else {
-			if (aip->dock_objnum != -1) {
-				Assert( aip->dock_objnum != -1 );
-				other_aip = &Ai_info[Ships[Objects[aip->dock_objnum].instance].ai_index];
-
-				// if the other object that I am docked with is undocking, then don't do anything.
-				if ( !((other_aip->mode == AIM_DOCK) && (other_aip->submode >= AIS_UNDOCK_1)) ) {
-					if ( (aip->mode != AIM_DOCK) && (aip->mode != AIM_WARP_OUT) ) {
-						object	*objp1, *objp2;
-
-						objp1 = &Objects[aip->dock_objnum];
-						objp2 = objp;
-
-						if (objp1->phys_info.speed > objp2->phys_info.speed) {
-							object *t = objp1;
-							objp1 = objp2;
-							objp2 = t;
-						}
-
-						//nprintf(("AI", "Calling doa, frame %i: %s, %s\n", Framecount, Ships[objp1->instance].ship_name, Ships[objp2->instance].ship_name));
-						call_doa(objp1, objp2, sip);
-					}
-				}
-			}
+	// support ships don't keep up if they're undocking
+	ship *shipp = &Ships[objp->instance];
+	if (Ship_info[shipp->ship_info_index].flags & SIF_SUPPORT)
+	{
+		ai_info *aip = &Ai_info[shipp->ai_index];
+		if ( (aip->mode == AIM_DOCK) && (aip->submode >= AIS_UNDOCK_1) )
+		{
+			return;
 		}
 	}
+
+	// check the guy that I'm docked with and don't move if he's undocking from me
+	ai_info *other_aip = &Ai_info[Ships[parent_objp->instance].ai_index];
+	if ( (other_aip->mode == AIM_DOCK) && (other_aip->submode >= AIS_UNDOCK_1) )
+	{
+		if (other_aip->goal_objnum == OBJ_INDEX(objp))
+		{
+			return;
+		}
+	}
+
+	// we're here, so we move with our parent object
+	extern void call_doa(object *child, object *parent);
+	call_doa(objp, parent_objp);
 }
 
 /*
@@ -1335,8 +1308,11 @@ void obj_move_call_physics(object *objp, float frametime)
 				//	Note: This conditional for using PF_USE_VEL (instantaneous acceleration) is probably too loose.
 				//	A ships awaiting support will fly towards the support ship with instantaneous acceleration.
 				//	But we want to have ships in the process of docking have quick acceleration, or they overshoot their goals.
-				//	Probably can not key off dock_objnum, but then need to add some other condition.  Live with it for now. -- MK, 2/19/98
-				if ((aip->dock_objnum != -1) || 
+				//	Probably can not key off objnum_I_am_docked_or_docking_with, but then need to add some other condition.  Live with it for now. -- MK, 2/19/98
+
+				// Goober5000 - no need to key off objnum; other conditions get it just fine
+
+				if (/* (objnum_I_am_docked_or_docking_with != -1) || */
 					((aip->mode == AIM_DOCK) && ((aip->submode == AIS_DOCK_2) || (aip->submode == AIS_DOCK_3) || (aip->submode == AIS_UNDOCK_0))) ||
 					((aip->mode == AIM_WARP_OUT) && (aip->submode >= AIS_WARP_3))) {
 					if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) > 0.0f){
@@ -1822,6 +1798,9 @@ void obj_move_all(float frametime)
 {
 	object *objp;	
 
+	// Goober5000 - HACK HACK HACK
+	// this function also resets the OF_DOCKED_ALREADY_HANDLED flag, to save trips
+	// through the used object list
 	obj_delete_all_that_should_be_dead();
 
 	obj_merge_created_list();
@@ -1890,9 +1869,7 @@ void obj_move_all(float frametime)
 	if(!(Game_mode & GM_DEMO_PLAYBACK)){
 		objp = GET_FIRST(&obj_used_list);
 		while( objp !=END_OF_LIST(&obj_used_list) )	{
-			if (objp->type == OBJ_SHIP){
-				move_docked_objects(objp);
-			}
+			dock_move_docked_objects(objp);
 
 			// unflag all objects as being updates
 			objp->flags &= ~OF_JUST_UPDATED;
@@ -2062,8 +2039,8 @@ void obj_client_post_interpolate()
 	//	After all objects have been moved, move all docked objects.
 	objp = GET_FIRST(&obj_used_list);
 	while( objp !=END_OF_LIST(&obj_used_list) )	{
-		if ( (objp->type == OBJ_SHIP) || (objp != Player_obj) ) {
-			move_docked_objects(objp);
+		if ( objp != Player_obj ) {
+			dock_move_docked_objects(objp);
 		}
 		objp = GET_NEXT(objp);
 	}	
@@ -2128,8 +2105,8 @@ void obj_client_simulate(float frametime)
 	//	After all objects have been moved, move all docked objects.
 	objp = GET_FIRST(&obj_used_list);
 	while( objp !=END_OF_LIST(&obj_used_list) )	{
-		if ( (objp->type == OBJ_SHIP) || (objp != Player_obj) ) {
-			move_docked_objects(objp);
+		if ( objp != Player_obj ) {
+			dock_move_docked_objects(objp);
 		}
 		objp = GET_NEXT(objp);
 	}
@@ -2375,4 +2352,10 @@ void obj_reset_all_collisions()
 		// next
 		moveup = GET_NEXT(moveup);
 	}		
+}
+
+// Goober5000
+int object_is_docked(object *objp)
+{
+	return (objp->dock_list != NULL);
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-12-14 14:46:12 $
+ * $Revision: 2.17 $
+ * $Date: 2005-01-11 21:38:48 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/12/14 14:46:12  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.15  2004/07/26 20:47:51  Kazan
  * remove MCD complete
  *
@@ -540,8 +544,7 @@
 #include "network/multi.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
-
-// memory tracking - ALWAYS INCLUDE LAST
+#include "object/objectdock.h"
 
 
 // all ai goals dealt with in this code are goals that are specified through
@@ -1038,13 +1041,61 @@ void ai_goal_purge_all_invalid_goals( ai_goal *aigp )
 		ai_goal_purge_invalid_goals( aigp, Wings[i].ai_goals );
 }
 
+// Goober5000
+int ai_goal_find_dockpoint(int shipnum, int dock_type)
+{
+	int dock_index = -1;
+	int loop_count = 0;
+
+	ship *shipp = &Ships[shipnum];
+	object *objp = &Objects[shipp->objnum];
+
+	// only check 100 points for sanity's sake
+	while (loop_count < 100)
+	{
+		dock_index = model_find_dock_index(shipp->modelnum, dock_type, dock_index+1);
+
+		// not found?
+		if (dock_index == -1)
+		{
+			if (loop_count == 0)
+			{
+				// first time around... there are no slots fitting this description
+				return -1;
+			}
+			else
+			{
+				// every slot is full
+				break;
+			}
+		}
+
+		// we've found something... check if it's occupied
+		if (dock_find_object_at_dockpoint(objp, dock_index) == NULL)
+		{
+			// not occupied... yay, we've found an index
+			return dock_index;
+		}
+
+		// keep track
+		loop_count++;
+	}
+
+	// insanity?
+	if (loop_count >= 100)
+		Warning(LOCATION, "Too many iterations while looking for a dockpoint on %s.  Either there was a bug or this is an übership.\n", shipp->ship_name);
+
+	// if we're here, just return the first dockpoint
+	return model_find_dock_index(shipp->modelnum, dock_type);
+}
+
 // function to fix up dock point references for objects.
 // passed are the pointer to goal we are working with.  aip if the ai_info pointer
 // of the ship with the order.  aigp is a pointer to the goal (of aip) of which we are
 // fixing up the docking points
 void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 {
-	int shipnum, dockee_index, docker_index;
+	int shipnum, docker_index, dockee_index;
 
 	Assert ( aip->shipnum != -1 );
 	shipnum = ship_name_lookup( aigp->ship_name );
@@ -1052,24 +1103,23 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 	dockee_index = -1;
 
 	// look for docking points of the appriopriate type.  Use cargo docks for cargo ships.
-	// use 
-	if ( Ship_info[Ships[shipnum].ship_info_index].flags & SIF_CARGO ) {
-		docker_index = model_find_dock_index(Ships[aip->shipnum].modelnum, DOCK_TYPE_CARGO );
-		dockee_index = model_find_dock_index(Ships[shipnum].modelnum, DOCK_TYPE_CARGO );
-	} else if ( Ship_info[Ships[aip->shipnum].ship_info_index].flags & SIF_SUPPORT ) {
-		docker_index = model_find_dock_index( Ships[aip->shipnum].modelnum, DOCK_TYPE_REARM );
-		dockee_index = model_find_dock_index( Ships[shipnum].modelnum, DOCK_TYPE_REARM );
+	if (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_CARGO) {
+		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_CARGO);
+		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_CARGO);
+	} else if (Ship_info[Ships[aip->shipnum].ship_info_index].flags & SIF_SUPPORT) {
+		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_REARM);
+		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_REARM);
 	}
 
 	// if we didn't find dockpoints above, then we should just look for generic docking points
 	if ( docker_index == -1 )
-		docker_index = model_find_dock_index(Ships[aip->shipnum].modelnum, DOCK_TYPE_GENERIC );
+		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_GENERIC);
 	if ( dockee_index == -1 )
-		dockee_index = model_find_dock_index(Ships[shipnum].modelnum, DOCK_TYPE_GENERIC );
+		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_GENERIC);
 		
 	aigp->docker.index = docker_index;
 	aigp->dockee.index = dockee_index;
-	aigp->flags &= ~(AIGF_DOCKER_NAME_VALID | AIGF_DOCKEE_NAME_VALID);
+	aigp->flags |= AIGF_DOCK_INDEXES_VALID;
 }
 
 // these functions deal with adding goals sent from the player.  They are slightly different
@@ -1231,11 +1281,10 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
 	case OP_AI_DESTROY_SUBSYS:
 		aigp->ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
 		aigp->ship_name = ai_get_goal_ship_name( CTEXT(CDR(node)), &aigp->ship_name_index );
-		// store the name of the subsystem in the docker_name field for now -- this field must
-		// get fixed up when the goal is valid since we need to locate the subsystem on the ship's
-		// model.
+		// store the name of the subsystem in the docker.name field for now -- this field must get
+		// fixed up when the goal is valid since we need to locate the subsystem on the ship's model
 		aigp->docker.name = ai_get_goal_ship_name(CTEXT(CDR(CDR(node))), &dummy);
-		aigp->flags |= AIGF_SUBSYS_NAME_VALID;
+		aigp->flags &= ~AIGF_SUBSYS_INDEX_VALID;
 		aigp->priority = atoi( CTEXT(CDR(CDR(CDR(node)))) );
 		break;
 
@@ -1268,8 +1317,14 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
 		break;
 
 	case OP_AI_UNDOCK:
-		aigp->ship_name = NULL;
 		aigp->priority = atoi( CTEXT(CDR(node)) );
+
+		// Goober5000 - optional undock with something
+		if (CDR(CDR(node)) != -1)
+			aigp->ship_name = ai_get_goal_ship_name( CTEXT(CDR(CDR(node))), &aigp->ship_name_index );
+		else
+			aigp->ship_name = NULL;
+
 		aigp->ai_mode = AI_GOAL_UNDOCK;
 		aigp->ai_submode = AIS_UNDOCK_0;
 		break;
@@ -1284,7 +1339,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
 		aigp->ship_name = ai_get_goal_ship_name( CTEXT(CDR(node)), &aigp->ship_name_index );
 		aigp->docker.name = ai_add_dock_name(CTEXT(CDR(CDR(node))));
 		aigp->dockee.name = ai_add_dock_name(CTEXT(CDR(CDR(CDR(node)))));
-		aigp->flags |= ( AIGF_DOCKER_NAME_VALID | AIGF_DOCKEE_NAME_VALID );
+		aigp->flags &= ~AIGF_DOCK_INDEXES_VALID;
 		aigp->priority = atoi( CTEXT(CDR(CDR(CDR(CDR(node))))) );
 
 		aigp->ai_mode = AI_GOAL_DOCK;
@@ -1472,7 +1527,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int doc
 		break;
 
 	case AI_GOAL_UNDOCK:
-		aigp->ship_name = NULL;
+		aigp->ship_name = name;
 		aigp->priority = 100;
 		aigp->ai_mode = AI_GOAL_UNDOCK;
 		aigp->ai_submode = AIS_UNDOCK_0;
@@ -1568,7 +1623,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
 			return AI_GOAL_ACHIEVABLE;
 
-		// if subspace drive, only valid if there's somewhere to depart to
+		// if no subspace drive, only valid if there's somewhere to depart to
 
 		// locate a capital ship on the same team:
 		if (ship_get_ship_with_dock_bay(shipp->team) >= 0)
@@ -1638,9 +1693,9 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		// destroyed when shipnum is valid
 		shipnum = ship_name_lookup( aigp->ship_name );
 
-		// can't determine the status of this goal if ship not valid or the subsystem
-		// name *is* still valid (meaning we haven't found a valid index yet).
-		if ( (shipnum == -1) || (aigp->flags & AIGF_SUBSYS_NAME_VALID) ) {
+		// can't determine the status of this goal if ship not valid
+		// or we haven't found a valid subsystem index yet
+		if ( (shipnum == -1) || !(aigp->flags & AIGF_SUBSYS_INDEX_VALID) ) {
 			status = 0;
 			break;
 		}
@@ -1728,6 +1783,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// determine the status of the shipname that this object is acting on.  There are a couple of
 	// special cases to deal with.  Both the chase wing and undock commands will return from within
 	// the if statement.
+	// Goober5000 - don't return achievable for undocking anymore!
 	if ( (aigp->ai_mode == AI_GOAL_CHASE_WING) || (aigp->ai_mode == AI_GOAL_GUARD_WING) ) {
 		int num = wing_name_lookup( aigp->ship_name );
 		wing *wingp = &Wings[num];
@@ -1738,8 +1794,9 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			return AI_GOAL_NOT_KNOWN;
 		else
 			return AI_GOAL_ACHIEVABLE;
-	} else if ( aigp->ai_mode == AI_GOAL_UNDOCK ) {
-			return AI_GOAL_ACHIEVABLE;
+// Goober5000 - check more stuff further below
+//	} else if ( aigp->ai_mode == AI_GOAL_UNDOCK ) {
+//			return AI_GOAL_ACHIEVABLE;
 	} else {
 		if ( ship_name_lookup( aigp->ship_name ) != -1 )
 			status = SHIP_STATUS_ARRIVED;
@@ -1765,25 +1822,20 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// this goal will get removed.
 	if ( (aigp->ai_mode == AI_GOAL_DOCK) && (status == SHIP_STATUS_ARRIVED) ) {
 		int index, modelnum, shipnum;
-		char docker_name[NAME_LENGTH], dockee_name[NAME_LENGTH];
 
-		// debug code to save off the name of the dockpoints (if they exist).
-		docker_name[0] = dockee_name[0] = '\0';
-		if ( aigp->flags & AIGF_DOCKER_NAME_VALID ) {
-			strcpy(docker_name, aigp->docker.name);
+		if (!(aigp->flags & AIGF_DOCKER_INDEX_VALID)) {
 			modelnum = Ships[objp->instance].modelnum;
 			index = model_find_dock_name_index(modelnum, aigp->docker.name);
 			aigp->docker.index = index;
-			aigp->flags &= ~AIGF_DOCKER_NAME_VALID;
+			aigp->flags |= AIGF_DOCKER_INDEX_VALID;
 		}
-		if ( aigp->flags & AIGF_DOCKEE_NAME_VALID ) {
+		if (!(aigp->flags & AIGF_DOCKEE_INDEX_VALID)) {
 			shipnum = ship_name_lookup(aigp->ship_name);
 			if ( shipnum != -1 ) {
-				strcpy(dockee_name, aigp->dockee.name);
 				modelnum = Ships[shipnum].modelnum;
 				index = model_find_dock_name_index(modelnum, aigp->dockee.name);
 				aigp->dockee.index = index;
-				aigp->flags &= ~AIGF_DOCKEE_NAME_VALID;
+				aigp->flags |= AIGF_DOCKEE_INDEX_VALID;
 			} else
 				aigp->dockee.index = -1;		// this will force code into if statement below making goal not achievable.
 		}
@@ -1792,37 +1844,46 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			return AI_GOAL_NOT_ACHIEVABLE;
 		}
 
-		// we must also determine if this ship which is supposed to dock with something is currently
-		// docked with something else.  If so, then return the ON_HOLD until it is not docked anymore
-		shipnum = ship_name_lookup(aigp->ship_name);
-		Assert( shipnum != -1 );
-
-		// if ship is disabled, dont' know if it can dock or not
+		// if ship is disabled, don't know if it can dock or not
 		if ( Ships[objp->instance].flags & SF_DISABLED )
 			return AI_GOAL_NOT_KNOWN;
 
-		// if the ship that I am supposed to dock with is docked with something else, then I need to put my
-		// goal on hold
+		// we must also determine if we're prevented from docking for any reason
+		shipnum = ship_name_lookup(aigp->ship_name);
+		Assert( shipnum != -1 );
+		object *goal_objp = &Objects[Ships[shipnum].objnum];
+
+		// if the ship that I am supposed to dock with is docked with something else, then I need to put my goal on hold
 		//	[MK, 4/23/98: With Mark, we believe this fixes the problem of Comet refusing to warp out after docking with Omega.
 		//	This bug occurred only when mission goals were validated in the frame in which Comet docked, which happened about
 		// once in 10-20 tries.]
-		if ( Ai_info[Ships[shipnum].ai_index].ai_flags & AIF_DOCKED )
-			if (aip->dock_objnum != Ships[shipnum].objnum)
+		if ( object_is_docked(goal_objp) )
+		{
+			// if the dockpoint I need to dock to is occupied by someone other than me
+			if (dock_find_object_at_dockpoint(goal_objp, aigp->dockee.index) != objp)
 				return AI_GOAL_NOT_KNOWN;
+		}
 
-		// if this ship is docked and needs to get docked with something else, then undock this
-		// ship
-		if ( aip->ai_flags & AIF_DOCKED ) {
-
-			// if we are trying to dock with a different ship, then force this ship to undock
-			if ( aip->dock_objnum != Ships[shipnum].objnum ) {
+		// if this ship is docked and needs to get docked with something else, then undock this ship
+		if ( object_is_docked(objp) )
+		{
+			// if the dockpoint I need to dock with is occupied by someone other than the guy I need to dock to
+			object *obstacle_objp = dock_find_object_at_dockpoint(objp, aigp->docker.index);
+			if (obstacle_objp == NULL)
+			{
+				// nobody in the way... we're good
+			}
+			else if (obstacle_objp != goal_objp)
+			{
 				// if this goal isn't on hold yet, then issue the undock goal and return NOT_KNOWN
 				// which will then place the goal on hold until the undocking is complete.
 				if ( !(aigp->flags & AIGF_GOAL_ON_HOLD) )
-					ai_add_goal_ship_internal( aip, AI_GOAL_UNDOCK, NULL, -1, -1, 0 );
+					ai_add_goal_ship_internal( aip, AI_GOAL_UNDOCK, Ships[obstacle_objp->instance].ship_name, -1, -1, 0 );
 
 				return AI_GOAL_NOT_KNOWN;
-			} else {
+			}
+			else
+			{
 				// if this ship is already docked with the guy this order tells him to dock with,
 				// then mark the goal as satisfied.
 				// MWA 2/23/98 -- don't return anything.  Since this item is a goal, the ai_dock code
@@ -1831,17 +1892,30 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			}
 		}
 
+	// Goober5000 - necessitated by the multiple ship docking
+	} else if ( (aigp->ai_mode == AI_GOAL_UNDOCK) && (status == SHIP_STATUS_ARRIVED) ) {
+		// Put this goal on hold if we're already undocking.  Otherwise the new goal will pre-empt
+		// the current goal and strange things might happen.  One is that the object movement code
+		// forgets the previous undocking and "re-docks" the previous goal's ship.  Other problems
+		// might happen too, so err on the safe side.  (Yay for emergent paragraph justification!)
+		if ((aip->mode == AIM_DOCK) && (aip->submode >= AIS_UNDOCK_0))
+		{
+			// only put it on hold if it's someone other than the guy we're undocking from right now!!
+			if (aip->goal_objnum != Ships[ship_name_lookup(aigp->ship_name)].objnum)
+				return AI_GOAL_NOT_KNOWN;
+		}
+
 	} else if ( (aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM) && (status == SHIP_STATUS_ARRIVED) ) {
 		// if the ship has arrived, and the goal is destroy subsystem, then check to see that we
 		// have fixed up the subsystem name (of the subsystem to destroy) into an index into
 		// the ship's subsystem list
-		if ( aigp->flags & AIGF_SUBSYS_NAME_VALID ) {
+		if ( !(aigp->flags & AIGF_SUBSYS_INDEX_VALID) ) {
 			int shipnum;			
 
 			shipnum = ship_name_lookup( aigp->ship_name );
 			if ( shipnum != -1 ) {
 				aigp->ai_submode = ship_get_subsys_index( &Ships[shipnum], aigp->docker.name );
-				aigp->flags &= ~AIGF_SUBSYS_NAME_VALID;
+				aigp->flags |= AIGF_SUBSYS_INDEX_VALID;
 			} else {
 				Int3();
 				return AI_GOAL_NOT_ACHIEVABLE;			// force this goal to be invalid
@@ -2048,7 +2122,7 @@ void validate_mission_goals(int objnum, ai_info *aip)
 
 	// if the active goal is a rearm/repair goal, the put all other valid goals (which are not repair goals)
 	// on hold
-	if ( (aip->goals[0].ai_mode == AI_GOAL_REARM_REPAIR) && (aip->ai_flags & AIF_DOCKED) ) {
+	if ( (aip->goals[0].ai_mode == AI_GOAL_REARM_REPAIR) && object_is_docked(&Objects[objnum]) ) {
 		for ( i = 1; i < MAX_AI_GOALS; i++ ) {
 			if ( (aip->goals[i].ai_mode == AI_GOAL_NONE) || (aip->goals[i].ai_mode == AI_GOAL_REARM_REPAIR) )
 				continue;
@@ -2214,9 +2288,8 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 		// be sure that we have indices for docking points here!  If we ever had names, they should
 		// get fixed up in goal_achievable so that the points can be checked there for validity
-		Assert ( !(current_goal->flags & AIGF_DOCKER_NAME_VALID) );
-		Assert ( !(current_goal->flags & AIGF_DOCKEE_NAME_VALID) );
-		ai_dock_with_object( objp, other_obj, current_goal->priority, AIDO_DOCK, current_goal->docker.index, current_goal->dockee.index );
+		Assert (current_goal->flags & AIGF_DOCK_INDEXES_VALID);
+		ai_dock_with_object( objp, current_goal->docker.index, other_obj, current_goal->dockee.index, current_goal->priority, AIDO_DOCK );
 		aip->submode_start_time = Missiontime;
 		break;
 	}
@@ -2225,7 +2298,28 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		// try to find the object which which this object is docked with.  Use that object as the
 		// "other object" for the undocking proceedure.  If "other object" isn't found, then the undock
 		// goal cannot continue.  Spit out a warning and remove the goal.
-		other_obj = ai_find_docked_object( objp );
+
+		// Goober5000 - do we have a specific ship to undock from?
+		if ( current_goal->ship_name != NULL )
+		{
+			shipnum = ship_name_lookup( current_goal->ship_name );
+
+			// hmm, perhaps he was destroyed
+			if (shipnum == -1)
+				other_obj = NULL;
+			else
+				other_obj = &Objects[Ships[shipnum].objnum];
+		}
+		// no specific ship
+		else
+		{
+			// just pick the first guy we're docked to
+			other_obj = dock_get_first_docked_object( objp );
+
+			// and add the ship name so it displays on the HUD
+			current_goal->ship_name = Ships[other_obj->instance].ship_name;
+		}
+
 		if ( other_obj == NULL ) {
 			//Int3();
 			// assume that the guy he was docked with doesn't exist anymore.  (i.e. a cargo containuer
@@ -2234,7 +2328,9 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 			ai_mission_goal_complete( aip );		// mark as complete, so we can remove it and move on!!!
 			break;
 		}
-		ai_dock_with_object( objp, other_obj, current_goal->priority, AIDO_UNDOCK, 0, 0 );
+
+		// passing 0, 0 is okay because the undock code will figure out where to undock from
+		ai_dock_with_object( objp, 0, other_obj, 0, current_goal->priority, AIDO_UNDOCK );
 		aip->submode_start_time = Missiontime;
 		break;
 
@@ -2341,7 +2437,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	case AI_GOAL_REARM_REPAIR:
 		shipnum = ship_name_lookup( current_goal->ship_name );
 		other_obj = &Objects[Ships[shipnum].objnum];
-		ai_rearm_repair( objp, other_obj, current_goal->priority, current_goal->docker.index, current_goal->dockee.index );
+		ai_rearm_repair( objp, current_goal->docker.index, other_obj, current_goal->dockee.index, current_goal->priority );
 		break;
 
 	default:

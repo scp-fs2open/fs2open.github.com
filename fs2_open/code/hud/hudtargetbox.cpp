@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-01-01 19:47:26 $
- * $Author: taylor $
+ * $Revision: 2.41 $
+ * $Date: 2005-01-11 21:38:49 $
+ * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/01/01 19:47:26  taylor
+ * make use of MR_NO_FOGGING to render models without fog
+ *
  * Revision 2.39  2004/08/01 02:30:52  phreak
  * -phreak command line changed to -dualscanlines
  *
@@ -395,6 +398,7 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
+#include "object/objectdock.h"
 
 #ifndef NDEBUG
 #include "hud/hudets.h"
@@ -846,7 +850,7 @@ void hud_get_target_strength(object *objp, float *shields, float *integrity)
 }
 
 // maybe draw the extra targeted ship information above the target monitor
-void hud_targetbox_show_extra_ship_info(ship *target_shipp, ai_info *target_aip)
+void hud_targetbox_show_extra_ship_info(ship *target_shipp, object *target_objp)
 {
 	char outstr[256], tmpbuf[256];
 	int has_orders = 0;
@@ -882,15 +886,27 @@ void hud_targetbox_show_extra_ship_info(ship *target_shipp, ai_info *target_aip)
 	}
 
 	// Print out dock status
-	if ( target_aip->ai_flags & AIF_DOCKED ) {
-		if ( target_aip->dock_objnum >= 0 ) {
-			sprintf(outstr, XSTR( "Docked: %s", 339), Ships[Objects[target_aip->dock_objnum].instance].ship_name);
-			gr_force_fit_string(outstr, 255, 173);
-			hud_targetbox_maybe_flash(TBOX_FLASH_DOCKED);
-			
-			emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_EXTRA_DOCK][0], Targetbox_coords[gr_screen.res][TBOX_EXTRA_DOCK][1], EG_TBOX_EXTRA3, outstr);			
-			extra_data_shown=1;
+	if ( object_is_docked(target_objp) )
+	{
+		// count the objects directly docked to me
+		int dock_count = dock_count_direct_docked_objects(target_objp);
+
+		// docked to only one object
+		if (dock_count == 1)
+		{
+			sprintf(outstr, XSTR("Docked: %s", 339), Ships[dock_get_first_docked_object(target_objp)->instance].ship_name);
 		}
+		// docked to multiple objects
+		else
+		{
+			sprintf(outstr, XSTR("Docked: %d objects", -1), dock_count);
+		}
+
+		gr_force_fit_string(outstr, 255, 173);
+		hud_targetbox_maybe_flash(TBOX_FLASH_DOCKED);
+			
+		emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_EXTRA_DOCK][0], Targetbox_coords[gr_screen.res][TBOX_EXTRA_DOCK][1], EG_TBOX_EXTRA3, outstr);			
+		extra_data_shown=1;
 	}
 
 	if ( extra_data_shown ) {
@@ -1109,7 +1125,6 @@ void hud_render_target_ship_info(object *target_objp)
 {
 	ship			*target_shipp;
 	ship_info	*target_sip;
-	ai_info		*target_aip;
 	int			w,h,screen_integrity=1, base_index;
 	char			outstr[256];
 	float			ship_integrity, shield_strength;
@@ -1118,7 +1133,6 @@ void hud_render_target_ship_info(object *target_objp)
 	Assert(target_objp->type == OBJ_SHIP);
 	target_shipp = &Ships[target_objp->instance];
 	target_sip = &Ship_info[target_shipp->ship_info_index];
-	target_aip = &Ai_info[target_shipp->ai_index];
 
 	strcpy( outstr, target_shipp->ship_name );
 
@@ -1248,7 +1262,7 @@ void hud_render_target_ship_info(object *target_objp)
 		gr_printf(Target_window_coords[gr_screen.res][0]+Target_window_coords[gr_screen.res][2]/2 - w/2 - 1, Target_window_coords[gr_screen.res][1]+Target_window_coords[gr_screen.res][3] - 2*h, "%s", outstr);
 	}
 
-	hud_targetbox_show_extra_ship_info(target_shipp, target_aip);
+	hud_targetbox_show_extra_ship_info(target_shipp, target_objp);
 }
 
 // call to draw the integrity bar that is on the right of the target monitor
@@ -1912,22 +1926,15 @@ void hud_show_target_data(float frametime)
 	// 7/28/99 DKA: Do not use vec_mag_quick -- the error is too big
 	spd = vm_vec_mag(&target_objp->phys_info.vel);
 //	spd = target_objp->phys_info.fspeed;
-	if ( spd < 0.1 ) {
+	if ( spd < 0.1f ) {
 		spd = 0.0f;
 	}
-	// if the speed is 0, determine if we are docked with something -- if so, get the velocity from
-	// our docked object instead
+	// if the speed is 0, determine if we are docked with something -- if so, get the docked velocity
 	if ( (spd == 0.0f) && is_ship ) {
-		ai_info *aip;
-		object *other_objp;
+		spd = dock_calc_docked_fspeed(&Objects[shipp->objnum]);
 
-		aip = &Ai_info[shipp->ai_index];
-		if ( aip->ai_flags & AIF_DOCKED ) {
-			Assert( aip->dock_objnum != -1 );
-			other_objp = &Objects[aip->dock_objnum];
-			spd = other_objp->phys_info.fspeed;
-			if ( spd < 0.1 )
-				spd = 0.0f;
+		if ( spd < 0.1f ) {
+			spd = 0.0f;
 		}
 	}
 

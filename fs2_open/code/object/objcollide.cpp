@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:45 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-01-11 21:38:49 $
+ * $Author: Goober5000 $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:45  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:59  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -254,7 +257,7 @@
 #include "ship/ship.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
-
+#include "object/objectdock.h"
 
 
 #ifdef FS2_DEMO
@@ -1012,17 +1015,9 @@ int collide_predict_large_ship(object *objp, float distance)
 {
 	object	*objp2;
 	vector	cur_pos, goal_pos;
-	object	*dock_objp;
 	ship_info	*sip;
 
 	sip = &Ship_info[Ships[objp->instance].ship_info_index];
-
-	dock_objp = NULL;
-	if (objp->type == OBJ_SHIP) {
-		ai_info	*aip = &Ai_info[Ships[objp->instance].ai_index];
-		if (aip->dock_objnum != -1)
-			dock_objp = &Objects[aip->dock_objnum];
-	}
 
 	cur_pos = objp->pos;
 
@@ -1031,7 +1026,7 @@ int collide_predict_large_ship(object *objp, float distance)
 	for ( objp2 = GET_FIRST(&obj_used_list); objp2 != END_OF_LIST(&obj_used_list); objp2 = GET_NEXT(objp2) ) {
 		if ((objp != objp2) && (objp2->type == OBJ_SHIP)) {
 			if (Ship_info[Ships[objp2->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
-				if (objp2 == dock_objp)
+				if (dock_check_find_docked_object(objp, objp2))
 					continue;
 
 				if (cpls_aux(&goal_pos, objp2, objp))

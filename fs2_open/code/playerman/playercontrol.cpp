@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-12-14 14:46:13 $
+ * $Revision: 2.20 $
+ * $Date: 2005-01-11 21:38:50 $
  * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/12/14 14:46:13  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.18  2004/10/12 22:47:14  Goober5000
  * added toggle-subsystem-scanning ship flag
  * --Goober5000
@@ -520,6 +524,7 @@
 #include "hud/hudmessage.h"
 #include "observer/observer.h"
 #include "weapon/weapon.h"
+#include "object/objectdock.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
@@ -1000,24 +1005,23 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if ( Player->flags & PLAYER_FLAGS_MATCH_TARGET ) {
 			if ( (Player_ai->last_target == Player_ai->target_objnum) && (Player_ai->target_objnum != -1) && ( ci->forward_cruise_percent == oldspeed) ) {
 				float tspeed, pmax_speed;
+				object *targeted_objp = &Objects[Player_ai->target_objnum];
 
-				tspeed = Objects[Player_ai->target_objnum].phys_info.fspeed;
+				tspeed = targeted_objp->phys_info.fspeed;
 
 				// maybe need to get speed from docked partner
 				if ( tspeed < MATCH_SPEED_THRESHOLD ) {
-					ai_info *aip;
+					Assert(targeted_objp->type == OBJ_SHIP);
 
-					Assert(Objects[Player_ai->target_objnum].type == OBJ_SHIP);
-
-					aip = &Ai_info[Ships[Objects[Player_ai->target_objnum].instance].ai_index];
-					if ( aip->ai_flags & AIF_DOCKED ) {
-						Assert( aip->dock_objnum != -1 );
-						tspeed = Objects[aip->dock_objnum].phys_info.fspeed;
+					// Goober5000
+					if (object_is_docked(targeted_objp))
+					{
+						tspeed = dock_calc_docked_fspeed(targeted_objp);
 					}
 				}
 
 				//	Note, if closer than 100 units, scale down speed a bit.  Prevents repeated collisions. -- MK, 12/17/97
-				float dist = vm_vec_dist(&Player_obj->pos, &Objects[Player_ai->target_objnum].pos);
+				float dist = vm_vec_dist(&Player_obj->pos, &targeted_objp->pos);
 
 				if (dist < 100.0f) {
 					tspeed = tspeed * (0.5f + dist/200.0f);
@@ -1333,10 +1337,6 @@ void player_clear_speed_matching()
 //				match_on_text	=>	default parm (NULL), used to overide HUD output when matching toggled on
 void player_match_target_speed(char *no_target_text, char *match_off_text, char *match_on_text)
 {
-	if ( Objects[Player_ai->target_objnum].type != OBJ_SHIP ) {
-		return;
-	}
-
 #ifndef NO_NETWORK
 	// multiplayer observers can't match target speed
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)) ){
@@ -1355,6 +1355,12 @@ void player_match_target_speed(char *no_target_text, char *match_off_text, char 
 		return;
 	}
 
+	object *targeted_objp = &Objects[Player_ai->target_objnum];
+
+	if ( targeted_objp->type != OBJ_SHIP ) {
+		return;
+	}
+
 	if ( Player->flags & PLAYER_FLAGS_MATCH_TARGET ) {
 		Player->flags &= ~PLAYER_FLAGS_MATCH_TARGET;
 		if ( match_off_text ) {
@@ -1367,15 +1373,14 @@ void player_match_target_speed(char *no_target_text, char *match_off_text, char 
 	} else {
 		int can_match=0;
 
-		if ( Objects[Player_ai->target_objnum].phys_info.speed > MATCH_SPEED_THRESHOLD ) {
+		if ( targeted_objp->phys_info.fspeed > MATCH_SPEED_THRESHOLD ) {
 			can_match=1;
 		} else {
 			// account for case of matching speed with docked ship 
-			ai_info *aip;
-			aip = &Ai_info[Ships[Objects[Player_ai->target_objnum].instance].ai_index];
-			if ( aip->ai_flags & AIF_DOCKED ) {
-				Assert( aip->dock_objnum != -1 );
-				if ( Objects[aip->dock_objnum].phys_info.fspeed > MATCH_SPEED_THRESHOLD ) {
+			if (object_is_docked(targeted_objp))
+			{
+				if (dock_calc_docked_fspeed(targeted_objp) > MATCH_SPEED_THRESHOLD)
+				{
 					can_match=1;
 				}
 			}
@@ -2084,9 +2089,11 @@ void player_maybe_fire_turret(object *objp)
 		return;
 	}*/
 
-	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED)) {
-		if (aip->dock_objnum > -1) {
-			if (vm_vec_dist_quick(&objp->pos, &Objects[aip->dock_objnum].pos) < (objp->radius + Objects[aip->dock_objnum].radius) * 1.25f)
+	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED))
+	{
+		if (aip->support_ship_objnum >= 0)
+		{
+			if (vm_vec_dist_quick(&objp->pos, &Objects[aip->support_ship_objnum].pos) < (objp->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
 				return;
 		}
 	}

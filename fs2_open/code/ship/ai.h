@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.16 $
- * $Date: 2004-08-11 05:06:33 $
- * $Author: Kazan $
+ * $Revision: 2.17 $
+ * $Date: 2005-01-11 21:38:48 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/08/11 05:06:33  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.15  2004/07/25 00:31:30  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -228,36 +231,35 @@ struct object;
 
 #define	AI_DEFAULT_CLASS 3  // default AI class for new ships (Fred)
 
-#define	AIF_FORMATION_WING					(1 << 0)		//	Fly in formation as part of wing.
-#define	AIF_AWAITING_REPAIR					(1 << 1)		//	Awaiting a repair ship.
-#define	AIF_BEING_REPAIRED					(1 << 2)		//	Currently docked with repair ship.
-#define	AIF_REPAIRING							(1 << 3)		//	Repairing a ship (or going to repair a ship)
-#define	AIF_DOCKED								(1 << 4)		// this object docked with something else
-#define	AIF_SEEK_LOCK							(1 << 5)		//	set if should focus on gaining aspect lock, not hitting with lasers
-#define	AIF_FORMATION_OBJECT					(1 << 6)		//	Fly in formation off a specific object.
-#define	AIF_TEMPORARY_IGNORE					(1 << 7)		//	Means current ignore_objnum is only temporary, not an order from the player.
-#define	AIF_USE_EXIT_PATH						(1	<< 8)		// Used by path code, to flag path as an exit path
-#define	AIF_USE_STATIC_PATH					(1	<< 9)		// Used by path code, use fixed path, don't try to recreate
-#define	AIF_TARGET_COLLISION					(1 << 10)	//	Collided with aip->target_objnum last frame.  Avoid that ship for half a second or so.
-#define	AIF_UNLOAD_SECONDARIES				(1 << 11)	//	Fire secondaries as fast as possible!
-#define	AIF_ON_SUBSYS_PATH					(1	<<	12)	// Current path leads to a subsystem
-#define	AIF_AVOID_SHOCKWAVE_SHIP			(1 << 13)	//	Avoid an existing shockwave from a ship.
-#define	AIF_AVOID_SHOCKWAVE_WEAPON			(1 << 14)	//	Avoid an expected shockwave from a weapon.  shockwave_object field contains object index.
-#define	AIF_AVOID_SHOCKWAVE_STARTED		(1 << 15)	//	Already started avoiding shockwave, don't keep deciding whether to avoid.
-#define	AIF_ATTACK_SLOWLY						(1 << 16)	//	Move slowly while attacking.
-#define	AIF_REPAIR_OBSTRUCTED				(1 << 17)	//	Ship wants to be repaired, but path is obstructed.
-#define	AIF_KAMIKAZE							(1 << 18)	//	Crash into target
-#define	AIF_NO_DYNAMIC							(1 << 19)	//	Not allowed to get dynamic goals
-#define	AIF_AVOIDING_SMALL_SHIP				(1 << 20)	//	Avoiding a player ship.
-#define	AIF_AVOIDING_BIG_SHIP				(1 << 21)	//	Avoiding a large ship.
-#define	AIF_BIG_SHIP_COLLIDE_RECOVER_1	(1 << 22)	//	Collided into a big ship.  Recovering by flying away.
-#define	AIF_BIG_SHIP_COLLIDE_RECOVER_2	(1 << 23)	//	Collided into a big ship.  Fly towards big ship sphere perimeter.
-#define	AIF_STEALTH_PURSUIT					(1 << 24)	// Ai is trying to fight stealth ship
+#define	AIF_FORMATION_WING					(1 << 0)	//	Fly in formation as part of wing.
+#define	AIF_AWAITING_REPAIR					(1 << 1)	//	Awaiting a repair ship.
+#define	AIF_BEING_REPAIRED					(1 << 2)	//	Currently docked with repair ship.
+#define	AIF_REPAIRING						(1 << 3)	//	Repairing a ship (or going to repair a ship)
+#define	AIF_SEEK_LOCK						(1 << 4)	//	set if should focus on gaining aspect lock, not hitting with lasers
+#define	AIF_FORMATION_OBJECT				(1 << 5)	//	Fly in formation off a specific object.
+#define	AIF_TEMPORARY_IGNORE				(1 << 6)	//	Means current ignore_objnum is only temporary, not an order from the player.
+#define	AIF_USE_EXIT_PATH					(1 << 7)	// Used by path code, to flag path as an exit path
+#define	AIF_USE_STATIC_PATH					(1 << 8)	// Used by path code, use fixed path, don't try to recreate
+#define	AIF_TARGET_COLLISION				(1 << 9)	//	Collided with aip->target_objnum last frame.  Avoid that ship for half a second or so.
+#define	AIF_UNLOAD_SECONDARIES				(1 << 10)	//	Fire secondaries as fast as possible!
+#define	AIF_ON_SUBSYS_PATH					(1 << 11)	// Current path leads to a subsystem
+#define	AIF_AVOID_SHOCKWAVE_SHIP			(1 << 12)	//	Avoid an existing shockwave from a ship.
+#define	AIF_AVOID_SHOCKWAVE_WEAPON			(1 << 13)	//	Avoid an expected shockwave from a weapon.  shockwave_object field contains object index.
+#define	AIF_AVOID_SHOCKWAVE_STARTED			(1 << 14)	//	Already started avoiding shockwave, don't keep deciding whether to avoid.
+#define	AIF_ATTACK_SLOWLY					(1 << 15)	//	Move slowly while attacking.
+#define	AIF_REPAIR_OBSTRUCTED				(1 << 16)	//	Ship wants to be repaired, but path is obstructed.
+#define	AIF_KAMIKAZE						(1 << 17)	//	Crash into target
+#define	AIF_NO_DYNAMIC						(1 << 18)	//	Not allowed to get dynamic goals
+#define	AIF_AVOIDING_SMALL_SHIP				(1 << 19)	//	Avoiding a player ship.
+#define	AIF_AVOIDING_BIG_SHIP				(1 << 20)	//	Avoiding a large ship.
+#define	AIF_BIG_SHIP_COLLIDE_RECOVER_1		(1 << 21)	//	Collided into a big ship.  Recovering by flying away.
+#define	AIF_BIG_SHIP_COLLIDE_RECOVER_2		(1 << 22)	//	Collided into a big ship.  Fly towards big ship sphere perimeter.
+#define	AIF_STEALTH_PURSUIT					(1 << 23)	// Ai is trying to fight stealth ship
 
 // Goober5000
-#define	AIF_UNLOAD_PRIMARIES				(1 << 25)	//	Fire primaries as fast as possible!
+#define	AIF_UNLOAD_PRIMARIES				(1 << 24)	//	Fire primaries as fast as possible!
 
-#define	AIF_AVOID_SHOCKWAVE	(AIF_AVOID_SHOCKWAVE_SHIP | AIF_AVOID_SHOCKWAVE_WEAPON)
+#define	AIF_AVOID_SHOCKWAVE		(AIF_AVOID_SHOCKWAVE_SHIP | AIF_AVOID_SHOCKWAVE_WEAPON)
 #define	AIF_FORMATION			(AIF_FORMATION_WING | AIF_FORMATION_OBJECT)
 
 //	dock_orient_and_approach() modes.
@@ -292,13 +294,15 @@ struct object;
 #define AIG_TYPE_DYNAMIC			5		// created on the fly
 
 // flags for AI_GOALS
-#define AIGF_DOCKER_NAME_VALID	(1<<0)	// when set, name field for docker is valid
-#define AIGF_DOCKEE_NAME_VALID	(1<<1)	// when set, name field for dockee is valid
+#define AIGF_DOCKER_INDEX_VALID		(1<<0)	// when set, index field for docker is valid
+#define AIGF_DOCKEE_INDEX_VALID		(1<<1)	// when set, index field for dockee is valid
 #define AIGF_GOAL_ON_HOLD			(1<<2)	// when set, this goal cannot currently be satisfied, although it could be in the future
-#define AIGF_SUBSYS_NAME_VALID	(1<<3)	// when set, the subsystem name (for a destroy subsystem goal) is valid, and stored in docker.name field!!
+#define AIGF_SUBSYS_INDEX_VALID		(1<<3)	// when set, the subsystem index (for a destroy subsystem goal) is valid, and stored in docker.index field!!
 #define AIGF_GOAL_OVERRIDE			(1<<4)	// paired with AIG_TYPE_DYNAMIC to mean this goal overrides any other goal
 #define AIGF_PURGE					(1<<5)	// purge this goal next time we process
 #define AIGF_GOALS_PURGED			(1<<6)	// this goal has already caused other goals to get purged
+
+#define AIGF_DOCK_INDEXES_VALID		(AIGF_DOCKER_INDEX_VALID|AIGF_DOCKEE_INDEX_VALID)
 
 //	Flags to ai_turn_towards_vector().
 #define	AITTV_FAST					(1<<0)	//	Turn fast, not slowed down based on skill level.
@@ -334,6 +338,8 @@ typedef struct ai_goal {
 	int		num_special_objects;
 
 	// unions for docking stuff.
+	// (AIGF_DOCKER_INDEX_VALID and AIGF_DOCKEE_INDEX_VALID tell us to use indexes; otherwise we use names)
+	// these are the dockpoints used on the docker and dockee ships, not the ships themselves
 	union {
 		char	*name;
 		int	index;
@@ -429,7 +435,7 @@ typedef struct ai_class {
 #define	AIS_DOCK_1		22
 #define	AIS_DOCK_2		23
 #define	AIS_DOCK_3		24
-#define	AIS_DOCK_3A		25
+//#define	AIS_DOCK_3A		25
 #define	AIS_DOCK_4		26			//	Only for rearm/repair.
 #define	AIS_DOCK_4A		27			//	Only for not rearm/repair.  MK, 7/15/97
 #define	AIS_UNDOCK_0	30
@@ -507,6 +513,7 @@ typedef struct ai_info {
 
 	int		enemy_wing;				//	When picking an enemy wing, only allow to be in enemy_wing, unless == -1, in which case don't care.
 	int		attacker_objnum;
+
 	int		goal_objnum;			//	mode specific goal.  In DOCK, ship to dock with.
 	int		goal_signature;
 
@@ -583,11 +590,11 @@ typedef struct ai_info {
 
 //	ship_subsys	*targeted_subobject;			//	subsystem to attack
 //	int		attack_subsystem_parent;		//	objnum of the object containing the attack_subsystem
-	int		dock_index;							// index of docking point to use when docking.
-	int		dockee_index;						//	index of dock point on other ship.
-	int		dock_path_index;					// index of docking path to use when docking.
-	int		dock_objnum;						// objnum of ship we are docked with.
-	int		dock_signature;					//	Signature of repair object.
+
+	// Goober5000
+	int		support_ship_objnum;			// objnum of support ship docking with us, or (if we're a support ship) object we're docking to
+	int		support_ship_signature;			// signature of the same
+
 	int		danger_weapon_objnum;			//	Closest objnum of weapon fired at this ship.
 	int		danger_weapon_signature;		//	Signature of object danger_weapon_objnum.
 
@@ -723,7 +730,7 @@ extern void ai_attack_object(object *attacker, object *attacked, int priority, s
 extern void ai_evade_object(object *evader, object *evaded, int priority);
 extern void ai_ignore_object(object *ignorer, object *ignored, int priority);
 extern void ai_ignore_wing(object *ignorer, int wingnum, int priority);
-extern void ai_dock_with_object(object *docker, object *dockee, int priority, int dock_type, int docker_index, int dockee_index);
+extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int priority, int dock_type);
 extern void ai_stay_still(object *still_objp, vector *view_pos);
 extern void ai_set_default_behavior(object *obj, int classnum);
 extern void ai_do_default_behavior(object *obj);
@@ -739,7 +746,7 @@ extern int ai_set_attack_subsystem(object *objp, int subnum);
 extern int ai_issue_rearm_request(object *requester_objp);		//	Object requests rearm/repair.
 extern int ai_abort_rearm_request(object *requester_objp);		//	Object aborts rearm/repair.
 extern void ai_do_repair_frame(object *objp, ai_info *aip, float frametime);		//	Repair a ship object, player or AI.
-extern float dock_orient_and_approach(object *objp, object *dobjp, int dock_mode);	//	Move to a position relative to a dock bay using thrusters.
+extern float dock_orient_and_approach(object *objp, int docker_index, object *dobjp, int dockee_index, int dock_mode);	//	Move to a position relative to a dock bay using thrusters.
 extern void ai_update_danger_weapon(int objnum, int weapon_objnum);
 
 // called externally from MissionParse.cpp to position ships in wings upon arrival into the
@@ -756,12 +763,11 @@ extern void ai_attack_wing(object *attacker, int wingnum, int priority);
 extern void ai_deathroll_start(object *ship_obj);
 extern void ai_fly_in_formation(int wing_num);		//	Force wing to fly in formation.
 extern void ai_disband_formation(int wing_num);		//	Force wing to disband formation flying.
-extern object *ai_find_docked_object( object *objp );	// returns object that objp is docked to
 extern int set_target_objnum(ai_info *aip, int objnum);
 extern void ai_form_on_wing(object *objp, object *goal_objp);
 extern void ai_do_stay_near(object *objp, object *other_obj, float dist);
 extern ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int parent_objnum);
-extern void ai_rearm_repair( object *objp, object *goal_objp, int priority, int docker_index, int dockee_index );
+extern void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int dockee_index, int priority );
 extern void ai_add_rearm_goal( object *requester_objp, object *support_objp );
 extern void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_path=0);
 
@@ -801,7 +807,7 @@ void ai_turret_select_default_weapon(ship_subsys *turret);
 extern void ai_set_rearm_status( int team, int new_status );
 extern void ai_good_secondary_time( int team, int weapon_index, int num_weapons, char *shipname );
 
-extern void ai_do_objects_docked_stuff( object *docker, object *dockee );
+extern void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee, int dockee_point);
 extern void ai_do_objects_undocked_stuff( object *docker, object *dockee );
 extern void ai_do_objects_repairing_stuff( object *repaired_obj, object *repair_obj, int how );
 
