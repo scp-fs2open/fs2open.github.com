@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-02-05 04:15:36 $
+ * $Revision: 2.11 $
+ * $Date: 2005-02-23 13:17:05 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/02/05 04:15:36  taylor
+ * more post merge happiness
+ *
  * Revision 2.9  2005/02/04 20:06:09  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -1525,7 +1528,7 @@ int WaveFile::Read(BYTE *pbDest, UINT cbSize, int service)
 			}
 
 			//OGG is trying to read the next file!
-			m_data_bytes_left = (m_data_offset + m_nDataSize) - ov_raw_tell( &m_ogg_info );
+			m_data_bytes_left = (m_data_offset + m_nDataSize) - (int)ov_raw_tell( &m_ogg_info );
 			if(m_data_bytes_left <= 0)
 			{
 				m_abort_next_read = TRUE;

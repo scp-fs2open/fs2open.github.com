@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-02-23 04:51:56 $
+ * $Revision: 2.12 $
+ * $Date: 2005-02-23 13:17:05 $
  * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/02/23 04:51:56  taylor
+ * some bm_unload() -> bm_release() changes to save bmpman slots
+ *
  * Revision 2.10  2005/01/31 23:27:53  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -1764,7 +1767,7 @@ void hud_config_do_frame(float frametime)
 
 void hud_config_unload_gauges()
 {
-	int					i, j;
+	int					i;
 	HC_gauge_region	*hg;
 
 	for (i=0; i<NUM_HUD_GAUGES; i++) {
