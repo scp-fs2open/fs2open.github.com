@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-03-03 06:05:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.19 $
+ * $Date: 2005-03-08 03:50:25 $
+ * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/03/03 06:05:29  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.17  2005/01/28 11:06:23  Goober5000
  * changed a bunch of transpose-rotate sequences to use unrotate instead
  * --Goober5000
@@ -75,7 +78,7 @@
  *
  * Revision 2.5  2003/10/13 05:57:48  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Commented out the "warning null vector in vector normalize" crap
  * Added "beam no whack" flag for beams - said beams NEVER whack
  * Some reliability updates in FS2NetD
  *

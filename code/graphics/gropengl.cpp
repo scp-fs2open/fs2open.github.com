@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.105 $
- * $Date: 2005-03-07 13:10:21 $
- * $Author: bobboau $
+ * $Revision: 2.106 $
+ * $Date: 2005-03-08 03:50:20 $
+ * $Author: Goober5000 $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2005/03/07 13:10:21  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.104  2005/03/05 19:11:07  taylor
  * make sure we don't scale the restore_screen bitmap, it's already the correct size
  *
@@ -301,7 +305,7 @@
  *
  * Revision 2.33  2003/10/13 05:57:48  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Commented out the "warning null vector in vector normalize" crap
  * Added "beam no whack" flag for beams - said beams NEVER whack
  * Some reliability updates in FS2NetD
  *
@@ -2985,7 +2989,6 @@ int gr_opengl_save_screen()
  	}
 	
 #ifdef _WIN32
-	// why oh why does Windows suck??
 	glReadBuffer(GL_FRONT);
 #else
 	glReadBuffer(GL_BACK);

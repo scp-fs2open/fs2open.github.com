@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-03-03 16:40:28 $
- * $Author: taylor $
+ * $Revision: 2.48 $
+ * $Date: 2005-03-08 03:50:17 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/03/03 16:40:28  taylor
+ * animated beam muzzle glows
+ *
  * Revision 2.46  2005/03/02 21:24:48  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -104,7 +107,7 @@
  *
  * Revision 2.26  2003/10/13 05:57:50  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Commented out the "warning null vector in vector normalize" crap
  * Added "beam no whack" flag for beams - said beams NEVER whack
  * Some reliability updates in FS2NetD
  *

@@ -98,6 +98,6 @@ void os_suspend();
 void os_resume();
 
 
-extern bool stay_minimised_damnit;
+extern bool stay_minimized;
 
 #endif // _OSAPI_H

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-03-03 07:13:16 $
- * $Author: wmcoolmon $
+ * $Revision: 2.25 $
+ * $Date: 2005-03-08 03:50:21 $
+ * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/03/03 07:13:16  wmcoolmon
+ * Made HUD shield icon auto-generation off unless "generate icon" ship flag is specified for the ship.
+ *
  * Revision 2.23  2005/03/03 06:05:28  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -456,7 +459,7 @@ int hud_shield_maybe_flash(int gauge, int target_index, int shield_offset)
 // Show the players shield strength and integrity
 //
 extern int Cmdline_nohtl;
-bool damnit_you_told_me_already = false;
+bool shield_ani_warning_displayed_already = false;
 void hud_shield_show(object *objp)
 {
 #ifndef NEW_HUD
@@ -497,8 +500,8 @@ void hud_shield_show(object *objp)
 		if ( sgp->first_frame == -1 && sip->shield_icon_index >= 0 && sip->shield_icon_index < Hud_shield_filename_count) {
 			sgp->first_frame = bm_load_animation(Hud_shield_filenames[sip->shield_icon_index], &sgp->num_frames);
 			if ( sgp->first_frame == -1 ) {
-				if(!damnit_you_told_me_already){
-					damnit_you_told_me_already = true;
+				if(!shield_ani_warning_displayed_already){
+					shield_ani_warning_displayed_already = true;
 					Warning(LOCATION, "Could not load in the HUD shield ani: %s\n", Hud_shield_filenames[sip->shield_icon_index]);
 				}
 				return;

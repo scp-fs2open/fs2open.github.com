@@ -11,11 +11,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.26 $
- * $Date: 2005-03-02 21:18:18 $
- * $Author: taylor $
+ * $Revision: 1.27 $
+ * $Date: 2005-03-08 03:50:25 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2005/03/02 21:18:18  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 1.25  2005/02/23 13:17:04  taylor
  * few more compiler warning fixes (didn't mean to commit iostream.h change)
  * lower warning level to 3 to stop MSVC6 from complaining about C++ headers
@@ -104,7 +109,7 @@
  *
  * Revision 1.3  2003/10/13 05:57:47  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Commented out the "warning null vector in vector normalize" crap
  * Added "beam no whack" flag for beams - said beams NEVER whack
  * Some reliability updates in FS2NetD
  *

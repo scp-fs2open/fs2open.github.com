@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-03-02 21:18:20 $
- * $Author: taylor $
+ * $Revision: 2.36 $
+ * $Date: 2005-03-08 03:50:23 $
+ * $Author: Goober5000 $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/03/02 21:18:20  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.34  2005/02/23 04:55:09  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -102,7 +107,7 @@
  *
  * Revision 2.10  2003/10/13 05:57:49  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Commented out the "warning null vector in vector normalize" crap
  * Added "beam no whack" flag for beams - said beams NEVER whack
  * Some reliability updates in FS2NetD
  *

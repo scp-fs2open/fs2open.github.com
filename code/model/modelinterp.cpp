@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.105 $
- * $Date: 2005-03-07 13:10:22 $
- * $Author: bobboau $
+ * $Revision: 2.106 $
+ * $Date: 2005-03-08 03:50:23 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2005/03/07 13:10:22  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.104  2005/03/01 06:55:41  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -326,7 +330,7 @@
  *
  * Revision 2.35  2003/10/13 05:57:48  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Commented out the "warning null vector in vector normalize" crap
  * Added "beam no whack" flag for beams - said beams NEVER whack
  * Some reliability updates in FS2NetD
  *
@@ -6100,7 +6104,7 @@ void triggered_rotation::add_queue(queued_animation* the_queue, int direction){
 	if(new_queue->start == 0){
 		new_queue->start += timestamp();
 		new_queue->end += new_queue->start;
-		start(new_queue);	//if there is no delay don't bother with the queue, just start the damned thing
+		start(new_queue);	//if there is no delay don't bother with the queue, just start the thing
 		return;
 	}
 
@@ -6113,7 +6117,7 @@ void triggered_rotation::add_queue(queued_animation* the_queue, int direction){
 			//this animation needs to be started now!
 			new_queue->start =  start_time + new_queue->real_end_time - timestamp();
 			new_queue->end += new_queue->start;
-			start(new_queue);	//if there is no delay don't bother with the queue, just start the damned thing
+			start(new_queue);	//if there is no delay don't bother with the queue, just start the thing
 			return;
 		}
 	}

@@ -60,7 +60,7 @@ true) as being totaly occupied
 
 Debugging Functions
 there are sevral debugging functions, they check the consistency of the lists, they only work 
-in debug and they are _REALY FUCKING >>_SLOW_<<_ wich is why they are all disabled, I don't 
+in debug and they are _REALY >>_SLOW_<<_ wich is why they are all disabled, I don't 
 even know if they still all/any work. enable at your own risk.
 
 

@@ -144,7 +144,7 @@ void gr_d3d_activate(int active)
 			if(!Cmdline_window){
 				GlobalD3DVars::d3dpp.Windowed = true;
 				d3d_lost_device(true);
-				//you will fucking minimize! /*twitch*/
+				//you will minimize! /*twitch*/
 				GlobalD3DVars::d3dpp.Windowed = false;
 			}
 			ClipCursor(NULL);
