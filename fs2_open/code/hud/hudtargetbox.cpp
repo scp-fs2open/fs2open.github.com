@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.33 $
- * $Date: 2004-03-05 09:02:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.34 $
+ * $Date: 2004-03-17 04:07:30 $
+ * $Author: bobboau $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2004/03/05 09:02:04  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.32  2004/02/15 06:02:32  bobboau
  * fixed sevral asorted matrix errors,
  * OGL people make sure I didn't break anything,
@@ -777,6 +781,9 @@ void hud_render_target_close()
 	}
 	g3_end_frame();
 	hud_save_restore_camera_data(0);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
 }
 
 // -------------------------------------------------------------------------------------

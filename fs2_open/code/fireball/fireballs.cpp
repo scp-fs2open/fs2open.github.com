@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-03-05 09:02:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2004-03-17 04:07:29 $
+ * $Author: bobboau $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/03/05 09:02:00  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.9  2004/02/14 00:18:30  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -641,7 +645,7 @@ void fireball_render(object * obj)
 //				obj->alt_rad = rad;
 
 
-				warpin_render(&obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_FORCE_OLD) );
+				warpin_render(obj, &obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_FORCE_OLD) );
 			}
 			break;
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-03-05 09:02:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2004-03-17 04:07:30 $
+ * $Author: bobboau $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/03/05 09:02:07  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.19  2004/02/28 14:14:57  randomtiger
  * Removed a few uneeded if DIRECT3D's.
  * Set laser function to only render the effect one sided.
@@ -740,7 +744,7 @@ int neb2_skip_render(object *objp, float z_depth)
 		}
 
 		// small ships over the fog limit by a small factor
-		if((sip->flags & SIF_SMALL_SHIP) && (z_depth >= (fog_far * 1.3f))){
+		if((sip->flags & SIF_SMALL_SHIP) && (z_depth >= (fog_far * 1.5f))){
 			return 1;
 		}
 
@@ -1275,11 +1279,11 @@ void neb2_render_player()
 				frame_area -= this_area;
 				frame_rendered++;			
 #else */
-//				if(!Cmdline_nohtl)gr_set_lighting(false,false);
-//				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-		 	  //	if(Cmdline_nohtl)
+				if(!Cmdline_nohtl)gr_set_lighting(false,false);
+				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+		 	  	if(Cmdline_nohtl)
 	 				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
-		 	  //	else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		 	  	else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 //#endif
 			}
 		}
@@ -1348,7 +1352,7 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 				nNfog_index = SHIP_TYPE_FIGHTER_BOMBER;
 			}
 		}
-/*	}else if(objp->type == OBJ_FIREBALL){//mostly here for the warp effect
+	}else if(objp->type == OBJ_FIREBALL){//mostly here for the warp effect
 		*fnear = objp->radius*2;
 		*ffar = (objp->radius*objp->radius*200)+objp->radius*200;
 		return;

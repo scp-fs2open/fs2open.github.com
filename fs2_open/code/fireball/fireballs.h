@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:02:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-17 04:07:29 $
+ * $Author: bobboau $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:02:00  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2003/03/19 06:23:27  Goober5000
  * added warp-effect sexp
  * --Goober5000
@@ -254,7 +258,7 @@ float fireball_lifeleft( object *obj );
 float fireball_lifeleft_percent( object *obj );
 
 // internal function to draw warp grid.
-extern void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int force_old = 0 );
+extern void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int force_old = 0 );
 extern int Warp_glow_bitmap;			// Internal
 
 extern int wm;

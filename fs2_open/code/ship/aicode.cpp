@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.56 $
- * $Date: 2004-03-06 23:28:24 $
+ * $Revision: 2.57 $
+ * $Date: 2004-03-17 04:07:31 $
  * $Author: bobboau $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2004/03/06 23:28:24  bobboau
+ * fixed motion debris
+ * animated laser textures
+ * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
+ *
  * Revision 2.55  2004/03/05 09:01:51  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -11270,6 +11275,7 @@ void turret_fire_weapon(ship_subsys *turret, int parent_objnum, vector *turret_p
 			fire_info.target = &Objects[turret->turret_enemy_objnum];
 			fire_info.target_subsys = NULL;
 			fire_info.turret = turret;
+			fire_info.fighter_beam = false;
 
 			// fire a beam weapon
 			beam_fire(&fire_info);

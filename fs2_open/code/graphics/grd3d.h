@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.10 $
- * $Date: 2004-02-20 21:45:41 $
- * $Author: randomtiger $
+ * $Revision: 2.11 $
+ * $Date: 2004-03-17 04:07:29 $
+ * $Author: bobboau $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/02/20 21:45:41  randomtiger
+ * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
+ * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
+ * Fixed setup of center_alpha in OGL which was causing crash.
+ *
  * Revision 2.9  2004/02/15 06:02:31  bobboau
  * fixed sevral asorted matrix errors,
  * OGL people make sure I didn't break anything,
@@ -190,4 +195,5 @@ extern ID3DXMatrixStack *proj_matrix_stack;
 
 void gr_d3d_set_texture_addressing(int);
 
+void gr_d3d_setup_background_fog(bool);
 #endif

@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-03-05 09:02:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2004-03-17 04:07:29 $
+ * $Author: bobboau $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/03/05 09:02:00  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.11  2003/11/16 04:09:19  Goober5000
  * language
  *
@@ -208,7 +212,7 @@ void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 #define wR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
 #define wP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 
-void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int force_old)
+void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int force_old)
 {
 	int i;
 
@@ -327,7 +331,7 @@ void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float ra
 		draw_face( &verts[0], &verts[3], &verts[4] );
 	}
 	if ( Warp_glow_bitmap != -1 )	{
-		gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (The_mission.flags & MISSION_FLAG_FULLNEB)?(1.0f - neb2_get_fog_intensity(pos)):1.0f );
+		gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (The_mission.flags & MISSION_FLAG_FULLNEB)?(1.0f - neb2_get_fog_intensity(obj)):1.0f );
 
 		float r = radius;
 

@@ -909,6 +909,7 @@ void d3d_setup_function_pointers()
 
 		gr_screen.gf_start_clip_plane = gr_d3d_start_clip;
 		gr_screen.gf_end_clip_plane   = gr_d3d_end_clip;
+		gr_screen.gf_setup_background_fog	= gr_d3d_setup_background_fog;
 	}
 
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.28 $
+ * $Date: 2004-03-17 04:07:32 $
+ * $Author: bobboau $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.26  2004/02/04 09:02:43  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -2449,11 +2453,11 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 						break;
 					case OBJ_BEAM://give kills for fighter beams-Bobboau
 					  {
-//						object beam_obj = Objects[beam_get_parent(other_obj)];
-						if((other_obj->parent < 0) || (other_obj->parent >= MAX_OBJECTS)){
+						int bobjn = beam_get_parent(other_obj);
+						if(bobjn == -1){
 							scoring_add_damage(ship_obj, NULL, damage);
 						} else {
-							scoring_add_damage(ship_obj, &Objects[other_obj->parent], damage);
+							scoring_add_damage(ship_obj, &Objects[bobjn], damage);
 						}
 						break;
 					  }
@@ -2482,7 +2486,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 								if (other_obj->type == OBJ_BEAM)
 								{
 									int beam_weapon_info_index = beam_get_weapon_info_index(other_obj);
-									if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_BEAM|WIF_HUGE)) ) {
+									if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_HUGE)) ) {
 										// Flag as vaporized
 										shipp->flags |= SF_VAPORIZE;
 									}

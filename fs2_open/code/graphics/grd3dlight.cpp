@@ -284,8 +284,8 @@ void gr_d3d_center_alpha(int type){
 }
 void gr_d3d_center_alpha_int(int type){
 	if(!type){
-		GlobalD3DVars::lpD3DDevice->LightEnable(0,false);
-		GlobalD3DVars::lpD3DDevice->LightEnable(1,false);
+	//	GlobalD3DVars::lpD3DDevice->LightEnable(0,false);
+	//	GlobalD3DVars::lpD3DDevice->LightEnable(1,false);
 		return;
 	}
 //	pre_render_lights_init();

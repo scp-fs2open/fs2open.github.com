@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.h $
- * $Revision: 2.2 $
- * $Date: 2003-11-02 05:50:08 $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-17 04:07:32 $
  * $Author: bobboau $
  *
  * External defs for missile trail stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/11/02 05:50:08  bobboau
+ * modified trails to render with tristrips now rather than with stinky old trifans,
+ * MUCH faster now, at least one order of magnatude.
+ *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move
  *
@@ -52,7 +56,7 @@
 
 #include "globalincs/pstypes.h"
 
-#define NUM_TRAIL_SECTIONS 64
+#define NUM_TRAIL_SECTIONS 128
 
 // contrail info - similar to that for missile trails
 // place this inside of info structures instead of explicit structs (eg. ship_info instead of ship, or weapon_info instead of weapon)

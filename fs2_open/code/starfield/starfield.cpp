@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-03-08 21:55:20 $
- * $Author: phreak $
+ * $Revision: 2.28 $
+ * $Date: 2004-03-17 04:07:32 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/03/08 21:55:20  phreak
+ * split the star and space debris rendering loops into their own separate functions
+ * this makes it easier to edit them if we ever need to and it also increases readability
+ * i also brought some variable declarations outside of the rendering loops
+ *
  * Revision 2.26  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1259,7 +1264,8 @@ void subspace_render()
 
 	} else {
 
-		int render_flags = MR_NO_LIGHTING | MR_ALWAYS_REDRAW;
+		int render_flags = MR_NO_LIGHTING | MR_ALWAYS_REDRAW | MR_ALL_XPARENT;
+		model_set_alpha(1.0f);	
 
 		Interp_subspace = 1;	
 		Interp_subspace_offset_u = 1.0f - subspace_offset_u;
@@ -1664,6 +1670,8 @@ void stars_draw_background()
 
 	// draw the model at the player's eye wif no z-buffering
 	model_set_alpha(1.0f);	
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
 

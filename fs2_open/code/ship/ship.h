@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.59 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.60 $
+ * $Date: 2004-03-17 04:07:32 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.58  2004/02/20 04:29:56  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -747,7 +751,7 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
-#define MAX_SHIP_CONTRAILS		6
+#define MAX_SHIP_CONTRAILS		12
 
 typedef struct ship_spark {
 	vector pos;			// position of spark in the submodel's RF
@@ -954,11 +958,8 @@ typedef struct ship {
 	// Special warpout objnum (warpout at knossos)
 	int special_warp_objnum;
 
-		int fighter_beam_loop_sound[MAX_PRIMARY_BANKS];			//loop sound used by fighter beams -Bobboau
-	int warmup_stamp[MAX_PRIMARY_BANKS];
-	int warmdown_stamp[MAX_PRIMARY_BANKS];
-	float life_left[MAX_PRIMARY_BANKS];	
-	float life_total[MAX_PRIMARY_BANKS];
+	ship_subsys fighter_beam_turret_data;		//a fake subsystem that pretends to be a turret for fighter beams
+	model_subsystem beam_sys_info;
 	int was_firing_last_frame[MAX_PRIMARY_BANKS];
 
 	// Goober5000 - range of primitive sensors
@@ -1230,6 +1231,7 @@ typedef struct ship_info {
 	ubyte shield_color[3];
 
 	//optional ABtrail values
+	char		ABtrail_bitmap_name[MAX_FILENAME_LEN];
 	int			ABbitmap;		//the bitmap used
 	float		ABwidth_factor;	//a number that the width (set by the thruster glow width) will be multiplyed by
 	float		ABAlpha_factor;	//allows you to set how starting trasparency value
