@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.7 $
+ * $Revision: 2.8 $
  * $Author: Goober5000 $
- * $Date: 2002-12-12 08:01:57 $
+ * $Date: 2002-12-17 02:21:42 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/12 08:01:57  Goober5000
+ * added distance-ship-subsystem sexp
+ * ~Goober5000~
+ *
  * Revision 2.6  2002/12/02 23:56:12  Goober5000
  * fixed misspelling
  *
@@ -474,10 +478,9 @@
 #define	OP_SECONDARY_AMMO_PCT				(0x0015 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_IS_SECONDARY_SELECTED			(0x0016 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_IS_PRIMARY_SELECTED				(0x0017 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define	OP_SPECIAL_WARP_DISTANCE			(0X0018 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define	OP_IS_SHIP_VISIBLE					(0X0019 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define	OP_TEAM_SCORE							(0X0020 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-
+#define	OP_SPECIAL_WARP_DISTANCE			(0x0018 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+#define	OP_IS_SHIP_VISIBLE					(0x0019 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+#define	OP_TEAM_SCORE						(0x001a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -550,6 +553,8 @@
 #define OP_SHIELDS_OFF					(0x0059 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_CHANGE_AI_LEVEL					(0x0060 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_END_MISSION					(0x0061 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //-Sesquipedalian. replaces end-mission-delay, which did nothing
+#define OP_SET_SCANNED					(0x0062 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_UNSCANNED				(0x0063	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // debugging sexpressions
@@ -694,7 +699,7 @@ char *CTEXT(int n);
 #define SEXP_ATOM_NUMBER		2
 #define SEXP_ATOM_STRING		3
 
-// defines to short circuit evaluation when possible. Also used then goals can't
+// defines to short circuit evaluation when possible. Also used when goals can't
 // be satisfied yet because ship (or wing) hasn't been created yet.
 
 #define SEXP_TRUE				1
