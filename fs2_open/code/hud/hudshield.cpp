@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-20 23:51:59 $
+ * $Author: DTP $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -199,7 +202,7 @@
 #define SHIELD_FLASH_INTERVAL_FAST	200	// time between shield quadrant flashes
 
 // now read in from hud.tbl
-#define MAX_SHIELD_ICONS		40
+#define MAX_SHIELD_ICONS		80	//DTP bumped from 40 to 80
 int Hud_shield_filename_count = 0;
 char Hud_shield_filenames[MAX_SHIELD_ICONS][MAX_FILENAME_LEN];
 
