@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-12-25 00:23:46 $
+ * $Revision: 2.6 $
+ * $Date: 2005-01-08 09:59:10 $
  * $Author: wmcoolmon $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/12/25 00:23:46  wmcoolmon
+ * Ogg support for WIN32
+ *
  * Revision 2.4  2004/07/26 20:47:52  Kazan
  * remove MCD complete
  *
@@ -203,8 +206,6 @@
 #include "sound/ds.h"
 #include "sound/ogg/ogg.h"
 
-
-
 // Constants
 #ifndef SUCCESS
 #define SUCCESS TRUE        // Error returns for all member functions
@@ -280,7 +281,6 @@ public:
 	WAVEFORMATEX * m_pwfmt_original;	// foramt of wave file from actual wave source
 	UINT m_total_uncompressed_bytes_read;
 	UINT m_max_uncompressed_bytes_to_read;
-	UINT	m_bits_per_sample_uncompressed;
 
 protected:
 	//These two aren't needed for OGG
@@ -364,7 +364,6 @@ public:
 	int	Is_looping() { return m_bLooping; }
 	int	status;
 	int	type;
-	UINT m_bits_per_sample_uncompressed;
 
 protected:
 	void Cue (void);
@@ -510,7 +509,6 @@ BOOL AudioStream::Create (LPSTR pszFilename, AudioStreamServices * pass)
 			// Call constructor
 			m_pwavefile->Init();
 			// Open given file
-			m_pwavefile->m_bits_per_sample_uncompressed = m_bits_per_sample_uncompressed;
 			if (m_pwavefile->Open (pszFilename)) {
 				// Calculate sound buffer size in bytes
 				// Buffer size is average data rate times length of buffer
@@ -528,7 +526,7 @@ BOOL AudioStream::Create (LPSTR pszFilename, AudioStreamServices * pass)
 				m_dsbd.dwSize = sizeof (DSBUFFERDESC);
 				m_dsbd.dwBufferBytes = m_cbBufSize;
 				m_dsbd.lpwfxFormat = &m_pwavefile->m_wfmt;
-				m_dsbd.dwFlags = DSBCAPS_STATIC | DSBCAPS_CTRLPAN | DSBCAPS_CTRLVOLUME | DSBCAPS_LOCSOFTWARE;
+				m_dsbd.dwFlags = DSBCAPS_STATIC | DSBCAPS_CTRLPAN | DSBCAPS_CTRLVOLUME;
 
 				hr = (m_pass->GetPDS ())->CreateSoundBuffer (&m_dsbd, &m_pdsb, NULL);
 				if (hr == DS_OK) {
@@ -1235,10 +1233,16 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 		m_wfmt.nChannels = m_ogg_info.vi->channels;
 		m_wfmt.nSamplesPerSec = m_ogg_info.vi->rate;
 		m_wfmt.cbSize = 0;
-		m_wfmt.wBitsPerSample = 16;					//OGGs always decoded at 16 bits here
+		if(UserSampleBits == 16 || UserSampleBits == 8)
+			m_wfmt.wBitsPerSample = UserSampleBits;				//Decode at whatever the user specifies; only 16 and 8 are supported.
+		else if(UserSampleBits > 16)
+			m_wfmt.wBitsPerSample = 16;
+		else
+			m_wfmt.wBitsPerSample = 8;
+		
 		m_wfmt.nBlockAlign = (unsigned short)(( m_wfmt.nChannels * m_wfmt.wBitsPerSample ) / 8);
 		m_wfmt.nAvgBytesPerSec = m_wfmt.nSamplesPerSec * m_wfmt.nBlockAlign;
-		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
+
 		m_nBlockAlign = m_wfmt.nBlockAlign;
 		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
 		goto OPEN_DONE;
@@ -1312,7 +1316,12 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 
 			case WAVE_FORMAT_ADPCM:
 				m_wave_format = WAVE_FORMAT_ADPCM;
-				m_wfmt.wBitsPerSample = 16;
+				if(UserSampleBits == 16 || UserSampleBits == 8)
+					m_wfmt.wBitsPerSample = UserSampleBits;				//Decode at whatever the user specified, if it's 16 or 8
+				else if(UserSampleBits > 16)
+					m_wfmt.wBitsPerSample = 16;
+				else
+					m_wfmt.wBitsPerSample = 8;
 				break;
 
 			default:
@@ -1423,7 +1432,7 @@ int WaveFile::Read(BYTE *pbDest, UINT cbSize, int service)
 
 		case WAVE_FORMAT_ADPCM:
 			if ( !m_hStream_open ) {
-				if ( !ACM_stream_open(m_pwfmt_original, &m_wfxDest, (void**)&m_hStream), m_bits_per_sample_uncompressed  ) {
+				if ( !ACM_stream_open(m_pwfmt_original, &m_wfxDest, (void**)&m_hStream), m_wfmt.wBitsPerSample  ) {
 					m_hStream_open = 1;
 				} else {
 					Int3();
@@ -1601,7 +1610,8 @@ BYTE WaveFile::GetSilenceData (void)
 			bSilenceData = 0x00;
 		}
 		else {
-			Int3();
+			bSilenceData = 0x00;
+			//Int3();
 		}
 	}
 	else {
@@ -1754,19 +1764,6 @@ int audiostream_open( char * filename, int type )
 		return -1;
 	}
 
-	switch(type) {
-	case ASF_VOICE:
-	case ASF_SOUNDFX:
-		Audio_streams[i].m_bits_per_sample_uncompressed = 8;
-		break;
-	case ASF_EVENTMUSIC:
-		Audio_streams[i].m_bits_per_sample_uncompressed = 16;
-		break;
-	default:
-		Int3();
-		return -1;
-	}
-	
 	rc = Audio_streams[i].Create(filename, m_pass);
 	if ( rc == 0 ) {
 		Audio_streams[i].status = ASF_FREE;

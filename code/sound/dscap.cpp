@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/dscap.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:52 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-01-08 09:59:10 $
+ * $Author: wmcoolmon $
  *
  * C module for DirectSoundCapture code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:52  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:33:06  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -210,8 +213,8 @@ int dscap_fill_buffer_with_silence()
 		silence_byte = 0x00;
 		break;
 	default:
-		Int3();
-		return -1;
+		silence_byte = 0x00;
+		break;
 	}
 
 	if ( (data1) && (size1 > 0) ) {

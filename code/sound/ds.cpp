@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-12-25 17:45:38 $
+ * $Revision: 2.13 $
+ * $Date: 2005-01-08 09:59:10 $
  * $Author: wmcoolmon $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/12/25 17:45:38  wmcoolmon
+ * Quick update to tempfix possible bug.
+ *
  * Revision 2.11  2004/12/25 00:23:46  wmcoolmon
  * Ogg support for WIN32
  *
@@ -365,6 +368,8 @@
 
 #include <objbase.h>
 #include <initguid.h>
+
+extern unsigned short UserSampleRate, UserSampleBits; //in sound.h
 
 
 // Pointers to functions contained in DSOUND.dll
@@ -774,7 +779,16 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 			Assert( pwfx != NULL );
 			Assert( si->data != NULL );
 			nprintf(( "Sound", "SOUND ==> converting sound from ADPCM to PCM\n" ));
-			rc = ACM_convert_ADPCM_to_PCM(pwfx, si->data, si->size, &convert_buffer, 0, &convert_len, &src_bytes_used, 8);
+
+			//Do ADPCM conversion at what bitrate the user wants.
+			if(UserSampleBits == 16 || UserSampleBits == 8)
+				WaveFormat.wBitsPerSample = UserSampleBits;
+			else if(UserSampleBits > 16)
+				WaveFormat.wBitsPerSample = 16;
+			else
+				WaveFormat.wBitsPerSample = 8;
+
+			rc = ACM_convert_ADPCM_to_PCM(pwfx, si->data, si->size, &convert_buffer, 0, &convert_len, &src_bytes_used, WaveFormat.wBitsPerSample);
 			if ( rc == -1 ) {
 				DSOUND_load_buffer_result = -1;
 				goto DSOUND_load_buffer_done;
@@ -792,7 +806,6 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 			WaveFormat.wFormatTag		= WAVE_FORMAT_PCM;
 			WaveFormat.nChannels		= (unsigned short)si->n_channels;
 			WaveFormat.nSamplesPerSec	= si->sample_rate;
-			WaveFormat.wBitsPerSample	= 8;
 			WaveFormat.cbSize				= 0;
 			WaveFormat.nBlockAlign		= (unsigned short)(( WaveFormat.nChannels * WaveFormat.wBitsPerSample ) / 8);
 			WaveFormat.nAvgBytesPerSec = WaveFormat.nBlockAlign * WaveFormat.nSamplesPerSec;
@@ -898,7 +911,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 //	if (ds_using_ds3d()) {
 		BufferDesc.dwFlags = DSBCAPS_STATIC | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRL3D | DSBCAPS_MUTE3DATMAXDISTANCE;
 	} else {
-		BufferDesc.dwFlags = DSBCAPS_STATIC | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME | DSBCAPS_LOCSOFTWARE;
+		BufferDesc.dwFlags = DSBCAPS_STATIC | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME;
 	}
 
 	// Create a new software buffer using the settings for this wave
@@ -1792,7 +1805,7 @@ int ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nsec
 	dsbd.dwSize = sizeof(DSBUFFERDESC);
 	dsbd.dwBufferBytes = wfx.nAvgBytesPerSec * nseconds;
 	dsbd.lpwfxFormat = &wfx;
-	dsbd.dwFlags = DSBCAPS_STATIC | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLDEFAULT | DSBCAPS_LOCSOFTWARE;
+	dsbd.dwFlags = DSBCAPS_STATIC | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLDEFAULT;
 
 	dsrval = pDirectSound->CreateSoundBuffer(&dsbd, &ds_software_buffers[sid].pdsb, NULL);
 	if ( dsrval != DS_OK ) {
