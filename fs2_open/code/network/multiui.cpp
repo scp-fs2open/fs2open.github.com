@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-04-30 18:32:51 $
+ * $Revision: 2.29 $
+ * $Date: 2004-07-07 21:00:08 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/04/30 18:32:51  Kazan
+ * Lobby screen only shows when PXO_LOBBY is defined
+ *
  * Revision 2.27  2004/04/27 20:43:32  taylor
  * fix create game buttons
  *
@@ -4533,13 +4536,18 @@ void multi_create_game_do()
 
 			gr_flip();
 
+			// I tried moving this before load_missions to see if it helps make it work right -- Kazan
+			// if this is a tracker game, validate missions
+			if(MULTI_IS_TRACKER_GAME){
+				multi_update_ban_list();
+				multi_update_valid_missions();
+			}
+			
+			
 			multi_create_list_load_missions();
 			multi_create_list_load_campaigns();
 
-			// if this is a tracker game, validate missions
-			if(MULTI_IS_TRACKER_GAME){
-				multi_update_valid_missions();
-			}
+
 
 			// update the file list
 			multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);						
