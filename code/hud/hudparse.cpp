@@ -17,8 +17,8 @@ hud_info ship_huds[MAX_SHIP_TYPES];
 extern int ships_inited; //Need this
 
 //Set coord_x or coord_y to -1 to not change that value
-void resize_coords(int* values, float* factors);
-void set_coords_if_clear(int* dest_coords, int coord_x, int coord_y = -1);
+//void resize_coords(int* values, float* factors);
+//void set_coords_if_clear(int* dest_coords, int coord_x, int coord_y = -1);
 
 //ADD YOUR VARIABLES HERE
 //Gauges MUST come first, and all variables MUST be in the hud struct.
@@ -31,8 +31,8 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 {NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size) ,HUD_VAR(Wenergy_fname), NULL, NULL, NULL},
 //Mini-gauges
 {&gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				5, 7, 5, 7,			NULL, NULL, NULL, NULL},
-{&gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			6, 0, 6, 0,			NULL, NULL, NULL, NULL},
-{&gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			2, 0, 2, 0,			NULL, NULL, NULL, NULL}
+{&gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			11, 0, 11, 0,		NULL, NULL, NULL, NULL},
+{&gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			7, 0, 7, 0,			NULL, NULL, NULL, NULL}
 };
 
 //Number of gauges
@@ -42,26 +42,6 @@ int Num_custom_gauges = 0;
 //Loads defaults for if a hud isn't specified in the table
 static void load_hud_defaults()
 {
-	gauge_info* cg;
-	for(int i = 0; i < Num_coord_types; i++)
-	{
-		cg = &gauges[i];
-		if(cg->parent && cg->fieldname)
-		{
-			HUD_INT(&default_hud, cg->coord_dest)[0] = -1;
-			HUD_INT(&default_hud, cg->coord_dest)[1] = -1;
-		}
-		else if(gr_screen.max_w == 640)
-		{
-			HUD_INT(&default_hud, cg->coord_dest)[0] = cg->defaultx_640;
-			HUD_INT(&default_hud, cg->coord_dest)[1] = cg->defaulty_480;
-		}
-		else
-		{
-			HUD_INT(&default_hud, cg->coord_dest)[0] = cg->defaultx_1024;
-			HUD_INT(&default_hud, cg->coord_dest)[1] = cg->defaulty_768;
-		}
-	}
 	//X values
 	if(gr_screen.max_w == 640)
 	{
@@ -92,6 +72,23 @@ static void load_hud_defaults()
 
 	//Neither
 	strcpy(default_hud.Shield_mini_fname, "targhit1");
+
+	//NONE OF THIS NEEDS TO BE MODIFIED TO SETUP VARS
+	gauge_info* cg;
+	for(int i = 0; i < Num_coord_types; i++)
+	{
+		cg = &gauges[i];
+		if(gr_screen.max_w == 640)
+		{
+			HUD_INT(&default_hud, cg->coord_dest)[0] = cg->defaultx_640;
+			HUD_INT(&default_hud, cg->coord_dest)[1] = cg->defaulty_480;
+		}
+		else
+		{
+			HUD_INT(&default_hud, cg->coord_dest)[0] = cg->defaultx_1024;
+			HUD_INT(&default_hud, cg->coord_dest)[1] = cg->defaulty_768;
+		}
+	}
 }
 
 /* You shouldn't have to modify anything past here to add gauges */
@@ -258,7 +255,6 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 
 static void calculate_gauges(hud_info* dest_hud)
 {
-	int resize_x, resize_y;
 	gauge_info* cg;
 	for(int i = 0; i < Num_coord_types; i++)
 	{
@@ -271,6 +267,7 @@ static void calculate_gauges(hud_info* dest_hud)
 	}
 }
 
+/*
 void set_coords_if_clear(int* dest_coords, int coord_x, int coord_y)
 {
 	if(dest_coords[0] == -1 && coord_x != -1)
@@ -288,7 +285,7 @@ void resize_coords(int* values, float* factors)
 {
 	values[0] = fl2i(values[0] * factors[0]);
 	values[1] = fl2i(values[1] * factors[1]);
-}
+}*/
 
 hud_info* parse_ship_start()
 {
@@ -533,7 +530,10 @@ void hud_positions_init()
 {
 	load_hud_defaults();
 
-	parse_hud_gauges_tbl("hud_gauges.tbl");
+	if(!parse_hud_gauges_tbl("hud_gauges.tbl"))
+	{
+		calculate_gauges(&default_hud);
+	}
 	char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
 	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-hdg.tbm", CF_SORT_REVERSE);
 	for(int i = 0; i < num_files; i++)
@@ -548,7 +548,8 @@ void hud_positions_init()
 
 //Depending on the ship number specified, this copies either the default hud or a ship hud
 //to a temporary hud_info struct and sets the current_hud pointer to it.
-//This lets you change HUD info via SEXPs and still have it be reset
+//This enables ship-specific huds.
+//Note that this creates a temporary current hud, so changes aren't permanently saved.
 void set_current_hud(int player_ship_num)
 {
 	static hud_info real_current_hud;
@@ -567,14 +568,14 @@ void set_current_hud(int player_ship_num)
 
 hud_info::hud_info()
 {
-	loaded = false;
+	//loaded = false;
 	memset(this, 0, sizeof(hud_info));
 }
 
 gauge_info* hud_get_gauge(char* name)
 {
 	int id = hud_get_gauge_index(name);
-	if(id != -1)
+	if(id > -1)
 	{
 		return &gauges[id];
 	}
