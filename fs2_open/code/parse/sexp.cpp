@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.64 $
- * $Date: 2003-06-19 18:12:12 $
- * $Author: phreak $
+ * $Revision: 2.65 $
+ * $Date: 2003-08-21 09:00:19 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2003/06/19 18:12:12  phreak
+ * added turret-tagged-specific and turret-tagged-clear-specific sexps
+ *
  * Revision 2.63  2003/05/24 16:47:58  phreak
  * added Sesquipedalian's kamikaze and not-kamikaze sexps
  *
@@ -1942,6 +1945,9 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if (type2 != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
+
+				if (!stricmp(CTEXT(index), "<no anchor>"))
+					break;
 
 				if (ship_name_lookup(CTEXT(index), 1) < 0)
 				{
@@ -9521,20 +9527,29 @@ void sexp_set_support_ship(int n)
 
 	// get arrival anchor
 	n = CDR(n);
-	temp_val = -1;
-	for (i=0; i<Num_parse_names; i++)
+	if (!stricmp(CTEXT(n), "<no anchor>"))
 	{
-		if (!stricmp(CTEXT(n), Parse_names[i]))
-			temp_val = i;
+		// if no anchor, set arrival location to hyperspace
+		The_mission.support_ships.arrival_location = 0;
 	}
-	// if not found, make a new entry
-	if (temp_val < 0)
+	else
 	{
-		strcpy(Parse_names[Num_parse_names], CTEXT(n));
-		temp_val = Num_parse_names;
-		Num_parse_names++;
+		// anchor must exist - look for it
+		temp_val = -1;
+		for (i=0; i<Num_parse_names; i++)
+		{
+			if (!stricmp(CTEXT(n), Parse_names[i]))
+				temp_val = i;
+		}
+		// if not found, make a new entry
+		if (temp_val < 0)
+		{
+			strcpy(Parse_names[Num_parse_names], CTEXT(n));
+			temp_val = Num_parse_names;
+			Num_parse_names++;
+		}
+		The_mission.support_ships.arrival_anchor = temp_val;
 	}
-	The_mission.support_ships.arrival_anchor = temp_val;
 
 	// get departure location
 	n = CDR(n);
@@ -9553,20 +9568,29 @@ void sexp_set_support_ship(int n)
 
 	// get departure anchor
 	n = CDR(n);
-	temp_val = -1;
-	for (i=0; i<Num_parse_names; i++)
+	if (!stricmp(CTEXT(n), "<no anchor>"))
 	{
-		if (!stricmp(CTEXT(n), Parse_names[i]))
-			temp_val = i;
+		// if no anchor, set departure location to hyperspace
+		The_mission.support_ships.departure_location = 0;
 	}
-	// if not found, make a new entry
-	if (temp_val < 0)
+	else
 	{
-		strcpy(Parse_names[Num_parse_names], CTEXT(n));
-		temp_val = Num_parse_names;
-		Num_parse_names++;
+		// anchor must exist - look for it
+		temp_val = -1;
+		for (i=0; i<Num_parse_names; i++)
+		{
+			if (!stricmp(CTEXT(n), Parse_names[i]))
+				temp_val = i;
+		}
+		// if not found, make a new entry
+		if (temp_val < 0)
+		{
+			strcpy(Parse_names[Num_parse_names], CTEXT(n));
+			temp_val = Num_parse_names;
+			Num_parse_names++;
+		}
+		The_mission.support_ships.departure_anchor = temp_val;
 	}
-	The_mission.support_ships.departure_anchor = temp_val;
 
 	// get ship class
 	n = CDR(n);
