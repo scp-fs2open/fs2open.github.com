@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-26 20:47:52 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2004-12-25 00:23:46 $
+ * $Author: wmcoolmon $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/26 20:47:52  Kazan
+ * remove MCD complete
+ *
  * Revision 2.8  2004/07/12 16:33:06  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -346,7 +349,7 @@
 #include "sound/ds3d.h"
 #include "sound/acm.h"
 #include "sound/dscap.h"
-//#include "sound/ogg/ogg.h"
+#include "sound/ogg/ogg.h"
 		
 
 
@@ -467,10 +470,10 @@ int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short 
 //		Warning(LOCATION, "Could not properly initialize the Microsoft ADPCM codec.\nPlease see the readme.txt file for detailed instructions on installing the Microsoft ADPCM codec.");
 	}
 
-//	if ( OGG_init() == -1)
-//	{
-//		mprintf(("Could not initialize the OGG vorbis converter."));
-//	}
+	if ( OGG_init() == -1)
+	{
+		mprintf(("Could not initialize the OGG vorbis converter."));
+	}
 
 	// Init the audio streaming stuff
 	audiostream_init();
@@ -629,7 +632,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 		mprintf(("Couldn't open sound file %s\n", gs->filename));
 	}
 	//Because ds_parse_wave uses seek_set, we can get away with not resetting the stream
-/*	if(!ov_open_callbacks(fp, &si->ogg_info, NULL, 0, cfile_callbacks))
+	if(!ov_open_callbacks(fp, &si->ogg_info, NULL, 0, cfile_callbacks))
 	{
 		//It's an OGG
 		ov_info(&si->ogg_info, -1);
@@ -641,7 +644,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 		si->avg_bytes_per_sec = si->sample_rate * si->n_block_align;
 		if(ov_pcm_total(&si->ogg_info, -1) < UINT_MAX)
 		{
-			si->size = (uint) ov_pcm_total(&si->ogg_info, -1) * si->n_block_align;
+			si->size = (uint) si->sample_rate * si->n_channels * si->bits * 2;
 		}
 		else
 		{
@@ -650,7 +653,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 		}
 		snd->duration = fl2i(1000.0f * (si->size / (si->bits/8.0f)) / si->sample_rate);
 	}
-	else*/ if ( ds_parse_wave(fp, &si->data, &si->size, &header) != -1 )
+	else if ( ds_parse_wave(fp, &si->data, &si->size, &header) != -1 )
 	{
 		//It's some sort of WAV
 		si->format					= header->wFormatTag;		// 16-bit flag (wFormatTag)
@@ -685,7 +688,10 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	rc = ds_load_buffer(&snd->sid, &snd->hid, &snd->uncompressed_size, header, si, type);
 
 	free(header);
-	free(si->data);	// don't want to keep this around
+	if(si->format != OGG_FORMAT_VORBIS)
+	{
+		free(si->data);	// don't want to keep this around
+	}
 
 	if ( rc == -1 )
 		return -1;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.7 $
- * $Date: 2004-08-11 05:06:34 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2004-12-25 00:23:46 $
+ * $Author: wmcoolmon $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/08/11 05:06:34  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.6  2004/06/28 02:13:08  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -132,7 +135,7 @@
 
 #include <windows.h>
 #include "directx/vdsound.h"
-//#include "sound/ogg/ogg.h"
+#include "sound/ogg/ogg.h"
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 
@@ -156,7 +159,7 @@
 
 typedef struct sound_info {
 	int	format;		// WAVE_FORMAT_* defines from mmreg.h
-//	OggVorbis_File ogg_info;
+	OggVorbis_File ogg_info;
 	uint	size;
 	int	sample_rate;
 	int	avg_bytes_per_sec;

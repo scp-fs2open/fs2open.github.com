@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-09-05 19:23:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2004-12-25 00:23:46 $
+ * $Author: wmcoolmon $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/09/05 19:23:24  Goober5000
+ * fixed a few warnings
+ * --Goober5000
+ *
  * Revision 2.9  2004/08/23 07:48:08  Goober5000
  * fix0red some warnings
  * --Goober5000
@@ -737,8 +741,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 	int	convert_len;					// num bytes of converted wav file
 	uint	src_bytes_used;				// number of source bytes actually converted (should always be equal to original size)
 	//Stuff for ogg
-	//unsigned long pos = 0;
-//	int garbage;
+	int garbage;
 
 	// Ensure DirectSound initialized
 	if (!ds_initialized) {
@@ -794,19 +797,33 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 			nprintf(( "Sound", "SOUND ==> Coverted sound from ADPCM to PCM successfully\n" ));
 			break;	
 
-/*		case OGG_FORMAT_VORBIS:
+		case OGG_FORMAT_VORBIS:
 			nprintf(( "Sound", "SOUND ==> converting sound from OGG to PCM\n" ));
 
-			convert_buffer = (ubyte*) malloc(si->size);
+			final_sound_size = 0;
+			convert_buffer = (byte*) malloc(si->size);
 			Assert(convert_buffer != NULL);
-			while((rc != 0 && rc != OV_EBADLINK) && pos < si->size)
+			while(final_sound_size < si->size)
 			{
 				//Assume little endian for now
 				//Ignores frequency changes, I think we're screwed if that happens anyway.
-				rc = ov_read(&si->ogg_info, (char *) convert_buffer, si->size, 0, si->bits / 8, 1, &garbage);
-				pos += rc;
+				rc = ov_read(&si->ogg_info, (char *) convert_buffer + final_sound_size, si->size - final_sound_size, 0, si->bits / 8, 1, &garbage);
+				if(rc == OV_EBADLINK)
+				{
+					free(convert_buffer);
+					convert_buffer = NULL;
+					DSOUND_load_buffer_result = -1;
+					goto DSOUND_load_buffer_done;
+				}
+				else if(rc == 0)
+				{
+					break;
+				}
+				else
+				{
+					final_sound_size += rc;
+				}
 			}
-			final_sound_size = pos;
 
 			WaveFormat.wFormatTag		= (unsigned short) WAVE_FORMAT_PCM;
 			WaveFormat.nChannels		= (unsigned short) si->n_channels;
@@ -816,7 +833,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 			WaveFormat.nBlockAlign		= (unsigned short) si->n_block_align;
 			WaveFormat.nAvgBytesPerSec	= si->avg_bytes_per_sec;
 
-			ofp = fopen("processed.wav", "wb");
+			/*ofp = fopen("processed.wav", "wb");
 
 			fwrite("RIFF", 1, 4, ofp);
 
@@ -851,13 +868,13 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 
 			fwrite(convert_buffer, 1, final_sound_size, ofp);
 
-			fclose(ofp);
+			fclose(ofp);*/
 
 			//The ogg handle isn't needed no more
 			ov_clear(&si->ogg_info);
 
 			mprintf(( "Sound SOUND ==> Coverted sound from OGG to PCM successfully\n" ));
-			break;*/
+			break;
 		default:
 			nprintf(( "Sound", "Unsupported sound encoding\n" ));
 			DSOUND_load_buffer_result = -1;
