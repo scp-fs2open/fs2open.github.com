@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-01-27 01:12:15 $
+ * $Author: DTP $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -502,7 +505,7 @@ void scoring_do_accept(scoring_struct *score)
 	score->bonehead_kills += score->m_bonehead_kills;
 
 	for(idx=0;idx<MAX_SHIP_TYPES;idx++){
-		score->kills[idx] = (unsigned short)(score->kills[idx] + score->m_okKills[idx]);
+		score->kills[idx] = (int)(score->kills[idx] + score->m_okKills[idx]);
 	}
 
 	// add in mission time
