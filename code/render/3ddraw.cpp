@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:05 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2003-08-21 15:03:43 $
+ * $Author: phreak $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:05  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2.2.1  2002/09/24 18:56:45  randomtiger
  * DX8 branch commit
  *
@@ -492,6 +495,7 @@ free_points:
 			}
 
 			p->sw = constant_sw;
+
 		}
 
 		gr_tmapper( nv, bufptr, tmap_flags );
@@ -697,6 +701,8 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags)
 	float sa, ca;
 	int i;
 
+	memset(v,0,sizeof(vertex)*4);
+
 	/*
 	if ( !Detail.alpha_effects )	{
 		int ang;
@@ -752,6 +758,7 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags)
 	v[0].sw = 0.0f;
 	v[0].u = 0.0f;
 	v[0].v = 1.0f;
+	
 
 	v[1].x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
 	v[1].y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
@@ -920,6 +927,8 @@ float g3_draw_rotated_bitmap_area(vertex *pnt,float angle, float rad,uint tmap_f
 	vertex *vertlist[4] = { &v[3], &v[2], &v[1], &v[0] };
 	float sa, ca;
 	int i;	
+
+	memset(v,0,sizeof(vertex)*4);
 
 	Assert( G3_count == 1 );
 
@@ -1657,6 +1666,8 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	float ui, vi;	
 	angles bank_first;		
 
+	memset(v,0,sizeof(vertex)*4);
+
 	// cap division values
 	// div_x = div_x > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_x;
 	div_x = 1;
@@ -1723,10 +1734,10 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 			v[1].v = vi * float(s_idx);
 
 			v[2].u = ui * float(idx+1);
-			v[2].v = vi * float(s_idx+1);						
+			v[2].v = vi * float(s_idx+1);
 
 			v[3].u = ui * float(idx);
-			v[3].v = vi * float(s_idx+1);			
+			v[3].v = vi * float(s_idx+1);
 
 			// poly 1
 			v[0].flags = 0;
@@ -1771,6 +1782,7 @@ int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flag
 	int saved_zbuffer_mode;
 	vertex v[4];
 	vertex *vertlist[4] = { &v[0], &v[1], &v[2], &v[3] };
+	memset(v,0,sizeof(vertex)*4);
 
 	int bw, bh;
 
