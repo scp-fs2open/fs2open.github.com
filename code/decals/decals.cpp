@@ -1484,7 +1484,7 @@ bool shpere_tri_edge(vector* s_point, float rad, vertex vert[3]){
 		vm_vert2vec(&vert[i], &point_one);
 		vector point_two;
 		vm_vert2vec(&vert[(i+1)%3], &point_two);
-		switch(vm_vec_dist_to_line(s_point, &point_one, &point_two, &n, &d)){
+		switch(vm_vec_dist_to_line(s_point, &point_one, &point_two, &n, NULL)){
 				// behind the line, so use the start pos
 			case -1:
 				d = vm_vec_dist(s_point,&point_one);
@@ -1492,9 +1492,9 @@ bool shpere_tri_edge(vector* s_point, float rad, vertex vert[3]){
 		
 				// use the closest point
 			case 0:
-				
-				// already calculated in vm_vec_dist_to_line(...)
+				d = vm_vec_dist(s_point,&n);
 				break;
+
 				// past the line, so use the shot pos
 			case 1:
 				d = vm_vec_dist(s_point,&point_two);
