@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-04-29 01:03:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2003-09-11 19:39:03 $
+ * $Author: argv $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/04/29 01:03:21  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.15  2003/03/20 23:30:03  Goober5000
  * comments
  * --Goober500
@@ -724,10 +728,13 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector* hitpo
 		// when an engine is destroyed, we must change the max velocity of the ship
 		// to be some fraction of its normal maximum value
 
+		// _argv[-1] - this is now handled in hudets.cpp.
+		/*
 		if ( ship_p->subsys_info[type].current_hits == 0.0f ) {
 			mission_log_add_entry(LOG_SHIP_DISABLED, ship_p->ship_name, NULL );
 			ship_p->flags |= SF_DISABLED;				// add the disabled flag
 		}
+		*/
 	}
 
 	if ( psub->subobj_num > -1 )	{
@@ -766,6 +773,9 @@ int shiphit_get_damage_weapon(object *damaging_objp)
 			break;
 		case OBJ_SHOCKWAVE:
 			weapon_info_index = shockwave_weapon_index(damaging_objp->instance);
+			break;
+		case OBJ_BEAM:
+			weapon_info_index = beam_get_weapon_info_index(damaging_objp);
 			break;
 		default:
 			weapon_info_index = -1;
@@ -899,7 +909,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 			return damage;
 		else {
 
-			damage_left = Shockwaves[other_obj->instance].damage/4.0f;
+			damage_left = Shockwaves[other_obj->instance].damage/*/4.0f*/;
 		}
 		hitpos2 = other_obj->pos;
 	} else {
@@ -909,7 +919,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);
-	if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON)) {
+	if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_BEAM)) {
 		damage_left *= Weapon_info[weapon_info_index].subsystem_factor;
 	}
 
@@ -1000,9 +1010,14 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 		//	miss their target.  There is code dating to FS1 in the collision code to detect that a bomb or
 		//	missile has somehow missed its target.  It gets its lifeleft set to 0.1 and then it detonates.
 		//	Unfortunately, the shockwave damage was cut by 4 above.  So boost it back up here.
+		// _argv[-1] - this doesn't always seem to work, so I've removed this crap with reducing shockwave damage entirely.
+		// Note that shockwaves still don't affect the subsystems on shielded ships unless the shields are down.
+		// And if the shields are down, the whole ship is going to get blown away, so who cares about subsystems?
+		/*
 		if ((dist < 10.0f) && ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE))) {
 			damage_left *= 4.0f * Weapon_info[weapon_info_index].subsystem_factor;;
 		}
+		*/
 
 //		if (damage_left > 100.0f)
 //			nprintf(("AI", "Applying %7.3f damage to subsystem %7.3f units away.\n", damage_left, dist));
@@ -2181,6 +2196,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 
 	ship *shipp;	
 	float subsystem_damage = damage;			// damage to be applied to subsystems
+	int	weapon_info_index;		
 
 	Assert(ship_obj->instance >= 0);
 	Assert(ship_obj->type == OBJ_SHIP);
@@ -2198,9 +2214,14 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 	}
 //mprintf(("lethality updated\n"));
 
+	if (other_obj != NULL)
+		weapon_info_index = shiphit_get_damage_weapon(other_obj);
+	else
+		weapon_info_index = -1;
+
 	// if this is a weapon
-	if((other_obj != NULL) && (other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS)){
-		damage *= weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_obj);
+	if((other_obj != NULL) && ((other_obj->type == OBJ_WEAPON && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS)) || other_obj->type == OBJ_BEAM)){
+		damage *= weapon_get_damage_scale(&Weapon_info[weapon_info_index], other_obj, ship_obj);
 	}
 
 	MONITOR_INC( ShipHits, 1 );
@@ -2212,7 +2233,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 		}
 	}
 
-	if ( (other_obj != NULL) && (other_obj->type == OBJ_WEAPON) ) {		
+	if ( (other_obj != NULL) && (other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_BEAM) ) {		
 		// for tvt and dogfight missions, don't scale damage
 #ifndef NO_NETWORK
 		if( (Game_mode & GM_MULTIPLAYER) && ((Netgame.type_flags & NG_TYPE_TEAM) || (Netgame.type_flags & NG_TYPE_DOGFIGHT)) ){
@@ -2221,10 +2242,16 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 #endif
 		{
 			// Do a little "skill" balancing for the player in single player and coop multiplayer
-			if (ship_obj->flags & OF_PLAYER_SHIP)	{
+			// _argv[-1] - apply damage scaling to all ships.
+			//if (ship_obj->flags & OF_PLAYER_SHIP)	{
+			if (shipp->team == Player_ship->team) {
 				damage *= Skill_level_player_damage_scale[Game_skill_level];
-				subsystem_damage *= Skill_level_player_damage_scale[Game_skill_level];
+				//subsystem_damage *= Skill_level_player_damage_scale[Game_skill_level];
 			}		
+			else {
+				damage /= Skill_level_player_damage_scale[Game_skill_level];
+				//subsystem_damage /= Skill_level_player_damage_scale[Game_skill_level];
+			}
 		}
 	}
 //mprintf(("skill balencing done\n"));
@@ -2274,7 +2301,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 //mprintf(("pain sent\n"));
 
 	// If the ship is invulnerable, do nothing
-	if (ship_obj->flags & OF_INVULNERABLE)	{
+	if (ship_obj->flags & OF_INVULNERABLE || (damage <= 0.0f && subsystem_damage <= 0.0f))	{
 		return;
 	}
 //mprintf(("not invulnerable\n"));
@@ -2291,9 +2318,6 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 	if ( quadrant > -1 && !(ship_obj->flags & OF_NO_SHIELDS) )	{
 //		mprintf(("applying damage ge to shield\n"));
 		float shield_factor = -1.0f;
-		int	weapon_info_index;		
-
-		weapon_info_index = shiphit_get_damage_weapon(other_obj);
 		if ( weapon_info_index >= 0 ) {
 			shield_factor = Weapon_info[weapon_info_index].shield_factor;
 		}
@@ -2327,6 +2351,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 	if ( (damage > 0.0f) || (subsystem_damage > 0.0f) )	{
 		int	weapon_info_index;		
 //mprintf(("applying damage to hull\n"));
+
 		float pre_subsys = subsystem_damage;
 		subsystem_damage = do_subobj_hit_stuff(ship_obj, other_obj, hitpos, subsystem_damage);
 		if(subsystem_damage > 0.0f){
@@ -2336,12 +2361,12 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 		}
 
 		// continue with damage?
-		if(damage > 0.0){
+		// _argv[-1] - made that 0.0f.
+		if(damage > 0.0f){
 			weapon_info_index = shiphit_get_damage_weapon(other_obj);
 			if ( weapon_info_index >= 0 ) {
-				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) {
+				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE)
 					damage /= 4;
-				}
 
 				damage *= Weapon_info[weapon_info_index].armor_factor;
 			}
@@ -2482,6 +2507,19 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 			// reduce weapon energy
 			shipp->weapon_energy -= wip->weapon_reduce;
 			shipp->weapon_energy = (shipp->weapon_energy < 0.0f) ? 0.0f : shipp->weapon_energy;
+
+			// _argv[-1] - use the fancy-schmancy new power drain code! now lamprey is effective against big ships, and will
+			// disable fighters/bombers for a short time.
+			// only if shields were down, though!
+			// note that this can be used to boost the target's energy levels...
+			// Also note that esuck weapons will only apply a power drain if they are 'big ship', 'huge', or 'supercap'.
+			// This is because, in regular FS2 tables, big ships have tiny power output, so players could easily disable
+			// them with the Leech/Lamprey. This works because the Leech/Lamprey is _not_ set to hurt big ships by
+			// default, so we can use that flag. We also have another flag, "drain big ships", which allows modders to
+			// allow this weapon to drain big ships without allowing it to also damage their hulls (for esuck weapons
+			// that also do damage).
+			if (quadrant == -1 && wip->power_output_reduce != 0.04f && (!(Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) || wip->wi_flags2 & WIF2_DRAIN_BIG_SHIPS))
+				shipp->effective_power_drain += wip->power_output_reduce;
 		}
 	}
 }
@@ -2676,9 +2714,10 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage
 	if ( ship_obj == Player_obj ) {
 		// only show blast icon if playing on medium skill or lower -> unknownplayer: why? I think this should be changed.
-		if ( Game_skill_level <= 2 ) {
+		// _argv[-1] - agreed. commented this out.
+		//if ( Game_skill_level <= 2 ) {
 			hud_start_text_flash(XSTR("Blast", 1428), 2000);
-		}
+		//}
 	}
 
 	// evaluate any player stats scoring conditions (specifically, blasts from remotely detonated secondary weapons)
@@ -2703,9 +2742,10 @@ void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage)
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage
 	if ( ship_obj == Player_obj ) {
 		// only show blast icon if playing on medium skill or lower
-		if ( Game_skill_level <= 2 ) {
+		// _argv[-1] - why?
+		//if ( Game_skill_level <= 2 ) {
 			hud_start_text_flash(XSTR("Engine Wash", 1429), 2000);
-		}
+		//}
 	}
 
 	// evaluate any player stats scoring conditions (specifically, blasts from remotely detonated secondary weapons)
