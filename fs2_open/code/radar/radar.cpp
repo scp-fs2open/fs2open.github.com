@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-06-11 03:01:27 $
+ * $Revision: 2.4 $
+ * $Date: 2003-06-11 03:15:17 $
  * $Author: phreak $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/06/11 03:01:27  phreak
+ * the radar will not show stage 3 local ssms
+ *
  * Revision 2.2  2003/01/03 21:58:07  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -390,7 +393,10 @@ int radar_blip_color(object *objp)
 		}
 		break;
 	case OBJ_WEAPON:
-		color = RCOL_BOMB;
+		if ((Weapons[objp->instance].lssm_stage==2) || (Weapons[objp->instance].lssm_stage==4))
+			color=RCOL_WARPING_SHIP;
+		else
+			color = RCOL_BOMB;
 		break;
 	case OBJ_JUMP_NODE:
 		color = RCOL_JUMP_NODE;
