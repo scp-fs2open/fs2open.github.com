@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Palman/PalMan.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:46 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2004-10-31 22:00:57 $
+ * $Author: taylor $
  *
  * Palette manager routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:46  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:33:01  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -338,7 +341,7 @@ void palette_load_table( char * filename )
 		*p = 0;
 	}
 
-	pcx_error = pcx_read_header(palette_base_filename, &w, &h, palette_org );
+	pcx_error = pcx_read_header(palette_base_filename, NULL, &w, &h, palette_org );
 	if ( pcx_error != PCX_ERROR_NONE )	{
 		// Read the old .256 file
 		CFILE *fp;

@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-10-09 17:44:10 $
+ * $Revision: 2.10 $
+ * $Date: 2004-10-31 22:00:57 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/10/09 17:44:10  taylor
+ * don't use DevIL to read the header, slightly more sane error checking
+ *
  * Revision 2.8  2004/09/28 19:54:32  Kazan
  * | is binary or, || is boolean or - please use the right one
  * autopilot velocity ramping biasing
@@ -92,7 +95,6 @@
  * $NoKeywords: $
  */
 
-#include <stdio.h>
 #include <string.h>
 
 #include "globalincs/pstypes.h"
@@ -102,6 +104,7 @@
 #include "palman/palman.h"
 #include "graphics/2d.h"
 #include "openil/il_func.h"
+#include "cmdline/cmdline.h"
 
 extern int Cmdline_jpgtga;
 
@@ -412,21 +415,30 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 //
 // returns - TARGA_ERROR_NONE if successful, otherwise error code
 //
-int targa_read_header(char *real_filename, int *w, int *h, int *bpp, ubyte *palette )
+int targa_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette )
 {	
 	targa_header header;
-	CFILE *targa_file;
+	CFILE *targa_file = NULL;
 	char filename[MAX_FILENAME_LEN];
-		
-	strcpy( filename, real_filename );
-	char *p = strchr( filename, '.' );
-	if ( p ) *p = 0;
-	strcat( filename, ".tga" );
 
-	targa_file = cfopen( filename , "rb" );
-	if ( !targa_file ){
-		return TARGA_ERROR_READING;
-	}	
+	if (img_cfp == NULL) {
+		strcpy( filename, real_filename );
+
+		char *p = strchr( filename, '.' );
+
+		if ( p )
+			*p = 0;
+
+		strcat( filename, ".tga" );
+
+		targa_file = cfopen( filename , "rb" );
+
+		if ( !targa_file ) {
+			return TARGA_ERROR_READING;
+		}
+	} else {
+		targa_file = img_cfp;
+	}
 
 	header.id_length = cfread_ubyte(targa_file);
 	// header.id_length=targa_file.read_char();
@@ -464,8 +476,10 @@ int targa_read_header(char *real_filename, int *w, int *h, int *bpp, ubyte *pale
 	header.image_descriptor = cfread_ubyte(targa_file);
 	// header.image_descriptor=targa_file.read_char();
 
-	cfclose(targa_file);
-	targa_file = NULL;
+	if (img_cfp == NULL) {
+		cfclose(targa_file);
+		targa_file = NULL;
+	}
 
 	*w = header.width;
 	*h = header.height;
@@ -604,6 +618,7 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 	// header.image_descriptor=targa_file.read_char();	
 
 	int bytes_per_pixel = (header.pixel_depth>>3);
+
 	// we're only allowing 2 bytes per pixel (16 bit compressed)
 	Assert(bytes_per_pixel == 2);
 	if(bytes_per_pixel != 2){
@@ -762,21 +777,22 @@ int targa_read_bitmap_32(char *real_filename, ubyte *image_data, ubyte *palette,
 	if ( p ) *p = 0;
 	strcat( filename, ".tga" );
 
-	ilGenImages(1,&tgaimage);
+	ilGenImages(1, &tgaimage);
 	ilBindImage(tgaimage);
 
 	if (ilLoadImage(filename) == IL_FALSE) {
-		mprintf(("Couldn't open '%s -- some kind of devIL-error: %s\n", filename, iluErrorString(ilGetError()) ));
-		ilDeleteImages(1,&tgaimage);
+		mprintf(("Couldn't open '%s' -- some kind of devIL-error: %s\n", filename, iluErrorString(ilGetError()) ));
+		ilDeleteImages(1, &tgaimage);
 		return TARGA_ERROR_READING;
 	}
 
 	// convert to BGRA if not already there, should be though
 	ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
 
-	ilGetIntegerv(IL_IMAGE_SIZE_OF_DATA,&ilsize);
+	ilGetIntegerv(IL_IMAGE_SIZE_OF_DATA, &ilsize);
 
 	memcpy(image_data, ilGetData(), ilsize);
+//	image_data = ilGetData();
 
 	ilDeleteImages(1,&tgaimage);
 #endif

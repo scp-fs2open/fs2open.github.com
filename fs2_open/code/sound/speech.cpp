@@ -16,6 +16,8 @@
 
 #pragma warning(disable:4711)	// function selected for inlining
 
+#include "PreProcDefines.h"
+
 #if FS2_SPEECH
 #include <sapi.h>
 #include <sphelper.h>

@@ -8,6 +8,8 @@
 
 // This module contains freespace specific stuff leaving the speech module to handle generic stuff.
 
+#include "PreProcDefines.h"
+
 #include "sound/fsspeech.h"
 
 #ifdef FS2_SPEECH
