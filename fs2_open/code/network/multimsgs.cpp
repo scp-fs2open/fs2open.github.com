@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-02-04 20:06:05 $
+ * $Revision: 2.27 $
+ * $Date: 2005-03-02 21:18:20 $
  * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/02/04 20:06:05  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.25  2005/01/11 21:38:50  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -444,6 +447,10 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "globalincs/pstypes.h"
 #include "network/multimsgs.h"
@@ -8599,3 +8606,5 @@ void process_self_destruct_packet(ubyte *data, header *hinfo)
 	// do eet
 	ship_self_destruct(&Objects[Net_players[np_index].m_player->objnum]);
 }
+
+#endif // !NO_NETWORK

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-02-16 10:00:40 $
- * $Author: wmcoolmon $
+ * $Revision: 2.29 $
+ * $Date: 2005-03-02 21:18:20 $
+ * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/02/16 10:00:40  wmcoolmon
+ * "-ingame" command line option
+ *
  * Revision 2.27  2005/02/04 20:06:05  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -302,6 +305,10 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
+
 #if defined _WIN32
 #include <winsock.h>
 #elif defined unix
@@ -349,8 +356,6 @@
 #include "network/multi.h"
 #include "cmdline/cmdline.h"
 #include "cfile/cfile.h"
-
-#ifndef NO_NETWORK
 #include "network/multimsgs.h"
 #include "network/multi_xfer.h"
 #include "network/multiteamselect.h"
@@ -375,7 +380,6 @@
 #pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
 #pragma warning(pop)
-#endif
 
 
 // FIXME: don't know why this should be needed but it is, copied from pstypes.h
@@ -575,11 +579,6 @@ ushort netmisc_calc_checksum( void * vptr, int len )
 	
 	return (unsigned short)((sum1<<8)+ sum2);
 }
-
-
-// -------------remainder of file is not used if NO_NETWORK is on
-
-#ifndef NO_NETWORK
 
 
 // -------------------------------------------------------------------------------------------------

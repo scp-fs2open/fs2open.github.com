@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.19 $
- * $Date: 2005-02-23 13:17:04 $
+ * $Revision: 1.20 $
+ * $Date: 2005-03-02 21:18:18 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/02/23 13:17:04  taylor
+ * few more compiler warning fixes (didn't mean to commit iostream.h change)
+ * lower warning level to 3 to stop MSVC6 from complaining about C++ headers
+ *
  * Revision 1.18  2005/02/23 05:05:37  taylor
  * compiler warning fixes (for MSVC++ 6)
  * have the warp effect only load as many LODs as will get used
@@ -74,6 +78,10 @@
  *
  *
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 // 4711 = function selected for automatic inline expansion
 #pragma warning(disable: 4711)
@@ -593,3 +601,5 @@ int Ping(const char* target)
 
 	return int( float(time(0) - rping.time)/2.0 );
 }
+
+#endif // !NO_NETWORK

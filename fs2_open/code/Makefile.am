@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.4 2005-01-30 12:50:07 taylor Exp $
+## $Id: Makefile.am,v 1.5 2005-03-02 21:18:18 taylor Exp $
 
 
 noinst_LIBRARIES = libcode.a
@@ -39,6 +39,10 @@ FS2_SOURCES =	\
 	exceptionhandler/exceptionhandler.cpp	\
 	fireball/fireballs.cpp	\
 	fireball/warpineffect.cpp	\
+	fs2open_pxo/Client.cpp	\
+	fs2open_pxo/TCP_Client.cpp	\
+	fs2open_pxo/TCP_Socket.cpp	\
+	fs2open_pxo/udpsocket.cpp	\
 	gamehelp/contexthelp.cpp	\
 	gamehelp/gameplayhelp.cpp	\
 	gamesequence/gamesequence.cpp	\
@@ -65,6 +69,7 @@ FS2_SOURCES =	\
 	hud/hudlock.cpp	\
 	hud/hudmessage.cpp	\
 	hud/hudnavigation.cpp	\
+	hud/hudobserver.cpp	\
 	hud/hudparse.cpp	\
 	hud/hudreticle.cpp	\
 	hud/hudshield.cpp	\
@@ -76,6 +81,7 @@ FS2_SOURCES =	\
 	io/keycontrol.cpp	\
 	io/mouse.cpp	\
 	io/timer.cpp	\
+	irc/irc.cpp	\
 	jpgutils/jpgutils.cpp	\
 	jumpnode/jumpnode.cpp	\
 	lighting/lighting.cpp	\
@@ -93,6 +99,7 @@ FS2_SOURCES =	\
 	menuui/mainhallmenu.cpp	\
 	menuui/mainhalltemp.cpp	\
 	menuui/optionsmenu.cpp	\
+	menuui/optionsmenumulti.cpp	\
 	menuui/playermenu.cpp	\
 	menuui/readyroom.cpp	\
 	menuui/snazzyui.cpp	\
@@ -108,6 +115,7 @@ FS2_SOURCES =	\
 	mission/missionmessage.cpp	\
 	mission/missionparse.cpp	\
 	mission/missiontraining.cpp	\
+	missionui/chatbox.cpp	\
 	missionui/missionbrief.cpp	\
 	missionui/missioncmdbrief.cpp	\
 	missionui/missiondebrief.cpp	\
@@ -125,6 +133,33 @@ FS2_SOURCES =	\
 	model/modelread.cpp	\
 	nebula/neb.cpp	\
 	nebula/neblightning.cpp	\
+	network/fs2ox.cpp	\
+	network/multi.cpp	\
+	network/multimsgs.cpp	\
+	network/multiteamselect.cpp	\
+	network/multiui.cpp	\
+	network/multiutil.cpp	\
+	network/multi_campaign.cpp	\
+	network/multi_data.cpp	\
+	network/multi_dogfight.cpp	\
+	network/multi_endgame.cpp	\
+	network/multi_ingame.cpp	\
+	network/multi_kick.cpp	\
+	network/multi_log.cpp	\
+	network/multi_obj.cpp	\
+	network/multi_observer.cpp	\
+	network/multi_options.cpp	\
+	network/multi_pause.cpp	\
+	network/multi_pinfo.cpp	\
+	network/multi_ping.cpp	\
+	network/multi_pmsg.cpp	\
+	network/multi_rate.cpp	\
+	network/multi_respawn.cpp	\
+	network/multi_team.cpp	\
+	network/multi_voice.cpp	\
+	network/multi_xfer.cpp	\
+	network/psnet.cpp	\
+	network/psnet2.cpp	\
 	object/collidedebrisship.cpp	\
 	object/collidedebrisweapon.cpp	\
 	object/collideshipship.cpp	\
@@ -217,54 +252,14 @@ endif
 endif
 
 ## networking support sources
-if FS2_NETWORKING
-NETWORK_SOURCES =	\
-	hud/hudobserver.cpp	\
-	irc/irc.cpp	\
-	network/fs2ox.cpp	\
-	network/multi.cpp	\
-	network/multimsgs.cpp	\
-	network/multiteamselect.cpp	\
-	network/multiui.cpp	\
-	network/multiutil.cpp	\
-	network/multi_campaign.cpp	\
-	network/multi_data.cpp	\
-	network/multi_dogfight.cpp	\
-	network/multi_endgame.cpp	\
-	network/multi_ingame.cpp	\
-	network/multi_kick.cpp	\
-	network/multi_log.cpp	\
-	network/multi_obj.cpp	\
-	network/multi_observer.cpp	\
-	network/multi_options.cpp	\
-	network/multi_pause.cpp	\
-	network/multi_pinfo.cpp	\
-	network/multi_ping.cpp	\
-	network/multi_pmsg.cpp	\
-	network/multi_rate.cpp	\
-	network/multi_respawn.cpp	\
-	network/multi_team.cpp	\
-	network/multi_voice.cpp	\
-	network/multi_xfer.cpp	\
-	network/psnet.cpp	\
-	network/psnet2.cpp	\
-	menuui/optionsmenumulti.cpp	\
-	missionui/chatbox.cpp	\
-	fs2open_pxo/Client.cpp	\
-	fs2open_pxo/TCP_Client.cpp	\
-	fs2open_pxo/TCP_Socket.cpp	\
-	fs2open_pxo/udpsocket.cpp
-
 if FS2_OS_WIN32
-NETWORK_SOURCES +=	\
+FS2_SOURCES +=	\
 	network/stand_gui.cpp
 endif
 
 if FS2_OS_UNIX
-NETWORK_SOURCES +=	\
+FS2_SOURCES +=	\
 	network/stand_gui-unix.cpp
-endif
-
 endif
 
 ## sound support sources
@@ -331,8 +326,8 @@ endif
 
 
 ## libcode.a
-libcode_a_SOURCES = ${FS2_SOURCES} ${JOY_SOURCES} ${NETWORK_SOURCES}	\
-	${SOUND_SOURCES} ${WIN32_SOURCES} ${UNIX_SOURCES}
+libcode_a_SOURCES = ${FS2_SOURCES} ${JOY_SOURCES} ${SOUND_SOURCES}	\
+	${WIN32_SOURCES} ${UNIX_SOURCES}
 
 ##
 ## End CODE library

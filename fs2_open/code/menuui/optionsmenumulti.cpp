@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenuMulti.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-04 10:12:30 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-02 21:18:19 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.5  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -221,6 +224,10 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "ui/ui.h"
 #include "io/key.h"
@@ -2577,3 +2584,5 @@ int options_multi_eat_tab()
 
 	return 0;
 }
+
+#endif // !NO_NETWORK

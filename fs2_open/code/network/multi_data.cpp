@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_data.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-02-04 10:12:31 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-02 21:18:19 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/04 10:12:31  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.6  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -144,6 +147,10 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include <time.h>
 #include <ctype.h>
@@ -559,3 +566,5 @@ void multi_data_maybe_reload()
 		}
 	}	
 }
+
+#endif // !NO_NETWORK

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ping.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-03-02 21:18:19 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -56,6 +59,10 @@
  *  
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "network/multi.h"
 #include "network/multi_ping.h"
@@ -215,3 +222,5 @@ int multi_ping_lowest_avg(ping_struct *ps)
 	// otherwise return the average of the 2
 	return (lowest + ps->ping_avg)/2;
 }
+
+#endif // !NO_NETWORK

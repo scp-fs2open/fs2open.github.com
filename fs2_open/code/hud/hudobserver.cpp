@@ -9,22 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDObserver.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-03-02 21:18:18 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  *
  */
 
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
+
 #include "hud/hudobserver.h"
 #include "hud/hudtargetbox.h"
 #include "hud/hudconfig.h"
 #include "ship/ship.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 
 
@@ -76,3 +77,5 @@ void hud_render_observer()
 	// render individual player text
 	hud_obs_render_players_all();
 }
+
+#endif // !NO_NETWORK

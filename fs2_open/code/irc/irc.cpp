@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.11 $
- * $Date: 2005-02-04 20:06:04 $
+ * $Revision: 1.12 $
+ * $Date: 2005-03-02 21:18:19 $
  * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/02/04 20:06:04  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 1.10  2004/11/21 11:31:02  taylor
  * move warning fixes from il_func.cpp to irc.cpp since that's where they are coming from
  *
@@ -52,6 +55,10 @@
  *
  *
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 // 4786 = identifier truncated in the debug information
 // 4710 = function not inlined
@@ -738,3 +745,4 @@ std::vector<std::string> irc_client::SplitOnStr(std::string haystack, std::strin
 	return Lines;
 }
 
+#endif // !NO_NETWORK

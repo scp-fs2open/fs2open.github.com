@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-02-04 20:06:05 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-02 21:18:20 $
  * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/04 20:06:05  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.6  2004/07/26 20:47:44  Kazan
  * remove MCD complete
  *
@@ -129,6 +132,10 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #ifdef _WIN32
 #include <windows.h>
@@ -2755,3 +2762,5 @@ void psnet_mark_received(PSNET_SOCKET_RELIABLE socket)
 }
 
 #endif	// #ifdef PSNET2
+
+#endif // !NO_NETWORK

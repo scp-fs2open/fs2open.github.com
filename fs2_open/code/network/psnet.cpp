@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/PsNet.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-01-31 23:27:55 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-02 21:18:20 $
  * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/01/31 23:27:55  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.6  2004/07/26 20:47:44  Kazan
  * remove MCD complete
  *
@@ -133,6 +136,10 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #ifdef _WIN32
 #include <windows.h>
@@ -3128,3 +3135,5 @@ void psnet_reliable_send_ack(net_addr *addr,ushort id_num)
 }
 
 #endif  // #ifndef PSNET2
+
+#endif // !NO_NETWORK

@@ -9,16 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.24 $
- * $Date: 2005-03-01 23:08:24 $
+ * $Revision: 2.25 $
+ * $Date: 2005-03-02 21:18:18 $
  * $Author: taylor $
- * $Revision: 2.24 $
- * $Date: 2005-03-01 23:08:24 $
+ * $Revision: 2.25 $
+ * $Date: 2005-03-02 21:18:18 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/03/01 23:08:24  taylor
+ * make sure starfield bitmaps render when not in HTL mode
+ * slight header fix for osapi.h
+ * add some string overflow protection to modelread and bmpman
+ * s/NO_NETWORKING/NO_NETWORK/g  (Inferno builds)
+ *
  * Revision 2.23  2005/02/08 23:49:58  taylor
  * update/add .cvsignore files for project file changes
  * silence warning about depreciated strings.h stuff for MSVC 2005
@@ -335,10 +341,6 @@
 //  	#define GAME_CD_CHECK
 //  #endif
 
-// Inferno builds break multiplayer so always build without networking
-#if defined(INF_BUILD)
-	#define NO_NETWORK
-#endif
 
 // 4127 is constant conditional (assert)
 // 4100 is unreferenced formal parameters,

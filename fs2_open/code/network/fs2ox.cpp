@@ -9,13 +9,16 @@
 
 /*
  * $Logfile$
- * $Revision: 1.13 $
- * $Date: 2005-02-23 04:55:09 $
+ * $Revision: 1.14 $
+ * $Date: 2005-03-02 21:18:19 $
  * $Author: taylor $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/02/23 04:55:09  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 1.12  2004/11/18 00:05:37  Goober5000
  * #pragma'd a bunch of warnings
  * --Goober5000
@@ -60,6 +63,9 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 // 4786 = identifier truncated in the debug information
 // 4710 = function not inlined
@@ -602,3 +608,5 @@ void fs2ox_button_pressed(int n)
 		break;
 	}
 }
+
+#endif // !NO_NETWORK

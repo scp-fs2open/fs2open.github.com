@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-02-04 20:06:03 $
+ * $Revision: 1.9 $
+ * $Date: 2005-03-02 21:18:18 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/02/04 20:06:03  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 1.7  2004/07/26 20:47:29  Kazan
  * remove MCD complete
  *
@@ -42,6 +45,9 @@
  *
  */
 
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #pragma warning(disable:4710)	// function not inlined
 #pragma warning(disable:4711)	// function inlined
@@ -187,3 +193,4 @@ int UDP_Socket::SendPacket(char *buffer, int plen, std::string &to, int toport)
 	return sent;
 }
 
+#endif // !NO_NETWORK

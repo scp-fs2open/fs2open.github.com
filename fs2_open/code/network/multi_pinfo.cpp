@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-04 20:06:05 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-02 21:18:19 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/04 20:06:05  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.5  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -99,6 +102,10 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "network/multi_pinfo.h"
 #include "ui/ui.h"
@@ -966,3 +973,5 @@ net_player *multi_pinfo_get_next_player(net_player *np)
 	
 	return NULL;
 }
+
+#endif // !NO_NETWORK

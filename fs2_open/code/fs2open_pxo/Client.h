@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.17 $
- * $Date: 2005-02-04 20:06:03 $
+ * $Revision: 1.18 $
+ * $Date: 2005-03-02 21:18:18 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/02/04 20:06:03  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 1.16  2004/08/11 05:06:23  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -112,7 +115,7 @@ void SendHeartBeat(const char* masterserver, int targetport, PXO_Socket &Socket,
 int Fs2OpenPXO_Login(const char* username, const char* password, PXO_Socket &Socket, const char* masterserver, int port=FS2OPEN_PXO_PORT, int timeout=15);
 int GetPingReply(PXO_Socket &Socket);
 void SendPingReply(PXO_Socket &Socket, int tstamp);
-fs2open_banmask* GetBanList(int &numBanMasks, PXO_Socket &Socket, int timeout=30);
+fs2open_banmask* GetBanList(int &numBanMasks, PXO_Socket &Socket, int timeout=15);
 
 // longer timeouts - mySQL operations
 file_record* GetTablesList(int &numTables, const char *masterserver, PXO_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);

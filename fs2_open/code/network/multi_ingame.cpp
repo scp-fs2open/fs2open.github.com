@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-02-04 20:06:04 $
+ * $Revision: 2.19 $
+ * $Date: 2005-03-02 21:18:19 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/02/04 20:06:04  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.17  2004/12/14 14:46:13  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -363,6 +366,10 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
+
+#ifndef NO_NETWORK
 
 #include "globalincs/globals.h"
 #include "object/object.h"
@@ -2233,3 +2240,4 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();
 }
 
+#endif // !NO_NETWORK
