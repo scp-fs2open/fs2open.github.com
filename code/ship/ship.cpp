@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.44 $
- * $Date: 2003-01-19 22:20:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.45 $
+ * $Date: 2003-01-20 05:40:50 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/01/19 22:20:22  Goober5000
+ * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
+ * and departure into hangars should now all work properly
+ * --Goober5000
+ *
  * Revision 2.43  2003/01/19 08:37:52  Goober5000
  * fixed two dumb bugs in the set-support-ship code
  * --Goober5000
@@ -2551,6 +2556,10 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->decals[i].timestamp = timestamp();
 		shipp->decals[i].is_valid = 0;
 	}
+	for(i = 0; i<32; i++){
+		(shipp->glows_active |= (1 << i));
+	}
+	shipp->glowmaps_active = 1;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because

@@ -21,6 +21,7 @@ int poly_num = 0;
 static vector decal_cube_point[8];
 static vector decal_cube_plane[6][2];
 static vector decal_hit_point;
+static vector decal_hit_vect;
 static float decal_hit_radius;
 
 static matrix decal_orient;
@@ -272,6 +273,7 @@ mprintf(("cube set up\n"));
 
 	decal_hit_point = point->pnt;
 	decal_hit_radius = max_rad;
+	decal_hit_vect = point->orient.vec.fvec;
 	poly_num = 0;
 	nverts = 0;
 
@@ -303,7 +305,8 @@ mprintf(("deacal defined\n"));
 	sdec[dinx].lifetime = 3000;
 	sdec[dinx].frames = 1;
 	sdec[dinx].importance = 0;
-
+	sdec[dinx].radius = max_rad;
+	sdec[dinx].position = point->pnt;
 
 	mprintf(("a decal should have been made with %d polys\n",sdec[0].n_poly));
 
@@ -373,11 +376,19 @@ void decal_create_sortnorm(ubyte * p)
 	int prelist = dw(p+44);
 	int postlist = dw(p+48);
 	int onlist = dw(p+52);
-/*
-	if ( Mc_pm->version >= 2000 )	{
-		if (!mc_ray_boundingbox( vp(p+56), vp(p+68), &Mc_p0, &Mc_direction, NULL ))	{
-			return;
-		}
+
+	vector min, max;
+	min.xyz = dvp(p+56)->xyz;
+	max.xyz = dvp(p+68)->xyz;
+	min.xyz.x += decal_hit_radius;
+	min.xyz.y += decal_hit_radius;
+	min.xyz.z += decal_hit_radius;
+	max.xyz.x += decal_hit_radius;
+	max.xyz.y += decal_hit_radius;
+	max.xyz.z += decal_hit_radius;
+
+/*	if (!fvi_ray_boundingbox( &min, &max, &decal_hit_point, &decal_hit_vect, NULL ))	{
+		return;
 	}
 */
 	if (prelist) decal_create_sub(p+prelist);
@@ -555,7 +566,7 @@ void decal_create_tmappoly(ubyte * p)
 //		mprintf(("temp poly has %d points\n", numv));
 		for(int h = 0; h < numv; h++){
 			decal_poly[h] = temp_poly[h];
-			mprintf(("seting decal_poly %d to %d\n",h,temp_poly[h]));
+			mprintf(("seting decal_poly point %d to %d\n",h,temp_poly[h]));
 		}
 		nv = numv;
 		numv=0;
@@ -567,7 +578,7 @@ void decal_create_tmappoly(ubyte * p)
 //	mprintf(("copying the poly to the decal\n"));
 	//copy a triangulated version of the poly to the new decal
 	if((valid == 1) && (nv > 2)){
-		for (i=1;i<(nv-1);i++)	{
+/*		for (i=1;i<(nv-1);i++)	{
 			if(poly_num >= MAX_DECAL_POLY){
 				mprintf(("bugging out becase there are too many polys in the decal\n"));		
 				return;
@@ -588,7 +599,29 @@ void decal_create_tmappoly(ubyte * p)
 			}
 //			mprintf(("decal poly %d, vert 0 being set to %d, vert 1 %d, and vert 2 %d\n", poly_num, new_decal->poly[poly_num].point[0], new_decal->poly[poly_num].point[1], new_decal->poly[poly_num].point[2]));
 			poly_num++;
+		}*/
+		for (i=1;i<nv;i++){
+			if(poly_num >= MAX_DECAL_POLY){
+				mprintf(("bugging out becase there are too many polys in the decal\n"));		
+				return;
+			}
+			if(i >= MAX_DECAL_POLY_POINT){
+				mprintf(("bugging out becase there are too many points in the poly\n"));		
+				return;
+			}
+			new_decal->poly[poly_num].point[i] = decal_poly[i];
+			new_decal->poly[poly_num].norm = pnorm;
+			if(back > 0){
+				new_decal->poly[poly_num].backfaced = 0;
+			}else{
+				new_decal->poly[poly_num].backfaced = 1;
+			}
+				//calculate the UV coords
+			new_decal->poly[poly_num].uv[i].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &new_decal->vert[new_decal->poly[poly_num].point[i]]) / (min_rad*2));
+			new_decal->poly[poly_num].uv[i].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &new_decal->vert[new_decal->poly[poly_num].point[i]]) / (min_rad*2));
+//			mprintf(("decal poly %d, vert 0 being set to %d, vert 1 %d, and vert 2 %d\n", poly_num, new_decal->poly[poly_num].point[0], new_decal->poly[poly_num].point[1], new_decal->poly[poly_num].point[2]));
 		}
+		poly_num++;
 	}else{
 //		mprintf(("no poly, all points are out side of planes"));
 	}
@@ -724,6 +757,13 @@ void decal_render_all(object * obj){
 		decal *dec = &shipp->decals[h];
 		if(dec->is_valid){
 			mprintf(("decal %d is valid, and has %d polys\n",h,dec->n_poly));
+			vector g_pos;
+			vm_vec_add(&g_pos, &dec->position, &obj->pos);
+			float dist = vm_vec_dist_quick(&g_pos, &View_position);
+				if(dist < (dec->radius*10)){
+					mprintf(("decal %d too far away to be drawn %0.2f\n", h, dist));
+					continue;
+				}
 			for(int i = 0; i<dec->n_poly; i++){
 
 			//	if((pm->submodel[dec->submodel_parent].blown_off != 0) && (dec->submodel_parent > 0))continue;

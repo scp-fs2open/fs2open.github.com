@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-01-19 01:07:41 $
+ * $Revision: 2.20 $
+ * $Date: 2003-01-20 05:40:49 $
  * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/01/19 01:07:41  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.18  2003/01/15 21:26:35  anonymous
  * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
  *
@@ -3978,6 +3981,8 @@ void game_flip_page_and_time_it()
 
 void game_simulation_frame()
 {
+	mprintf(("about to render a frame\n"));
+
 #ifndef NO_NETWORK
 	// blow ships up in multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
@@ -4009,6 +4014,7 @@ void game_simulation_frame()
 
 	// process AWACS stuff - do this first thing
 	awacs_process();
+mprintf(("awacs procesed\n"));
 
 	// single player, set Player hits_this_frame to 0
 	if ( !(Game_mode & GM_MULTIPLAYER) && Player ) {
@@ -4030,6 +4036,7 @@ void game_simulation_frame()
 	// the basic idea being that because it con be confusing to deal with them on a multi-frame basis, they are only valid for
 	// frame
 	ship_process_targeting_lasers();	
+mprintf(("targeting lasers procesed\n"));
 
 	// do this here so that it works for multiplayer
 	if ( Viewer_obj ) {
@@ -4056,6 +4063,7 @@ void game_simulation_frame()
 	} else {
 		physics_set_viewer( NULL, PHYSICS_VIEWER_FRONT );
 	}
+mprintf(("view stuff done\n"));
 
 #define	VM_PADLOCK_UP					(1 << 7)
 #define	VM_PADLOCK_REAR				(1 << 8)
@@ -4099,11 +4107,14 @@ void game_simulation_frame()
 			mission_eval_goals();
 		}
 #endif  // ifndef NO_NETWORK
+mprintf(("arivals\\departures done\n"));
 
 	// always check training objectives, even in multiplayer missions. we need to do this so that the directives gauge works properly on clients
 	if(!(Game_mode & GM_DEMO_PLAYBACK)){
 		training_check_objectives();
 	}
+	mprintf(("objectives procesed\n"));
+
 	
 #ifndef NO_NETWORK
 	// do all interpolation now
@@ -4119,12 +4130,15 @@ void game_simulation_frame()
 		// move all objects - does interpolation now as well
 		obj_move_all(flFrametime);
 	}
+	mprintf(("interpolation procesed\n"));
+
 #endif  // ifndef NO_NETWORK
 
 	// only process the message queue when the player is "in" the game
 	if ( !Pre_player_entry ){
 		message_queue_process();				// process any messages send to the player
 	}
+mprintf(("message queue procesed\n"));
 
 	if(!(Game_mode & GM_DEMO_PLAYBACK)){
 		message_maybe_distort();				// maybe distort incoming message if comms damaged
@@ -4132,12 +4146,14 @@ void game_simulation_frame()
 		player_process_pending_praise();		// maybe send off a delayed praise message to the player
 		player_maybe_play_all_alone_msg();	// mabye tell the player he is all alone	
 	}
+mprintf(("assorted player stuff procesed\n"));
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){		
 		// process some stuff every frame (before frame is rendered)
 		emp_process_local();
 
 		hud_update_frame();						// update hud systems
+mprintf(("HUD updated\n"));
 
 		if (!physics_paused)	{
 			// Move particle system
@@ -4154,9 +4170,11 @@ void game_simulation_frame()
 
 			shockwave_move_all(flFrametime);	// update all the shockwaves
 		}
+mprintf(("physics stuff procesed\n"));
 
 		// subspace missile strikes
 		ssm_process();
+mprintf(("SSM procesed\n"));
 
 #ifndef NO_SOUND
 		obj_snd_do_frame();						// update the object-linked persistant sounds
@@ -4169,6 +4187,7 @@ void game_simulation_frame()
 		if ( Game_subspace_effect ) {
 			game_start_subspace_ambient_sound();
 		}
+mprintf(("sound procesed\n"));
 #endif
 	}
 	mprintf(("frame rendered\n"));

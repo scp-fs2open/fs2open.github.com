@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.28 $
- * $Date: 2003-01-19 22:20:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.29 $
+ * $Date: 2003-01-20 05:40:50 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/01/19 22:20:22  Goober5000
+ * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
+ * and departure into hangars should now all work properly
+ * --Goober5000
+ *
  * Revision 2.27  2003/01/19 07:02:15  Goober5000
  * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
  * all ships, and all ships who have their departure anchor set to a capital ship
@@ -849,6 +854,9 @@ typedef struct ship {
 	int ab_count;
 
 	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
+	int glows_active;
+	int glowmaps_active;
+	int n_decal;
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful

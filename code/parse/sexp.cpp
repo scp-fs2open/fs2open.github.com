@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.35 $
- * $Date: 2003-01-19 22:20:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.36 $
+ * $Date: 2003-01-20 05:40:50 $
+ * $Author: bobboau $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/01/19 22:20:22  Goober5000
+ * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
+ * and departure into hangars should now all work properly
+ * --Goober5000
+ *
  * Revision 2.34  2003/01/19 07:45:38  Goober5000
  * actually added the set-support-ship sexp; much of the other commit was
  * groundwork (data types and stuff)
@@ -713,7 +718,12 @@ sexp_oper Operators[] = {
 	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
 	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
 	{ "change-ship-model",			OP_CHANGE_SHIP_MODEL,			2, INT_MAX },	// Goober5000
-	{ "change-ship-class",			OP_CHANGE_SHIP_CLASS,			2, INT_MAX },	// Goober5000
+	{ "deactivate-glow-points",		OP_DEACTIVAE_GLOW_POINTS,		1, INT_MAX },	//-Bobboau
+	{ "activate-glow-points",		OP_ACTIVAE_GLOW_POINTS,			1, INT_MAX },	//-Bobboau
+	{ "deactivate-glow-maps",		OP_DEACTIVAE_GLOW_MAPS,			1, INT_MAX },	//-Bobboau
+	{ "activate-glow-maps",			OP_ACTIVAE_GLOW_MAPS,			1, INT_MAX },	//-Bobboau
+	{ "deactivate-glow-point-bank",	OP_DEACTIVAE_GLOW_POINT,		2, INT_MAX },	//-Bobboau
+	{ "activate-glow-point-bank",	OP_ACTIVAE_GLOW_POINT,		2, INT_MAX },	//-Bobboau
 
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
@@ -7809,6 +7819,133 @@ void sexp_change_ship_class(int n)
 	}
 }
 
+
+//-Bobboau
+
+
+void sexp_deactivate_glow_points(int n){
+
+	char *ship_name;
+
+	ship_name = CTEXT(n);
+
+	int sindex = ship_name_lookup(ship_name);
+
+//	HUD_printf("deactivateing glows on %s", Ships[sindex].ship_name);
+
+	ship *shipp;
+	for ( ; n != -1; n = CDR(n))
+	{
+		shipp = &Ships[sindex];
+		for(int i = 0; i<32; i++){
+			shipp->glows_active	&= ~(1 << i);	
+		}
+		ship_name = CTEXT(n);
+		sindex = ship_name_lookup(CTEXT(n), 1);
+	}
+}
+
+void sexp_activate_glow_points(int n){
+	char *ship_name;
+
+	ship_name = CTEXT(n);
+
+	int sindex = ship_name_lookup(ship_name);
+
+//	HUD_printf("activateing glows on %s", Ships[sindex].ship_name);
+	ship *shipp;
+	for ( ; n != -1; n = CDR(n))
+	{
+		shipp = &Ships[sindex];
+		for(int i = 0; i<32; i++){
+			shipp->glows_active	|= (1 << i);
+		}
+		sindex = ship_name_lookup(CTEXT(n), 1);
+	}
+}
+
+void sexp_deactivate_glow_maps(int n){
+	char *ship_name;
+
+	ship_name = CTEXT(n);
+
+	int sindex = ship_name_lookup(ship_name);
+
+//	HUD_printf("deactivateing glowmaps on %s", Ships[sindex].ship_name);
+	ship *shipp;
+	for ( ; n != -1; n = CDR(n))
+	{
+		shipp = &Ships[sindex];
+		shipp->glowmaps_active = 0;	
+		sindex = ship_name_lookup(CTEXT(n), 1);
+	}
+}
+
+void sexp_activate_glow_maps(int n){
+	char *ship_name;
+
+	ship_name = CTEXT(n);
+
+	int sindex = ship_name_lookup(ship_name);
+
+//	HUD_printf("activateing glowmaps on %s", Ships[sindex].ship_name);
+	ship *shipp;
+	for ( ; n != -1; n = CDR(n))
+	{
+		shipp = &Ships[sindex];
+		shipp->glowmaps_active = 1;	
+		sindex = ship_name_lookup(CTEXT(n), 1);
+	}
+}
+
+void sexp_deactivate_glow_point(int n){
+
+	char *ship_name;
+
+	ship_name = CTEXT(n);
+
+	int sindex = ship_name_lookup(ship_name);
+
+	ship *shipp;
+	n = CDR(n);
+	
+	shipp = &Ships[sindex];
+	int i = CDR(n);
+
+	for ( ; n != -1; n = CDR(n))
+	{
+		i = (int)atoi(CTEXT(n));
+		HUD_printf("deactivateing glow %d on %s", i, Ships[sindex].ship_name);
+
+		shipp->glows_active	&= ~(1 << i);
+	}
+
+}
+
+void sexp_activate_glow_point(int n){
+
+	char *ship_name;
+
+	ship_name = CTEXT(n);
+
+	int sindex = ship_name_lookup(ship_name);
+
+	ship *shipp;
+	n = CDR(n);
+	
+	shipp = &Ships[sindex];
+	int i = CDR(n);
+
+	for ( ; n != -1; n = CDR(n))
+	{
+		i = (int)atoi(CTEXT(n));
+		HUD_printf("activateing glow %d on %s", i, Ships[sindex].ship_name);
+
+		shipp->glows_active	|= (1 << i);
+	}
+
+}
+
 void sexp_beam_fire(int node)
 {
 	int sindex;
@@ -9872,6 +10009,31 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+				//-Bobboau
+			case OP_DEACTIVAE_GLOW_POINTS:
+				sexp_deactivate_glow_points(node);
+				sexp_val = 1;
+				break;
+			case OP_ACTIVAE_GLOW_POINTS:
+				sexp_activate_glow_points(node);
+				sexp_val = 1;
+				break;
+			case OP_DEACTIVAE_GLOW_MAPS:
+				sexp_deactivate_glow_maps(node);
+				sexp_val = 1;
+				break;
+			case OP_ACTIVAE_GLOW_MAPS:
+				sexp_activate_glow_maps(node);
+				sexp_val = 1;
+				break;
+			case OP_DEACTIVAE_GLOW_POINT:
+				sexp_deactivate_glow_point(node);
+				sexp_val = 1;
+				break;
+			case OP_ACTIVAE_GLOW_POINT:
+				sexp_activate_glow_point(node);
+				sexp_val = 1;
+				break;
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -10191,6 +10353,12 @@ int query_operator_return_type(int op)
 		case OP_COLLIDE_INVISIBLE:
 		case OP_CHANGE_SHIP_MODEL:
 		case OP_CHANGE_SHIP_CLASS:
+		case OP_DEACTIVAE_GLOW_POINTS:
+		case OP_ACTIVAE_GLOW_POINTS:
+		case OP_DEACTIVAE_GLOW_MAPS:
+		case OP_ACTIVAE_GLOW_MAPS:
+		case OP_DEACTIVAE_GLOW_POINT:
+		case OP_ACTIVAE_GLOW_POINT:
 		case OP_SET_SUPPORT_SHIP:
 			return OPR_NULL;
 
@@ -10932,6 +11100,18 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_CLASS_NAME;
 			else
 				return OPF_SHIP;
+
+		case OP_DEACTIVAE_GLOW_POINTS:	//-Bobboau
+		case OP_ACTIVAE_GLOW_POINTS:	//-Bobboau
+		case OP_DEACTIVAE_GLOW_MAPS:	//-Bobboau
+		case OP_ACTIVAE_GLOW_MAPS:		//-Bobboau
+			return OPF_SHIP;	//a list of ships that are to be activated/deactivated
+		case OP_DEACTIVAE_GLOW_POINT:
+		case OP_ACTIVAE_GLOW_POINT:
+			if (!argnum)
+				return OPF_SHIP;		//the ship
+			else
+				return OPF_NUMBER;		//the glow bank to disable
 
 		// Goober5000 - this is complicated :)
 		case OP_SET_SUPPORT_SHIP:

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-01-19 01:07:41 $
+ * $Revision: 2.15 $
+ * $Date: 2003-01-20 05:40:49 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/01/19 01:07:41  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.13  2003/01/17 01:48:49  Goober5000
  * added capability to the $Texture replace code to substitute the textures
  * without needing and extra model, however, this way you can't substitute
@@ -314,6 +317,8 @@ int modelstats_num_verts = 0;
 int modelstats_num_sortnorms = 0;
 int modelstats_num_boxes = 0;
 #endif
+
+int glow_maps_active = 1;
 
 // a lighting object
 typedef struct model_light_object {
@@ -1034,9 +1039,11 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					} else {
 						if (pm->is_ani[w(p+40)]){
 							texture = pm->textures[w(p+40)] + ((timestamp() / (int)(pm->fps[w(p+40)])) % pm->num_frames[w(p+40)]);//here is were it picks the texture to render for ani-Bobboau
+							if(glow_maps_active)
 							GLOWMAP = pm->glow_textures[w(p+40)] + ((timestamp() / (int)(pm->glow_fps[w(p+40)])) % pm->glow_numframes[w(p+40)]);
 						}else{
 							texture = pm->textures[w(p+40)];//here is were it picks the texture to render for normal-Bobboau
+							if(glow_maps_active)
 							GLOWMAP = pm->glow_textures[w(p+40)];
 						}
 					}
@@ -2727,11 +2734,20 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 {
 	int i, detail_level;
 	polymodel * pm;
+	glow_maps_active = 1;
 
 	uint save_gr_zbuffering_mode;
 	int zbuf_mode;
 	int objnum = light_ignore_id;
-//	ship *shipp = &Ships[Objects[objnum].instance];
+	ship *shipp = NULL;
+	int is_ship = 0;
+	object *obj = &Objects[objnum];
+	if(obj->type == OBJ_SHIP){
+		shipp = &Ships[obj->instance];
+		is_ship = 1;
+		glow_maps_active = shipp->glowmaps_active;
+	}
+	
 
 
 	MONITOR_INC( NumModelsRend, 1 );	
@@ -3029,6 +3045,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			glow_bank *bank = &pm->glows[i];
 			int j;
 			if(bank->is_on){
+				if(is_ship && i<32)
+				if(!(shipp->glows_active & (1 << i)))continue;
 
 				for ( j=0; j<bank->num_slots; j++ )	{
 					
@@ -3316,7 +3334,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 
 	g3_done_instance();
-	gr_zbuffer_set(save_gr_zbuffering_mode);	
+	gr_zbuffer_set(save_gr_zbuffering_mode);
+	
+	glow_maps_active = 1;
+
 }
 
 
