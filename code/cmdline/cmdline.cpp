@@ -9,11 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.54 $
- * $Date: 2004-02-16 11:47:31 $
+ * $Revision: 2.55 $
+ * $Date: 2004-02-20 21:45:40 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2004/02/16 11:47:31  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.53  2004/02/04 10:14:25  Goober5000
  * changed spec and glow to be off by default; command lines are now -spec and -glow
  * --Goober5000
@@ -525,7 +532,7 @@ cmdline_parm spec_arg("-spec", NULL); // use specular highlighting -Sticks
 cmdline_parm glow_arg("-glow", NULL); // use Bobs glow code
 cmdline_parm MissionCRCs("-missioncrcs", NULL);
 cmdline_parm TableCRCs("-tablecrcs", NULL);
-cmdline_parm htl_arg("-htl", NULL); //Use HT&L	  
+cmdline_parm htl_arg("-nohtl", NULL); //Use HT&L	  
 cmdline_parm cell_arg("-cell", NULL);
 cmdline_parm jpgtga_arg("-jpgtga",NULL);
 cmdline_parm no_set_gamma_arg("-no_set_gamma",NULL);

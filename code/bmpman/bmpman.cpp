@@ -10,13 +10,24 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.20 $
- * $Date: 2004-02-14 00:18:29 $
+ * $Revision: 2.21 $
+ * $Date: 2004-02-20 21:45:40 $
  * $Author: randomtiger $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/02/14 00:18:29  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.19  2004/01/18 14:03:22  randomtiger
  * A couple of FRED_OGL changes.
  *
@@ -2353,11 +2364,6 @@ void bm_gfx_page_in_start()
 
 }
 
-#ifndef NO_DIRECT3D
-extern void gr_d3d_preload_init();
-extern int gr_d3d_preload(int bitmap_num, int is_aabitmap );
-#endif
-
 void bm_gfx_page_in_stop()
 {	
 	int i;	
@@ -2371,11 +2377,6 @@ void bm_gfx_page_in_stop()
 	#ifdef BMPMAN_NDEBUG
 	Bm_ram_freed = 0;
 	#endif
-
-#ifndef NO_DIRECT3D
-	int d3d_preloading = 1;
-	gr_d3d_preload_init();
-#endif
 
 	for (i = 0; i < MAX_BITMAPS; i++)	{
 		if ( bm_bitmaps[i].type != BM_TYPE_NONE )	{
@@ -2402,15 +2403,6 @@ void bm_gfx_page_in_stop()
 					bm_lock( bm_bitmaps[i].handle, 16, bm_bitmaps[i].used_flags );
 				}
 				bm_unlock( bm_bitmaps[i].handle );
-
-#ifndef NO_DIRECT3D
-				if ( d3d_preloading )	{
-					if ( !gr_d3d_preload(bm_bitmaps[i].handle, (bm_bitmaps[i].preloaded==2) ) )	{
-						mprintf(( "Out of VRAM.  Done preloading.\n" ));
-						d3d_preloading = 0;
-					}
-				}
-#endif
 
 				n++;
 				#ifdef BMPMAN_NDEBUG
