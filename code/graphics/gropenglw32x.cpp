@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLw32x.cpp $
- * $Revision: 1.3 $
- * $Date: 2002-10-13 21:43:24 $
+ * $Revision: 1.4 $
+ * $Date: 2002-10-14 19:49:08 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/10/13 21:43:24  phreak
+ * further optimizations
+ *
  * Revision 1.2  2002/10/12 17:48:11  phreak
  * fixed text
  *
@@ -282,7 +285,7 @@ This file combines penguin's and the Icculus OpenGL code
 5. Fix rendering of ships after this is all done (access violation in nvopengl.dll 
 	(opengl32.dll for nvidia cards)
 
-6. Switch to true 3d graphics (not projected)
+6. Switch to true 3d graphics (not ortho)
 7. Start extenstion implentation (last)
 
 other small projects
@@ -321,6 +324,8 @@ won't crash due to an integer divide by 0 error in bm_set_components (another TO
 #include "nebula/neb.h"
 #include "io/mouse.h"
 #include "osapi/osregistry.h"
+#include "cfile/cfile.h"
+#include "io/timer.h"
 
 static int Inited = 0;
 static HDC dev_context = NULL;
@@ -1752,7 +1757,42 @@ void gr_opengl_set_color_fast(color *dst)
 
 void gr_opengl_print_screen(char *filename)
 {
-	STUB_FUNCTION;
+	ubyte buf[1024*3];
+
+	memset(buf,0,1024*3);
+	char tmp[1024];
+
+	strcpy( tmp, NOX(".\\gl"));	// specify a path mean files goes in root
+	strcat( tmp, filename );
+	strcat( tmp, NOX(".tga"));
+
+	CFILE *f = cfopen(tmp, "wb");
+
+	// Write the TGA header
+	cfwrite_ubyte( 0, f );	//	IDLength;
+	cfwrite_ubyte( 0, f );	//	ColorMapType;
+	cfwrite_ubyte( 2, f );	//	ImageType;		// 2 = 24bpp, uncompressed, 10=24bpp rle compressed
+	cfwrite_ushort( 0, f );	// CMapStart;
+	cfwrite_ushort( 0, f );	//	CMapLength;
+	cfwrite_ubyte( 0, f );	// CMapDepth;
+	cfwrite_ushort( 0, f );	//	XOffset;
+	cfwrite_ushort( 0, f );	//	YOffset;
+	cfwrite_ushort( (ushort)gr_screen.max_w, f );	//	Width;
+	cfwrite_ushort( (ushort)gr_screen.max_h, f );	//	Height;
+	cfwrite_ubyte( 24, f );	//PixelDepth;
+	cfwrite_ubyte( 0, f );	//ImageDesc;
+	
+	int h=gr_screen.max_h;
+	int w=gr_screen.max_w;
+
+	for (int i=0; i < h; i++)
+	{
+		glReadPixels(0,i,w,1,GL_BGR_EXT, GL_UNSIGNED_BYTE, buf);	
+		cfwrite(buf,w*3,1,f);
+	}
+	
+	cfclose(f);
+
 }
 
 int gr_opengl_supports_res_ingame(int res)
@@ -1943,8 +1983,6 @@ void opengl_tcache_init (int use_sections)
 	} else {
 		GL_should_preload = 1;
 	}
-
-	STUB_FUNCTION;
 
 	GL_min_texture_width = 16;
 	GL_min_texture_height = 16;
