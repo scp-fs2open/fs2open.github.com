@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-09-15 12:34:09 $
- * $Author: fryday $
+ * $Revision: 2.19 $
+ * $Date: 2003-10-23 23:49:12 $
+ * $Author: phreak $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/09/15 12:34:09  fryday
+ * Rollback killed my lens-flare. D'oh.
+ *
  * Revision 2.17  2003/09/13 06:02:08  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -675,6 +678,8 @@ void stars_level_init()
 		Nmodel_bitmap = -1;
 	}
 
+	stars_set_background_model(The_mission.skybox_model,"");
+
 	// if (!stars_debris_loaded){
 		stars_load_debris();
 	// }
@@ -1293,6 +1298,8 @@ void subspace_render()
 	gr_zbuffer_set(saved_gr_zbuffering);
 }
 
+extern void stars_draw_background();
+
 void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subspace )
 {
 	int i;
@@ -1325,10 +1332,14 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 		// semi-hack, do we don't fog the background
 		int neb_save = Neb2_render_mode;
 		Neb2_render_mode = NEB2_RENDER_NONE;
-		extern void stars_draw_background();
 		stars_draw_background();
 		Neb2_render_mode = neb_save;
 	}
+	else if (!show_subspace)		//dont render the background pof when rendering subspace
+	{
+		stars_draw_background();
+	}
+	else{}
 
 	if (show_stars && ( Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags & MISSION_FLAG_FULLNEB) && (supernova_active() < 3))	{
 		//Num_stars = 1;
@@ -1648,21 +1659,38 @@ void stars_page_in()
 
 // background nebula models and planets
 void stars_draw_background()
-{				
-	if((Nmodel_num < 0) || (Nmodel_bitmap < 0)){
+{	
+	int flags = MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING;
+
+	if (Nmodel_num < 0){
 		return;
 	}
 
+	if (Nmodel_bitmap > -1)
+	{
+		model_set_forced_texture(Nmodel_bitmap);
+		flags |= MR_FORCE_TEXTURE;
+	}
+
 	// draw the model at the player's eye wif no z-buffering
-	model_set_alpha(1.0f);
-	model_set_forced_texture(Nmodel_bitmap);	
-	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING | MR_FORCE_TEXTURE);	
-	model_set_forced_texture(-1);
+	model_set_alpha(1.0f);	
+	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
+
+	if (Nmodel_bitmap > -1) model_set_forced_texture(-1);
 }
 
 // call this to set a specific model as the background model
 void stars_set_background_model(char *model_name, char *texture_name)
 {
+	if (Nmodel_bitmap >= 0)
+		bm_unload(Nmodel_bitmap);
+
+	if (!stricmp(model_name,""))
+	{
+		Nmodel_num=-1;
+		return;
+	}
+
 	Nmodel_num = model_load(model_name, 0, NULL);
 	Nmodel_bitmap = bm_load(texture_name);
 }
