@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-03-21 09:41:54 $
- * $Author: randomtiger $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-12 16:33:04 $
+ * $Author: Kazan $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/21 09:41:54  randomtiger
+ * Fixed a bug that was causing windowed movie playback and a crash.
+ * Added some batching redirection.
+ *
  * Revision 2.10  2004/03/17 04:07:31  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -190,6 +194,9 @@
 #include "io/key.h"
 #include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int Lasers = 1;
 DCF_BOOL( lasers, Lasers );

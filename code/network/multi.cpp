@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-07-07 23:34:08 $
+ * $Revision: 2.22 $
+ * $Date: 2004-07-12 16:32:57 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/07/07 23:34:08  Kazan
+ * fixed a typo in one of the fs2netd strings
+ * played with WMCoolmon's hacked up escort list
+ *
  * Revision 2.20  2004/07/07 21:00:08  Kazan
  * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
  *
@@ -321,6 +325,10 @@ extern char PXO_Server[];
 extern int PXO_port;
 
 #pragma warning(pop)
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 // ----------------------------------------------------------------------------------------
 // Basic module scope defines
 //

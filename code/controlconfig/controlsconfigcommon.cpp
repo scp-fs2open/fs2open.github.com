@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-05-03 21:22:19 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-12 16:32:43 $
  * $Author: Kazan $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/05/03 21:22:19  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.5  2004/04/06 03:09:01  phreak
  * added a control config option for the wireframe hud targetbox i enabled ages ago
  *
@@ -397,6 +402,9 @@
 #include "io/key.h"
 #include "io/joy.h"
 #include "localization/localize.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define TARGET_TAB			0
 #define SHIP_TAB				1

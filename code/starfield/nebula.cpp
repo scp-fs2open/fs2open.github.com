@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:02:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:33:07 $
+ * $Author: Kazan $
  *
  * Code to load & display nebulas
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:02:07  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2004/02/15 06:02:32  bobboau
  * fixed sevral asorted matrix errors,
  * OGL people make sure I didn't break anything,
@@ -144,6 +148,10 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "cfile/cfile.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 #define MAX_TRIS 200
 #define MAX_POINTS 300

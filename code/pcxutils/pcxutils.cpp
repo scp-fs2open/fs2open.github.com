@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:02:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:33:02 $
+ * $Author: Kazan $
  *
  * code to deal with pcx files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:02:09  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/11/19 20:37:24  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -135,6 +139,8 @@
 #include "palman/palman.h"
 #include "bmpman/bmpman.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 
 /* PCX Header data type */

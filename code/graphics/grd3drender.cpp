@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.50 $
- * $Date: 2004-07-05 05:09:19 $
- * $Author: bobboau $
+ * $Revision: 2.51 $
+ * $Date: 2004-07-12 16:32:48 $
+ * $Author: Kazan $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2004/07/05 05:09:19  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.49  2004/05/25 00:37:26  wmcoolmon
  * Updated function calls for VC7 use
  *
@@ -712,6 +718,9 @@
 #include "debugconsole/dbugfile.h"
 
 #include <D3dx8tex.h>
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // Viewport used to change render between full screen and sub sections like the pilot animations
 D3DVIEWPORT8 viewport;

@@ -9,15 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-12 16:32:41 $
+ * $Author: Kazan $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
  * Anim files.  Also handles Anim loading, creating Anim instances (for
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2004/02/14 00:18:29  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -193,6 +197,10 @@
 #include "bmpman/bmpman.h"
 #include "graphics/2d.h"
 #include "anim/animplay.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 int packer_code = PACKER_CODE;
 int transparent_code = 254;

@@ -5,11 +5,16 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.8 $
- * $Date: 2004-03-31 05:42:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.9 $
+ * $Date: 2004-07-12 16:33:07 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/03/31 05:42:29  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 1.7  2004/03/05 09:02:13  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -56,6 +61,8 @@
 #include "cfile/cfile.h"
 //#include <memory.h>
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // from shield.cpp
 int True_NumSpecies = 3;

@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:49 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2003/03/19 12:29:02  unknownplayer
  * Woohoo! Killed two birds with one stone!
  * Fixed the 'black screen around dialog boxes' problem and also the much more serious freezing problem experienced by Goober5000. It wasn't a crash, just an infinite loop. DX8 merge is GO! once again :)
@@ -67,6 +71,8 @@
 #include "object/object.h"
 #include "math/vecmat.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS

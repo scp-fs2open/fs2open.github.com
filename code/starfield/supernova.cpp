@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:33:07 $
+ * $Author: Kazan $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:07  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -62,6 +66,8 @@
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // --------------------------------------------------------------------------------------------------------------------------
 // SUPERNOVA DEFINES/VARS

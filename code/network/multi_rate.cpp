@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-04-03 06:22:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:57 $
+ * $Author: Kazan $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/04/03 06:22:32  Goober5000
+ * fixed some stub functions and a bunch of compile warnings
+ * --Goober5000
+ *
  * Revision 2.2  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -58,6 +62,9 @@
 
 #include "io/timer.h"
 #include "globalincs/alphacolors.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // how many records in the past we'll keep track of
 #define NUM_UPDATE_RECORDS							5

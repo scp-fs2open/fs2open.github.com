@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-08 22:02:38 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:47 $
  * $Author: Kazan $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/08 22:02:38  Kazan
+ * Lobby GUI screen restored
+ *
  * Revision 2.3  2004/03/05 09:01:58  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -131,6 +134,8 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 ////////////////////////////////////////////////////////////////////
 // private function prototypes / structs

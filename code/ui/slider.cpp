@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/slider.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-02-14 00:18:36 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:33:08 $
+ * $Author: Kazan $
  *
  * C++ file for controlling and displaying a horizontal slider
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/02/14 00:18:36  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -97,6 +108,9 @@
 #include "bmpman/bmpman.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 /// DOT_SLIDER class down here
 void UI_DOT_SLIDER_NEW::create(UI_WINDOW *wnd, int _x, int _y, int _num_pos, char *bm_slider, int slider_mask,

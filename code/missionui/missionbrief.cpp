@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-03-05 09:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2004-07-12 16:32:54 $
+ * $Author: Kazan $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.13  2003/12/16 20:48:41  phreak
  * made gr_set_proj_matrix use the MIN/MAX_DRAW_DISTANCE constants
  *
@@ -378,6 +382,9 @@
 #include "network/multiui.h"
 #include "missionui/chatbox.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 /*
 #define OBJECTIVES_X	65

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/dscap.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-07-12 16:33:06 $
+ * $Author: Kazan $
  *
  * C module for DirectSoundCapture code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -68,6 +71,9 @@
 #include "globalincs/pstypes.h"
 #include "sound/ds.h"
 #include "sound/dscap.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int dscap_inited=0;						// flag to indicate that DirectSoundCapture inited ok
 int dscap_recording;						// flag to indicate that sound is being recorded

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-11-22 20:56:15 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:32:47 $
+ * $Author: Kazan $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/11/22 20:56:15  phreak
+ * added OGL_inited global.  Sets to 0 even if OGL isn't defined by preproccessor
+ * -phreak
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -201,6 +205,9 @@
 #include "globalincs/systemvars.h"
 #include "io/timer.h"
 #include "nebula/neb.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 fix Missiontime;
 fix Frametime;

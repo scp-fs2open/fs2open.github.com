@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-03-05 09:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-12 16:33:03 $
+ * $Author: Kazan $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/03/05 09:02:05  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.7  2003/09/05 04:25:28  Goober5000
  * well, let's see here...
  *
@@ -283,6 +287,9 @@
 #ifndef NO_NETWORK
 #include "network/multi.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // update this when altering data that is read/written to .PLR file
 #define CURRENT_PLAYER_FILE_VERSION					141

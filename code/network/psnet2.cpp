@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-12-02 23:18:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:58 $
+ * $Author: Kazan $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/12/02 23:18:53  Goober5000
+ * commented out an unneeded variable (int ret) in psnet_socket_options
+ *
  * Revision 2.3  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -152,6 +155,9 @@
 #ifdef PSNET2
 
 #include "network/psnet2.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 DEFINES/VARS

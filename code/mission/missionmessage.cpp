@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-05-11 02:52:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2004-07-12 16:32:54 $
+ * $Author: Kazan $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/05/11 02:52:12  Goober5000
+ * completed the FRED import conversion stuff that I started ages ago
+ * --Goober5000
+ *
  * Revision 2.15  2004/05/10 13:07:22  Goober5000
  * fixed the AWACS help message
  * --Goober5000
@@ -466,6 +470,9 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // here is a text list of the builtin message names.  These names are used to match against
 // names read in for builtin message radio bits to see what message to play.  These are

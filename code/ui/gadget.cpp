@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/GADGET.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-12 16:33:08 $
+ * $Author: Kazan $
  *
  * Functions for the base gadget class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2004/02/14 00:18:36  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -187,6 +191,9 @@
 #include "ui/ui.h"
 #include "bmpman/bmpman.h"
 #include "anim/animplay.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // constructor
 UI_GADGET::UI_GADGET()

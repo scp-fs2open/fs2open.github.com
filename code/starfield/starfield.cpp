@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.33 $
- * $Date: 2004-07-09 05:52:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.34 $
+ * $Date: 2004-07-12 16:33:07 $
+ * $Author: Kazan $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2004/07/09 05:52:19  wmcoolmon
+ * Re-implemented nomotiondebris, as Bobb overwrote it when he commited his changes.
+ *
  * Revision 2.32  2004/07/05 05:09:21  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -347,6 +350,9 @@
 #include "starfield/supernova.h"
 #include "cmdline\cmdline.h"
 #include "parse/parselo.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define MAX_DEBRIS_VCLIPS	4
 #define DEBRIS_ROT_MIN				10000

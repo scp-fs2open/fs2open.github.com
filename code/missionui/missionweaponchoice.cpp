@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-05-10 10:51:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2004-07-12 16:32:55 $
+ * $Author: Kazan $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/05/10 10:51:53  Goober5000
+ * made primary and secondary banks quite a bit more friendly... added error-checking
+ * and reorganized a bunch of code
+ * --Goober5000
+ *
  * Revision 2.21  2004/03/06 00:19:23  Goober5000
  * weapons now display counts up to 9999, instead of just 999
  * --Goober5000
@@ -548,6 +553,10 @@
 #include "network/multiui.h"
 #include "missionui/chatbox.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 #define IS_BANK_PRIMARY(x)			(x < MAX_WL_PRIMARY)
 #define IS_BANK_SECONDARY(x)		(x >= MAX_WL_PRIMARY)

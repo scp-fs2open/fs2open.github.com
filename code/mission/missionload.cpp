@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:54 $
+ * $Author: Kazan $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -205,6 +209,8 @@
 #include "globalincs/alphacolors.h"
 #include "cfile/cfilesystem.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 extern mission The_mission;  // need to send this info to the briefing
 extern int shifted_ascii_table[];

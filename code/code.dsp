@@ -2583,5 +2583,17 @@ SOURCE=.\Autopilot\Autopilot.cpp
 SOURCE=.\Autopilot\Autopilot.h
 # End Source File
 # End Group
+# Begin Group "mcd"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\mcd\mcd.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\mcd\mcd.h
+# End Source File
+# End Group
 # End Target
 # End Project

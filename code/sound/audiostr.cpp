@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-02 06:37:24 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:33:06 $
+ * $Author: Kazan $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/02 06:37:24  penguin
+ * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
+ *  - penguin
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -191,6 +195,9 @@
 #include "sound/sound.h"		/* for Snd_sram */
 #include "sound/acm.h"
 #include "sound/ds.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // Constants
 #ifndef SUCCESS

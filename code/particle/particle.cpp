@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-03-21 09:41:54 $
- * $Author: randomtiger $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-12 16:33:02 $
+ * $Author: Kazan $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/21 09:41:54  randomtiger
+ * Fixed a bug that was causing windowed movie playback and a crash.
+ * Added some batching redirection.
+ *
  * Revision 2.5  2004/03/20 14:47:13  randomtiger
  * Added base for a general dynamic batching solution.
  * Fixed NO_DSHOW_CODE code path bug.
@@ -203,6 +207,10 @@
 
 #include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 typedef struct particle {
 	// old style data

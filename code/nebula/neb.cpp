@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-07-01 01:12:33 $
- * $Author: bobboau $
+ * $Revision: 2.27 $
+ * $Date: 2004-07-12 16:32:56 $
+ * $Author: Kazan $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/07/01 01:12:33  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.25  2004/04/18 19:39:13  randomtiger
  * Added -2d_poof command which allows access to 2D poof rendering
  * Added -radar_reduce to launcher flag description structure
@@ -244,6 +248,9 @@
 #include "mission/missionparse.h"
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // --------------------------------------------------------------------------------------------------------
 // NEBULA DEFINES/VARS

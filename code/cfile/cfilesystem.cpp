@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-05-26 22:02:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2004-07-12 16:32:42 $
+ * $Author: Kazan $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/05/26 22:02:36  wmcoolmon
+ * Fixed cf_matches_spec; small bug was introduced.
+ *
  * Revision 2.18  2004/05/26 21:02:26  wmcoolmon
  * Added weapons_expl modular table, updated cfilesystem to work with modular tables, fixed loading order, fixed ship loading error messages
  *
@@ -185,6 +188,9 @@
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"
 #include "localization/localize.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define CF_ROOTTYPE_PATH 0
 #define CF_ROOTTYPE_PACK 1

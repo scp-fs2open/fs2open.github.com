@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-03-05 09:02:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-12 16:33:03 $
+ * $Author: Kazan $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/03/05 09:02:10  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.6  2003/11/11 02:15:46  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -386,6 +390,9 @@
 #include "physics/physics.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // defines for physics functions
 #define	MAX_TURN_LIMIT	0.2618f		// about 15 degrees

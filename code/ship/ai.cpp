@@ -15,6 +15,9 @@
 #include "object/object.h"
 #include "ship/ship.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 int Total_goal_ship_names = 0;
 char Goal_ship_names[MAX_GOAL_SHIP_NAMES][NAME_LENGTH];
 ai_info Ai_info[MAX_AI_INFO];

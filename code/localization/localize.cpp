@@ -9,12 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-05-10 06:14:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-12 16:32:52 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/05/10 06:14:40  Goober5000
+ * fixed $quote and $semicolon... it was simply a matter of moving the spot where
+ * the replacement occurred
+ * --Goober5000
+ *
  * Revision 2.10  2004/03/28 17:49:55  taylor
  * runtime language selection, mantis:0000133
  *
@@ -341,6 +346,10 @@
 #include "parse/encrypt.h"
 #include "playerman/player.h"
 #include "cfile/cfile.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS

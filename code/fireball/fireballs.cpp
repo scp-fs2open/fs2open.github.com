@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-05-12 22:49:14 $
- * $Author: phreak $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-12 16:32:45 $
+ * $Author: Kazan $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/05/12 22:49:14  phreak
+ * renamed the warp model variable from 'wm' to 'Warp_model'
+ *
  * Revision 2.11  2004/03/17 04:07:29  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -387,6 +390,9 @@
 #include "localization/localize.h"
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int Warp_model;
 

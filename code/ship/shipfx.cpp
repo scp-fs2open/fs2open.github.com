@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-03-20 21:17:13 $
- * $Author: bobboau $
+ * $Revision: 2.28 $
+ * $Date: 2004-07-12 16:33:05 $
+ * $Author: Kazan $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/03/20 21:17:13  bobboau
+ * fixed -spec comand line option,
+ * probly some other stuf
+ *
  * Revision 2.26  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -361,6 +365,10 @@
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 #ifndef NDEBUG
 extern float flFrametime;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:01:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-12 16:32:43 $
+ * $Author: Kazan $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:01:58  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2003/11/11 02:15:43  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -349,6 +353,9 @@
 #ifndef NDEBUG
 #include "hud/hud.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define NUM_SYSTEM_KEYS			14
 #define NUM_BUTTONS				19

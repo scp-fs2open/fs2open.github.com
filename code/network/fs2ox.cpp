@@ -9,13 +9,16 @@
 
 /*
  * $Logfile$
- * $Revision: 1.9 $
- * $Date: 2004-04-03 18:11:21 $
+ * $Revision: 1.10 $
+ * $Date: 2004-07-12 16:32:57 $
  * $Author: Kazan $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2004/04/03 18:11:21  Kazan
+ * FRED fixes
+ *
  * Revision 1.8  2004/04/03 06:22:32  Goober5000
  * fixed some stub functions and a bunch of compile warnings
  * --Goober5000
@@ -71,6 +74,9 @@ TCP_Socket ServerConnection;
 #else
 
 #include "irc/irc.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 irc_client IRCConn;
 

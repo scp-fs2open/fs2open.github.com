@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-03-05 09:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2004-07-12 16:32:53 $
+ * $Author: Kazan $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.16  2003/12/16 20:47:21  phreak
  * made gr_set_proj_matrix use the MIN/MAX_DRAW_DISTANCE constants
  *
@@ -329,6 +333,9 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define REVOLUTION_RATE	5.2f
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.39 $
- * $Date: 2004-07-11 03:22:49 $
- * $Author: bobboau $
+ * $Revision: 2.40 $
+ * $Date: 2004-07-12 16:32:48 $
+ * $Author: Kazan $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2004/07/11 03:22:49  bobboau
+ * added the working decal code
+ *
  * Revision 2.38  2004/07/01 01:12:31  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -578,6 +581,9 @@
 #include "cmdline/cmdline.h"
 
 #include "network/multi_log.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 bool Supports_compression[NUM_COMPRESSION_TYPES];
 

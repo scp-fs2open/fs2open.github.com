@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/PsNet.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-11-11 02:15:46 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:58 $
+ * $Author: Kazan $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/11/11 02:15:46  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.3  2003/11/09 04:09:18  Goober5000
  * edited for language
  * --Goober5000
@@ -143,6 +148,9 @@
 #include "io/timer.h"
 #include "network/multi_log.h"
 #include "cmdline/cmdline.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #ifndef PSNET2
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-02 05:46:28 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:51 $
+ * $Author: Kazan $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/02 05:46:28  penguin
+ * Added gcc-compatible asm blocks
+ *  - penguin
+ *
  * Revision 2.2  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -99,6 +103,9 @@
 #include "io/timer.h"
 #include "graphics/2d.h"
 #include "globalincs/alphacolors.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #ifndef NDEBUG
 	#define USE_TIMING

@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.6 $
- * $Date: 2004-05-25 00:24:00 $
- * $Author: wmcoolmon $
+ * $Revision: 1.7 $
+ * $Date: 2004-07-12 16:32:51 $
+ * $Author: Kazan $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/05/25 00:24:00  wmcoolmon
+ * Updated to use <fstream> instead of <fstream.h> and fixed an un/signed disagreement
+ *
  * Revision 1.5  2004/04/03 18:11:21  Kazan
  * FRED fixes
  *
@@ -43,6 +46,9 @@
 #pragma warning(disable:4711)	// function inlined
 #include "irc.h"
 #include "direct.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 //************************************************************************************
 // irc_channel implementation

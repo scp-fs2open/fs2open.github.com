@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.33 $
- * $Date: 2004-06-18 04:59:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.34 $
+ * $Date: 2004-07-12 16:32:49 $
+ * $Author: Kazan $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2004/06/18 04:59:54  wmcoolmon
+ * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
+ *
  * Revision 2.32  2004/05/30 08:04:49  wmcoolmon
  * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
  *
@@ -364,6 +367,9 @@
 #include "localization/localize.h"
 #include "ship/awacs.h"
 #include "parse/parselo.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileList.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:32:42 $
+ * $Author: Kazan $
  *
  * Code for doing directory lists and sorts
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/29 19:37:21  penguin
  * added #ifdef _WIN32 around windows-specific system headers
  *
@@ -73,6 +76,10 @@
 
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 // Sorts a list of filenames using the specified sorting method (CF_SORT_*).
 //   n = number of filenames in list to sort

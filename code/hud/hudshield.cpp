@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-05-30 08:04:49 $
- * $Author: wmcoolmon $
+ * $Revision: 2.16 $
+ * $Date: 2004-07-12 16:32:49 $
+ * $Author: Kazan $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/05/30 08:04:49  wmcoolmon
+ * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
+ *
  * Revision 2.14  2004/05/29 03:02:53  wmcoolmon
  * Added HUD gauges placement table, "hud_gauges.tbl" or "*-hdg.tbm" table module
  *
@@ -243,6 +246,10 @@
 #ifndef NO_NETWORK
 #include "network/multi.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 #define NUM_SHIELD_LEVELS		8
 

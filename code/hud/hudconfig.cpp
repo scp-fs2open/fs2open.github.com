@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-04-06 01:11:41 $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-12 16:32:49 $
  * $Author: Kazan $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/04/06 01:11:41  Kazan
+ * make custom build work again
+ *
  * Revision 2.6  2004/03/31 05:42:27  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -287,6 +290,9 @@
 #include "ship/ship.h"
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 
 //////////////////////////////////////////////////////////////////////////////

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-03-27 22:27:07 $
- * $Author: randomtiger $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-12 16:32:53 $
+ * $Author: Kazan $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/03/27 22:27:07  randomtiger
+ * Committed possible fix to cutscene listing problem in techroom, as described in mantis.
+ *
  * Revision 2.11  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -269,6 +272,9 @@
 #include "cfile/cfile.h"
 #include "starfield/supernova.h"
 #include "Cutscene/Cutscenes.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // mission disk stuff
 #define CAMPAIGN_SAVEFILE_MAX_SHIPS_OLD						75

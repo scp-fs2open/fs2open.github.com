@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-01 01:12:32 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:52 $
+ * $Author: Kazan $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/01 01:12:32  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.2  2003/11/17 04:25:56  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -72,6 +76,9 @@ int Num_jump_nodes = 0;
 #include "jumpnode/jumpnode.h"
 #include "model/model.h"
 #include "hud/hud.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 jump_node_struct Jump_nodes[MAX_JUMP_NODES];
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-06-05 19:14:42 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:32:52 $
+ * $Author: Kazan $
  *
  * static random functions.  Return "random" number based on integer inut
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/06/05 19:14:42  phreak
+ * added static_random_cone which is used for spawn angle features in multi
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -49,6 +52,9 @@
 #include "globalincs/pstypes.h"
 #include "math/staticrand.h"
 #include "math/vecmat.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int Semirand_inited = 0;
 int Semirand[SEMIRAND_MAX];

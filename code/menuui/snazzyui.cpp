@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/SnazzyUI.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:53 $
+ * $Author: Kazan $
  *
  *  Code to drive the Snazzy User Interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2004/02/14 00:18:33  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -215,6 +219,8 @@
 #include "cfile/cfile.h"
 #include "localization/localize.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 extern int ascii_table[];
 extern int shifted_ascii_table[];

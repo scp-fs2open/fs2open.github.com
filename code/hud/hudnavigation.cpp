@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.2 $
- * $Date: 2004-07-01 16:38:19 $
+ * $Revision: 1.3 $
+ * $Date: 2004-07-12 16:32:49 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/07/01 16:38:19  Kazan
+ * working on autonav
+ *
  * Revision 1.1  2004/05/24 07:23:09  taylor
  * filename case change
  *
@@ -28,6 +31,8 @@
 #include "object/object.h"
 #include "render/3d.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 extern float Cmdline_fov;
 // Draws the Navigation stuff on the HUD

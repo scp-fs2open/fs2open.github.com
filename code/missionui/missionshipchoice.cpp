@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-07-08 22:06:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.24 $
+ * $Date: 2004-07-12 16:32:55 $
+ * $Author: Kazan $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/07/08 22:06:56  wmcoolmon
+ * Moving set_current_hud, to ensure compatibility with multiplayer.
+ *
  * Revision 2.22  2004/05/30 08:04:49  wmcoolmon
  * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
  *
@@ -500,6 +503,10 @@
 #include "network/multiteamselect.h"
 #include "network/multiutil.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 //////////////////////////////////////////////////////
 // Game-wide Globals

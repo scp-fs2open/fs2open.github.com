@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-01 01:53:27 $
- * $Author: phreak $
+ * $Revision: 2.21 $
+ * $Date: 2004-07-12 16:32:49 $
+ * $Author: Kazan $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/01 01:53:27  phreak
+ * function pointer radar update.
+ * will enable us to make different radar styles that we can switch between
+ *
  * Revision 2.19  2004/06/08 00:35:43  wmcoolmon
  * Added +Color: option for custom gauges.
  *
@@ -442,6 +446,9 @@
 #include "network/multi_voice.h"
 #include "network/multi_pmsg.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // new values for HUD alpha
 #define HUD_NEW_ALPHA_DIM				80	

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-05-03 21:22:20 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:47 $
  * $Author: Kazan $
  *
  * File to control Game Sequencing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/05/03 21:22:20  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.2  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -252,6 +257,9 @@
 
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // local defines
 #define MAX_GAMESEQ_EVENTS		20		// maximum number of events on the game sequencing queue

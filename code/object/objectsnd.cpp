@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:01:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:59 $
+ * $Author: Kazan $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:01:57  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/18 01:44:31  Goober5000
  * fixed some misspellings
  * --Goober5000
@@ -267,6 +271,9 @@
 #include "io/timer.h"
 #include "render/3d.h"
 #include "io/joy_ff.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 
 //  // --mharris port hack--

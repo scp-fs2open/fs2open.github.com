@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/INPUTBOX.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-07-12 03:19:17 $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:33:08 $
  * $Author: Kazan $
  *
  * Code to implement input boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/07/12 03:19:17  Kazan
+ * removed a couple pointless useless messages from the debug console
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -209,6 +212,8 @@
 #include "io/timer.h"
 #include "globalincs/alphacolors.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define INPUTBOX_PASSWD_CHAR        '*'   // the password protected char
 

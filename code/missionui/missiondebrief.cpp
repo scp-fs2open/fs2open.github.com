@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-07-10 03:18:22 $
+ * $Revision: 2.22 $
+ * $Date: 2004-07-12 16:32:54 $
  * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/07/10 03:18:22  Kazan
+ * minor bugfixes - oh yeah reenabling a rule for multistats :P
+ *
  * Revision 2.20  2004/07/09 22:05:32  Kazan
  * fs2netd 1.0 RC5 full support - Rank and Medal updates
  *
@@ -454,6 +457,10 @@
 #endif
 
 #include "fs2open_pxo/Client.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 #if !defined(PXO_TCP)
 extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan

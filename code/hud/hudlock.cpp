@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-12 16:32:49 $
+ * $Author: Kazan $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.5  2003/09/09 17:18:24  matt
  * Broke stars last commit, fixed -Sticks
  *
@@ -312,6 +316,10 @@
 #ifndef NO_NETWORK
 #include "network/multi.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 static float Lock_start_dist;
 static int Rotate_time_id = 1;	// timer id for controlling how often to rotate triangles around lock indicator

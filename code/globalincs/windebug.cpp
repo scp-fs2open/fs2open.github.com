@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-05-01 21:53:39 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2004-07-12 16:32:47 $
+ * $Author: Kazan $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/05/01 21:53:39  taylor
+ * add some error handling to vm_strdup()
+ *
  * Revision 2.8  2004/04/03 18:11:20  Kazan
  * FRED fixes
  *
@@ -158,6 +161,9 @@
 
 #ifdef _MSC_VER
 #include <crtdbg.h>
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 //Uncomment SHOW_CALL_STACK to show the call stack in Asserts, Warnings, and Errors
 #define SHOW_CALL_STACK

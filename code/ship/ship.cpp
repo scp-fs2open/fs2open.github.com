@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.129 $
- * $Date: 2004-07-11 03:22:52 $
- * $Author: bobboau $
+ * $Revision: 2.130 $
+ * $Date: 2004-07-12 16:33:05 $
+ * $Author: Kazan $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.129  2004/07/11 03:22:52  bobboau
+ * added the working decal code
+ *
  * Revision 2.128  2004/07/10 08:03:13  wmcoolmon
  * Fixed bug with the base ship flag I unwittingly introduced.
  *
@@ -1292,6 +1295,9 @@
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #ifdef FS2_DEMO
 	#define MAX_SHIP_SUBOBJECTS		360

@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dMath.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-02-14 00:18:35 $
- * $Author: randomtiger $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:33:04 $
+ * $Author: Kazan $
  *
  * 3d Math routines used by the Renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/02/14 00:18:35  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.3  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -104,6 +115,9 @@
 
 #include "graphics/2d.h"
 #include "render/3dinternal.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 
 #define MIN_Z 0.0f

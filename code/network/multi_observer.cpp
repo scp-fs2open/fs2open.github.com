@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_observer.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:57 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -109,6 +113,9 @@
 #include "mission/missionparse.h"
 #include "playerman/player.h"
 #include "io/timer.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // ---------------------------------------------------------------------------------------
 // MULTI OBSERVER DEFINES/VARS

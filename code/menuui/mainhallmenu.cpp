@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-07-01 01:12:32 $
- * $Author: bobboau $
+ * $Revision: 2.19 $
+ * $Date: 2004-07-12 16:32:53 $
+ * $Author: Kazan $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/07/01 01:12:32  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.17  2004/04/30 18:33:22  Kazan
  * Lobby screen only shows when PXO_LOBBY is defined
  *
@@ -438,6 +442,9 @@
 #include "demo/demo.h"
 #include "mission/missionload.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // ----------------------------------------------------------------------------
 // MAIN HALL DATA DEFINES

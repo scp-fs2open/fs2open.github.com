@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dClipper.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-05 05:09:21 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-12 16:33:04 $
+ * $Author: Kazan $
  *
  * Polygon clipping functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/05 05:09:21  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.5  2003/08/30 14:49:01  phreak
  * fixed some random specular lighting bugs
  *
@@ -109,6 +115,9 @@
 
 #include "render/3dinternal.h"
 #include "graphics/tmapper.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int free_point_num=0;
 

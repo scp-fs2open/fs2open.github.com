@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-04-26 12:36:10 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2004-07-12 16:33:04 $
+ * $Author: Kazan $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/04/26 12:36:10  taylor
+ * add color and HTL support for g3_draw_rod()
+ *
  * Revision 2.20  2004/04/11 13:56:33  randomtiger
  * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
  *
@@ -269,6 +272,9 @@
 #include "graphics/grbatch.h"
 
 #include "io/key.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 //deal with a clipped line
 int must_clip_line(vertex *p0,vertex *p1,ubyte codes_or, uint flags)

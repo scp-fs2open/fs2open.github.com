@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.2 $
- * $Date: 2004-07-01 01:12:31 $
- * $Author: bobboau $
+ * $Revision: 1.3 $
+ * $Date: 2004-07-12 16:32:48 $
+ * $Author: Kazan $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/07/01 01:12:31  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 1.1  2004/05/24 07:25:32  taylor
  * filename case change
  *
@@ -52,6 +56,8 @@
 #include "graphics/gropenglextension.h"
 #include "graphics/grinternal.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 static void *Texture_sections = NULL;
 static tcache_slot_opengl *Textures = NULL;

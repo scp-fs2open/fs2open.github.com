@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-06-18 04:59:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-12 16:32:47 $
+ * $Author: Kazan $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/06/18 04:59:54  wmcoolmon
+ * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
+ *
  * Revision 2.10  2004/05/28 23:37:30  wmcoolmon
  * Modular music tables
  *
@@ -166,6 +169,9 @@
 #include "mission/missiongoals.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #pragma optimize("", off)
 

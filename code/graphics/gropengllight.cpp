@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.1 $
- * $Date: 2004-05-24 07:25:32 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-07-12 16:32:48 $
+ * $Author: Kazan $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/24 07:25:32  taylor
+ * filename case change
+ *
  * Revision 2.7  2004/05/13 00:17:20  taylor
  * disable COLOR_MATERIAL, for nvidia drivers
  *
@@ -50,6 +53,9 @@
 #include "graphics/gl/glext.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // Variables
 opengl_light opengl_lights[MAX_LIGHTS];

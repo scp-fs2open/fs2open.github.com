@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.38 $
- * $Date: 2004-04-06 05:42:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.39 $
+ * $Date: 2004-07-12 16:33:09 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2004/04/06 05:42:49  Goober5000
+ * ugh - added back in something that Bobboau removed
+ * -Goober5000
+ *
  * Revision 2.37  2004/04/03 02:55:50  bobboau
  * commiting recent minor bug fixes
  *
@@ -434,6 +438,9 @@
 #include "playerman/player.h"
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 extern int Cmdline_nohtl;
 // ------------------------------------------------------------------------------------------------

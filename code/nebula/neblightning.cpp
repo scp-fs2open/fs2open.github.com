@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-04-14 10:27:24 $
- * $Author: taylor $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:57 $
+ * $Author: Kazan $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/04/14 10:27:24  taylor
+ * render lightning unlit so that it works in OGL
+ *
  * Revision 2.2  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -83,6 +86,9 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 extern int Cmdline_nohtl;
 

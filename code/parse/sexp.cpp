@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.93 $
- * $Date: 2004-07-03 08:23:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.94 $
+ * $Date: 2004-07-12 16:33:01 $
+ * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2004/07/03 08:23:00  wmcoolmon
+ * Replaced some more Int3s with Warnings and Errors.
+ *
  * Revision 2.92  2004/07/03 07:55:22  wmcoolmon
  * Error handling for fire_beam instead of just calling Int3()
  *
@@ -769,6 +772,9 @@
 #if defined(ENABLE_AUTO_PILOT)
 #include "autopilot/autopilot.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define TRUE	1
 #define FALSE	0

@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.31 $
- * $Date: 2004-06-26 19:23:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.32 $
+ * $Date: 2004-07-12 16:32:42 $
+ * $Author: Kazan $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/06/26 19:23:54  wmcoolmon
+ * Minor optimizations
+ *
  * Revision 2.30  2004/05/11 23:08:55  taylor
  * do page in unlock but not for gr_preload() stuff
  *
@@ -643,6 +646,9 @@
 #include "cmdline/cmdline.h"
 #include "jpgutils/jpgutils.h"
 #include "openil/il_func.h" // needed for the #define's
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #ifndef NDEBUG
 #define BMPMAN_NDEBUG

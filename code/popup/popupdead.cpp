@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/PopupDead.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:33:03 $
+ * $Author: Kazan $
  *
  * C module for the death popup
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:11  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -138,6 +142,9 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 UI_WINDOW	Popupdead_window;
 UI_BUTTON	Popupdead_buttons[POPUPDEAD_NUM_CHOICES_MAX];				// actual lit buttons

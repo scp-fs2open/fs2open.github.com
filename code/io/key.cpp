@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Key.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-11-11 02:15:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:51 $
+ * $Author: Kazan $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/11/11 02:15:44  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.3  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -154,6 +159,9 @@
 #include "io/timer.h"
 #include "osapi/osapi.h"
 #include "localization/localize.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define KEY_BUFFER_SIZE 16
 

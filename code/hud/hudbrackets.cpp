@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-06-28 10:00:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-12 16:32:49 $
+ * $Author: Kazan $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/06/28 10:00:33  wmcoolmon
+ * Fixed weapon miniinfo display
+ *
  * Revision 2.7  2004/06/26 03:19:53  wmcoolmon
  * Displayed escorts now settable up to MAX_COMPLETE_ESCORT_LIST via "$Max Escort Ships:" in hud_gauges.tbl
  * Escort list is now hud_gauges.tbl compatible.
@@ -259,6 +262,10 @@
 #include "jumpnode/jumpnode.h"
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 #define FADE_FACTOR	2			// how much the bounding brackets get faded
 #define LOWEST_RED	50			// lowest r value for bounding bracket
