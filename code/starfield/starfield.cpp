@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.34 $
- * $Date: 2004-07-12 16:33:07 $
- * $Author: Kazan $
+ * $Revision: 2.35 $
+ * $Date: 2004-07-17 18:59:01 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2004/07/12 16:33:07  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.33  2004/07/09 05:52:19  wmcoolmon
  * Re-implemented nomotiondebris, as Bobb overwrote it when he commited his changes.
  *
@@ -1311,13 +1314,12 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 	if(st___ == -1)st___ = bm_load("subspacenode01a");
 
 	vector v = ZERO_VECTOR;
-	if (!Cmdline_nohtl) 
-		if(env == 1)
-			gr_set_proj_matrix( (PI/2.0f), 1.0f, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-		else
-			gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&v, &Eye_matrix);
+	if (!Cmdline_nohtl && !env) 
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		gr_set_view_matrix(&v, &Eye_matrix);
+	}
+
 	// render all bitmaps
 	gr_set_buffer(perspective_bitmap_buffer);
 	for(idx=0; idx<Num_starfield_bitmaps; idx++){
@@ -1367,6 +1369,11 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 				}
 			}
 		}
+	}
+
+	if (!Cmdline_nohtl && !env) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
 	}
 }
 
@@ -1531,6 +1538,11 @@ void subspace_render(int env)
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
+	if (!Cmdline_nohtl && !env) {
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
+
 	if ( !D3D_enabled )	{
 
 		int render_flags = MR_NO_LIGHTING | MR_ALWAYS_REDRAW;
@@ -1546,12 +1558,7 @@ void subspace_render(int env)
 		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
 		model_set_alpha(1.0f);	
-		if (!Cmdline_nohtl) 
-			if(env == 1)
-				gr_set_proj_matrix( (PI/2.0f), 1.0f, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-			else
-				gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
 		if (!Cmdline_nohtl)	gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 		model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
 		if (!Cmdline_nohtl)	gr_set_texture_panning(0, 0, false);
@@ -1573,12 +1580,7 @@ void subspace_render(int env)
 		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
 		model_set_alpha(1.0f);	
-		if (!Cmdline_nohtl) 
-			if(env == 1)
-				gr_set_proj_matrix( (PI/2.0f), 1.0f, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-			else
-				gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
 		if (!Cmdline_nohtl)	gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 		model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
 		if (!Cmdline_nohtl)	gr_set_texture_panning(0, 0, false);
@@ -1602,15 +1604,15 @@ void subspace_render(int env)
 		render_flags |= MR_SHOW_THRUSTERS;
 
 		model_set_alpha(1.0f);	
-		if (!Cmdline_nohtl) 
-			if(env == 1)
-				gr_set_proj_matrix( (PI/2.0f), 1.0f, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-			else
-				gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
 		if (!Cmdline_nohtl)	gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 		model_render( Subspace_model_inner, &tmp, &Eye_position, render_flags  );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
 		if (!Cmdline_nohtl)	gr_set_texture_panning(0, 0, false);
+	}
+
+	if (!Cmdline_nohtl && !env) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
 	}
 
 	Interp_subspace = 0;
@@ -1997,14 +1999,18 @@ void stars_draw_background(int env)
 
 	// draw the model at the player's eye wif no z-buffering
 	model_set_alpha(1.0f);	
-		if (!Cmdline_nohtl) 
-			if(env == 1)
-				gr_set_proj_matrix( (PI/2.0f), 1.0f, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-			else
-				gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	if (!Cmdline_nohtl && !env) {
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
+
+	if (!Cmdline_nohtl && !env) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
 
 	if (Nmodel_bitmap > -1) model_set_forced_texture(-1);
 }
