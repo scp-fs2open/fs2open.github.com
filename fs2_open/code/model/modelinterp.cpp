@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-06-08 17:31:37 $
+ * $Revision: 2.23 $
+ * $Date: 2003-07-04 02:28:37 $
  * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/06/08 17:31:37  phreak
+ * debris is now properly fogged
+ *
  * Revision 2.21  2003/06/04 15:28:24  phreak
  * added some code that took advantage of opengl fogging stuff
  *
@@ -438,6 +441,8 @@ static float Interp_xparent_alpha = 1.0f;
 
 float Interp_light = 0.0f;
 
+int Interp_multitex_cloakmap=-1;
+
 void set_warp_globals(float a, float b, float c, int d, float e){
 	Model_Interp_scale_x =a;
 	Model_Interp_scale_y=b;
@@ -446,6 +451,41 @@ void set_warp_globals(float a, float b, float c, int d, float e){
 	Warp_Alpha=e;
 //	mprintf(("warpmap being set to %d\n",Warp_Map));
 }
+
+static int FULLCLOAK=-1;
+
+void model_setup_cloak(vector *shift, int full_cloak)
+{
+	FULLCLOAK=full_cloak;
+	int unit;
+	if (full_cloak)
+	{
+//		Int3();
+		unit=0;
+		Interp_multitex_cloakmap=0;
+		model_set_insignia_bitmap(-1);
+	}
+	else
+	{
+		unit=2;
+		Interp_multitex_cloakmap=1;
+	}
+
+	gr_push_texture_matrix(unit);
+	gr_translate_texture_matrix(unit,shift);
+}
+
+void model_finish_cloak(int full_cloak)
+{
+	int unit;
+	if (full_cloak)		unit=0;
+	else				unit=2;
+
+	gr_pop_texture_matrix(unit);
+	Interp_multitex_cloakmap=-1;
+	model_set_forced_texture(-1);
+}
+
 
 // call at the beginning of a level. after the level has been loaded
 void model_level_post_init()
@@ -3014,6 +3054,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			g3_draw_sphere_ez(&pm->autocenter, pm->rad / 4.5f);
 		}
 	}
+
+	if (FULLCLOAK != -1)	model_finish_cloak(FULLCLOAK);
+	FULLCLOAK=-1;
 
 	if ( pm->submodel[pm->detail[0]].num_arcs )	{
 		interp_render_lightning( pm, &pm->submodel[pm->detail[0]]);

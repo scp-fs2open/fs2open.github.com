@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.23 $
- * $Date: 2003-04-29 01:03:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.24 $
+ * $Date: 2003-07-04 02:28:37 $
+ * $Author: phreak $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.22  2003/03/18 01:44:31  Goober5000
  * fixed some misspellings
  * --Goober5000
@@ -1280,3 +1284,6 @@ void model_set_replacement_bitmap(int bmap);
 void model_set_replacement_textures(int *replacement_textures);
 
 int decal_make_model(polymodel * pm);
+
+void model_setup_cloak(vector *shift, int full_cloak);
+void model_finish_cloak(int full_cloak);
