@@ -8,6 +8,7 @@
 #include "localization/localize.h"
 #include "ship/ship.h"
 #include "hud/hudparse.h"
+#include "hud/hud.h"
 
 //Global stuffs
 hud_info* current_hud;
@@ -98,44 +99,51 @@ static void load_hud_defaults()
 //This doesn't belong in parse_lo, it's not really that low.
 static int size_temp[2];
 static float percentage_temp[2];
-int stuff_coords(char* pstr, hud_info* dest_hud, size_t i, size_t image, size_t size, size_t text, bool required = false)
+int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 {
 	//Speed up calculations
 	static hud_info* factor_for_hud;
 	static float resize_factor[2];
 	float fl_buffer[2];
+	bool size_defined = false;
 
 	if(required)
 	{
-		required_string(pstr);
+		required_string(cg->fieldname);
 	}
-	if(!required && !optional_string(pstr))
+	if(!required && !optional_string(cg->fieldname))
 	{
 		return 0;
 	}
 
 	//stuff_int_list(HUD_INT(dest_hud, i), 2, RAW_INTEGER_TYPE);
 	stuff_float_list(fl_buffer, 2);
-	if(dest_hud != factor_for_hud)
+	if(!cg->parent)
+	{
+		factor_for_hud = NULL;
+		resize_factor[0] = 1;
+		resize_factor[1] = 1;
+	}
+	else if(dest_hud != factor_for_hud)
 	{
 		resize_factor[0] = (float)gr_screen.max_w / (float)dest_hud->resolution[0];
 		resize_factor[1] = (float)gr_screen.max_h / (float)dest_hud->resolution[1];
 	}
 	//Resize to current res
-	HUD_INT(dest_hud, i)[0] = fl2i(fl_buffer[0] * resize_factor[0]);
-	HUD_INT(dest_hud, i)[1] = fl2i(fl_buffer[1] * resize_factor[1]);
+	HUD_INT(dest_hud, cg->coord_dest)[0] = fl2i(fl_buffer[0] * resize_factor[0]);
+	HUD_INT(dest_hud, cg->coord_dest)[1] = fl2i(fl_buffer[1] * resize_factor[1]);
 
 	if(optional_string("+Size:"))
 	{
 		stuff_int_list(size_temp, 2, RAW_INTEGER_TYPE);
-		if(size)
+		if(cg->size_dest)
 		{
-			HUD_INT(dest_hud, size)[0] = size_temp[0];
-			HUD_INT(dest_hud, size)[1] = size_temp[1];
+			HUD_INT(dest_hud, cg->size_dest)[0] = size_temp[0];
+			HUD_INT(dest_hud, cg->size_dest)[1] = size_temp[1];
 		}
 		
-		//Look! Now it's a bool!
-		pstr = NULL;
+		//For %
+		size_defined = false;
 	}
 
 	if(optional_string("+Percentage:"))
@@ -144,8 +152,8 @@ int stuff_coords(char* pstr, hud_info* dest_hud, size_t i, size_t image, size_t 
 		percentage_temp[0] *= (gr_screen.max_w / 100.0f);
 		percentage_temp[1] *= (gr_screen.max_h / 100.0f);
 
-		//Our, uh, bool is true; size is loaded
-		if(!pstr)
+		//Bool true, size defined
+		if(!size_defined)
 		{
 			if(percentage_temp[0])
 			{
@@ -156,16 +164,16 @@ int stuff_coords(char* pstr, hud_info* dest_hud, size_t i, size_t image, size_t 
 				percentage_temp[1] -= size_temp[1] / 2;
 			}
 		}
-		HUD_INT(dest_hud, i)[0] += fl2i(percentage_temp[0]);
-		HUD_INT(dest_hud, i)[1] += fl2i(percentage_temp[1]);
+		HUD_INT(dest_hud, cg->coord_dest)[0] += fl2i(percentage_temp[0]);
+		HUD_INT(dest_hud, cg->coord_dest)[1] += fl2i(percentage_temp[1]);
 	}
 
 	char buffer[32];
 	if(optional_string("+Image:"))
 	{
-		if(image)
+		if(cg->image_dest)
 		{
-			stuff_string(HUD_CHAR(dest_hud, image), F_NAME, NULL);
+			stuff_string(HUD_CHAR(dest_hud, cg->image_dest), F_NAME, NULL);
 		}
 		else
 		{
@@ -174,13 +182,29 @@ int stuff_coords(char* pstr, hud_info* dest_hud, size_t i, size_t image, size_t 
 	}
 	if(optional_string("+Text:"))
 	{
-		if(text)
+		if(cg->text_dest)
 		{
-			stuff_string(HUD_CHAR(dest_hud, text),  F_NAME, NULL);
+			stuff_string(HUD_CHAR(dest_hud, cg->text_dest),  F_NAME, NULL);
 		}
 		else
 		{
 			stuff_string(buffer, F_NAME, NULL);
+		}
+	}
+	if(optional_string("+Color:"))
+	{
+		if(cg->color_dest)
+		{
+			stuff_byte(&HUD_COLOR(dest_hud, cg->color_dest)->red);
+			stuff_byte(&HUD_COLOR(dest_hud, cg->color_dest)->green);
+			stuff_byte(&HUD_COLOR(dest_hud, cg->color_dest)->blue);
+		}
+		else
+		{
+			ubyte junk_byte;
+			stuff_byte(&junk_byte);
+			stuff_byte(&junk_byte);
+			stuff_byte(&junk_byte);
 		}
 	}
 	return 1;
@@ -196,7 +220,7 @@ static void parse_resolution(hud_info* dest_hud)
 		if(!cg->parent && cg->fieldname)
 		{
 
-			stuff_coords(cg->fieldname, dest_hud, cg->coord_dest, cg->image_dest, cg->size_dest, cg->text_dest);
+			stuff_coords(dest_hud, cg);
 		}
 	}
 }
@@ -224,7 +248,7 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 			}
 			else if(parent == cg->parent)
 			{
-				stuff_coords(cg->fieldname, dest_hud, cg->coord_dest, cg->image_dest, cg->size_dest, cg->text_dest);
+				stuff_coords(dest_hud, cg);
 			}
 		}
 	}
@@ -241,18 +265,8 @@ static void calculate_gauges(hud_info* dest_hud)
 		cg = &gauges[i];
 		if(cg->parent)
 		{
-			if(cg->parent)
-			{
-				resize_x = HUD_INT(dest_hud, cg->coord_dest)[0] + HUD_INT(dest_hud, cg->parent->coord_dest)[0];
-				resize_y = HUD_INT(dest_hud, cg->coord_dest)[1] + HUD_INT(dest_hud, cg->parent->coord_dest)[1];
-			}
-			else
-			{
-				resize_x = HUD_INT(dest_hud, cg->coord_dest)[0];
-				resize_y = HUD_INT(dest_hud, cg->coord_dest)[1];
-			}
-
-			set_coords_if_clear(HUD_INT(dest_hud, cg->coord_dest), resize_x, resize_y);
+			HUD_INT(dest_hud, cg->coord_dest)[0] = HUD_INT(dest_hud, cg->coord_dest)[0] + HUD_INT(dest_hud, cg->parent->coord_dest)[0];
+			HUD_INT(dest_hud, cg->coord_dest)[1] = HUD_INT(dest_hud, cg->coord_dest)[1] + HUD_INT(dest_hud, cg->parent->coord_dest)[1];
 		}
 	}
 }
@@ -354,7 +368,7 @@ void parse_custom_gauge()
 		cg->image_dest = HUD_VAR(custom_gauge_images[Num_custom_gauges]);
 		cg->frame_dest = HUD_VAR(custom_gauge_frames[Num_custom_gauges]);
 		cg->text_dest = HUD_VAR(custom_gauge_text[Num_custom_gauges]);
-		//Wipe 'em
+		cg->color_dest = HUD_VAR(custom_gauge_colors[Num_custom_gauges]);
 
 		required_string("$Name:");
 		//Gotta make this a token
@@ -554,7 +568,7 @@ void set_current_hud(int player_ship_num)
 hud_info::hud_info()
 {
 	loaded = false;
-	//memset(this, 0, sizeof(hud_info));
+	memset(this, 0, sizeof(hud_info));
 }
 
 gauge_info* hud_get_gauge(char* name)

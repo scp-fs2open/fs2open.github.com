@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-06-01 07:31:56 $
+ * $Revision: 2.19 $
+ * $Date: 2004-06-08 00:35:43 $
  * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/06/01 07:31:56  wmcoolmon
+ * Lotsa stuff. Custom gauges w/ ANIs support added, SEXPs to set gauge text, gauge image frames, and gauge coords. These SEXPs and toggle-hud reside in the Hud/change category.
+ *
  * Revision 2.17  2004/05/31 08:54:13  wmcoolmon
  * Update to make images (not animations) work
  *
@@ -1601,8 +1604,17 @@ void HUD_render_2d(float frametime)
 		}
 		image_ids_set = true;
 	}
+
+	//Display the gauges
 	for(i = 0; i < Num_custom_gauges; i++)
 	{
+		if(current_hud->custom_gauge_colors[i].red != 0 || current_hud->custom_gauge_colors[i].green != 0 || current_hud->custom_gauge_colors[i].blue != 0)
+		{
+			//No custom alpha gauge color...
+			gr_init_alphacolor(&current_hud->custom_gauge_colors[i], current_hud->custom_gauge_colors[i].red, current_hud->custom_gauge_colors[i].green, current_hud->custom_gauge_colors[i].blue, (HUD_color_alpha+1)*16);
+
+			gr_set_color_fast(&current_hud->custom_gauge_colors[i]);
+		}
 		if(strlen(current_hud->custom_gauge_text[i]))
 		{
 			hud_num_make_mono(current_hud->custom_gauge_text[i]);
@@ -1612,6 +1624,9 @@ void HUD_render_2d(float frametime)
 		{
 			GR_AABITMAP(image_ids[i].first_frame + current_hud->custom_gauge_frames[i], current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
 		}
+
+		//So we're back to normal
+		hud_set_default_color();
 	}
 
 	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {		
