@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-02-16 11:47:33 $
+ * $Revision: 2.14 $
+ * $Date: 2004-02-28 14:14:57 $
  * $Author: randomtiger $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/02/16 11:47:33  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.12  2004/02/14 00:18:33  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -911,8 +918,7 @@ void main_hall_init(int main_hall_num)
 	
 	// init tooltip shader
 	float gray_intensity = 0.02f;													// nearly black
-	float c = (gr_screen.mode == GR_DIRECT3D) ? 0.11f : 0.07f;			// adjust for renderer differences
-	gr_create_shader(&Main_hall_tooltip_shader, gray_intensity, gray_intensity, gray_intensity, c);
+	gr_create_shader(&Main_hall_tooltip_shader, gray_intensity, gray_intensity, gray_intensity, 0.11f);
 
 	// load the background bitmap
 	Main_hall_bitmap = bm_load(Main_hall->bitmap);

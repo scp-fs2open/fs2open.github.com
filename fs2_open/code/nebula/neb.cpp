@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-02-14 00:18:34 $
+ * $Revision: 2.19 $
+ * $Date: 2004-02-28 14:14:57 $
  * $Author: randomtiger $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/02/14 00:18:34  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.17  2004/02/13 04:17:14  randomtiger
  * Turned off fog in OGL for Fred.
  * Simulated speech doesnt say tags marked by $ now.
@@ -1356,21 +1367,8 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 		nNfog_index = SHIP_TYPE_FIGHTER_BOMBER;
 	}
 
-	// get the values
-	switch(gr_screen.mode){
-	case GR_DIRECT3D:
-		*fnear = Neb_ship_fog_vals_d3d[nNfog_index][0];
-		*ffar = Neb_ship_fog_vals_d3d[nNfog_index][1];
-		break;
-
-	case GR_OPENGL:
-		*fnear = Neb_ship_fog_vals_d3d[nNfog_index][0];
-		*ffar = Neb_ship_fog_vals_d3d[nNfog_index][1];
-		break;
-
-	default:
-		Int3();
-	}
+	*fnear = Neb_ship_fog_vals_d3d[nNfog_index][0];
+	*ffar =  Neb_ship_fog_vals_d3d[nNfog_index][1];
 }
 
 float nNf_near, nNf_far;
@@ -1736,7 +1734,6 @@ DCF(neb2_fog, "")
 			Neb_backg_fog_near = fnear;
 			Neb_backg_fog_far = ffar;
 		} else {
-			Assert(gr_screen.mode == GR_DIRECT3D);
 			Neb_ship_fog_vals_d3d[index][0] = fnear;
 			Neb_ship_fog_vals_d3d[index][1] = ffar;
 		}
@@ -1850,7 +1847,6 @@ DCF(neb2_fog_vals, "")
 {
 	dc_printf("neb2_fog : \n");
 	{
-		Assert(gr_screen.mode == GR_DIRECT3D);
 		dc_printf("(1)cargo containers : %f, %f\n", Neb_ship_fog_vals_d3d[1][0], Neb_ship_fog_vals_d3d[1][1]);
 		dc_printf("(2)fighters/bombers : %f, %f\n", Neb_ship_fog_vals_d3d[2][0], Neb_ship_fog_vals_d3d[2][1]);
 		dc_printf("(3)cruisers : %f, %f\n", Neb_ship_fog_vals_d3d[3][0], Neb_ship_fog_vals_d3d[3][1]);

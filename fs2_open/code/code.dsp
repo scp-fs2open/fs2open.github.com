@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "..\Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /I "c:\mssdk\include\\" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENGL" /D "MORE_SPECIES" /D "NO_DSHOW_CODE" /U "_DEBUG" /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /I "c:\mssdk\include\\" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENGL" /D "MORE_SPECIES" /D "FS2_SPEECH" /U "_DEBUG" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe

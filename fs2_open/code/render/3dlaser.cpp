@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-02-20 04:29:56 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2004-02-28 14:14:57 $
+ * $Author: randomtiger $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/02/20 04:29:56  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.5  2004/02/14 00:18:35  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -305,8 +310,7 @@ float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, 
 	ptlist[3]->b = (ubyte)b;
 	ptlist[3]->a = 255;
 
-	gr_tmapper(gr_screen.mode == GR_DIRECT3D ? 8 : 4,
-		ptlist,tmap_flags | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+	gr_tmapper(4, ptlist,tmap_flags | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
 	
 	return center.xyz.z;
 }

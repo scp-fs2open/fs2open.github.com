@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-02-16 11:47:32 $
+ * $Revision: 2.17 $
+ * $Date: 2004-02-28 14:14:56 $
  * $Author: randomtiger $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/02/16 11:47:32  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.15  2004/02/15 06:02:31  bobboau
  * fixed sevral asorted matrix errors,
  * OGL people make sure I didn't break anything,
@@ -1102,12 +1109,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	switch( mode )	{
 #ifdef _WIN32
 		case GR_DIRECT3D:
-
-			if(gr_d3d_init() == false)
-			{
-				Gr_inited = 0;
-				return false;
-			}
+			Gr_inited = gr_d3d_init();
 			break;
 #endif  // ifdef WIN32
 
@@ -1117,6 +1119,10 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 
 		default:
 			Int3();		// Invalid graphics mode
+	}
+
+	if(Gr_inited == false) {
+		return false;
 	}
 
 //  	memmove( Gr_current_palette, Gr_original_palette, 768 );
