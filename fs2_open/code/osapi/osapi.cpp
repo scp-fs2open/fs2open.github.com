@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-07 00:02:08 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2003-02-22 04:14:21 $
+ * $Author: wmcoolmon $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/07 00:02:08  phreak
+ * fixed problem in win32_create_window() that disabled OpenGL from running in windowed mode
+ *
  * Revision 2.3  2002/11/14 04:18:17  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -374,6 +377,13 @@ BOOL __stdcall os_enum_windows( HWND hwnd, char * search_string )
 	return TRUE;	// continue enumeration
 }
 
+
+bool os_app_activate_hook_on = true;
+
+void os_app_activate_set(bool state)
+{
+	os_app_activate_hook_on = state;
+}
 
 int Got_message = 0;
 // message handler for the main thread
