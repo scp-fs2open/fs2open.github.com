@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.6 $
- * $Date: 2004-08-11 05:06:25 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2004-09-17 00:18:17 $
+ * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/08/11 05:06:25  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.5  2004/05/30 08:04:49  wmcoolmon
  * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
  *
@@ -426,6 +429,11 @@ void hud_maybe_render_multi_text();
 void hud_toggle_draw();
 int	hud_disabled();
 int hud_support_find_closest( int objnum );
+
+// Goober5000
+void hud_set_draw(int draw);
+void hud_disable_except_messages(int disable);
+int hud_disabled_except_messages();
 
 // contrast stuff
 void hud_toggle_contrast();

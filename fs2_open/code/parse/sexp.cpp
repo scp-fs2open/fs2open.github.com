@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.102 $
- * $Date: 2004-09-02 04:02:44 $
+ * $Revision: 2.103 $
+ * $Date: 2004-09-17 00:18:18 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2004/09/02 04:02:44  Goober5000
+ * fixed a warning
+ * --Goober5000
+ *
  * Revision 2.101  2004/08/23 04:32:05  Goober5000
  * ship-tag and ship-untag sexps
  * --Goober5000
@@ -1079,7 +1083,8 @@ sexp_oper Operators[] = {
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 
 	//HUD funcs -C
-	{ "toggle-hud",					OP_TOGGLE_HUD,					0, 0 },		// Goober5000
+	{ "hud-disable",				OP_HUD_DISABLE,					1, 1 },	// Goober5000
+	{ "hud-disable-except-messages",OP_HUD_DISABLE_EXCEPT_MESSAGES,	1, 1 },	// Goober5000
 	{ "hud-set-text",				OP_HUD_SET_TEXT,				2, 2 },	//WMCoolmon
 	{ "hud-set-text-num",			OP_HUD_SET_TEXT_NUM,			2, 2 },	//WMCoolmon
 	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
@@ -6647,9 +6652,15 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 }
 
 // Goober5000
-void sexp_toggle_hud()
+void sexp_hud_disable(int n)
 {
-	hud_toggle_draw();
+	hud_set_draw(!sexp_get_val(n));
+}
+
+// Goober5000
+void sexp_hud_disable_except_messages(int n)
+{
+	hud_disable_except_messages(sexp_get_val(n));
 }
 
 void sexp_hud_set_text_num(int n)
@@ -11769,8 +11780,13 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
-			case OP_TOGGLE_HUD:
-				sexp_toggle_hud();
+			case OP_HUD_DISABLE:
+				sexp_hud_disable(node);
+				sexp_val = 1;
+				break;
+
+			case OP_HUD_DISABLE_EXCEPT_MESSAGES:
+				sexp_hud_disable_except_messages(node);
 				sexp_val = 1;
 				break;
 
@@ -12779,7 +12795,8 @@ int query_operator_return_type(int op)
 		case OP_SET_SHIP_POSITION:
 		case OP_SET_SHIP_FACING:
 		case OP_SET_SHIP_FACING_OBJECT:
-		case OP_TOGGLE_HUD:
+		case OP_HUD_DISABLE:
+		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_KAMIKAZE:
 		case OP_NOT_KAMIKAZE:
 		case OP_TURRET_TAGGED_SPECIFIC:
@@ -13243,8 +13260,10 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CLOSE_SOUND_FROM_FILE:
 			return OPF_BOOL;
 
-		case OP_TOGGLE_HUD:
-			return OPF_NONE;
+		case OP_HUD_DISABLE:
+		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
+			return OPF_POSITIVE;
+
 		case OP_HUD_SET_TEXT:
 			if(argnum == 0)
 				return OPF_STRING;
@@ -14699,7 +14718,8 @@ int get_subcategory(int sexp_id)
 		case OP_RADAR_SET_MAXRANGE: //Kazan
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
-		case OP_TOGGLE_HUD:
+		case OP_HUD_DISABLE:
+		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_COORDS:

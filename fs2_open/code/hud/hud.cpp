@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.24 $
+ * $Date: 2004-09-17 00:18:17 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.22  2004/07/26 17:54:04  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
  * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
@@ -477,6 +480,9 @@ int HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;		// 1 -> HUD_COLOR_ALPHA_USER_MAX
 
 int HUD_draw     = 1;
 int HUD_contrast = 0;										// high or lo contrast (for nebula, etc)
+
+// Goober5000
+int HUD_disable_except_messages = 0;
 
 color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];		// array of colors with different alpha blending
 color HUD_color_debug;										// grey debug text shown on HUD
@@ -1067,6 +1073,25 @@ void hud_toggle_draw()
 	HUD_draw = !HUD_draw;
 }
 
+// Goober5000
+void hud_set_draw(int draw)
+{
+	HUD_draw = draw;
+}
+
+// Goober5000
+void hud_disable_except_messages(int disable)
+{
+	HUD_disable_except_messages = disable;
+}
+
+// Goober5000
+// like hud_disabled, except messages are still drawn
+int hud_disabled_except_messages()
+{
+	return HUD_disable_except_messages;
+}
+
 // return !0 if HUD is disabled (ie no gauges are shown/usable), otherwise return 0
 int hud_disabled()
 {
@@ -1600,7 +1625,26 @@ void HUD_render_2d(float frametime)
 		gr_string( 10, 40, Scoring_debug_text );
 	}
 */
-	if ( hud_disabled() ) {
+
+	// Goober5000 - special case... hud is off, but we're still displaying messages
+	if ( hud_disabled_except_messages() )
+	{
+		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY )))
+		{
+			// draw a border around a talking head if it is playing
+			hud_maybe_blit_head_border();
+
+			// show the directives popup and/or training popup
+			message_training_display();
+		}
+
+		hud_show_messages();
+
+		return;
+	}
+
+	if ( hud_disabled() )
+	{
 		return;
 	}
 
@@ -1656,8 +1700,8 @@ void HUD_render_2d(float frametime)
 		hud_set_default_color();
 	}
 
-	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {		
-	
+	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY )))
+	{
 		// display Energy Transfer System gauges
 		if ( hud_gauge_active(HUD_ETS_GAUGE) ) {
 			show_gauge_flag=1;
@@ -1696,24 +1740,6 @@ void HUD_render_2d(float frametime)
 		// draw the reticle
 		hud_show_reticle();
 
-
-		/*
-		// why is this here twice?
-		// display Energy Transfer System gauges
-		if ( hud_gauge_active(HUD_ETS_GAUGE) ) {
-			show_gauge_flag=1;
-			// is gauge configured as a popup?
-			if ( hud_gauge_is_popup(HUD_ETS_GAUGE) ) {
-				if ( !hud_gauge_popup_active(HUD_ETS_GAUGE) ) {
-					show_gauge_flag=0;
-				}
-			}
-			
-			if ( show_gauge_flag ) {
-				hud_show_ets();
-			}
-		}
-		*/
 
 		// display info on the ships in the escort list
 		if ( hud_gauge_active(HUD_ESCORT_VIEW) ) {
