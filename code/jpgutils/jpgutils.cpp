@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-02-05 04:15:35 $
+ * $Revision: 1.9 $
+ * $Date: 2005-02-07 08:33:14 $
  * $Author: taylor $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/02/05 04:15:35  taylor
+ * more post merge happiness
+ *
  * Revision 1.7  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -41,7 +44,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <setjmp.h>
-#include <jpeglib.h>
+
+extern "C" {
+	#include <jpeglib.h>
+}
 
 #undef LOCAL // fix from a jpeg header, pstypes.h will define it again
 
