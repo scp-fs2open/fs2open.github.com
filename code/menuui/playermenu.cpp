@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-04 05:12:42 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-14 04:00:15 $
+ * $Author: Goober5000 $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/04 05:12:42  penguin
+ * Display fs2_open version instead of "Freespace 2"
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -342,7 +345,7 @@ int Player_select_clone_flag;									// clone the currently selected pilot
 char Player_select_last_pilot[CALLSIGN_LEN + 10];		// callsign of the last used pilot, or none if there wasn't one
 int Player_select_last_is_multi;
 
-int Player_select_force_bastion = 0;
+int Player_select_force_main_hall = 0;
 
 // notification text areas
 
@@ -408,7 +411,7 @@ void player_select_init()
 	// start a looping ambient sound
 	main_hall_start_ambient();
 
-	Player_select_force_bastion = 0;
+	Player_select_force_main_hall = 0;
 
 #ifdef FS2_DEMO
 	/*
@@ -723,8 +726,8 @@ void player_select_close()
 		Player = NULL;
 	} 		
 
-	if (Player_select_force_bastion) {
-		Player->on_bastion = 1;
+	if (Player_select_force_main_hall) {
+		Player->main_hall = 1;
 	}
 }
 
@@ -1462,7 +1465,7 @@ void player_select_cancel_create()
 DCF(bastion,"Sets the player to be on the bastion")
 {
 	if(gameseq_get_state() == GS_STATE_INITIAL_PLAYER_SELECT){
-		Player_select_force_bastion = 1;
+		Player_select_force_main_hall = 1;
 		dc_printf("Player is now in the Bastion\n");
 	}
 }

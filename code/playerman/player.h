@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/Player.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-01-14 04:00:15 $
+ * $Author: Goober5000 $
  *
  *  Header file for player information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -236,7 +239,7 @@ typedef struct player {
 	campaign_info	*campaigns;									// holds information regarding all active campaigns the player is playing
 	int				readyroom_listing_mode;
 
-	ubyte				on_bastion;
+	ubyte			main_hall;							// Goober5000 - now allows 256 halls; I didn't make this int because it would mess up the file compatibility
 	int				flags;
 	int				save_flags;
 

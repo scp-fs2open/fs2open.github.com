@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-08-27 13:38:58 $
- * $Author: penguin $
+ * $Revision: 2.6 $
+ * $Date: 2003-01-14 04:00:16 $
+ * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/08/27 13:38:58  penguin
+ * Moved DirectX8 stuff to directx8 branch; reverted to previous
+ *
  * Revision 2.3  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -600,6 +603,17 @@ int mission_campaign_load( char *filename, int load_savefile )
 			cm->flags = 0;
 			if (optional_string("+Flags:"))
 				stuff_int(&cm->flags);
+
+			// Goober5000 - new main hall stuff!
+			cm->main_hall = 0;
+
+			// deal with previous campaign versions
+			if (cm->flags & CMISSION_FLAG_BASTION)
+				cm->main_hall = 1;
+
+			// specify up to 256 main halls :)
+			if (optional_string("+Main Hall:"))
+				stuff_byte(&cm->main_hall);
 
 			cm->formula = -1;
 			if ( optional_string("+Formula:") ) {
@@ -1513,12 +1527,9 @@ void mission_campaign_mission_over()
 		Sexp_nodes[mission->formula].value = SEXP_UNKNOWN;
 	}
 
+	// new main hall behavior - Goober5000
 	Assert(Player);
-	if (Campaign.missions[Campaign.next_mission].flags & CMISSION_FLAG_BASTION){
-		Player->on_bastion = 1;
-	} else {
-		Player->on_bastion = 0;
-	}
+	Player->main_hall = Campaign.missions[Campaign.next_mission].main_hall;
 
 	mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }
