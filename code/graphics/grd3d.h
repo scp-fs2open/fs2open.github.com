@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.5 $
- * $Date: 2003-10-25 03:26:39 $
- * $Author: phreak $
+ * $Revision: 2.6 $
+ * $Date: 2003-11-01 21:59:21 $
+ * $Author: bobboau $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/10/25 03:26:39  phreak
+ * fixed some old bugs that reappeared after RT committed his texture code
+ *
  * Revision 2.4  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -96,6 +99,7 @@
 struct poly_list;
 
 #include "globalincs/systemvars.h"
+#include <d3dx8math.h>
 
 bool gr_d3d_resize_screen_pos(int *x, int *y);
 void gr_d3d_exb_flush(int end_of_frame);
@@ -134,12 +138,26 @@ void gr_d3d_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, flo
 void gr_d3d_filter_set(int filter);
 void gr_d3d_set_clear_color(int r, int g, int b);
 void gr_d3d_get_region(int front, int w, int h, ubyte *data);
+
 int gr_d3d_make_buffer(poly_list *list);
 void gr_d3d_destroy_buffer(int idx);
 void gr_d3d_render_buffer(int idx);
+
+void gr_d3d_set_proj_matrix(float fov, float ratio, float n, float f);
+void gr_d3d_end_proj_matrix();
+void gr_d3d_set_view_matrix(vector* offset, matrix *orient);
+void gr_d3d_end_view_matrix();
+void gr_d3d_set_scale_matrix(vector* scale);
+void gr_d3d_end_scale_matrix();
 void gr_d3d_start_instance_matrix(vector*, matrix*);
+void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient);
 void gr_d3d_end_instance_matrix();
+
 void d3d_start_clip();
 void d3d_end_clip();
+
+extern ID3DXMatrixStack *world_matrix_stack;
+extern ID3DXMatrixStack *view_matrix_stack;
+extern ID3DXMatrixStack *proj_matrix_stack;
 
 #endif

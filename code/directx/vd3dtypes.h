@@ -328,6 +328,7 @@ typedef struct _D3DTLVERTEX {
 /*
  * Untransformed/lit vertices
  */
+//(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX1)
 typedef struct _D3DLVERTEX {
     union {
 	D3DVALUE     x;             /* Homogeneous coordinates */
