@@ -11,12 +11,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.h $
- * $Revision: 1.4 $
- * $Date: 2004-02-21 00:59:43 $
+ * $Revision: 1.5 $
+ * $Date: 2004-03-09 17:59:01 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/02/21 00:59:43  Kazan
+ * FS2NETD License Comments
+ *
  * Revision 1.3  2003/10/13 06:02:50  Kazan
  * Added Log Comment Thingy to these files
  *
@@ -28,7 +31,7 @@
 //#define MT_TCP_Socket
 
 // Enable MultiThreaded Receive - FreeSpace 2 TCP_Socket only!
-#define FS2_TCP_RMultithread
+//#define FS2_TCP_RMultithread
 
 #if defined(WIN32)
 // Windows Version
@@ -162,7 +165,10 @@ class TCP_Socket : public Generic_Socket
 		void RemoveFirstPacket();
 
 		friend void _cdecl tcp_socket_mt_run(void *arg);
+#else
+		void IgnorePackets();
 #endif
+	
 
 		STYPE GetSocketNum() { return mySocket; }; 
 
