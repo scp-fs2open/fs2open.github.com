@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.35 $
- * $Date: 2003-04-29 01:03:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.36 $
+ * $Date: 2003-05-09 23:52:01 $
+ * $Author: phreak $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.34  2003/03/25 07:03:30  Goober5000
  * added beginning functionality for $Texture Replace implementation in FRED
  * --Goober5000
@@ -791,6 +795,8 @@ int Num_reinforcement_type_names = sizeof(Reinforcement_type_names) / sizeof(cha
 vector Parse_viewer_pos;
 matrix Parse_viewer_orient;
 
+int Loading_screen_bm_index=-1;
+
 // definitions for timestamps for eval'ing arrival/departure cues
 int Mission_arrival_timestamp;
 int Mission_departure_timestamp;
@@ -1030,6 +1036,34 @@ void parse_mission_info(mission *pm)
 	if ( (pm->game_type & MISSION_TYPE_MULTI) && (pm->game_type & MISSION_TYPE_MULTI_TEAMS) ){
 		Num_teams = 2;
 	}
+
+	int found640=0, found1024=0;
+	strcpy(The_mission.loading_screen[GR_640],"");
+	strcpy(The_mission.loading_screen[GR_1024],"");
+	//custom mission loading background
+	if (optional_string("$Load Screen 640:"))
+	{
+		found640=1;
+		stuff_string(The_mission.loading_screen[GR_640],F_NAME,NULL);	
+	}
+	if (optional_string("$Load Screen 1024:"))
+	{
+		found1024=1;
+		stuff_string(The_mission.loading_screen[GR_1024],F_NAME,NULL);
+	}
+
+	//error testing
+	if ((found640) && !(found1024))
+	{
+		Warning(LOCATION, "Mission: %s\nhas no 1024 loading screen but a 640 loading screen!",The_mission.name);
+		strcpy(The_mission.loading_screen[GR_640],"");
+	}
+
+	if (!(found640) && (found1024))
+	{
+		Warning(LOCATION, "Mission: %s\nhas no 640 loading screen but a 1024 loading screen!",The_mission.name);
+		strcpy(The_mission.loading_screen[GR_1024],"");
+	}	
 }
 
 void parse_player_info(mission *pm)
