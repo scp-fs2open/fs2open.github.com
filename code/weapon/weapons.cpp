@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2004/06/22 23:14:10  wmcoolmon
+ * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
+ * OGG code has been commented out, so you don't need the SDK yet.
+ *
  * Revision 2.65  2004/06/18 04:59:55  wmcoolmon
  * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
  *
@@ -4388,6 +4392,7 @@ int weapon_create_group_id()
 	return n;
 }
 
+extern int Cmdline_load_only_used;
 unsigned int used_weapons[MAX_WEAPON_TYPES] = {0};
 void weapons_page_in()
 {
@@ -4404,10 +4409,10 @@ void weapons_page_in()
 
 	// Page in bitmaps for all used weapons
 	for (i=0; i<Num_weapon_types; i++ )	{
-		/*if(!used_weapons[i])
+		if(!used_weapons[i] && Cmdline_load_only_used)
 		{
 			continue;
-		}*/
+		}
 		weapon_info *wip = &Weapon_info[i];
 
 		wip->wi_flags &= (~WIF_THRUSTER);		// Assume no thrusters
