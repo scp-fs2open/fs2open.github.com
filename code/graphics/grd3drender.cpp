@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-07 00:45:25 $
- * $Author: DTP $
+ * $Revision: 2.4 $
+ * $Date: 2002-10-05 16:46:09 $
+ * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/07 00:45:25  DTP
+ * Implented -GF4FIX commandline switch & #include "cmdline/cmdline.h"
+ *
  * Revision 2.2  2002/08/03 19:42:17  randomtiger
  * Fixed Geforce 4 bug that caused font and hall video distortion.
  * Very small change in 'gr_d3d_aabitmap_ex_internal'
@@ -343,6 +346,7 @@
 #include "nebula/neb.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"	//DTP for random tigers GF4fix, and the commandline switch.
+#include "debugconsole/timerbar.h"
 
 typedef enum gr_texture_source {
 	TEXTURE_SOURCE_NONE,
@@ -2296,6 +2300,45 @@ void gr_d3d_print_screen(char *filename)
 	lpBackBuffer->Unlock( NULL );
 
 }
+
+void d3d_render_timer_bar(int colour, float x, float y, float w, float h)
+{
+	static D3DCOLOR pre_set_colours[TIMERBAR_COLOUR_MAX] = 
+	{
+		0xffff0000, // red
+		0xff00ff00, // green
+		0xff0000ff, // blue
+	};
+
+	D3DTLVERTEX d3d_verts[4];
+
+	static float max_fw = (float) gr_screen.max_w; 
+	static float max_fh = (float) gr_screen.max_h; 
+
+	d3d_verts[0].rhw   = 1;
+	d3d_verts[0].color = pre_set_colours[colour];
+	d3d_verts[0].sx = max_fw * x;
+	d3d_verts[0].sy = max_fh * y;
+
+	d3d_verts[1].rhw   = 1;
+	d3d_verts[1].color = pre_set_colours[colour];
+	d3d_verts[1].sx = max_fw * (x + w);
+	d3d_verts[1].sy = max_fh * y;
+
+	d3d_verts[2].rhw   = 1;
+	d3d_verts[2].color = pre_set_colours[colour];
+	d3d_verts[2].sx = max_fw * (x + w);
+	d3d_verts[2].sy = max_fh * (y + h);
+
+	d3d_verts[3].rhw   = 1;
+	d3d_verts[3].color = pre_set_colours[colour];
+	d3d_verts[3].sx = max_fw * x;
+	d3d_verts[3].sy = max_fh * (y + h);
+
+	gr_d3d_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
+	d3d_DrawPrimitive(D3DPT_TRIANGLEFAN,D3DVT_TLVERTEX,(LPVOID)d3d_verts,4,NULL);
+}
+
 
 
 

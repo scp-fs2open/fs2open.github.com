@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-05 16:46:09 $
+ * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -217,6 +220,7 @@ void gr_d3d_set_palette(ubyte *new_palette, int restrict_alphacolor);
 void gr_d3d_diamond(int x, int y, int width, int height);
 void gr_d3d_print_screen(char *filename);
 
+void d3d_render_timer_bar(int colour, float x, float y, float w, float h);
 
 // Functions used to render.  Calls either DrawPrim or Execute buffer code
 HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE dwRenderStateType,  DWORD dwRenderState );
