@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-03-05 09:01:53 $
+ * $Revision: 2.9 $
+ * $Date: 2004-04-10 16:55:45 $
  * $Author: Goober5000 $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.7  2003/09/05 04:25:28  Goober5000
  * well, let's see here...
  *
@@ -773,25 +777,16 @@ int sim_room_line_query_visible(int n)
 
 void sim_room_scroll_screen_up()
 {
-	if (Player->readyroom_listing_mode != MODE_MISSIONS) {
-		if (Scroll_offset) {
-			Scroll_offset--;
-			gamesnd_play_iface(SND_SCROLL);
-
-			Sim_room_slider.forceUp();
-		} else
-			gamesnd_play_iface(SND_GENERAL_FAIL);
-
-		return;
-	}
-
-	if (Scroll_offset) {
+	if (Scroll_offset > 0) {
 		Scroll_offset--;
-		Assert(Selected_line > Scroll_offset);
-		while (!sim_room_line_query_visible(Selected_line))
+
+		if (Player->readyroom_listing_mode == MODE_MISSIONS)
 		{
-			Selected_line--;
-			Sim_room_slider.forceUp();
+			Assert(Selected_line > Scroll_offset);
+			while (!sim_room_line_query_visible(Selected_line))
+			{
+				Selected_line--;
+			}
 		}
 
 		gamesnd_play_iface(SND_SCROLL);
@@ -818,24 +813,16 @@ void sim_room_scroll_line_up()
 
 void sim_room_scroll_screen_down()
 {
-	if (Player->readyroom_listing_mode != MODE_MISSIONS) {
-		if (sim_room_lines[Num_lines - 1].y + gr_get_font_height() > sim_room_lines[Scroll_offset].y + list_h) {
-			Scroll_offset++;
-			gamesnd_play_iface(SND_SCROLL);
-
-			Sim_room_slider.forceDown();
-		} else
-			gamesnd_play_iface(SND_GENERAL_FAIL);
-
-		return;
-	}
-
 	if (sim_room_lines[Num_lines - 1].y + gr_get_font_height() > sim_room_lines[Scroll_offset].y + list_h) {
 		Scroll_offset++;
-		while (!sim_room_line_query_visible(Selected_line)) {
-			Selected_line++;
-			Assert(Selected_line < Num_lines);
-			Sim_room_slider.forceDown();
+
+		if (Player->readyroom_listing_mode == MODE_MISSIONS)
+		{			
+			while (!sim_room_line_query_visible(Selected_line))
+			{
+				Selected_line++;
+				Assert(Selected_line < Num_lines);
+			}
 		}
 
 		gamesnd_play_iface(SND_SCROLL);
