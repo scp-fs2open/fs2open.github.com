@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-12-20 00:50:41 $
- * $Author: DTP $
+ * $Revision: 2.8 $
+ * $Date: 2002-12-27 17:58:11 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/20 00:50:41  DTP
+ * DTP FIX, fast fix to the beam/shield bug problem. will maybe commit later when i find out why this is getting triggered when it should not
+ *
  * Revision 2.6  2002/12/07 01:37:43  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -334,7 +337,7 @@
 // randomness factor - all beam weapon aiming is adjusted by +/- some factor within this range
 #define BEAM_RANDOM_FACTOR			0.4f
 
-#define MAX_BEAMS						500
+#define MAX_BEAMS					500
 #define BEAM_DAMAGE_TIME			170			// apply damage 
 #define MAX_SHOT_POINTS				30
 #define SHOT_POINT_TIME				200			// 5 arcs a second
@@ -2324,7 +2327,7 @@ int beam_collide_ship(obj_pair *pair)
 	ship *shipp;
 	ship_info *sip;
 	mc_info test_collide;		
-	int model_num;	
+	int model_num, quad;
 	float widest;
 	weapon_info *bwi;
 
@@ -2398,7 +2401,7 @@ int beam_collide_ship(obj_pair *pair)
 	// maybe do a sphere line
 	if(widest > pair->b->radius * BEAM_AREA_PERCENT){
 		test_collide.radius = beam_get_widest(b) * 0.5f;
-		//if the shields have any juce check them otherwise check the model
+		//if the shields have any juice check them otherwise check the model
 		if ( (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for beams wich have a positive sheild factor -Bobboau
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_SPHERELINE;	
 		}else{		
@@ -2413,29 +2416,46 @@ int beam_collide_ship(obj_pair *pair)
 	}
 
 	model_collide(&test_collide);
-	
-	if(test_collide.flags & MC_CHECK_SHIELD){	//if we're checking sheilds
-		int quad = get_quadrant(&test_collide.hit_point);//find wich quadrant we hit
-		if(Objects[shipp->objnum].shields[quad] < (bwi->damage * bwi->shield_factor * 2.0f)){	
+
+	quad = -1;
+	if(test_collide.flags & MC_CHECK_SHIELD)	//if we're checking shields
+	{
+		quad = get_quadrant(&test_collide.hit_point);//find which quadrant we hit
+
 		//then if the beam does more damage than that quadrant can take
-		//if(!(ship_is_shield_up(&Objects[shipp->objnum], get_quadrant(&test_collide.hit_point)))){
-		//go through the shield and hit the hull -Bobboau
-			if(widest > pair->b->radius * BEAM_AREA_PERCENT){
+		if(Objects[shipp->objnum].shields[quad] < (bwi->damage * bwi->shield_factor * 2.0f))
+		//if(!(ship_is_shield_up(&Objects[shipp->objnum], get_quadrant(&test_collide.hit_point))))
+		{
+			//go through the shield and hit the hull -Bobboau
+			if(widest > pair->b->radius * BEAM_AREA_PERCENT)
+			{
 				test_collide.radius = beam_get_widest(b) * 0.5f;
 				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
-			} else {	
+			}
+			else
+			{	
 				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
 			}
 			model_collide(&test_collide);
-			//Objects[shipp->objnum].shields[quad]=0.0f; //for good measure-Bobboau
+		}
+		else
+		{
+			quad = -1;
 		}
 	}
 
 
 	// if we got a hit
-	if(test_collide.num_hits){
+	if(test_collide.num_hits)
+	{
 		// add to the collision list
-		beam_add_collision(b, pair->b, &test_collide);		
+		beam_add_collision(b, pair->b, &test_collide);
+
+		// if we went through the shield
+		if (quad != -1)
+		{
+			Objects[shipp->objnum].shields[quad] = 0.0f;	// Bobboau's addition: now works correctly
+		}
 	}	
 
 	// add this guy to the lighting list
