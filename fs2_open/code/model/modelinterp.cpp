@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.90 $
- * $Date: 2004-10-31 21:55:00 $
- * $Author: taylor $
+ * $Revision: 2.91 $
+ * $Date: 2004-12-05 22:01:11 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2004/10/31 21:55:00  taylor
+ * s/fisrt/first/g
+ *
  * Revision 2.89  2004/10/09 17:48:58  taylor
  * da simple IBX code, back to old line rendering for models since it should be faster for OGL now
  *
@@ -3629,7 +3632,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	vector decal_z_corection = View_position;
 //	vm_vec_sub(&decal_z_corection, &Eye_position, pos);
-	vm_vec_normalize(&decal_z_corection);
+	if(decal_z_corection.xyz.x != 0 && decal_z_corection.xyz.y != 0 && decal_z_corection.xyz.z != 0)
+		vm_vec_normalize(&decal_z_corection);
 	float corection = 0.1f;
 	vm_vec_scale(&decal_z_corection, corection);
 	g3_start_instance_matrix(&decal_z_corection, NULL, use_api);		
@@ -5291,7 +5295,18 @@ void find_tri_counts(int offset, ubyte *bsp_data){
 }
 
 
+int in_box(vector *min, vector *max, vector * point){
+	if(point->xyz.x >= min->xyz.x && point->xyz.x <= max->xyz.x &&
+		point->xyz.y >= min->xyz.y && point->xyz.y <= max->xyz.y &&
+		point->xyz.z >= min->xyz.z && point->xyz.z <= max->xyz.z)return 1;
+	return -1;
+}
+
+
 void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level){
+
+	if(model->use_render_box && -model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &View_position))return;
+	
 	int i;
 	int zbuf_mode = gr_zbuffering_mode;
 
@@ -5359,6 +5374,8 @@ extern vector Object_position;
 extern matrix Object_matrix;
 
 void model_render_buffers(bsp_info* model, polymodel * pm){
+
+	if(model->use_render_box && -model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &View_position))return;
 	
 	if(model->indexed_vertex_buffer == -1)return;
 
@@ -5752,4 +5769,138 @@ void model_resort_index_buffer_bsp(int offset, ubyte *bsp_data, bool f2b, int te
 void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* index_buffer){
 	model_resort_index_buffer_n_verts = 0;
 	model_resort_index_buffer_bsp(0, bsp_data, f2b, texture, index_buffer);
+}
+
+
+//************************************//
+//*** triggered submodel animation ***//
+//************************************//
+
+//this calculates the angle at wich the rotation should start to slow down
+//and basicly fills in a bunch of other crap
+//if anyone wants the calculus behind these numbers I'll provide it
+void triggered_rotation::start(queued_animation* q){
+	mprintf(("animation start at %d\n",timestamp()));
+	char ax[]="xyz";
+
+	for(int axis = 0; axis < 3; axis++){
+
+		direction.a1d[axis] = (end_angle.a1d[axis]+q->angle.a1d[axis])-current_ang.a1d[axis];
+		if(direction.a1d[axis])direction.a1d[axis] /= (float)fabs(direction.a1d[axis]);
+
+		if(q->absolute){
+			end_angle.a1d[axis] = end_angle.a1d[axis] - (2*PI2*(float)int(end_angle.a1d[axis]/(2*PI2)));
+			current_ang.a1d[axis] = current_ang.a1d[axis] - (2*PI2*(float)int(current_ang.a1d[axis]/(2*PI2)));
+		}else{
+			end_angle.a1d[axis]=q->angle.a1d[axis]+end_angle.a1d[axis];
+		}
+	
+		rot_vel.a1d[axis] = q->vel.a1d[axis]*direction.a1d[axis];
+		rot_accel.a1d[axis] = q->accel.a1d[axis]*direction.a1d[axis];
+	
+		slow_angle.a1d[axis]=end_angle.a1d[axis]-(((q->vel.a1d[axis]*q->vel.a1d[axis])/(2.0f*q->accel.a1d[axis]))*direction.a1d[axis]);
+	mprintf(("axis %c: direction=%d, end angle=%f, velocity=%f, acceleration=%f, slow angle=%f\n", ax[axis],(int)direction.a1d[axis],end_angle.a1d[axis],rot_vel.a1d[axis],rot_accel.a1d[axis],slow_angle.a1d[axis]));
+	}
+}
+
+triggered_rotation::triggered_rotation(){
+	vector v = ZERO_VECTOR;
+	current_ang = v;	
+	current_vel = v;	
+	rot_accel = v;	
+	rot_vel = v;	
+	slow_angle = v;	
+	end_time = 0;	
+	end_angle = v;
+	n_queue = 0;
+}
+
+triggered_rotation::~triggered_rotation(){
+	//origonaly the que was a dynamic array
+}
+
+
+
+void triggered_rotation::add_queue(queued_animation* new_queue){
+	if(new_queue->start == 0){
+		new_queue->start += timestamp();
+		new_queue->end += new_queue->start;
+		start(new_queue);	//if there is no delay don't bother with the queue, just start the damned thing
+		return;
+	}
+
+	//starts that many seconds from now
+	new_queue->start += timestamp();
+	//runs for that long
+	new_queue->end += new_queue->start;
+
+	queued_animation old[MAX_TRIGGERED_ANIMATIONS];		//all the triggered animations assosiated with this object
+
+	memcpy(old, queue, sizeof(queued_animation)*MAX_TRIGGERED_ANIMATIONS);
+
+	if(n_queue > 0){
+		//if we already have something in the queue find the first item on the 
+		//queue that is going to start after the new item, 
+		for(int i = 0; new_queue->start > old[i].start && i < n_queue && i < MAX_TRIGGERED_ANIMATIONS; i++);
+		if(i >= MAX_TRIGGERED_ANIMATIONS)return;
+		//then incert the new item before that item
+		//from the begining of the queue to the item on the queue that is just before the new item
+		if(i)memcpy(queue, old, sizeof(queued_animation)*(i));
+		//add the new item
+		queue[i] = *new_queue;
+		//if there are any items after copy them from the origonal queue
+		if(n_queue > i+1)
+			memcpy(&queue[i+1], &old[i], sizeof(queued_animation)*(n_queue - i));
+	}else{
+		queue[0] = *new_queue;
+	}
+	n_queue++;
+}
+
+//look at the queue and see if any of the items on it need to be started
+//remove items from the queue that you just executed
+void triggered_rotation::proces_queue(){
+	if(!n_queue)return;
+	//if there is nothing on the queue just quit right now
+
+	//all items on the que are in cronological order (or at least they should be)
+	//so execute all items who's starting timestamps are less than the current time
+	for(int i = 0; queue[i].start<=timestamp() && i<n_queue; i++){
+		start(&queue[i]);
+	}
+	//if no items were procesed quit
+	if(!i)return;
+
+	queued_animation old[MAX_TRIGGERED_ANIMATIONS];		//all the triggered animations assosiated with this object
+
+	memcpy(old, queue, sizeof(queued_animation)*MAX_TRIGGERED_ANIMATIONS);
+
+//	if(n_queue > i){
+
+		//if there are more items on the queue than we just executed realocate the queue 
+		//copy all the items after the last one we executed
+		memcpy(queue, &old[i], sizeof(queued_animation)*(n_queue-i));
+//	}
+	//then erase the old queue
+	n_queue-=i;
+}
+
+
+queued_animation::queued_animation(float an,float v,float a,int s, int e, int axis)
+:start(s),end(e),absolute(false){
+	angle.a1d[axis]=an; 
+	angle.a1d[(axis+1)%3]=0; 
+	angle.a1d[(axis+2)%3]=0; 
+	vel.a1d[axis]=v; 
+	vel.a1d[(axis+1)%3]=0; 
+	vel.a1d[(axis+2)%3]=0; 
+	accel.a1d[axis]=a; 
+	accel.a1d[(axis+1)%3]=0; 
+	accel.a1d[(axis+2)%3]=0;
+}
+
+void trigger_instance::corect(){
+	for(int i = 0; i<3; i++)
+		if((properties.vel.a1d[i]*properties.vel.a1d[i])/properties.accel.a1d[i] > fabs(properties.angle.a1d[i]))
+			properties.vel.a1d[i] = (float)sqrt(fabs(properties.accel.a1d[i] * properties.angle.a1d[i]));
 }

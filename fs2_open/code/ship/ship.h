@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.69 $
- * $Date: 2004-11-21 11:35:17 $
- * $Author: taylor $
+ * $Revision: 2.70 $
+ * $Date: 2004-12-05 22:01:12 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2004/11/21 11:35:17  taylor
+ * some weapon-only-used loading fixes and general page-in cleanup
+ * page in all ship textures from one function rather than two
+ *
  * Revision 2.68  2004/10/15 09:21:55  Goober5000
  * cleaned up some sexp stuff and added wing capability to kamikaze sexp
  * --Goober5000
@@ -1112,6 +1116,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 // flags2 -- added by Goober5000
 #define SIF2_DEFAULT_IN_TECH_DATABASE		(1 << 0)	// default in tech database - Goober5000
 #define SIF2_DEFAULT_IN_TECH_DATABASE_M		(1 << 1)	// ditto - Goober5000
+#define SIF2_FLASH							(1 << 2)	// makes a flash when it explodes
 
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
@@ -1780,5 +1785,10 @@ extern void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_s
 // Goober5000 - shortcut hud stuff
 extern int ship_has_energy_weapons(ship *shipp);
 extern int ship_has_engine_power(ship *shipp);
+
+//starts an animation of a certan type that may be assosiated with a submodel of a ship
+void ship_start_animation_type(ship *shipp, int animation_type, int direction);
+//how long untill the animation is done
+int ship_get_animation_time_type(ship *shipp, int animation_type);
 
 #endif

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.32 $
- * $Date: 2004-10-31 22:02:47 $
- * $Author: taylor $
+ * $Revision: 2.33 $
+ * $Date: 2004-12-05 22:01:12 $
+ * $Author: bobboau $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2004/10/31 22:02:47  taylor
+ * little cleanup
+ *
  * Revision 2.31  2004/09/10 13:55:49  et1
  * Use yellow warp anim when doing exit jump with "-tbpwarpeffects"
  *
@@ -2439,7 +2442,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 	}
 }
 
-
+void big_explosion_flash(float);
 // Returns 1 when explosion is done
 int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 {
@@ -2466,8 +2469,8 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 					intensity = 1.0f;
 				}
 
-				if (intensity > 0.1f) {
-					// big_explosion_flash(intensity);
+				if (intensity > 0.1f && Ship_info[shipp->ship_info_index].flags2 & SIF2_FLASH) {
+					big_explosion_flash(intensity);
 				}
 			}
 			the_split_ship->explosion_flash_started = 1;

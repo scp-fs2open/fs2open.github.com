@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.140 $
- * $Date: 2004-11-21 11:35:17 $
- * $Author: taylor $
+ * $Revision: 2.141 $
+ * $Date: 2004-12-05 22:01:12 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2004/11/21 11:35:17  taylor
+ * some weapon-only-used loading fixes and general page-in cleanup
+ * page in all ship textures from one function rather than two
+ *
  * Revision 2.139  2004/11/01 20:57:04  taylor
  * make use of Knossos_warp_ani_used flag - thanks Goober5000
  *
@@ -1735,6 +1739,17 @@ void parse_engine_wash(bool replace)
 	stuff_float(&ewp->intensity);
 }
 
+int match_type(char *p){
+	if(!strncmp(p,"\"docking\"",9)){
+		return TRIGGER_TYPE_DOCKING;
+	}
+	if(!strncmp(p,"\"docked\"",8)){
+		return TRIGGER_TYPE_DOCKED;
+	}
+	return-1;
+	
+}
+
 
 // Kazan -- Volition had this set to 1500, Set it to 4K for WC Saga
 //#define SHIP_MULTITEXT_LENGTH 1500
@@ -2350,6 +2365,8 @@ strcpy(parse_error_text, temp_error);
 			sip->flags |= SIF_NO_FRED;
 		else if ( !stricmp( NOX("ballistic primaries"), ship_strings[i]))
 			sip->flags |= SIF_BALLISTIC_PRIMARIES;
+		else if( !stricmp( NOX("flash"), ship_strings[i]))
+			sip->flags2 |= SIF2_FLASH;
 		else
 			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 	}
@@ -2752,6 +2769,72 @@ strcpy(parse_error_text, temp_error);
 			if ( sp->turret_weapon_type < 0 ) {
 				sp->turret_weapon_type = sp->secondary_banks[0];
 			}
+
+			if(optional_string("+non-targetable"))
+				sp->targetable = 0;
+			else
+				sp->targetable = 1;
+
+			trigger_instance *old_triggers = NULL;
+			sp->n_triggers = 0;
+			sp->triggers = NULL;
+			while(optional_string("$animation=triggered")){
+				trigger_instance *current_trigger;
+
+				old_triggers = sp->triggers;
+				sp->triggers = (trigger_instance*)malloc(sizeof(trigger_instance)*(sp->n_triggers+1));
+				if(sp->n_triggers)memcpy(sp->triggers,old_triggers,sizeof(trigger_instance)*sp->n_triggers);
+				if(sp->n_triggers)free(old_triggers);
+				current_trigger = &sp->triggers[sp->n_triggers];
+				sp->n_triggers++;
+				//add a new trigger
+
+				required_string("$type=");
+				char atype[128];
+				stuff_string(atype, F_NAME, NULL);
+				current_trigger->type = match_type(atype);
+
+				required_string("+delay:");
+				stuff_int(&current_trigger->properties.start); 
+
+				if(optional_string("+absolute_angle:")){
+					current_trigger->properties.absolute = true;
+					stuff_vector(&current_trigger->properties.angle );
+
+					current_trigger->properties.angle.xyz.x = fl_radian(current_trigger->properties.angle.xyz.x);
+					current_trigger->properties.angle.xyz.y = fl_radian(current_trigger->properties.angle.xyz.y);
+					current_trigger->properties.angle.xyz.y = fl_radian(current_trigger->properties.angle.xyz.z);
+				}else{
+					current_trigger->properties.absolute = false;
+					required_string("+relitive_angle:");
+					stuff_vector(&current_trigger->properties.angle );
+
+					current_trigger->properties.angle.xyz.x = fl_radian(current_trigger->properties.angle.xyz.x);
+					current_trigger->properties.angle.xyz.y = fl_radian(current_trigger->properties.angle.xyz.y);
+					current_trigger->properties.angle.xyz.z = fl_radian(current_trigger->properties.angle.xyz.z);
+				}
+
+				required_string("+velocity:");
+				stuff_vector(&current_trigger->properties.vel );
+				current_trigger->properties.vel.xyz.x = fl_radian(current_trigger->properties.vel.xyz.x);
+				current_trigger->properties.vel.xyz.y = fl_radian(current_trigger->properties.vel.xyz.y);
+				current_trigger->properties.vel.xyz.z = fl_radian(current_trigger->properties.vel.xyz.z);
+
+				required_string("+acceleration:");
+				stuff_vector(&current_trigger->properties.accel );
+				current_trigger->properties.accel.xyz.x = fl_radian(current_trigger->properties.accel.xyz.x);
+				current_trigger->properties.accel.xyz.y = fl_radian(current_trigger->properties.accel.xyz.y);
+				current_trigger->properties.accel.xyz.z = fl_radian(current_trigger->properties.accel.xyz.z);
+
+				required_string("+time:");
+				stuff_int(&current_trigger->properties.end );
+
+				current_trigger->corect();
+				//makes sure that the amount of time it takes to accelerate up and down doesn't make it go farther than the angle
+			}
+			if(optional_string("$animation=linked")){
+			}
+
 			sp->model_num = -1;		// init value for later sanity checking!!
 		}
 		break;
@@ -4141,6 +4224,9 @@ void ship_subsystem_delete(ship *shipp)
 	// Goober5000 - free stuff used for alt models if we have an alt model
 	if (shipp->alt_modelnum != -1)
 	{
+		for(int n = 0; n<shipp->n_subsystems; n++)
+			if(shipp->subsystems[n].n_triggers)
+				free(shipp->subsystems[n].triggers);
 		free(shipp->subsystems);
 		shipp->n_subsystems = 0;
 		shipp->subsystems = NULL;
@@ -6433,6 +6519,9 @@ void ship_model_change(int n, int ship_type, int force_ship_info_stuff)
 		sp->n_subsystems = 0;
 		if (sp->subsystems != NULL)
 		{
+			for(int n = 0; n<sp->n_subsystems; n++)
+				if(sp->subsystems[n].n_triggers)
+					free(sp->subsystems[n].triggers);
 			free(sp->subsystems);
 			sp->subsystems = NULL;
 		}
@@ -6463,6 +6552,9 @@ void ship_model_change(int n, int ship_type, int force_ship_info_stuff)
 		// redo the memory thing with subsystems
 		if (sp->subsystems != NULL)
 		{
+			for(int n = 0; n<sp->n_subsystems; n++)
+				if(sp->subsystems[n].n_triggers)
+					free( sp->subsystems[n].triggers);
 			free( sp->subsystems );
 			sp->subsystems = NULL;
 		}
@@ -9560,8 +9652,13 @@ void ship_close()
 	// free memory alloced for subsystem storage
 	for ( i = 0; i < Num_ship_types; i++ ) {
 		if ( Ship_info[i].subsystems != NULL ) {
+			for(int n = 0; n<Ship_info[i].n_subsystems; n++)
+				if(Ship_info[i].subsystems[n].n_triggers)
+					free(Ship_info[i].subsystems[n].triggers);
 			free(Ship_info[i].subsystems);
 		}
+
+		
 
 		// free info from parsed table data
 		if (Ship_info[i].type_str != NULL) {
@@ -12715,7 +12812,59 @@ int ship_fire_tertiary(object *objp)
 	return 1;
 }
 
+void ship_start_animation_type(ship *shipp, int animation_type, int direction){
 
+	ship_subsys	*pss;
+	model_subsystem	*psub;
+	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+		psub = pss->system_info;
+
+		// Don't process destroyed objects
+		if ( pss->current_hits <= 0.0f ) 
+			continue;
+		if(psub->flags & MSS_FLAG_TRIGGERED){
+			for(int i = 0; i<psub->n_triggers; i++){
+				if(psub->triggers[i].type == animation_type){
+					queued_animation var =psub->triggers[i].properties;
+					var.angle.xyz.x *= direction;
+					var.angle.xyz.y *= direction;
+					var.angle.xyz.z *= direction;
+					psub->trigger.add_queue(&var);
+				}
+			}
+		}
+		//
+	}
+
+}
+
+//this tells you how long an animation is going to take to get done with
+//this is for things that can't happen untill animations are done
+int ship_get_animation_time_type(ship *shipp, int animation_type){
+
+	ship_subsys	*pss;
+	model_subsystem	*psub;
+	int ret = 0;
+	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+		psub = pss->system_info;
+
+		// Don't process destroyed objects
+		if ( pss->current_hits <= 0.0f ) 
+			continue;
+		if(psub->flags & MSS_FLAG_TRIGGERED){
+			for(int i = 0; i<psub->n_triggers; i++){
+				if(psub->triggers[i].type == animation_type){
+					if(psub->triggers[i].properties.end)ret = psub->triggers[i].properties.start + psub->triggers[i].properties.end;
+				}
+			}
+		}
+		//
+	}
+	return ret;
+
+}
+
+void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii);
 // Goober5000
 void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss)
 {
@@ -12724,8 +12873,17 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 	Assert(pss);
 
 	// check if we actually can rotate
-	if ( !(psub->flags & MSS_FLAG_ROTATES) )
+	if ( !(psub->flags & MSS_FLAG_ROTATES) ){
 		return;
+	}
+
+	if(psub->flags & MSS_FLAG_TRIGGERED){
+
+		psub->trigger.proces_queue();
+		submodel_trigger_rotate(psub, &pss->submodel_info_1 );
+		return;
+	
+	}
 
 	// check for rotating artillery
 	if ( psub->flags & MSS_FLAG_ARTILLERY )

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.38 $
- * $Date: 2004-11-27 10:45:36 $
- * $Author: taylor $
+ * $Revision: 2.39 $
+ * $Date: 2004-12-05 22:01:11 $
+ * $Author: bobboau $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2004/11/27 10:45:36  taylor
+ * some fixes for position problems on the HUD in non-standard resolutions
+ * few compiler warning fixes
+ *
  * Revision 2.37  2004/10/31 21:48:42  taylor
  * faster setting of 0 spec values (Kazan), comment out second (dumbfire?) lead indicator since it just looked wierd constantly being offset
  *
@@ -834,7 +838,7 @@ homing_beep_info Homing_beep = { -1, 0, 150, 1000, 30.0f, 1500.0f };
 float Min_warning_missile_dist;
 float	Max_warning_missile_dist;
 
-void hud_maybe_flash_weapon(int index);					  
+void hud_maybe_flash_weapon(int index);	
 
 // if a given object should be ignored because of AWACS effects
 int hud_target_invalid_awacs(object *objp)
@@ -1613,6 +1617,10 @@ void hud_target_subobject_common(int next_flag)
 
 		// ignore turrets
 		if ( A->system_info->type == SUBSYSTEM_TURRET ) {
+			continue;
+		}
+
+		if ( !A->system_info->targetable ) {
 			continue;
 		}
 
@@ -2500,6 +2508,9 @@ void evaluate_ship_as_closest_target(esct *esct)
 	// find closest turret to player if BIG or HUGE ship
 	if (Ship_info[esct->shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) {
 		for (ss=GET_FIRST(&esct->shipp->subsys_list); ss!=END_OF_LIST(&esct->shipp->subsys_list); ss=GET_NEXT(ss)) {
+
+			if(!(ss->system_info->targetable == 0))continue;
+
 			if ( (ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits > 0) ) {
 
 				if (esct->check_all_turrets || (ss->turret_enemy_objnum == esct->attacked_objnum)) {
@@ -2994,6 +3005,8 @@ void hud_target_subsystem_in_reticle()
 	int shipnum = targetp->instance;
 
 	for (subsys = GET_FIRST(&Ships[shipnum].subsys_list); subsys != END_OF_LIST(&Ships[shipnum].subsys_list)  ; subsys = GET_NEXT( subsys ) ) {
+		if(!(subsys->system_info->targetable == 0))continue;
+
 		get_subsystem_world_pos(targetp, subsys, &subobj_pos);
 
 		dist = vm_vec_normalized_dir(&vec_to_target, &subobj_pos, &Eye_position);
@@ -4072,6 +4085,7 @@ void hud_show_hostile_triangle()
 		// check if any turrets on ship are firing at the player (only on non fighter-bombers)
 		if ( !(Ship_info[sp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ) {
 			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
+				if(!(ss->system_info->targetable == 0))continue;
 				if ( (ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits > 0) ) {
 
 					if ( ss->turret_enemy_objnum == player_obj_index ) {
