@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-09-13 06:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2004-01-31 03:54:50 $
+ * $Author: phreak $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.6  2003/03/29 09:42:05  Goober5000
  * made beams default shield piercing again
  * also added a beam no pierce command line flag
@@ -280,13 +284,13 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *worl
 	}
 
 	if(quadrant_num == -1){
-		weapon_info	*wip = &Weapon_info[Weapons[weapon_obj->instance].weapon_info_index];
+		/*weapon_info	*wip = &Weapon_info[Weapons[weapon_obj->instance].weapon_info_index];
 		decal_point dec;
 		dec.orient = weapon_obj->orient;
 		dec.pnt.xyz = hitpos->xyz;
 		dec.radius = wip->decal_rad;
 		if((dec.radius > 0) && (wip->decal_texture > -1))
-		decal_create(ship_obj, &dec, submodel_num, wip->decal_texture, wip->decal_backface_texture );
+		decal_create(ship_obj, &dec, submodel_num, wip->decal_texture, wip->decal_backface_texture );*/
 	}
 	
 
