@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.15 $
- * $Date: 2002-12-27 02:57:50 $
+ * $Revision: 2.16 $
+ * $Date: 2002-12-31 08:20:30 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2002/12/27 02:57:50  Goober5000
+ * removed the existing stealth sexps and replaced them with the following...
+ * ship-stealthy
+ * ship-unstealthy
+ * is-ship-stealthy
+ * friendly-stealth-invisible
+ * friendly-stealth-visible
+ * is-friendly-stealth-visible
+ * --Goober5000
+ *
  * Revision 2.14  2002/12/24 07:42:28  Goober5000
  * added change-ai-class and is-ai-class, and I think I may also have nailed the
  * is-iff bug; did some other bug hunting as well
@@ -338,6 +348,10 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 
 #define	MAX_PRIMARY_WEAPON_TYPES	10
 #define	MAX_SECONDARY_WEAPON_TYPES	10
+
+// Goober5000 - moved from hudescort.cpp
+// size of complete escort list, including all those wanting to get onto list but without space
+#define MAX_COMPLETE_ESCORT_LIST	20
 
 // Goober5000 - currently only used in ship_select_next_primary and ship_select_next_secondary
 // Goober5000 - now used in hudtarget.cpp->hud_get_best_primary_bank
@@ -793,7 +807,6 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_PATH_FIXUP				(1 << 3)		// when set, path verts have been set for this ship's model
 #define	SIF_SUPPORT					(1 << 4)		// this ship can perform repair/rearm functions
 #define	SIF_AFTERBURNER			(1 << 5)		// this ship has afterburners
-#define SIF_BALLISTIC_PRIMARIES (1 << 6)		// this ship can equip primary ballistics - Goober5000
 
 // If you add a new ship type, then please add the appriopriate type in the ship_count
 // structure later in this file!!! and let MWA know!!
