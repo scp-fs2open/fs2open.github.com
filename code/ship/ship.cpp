@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.142 $
- * $Date: 2004-12-14 14:46:12 $
+ * $Revision: 2.143 $
+ * $Date: 2004-12-15 17:32:19 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.142  2004/12/14 14:46:12  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.141  2004/12/05 22:01:12  bobboau
  * sevral feature additions that WCS wanted,
  * and the foundations of a submodel animation system,
@@ -3102,10 +3106,25 @@ void ship_level_init()
 	for (i=0; i<MAX_TVT_WINGS; i++)
 		TVT_wings[i] = -1;
 
+
 	// Goober5000
-	memset(Starting_wing_names, 0, sizeof(char)*MAX_STARTING_WINGS*NAME_LENGTH);
-	memset(Squadron_wing_names, 0, sizeof(char)*MAX_SQUADRON_WINGS*NAME_LENGTH);
-	memset(TVT_wing_names, 0, sizeof(char)*MAX_TVT_WINGS*NAME_LENGTH);
+
+	// set starting wing names to default
+	strcpy(Starting_wing_names[0], "Alpha");
+	strcpy(Starting_wing_names[1], "Beta");
+	strcpy(Starting_wing_names[2], "Gamma");
+
+	// set squadron wing names to default
+	strcpy(Squadron_wing_names[0], "Alpha");
+	strcpy(Squadron_wing_names[1], "Beta");
+	strcpy(Squadron_wing_names[2], "Gamma");
+	strcpy(Squadron_wing_names[3], "Delta");
+	strcpy(Squadron_wing_names[4], "Epsilon");
+
+	// set tvt wing names to default
+	strcpy(TVT_wing_names[0], "Alpha");
+	strcpy(TVT_wing_names[1], "Zeta");
+
 
 	// Empty the subsys list
 	memset( Ship_subsystems, 0, sizeof(ship_subsys)*MAX_SHIP_SUBOBJECTS );
