@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-03-10 08:00:08 $
+ * $Revision: 2.27 $
+ * $Date: 2005-03-24 23:38:49 $
  * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/03/10 08:00:08  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.25  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -998,7 +1007,7 @@ void message_mission_free_avi(int m_index)
 	int rc = 0, try_count = 0;
 
 	// check for bogus index
-	if ( (m_index < 0) || (m_index > Num_message_avis) )
+	if ( (m_index < 0) || (m_index >= Num_message_avis) )
 		return;
 
 	// Make sure this code doesn't get run if the talking head guage is off
