@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.16 $
- * $Date: 2004-08-11 05:06:23 $
- * $Author: Kazan $
+ * $Revision: 1.17 $
+ * $Date: 2005-02-04 20:06:03 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2004/08/11 05:06:23  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.15  2004/07/07 21:00:06  Kazan
  * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
  *
@@ -57,25 +60,32 @@
  *
  */
 
-#include "PreProcDefines.h"
+
+#if !defined(__pxo_client_h_)
+#define __pxo_client_h_
+
+
 #pragma warning(disable:4018)	// signed/unsigned mismatch
 #pragma warning(disable:4100)	// unreferenced formal parameter
 #pragma warning(disable:4511)	// copy constructor could not be generated
 #pragma warning(disable:4512)	// assignment operator could not be generated
 #pragma warning(disable:4663)	// new template specification syntax
 #pragma warning(disable:4710)	// function not inlined
+#include "PreProcDefines.h"
 
-#if !defined(__pxo_client_h_)
-#define __pxo_client_h_
 
 #define MAX_SERVERS 512
-#include "protocol.h"
+#include "fs2open_pxo/protocol.h"
 
 #if !defined(PXO_TCP)
-#include "udpsocket.h"
+#include "fs2open_pxo/udpsocket.h"
+typedef UDP_Socket PXO_Socket;
 #else
-#include "TCP_Socket.h"
+#include "fs2open_pxo/TCP_Socket.h"
+typedef TCP_Socket PXO_Socket;
 #endif
+
+extern PXO_Socket FS2OpenPXO_Socket;
 
 struct player;
 
@@ -92,47 +102,21 @@ struct net_server
 	  int port;
 };
 
+int SendPlayerData(int SID, const char* player_name, const char* user, player *pl, const char* masterserver, PXO_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
+int GetPlayerData(int SID, const char* player_name, player *pl, const char* masterserver, PXO_Socket &Socket, int port=FS2OPEN_PXO_PORT, bool CanCreate=false, int timeout=15);
+int CheckSingleMission(const char* mission, unsigned int crc32, PXO_Socket &Socket, const char* masterserver, int port=FS2OPEN_PXO_PORT, int timeout=15);
 
-#if !defined(PXO_TCP)
-// ********************************************************************************************************
-// UDP Version of PXO
-// ********************************************************************************************************
-// Variants of the above functions with persistant connections
-int SendPlayerData(int SID, const char* player_name, const char* user, player *pl, const char* masterserver, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
-int GetPlayerData(int SID, const char* player_name, player *pl, const char* masterserver, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, bool CanCreate=false, int timeout=15);
-int CheckSingleMission(const char* mission, unsigned int crc32, UDP_Socket &Socket, const char* masterserver, int port=FS2OPEN_PXO_PORT, int timeout=15);
-
-net_server* GetServerList(const char* masterserver, int &numServersFound, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
-int Ping(const char* target, UDP_Socket &Socket);
-void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket, const char* myName, const char* MisName, const char* title, int flags, int port, int players)
-int Fs2OpenPXO_Login(const char* username, const char* password, UDP_Socket &Socket, const char* masterserver, int port=FS2OPEN_PXO_PORT, int timeout=15);
-
+net_server* GetServerList(const char* masterserver, int &numServersFound, PXO_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
+int Ping(const char* target, PXO_Socket &Socket);
+void SendHeartBeat(const char* masterserver, int targetport, PXO_Socket &Socket, const char* myName, const char* MisName, const char* title, int flags, int port, int players);
+int Fs2OpenPXO_Login(const char* username, const char* password, PXO_Socket &Socket, const char* masterserver, int port=FS2OPEN_PXO_PORT, int timeout=15);
+int GetPingReply(PXO_Socket &Socket);
+void SendPingReply(PXO_Socket &Socket, int tstamp);
+fs2open_banmask* GetBanList(int &numBanMasks, PXO_Socket &Socket, int timeout=30);
 
 // longer timeouts - mySQL operations
-file_record* GetTablesList(int &numTables, const char *masterserver, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
-file_record* GetMissionsList(int &numMissions, const char *masterserver, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
-#else
-// ********************************************************************************************************
-// TCP Version of PXO
-// ********************************************************************************************************
-int SendPlayerData(int SID, const char* player_name, const char* user, player *pl, const char* masterserver, TCP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
-int GetPlayerData(int SID, const char* player_name, player *pl, const char* masterserver, TCP_Socket &Socket, int port=FS2OPEN_PXO_PORT, bool CanCreate=false, int timeout=15);
-int CheckSingleMission(const char* mission, unsigned int crc32, TCP_Socket &Socket, const char* masterserver, int port=FS2OPEN_PXO_PORT, int timeout=15);
-
-net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
-int Ping(const char* target, TCP_Socket &Socket);
-void SendHeartBeat(const char* masterserver, int targetport, TCP_Socket &Socket, const char* myName, const char* MisName, const char* title, int flags, int port, int players);
-int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Socket, const char* masterserver, int port=FS2OPEN_PXO_PORT, int timeout=15);
-int GetPingReply(TCP_Socket &Socket);
-void SendPingReply(TCP_Socket &Socket, int tstamp);
-
-// longer timeouts - mySQL operations
-file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
-file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
-
-fs2open_banmask* GetBanList(int &numBanMasks, TCP_Socket &Socket, int timeout=15);
-
-#endif
+file_record* GetTablesList(int &numTables, const char *masterserver, PXO_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
+file_record* GetMissionsList(int &numMissions, const char *masterserver, PXO_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
 
 
 #endif

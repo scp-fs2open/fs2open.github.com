@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-01-11 21:38:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2005-02-04 20:06:06 $
+ * $Author: taylor $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/01/11 21:38:50  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.19  2004/12/14 14:46:13  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -1576,7 +1581,7 @@ void player_level_init()
 	Player->locking_subsys_parent=-1;
 
 	Player->killer_objtype=-1;					// type of object that killed player
-	Player->killer_weapon_index;				// weapon used to kill player (if applicable)
+	Player->killer_weapon_index = -1;			// weapon used to kill player (if applicable)
 	Player->killer_parent_name[0]=0;			// name of parent object that killed the player
 
 	Player_all_alone_msg_inited=0;
@@ -1771,7 +1776,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 				if(pn == -1){
 					strcpy(outstr, "");
 				} else {
-					sprintf(outstr, "%s", Net_players[pn].player->short_callsign );
+					sprintf(outstr, "%s", Net_players[pn].m_player->short_callsign );
 				}
 #else
 				// should never be here
@@ -1984,6 +1989,7 @@ char *player_generate_death_text( player *player_p, char *death_text )
 {
 	char weapon_name[NAME_LENGTH];
 	weapon_name[0] = 0;	
+	int ship_index;
 
 	player_generate_killer_weapon_name(player_p->killer_weapon_index, player_p->killer_species, weapon_name);
 
@@ -2000,7 +2006,6 @@ char *player_generate_death_text( player *player_p, char *death_text )
 		Assert(weapon_name[0]);
 
 		// is this from a friendly ship?
-		int ship_index;
 		ship_index = ship_name_lookup(player_p->killer_parent_name, 1);
 		if((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team)){
 			sprintf(death_text, XSTR( "%s was killed by friendly fire from %s", 1338), player_p->callsign, player_p->killer_parent_name);
@@ -2029,7 +2034,6 @@ char *player_generate_death_text( player *player_p, char *death_text )
 			sprintf(death_text, XSTR( "%s was killed by a beam from an unknown source", 1081), player_p->callsign);
 		} else {					
 			// is this from a friendly ship?
-			int ship_index;
 			ship_index = ship_name_lookup(player_p->killer_parent_name, 1);
 			if((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team)){
 				sprintf(death_text, XSTR( "%s was destroyed by friendly beam fire from %s", 1339), player_p->callsign, player_p->killer_parent_name);

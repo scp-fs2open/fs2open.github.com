@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-01-28 03:00:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.27 $
+ * $Date: 2005-02-04 20:06:04 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/01/28 03:00:56  wmcoolmon
+ * Better debrief memory handling
+ *
  * Revision 2.25  2005/01/10 04:45:09  wmcoolmon
  * Debriefing screen updated to only use memory while open
  *
@@ -466,22 +469,13 @@
 #include "network/multi_campaign.h"
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
-#endif
 
 #include "fs2open_pxo/Client.h"
-
-
-
-
-#if !defined(PXO_TCP)
-extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
-#else
-extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
-#endif
 
 extern int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[32];
 extern int PXO_port;
+#endif
 
 #define MAX_TOTAL_DEBRIEF_LINES	200
 
@@ -766,7 +760,7 @@ static int Award_active;
 static int Text_offset;
 static int Num_text_lines = 0;
 static int Num_debrief_lines = 0;
-static int Num_normal_debrief_lines = 0;
+//static int Num_normal_debrief_lines = 0;
 static int Text_type[MAX_TOTAL_DEBRIEF_LINES];
 static char *Text[MAX_TOTAL_DEBRIEF_LINES];
 
@@ -1398,13 +1392,13 @@ void debrief_award_init()
 			} else {
 				ver = 0;
 			}
-			sprintf(buf, NOX("%s%0.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_WINGS], ver);		
+			sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_WINGS], ver);	
 			Wings_bitmap = bm_load(buf);
 
 		} else if (Player->stats.m_medal_earned == 17) {  // special hack for the soc crest
 			Crest_bitmap = bm_load(Debrief_award_filename[gr_screen.res][DB_AWARD_SOC]);
 		} else {
-			sprintf(buf, NOX("%s%0.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_MEDAL], Player->stats.m_medal_earned);
+			sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_MEDAL], Player->stats.m_medal_earned);
 			Medal_bitmap = bm_load(buf);
 		}
 
@@ -1414,7 +1408,7 @@ void debrief_award_init()
 	// handle promotions
 	if ( Player->stats.m_promotion_earned != -1 ) {
 		Promoted = Player->stats.m_promotion_earned;
-		sprintf(buf, NOX("%s%0.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_RANK], Promoted + 1);
+		sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_RANK], Promoted + 1);
 		Rank_bitmap = bm_load(buf);
 
 		Promotion_stage.new_text = Ranks[Promoted].promotion_text;
@@ -1430,7 +1424,7 @@ void debrief_award_init()
 	// only grant badge if earned and allowed.  (no_promotion really means no promotion and no badges)
 	if ( Player->stats.m_badge_earned != -1 ) {
 		i = Player->stats.m_badge_earned;
-		sprintf(buf, NOX("%s%0.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_BADGE], i + 1);
+		sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_BADGE], i + 1);
 		Badge_bitmap = bm_load(buf);
 
 		Badge_stage.new_text = Badge_info[i].promotion_text;
@@ -1607,7 +1601,7 @@ void debrief_multi_list_draw()
 				// switch stats display to this newly selected player
 				set_player_stats(Multi_list[idx].net_player_index);
 				strcpy(Debrief_current_callsign, Multi_list[idx].callsign);	
-				Debrief_player = Net_players[Multi_list[idx].net_player_index].player;				
+				Debrief_player = Net_players[Multi_list[idx].net_player_index].m_player;				
 				break;
 			}
 		}
@@ -2261,7 +2255,7 @@ void debrief_check_buttons()
 			// switch stats display to this newly selected player
 			set_player_stats(Multi_list[z].net_player_index);
 			strcpy(Debrief_current_callsign, Multi_list[z].callsign);
-			Debrief_player = Net_players[Multi_list[z].net_player_index].player;
+			Debrief_player = Net_players[Multi_list[z].net_player_index].m_player;
 			Multi_list_select = z;
 			debrief_setup_ship_kill_stats(Current_stage);
 			gamesnd_play_iface(SND_USER_SELECT);			
@@ -2318,17 +2312,18 @@ void debrief_free_text()
 // setup the debriefing text lines for rendering
 void debrief_text_init()
 {
+	int r_count = 0;
+	char *src;
+	int i;
+
 	// If no wav files are being used use speech simulation
 	bool use_sim_speech = true;
-	for (int i = 0; i < MAX_DEBRIEF_STAGES; i++) {
+	for (i = 0; i < MAX_DEBRIEF_STAGES; i++) {
 		if(Debrief_voices[i] != -1) {
 		 	use_sim_speech = false;
 			break;
 		}
 	}
-
-	int r_count = 0;
-	char *src;
 
 	// release old text lines first
 	debrief_free_text();
@@ -2671,8 +2666,8 @@ void debrief_close()
 		if (multi_debrief_stats_accept_code() != 1) {
 			if(MULTIPLAYER_MASTER){
 				for(idx=0; idx<MAX_PLAYERS; idx++){
-					if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].player != NULL)){
-						scoring_backout_accept(&Net_players[idx].player->stats);
+					if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL)){
+						scoring_backout_accept(&Net_players[idx].m_player->stats);
 					}
 				}
 			} else {
@@ -3221,7 +3216,7 @@ void debrief_rebuild_player_list()
 		if ( MULTI_CONNECTED((*np)) && !MULTI_STANDALONE((*np))){
 			list = &Multi_list[Multi_list_size++];
 			list->net_player_index = i;
-			strcpy(list->callsign, np->player->callsign);
+			strcpy(list->callsign, np->m_player->callsign);
 			
 			// make sure to leave some room to blit the team indicator
 			gr_force_fit_string(list->callsign, CALLSIGN_LEN - 1, Debrief_list_coords[gr_screen.res][2] - MULTI_LIST_TEAM_OFFSET);

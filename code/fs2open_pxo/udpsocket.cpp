@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.cpp $
- * $Revision: 1.7 $
- * $Date: 2004-07-26 20:47:29 $
- * $Author: Kazan $
+ * $Revision: 1.8 $
+ * $Date: 2005-02-04 20:06:03 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/07/26 20:47:29  Kazan
+ * remove MCD complete
+ *
  * Revision 1.6  2004/07/12 16:32:46  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -39,10 +42,22 @@
  *
  */
 
+
 #pragma warning(disable:4710)	// function not inlined
 #pragma warning(disable:4711)	// function inlined
 
-#include "udpsocket.h"
+#include <iostream>
+
+#ifdef SCP_UNIX
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
+
+#include "fs2open_pxo/udpsocket.h"
+
+using namespace std;
 
 
 
@@ -94,14 +109,14 @@ bool UDP_Socket::InitSocket()
 	this->socket = ::socket(AF_INET, SOCK_DGRAM, 0);
 	if (this->socket == -1)
 	{
-		Out << "Couldn't Get Socket (" << strerror(errno) << ")" << endl;
+		cout << "Couldn't Get Socket (" << strerror(errno) << ")" << endl;
 		return false;
 	}
 
 
 	if (bind(this->socket, (sockaddr *)&adr_inet, sizeof(adr_inet)) == -1)
 	{
-		Out << "Couldn't Bind Socket" << endl;
+		cout << "Couldn't Bind Socket" << endl;
 		return false;
 	}
 
@@ -129,25 +144,23 @@ int UDP_Socket::GetPacket(char *buffer, int blen, std::string &from)
 	int recvbytes = -1;
 	int from_size = sizeof(from_addr);
 
-#if defined(WIN32)
 	timeval wait;
 	wait.tv_sec = 0;
 	wait.tv_usec = 1;
 
 	fd_set recvs;
-	recvs.fd_count = 1;
-	recvs.fd_array[0] = this->socket;
+	FD_ZERO(&recvs);
+	FD_SET(this->socket, &recvs);
+	
 
-	int status = select(NULL, &recvs, NULL, NULL, &wait);
+	int status = select(-1, &recvs, NULL, NULL, &wait);
 	if (status != 0 && status != SOCKET_ERROR)
+#if defined(WIN32)
 		recvbytes = recvfrom(this->socket, buffer, blen, 0, (sockaddr *)&from_addr, &from_size);
-
 #else
-	// +#@$++#@$+ +#@$++#@$+ CRITICAL FIX REQURED +#@$++#@$+ +#@$++#@$+ 
-	// FIX THIS FOR IT NOT TO BLOCK LIKE I DID ON WINDOWS! 
-	// +#@$++#@$+ +#@$++#@$+ CRITICAL FIX REQURED +#@$++#@$+ +#@$++#@$+ 
-	recvbytes = recvfrom(this->socket, buffer, blen, 0, (sockaddr *)&from_addr, (socklen_t *)&from_size);
+		recvbytes = recvfrom(this->socket, buffer, blen, 0, (sockaddr *)&from_addr, (socklen_t *)&from_size);
 #endif
+
 	from = inet_ntoa(from_addr.sin_addr);
 
 	return recvbytes;

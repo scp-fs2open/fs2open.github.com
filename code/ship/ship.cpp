@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.159 $
- * $Date: 2005-01-30 09:36:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.160 $
+ * $Date: 2005-02-04 20:06:08 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.159  2005/01/30 09:36:19  Goober5000
+ * optional flags default to false I should think
+ * --Goober5000
+ *
  * Revision 2.158  2005/01/30 01:34:39  wmcoolmon
  * Made a bunch of ship.tbl variables optional
  *
@@ -1346,6 +1350,8 @@
  */
 
 #include <setjmp.h>
+
+#include "PreProcDefines.h"
 
 #include "ship/ship.h"
 #include "object/object.h"
@@ -4308,8 +4314,8 @@ void ship_render(object * obj)
 		if(Game_mode & GM_MULTIPLAYER){
 			// if its any player's object
 			int np_index = multi_find_player_by_object( obj );
-			if((np_index >= 0) && (np_index < MAX_PLAYERS) && MULTI_CONNECTED(Net_players[np_index]) && (Net_players[np_index].player != NULL)){
-				model_set_insignia_bitmap(Net_players[np_index].player->insignia_texture);
+			if((np_index >= 0) && (np_index < MAX_PLAYERS) && MULTI_CONNECTED(Net_players[np_index]) && (Net_players[np_index].m_player != NULL)){
+				model_set_insignia_bitmap(Net_players[np_index].m_player->insignia_texture);
 			}
 		}
 		// in single player, we want to render model insignias on all ships in alpha beta and gamma
@@ -4529,6 +4535,10 @@ void ship_delete( object * obj )
 
 	// call the contrail system
 	ct_ship_delete(shipp);
+
+	// remove textures from memory if we are done with them - taylor
+	ship_page_out_model_textures( shipp->modelnum, shipp->ship_info_index );
+	
 	ship_clear_decals(shipp);
 }
 
@@ -5720,9 +5730,9 @@ void ship_check_player_distance()
 		if (MULTIPLAYER_MASTER) {
 			// warn all players
 			for (idx=0; idx<MAX_PLAYERS; idx++) {
-				if (MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Objects[Net_players[idx].player->objnum].type != OBJ_GHOST) ) {
+				if (MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].type != OBJ_GHOST) ) {
 					// if bad, blow him up
-					ship_check_player_distance_sub(Net_players[idx].player, idx);
+					ship_check_player_distance_sub(Net_players[idx].m_player, idx);
 				}
 			}
 		}
@@ -5738,6 +5748,11 @@ void ship_check_player_distance()
 
 void observer_process_post(object *objp)
 {
+	Assert(objp != NULL);
+
+	if (objp == NULL)
+		return;
+
 	Assert(objp->type == OBJ_OBSERVER);
 
 #ifndef NO_NETWORK
@@ -5760,6 +5775,11 @@ void observer_process_post(object *objp)
 // reset some physics info when ship's engines goes from disabled->enabled 
 void ship_reset_disabled_physics(object *objp, int ship_class)
 {
+	Assert(objp != NULL);
+
+	if (objp == NULL)
+		return;
+
 	objp->phys_info.flags &= ~(PF_REDUCED_DAMP | PF_DEAD_DAMP);
 	objp->phys_info.side_slip_time_const = Ship_info[ship_class].damp;
 }
@@ -5891,6 +5911,8 @@ void lethality_decay(ai_info *aip)
 
 void ship_process_pre(object *objp, float frametime)
 {
+	if ( (objp == NULL) || !frametime )
+		return;
 }
 
 MONITOR( NumShips );	
@@ -6406,10 +6428,12 @@ void show_ship_subsys_count()
 {
 	object	*objp;
 	int		count = 0;	
+	int		o_type = 0;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if (objp->type == OBJ_SHIP) {
-			count += Ship_info[Ships[objp->type].ship_info_index].n_subsystems;
+		o_type = (int)objp->type;
+		if (o_type == OBJ_SHIP) {
+			count += Ship_info[Ships[o_type].ship_info_index].n_subsystems;
 		}
 	}
 
@@ -6424,7 +6448,7 @@ void show_ship_subsys_count()
 //	-1 means failed.
 int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 {
-	int			i, n, objnum, j, k, t;
+	int			i, n, objnum, j, k, h, t;
 	ship_info	*sip;
 	ship			*shipp;
 
@@ -6683,24 +6707,14 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	shipp->wing_status_wing_index = -1;		// wing index (0-4) in wingman status gauge
 	shipp->wing_status_wing_pos = -1;		// wing position (0-5) in wingman status gauge
 
-	sip->thruster_glow1 = bm_load(sip->thruster_bitmap1);
-	sip->thruster_glow1a = bm_load(sip->thruster_bitmap1a);
-	sip->thruster_glow2 = bm_load(sip->thruster_bitmap2);
-	sip->thruster_glow2a = bm_load(sip->thruster_bitmap2a);
-	sip->thruster_glow3 = bm_load(sip->thruster_bitmap3);
-	sip->thruster_glow3a = bm_load(sip->thruster_bitmap3a);
-	
-	if(strlen(sip->ABtrail_bitmap_name))
-	sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
-
 	trail_info *ci;
 	//first try at ABtrails -Bobboau	
 	shipp->ab_count = 0;
 	if(sip->flags & SIF_AFTERBURNER)
 	{
-		for(int h = 0; h < pm_orig->n_thrusters; h++)
+		for(h = 0; h < pm_orig->n_thrusters; h++)
 		{
-			for(int j = 0; j < pm_orig->thrusters->num_slots; j++)
+			for(j = 0; j < pm_orig->thrusters->num_slots; j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
@@ -7342,7 +7356,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	ship_weapon	*swp;
 	ship_info	*sip;
 	ai_info		*aip;
-	int			weapon, i, j, weapon_objnum;
+	int			weapon, i, j, w, v, weapon_objnum;
 	int			bank_to_fire, num_fired = 0;	
 	int			banks_fired, have_timeout;				// used for multiplayer to help determine whether or not to send packet
 	have_timeout = 0;			// used to help tell us whether or not we need to send a packet
@@ -7582,11 +7596,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				fbfire_info.fighter_beam = true;
 				fbfire_info.bank = bank_to_fire;
 
-
-				int j; // fireing point cycleing for TBP
-
-
-				for ( int v = 0; v < points; v++ ){
+				for ( v = 0; v < points; v++ ){
 					if(winfo_p->b_info.beam_shots){
 						j = (shipp->last_fired_point[bank_to_fire]+1)%num_slots;
 						shipp->last_fired_point[bank_to_fire] = j;
@@ -7724,7 +7734,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 
 //mprintf(("I am going to fire a weapon %d times, from %d points, the last point fired was %d, and that will be point %d\n",numtimes,points,shipp->last_fired_point[bank_to_fire],shipp->last_fired_point[bank_to_fire]%num_slots));
-				for(int w = 0; w<numtimes; w++){
+				for( w = 0; w<numtimes; w++ ){
 				for ( j = 0; j < points; j++ )
 				{
 					int pt; //point
@@ -7813,7 +7823,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				if ( obj == Player_obj ) {
 					if ( winfo_p->launch_snd != -1 ) {
 						weapon_info *wip;
-						ship_weapon *swp;
+						ship_weapon *sw_pl;
 
 						// HACK
 						if(winfo_p->launch_snd == SND_AUTOCANNON_SHOT){
@@ -7823,10 +7833,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						}
 		//				snd_play( &Snds[winfo_p->launch_snd] );
 	
-						swp = &Player_ship->weapons;
-						if (swp->current_primary_bank >= 0)
+						sw_pl = &Player_ship->weapons;
+						if (sw_pl->current_primary_bank >= 0)
 						{
-							wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
+							wip = &Weapon_info[sw_pl->primary_bank_weapons[sw_pl->current_primary_bank]];
 							int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
 
 							// modify force feedback for ballistics: make it stronger
@@ -7850,12 +7860,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	
 	// if multiplayer and we're client-side firing, send the packet
 	// if((Game_mode & GM_MULTIPLAYER) && (Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING)){
+#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
 		// if i'm a client, and this is not me, don't send
 		if(!(MULTIPLAYER_CLIENT && (shipp != Player_ship))){
 			send_NEW_primary_fired_packet( shipp, banks_fired );
 		}
 	}
+#endif
 
 	// post a primary fired event
 	if(Game_mode & GM_DEMO_RECORD){
@@ -7868,14 +7880,16 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		// function to find the player given the object *.  It had better return a valid player
 		// or our internal structure as messed up.
 		if( Game_mode & GM_MULTIPLAYER ) {
+#ifndef NO_NETWORK
 			if ( Net_player->flags & NETINFO_FLAG_AM_MASTER ) {
 				int player_num;
 
 				player_num = multi_find_player_by_object ( obj );
 				Assert ( player_num != -1 );
 
-				Net_players[player_num].player->stats.mp_shots_fired += num_fired;
+				Net_players[player_num].m_player->stats.mp_shots_fired += num_fired;
 			}
+#endif
 		} else {
 			Player->stats.mp_shots_fired += num_fired;
 		}
@@ -7968,7 +7982,7 @@ void ship_process_targeting_lasers()
 			fire_info.warmdown_stamp = -1;				//for fighter beams
 			fire_info.warmup_stamp = -1;				//for fighter beams
 			fire_info.accuracy = 0.0f;
-			fire_info.beam_info_index = shipp->weapons.primary_bank_weapons[shipp->targeting_laser_bank];
+			fire_info.beam_info_index = shipp->weapons.primary_bank_weapons[(int)shipp->targeting_laser_bank];
 			fire_info.beam_info_override = NULL;
 			fire_info.shooter = &Objects[shipp->objnum];
 			fire_info.target = NULL;
@@ -8493,7 +8507,7 @@ done_secondary:
 					player_num = multi_find_player_by_object ( obj );
 					Assert ( player_num != -1 );
 
-					Net_players[player_num].player->stats.ms_shots_fired += num_fired;
+					Net_players[player_num].m_player->stats.ms_shots_fired += num_fired;
 				}				
 			}
 			else
@@ -9963,6 +9977,46 @@ void ship_close()
 		}
 
 		if (Ship_info[i].missile_banks != NULL) {
+			free(Ship_info[i].missile_banks);
+			Ship_info[i].missile_banks = NULL;
+		}
+	}
+
+	// free info from parsed table data
+	for (i=0; i<MAX_SHIP_TYPES; i++) {
+		if(Ship_info[i].type_str != NULL){
+			free(Ship_info[i].type_str);
+			Ship_info[i].type_str = NULL;
+		}
+		if(Ship_info[i].maneuverability_str != NULL){
+			free(Ship_info[i].maneuverability_str);
+			Ship_info[i].maneuverability_str = NULL;
+		}
+		if(Ship_info[i].armor_str != NULL){
+			free(Ship_info[i].armor_str);
+			Ship_info[i].armor_str = NULL;
+		}
+		if(Ship_info[i].manufacturer_str != NULL){
+			free(Ship_info[i].manufacturer_str);
+			Ship_info[i].manufacturer_str = NULL;
+		}
+		if(Ship_info[i].desc != NULL){
+			free(Ship_info[i].desc);
+			Ship_info[i].desc = NULL;
+		}
+		if(Ship_info[i].tech_desc != NULL){
+			free(Ship_info[i].tech_desc);
+			Ship_info[i].tech_desc = NULL;
+		}
+		if(Ship_info[i].ship_length != NULL){
+			free(Ship_info[i].ship_length);
+			Ship_info[i].ship_length = NULL;
+		}
+		if(Ship_info[i].gun_mounts != NULL){
+			free(Ship_info[i].gun_mounts);
+			Ship_info[i].gun_mounts = NULL;
+		}
+		if(Ship_info[i].missile_banks != NULL){
 			free(Ship_info[i].missile_banks);
 			Ship_info[i].missile_banks = NULL;
 		}
@@ -11935,7 +11989,6 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 
 // Page in bitmaps for all the ships in this level
 
-extern unsigned int used_weapons[MAX_WEAPON_TYPES];
 extern int Cmdline_load_only_used;
 
 void ship_page_in()
@@ -12106,7 +12159,7 @@ void ship_page_in()
 			if ( sip->modelnum > -1 ) {
 				nprintf(( "Paging", "Paging in textures for model '%s'\n", sip->pof_file ));
 
-				ship_page_in_model_textures(sip->modelnum, sip);
+				ship_page_in_model_textures(sip->modelnum, i);
 			} else {
 				nprintf(( "Paging", "Couldn't load model '%s'\n", sip->pof_file ));
 			}
@@ -12164,8 +12217,8 @@ void ship_page_in()
 #ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
 		for(i=0; i<MAX_PLAYERS; i++){
-			if(MULTI_CONNECTED(Net_players[i]) && (Net_players[i].player != NULL) && (Net_players[i].player->insignia_texture >= 0)){
-				bm_page_in_xparent_texture(Net_players[i].player->insignia_texture);
+			if(MULTI_CONNECTED(Net_players[i]) && (Net_players[i].m_player != NULL) && (Net_players[i].m_player->insignia_texture >= 0)){
+				bm_page_in_xparent_texture(Net_players[i].m_player->insignia_texture);
 			}
 		}
 	}
@@ -12223,10 +12276,11 @@ void ship_page_in()
 }
 
 // Goober5000 - called from ship_page_in()
-void ship_page_in_model_textures(int modelnum, ship_info *sip)
+void ship_page_in_model_textures(int modelnum, int ship_index)
 {
 	int i, j;
 	polymodel *pm;
+	ship_info *sip;
 
 	pm = model_get(modelnum);
 
@@ -12279,9 +12333,11 @@ void ship_page_in_model_textures(int modelnum, ship_info *sip)
 			}
 		}
 	}
-
-	if (sip == NULL)
+	
+	if (ship_index == -1)
 		return;
+
+	sip = &Ship_info[ship_index];
 
 	// afterburner
 	bm_page_in_texture(sip->ABbitmap);
@@ -12333,6 +12389,107 @@ void ship_page_in_model_textures(int modelnum, ship_info *sip)
 		if ( strcmp(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_name, "none") ) {
 			sip->afterburner_thruster_particles[i].thruster_particle_bitmap01 = bm_load_animation(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_name, &sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_nframes, NULL, 1);
 			bm_page_in_texture(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01, sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_nframes);
+		}
+	}
+}
+
+// unload all textures for a given ship
+void ship_page_out_model_textures(int modelnum, int ship_index)
+{
+	int i, j;
+	polymodel *pm;
+	ship_info *sip;
+	int bitmap_num = -1;
+
+	pm = model_get(modelnum);
+
+	Assert( pm != NULL );
+
+	if (pm == NULL)
+		return;
+
+	for (i=0; i<pm->n_textures; i++) {
+		bitmap_num = pm->textures[i];
+
+		if ( bitmap_num > -1 ) {
+			bm_page_out( bitmap_num );
+		}
+
+		bitmap_num = pm->glow_textures[i];
+
+		if ( bitmap_num > -1 ) {
+			bm_page_out( bitmap_num );
+		}
+
+		bitmap_num = pm->specular_textures[i];
+
+		if ( bitmap_num > -1 ) {
+			bm_page_out( bitmap_num );
+		}
+
+		if (pm->n_glows) {
+			for (j=0; j<pm->n_glows; j++) {
+				glow_bank *bank = &pm->glows[j];
+
+				if (bank->glow_bitmap > -1) {
+					bm_page_out( bank->glow_bitmap );
+				}
+
+				if (bank->glow_neb_bitmap > -1) {
+					bm_page_out( bank->glow_neb_bitmap );
+				}
+			}
+		}
+	}
+
+	if (ship_index == -1)
+		return;
+
+	sip = &Ship_info[ship_index];
+
+	// afterburner
+	if (sip->ABbitmap > -1) {
+		bm_page_out(sip->ABbitmap);
+	}
+
+	// thruster bitmaps
+	if (sip->thruster_glow1 > -1) {
+		bm_page_out(sip->thruster_glow1);
+	}
+
+	if (sip->thruster_glow1a > -1) {
+		bm_page_out(sip->thruster_glow1a);
+	}
+
+	if (sip->thruster_glow2 > -1) {
+		bm_page_out(sip->thruster_glow2);
+	}
+
+	if (sip->thruster_glow2a > -1) {
+		bm_page_out(sip->thruster_glow2a);
+	}
+
+	if (sip->thruster_glow3 > -1) {
+		bm_page_out(sip->thruster_glow3);
+	}
+
+	if (sip->thruster_glow3a > -1) {
+		bm_page_out(sip->thruster_glow3a);
+	}
+
+	// slodeing bitmap
+	if (sip->splodeing_texture > -1) {
+		bm_page_out(sip->splodeing_texture);
+	}
+
+	// thruster/particle bitmaps
+	for (i = 0; i<sip->n_thruster_particles; i++) {
+		if (sip->normal_thruster_particles[i].thruster_particle_bitmap01 > -1) {
+			bm_page_out(sip->normal_thruster_particles[i].thruster_particle_bitmap01);
+		}
+
+		if (sip->afterburner_thruster_particles[i].thruster_particle_bitmap01 > -1) {
+			bm_page_out(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01);
 		}
 	}
 }

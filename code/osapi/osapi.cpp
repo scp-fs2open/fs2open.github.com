@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-07-26 20:47:46 $
- * $Author: Kazan $
+ * $Revision: 2.23 $
+ * $Date: 2005-02-04 20:06:06 $
+ * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/07/26 20:47:46  Kazan
+ * remove MCD complete
+ *
  * Revision 2.21  2004/07/25 00:31:29  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -277,7 +280,7 @@ void os_init(char * wclass, char * title, char *app_name, char *version_string )
 	strcpy( szWinTitle, title );
 	strcpy( szWinClass, wclass );	
 
-	InitializeCriticalSection( &Os_lock );
+	INITIALIZE_CRITICAL_SECTION( Os_lock );
 
 	#ifdef THREADED
 		// Create an even to signal that the window is created, 
@@ -354,13 +357,13 @@ void os_sleep(int ms)
 // Used to stop message processing
 void os_suspend()
 {
-	ENTER_CRITICAL_SECTION(&Os_lock);	
+	ENTER_CRITICAL_SECTION( Os_lock );	
 }
 
 // resume message processing
 void os_resume()
 {
-	LEAVE_CRITICAL_SECTION(&Os_lock);	
+	LEAVE_CRITICAL_SECTION( Os_lock );	
 }
 
 
@@ -385,19 +388,19 @@ DWORD win32_process(DWORD lparam)
 
 	while (1)	{	
 		if (WaitMessage() == TRUE)	{
-			EnterCriticalSection(&Os_lock);			
+			ENTER_CRITICAL_SECTION( Os_lock );			
 			while(PeekMessage(&msg,0,0,0,PM_REMOVE))	{
 				if ( msg.message == WM_DESTROY )	{
-					LeaveCriticalSection(&Os_lock);
+					LEAVE_CRITICAL_SECTION( Os_lock );
 
 					// cleanup and exit this thread!!
-					DeleteCriticalSection(&Os_lock);
+					DELETE_CRITICAL_SECTION( Os_lock );
 					return 0;
 				}
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
-			LeaveCriticalSection(&Os_lock);
+			LEAVE_CRITICAL_SECTION( Os_lock );
 		} 
 	}
 	return 0;
@@ -823,7 +826,7 @@ void os_poll()
 	win32_process2(0);
 #else
 	MSG msg;
-	EnterCriticalSection(&Os_lock);
+	ENTER_CRITICAL_SECTION( Os_lock );
 	while(PeekMessage(&msg,0,0,0,PM_NOREMOVE))	{		
 		if ( msg.message == WM_DESTROY )	{
 			break;
@@ -834,7 +837,7 @@ void os_poll()
 		}		
 		Got_message++;
 	}
-	LeaveCriticalSection(&Os_lock);
+	LEAVE_CRITICAL_SECTION( Os_lock );
 #endif
 }
 

@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.10 $
- * $Date: 2004-11-21 11:31:02 $
+ * $Revision: 1.11 $
+ * $Date: 2005-02-04 20:06:04 $
  * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2004/11/21 11:31:02  taylor
+ * move warning fixes from il_func.cpp to irc.cpp since that's where they are coming from
+ *
  * Revision 1.9  2004/11/18 00:05:37  Goober5000
  * #pragma'd a bunch of warnings
  * --Goober5000
@@ -60,7 +63,10 @@
 #pragma warning(disable: 4786 4710 4711 4097 4127 4701 4702)
 
 #include "irc.h"
-#include "direct.h"
+
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 
 //************************************************************************************

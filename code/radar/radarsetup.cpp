@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/radarsetup.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-08-02 22:54:07 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2005-02-04 20:06:07 $
+ * $Author: taylor $
  *
  * C module containg functions to manage different radar modes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/02 22:54:07  phreak
+ * orb radar rendering style
+ *
  * $NoKeywords: $
  */
 
@@ -107,7 +110,8 @@ int		Radar_calc_dim_dist_timer;		// timestamp at which we recalc Radar_dim_range
 int		Radar_flicker_timer[NUM_FLICKER_TIMERS];					// timestamp used to flicker blips on and off
 int		Radar_flicker_on[NUM_FLICKER_TIMERS];		
 
-extern int See_all=FALSE;
+int See_all = 0;
+
 DCF_BOOL(see_all, See_all)
 
 static const char radar_deafult_filenames[2][16]=

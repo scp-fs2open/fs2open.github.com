@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.5 $
- * $Date: 2005-02-04 10:12:29 $
+ * $Revision: 1.6 $
+ * $Date: 2005-02-04 20:06:04 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/02/04 10:12:29  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 1.4  2005/01/21 08:54:53  taylor
  * slightly better memory management
  *
@@ -41,6 +44,7 @@
 #include "jpgutils/jpgutils.h"
 #include "pcxutils/pcxutils.h"
 #include "graphics/gropengltexture.h"
+#include "globalincs/systemvars.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"

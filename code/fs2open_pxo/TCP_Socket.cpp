@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.12 $
- * $Date: 2004-11-18 00:05:36 $
- * $Author: Goober5000 $
+ * $Revision: 1.13 $
+ * $Date: 2005-02-04 20:06:03 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2004/11/18 00:05:36  Goober5000
+ * #pragma'd a bunch of warnings
+ * --Goober5000
+ *
  * Revision 1.11  2004/07/26 20:47:29  Kazan
  * remove MCD complete
  *
@@ -64,11 +68,20 @@
 // 4711 = function selected for inlining
 #pragma warning(disable:4100 4511 4512 4711)
 
-#include "TCP_Socket.h"
+#include <iostream>
+
+#ifdef SCP_UNIX
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
+
+#include "fs2open_pxo/TCP_Socket.h"
 //#include <process.h>
-//#include <iostream.h>
 
 
+using namespace std;
 
 //**************************************************************************
 // TCP_Socket Implementation
@@ -200,7 +213,7 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 		if (connect(mySocket, (sockaddr *)&adr_inet, sizeof(sockaddr_in)) == -1)
 		{
 			cout << "Couldn't Connect to Remote system" << endl;
-			return fasle;
+			return false;
 		}
 	}
 #endif
@@ -376,8 +389,12 @@ STYPE TCP_Socket::AcceptConnections()
 {
 	sockaddr_in adr_client;
 	int len = sizeof(sockaddr_in);
+#ifndef SCP_UNIX
 	STYPE client = accept(mySocket, (sockaddr *) &adr_client, &len);
-
+#else
+	STYPE client = accept(mySocket, (sockaddr *) &adr_client, (socklen_t*)&len);
+#endif
+	
 	return client; // some sort of error
 }
 

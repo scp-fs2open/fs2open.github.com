@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.86 $
- * $Date: 2005-01-28 11:06:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.87 $
+ * $Date: 2005-02-04 20:06:07 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2005/01/28 11:06:22  Goober5000
+ * changed a bunch of transpose-rotate sequences to use unrotate instead
+ * --Goober5000
+ *
  * Revision 2.85  2005/01/28 09:01:04  Goober5000
  * finished implementing docking to a rotating submodel
  * --Goober5000
@@ -803,11 +807,10 @@
 //#include "network/multi_team.h"
 #endif
 
-  // still need this...
-  #include "network/multi.h"
+// still need this...
+#include "network/multi.h"
 
-#include "Autopilot/Autopilot.h"
-
+#include "autopilot/autopilot.h"
 
 
 #pragma optimize("", off)
@@ -1290,7 +1293,7 @@ void garbage_collect_path_points()
 
 			if ((aip->path_length > 0) && (aip->path_start > -1)) {
 
-				for (int i=aip->path_start; i<aip->path_start + aip->path_length; i++) {
+				for (i=aip->path_start; i<aip->path_start + aip->path_length; i++) {
 					Assert(pp_xlate[i] == 0);	//	If this is not 0, then two paths use this point!
 					pp_xlate[i] = 1;
 				}
@@ -3432,7 +3435,6 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 			return eeo.nearest_bomb_objnum;
 		}
 	}
-
 
 	// Ship_used_list
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
@@ -9717,7 +9719,6 @@ void ai_chase()
 
 							if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
 								if (tswp->current_secondary_bank >= 0) {
-									weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[tswp->current_secondary_bank]];
 									float firing_range;
 									
 									if (swip->wi_flags2 & WIF2_LOCAL_SSM)
@@ -11683,6 +11684,7 @@ void ai_dock()
 
 			// Play a ship docking detach sound
 			snd_play_3d( &Snds[SND_DOCK_DETACH], &Pl_objp->pos, &View_position );
+
 		}
 		break;
 							 }
@@ -12632,14 +12634,13 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}
 		}
 
-
 		//start testing if your going to hit yourself-Bobboau
 		/* Goober5000 - commented this out because it screws up some stuff in the main campaign
 		{
 			polymodel *pm = model_get(shipp->modelnum);		
 			mc_info test_collide;
-			matrix or;
-			vm_vector_2_matrix(&or, &v2e, NULL, NULL);
+			matrix or_t;
+			vm_vector_2_matrix(&or_t, &v2e, NULL, NULL);
 			vector start, end;
 
 			float r;
@@ -13419,8 +13420,6 @@ int ai_formation()
 			} else if (dist_to_goal > 10.0f) {
 				float	dv;
 
-				future_goal_point_2;
-
 				turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f);
 
 				if (dist_to_goal > 25.0f) {
@@ -13627,9 +13626,6 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 	
 			aip->nearest_locked_distance = dist;
 			//	Verify that this object is really homing on us.
-			object	*weapon_objp;
-
-			weapon_objp = &Objects[aip->nearest_locked_object];
 
 			float	fire_chance;
 
@@ -14713,6 +14709,7 @@ void ai_set_mode_warp_out(object *objp, ai_info *aip)
 void ai_maybe_depart(object *objp)
 {
 	ship	*shipp;
+	ship_info *sip;
 
 	// don't do anything if in a training mission.
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING )
@@ -14722,13 +14719,13 @@ void ai_maybe_depart(object *objp)
 
 	shipp = &Ships[objp->instance];
 	ai_info	*aip = &Ai_info[shipp->ai_index];
+	sip = &Ship_info[shipp->ship_info_index];
 
 	if (aip->mode == AIM_WARP_OUT || aip->mode == AIM_BAY_DEPART)
 		return;
 
 	//	If a support ship with no goals and low hull, depart.  Be sure that there are no pending goals
-	// in the support ships ai_goal array.  Just process this ship's goals.
-	ship_info	*sip = &Ship_info[shipp->ship_info_index];
+	// in the support ships ai_goal array.  Just process this ships goals.
 	if (sip->flags & SIF_SUPPORT) {
 		if ( timestamp_elapsed(aip->warp_out_timestamp) ) {
 			ai_process_mission_orders( OBJ_INDEX(objp), aip );
@@ -14744,9 +14741,6 @@ void ai_maybe_depart(object *objp)
 		return;
 
 	if (!(shipp->flags & SF_DEPARTING)) {
-		ship_info	*sip;
-
-		sip = &Ship_info[shipp->ship_info_index];
 		if (sip->flags & (SIF_FIGHTER | SIF_BOMBER)) {
 			if (aip->warp_out_timestamp == 0) {
 				//if (ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS) == 0.0f) {

@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-12-14 14:46:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2005-02-04 20:06:04 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/12/14 14:46:13  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.16  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -863,7 +867,7 @@ int Multi_ingame_ship_selected;
 #define INGAME_FINAL_TIMEOUT 4000
 
 ushort Ingame_ship_signatures[MAX_INGAME_SHIPS];
-LOCAL int Ingame_final_timeout;
+//LOCAL int Ingame_final_timeout;
 
 //XSTR:ON
 
@@ -956,7 +960,7 @@ void multi_ingame_select_init()
 	int idx;
 
 	Multi_ingame_join_sig = 0;
-	Net_player->player->objnum = -1;
+	Net_player->m_player->objnum = -1;
 
 	// create a ship, then find a ship to copy crucial information from.  Save and restore the wing
 	// number to be safe.
@@ -1335,7 +1339,6 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 	// go through the ship obj list and delete everything. YEAH
 	if(!Ingame_ships_deleted){
-		int idx;
 
 		// no player object
 		Player_obj = NULL;
@@ -1361,15 +1364,15 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		int ship_num, objnum;
 
 		GET_STRING( ship_name );
-		GET_DATA( net_signature );
-		GET_DATA( sflags );
-		GET_DATA( sflags2 );
-		GET_DATA( oflags );
-		GET_DATA( team );		
-		GET_DATA( wing_data );
+		GET_USHORT( net_signature );
+		GET_INT( sflags );
+		GET_INT( sflags2 );
+		GET_INT( oflags );
+		GET_INT( team );		
+		GET_SHORT( wing_data );
 		net_sig_modify = 0;
 		if(wing_data >= 0){
-			GET_DATA(Wings[wing_data].current_wave);			
+			GET_INT(Wings[wing_data].current_wave);			
 			net_sig_modify = Wings[wing_data].current_wave - 1;
 		}
 
@@ -1438,7 +1441,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			// if this is a player ship, make sure we find out who's it is and set their objnum accordingly
 			if(team_val != -1){
 				for( j = 0; j < MAX_PLAYERS; j++){
-					if(MULTI_CONNECTED(Net_players[j]) && (Net_players[j].player->objnum == Objects[Ships[idx].objnum].net_signature)) {						
+					if(MULTI_CONNECTED(Net_players[j]) && (Net_players[j].m_player->objnum == Objects[Ships[idx].objnum].net_signature)) {						
 						// nprintf(("Network", "Making %s ship for %s\n", Ships[shipnum].ship_name, Net_players[j].player->callsign));
 						multi_assign_player_ship( j, objp, Ships[idx].ship_info_index );
 						objp->flags |= OF_PLAYER_SHIP;
@@ -1490,15 +1493,15 @@ void send_ingame_ships_packet(net_player *player)
 		p_type = INGAME_SHIP_NEXT;
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
-		ADD_DATA( Objects[so->objnum].net_signature );
-		ADD_DATA( shipp->flags );
-		ADD_DATA( shipp->flags2 );
-		ADD_DATA( Objects[so->objnum].flags );
-		ADD_DATA( shipp->team );
+		ADD_USHORT( Objects[so->objnum].net_signature );
+		ADD_INT( shipp->flags );
+		ADD_INT( shipp->flags2 );
+		ADD_INT( Objects[so->objnum].flags );
+		ADD_INT( shipp->team );
 		wing_data = (short)shipp->wingnum;
-		ADD_DATA(wing_data);
+		ADD_SHORT(wing_data);
 		if(wing_data >= 0){
-			ADD_DATA(Wings[wing_data].current_wave);
+			ADD_INT(Wings[wing_data].current_wave);
 		}
 
 		// don't send anymore data if we are getting close to the maximum size of this packet.  Send it off and
@@ -1767,14 +1770,14 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 	BUILD_HEADER(INGAME_SHIP_REQUEST);
 
 	// add the code
-	ADD_DATA(code);
+	ADD_INT(code);
 	
 	// add any code specific data
 	switch(code){
 	case INGAME_SR_REQUEST:
 		// add the net signature of the ship we're requesting
 		signature = (ushort)rdata;
-		ADD_DATA( signature );
+		ADD_USHORT( signature );
 		break;
 	case INGAME_SR_CONFIRM:
 		// get a pointer to the ship
@@ -1782,9 +1785,9 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		sip = &Ship_info[shipp->ship_info_index];
 
 		// add the most recent position and orientation for the requested ship
-		ADD_DATA(Objects[rdata].pos);
+		ADD_VECTOR(Objects[rdata].pos);
 		ADD_ORIENT(Objects[rdata].orient);
-		ADD_DATA( Missiontime );
+		ADD_INT( Missiontime ); // NOTE: this is a long so careful with swapping in 64-bit platforms - taylor
 
 		// add the # of respawns this ship has left
 		pobj = mission_parse_get_arrival_ship( Objects[rdata].net_signature );
@@ -1854,14 +1857,14 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 
 	// if this is a confirm to a player -- send data to the other players in the game telling them
 	if ( (code == INGAME_SR_CONFIRM) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
-		int i, player_num;
+		int player_num;
 
 		player_num = NET_PLAYER_NUM(pl);
 		code = INGAME_PLAYER_CHOICE;
 		BUILD_HEADER(INGAME_SHIP_REQUEST);
-		ADD_DATA(code);
-		ADD_DATA(player_num);
-		ADD_DATA(Objects[rdata].net_signature);
+		ADD_INT(code);
+		ADD_INT(player_num);
+		ADD_USHORT(Objects[rdata].net_signature);
 		for (i = 0; i < MAX_PLAYERS; i++ ) {
 			if(MULTI_CONNECTED(Net_players[i]) && (&Net_players[i] != Net_player) && (i != player_num) ) {				
 				multi_io_send_reliable(&Net_players[i], data, packet_size);
@@ -1881,7 +1884,7 @@ void multi_ingame_validate_players()
 			char ship_name[NAME_LENGTH];
 			int shipnum, objnum, player_objnum;
 
-			player_objnum = Net_players[i].player->objnum;
+			player_objnum = Net_players[i].m_player->objnum;
 			if ( (Objects[player_objnum].type != OBJ_SHIP) || (Objects[player_objnum].type != OBJ_GHOST) ) {
 				Int3();
 			}
@@ -1898,9 +1901,9 @@ void multi_ingame_validate_players()
 
 			// if this guy's objnum isn't a ship, then it should proably be a ghost!!
 			if ( Objects[objnum].type == OBJ_SHIP ) {
-				if ( objnum != Net_players[i].player->objnum ) {
+				if ( objnum != Net_players[i].m_player->objnum ) {
 					Int3();
-					Net_players[i].player->objnum = objnum;
+					Net_players[i].m_player->objnum = objnum;
 				}
 			} else {
 				Assert( Objects[objnum].type == OBJ_GHOST );
@@ -1919,18 +1922,18 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 	uint respawn_count;
 	ubyte val, num_secondary_banks, num_primary_banks;
 	p_object *pobj;
+	int player_num;
 
 	// get the code
-	GET_DATA(code);
+	GET_INT(code);
 
 	switch(code){
 	// a request for a ship from an ingame joiner
-	case INGAME_SR_REQUEST:			
-		int player_num;		
+	case INGAME_SR_REQUEST:				
 		ushort sig_request;
 
 		// lookup the player and make sure he doesn't already have an objnum (along with possible error conditions)
-		GET_DATA(sig_request);
+		GET_USHORT(sig_request);
 		PACKET_SET_SIZE();
 			
 		player_num = find_player_id(hinfo->id);	
@@ -1941,7 +1944,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		
 		// make sure this player doesn't already have an object
 		Assert(MULTI_CONNECTED(Net_players[player_num]));
-		if(Net_players[player_num].player->objnum != -1){
+		if(Net_players[player_num].m_player->objnum != -1){
 			send_ingame_ship_request_packet(INGAME_SR_DENY,0,&Net_players[player_num]);
 			break;
 		}
@@ -1955,7 +1958,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		}		
 
 		// Assign the player this objnum and ack him
-		Net_players[player_num].player->objnum = OBJ_INDEX(objp);
+		Net_players[player_num].m_player->objnum = OBJ_INDEX(objp);
 		Net_players[player_num].state = NETPLAYER_STATE_IN_MISSION;                   // since he'll do this anyway...
 		Net_players[player_num].flags &= ~(NETINFO_FLAG_INGAME_JOIN);
 		multi_assign_player_ship( player_num, objp, Ships[objp->instance].ship_info_index );
@@ -1979,7 +1982,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		Netgame.flags &= ~NG_FLAG_INGAME_JOINING;
 
 		// clear his net stats
-		scoring_level_init( &(Net_players[player_num].player->stats) );
+		scoring_level_init( &(Net_players[player_num].m_player->stats) );
 		break;
 
 		// a denial for the ship we requested from the server
@@ -2008,17 +2011,17 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		Assert(objp != NULL);
 
 		// get its most recent position and orientation
-		GET_DATA(objp->pos);
+		GET_VECTOR(objp->pos);
 		GET_ORIENT(objp->orient);
-		GET_DATA( Missiontime );
-		GET_DATA( respawn_count );
+		GET_INT( Missiontime ); // NOTE: this is a long so careful with swapping in 64-bit platforms - taylor
+		GET_UINT( respawn_count );
 				
 		// tell the server I'm in the mission
 		Net_player->state = NETPLAYER_STATE_IN_MISSION;
 		send_netplayer_update_packet();
 
 		// setup our object				
-		Net_player->player->objnum = OBJ_INDEX(objp);			
+		Net_player->m_player->objnum = OBJ_INDEX(objp);			
 		Player_obj = objp;
 		Player_obj->flags &= ~(OF_COULD_BE_PLAYER);
 		Player_obj->flags |= OF_PLAYER_SHIP;
@@ -2115,19 +2118,17 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		break;
 
 	case INGAME_PLAYER_CHOICE: {
-		int player_num;
 		ushort net_signature;
-		object *objp;
 
 		// get the player number of this guy, and the net signature of the ship he has chosen
-		GET_DATA(player_num);
-		GET_DATA(net_signature);
+		GET_INT(player_num);
+		GET_USHORT(net_signature);
 		PACKET_SET_SIZE();
 
 		objp = multi_get_network_object(net_signature);
 		if ( objp == NULL ) {
 			// bogus!!!  couldn't find the object -- we cannot connect his -- this is really bad!!!
-			nprintf(("Network", "Couldn't find ship for ingame joiner %s\n", Net_players[player_num].player->callsign));
+			nprintf(("Network", "Couldn't find ship for ingame joiner %s\n", Net_players[player_num].m_player->callsign));
 			break;
 		}
 		objp->flags |= OF_PLAYER_SHIP;
@@ -2180,14 +2181,14 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 	
 	// just send net signature, shield and hull percentages
 	objp = &Objects[sp->objnum];
-	ADD_DATA(objp->net_signature);
-	ADD_DATA(objp->flags);
-	ADD_DATA(objp->hull_strength);
+	ADD_USHORT(objp->net_signature);
+	ADD_UINT(objp->flags);
+	ADD_FLOAT(objp->hull_strength);
 	
 	// shield percentages
 	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
 		f_tmp = objp->shield_quadrant[idx];
-		ADD_DATA(f_tmp);
+		ADD_FLOAT(f_tmp);
 	}
 	
 	multi_io_send_reliable(p, data, packet_size);
@@ -2205,17 +2206,17 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	
 	offset = HEADER_LENGTH;
 	// get the net sig for the ship and do a lookup
-	GET_DATA(net_sig);
-	GET_DATA(flags);
+	GET_USHORT(net_sig);
+	GET_INT(flags);
    
 	// get the object
 	lookup = multi_get_network_object(net_sig);
 	if(lookup == NULL){
 		// read in garbage values if we can't find the ship
 		nprintf(("Network","Got ingame ship update for unknown object\n"));
-		GET_DATA(garbage);
+		GET_FLOAT(garbage);
 		for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){
-			GET_DATA(garbage);
+			GET_FLOAT(garbage);
 		}
 
 		PACKET_SET_SIZE();
@@ -2223,9 +2224,9 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	}
 	// otherwise read in the ship values
 	lookup->flags = flags;
- 	GET_DATA(lookup->hull_strength);
+ 	GET_FLOAT(lookup->hull_strength);
 	for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){
-		GET_DATA(f_tmp);
+		GET_FLOAT(f_tmp);
 		lookup->shield_quadrant[idx] = f_tmp;
 	}
 

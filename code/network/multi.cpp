@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-11-18 00:05:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2005-02-04 20:06:04 $
+ * $Author: taylor $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/11/18 00:05:37  Goober5000
+ * #pragma'd a bunch of warnings
+ * --Goober5000
+ *
  * Revision 2.24  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -324,11 +328,8 @@
 // 4245 = signed/unsigned mismatch in conversion of const value
 #pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
-#if !defined(PXO_TCP)
-extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
-#else
-extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
-#endif
+
+
 extern int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[];
 extern int PXO_port;
@@ -473,7 +474,7 @@ void multi_init()
 	// initialize the local netplayer
 	Net_player = &Net_players[0];	
 	Net_player->tracker_player_id = Multi_tracker_id;
-	Net_player->player = Player;
+	Net_player->m_player = Player;
 	Net_player->flags = 0;	
 	Net_player->s_info.xfer_handle = -1;
 	Net_player->player_id = multi_get_new_id();
@@ -654,7 +655,7 @@ void multi_check_listen()
 				}
 
 				// NETLOG
-				ml_printf(NOX("Accepted TCP connection from %s"), Net_players[i].player == NULL ? NOX("Unknown") : Net_players[i].player->callsign);				
+				ml_printf(NOX("Accepted TCP connection from %s"), Net_players[i].m_player == NULL ? NOX("Unknown") : Net_players[i].m_player->callsign);				
 				break;
 			}
 		}
@@ -1892,7 +1893,7 @@ void standalone_main_init()
 	Net_player->tracker_player_id = -1;
 	Net_player->flags |= (NETINFO_FLAG_AM_MASTER | NETINFO_FLAG_CONNECTED | NETINFO_FLAG_DO_NETWORKING | NETINFO_FLAG_MISSION_OK);
 	Net_player->state = NETPLAYER_STATE_WAITING;
-	Net_player->player = Player;
+	Net_player->m_player = Player;
 	strcpy(Player->callsign, "server");
 	Net_player->p_info.addr = Psnet_my_addr;
 	Net_player->s_info.xfer_handle = -1;	
@@ -2200,11 +2201,11 @@ void multi_display_netinfo()
 		gr_string(sx, sy, "SERVER"); sy += 10;
 
 		for(idx=0; idx<MAX_PLAYERS; idx++){
-			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && (Net_players[idx].player != NULL)){
+			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && (Net_players[idx].m_player != NULL)){
 				if(Net_players[idx].sv_last_pl < 0){
-					gr_printf(sx, sy, "%s : %d, %d pl", Net_players[idx].player->callsign, Net_players[idx].sv_bytes_sent, 0); sy += 10;
+					gr_printf(sx, sy, "%s : %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, 0); sy += 10;
 				} else {
-					gr_printf(sx, sy, "%s : %d, %d pl", Net_players[idx].player->callsign, Net_players[idx].sv_bytes_sent, Net_players[idx].sv_last_pl); sy += 10;
+					gr_printf(sx, sy, "%s : %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, Net_players[idx].sv_last_pl); sy += 10;
 				}
 			}
 		}

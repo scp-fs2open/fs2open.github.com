@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-01-30 09:27:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.40 $
+ * $Date: 2005-02-04 20:06:09 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/01/30 09:27:40  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 2.38  2005/01/29 08:12:20  wmcoolmon
  * Clipping stuff
  *
@@ -363,7 +367,7 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "starfield/supernova.h"
-#include "cmdline\cmdline.h"
+#include "cmdline/cmdline.h"
 #include "parse/parselo.h"
 
 
@@ -453,6 +457,9 @@ starfield_bitmap *stars_lookup_sun(starfield_bitmap_instance *s)
 	if(s == NULL){
 		return NULL;
 	}
+
+	if (!strlen(s->filename))
+		return NULL;
 
 	// lookup
 	for(idx=0; idx<MAX_STARFIELD_BITMAPS; idx++){
@@ -667,8 +674,8 @@ void stars_generate_bitmap_instance_vertex_buffers(){
 
 	SAFEPOINT("entering stars_generate_bitmap_instance_vertex_buffers");
 
-	int vert_count = 0;
-	for(int idx=0; idx<Num_starfield_bitmaps; idx++){
+	int idx, vert_count = 0;
+	for(idx=0; idx<Num_starfield_bitmaps; idx++){
 		// lookup the info index
 		int star_index = stars_find_bitmap(Starfield_bitmap_instance[idx].filename);
 		if(star_index < 0){
@@ -709,7 +716,7 @@ void stars_init()
 {
 	
 	starfield_bitmap *bm;	
-	int count, idx;
+	int count, idx, j;
 	char filename[MAX_FILENAME_LEN+1] = "";
 	char glow_filename[MAX_FILENAME_LEN+1] = "";
 	float r, g, b, i, spec_r, spec_g, spec_b;
@@ -717,6 +724,7 @@ void stars_init()
 	int flarecount,flaretexcount, isflare;
 	flare_info flares[MAX_FLARE_COUNT];
 	char flare_filenames[MAX_FLARE_BMP][MAX_FILENAME_LEN+1];
+	char tempf[16];
 
 	flarecount = flaretexcount = isflare = 0; //get rid of warnings
 	// parse stars.tbl
@@ -818,9 +826,9 @@ void stars_init()
 
 				flaretexcount = 1;
 
-				for(int j = 1; j < MAX_FLARE_BMP; j++)
+				for(j = 1; j < MAX_FLARE_BMP; j++)
 				{
-					char tempf[16]; //allow 9999 textures (theoretically speaking, that is)
+					//allow 9999 textures (theoretically speaking, that is)
 					sprintf(tempf,"$FlareTexture%d:",j+1);
 					if (optional_string(tempf))
 					{
@@ -842,7 +850,7 @@ void stars_init()
 
 				for(j = 1; j < MAX_FLARE_COUNT; j++)
 				{
-					char tempf[13]; //allow a lot of glows
+					//allow a lot of glows
 					sprintf(tempf,"$FlareGlow%d:",j+1);
 					if (optional_string(tempf))
 					{
@@ -882,7 +890,7 @@ void stars_init()
 					bm->flare = 1;
 					bm->flare_n_flares = flarecount;
 					bm->flare_n_tex = flaretexcount;
-					for ( int j = 0; j < flarecount; j++) //yes, a memcpy would be simpler, but this is clearer, and hopefully the M$ compiler can optimize this
+					for ( j = 0; j < flarecount; j++) //yes, a memcpy would be simpler, but this is clearer, and hopefully the M$ compiler can optimize this
 						bm->flare_infos[j] = flares[j];
 					for ( j = 0; j < flaretexcount; j++)
 					{
@@ -1186,6 +1194,10 @@ void stars_draw_sun( int show_sun, int env )
 	starfield_bitmap *bm;
 	float local_scale = 1.0f;
 
+	// should we even be here?
+	if (!show_sun)
+		return;
+
 	// no suns drew yet
 	Sun_drew = 0;
 
@@ -1309,6 +1321,10 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 
 	int idx;
 	int star_index;	
+
+	// should we even be here?
+	if (!show_bitmaps)
+		return;
 
 	// if we're in the nebula, don't render any backgrounds
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
@@ -1553,7 +1569,7 @@ void subspace_render(int env)
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 
-	if ( !D3D_enabled )	{
+	if ( !D3D_enabled || !OGL_enabled )	{
 
 		int render_flags = MR_NO_LIGHTING | MR_ALWAYS_REDRAW;
 

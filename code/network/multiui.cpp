@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.32 $
- * $Date: 2004-07-26 20:47:43 $
- * $Author: Kazan $
+ * $Revision: 2.33 $
+ * $Date: 2005-02-04 20:06:05 $
+ * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2004/07/26 20:47:43  Kazan
+ * remove MCD complete
+ *
  * Revision 2.31  2004/07/12 16:32:58  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -550,6 +553,7 @@
 #include <winsock.h>	// for inet_addr()
 #else
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #endif
 
 #include "network/multiui.h"
@@ -603,12 +607,6 @@
 extern int Om_tracker_flag; // needed to know whether or not to use FS2OpenPXO
 
 int PXO_SID = -1; // FS2 Open PXO Session ID
-
-#if !defined(PXO_TCP)
-extern UDP_Socket FS2OpenPXO_Socket(FS2OPEN_CLIENT_PORT); // obvious :D - Kazan
-#else
-extern TCP_Socket FS2OpenPXO_Socket(FS2OPEN_CLIENT_PORT); // obvious :D - Kazan
-#endif
 
 char PXO_Server[32];
 int PXO_port = -1;
@@ -1410,7 +1408,7 @@ void multi_join_game_init()
 
 	multi_level_init();		
 	Net_player->flags |= NETINFO_FLAG_DO_NETWORKING;	
-	Net_player->player = Player;
+	Net_player->m_player = Player;
 	memcpy(&Net_player->p_info.addr,&Psnet_my_addr,sizeof(net_addr));
 
 	// check for the existence of a CD
@@ -3271,7 +3269,7 @@ void multi_start_game_do()
 	// return here since we will be moving to the next stage anyway -- I don't want to see the backgrounds of
 	// all the screens for < 1 second for every screen we automatically move to.
 	if ( Cmdline_start_netgame ) {
-		Cmdline_start_netgame = NULL; // DTP no quit fix; by using -startgame Quit was sort of out of function 
+		Cmdline_start_netgame = 0; // DTP no quit fix; by using -startgame Quit was sort of out of function 
 		return;
 	}
 
@@ -3777,7 +3775,7 @@ void multi_sg_rank_process_select()
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 
 				memset(string,0,255);
-				sprintf(string,XSTR("Illegal value for a host of your rank (%s)\n",784),Ranks[Net_player->player->stats.rank].name);
+				sprintf(string,XSTR("Illegal value for a host of your rank (%s)\n",784),Ranks[Net_player->m_player->stats.rank].name);
 				multi_common_add_notify(string);
 			}
 		}		
@@ -3845,13 +3843,13 @@ int multi_sg_rank_select_valid(int rank)
 {
 	// rank above mode
 	if(Multi_sg_netgame->mode == NG_MODE_RANK_ABOVE){
-		if(Net_player->player->stats.rank >= rank){
+		if(Net_player->m_player->stats.rank >= rank){
 			return 1;
 		}
 	}
 	// rank below mode
 	else {
-		if(Net_player->player->stats.rank <= rank){
+		if(Net_player->m_player->stats.rank <= rank){
 			return 1;
 		}
 	}
@@ -3862,7 +3860,7 @@ int multi_sg_rank_select_valid(int rank)
 void multi_sg_select_rank_default()
 {
 	// pick our rank for now
-	Multi_sg_rank_select = Net_player->player->stats.rank;
+	Multi_sg_rank_select = Net_player->m_player->stats.rank;
 
 	// set the Netgame rank
 	Multi_sg_netgame->rank_base = Multi_sg_rank_select;
@@ -5063,7 +5061,7 @@ void multi_create_plist_blit_normal()
 			}			
 			
 			// make sure the string will fit, then display it
-			strcpy(str,Net_players[idx].player->callsign);
+			strcpy(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
 				strcat(str,XSTR("(O)",787));  // [[ Observer ]]
 			}
@@ -5136,7 +5134,7 @@ void multi_create_plist_blit_team()
 			}						
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].player->callsign);
+			strcpy(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
 				strcat(str,XSTR("(O)",787));
 			}
@@ -5202,7 +5200,7 @@ void multi_create_plist_blit_team()
 			}
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].player->callsign);
+			strcpy(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
 				strcat(str,XSTR("(O)",787));
 			}
@@ -5269,6 +5267,8 @@ void multi_create_list_load_missions()
 		int flags,max_players;
 		char *filename;
 		uint m_respawn;		
+		char *mvalid_cfg_buffer = NULL;
+		CFILE *mvalid_cfg = NULL;
 
 		fname = Multi_create_files_array[idx];
 		
@@ -5293,16 +5293,14 @@ void multi_create_list_load_missions()
 #endif
 
 		flags = mission_parse_is_multi(filename, mission_name);		
-		char *mvalid_cfg_buffer = NULL;
-		CFILE *mvalid_cfg = NULL;
 
-		
-		mvalid_cfg = cfopen("mvalid.cfg", "rt", CFILE_NORMAL, CF_TYPE_DATA);
-		mvalid_cfg_buffer = new char[cfilelength(mvalid_cfg)];
-		cfread(mvalid_cfg_buffer, 1, cfilelength(mvalid_cfg), mvalid_cfg);			
-		
-				
-
+		if (Om_tracker_flag) {
+			mvalid_cfg = cfopen("mvalid.cfg", "rt", CFILE_NORMAL, CF_TYPE_DATA);
+			if (mvalid_cfg != NULL) {
+				mvalid_cfg_buffer = new char[cfilelength(mvalid_cfg)];
+				cfread(mvalid_cfg_buffer, 1, cfilelength(mvalid_cfg), mvalid_cfg);			
+			}
+		}
 		
 		std::string v_string;
 
@@ -5347,11 +5345,13 @@ void multi_create_list_load_missions()
 			}
 		}
 
-		if (mvalid_cfg_buffer != NULL)
-			delete[] mvalid_cfg_buffer;
+		if (Om_tracker_flag) {
+			if (mvalid_cfg_buffer != NULL)
+				delete[] mvalid_cfg_buffer;
 
-		if (mvalid_cfg != NULL)
-			cfclose(mvalid_cfg);
+			if (mvalid_cfg != NULL)
+				cfclose(mvalid_cfg);
+		}
 	}
 
 	Multi_create_slider.set_numberItems(Multi_create_mission_count > Multi_create_list_max_display[gr_screen.res] ? Multi_create_mission_count-Multi_create_list_max_display[gr_screen.res] : 0);
@@ -6027,10 +6027,10 @@ int multi_create_ok_to_commit()
 			found_hack = 1;
 
 			// message everyone - haha
-			if(Net_players[idx].player != NULL){
-				sprintf(err_string, "%s %s", Net_players[idx].player->callsign, XSTR("has hacked tables/data", 1271)); 
+			if(Net_players[idx].m_player != NULL){
+				sprintf(err_string, "%s %s", Net_players[idx].m_player->callsign, XSTR("has hacked tables/data", 1271)); 
 			} else {
-				sprintf(err_string, "%s", Net_players[idx].player->callsign, XSTR("has hacked tables/data", 1271)); 
+				sprintf(err_string, "somebody %s", XSTR("has hacked tables/data", 1271)); 
 			}
 			send_game_chat_packet(Net_player, err_string, MULTI_MSG_ALL, NULL, NULL, 1);
 		}
@@ -7744,7 +7744,6 @@ void multi_jw_plist_process()
 	// if the player has clicked somewhere in the player list area
 	if(Multi_jw_plist_select_button.pressed()){
 		short player_id;
-		int player_index;
 	
 		player_id = multi_jw_get_mouse_id();
 		player_index = find_player_id(player_id);
@@ -7793,7 +7792,7 @@ void multi_jw_plist_blit_normal()
 			}			
 			
 			// make sure the string will fit, then display it
-			strcpy(str,Net_players[idx].player->callsign);
+			strcpy(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
 				strcat(str,"(0)");
 			}
@@ -7867,7 +7866,7 @@ void multi_jw_plist_blit_team()
 			}
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].player->callsign);
+			strcpy(str,Net_players[idx].m_player->callsign);
 			gr_force_fit_string(str,CALLSIGN_LEN,Mjw_players_coords[gr_screen.res][MJW_W_COORD] - total_offset);
 
 			// display him in the correct half of the list depending on his team
@@ -7924,7 +7923,7 @@ void multi_jw_plist_blit_team()
 			}
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].player->callsign);
+			strcpy(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
 				strcat(str,"(0)");
 			}
@@ -8460,7 +8459,7 @@ void multi_sync_blit_screen_all()
 	for(idx=0;idx<MAX_PLAYERS;idx++){
 		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx])){
 			// display his name and status
-			multi_sync_display_name(Net_players[idx].player->callsign,count,idx);
+			multi_sync_display_name(Net_players[idx].m_player->callsign,count,idx);
 	
 			// get the player state
 			state = Net_players[idx].state;
@@ -8923,7 +8922,7 @@ void multi_sync_pre_close()
 		nprintf(("Network","WARNING - killing file xfer while leaving mission sync state!!!\n"));
 
 		multi_xfer_abort(Net_player->s_info.xfer_handle);
-		Net_player->s_info.xfer_handle;
+		Net_player->s_info.xfer_handle = -1;
 	}
 }
 
@@ -9000,8 +8999,8 @@ void multi_sync_post_do()
 
 				// update player ets settings
 				for(idx=0;idx<MAX_PLAYERS;idx++){
-					if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].player->objnum != -1)){
-						multi_server_update_player_weapons(&Net_players[idx],&Ships[Objects[Net_players[idx].player->objnum].instance]);
+					if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player->objnum != -1)){
+						multi_server_update_player_weapons(&Net_players[idx],&Ships[Objects[Net_players[idx].m_player->objnum].instance]);
 					}
 				}			
 			}			

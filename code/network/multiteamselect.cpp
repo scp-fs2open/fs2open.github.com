@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-12-14 14:46:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-02-04 20:06:05 $
+ * $Author: taylor $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/12/14 14:46:13  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.6  2004/07/26 20:47:43  Kazan
  * remove MCD complete
  *
@@ -1033,7 +1037,7 @@ void multi_ts_assign_players_all()
 	Netgame.host->p_info.ship_index = slot_index;
 	Assert(Netgame.host->p_info.ship_index >= 0);
 	Netgame.host->p_info.ship_class = Ships[shipnum].ship_info_index;
-	Netgame.host->player->objnum = Ships[shipnum].objnum;						
+	Netgame.host->m_player->objnum = Ships[shipnum].objnum;						
 
 	// for each netplayer, try and find a ship
 	objp = GET_FIRST(&obj_used_list);
@@ -1073,7 +1077,7 @@ void multi_ts_assign_players_all()
 				Net_players[idx].p_info.ship_index = slot_index;
 				Assert(Net_players[idx].p_info.ship_index >= 0);
 				Net_players[idx].p_info.ship_class = Ships[objp->instance].ship_info_index;
-				Net_players[idx].player->objnum = OBJ_INDEX(objp);					
+				Net_players[idx].m_player->objnum = OBJ_INDEX(objp);					
 				
 				// decrement the player count
 				player_count--;
@@ -1104,7 +1108,7 @@ void multi_ts_assign_players_all()
 	
 	if(Game_mode & GM_STANDALONE_SERVER){
 		Player_obj = NULL;
-		Net_player->player->objnum = -1;
+		Net_player->m_player->objnum = -1;
 	}
 
 	// check to make sure all players were assigned correctly
@@ -1441,7 +1445,7 @@ void multi_ts_blit_wing_callsigns()
 		// if there is a player in the slot
 		if(Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx] != NULL){
 			// make sure the string fits
-			strcpy(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx]->player->callsign);
+			strcpy(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx]->m_player->callsign);
 		} else {
 			// determine if this is a locked AI ship
 			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].instance].ship_name);			
@@ -2618,7 +2622,7 @@ void multi_ts_blit_carried_icon()
 		break;
 	case MULTI_TS_PLAYER_LIST:
 		// get the final length of the string so we can calculate a valid offset
-		strcpy(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->player->callsign);
+		strcpy(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->m_player->callsign);
 		gr_force_fit_string(callsign,CALLSIGN_LEN,Multi_ts_slot_text_coords[Multi_ts_carried_from_index][gr_screen.res][MULTI_TS_W_COORD]);						
 		gr_get_string_size(&callsign_w,NULL,callsign);
 
@@ -2627,7 +2631,7 @@ void multi_ts_blit_carried_icon()
 		offset_y = Multi_ts_slot_text_coords[Multi_ts_carried_from_index][gr_screen.res][MULTI_TS_Y_COORD] - Multi_ts_clicked_y;
 
 		gr_set_color_fast(&Color_normal);
-		gr_string(x + offset_x,y + offset_y,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->player->callsign);
+		gr_string(x + offset_x,y + offset_y,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->m_player->callsign);
 		break;
 	default : 
 		break;			
@@ -2967,7 +2971,7 @@ void send_pslot_update_packet(int team,int code,int sound)
 
 	// add the sound to play
 	s_sound = (short)sound;
-	ADD_DATA(s_sound);
+	ADD_SHORT(s_sound);
 	
 	// add data based upon the packet code
 	switch(code){
@@ -2995,7 +2999,7 @@ void send_pslot_update_packet(int team,int code,int sound)
 
 				// add the objnum we're working with
 				i_tmp = Multi_ts_team[team].multi_ts_objnum[idx];
-				ADD_DATA(i_tmp);
+				ADD_INT(i_tmp);
 
 				// add a byte indicating if a player is here or not
 				if(Multi_ts_team[team].multi_ts_player[idx] == NULL){
@@ -3071,7 +3075,7 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 	team = (int)val;
 
 	// get the sound to play
-	GET_DATA(sound);
+	GET_SHORT(sound);
 
 	// process the different opcodes
 	switch(code){
@@ -3116,13 +3120,13 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 			GET_DATA(ship_class);
 
 			// get the objnum
-			GET_DATA(objnum);
+			GET_INT(objnum);
 	
 			// flag indicating if a player is in this slot
 			GET_DATA(val);
 			if(val){
 				// look the player up
-				GET_DATA(player_id);
+				GET_SHORT(player_id);
 				player_index = find_player_id(player_id);
 			
 				// if we couldn't find him

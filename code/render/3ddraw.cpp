@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-01-28 11:06:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2005-02-04 20:06:07 $
+ * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/01/28 11:06:22  Goober5000
+ * changed a bunch of transpose-rotate sequences to use unrotate instead
+ * --Goober5000
+ *
  * Revision 2.23  2004/07/26 20:47:50  Kazan
  * remove MCD complete
  *
@@ -882,6 +886,7 @@ int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float
 	vm_vert2vec(pnt, &PNT);
 	vector p[4];
 	vertex P[4];
+	int i;
 	//unused variables that were there for some reason
 //	matrix m;
 //	vm_set_identity(&m);
@@ -894,7 +899,7 @@ int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float
 	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
 	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
 
-	for(int i = 0; i<4; i++){
+	for(i = 0; i<4; i++){
 		vector t = p[i];
 		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 		vm_vec_add2(&p[i],&PNT);//move it
@@ -907,9 +912,9 @@ int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float
 	g3_transfer_vertex(&P[3], &p[0]);
 
 	for( i = 0; i<4; i++){
-		P[i].r = unsigned char(255 * c);
-		P[i].g = unsigned char(255 * c);
-		P[i].b = unsigned char(255 * c); 
+		P[i].r = (ubyte)(255.0f * c);
+		P[i].g = (ubyte)(255.0f * c);
+		P[i].b = (ubyte)(255.0f * c); 
 	}
 
 	//set up the UV coords
@@ -948,9 +953,11 @@ int g3_draw_bitmap(vertex *pnt,int orient, float rad,uint tmap_flags, float dept
 	{
 		bool gr_d3d_particle_set(vertex *pos, int bitmap_id, float size);
 
+#ifdef _WIN32
 		if((tmap_flags & TMAP_HTL_PARTICLE) && gr_screen.mode == GR_DIRECT3D && Cmdline_d3d_particle)
 			if(gr_d3d_particle_set(pnt, gr_screen.current_bitmap, rad) == true)
 				return 0;
+#endif
 
 		if(tmap_flags & TMAP_HTL_3D_UNLIT)
 		//	return g3_draw_bitmap_3d_volume(pnt, orient, rad, tmap_flags, depth, 10);// just playing with an idea for makeing glows on thrusters less... not... good

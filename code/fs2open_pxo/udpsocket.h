@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.h $
- * $Revision: 1.5 $
- * $Date: 2004-08-11 05:06:23 $
- * $Author: Kazan $
+ * $Revision: 1.6 $
+ * $Date: 2005-02-04 20:06:03 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/08/11 05:06:23  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.4  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -35,8 +38,7 @@
 #if !defined(__protocol_h_)
 #define __protocol_h_
 
-#if defined(WIN32)
-// Windows Version
+#ifdef _WIN32
 #include <windows.h>
 
 #pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
@@ -48,19 +50,19 @@
 #define CLOSEFUNC closesocket
 
 #else
-// Unix Version
-#include <stdio.h>
+#include <cstdio>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <cerrno>
+#endif
 #include <string>
-#define STYPE int
-#define CLOSEFUNC close
 
+#include "globalincs/pstypes.h"
+
+#define CLOSEFUNC closesocket
+
+#if !defined(STYPE)
+#define STYPE SOCKET
 #endif
 
 class UDP_Socket

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/LevelPaging.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:29 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-04 20:06:03 $
+ * $Author: taylor $
  *
  * Code to page in all the bitmaps at the beginning of a level.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:29  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:46  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -92,6 +95,7 @@ extern void asteroid_page_in();
 extern void training_mission_page_in();
 extern void neb2_page_in();
 extern void message_pagein_mission_messages();
+extern void model_page_in_stop();
 
 // Pages in all the texutures for the currently
 // loaded mission.  Call game_busy() occasionally...
@@ -126,6 +130,7 @@ void level_page_in()
 	}
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
+		model_page_in_stop();		// free any loaded models that aren't used
 		bm_page_in_stop();
 	}
 

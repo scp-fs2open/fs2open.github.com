@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/02/03 01:26:45  phreak
+ * revert to default d-missile behavior if the electroinics parameters aren't specified.
+ * added an option to customize the old-style disruption calculation as well.
+ *
  * Revision 2.37  2005/01/28 04:05:05  phreak
  * shockwave weapons now work properly with the electronics (d-missible) tag
  * added in a "randomness factor" for electronics parameters.  This adds or subtracts
@@ -881,7 +885,7 @@ extern char	*Weapon_names[MAX_WEAPON_TYPES];
 #define TERTIARY_WEAPON_INFO_INDEX(twip)	(twip-Tertiary_weapon_info)
 
 
-int weapon_info_lookup(char *name);
+int weapon_info_lookup(char *name = NULL);
 void weapon_init();					// called at game startup
 void weapon_level_init();			// called before the start of each level
 void weapon_render(object * obj);
