@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.8 $
+ * $Revision: 2.9 $
  * $Author: Goober5000 $
- * $Date: 2002-12-14 17:09:28 $
+ * $Date: 2002-12-23 05:18:52 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/12/14 17:09:28  Goober5000
+ * removed mission flag for fighterbay damage; instead made damage display contingent on whether the fighterbay subsystem is assigned a damage percentage in ships.tbl
+ * --Goober5000
+ *
  * Revision 2.7  2002/12/14 01:55:04  Goober5000
  * added mission flag to show subsystem damage for fighterbays
  * ~Goober5000~
@@ -475,6 +479,7 @@ typedef struct p_object {
 #define P_KNOSSOS_WARP_IN			(1<<19)
 #define P_OF_NO_LASERS				(1<<20)
 #define P_OF_NO_ENGINES				(1<<21)
+#define P_SSF_STEALTH				(1<<22)
 
 
 // the following parse object flags are used internally by Freespace

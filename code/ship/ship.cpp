@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.17 $
- * $Date: 2002-12-20 07:09:03 $
+ * $Revision: 2.18 $
+ * $Date: 2002-12-23 05:18:52 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2002/12/20 07:09:03  Goober5000
+ * added capability of storing time_subsys_cargo_revealed
+ * --Goober5000
+ *
  * Revision 2.16  2002/12/17 02:18:39  Goober5000
  * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
  * --Goober5000
@@ -1502,6 +1506,7 @@ int parse_ship()
 		else
 			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 	}
+	sip->stealth_flags = SSF_DEFAULT_VALUE;
 
 	// be friendly; ensure ballistic flags check out
 	if (pbank_capacity_specified)
