@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.15 $
- * $Date: 2004-11-18 00:05:36 $
- * $Author: Goober5000 $
+ * $Revision: 1.16 $
+ * $Date: 2004-11-21 16:07:22 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2004/11/18 00:05:36  Goober5000
+ * #pragma'd a bunch of warnings
+ * --Goober5000
+ *
  * Revision 1.14  2004/05/25 00:21:39  wmcoolmon
  * Updated to use <iostream> instead of <iostream.h>
  *
@@ -466,8 +470,8 @@ void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket,
 	hbpack.players = (short) players;
 	hbpack.port = port;
 
-
-	Socket.SendPacket((char *) &hbpack, sizeof(serverlist_hb_packet), std::string(masterserver), targetport);
+	std::string ms = masterserver;
+	Socket.SendPacket((char *) &hbpack, sizeof(serverlist_hb_packet), ms, targetport);
 }
 
 
