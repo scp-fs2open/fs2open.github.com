@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.62 $
- * $Date: 2003-04-29 01:03:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.63 $
+ * $Date: 2003-05-24 16:47:58 $
+ * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2003/04/29 01:03:24  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.61  2003/04/05 20:47:58  Goober5000
  * gotta love those compiler errors ;)
  * fixed those and cleaned up conflicts with the missile-locked sexp
@@ -877,6 +881,8 @@ sexp_oper Operators[] = {
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "toggle-hud",					OP_TOGGLE_HUD,					0, 0 },		// Goober5000
+	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
+	{ "not-kamikaze",					OP_NOT_KAMIKAZE,					1, INT_MAX }, //-Sesquipedalian
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -8253,6 +8259,89 @@ void sexp_shields_off(int n, int shields_off ) //-Sesquipedalian
 	}
 }
 
+void sexp_kamikaze(int n)
+{
+	char *ship_name;
+	int num;
+	int kdamage;
+	ai_info * aip;
+	
+	kdamage = sexp_get_val(n);
+	n=CDR(n);
+
+	while (n!=-1)
+	{
+		ship_name=CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+			return;
+	
+		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
+		// in a list until created
+		num = ship_name_lookup(ship_name);
+		if ( num != -1 ) {
+			aip=&Ai_info[Ships[num].ai_index];
+			aip->ai_flags |= AIF_KAMIKAZE;
+			aip->kamikaze_damage = i2fl(kdamage); 
+		} else {
+			p_object *parse_obj;
+	
+			parse_obj = mission_parse_get_arrival_ship( ship_name );
+			if ( parse_obj ) {
+				parse_obj->flags |= P_AIF_KAMIKAZE;
+				Ai_info[Ships[num].ai_index].kamikaze_damage = i2fl(kdamage); 
+			
+#ifndef NDEBUG
+			}else {
+				Int3();	// get allender -- could be a potential problem here
+#endif
+			}
+
+		}
+		n=CDR(n);
+	}
+}
+
+void sexp_not_kamikaze(int n)
+{
+	char *ship_name;
+	ai_info *aip;
+	int num;
+	
+	
+	while (n!=-1)
+	{
+		ship_name = CTEXT(n);
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+			return;
+
+		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
+		// in a list until created
+		num = ship_name_lookup(ship_name);
+		if ( num != -1 ) {
+			aip= &Ai_info[Ships[num].ai_index];
+			aip->kamikaze_damage = 0.0f; 	
+			aip->ai_flags &= ~(AIF_KAMIKAZE);
+		} else {
+			p_object *parse_obj;
+	
+			parse_obj = mission_parse_get_arrival_ship( ship_name );
+			if ( parse_obj ) {
+				parse_obj->flags &= ~(P_AIF_KAMIKAZE);
+				Ai_info[Ships[num].ai_index].kamikaze_damage = 0.0f; 
+			
+#ifndef	NDEBUG
+			}else {
+				Int3();	// get allender -- could be a potential problem here
+#endif
+			}
+		}
+		n=CDR(n);
+	}
+
+}
 
 
 
@@ -10581,6 +10670,18 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			//-Sesquipedalian
+			case OP_KAMIKAZE: 
+				sexp_kamikaze(node);
+				sexp_val = 1;
+				break;
+
+			case OP_NOT_KAMIKAZE:
+				sexp_not_kamikaze(node);
+				sexp_val=1;
+				break;
+
+
 			case OP_SET_CARGO:
 				sexp_set_cargo(node);
 				sexp_val = 1;
@@ -11448,6 +11549,8 @@ int query_operator_return_type(int op)
 		case OP_SET_SHIP_FACING:
 		case OP_SET_SHIP_FACING_OBJECT:
 		case OP_TOGGLE_HUD:
+		case OP_KAMIKAZE:
+		case OP_NOT_KAMIKAZE:
 			return OPR_NULL;
 
 		case OP_GET_OBJECT_X:
@@ -11584,6 +11687,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_VANISH:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
+		case OP_NOT_KAMIKAZE:
 		case OP_SHIP_STEALTHY:
 		case OP_SHIP_UNSTEALTHY:
 		case OP_FRIENDLY_STEALTH_INVISIBLE:
@@ -12297,6 +12401,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUPPORT_SHIP_CLASS;
 			if (argnum == 5)
 				return OPF_NUMBER;
+
+		case OP_KAMIKAZE:
+			if (argnum==0)
+				return OPF_POSITIVE;
+			else
+				return OPF_SHIP;
 
 		default:
 			Int3();
@@ -13108,6 +13218,8 @@ int get_subcategory(int sexp_id)
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
 		case OP_BEAM_UNPROTECT_SHIP:
+		case OP_KAMIKAZE:
+		case OP_NOT_KAMIKAZE:
 			return CHANGE_SUBCATEGORY_AI_AND_IFF;
 			
 		case OP_SABOTAGE_SUBSYSTEM:
