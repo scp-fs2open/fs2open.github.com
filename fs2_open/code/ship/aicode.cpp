@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.99 $
- * $Date: 2005-03-14 02:52:58 $
+ * $Revision: 2.100 $
+ * $Date: 2005-03-16 00:37:42 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2005/03/14 02:52:58  phreak
+ * Got rid of the stealth check that only applied to cloaked ships.  This should
+ * fix some errorneous behavior that caused the ai to target the player
+ *
  * Revision 2.98  2005/03/12 23:53:27  phreak
  * extra checks in find_parent_rotating_submodel()
  *
@@ -6564,7 +6568,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	//not using the new AI, use the old version of this function instead.
 	if (!(The_mission.flags & MISSION_FLAG_USE_NEW_AI))
 	{
-		ai_select_primary_weapon_OLD(objp, other_objp, flags);
+		return ai_select_primary_weapon_OLD(objp, other_objp, flags);
 	}
 
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
