@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.18 $
- * $Date: 2003-01-03 21:58:06 $
+ * $Revision: 2.19 $
+ * $Date: 2003-01-05 01:26:35 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/01/03 21:58:06  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.17  2002/12/31 18:59:42  Goober5000
  * if it ain't broke, don't fix it
  * --Goober5000
@@ -1428,6 +1435,10 @@ float ship_get_length(ship* shipp);
 // Goober5000 - used by change-ai-class
 extern void ship_set_new_ai_class(int ship_num, int new_ai_class);
 extern void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_class);
+
+// Goober5000 - used by is-iff and change-iff
+extern int ship_is_iff(int ship_num, int check_team);
+extern void ship_change_iff(int ship_num, int new_team);
 
 
 #endif

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.26 $
- * $Date: 2003-01-03 21:58:06 $
+ * $Revision: 2.27 $
+ * $Date: 2003-01-05 01:26:35 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/01/03 21:58:06  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.25  2003/01/02 03:09:00  Goober5000
  * this is the way we squash the bugs, squash the bugs, squash the bugs
  * this is the way we squash the bugs, so early in the morning :p
@@ -10744,3 +10751,25 @@ void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_c
 	Int3();	// subsystem not found
 }
 
+// Goober5000: check ship's iff, currently only called from is-iff in sexp.cpp
+int ship_is_iff(int ship_num, int check_team)
+{
+	Assert(ship_num >= 0);
+
+	return (Ships[ship_num].team == check_team);
+}
+
+// Goober5000: change ship's iff, currently only called from change-iff in sexp.cpp
+void ship_change_iff(int ship_num, int new_team)
+{
+	Assert(ship_num >= 0);
+
+	Ships[ship_num].team = new_team;
+
+#ifndef NO_NETWORK
+	// send a network packet if we need to
+	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0)){
+		send_change_iff_packet(Objects[Ships[ship_num].objnum].net_signature, new_team);
+	}
+#endif
+}
