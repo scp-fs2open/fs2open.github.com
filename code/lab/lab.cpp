@@ -424,7 +424,10 @@ void make_another_window(Button* caller)
 void change_lod(Tree* caller)
 {
 	if(ShipSelectModelNum != -1)
-		model_unload(ShipSelectModelNum);
+	{
+		model_page_out_textures(ShipSelectModelNum);
+		//model_unload(ShipSelectModelNum);
+	}
 	ShipSelectShipIndex = (int)(caller->GetSelectedItem()->Parent->Data);
 	ModelLOD = (int)(caller->GetSelectedItem()->Data);
 	ShipSelectModelNum = model_load(Ship_info[ShipSelectShipIndex].pof_file, 0, NULL);
@@ -596,7 +599,11 @@ void lab_close()
 {
 	delete LAB_GUI_System;
 
-	model_unload(ShipSelectModelNum);
+	if(ShipSelectModelNum != -1)
+	{
+		model_page_out_textures(ShipSelectModelNum);
+		//model_unload(ShipSelectModelNum);
+	}
 	ShipSelectModelNum = -1;
 	beam_unpause_sounds();
 	//audiostream_unpause_all();
