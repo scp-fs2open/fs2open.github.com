@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-09-13 06:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.16.2.1 $
+ * $Date: 2003-09-19 00:42:13 $
+ * $Author: argv $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/09/13 06:02:06  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.14  2003/08/16 03:52:23  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -1077,7 +1081,8 @@ void process_debug_keys(int k)
 
 					do_subobj_hit_stuff(objp, Player_obj, &g_subobj_pos, (float) -Player_ai->targeted_subsys->system_info->type); //100.0f);
 
-					if ( sp->subsys_info[SUBSYSTEM_ENGINE].current_hits <= 0.0f ) {
+					// _argv[-1] - with the new energy system, this is done in hudets.cpp.
+					if ( !(sp->flags2 & SIF2_NEW_ENERGY_SYSTEM) && sp->subsys_info[SUBSYSTEM_ENGINE].current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
 						sp->flags |= SF_DISABLED;				// add the disabled flag
 					}
