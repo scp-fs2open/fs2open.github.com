@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.47 $
+ * $Revision: 2.48 $
  * $Author: Goober5000 $
- * $Date: 2003-08-27 02:04:54 $
+ * $Date: 2003-08-28 05:46:52 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/08/27 02:04:54  Goober5000
+ * added percent-ships-disarmed and percent-ships-disabled
+ * --Goober5000
+ *
  * Revision 2.46  2003/08/27 01:38:00  Goober5000
  * added is-ship-type, is-ship-class, lock-rotating-subsystem, and free-rotating-subsystem;
  * also fixed the argument and return values for various sexps so that they work
@@ -517,7 +521,7 @@
 #define MAX_SEXP_VARIABLES 100
 
 #define	MAX_SEXP_TEXT	2000
-#define	MAX_OPERATORS	256  // Yes, this is used, but not by the Sexp code.
+#define	MAX_OPERATORS	1024  // Yes, this is used, but not by the Sexp code.
 
 // Operator argument formats (data types of an argument)
 #define	OPF_NONE				1		// argument cannot exist at this position if it's this
@@ -571,34 +575,58 @@
 
 // Operand return types
 #define	OPR_NUMBER		1	// returns number
-#define	OPR_BOOL			2	// returns true/false value
-#define	OPR_NULL			3  // doesn't return a value
-#define	OPR_AI_GOAL		4  // is an ai operator (doesn't really return a value, but used for type matching)
-#define	OPR_POSITIVE	5  // returns a non-negative number
-#define	OPR_STRING		6  // not really a return type, but used for type matching.
+#define	OPR_BOOL		2	// returns true/false value
+#define	OPR_NULL		3	// doesn't return a value
+#define	OPR_AI_GOAL		4	// is an ai operator (doesn't really return a value, but used for type matching)
+#define	OPR_POSITIVE	5	// returns a non-negative number
+#define	OPR_STRING		6	// not really a return type, but used for type matching.
 #define	OPR_AMBIGUOUS	7	// not really a return type, but used for type matching.
 
-#define	OP_INSERT_FLAG				0x8000
+#define	OP_INSERT_FLAG			0x8000
 #define	OP_REPLACE_FLAG			0x4000
 #define	OP_NONCAMPAIGN_FLAG		0x2000
 #define	OP_CAMPAIGN_ONLY_FLAG	0x1000
-#define	FIRST_OP						0x0100
 
-#define	OP_CATEGORY_MASK			0x0f00
+// if we ever have more than 1024 (!)
+// total sexps, we're going to have to
+// figure out a different way of
+// distinguishing between sexp identifier
+// and sexp array index
+#define	FIRST_OP				0x0400
 
-#define	OP_CATEGORY_OBJECTIVE	0x0100
-#define	OP_CATEGORY_TIME			0x0200
-#define	OP_CATEGORY_LOGICAL		0x0300
-#define	OP_CATEGORY_ARITHMETIC	0x0400
-#define	OP_CATEGORY_STATUS		0x0500
-#define	OP_CATEGORY_CHANGE		0x0600
-#define	OP_CATEGORY_CONDITIONAL	0x0700
-#define	OP_CATEGORY_DEBUG			0x0800
-#define	OP_CATEGORY_AI				0x0900  // used for AI goals
-#define	OP_CATEGORY_TRAINING		0x0a00
-#define	OP_CATEGORY_UNLISTED		0x0b00
-#define	OP_CATEGORY_GOAL_EVENT	0x0c00
+// IMPORTANT: because of the way
+// categories work, no category can
+// have more than 256 sexps (mapped
+// to 00 through ff) otherwise
+// they'll overlap their category)
+#define	OP_CATEGORY_OBJECTIVE	0x0400
+#define	OP_CATEGORY_TIME		0x0500
+#define	OP_CATEGORY_LOGICAL		0x0600
+#define	OP_CATEGORY_ARITHMETIC	0x0700
+#define	OP_CATEGORY_STATUS		0x0800
+#define	OP_CATEGORY_CHANGE		0x0900
+#define	OP_CATEGORY_CONDITIONAL	0x0a00
+#define	OP_CATEGORY_AI			0x0b00  // used for AI goals
+#define	OP_CATEGORY_TRAINING	0x0c00
+#define	OP_CATEGORY_UNLISTED	0x0d00
+#define	OP_CATEGORY_GOAL_EVENT	0x0f00	// final category can't be higher than 0x0f00,
+										// to avoid overlap with flags above
 
+#define	OP_CATEGORY_MASK		0x0f00	// 0000111100000000b
+
+
+// The debug category is obsolete, so
+// I removed it.  It originally took the
+// place of OP_CATEGORY_CONDITIONAL,
+// which was bumped (along with all the
+// lower categories) so that FIRST_OP
+// could be 0x0400.  This allows for
+// 1024 possible sexps, as opposed to
+// the 768 possible if the categories
+// had not been bumped.
+/*
+#define	OP_CATEGORY_DEBUG		0x0a00
+*/
 
 // New subcategories! :) -- Goober5000
 // Adding more subcategories is possible with the new code.  All that needs to be done is
@@ -829,8 +857,10 @@
 #define OP_LOCK_ROTATING_SUBSYSTEM			(0x008a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FREE_ROTATING_SUBSYSTEM			(0x008b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
+/* made obsolete by Goober5000
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
+*/
 
 // defined for AI goals
 #define OP_AI_CHASE								(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
