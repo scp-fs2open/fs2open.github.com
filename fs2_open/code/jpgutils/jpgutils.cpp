@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.11 $
- * $Date: 2005-03-03 06:05:28 $
+ * $Revision: 1.12 $
+ * $Date: 2005-03-03 07:32:55 $
  * $Author: wmcoolmon $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/03/03 06:05:28  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 1.10  2005/02/12 10:44:11  taylor
  * fix possible crash in bm_get_section_size()
  * get jpeg_read_header() working properly
@@ -54,7 +57,7 @@
 #include <setjmp.h>
 
 extern "C" {
-	#include <libjpeg/jpeglib.h>
+	#include <jpeglib.h>
 }
 
 #undef LOCAL // fix from a jpeg header, pstypes.h will define it again
