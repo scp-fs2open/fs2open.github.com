@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.18 $
+ * $Revision: 2.19 $
  * $Author: Goober5000 $
- * $Date: 2005-01-25 22:21:45 $
+ * $Date: 2005-01-25 22:47:37 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/01/25 22:21:45  Goober5000
+ * separated one parsing function into two
+ * --Goober5000
+ *
  * Revision 2.17  2004/12/25 09:25:18  wmcoolmon
  * Fix to modular tables workaround with Fs2NetD
  *
@@ -431,8 +435,9 @@ extern void parse_main();
 extern void mark_int_list(int *ilp, int max_ints, int lookup_type);
 extern void compact_multitext_string(char *str);
 extern void read_file_text(char *filename, int mode = CF_TYPE_ANY, char *processed_text = Mission_text, char *raw_text = Mission_text_raw);
-extern int read_raw_file_text(char *filename, int mode = CF_TYPE_ANY, char *raw_text = Mission_text_raw);
-extern void process_raw_file_text(int raw_text_len, char *processed_text = Mission_text, char *raw_text = Mission_text_raw);
+extern void read_file_text_from_array(char *array, char *processed_text = Mission_text, char *raw_text = Mission_text_raw);
+extern void read_raw_file_text(char *filename, int mode = CF_TYPE_ANY, char *raw_text = Mission_text_raw);
+extern void process_raw_file_text(char *processed_text = Mission_text, char *raw_text = Mission_text_raw);
 extern void debug_show_mission_text();
 extern void convert_sexp_to_string(int cur_node, char *outstr, int mode);
 char *split_str_once(char *src, int max_pixel_w);
