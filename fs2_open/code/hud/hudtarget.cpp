@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-08-22 07:35:08 $
- * $Author: bobboau $
+ * $Revision: 2.19 $
+ * $Date: 2003-09-09 05:51:14 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/08/22 07:35:08  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.17  2003/08/21 06:31:19  Goober5000
  * ships that have no afterburners will no longer have the afterburner gauge drawn
  * --Goober5000
@@ -3448,6 +3453,11 @@ void hud_show_message_sender()
 
 	// Don't do this for the ship you're flying!
 	if ( targetp == Player_obj ) {
+		return;
+	}
+
+	// Goober5000 - don't draw if primitive sensors
+	if ( Ships[Player_obj->instance].flags2 & SF2_PRIMITIVE_SENSORS ) {
 		return;
 	}
 
