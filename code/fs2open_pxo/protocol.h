@@ -10,12 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/protocol.h $
- * $Revision: 1.11 $
- * $Date: 2004-03-31 05:42:26 $
- * $Author: Goober5000 $
+ * $Revision: 1.12 $
+ * $Date: 2004-07-07 21:00:06 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2004/03/31 05:42:26  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 1.10  2004/03/07 23:07:20  Kazan
  * [Incomplete] Readd of Software renderer so Standalone server works
  *
@@ -64,6 +69,13 @@
 
 #define PCKT_MISSION_CHECK	0xF
 #define PCKT_MCHECK_REPLY	0x10
+
+#define PCKT_BANLIST_RQST	0x11
+#define PCKT_BANLIST_RPLY	0x12
+
+// this only goes from the server out
+#define PCKT_NETOWRK_WALL	0x13
+
 
 #define FS2OPEN_PXO_PORT	12000
 #define FS2OPEN_CLIENT_PORT	FS2OPEN_PXO_PORT + 1
@@ -283,5 +295,34 @@ struct fs2open_pingreply
 	int time;
 };
 
+// ---------------- Banlist Packets -----------------
+
+struct fs2open_banlist_request
+{
+		int pid; // 0x11 (PCKT_BANLIST_RQST)
+		int reserved;
+};
+
+
+struct fs2open_banmask
+{
+	char ip_mask[16]; // up to 15 chars (123.123.123.123) and a NULL
+};
+
+struct fs2open_banlist_reply
+{
+		int pid; // 0x12 (PCKT_BANLIST_RPLY)
+		int num_ban_masks;
+		fs2open_banmask* masks;
+};
+
+// ---------------- Global Message Packet -----------------
+
+
+struct fs2open_network_wall
+{
+	int pid; // 0x13 (PCKT_NETOWRK_WALL)
+	char message[252];
+};
 
 #endif

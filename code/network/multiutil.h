@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-07-07 21:00:08 $
+ * $Author: Kazan $
  *
  * Header file to support misc. multiplayer support functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -356,6 +359,12 @@ int multi_get_connection_speed();
 
 // if we're in tracker mode, do a validation update on all known missions
 void multi_update_valid_missions();
+
+// if we're in tracker mode, get the ip banmask list
+void multi_update_ban_list();
+
+// if we're in tracker mode, check if this addr matches a banmask
+bool fs2netd_player_banned(net_addr *addr);
 
 // get a new id# for a player
 short multi_get_new_id();

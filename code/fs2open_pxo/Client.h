@@ -10,12 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.14 $
- * $Date: 2004-03-31 05:42:26 $
- * $Author: Goober5000 $
+ * $Revision: 1.15 $
+ * $Date: 2004-07-07 21:00:06 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2004/03/31 05:42:26  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 1.13  2004/03/09 00:02:16  Kazan
  * more fs2netd stuff
  *
@@ -115,10 +120,14 @@ int Ping(const char* target, TCP_Socket &Socket);
 void SendHeartBeat(const char* masterserver, int targetport, TCP_Socket &Socket, const char* myName, const char* MisName, const char* title, int flags, int port, int players);
 int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Socket, const char* masterserver, int port=FS2OPEN_PXO_PORT, int timeout=15);
 int GetPingReply(TCP_Socket &Socket);
+void SendPingReply(TCP_Socket &Socket, int tstamp);
 
 // longer timeouts - mySQL operations
 file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
 file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
+
+fs2open_banmask* GetBanList(int &numBanMasks, TCP_Socket &Socket, int timeout=15);
+
 #endif
 
 

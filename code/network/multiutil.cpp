@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-03-31 05:42:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2004-07-07 21:00:08 $
+ * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/03/31 05:42:27  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.15  2004/03/05 21:19:39  Kazan
  * Fixed mission validation (was returning false positives)
  *
@@ -2300,6 +2305,13 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}
 #endif
 
+	// ----------- FS2NetD IP Banning -----------
+	if(fs2netd_player_banned(addr)){
+		return JOIN_DENY_JR_BANNED;
+	}
+	
+	
+
 	// if the game is in-mission, make sure there are ships available
 	if(MULTI_IN_MISSION && !(jr->flags & JOIN_FLAG_AS_OBSERVER)){
 		team0_avail = 0;
@@ -3277,6 +3289,89 @@ void multi_update_validate_missions_DrawString(char *str)
 
 }
 
+
+void multi_update_ban_list()
+{
+	// if we're not on FS2NetD (PXO) then don't bother with this function
+	if (!Om_tracker_flag)
+		return;
+
+	// destroy the file prior to updating
+	cf_delete( "banlist.cfg", CF_TYPE_DATA );
+
+#ifndef NO_STANDALONE
+	// if we're a standalone, show a dialog saying "validating missions"
+	if(Game_mode & GM_STANDALONE_SERVER){
+		std_create_gen_dialog("Updating Global Banlist");
+		std_gen_set_text("Querying FS2NetD:",1);
+	}
+#endif
+
+	multi_update_validate_missions_DrawString("Asking PXO Server for IP Banlist Masks");
+
+	// Get the banlist from the server
+	int numBans;	
+	fs2open_banmask *bans = GetBanList(numBans, FS2OpenPXO_Socket);
+
+
+#ifndef NO_STANDALONE
+	// if we're a standalone, show a dialog saying "validating missions"
+	if(Game_mode & GM_STANDALONE_SERVER){
+		std_gen_set_text("Got FS2NetD Reply:",1);
+	}
+#endif
+
+	// open the outfile
+	CFILE *banlist_cfg = cfopen("banlist.cfg", "wt", CFILE_NORMAL, CF_TYPE_DATA);
+
+	for (int i = 0; i < numBans; i++)
+	{
+		cfputs(bans[i].ip_mask, banlist_cfg);
+	}
+
+	cfclose(banlist_cfg);
+	delete[] bans;
+
+#ifndef NO_STANDALONE
+	// if we're a standalone, kill the validate dialog
+	if(Game_mode & GM_STANDALONE_SERVER){
+		std_destroy_gen_dialog();
+	}
+#endif 
+}
+
+	
+bool fs2netd_player_banned(net_addr *addr)
+{
+	if (!Om_tracker_flag)
+		return false; // no tracker, no bannination
+
+	char line[32]; // no line should be larger than 16, but let's be safe
+	char ip_str[32];
+	memset(ip_str, 0, 32);
+	memset(line, 0, 32);
+
+	psnet_addr_to_string( ip_str, addr );
+
+	bool retval = false;
+	CFILE *banlist_cfg = cfopen("banlist.cfg", "rt", CFILE_NORMAL, CF_TYPE_DATA);
+
+	while (!cfeof(banlist_cfg) && !retval)
+	{
+		cfgets(line, 32, banlist_cfg);
+
+		if (!strnicmp(ip_str, line, strlen(line)))
+			retval = true; // BANNINATED!!!
+	}
+
+	cfclose(banlist_cfg);
+
+
+	return retval;
+
+}
+
+
 void multi_update_valid_missions()
 {
 
@@ -3284,48 +3379,13 @@ void multi_update_valid_missions()
 	if (!Om_tracker_flag)
 		return;
 
+	// destroy the file prior to updating
+	cf_delete( "mvalid.cfg", CF_TYPE_DATA );
+
 	static char Server[32];
 	static int port = -1;
 
-	if (port == -1)
-	{
-
-
-
-		CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
-		if(file == NULL){
-			ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
-			return;
-		}
-			
-
-		char Port[32];
-		if (cfgets(Server, 32, file) == NULL)
-		{
-			ml_printf("Network", "No Masterserver definition!\n");
-			return;
-		}
-
-		if (strstr(Server, "\n"))
-			*strstr(Server, "\n") = '\0';
-
-		if (cfgets(Port, 32, file) != NULL)
-			port = atoi(Port);
-		else
-			port = 12000;
-		
-		if (!FS2OpenPXO_Socket.isInitialized())
-		{
-#if !defined(PXO_TCP)
-				if (!FS2OpenPXO_Socket.InitSocket())
-#else
-				if (!FS2OpenPXO_Socket.InitSocket(Server, port))
-#endif
-				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
-				}
-		}
-	}
+	fs2netd_maybe_init();
 
 #ifndef NO_STANDALONE
 	// if we're a standalone, show a dialog saying "validating missions"
@@ -3372,7 +3432,7 @@ void multi_update_valid_missions()
 		// open the outfile
 		CFILE *mvalid_cfg = cfopen("mvalid.cfg", "wt", CFILE_NORMAL, CF_TYPE_DATA);
 
-		
+	 
 		// do all the checksums
 		for(idx=0; idx<count; idx++){
 			memset(full_name, 0, MAX_FILENAME_LEN+1);			
@@ -3479,45 +3539,7 @@ void multi_update_valid_tables()
 	static char Server[32];
 	static int port = -1;
 
-	if (port == -1)
-	{
-
-
-
-		CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
-		if(file == NULL){
-			ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
-			return;
-		}
-			
-
-		char Port[32];
-		if (cfgets(Server, 32, file) == NULL)
-		{
-			ml_printf("Network", "No Masterserver definition!\n");
-			return;
-		}
-
-		if (strstr(Server, "\n"))
-			*strstr(Server, "\n") = '\0';
-
-		if (cfgets(Port, 32, file) != NULL)
-			port = atoi(Port);
-		else
-			port = 12000;
-
-		if (!FS2OpenPXO_Socket.isInitialized())
-		{
-#if !defined(PXO_TCP)
-					if (!FS2OpenPXO_Socket.InitSocket())
-#else
-					if (!FS2OpenPXO_Socket.InitSocket(Server, port))
-#endif
-				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
-				}
-		}
-	}
+	fs2netd_maybe_init();
 
 #ifndef NO_STANDALONE
 	// if we're a standalone, show a dialog saying "validating missions"

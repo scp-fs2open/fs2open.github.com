@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.17 $
- * $Date: 2004-07-06 23:45:34 $
+ * $Revision: 1.18 $
+ * $Date: 2004-07-07 21:00:06 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2004/07/06 23:45:34  Kazan
+ * minor multi fix
+ *
  * Revision 1.16  2004/05/25 00:21:39  wmcoolmon
  * Updated to use <iostream> instead of <iostream.h>
  *
@@ -353,7 +356,87 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 
 	return -1;
 }
+//**************************************************************************************************************************************************
 
+
+
+fs2open_banmask* GetBanList(int &numBanMasks, TCP_Socket &Socket, int timeout)
+{
+	// Clear any old dead crap data
+	Socket.IgnorePackets();
+
+	fs2open_banlist_request br_packet;
+	br_packet.pid = PCKT_BANLIST_RQST;
+	br_packet.reserved = 0;
+
+
+	timeout = timeout * CLK_TCK;
+
+	//std::string sender = masterserver;
+
+	// send Packet
+	if (Socket.SendData((char *)&br_packet, sizeof(fs2open_banlist_request)) == -1)
+		return NULL;
+
+	char PacketBuffer[16384]; // 16K should be enough i think..... I HOPE!
+	fs2open_banlist_reply *banreply_ptr = (fs2open_banlist_reply *) PacketBuffer;
+	
+	fs2open_banmask *masks = NULL;
+	numBanMasks = 0;
+	Sleep(1); //lets give them a second
+
+	int starttime = clock();
+
+	int recvsize = 0, rs2;
+	int CheckSize = sizeof(int) * 2;
+
+
+	while ((clock() - starttime) <= timeout)
+	{
+
+		if (Socket.DataReady() && (recvsize = Socket.GetData(PacketBuffer, 16384)) != -1)
+		{
+			if (banreply_ptr->pid != PCKT_BANLIST_RPLY)
+			{
+				continue; // skip and ignore this packet
+			}
+			
+
+			CheckSize += banreply_ptr->num_ban_masks * sizeof(fs2open_banmask);
+
+			ml_printf("Precompletion Table Get: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
+			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
+			{
+				if (Socket.DataReady())
+				{
+					rs2 = Socket.GetData(PacketBuffer+recvsize, 16384-recvsize);
+					ml_printf("Banlist Completetion: Got Additional %u bytes", rs2);
+					recvsize += rs2;
+				}
+			}
+			ml_printf("PostCompletion Banlist Get: CheckSize = %u, recvsize = %u", CheckSize, recvsize);
+
+			if ((clock() - starttime) >= timeout)
+			{
+				ml_printf("Banlist Transfer completetion timed out");
+				break;
+			}
+
+			masks = new fs2open_banmask[banreply_ptr->num_ban_masks];
+			memcpy(masks, PacketBuffer + 8, sizeof(fs2open_banmask) * banreply_ptr->num_ban_masks); // packet buffer will be two ints then the array;
+			numBanMasks = banreply_ptr->num_ban_masks;
+			
+
+			return masks;
+
+		}
+
+
+	}
+
+	return NULL;
+
+}
 //**************************************************************************************************************************************************
 
 
@@ -710,4 +793,17 @@ int GetPingReply(TCP_Socket &Socket)
 	Socket.GetData((char *)&rping, sizeof(fs2open_pingreply));
 
 	return int( float(clock() - rping.time)/2.0 );
+}
+
+
+//**************************************************************************************************************************************************
+
+void SendPingReply(TCP_Socket &Socket, int tstamp)
+{
+	
+	fs2open_pingreply rping;
+	rping.pid = PCKT_PINGREPLY;
+	rping.time = tstamp;
+
+	Socket.SendData((char*)&rping, sizeof(rping));
 }

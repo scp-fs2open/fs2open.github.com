@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-05 05:09:19 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-07 21:00:07 $
+ * $Author: Kazan $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/05 05:09:19  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.9  2004/06/28 02:13:07  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -834,7 +840,8 @@ void hud_display_escort()
 	x += current_hud->Escort_entry_last[0];
 	y += current_hud->Escort_entry_last[1];
 	GR_AABITMAP(Escort_gauges[2].first_frame, x, y);
-	hud_escort_show_icon(x, y, i);
+	// Kazan - I is invalid here
+	hud_escort_show_icon(x, y, Num_escort_ships-1);
 	}
 
 /*

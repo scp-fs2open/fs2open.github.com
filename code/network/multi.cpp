@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-07-06 19:59:37 $
+ * $Revision: 2.20 $
+ * $Date: 2004-07-07 21:00:08 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/07/06 19:59:37  Kazan
+ * small multifix
+ *
  * Revision 2.18  2004/03/31 05:42:27  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -294,6 +297,7 @@
 #include "network/multi_log.h"
 #include "network/multi_rate.h"
 #include "hud/hudescort.h"
+#include "hud/hudmessage.h"
 #include "globalincs/alphacolors.h"
 #include "cfile/cfile.h"
 
@@ -1377,6 +1381,9 @@ void multi_do_frame()
 	/* FS2NetD Heartbeat Continue */
 
 
+	char packetbuffer[1024], long_str[512];
+	int *pid = (int *)packetbuffer;
+	int bytes_read, bytes_processed, itemp;
 	static int LastSend = -1;
 	if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized())
 	{
@@ -1406,9 +1413,84 @@ void multi_do_frame()
 		// stuff that should be checked every frame!
 		if (FS2OpenPXO_Socket.DataReady())
 		{
-			ml_printf("Network FS2netD received PONG: Time diff %d ms\n", GetPingReply(FS2OpenPXO_Socket));
-		}
-	}
+			
+			// Check for GWall messages - ping replies, etc
+			//ml_printf("Network FS2netD received PONG: Time diff %d ms\n", GetPingReply(FS2OpenPXO_Socket));
+			bytes_read = bytes_processed = 0;
+
+			bytes_read = FS2OpenPXO_Socket.GetData(packetbuffer, 256);
+
+			while (bytes_read>bytes_processed)
+			{
+				switch (*pid)
+				{
+					case PCKT_PING:
+						// 8 bytes should never be segmented
+						itemp = ((fs2open_ping*)(packetbuffer+bytes_processed))->time;
+						ml_printf("FS2netD received PING: %d\n", itemp);
+						SendPingReply(FS2OpenPXO_Socket, itemp);
+						bytes_processed += 8;
+						break;
+
+
+
+					case PCKT_PINGREPLY:
+						// 8 bytes should never be segmented
+						itemp = (int) float(clock() - ((fs2open_pingreply*)(packetbuffer+bytes_processed))->time)/2.0;
+						ml_printf("FS2netD received PONG: %d ms\n", itemp);
+
+						bytes_processed += 8;
+						break;
+
+					case PCKT_NETOWRK_WALL:
+						// 256 bytes _may_ be segmented
+						while (bytes_read-bytes_processed < 256)
+						{
+							bytes_read += FS2OpenPXO_Socket.GetData(packetbuffer+bytes_read, 256-bytes_read);
+						}
+						ml_printf("Fs2netD WALL received MSG: %s\n", ((fs2open_network_wall*)(packetbuffer+bytes_processed))->message);
+
+						sprintf(long_str, "FS2NETD SYSTEM MESAGE: %s", ((fs2open_network_wall*)(packetbuffer+bytes_processed))->message);
+						switch (Netgame.game_state)
+						{
+							case NETGAME_STATE_FORMING:
+							case NETGAME_STATE_BRIEFING:
+							case NETGAME_STATE_MISSION_SYNC:
+							case NETGAME_STATE_DEBRIEF:
+								multi_display_chat_msg(long_str,0,0);
+								break;
+
+							/* -- Won't Happen - multi_do_frame() is not called during paused state 
+								  so the game will not even receive the data during it
+							case NETGAME_STATE_PAUSED: // EASY!
+								send_game_chat_packet(Net_player, long_str, MULTI_MSG_ALL,NULL);
+								break;
+							*/
+
+							case NETGAME_STATE_IN_MISSION: // gotta make it paused
+								//multi_pause_request(1); 
+								//send_game_chat_packet(Net_player, long_str, MULTI_MSG_ALL,NULL);
+								HUD_printf(long_str);
+								break;
+
+							default:
+								// do-nothing
+								break;
+						}
+						bytes_processed += 256;
+						break;
+
+
+					default:
+						ml_printf("Unexpected FS2netD Packet - PID=%d\n", *pid);
+						bytes_processed=bytes_read;
+						break;
+				} // switch
+
+			} //while
+
+		} // (if FS2OpenPXO_Socket.DataReady())
+	} //if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized())
 
 	PSNET_TOP_LAYER_PROCESS();
 
