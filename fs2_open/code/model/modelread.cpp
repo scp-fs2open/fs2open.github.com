@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.39 $
- * $Date: 2004-04-03 02:55:49 $
- * $Author: bobboau $
+ * $Revision: 2.40 $
+ * $Date: 2004-04-26 12:37:10 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2004/04/03 02:55:49  bobboau
+ * commiting recent minor bug fixes
+ *
  * Revision 2.38  2004/04/01 15:31:22  taylor
  * don't use interface anis as ship textures
  *
@@ -2416,44 +2419,51 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	//a quick hack for glow mapping-Bobboau
 	//redid the way glowmaps are handeled
 
-	strcat( tmp_name, "-glow");
-	pm->glow_textures[i] = bm_load( tmp_name );
-	pm->glow_numframes[i] = 1;
-	if (pm->glow_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
+	if (Cmdline_noglow) {
+		pm->glow_textures[i] = -1;
+		pm->glow_original_textures[i] = -1;
+		pm->glow_is_ani[i] = 0;
+	} else {
+		strcpy( tmp_name, file );
+		strcat( tmp_name, "-glow" );
+		pm->glow_textures[i] = bm_load( tmp_name );
+		pm->glow_numframes[i] = 1;
+		if (pm->glow_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
 							
-		nprintf(("couldn't find %s.pcx",tmp_name));
+			nprintf(("couldn't find %s.pcx",tmp_name));
 
-		pm->glow_is_ani[i] = 1;	//this is an animated texture
-		pm->glow_textures[i] = bm_load_animation(tmp_name,  &pm->glow_numframes[i], &pm->glow_fps[i], 1);
+			pm->glow_is_ani[i] = 1;	//this is an animated texture
+			pm->glow_textures[i] = bm_load_animation(tmp_name,  &pm->glow_numframes[i], &pm->glow_fps[i], 1);
 						
-		if(pm->glow_textures[i]<0){
-		//	Warning( LOCATION, "Couldn't open glow_texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
-			pm->glow_textures[i] = -1;
-			pm->glow_is_ani[i] = 0;	//this isn't an animated texture after all
-			nprintf((" or %s.ani\n",tmp_name));
-		}else{
-			mprintf(("but I did find %s.ani, ", tmp_name));
-			mprintf(("with %d frames, ", pm->glow_numframes[i]));
-			mprintf(("and a rate of %d\n", pm->glow_fps[i]));
+			if(pm->glow_textures[i]<0){
+			//	Warning( LOCATION, "Couldn't open glow_texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
+				pm->glow_textures[i] = -1;
+				pm->glow_is_ani[i] = 0;	//this isn't an animated texture after all
+				nprintf((" or %s.ani\n",tmp_name));
+			}else{
+				mprintf(("but I did find %s.ani, ", tmp_name));
+				mprintf(("with %d frames, ", pm->glow_numframes[i]));
+				mprintf(("and a rate of %d\n", pm->glow_fps[i]));
+			}
 		}
+		pm->glow_original_textures[i] = pm->glow_textures[i];
 	}
-	pm->glow_original_textures[i] = pm->glow_textures[i];
 
-	if(Cmdline_nospec){
+	if (Cmdline_nospec) {
 		pm->specular_textures[i] = -1;
 		pm->specular_original_textures[i] = -1;
-		return;
-	}
-	strcpy(tmp_name, file);
-	strcat( tmp_name, "-shine");
-	pm->specular_textures[i] = bm_load( tmp_name );
-	if (pm->specular_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
+	} else {
+		strcpy(tmp_name, file);
+		strcat( tmp_name, "-shine");
+		pm->specular_textures[i] = bm_load( tmp_name );
+		if (pm->specular_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
 							
-		nprintf(("couldn't find %s.pcx",tmp_name));
-		pm->specular_textures[i] = pm->textures[i];
+			nprintf(("couldn't find %s.pcx",tmp_name));
+			pm->specular_textures[i] = pm->textures[i];
 
+		}
+		pm->specular_original_textures[i] = pm->specular_textures[i];
 	}
-	pm->specular_original_textures[i] = pm->specular_textures[i];
 
 
 }
