@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.68 $
- * $Date: 2004-09-01 01:26:20 $
- * $Author: phreak $
+ * $Revision: 2.69 $
+ * $Date: 2004-09-10 13:54:21 $
+ * $Author: et1 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2004/09/01 01:26:20  phreak
+ * MISSION_FLAG_USE_NEW_AI fixes for bomber+ missile selection, rapid dumbfire
+ * firing and primary weapons selection
+ *
  * Revision 2.67  2004/07/31 08:54:38  et1
  * Fixed inaccuracy problems with non-homing swarmers
  *
@@ -11785,6 +11789,10 @@ int Num_turrets_fired = 0;
 void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 {
 	float		weapon_firing_range;
+
+    // *Weapon minimum firing range -Et1
+    float WeaponMinRange;
+
 	vector	v2e;
 	object	*lep;		//	Last enemy pointer
 	model_subsystem	*tp = ss->system_info;
@@ -11888,9 +11896,23 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	// Don't try to fire beyond weapon_limit_range
 	weapon_firing_range = min(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
 
+
+    // *Weapon minimum firing range -Et1
+
+    WeaponMinRange = Weapon_info[tp->turret_weapon_type].WeaponMinRange;
+
+
 	if (Weapon_info[turret_weapon_class].wi_flags2 & WIF2_LOCAL_SSM)
 	{
+
 		weapon_firing_range=Weapon_info[turret_weapon_class].lssm_lock_range;
+
+
+        // *If weapon max range gets capped like this, ignore min range. Dunno if it's even
+        //  usable with local ssm   -Et1
+
+        WeaponMinRange = 0.0f;
+
 	}
 
 
@@ -11898,17 +11920,31 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	extern int Nebula_sec_range;
 	if (Weapon_info[turret_weapon_class].wi_flags & WIF_BEAM) {
 		if ( !((shipp->tag_left > 0) || (shipp->level2_tag_left > 0)) ) {
-			if (Nebula_sec_range) {
+			if (Nebula_sec_range)
+            {
+
 				weapon_firing_range *= float(BEAM_NEBULA_RANGE_REDUCE_FACTOR);
+
+
+                // *Scale minimum weapon range in nebula    -Et1
+
+                WeaponMinRange *= float(BEAM_NEBULA_RANGE_REDUCE_FACTOR);
 			}
 		}
 	}
 
 	if (ss->turret_enemy_objnum != -1) {
 		float dist_to_enemy = vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &gpos) - lep->radius;
-		if (dist_to_enemy > weapon_firing_range) {
+
+        // *Check both min and max range -Et1
+
+		if( dist_to_enemy > weapon_firing_range || dist_to_enemy < WeaponMinRange )
+        {
+
 			ss->turret_enemy_objnum = -1;		//	Force picking of new enemy.
+
 		}
+
 	}
 
 	// Turret spawn weapons are a special case.  They fire if there are enough enemies in the 
@@ -13759,17 +13795,20 @@ void ai_bay_depart()
 	anchor_shipnum = ship_name_lookup(Parse_names[Ships[Pl_objp->instance].departure_anchor]);
 	if (anchor_shipnum >= 0)
 	{
-		// make sure not dying or departing
-		if ( Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
-		{
-			anchor_shipnum = -1;
-		}
 
-		// make sure fighterbays not destroyed
-		if ( ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]) )
+		// make sure not dying or departing
+
+
+        // *Yeah, but make it without a crash ;)
+        //  If the anchor ship is departing/dying, anchor was being set to -1 and it was trying to check it for bays   -Et1
+
+		if ( Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING) || ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]) )
 		{
+
 			anchor_shipnum = -1;
-		}
+
+        }
+
 	}
 
 	if (anchor_shipnum < 0)
