@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -260,7 +263,7 @@ void obj_render_all(void (*render_function)(object *objp) )
 				osp->obj = objp;
 				vector to_obj;
 				vm_vec_sub( &to_obj, &objp->pos, &Eye_position );
-				osp->z = vm_vec_dot( &Eye_matrix.fvec, &to_obj );
+				osp->z = vm_vec_dot( &Eye_matrix.vec.fvec, &to_obj );
 /*
 				if ( objp->type == OBJ_SHOCKWAVE )
 					osp->z -= 2*objp->radius;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -320,6 +323,8 @@
 #include "sound.h"
 #include "missionparse.h"
 
+#ifndef NO_SOUND
+
 void gamesnd_parse_soundstbl();	// Loads in general game sounds from sounds.tbl
 void gamesnd_init_sounds();		// initializes the Snds[] and Snds_iface[] array
 void gamesnd_load_gameplay_sounds();
@@ -332,6 +337,24 @@ void gamesnd_play_iface(int n);
 void gamesnd_play_error_beep();
 
 void common_play_highlight_sound();	// called from interface code
+
+#else
+
+#define gamesnd_parse_soundstbl()
+#define gamesnd_init_sounds()
+#define gamesnd_load_gameplay_sounds()
+#define gamesnd_unload_gameplay_sounds()
+#define gamesnd_load_interface_sounds()
+#define gamesnd_unload_interface_sounds()
+#define gamesnd_preload_common_sounds()
+#define gamesnd_play_iface(n)							((void)(n))
+#define gamesnd_play_error_beep()
+
+// this is a callback, so it needs to be a real function
+void common_play_highlight_sound();
+
+#endif  // ifndef NO_SOUND
+
 
 // Misc_sounds[] holds handles for misc sounds in the game (list appears in sounds.tbl)
 #define MAX_GAME_SOUNDS					200

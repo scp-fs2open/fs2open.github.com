@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:03 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -30,6 +33,7 @@
  * $NoKeywords: $
  */
 
+#include "pstypes.h"
 #include "flak.h"
 #include "vecmat.h"
 #include "bmpman.h"
@@ -197,7 +201,7 @@ void flak_jitter_aim(vector *dir, float dist_to_target, float weapon_subsys_stre
 	if(rand_dist <= 0.0f){
 		return;
 	}
-	vm_vec_copy_scale(&rand_twist_pre, &temp.rvec, rand_dist);
+	vm_vec_copy_scale(&rand_twist_pre, &temp.vec.rvec, rand_dist);
 
 	// now rotate the twist vector around the x axis (the base aim axis) at a random angle
 	vm_rot_point_around_line(&rand_twist_post, &rand_twist_pre, fl_radian(359.0f * frand_range(0.0f, 1.0f)), &vmd_zero_vector, dir);

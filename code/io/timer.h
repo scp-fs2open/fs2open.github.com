@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/17 06:45:53  mharris
+ * More porting tweaks.  It links!  but segfaults...
+ *
+ * Revision 1.2  2002/05/10 15:55:31  mharris
+ * Moved timestamp_elapsed_safe macro from Network/multi_obj.h
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -68,7 +74,9 @@
 // 1,193,180 divided by your target frequency. Use 0 for the normal 18.2 Hz
 // interrupt rate.
 
+#ifdef WIN32
 #define TIMER_FREQUENCY 1193180
+#endif
 
 extern void timer_init();
 extern void timer_close();
@@ -156,6 +164,9 @@ int timestamp_until(int stamp);
 // checks if a specified time (in milliseconds) has elapsed past the given timestamp (which
 // should be obtained from timestamp() or timestamp(x) with a positive x)
 int timestamp_has_time_elapsed(int stamp, int time);
+
+// safer version of timestamp
+#define timestamp_elapsed_safe(_a, _b)		( (_a != 0) ? (((timestamp_ticker >= (_a)) || (timestamp_ticker < (_a - (_b + 100)))) ? 1 : 0) : 1 )
 
 
 // timing functions -------------------------------------------------------------------------------

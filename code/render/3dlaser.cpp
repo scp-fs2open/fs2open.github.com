@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:28 $
  * $Author: penguin $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -171,11 +174,11 @@ float g3_draw_laser(vector *headp, float head_width, vector *tailp, float tail_w
 
 	headx = pt1.sx;
 	heady = pt1.sy;
-	headr = (head_width*Matrix_scale.x*Canv_w2*pt1.sw);
+	headr = (head_width*Matrix_scale.xyz.x*Canv_w2*pt1.sw);
 
 	tailx = pt2.sx;
 	taily = pt2.sy;
-	tailr = (tail_width*Matrix_scale.x*Canv_w2*pt2.sw);
+	tailr = (tail_width*Matrix_scale.xyz.x*Canv_w2*pt2.sw);
 
 	float len_2d = fl_sqrt( (tailx-headx)*(tailx-headx) + (taily-heady)*(taily-heady) );
 
@@ -331,11 +334,11 @@ float g3_draw_laser_rgb(vector *headp, float head_width, vector *tailp, float ta
 
 	headx = pt1.sx;
 	heady = pt1.sy;
-	headr = (head_width*Matrix_scale.x*Canv_w2*pt1.sw);
+	headr = (head_width*Matrix_scale.xyz.x*Canv_w2*pt1.sw);
 
 	tailx = pt2.sx;
 	taily = pt2.sy;
-	tailr = (tail_width*Matrix_scale.x*Canv_w2*pt2.sw);
+	tailr = (tail_width*Matrix_scale.xyz.x*Canv_w2*pt2.sw);
 
 	float len_2d = fl_sqrt( (tailx-headx)*(tailx-headx) + (taily-heady)*(taily-heady) );
 

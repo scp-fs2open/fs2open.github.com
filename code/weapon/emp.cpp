@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:03 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 21:09:29  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -63,10 +69,9 @@
  */
 
 #include <stdarg.h>
+#include "pstypes.h"
 #include "emp.h"
 #include "timer.h"
-#include "multimsgs.h"
-#include "multiutil.h"
 #include "systemvars.h"
 #include "freespace.h"
 #include "linklist.h"
@@ -74,7 +79,13 @@
 #include "hudtarget.h"
 #include "hudgauges.h"
 #include "missiongoals.h"
+#include "hud.h"
+
+#ifndef NO_NETWORK
+#include "multimsgs.h"
+#include "multiutil.h"
 #include "multi.h"
+#endif
 
 // ----------------------------------------------------------------------------------------------------
 // EMP EFFECT DEFINES/VARS
@@ -189,10 +200,12 @@ void emp_apply(vector *pos, float inner_radius, float outer_radius, float emp_in
 		}	
 	}
 
+#ifndef NO_NETWORK
 	// if I'm only a client in a multiplayer game, do nothing
 	if(MULTIPLAYER_CLIENT){
 		return;
 	}
+#endif
 
 	// See if there are any friendly ships present, if so return without preventing msg
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
@@ -280,11 +293,13 @@ void emp_apply(vector *pos, float inner_radius, float outer_radius, float emp_in
 				emp_start_local(actual_intensity, actual_time);
 			} 
 
+#ifndef NO_NETWORK
 			// if this is a multiplayer game, notify other players of the effect
 			if(Game_mode & GM_MULTIPLAYER){		
 				Assert(MULTIPLAYER_MASTER);				
 				send_emp_effect(target->net_signature, actual_intensity, actual_time);
 			}
+#endif
 			
 			// now be sure to start the emp effect for the ship itself
 			emp_start_ship(target, actual_intensity, actual_time);
@@ -322,10 +337,12 @@ void emp_start_ship(object *ship_obj, float intensity, float time)
 	shipp->emp_intensity = intensity;
 	shipp->emp_decr = intensity / time;
 
+#ifndef NO_NETWORK
 	// multiplayer clients should bail now
 	if(MULTIPLAYER_CLIENT){
 		return;
 	}
+#endif
 
 	// do any initial AI effects
 	Assert(shipp->ai_index >= 0);
@@ -363,10 +380,12 @@ void emp_process_ship(ship *shipp)
 	// reduce the emp effect
 	shipp->emp_intensity -= shipp->emp_decr * flFrametime;
 
+#ifndef NO_NETWORK
 	// multiplayer clients should bail here
 	if(MULTIPLAYER_CLIENT){
 		return;
 	}
+#endif
 
 	// if this is a player ship, don't do anything wacky
 	if(objp->flags & OF_PLAYER_SHIP){

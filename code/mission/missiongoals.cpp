@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/13 21:43:38  mharris
+ * A little more network and sound cleanup
+ *
+ * Revision 1.3  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/07 03:00:17  mharris
+ * make Goal_text static
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -338,15 +347,19 @@
 #include "parselo.h"
 #include "sexp.h"
 #include "eventmusic.h"
-#include "multi.h"
-#include "multimsgs.h"
 #include "stand_gui.h"
 #include "ui.h"
 #include "bmpman.h"
 #include "sound.h"
 #include "gamesnd.h"
 #include "alphacolors.h"
+#include "player.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multimsgs.h"
 #include "multi_team.h"
+#endif
 
 // timestamp stuff for evaluating mission goals
 #define GOAL_TIMESTAMP				0				// make immediately eval
@@ -489,7 +502,7 @@ int Mission_goal_timestamp;
 
 mission_event Mission_events[MAX_MISSION_EVENTS];
 mission_goal Mission_goals[MAX_GOALS];		// structure for the goals of this mission
-goal_text Goal_text;
+static goal_text Goal_text;
 
 #define DIRECTIVE_SOUND_DELAY			500					// time directive success sound effect is delayed
 #define DIRECTIVE_SPECIAL_DELAY		7000					// mark special directives as true after 7 seconds
@@ -905,9 +918,11 @@ int ML_objectives_init(int x, int y, int w, int h)
 	Goal_screen_icon_x = x;
 
 	team_num = 0;			// this is the default team -- we will change it if in a multiplayer team v. team game
+#ifndef NO_NETWORK
 	if ( (Game_mode & GM_MULTIPLAYER) && (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) ){
 		team_num = Net_player->p_info.team;
 	}
+#endif
 
 	// fill up the lists so we can display the goals appropriately
 	for (i=0; i<Num_goals; i++) {
@@ -1033,10 +1048,12 @@ void mission_goal_status_change( int goal_num, int new_status)
 	Assert(goal_num < Num_goals);
 	Assert((new_status == GOAL_FAILED) || (new_status == GOAL_COMPLETE));
 
+#ifndef NO_NETWORK
 	// if in a multiplayer game, send a status change to clients
 	if ( MULTIPLAYER_MASTER ){
 		send_mission_goal_info_packet( goal_num, new_status, -1 );
 	}
+#endif
 
 	type = Mission_goals[goal_num].type & GOAL_TYPE_MASK;
 	Mission_goals[goal_num].satisfied = new_status;
@@ -1045,29 +1062,39 @@ void mission_goal_status_change( int goal_num, int new_status)
 		if ( type != BONUS_GOAL ) {
 
 			// only do HUD and music is goals are my teams goals.
+#ifndef NO_NETWORK
 			if ( (Game_mode & GM_NORMAL) || ((Net_player != NULL) && (Net_player->p_info.team == Mission_goals[goal_num].team)) ) {
+#endif
 				hud_add_objective_messsage(type, new_status);
 				if ( !Mission_goals[goal_num].flags & MGF_NO_MUSIC ) {	// maybe play event music
 					event_music_primary_goal_failed();
 				}
 				//HUD_sourced_printf(HUD_SOURCE_FAILED, "%s goal failed at time %6.1f!", Goal_type_text(type), f2fl(Missiontime) );
+#ifndef NO_NETWORK
 			}
+#endif
 		}
 		mission_log_add_entry( LOG_GOAL_FAILED, Mission_goals[goal_num].name, NULL, goal_num );
 	} else if ( new_status == GOAL_COMPLETE ) {
+#ifndef NO_NETWORK
 		if ( (Game_mode & GM_NORMAL) || ((Net_player != NULL) && (Net_player->p_info.team == Mission_goals[goal_num].team))) {
+#endif
 			hud_add_objective_messsage(type, new_status);
 			// cue for Event Music
 			if ( !(Mission_goals[goal_num].flags & MGF_NO_MUSIC) ) {
 				event_music_primary_goals_met();
 			}			
 			mission_log_add_entry( LOG_GOAL_SATISFIED, Mission_goals[goal_num].name, NULL, goal_num );
+#ifndef NO_NETWORK
 		}	
 		
 		if(Game_mode & GM_MULTIPLAYER){
 			// squad war
 			multi_team_maybe_add_score((int)(Mission_goals[goal_num].score * scoring_get_scale_factor()), Mission_goals[goal_num].team);	
-		} else {
+		}
+		else
+#endif
+		{
 			// deal with the score
 			Player->stats.m_score += (int)(Mission_goals[goal_num].score * scoring_get_scale_factor());			
 		}
@@ -1225,10 +1252,14 @@ void mission_process_event( int event )
 			Mission_events[event].timestamp = (int)Missiontime;
 			Mission_events[event].formula = -1;
 
+#ifndef NO_NETWORK
 			if(Game_mode & GM_MULTIPLAYER){
 				// squad war
 				multi_team_maybe_add_score((int)(Mission_events[event].score * scoring_get_scale_factor()), Mission_events[event].team);
-			} else {
+			} 
+			else
+#endif
+			{
 				// deal with the player's score
 				Player->stats.m_score += (int)(Mission_events[event].score * scoring_get_scale_factor());			
 			}
@@ -1240,10 +1271,12 @@ void mission_process_event( int event )
 		}
 	}
 
+#ifndef NO_NETWORK
 	// see if anything has changed	
 	if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (store_formula != Mission_events[event].formula) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
 		send_event_update_packet(event);
 	}	
+#endif
 }
 
 // Maybe play a directive success sound... need to poll since the sound is delayed from when
@@ -1324,10 +1357,12 @@ void mission_eval_goals()
 		mission_maybe_play_directive_success_sound();
 	}
 
+#ifndef NO_NETWORK
    // update goal status if playing on a multiplayer standalone server
 	if (Game_mode & GM_STANDALONE_SERVER){
 		std_multi_update_goals();
 	}
+#endif
 }
 
 //	evaluate_primary_goals() will determine if the primary goals for a mission are complete
@@ -1390,10 +1425,12 @@ void mission_goal_validation_change( int goal_num, int valid )
 		return;
 	}
 
+#ifndef NO_NETWORK
 	// if in multiplayer, then send a packet
 	if ( MULTIPLAYER_MASTER ){
 		send_mission_goal_info_packet( goal_num, -1, valid );
 	}
+#endif
 
 	// change the valid status
 	if ( valid ){

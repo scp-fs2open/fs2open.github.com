@@ -9,13 +9,16 @@
 
  /*
  * $Logfile: /Freespace2/code/Inetfile/inetgetfile.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * InternetGetFile Class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/08 02:35:09  mharris
+ * porting
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -41,6 +44,9 @@
 #include <windows.h>
 #include <stdio.h>
 #include <direct.h>
+#include <string.h>
+
+#include "pstypes.h"
 #include "cftp.h"
 #include "chttpget.h"
 

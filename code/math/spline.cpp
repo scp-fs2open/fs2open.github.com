@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/spline.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -116,21 +119,21 @@ void bez_spline::bez_get_point(vector *out, float u)
 	}
 
 	// calc
-	out->x = 0.0f;
-	out->y = 0.0f;
-	out->z = 0.0f;
+	out->xyz.x = 0.0f;
+	out->xyz.y = 0.0f;
+	out->xyz.z = 0.0f;
 	for(idx=0; idx<num_pts; idx++){
 		// bez val
 		bez_val = BEZ(idx, num_pts-1, u);
 
 		// x component
-		out->x += pts[idx].x * bez_val;
+		out->xyz.x += pts[idx].xyz.x * bez_val;
 
 		// y component
-		out->y += pts[idx].y * bez_val;
+		out->xyz.y += pts[idx].xyz.y * bez_val;
 
 		// z component
-		out->z += pts[idx].z * bez_val;
+		out->xyz.z += pts[idx].xyz.z * bez_val;
 	}
 }	
 

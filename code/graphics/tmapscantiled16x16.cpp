@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TmapScanTiled16x16.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * Routines for drawing tiled 16x16 textues

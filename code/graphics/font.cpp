@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/16 13:43:25  mharris
+ * ifdef WIN32 around (unused?) win-specific code
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -629,6 +632,7 @@ void gr8_string(int sx, int sy, char *s )
 	gr_unlock();
 }
 
+#ifdef WIN32
 HFONT MyhFont = NULL;
 extern HDC hDibDC;
 
@@ -717,6 +721,7 @@ void gr_get_string_size_win(int *w, int *h, char *text)
 	if (h)
 		*h += size.cy;
 }
+#endif
 
 char grx_printf_text[2048];	
 
@@ -847,7 +852,7 @@ int gr_create_font(char * typeface)
 			for (x1=0; x1<fnt->char_data[i].byte_width; x1++ )	{
 				uint c = *fp++;
 				if ( c > 14 ) c = 14;
-				fnt->bm_data[(x+x1)+(y+y1)*fnt->bm_w] = unsigned char(c);	
+				fnt->bm_data[(x+x1)+(y+y1)*fnt->bm_w] = (unsigned char)(c);	
 			}
 		}
 		x += fnt->char_data[i].byte_width;

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Colors.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Functions to deal with colors & alphacolors
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/26 14:10:29  mharris
+ * More testing
+ *
+ * Revision 1.3  2002/05/24 16:45:06  mharris
+ * Increased MAX_ALPHACOLORS (dunno why unix port affected this but...)
+ *
+ * Revision 1.2  2002/05/21 15:40:04  mharris
+ * Added some debug mprintfs
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -175,7 +184,7 @@
 #include "systemvars.h"
 
 //#define MAX_ALPHACOLORS 36
-#define MAX_ALPHACOLORS 72
+#define MAX_ALPHACOLORS 256
 
 alphacolor Alphacolors[MAX_ALPHACOLORS];
 static int Alphacolors_intited = 0;
@@ -408,7 +417,11 @@ void grx_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type )
 
 	if ( n==-1 )	{
 		for (n=0; n<MAX_ALPHACOLORS; n++ )	{
-			if (!Alphacolors[n].used) break;
+			if (!Alphacolors[n].used) {
+				mprintf(("Creating alphacolor #%d %02x/%02x/%02x/%02x\n",
+							n, r, g, b, alpha));
+				break;
+			}
 		}
 		if ( n == MAX_ALPHACOLORS )	
 			Error( LOCATION, "Out of alphacolors!\n" );
@@ -470,6 +483,10 @@ void grx_init_color( color * dst, int r, int g, int b )
 
 void grx_set_color_fast( color * dst )
 {
+//  	mprintf(("grx_set_color_fast: %02x/%02x/%02x/%02x (isalpha=%d, magic=%04x)\n",
+//  				dst->red, dst->green, dst->blue, dst->alpha, 
+//  				dst->is_alphacolor, dst->magic));
+
 	if ( dst->magic != 0xAC01 ) return;
 
 	if ( dst->screen_sig != gr_screen.signature )	{
@@ -485,7 +502,15 @@ void grx_set_color_fast( color * dst )
 	if ( dst->is_alphacolor )	{
 		Assert( dst->alphacolor > -1 );
 		Assert( dst->alphacolor <= MAX_ALPHACOLORS );
-		Assert( Alphacolors[dst->alphacolor].used );
+
+
+///FIXME--THIS IS TEMP ONLY
+///FIXME--THIS IS TEMP ONLY
+///FIXME--THIS IS TEMP ONLY
+//		Assert( Alphacolors[dst->alphacolor].used );
+///////////////////////
+
+
 
 		// Current_alphacolor = &Alphacolors[dst->alphacolor];
 		Current_alphacolor = NULL;
@@ -497,6 +522,8 @@ void grx_set_color_fast( color * dst )
 
 void grx_set_color( int r, int g, int b )
 {
+//	mprintf(("grx_set_color: %02x/%02x/%02x\n", r, g, b));
+
 	Assert((r >= 0) && (r < 256));
 	Assert((g >= 0) && (g < 256));
 	Assert((b >= 0) && (b < 256));

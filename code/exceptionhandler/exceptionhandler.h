@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Header file for program exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/07 02:58:10  mharris
+ * ifdef around pragma
+ *
  * Revision 1.1  2002/05/02 18:03:05  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -29,7 +32,9 @@
  * $NoKeywords: $
  */
 
+#ifdef MSVC
 #pragma once		// Include this file only once
+#endif
 
 #ifndef __EXCEPTION_HANDLER_H
 #define __EXCEPTION_HANDLER_H

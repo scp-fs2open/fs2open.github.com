@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/24 15:38:55  mharris
+ * Fixed boneheaded mistake in #defines for NO_JOYSTICK and NO_SOUND
+ *
+ * Revision 1.2  2002/05/09 22:56:41  mharris
+ * audiostream functions are do-nothing macros if NO_SOUND is defined
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -92,6 +98,7 @@
 #define ASF_NONE				3		// used to catch errors
 
 
+#ifndef NO_SOUND
 // Initializes the audio streaming library.  Called
 // automatically when the sound stuff is inited.
 void audiostream_init();
@@ -144,5 +151,29 @@ void audiostream_pause_all();	// pause all audio streams
 
 void audiostream_unpause(int i);	// unpause a particular stream
 void audiostream_unpause_all();	// unpause all audio streams
+
+#else
+
+#define audiostream_init()
+#define audiostream_close()
+#define audiostream_open(filename, type)          ((filename), (type), 0)
+#define audiostream_close_file(i, fade)           ((void)((i), (fade)))
+#define audiostream_close_all(fade)               ((void)(fade))
+#define audiostream_play(i, volume, looping)      ((void)((i), (volume), (looping)))
+#define audiostream_is_playing(i)                 ((i), 0)
+#define audiostream_stop(i, rewind, paused)       ((void)((i), (rewind), (paused)))
+#define audiostream_set_volume_all(volume, type)  ((void)((volume), (type)))
+#define audiostream_set_volume(i, volume)         ((void)((i), (volume)))
+#define audiostream_is_paused(i)                  ((i), 0)
+#define audiostream_set_byte_cutoff(i, cutoff)    ((void)((i), (cutoff)))
+#define audiostream_get_bytes_committed(i)        ((i), 0)
+#define audiostream_done_reading(i)               ((i), 1)
+#define audiostream_is_inited()                   (1)
+#define audiostream_pause(i)                      ((void)(i))
+#define audiostream_pause_all()
+#define audiostream_unpause(i)                    ((void)(i))
+#define audiostream_unpause_all()
+
+#endif // ifndef NO_SOUND
 
 #endif // _AUDIOSTR_H

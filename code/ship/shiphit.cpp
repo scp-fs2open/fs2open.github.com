@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:28 $
  * $Author: penguin $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/05/13 21:09:29  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.4  2002/05/10 20:42:45  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.3  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
+ * Revision 1.2  2002/05/03 22:07:10  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -442,8 +454,6 @@
 #include "linklist.h"
 #include "hudets.h"
 #include "hudtarget.h"
-#include "multi.h"
-#include "multiutil.h"
 #include "aigoals.h"
 #include "gamesnd.h"
 #include "eventmusic.h"
@@ -459,14 +469,19 @@
 #include "hudsquadmsg.h"
 #include "swarm.h"
 #include "shiphit.h"
-#include "multimsgs.h"
 #include "particle.h"
-#include "multi_respawn.h"
 #include "popup.h"
 #include "emp.h"
 #include "beam.h"
 #include "demo.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multiutil.h"
+#include "multimsgs.h"
+#include "multi_respawn.h"
 #include "multi_pmsg.h"
+#endif
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -567,6 +582,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector* hitpo
 		}
 	}
 
+#ifndef NO_NETWORK
 	if ( MULTIPLAYER_MASTER ) {
 		int index;
 
@@ -580,6 +596,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector* hitpo
 		}
 		send_subsystem_destroyed_packet( ship_p, index, hit );
 	}
+#endif
 
 	// next do a quick sanity check on the current hits that we are keeping for the generic subsystems
 	// I think that there might be rounding problems with the floats.  This code keeps us safe.
@@ -930,7 +947,11 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 		}
 
 		// if we're not in CLIENT_NODAMAGE multiplayer mode (which is a the NEW way of doing things)
+#ifndef NO_NETWORK
 		if (damage_to_apply > 0.1f && !(MULTIPLAYER_CLIENT) && !(Game_mode & GM_DEMO_PLAYBACK)) {
+#else
+		if (damage_to_apply > 0.1f && !(Game_mode & GM_DEMO_PLAYBACK)) {
+#endif
 			//	Decrease damage to subsystems to player ships.
 			if (ship_obj->flags & OF_PLAYER_SHIP){
 				damage_to_apply *= Skill_level_subsys_damage_scale[Game_skill_level];
@@ -951,7 +972,11 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 			}
 
 			// multiplayer clients never blow up subobj stuff on their own
+#ifndef NO_NETWORK
 			if ( (subsys->current_hits <= 0.0f) && !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)){
+#else
+			if ( (subsys->current_hits <= 0.0f) && !(Game_mode & GM_DEMO_PLAYBACK)){
+#endif
 				do_subobj_destroyed_stuff( ship_p, subsys, hitpos );
 			}
 
@@ -988,6 +1013,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			}
 		}
 
+#ifndef NO_NETWORK
 		// in multiplayer, record callsign of killer if killed by another player
 		if ( (Game_mode & GM_MULTIPLAYER) && ( Objects[killer_objp->parent].flags & OF_PLAYER_SHIP) ) {
 			int pnum;
@@ -998,7 +1024,10 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			} else {
 				nprintf(("Network", "Couldn't find player object of weapon for killer of %s\n", p->callsign));
 			}
-		} else {
+		}
+		else
+#endif
+		{
 			strcpy(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
 		}
 		break;
@@ -1012,6 +1041,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			p->flags |= PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE;
 		}
 
+#ifndef NO_NETWORK
 		if ( (Game_mode & GM_MULTIPLAYER) && ( Objects[killer_objp->parent].flags & OF_PLAYER_SHIP) ) {
 			int pnum;
 
@@ -1021,7 +1051,10 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			} else {
 				nprintf(("Network", "Couldn't find player object of shockwave for killer of %s\n", p->callsign));
 			}
-		} else {
+		}
+		else
+#endif
+		{
 			strcpy(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
 		}
 		break;
@@ -1039,6 +1072,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			p->flags |= PLAYER_FLAGS_KILLED_BY_ENGINE_WASH;
 		}
 
+#ifndef NO_NETWORK
 		// in multiplayer, record callsign of killer if killed by another player
 		if ( (Game_mode & GM_MULTIPLAYER) && (killer_objp->flags & OF_PLAYER_SHIP) ) {
 			int pnum;
@@ -1049,7 +1083,10 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			} else {
 				nprintf(("Network", "Couldn't find player object for killer of %s\n", p->callsign));
 			}
-		} else {
+		}
+		else
+#endif
+		{
 			strcpy(p->killer_parent_name, Ships[killer_objp->instance].ship_name);
 		}
 		break;
@@ -1115,6 +1152,7 @@ void show_dead_message(object *ship_obj, object *other_obj)
 	// Get a pointer to the player (we are assured a player ship was killed)
 	if ( Game_mode & GM_NORMAL ) {
 		player_p = Player;
+#ifndef NO_NETWORK
 	} else {
 		// in multiplayer, get a pointer to the player that died.
 		pnum = multi_find_player_by_object( ship_obj );
@@ -1123,12 +1161,15 @@ void show_dead_message(object *ship_obj, object *other_obj)
 			return;
 		}
 		player_p = Net_players[pnum].player;
+#endif
 	}
 
+#ifndef NO_NETWORK
 	// multiplayer clients should already have this information.
 	if ( !MULTIPLAYER_CLIENT ){
 		shiphit_record_player_killer( other_obj, player_p );
 	}
+#endif
 
 	// display a hud message is the guy killed isn't me (multiplayer only)
 	/*
@@ -1437,9 +1478,9 @@ void ship_hit_create_sparks(object *ship_obj, vector *hitpos, int submodel_num)
 		vm_vec_sub(&diff, hitpos, &temp_zero);
 
 		// find displacement from submodel origin in submodel RF
-		ship_p->sparks[n].pos.x = vm_vec_dotprod(&diff, &temp_x);
-		ship_p->sparks[n].pos.y = vm_vec_dotprod(&diff, &temp_y);
-		ship_p->sparks[n].pos.z = vm_vec_dotprod(&diff, &temp_z);
+		ship_p->sparks[n].pos.xyz.x = vm_vec_dotprod(&diff, &temp_x);
+		ship_p->sparks[n].pos.xyz.y = vm_vec_dotprod(&diff, &temp_y);
+		ship_p->sparks[n].pos.xyz.z = vm_vec_dotprod(&diff, &temp_z);
 		ship_p->sparks[n].submodel_num = submodel_num;
 		ship_p->sparks[n].end_time = timestamp(-1);
 	} else {
@@ -1506,9 +1547,9 @@ void player_died_start(object *killer_objp)
 		other_objp = Player_obj;
 	}
 
-	vm_vec_add(&Original_vec_to_deader, &Player_obj->orient.fvec, &Player_obj->orient.rvec);
+	vm_vec_add(&Original_vec_to_deader, &Player_obj->orient.vec.fvec, &Player_obj->orient.vec.rvec);
 	vm_vec_scale(&Original_vec_to_deader, 2.0f);
-	vm_vec_add2(&Original_vec_to_deader, &Player_obj->orient.uvec);
+	vm_vec_add2(&Original_vec_to_deader, &Player_obj->orient.vec.uvec);
 	vm_vec_normalize(&Original_vec_to_deader);
 
 	vector	vec_from_killer;
@@ -1519,7 +1560,7 @@ void player_died_start(object *killer_objp)
 
 	if (Player_obj == other_objp) {
 		dist = 50.0f;
-		vec_from_killer = Player_obj->orient.fvec;
+		vec_from_killer = Player_obj->orient.vec.fvec;
 	} else {
 		dist = vm_vec_normalized_dir(&vec_from_killer, &Player_obj->pos, &other_objp->pos);
 	}
@@ -1528,11 +1569,11 @@ void player_died_start(object *killer_objp)
 		dist = 100.0f;
 	vm_vec_scale_add(&Dead_camera_pos, &Player_obj->pos, &vec_from_killer, dist);
 
-	float	dot = vm_vec_dot(&Player_obj->orient.rvec, &vec_from_killer);
+	float	dot = vm_vec_dot(&Player_obj->orient.vec.rvec, &vec_from_killer);
 	if (fl_abs(dot) > 0.8f)
-		side_vec = &Player_obj->orient.fvec;
+		side_vec = &Player_obj->orient.vec.fvec;
 	else
-		side_vec = &Player_obj->orient.rvec;
+		side_vec = &Player_obj->orient.vec.rvec;
 	
 	vm_vec_scale_add2(&Dead_camera_pos, side_vec, 10.0f);
 
@@ -1675,17 +1716,17 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	} else {
 		// if added rotvel is too random, we should decrease the random component, putting a const in front of the rotvel.
 		sp->deathroll_rotvel = objp->phys_info.rotvel;
-		sp->deathroll_rotvel.x += (frand() - 0.5f) * 2.0f * rotvel_mag;
-		saturate_fabs(&sp->deathroll_rotvel.x, 0.75f*DEATHROLL_ROTVEL_CAP);
-		sp->deathroll_rotvel.y += (frand() - 0.5f) * 3.0f * rotvel_mag;
-		saturate_fabs(&sp->deathroll_rotvel.y, 0.75f*DEATHROLL_ROTVEL_CAP);
-		sp->deathroll_rotvel.z += (frand() - 0.5f) * 6.0f * rotvel_mag;
+		sp->deathroll_rotvel.xyz.x += (frand() - 0.5f) * 2.0f * rotvel_mag;
+		saturate_fabs(&sp->deathroll_rotvel.xyz.x, 0.75f*DEATHROLL_ROTVEL_CAP);
+		sp->deathroll_rotvel.xyz.y += (frand() - 0.5f) * 3.0f * rotvel_mag;
+		saturate_fabs(&sp->deathroll_rotvel.xyz.y, 0.75f*DEATHROLL_ROTVEL_CAP);
+		sp->deathroll_rotvel.xyz.z += (frand() - 0.5f) * 6.0f * rotvel_mag;
 		// make z component  2x larger than larger of x,y
-		float largest_mag = max(fl_abs(sp->deathroll_rotvel.x), fl_abs(sp->deathroll_rotvel.y));
-		if (fl_abs(sp->deathroll_rotvel.z) < 2.0f*largest_mag) {
-			sp->deathroll_rotvel.z *= (2.0f * largest_mag / fl_abs(sp->deathroll_rotvel.z));
+		float largest_mag = max(fl_abs(sp->deathroll_rotvel.xyz.x), fl_abs(sp->deathroll_rotvel.xyz.y));
+		if (fl_abs(sp->deathroll_rotvel.xyz.z) < 2.0f*largest_mag) {
+			sp->deathroll_rotvel.xyz.z *= (2.0f * largest_mag / fl_abs(sp->deathroll_rotvel.xyz.z));
 		}
-		saturate_fabs(&sp->deathroll_rotvel.z, 0.75f*DEATHROLL_ROTVEL_CAP);
+		saturate_fabs(&sp->deathroll_rotvel.xyz.z, 0.75f*DEATHROLL_ROTVEL_CAP);
 		// nprintf(("Physics", "Frame: %i rotvel_mag: %5.2f, rotvel: (%4.2f, %4.2f, %4.2f)\n", Framecount, rotvel_mag, sp->deathroll_rotvel.x, sp->deathroll_rotvel.y, sp->deathroll_rotvel.z));
 	}
 
@@ -1725,7 +1766,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 {
 	ship *sp;
 	char *killer_ship_name;
-	int killer_damage_percent = NULL;
+	int killer_damage_percent = 0;
 	object *killer_objp = NULL;
 
 	sp = &Ships[ship_obj->instance];
@@ -1745,7 +1786,11 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	game_tst_mark(ship_obj, sp);
 
 	// single player and multiplayer masters evaluate the scoring and kill stuff
+#ifndef NO_NETWORK
 	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
+#else
+	if ( !(Game_mode & GM_DEMO_PLAYBACK)) {
+#endif
 		scoring_eval_kill( ship_obj );
 
 		// ship is destroyed -- send this event to the mission log stuff to record this event.  Try to find who
@@ -1781,6 +1826,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 		}		
 
 		if(!self_destruct){
+#ifndef NO_NETWORK
 			// multiplayer
 			if(Game_mode & GM_MULTIPLAYER){
 				char name1[256] = "";
@@ -1812,7 +1858,10 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 				}
 
 				mission_log_add_entry(LOG_SHIP_DESTROYED, name1, name2, killer_damage_percent);
-			} else {
+			}
+			else
+#endif
+			{
 				// DKA: 8/23/99 allow message log in single player with no killer name
 				//if(killer_ship_name != NULL){
 				mission_log_add_entry(LOG_SHIP_DESTROYED, sp->ship_name, killer_ship_name, killer_damage_percent);
@@ -1828,6 +1877,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 
 	ship_generic_kill_stuff( ship_obj, percent_killed );
 
+#ifndef NO_NETWORK
 	// mwa -- removed 2/25/98 -- why is this here?  ship_obj->flags &= ~(OF_PLAYER_SHIP);
 	// if it is for observers, must deal with it a separate way!!!!
 	if ( MULTIPLAYER_MASTER ) {
@@ -1838,6 +1888,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 		// maybe send vaporize packet to all players
 		send_ship_kill_packet( ship_obj, other_obj, percent_killed, self_destruct );
 	}	
+#endif
 
 	// If ship from a player wing ship has died, then maybe play a scream
 	if ( !(ship_obj->flags & OF_PLAYER_SHIP) && (sp->flags & SF_FROM_PLAYER_WING) ) {
@@ -1856,6 +1907,7 @@ void ship_self_destruct( object *objp )
 	Assert ( objp->type == OBJ_SHIP );
 
 	// try and find a player
+#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_object(objp) >= 0)){
 		int np_index = multi_find_player_by_object(objp);
 		if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].player != NULL)){
@@ -1863,10 +1915,14 @@ void ship_self_destruct( object *objp )
 		} else {
 			mission_log_add_entry(LOG_SELF_DESTRUCT, Ships[objp->instance].ship_name, NULL );
 		}
-	} else {
+	}
+	else
+#endif
+	{
 		mission_log_add_entry(LOG_SELF_DESTRUCT, Ships[objp->instance].ship_name, NULL );
 	}
 	
+#ifndef NO_NETWORK
 	// check to see if this ship needs to be respawned
 	if(MULTIPLAYER_MASTER){
 		// player ship?
@@ -1884,12 +1940,13 @@ void ship_self_destruct( object *objp )
 			}
 		}
 	}
+#endif
 
 	// self destruct
 	ship_hit_kill(objp, NULL, 1.0f, 1);	
 }
 
-extern Homing_hits, Homing_misses;
+extern int Homing_hits, Homing_misses;
 
 // Call this instead of physics_apply_whack directly to 
 // deal with two ships docking properly.
@@ -1916,7 +1973,7 @@ void ship_apply_whack(vector *force, vector *new_pos, object *objp)
 		vector test;
 		vm_vec_unrotate(&test, force, &objp->orient);
 
-		game_whack_apply( -test.x, -test.y );
+		game_whack_apply( -test.xyz.x, -test.xyz.y );
 	}
 					
 	physics_apply_whack(force, new_pos, &objp->phys_info, &objp->orient, objp->phys_info.mass);
@@ -2081,8 +2138,12 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 
 	if ( (other_obj != NULL) && (other_obj->type == OBJ_WEAPON) ) {		
 		// for tvt and dogfight missions, don't scale damage
+#ifndef NO_NETWORK
 		if( (Game_mode & GM_MULTIPLAYER) && ((Netgame.type_flags & NG_TYPE_TEAM) || (Netgame.type_flags & NG_TYPE_DOGFIGHT)) ){
-		} else {
+		} 
+		else
+#endif
+		{
 			// Do a little "skill" balancing for the player in single player and coop multiplayer
 			if (ship_obj->flags & OF_PLAYER_SHIP)	{
 				damage *= Skill_level_player_damage_scale[Game_skill_level];
@@ -2093,7 +2154,11 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 
 	// if this is not a laser, or i'm not a multiplayer client
 	// apply pain to me
+#ifndef NO_NETWORK
 	if((other_obj != NULL) && ((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (ship_obj == Player_obj)){
+#else
+	if((other_obj != NULL) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) && (Player_obj != NULL) && (ship_obj == Player_obj)){
+#endif
 		ship_hit_pain(damage);
 	}	
 
@@ -2179,8 +2244,12 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 				}
 			}
 
+#ifndef NO_NETWORK
 			// multiplayer clients don't do damage
 			if(((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT) || (Game_mode & GM_DEMO_PLAYBACK)){
+#else
+			if (Game_mode & GM_DEMO_PLAYBACK){
+#endif
 			} else {
 				ship_obj->hull_strength -= damage;		
 			}
@@ -2223,7 +2292,10 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 				// If massive beam hitting small ship, vaporize  otherwise normal damage pipeline
 				// Only vaporize once
 				// multiplayer clients should skip this
-				if(!MULTIPLAYER_CLIENT){
+#ifndef NO_NETWORK
+				if(!MULTIPLAYER_CLIENT)
+#endif
+				{
 					if ( !(shipp->flags & SF_VAPORIZE) ) {
 						// Only small ships can be vaporized
 						if (sip->flags & (SIF_SMALL_SHIP)) {
@@ -2248,7 +2320,11 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 					percent_killed = 1.0f;
 				}
 
+#ifndef NO_NETWORK
 				if ( !(shipp->flags & SF_DYING) && !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)){  // if not killed, then kill
+#else
+				if ( !(shipp->flags & SF_DYING) && !(Game_mode & GM_DEMO_PLAYBACK)){  // if not killed, then kill
+#endif
 					ship_hit_kill(ship_obj, other_obj, percent_killed, 0);
 				}
 			}
@@ -2291,7 +2367,11 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 
 	//	If got hit by a weapon, tell the AI so it can react.  Only do this line in single player,
 	// or if I am the master in a multiplayer game
+#ifndef NO_NETWORK
 	if ( other_obj->type == OBJ_WEAPON && ( !(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)) )) {
+#else
+	if ( other_obj->type == OBJ_WEAPON ) {
+#endif
 		weapon	*wp;
 
 		wp = &Weapons[other_obj->instance];
@@ -2314,7 +2394,11 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 	}
 
 	// only want to check the following in single player or if I am the multiplayer game server
+#ifndef NO_NETWORK
 	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK) && ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_WEAPON)) ){
+#else
+	if ( !(Game_mode & GM_DEMO_PLAYBACK) && ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_WEAPON))) {
+#endif
 		ai_ship_hit(ship_obj, other_obj, hitpos, shield_quadrant, hit_normal);
 	}
 
@@ -2336,7 +2420,11 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 	// }
 
 	// maybe tag the ship
+#ifndef NO_NETWORK
 	if(!MULTIPLAYER_CLIENT && (other_obj->type == OBJ_WEAPON) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags & WIF_TAG)) {
+#else
+	if((other_obj->type == OBJ_WEAPON) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags & WIF_TAG)) {
+#endif
 		if (Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_level == 1) {
 			Ships[ship_obj->instance].tag_left = Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_time;
 			Ships[ship_obj->instance].tag_total = Ships[ship_obj->instance].tag_left;
@@ -2367,10 +2455,11 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 	}
 #endif
 
-	
+	#ifndef NO_SOUND
 	if ( Event_Music_battle_started == 0 )	{
 		ship_hit_music(ship_obj, other_obj);
 	}
+	#endif
 	
 
 	if (damage < 0.0f){
@@ -2432,7 +2521,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force
 		// Since an force_center wasn't specified, this is probably just a debug key
 		// to kill an object.   So pick a shield quadrant and a point on the
 		// radius of the object.   
-		vm_vec_scale_add( &world_hitpos, &ship_obj->pos, &ship_obj->orient.fvec, ship_obj->radius );
+		vm_vec_scale_add( &world_hitpos, &ship_obj->pos, &ship_obj->orient.vec.fvec, ship_obj->radius );
 
 		for (int i=0; i<MAX_SHIELD_SECTIONS; i++){
 			ship_do_damage(ship_obj, other_obj, &world_hitpos, damage/MAX_SHIELD_SECTIONS, i);
@@ -2459,7 +2548,7 @@ void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage)
 	// to kill an object.   So pick a shield quadrant and a point on the
 	// radius of the object
 	vm_vec_rand_vec_quick(&rand_vec);
-	vm_vec_scale_add(&direction_vec, &ship_obj->orient.fvec, &rand_vec, 0.5f);
+	vm_vec_scale_add(&direction_vec, &ship_obj->orient.vec.fvec, &rand_vec, 0.5f);
 	vm_vec_normalize_quick(&direction_vec);
 	vm_vec_scale_add( &world_hitpos, &ship_obj->pos, &direction_vec, ship_obj->radius );
 

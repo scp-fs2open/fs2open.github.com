@@ -9,13 +9,28 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2002/05/26 14:12:03  mharris
+ * Changed alphacolors from automatic to static
+ *
+ * Revision 1.5  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.4  2002/05/10 20:42:43  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.3  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -305,8 +320,6 @@
 #include "hudmessage.h"
 #include "sound.h"
 #include "player.h"
-#include "multi.h"
-#include "multiutil.h"
 #include "gamesnd.h"
 #include "hudsquadmsg.h"
 #include "timer.h"
@@ -332,14 +345,19 @@
 #include "asteroid.h"
 #include "starfield.h"
 #include "hudwingmanstatus.h"
-#include "multi_voice.h"
-#include "multi_pmsg.h"
 #include "redalert.h"
 #include "emp.h"
 #include "alphacolors.h"
 #include "localize.h"
 #include "supernova.h"
 #include "font.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multiutil.h"
+#include "multi_voice.h"
+#include "multi_pmsg.h"
+#endif
 
 // new values for HUD alpha
 #define HUD_NEW_ALPHA_DIM				80	
@@ -1112,6 +1130,7 @@ void hud_update_frame()
 		}
 	}
 
+	#ifndef NO_SOUND
 	// Switch to battle track when a targeted ship is hostile and within BATTLE_START_MIN_TARGET_DIST
 	if (targetp->type == OBJ_SHIP && Event_Music_battle_started == 0 ) {
 		Assert( target_shipp != NULL );
@@ -1129,6 +1148,7 @@ void hud_update_frame()
 			}
 		}
 	}
+	#endif
 
 	// Since we need to reference the player's target integrity in several places this upcoming 
 	// frame, only calculate once here
@@ -1154,7 +1174,7 @@ void HUD_render_forward_icon(object *objp)
 	vertex	v0;
 	vector	p0;
 
-	vm_vec_scale_add(&p0, &objp->pos, &objp->orient.fvec, 100.0f);
+	vm_vec_scale_add(&p0, &objp->pos, &objp->orient.vec.fvec, 100.0f);
 	g3_rotate_vertex(&v0, &p0);
 
 	gr_set_color(255, 0, 0);
@@ -1405,6 +1425,7 @@ void hud_maybe_display_supernova()
 	gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning : %.2f s", time_left);
 }
 
+#ifndef NO_NETWORK
 // render multiplayer ping time to the server if appropriate
 void hud_render_multi_ping()
 {
@@ -1433,6 +1454,7 @@ void hud_render_multi_ping()
 		}
 	}
 }
+#endif  // ifndef NO_NETWORK
 
 // render all the 2D gauges on the HUD
 void HUD_render_2d(float frametime)
@@ -1477,6 +1499,7 @@ void HUD_render_2d(float frametime)
 		// text flash gauge
 		hud_maybe_show_text_flash_icon();
 
+#ifndef NO_NETWORK
 		// maybe show the netlag icon
 		if(Game_mode & GM_MULTIPLAYER){
 			hud_maybe_show_netlag_icon();
@@ -1485,6 +1508,7 @@ void HUD_render_2d(float frametime)
 				hud_render_observer();					
 			}
 		}
+#endif
 
 		// draw the reticle
 		hud_show_reticle();
@@ -1608,16 +1632,20 @@ void HUD_render_2d(float frametime)
 		// show the directives popup and/or training popup
 		message_training_display();
 
+#ifndef NO_NETWORK
 		// if this is a multiplayer game, blit any icons/bitmaps indicating voice recording or playback
 		if(Game_mode & GM_MULTIPLAYER){
 			hud_show_voice_status();
 		}
+#endif
 	}
 
 	hud_show_messages();
 
+#ifndef NO_NETWORK
 	// maybe render any necessary multiplayer text messaging strings being entered
 	hud_maybe_render_multi_text();
+#endif
 
 	// show red alert notify gauge when moving to red alert
 	hud_maybe_display_red_alert();	
@@ -1635,7 +1663,9 @@ void HUD_render_2d(float frametime)
 		}
 	}
 
+#ifndef NO_NETWORK
 	hud_render_multi_ping();	
+#endif
 }
 
 
@@ -1665,6 +1695,7 @@ void update_throttle_sound()
 	float percent_throttle;
 //	int	throttle_pitch;
 
+#ifndef NO_NETWORK
 	// if we're a multiplayer observer, stop any engine sounds from playing and return
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 		// stop engine sound if it is playing
@@ -1676,6 +1707,7 @@ void update_throttle_sound()
 		// return
 		return;
 	}
+#endif
 
 	if ( timestamp_elapsed(throttle_sound_check_id) ) {
 
@@ -2115,6 +2147,7 @@ void hud_show_kills_gauge()
 	gr_string(Kills_text_val_coords[gr_screen.res][0]-w, Kills_text_val_coords[gr_screen.res][1], num_kills_string);
 }
 
+#ifndef NO_NETWORK
 // maybe show the netlag icon on the hud
 void hud_maybe_show_netlag_icon()
 {
@@ -2156,6 +2189,7 @@ void hud_maybe_show_netlag_icon()
 		gr_aabitmap(Netlag_coords[gr_screen.res][0], Netlag_coords[gr_screen.res][1]);
 	}
 }
+#endif  // ifndef NO_NETWORK
 
 // load in kills gauge if required
 void hud_init_kills_gauge()
@@ -2280,7 +2314,7 @@ int hud_support_get_dock_time( int objnum )
 
 		//	When faraway, use max speed, not current speed.  Might not have sped up yet.
 		if (d > 100.0f) {
-			time += (d - 100.0f)/support_objp->phys_info.max_vel.z;
+			time += (d - 100.0f)/support_objp->phys_info.max_vel.xyz.z;
 		}
 
 		//	For mid-range, use current speed.
@@ -2359,10 +2393,12 @@ void hud_support_view_blit()
 		return;
 	}
 
+#ifndef NO_NETWORK
 	// don't render this gauge for multiplayer observers
 	if((Game_mode & GM_MULTIPLAYER) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER))){
 		return;
 	}
+#endif
 
 	// If we haven't determined yet who the rearm ship is, try to!
 	if (Hud_support_objnum == -1) {
@@ -2629,9 +2665,9 @@ void hud_gauge_start_flash(int gauge_index)
 // Set the HUD color for the gauge, based on whether it is flashing or not
 void hud_set_gauge_color(int gauge_index, int bright_index)
 {
-	color use_color;
+//	color use_color;
 	int flash_status = hud_gauge_maybe_flash(gauge_index);
-	use_color = HUD_config.clr[gauge_index];
+	color *use_color = &HUD_config.clr[gauge_index];
 	int alpha;
 
 	// if we're drawing it as bright
@@ -2639,17 +2675,17 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 		switch(bright_index){
 		case HUD_C_DIM:
 			alpha = HUD_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
-			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
+			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 
 		case HUD_C_NORMAL:
 			alpha = HUD_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
-			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
+			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 
 		case HUD_C_BRIGHT:
 			alpha = HUD_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
-			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
+			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 
 		// intensity
@@ -2672,27 +2708,27 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 			if(alpha < 0){
 				alpha = 0;
 			}
-			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
+			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 		}
 	} else {
 		switch(flash_status) {
 		case 0:
 			alpha = HUD_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
-			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
+			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 		case 1:			
 			alpha = HUD_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
-			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
+			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 		default:			
 			alpha = HUD_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;	
-			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
+			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 		}
 	}
 
-	gr_set_color_fast(&use_color);	
+	gr_set_color_fast(use_color);	
 }
 
 // set the color for a gauge that may be flashing
@@ -2748,10 +2784,14 @@ void hud_add_objective_messsage(int type, int status)
 	Objective_display.goal_type=type;
 	Objective_display.goal_status=status;
 
+#ifndef NO_NETWORK
 	// if this is a multiplayer tvt game
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
 		mission_goal_fetch_num_resolved(type, &Objective_display.goal_nresolved, &Objective_display.goal_ntotal, Net_player->p_info.team);
-	} else {
+	}
+	else
+#endif
+	{
 		mission_goal_fetch_num_resolved(type, &Objective_display.goal_nresolved, &Objective_display.goal_ntotal);
 	}
 
@@ -2959,6 +2999,7 @@ int hud_wing_index_from_ship(int shipnum)
 	return (i*4+wing_slot);
 }
 
+#ifndef NO_NETWORK
 void hud_show_voice_status()
 {
 	char play_callsign[CALLSIGN_LEN+5];
@@ -2988,6 +3029,7 @@ void hud_show_voice_status()
 		break;
 	}	
 }
+#endif  // ifndef NO_NETWORK
 
 void hud_subspace_notify_abort()
 {
@@ -3026,6 +3068,7 @@ int hud_objective_notify_active()
 	return Objective_notify_active;
 }
 
+#ifndef NO_NETWORK
 // render multiplayer text message currently being entered if any
 void hud_maybe_render_multi_text()
 {
@@ -3040,6 +3083,7 @@ void hud_maybe_render_multi_text()
 		gr_string(Multi_msg_coords[gr_screen.res][0], Multi_msg_coords[gr_screen.res][1], txt);
 	}
 }
+#endif
 
 // cut any text off after (and including) '#' char
 void hud_end_string_at_first_hash_symbol(char *src)
@@ -3064,7 +3108,7 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack)
 		HUD_offset_x = 0.0f;
 		HUD_offset_y = 0.0f;
 
-		vm_vec_scale_add( &tmp, &Viewer_obj->pos, &Viewer_obj->orient.fvec, 100.0f );
+		vm_vec_scale_add( &tmp, &Viewer_obj->pos, &Viewer_obj->orient.vec.fvec, 100.0f );
 		
 		flags = g3_rotate_vertex(&pt,&tmp);
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Tmapper.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * Routines to draw a texture map.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/08 02:36:01  mharris
+ * porting
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -451,11 +454,19 @@ void tmap_scan_generic()
 // unlike C's ftol, which must always round down.  
 // But, in the tmapper, we don't care, since this is
 // just for Z and L.
-inline int tmap_ftol(float f)
+static inline int tmap_ftol(float f)
 {
-	int x;
+	  int x;
+
+#if defined(WIN32) && defined(MSVC)
 	_asm fld f
 	_asm fistp x
+#elif defined(__GNUC__) && defined(__i386__)
+	 asm ( "fistl %0" : "=m" (x) : "t" (f) );
+#else
+#error unknown processor/compiler
+#endif
+
 	return x; 
 }
 

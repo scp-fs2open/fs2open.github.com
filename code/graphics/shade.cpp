@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Shade.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * Routines to shade an area.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/08 02:36:01  mharris
+ * porting
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -188,6 +191,7 @@ void gr8_shade(int x,int y,int w,int h)
 					int left_over = w1 % 4;
 			
 					if ( wd4 > 0 )	{
+#ifdef WIN32
 						_asm push eax
 						_asm push ebx
 						_asm push ecx
@@ -237,6 +241,9 @@ void gr8_shade(int x,int y,int w,int h)
 						_asm pop ecx
 						_asm pop ebx
 						_asm pop eax
+#else
+#warning not implemented
+#endif
 					}
 
 					for (int j=0; j<left_over; j++ )	{

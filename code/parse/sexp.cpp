@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -325,16 +331,19 @@
 #include "redalert.h"
 #include "jumpnode.h"
 #include "hudshield.h"
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiutil.h"
 #include "hudescort.h"
 #include "beam.h"
 #include "supernova.h"
 #include "hudets.h"
 #include "fvi.h"
 #include "awacs.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multimsgs.h"
+#include "multiutil.h"
 #include "multi_team.h"
+#endif
 
 #define TRUE	1
 #define FALSE	0
@@ -3219,16 +3228,16 @@ int sexp_special_warp_dist( int n)
 	}
 
 	// check if within 45 degree half-angle cone of facing 
-	float dot = fl_abs(vm_vec_dotprod(&warp_objp->orient.fvec, &ship_objp->orient.fvec));
+	float dot = fl_abs(vm_vec_dotprod(&warp_objp->orient.vec.fvec, &ship_objp->orient.vec.fvec));
 	if (dot < 0.707f) {
 		return SEXP_NAN;
 	}
 
 	// get distance
 	vector hit_pt;
-	float dist = fvi_ray_plane(&hit_pt, &warp_objp->pos, &warp_objp->orient.fvec, &ship_objp->pos, &ship_objp->orient.fvec, 0.0f);
+	float dist = fvi_ray_plane(&hit_pt, &warp_objp->pos, &warp_objp->orient.vec.fvec, &ship_objp->pos, &ship_objp->orient.vec.fvec, 0.0f);
 	polymodel *pm = model_get(Ships[shipnum].modelnum);
-	dist += pm->mins.z;
+	dist += pm->mins.xyz.z;
 
 	// return as a percent of length
 	return (int) (100.0f * dist / ship_get_length(&Ships[shipnum]));
@@ -3438,6 +3447,7 @@ int sexp_is_ship_visible(int n)
 // if invalid team return 0
 int sexp_team_score(int node)
 {
+#ifndef NO_NETWORK
 	// if multi t vs t
 	if (Game_mode & GM_MULTIPLAYER) {
 		if (Netgame.type_flags & NG_TYPE_TEAM) {
@@ -3455,6 +3465,7 @@ int sexp_team_score(int node)
 			}
 		}
 	}
+#endif
 
 	return 0;
 }
@@ -4361,10 +4372,12 @@ void sexp_change_iff( int n )
 		if ( num >= 0 ) { 					// only change iff if we found the ship
 			Ships[num].team = new_team;
 
+#ifndef NO_NETWORK
 			// send a network packet if we need to
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[num].objnum >= 0)){
 				send_change_iff_packet(Objects[Ships[num].objnum].net_signature, new_team);
 			}
+#endif
 		}
 
 		n = CDR(n);
@@ -5141,6 +5154,7 @@ void sexp_grant_medal( int n )
 
 	if ( i < NUM_MEDALS ) {
 		Player->stats.m_medal_earned = i;
+#ifndef NO_NETWORK
 		if ( Game_mode & GM_MULTIPLAYER ) {
 			for ( j = 0; j < MAX_PLAYERS; j++ ) {
 				if ( MULTI_CONNECTED(Net_players[j]) ) {
@@ -5148,6 +5162,7 @@ void sexp_grant_medal( int n )
 				}
 			}
 		}
+#endif
 	}
 }
 
@@ -6007,7 +6022,7 @@ int sexp_facing(int node)
 	}
 
 	obj = Ships[sh].objnum;
-	v1 = Player_obj->orient.fvec;
+	v1 = Player_obj->orient.vec.fvec;
 	vm_vec_normalize(&v1);
 	vm_vec_sub(&v2, &Objects[obj].pos, &Player_obj->pos);
 	vm_vec_normalize(&v2);
@@ -6033,7 +6048,7 @@ int sexp_facing2(int node)
 	}
 
 	// get player fvec
-	v1 = Player_obj->orient.fvec;
+	v1 = Player_obj->orient.vec.fvec;
 	vm_vec_normalize(&v1);
 
 	// get waypoint name
@@ -6714,6 +6729,7 @@ int sexp_num_kills(int node)
 		return 0;
 	}
 	
+#ifndef NO_NETWORK
 	// in multiplayer, search through all players
 	if(Game_mode & GM_MULTIPLAYER){
 		// try and find the player
@@ -6723,7 +6739,9 @@ int sexp_num_kills(int node)
 		}
 	}
 	// if we're in single player, we're only concerned with ourself
-	else {
+	else 
+#endif
+	{
 		// me
 		if(Player_obj == &Objects[Ships[sindex].objnum]){
 			p = Player;
@@ -6754,6 +6772,7 @@ int sexp_num_type_kills(int node)
 		return 0;
 	}
 	
+#ifndef NO_NETWORK
 	// in multiplayer, search through all players
 	if(Game_mode & GM_MULTIPLAYER){
 		// try and find the player
@@ -6763,7 +6782,9 @@ int sexp_num_type_kills(int node)
 		}
 	}
 	// if we're in single player, we're only concerned with ourself
-	else {
+	else
+#endif
+	{
 		// me
 		if(Player_obj == &Objects[Ships[sindex].objnum]){
 			p = Player;
@@ -6807,6 +6828,7 @@ int sexp_num_class_kills(int node)
 		return 0;
 	}
 	
+#ifndef NO_NETWORK
 	// in multiplayer, search through all players
 	if(Game_mode & GM_MULTIPLAYER){
 		// try and find the player
@@ -6816,7 +6838,9 @@ int sexp_num_class_kills(int node)
 		}
 	}
 	// if we're in single player, we're only concerned with ourself
-	else {
+	else
+#endif
+	{
 		// me
 		if(Player_obj == &Objects[Ships[sindex].objnum]){
 			p = Player;
@@ -9440,7 +9464,9 @@ void sexp_modify_variable(char *text, int index)
 {
 	Assert(index >= 0 && index < MAX_SEXP_VARIABLES);
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
+#ifndef NO_NETWORK
 	Assert( !MULTIPLAYER_CLIENT );
+#endif
 
 	strcpy(Sexp_variables[index].text, text);
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
@@ -9455,11 +9481,12 @@ void sexp_modify_variable(int n)
 //	char *new_char_var;
 	char number_as_str[TOKEN_LENGTH];
 
+#ifndef NO_NETWORK
 	// Only do single player of multi host
 	if ( MULTIPLAYER_CLIENT ) {
 		return;
 	}
-
+#endif
 
 	if (n != -1) {
 		// get sexp_variable index

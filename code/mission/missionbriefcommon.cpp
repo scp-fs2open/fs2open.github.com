@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/09 23:02:57  mharris
+ * Not using default values for audiostream functions, since they may
+ * be macros (if NO_SOUND is defined)
+ *
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -1540,20 +1547,20 @@ void brief_render_elements(vector *pos, grid* gridp)
 	plane		tplane;
 	vector	*gv;
 	
-	if ( pos->y < 1 && pos->y > -1 )
+	if ( pos->xyz.y < 1 && pos->xyz.y > -1 )
 		return;
 
-	tplane.A = gridp->gmatrix.uvec.x;
-	tplane.B = gridp->gmatrix.uvec.y;
-	tplane.C = gridp->gmatrix.uvec.z;
+	tplane.A = gridp->gmatrix.vec.uvec.xyz.x;
+	tplane.B = gridp->gmatrix.vec.uvec.xyz.y;
+	tplane.C = gridp->gmatrix.vec.uvec.xyz.z;
 	tplane.D = gridp->planeD;
 
 	compute_point_on_plane(&gpos, &tplane, pos);
 
 	dxz = vm_vec_dist(pos, &gpos)/8.0f;
 
-	gv = &gridp->gmatrix.uvec;
-	if (gv->x * pos->x + gv->y * pos->y + gv->z * pos->z < -gridp->planeD)
+	gv = &gridp->gmatrix.vec.uvec;
+	if (gv->xyz.x * pos->xyz.x + gv->xyz.y * pos->xyz.y + gv->xyz.z * pos->xyz.z < -gridp->planeD)
 		gr_set_color(127, 127, 127);
 	else
 		gr_set_color(255, 255, 255);   // white
@@ -1564,16 +1571,16 @@ void brief_render_elements(vector *pos, grid* gridp)
 
 	tpos = gpos;
 
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.rvec, -dxz/2);
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.fvec, -dxz/2);
+	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, -dxz/2);
+	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.fvec, -dxz/2);
 	
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.rvec, dxz/2);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.fvec, dxz/2);
+	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, dxz/2);
+	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.fvec, dxz/2);
 	
 	brief_rpd_line(&gpos, &tpos);
 
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.rvec, dxz);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.rvec, -dxz);
+	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, dxz);
+	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, -dxz);
 
 	brief_rpd_line(&gpos, &tpos);
 */
@@ -1624,8 +1631,8 @@ void brief_set_camera_target(vector *pos, matrix *orient, int time)
 	Total_move_time = time_in_seconds;
 	Elapsed_time = 0.0f;
 
-	vm_vec_scale_add(&Start_lookat_pos, &Start_cam_pos, &Start_cam_orient.fvec, LOOKAT_DIST);
-	vm_vec_scale_add(&Target_lookat_pos, &Target_cam_pos, &Target_cam_orient.fvec, LOOKAT_DIST);
+	vm_vec_scale_add(&Start_lookat_pos, &Start_cam_pos, &Start_cam_orient.vec.fvec, LOOKAT_DIST);
+	vm_vec_scale_add(&Target_lookat_pos, &Target_cam_pos, &Target_cam_orient.vec.fvec, LOOKAT_DIST);
 
 	Play_highlight_flag = 1;								// once target reached, play highlight anims
 	Cam_target_reached = 0;
@@ -1943,7 +1950,7 @@ void brief_set_new_stage(vector *pos, matrix *orient, int time, int stage_num)
 
 	if ( (Last_new_stage != -1) && (num_movers == 0) && not_objv ) {
 		if ( !vm_vec_cmp( &Briefing->stages[stage_num].camera_pos, &Briefing->stages[Last_new_stage].camera_pos) ) {
-			if ( !vm_vec_cmp( &Briefing->stages[stage_num].camera_orient.fvec, &Briefing->stages[Last_new_stage].camera_orient.fvec) ){
+			if ( !vm_vec_cmp( &Briefing->stages[stage_num].camera_orient.vec.fvec, &Briefing->stages[Last_new_stage].camera_orient.vec.fvec) ){
 				new_time = 0;
 			}
 		}
@@ -2021,11 +2028,11 @@ void interpolate_matrix(matrix *result, matrix *goal, matrix *start, float elaps
 	time0 = elapsed_time / total_time;
 	time1 = (total_time - elapsed_time) / total_time;
 
-	vm_vec_copy_scale(&fvec, &start->fvec, time1);
-	vm_vec_scale_add2(&fvec, &goal->fvec, time0);
+	vm_vec_copy_scale(&fvec, &start->vec.fvec, time1);
+	vm_vec_scale_add2(&fvec, &goal->vec.fvec, time0);
 
-	vm_vec_copy_scale(&rvec, &start->rvec, time1);
-	vm_vec_scale_add2(&rvec, &goal->rvec, time0);
+	vm_vec_copy_scale(&rvec, &start->vec.rvec, time1);
+	vm_vec_scale_add2(&rvec, &goal->vec.rvec, time0);
 
 	vm_vector_2_matrix(result, &fvec, NULL, &rvec);
  }
@@ -2086,7 +2093,7 @@ void brief_camera_move(float frametime, int stage_num)
 	}
 
 	cur_dist = Start_dist + Dist_change_rate * Elapsed_time;
-	vm_vec_copy_scale(&dist_moved, &Current_cam_orient.fvec, -cur_dist);
+	vm_vec_copy_scale(&dist_moved, &Current_cam_orient.vec.fvec, -cur_dist);
 	vm_vec_add(&Current_cam_pos, &Current_lookat_pos, &dist_moved);
 	*/
 
@@ -2126,13 +2133,13 @@ void brief_maybe_create_new_grid(grid* gridp, vector *pos, matrix *orient, int f
 	float	dist_to_plane;
 	float	square_size, ux, uy, uz;
 
-	ux = tplane.A = gridp->gmatrix.uvec.x;
-	uy = tplane.B = gridp->gmatrix.uvec.y;
-	uz = tplane.C = gridp->gmatrix.uvec.z;
+	ux = tplane.A = gridp->gmatrix.vec.uvec.xyz.x;
+	uy = tplane.B = gridp->gmatrix.vec.uvec.xyz.y;
+	uz = tplane.C = gridp->gmatrix.vec.uvec.xyz.z;
 	tplane.D = gridp->planeD;
 
 	compute_point_on_plane(&c, &tplane, pos);
-	dist_to_plane = fl_abs(vm_dist_to_plane(pos, &gridp->gmatrix.uvec, &c));
+	dist_to_plane = fl_abs(vm_dist_to_plane(pos, &gridp->gmatrix.vec.uvec, &c));
 	square_size = 1.0f;
 
 	while (dist_to_plane >= 25.0f)
@@ -2141,9 +2148,9 @@ void brief_maybe_create_new_grid(grid* gridp, vector *pos, matrix *orient, int f
 		dist_to_plane /= 10.0f;
 	}
 	
-	if (fvi_ray_plane(&gpos, &gridp->center, &gridp->gmatrix.uvec, pos, &orient->fvec, 0.0f)<0.0f)	{
+	if (fvi_ray_plane(&gpos, &gridp->center, &gridp->gmatrix.vec.uvec, pos, &orient->vec.fvec, 0.0f)<0.0f)	{
 		vector p;
-		vm_vec_scale_add(&p,pos,&orient->fvec, 100.0f );
+		vm_vec_scale_add(&p,pos,&orient->vec.fvec, 100.0f );
 		compute_point_on_plane(&gpos, &tplane, &p );
 	}
 
@@ -2156,16 +2163,16 @@ void brief_maybe_create_new_grid(grid* gridp, vector *pos, matrix *orient, int f
 
 	roundoff = (int) square_size * 10;
 	if (!ux)
-		gpos.x = fl_roundoff(gpos.x, roundoff);
+		gpos.xyz.x = fl_roundoff(gpos.xyz.x, roundoff);
 	if (!uy)
-		gpos.y = fl_roundoff(gpos.y, roundoff);
+		gpos.xyz.y = fl_roundoff(gpos.xyz.y, roundoff);
 	if (!uz)
-		gpos.z = fl_roundoff(gpos.z, roundoff);
+		gpos.xyz.z = fl_roundoff(gpos.xyz.z, roundoff);
 
 	if ((square_size != gridp->square_size) ||
-		(gpos.x != gridp->center.x) ||
-		(gpos.y != gridp->center.y) ||
-		(gpos.z != gridp->center.z) || force)
+		(gpos.xyz.x != gridp->center.xyz.x) ||
+		(gpos.xyz.y != gridp->center.xyz.y) ||
+		(gpos.xyz.z != gridp->center.xyz.z) || force)
 	{
 		gridp->square_size = square_size;
 		gridp->center = gpos;
@@ -2222,13 +2229,13 @@ grid *brief_create_grid(grid *gridp, vector *forward, vector *right, vector *cen
 	
 	Assert(!IS_VEC_NULL(&uvec));
 
-	gridp->gmatrix.uvec = uvec;
+	gridp->gmatrix.vec.uvec = uvec;
 
-	gridp->planeD = -(center->x * uvec.x + center->y * uvec.y + center->z * uvec.z);
+	gridp->planeD = -(center->xyz.x * uvec.xyz.x + center->xyz.y * uvec.xyz.y + center->xyz.z * uvec.xyz.z);
 	Assert(!_isnan(gridp->planeD));
 
-	gridp->gmatrix.fvec = dfvec;
-	gridp->gmatrix.rvec = drvec;
+	gridp->gmatrix.vec.fvec = dfvec;
+	gridp->gmatrix.vec.rvec = drvec;
 
 	vm_vec_scale(&dfvec, square_size);
 	vm_vec_scale(&drvec, square_size);
@@ -2355,7 +2362,7 @@ void brief_render_grid(grid *gridp)
 
 void brief_modify_grid(grid *gridp)
 {
-	brief_create_grid(gridp, &gridp->gmatrix.fvec, &gridp->gmatrix.rvec, &gridp->center,
+	brief_create_grid(gridp, &gridp->gmatrix.vec.fvec, &gridp->gmatrix.vec.rvec, &gridp->center,
 		gridp->nrows, gridp->ncols, gridp->square_size);
 }
 
@@ -2478,7 +2485,7 @@ void brief_voice_stop(int stage_num)
 	if ( Brief_voices[stage_num] == -1 )
 		return;
 
-	audiostream_stop(Brief_voices[stage_num]);	// stream is automatically rewound
+	audiostream_stop(Brief_voices[stage_num], 1, 0);	// stream is automatically rewound
 }
 
 // pause playback of the voice for a particular briefing stage, to resume just

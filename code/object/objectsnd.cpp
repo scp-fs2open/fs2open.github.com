@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -245,11 +248,19 @@
 #include "linklist.h"
 #include "ship.h"
 #include "gamesnd.h"
-#include "ds.h"
-#include "ds3d.h"
+//#include "ds.h"
+//#include "ds3d.h"
 #include "timer.h"
 #include "3d.h"
 #include "joy_ff.h"
+
+
+// --mharris port hack--
+int ds_using_ds3d();
+int ds_get_channel(int);
+void ds3d_update_buffer(int, float, float, vector *, vector *);
+// --end hack--
+
 
 // Persistant sounds for objects (pointer to obj_snd is in object struct)
 typedef struct _obj_snd {
@@ -729,11 +740,11 @@ void obj_snd_do_frame()
 		speed_vol_multiplier = 1.0f;
 		if ( objp->type == OBJ_SHIP ) {
 			if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
-				if ( objp->phys_info.max_vel.z <= 0 ) {
+				if ( objp->phys_info.max_vel.xyz.z <= 0 ) {
 					percent_max = 0.0f;
 				}
 				else
-					percent_max = objp->phys_info.fspeed / objp->phys_info.max_vel.z;
+					percent_max = objp->phys_info.fspeed / objp->phys_info.max_vel.xyz.z;
 
 				if ( percent_max >= 0.5 )
 					speed_vol_multiplier = 1.0f;

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * main upper level code for pasring stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -334,9 +340,6 @@
 #include "lighting.h"
 #include "eventmusic.h"
 #include "missionbriefcommon.h"
-#include "multi.h"
-#include "multiutil.h"
-#include "multimsgs.h"
 #include "shipfx.h"
 #include "debris.h"
 #include "cfile.h"
@@ -354,15 +357,26 @@
 #include "staticrand.h"
 #include "missioncmdbrief.h"
 #include "redalert.h"
-#include "multi_respawn.h"
 #include "hudwingmanstatus.h"
 #include "jumpnode.h"
-#include "multi_endgame.h"
 #include "localize.h"
 #include "neb.h"
 #include "demo.h"
 #include "neblightning.h"
 #include "fvi.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multiutil.h"
+#include "multimsgs.h"
+#include "multi_respawn.h"
+#include "multi_endgame.h"
+#else
+  // mharris FIXME: temp until I figure out if needed...
+  //extern ushort netmisc_calc_checksum( void * vptr, int len );
+  //extern ushort multi_assign_network_signature( int what_kind );
+  #include "multiutil.h"
+#endif
 
 LOCAL struct {
 	p_object *docker;
@@ -869,7 +883,11 @@ void parse_player_info2(mission *pm)
 		for (i=0; i<total; i++) {
 			// in a campaign, see if the player is allowed the ships or not.  Remove them from the
 			// pool if they are not allowed
+#ifndef NO_NETWORK
 			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+#else
+			if (Game_mode & GM_CAMPAIGN_MODE ) {
+#endif
 				if ( !Campaign.ships_allowed[list[i*2]] )
 					continue;
 			}
@@ -890,7 +908,11 @@ void parse_player_info2(mission *pm)
 			ptr->default_ship = ship_info_lookup(str);
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
 			// do we do?  choose the first allowable one?
+#ifndef NO_NETWORK
 			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+#else
+			if (Game_mode & GM_CAMPAIGN_MODE) {
+#endif
 				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
 					for (i = 0; i < MAX_SHIP_TYPES; i++ ) {
 						if ( Campaign.ships_allowed[ptr->default_ship] ) {
@@ -917,7 +939,11 @@ void parse_player_info2(mission *pm)
 			for (i=0; i<total; i++) {
 				// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
 				// pool if they are not allowed
+#ifndef NO_NETWORK
 				if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+#else
+				if (Game_mode & GM_CAMPAIGN_MODE) {
+#endif
 					if ( !Campaign.weapons_allowed[list2[i*2]] )
 						continue;
 				}
@@ -1352,10 +1378,10 @@ void position_ship_for_knossos_warpin(p_object *objp, int shipnum, int objnum)
 
 		// position self for warp on plane of device
 		vector new_point;
-		float dist = fvi_ray_plane(&new_point, &Objects[knossos_num].pos, &Objects[knossos_num].orient.fvec, &objp->pos, &objp->orient.fvec, 0.0f);
+		float dist = fvi_ray_plane(&new_point, &Objects[knossos_num].pos, &Objects[knossos_num].orient.vec.fvec, &objp->pos, &objp->orient.vec.fvec, 0.0f);
 		polymodel *pm = model_get(Ship_info[Ships[shipnum].ship_info_index].modelnum);
-		float desired_dist = -pm->mins.z;
-		vm_vec_scale_add2(&Objects[objnum].pos, &Objects[objnum].orient.fvec, (dist - desired_dist));
+		float desired_dist = -pm->mins.xyz.z;
+		vm_vec_scale_add2(&Objects[objnum].pos, &Objects[objnum].orient.vec.fvec, (dist - desired_dist));
 		// if ship is BIG or HUGE, make it go through the center of the knossos
 		if (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_HUGE_SHIP) {
 			vector offset;
@@ -1395,6 +1421,7 @@ int parse_create_object(p_object *objp)
 	Ships[shipnum].escort_priority = objp->escort_priority;
 	Ships[shipnum].special_exp_index = objp->special_exp_index;
 	Ships[shipnum].respawn_priority = objp->respawn_priority;
+#ifndef NO_NETWORK
 	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (objp->wingnum >= 0)){
 		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
@@ -1403,6 +1430,7 @@ int parse_create_object(p_object *objp)
 			} 
 		}
 	}
+#endif
 
 	sip = &Ship_info[Ships[shipnum].ship_info_index];
 
@@ -1693,7 +1721,7 @@ int parse_create_object(p_object *objp)
 		// initial velocities now do not apply to ships which warp in after mission starts
 		if ( !(Game_mode & GM_IN_MISSION) ) {
 			Objects[objnum].phys_info.speed = (float)objp->initial_velocity * sip->max_speed / 100.0f;
-			Objects[objnum].phys_info.vel.z = Objects[objnum].phys_info.speed;
+			Objects[objnum].phys_info.vel.xyz.z = Objects[objnum].phys_info.speed;
 			Objects[objnum].phys_info.prev_ramp_vel = Objects[objnum].phys_info.vel;
 			Objects[objnum].phys_info.desired_vel = Objects[objnum].phys_info.vel;
 		}
@@ -1734,8 +1762,10 @@ int parse_create_object(p_object *objp)
 				// position has already been determined.  Don't actually set the variable since we
 				// don't want the warp effect to show if coming from a dock bay.
 				location = objp->arrival_location;
+#ifndef NO_NETWORK
 				if ( MULTIPLAYER_CLIENT )
 					location = ARRIVE_AT_LOCATION;
+#endif
 				mission_set_arrival_location(objp->arrival_anchor, location, objp->arrival_distance, objnum, NULL, NULL);
 				if ( objp->arrival_location != ARRIVE_FROM_DOCK_BAY )
 					shipfx_warpin_start( &Objects[objnum] );
@@ -1754,6 +1784,7 @@ int parse_create_object(p_object *objp)
 		}
 	}
 
+#ifndef NO_NETWORK
 	// for multiplayer games, make a call to the network code to assign the object signature
 	// of the newly created object.  The network host of the netgame will always assign a signature
 	// to a newly created object.  The network signature will get to the clients of the game in
@@ -1765,6 +1796,7 @@ int parse_create_object(p_object *objp)
 			send_ship_create_packet( &Objects[objnum], (objp==Arriving_support_ship)?1:0 );
 		}
 	}
+#endif
 
 	// if recording a demo, post the event
 	if(Game_mode & GM_DEMO_RECORD){
@@ -1810,10 +1842,12 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		objp->ship_class = 0;
 	}
 
+#ifndef NO_NETWORK
 	// if this is a multiplayer dogfight mission, skip support ships
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[objp->ship_class].flags & SIF_SUPPORT)){
 		return 0;
 	}		
+#endif
 
 	// optional alternate name type
 	objp->alt_type_index = -1;
@@ -2066,12 +2100,14 @@ int parse_object(mission *pm, int flag, p_object *objp)
 
 	objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
 
+#ifndef NO_NETWORK
 	// for multiplayer, assign a network signature to this parse object.  Doing this here will
 	// allow servers to use the signature with clients when creating new ships, instead of having
 	// to pass ship names all the time
 	if ( Game_mode & GM_MULTIPLAYER ){
 		objp->net_signature = multi_assign_network_signature( MULTI_SIG_SHIP );
 	}
+#endif
 
 	// set the wing_status position to be -1 for all objects.  This will get set to an appropriate
 	// value when the wing positions are finally determined.
@@ -2103,10 +2139,12 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		list_append(&ship_arrival_list, &ship_arrivals[num_ship_arrivals]);
 		num_ship_arrivals++;
 	}
+#ifndef NO_NETWORK
 	// ingame joiners bail here.
 	else if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN)){
 		return 1;
 	}
+#endif
 	else {
 		int	real_objnum;
 
@@ -2433,9 +2471,11 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			// this wing
 			// also, if multplayer, set the parse object's net signature to be wing's net signature
 			// base + total_arrived_count (before adding 1)
+#ifndef NO_NETWORK
 			if ( Game_mode & GM_MULTIPLAYER ){
 				objp->net_signature = (ushort)(wingp->net_signature + wingp->total_arrived_count);
 			}
+#endif
 
 			wingp->total_arrived_count++;
 			if ( wingp->num_waves > 1 ){
@@ -2472,7 +2512,11 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			// keep any player ship on the parse object list -- used for respawns
 			// 5/8/98 -- MWA -- don't remove ships from the list when you are ingame joining
 			if ( !(objp->flags & P_OF_PLAYER_START) ) {
+#ifndef NO_NETWORK
 				if ( (Game_mode & GM_NORMAL) || !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ) {
+#else
+				if ( (Game_mode & GM_NORMAL) ) {
+#endif
 					if ( wingp->num_waves == wingp->current_wave ) {	// only remove ship if one wave in wing
 						list_remove( &ship_arrival_list, objp);			// remove objp from the list
 						if ( objp->ai_goals != -1 ){
@@ -2482,13 +2526,17 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 				}
 			}
 
+#ifndef NO_NETWORK
 			// flag ship with SF_FROM_PLAYER_WING if a member of player starting wings
 			if ( (Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) ) {
 				// but for team vs. team games, then just check the alpha and zeta wings
 				if ( !(stricmp(Starting_wing_names[STARTING_WING_ALPHA], wingp->name)) || !(stricmp(Starting_wing_names[STARTING_WING_ZETA], wingp->name)) ) {
 					Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
 				}
-			} else {
+			} 
+			else
+#endif
+			{
 				for (int i = 0; i < MAX_STARTING_WINGS; i++ ) {
 					if ( !stricmp(Starting_wing_names[i], wingp->name) ) {
 						Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
@@ -2537,11 +2585,13 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// possibly change the location where these ships arrive based on the wings arrival location
 		mission_set_wing_arrival_location( wingp, num_create_save );
 
+#ifndef NO_NETWORK
 		// if in multiplayer (and I am the host) and in the mission, send a wing create command to all
 		// other players
 		if ( MULTIPLAYER_MASTER ){
 			send_wing_create_packet( wingp, num_create_save, pre_create_count );
 		}
+#endif
 
 #ifndef NDEBUG
 		// test code to check to be sure that all ships in the wing are ignoring the same types
@@ -2712,6 +2762,7 @@ void parse_wing(mission *pm)
 		wingp->ai_goals[i].priority = -1;
 	}
 
+#ifndef NO_NETWORK
 	// 7/13/98 -- MWA
 	// error checking against the player ship wings to be sure that wave count doesn't exceed one for
 	// these wings.
@@ -2740,6 +2791,7 @@ void parse_wing(mission *pm)
 			Error(LOCATION, "Too many total ships in mission (%d) for network signature assignment", SHIP_SIG_MAX);
 		multi_set_network_signature( (ushort)next_signature, MULTI_SIG_SHIP );
 	}
+#endif
 
 	for (i=0; i<MAX_SHIPS_PER_WING; i++)
 		wingp->ship_index[i] = -1;
@@ -3489,14 +3541,18 @@ void post_process_mission()
 	Player_ai->targeted_subsys_parent = -1;
 
 	// determine if player start has initial velocity and set forward cruise percent to relect this
-	if ( Player_obj->phys_info.vel.z > 0.0f )
-		Player->ci.forward_cruise_percent = Player_obj->phys_info.vel.z / Player_ship->current_max_speed * 100.0f;
+	if ( Player_obj->phys_info.vel.xyz.z > 0.0f )
+		Player->ci.forward_cruise_percent = Player_obj->phys_info.vel.xyz.z / Player_ship->current_max_speed * 100.0f;
 
+#ifndef NO_NETWORK
 	// put in hard coded starting wing names.
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		Starting_wings[0] = wing_name_lookup(Starting_wing_names[0],1);
 		Starting_wings[1] = wing_name_lookup(Starting_wing_names[MAX_STARTING_WINGS],1);
-	} else {
+	}
+	else
+#endif
+	{
 		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
 			Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
 		}
@@ -3672,9 +3728,11 @@ void post_process_mission()
 	Mission_departure_timestamp = timestamp( DEPARTURE_TIMESTAMP );
 	Mission_end_time = -1;
 
+#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){ 
 		multi_respawn_build_points();
 	}	
+#endif
 
 	// maybe reset hotkey defaults when loading new mission
 	if ( Last_file_checksum != Current_file_checksum ){
@@ -4125,7 +4183,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			return 0;
 		}
 		Objects[objnum].pos = pos;
-		Objects[objnum].orient.fvec = fvec;
+		Objects[objnum].orient.vec.fvec = fvec;
 	} else {
 
 		// AL: ensure dist > 0 (otherwise get errors in vecmat)
@@ -4165,9 +4223,9 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 				r2 = static_rand(Objects[objnum].net_signature+1) < RAND_MAX/2 ? -1 : 1;
 			}
 
-			vm_vec_copy_scale(&t1, &(Objects[anchor_objnum].orient.fvec), x);
-			vm_vec_copy_scale(&t2, &(Objects[anchor_objnum].orient.rvec), (1.0f - x) * r1);
-			vm_vec_copy_scale(&t3, &(Objects[anchor_objnum].orient.uvec), (1.0f - x) * r2);
+			vm_vec_copy_scale(&t1, &(Objects[anchor_objnum].orient.vec.fvec), x);
+			vm_vec_copy_scale(&t2, &(Objects[anchor_objnum].orient.vec.rvec), (1.0f - x) * r1);
+			vm_vec_copy_scale(&t3, &(Objects[anchor_objnum].orient.vec.uvec), (1.0f - x) * r2);
 
 			vm_vec_add(&rand_vec, &t1, &t2);
 			vm_vec_add2(&rand_vec, &t3);
@@ -4214,10 +4272,12 @@ void mission_parse_mark_reinforcement_available(char *name)
 			if ( !(rp->flags & RF_IS_AVAILABLE) ) {
 				rp->flags |= RF_IS_AVAILABLE;
 
+#ifndef NO_NETWORK
 				// tell all of the clients.
 				if ( MULTIPLAYER_MASTER ) {
 					send_reinforcement_avail( i );
 				}
+#endif
 			}
 			return;
 		}
@@ -4374,7 +4434,11 @@ void mission_eval_arrivals()
 	// before checking arrivals, check to see if we should play a message concerning arrivals
 	// of other wings.  We use the timestamps to delay the arrival message slightly for
 	// better effect
+#ifndef NO_NETWORK
 	if ( timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) ){
+#else
+	if ( timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) ) {
+#endif
 		int rship, use_terran;
 
 		// use terran command 25% of time
@@ -4488,6 +4552,7 @@ void mission_eval_arrivals()
 					continue;
 				}
 
+#ifndef NO_NETWORK
 				// multiplayer team vs. team
 				if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 					// send a hostile wing arrived message
@@ -4508,8 +4573,10 @@ void mission_eval_arrivals()
 						message_send_builtin_to_player( MESSAGE_ARRIVE_ENEMY, NULL, MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter );
 					}
 				} 
-				// everything else
-					else {
+				else
+#endif
+				{
+					// everything else
 					// see if this is a starting player wing
 					if ( i == Starting_wings[STARTING_WING_BETA] ) {					// this is the beta wing
 						rship = ship_get_random_ship_in_wing( i, SHIP_GET_NO_PLAYERS );
@@ -4814,9 +4881,11 @@ void mission_add_to_arriving_support( object *requester_objp )
 	strcpy( Arriving_repair_targets[Num_arriving_repair_targets], Ships[requester_objp->instance].ship_name );
 	Num_arriving_repair_targets++;
 
+#ifndef NO_NETWORK
 	if ( MULTIPLAYER_MASTER ){
 		multi_maybe_send_repair_info( requester_objp, NULL, REPAIR_INFO_WARP_ADD );
 	}	
+#endif
 }
 
 extern int pp_collide_any(vector *curpos, vector *goalpos, float radius, object *ignore_objp1, object *ignore_objp2, int big_only_flag);
@@ -4836,9 +4905,9 @@ int get_warp_in_pos(vector *pos, object *objp, float x, float y, float z)
 
 	*pos = objp->pos;
 
-	vm_vec_scale_add2( pos, &objp->orient.rvec, x*rand_val*800.0f);
-	vm_vec_scale_add2( pos, &objp->orient.uvec, y*rand_val*800.0f);
-	vm_vec_scale_add2( pos, &objp->orient.fvec, z*rand_val*800.0f);
+	vm_vec_scale_add2( pos, &objp->orient.vec.rvec, x*rand_val*800.0f);
+	vm_vec_scale_add2( pos, &objp->orient.vec.uvec, y*rand_val*800.0f);
+	vm_vec_scale_add2( pos, &objp->orient.vec.fvec, z*rand_val*800.0f);
 
 	return pp_collide_any(&objp->pos, pos, objp->radius, objp, NULL, 1);
 }
@@ -4873,8 +4942,8 @@ void mission_warp_in_support_ship( object *requester_objp )
 		else
 			vm_vec_scale( &warp
 	} else {
-		// take -player_pos.fvec scaled by 1000.0f;
-		warp_in_pos = Player_obj->orient.fvec;
+		// take -player_pos.vec.fvec scaled by 1000.0f;
+		warp_in_pos = Player_obj->orient.vec.fvec;
 		vm_vec_scale( &warp_in_pos, -1000.0f );
 	}
 	*/
@@ -5049,8 +5118,10 @@ int mission_remove_scheduled_repair( object *objp )
 
 	Num_arriving_repair_targets--;
 
+#ifndef NO_NETWORK
 	if ( MULTIPLAYER_MASTER )
 		multi_maybe_send_repair_info( objp, NULL, REPAIR_INFO_WARP_REMOVE );
+#endif
 
 	return 1;
 }
@@ -5076,7 +5147,7 @@ int mission_parse_lookup_alt(char *name)
 	return -1;
 }
 
-static mission_parse_lookup_alt_index_warn = 1;
+static int mission_parse_lookup_alt_index_warn = 1;
 void mission_parse_lookup_alt_index(int index, char *out)
 {
 	// sanity

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDObserver.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * $NoKeywords: $
@@ -20,7 +20,6 @@
 #include "hud.h"
 #include "hudobserver.h"
 #include "freespace.h"
-#include "multi.h"
 #include "font.h"
 #include "missiongoals.h"
 #include "3d.h"
@@ -32,6 +31,10 @@
 #include "radar.h"
 #include "hudconfig.h"
 #include "alphacolors.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#endif
 
 // use these to redirect Player_ship and Player_ai when switching into ai mode
 ship Hud_obs_ship;

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:00 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -63,9 +69,12 @@
 #include "missionparse.h"
 #include "neb.h"
 #include "neblightning.h"
-#include "multi.h"
 #include "emp.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
 #include "multimsgs.h"
+#endif
 
 // ------------------------------------------------------------------------------------------------------
 // NEBULA LIGHTNING DEFINES/VARS
@@ -456,9 +465,9 @@ void nebl_init()
 
 		// flavor
 		required_string("+flavor:");
-		stuff_float(&s->flavor.x);
-		stuff_float(&s->flavor.y);
-		stuff_float(&s->flavor.z);
+		stuff_float(&s->flavor.xyz.x);
+		stuff_float(&s->flavor.xyz.y);
+		stuff_float(&s->flavor.xyz.z);
 
 		// frequencies
 		required_string("+random_freq:");
@@ -653,10 +662,12 @@ void nebl_process()
 		return;
 	}		
 	
+#ifndef NO_NETWORK
 	// non servers in multiplayer don't do this
 	if((Game_mode & GM_MULTIPLAYER) && !MULTIPLAYER_MASTER){
 		return;
 	}
+#endif
 
 	// if there's no chosen storm
 	if(Storm == NULL){
@@ -799,7 +810,7 @@ void nebl_bolt(int type, vector *start, vector *strike)
 
 	// setup the rest of the important bolt data
 	if(vm_vec_same(&Nebl_bolt_start, &Nebl_bolt_strike)){
-		Nebl_bolt_strike.z += 150.0f;
+		Nebl_bolt_strike.xyz.z += 150.0f;
 	}
 	Nebl_bolt_len = vm_vec_dist(&Nebl_bolt_start, &Nebl_bolt_strike);	
 	vm_vec_sub(&dir, &Nebl_bolt_strike, &Nebl_bolt_start);
@@ -828,10 +839,12 @@ void nebl_bolt(int type, vector *start, vector *strike)
 	bolt->used = 1;	
 	bolt->width = bi->b_poly_pct * bolt_len;
 
+#ifndef NO_NETWORK
 	// if i'm a multiplayer master, send a bolt packet
 	if(MULTIPLAYER_MASTER){
 		send_lightning_packet(type, start, strike);
 	}
+#endif
 }
 
 // get the current # of active lightning bolts
@@ -990,9 +1003,9 @@ int nebl_gen(vector *left, vector *right, float depth, float max_depth, int chil
 	}
 	
 	float scaler = 0.30f;
-	tmp.x += (frand()-0.5f)*d*scaler;
-	tmp.y += (frand()-0.5f)*d*scaler;
-	tmp.z += (frand()-0.5f)*d*scaler;
+	tmp.xyz.x += (frand()-0.5f)*d*scaler;
+	tmp.xyz.y += (frand()-0.5f)*d*scaler;
+	tmp.xyz.z += (frand()-0.5f)*d*scaler;
 
 	// generate left half
 	l_node *ll = NULL;

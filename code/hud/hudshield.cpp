@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -183,7 +186,10 @@
 #include "hudshield.h"
 #include "hudescort.h"
 #include "emp.h"
+
+#ifndef NO_NETWORK
 #include "multi.h"
+#endif
 
 #define NUM_SHIELD_LEVELS		8
 
@@ -532,7 +538,11 @@ void hud_shield_equalize(object *objp, player *pl)
 		strength = get_shield_strength(objp);
 		if ( strength != 0 ) {
 			// maybe impose a 2% penalty - server side and single player only
+#ifndef NO_NETWORK
 			if(!MULTIPLAYER_CLIENT &&  (pl->shield_penalty_stamp < 0) || timestamp_elapsed_safe(pl->shield_penalty_stamp, 1000) ){
+#else
+			if((pl->shield_penalty_stamp < 0) || timestamp_elapsed_safe(pl->shield_penalty_stamp, 1000) ){
+#endif
 				strength *= 0.98f;
 
 				// reset the penalty timestamp

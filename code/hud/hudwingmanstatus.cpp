@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -449,6 +452,7 @@ void hud_wingman_status_init_late_wings()
 */
 }
 
+#ifndef NO_NETWORK
 // function which marks the other team wing as not used for the wingman status gauge
 void hud_wingman_kill_multi_teams()
 {
@@ -472,6 +476,7 @@ void hud_wingman_kill_multi_teams()
 
 	HUD_wingman_status[wing_index].ignore = 1;
 }
+#endif
 
 
 // called once per level to init the wingman status gauge.  Loads in the frames the first time
@@ -504,7 +509,9 @@ void hud_init_wingman_status_gauge()
 	}
 
 	hud_wingman_status_init_late_wings();
+#ifndef NO_NETWORK
 	hud_wingman_kill_multi_teams();
+#endif
 	hud_wingman_status_update();
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/09 13:52:26  mharris
+ * Removed dead test code
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -559,9 +562,6 @@ void outwnd_print(char *id, char *tmp)
 	if(gr_screen.mode == GR_DIRECT3D){
 		return;
 	}
-//	if ( D3D_enabled )	{
-//		return;		// Direct3D seems to hang sometimes printing to window
-//	}
 
 	if ( outwnd_disabled ){
 		return;

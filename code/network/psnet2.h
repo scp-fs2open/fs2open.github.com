@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Header file for the application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -140,7 +143,9 @@ extern uint Unreliable_socket;	// all PXO API modules should use this to send an
 //
 
 struct sockaddr;
+#ifdef WINDOWS
 struct fd_set;
+#endif
 struct timeval;
 
 // wrappers around select() and recvfrom() for lagging/losing data, and for sorting through different packet types

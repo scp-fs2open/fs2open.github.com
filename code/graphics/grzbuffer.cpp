@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrZbuffer.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * Code for the software renderer's zbuffer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/08 02:36:01  mharris
+ * porting
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -31,6 +34,7 @@
  * $NoKeywords: $
  */
 
+#include "pstypes.h"
 #include "osapi.h"
 #include "2d.h"
 #include "floating.h"

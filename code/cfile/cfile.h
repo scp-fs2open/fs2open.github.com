@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/16 06:03:29  mharris
+ * Unix port changes
+ *
+ * Revision 1.2  2002/05/09 22:58:08  mharris
+ * Added ifdef WIN32 around change-drive functions
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -334,6 +340,16 @@
 #include <time.h>
 #include "pstypes.h"
 
+#if defined WIN32
+  #define DIR_SEPARATOR_CHAR '\\'
+  #define DIR_SEPARATOR_STR  "\\"
+#elif defined unix
+  #define DIR_SEPARATOR_CHAR '/'
+  #define DIR_SEPARATOR_STR  "/"
+#else
+  #error unknown OS
+#endif
+
 #define CF_EOF (-1)
 
 #define CF_SEEK_SET (0)
@@ -591,7 +607,10 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 
 // Functions to change directories
 int cfile_chdir(char *dir);
+
+#ifdef WIN32
 int cfile_chdrive(int DriveNum, int flag);
+#endif
 
 // push current directory on a 'stack' (so we can restore it) and change the directory
 int cfile_push_chdir(int type);

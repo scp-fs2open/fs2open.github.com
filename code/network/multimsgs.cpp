@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:00 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:26 $
  * $Author: penguin $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/09 23:01:24  mharris
+ * porting
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -339,6 +342,7 @@
 
 #include <limits.h>
 #include <io.h>         // for findfirst/findnext, etc
+#include "pstypes.h"
 #include "osapi.h"
 #include "multimsgs.h"
 #include "multiutil.h"
@@ -3174,7 +3178,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 
 	// build the fire turret packet.  
 	BUILD_HEADER(FIRE_TURRET_WEAPON);	
-	packet_size += multi_pack_unpack_position(1, data + packet_size, &objp->orient.fvec);
+	packet_size += multi_pack_unpack_position(1, data + packet_size, &objp->orient.vec.fvec);
 	ADD_DATA( has_sig );
 	ADD_DATA( pnet_signature );	
 	if(has_sig){		
@@ -6109,7 +6113,7 @@ void send_shield_explosion_packet( int objnum, int tri_num, vector hit_pos )
 			}
 
 			vm_vec_normalized_dir(&eye_to_obj_vec, &Objects[objnum].pos, &eye_pos);
-			dot = vm_vec_dot(&eye_orient.fvec, &eye_to_obj_vec);
+			dot = vm_vec_dot(&eye_orient.vec.fvec, &eye_to_obj_vec);
 
 			if ( dot < OBJ_VISIBILITY_DOT ){
 				continue;
@@ -7677,7 +7681,7 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 
 	// build the fire turret packet.  
 	BUILD_HEADER(FLAK_FIRED);	
-	packet_size += multi_pack_unpack_position(1, data + packet_size, &objp->orient.fvec);	
+	packet_size += multi_pack_unpack_position(1, data + packet_size, &objp->orient.vec.fvec);	
 	ADD_DATA( pnet_signature );		
 	ADD_DATA( cindex );
 	val = (short)ssp->submodel_info_1.angs.h;

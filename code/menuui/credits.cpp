@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/17 03:05:08  mharris
+ * more porting tweaks
+ *
+ * Revision 1.3  2002/05/16 06:07:38  mharris
+ * more ifndef NO_SOUND
+ *
+ * Revision 1.2  2002/05/09 23:02:52  mharris
+ * Not using default values for audiostream functions, since they may
+ * be macros (if NO_SOUND is defined)
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -265,14 +275,17 @@ float Credit_start_pos, Credit_stop_pos, Credit_position = 0.0f;
 
 void credits_stop_music()
 {
+#ifndef NO_SOUND
 	if ( Credits_music_handle != -1 ) {
-		audiostream_close_file(Credits_music_handle);
+		audiostream_close_file(Credits_music_handle, 1);
 		Credits_music_handle = -1;
 	}
+#endif
 }
 
 void credits_load_music(char* fname)
 {
+#ifndef NO_SOUND
 	if ( Credits_music_handle != -1 ){
 		return;
 	}
@@ -280,17 +293,20 @@ void credits_load_music(char* fname)
 	if ( fname ){
 		Credits_music_handle = audiostream_open( fname, ASF_EVENTMUSIC );
 	}
+#endif
 }
 
 void credits_start_music()
 {
+#ifndef NO_SOUND
 	if (Credits_music_handle != -1) {
 		if ( !audiostream_is_playing(Credits_music_handle) ){
-			audiostream_play(Credits_music_handle, Master_event_music_volume);
+			audiostream_play(Credits_music_handle, Master_event_music_volume, 1);
 		}
 	} else {
 		nprintf(("Warning", "Cannot play credits music\n"));
 	}
+#endif
 }
 
 int credits_screen_button_pressed(int n)
@@ -328,6 +344,7 @@ void credits_init()
 	char line[512] = "";	
 	char *linep1, *linep2;	
 
+#ifndef NO_SOUND
 	int credits_spooled_music_index = event_music_get_spooled_music_index("Cinema");	
 	if(credits_spooled_music_index != -1){
 		char *credits_wavfile_name = Spooled_music[credits_spooled_music_index].filename;		
@@ -335,6 +352,7 @@ void credits_init()
 			credits_load_music(credits_wavfile_name);
 		}
 	}
+#endif
 
 	// Use this id to trigger the start of music playing on the briefing screen
 	Credits_music_begin_timestamp = timestamp(CREDITS_MUSIC_DELAY);
@@ -726,11 +744,15 @@ void credits_do_frame(float frametime)
 		sy = fl2i(Credit_position-0.5f);
 	}
 
+#ifdef WIN32
 	// HACK - I don't want to change the string code, so we'll just use a special version here
 	if(gr_screen.mode == GR_GLIDE){
 		extern void gr_glide_string_hack(int sx, int sy, char *s);
 		gr_glide_string_hack(0x8000, sy, Credit_text);
-	} else {
+	} 
+	else
+#endif
+	{
 		gr_string(0x8000, sy, Credit_text);
 	}
 

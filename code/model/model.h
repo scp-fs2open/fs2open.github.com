@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -355,14 +358,14 @@ typedef struct stepped_rotation {
 	float t_pause;				// time at rest between steps
 	float max_turn_rate;		// max turn rate going betweens steps
 	float max_turn_accel;	// max accel going between steps
-} stepped_rotation;
+} stepped_rotation_t;
 
 typedef struct ai_rotation {
 	void *p_rotation;
 	int type;
 	float dist;
 	float speed;
-} ai_rotation;
+} ai_rotation_t;
 
 // definition for model subsystems.
 typedef struct model_subsystem {					/* contains rotation rate info */
@@ -393,8 +396,8 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 
 	// Rotation specific info
 	float		turn_rate;								// The turning rate of this subobject, if MSS_FLAG_ROTATES is set.
-	stepped_rotation *stepped_rotation;			// turn rotation struct
-	ai_rotation *ai_rotation;						// ai controlled rotation struct
+	stepped_rotation_t *stepped_rotation;			// turn rotation struct
+	ai_rotation_t *ai_rotation;						// ai controlled rotation struct
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem
@@ -551,7 +554,7 @@ typedef struct ship_bay {
 	int	paths[MAX_SHIP_BAY_PATHS];		// index into polymodel->paths[] array
 	int	arrive_flags;	// bitfield, set to 1 when that path number is reserved for an arrival
 	int	depart_flags;	// bitfield, set to 1 when that path number is reserved for a departure
-} ship_bay;
+} ship_bay_t;
 
 // three structures now used for representing shields.
 // shield_tri structure stores information concerning each face of the shield.
@@ -675,7 +678,7 @@ typedef struct polymodel {
 	w_bank		*missile_banks;					// array of missile banks
 	dock_bay		*docking_bays;						// array of docking point pairs
 	thruster_bank		*thrusters;							// array of thruster objects -- likely to change in the future
-	ship_bay		*ship_bay;							// contains path indexes for ship bay approach/depart paths
+	ship_bay_t		*ship_bay;							// contains path indexes for ship bay approach/depart paths
 
 	shield_info	shield;								// new shield information
 

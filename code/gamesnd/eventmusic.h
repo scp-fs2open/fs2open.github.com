@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -184,6 +187,8 @@ typedef struct tagSOUNDTRACK_INFO {
 extern SOUNDTRACK_INFO Soundtracks[MAX_SOUNDTRACKS];
 extern int Num_soundtracks;
 
+#ifndef NO_SOUND
+
 void	event_music_init();
 void	event_music_close();
 void	event_music_level_init(int force_soundtrack = -1);
@@ -216,5 +221,48 @@ void	event_music_reset_choices();
 int	event_music_player_respawn();
 int	event_music_player_respawn_as_observer();
 void event_music_hostile_ship_destroyed();
+
+#else
+
+#define	event_music_init()
+#define	event_music_close()
+#define	event_music_level_init(force_soundtrack)		  ((void)(force_soundtrack))
+#define	event_music_level_close()
+#define	event_music_do_frame()
+#define	event_music_disable()
+#define	event_music_enable()
+#define	event_music_pause()
+#define	event_music_unpause()
+#define	event_music_set_volume_all(volume)				  ((void)(volume))
+#define	event_music_parse_musictbl()
+#define	event_music_change_pattern(new_pattern)		  ((void)(new_pattern))
+#define	event_music_return_current_pattern()			  (0)
+#define	event_music_first_pattern()
+#define	event_music_battle_start()							  (0)
+#define	event_music_enemy_arrival()						  (0)
+#define	event_music_friendly_arrival()					  (0)
+#define	event_music_arrival(team)							  ((void)(team))
+#define	event_music_primary_goals_met()					  (0)
+#define	event_music_primary_goal_failed()				  (0)
+#define	event_music_player_death()							  (0)
+#define	event_music_start_default()
+inline void	event_music_get_info(char *outbuf)
+{
+	if (outbuf) *outbuf = '\0';
+}
+inline void	event_music_get_soundtrack_name(char *outbuf)
+{
+	if (outbuf) *outbuf = '\0';
+}
+#define	event_music_next_soundtrack(delta)				  (0)
+#define	event_music_set_soundtrack(name)					  ((void)(name))
+#define	event_music_set_score(score_index, name)		  ((void)((score_index), (name)))
+#define	event_music_get_spooled_music_index(name)		  (-1)
+#define	event_music_reset_choices()
+#define	event_music_player_respawn()						  (0)
+#define	event_music_player_respawn_as_observer()		  (0)
+#define event_music_hostile_ship_destroyed()
+
+#endif  // ifndef NO_SOUND
 
 #endif /* __EVENT_MUSIC_H__  */

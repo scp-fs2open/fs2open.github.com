@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/08 17:29:17  mharris
+ * more port tweaks
+ *
+ * Revision 1.2  2002/05/07 13:22:14  mharris
+ * added pstypes.h include
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -190,6 +196,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include "pstypes.h"
 #include "cmdline.h"
 #include "linklist.h"
 #include "systemvars.h"
@@ -408,10 +415,8 @@ void os_init_cmdline(char *cmdline)
 	}
 
 
-
 	os_parse_parms(cmdline);
 	os_validate_parms(cmdline);
-
 }
 
 
@@ -477,9 +482,39 @@ char *cmdline_parm::str()
 }
 
 // external entry point into this modules
+#ifdef WIN32
 int parse_cmdline(char *cmdline)
+#else
+int parse_cmdline(int argc, char *argv[])
+#endif
 {
+   #ifdef WIN32
 	os_init_cmdline(cmdline);
+   #else
+	if (argc > 1) {
+		// kind of silly -- combine arg list into single string for parsing,
+		// but it fits with the win32-centric existing code.
+		char *cmdline = NULL;
+		unsigned int arglen = 0;
+		int i;
+		for (i = 1;  i < argc;  i++)
+			arglen += strlen(argv[i]);
+		if (argc > 2)
+			arglen += argc - 2; // leave room for the separators
+		cmdline = new char [arglen+1];
+		i = 1;
+		strcpy(cmdline, argv[i]);
+		for ( ; i < argc;  i++) {
+			strcat(cmdline, " ");
+			strcat(cmdline, argv[i]);
+		}
+		os_init_cmdline(cmdline);
+		delete [] cmdline;
+	} else {
+		// no cmdline args
+		os_init_cmdline("");
+	}
+   #endif
 
 	// is this a standalone server??
 	if (standalone_arg.found()) {

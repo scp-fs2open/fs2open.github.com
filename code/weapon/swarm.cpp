@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Swarm.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:03 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * C module for managing swarm missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -333,9 +336,9 @@ void swarm_update_direction(object *objp, float frametime)
 				}
 			}
 
-			vm_vec_scale_add(&swarmp->original_target, &objp->pos, &objp->orient.fvec, SWARM_CONE_LENGTH);
-			swarmp->circle_rvec = objp->orient.rvec;
-			swarmp->circle_uvec = objp->orient.uvec;
+			vm_vec_scale_add(&swarmp->original_target, &objp->pos, &objp->orient.vec.fvec, SWARM_CONE_LENGTH);
+			swarmp->circle_rvec = objp->orient.vec.rvec;
+			swarmp->circle_uvec = objp->orient.vec.uvec;
 
 			swarmp->change_count = 1;
 			swarmp->change_time = fl2i(SWARM_CHANGE_DIR_TIME + SWARM_TIME_VARIANCE*(frand() - 0.5f) * 2);
@@ -360,8 +363,8 @@ void swarm_update_direction(object *objp, float frametime)
 			// Calculate a rvec and uvec that will determine the displacement from the
 			// intended target.  Use crossprod to generate a right vector, from the missile
 			// up vector and the vector connecting missile to the homing object.
-			swarmp->circle_uvec = objp->orient.uvec;
-			swarmp->circle_rvec = objp->orient.rvec;
+			swarmp->circle_uvec = objp->orient.vec.uvec;
+			swarmp->circle_rvec = objp->orient.vec.rvec;
 
 			missile_speed = pi->speed;
 			missile_dist = missile_speed * swarmp->change_time/1000.0f;
@@ -462,7 +465,7 @@ void swarm_update_direction(object *objp, float frametime)
 
 	ai_turn_towards_vector(&swarmp->new_target, objp, frametime, wip->turn_time, NULL, NULL, 0.0f, 0);
 	vel = vm_vec_mag(&objp->phys_info.desired_vel);
-	vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.fvec, vel);
+	vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vel);
 }
 
 // ------------------------------------------------------------------

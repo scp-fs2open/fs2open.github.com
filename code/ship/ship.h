@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:28 $
  * $Author: penguin $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/10 20:42:45  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -223,9 +226,12 @@
 #include "parselo.h"		// for defintions of token lengths -- maybe move this elsewhere later
 #include "model.h"
 #include "2d.h"			// for color def
-#include "multi_obj.h"
 #include "trails.h"
 #include "palman.h"
+
+#ifndef NO_NETWORK
+#include "multi_obj.h"
+#endif
 
 struct object;
 
@@ -632,8 +638,10 @@ typedef struct ship {
 	float level2_tag_total;							// total tag time
 	float level2_tag_left;							// total tag remaining	
 
+   #ifndef NO_NETWORK
 	// old-style object update stuff
 	np_update		np_updates[MAX_PLAYERS];	// for both server and client
+   #endif  // ifndef NO_NETWORK
 
 	// lightning timestamp
 	int lightning_stamp;

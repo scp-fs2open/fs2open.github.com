@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,21 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2002/05/24 16:44:10  mharris
+ * Fix unix "find files" operations so they return relative path
+ *
+ * Revision 1.5  2002/05/21 15:38:00  mharris
+ * Unix glob changes -- still needs some work as we are getting full pathnames
+ *
+ * Revision 1.4  2002/05/17 23:38:33  mharris
+ * Fixed silly bug in unix find-files code
+ *
+ * Revision 1.3  2002/05/16 06:03:29  mharris
+ * Unix port changes
+ *
+ * Revision 1.2  2002/05/07 13:22:52  mharris
+ * Added errno.h include
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -89,6 +104,12 @@
 #include <direct.h>
 #include <windows.h>
 #include <winbase.h>		/* needed for memory mapping of file functions */
+#include <errno.h>
+
+#ifdef unix
+#include <glob.h>
+#include <sys/stat.h>
+#endif
 
 #include "pstypes.h"
 //#include "outwnd.h"
@@ -97,7 +118,6 @@
 #include "cfile.h"
 #include "cfilesystem.h"
 #include "localize.h"
-
 
 #define CF_ROOTTYPE_PATH 0
 #define CF_ROOTTYPE_PACK 1
@@ -222,9 +242,10 @@ int cf_get_packfile_count(cf_root *root)
 
 		if(strlen(Pathtypes[i].path)){
 			strcat( filespec, Pathtypes[i].path );
-			strcat( filespec, "\\" );
+			strcat( filespec, DIR_SEPARATOR_STR );
 		}
 
+#if defined WIN32
 		strcat( filespec, "*.vp" );
 
 		int find_handle;
@@ -242,7 +263,26 @@ int cf_get_packfile_count(cf_root *root)
 
 			_findclose( find_handle );
 		}	
-	}	
+#elif defined unix
+		strcat( filespec, "*.[vV][pP]" );
+
+		glob_t globinfo;
+		memset(&globinfo, 0, sizeof(globinfo));
+		int status = glob(filespec, 0, NULL, &globinfo);
+		if (status == 0) {
+			for (unsigned int j = 0;  j < globinfo.gl_pathc;  j++) {
+				// Determine if this is a regular file
+				struct stat statbuf;
+				memset(&statbuf, 0, sizeof(statbuf));
+				stat(globinfo.gl_pathv[j], &statbuf);
+				if (S_ISREG(statbuf.st_mode)) {
+					packfile_count++;
+				}
+			}
+			globfree(&globinfo);
+		}
+#endif
+	}
 
 	return packfile_count;
 }
@@ -291,8 +331,10 @@ void cf_build_pack_list( cf_root *root )
 
 		if(strlen(Pathtypes[i].path)){
 			strcat( filespec, Pathtypes[i].path );		
-			strcat( filespec, "\\" );
+			strcat( filespec, DIR_SEPARATOR_STR );
 		}
+
+#if defined WIN32
 		strcat( filespec, "*.vp" );
 
 		int find_handle;
@@ -314,7 +356,7 @@ void cf_build_pack_list( cf_root *root )
 
 					if(strlen(Pathtypes[i].path)){
 						strcat(rptr_sort->path, Pathtypes[i].path );					
-						strcat(rptr_sort->path, "\\");
+						strcat(rptr_sort->path, DIR_SEPARATOR_STR);
 					}
 
 					strcat(rptr_sort->path, find.name );
@@ -326,6 +368,32 @@ void cf_build_pack_list( cf_root *root )
 
 			_findclose( find_handle );
 		}	
+#elif defined unix
+		strcat( filespec, "*.[vV][pP]" );
+		glob_t globinfo;
+		memset(&globinfo, 0, sizeof(globinfo));
+		int status = glob(filespec, 0, NULL, &globinfo);
+		if (status == 0) {
+			for (unsigned int j = 0;  j < globinfo.gl_pathc;  j++) {
+				// Determine if this is a regular file
+				struct stat statbuf;
+				memset(&statbuf, 0, sizeof(statbuf));
+				stat(globinfo.gl_pathv[j], &statbuf);
+				if (S_ISREG(statbuf.st_mode)) {
+					Assert(root_index < temp_root_count);
+
+					// get a temp pointer
+					rptr_sort = &temp_roots_sort[root_index++];
+
+					// fill in all the proper info
+					strcpy(rptr_sort->path, globinfo.gl_pathv[j] );
+					rptr_sort->roottype = CF_ROOTTYPE_PACK;
+					rptr_sort->cf_type = i;
+				}
+			}
+			globfree(&globinfo);
+		}
+#endif
 	}	
 
 	// these should always be the same
@@ -368,8 +436,8 @@ void cf_build_root_list(char *cdrom_dir)
 	}
 
 	// do we already have a slash? as in the case of a root directory install
-	if(strlen(root->path) && (root->path[strlen(root->path)-1] != '\\')){
-		strcat(root->path, "\\");		// put trailing backslash on for easier path construction
+	if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+		strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 	}
 	root->roottype = CF_ROOTTYPE_PATH;
 
@@ -425,9 +493,10 @@ void cf_search_root_path(int root_index)
 
 		if(strlen(Pathtypes[i].path)){
 			strcat( search_path, Pathtypes[i].path );
-			strcat( search_path, "\\" );
+			strcat( search_path, DIR_SEPARATOR_STR );
 		} 
 
+#if defined WIN32
 		strcat( search_path, "*.*" );
 
 		int find_handle;
@@ -463,7 +532,39 @@ void cf_search_root_path(int root_index)
 
 			_findclose( find_handle );
 		}
-
+#elif defined unix
+		strcat( search_path, "*" );
+		glob_t globinfo;
+		memset(&globinfo, 0, sizeof(globinfo));
+		int status = glob(search_path, 0, NULL, &globinfo);
+		if (status == 0) {
+			for (unsigned int j = 0;  j < globinfo.gl_pathc;  j++) {
+				// Determine if this is a regular file
+				struct stat statbuf;
+				memset(&statbuf, 0, sizeof(statbuf));
+				stat(globinfo.gl_pathv[j], &statbuf);
+				if (S_ISREG(statbuf.st_mode)) {
+					char *ext = strchr(globinfo.gl_pathv[j], '.' );
+					if ( ext )	{
+						if ( is_ext_in_list( Pathtypes[i].extensions, ext ) )	{
+							// Found a file!!!!
+							cf_file *file = cf_create_file();
+							
+							strcpy( file->name_ext, globinfo.gl_pathv[j] );
+							file->root_index = root_index;
+							file->pathtype_index = i;
+							file->write_time = statbuf.st_mtime;
+							file->size = statbuf.st_size;
+							file->pack_offset = 0;			// Mark as a non-packed file
+							
+							//mprintf(( "Found file '%s'\n", file->name_ext ));
+						}
+					}
+				}
+			}
+			globfree(&globinfo);
+		}
+#endif
 	}
 }
 
@@ -520,13 +621,13 @@ void cf_search_root_pack(int root_index)
 			if ( !stricmp( find.filename, ".." ))	{
 				int l = strlen(search_path);
 				char *p = &search_path[l-1];
-				while( (p > search_path) && (*p != '\\') )	{
+				while( (p > search_path) && (*p != DIR_SEPARATOR_CHAR) )	{
 					p--;
 				}
 				*p = 0;
 			} else {
 				if ( strlen(search_path)	)	{
-					strcat( search_path,	"\\" );
+					strcat( search_path,	DIR_SEPARATOR_STR );
 				}
 				strcat( search_path, find.filename );
 			}
@@ -596,9 +697,11 @@ void cf_build_secondary_filelist(char *cdrom_dir)
 	// Init the path types
 	for (i=0; i<CF_MAX_PATH_TYPES; i++ )	{
 		Assert( Pathtypes[i].index == i );
-		if ( Pathtypes[i].extensions )	{
-			strlwr(Pathtypes[i].extensions);
-		}
+		// [mharris]  can't modify constant strings, why do this anyhow???
+		// just need to make sure exts are all lc in the definition...
+//  		if ( Pathtypes[i].extensions )	{
+//  			strlwr(Pathtypes[i].extensions);
+//  		}
 	}
 	
 	// Init the root blocks
@@ -669,7 +772,15 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 	if ( strpbrk(filespec,"/\\:")  ) {		// do we have a full path already?
 		FILE *fp = fopen(filespec, "rb" );
 		if (fp)	{
-			if ( size ) *size = filelength(fileno(fp));
+			if ( size ) {
+#if defined WIN32
+				*size = filelength(fileno(fp));
+#elif defined unix
+				struct stat statbuf;
+				fstat(fileno(fp), &statbuf);
+				*size = statbuf.st_size;
+#endif
+			}
 			if ( offset ) *offset = 0;
 			if ( pack_filename ) {
 				strcpy( pack_filename, filespec );
@@ -702,7 +813,15 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 
 		FILE *fp = fopen(longname, "rb" );
 		if (fp)	{
-			if ( size ) *size = filelength(fileno(fp));
+			if ( size ) {
+#if defined WIN32
+				*size = filelength(fileno(fp));
+#elif defined unix
+				struct stat statbuf;
+				fstat(fileno(fp), &statbuf);
+				*size = statbuf.st_size;
+#endif
+			}
 			if ( offset ) *offset = 0;
 			if ( pack_filename ) {
 				strcpy( pack_filename, longname );
@@ -737,7 +856,7 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 						strcpy( pack_filename, r->path );
 						if ( f->pack_offset < 1 )	{
 							strcat( pack_filename, Pathtypes[f->pathtype_index].path );
-							strcat( pack_filename, "\\" );
+							strcat( pack_filename, DIR_SEPARATOR_STR );
 							strcat( pack_filename, f->name_ext );
 						}
 					}				
@@ -759,7 +878,7 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 
 						if(strlen(Pathtypes[f->pathtype_index].path)){
 							strcat( pack_filename, Pathtypes[f->pathtype_index].path );
-							strcat( pack_filename, "\\" );
+							strcat( pack_filename, DIR_SEPARATOR_STR );
 						}
 
 						strcat( pack_filename, f->name_ext );
@@ -822,7 +941,6 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 {
 	char *ptr;
 	int i, l, find_handle, num_files = 0, own_flag = 0;
-	_finddata_t find;
 
 	if (max < 1) {
 		Get_file_list_filter = NULL;
@@ -840,6 +958,8 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 
 	cf_create_default_path_string( filespec, pathtype, filter );
 
+#if defined WIN32
+	_finddata_t find;
 	find_handle = _findfirst( filespec, &find );
 	if (find_handle != -1) {
 		do {
@@ -869,6 +989,43 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 		_findclose( find_handle );
 	}
 
+#elif defined unix
+	char base_filespec[MAX_PATH_LEN];
+	cf_create_default_path_string( base_filespec, pathtype );
+	int base_filespec_len = strlen(base_filespec);
+	glob_t globinfo;
+	memset(&globinfo, 0, sizeof(globinfo));
+	int status = glob(filespec, 0, NULL, &globinfo);
+	if (status == 0) {
+		for (unsigned int i = 0;  i < globinfo.gl_pathc;  i++) {
+			// Determine if this is a regular file
+			struct stat statbuf;
+			memset(&statbuf, 0, sizeof(statbuf));
+			stat(globinfo.gl_pathv[i], &statbuf);
+			if (S_ISREG(statbuf.st_mode)) {
+				if ( !Get_file_list_filter || (*Get_file_list_filter)(globinfo.gl_pathv[i]) ) {
+					char *found_file = globinfo.gl_pathv[i];
+					Assert(strncmp(found_file, base_filespec, base_filespec_len) == 0);
+					found_file += base_filespec_len;
+					ptr = strrchr(found_file, '.');
+					if (ptr)
+						l = ptr - found_file;
+					else
+						l = strlen(found_file);
+					
+					list[num_files] = (char *)malloc(l + 1);
+					strncpy(list[num_files], found_file, l);
+					list[num_files][l] = 0;
+					if (info)
+						info[num_files].write_time = statbuf.st_mtime;
+					
+					num_files++;
+				}
+			}
+			globfree(&globinfo);
+		}
+	}
+#endif
 
 	// Search all the packfiles and CD.
 	if ( !Skip_packfile_search )	{
@@ -977,8 +1134,11 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	char filespec[MAX_PATH_LEN];
 
 	cf_create_default_path_string( filespec, pathtype, filter );
+	mprintf(("cf_get_file_list_preallocated looking for type=%d, filter=\"%s\"\n",
+				pathtype, filter));
 
 	// Search the default directories
+#if defined WIN32
 	int find_handle;
 	_finddata_t find;
 	
@@ -1010,7 +1170,44 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 
 		_findclose( find_handle );
 	}
-		
+
+#elif defined unix
+	char base_filespec[MAX_PATH_LEN];
+	cf_create_default_path_string( base_filespec, pathtype );
+	int base_filespec_len = strlen(base_filespec);
+	glob_t globinfo;
+	memset(&globinfo, 0, sizeof(globinfo));
+	int status = glob(filespec, 0, NULL, &globinfo);
+	if (status == 0) {
+		for (unsigned int i = 0;  i < globinfo.gl_pathc;  i++) {
+			// Determine if this is a regular file
+			struct stat statbuf;
+			memset(&statbuf, 0, sizeof(statbuf));
+			stat(globinfo.gl_pathv[i], &statbuf);
+			if (S_ISREG(statbuf.st_mode)) {
+				if ( !Get_file_list_filter || (*Get_file_list_filter)(globinfo.gl_pathv[i]) ) {
+					
+					char *found_file = globinfo.gl_pathv[i];
+					Assert(strncmp(found_file, base_filespec, base_filespec_len) == 0);
+					found_file += base_filespec_len;
+
+					strncpy(arr[num_files], found_file, MAX_FILENAME_LEN - 1 );
+					char *ptr = strrchr(arr[num_files], '.');
+					if ( ptr ) {
+						*ptr = 0;
+					}
+
+					if (info)	{
+						info[num_files].write_time = statbuf.st_mtime;
+					}
+					
+					num_files++;
+				}
+			}
+		}
+		globfree(&globinfo);
+	}
+#endif
 
 	// Search all the packfiles and CD.
 	if ( !Skip_packfile_search )	{
@@ -1095,7 +1292,7 @@ void cf_create_default_path_string( char *path, int pathtype, char *filename, bo
 
 		// Don't add slash for root directory
 		if (Pathtypes[pathtype].path[0] != '\0') {
-			strcat(path, "\\");
+			strcat(path, DIR_SEPARATOR_STR);
 		}
 
 		// add filename

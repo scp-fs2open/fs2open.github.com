@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -192,17 +195,21 @@
 #include "pstypes.h"
 #include "object.h"
 #include "ship.h"
-#include "multi.h"
-#include "multiutil.h"
 #include "scoring.h"
 #include "player.h"
 #include "parselo.h"
-#include "multimsgs.h"
 #include "medals.h"
 #include "localize.h"
+#include "missionparse.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multiutil.h"
+#include "multimsgs.h"
 #include "multi_team.h"
 #include "multi_dogfight.h"
 #include "multi_pmsg.h"
+#endif
 
 // what percent of points of total damage to a ship a player has to have done to get an assist (or a kill) when it is killed
 #define ASSIST_PERCENTAGE				(0.15f)
@@ -572,6 +579,7 @@ void scoring_level_close(int accepted)
 
 	if(accepted){
 		// apply mission stats for all players in the game
+#ifndef NO_NETWORK
 		if(Game_mode & GM_MULTIPLAYER){
 			nprintf(("Network","Storing stats for all players now\n"));
 			for(idx=0;idx<MAX_PLAYERS;idx++){
@@ -581,7 +589,10 @@ void scoring_level_close(int accepted)
 					scoring_do_accept( sc );
 				}
 			}
-		} else {
+		}
+		else
+#endif
+		{
 			nprintf(("General","Storing stats now\n"));
 			scoring_do_accept( &Player->stats );
 		}
@@ -613,10 +624,12 @@ void scoring_add_damage(object *ship_obj,object *other_obj,float damage)
 	object *use_obj;
 	ship *sp;
 
+#ifndef NO_NETWORK
 	// multiplayer clients bail here
 	if(MULTIPLAYER_CLIENT){
 		return;
 	}
+#endif
 
 	// if we have no other object, bail
 	if(other_obj == NULL){
@@ -716,10 +729,12 @@ void scoring_eval_kill(object *ship_obj)
 	net_player *dead_plr = NULL;
 	int i;
 
+#ifndef NO_NETWORK
 	// multiplayer clients bail here
 	if(MULTIPLAYER_CLIENT){
 		return;
 	}
+#endif
 
 	// we don't evaluate kills on anything except ships
 	if(ship_obj->type != OBJ_SHIP){
@@ -733,6 +748,7 @@ void scoring_eval_kill(object *ship_obj)
 	dead_ship = &Ships[ship_obj->instance];
 
 	// evaluate player deaths
+#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
 		net_player_num = multi_find_player_by_object(ship_obj);
 		if(net_player_num != -1){
@@ -740,7 +756,10 @@ void scoring_eval_kill(object *ship_obj)
 			nprintf(("Network","Setting player %s deaths to %d\n",Net_players[net_player_num].player->callsign,Net_players[net_player_num].player->stats.m_player_deaths));
 			dead_plr = &Net_players[net_player_num];
 		}
-	} else {
+	}
+	else
+#endif
+	{
 		if(ship_obj == Player_obj){
 			Player->stats.m_player_deaths++;
 		}
@@ -807,13 +826,17 @@ void scoring_eval_kill(object *ship_obj)
 
 		// get the player (whether single or multiplayer)
 		net_player_num = -1;
+#ifndef NO_NETWORK
 		if(Game_mode & GM_MULTIPLAYER){
 			net_player_num = multi_find_player_by_signature(killer_sig);
 			if(net_player_num != -1){
 				plr = Net_players[net_player_num].player;
 				net_plr = &Net_players[net_player_num];
 			}
-		} else {
+		}
+		else
+#endif
+		{
 			if(Objects[Player->objnum].signature == killer_sig){
 				plr = Player;
 			}
@@ -840,26 +863,37 @@ void scoring_eval_kill(object *ship_obj)
 			Assert( !(Ship_info[si_index].flags & SIF_SHIP_COPY) );
 
 			// if he killed a guy on his own team increment his bonehead kills
+#ifndef NO_NETWORK
 			if((Ships[Objects[plr->objnum].instance].team == dead_ship->team) && !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))){
+#else
+			if (Ships[Objects[plr->objnum].instance].team == dead_ship->team) {
+#endif
 				plr->stats.m_bonehead_kills++;
 				plr->stats.m_score -= (int)(dead_ship->score * scoring_get_scale_factor());
 
+#ifndef NO_NETWORK
 				// squad war
 				if(net_plr != NULL){
 					multi_team_maybe_add_score(-(int)(dead_ship->score * scoring_get_scale_factor()), net_plr->p_info.team);
 				}
+#endif
 			} 
 			// otherwise increment his valid kill count and score
 			else {
+#ifndef NO_NETWORK
 				// dogfight mode
 				if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (multi_find_player_by_object(ship_obj) < 0)){
 					// don't add a kill for dogfight kills on non-players
-				} else {
+				} 
+				else
+#endif
+				{
 					plr->stats.m_okKills[si_index]++;		
 					plr->stats.m_kill_count_ok++;
 					plr->stats.m_score += (int)(dead_ship->score * scoring_get_scale_factor());
 					hud_gauge_popup_start(HUD_KILLS_GAUGE);
 
+#ifndef NO_NETWORK
 					// multiplayer
 					if(net_plr != NULL){
 						multi_team_maybe_add_score((int)(dead_ship->score * scoring_get_scale_factor()), net_plr->p_info.team);
@@ -895,6 +929,7 @@ void scoring_eval_kill(object *ship_obj)
 							HUD_printf(dead_text);
 						}
 					}
+#endif
 				}
 			}
 				
@@ -902,6 +937,7 @@ void scoring_eval_kill(object *ship_obj)
 			plr->stats.m_kills[si_index]++;
 			plr->stats.m_kill_count++;			
 			
+#ifndef NO_NETWORK
 			// update everyone on this guy's kills if this is multiplayer
 			if(MULTIPLAYER_MASTER && (net_player_num != -1)){
 				// send appropriate stats
@@ -915,6 +951,7 @@ void scoring_eval_kill(object *ship_obj)
 					send_player_stats_block_packet(&Net_players[net_player_num], STATS_MISSION_KILLS);
 				}				
 			}
+#endif
 		}
 	} else {
 		// set killer_sig for this ship to -1, indicating no one got the kill for it
@@ -965,10 +1002,12 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 	int idx;
 	player *plr;
 
+#ifndef NO_NETWORK
 	// multiplayer clients bail here
 	if(MULTIPLAYER_CLIENT){
 		return;
 	}
+#endif
 		
 	// evaluate each damage slot to see if it did enough to give the assis
 	for(idx=0;idx<MAX_DAMAGE_SLOTS;idx++){
@@ -977,6 +1016,7 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 			// get the player which did this damage (if any)
 			plr = NULL;
 			
+#ifndef NO_NETWORK
 			// multiplayer
 			if(Game_mode & GM_MULTIPLAYER){
 				int net_player_num = multi_find_player_by_signature(sp->damage_ship_id[idx]);
@@ -985,7 +1025,9 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 				}
 			}
 			// single player
-			else {
+			else 
+#endif
+			{
 				if(Objects[Player->objnum].signature == sp->damage_ship_id[idx]){
 					plr = Player;
 				}
@@ -1005,10 +1047,12 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 // eval a hit on an object (for primary and secondary hit purposes)
 void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 {	
+#ifndef NO_NETWORK
 	// multiplayer clients bail here
 	if(MULTIPLAYER_CLIENT){
 		return;
 	}
+#endif
 
 	// only evaluate hits on ships and asteroids
 	if((hit_obj->type != OBJ_SHIP) && (hit_obj->type != OBJ_ASTEROID)){
@@ -1060,6 +1104,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 		// set the flag indicating that we've already applied a "stats" hit for this weapon
 		// Weapons[other_obj->instance].weapon_flags |= WF_ALREADY_APPLIED_STATS;
 
+#ifndef NO_NETWORK
 		// in multiplayer -- only the server records the stats
 		if( Game_mode & GM_MULTIPLAYER ) {
 			if ( Net_player->flags & NETINFO_FLAG_AM_MASTER ) {
@@ -1105,7 +1150,11 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 					}
 				}
 			}
-		} else if(Player_obj == &(Objects[other_obj->parent])){
+		}
+		else
+#endif
+		{
+			if(Player_obj == &(Objects[other_obj->parent])){
 			switch(sub_type){
 			case WP_LASER : 
 				if(is_bonehead){
@@ -1139,6 +1188,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 			default : 
 				break;
 			}
+			}
 		}
 	}
 }
@@ -1146,10 +1196,12 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 // get a scaling factor for adding/subtracting from mission score
 float scoring_get_scale_factor()
 {
+#ifndef NO_NETWORK
 	// multiplayer dogfight. don't scale anything
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		return 1.0f;
 	}
+#endif
 
 	// check for bogus Skill_level values
 	Assert((Game_skill_level >= 0) && (Game_skill_level < NUM_SKILL_LEVELS));

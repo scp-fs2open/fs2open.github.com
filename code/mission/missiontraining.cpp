@@ -9,14 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.3  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
+ * Revision 1.2  2002/05/09 23:02:57  mharris
+ * Not using default values for audiostream functions, since they may
+ * be macros (if NO_SOUND is defined)
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -449,12 +459,14 @@ void training_obj_display()
 				sprintf(buf + strlen(buf), NOX(" [%d]"), Mission_events[z].count);
 			}
 
+#ifndef NO_NETWORK
 			// if this is a multiplayer tvt game, and this is event is not for my team, don't display it
 			if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
 				if((Mission_events[z].team != -1) && (Net_player->p_info.team != Mission_events[z].team)){
 					continue;
 				}
 			}
+#endif
 
 			switch (mission_get_event_status(z)) {
 			case EVENT_CURRENT:
@@ -899,7 +911,7 @@ int message_play_training_voice(int index)
 				if (Training_voice >= 0) {
 					if (Training_voice_type) {
 						if (Training_voice == index)
-							audiostream_stop(Training_voice_handle);
+							audiostream_stop(Training_voice_handle, 1, 0);
 						else
 							audiostream_close_file(Training_voice_handle, 0);
 
@@ -928,7 +940,7 @@ int message_play_training_voice(int index)
 			game_snd tmp_gs;
 			memset(&tmp_gs, 0, sizeof(game_snd));
 			strcpy(tmp_gs.filename, Message_waves[index].name);
-			Message_waves[index].num = snd_load(&tmp_gs);
+			Message_waves[index].num = snd_load(&tmp_gs, 0);
 			if (Message_waves[index].num < 0) {
 				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
 				return -1;

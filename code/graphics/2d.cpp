@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/05/26 14:10:29  mharris
+ * More testing
+ *
+ * Revision 1.4  2002/05/17 23:44:22  mharris
+ * Removed Int3()'s from opengl calls
+ *
+ * Revision 1.3  2002/05/17 02:52:38  mharris
+ * More porting hacks
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -428,6 +440,7 @@
 #include <windows.h>
 #include <windowsx.h>
 
+#include "pstypes.h"
 #include "osapi.h"
 #include "2d.h"
 #include "3d.h"
@@ -485,6 +498,7 @@ void gr_close()
 	palette_flush();
 
 	switch( gr_screen.mode )	{
+#ifdef WIN32
 	case GR_SOFTWARE:		
 		gr_soft_cleanup();
 		break;
@@ -498,8 +512,8 @@ void gr_close()
 	case GR_GLIDE:
 		gr_glide_cleanup();
 		break;
+#endif
 	case GR_OPENGL:
-		Int3();
 		gr_opengl_cleanup();
 		break;
 	default:
@@ -531,7 +545,6 @@ DCF(gr,"Changes graphics mode")
 		} else if ( !strcmp( Dc_arg, "g"))	{
 			mode = GR_GLIDE;
 		} else if ( !strcmp( Dc_arg, "o"))	{
-			Int3();
 			mode = GR_OPENGL;
 		} else {
 			// print usage, not stats
@@ -577,7 +590,6 @@ DCF(gr,"Changes graphics mode")
 			dc_printf( "3Dfx Glide\n" );
 			break;
 		case GR_OPENGL:
-			Int3();
 			dc_printf( "OpenGl\n" );
 			break;
 		default:
@@ -663,6 +675,8 @@ void gr_set_palette( char *name, ubyte * palette, int restrict_font_to_128 )
 
 //void gr_test();
 
+#if defined( WINDOWS ) && defined( MSVC )		
+
 #define CPUID _asm _emit 0fh _asm _emit 0a2h
 
 // -----------------------------------------------------------------------
@@ -680,7 +694,7 @@ void gr_detect_cpu(int *cpu, int *mmx, int *amd3d, int *katmai )
 
 	char cpu_vender[16];
 	memset( cpu_vender, 0, sizeof(cpu_vender) );
-		
+
   _asm {
 
 		// Check for prescence of 
@@ -818,6 +832,22 @@ done_checking_cpuid:
 	}
 	*/
 }
+#else
+// TEMP mharris FIXME
+void gr_detect_cpu(int *cpu, int *mmx, int *amd3d, int *katmai )
+{
+	if (cpu)
+		*cpu = 0;
+	if (mmx)
+		*mmx = 0;
+	if (amd3d)
+		*amd3d = 0;
+	if (katmai)
+		*katmai = 0;
+}
+#endif // if defined( WINDOWS ) && defined( MSVC )		
+
+
 
 // --------------------------------------------------------------------------
 
@@ -838,6 +868,7 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 	// If already inited, shutdown the previous graphics
 	if ( Gr_inited )	{
 		switch( gr_screen.mode )	{
+#ifdef WIN32
 		case GR_SOFTWARE:			
 			gr_soft_cleanup();
 			break;
@@ -851,8 +882,8 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 		case GR_GLIDE:
 			gr_glide_cleanup();
 			break;
+#endif
 		case GR_OPENGL:
-			Int3();
 			gr_opengl_cleanup();
 			break;
 		default:
@@ -862,7 +893,7 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 		first_time = 1;
 	}
 
-#if defined(HARDWARE_ONLY)
+#if defined(HARDWARE_ONLY) && defined(WIN32)
 	if(!Fred_running && !Pofview_running && !Nebedit_running && !Is_standalone){
 		if((mode != GR_GLIDE) && (mode != GR_DIRECT3D)){
 			mprintf(("Forcing glide startup!\n"));
@@ -920,10 +951,12 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 	gr_screen.clip_height = gr_screen.max_h;
 
 	switch( gr_screen.mode )	{
+#ifdef WIN32
 		case GR_SOFTWARE:
 			Assert(Fred_running || Pofview_running || Is_standalone || Nebedit_running);
 			gr_soft_init();
 			break;
+		// directdraw, direct3d, 
 		case GR_DIRECTDRAW:
 			Int3();
 			gr_directdraw_init();
@@ -952,16 +985,17 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 			}
 			gr_glide_init();
 			break;
+#endif  // ifdef WIN32
 		case GR_OPENGL:
-			Int3();
 			gr_opengl_init();
 			break;
 		default:
 			Int3();		// Invalid graphics mode
 	}
 
-	memmove( Gr_current_palette, Gr_original_palette, 768 );
-	gr_set_palette_internal(Gr_current_palette_name, Gr_current_palette,0);	
+//  	memmove( Gr_current_palette, Gr_original_palette, 768 );
+//  	gr_set_palette_internal(Gr_current_palette_name, Gr_current_palette,0);	
+	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);	
 
 	gr_set_gamma(Gr_gamma);
 
@@ -991,6 +1025,7 @@ void gr_force_windowed()
 	if ( !Gr_inited )	return;
 
 	switch( gr_screen.mode )	{
+#ifdef WIN32
 		case GR_SOFTWARE:
 			{				
 				extern void gr_soft_force_windowed();
@@ -1012,8 +1047,8 @@ void gr_force_windowed()
 				gr_glide_force_windowed();
 			}
 			break;
+#endif  // ifdef WIN32
 		case GR_OPENGL:
-			Int3();
 			break;
 
 		default:
@@ -1030,6 +1065,7 @@ void gr_activate(int active)
 	if ( !Gr_inited ) return;
 
 	switch( gr_screen.mode )	{
+#ifdef WIN32
 		case GR_SOFTWARE:
 			{				
 				extern void gr_soft_activate(int active);
@@ -1059,8 +1095,8 @@ void gr_activate(int active)
 				return;
 			}
 			break;
+#endif  // ifdef WIN32
 		case GR_OPENGL:
-			Int3();
 			break;
 		default:
 			Int3();		// Invalid graphics mode
@@ -1154,7 +1190,11 @@ void gr_bitmap(int x, int y)
 
 	// old school bitmaps
 	switch(gr_screen.mode){
+#ifdef WIN32
 	case GR_SOFTWARE:
+		grx_bitmap(x, y);
+		break;
+
 	case GR_DIRECTDRAW:
 		grx_bitmap(x, y);
 		break;
@@ -1167,6 +1207,8 @@ void gr_bitmap(int x, int y)
 		gr_glide_bitmap(x, y);		
 		break;
 
+#endif  // ifdef WIN32
+
 	case GR_OPENGL:
 		gr_opengl_bitmap(x, y);
 		break;
@@ -1176,7 +1218,11 @@ void gr_bitmap(int x, int y)
 void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy)
 {
 	switch(gr_screen.mode){
+#ifdef WIN32
 	case GR_SOFTWARE:
+		grx_bitmap_ex(x, y, w, h, sx, sy);
+		break;
+
 	case GR_DIRECTDRAW:
 		grx_bitmap_ex(x, y, w, h, sx, sy);
 		break;
@@ -1188,6 +1234,7 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy)
 	case GR_GLIDE:
 		gr_glide_bitmap_ex(x, y, w, h, sx, sy);
 		break;
+#endif  // ifdef WIN32
 
 	case GR_OPENGL:
 		gr_opengl_bitmap_ex(x, y, w, h, sx, sy);
@@ -1204,9 +1251,9 @@ void gr_pline_helper(vector *out, vector *in1, vector *in2, int thickness)
 		slope = vmd_zero_vector;
 	} else {
 		vm_vec_sub(&slope, in2, in1);
-		float temp = -slope.x;
-		slope.x = slope.y;
-		slope.y = temp;
+		float temp = -slope.xyz.x;
+		slope.xyz.x = slope.xyz.y;
+		slope.xyz.y = temp;
 		vm_vec_normalize(&slope);
 	}
 
@@ -1258,8 +1305,8 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 		vm_vec_add(&e2, &s2, &dir);										// end 2
 		
 		// stuff coords		
-		v[0].sx = (float)ceil(s1.x);
-		v[0].sy = (float)ceil(s1.y);	
+		v[0].sx = (float)ceil(s1.xyz.x);
+		v[0].sy = (float)ceil(s1.xyz.y);	
 		v[0].sw = 0.0f;
 		v[0].u = 0.5f;
 		v[0].v = 0.5f;
@@ -1269,8 +1316,8 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 		v[0].g = gr_screen.current_color.green;
 		v[0].b = gr_screen.current_color.blue;
 
-		v[1].sx = (float)ceil(s2.x);
-		v[1].sy = (float)ceil(s2.y);	
+		v[1].sx = (float)ceil(s2.xyz.x);
+		v[1].sy = (float)ceil(s2.xyz.y);	
 		v[1].sw = 0.0f;
 		v[1].u = 0.5f;
 		v[1].v = 0.5f;
@@ -1280,8 +1327,8 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 		v[1].g = gr_screen.current_color.green;
 		v[1].b = gr_screen.current_color.blue;
 
-		v[2].sx = (float)ceil(e2.x);
-		v[2].sy = (float)ceil(e2.y);
+		v[2].sx = (float)ceil(e2.xyz.x);
+		v[2].sy = (float)ceil(e2.xyz.y);
 		v[2].sw = 0.0f;
 		v[2].u = 0.5f;
 		v[2].v = 0.5f;
@@ -1291,8 +1338,8 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 		v[2].g = gr_screen.current_color.green;
 		v[2].b = gr_screen.current_color.blue;
 
-		v[3].sx = (float)ceil(e1.x);
-		v[3].sy = (float)ceil(e1.y);
+		v[3].sx = (float)ceil(e1.xyz.x);
+		v[3].sy = (float)ceil(e1.xyz.y);
 		v[3].sw = 0.0f;
 		v[3].u = 0.5f;
 		v[3].v = 0.5f;
@@ -1308,8 +1355,8 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 		// if we're past the first section, draw a "patch" triangle to fill any gaps
 		if(idx > 0){
 			// stuff coords		
-			v[0].sx = (float)ceil(s1.x);
-			v[0].sy = (float)ceil(s1.y);	
+			v[0].sx = (float)ceil(s1.xyz.x);
+			v[0].sy = (float)ceil(s1.xyz.y);	
 			v[0].sw = 0.0f;
 			v[0].u = 0.5f;
 			v[0].v = 0.5f;
@@ -1319,8 +1366,8 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 			v[0].g = gr_screen.current_color.green;
 			v[0].b = gr_screen.current_color.blue;
 
-			v[1].sx = (float)ceil(s2.x);
-			v[1].sy = (float)ceil(s2.y);	
+			v[1].sx = (float)ceil(s2.xyz.x);
+			v[1].sy = (float)ceil(s2.xyz.y);	
 			v[1].sw = 0.0f;
 			v[1].u = 0.5f;
 			v[1].v = 0.5f;
@@ -1331,8 +1378,8 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 			v[1].b = gr_screen.current_color.blue;
 
 
-			v[2].sx = (float)ceil(last_e2.x);
-			v[2].sy = (float)ceil(last_e2.y);
+			v[2].sx = (float)ceil(last_e2.xyz.x);
+			v[2].sy = (float)ceil(last_e2.xyz.y);
 			v[2].sw = 0.0f;
 			v[2].u = 0.5f;
 			v[2].v = 0.5f;

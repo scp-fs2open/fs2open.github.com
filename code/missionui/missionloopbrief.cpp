@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Campaign Loop briefing screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/09 23:02:59  mharris
+ * Not using default values for audiostream functions, since they may
+ * be macros (if NO_SOUND is defined)
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -286,8 +290,8 @@ void loop_brief_close()
 
 	// stop voice
 	if(Loop_sound != -1){
-		audiostream_stop(Loop_sound);
-		audiostream_close_file(Loop_sound);
+		audiostream_stop(Loop_sound, 1, 0);
+		audiostream_close_file(Loop_sound, 1);
 		Loop_sound = -1;
 	}
 

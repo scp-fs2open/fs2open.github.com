@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -172,28 +175,28 @@ void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float ra
 
 	vector center;
 
-	vm_vec_scale_add( &center, pos, &orient->fvec, -(max_radius/2.5f)/3.0f );
+	vm_vec_scale_add( &center, pos, &orient->vec.fvec, -(max_radius/2.5f)/3.0f );
 
 	vector vecs[5];
 	vertex verts[5];
 
-	vm_vec_scale_add( &vecs[0], &center, &orient->uvec, radius );
-	vm_vec_scale_add2( &vecs[0], &orient->rvec, -radius );
-	vm_vec_scale_add2( &vecs[0], &orient->fvec, Grid_depth );
+	vm_vec_scale_add( &vecs[0], &center, &orient->vec.uvec, radius );
+	vm_vec_scale_add2( &vecs[0], &orient->vec.rvec, -radius );
+	vm_vec_scale_add2( &vecs[0], &orient->vec.fvec, Grid_depth );
 
-	vm_vec_scale_add( &vecs[1], &center, &orient->uvec, radius );
-	vm_vec_scale_add2( &vecs[1], &orient->rvec, radius );
-	vm_vec_scale_add2( &vecs[1], &orient->fvec, Grid_depth );
+	vm_vec_scale_add( &vecs[1], &center, &orient->vec.uvec, radius );
+	vm_vec_scale_add2( &vecs[1], &orient->vec.rvec, radius );
+	vm_vec_scale_add2( &vecs[1], &orient->vec.fvec, Grid_depth );
 
-	vm_vec_scale_add( &vecs[2], &center, &orient->uvec, -radius );
-	vm_vec_scale_add2( &vecs[2], &orient->rvec, radius );
-	vm_vec_scale_add2( &vecs[2], &orient->fvec, Grid_depth );
+	vm_vec_scale_add( &vecs[2], &center, &orient->vec.uvec, -radius );
+	vm_vec_scale_add2( &vecs[2], &orient->vec.rvec, radius );
+	vm_vec_scale_add2( &vecs[2], &orient->vec.fvec, Grid_depth );
 
-	vm_vec_scale_add( &vecs[3], &center, &orient->uvec, -radius );
-	vm_vec_scale_add2( &vecs[3], &orient->rvec, -radius );
-	vm_vec_scale_add2( &vecs[3], &orient->fvec, Grid_depth );
+	vm_vec_scale_add( &vecs[3], &center, &orient->vec.uvec, -radius );
+	vm_vec_scale_add2( &vecs[3], &orient->vec.rvec, -radius );
+	vm_vec_scale_add2( &vecs[3], &orient->vec.fvec, Grid_depth );
 
-//	vm_vec_scale_add( &vecs[4], &center, &orient->fvec, -Grid_depth );
+//	vm_vec_scale_add( &vecs[4], &center, &orient->vec.fvec, -Grid_depth );
 	vecs[4] = center;
 			
 	verts[0].u = 0.01f; verts[0].v = 0.01f; 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -921,7 +924,7 @@ int fireball_get_lod(vector *pos, fireball_info *fd, float size)
 		vector temp;
 
 		behind = 1;
-		vm_vec_scale_add(&temp, &Eye_position, &Eye_matrix.fvec, dist);
+		vm_vec_scale_add(&temp, &Eye_position, &Eye_matrix.vec.fvec, dist);
 		g3_rotate_vertex(&v, &temp);
 
 		// if still behind, bail and go with default
@@ -1088,8 +1091,8 @@ int fireball_create( vector * pos, int fireball_type, int parent_obj, float size
 			if (reverse)	{
 				fb->orient = 1;
 				// if warp out, then reverse the orientation
-				vm_vec_scale( &obj->orient.fvec, -1.0f );	// Reverse the forward vector
-				vm_vec_scale( &obj->orient.rvec, -1.0f );	// Reverse the right vector
+				vm_vec_scale( &obj->orient.vec.fvec, -1.0f );	// Reverse the forward vector
+				vm_vec_scale( &obj->orient.vec.rvec, -1.0f );	// Reverse the right vector
 			} else {
 				fb->orient = 0;
 			}

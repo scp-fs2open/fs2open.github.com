@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Corkscrew.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:03 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * C module for managing corkscrew missiles
@@ -145,14 +145,14 @@ int cscrew_create(object *obj)
 
 	// get the "center" pointing vector
 	vector neg;
-	neg = obj->orient.uvec;
+	neg = obj->orient.vec.uvec;
 	if(Corkscrew_down_first){
 		vm_vec_negate(&neg);
 	}
 	vm_vec_scale_add2(&cscrewp->cen_p, &neg, Corkscrew_radius);	
 
 	// move the missile up so that the corkscrew point is at the muzzle of the gun
-	// vm_vec_scale_add2(&obj->pos, &obj->orient.uvec, Corkscrew_radius);
+	// vm_vec_scale_add2(&obj->pos, &obj->orient.vec.uvec, Corkscrew_radius);
 
 	// store some initial helix params
 	cscrewp->real_orient = obj->orient;
@@ -226,7 +226,7 @@ void cscrew_process_post(object *objp)
 	twist_val *= flFrametime;	
 	
 	// rotate the missile position
-	vm_rot_point_around_line(&new_pt, &objp->pos, twist_val, &cen, &objp->orient.fvec);	
+	vm_rot_point_around_line(&new_pt, &objp->pos, twist_val, &cen, &objp->orient.vec.fvec);	
 	objp->pos = new_pt;
 
 	// rotate the missile itself

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/13 21:43:37  mharris
+ * A little more network and sound cleanup
+ *
+ * Revision 1.3  2002/05/10 20:42:43  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -219,13 +228,16 @@
 #include "objectsnd.h"
 #include "linklist.h"
 #include "systemvars.h"
-#include "multi.h"
-#include "multimsgs.h"
 #include "particle.h"
 #include "freespace.h"
-#include "multiutil.h"
 #include "objcollide.h"
 #include "timer.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multimsgs.h"
+#include "multiutil.h"
+#endif
 
 #define MAX_LIFE									10.0f
 #define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant
@@ -270,8 +282,10 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p)
 {
 	if (debris_p->is_hull)	{
 		// tell everyone else to blow up the piece of debris
+#ifndef NO_NETWORK
 		if( MULTIPLAYER_MASTER )
 			send_debris_update_packet(debris_obj,DEBRIS_UPDATE_NUKE);
+#endif
 
 		int fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
 		fireball_create( &debris_obj->pos, fireball_type, OBJ_INDEX(debris_obj), debris_obj->radius*1.75f);
@@ -495,7 +509,9 @@ void debris_process_post(object * obj, float frame_time)
 		radar_plot_object( obj );
 
 		if ( timestamp_elapsed(db->sound_delay) ) {
+#ifndef NO_SOUND
 			obj_snd_assign(objnum, SND_DEBRIS, &vmd_zero_vector, 0);
+#endif
 			db->sound_delay = 0;
 		}
 	} else {
@@ -775,9 +791,11 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vecto
 	// assign the network signature.  The signature will be 0 for non-hull pieces, but since that
 	// is our invalid signature, it should be okay.
 	obj->net_signature = 0;
+#ifndef NO_NETWORK
 	if ( (Game_mode & GM_MULTIPLAYER) && hull_flag ) {
 		obj->net_signature = multi_get_next_network_signature( MULTI_SIG_DEBRIS );
 	}
+#endif
 
 	// -- No long need shield: bset_shield_strength(obj, 100.0f);		//	Hey!  Set to some meaningful value!
 
@@ -952,10 +970,12 @@ void debris_hit(object *debris_obj, object *other_obj, vector *hitpos, float dam
 		particle_emit( &pe, PARTICLE_FIRE, 0 );
 	}
 
+#ifndef NO_NETWORK
 	// multiplayer clients bail here
 	if(MULTIPLAYER_CLIENT){
 		return;
 	}
+#endif
 
 	if ( damage < 0.0f ) {
 		damage = 0.0f;
@@ -967,9 +987,11 @@ void debris_hit(object *debris_obj, object *other_obj, vector *hitpos, float dam
 		debris_start_death_roll(debris_obj, debris_p );
 	} else {
 		// otherwise, give all the other players an update on the debris
+#ifndef NO_NETWORK
 		if(MULTIPLAYER_MASTER){
 			send_debris_update_packet(debris_obj,DEBRIS_UPDATE_UPDATE);
 		}
+#endif
 	}
 }
 
@@ -1087,7 +1109,8 @@ int debris_check_collision(object *pdebris, object *other_obj, vector *hitpos, c
 				pm = model_get(Ships[heavy_obj->instance].modelnum);
 
 				// turn off all rotating submodels and test for collision
-				for (int i=0; i<num_rotating_submodels; i++) {
+				int i;
+				for (i=0; i<num_rotating_submodels; i++) {
 					pm->submodel[submodel_list[i]].blown_off = 1;
 				}
 
@@ -1247,25 +1270,25 @@ int debris_get_team(object *objp)
 void calc_debris_physics_properties( physics_info *pi, vector *mins, vector *maxs )
 {
 	float dx, dy, dz, mass;
-	dx = maxs->x - mins->x;
-	dy = maxs->y - mins->y;
-	dz = maxs->z - mins->z;
+	dx = maxs->xyz.x - mins->xyz.x;
+	dy = maxs->xyz.y - mins->xyz.y;
+	dz = maxs->xyz.z - mins->xyz.z;
 
 	// John, with new bspgen, just set pi->mass = mass
 	mass = 0.12f * dx * dy * dz;
 	pi->mass = (float) pow(mass, 0.6666667f) * 4.65f;
 
-	pi->I_body_inv.rvec.x = 12.0f / (pi->mass *  (dy*dy + dz*dz));
-	pi->I_body_inv.rvec.y = 0.0f;
-	pi->I_body_inv.rvec.z = 0.0f;
+	pi->I_body_inv.vec.rvec.xyz.x = 12.0f / (pi->mass *  (dy*dy + dz*dz));
+	pi->I_body_inv.vec.rvec.xyz.y = 0.0f;
+	pi->I_body_inv.vec.rvec.xyz.z = 0.0f;
 
-	pi->I_body_inv.uvec.x = 0.0f;
-	pi->I_body_inv.uvec.y = 12.0f / (pi->mass *  (dx*dx + dz*dz));
-	pi->I_body_inv.uvec.z = 0.0f;
+	pi->I_body_inv.vec.uvec.xyz.x = 0.0f;
+	pi->I_body_inv.vec.uvec.xyz.y = 12.0f / (pi->mass *  (dx*dx + dz*dz));
+	pi->I_body_inv.vec.uvec.xyz.z = 0.0f;
 
-	pi->I_body_inv.fvec.x = 0.0f;
-	pi->I_body_inv.fvec.y = 0.0f;
-	pi->I_body_inv.fvec.z = 12.0f / (pi->mass *  (dx*dx + dy*dy));
+	pi->I_body_inv.vec.fvec.xyz.x = 0.0f;
+	pi->I_body_inv.vec.fvec.xyz.y = 0.0f;
+	pi->I_body_inv.vec.fvec.xyz.z = 12.0f / (pi->mass *  (dx*dx + dy*dy));
 }
 
 

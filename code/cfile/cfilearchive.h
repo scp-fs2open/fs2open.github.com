@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * External def's for CfileArchive.cpp.  This should only be used 
  * internally by cfile stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/17 02:56:19  mharris
+ * first crack at unix compatibity
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -60,8 +63,13 @@ typedef struct Cfile_block {
 	int		dir_type;		// directory location
 	FILE		*fp;				// File pointer if opening an individual file
 	void		*data;			// Pointer for memory-mapped file access.  NULL if not mem-mapped.
+#ifdef WIN32
 	HANDLE	hInFile;			// Handle from CreateFile()
 	HANDLE	hMapFile;		// Handle from CreateFileMapping()
+#else
+//	int		fd;				// file descriptor
+	size_t	data_length;	// length of data for mmap
+#endif
 	int		lib_offset;
 	int		raw_position;
 	int		size;				// for packed files

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:28 $
  * $Author: penguin $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 21:09:29  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.2  2002/05/03 22:07:10  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -683,7 +689,7 @@ void create_tris_containing(vector *vp, matrix *orient, shield_info *shieldp, ve
 				vector v;
 
 				v = verts[shieldp->tris[i].verts[j]].pos;
-				if ((vp->x == v.x) && (vp->y == v.y) && (vp->z == v.z))
+				if ((vp->xyz.x == v.xyz.x) && (vp->xyz.y == v.xyz.y) && (vp->xyz.z == v.xyz.z))
 					create_shield_from_triangle(i, orient, shieldp, tcp, centerp, radius, rvec, uvec);
 			}
 		}
@@ -817,9 +823,11 @@ float apply_damage_to_shield(object *objp, int shield_quadrant, float damage)
 
 	// multiplayer clients bail here if nodamage
 	// if(MULTIPLAYER_CLIENT && (Netgame.debug_flags & NETD_FLAG_CLIENT_NODAMAGE)){
+#ifndef NO_NETWORK
 	if(MULTIPLAYER_CLIENT){
 		return damage;
 	}
+#endif
 
 	if ( (shield_quadrant < 0)  || (shield_quadrant > 3) ) return damage;	
 	
@@ -878,7 +886,7 @@ void create_shield_low_detail(int objnum, int model_num, matrix *orient, vector 
 	vm_vector_2_matrix(&tom, &shieldp->tris[tr0].norm, NULL, NULL);
 	//rs_compute_uvs( &shieldp->tris[tr0], shieldp->verts, tcp, Objects[objnum].radius, &tom.rvec, &tom.uvec);
 
-	create_low_detail_poly(gi, tcp, &tom.rvec, &tom.uvec);
+	create_low_detail_poly(gi, tcp, &tom.vec.rvec, &tom.vec.uvec);
 
 }
 
@@ -942,10 +950,10 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vector *
 	//vm_vec_sub(&v2c, tcp, &Objects[objnum].pos);
 
 	//	Create the shield from the current triangle, as well as its neighbors.
-	create_shield_from_triangle(tr0, orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.rvec, &tom.uvec);
+	create_shield_from_triangle(tr0, orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
 	//nprintf(("AI", "\n"));
 	for (i=0; i<3; i++)
-		create_shield_from_triangle(shieldp->tris[tr0].neighbors[i], orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.rvec, &tom.uvec);
+		create_shield_from_triangle(shieldp->tris[tr0].neighbors[i], orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
 	
 	copy_shield_to_globals(objnum, shieldp);
 	// render_shield(orient, centerp);
@@ -995,6 +1003,7 @@ void add_shield_point_multi(int objnum, int tri_num, vector *hit_pos)
 	Num_multi_shield_points++;
 }
 
+#ifndef NO_NETWORK
 // sets up the shield point hit information for multiplayer clients
 void shield_point_multi_setup()
 {
@@ -1012,6 +1021,7 @@ void shield_point_multi_setup()
 
 	Num_multi_shield_points = 0;
 }
+#endif
 
 
 //	Create all the shield explosions that occurred on object *objp this frame.
@@ -1045,9 +1055,12 @@ void create_shield_explosion_all(object *objp)
 
 	//mprintf(("Creating %i explosions took %7.3f seconds\n", shipp->shield_hits, (float) (timer_get_milliseconds() - start_time)/1000.0f));
 
+#ifndef NO_NETWORK
 	// some some reason, clients seem to have a bogus count valud on occation.  I"ll chalk it up
 	// to missed packets :-)  MWA 2/6/98
-	if ( !MULTIPLAYER_CLIENT ){
+	if ( !MULTIPLAYER_CLIENT )
+#endif
+	{
 		Assert(count == 0);	//	Couldn't find all the alleged shield hits.  Bogus!
 	}
 }
@@ -1241,10 +1254,10 @@ int get_quadrant(vector *hit_pnt)
 {
 	int	result = 0;
 
-	if (hit_pnt->x < hit_pnt->z)
+	if (hit_pnt->xyz.x < hit_pnt->xyz.z)
 		result |= 1;
 
-	if (hit_pnt->x < -hit_pnt->z)
+	if (hit_pnt->xyz.x < -hit_pnt->xyz.z)
 		result |= 2;
 
 	return result;

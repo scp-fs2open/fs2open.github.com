@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -485,7 +488,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 			if (Weapon_info[Weapons[B->instance].weapon_info_index].subtype == WP_LASER) {
 				vector velocity_rel_weapon;
 				vm_vec_sub(&velocity_rel_weapon, &B->phys_info.vel, &A->phys_info.vel);
-				vdot = -vm_vec_dot(&velocity_rel_weapon, &B->orient.fvec);
+				vdot = -vm_vec_dot(&velocity_rel_weapon, &B->orient.vec.fvec);
 			} else {
 				vdot = vm_vec_dot( &A->phys_info.vel, &B->phys_info.vel);
 			}
@@ -494,7 +497,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 				// check their positions
 				vector weapon2other;
 				vm_vec_sub( &weapon2other, &A->pos, &B->pos );
-				float pdot = vm_vec_dot( &B->orient.fvec, &weapon2other );
+				float pdot = vm_vec_dot( &B->orient.vec.fvec, &weapon2other );
 				if ( pdot <= -A->radius )	{
 					// The other object is behind the weapon by more than
 					// its radius, so it will never hit...
@@ -790,7 +793,7 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 		if (Weapon_info[Weapons[weapon->instance].weapon_info_index].subtype == WP_LASER) {
 			vector velocity_rel_weapon;
 			vm_vec_sub(&velocity_rel_weapon, &weapon->phys_info.vel, &other->phys_info.vel);
-			vdot = -vm_vec_dot(&velocity_rel_weapon, &weapon->orient.fvec);
+			vdot = -vm_vec_dot(&velocity_rel_weapon, &weapon->orient.vec.fvec);
 		} else {
 			vdot = vm_vec_dot( &other->phys_info.vel, &weapon->phys_info.vel);
 		}
@@ -799,7 +802,7 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 			// check their positions
 			vector weapon2other;
 			vm_vec_sub( &weapon2other, &other->pos, &weapon->pos );
-			float pdot = vm_vec_dot( &weapon->orient.fvec, &weapon2other );
+			float pdot = vm_vec_dot( &weapon->orient.vec.fvec, &weapon2other );
 			if ( pdot <= -other->radius )	{
 				// The other object is behind the weapon by more than
 				// its radius, so it will never hit...
@@ -828,8 +831,8 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 		//vector	max_vel;			//maximum foward velocity in x,y,z
 
 		float max_vel_weapon, max_vel_other;
-		max_vel_weapon = weapon->phys_info.max_vel.z;
-		max_vel_other = other->phys_info.max_vel.z;
+		max_vel_weapon = weapon->phys_info.max_vel.xyz.z;
+		max_vel_other = other->phys_info.max_vel.xyz.z;
 		if (max_vel_other < 10.0f) {
 			if ( vm_vec_mag_squared( &other->phys_info.vel ) > 100 ) {
 				// bump up velocity from collision
@@ -849,7 +852,7 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 			float root1, root2, root, earliest_time;
 
 			vm_vec_sub( &delta_x, &weapon->pos, &other->pos );
-			vm_vec_copy_scale( &laser_vel, &weapon->orient.fvec, max_vel_weapon );
+			vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
 			delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
 			delta_x_dot_vl = vm_vec_dotprod( &delta_x, &laser_vel );
 
@@ -998,7 +1001,7 @@ int collide_predict_large_ship(object *objp, float distance)
 
 	cur_pos = objp->pos;
 
-	vm_vec_scale_add(&goal_pos, &cur_pos, &objp->orient.fvec, distance);
+	vm_vec_scale_add(&goal_pos, &cur_pos, &objp->orient.vec.fvec, distance);
 
 	for ( objp2 = GET_FIRST(&obj_used_list); objp2 != END_OF_LIST(&obj_used_list); objp2 = GET_NEXT(objp2) ) {
 		if ((objp != objp2) && (objp2->type == OBJ_SHIP)) {

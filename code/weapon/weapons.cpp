@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapons.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:03 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * Code to handle the weapon systems
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.3  2002/05/10 20:42:45  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -362,8 +371,6 @@
 #include "radar.h"
 #include "ai.h"
 #include "sound.h"
-#include "multi.h"
-#include "multimsgs.h"
 #include "linklist.h"
 #include "timer.h"
 #include "gamesnd.h"
@@ -372,7 +379,6 @@
 #include "model.h"
 #include "staticrand.h"
 #include "swarm.h"
-#include "multiutil.h"
 #include "shiphit.h"
 #include "trails.h"
 #include "hud.h"
@@ -381,12 +387,18 @@
 #include "particle.h"
 #include "asteroid.h"
 #include "joy_ff.h"
-#include "multi_obj.h"
 #include "corkscrew.h"
 #include "emp.h"
 #include "localize.h"
 #include "flak.h"
 #include "muzzleflash.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multimsgs.h"
+#include "multiutil.h"
+#include "multi_obj.h"
+#endif
 
 #ifndef NDEBUG
 int Weapon_flyby_sound_enabled = 1;
@@ -607,8 +619,10 @@ void weapon_maybe_alert_cmeasure_success(object *objp)
 		if ( cmp->source_objnum == OBJ_INDEX(Player_obj) ) {
 			hud_start_text_flash(XSTR("Evaded", 1430), 800);
 			snd_play(&Snds[SND_MISSILE_EVADED_POPUP]);
+#ifndef NO_NETWORK
 		} else if ( Objects[cmp->source_objnum].flags & OF_PLAYER_SHIP ) {
 			send_countermeasure_success_packet( cmp->source_objnum );
+#endif
 		}
 	}
 }
@@ -1511,7 +1525,7 @@ void weapon_render(object *obj)
 				gr_set_bitmap(wip->laser_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 
 				vector headp;
-				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.fvec, wip->laser_length);
+				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
 				if ( g3_draw_laser(&headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius) ) {
 					wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
@@ -1524,7 +1538,7 @@ void weapon_render(object *obj)
 				weapon_get_laser_color(&c, obj);
 
 				vector headp2;			
-				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.fvec, wip->laser_length * weapon_glow_scale_l);
+				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
 				gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, gr_screen.mode == GR_DIRECT3D ? weapon_glow_alpha_d3d : weapon_glow_alpha_glide);
 				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &obj->pos, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue);
 			}						
@@ -1723,7 +1737,7 @@ void find_homing_object(object *weapon_objp, int num)
 				if (objp->type == OBJ_CMEASURE)
 					dist *= 0.5f;
 
-				dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.fvec);
+				dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
 
 				if (dot > wip->fov) {
 					if (dist < best_dist) {
@@ -1744,10 +1758,12 @@ void find_homing_object(object *weapon_objp, int num)
 	if (wp->homing_object == Player_obj)
 		weapon_maybe_play_warning(wp);
 
+#ifndef NO_NETWORK
 	// if the old homing object is different that the new one, send a packet to clients
 	if ( MULTIPLAYER_MASTER && (old_homing_objp != wp->homing_object) ) {
 		send_homing_weapon_info( num );
 	}
+#endif
 }
 
 //	Scan all countermeasures.  Maybe make weapon_objp home on it.
@@ -1787,7 +1803,7 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 				
 				if (objp->signature != wp->cmeasure_ignore_objnum) {
 
-					dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.fvec);
+					dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
 
 					if (dot > best_dot) {
 						//nprintf(("Jim", "Frame %i: Weapon #%i homing on cmeasure #%i\n", Framecount, weapon_objp-Objects, objp->signature));
@@ -1855,11 +1871,12 @@ void find_homing_object_by_sig(object *weapon_objp, int sig)
 		sop = sop->next;
 	}
 
+#ifndef NO_NETWORK
 	// if the old homing object is different that the new one, send a packet to clients
 	if ( MULTIPLAYER_MASTER && (old_homing_objp != wp->homing_object) ) {
 		send_homing_weapon_info( weapon_objp->instance );
 	}
-
+#endif
 }
 
 //	Make weapon num home.  It's also object *obj.
@@ -1885,10 +1902,10 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		if (obj->phys_info.speed > wip->max_speed) {
 			obj->phys_info.speed -= frame_time * 4;
-			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.fvec, obj->phys_info.speed);
+			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 		} else if ((obj->phys_info.speed < wip->max_speed/4) && (wip->wi_flags & WIF_HOMING_HEAT)) {
 			obj->phys_info.speed = wip->max_speed/4;
-			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.fvec, obj->phys_info.speed);
+			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 		}
 
 /*	Removed code that makes bombs drop for a bit.  They looked odd and it was confusing.  People wondered where their weapons went.
@@ -1896,7 +1913,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		if (wip->wi_flags & WIF_BOMB) {
 			if (wip->lifetime - wp->lifeleft < 0.5f) {
 				float	time_scale = wip->lifetime - wp->lifeleft;
-				vm_vec_scale_add2(&obj->phys_info.desired_vel, &obj->orient.uvec, (time_scale - 0.5f) * max(10.0f, obj->phys_info.speed/2.0f));
+				vm_vec_scale_add2(&obj->phys_info.desired_vel, &obj->orient.vec.uvec, (time_scale - 0.5f) * max(10.0f, obj->phys_info.speed/2.0f));
 			}
 		}
 */
@@ -2044,6 +2061,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 							// determine the player
 							pp = Player;
+#ifndef NO_NETWORK
 							if ( Game_mode & GM_MULTIPLAYER ) {
 								int pnum;
 
@@ -2052,6 +2070,7 @@ void weapon_home(object *obj, int num, float frame_time)
 									pp = Net_players[pnum].player;
 								}
 							}
+#endif
 
 							// If player has apect lock, we don't want to find a homing point on the closest
 							// octant... setting the timestamp to 0 ensures this.
@@ -2166,7 +2185,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		Assert( obj->phys_info.speed > 0.0f );
 
-		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.fvec, obj->phys_info.speed);
+		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 
 		// turn the missile towards the target only if non-swarm.  Homing swarm missiles choose
 		// a different vector to turn towards, this is done in swarm_update_direction().
@@ -2176,7 +2195,7 @@ void weapon_home(object *obj, int num, float frame_time)
 			ai_turn_towards_vector(&target_pos, obj, frame_time, wip->turn_time, NULL, NULL, 0.0f, 0, NULL);
 			vel = vm_vec_mag(&obj->phys_info.desired_vel);
 
-			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.fvec, vel);
+			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, vel);
 
 		}
 
@@ -2240,13 +2259,13 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 			vm_vec_normalize(&vec_to_weapon);
 
 			// ensure laser is in front of eye
-			dot = vm_vec_dot(&vec_to_weapon, &Eye_matrix.fvec);
+			dot = vm_vec_dot(&vec_to_weapon, &Eye_matrix.vec.fvec);
 			if ( dot < 0.1 ) {
 				return;
 			}
 
 			// ensure that laser is moving in similar direction to fvec
-			dot = vm_vec_dot(&vec_to_weapon, &weapon_objp->orient.fvec);
+			dot = vm_vec_dot(&vec_to_weapon, &weapon_objp->orient.vec.fvec);
 			
 //			nprintf(("Alan", "Weapon dot: %.2f\n", dot));
 			if ( (dot < -0.80) && (dot > -0.98) ) {
@@ -2290,12 +2309,16 @@ void weapon_process_post(object * obj, float frame_time)
 	// when killing a missile that spawn child weapons!!!!
 	if ( wp->lifeleft < 0.0f ) {
 		if ( wip->subtype & WP_MISSILE ) {
+#ifndef NO_NETWORK
 			if(Game_mode & GM_MULTIPLAYER){				
 				if ( !MULTIPLAYER_CLIENT || (MULTIPLAYER_CLIENT && (wp->lifeleft < -2.0f)) || (MULTIPLAYER_CLIENT && (wip->wi_flags & WIF_CHILD))) {					// don't call this function multiplayer client -- host will send this packet to us
 					// nprintf(("AI", "Frame %i: Weapon %i detonated, dist = %7.3f!\n", Framecount, obj-Objects));
 					weapon_detonate(obj);					
 				}
-			} else {
+			}
+			else
+#endif
+			{
 				// nprintf(("AI", "Frame %i: Weapon %i detonated, dist = %7.3f!\n", Framecount, obj-Objects));
 				weapon_detonate(obj);									
 			}
@@ -2371,7 +2394,7 @@ void weapon_process_post(object * obj, float frame_time)
 				}
 
 				vm_vec_normalized_dir(&tvec, &v0, &Objects[wp->target_num].pos);
-				dot = vm_vec_dot(&tvec, &Objects[wp->target_num].orient.fvec);
+				dot = vm_vec_dot(&tvec, &Objects[wp->target_num].orient.vec.fvec);
 				// nprintf(("AI", "Miss dot = %7.3f, dist = %7.3f, lead_scale = %7.3f\n", dot, cur_dist, lead_scale));
 				wp->target_num = -1;
 
@@ -2460,7 +2483,11 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			targeting_same = 0;
 		}
 
+#ifndef NO_NETWORK
 		if ((target_objnum != -1) && (!targeting_same || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (target_team == TEAM_TRAITOR))) ) {
+#else
+		if ((target_objnum != -1) && (!targeting_same)) {
+#endif
 			wp->target_num = target_objnum;
 			wp->target_sig = Objects[target_objnum].signature;
 			wp->nearest_dist = 99999.0f;
@@ -2611,6 +2638,7 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 		wp->particle_spew_time = -1;		
 	}
 
+#ifndef NO_NETWORK
 	// assign the network signature.  The starting sig is sent to all clients, so this call should
 	// result in the same net signature numbers getting assigned to every player in the game
 	if ( Game_mode & GM_MULTIPLAYER ) {
@@ -2631,6 +2659,7 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 		// removed 1/13/98 -- MWA if ( MULTIPLAYER_CLIENT && (wip->subtype == WP_LASER) )
 		//	removed 1/13/98 -- MWA	wp->lifeleft += 1.5f;
 	}
+#endif
 
 	//	Make remote detonate missiles look like they're getting detonated by firer simply by giving them variable lifetimes.
 	if (!(Objects[parent_objnum].flags & OF_PLAYER_SHIP) && (wip->wi_flags & WIF_REMOTE)) {
@@ -2649,7 +2678,7 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 	objp->phys_info.side_slip_time_const = 0.0f;
 	objp->phys_info.rotdamp = 0.0f;
 	vm_vec_zero(&objp->phys_info.max_vel);
-	objp->phys_info.max_vel.z = wip->max_speed;
+	objp->phys_info.max_vel.xyz.z = wip->max_speed;
 	vm_vec_zero(&objp->phys_info.max_rotvel);
 	objp->shields[0] = wip->damage;
 	if (wip->wi_flags & WIF_BOMB){
@@ -2671,7 +2700,7 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 	//	Note: If you change how speed works here, such as adding in speed of parent ship, you'll need to change the AI code
 	//	that predicts collision points.  See Mike Kulas or Dave Andsager.  (Or see ai_get_weapon_speed().)
 	if (!(wip->wi_flags & WIF_HOMING)) {
-		vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.fvec, objp->phys_info.max_vel.z );
+		vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.desired_vel);
 	} else {		
@@ -2679,9 +2708,9 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 		//	Note that it is important to extract the forward component of the parent's velocity to factor out sliding, else
 		//	the missile will not be moving forward.
 		if(parent_objp != NULL){
-			vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.fvec) + objp->phys_info.max_vel.z/4 );
+			vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z/4 );
 		} else {
-			vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.fvec, objp->phys_info.max_vel.z/4 );
+			vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z/4 );
 		}
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
@@ -2772,6 +2801,7 @@ void spawn_child_weapons(object *objp)
 	}
 
 	starting_sig = 0;
+#ifndef NO_NETWORK
 	if ( Game_mode & GM_MULTIPLAYER ) {		
 		// get the next network signature and save it.  Set the next usable network signature to be
 		// the passed in objects signature + 1.  We "reserved" N of these slots when we created objp
@@ -2779,6 +2809,7 @@ void spawn_child_weapons(object *objp)
 		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
 		multi_set_network_signature( objp->net_signature, MULTI_SIG_NON_PERMANENT );
 	}
+#endif
 
 	for (i=0; i<wip->spawn_count; i++) {
 		int		weapon_objnum;
@@ -2812,10 +2843,12 @@ void spawn_child_weapons(object *objp)
 
 	}
 
+#ifndef NO_NETWORK
 	// in multiplayer, reset the next network signature to the one that was saved.
 	if ( Game_mode & GM_MULTIPLAYER ){
 		multi_set_network_signature( starting_sig, MULTI_SIG_NON_PERMANENT );
 	}
+#endif
 }
 
 // -----------------------------------------------------------------------
@@ -3147,7 +3180,10 @@ void weapon_hit( object * weapon_obj, object * other_obj, vector * hitpos )
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
 	// if( ((wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (other_obj == Player_obj) ){
-	if((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT){
+#ifndef NO_NETWORK
+	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT)
+#endif
+	{
 		weapon_hit_do_sound(other_obj, wip, hitpos);
 	}
 
@@ -3208,10 +3244,12 @@ void weapon_detonate(object *objp)
 		return;
 	}	
 
+#ifndef NO_NETWORK
 	// send a detonate packet in multiplayer
 	if(MULTIPLAYER_MASTER){
 		send_weapon_detonate_packet(objp);
 	}
+#endif
 
 	// call weapon hit
 	weapon_hit(objp, NULL, &objp->pos);
@@ -3452,26 +3490,26 @@ void weapon_maybe_spew_particle(object *obj)
 		// spew some particles
 		for(idx=0; idx<Weapon_particle_spew_count; idx++){
 			// get the backward vector of the weapon
-			direct = obj->orient.fvec;
+			direct = obj->orient.vec.fvec;
 			vm_vec_negate(&direct);
 
 			//	randomly perturb x, y and z
 			
 			// uvec
 			ang = fl_radian(frand_range(-90.0f, 90.0f));
-			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.fvec);			
+			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.fvec);			
 			direct = direct_temp;
 			vm_vec_scale(&direct, Weapon_particle_spew_scale);
 
 			// rvec
 			ang = fl_radian(frand_range(-90.0f, 90.0f));
-			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.rvec);			
+			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.rvec);			
 			direct = direct_temp;
 			vm_vec_scale(&direct, Weapon_particle_spew_scale);
 
 			// fvec
 			ang = fl_radian(frand_range(-90.0f, 90.0f));
-			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.uvec);			
+			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.uvec);			
 			direct = direct_temp;
 			vm_vec_scale(&direct, Weapon_particle_spew_scale);
 
@@ -3681,7 +3719,7 @@ int weapon_get_expl_handle(int weapon_expl_index, vector *pos, float size)
 		vector temp;
 
 		behind = 1;
-		vm_vec_scale_add(&temp, &Eye_position, &Eye_matrix.fvec, dist);
+		vm_vec_scale_add(&temp, &Eye_position, &Eye_matrix.vec.fvec, dist);
 		g3_rotate_vertex(&v, &temp);
 
 		// if still behind, bail and go with default

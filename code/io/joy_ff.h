@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy_ff.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Code for joystick Force Feedback.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/10 06:05:08  mharris
+ * Porting... added ifndef NO_JOYSTICK
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -42,6 +45,8 @@
 #ifndef __JOY_FF_H__
 #define __JOY_FF_H__
 
+#ifndef NO_JOYSTICK
+
 int joy_ff_init();
 void joy_ff_shutdown();
 void joy_ff_stop_effects();
@@ -60,5 +65,28 @@ void joy_ff_afterburn_off();
 void joy_ff_explode();
 void joy_ff_fly_by(int mag);
 void joy_ff_deathroll();
+
+#else
+
+#define joy_ff_init()						 (0)
+#define joy_ff_shutdown()
+#define joy_ff_stop_effects()
+#define joy_ff_mission_init(v)			 ((void)(v))
+#define joy_reacquire_ff()
+#define joy_unacquire_ff()
+#define joy_ff_play_vector_effect(v, scaler)		((void)((v), (scaler)))
+#define joy_ff_play_dir_effect(x, y)				((void)((x), (y)))
+#define joy_ff_play_primary_shoot(gain)			((void)(gain))
+#define joy_ff_play_secondary_shoot(gain)			((void)(gain))
+#define joy_ff_adjust_handling(speed)				((void)(speed))
+#define joy_ff_docked()
+#define joy_ff_play_reload_effect()
+#define joy_ff_afterburn_on()
+#define joy_ff_afterburn_off()
+#define joy_ff_explode()
+#define joy_ff_fly_by(mag)								((void)(mag))
+#define joy_ff_deathroll()
+
+#endif // ifndef NO_JOYSTICK
 
 #endif

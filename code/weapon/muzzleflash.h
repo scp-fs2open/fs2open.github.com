@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:03 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * all sorts of cool stuff about ships

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -924,8 +927,10 @@ void barracks_init_player_stuff(int mode)
 
 	int ranks[MAX_PILOTS];
 
-	for (int i=0; i<Num_pilots; i++) {
-		for (int j=0; j<Num_pilots; j++) {
+	int i;
+	for (i=0; i<Num_pilots; i++) {
+		int j;
+		for (j=0; j<Num_pilots; j++) {
 			if (!strcmp(Pilots[i], Pilots_arr[j])) {
 				ranks[i] = Pilot_ranks[j];
 				break;
@@ -1339,7 +1344,8 @@ void barracks_init()
 	}
 
 	// create buttons
-	for (int i=0; i<BARRACKS_NUM_BUTTONS; i++) {
+	int i;
+	for (i=0; i<BARRACKS_NUM_BUTTONS; i++) {
 		// create the object
 		Buttons[gr_screen.res][i].button.create(&Ui_window, "", Buttons[gr_screen.res][i].x, Buttons[gr_screen.res][i].y, 60, 30, Buttons[gr_screen.res][i].repeat, 1);
 
@@ -1653,7 +1659,8 @@ void barracks_close()
 	}	
 
 	// release rank pip bitmaps
-	for (int i=0; i<Rank_pips_count; i++) {
+	int i;
+	for (i=0; i<Rank_pips_count; i++) {
 		bm_release(Rank_pips_bitmaps + i);
 	}	
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * Code to load & display nebulas
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -185,9 +188,9 @@ void project_2d_onto_sphere( vector *pnt, float u, float v )
 	s = scale_factor * fl_sqrt( 1.0f - z*z );
 	x = s * (float)cos(a);
 	y = s * (float)sin(a);
-	pnt->x = x;
-	pnt->y = y;
-	pnt->z = z;
+	pnt->xyz.x = x;
+	pnt->xyz.y = y;
+	pnt->xyz.z = z;
 }
 
 // Version 199 mean major version=1, minor=99.
@@ -228,7 +231,8 @@ int load_nebula_sub(char *filename)
 	cfread( &num_tris, sizeof(int), 1, fp );
 	Assert( num_tris < MAX_TRIS );
 
-	for (int i=0; i<num_pts; i++ )	{
+	int i;
+	for (i=0; i<num_pts; i++ )	{
 		float xf, yf;
 		int l;
 

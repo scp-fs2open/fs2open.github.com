@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrSoft.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * Code for our software renderer using standard Win32 functions.  (Dibsections, etc)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/17 02:52:38  mharris
+ * More porting hacks
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -384,7 +387,8 @@
 #include "colors.h"
 #include "bitblt.h"
 
- // Window's specific
+#ifdef WIN32
+ // Windows specific
 
 // This structure is the same as LOGPALETTE except that LOGPALETTE
 // requires you to malloc out space for the palette, which just isn't
@@ -416,6 +420,7 @@ HDC hDibDC = NULL;
 void *lpDibBits=NULL;
 
 HPALETTE hOldPalette=NULL, hPalette = NULL;	
+#endif  // ifdef WIN32
 
 int Gr_soft_inited = 0;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -204,13 +207,13 @@ typedef	struct asteroid {
 typedef enum {
 	DG_ASTEROID,
 	DG_SHIP
-} debris_genre;
+} debris_genre_t;
 
 // TYPEDEF FOR FIELD TYPE
 typedef enum {
 	FT_ACTIVE,
 	FT_PASSIVE
-} field_type;
+} field_type_t;
 
 #define	MAX_ACTIVE_DEBRIS_TYPES	3
 
@@ -223,8 +226,8 @@ typedef	struct asteroid_field {
 	vector	vel;								//	Average asteroid moves at this velocity.
 	float		speed;							// Average speed of field
 	int		num_initial_asteroids;		//	Number of asteroids at creation.
-	field_type		field_type;			// active throws and wraps, passive does not
-	debris_genre	debris_genre;		// type of debris (ship or asteroid)  [generic type]
+	field_type_t		field_type;			// active throws and wraps, passive does not
+	debris_genre_t	debris_genre;		// type of debris (ship or asteroid)  [generic type]
 	int				field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];	// one of the debris type defines above
 } asteroid_field;
 

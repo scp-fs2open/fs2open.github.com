@@ -9,13 +9,35 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2002/05/17 03:05:08  mharris
+ * more porting tweaks
+ *
+ * Revision 1.7  2002/05/16 06:07:38  mharris
+ * more ifndef NO_SOUND
+ *
+ * Revision 1.6  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.5  2002/05/10 20:42:43  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.4  2002/05/09 23:02:52  mharris
+ * Not using default values for audiostream functions, since they may
+ * be macros (if NO_SOUND is defined)
+ *
+ * Revision 1.3  2002/05/09 13:51:37  mharris
+ * Added ifndef NO_DIRECT3D; removed dead test code
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -285,6 +307,7 @@
  *
  */
 
+#include "pstypes.h"
 #include "mainhallmenu.h"
 #include "palman.h"
 #include "bmpman.h"
@@ -303,18 +326,21 @@
 #include "contexthelp.h"
 #include "cmdline.h"
 #include "psnet.h"
-#include "multiui.h"
-#include "multiutil.h"
 #include "popup.h"
 #include "rtvoice.h"
 #include "osapi.h"
 #include "playermenu.h"
 #include "freespace.h"
-#include "multi_voice.h"
-#include "multi.h"
 #include "alphacolors.h"
 #include "demo.h"
 #include "fishtank.h"
+
+#ifndef NO_NETWORK
+#include "multiui.h"
+#include "multiutil.h"
+#include "multi_voice.h"
+#include "multi.h"
+#endif
 
 // #include "movie.h"
 
@@ -670,6 +696,7 @@ void main_hall_process_help_stuff();
 int Recording = 0;
 
 
+#ifndef NO_NETWORK
 // called when multiplayer clicks on the ready room door.  May pop up dialog depending on network
 // connection status and errors
 void main_hall_do_multi_ready()
@@ -739,6 +766,7 @@ void main_hall_do_multi_ready()
 	// select protocol
 	psnet_use_protocol(Multi_options_g.protocol);
 }
+#endif  // ifndef NO_NETWORK
 
 // blit some small color indicators to show whether ships.tbl and weapons.tbl are valid
 // green == valid, red == invalid.
@@ -940,6 +968,7 @@ void main_hall_init(int main_hall_num)
 
 	// set the game_mode based on the type of player
 	Assert( Player != NULL );
+#ifndef NO_NETWORK
 	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ){
 		Game_mode = GM_MULTIPLAYER;
 	} else {
@@ -950,6 +979,9 @@ void main_hall_init(int main_hall_num)
 		Main_hall_netgame_started = 1;
 		main_hall_do_multi_ready();
 	}
+#else
+	Game_mode = GM_NORMAL;
+#endif // ifndef NO_NETWORK
 }
 
 void main_hall_exit_game()
@@ -1050,10 +1082,15 @@ void main_hall_do(float frametime)
 #elif defined(E3_BUILD) || defined(PRESS_TOUR_BUILD)									
 			gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);			
 #else
+
+#ifndef NO_NETWORK
 			if (Player->flags & PLAYER_FLAGS_IS_MULTI){
 				gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 				main_hall_do_multi_ready();
-			} else {				
+			}
+			else
+#endif // ifndef NO_NETWORK
+			{				
 				if(strlen(Main_hall_campaign_cheat)){
 					gameseq_post_event(GS_EVENT_CAMPAIGN_CHEAT);
 				} else {
@@ -1252,6 +1289,7 @@ void main_hall_do(float frametime)
 #ifndef NDEBUG
 	gr_set_color_fast(&Color_white);
 
+#ifndef NO_DIRECT3D
 	// d3d
 	if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_ARGB_D3D){		
@@ -1269,14 +1307,13 @@ void main_hall_do(float frametime)
 		}
 		gr_printf(320, gr_screen.max_h - 40, "Fog : %d", D3D_fog_mode);
 		gr_printf(320, gr_screen.max_h - 50, "Zbias : %d", D3D_zbias);
-		// extern void d3d_test();
-		// d3d_test();
 	} else if(gr_screen.mode == GR_GLIDE){
 		extern int Glide_voodoo3;
 		if(Glide_voodoo3){
 			gr_string(320, gr_screen.max_h - 20, "VOODOO 3");
 		}
 	}
+#endif
 #endif	
 
 	gr_flip();
@@ -1393,6 +1430,7 @@ void main_hall_close()
 // start the main hall music playing
 void main_hall_start_music()
 {
+#ifndef NO_SOUND
 	// start a looping ambient sound
 	main_hall_start_ambient();
 
@@ -1408,21 +1446,24 @@ void main_hall_start_music()
 		if (music_wavfile_name != NULL) {
 				Main_hall_music_handle = audiostream_open( music_wavfile_name, ASF_EVENTMUSIC );
 				if ( Main_hall_music_handle != -1 )
-					audiostream_play(Main_hall_music_handle, Master_event_music_volume);
+					audiostream_play(Main_hall_music_handle, Master_event_music_volume, 1);
 		}
 		else {
 			nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
 		}
 	}
+#endif  // ifndef NO_SOUND
 }
 
 // stop the main hall music
 void main_hall_stop_music()
 {
+#ifndef NO_SOUND
 	if ( Main_hall_music_handle != -1 ) {
-		audiostream_close_file(Main_hall_music_handle);
+		audiostream_close_file(Main_hall_music_handle, 1);
 		Main_hall_music_handle = -1;
 	}
+#endif
 }
 
 // do any necessary instantiation of misc animations
@@ -2122,38 +2163,4 @@ void main_hall_read_table()
 void main_hall_vasudan_funny()
 {
 	Vasudan_funny = 1;
-}
-
-
-/*
-#include "3d.h"
-int argh = -1;
-matrix view = {
-	0.0f, 0.0f, 0.0f,
-	0.0f, 0.0f, 0.0f,
-	0.0f, 0.0f, 1.0f
-};
-*/
-void d3d_test()
-{
-	/*	
-	vertex p1;
-	vector sun_pos = vmd_zero_vector;
-	sun_pos.z = 1.0f;
-
-	if(argh == -1){
-		argh = bm_load("sun01");
-		bm_lock(argh, 16, BMP_TEX_XPARENT);
-		bm_unlock(argh);
-	}
-	
-	g3_start_frame(1);
-	g3_set_view_matrix(&vmd_zero_vector, &view, 0.5f);	
-	g3_rotate_vertex(&p1, &sun_pos);
-	g3_project_vertex(&p1);
-	gr_zbuffer_set(GR_ZBUFF_NONE);
-	gr_set_bitmap( argh );
-	g3_draw_bitmap(&p1, 0, 0.05f, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT);		
-	g3_end_frame();
-	*/
 }

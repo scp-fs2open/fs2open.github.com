@@ -9,13 +9,16 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/Chttpget.cpp $
-* $Revision: 1.1 $
-* $Date: 2002-06-03 03:25:58 $
+* $Revision: 2.0 $
+* $Date: 2002-06-03 04:02:23 $
 * $Author: penguin $
 *
 * HTTP Client class (get only)
 *
 * $Log: not supported by cvs2svn $
+* Revision 1.2  2002/05/08 02:35:09  mharris
+* porting
+*
 * Revision 1.1  2002/05/02 18:03:08  mharris
 * Initial checkin - converted filenames and includes to lower case
 *
@@ -104,6 +107,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <errno.h>
 
 #include "inetgetfile.h"
 #include "chttpget.h"
@@ -200,7 +205,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	unsigned long arg;
 
 	arg = true;
-#ifndef __LINUX__
+#ifndef unix
 	ioctlsocket( m_DataSock, FIONBIO, &arg );
 #else
 	ioctl( m_DataSock, FIONBIO, &arg );

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -445,7 +448,7 @@ int cmeasure_create( object * source_obj, vector * pos, int cm_type, int rand_va
 
 	vector vel, rand_vec;
 
-	vm_vec_scale_add(&vel, &source_obj->phys_info.vel, &source_obj->orient.fvec, -25.0f);
+	vm_vec_scale_add(&vel, &source_obj->phys_info.vel, &source_obj->orient.vec.fvec, -25.0f);
 
 	static_randvec(arand+1, &rand_vec);
 
@@ -460,8 +463,8 @@ int cmeasure_create( object * source_obj, vector * pos, int cm_type, int rand_va
 	obj->phys_info.side_slip_time_const = 10000.0f;
 
 	vm_vec_zero(&obj->phys_info.max_vel);		// make so he can't turn on his own VOLITION anymore.
-	obj->phys_info.max_vel.z = -25.0f;
-	vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.fvec, obj->phys_info.max_vel.z );
+	obj->phys_info.max_vel.xyz.z = -25.0f;
+	vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.max_vel.xyz.z );
 
 	vm_vec_zero(&obj->phys_info.max_rotvel);	// make so he can't change speed on his own VOLITION anymore.
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -105,14 +108,14 @@
 // returns 1 if a point is in an octant.
 int point_in_octant( polymodel * pm, model_octant * oct, vector *vert )
 {
-	if ( vert->x < oct->min.x ) return 0;
-	if ( vert->x > oct->max.x ) return 0;
+	if ( vert->xyz.x < oct->min.xyz.x ) return 0;
+	if ( vert->xyz.x > oct->max.xyz.x ) return 0;
 
-	if ( vert->y < oct->min.y ) return 0;
-	if ( vert->y > oct->max.y ) return 0;
+	if ( vert->xyz.y < oct->min.xyz.y ) return 0;
+	if ( vert->xyz.y > oct->max.xyz.y ) return 0;
 
-	if ( vert->z< oct->min.z) return 0;
-	if ( vert->z> oct->max.z) return 0;
+	if ( vert->xyz.z < oct->min.xyz.z) return 0;
+	if ( vert->xyz.z > oct->max.xyz.z) return 0;
 
 	return 1;
 }
@@ -214,9 +217,9 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 			vm_vec_add2( &center_point, Interp_verts[verts[i].vertnum] );
 		}
 
-		center_point.x /= nv;
-		center_point.y /= nv;
-		center_point.z /= nv;
+		center_point.xyz.x /= nv;
+		center_point.xyz.y /= nv;
+		center_point.xyz.z /= nv;
 
 		*vp(p+20) = center_point;
 
@@ -273,9 +276,9 @@ void moff_flatpoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 			vm_vec_add2( &center_point, Interp_verts[verts[i*2]] );
 		}
 
-		center_point.x /= nv;
-		center_point.y /= nv;
-		center_point.z /= nv;
+		center_point.xyz.x /= nv;
+		center_point.xyz.y /= nv;
+		center_point.xyz.z /= nv;
 
 		*vp(p+20) = center_point;
 
@@ -389,27 +392,27 @@ void model_octant_create( polymodel * pm )
 		z = i & 1;
 	
 		if ( x )	{
-			pm->octants[i].max.x = max.x;
-			pm->octants[i].min.x = center.x;
+			pm->octants[i].max.xyz.x = max.xyz.x;
+			pm->octants[i].min.xyz.x = center.xyz.x;
 		} else {
-			pm->octants[i].max.x = center.x;
-			pm->octants[i].min.x = min.x;
+			pm->octants[i].max.xyz.x = center.xyz.x;
+			pm->octants[i].min.xyz.x = min.xyz.x;
 		}
 
 		if ( y )	{
-			pm->octants[i].max.y = max.y;
-			pm->octants[i].min.y = center.y;
+			pm->octants[i].max.xyz.y = max.xyz.y;
+			pm->octants[i].min.xyz.y = center.xyz.y;
 		} else {
-			pm->octants[i].max.y = center.y;
-			pm->octants[i].min.y = min.y;
+			pm->octants[i].max.xyz.y = center.xyz.y;
+			pm->octants[i].min.xyz.y = min.xyz.y;
 		}
 
 		if ( z )	{
-			pm->octants[i].max.z = max.z;
-			pm->octants[i].min.z = center.z;
+			pm->octants[i].max.xyz.z = max.xyz.z;
+			pm->octants[i].min.xyz.z = center.xyz.z;
 		} else {
-			pm->octants[i].max.z = center.z;
-			pm->octants[i].min.z = min.z;
+			pm->octants[i].max.xyz.z = center.xyz.z;
+			pm->octants[i].min.xyz.z = min.xyz.z;
 		}
 
 		model_octant_find_shields( pm, &pm->octants[i] );
@@ -466,9 +469,9 @@ int model_which_octant_distant_many( vector *pnt, int model_num,matrix *model_or
 	vm_vec_avg( &center, &((*pm)->mins), &((*pm)->maxs ));
 	int i, x, y, z;
 
-	if ( rotpnt.x > center.x ) x = 1; else x = 0;
-	if ( rotpnt.y > center.y ) y = 1; else y = 0;
-	if ( rotpnt.z > center.z ) z = 1; else z = 0;
+	if ( rotpnt.xyz.x > center.xyz.x ) x = 1; else x = 0;
+	if ( rotpnt.xyz.y > center.xyz.y ) y = 1; else y = 0;
+	if ( rotpnt.xyz.z > center.xyz.z ) z = 1; else z = 0;
 
 	i = ( (x<<2) | (y<<1) | z );
 
@@ -506,9 +509,9 @@ int model_which_octant_distant( vector *pnt, int model_num,matrix *model_orient,
 	vm_vec_avg( &center, &pm->mins, &pm->maxs );
 	int i, x, y, z;
 
-	if ( rotpnt.x > center.x ) x = 1; else x = 0;
-	if ( rotpnt.y > center.y ) y = 1; else y = 0;
-	if ( rotpnt.z > center.z ) z = 1; else z = 0;
+	if ( rotpnt.xyz.x > center.xyz.x ) x = 1; else x = 0;
+	if ( rotpnt.xyz.y > center.xyz.y ) y = 1; else y = 0;
+	if ( rotpnt.xyz.z > center.xyz.z ) z = 1; else z = 0;
 
 	i = ( (x<<2) | (y<<1) | z );
 
@@ -545,9 +548,9 @@ int model_which_octant( vector *pnt, int model_num,matrix *model_orient, vector 
 	vm_vec_avg( &center, &pm->mins, &pm->maxs );
 	int i, x, y, z;
 
-	if ( rotpnt.x > center.x ) x = 1; else x = 0;
-	if ( rotpnt.y > center.y ) y = 1; else y = 0;
-	if ( rotpnt.z > center.z ) z = 1; else z = 0;
+	if ( rotpnt.xyz.x > center.xyz.x ) x = 1; else x = 0;
+	if ( rotpnt.xyz.y > center.xyz.y ) y = 1; else y = 0;
+	if ( rotpnt.xyz.z > center.xyz.z ) z = 1; else z = 0;
 
 	i =  (x<<2) | (y<<1) | z;
 

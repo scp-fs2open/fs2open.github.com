@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fvi.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Routines to find intersections of various 3d things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -162,12 +165,12 @@ void accurate_square_root( float A, float B, float C, float discriminant, float 
 float matrix_determinant_from_vectors(vector *v1,vector *v2,vector *v3)
 {
 	float ans;
-	ans=v1->x*v2->y*v3->z;
-	ans+=v2->x*v3->y*v1->z;
-	ans+=v3->x*v1->y*v2->z;
-	ans-=v1->z*v2->y*v3->x;
-	ans-=v2->z*v3->y*v1->x;
-	ans-=v3->z*v1->y*v2->x;
+	ans =  v1->xyz.x * v2->xyz.y * v3->xyz.z;
+	ans += v2->xyz.x * v3->xyz.y * v1->xyz.z;
+	ans += v3->xyz.x * v1->xyz.y * v2->xyz.z;
+	ans -= v1->xyz.z * v2->xyz.y * v3->xyz.x;
+	ans -= v2->xyz.z * v3->xyz.y * v1->xyz.x;
+	ans -= v3->xyz.z * v1->xyz.y * v2->xyz.x;
 
 	return ans;
 }
@@ -241,9 +244,9 @@ float fvi_ray_plane(vector *new_pnt,
 	den = -vm_vec_dot(plane_norm,ray_direction);
 	if ( den == 0.0f ) {	// Ray & plane are parallel, so there is no intersection
 		if ( new_pnt )	{
-			new_pnt->x = -FLT_MAX;
-			new_pnt->y = -FLT_MAX;
-			new_pnt->z = -FLT_MAX;
+			new_pnt->xyz.x = -FLT_MAX;
+			new_pnt->xyz.y = -FLT_MAX;
+			new_pnt->xyz.z = -FLT_MAX;
 		}
 		return -FLT_MAX;			
 	}
@@ -314,9 +317,9 @@ int fvi_segment_sphere(vector *intp,vector *p0,vector *p1,vector *sphere_pos,flo
 	}
 
 	// normalize dn
-	dn.x = d.x / mag_d;
-	dn.y = d.y / mag_d;
-	dn.z = d.z / mag_d;
+	dn.xyz.x = d.xyz.x / mag_d;
+	dn.xyz.y = d.xyz.y / mag_d;
+	dn.xyz.z = d.xyz.z / mag_d;
 
 	w_dist = vm_vec_dot(&dn,&w);
 
@@ -386,9 +389,9 @@ int fvi_ray_sphere(vector *intp,vector *p0,vector *p1,vector *sphere_pos,float s
 	}
 
 	// normalize dn
-	dn.x = d.x / mag_d;
-	dn.y = d.y / mag_d;
-	dn.z = d.z / mag_d;
+	dn.xyz.x = d.xyz.x / mag_d;
+	dn.xyz.y = d.xyz.y / mag_d;
+	dn.xyz.z = d.xyz.z / mag_d;
 
 	w_dist = vm_vec_dot(&dn,&w);
 
@@ -444,11 +447,11 @@ int fvi_ray_sphere(vector *intp,vector *p0,vector *p1,vector *sphere_pos,float s
 // Fast ray-box intersection taken from Graphics Gems I, pages 395,736.
 int fvi_ray_boundingbox( vector *min, vector *max, vector * p0, vector *pdir, vector *hitpt )
 {
-	float *origin = (float *)&p0->x;
-	float *dir = (float *)&pdir->x;
+	float *origin = (float *)&p0->xyz.x;
+	float *dir = (float *)&pdir->xyz.x;
 	float *minB = (float *)min;
 	float *maxB = (float *)max;
-	float *coord = (float *)&hitpt->x;
+	float *coord = (float *)&hitpt->xyz.x;
 	int inside = 1;
 	int middle[3];
 	int i;
@@ -546,12 +549,12 @@ int fvi_point_face(vector *checkp, int nv, vector **verts, vector * norm1, float
 	norm = (float *)norm1;
 
 	//project polygon onto plane by finding largest component of normal
-	t.x = fl_abs(norm[0]); 
-	t.y = fl_abs(norm[1]); 
-	t.z = fl_abs(norm[2]);
+	t.xyz.x = fl_abs(norm[0]); 
+	t.xyz.y = fl_abs(norm[1]); 
+	t.xyz.z = fl_abs(norm[2]);
 
-	if (t.x > t.y) if (t.x > t.z) i0=0; else i0=2;
-	else if (t.y > t.z) i0=1; else i0=2;
+	if (t.xyz.x > t.xyz.y) if (t.xyz.x > t.xyz.z) i0=0; else i0=2;
+	else if (t.xyz.y > t.xyz.z) i0=1; else i0=2;
 
 	if (norm[i0] > 0.0f) {
 		i1 = ij_table[i0][0];
@@ -753,14 +756,14 @@ int fvi_sphere_perp_edge(vector *intersect_point, vector *sphere_center_start, v
 	vm_project_point_onto_plane(&Xs_proj, sphere_center_start, &z_hat, &V0);
 
 	vector plane_coord;
-	plane_coord.x = vm_vec_dotprod(&Xs_proj, &x_hat);
-	plane_coord.y = vm_vec_dotprod(&Xe_proj, &y_hat);
-	plane_coord.z = vm_vec_dotprod(&Xe_proj, &z_hat);
+	plane_coord.xyz.x = vm_vec_dotprod(&Xs_proj, &x_hat);
+	plane_coord.xyz.y = vm_vec_dotprod(&Xe_proj, &y_hat);
+	plane_coord.xyz.z = vm_vec_dotprod(&Xe_proj, &z_hat);
 
 	// determime the position on the edge line
-	vm_vec_copy_scale( intersect_point, &x_hat, plane_coord.x );
-	vm_vec_scale_add2( intersect_point, &y_hat, plane_coord.y );
-	vm_vec_scale_add2( intersect_point, &z_hat, plane_coord.z );
+	vm_vec_copy_scale( intersect_point, &x_hat, plane_coord.xyz.x );
+	vm_vec_scale_add2( intersect_point, &y_hat, plane_coord.xyz.y );
+	vm_vec_scale_add2( intersect_point, &z_hat, plane_coord.xyz.z );
 
 	// check if point is actually on edge
 	float edge_parameter;
@@ -1524,34 +1527,34 @@ int project_point_onto_bbox(vector *mins, vector *maxs, vector *start, vector *b
 {
 	int inside = TRUE;
 
-	if (start->x > maxs->x) {
-		box_pt->x = maxs->x;
+	if (start->xyz.x > maxs->xyz.x) {
+		box_pt->xyz.x = maxs->xyz.x;
 		inside = FALSE;
-	} else if (start->x < mins->x) {
-		box_pt->x = mins->x;
+	} else if (start->xyz.x < mins->xyz.x) {
+		box_pt->xyz.x = mins->xyz.x;
 		inside = FALSE;
 	} else {
-		box_pt->x = start->x;
+		box_pt->xyz.x = start->xyz.x;
 	}
 
-	if (start->y > maxs->y) {
-		box_pt->y = maxs->y;
+	if (start->xyz.y > maxs->xyz.y) {
+		box_pt->xyz.y = maxs->xyz.y;
 		inside = FALSE;
-	} else if (start->y < mins->y) {
-		box_pt->y = mins->y;
+	} else if (start->xyz.y < mins->xyz.y) {
+		box_pt->xyz.y = mins->xyz.y;
 		inside = FALSE;
 	} else {
-		box_pt->y = start->y;
+		box_pt->xyz.y = start->xyz.y;
 	}
 
-	if (start->z > maxs->z) {
-		box_pt->z = maxs->z;
+	if (start->xyz.z > maxs->xyz.z) {
+		box_pt->xyz.z = maxs->xyz.z;
 		inside = FALSE;
-	} else if (start->z < mins->z) {
-		box_pt->z = mins->z;
+	} else if (start->xyz.z < mins->xyz.z) {
+		box_pt->xyz.z = mins->xyz.z;
 		inside = FALSE;
 	} else {
-		box_pt->z = start->z;
+		box_pt->xyz.z = start->xyz.z;
 	}
 
 	return inside;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -187,11 +190,14 @@
 #include "osregistry.h"
 #include "palman.h"
 #include "mainhallmenu.h"
-#include "multi.h"
 #include "popup.h"
 #include "mouse.h"
 #include "alphacolors.h"
 #include "localize.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#endif
 
 // --------------------------------------------------------------------------------------------------------
 // Demo title screen
@@ -925,8 +931,10 @@ int player_select_create_new_pilot()
 		strcpy(Pilots[idx + 1], Pilots[idx]);		
 	}	
 
+#ifndef NO_NETWORK
 	// by default, set the default netgame protocol to be VMT
 	Multi_options_g.protocol = NET_TCP;	
+#endif
 
 	// select the beginning of the list
 	Player_select_pilot = 0;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -58,8 +61,8 @@
 typedef struct {
 	char *text;  // text to display
 	char ani_filename[MAX_FILENAME_LEN];  // associated ani file to play
-	anim *anim;
-	anim_instance *anim_instance;
+	anim_t *anim;
+	anim_instance_t *anim_instance;
 	int anim_ref;  // potential reference to another index (use it's anim instead of this's)
 	char wave_filename[MAX_FILENAME_LEN];
 	int wave;  // instance number of above

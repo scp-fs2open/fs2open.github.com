@@ -9,13 +9,16 @@
 
  /*
  * $Logfile: /Freespace2/code/Inetfile/CFtp.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  *  $Author: penguin $
  *
  * FTP Client class (get only)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/08 02:35:09  mharris
+ * porting
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -37,6 +40,7 @@
 #include <process.h>
 #include <stdio.h>
 
+#include "pstypes.h"
 #include "cftp.h"
 
 void FTPObjThread( void * obj )
@@ -170,9 +174,9 @@ CFtpGet::CFtpGet(char *URL,char *localfile,char *Username,char *Password)
 	else
 	{
 		strncpy(m_szDir,dirstart,(filestart-dirstart));
-		m_szDir[(filestart-dirstart)] = NULL;
+		m_szDir[(filestart-dirstart)] = '\0';
 		strncpy(m_szHost,pURL,(dirstart-pURL));
-		m_szHost[(dirstart-pURL)-1] = NULL;
+		m_szHost[(dirstart-pURL)-1] = '\0';
 	}
 	//At this point we should have a nice host,dir and filename
 	
@@ -298,7 +302,7 @@ unsigned int CFtpGet::GetFile()
 	if(p)
 	{
 		s = strchr(p,' ');
-		*s = NULL;
+		*s = '\0';
 		m_iBytesTotal = atoi(p);
 	}
 	if(m_Aborting)
@@ -326,7 +330,11 @@ unsigned int CFtpGet::IssuePort()
 
 	char szCommandString[200];
 	SOCKADDR_IN listenaddr;					// Socket address structure
-   int iLength;									// Length of the address structure
+#ifdef unix
+   socklen_t iLength;						// Length of the address structure
+#else
+   int iLength;								// Length of the address structure
+#endif
    UINT nLocalPort;							// Local port for listening
 	UINT nReplyCode;							// FTP server reply code
 
@@ -353,6 +361,7 @@ unsigned int CFtpGet::IssuePort()
 	}
 				
 	// Format the PORT command with the correct numbers.
+#ifdef WINDOWS
 	sprintf(szCommandString, "PORT %d,%d,%d,%d,%d,%d\r\n", 
 				listenaddr.sin_addr.S_un.S_un_b.s_b1, 
 				listenaddr.sin_addr.S_un.S_un_b.s_b2,
@@ -360,7 +369,16 @@ unsigned int CFtpGet::IssuePort()
 				listenaddr.sin_addr.S_un.S_un_b.s_b4,
 				nLocalPort & 0xFF,	
 				nLocalPort >> 8);
-															
+#else
+	sprintf(szCommandString, "PORT %d,%d,%d,%d,%d,%d\r\n", 
+			  (listenaddr.sin_addr.s_addr & 0xff000000) >> 24,
+			  (listenaddr.sin_addr.s_addr & 0x00ff0000) >> 16,
+			  (listenaddr.sin_addr.s_addr & 0x0000ff00) >>  8,
+			  (listenaddr.sin_addr.s_addr & 0x000000ff),
+				nLocalPort & 0xFF,	
+				nLocalPort >> 8);
+#endif
+
 	// Tell the server which port to use for data.
 	nReplyCode = SendFTPCommand(szCommandString);
 	if (nReplyCode != 200)
@@ -465,7 +483,7 @@ unsigned int CFtpGet::ReadFTPServerReply()
 	memset(recv_buffer,0,1000);
 	do
 	{
-		chunk[0]=NULL;
+		chunk[0] = '\0';
 		iBytesRead = recv(m_ControlSock,chunk,1,0);
 
 		if (iBytesRead == SOCKET_ERROR)
@@ -477,13 +495,13 @@ unsigned int CFtpGet::ReadFTPServerReply()
 		
 		if((chunk[0]==0x0a) || (chunk[0]==0x0d))
 		{
-			if(recv_buffer[0]!=NULL) 
+			if(recv_buffer[0] != '\0') 
 			{
 				igotcrlf = 1;	
 			}
 		}
 		else
-		{	chunk[1] = NULL;
+		{	chunk[1] = '\0';
 			strcat(recv_buffer,chunk);
 		}
 		
@@ -501,7 +519,7 @@ unsigned int CFtpGet::ReadFTPServerReply()
 		return 999;
 	}
 	memcpy(szcode,recv_buffer,3);
-	szcode[3] = NULL;
+	szcode[3] = '\0';
 	rcode = atoi(szcode);
     // Extract the reply code from the server reply and return as an integer
 	return(rcode);	            

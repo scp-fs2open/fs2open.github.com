@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:28 $
  * $Author: penguin $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -240,7 +243,11 @@ void afterburners_start(object *objp)
 	}
 
 	// Check if there is enough afterburner fuel
+#ifndef NO_NETWORK
 	if ( (shipp->afterburner_fuel < MIN_AFTERBURNER_FUEL_TO_ENGAGE) && !MULTIPLAYER_CLIENT ) {
+#else
+	if ( (shipp->afterburner_fuel < MIN_AFTERBURNER_FUEL_TO_ENGAGE) ) {
+#endif
 		if ( objp == Player_obj ) {
 			snd_play( &Snds[SND_ABURN_FAIL] );
 		}
@@ -328,7 +335,11 @@ void afterburners_update(object *objp, float fl_frametime)
 	}
 
 	// single player, multiplayer servers, and clients for their own ships
+#ifndef NO_NETWORK
 	if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER || (objp == Player_obj)){
+#else
+	if (objp != Player_obj) {
+#endif
 		if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 			// Recover afterburner fuel
 		

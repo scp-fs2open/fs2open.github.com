@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TrainingMenu.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * C module that contains functions to drive the Training user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -134,7 +137,7 @@ static int Training_mask_w, Training_mask_h;
 static MENU_REGION region[TRAINING_MENU_MAX_CHOICES];
 static int num_training;
 
-static training_menu_inited=0;
+static int training_menu_inited=0;
 
 void training_menu_init()
 {

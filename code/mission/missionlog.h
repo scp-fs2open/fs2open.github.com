@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Header file to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -164,7 +167,9 @@ extern void mission_log_init();
 // adds an entry to the mission log.  The name is a string identifier that is the object
 // of the event.  The multiplayer version of this takes the actual entry number to modify.
 extern void mission_log_add_entry(int type, char *pname, char *sname, int index = -1 );
-extern void mission_log_add_entry_multi( int type, char *pname, char *sname, int index, fix timestamp, int flags );
+#ifndef NO_NETWORK
+  extern void mission_log_add_entry_multi( int type, char *pname, char *sname, int index, fix timestamp, int flags );
+#endif
 
 // function to determine if event happened and what time it happened
 extern int mission_log_get_time( int type, char *name, char *sname, fix *time);

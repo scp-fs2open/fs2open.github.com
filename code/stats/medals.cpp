@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/15 15:06:11  mharris
+ * TEMP PORT FIX: for non-Win32, ifdef out code to assign multiple
+ * levels of a medal to remove _splitpath() reference.
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -670,6 +674,7 @@ void init_medal_bitmaps()
 			// for this medal.  if the player has > 1 of these types of medals, then determien
 			// which of the possible version to use based on the player's count of this medal
 			strcpy( filename, Medals[idx].bitmap );
+#ifdef WIN32
 			_splitpath( filename, NULL, NULL, base, NULL );
 
 			num_medals = Player_score->medals[idx];
@@ -683,7 +688,12 @@ void init_medal_bitmaps()
 				// has no character. next version is a, then b, etc.
 				sprintf( base, "%s%c", base, (num_medals-2)+'a');
 			}
-	
+#else
+			// mharris FIXME
+			// quick hack for unix - no levels of medals
+			strcpy(base, filename);
+#endif
+
 			// hi-res support
 			if (gr_screen.res == GR_1024) {
 				sprintf( filename, "2_%s", base );

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/21 15:43:05  mharris
+ * Cosmetics - removed commented-out code
+ *
+ * Revision 1.2  2002/05/17 03:04:09  mharris
+ * Make mouse routines more portable
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -133,11 +139,15 @@
 #define MOUSE_MODE_DI	0
 #define MOUSE_MODE_WIN	1
 
+#ifdef USE_DIRECTINPUT
 #ifdef NDEBUG
 LOCAL int Mouse_mode = MOUSE_MODE_DI;
 #else
 LOCAL int Mouse_mode = MOUSE_MODE_WIN;
 #endif
+#else // !USE_DIRECTINPUT
+LOCAL int Mouse_mode = MOUSE_MODE_WIN;
+#endif // ifdef USE_DIRECTINPUT
 
 LOCAL int mouse_inited = 0;
 LOCAL int Di_mouse_inited = 0;
@@ -164,10 +174,13 @@ int Use_mouse_to_fly = 0;
 int Mouse_hidden = 0;
 int Keep_mouse_centered = 0;;
 
+#ifdef USE_DIRECTINPUT
 int di_init();
 void di_cleanup();
-void mouse_force_pos(int x, int y);
 void mouse_eval_deltas_di();
+#endif
+
+void mouse_force_pos(int x, int y);
 
 int mouse_is_visible()
 {
@@ -444,8 +457,7 @@ void mouse_force_pos(int x, int y)
 
 		pnt.x = x;
 		pnt.y = y;
-		ClientToScreen((HWND) os_get_window(), &pnt);
-		SetCursorPos(pnt.x, pnt.y);
+		setWindowMousePos(&pnt);
 	}
 }
 
@@ -462,10 +474,12 @@ void mouse_eval_deltas()
 	if (!mouse_inited)
 		return;
 
+#ifdef USE_DIRECTINPUT
 	if (Mouse_mode == MOUSE_MODE_DI) {
 		mouse_eval_deltas_di();
 		return;
 	}
+#endif
 
 	cx = gr_screen.max_w / 2;
 	cy = gr_screen.max_h / 2;
@@ -473,8 +487,7 @@ void mouse_eval_deltas()
 	ENTER_CRITICAL_SECTION(&mouse_lock);
 
 	POINT pnt;
-	GetCursorPos(&pnt);
-	ScreenToClient((HWND)os_get_window(), &pnt);
+	getWindowMousePos(&pnt);
 	tmp_x = pnt.x;
 	tmp_y = pnt.y;
 
@@ -497,6 +510,7 @@ void mouse_eval_deltas()
 	LEAVE_CRITICAL_SECTION(&mouse_lock);
 }
 
+#ifdef USE_DIRECTINPUT
 #include "vdinput.h"
 
 static LPDIRECTINPUT			Di_mouse_obj = NULL;
@@ -559,6 +573,8 @@ void mouse_eval_deltas_di()
 	// JH: Dang!  This makes the mouse readings in DirectInput act screwy!
 //	mouse_force_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
 }
+#endif  // ifdef USE_DIRECTINPUT
+
 
 int mouse_get_pos(int *xpos, int *ypos)
 {
@@ -580,8 +596,7 @@ int mouse_get_pos(int *xpos, int *ypos)
 	}
 
 	POINT pnt;
-	GetCursorPos(&pnt);
-	ScreenToClient((HWND)os_get_window(), &pnt);
+	getWindowMousePos(&pnt);
 
 //	EnterCriticalSection(&mouse_lock);
 
@@ -627,8 +642,7 @@ void mouse_get_real_pos(int *mx, int *my)
 	}
 
 	POINT pnt;
-	GetCursorPos(&pnt);
-	ScreenToClient((HWND)os_get_window(), &pnt);
+	getWindowMousePos(&pnt);
 	
 	*mx = pnt.x;
 	*my = pnt.y;
@@ -647,6 +661,7 @@ void mouse_set_pos(int xpos, int ypos)
 	}
 }
 
+#ifdef USE_DIRECTINPUT
 int di_init()
 {
 	HRESULT hr;
@@ -713,6 +728,7 @@ int di_init()
 	return TRUE;
 }
 
+
 void di_cleanup()
 {
 	// Destroy any lingering IDirectInputDevice object.
@@ -733,3 +749,26 @@ void di_cleanup()
 
 	Di_mouse_inited = 0;
 }
+#endif  // ifdef USE_DIRECTINPUT
+
+
+#ifdef WIN32
+// portable routine to get the mouse position, relative
+// to current window
+void getWindowMousePos(POINT * pt)
+{
+	Assert(pt != NULL);
+	GetCursorPos(pt);
+	ScreenToClient((HWND)os_get_window(), pt);
+}
+
+
+// portable routine to get the mouse position, relative
+// to current window
+void setWindowMousePos(POINT * pt)
+{
+	Assert(pt != NULL);
+	ClientToScreen((HWND) os_get_window(), pt);
+	SetCursorPos(pt->x, pt->y);
+}
+#endif // ifdef WIN32

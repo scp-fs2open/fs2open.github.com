@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Low-level floating point math routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/28 20:22:00  mharris
+ * Changed frand() -- was returning negative values under Linux
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -150,8 +153,11 @@ float fl_roundoff(float x, int multiple)
 //	Return random value in range 0.0..1.0- (1.0- means the closest number less than 1.0)
 float frand()
 {
-	float rval;
-	rval = ((float) myrand()) / (RAND_MAX + 1);
+	int i_rval;
+	do {
+		i_rval = myrand();
+	} while (i_rval == RAND_MAX);
+	float rval = ((float) i_rval) / RAND_MAX;
 	return rval;
 }
 

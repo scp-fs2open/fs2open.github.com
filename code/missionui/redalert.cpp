@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/09 23:02:59  mharris
+ * Not using default values for audiostream functions, since they may
+ * be macros (if NO_SOUND is defined)
+ *
+ * Revision 1.2  2002/05/07 02:59:29  mharris
+ * make Buttons[] static
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -226,7 +233,7 @@ static int Ra_flash_coords[GR_NUM_RESOLUTIONS][2] = {
 #define RA_REPLAY_MISSION				0
 #define RA_CONTINUE						1
 
-ui_button_info Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
+static ui_button_info Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 	{	// GR_640
 		ui_button_info("RAB_00",	2,		445,	-1,	-1, 0),
 		ui_button_info("RAB_01",	575,	432,	-1,	-1, 1),
@@ -319,7 +326,7 @@ void red_alert_voice_stop()
 	if ( Red_alert_voice == -1 )
 		return;
 
-	audiostream_stop(Red_alert_voice);	// stream is automatically rewound
+	audiostream_stop(Red_alert_voice, 1, 0);	// stream is automatically rewound
 }
 
 // a button was pressed, deal with it

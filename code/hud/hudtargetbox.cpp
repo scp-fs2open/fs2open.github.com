@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -735,7 +741,7 @@ void hud_render_target_jump_node(object *target_objp)
 		factor = target_objp->radius*4.0f;
 
 		// use the player's up vector, and construct the viewers orientation matrix
-		up_vector = Player_obj->orient.uvec;
+		up_vector = Player_obj->orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
 
 		// normalize the vector from the player to the current target, and scale by a factor to calculate
@@ -799,7 +805,7 @@ void hud_render_target_asteroid(object *target_objp)
 		factor = 2*target_objp->radius;
 
 		// use the player's up vector, and construct the viewers orientation matrix
-		up_vector = Player_obj->orient.uvec;
+		up_vector = Player_obj->orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
 
 		// normalize the vector from the player to the current target, and scale by a factor to calculate
@@ -1227,10 +1233,10 @@ void hud_render_target_ship(object *target_objp)
 		vm_vec_sub(&orient_vec, &target_objp->pos, &Player_obj->pos);
 		vm_vec_normalize(&orient_vec);
 
-		factor = -target_sip->closeup_pos.z;
+		factor = -target_sip->closeup_pos.xyz.z;
 
 		// use the player's up vector, and construct the viewers orientation matrix
-		up_vector = Player_obj->orient.uvec;
+		up_vector = Player_obj->orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
 
 		// normalize the vector from the player to the current target, and scale by a factor to calculate
@@ -1317,7 +1323,7 @@ void hud_render_target_debris(object *target_objp)
 		factor = 2*target_objp->radius;
 
 		// use the player's up vector, and construct the viewers orientation matrix
-		up_vector = Player_obj->orient.uvec;
+		up_vector = Player_obj->orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
 
 		// normalize the vector from the player to the current target, and scale by a factor to calculate
@@ -1409,7 +1415,7 @@ void hud_render_target_weapon(object *target_objp)
 			factor = vm_vec_dist_quick(&viewer_obj->pos, &viewed_obj->pos);
 
 		// use the viewer's up vector, and construct the viewers orientation matrix
-		up_vector = viewer_obj->orient.uvec;
+		up_vector = viewer_obj->orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
 
 		// normalize the vector from the viewer to the viwed target, and scale by a factor to calculate
@@ -1700,7 +1706,7 @@ void hud_show_target_data(float frametime)
 				dist = vm_vec_dist_quick(&Objects[Player_ai->target_objnum].pos, &Objects[aip->target_objnum].pos);
 				vm_vec_normalized_dir(&v2t,&Objects[aip->target_objnum].pos, &Objects[Player_ai->target_objnum].pos);
 
-				dot = vm_vec_dot(&v2t, &Objects[Player_ai->target_objnum].orient.fvec);
+				dot = vm_vec_dot(&v2t, &Objects[Player_ai->target_objnum].orient.vec.fvec);
 
 				// data can be found in target montior
 				// gr_printf(TARGET_WINDOW_X1+TARGET_WINDOW_WIDTH+3, TARGET_WINDOW_Y1+6*h, "Targ dist: %5.1f", dist);
@@ -1748,7 +1754,7 @@ void hud_show_target_data(float frametime)
 							dist = vm_vec_dist_quick(&Enemy_attacker->pos, &Player_obj->pos);
 							vm_vec_normalized_dir(&v2t,&Objects[eaip->target_objnum].pos, &Enemy_attacker->pos);
 
-							dot = vm_vec_dot(&v2t, &Enemy_attacker->orient.fvec);
+							dot = vm_vec_dot(&v2t, &Enemy_attacker->orient.vec.fvec);
 
 							gr_printf(sx, sy, "#%i: %s", Enemy_attacker-Objects, Ships[Enemy_attacker->instance].ship_name);
 							sy += dy;
@@ -1846,10 +1852,12 @@ int hud_targetbox_static_maybe_blit(float frametime)
 	if ( Game_skill_level == 0 )
 		return 0;
 
+#ifndef NO_NETWORK
 	// if multiplayer observer, don't show static
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 		return 0;
 	}
+#endif
 
 	sensors_str = ship_get_subsystem_strength( Player_ship, SUBSYSTEM_SENSORS );
 

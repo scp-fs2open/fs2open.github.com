@@ -9,13 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 1.1 $
+ * $Revision: 2.0 $
  * $Author: penguin $
- * $Date: 2002-06-03 03:26:01 $
+ * $Date: 2002-06-03 04:02:27 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/21 15:46:58  mharris
+ * Reformat some debug strings
+ *
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -714,7 +720,7 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 		longjmp(parse_abort, 4);
 	}
 
-	diag_printf("Here's the partial wad of text:\n%.30s", outstr);
+	diag_printf("Here's the partial wad of text:\n%.30s\n", outstr);
 }
 
 // stuffs a string into a buffer.  Can get a string between " marks and stops
@@ -1130,7 +1136,7 @@ void read_file_text(char *filename, int mode)
 	strcpy(Current_filename, filename);
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL) {
-		nprintf(("Error", "Wokka!  Error opening mission.txt!\n"));
+		nprintf(("Error", "Wokka!  Error opening mission.txt (%s)!\n", filename));
 		longjmp(parse_abort, 5);
 	}
 
@@ -1528,9 +1534,9 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 //	Stuff a vector, which is 3 floats.
 void stuff_vector(vector *vp)
 {
-	stuff_float(&vp->x);
-	stuff_float(&vp->y);
-	stuff_float(&vp->z);
+	stuff_float(&vp->xyz.x);
+	stuff_float(&vp->xyz.y);
+	stuff_float(&vp->xyz.z);
 }
 
 void stuff_parenthesized_vector(vector *vp)
@@ -1589,9 +1595,9 @@ int stuff_vector_list(vector *vlp, int max_vecs)
 //	Stuff a matrix, which is 3 vectors.
 void stuff_matrix(matrix *mp)
 {
-	stuff_vector(&mp->rvec);
-	stuff_vector(&mp->uvec);
-	stuff_vector(&mp->fvec);
+	stuff_vector(&mp->vec.rvec);
+	stuff_vector(&mp->vec.uvec);
+	stuff_vector(&mp->vec.fvec);
 }
 
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -510,23 +513,23 @@ void parse_helptbl()
 					for (i=0; i<help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtxcount; i++) {
 						stuff_int(&a);
 						stuff_int(&b);
-						help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i].x = (float)a;
-						help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i].y = (float)b;
-						help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i].z = 0.0f;
+						help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i].xyz.x = (float)a;
+						help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i].xyz.y = (float)b;
+						help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i].xyz.z = 0.0f;
 						help_overlaylist[overlay_id].plinelist[GR_640][currcount].pvtx[i] = &help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i];
 					}
 					// get 1024x768 vertex coordinates
 					for (i=0; i<help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtxcount; i++) {
 						stuff_int(&a);
 						stuff_int(&b);
-						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i].x = (float)a;
-						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i].y = (float)b;
-						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i].z = 0.0f;
+						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i].xyz.x = (float)a;
+						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i].xyz.y = (float)b;
+						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i].xyz.z = 0.0f;
 						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].pvtx[i] = &help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i];
 					}
 				}
 
-				//mprintf(("Found pline - start location (%f,%f), end location (%f,%f)\n", help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[0].x, help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[0].y, help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[2].x, help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[2].y));
+				//mprintf(("Found pline - start location (%f,%f), end location (%f,%f)\n", help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[0].xyz.x, help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[0].xyz.y, help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[2].xyz.x, help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[2].xyz.y));
 				help_overlaylist[overlay_id].plinecount++;
 
 			} else if (optional_string("+text")) {
@@ -668,11 +671,11 @@ void nudgetext_y(int textnum, int amount)
 }
 void nudgepline_x(int plinenum, int plinevert, int amount)
 {
-	help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[plinevert].x += amount;
+	help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[plinevert].xyz.x += amount;
 }
 void nudgepline_y(int plinenum, int plinevert, int amount)
 {
-	help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[plinevert].y += amount;
+	help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[plinevert].xyz.y += amount;
 }
 void nudgerbracket_x(int num, int amount)
 {
@@ -708,7 +711,7 @@ void showplinepos(int plinenum)
 	dc_printf("pline %d on overlay %d vertices are now ", plinenum, current_helpid, help_overlaylist[current_helpid].textlist[gr_screen.res][plinenum].y_coord );
 	for (i=0; i<help_overlaylist[current_helpid].plinelist[GR_640][plinenum].vtxcount; i++)
 	{
-		dc_printf("(%3.0f %3.0f) ", help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[i].x, help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[i].y);
+		dc_printf("(%3.0f %3.0f) ", help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[i].xyz.x, help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[i].xyz.y);
 	}
 }
 

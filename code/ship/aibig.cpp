@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:28 $
  * $Author: penguin $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -589,7 +592,7 @@ void ai_big_pick_attack_point(object *objp, object *attacker_objp, vector *attac
 
 	// checks valid line to target
 	vector surface_normal;
-	ai_bpap(objp, &attacker_objp->pos, &attacker_objp->orient.fvec, attack_point, &local_attack_point, fov, 99999.9f, &surface_normal);
+	ai_bpap(objp, &attacker_objp->pos, &attacker_objp->orient.vec.fvec, attack_point, &local_attack_point, fov, 99999.9f, &surface_normal);
 
 	switch (attacker_objp->type) {
 	case OBJ_SHIP: {
@@ -875,9 +878,9 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vector *enemy_pos, float 
 						float		dist;
 
 						vm_vec_sub(&in_vec, &objp->pos, &Pl_objp->pos);
-						if (vm_vec_dot(&in_vec, &objp->orient.fvec) > 0.0f) {
+						if (vm_vec_dot(&in_vec, &objp->orient.vec.fvec) > 0.0f) {
 							dist = vm_vec_normalize(&in_vec);
-							if ((dist < 200.0f) && (vm_vec_dot(&in_vec, &objp->orient.fvec) > 0.95f)) {
+							if ((dist < 200.0f) && (vm_vec_dot(&in_vec, &objp->orient.vec.fvec) > 0.95f)) {
 								if ((Objects[objp->parent].signature == objp->parent_sig) && (vm_vec_dist_quick(&objp->pos, &Objects[objp->parent].pos) < 300.0f)) {
 									set_target_objnum(aip, objp->parent);
 									aip->submode = SM_ATTACK;
@@ -921,7 +924,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vector *enemy_pos, float 
 			rel_pos = NULL;
 
 		dist_to_enemy = vm_vec_normalized_dir(&vec_to_enemy, enemy_pos, &Pl_objp->pos);
-		dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.fvec);
+		dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 
 		vector	rvec_vec, *rvec = &rvec_vec;
 
@@ -1123,7 +1126,7 @@ void ai_big_chase()
 	}
 
 	dist_to_enemy = vm_vec_normalized_dir(&vec_to_enemy, &enemy_pos, &player_pos); // - En_objp->radius;
-	dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.fvec);
+	dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 
 	if (aip->ai_flags & AIF_TARGET_COLLISION) {
 		if ( ai_big_strafe_maybe_retreat(dist_to_enemy, &enemy_pos) ) {
@@ -1152,7 +1155,7 @@ void ai_big_chase()
 		vm_vec_add2(&enemy_pos, &predicted_enemy_pos);
 		vm_vec_sub2(&enemy_pos, &En_objp->pos);
 		dist_to_enemy = vm_vec_normalized_dir(&vec_to_enemy, &enemy_pos, &player_pos); // - En_objp->radius;
-		dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.fvec);
+		dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy, En_objp->radius);
 	} else if (En_objp->flags & OF_PROTECTED) {	//	If protected and we're not attacking a subsystem, stop attacking!
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy - En_objp->radius, En_objp->radius);
@@ -1416,12 +1419,12 @@ void ai_big_attack_get_data(vector *enemy_pos, float *dist_to_enemy, float *dot_
 	}
 
 	// Take player pos to be center of ship + ship_radius
-	vm_vec_scale_add2(&player_pos, &Pl_objp->orient.fvec, Pl_objp->radius); 
+	vm_vec_scale_add2(&player_pos, &Pl_objp->orient.vec.fvec, Pl_objp->radius); 
 
 	//	If seeking lock, try to point directly at ship, else predict position so lasers can hit it.
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
 	vm_vec_normalized_dir(&vec_to_enemy, enemy_pos, &player_pos);
-	*dot_to_enemy=vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.fvec);
+	*dot_to_enemy=vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 	if ((*dot_to_enemy < 0.25f) || (aip->target_time < 1.0f) || (aip->ai_flags & AIF_SEEK_LOCK)) {
 		predicted_enemy_pos=*enemy_pos;
 	} else {
@@ -1439,7 +1442,7 @@ void ai_big_attack_get_data(vector *enemy_pos, float *dist_to_enemy, float *dot_
 	}
 
 	*dist_to_enemy = vm_vec_normalized_dir(&vec_to_enemy, &predicted_enemy_pos, &player_pos);
-	*dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.fvec);
+	*dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 	update_aspect_lock_information(aip, &vec_to_enemy, *dist_to_enemy, En_objp->radius);
 
 	*enemy_pos = predicted_enemy_pos;
@@ -1544,16 +1547,16 @@ void ai_big_strafe_attack()
 			aip->goal_point = Pl_objp->pos;
 			switch(rand()%4) {
 			case 0:
-				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.fvec, &Pl_objp->orient.uvec, 2.0f);
+				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.uvec, 2.0f);
 				break;
 			case 1:
-				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.fvec, &Pl_objp->orient.uvec, -2.0f);
+				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.uvec, -2.0f);
 				break;
 			case 2:
-				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.fvec, &Pl_objp->orient.rvec, 2.0f);
+				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.rvec, 2.0f);
 				break;
 			case 3:
-				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.fvec, &Pl_objp->orient.rvec, -2.0f);
+				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.rvec, -2.0f);
 				break;
 			} // end switch
 
@@ -1654,16 +1657,16 @@ void ai_big_strafe_retreat1()
 		aip->prev_goal_point = Pl_objp->pos;
 		switch(rand()%4) {
 		case 0:
-			vm_vec_add(&rand_vec, &Pl_objp->orient.fvec, &Pl_objp->orient.uvec);
+			vm_vec_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.uvec);
 			break;
 		case 1:
-			vm_vec_scale_add(&rand_vec, &Pl_objp->orient.fvec, &Pl_objp->orient.uvec, -1.0f);
+			vm_vec_scale_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.uvec, -1.0f);
 			break;
 		case 2:
-			vm_vec_add(&rand_vec, &Pl_objp->orient.fvec, &Pl_objp->orient.rvec);
+			vm_vec_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.rvec);
 			break;
 		case 3:
-			vm_vec_scale_add(&rand_vec, &Pl_objp->orient.fvec, &Pl_objp->orient.rvec, -1.0f);
+			vm_vec_scale_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.rvec, -1.0f);
 			break;
 		} // end switch
 

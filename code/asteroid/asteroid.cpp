@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/10 20:42:43  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -270,12 +276,17 @@
 #include "linklist.h"
 #include "hudescort.h"
 #include "shiphit.h"
-#include "multiutil.h"
 #include "staticrand.h"
-#include "multimsgs.h"
 #include "systemvars.h"
 #include "localize.h"
+#include "scoring.h"
+#include "hudtarget.h"
+
+#ifndef NO_NETWORK
+#include "multiutil.h"
+#include "multimsgs.h"
 #include "multi.h"
+#endif
 
 #ifndef FS2_DEMO
 
@@ -415,15 +426,15 @@ int asteroid_in_inner_bound_with_axes(asteroid_field *asfieldp, vector *pos, flo
 	Assert(asfieldp->has_inner_bound);
 
 	int rval = 0;
-	if ( (pos->x > asfieldp->inner_min_bound.x - delta) && (pos->x < asfieldp->inner_max_bound.x + delta) ) {
+	if ( (pos->xyz.x > asfieldp->inner_min_bound.xyz.x - delta) && (pos->xyz.x < asfieldp->inner_max_bound.xyz.x + delta) ) {
 		rval += 1;
 	}
 
-	if ( (pos->y > asfieldp->inner_min_bound.y - delta) && (pos->y < asfieldp->inner_max_bound.y + delta) ) {
+	if ( (pos->xyz.y > asfieldp->inner_min_bound.xyz.y - delta) && (pos->xyz.y < asfieldp->inner_max_bound.xyz.y + delta) ) {
 		rval += 2;
 	}
 
-	if ( (pos->z > asfieldp->inner_min_bound.z - delta) && (pos->z < asfieldp->inner_max_bound.z + delta) ) {
+	if ( (pos->xyz.z > asfieldp->inner_min_bound.xyz.z - delta) && (pos->xyz.z < asfieldp->inner_max_bound.xyz.z + delta) ) {
 		rval += 4;
 	}
 
@@ -536,9 +547,9 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	signature = 0;
 	rand_base = 0;
 	if ( Game_mode & GM_NORMAL ) {
-		pos.x = asfieldp->min_bound.x + delta_bound.x * frand();
-		pos.y = asfieldp->min_bound.y + delta_bound.y * frand();
-		pos.z = asfieldp->min_bound.z + delta_bound.z * frand();
+		pos.xyz.x = asfieldp->min_bound.xyz.x + delta_bound.xyz.x * frand();
+		pos.xyz.y = asfieldp->min_bound.xyz.y + delta_bound.xyz.y * frand();
+		pos.xyz.z = asfieldp->min_bound.xyz.z + delta_bound.xyz.z * frand();
 
 		inner_bound_pos_fixup(asfieldp, &pos);
 		// vm_set_identity(&orient);
@@ -546,18 +557,20 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 		angs.b = frand() * 2*PI;
 		angs.h = frand() * 2*PI;
 	} else {
+#ifndef NO_NETWORK
 		signature = multi_assign_network_signature( MULTI_SIG_ASTEROID );
 		rand_base = signature;
 
-		pos.x = asfieldp->min_bound.x + delta_bound.x * static_randf( rand_base++ );
-		pos.y = asfieldp->min_bound.y + delta_bound.y * static_randf( rand_base++ );
-		pos.z = asfieldp->min_bound.z + delta_bound.z * static_randf( rand_base++ );
+		pos.xyz.x = asfieldp->min_bound.xyz.x + delta_bound.xyz.x * static_randf( rand_base++ );
+		pos.xyz.y = asfieldp->min_bound.xyz.y + delta_bound.xyz.y * static_randf( rand_base++ );
+		pos.xyz.z = asfieldp->min_bound.xyz.z + delta_bound.xyz.z * static_randf( rand_base++ );
 
 		inner_bound_pos_fixup(asfieldp, &pos);
 		// vm_set_identity(&orient);
 		angs.p = static_randf( rand_base++ ) * 2*PI;
 		angs.b = static_randf( rand_base++ ) * 2*PI;
 		angs.h = static_randf( rand_base++ ) * 2*PI;
+#endif
 	}
 
 	vm_angles_2_matrix(&orient, &angs);
@@ -620,14 +633,14 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	// Fill in the max_vel field, so the collision pair stuff knows
 	// how fast this can move maximum in order to throw out collisions.
 	// This is in local coordinates, so Z is forward velocity.
-	objp->phys_info.max_vel.x = 0.0f;
-	objp->phys_info.max_vel.y = 0.0f;
-	objp->phys_info.max_vel.z = vm_vec_mag(&objp->phys_info.desired_vel);
+	objp->phys_info.max_vel.xyz.x = 0.0f;
+	objp->phys_info.max_vel.xyz.y = 0.0f;
+	objp->phys_info.max_vel.xyz.z = vm_vec_mag(&objp->phys_info.desired_vel);
 	
 	objp->phys_info.mass = asip->modelp[asteroid_subtype]->rad * 700.0f;
-	objp->phys_info.I_body_inv.rvec.x = 1.0f / (objp->phys_info.mass*asip->modelp[asteroid_subtype]->rad);
-	objp->phys_info.I_body_inv.uvec.y = objp->phys_info.I_body_inv.rvec.x;
-	objp->phys_info.I_body_inv.fvec.z = objp->phys_info.I_body_inv.rvec.x;
+	objp->phys_info.I_body_inv.vec.rvec.xyz.x = 1.0f / (objp->phys_info.mass*asip->modelp[asteroid_subtype]->rad);
+	objp->phys_info.I_body_inv.vec.uvec.xyz.y = objp->phys_info.I_body_inv.vec.rvec.xyz.x;
+	objp->phys_info.I_body_inv.vec.fvec.xyz.z = objp->phys_info.I_body_inv.vec.rvec.xyz.x;
 	objp->hull_strength = asip->initial_hull_strength * (0.8f + (float)Game_skill_level/NUM_SKILL_LEVELS)/2.0f;
 
 	// ensure vel is valid
@@ -652,9 +665,11 @@ void asteroid_sub_create(object *parent_objp, int asteroid_type, vector *relvec)
 	if (new_objp == NULL)
 		return;
 
+#ifndef NO_NETWORK
 	if ( MULTIPLAYER_MASTER ){
 		send_asteroid_create( new_objp, parent_objp, asteroid_type, relvec );
 	}
+#endif
 
 	//	Now, bash some values.
 	vm_vec_scale_add(&new_objp->pos, &parent_objp->pos, relvec, 0.5f * parent_objp->radius);
@@ -859,38 +874,40 @@ void asteroid_level_init()
 // 0 from this function.  We will force a wrap on the clients when server tells us
 int asteroid_should_wrap(object *objp, asteroid_field *asfieldp)
 {
+#ifndef NO_NETWORK
 	if ( MULTIPLAYER_CLIENT )
 		return 0;
+#endif
 
-	if (objp->pos.x < asfieldp->min_bound.x) {
+	if (objp->pos.xyz.x < asfieldp->min_bound.xyz.x) {
 		return 1;
 	}
 
-	if (objp->pos.y < asfieldp->min_bound.y) {
+	if (objp->pos.xyz.y < asfieldp->min_bound.xyz.y) {
 		return 1;
 	}
 
-	if (objp->pos.z < asfieldp->min_bound.z) {
+	if (objp->pos.xyz.z < asfieldp->min_bound.xyz.z) {
 		return 1;
 	}
 
-	if (objp->pos.x > asfieldp->max_bound.x) {
+	if (objp->pos.xyz.x > asfieldp->max_bound.xyz.x) {
 		return 1;
 	}
 
-	if (objp->pos.y > asfieldp->max_bound.y) {
+	if (objp->pos.xyz.y > asfieldp->max_bound.xyz.y) {
 		return 1;
 	}
 
-	if (objp->pos.z > asfieldp->max_bound.z) {
+	if (objp->pos.xyz.z > asfieldp->max_bound.xyz.z) {
 		return 1;
 	}
 
 	// check against inner bound
 	if (asfieldp->has_inner_bound) {
-		if ( (objp->pos.x > asfieldp->inner_min_bound.x) && (objp->pos.x < asfieldp->inner_max_bound.x)
-		  && (objp->pos.y > asfieldp->inner_min_bound.y) && (objp->pos.y < asfieldp->inner_max_bound.y)
-		  && (objp->pos.z > asfieldp->inner_min_bound.z) && (objp->pos.z < asfieldp->inner_max_bound.z) ) {
+		if ( (objp->pos.xyz.x > asfieldp->inner_min_bound.xyz.x) && (objp->pos.xyz.x < asfieldp->inner_max_bound.xyz.x)
+		  && (objp->pos.xyz.y > asfieldp->inner_min_bound.xyz.y) && (objp->pos.xyz.y < asfieldp->inner_max_bound.xyz.y)
+		  && (objp->pos.xyz.z > asfieldp->inner_min_bound.xyz.z) && (objp->pos.xyz.z < asfieldp->inner_max_bound.xyz.z) ) {
 
 			return 1;
 		}
@@ -902,28 +919,28 @@ int asteroid_should_wrap(object *objp, asteroid_field *asfieldp)
 // Wrap an asteroid from one end of the asteroid field to the other
 void asteroid_wrap_pos(object *objp, asteroid_field *asfieldp)
 {
-	if (objp->pos.x < asfieldp->min_bound.x) {
-		objp->pos.x = asfieldp->max_bound.x + (objp->pos.x - asfieldp->min_bound.x);
+	if (objp->pos.xyz.x < asfieldp->min_bound.xyz.x) {
+		objp->pos.xyz.x = asfieldp->max_bound.xyz.x + (objp->pos.xyz.x - asfieldp->min_bound.xyz.x);
 	}
 
-	if (objp->pos.y < asfieldp->min_bound.y) {
-		objp->pos.y = asfieldp->max_bound.y + (objp->pos.y - asfieldp->min_bound.y);
+	if (objp->pos.xyz.y < asfieldp->min_bound.xyz.y) {
+		objp->pos.xyz.y = asfieldp->max_bound.xyz.y + (objp->pos.xyz.y - asfieldp->min_bound.xyz.y);
 	}
 	
-	if (objp->pos.z < asfieldp->min_bound.z) {
-		objp->pos.z = asfieldp->max_bound.z + (objp->pos.z - asfieldp->min_bound.z);
+	if (objp->pos.xyz.z < asfieldp->min_bound.xyz.z) {
+		objp->pos.xyz.z = asfieldp->max_bound.xyz.z + (objp->pos.xyz.z - asfieldp->min_bound.xyz.z);
 	}
 
-	if (objp->pos.x > asfieldp->max_bound.x) {
-		objp->pos.x = asfieldp->min_bound.x + (objp->pos.x - asfieldp->max_bound.x);
+	if (objp->pos.xyz.x > asfieldp->max_bound.xyz.x) {
+		objp->pos.xyz.x = asfieldp->min_bound.xyz.x + (objp->pos.xyz.x - asfieldp->max_bound.xyz.x);
 	}
 
-	if (objp->pos.y > asfieldp->max_bound.y) {
-		objp->pos.y = asfieldp->min_bound.y + (objp->pos.y - asfieldp->max_bound.y);
+	if (objp->pos.xyz.y > asfieldp->max_bound.xyz.y) {
+		objp->pos.xyz.y = asfieldp->min_bound.xyz.y + (objp->pos.xyz.y - asfieldp->max_bound.xyz.y);
 	}
 
-	if (objp->pos.z > asfieldp->max_bound.z) {
-		objp->pos.z = asfieldp->min_bound.z + (objp->pos.z - asfieldp->max_bound.z);
+	if (objp->pos.xyz.z > asfieldp->max_bound.xyz.z) {
+		objp->pos.xyz.z = asfieldp->min_bound.xyz.z + (objp->pos.xyz.z - asfieldp->max_bound.xyz.z);
 	}
 
 	// wrap on inner bound, check all 3 axes as needed, use of rand ok for multiplayer with send_asteroid_throw()
@@ -962,9 +979,9 @@ void asteroid_aim_at_target(object *objp, object *asteroid_objp, float delta_tim
 	vm_vec_rand_vec_quick(&rand_vec);
 	vm_vec_scale_add2(&predicted_center_pos, &rand_vec, objp->radius/2.0f);
 
-	vm_vec_add2(&rand_vec, &objp->orient.fvec);
+	vm_vec_add2(&rand_vec, &objp->orient.vec.fvec);
 	if (vm_vec_mag_quick(&rand_vec) < 0.1f)
-		vm_vec_add2(&rand_vec, &objp->orient.rvec);
+		vm_vec_add2(&rand_vec, &objp->orient.vec.rvec);
 	vm_vec_normalize(&rand_vec);
 
 	speed = Asteroid_info[0].max_speed * (frand()/2.0f + 0.5f);
@@ -1017,9 +1034,11 @@ void maybe_throw_asteroid(int count)
 					// this line gives too many collision pairs.
 					// asteroid_update_collide(objp);
 
+#ifndef NO_NETWORK
 					if ( MULTIPLAYER_MASTER ) {
 						send_asteroid_throw( objp );
 					}
+#endif
 				}
 			}
 
@@ -1071,7 +1090,7 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 
 			// only wrap if player won't see asteroid disappear/reverse direction
 			dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
-			dot = vm_vec_dot(&Eye_matrix.fvec, &vec_to_asteroid);
+			dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
 			
 			if ((dot < 0.7f) || (dist > 3000.0f)) {
 				if (Num_asteroids > MAX_ASTEROIDS-10) {
@@ -1082,7 +1101,7 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 					Asteroids[objp->instance].target_objnum = -1;
 
 					vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
-					dot = vm_vec_dot(&Eye_matrix.fvec, &vec_to_asteroid);
+					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
 					dist = vm_vec_dist_quick(&objp->pos, &Eye_position);
 					
 					if (( dot > 0.7f) && (dist < 3000.0f)) {
@@ -1098,8 +1117,10 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 
 					asteroid_update_collide(objp);
 
+#ifndef NO_NETWORK
 					if ( MULTIPLAYER_MASTER )
 						send_asteroid_throw( objp );
+#endif
 				}
 			}
 		}
@@ -1119,12 +1140,12 @@ void asteroid_process_pre( object *objp, float frame_time)
 		v = &objp->phys_info.vel;
 		vv = &objp->phys_info.desired_vel;
 
-		//nprintf(("AI", "Frm %i: Obj #%2i: Hull: %5.1f Vel: %5.1f %5.1f %5.1f Des: %5.1f %5.1f %5.1f\n", Framecount, objp-Objects, objp->hull_strength, v->x, v->y, v->z, vv->x, vv->y, vv->z));
+		//nprintf(("AI", "Frm %i: Obj #%2i: Hull: %5.1f Vel: %5.1f %5.1f %5.1f Des: %5.1f %5.1f %5.1f\n", Framecount, objp-Objects, objp->hull_strength, v->xyz.x, v->xyz.y, v->xyz.z, vv->xyz.x, vv->xyz.y, vv->xyz.z));
 
 		//	Make vel chase desired_vel
-		lerp(&objp->phys_info.vel.x, objp->phys_info.vel.x, objp->phys_info.desired_vel.x, flFrametime);
-		lerp(&objp->phys_info.vel.y, objp->phys_info.vel.y, objp->phys_info.desired_vel.y, flFrametime);
-		lerp(&objp->phys_info.vel.z, objp->phys_info.vel.z, objp->phys_info.desired_vel.z, flFrametime);
+		lerp(&objp->phys_info.vel.xyz.x, objp->phys_info.vel.xyz.x, objp->phys_info.desired_vel.xyz.x, flFrametime);
+		lerp(&objp->phys_info.vel.xyz.y, objp->phys_info.vel.xyz.y, objp->phys_info.desired_vel.xyz.y, flFrametime);
+		lerp(&objp->phys_info.vel.xyz.z, objp->phys_info.vel.xyz.z, objp->phys_info.desired_vel.xyz.z, flFrametime);
 	}
 }
 
@@ -1244,7 +1265,8 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vector *hitpo
 				pm = model_get(Ships[heavy_obj->instance].modelnum);
 
 				// turn off all rotating submodels and test for collision
-				for (int i=0; i<num_rotating_submodels; i++) {
+				int i;
+				for (i=0; i<num_rotating_submodels; i++) {
 					pm->submodel[submodel_list[i]].blown_off = 1;
 				}
 
@@ -1561,9 +1583,11 @@ void asteroid_hit( object * asteroid_obj, object * other_obj, vector * hitpos, f
 		return;
 	}
 
+#ifndef NO_NETWORK
 	if ( MULTIPLAYER_MASTER ){
 		send_asteroid_hit( asteroid_obj, other_obj, hitpos, damage );
 	}
+#endif
 
 	asteroid_obj->hull_strength -= damage;
 
@@ -1698,8 +1722,9 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 
 		// multiplayer clients won't go through the following code.  asteroid_sub_create will send
 		// a create packet to the client in the above named function
+#ifndef NO_NETWORK
 		if ( !MULTIPLAYER_CLIENT ) {
-
+#endif
 			switch (asp->type) {
 			case ASTEROID_TYPE_SMALL:
 				break;
@@ -1746,7 +1771,9 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 			default:
 				Int3();
 			}
+#ifndef NO_NETWORK
 		}
+#endif
 
 		asp->final_death_time = timestamp(-1);
 	}
@@ -1850,10 +1877,12 @@ void asteroid_update_collide_flag(object *asteroid_objp)
 	asp->collide_objnum = -1;
 	asp->collide_objsig = -1;
 
+#ifndef NO_NETWORK
 	// multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		return;
 	}
+#endif
 
 	num_escorts = hud_escort_num_ships_on_list();
 
@@ -2070,12 +2099,12 @@ int set_asteroid_throw_objnum()
 		float		radius = ship_objp->radius*2.0f;
 
 		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & (SIF_HUGE_SHIP | SIF_BIG_SHIP)) {
-			if (ship_objp->pos.x + radius > Asteroid_field.min_bound.x)
-				if (ship_objp->pos.y + radius > Asteroid_field.min_bound.y)
-				if (ship_objp->pos.z + radius > Asteroid_field.min_bound.z)
-				if (ship_objp->pos.x - radius < Asteroid_field.max_bound.x)
-				if (ship_objp->pos.y - radius < Asteroid_field.max_bound.y)
-				if (ship_objp->pos.z - radius < Asteroid_field.max_bound.z)
+			if (ship_objp->pos.xyz.x + radius > Asteroid_field.min_bound.xyz.x)
+				if (ship_objp->pos.xyz.y + radius > Asteroid_field.min_bound.xyz.y)
+				if (ship_objp->pos.xyz.z + radius > Asteroid_field.min_bound.xyz.z)
+				if (ship_objp->pos.xyz.x - radius < Asteroid_field.max_bound.xyz.x)
+				if (ship_objp->pos.xyz.y - radius < Asteroid_field.max_bound.xyz.y)
+				if (ship_objp->pos.xyz.z - radius < Asteroid_field.max_bound.xyz.z)
 				if (!asteroid_in_inner_bound(&Asteroid_field, &ship_objp->pos, radius))
 					return so->objnum;
 		}

@@ -9,7 +9,7 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.h $
- * $Revision: 1.1 $Date: 2002/05/02 18:03:09 $
+ * $Revision: 2.0 $Date: 2002/05/02 18:03:09 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $

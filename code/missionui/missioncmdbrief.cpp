@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/09 23:02:59  mharris
+ * Not using default values for audiostream functions, since they may
+ * be macros (if NO_SOUND is defined)
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -417,7 +421,7 @@ void cmd_brief_voice_play(int stage_num)
 
 	// if previous wave is still playing, stop it first.
 	if (Cmd_brief_last_voice >= 0) {
-		audiostream_stop(Cmd_brief_last_voice);  // stream is automatically rewound
+		audiostream_stop(Cmd_brief_last_voice, 1, 0);  // stream is automatically rewound
 		Cmd_brief_last_voice = -1;
 	}
 
@@ -443,7 +447,7 @@ void cmd_brief_stop_anim(int id)
 
 	Voice_good_to_go = 0;
 	if (Cmd_brief_last_voice >= 0) {
-		audiostream_stop(Cmd_brief_last_voice);  // stream is automatically rewound
+		audiostream_stop(Cmd_brief_last_voice, 1, 0);  // stream is automatically rewound
 		Cmd_brief_last_voice = -1;
 	}
 }

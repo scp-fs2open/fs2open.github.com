@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenuMulti.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *  
@@ -201,7 +207,6 @@
 #include "bmpman.h"
 #include "cfile.h"
 #include "key.h"
-#include "ds.h"
 #include "font.h"
 #include "gamesnd.h"
 #include "freespace.h"
@@ -216,6 +221,11 @@
 #include "osregistry.h"
 #include "alphacolors.h"
 #include "timer.h"
+
+#ifndef NO_SOUND
+ #include "ds.h"
+#endif
+
 
 // general data section ------------------------------------------------
 UI_WINDOW *Om_window = NULL;
@@ -2045,6 +2055,7 @@ void options_multi_vox_do()
 		break;
 	
 	case OM_VOX_TEST_PLAYBACK:			
+		#ifndef NO_SOUND
 		// if we were playing a sound back, but now the sound is done
 		if((Om_vox_playback_handle != -1) && (ds_get_play_position(ds_get_channel(Om_vox_playback_handle)) >= (DWORD)Om_vox_voice_comp_size)){
 			// flush all playing sounds safely
@@ -2060,6 +2071,10 @@ void options_multi_vox_do()
 			// free the status up
 			Om_vox_test_status = OM_VOX_TEST_NONE;
 		}
+		#else
+		// shouln't be necessary, but...
+		Om_vox_test_status = OM_VOX_TEST_NONE;
+		#endif  // ifndef NO_SOUND
 		break;
 	}
 }
@@ -2124,6 +2139,7 @@ void options_multi_vox_button_pressed(int n)
 
 	// mic test button
 	case OM_VOX_VOICE_TEST:
+		#ifndef NO_SOUND
 		// if in a multiplayer game, don't allow testing
 		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_CONNECTED)){
 			options_multi_add_notify(XSTR( "Cannot test mic while in a multiplayer game!", 391));
@@ -2146,6 +2162,7 @@ void options_multi_vox_button_pressed(int n)
 				multi_voice_test_record_start();
 			}
 		}
+		#endif  // ifndef NO_SOUND
 		break;
 	}
 }
@@ -2210,6 +2227,7 @@ void options_multi_vox_process_waveform()
 		break;
 
 	case OM_VOX_TEST_PLAYBACK:
+		#ifndef NO_SOUND
 		// get the offset into the playing direct sound buffer
 		buf_offset = ds_get_play_position(ds_get_channel(Om_vox_playback_handle));		
 
@@ -2233,6 +2251,7 @@ void options_multi_vox_process_waveform()
 			running_avg /= avg_len;			
 			gr_line((gr_screen.max_w - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
 		}				
+		#endif  // ifndef NO_SOUND
 		break;
 	}
 }
