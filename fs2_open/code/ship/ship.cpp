@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.72 $
- * $Date: 2003-09-05 04:25:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.73 $
+ * $Date: 2003-09-06 19:07:31 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2003/09/05 04:25:27  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.71  2003/08/28 20:42:18  Goober5000
  * implemented rotating barrels for firing primary weapons
  * --Goober5000
@@ -8474,7 +8486,7 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 int ship_do_rearm_frame( object *objp, float frametime )
 {
 	int			i, banks_full, primary_banks_full, subsys_type, subsys_all_ok;
-	float			shield_str, repair_delta, repair_allocated;
+	float			shield_str, repair_delta, repair_allocated, max_hull_repair;
 	ship			*shipp;
 	ship_weapon	*swp;
 	ship_info	*sip;
@@ -8531,13 +8543,21 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 //	AL 11-24-97: remove increase to hull integrity
 //	Comments removed by PhReAk; Note that this is toggled on/off with a mission flag
+
+	//Figure out how much of the ship's hull we can repair
+	max_hull_repair = shipp->ship_initial_hull_strength * (The_mission.support_ships.max_hull_repair_val * .01);
 	
 	if(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
 	{
 		objp->hull_strength += repair_allocated;
-		if ( objp->hull_strength > shipp->ship_initial_hull_strength ) {
-			repair_allocated -= ( shipp->ship_initial_hull_strength - objp->hull_strength);
+		if ( objp->hull_strength > max_hull_repair ) {
+			objp->hull_strength = max_hull_repair;
+		}
+
+		if ( objp->hull_strength > shipp->ship_initial_hull_strength )
+		{
 			objp->hull_strength = shipp->ship_initial_hull_strength;
+			repair_allocated -= ( shipp->ship_initial_hull_strength - objp->hull_strength);
 		}
 	}
 
@@ -8728,7 +8748,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
 //	if ( ((ssp = END_OF_LIST(&shipp->subsys_list)) != NULL )&&(objp->hull_strength == shipp->ship_initial_hull_strength)&&(shields_full) ) {
-	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength == shipp->ship_initial_hull_strength) ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
+	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength == max_hull_repair) ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
 	{
 		if ( objp == Player_obj ) {
 			player_stop_repair_sound();
