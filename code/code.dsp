@@ -41,8 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "..\Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /I "c:\mssdk\include\\" /I "c:\dxsdk\include" /I "c:\speech_api\include" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENGL" /D "MORE_SPECIES" /U "_DEBUG" /FR /YX /FD /c
-# SUBTRACT CPP /X
+# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /I "c:\mssdk\include\\" /I "c:\dxsdk\include" /I "c:\speech_api\include" /I "c:\devil-sdk\include" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENGL" /D "MORE_SPECIES" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -65,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "..\Debug\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "." /I "c:\mssdk\include\\" /I "c:\dxsdk\include" /I "c:\speech_api\include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "MORE_SPECIES" /D "_REPORT_MEM_LEAKS" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "." /I "c:\mssdk\include\\" /I "c:\dxsdk\include" /I "c:\speech_api\include" /I "c:\devil-sdk\include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "MORE_SPECIES" /D "_REPORT_MEM_LEAKS" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -2526,6 +2525,30 @@ SOURCE=.\irc\irc.cpp
 # Begin Source File
 
 SOURCE=.\irc\irc.h
+# End Source File
+# End Group
+# Begin Group "openil"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\openil\il_func.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\openil\il_func.h
+# End Source File
+# End Group
+# Begin Group "jpgutils"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\jpgutils\jpgutils.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\jpgutils\jpgutils.h
 # End Source File
 # End Group
 # End Target
