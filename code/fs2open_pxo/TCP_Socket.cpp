@@ -5,19 +5,29 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.3 $
- * $Date: 2003-10-13 06:02:50 $
+ * $Revision: 1.4 $
+ * $Date: 2003-11-06 20:22:05 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2003/10/13 06:02:50  Kazan
+ * Added Log Comment Thingy to these files
+ *
  *
  *
  */
 
+#pragma warning(disable:4100)
+#pragma warning(disable:4511)
+#pragma warning(disable:4512)
+#pragma warning(disable:4711)
+
 #include "TCP_Socket.h"
 #include <process.h>
 #include <iostream.h>
+
+
 //**************************************************************************
 // TCP_Socket Implementation
 //**************************************************************************
@@ -73,12 +83,12 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 
 	if (ServerMode) //adr_inet will be MY address
 	{
-		adr_inet.sin_port = htons(port);
+		adr_inet.sin_port = htons((unsigned short)port);
 		adr_inet.sin_addr.s_addr = INADDR_ANY;
 	}
 	else // adr_inet is the remote address
 	{
-		adr_inet.sin_port = htons(rem_port);
+		adr_inet.sin_port = htons((unsigned short)rem_port);
 		adr_inet.sin_addr.s_addr = inet_addr(rem_host.c_str());
 	}
 
@@ -178,8 +188,6 @@ bool TCP_Socket::DataReady()
 
 	return (status != 0 && status != SOCKET_ERROR);
 
-	// --------- IMPLEMENT ME!!! ------------
-	return false; 
 
 }
 
@@ -246,6 +254,11 @@ void TCP_Socket::RemoveFirstPacket()
 
 int TCP_Socket::GetData(char *buffer, int blen, bool OOB)
 {
+	int flags = 0;
+
+	if (OOB)
+		flags = flags | MSG_OOB;
+
 #if defined(FS2_TCP_RMultithread)
 	if (MT_DataReady())
 	{
@@ -270,10 +283,7 @@ int TCP_Socket::GetData(char *buffer, int blen, bool OOB)
 	// clear the buffer
 	memset(buffer, 0, blen);
 
-	int flags = 0;
 
-	if (OOB)
-		flags = flags | MSG_OOB;
 
 	return recv(mySocket, buffer, blen, flags);
 #endif

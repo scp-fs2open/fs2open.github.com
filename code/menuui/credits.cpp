@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-11-06 19:35:51 $
- * $Author: matt $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-06 20:22:09 $
+ * $Author: Kazan $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/11/06 19:35:51  matt
+ * Added myself to the credits. -Sticks
+ *
  * Revision 2.9  2003/05/05 19:29:24  phreak
  * added my real name
  *
@@ -218,6 +221,7 @@ char *fs2_open_credit_text =
 	"Programmers:\n"
 	"\n"
 	"\"Bobboau\"\n"
+	"Derek \"Kazan\" Meek\n"
 	"Dennis \"DTP\" Pedersen\n"
 	"Ian \"Goober5000\" Warfield\n"
 	"Joe \"Righteous1\" Dowd\n"

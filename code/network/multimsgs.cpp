@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-10-04 22:42:22 $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-06 20:22:13 $
  * $Author: Kazan $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/10/04 22:42:22  Kazan
+ * fs2netd now TCP
+ *
  * Revision 2.9  2003/09/24 19:35:59  Kazan
  * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
  *
@@ -446,7 +449,8 @@
 #include "nebula/neblightning.h"
 #include "hud/hudescort.h"
 
-
+#pragma warning(push)
+#pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
 #if !defined(PXO_TCP)
 extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
@@ -456,6 +460,7 @@ extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
 extern unsigned int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[];
 extern int PXO_port;
+#pragma warning(pop)
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 

@@ -9,6 +9,8 @@
 
 #include "dbugfile.h"
 
+#pragma warning(disable:4711)
+
 int  dbugfile_counters[MAX_COUNTERS];
 bool dbugfile_init_var = false;
 

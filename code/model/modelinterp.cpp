@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.46 $
- * $Date: 2003-11-02 05:50:08 $
- * $Author: bobboau $
+ * $Revision: 2.47 $
+ * $Date: 2003-11-06 20:22:11 $
+ * $Author: Kazan $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/11/02 05:50:08  bobboau
+ * modified trails to render with tristrips now rather than with stinky old trifans,
+ * MUCH faster now, at least one order of magnatude.
+ *
  * Revision 2.45  2003/11/01 21:59:22  bobboau
  * new matrix handeling code, and fixed some problems with 3D lit verts,
  * several other small fixes
@@ -1287,9 +1291,9 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
 				Interp_list[i]->u = verts[i].u*2;
 				Interp_list[i]->v = verts[i].v*2;
-				Interp_list[i]->r = 255*salpha;
-				Interp_list[i]->g = 250*salpha;
-				Interp_list[i]->b = 200*salpha;
+				Interp_list[i]->r = (unsigned char)(255*salpha);
+				Interp_list[i]->g = (unsigned char)(250*salpha);
+				Interp_list[i]->b = (unsigned char)(200*salpha);
 				model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], salpha, false);
 			}
 			gr_set_cull(0);
@@ -4598,7 +4602,7 @@ void parse_defpoint(int off, ubyte *bsp_data){
 void parse_tmap(int offset, ubyte *bsp_data){
 	int pof_tex = bsp_data[offset+40];
 	int n_vert = bsp_data[offset+36];
-	int n_tri = n_vert - 2;
+	//int n_tri = n_vert - 2;
 	ubyte *temp_verts;
 
 	model_tmap_vert *tverts;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-10-30 15:30:23 $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-06 20:22:13 $
  * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/10/30 15:30:23  Kazan
+ * lil update
+ *
  * Revision 2.9  2003/10/15 22:03:26  Kazan
  * Da Species Update :D
  *
@@ -280,7 +283,12 @@
 #include "hud/hudescort.h"
 
 #include "network/multi.h"
+
+#pragma warning(push)
+#pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
+#pragma warning(pop)
+
 #include "cmdline/cmdline.h"
 
 #ifndef NO_NETWORK

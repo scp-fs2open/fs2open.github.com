@@ -22,6 +22,7 @@
 #endif
 
 #include "speech.h"
+#pragma warning(disable:4711)
 
 #if FS2_SPEECH
 ISpVoice *Voice_device;

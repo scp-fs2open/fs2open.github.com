@@ -5,21 +5,25 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.7 $
- * $Date: 2003-10-13 06:02:50 $
+ * $Revision: 1.8 $
+ * $Date: 2003-11-06 20:22:05 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2003/10/13 06:02:50  Kazan
+ * Added Log Comment Thingy to these files
+ *
  *
  *
  */
 
+#pragma warning(disable:4018)
 #pragma warning(disable:4100)
 #pragma warning(disable:4511)
 #pragma warning(disable:4512)
 #pragma warning(disable:4663)
-#pragma warning(disable:4018)
+#pragma warning(disable:4710)
 
 #if !defined(__pxo_client_h_)
 #define __pxo_client_h_

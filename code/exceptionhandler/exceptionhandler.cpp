@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.1 $
- * $Date: 2003-03-02 05:10:42 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-11-06 20:22:03 $
+ * $Author: Kazan $
  *
  * Main file for dealing with exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/03/02 05:10:42  penguin
+ * Added #ifdef _MSC_VER around strange exception-handling code
+ *  - penguin
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -45,6 +49,8 @@ on how to hook it in.
 
 
 #include <windows.h>
+
+#pragma warning(disable:4711)
 
 // --------------------
 //

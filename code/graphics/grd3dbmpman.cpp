@@ -319,7 +319,7 @@ int bm_d3d_load( char * real_filename )
 	{
 		bool found = false;
 
-		int handle = -1;
+		//int handle = -1;
 		const int NUM_TYPES	= 3;
 		const int type_list[NUM_TYPES] = {BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_PCX};
 		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".pcx"};

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-10-04 22:42:23 $
+ * $Revision: 2.6 $
+ * $Date: 2003-11-06 20:22:14 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/10/04 22:42:23  Kazan
+ * fs2netd now TCP
+ *
  * Revision 2.4  2003/09/24 19:35:59  Kazan
  * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
  *
@@ -374,7 +377,11 @@
 #include "osapi/osregistry.h"
 #include "io/timer.h"
 #include "globalincs/version.h"
+
+#pragma warning(push)
+#pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
+#pragma warning(pop)
 
 
 #if !defined(PXO_TCP)

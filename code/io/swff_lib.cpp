@@ -41,6 +41,7 @@ Version	Date		Author	Comments
 #include "directx/vdinput.h"
 #undef INITGUIDS
 
+#pragma warning(disable:4711)
 
 BOOL CALLBACK DIEnumAndDestroyCreatedEffectsProc(LPDIRECTINPUTEFFECT pDIEffect, LPVOID lpvRef);
 BOOL CALLBACK DIEnumDevicesProc(LPCDIDEVICEINSTANCE lpddi, LPVOID lpvContext);

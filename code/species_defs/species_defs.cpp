@@ -5,11 +5,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.3 $
- * $Date: 2003-10-16 16:38:17 $
+ * $Revision: 1.4 $
+ * $Date: 2003-11-06 20:22:18 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2003/10/16 16:38:17  Kazan
+ * couple more types in species_defs.cpp, also finished up "Da Species Upgrade"
+ *
  * Revision 1.2  2003/10/16 01:55:26  Kazan
  * fixed typo in fallback code array index
  *
@@ -22,11 +25,14 @@
  */
 
 
+#pragma warning(disable:4710)
+
 #include "CFile/CFile.h"
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include <memory.h>
+
 
 // from shield.cpp
 int True_NumSpecies = 3;

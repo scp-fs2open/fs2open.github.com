@@ -5,12 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.6 $
- * $Date: 2003-10-13 06:02:50 $
+ * $Revision: 1.7 $
+ * $Date: 2003-11-06 20:22:05 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2003/10/13 06:02:50  Kazan
+ * Added Log Comment Thingy to these files
+ *
  *
  *
  */
@@ -21,6 +24,7 @@
 #include <iostream.h>
 #include <time.h>
 #include "network/multi_log.h"
+
 
 #define PXO_ADDINT(n)	*((int *)cur) = (n); cur += sizeof(int);
 #define PXO_ADDSTRING(x, y) memcpy(cur, x, y); cur += y;
