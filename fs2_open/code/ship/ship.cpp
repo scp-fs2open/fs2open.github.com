@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.155 $
- * $Date: 2005-01-28 11:06:23 $
+ * $Revision: 2.156 $
+ * $Date: 2005-01-28 11:57:36 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.155  2005/01/28 11:06:23  Goober5000
+ * changed a bunch of transpose-rotate sequences to use unrotate instead
+ * --Goober5000
+ *
  * Revision 2.154  2005/01/27 04:23:17  wmcoolmon
  * Ship autorepair, requested by TBP
  *
@@ -2884,7 +2888,7 @@ strcpy(parse_error_text, temp_error);
 					current_trigger->properties.angle.xyz.y = fl_radian(current_trigger->properties.angle.xyz.z);
 				}else{
 					current_trigger->properties.absolute = false;
-					required_string("+relitive_angle:");
+					required_string("+relative_angle:");
 					stuff_vector(&current_trigger->properties.angle );
 
 					current_trigger->properties.angle.xyz.x = fl_radian(current_trigger->properties.angle.xyz.x);
