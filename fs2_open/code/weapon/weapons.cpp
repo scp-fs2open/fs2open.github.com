@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapons.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-11-11 20:18:30 $
- * $Author: phreak $
+ * Revision 2.4  2002/11/11 20:18:30  phreak
+ * updated parse_weapon to parse custom corkscrew missiles
  *
- * Code to handle the weapon systems
- *
- * $Log: not supported by cvs2svn $
  * Revision 2.3  2002/11/06 23:22:05  phreak
  * Parser error handling for fighter flak, it didn't want flak on player weapons, now it doesn't care
  *
+ 2.4
  * Revision 2.2  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -757,10 +754,10 @@ void parse_wi_flags(weapon_info *weaponp)
 		Assert(!(weaponp->wi_flags & WIF_CORKSCREW) && !(weaponp->wi_flags & WIF_FLAK));
 	}
 
-	// make sure flak guns are only placed on turrets - commented out phreak 11/05/02
-//	if(weaponp->wi_flags & WIF_FLAK){
-//		Assert(weaponp->wi_flags & WIF_BIG_ONLY);
-//	}
+	// make sure flak guns are only placed on turrets
+	if(weaponp->wi_flags & WIF_FLAK){
+		Assert(weaponp->wi_flags & WIF_BIG_ONLY);
+	}
 }
 
 // function to parse the information for a specific weapon type.	
@@ -851,6 +848,20 @@ int parse_weapon()
 		wip->laser_bitmap = -1;
 		if(!Fred_running){
 			wip->laser_bitmap = bm_load( wip->pofbitmap_name );
+			if(wip->laser_bitmap < 0){	//if it couldn't find the pcx look for an ani-Bobboau
+				nprintf(("General","couldn't find pcx for %s \n", wip->name));
+				wip->laser_bitmap = bm_load_animation(wip->pofbitmap_name, &wip->laser_bitmap_nframes, &wip->laser_bitmap_fps, 1);				
+				if(wip->laser_bitmap < 0){
+					nprintf(("General","couldn't find ani for %s \n", wip->name));
+				Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by weapon '%s'\n", wip->pofbitmap_name, wip->name );
+				}else{
+					nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", wip->pofbitmap_name, wip->name,wip->laser_bitmap_nframes, wip->laser_bitmap_fps));
+				}
+			}else{
+				wip->laser_bitmap_nframes = 0;
+				wip->laser_bitmap_fps = 0;
+			}
+
 		}
 
 		// optional laser glow
@@ -859,11 +870,28 @@ int parse_weapon()
 			stuff_string(fname, F_NAME, NULL);		
 			if(!Fred_running){
 				wip->laser_glow_bitmap = bm_load( fname );
+				if(wip->laser_glow_bitmap < 0){	//if it couldn't find the pcx look for an ani-Bobboau
+					nprintf(("General","couldn't find pcx for %s \n", wip->name));
+					wip->laser_glow_bitmap = bm_load_animation(fname, &wip->laser_glow_bitmap_nframes, &wip->laser_glow_bitmap_fps, 1);				
+					if(wip->laser_glow_bitmap < 0){
+						nprintf(("General","couldn't find ani for %s \n", wip->name));
+					Warning( LOCATION, "Couldn't open glow texture '%s'\nreferenced by weapon '%s'\n", fname, wip->name );
+					}else{
+						nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", fname, wip->name,wip->laser_glow_bitmap_nframes, wip->laser_glow_bitmap_fps));
+					}
+				}else{
+					wip->laser_glow_bitmap_nframes = 0;
+					wip->laser_glow_bitmap_fps = 0;
+				}
 
 				// might as well lock it down as an aabitmap now
-				if(wip->laser_glow_bitmap >= 0){
-					bm_lock(wip->laser_glow_bitmap, 8, BMP_AABITMAP);
-					bm_unlock(wip->laser_glow_bitmap);
+				if(wip->laser_glow_bitmap >= 0){	//locking all frames if it is a ani-Bobboau
+					for(int i = 0; i>wip->laser_glow_bitmap_nframes; i++){
+						bm_lock((wip->laser_glow_bitmap + i), 8, BMP_AABITMAP);
+						bm_unlock((wip->laser_glow_bitmap + i));
+						nprintf(("General","locking glow for weapon %s \n", wip->name));
+					//	mprintf(("locking glow for weapon"));
+					}
 				}
 			}
 		}
@@ -1356,6 +1384,49 @@ int parse_weapon()
 		}		
 	}
 
+	if(wip->wi_flags & WIF_PARTICLE_SPEW){
+		if(optional_string("$Pspew:")){
+			required_string("+Count:");
+			stuff_int(&wip->Weapon_particle_spew_count);
+			required_string("+Time:");
+			stuff_int(&wip->Weapon_particle_spew_time);
+			required_string("+Vel:");
+			stuff_float(&wip->Weapon_particle_spew_vel);
+			required_string("+Radius:");
+			stuff_float(&wip->Weapon_particle_spew_radius);
+			required_string("+Life:");
+			stuff_float(&wip->Weapon_particle_spew_lifetime);
+			required_string("+Scale:");
+			stuff_float(&wip->Weapon_particle_spew_scale);
+			required_string("+Bitmap:");
+			stuff_string(wip->Weapon_particle_spew_bitmap_name, F_NAME, NULL);
+		
+			wip->Weapon_particle_spew_bitmap = bm_load( wip->Weapon_particle_spew_bitmap_name );
+			if(wip->Weapon_particle_spew_bitmap < 0){	//if it couldn't find the pcx look for an ani-Bobboau
+				nprintf(("General","couldn't find particle pcx for %s \n", wip->name));
+				wip->Weapon_particle_spew_bitmap = bm_load_animation(wip->Weapon_particle_spew_bitmap_name, &wip->Weapon_particle_spew_nframes, &wip->Weapon_particle_spew_fps, 1);				
+				if(wip->Weapon_particle_spew_bitmap < 0){
+					nprintf(("General","couldn't find ani for %s \n", wip->name));
+				Warning( LOCATION, "Couldn't open paticle texture '%s'\nreferenced by weapon '%s'\n", wip->Weapon_particle_spew_bitmap_name, wip->name );
+				}else{
+					nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", wip->Weapon_particle_spew_bitmap_name, wip->name, wip->Weapon_particle_spew_nframes, wip->Weapon_particle_spew_fps));
+				}
+			}else{
+				wip->Weapon_particle_spew_nframes = 1;
+				wip->Weapon_particle_spew_fps = 0;
+			}
+
+		}else{
+			wip->Weapon_particle_spew_count = 1;
+			wip->Weapon_particle_spew_time = 25;
+			wip->Weapon_particle_spew_vel = 0.4f;
+			wip->Weapon_particle_spew_radius = 2.0f;
+			wip->Weapon_particle_spew_lifetime = 0.15f;
+			wip->Weapon_particle_spew_scale = 0.8f;
+			wip->Weapon_particle_spew_bitmap = -1;
+		}
+	}
+
 	// tag weapon optional stuff
 	wip->tag_level = -1;
 	wip->tag_time = -1.0f;
@@ -1590,7 +1661,14 @@ void weapon_render(object *obj)
 
 			if (wip->laser_bitmap >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
-				gr_set_bitmap(wip->laser_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
+				if(wip->laser_bitmap_nframes > 1){
+//					wp->frame += ((timestamp() / (int)(wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes);
+					wp->frame = (int)(wp->frame + ((int)(flFrametime * 1000) / wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
+		//			HUD_printf("frame %d", wp->frame);
+					gr_set_bitmap(wip->laser_bitmap + wp->frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
+				}else{
+					gr_set_bitmap(wip->laser_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
+				}
 
 				vector headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
@@ -1607,7 +1685,13 @@ void weapon_render(object *obj)
 
 				vector headp2;			
 				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
-				gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, gr_screen.mode == GR_DIRECT3D ? weapon_glow_alpha_d3d : weapon_glow_alpha_glide);
+				if(wip->laser_bitmap_nframes > 1){//set the proper bitmap
+//					wp->gframe += ((timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes);
+					wp->gframe = (int)(wp->gframe + ((int)(flFrametime * 1000) / wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
+					gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, gr_screen.mode == GR_DIRECT3D ? weapon_glow_alpha_d3d : weapon_glow_alpha_glide);
+				}else{
+					gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, gr_screen.mode == GR_DIRECT3D ? weapon_glow_alpha_d3d : weapon_glow_alpha_glide);
+				}
 				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &obj->pos, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue);
 			}						
 			break;
@@ -3447,6 +3531,15 @@ void weapons_page_in()
 				bm_page_in_texture( wip->b_info.beam_particle_ani, nframes );
 			}
 		}
+	
+		if(wip->wi_flags & WIF_PARTICLE_SPEW){
+			if(wip->Weapon_particle_spew_nframes > 1){
+				bm_page_in_texture(wip->Weapon_particle_spew_bitmap, wip->Weapon_particle_spew_nframes);//page in the bitmap-Bobboau
+			}else{
+				bm_page_in_texture(wip->Weapon_particle_spew_bitmap);//page in the bitmap-Bobboau
+			}
+		}
+
 	}
 
 	// explosion ani's
@@ -3530,6 +3623,7 @@ void weapon_get_laser_color(color *c, object *objp)
 }
 
 // default weapon particle spew data
+
 int Weapon_particle_spew_count = 1;
 int Weapon_particle_spew_time = 25;
 float Weapon_particle_spew_vel = 0.4f;
@@ -3541,6 +3635,7 @@ float Weapon_particle_spew_scale = 0.8f;
 void weapon_maybe_spew_particle(object *obj)
 {
 	weapon *wp;
+	weapon_info *wip;
 	int idx;
 	vector direct, direct_temp, particle_pos;
 	vector null_vec = ZERO_VECTOR;
@@ -3554,14 +3649,14 @@ void weapon_maybe_spew_particle(object *obj)
 	Assert(Weapon_info[Weapons[obj->instance].weapon_info_index].wi_flags & WIF_PARTICLE_SPEW);
 	
 	wp = &Weapons[obj->instance];	
-
+	wip = &Weapon_info[wp->weapon_info_index];
 	// if the weapon's particle timestamp has elapse`d
 	if((wp->particle_spew_time == -1) || timestamp_elapsed(wp->particle_spew_time)){
 		// reset the timestamp
-		wp->particle_spew_time = timestamp(Weapon_particle_spew_time);
+		wp->particle_spew_time = timestamp(wip->Weapon_particle_spew_time);
 
 		// spew some particles
-		for(idx=0; idx<Weapon_particle_spew_count; idx++){
+		for(idx=0; idx<wip->Weapon_particle_spew_count; idx++){
 			// get the backward vector of the weapon
 			direct = obj->orient.vec.fvec;
 			vm_vec_negate(&direct);
@@ -3572,27 +3667,36 @@ void weapon_maybe_spew_particle(object *obj)
 			ang = fl_radian(frand_range(-90.0f, 90.0f));
 			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.fvec);			
 			direct = direct_temp;
-			vm_vec_scale(&direct, Weapon_particle_spew_scale);
+			vm_vec_scale(&direct, wip->Weapon_particle_spew_scale);
 
 			// rvec
 			ang = fl_radian(frand_range(-90.0f, 90.0f));
 			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.rvec);			
 			direct = direct_temp;
-			vm_vec_scale(&direct, Weapon_particle_spew_scale);
+			vm_vec_scale(&direct, wip->Weapon_particle_spew_scale);
 
 			// fvec
 			ang = fl_radian(frand_range(-90.0f, 90.0f));
 			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.uvec);			
 			direct = direct_temp;
-			vm_vec_scale(&direct, Weapon_particle_spew_scale);
+			vm_vec_scale(&direct, wip->Weapon_particle_spew_scale);
 
 			// get a velovity vector of some percentage of the weapon's velocity
 			vel = obj->phys_info.vel;
-			vm_vec_scale(&vel, Weapon_particle_spew_vel);
+			vm_vec_scale(&vel, wip->Weapon_particle_spew_vel);
 
 			// emit the particle
 			vm_vec_add(&particle_pos, &obj->pos, &direct);
-			particle_create(&particle_pos, &vel, Weapon_particle_spew_lifetime, Weapon_particle_spew_radius, PARTICLE_SMOKE);
+
+			if(wip->Weapon_particle_spew_bitmap < 0){
+				particle_create(&particle_pos, &vel, wip->Weapon_particle_spew_lifetime, wip->Weapon_particle_spew_radius, PARTICLE_SMOKE);
+			}else{
+				int frame = 0;
+				if(wip->Weapon_particle_spew_nframes < 1){
+					frame = ((timestamp() - wp->particle_spew_time)/wip->Weapon_particle_spew_fps)%wip->Weapon_particle_spew_nframes;
+				}
+				particle_create(&particle_pos, &vel, wip->Weapon_particle_spew_lifetime, wip->Weapon_particle_spew_radius, PARTICLE_BITMAP, (wip->Weapon_particle_spew_bitmap + frame));
+			}
 		}
 	}
 }

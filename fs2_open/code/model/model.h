@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.5 $
- * $Date: 2002-10-19 19:29:27 $
+ * $Revision: 2.6 $
+ * $Date: 2002-11-14 04:18:16 $
  * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/10/19 19:29:27  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.4  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -376,11 +379,17 @@ typedef struct stepped_rotation {
 } stepped_rotation_t;
 
 typedef struct ai_rotation {
-	void *p_rotation;
-	int type;
-	float dist;
-	float speed;
-} ai_rotation_t;
+//	void *p_rotation;
+	uint type;			//flags for what animation type
+	float max;
+	float min;
+	int time;
+} ai_rotation;
+
+#define MSS_AI_DOCK			(1<<0)		//model that animates when docking
+#define MSS_AI_ENGINE		(1<<1)		//model that animates baised on wich direction you're turning 
+#define MSS_AI_GUN			(1<<2)		//model that animates when you're fireing
+
 
 // definition for model subsystems.
 typedef struct model_subsystem {					/* contains rotation rate info */
@@ -412,7 +421,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	// Rotation specific info
 	float		turn_rate;								// The turning rate of this subobject, if MSS_FLAG_ROTATES is set.
 	stepped_rotation_t *stepped_rotation;			// turn rotation struct
-	ai_rotation_t *ai_rotation;						// ai controlled rotation struct
+	ai_rotation ai_rotation;						// ai controlled rotation struct
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem
@@ -554,6 +563,7 @@ typedef struct glow_bank {  // glow bank struckture -Bobboau
 	vector	norm[MAX_THRUSTER_SLOTS]; 
 	float		radius[MAX_THRUSTER_SLOTS]; 
 	int		glow_bitmap; 
+	int		glow_neb_bitmap; 
 } glow_bank;
 
 // defines for docking bay things.  The types are essentially flags since docking bays can probably
@@ -1154,3 +1164,5 @@ void model_page_in_textures(int modelnum, int ship_info_index);
 int model_is_pirate_ship(int modelnum);
 
 #endif
+
+void set_warp_gloabals(float, float, float, int, float);

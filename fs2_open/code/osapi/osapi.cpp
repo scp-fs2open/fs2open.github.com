@@ -7,27 +7,15 @@
  *
 */
 
-/*
+/* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-11-14 04:18:17 $
+ * $Author: bobboau $
  *
  * Low level Windows code
  *
- * $Log: not supported by cvs2svn $
- * Revision 2.1  2002/07/07 19:55:59  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:27  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/09 13:52:01  mharris
- * debug_int3() calls abort()
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- * 
+ * $Log: not supported by cvs2svn $ 
  * 
  * 7     6/30/99 5:53p Dave
  * Put in new anti-camper code.
@@ -705,11 +693,7 @@ void os_poll()
 
 void debug_int3()
 {
-#ifdef _WIN32
 	gr_activate(0);
 	_asm { int 3 };
 	gr_activate(1);
-#else
-   abort();
-#endif
 }

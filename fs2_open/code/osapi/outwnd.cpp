@@ -9,25 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 19:29:28 $
+ * $Revision: 2.3 $
+ * $Date: 2002-11-14 04:18:17 $
  * $Author: bobboau $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.1  2002/08/01 01:41:09  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:27  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/09 13:52:26  mharris
- * Removed dead test code
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
  * 
  * 6     6/03/99 6:37p Dave
  * More TNT fun. Made perspective bitmaps more flexible.
@@ -35,7 +23,7 @@
  * 5     6/02/99 6:18p Dave
  * Fixed TNT lockup problems! Wheeeee!
  * 
- * 4     12/14/98 12:13p Dave
+ * 4      12/14/98 12:13p Dave
  * Spiffed up xfer system a bit. Put in support for squad logo file xfer.
  * Need to test now.
  * 
@@ -136,7 +124,7 @@
 #include <winioctl.h>
 #include <conio.h>
 
-#include "osapi/osapi.h"
+#include "osapi/OsApi.h"
 #include "osapi/outwnd.h"
 #include "cfile/cfile.h"
 #include "osapi/monopub.h"
@@ -454,7 +442,7 @@ void outwnd_print(char *id, char *tmp)
 	outwnd_filter_struct *temp;
 
 	if(gr_screen.mode == GR_DIRECT3D){
-	//	return;	//it doesn't print while playing if this is in-Bobboau
+	//	return;
 	}
 
 	if (!outwnd_inited)
@@ -475,6 +463,7 @@ void outwnd_print(char *id, char *tmp)
 	for (i=0; i<outwnd_filter_count; i++)
 		if (!stricmp(id, outwnd_filter[i]->name))
 			break;
+
 
 	if (i == outwnd_filter_count)  // new id found that's not yet in filter list
 	{
@@ -564,10 +553,13 @@ void outwnd_print(char *id, char *tmp)
 		sptr++;
 	} 
 
-/*	if(gr_screen.mode == GR_DIRECT3D){
+	if(gr_screen.mode == GR_DIRECT3D){
 		return;
 	}
-*///	it doesn't print while playing if this is in-Bobboau
+//	if ( D3D_enabled )	{
+//		return;		// Direct3D seems to hang sometimes printing to window
+//	}
+
 	if ( outwnd_disabled ){
 		return;
 	}

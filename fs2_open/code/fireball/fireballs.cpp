@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-11-14 04:18:16 $
+ * $Author: bobboau $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -343,7 +346,9 @@
 #include "gamesnd/gamesnd.h"
 #include "localization/localize.h"
 
-#define WARPHOLE_GROW_TIME		(1.5f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
+int wm;
+
+#define WARPHOLE_GROW_TIME		(3.5f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
 #define MAX_FIREBALL_LOD						4
 
@@ -508,7 +513,13 @@ void fireball_load_data()
 
 	if ( Warp_glow_bitmap == -1 )	{
 		Warp_glow_bitmap = bm_load( NOX("warpglow01") );
-	}	
+	}
+	
+//	polymodel Warp_pm;
+	mprintf(("loading warp model"));
+	wm = -1;
+	wm = model_load("warp.pof", 0, NULL);
+	mprintf((" %d\n", wm));
 
 }
 
@@ -630,6 +641,7 @@ void fireball_render(object * obj)
 					//rad = (fb->total_time - t )*obj->radius/WARPHOLE_GROW_TIME;
 				}
 				//rad = obj->radius;
+//				obj->alt_rad = rad;
 
 
 				warpin_render(&obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius );

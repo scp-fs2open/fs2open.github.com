@@ -5,17 +5,20 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/  
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-11-14 04:18:16 $
+ * $Author: bobboau $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -207,3 +210,5 @@ extern void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, f
 extern int Warp_glow_bitmap;			// Internal
 
 #endif /* _FIREBALLS_H */
+
+extern int wm;

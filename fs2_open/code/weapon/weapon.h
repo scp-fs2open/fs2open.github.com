@@ -9,13 +9,12 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapon.h $
- * $Revision: 2.3 $
- * $Date: 2002-11-11 20:11:02 $
- * $Author: phreak $
- *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/11/11 20:11:02  phreak
+ * changed around the 'weapon_info' struct to allow for custom corkscrew missiles
+ *
  * Revision 2.2  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -405,6 +404,8 @@ typedef struct weapon {
 
 	// flak info
 	short flak_index;							// flak info index
+	int frame;				//for animated laser bitmaps
+	int gframe;				//for animated laser glow bitmaps
 } weapon;
 
 
@@ -469,7 +470,11 @@ typedef struct weapon_info {
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
 
 	int	laser_bitmap;						// Which bitmap renders for laser, -1 if none
+	int	laser_bitmap_nframes;						//number of frames, 1 if it is not an ani 
+	int	laser_bitmap_fps;					//framerate, irellivent ifnframes is < 2 
 	int	laser_glow_bitmap;				// optional bitmap for laser glow
+	int	laser_glow_bitmap_nframes;				//number of frames, 1 if it is not an ani
+	int	laser_glow_bitmap_fps;				//framerate, irellivent ifnframes is < 2
 	float laser_length;
 	color	laser_color_1;						// for cycling between glow colors
 	color	laser_color_2;						// for cycling between glow colors
@@ -540,6 +545,18 @@ typedef struct weapon_info {
 	
 	// SSM
 	int SSM_index;							// wich entry in the SSM,tbl it uses -Bobboau
+
+	int Weapon_particle_spew_count;
+	int Weapon_particle_spew_time;
+	float Weapon_particle_spew_vel;
+	float Weapon_particle_spew_radius;
+	float Weapon_particle_spew_lifetime;
+	float Weapon_particle_spew_scale;
+	int Weapon_particle_spew_bitmap;
+	char Weapon_particle_spew_bitmap_name[NAME_LENGTH];			//p_spew stuff -Bobboau
+	int Weapon_particle_spew_nframes;
+	int Weapon_particle_spew_fps;
+
 
 	// Corkscrew info - phreak 11/9/02
 	int cs_num_fired;

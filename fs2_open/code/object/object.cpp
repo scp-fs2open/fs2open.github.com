@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 19:29:27 $
+ * $Revision: 2.3 $
+ * $Date: 2002-11-14 04:18:17 $
  * $Author: bobboau $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 19:29:27  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.1  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -1115,7 +1118,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 
 			// fire non-streaming primaries here
 			ship_fire_primary( objp, 0 );
-			has_fired = -1;
+			has_fired = 1;
 		} else {
 			// unflag the ship as having the trigger down
 			if(shipp != NULL){
@@ -1261,7 +1264,10 @@ obj_maybe_fire:
 			// fire streaming weapons for ships in here - ALL PLAYERS, regardless of client, single player, server, whatever.
 			// do stream weapon firing for all ships themselves. 
 			if(objp->type == OBJ_SHIP){
-			has_fired =	ship_fire_primary(objp, 1, 0);
+			has_fired = 1;
+				if(ship_fire_primary(objp, 1, 0) == 0){
+					has_fired = -1;
+				}
 			}
 		}
 	}
