@@ -9,15 +9,20 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.3 $
- * $Author: bobboau $
- * $Date: 2003-01-05 23:41:51 $
+ * $Revision: 2.4 $
+ * $Author: Goober5000 $
+ * $Date: 2003-01-17 07:59:08 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/05 23:41:51  bobboau
+ * disabled decals (for now), removed the warp ray thingys,
+ * made some better error mesages while parseing weapons and ships tbls,
+ * and... oh ya, added glow mapping
+ *
  * Revision 2.2  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -290,6 +295,10 @@ extern jmp_buf parse_abort;
 
 #define SEXP_SAVE_MODE				1
 #define SEXP_ERROR_CHECK_MODE		2
+
+// Goober5000 - this seems to be a pretty universal function
+void end_string_at_first_hash_symbol(char *src);
+char *get_pointer_to_first_hash_symbol(char *src);
 
 // white space
 extern int is_white_space(char ch);

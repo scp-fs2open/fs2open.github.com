@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.38 $
- * $Date: 2003-01-17 01:48:49 $
+ * $Revision: 2.39 $
+ * $Date: 2003-01-17 07:59:08 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/01/17 01:48:49  Goober5000
+ * added capability to the $Texture replace code to substitute the textures
+ * without needing and extra model, however, this way you can't substitute
+ * transparent or animated textures
+ * --Goober5000
+ *
  * Revision 2.37  2003/01/16 06:49:11  Goober5000
  * yay! got texture replacement to work!!!
  * --Goober5000
@@ -1250,7 +1256,7 @@ int parse_ship()
 #endif
 
 #ifdef NDEBUG
-	if (strchr(sip->name, '#') && Fred_running)
+	if (get_pointer_to_first_hash_symbol(sip->name) && Fred_running)
 		rtn = 1;
 #endif
 
@@ -1943,12 +1949,10 @@ strcpy(parse_error_text, temp_error);
 
 		index = ship_info_base_lookup( Num_ship_types );		// Num_ship_types is our current entry into the array
 		if ( index == -1 ) {
-			char *p, name[NAME_LENGTH];;
+			char name[NAME_LENGTH];
 
 			strcpy( name, sip->name );
-			p = strchr(name, '#');
-			if ( p )
-				*p = '\0';
+			end_string_at_first_hash_symbol(name);
 			Error(LOCATION, "Ship %s is a copy, but base ship %s couldn't be found.", sip->name, name);
 		}
 	}
@@ -6533,7 +6537,7 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
 				if (src == Player_obj) {
 					char missile_name[NAME_LENGTH];
 					strcpy(missile_name, wip->name);
-					hud_end_string_at_first_hash_symbol(missile_name);
+					end_string_at_first_hash_symbol(missile_name);
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Detonated %s!", 486), missile_name);
 				}
 				*/
@@ -6736,7 +6740,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 					} else {
 						char missile_name[NAME_LENGTH];
 						strcpy(missile_name, wip->name);
-						hud_end_string_at_first_hash_symbol(missile_name);
+						end_string_at_first_hash_symbol(missile_name);
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s without a lock", 488), missile_name);
 					}
 
@@ -6789,7 +6793,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
 					char missile_name[NAME_LENGTH];
 					strcpy(missile_name, Weapon_info[weapon].name);
-					hud_end_string_at_first_hash_symbol(missile_name);
+					end_string_at_first_hash_symbol(missile_name);
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), missile_name);
 				}
 			goto done_secondary;
@@ -7373,12 +7377,11 @@ int ship_info_lookup(char *name)
 int ship_info_base_lookup(int si_index)
 {
 	int	i;
-	char name[NAME_LENGTH], *p;
+	char name[NAME_LENGTH];
 
 	strcpy( name, Ship_info[si_index].name );
-	p = strchr( name, '#' );
-	Assert( p );						// get allender -- something bogus with ship copy
-	*p = '\0';
+	Assert( get_pointer_to_first_hash_symbol(name) );						// get allender -- something bogus with ship copy
+	end_string_at_first_hash_symbol(name);
 
 	i = ship_info_lookup( name );
 	Assert( i != -1 );				// get allender -- there had better be a base ship!

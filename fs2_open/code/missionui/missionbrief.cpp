@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-01-17 07:59:08 $
+ * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -1535,18 +1538,6 @@ void brief_get_closeup_ship_modelnum(brief_icon *ci)
 	}
 }
 
-// cut any text off after (and including) '#' char
-void brief_truncate_label(char *src)
-{
-	char *pointer_to_last_char;
-
-	pointer_to_last_char = strstr(src, NOX("#"));
-
-	if ( pointer_to_last_char ) {
-		*pointer_to_last_char = 0;
-	}
-}
-
 // -------------------------------------------------------------------------------------
 // brief_setup_closeup()
 //
@@ -1606,7 +1597,7 @@ int brief_setup_closeup(brief_icon *bi)
 		strcpy(Closeup_icon->closeup_label,sip->name);
 
 		// cut any text off after (and including) '#' char
-		brief_truncate_label(Closeup_icon->closeup_label);
+		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
 
 		if ( sip->flags & (SIF_SMALL_SHIP|SIF_BIG_SHIP|SIF_HUGE_SHIP|SIF_SENTRYGUN) ) {
 			strcat(Closeup_icon->closeup_label, XSTR( " class", 434));

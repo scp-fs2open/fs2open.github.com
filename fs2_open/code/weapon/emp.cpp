@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-01-14 04:01:33 $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-17 07:59:09 $
  * $Author: Goober5000 $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/14 04:01:33  Goober5000
+ * fixed minor potential bug
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move
  *
@@ -661,7 +665,7 @@ void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
 	}
 
 	// watch out for '#' - Goober5000
-	hud_end_string_at_first_hash_symbol(text);
+	end_string_at_first_hash_symbol(text);
 }
 
 // randomize the chars in a string

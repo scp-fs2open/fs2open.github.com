@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.2 $
- * $Date: 2002-10-17 20:40:50 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-17 07:59:09 $
+ * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/17 20:40:50  randomtiger
+ * Added ability to remove HUD ingame on keypress shift O
+ * So I've added a new key to the bind list and made use of already existing hud removal code.
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -346,9 +350,6 @@ void hud_start_text_flash(char *txt, int t);
 
 // convert a string to use mono spaced numbers
 void hud_num_make_mono(char *num_str);
-
-// cut any text off after (and including) '#' char
-void hud_end_string_at_first_hash_symbol(char *src);
 
 // functions for handling hud animations
 void	hud_anim_init(hud_anim *ha, int sx, int sy, char *filename);
