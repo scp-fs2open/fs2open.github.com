@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-06-04 15:28:24 $
+ * $Revision: 2.22 $
+ * $Date: 2003-06-08 17:31:37 $
  * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/06/04 15:28:24  phreak
+ * added some code that took advantage of opengl fogging stuff
+ *
  * Revision 2.20  2003/03/18 10:07:04  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -3379,6 +3382,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
 	glow_maps_active = 1;
+	memset(&Interp_offset,0,sizeof(vector));
 
 }
 
@@ -3401,7 +3405,8 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 		flags |= MR_NO_TEXTURING;
 
 	Interp_flags = flags;
-
+	Interp_pos=pos;
+	
 	pm = model_get(model_num);
 
 	// Set the flags we will pass to the tmapper
