@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2003-03-02 05:10:42 $
  * $Author: penguin $
  *
  * Main file for dealing with exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:05  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -139,7 +142,9 @@ static void PrintTime(char *output, FILETIME TimeToPrint)
 static void ShowModuleInfo(HANDLE LogFile, HINSTANCE ModuleHandle)
 {
 	char ModName[MAX_PATH];
+#ifdef _MSC_VER
 	__try {
+#endif
 		if (GetModuleFileName(ModuleHandle, ModName, sizeof(ModName)) > 0) {
 			// If GetModuleFileName returns greater than zero then this must
 			// be a valid code module address. Therefore we can try to walk
@@ -174,11 +179,13 @@ static void ShowModuleInfo(HANDLE LogFile, HINSTANCE ModuleHandle)
 						ModName, ModuleHandle, FileSize,
 						NTHeader->FileHeader.TimeDateStamp, TimeBuffer);
 		}
+#ifdef _MSC_VER
 	}
 	// Handle any exceptions by continuing from this point.
 	__except(EXCEPTION_EXECUTE_HANDLER)
 	{
 	}
+#endif
 }
 
 // Scan memory looking for code modules (DLLs or EXEs). VirtualQuery is used
@@ -436,15 +443,19 @@ int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char *Message)
 	// exception handler will print '??'.
 	unsigned char *code = (unsigned char*)Context->Eip;
 	for (int codebyte = 0; codebyte < NumCodeBytes; codebyte++) {
+#ifdef _MSC_VER
 		__try {
+#endif
 			hprintf(LogFile, "%02x ", code[codebyte]);
-
+#ifdef _MSC_VER
 		}
 		__except(EXCEPTION_EXECUTE_HANDLER) {
 			hprintf(LogFile, "?? ");
 		}
+#endif
 	}
 
+#ifdef _MSC_VER
 	// Time to print part or all of the stack to the error log. This allows
 	// us to figure out the call stack, parameters, local variables, etc.
 	hprintf(LogFile, "\r\n"
@@ -500,6 +511,7 @@ int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char *Message)
 	__except(EXCEPTION_EXECUTE_HANDLER) {
 		hprintf(LogFile, "Exception encountered during stack dump.\r\n");
 	}
+#endif
 
 	RecordModuleList(LogFile);
 
