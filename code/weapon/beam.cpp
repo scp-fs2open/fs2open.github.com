@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.8 $
- * $Date: 2002-12-27 17:58:11 $
+ * $Revision: 2.9 $
+ * $Date: 2003-01-13 23:20:01 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/12/27 17:58:11  Goober5000
+ * the insidious beam bug is now squashed AND committed!
+ * --Goober5000
+ *
  * Revision 2.7  2002/12/20 00:50:41  DTP
  * DTP FIX, fast fix to the beam/shield bug problem. will maybe commit later when i find out why this is getting triggered when it should not
  *
@@ -2375,15 +2379,15 @@ int beam_collide_ship(obj_pair *pair)
 	Beam_test_ship++;
 #endif
 
-	shipp = &Ships[pair->b->instance];
-	sip = &Ship_info[shipp->ship_info_index];
-
 	// bad
 	Assert(pair->b->type == OBJ_SHIP);
 	Assert(pair->b->instance >= 0);
 	if((pair->b->type != OBJ_SHIP) || ((pair->b->instance) < 0)){
 		return 1;
 	}
+
+	shipp = &Ships[pair->b->instance];
+	sip = &Ship_info[shipp->ship_info_index];
 
 	// get the widest portion of the beam
 	widest = beam_get_widest(b);
@@ -2965,8 +2969,10 @@ void beam_handle_collisions(beam *b)
 				// maybe vaporize ship.
 				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), b->f_collisions[idx].quadrant);
 
-				// if this is the first hit on the player ship. whack him				
-				if((do_damage) && !(b->f_collisions[idx].quadrant)){ //I didn't want the beam wacking things if it's hitting just sheilds -Bobboau
+				// GAH!! Bobboau, the shields are almost always up!  Anyway, some people complained.
+				// if this is the first hit on the player ship. whack him
+				if(do_damage)	// && !(b->f_collisions[idx].quadrant)) //I didn't want the beam wacking things if it's hitting just sheilds -Bobboau
+				{
 					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
 				}
 				break;
