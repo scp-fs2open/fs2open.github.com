@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-26 20:47:48 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2005-01-11 21:25:58 $
+ * $Author: Goober5000 $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/26 20:47:48  Kazan
+ * remove MCD complete
+ *
  * Revision 2.8  2004/07/12 16:33:03  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1122,7 +1125,8 @@ void physics_apply_whack(vector *impulse, vector *pos, physics_info *pi, matrix 
 		pi->afterburner_decay = timestamp( WEAPON_SHAKE_TIME );
 	}
 
-	vm_vec_scale_add2( &pi->vel, impulse, 1.0f / pi->mass );
+	// Goober5000 - pi->mass should probably be just mass, as specified in the header
+	vm_vec_scale_add2( &pi->vel, impulse, 1.0f / mass );
 	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
 		// Get DaveA
 		nprintf(("Physics", "speed reset in physics_apply_whack [speed: %f]\n", vm_vec_mag(&pi->vel)));
