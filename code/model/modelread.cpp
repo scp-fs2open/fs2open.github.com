@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-10-19 19:29:27 $
+ * $Revision: 2.5 $
+ * $Date: 2002-11-14 04:18:16 $
  * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/10/19 19:29:27  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.3  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -1059,9 +1062,29 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 
 		// CASE OF AI ROTATION
 		else if ( (p = strstr(props, "$ai")) != NULL) {
-			get_user_prop_value(p+8, buf);
+			get_user_prop_value(p+3, buf);
 			subsystemp->flags |= MSS_FLAG_AI_ROTATE;
-
+//reading early animation suport-Bobboau
+			if(!stricmp("dock",buf)){
+				subsystemp->ai_rotation.type &= MSS_AI_DOCK;
+				mprintf(("model has AI animation, %s", buf));
+				if((p = strstr(props, "$up")) != NULL){
+					get_user_prop_value(p+3, buf);
+//					mprintf((" up"));
+					subsystemp->ai_rotation.min = (float)(atof("90"));
+				}
+				if((p = strstr(props, "$down")) != NULL){
+//					mprintf(("down"));
+					get_user_prop_value(p+5, buf);
+					subsystemp->ai_rotation.max = (float)atof("0");
+				}
+//				if((p = strstr(props, "$time")) != NULL){
+//					mprintf(("time"));
+//					get_user_prop_value(p+5, buf);
+					subsystemp->ai_rotation.time = (int)(turn_time * 1000);
+//				}
+mprintf(("animation values, %f %f %d", subsystemp->ai_rotation.min, subsystemp->ai_rotation.max, subsystemp->ai_rotation.time));
+			}
 			// get parameters - ie, speed / dist / other ??
 			// time to activate
 			// condition
@@ -1671,63 +1694,18 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				for (int q = 0; q < pm->n_glows; q++ ) {
 					glow_bank *bank = &pm->glows[q];
-					bank->type=1;
-					bank->is_on=1;
-					bank->glow_timestamp=0;
-					bank->disp_time=0;
-					bank->on_time=1000;
-					bank->off_time=0;
-					bank->LOD=0;
-					bank->submodel_parent=-1;
-					bank->num_slots = cfread_int(fp);
-	
-						cfread_string_len( props, MAX_PROP_LEN, fp );
-						// look for $glow_texture=xxx
-						int length = strlen(props);
-						if (length > 0) {
-							int base_length = strlen("$glow_texture=");
-							Assert( strstr( (const char *)&props, "$glow_texture=") != NULL );
-							Assert( length > base_length );
-								char *glow_texture_name = props + base_length;
-							if (glow_texture_name[0] == '$') {
-								glow_texture_name++;
-							}
-						bank->glow_bitmap = bm_load( glow_texture_name );
-						if (bank->glow_bitmap < 0)	{
-							Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
-						
-						}
-					}
-					for (j = 0; j < bank->num_slots; j++) {
-						cfread_vector( &(bank->pnt[j]), fp );
-						cfread_vector( &(bank->norm[j]), fp );
-							bank->radius[j] = cfread_float( fp );
-							//mprintf(( "Rad = %.2f\n", rad ));
-					}
-					//mprintf(( "Num slots = %d\n", bank->num_slots ));
-
-				}
-				break;					
-			 }				//end glowpoint reading -Bobboau
-
-			case ID_GLOX:{	//experimental glowpoints, so I can test code for things I have to use a hex editor for -Bobboau
-				//
-				char props[MAX_PROP_LEN];
-				pm->n_glows = cfread_int(fp);
-				pm->glows = (glow_bank *)malloc(sizeof(glow_bank) * pm->n_glows);
-				Assert( pm->glows != NULL );
-
-				for (int q = 0; q < pm->n_glows; q++ ) {
-					glow_bank *bank = &pm->glows[q];
-					bank->type=1;
 					bank->is_on=1;
 					bank->glow_timestamp=0;
 					bank->disp_time = cfread_int(fp);
 					bank->on_time = cfread_int(fp);
 					bank->off_time = cfread_int(fp);
-					bank->LOD=0;
-					bank->submodel_parent=-1;
+					bank->submodel_parent = cfread_int(fp);
+					bank->LOD = cfread_int(fp);
+					bank->type = cfread_int(fp);
 					bank->num_slots = cfread_int(fp);
+					if((bank->off_time > 0) && (bank->disp_time > 0)){
+						bank->is_on=0;
+					} 
 	
 						cfread_string_len( props, MAX_PROP_LEN, fp );
 						// look for $glow_texture=xxx
@@ -1743,8 +1721,19 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						bank->glow_bitmap = bm_load( glow_texture_name );
 						if (bank->glow_bitmap < 0)	{
 							Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
-						
+						}else{
+							mprintf(( "glowbank texture num is %d\n", bank->glow_bitmap ));
 						}
+						strcat(glow_texture_name, "-neb");
+						bank->glow_neb_bitmap = bm_load( glow_texture_name );
+						if (bank->glow_neb_bitmap < 0)	{
+							bank->glow_neb_bitmap = bank->glow_bitmap;
+							mprintf(( "glowbank texture not found, setting as the normal one num\n"));
+						//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
+						}else{
+							mprintf(( "glowbank nebula texture num is %d\n", bank->glow_neb_bitmap ));
+						}
+
 					}
 					for (j = 0; j < bank->num_slots; j++) {
 						cfread_vector( &(bank->pnt[j]), fp );
@@ -1934,16 +1923,17 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->transparent[i]=0;	//it's transparent
 					pm->ambient[i]=0;		//ambient glow
 					pm->is_ani[i]=0;		//animated textures
-					if ( strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") )	{
+					if ( strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))	{
 						// Don't load textures for thruster animations or invisible textures
+						// or warp models!-Bobboau
 						pm->textures[i] = -1;
 					} else {
 
-						if(strstr(tmp_name, "trans")){
+						if(strstr(tmp_name, "-trans")){
 							pm->transparent[i]=1;
 							nprintf(("%s is transparent, oooow\n",tmp_name));
 						}
-						if(strstr(tmp_name, "amb")){
+						if(strstr(tmp_name, "-amb")){
 							pm->ambient[i]=1;
 							nprintf(("%s is amient, aaaahhh\n",tmp_name));
 						}
@@ -2938,7 +2928,79 @@ void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii)
 		break;
 	}
 }
+/*
+void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
+{
+	bsp_info * sm;
 
+	if ( psub->subobj_num < 0 ) return;
+	if(psub->ai_rotation.type = 0) return;
+
+	polymodel *pm = model_get(psub->model_num);
+	sm = &pm->submodel[psub->subobj_num];
+
+	if ( sm->movement_type != MOVEMENT_TYPE_ROT ) return;
+
+	
+	// save last angles
+	sii->prev_angs = sii->angs;
+
+	// probably send in a calculated desired turn rate
+	float diff = sii->desired_turn_rate - sii->cur_turn_rate;
+
+	float final_turn_rate;
+	if (diff > 0) {
+		final_turn_rate = sii->cur_turn_rate + sii->turn_accel * flFrametime;
+		if (final_turn_rate > sii->desired_turn_rate) {
+			final_turn_rate = sii->desired_turn_rate;
+		}
+	} else if (diff < 0) {
+		final_turn_rate = sii->cur_turn_rate - sii->turn_accel * flFrametime;
+		if (final_turn_rate < sii->desired_turn_rate) {
+			final_turn_rate = sii->desired_turn_rate;
+		}
+	} else {
+		final_turn_rate = sii->desired_turn_rate;
+	}
+
+	float delta = (sii->cur_turn_rate + final_turn_rate) * 0.5f * flFrametime;
+	sii->cur_turn_rate = final_turn_rate;
+
+	
+	//float delta = psub->turn_rate * flFrametime;
+
+	switch( sm->movement_axis )	{
+	case MOVEMENT_AXIS_X:
+		if (sii->angs.p + delta > psub->ai_rotation.max ){//if it will or has gone past it's max then set it to the max/min
+			sii->angs.p = psub->ai_rotation.max;
+			return;
+		} else if(sii->angs.p + delta < psub->ai_rotation.min){
+			sii->angs.p = psub->ai_rotation.min;
+			return;
+		}
+		sii->angs.p += delta;
+		if (sii->angs.p > PI2 )
+			sii->angs.p -= PI2;
+		else if (sii->angs.p < 0.0f )
+			sii->angs.p += PI2;
+		break;
+	case MOVEMENT_AXIS_Y:	
+		sii->angs.h += delta;
+		if (sii->angs.h > PI2 )
+			sii->angs.h -= PI2;
+		else if (sii->angs.h < 0.0f )
+			sii->angs.h += PI2;
+		break;
+	case MOVEMENT_AXIS_Z:	
+		sii->angs.b += delta;
+		if (sii->angs.b > PI2 )
+			sii->angs.b -= PI2;
+		else if (sii->angs.b < 0.0f )
+			sii->angs.b += PI2;
+		break;
+	}
+}
+*/
 
 //=========================================================================
 // Make a turret's correct orientation matrix.   This should be done when 

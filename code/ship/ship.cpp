@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.9 $
- * $Date: 2002-11-11 20:05:52 $
- * $Author: phreak $
+ * $Revision: 2.10 $
+ * $Date: 2002-11-14 04:18:17 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2002/11/11 20:05:52  phreak
+ * changed a line in ship_fire_secondary to allow for custom
+ * amounts of corkscrew missiles fired
+ *
  * Revision 2.8  2002/11/06 23:21:06  phreak
  * Fighter flak code, it doesn't blow up in your face anymore!
  *
@@ -1073,7 +1077,7 @@ int parse_ship()
 	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS];		// see model.h for max_model_subsystems
 	for (int idx=0; idx<MAX_MODEL_SUBSYSTEMS; idx++) {
 		subsystems[idx].stepped_rotation = NULL;
-		subsystems[idx].ai_rotation = NULL;
+//		subsystems[idx].ai_rotation = NULL;
 	}
 	int i, num_allowed, rtn = 0;
 	int allowed_weapons[MAX_WEAPON_TYPES];
@@ -5364,6 +5368,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
 		if((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->tag_level == 3) && (shipp->flags & SF_TRIGGER_DOWN) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
 			ship_start_targeting_laser(shipp);
+			continue;
 		}
 
 		// if we're firing stream weapons and this is a non stream weapon, skip it
@@ -5443,26 +5448,22 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		
 		if (winfo_p->wi_flags & WIF_BEAM){
 			if ( obj == Player_obj ) {//beam sounds for the player
-				if((shipp->fighter_beam_loop_sound[bank_to_fire] == -1) && (winfo_p->b_info.beam_loop_sound >= 0)){				
-					sound_played = winfo_p->launch_snd;
-					if ( obj == Player_obj ) {
-						if ( winfo_p->launch_snd != -1 ) {
-							weapon_info *wip;
-							ship_weapon *swp;
+				sound_played = winfo_p->launch_snd;
+				if ( winfo_p->launch_snd != -1 ) {
+					weapon_info *wip;
+					ship_weapon *swp;
 
-							if(shipp->fighter_beam_loop_sound[bank_to_fire] == -1 ){
-								shipp->fighter_beam_loop_sound[bank_to_fire] = snd_play_looping( &Snds[winfo_p->launch_snd], 0.0f, -1, -1, 1.0f, SND_PRIORITY_MUST_PLAY );
-							}
-							if(!(snd_is_playing(shipp->fighter_beam_loop_sound[bank_to_fire])) ){
-								shipp->fighter_beam_loop_sound[bank_to_fire] = -1;
-							}
+					if(!(snd_is_playing(shipp->fighter_beam_loop_sound[bank_to_fire])) ){
+						shipp->fighter_beam_loop_sound[bank_to_fire] = -1;
+					}
+					if(shipp->fighter_beam_loop_sound[bank_to_fire] == -1 ){
+						shipp->fighter_beam_loop_sound[bank_to_fire] = snd_play_looping( &Snds[winfo_p->launch_snd], 0.0f, -1, -1, 1.0f, SND_PRIORITY_MUST_PLAY );
+					}
 	
-							swp = &Player_ship->weapons;
-							if (swp->current_primary_bank >= 0) {
-								wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
-								joy_ff_play_primary_shoot((int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000);
-							}
-						}
+					swp = &Player_ship->weapons;
+					if (swp->current_primary_bank >= 0) {
+						wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
+						joy_ff_play_primary_shoot((int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000);
 					}
 				}
 			}else{//beam sounds for other fighters
@@ -5527,7 +5528,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				shipp->weapon_energy -= num_slots*winfo_p->energy_consumed*flFrametime;
 				
 				fighter_beam_fire_info fbfire_info;
-
+/*
 				if(shipp->was_firing_last_frame[bank_to_fire] == 1){
 					if(shipp->warmup_stamp[bank_to_fire] < timestamp())
 						shipp->warmup_stamp[bank_to_fire] = -1;
@@ -5543,15 +5544,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						HUD_printf("first frame");
 					}*/
 
-				}
+//				}
 				
 
 
-			/*		shipp->warmup_stamp[bank_to_fire] = -1;
+					shipp->warmup_stamp[bank_to_fire] = -1;
 					shipp->life_left[bank_to_fire] = 0.0f;					//for fighter beams
 					shipp->life_total[bank_to_fire] = 0.0f;					//for fighter beams
 					shipp->warmdown_stamp[bank_to_fire] = -1;				//for fighter beams
-*/
+
 				//	if ( obj == Player_obj ){
 						fbfire_info.fighter_beam_loop_sound = -1;
 				//	}else{
@@ -5799,8 +5800,8 @@ void ship_start_targeting_laser(ship *shipp)
 
 void ship_stop_targeting_laser(ship *shipp)
 {
-	//shipp->targeting_laser_bank = -1;
-	//shipp->targeting_laser_objnum = -1; // erase old laser obj num if it has any -Bobboau
+	shipp->targeting_laser_bank = -1;
+	shipp->targeting_laser_objnum = -1; // erase old laser obj num if it has any -Bobboau
 }
 
 void ship_process_targeting_lasers()
@@ -5839,6 +5840,10 @@ void ship_process_targeting_lasers()
 			}
 
 			// fire a targeting laser
+			fire_info.life_left = 0.0;					//for fighter beams
+			fire_info.life_total = 0.0f;					//for fighter beams
+			fire_info.warmdown_stamp = -1;				//for fighter beams
+			fire_info.warmup_stamp = -1;				//for fighter beams
 			fire_info.accuracy = 0.0f;
 			fire_info.beam_info_index = shipp->weapons.primary_bank_weapons[shipp->targeting_laser_bank];
 			fire_info.beam_info_override = NULL;

@@ -5,17 +5,20 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/
+*/ 
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.3 $
- * $Date: 2002-10-19 19:29:29 $
+ * $Revision: 2.4 $
+ * $Date: 2002-11-14 04:18:17 $
  * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/19 19:29:29  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.2  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -264,3 +267,5 @@ void beam_test(int whee);
 void beam_test_new(int whee);
 
 #endif
+void beam_calc_facing_pts(vector *top, vector *bot, vector *fvec, vector *pos, float w, float z_add);
+

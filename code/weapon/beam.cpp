@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-10-19 19:29:29 $
+ * $Revision: 2.5 $
+ * $Date: 2002-11-14 04:18:17 $
  * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/10/19 19:29:29  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.3  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -809,14 +812,14 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	}
 
 	// fill in some values
-	new_item->warmup_stamp = -1;
-	new_item->warmdown_stamp = -1;
+	new_item->warmup_stamp = fire_info->warmup_stamp;
+	new_item->warmdown_stamp = fire_info->warmdown_stamp;
 	new_item->weapon_info_index = fire_info->beam_info_index;	
 	new_item->objp = fire_info->shooter;
-	new_item->sig = 0;
+	new_item->sig = fire_info->shooter->signature;
 	new_item->subsys = NULL;
-	new_item->life_left = 0;	
-	new_item->life_total = 0;
+	new_item->life_left = fire_info->life_left;	
+	new_item->life_total = fire_info->life_total;
 	new_item->r_collision_count = 0;
 	new_item->f_collision_count = 0;
 	new_item->target = NULL;
@@ -845,6 +848,12 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 
 	// this sets up all info for the first frame the beam fires
 	beam_aim(new_item);						// to fill in shot_point, etc.		
+
+	if(Beams[Objects[objnum].instance].objnum != objnum){
+		Int3();
+		return -1;
+	}
+
 	
 	return objnum;
 }
@@ -871,10 +880,10 @@ int beam_get_parent(object *bm)
 	}
 
 	// if the object handle is invalid
-/*	if(b->objp->signature != b->sig){
+	if(b->objp->signature != b->sig){
 		return -1;
 	}
-*/ //comented out to see if this is the weak link in the fighter beam hit recording -Bobboau
+ //comented out to see if this is the weak link in the fighter beam hit recording -Bobboau
 
 	// return the handle
 	return OBJ_INDEX(b->objp);
@@ -911,7 +920,12 @@ int beam_get_num_collisions(int objnum)
 		Int3();
 		return -1;
 	}
-	if((Beams[Objects[objnum].instance].objnum != objnum) || (Beams[Objects[objnum].instance].objnum < 0)){
+	if(Beams[Objects[objnum].instance].objnum != objnum){
+		Int3();
+		return -1;
+	}
+
+	if(Beams[Objects[objnum].instance].objnum < 0){
 		Int3();
 		return -1;
 	}
@@ -1615,7 +1629,7 @@ void beam_render_all()
 void beam_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos, float w, float z_add )
 {
 	vector uvec, rvec;
-	vector temp;	
+	vector temp;
 
 	temp = *pos;
 

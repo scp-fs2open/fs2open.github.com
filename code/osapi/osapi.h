@@ -6,12 +6,12 @@
  * source.
  *
 */
+ 
+#include "globalincs/pstypes.h"
+#include "OsRegistry.h"
 
 #ifndef _OSAPI_H
 #define _OSAPI_H
-
-#include "globalincs/pstypes.h"
-
 
 // --------------------------------------------------------------------------------------------------
 // OSAPI DEFINES/VARS
