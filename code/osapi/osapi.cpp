@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-03-01 06:55:42 $
- * $Author: bobboau $
+ * $Revision: 2.25 $
+ * $Date: 2005-03-03 16:18:19 $
+ * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/03/01 06:55:42  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.23  2005/02/04 20:06:06  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -201,7 +205,6 @@
 #include <direct.h>
 
 #include "globalincs/pstypes.h"
-#include "osapi/osapi.h"
 #include "io/key.h"
 #include "palman/palman.h"
 #include "io/mouse.h"
@@ -216,7 +219,13 @@
 #include "osapi/osregistry.h"
 #include "cmdline/cmdline.h"
 
+#define THREADED	// to use the proper set of macros
+#include "osapi/osapi.h"
 
+
+// used to be a THREADED define but only use multiple process threads if this is defined
+// NOTE: may hang if set
+//#define THREADED_PROCESS
 
 
 // ----------------------------------------------------------------------------------------------------
@@ -244,12 +253,12 @@ int Os_debugger_running = 0;
 // OSAPI FORWARD DECLARATIONS
 //
 
-#ifdef THREADED
+#ifdef THREADED_PROCESS
 	// thread handler for the main message thread
 	DWORD win32_process(DWORD lparam);
 #else
 	DWORD win32_process1(DWORD lparam);
-	DWORD win32_process1(DWORD lparam);
+	DWORD win32_process2(DWORD lparam);
 #endif
 
 // Fills in the Os_debugger_running with non-zero if debugger detected.
@@ -285,7 +294,7 @@ void os_init(char * wclass, char * title, char *app_name, char *version_string )
 
 	INITIALIZE_CRITICAL_SECTION( Os_lock );
 
-	#ifdef THREADED
+	#ifdef THREADED_PROCESS
 		// Create an even to signal that the window is created, 
 		// so that we don't return from this function until 
 		// the window is all properly created.
@@ -375,7 +384,7 @@ void os_resume()
 //
 
 #pragma warning(disable:4702)	// unreachable code
-#ifdef THREADED
+#ifdef THREADED_PROCESS
 
 // thread handler for the main message thread
 DWORD win32_process(DWORD lparam)
@@ -430,7 +439,7 @@ DWORD win32_process2(DWORD lparam)
 
 	return 0;
 }
-#endif // THREADED
+#endif // THREADED_PROCESS
 #pragma warning(default:4702)	// unreachable code
 
 // Fills in the Os_debugger_running with non-zero if debugger detected.
@@ -518,7 +527,7 @@ void change_window_active_state()
 			// maximize it
 			joy_reacquire_ff();
 
-#ifdef THREADED
+#ifdef THREADED_PROCESS
 			SetThreadPriority( hThread, THREAD_PRIORITY_HIGHEST );
 #endif
 		} else {
@@ -531,7 +540,7 @@ void change_window_active_state()
 
 			alt_tab_pause();
 
-#ifdef THREADED
+#ifdef THREADED_PROCESS
 			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
 #endif
 		}
@@ -835,7 +844,7 @@ BOOL win32_create_window()
 
 void os_poll()
 {
-#ifndef THREADED
+#ifndef THREADED_PROCESS
 	win32_process2(0);
 #else
 	MSG msg;
