@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.h $
- * $Revision: 2.4 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.5 $
+ * $Date: 2003-11-14 22:47:37 $
+ * $Author: Kazan $
  *
  * Header file for the application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.3  2002/07/26 16:12:05  penguin
  * fixed bug where winsock.h wasn't defined
  *
@@ -81,7 +84,9 @@
 #define NET_IPX		2
 #define NET_VMT		3
 
-#define MAX_PACKET_SIZE		512
+// kazan - I think this should raise the ships limit across the network
+#define MAX_PACKET_SIZE 4096
+//#define MAX_PACKET_SIZE		512
 
 #ifdef FS2_DEMO
 	#define DEFAULT_GAME_PORT 7802
@@ -100,6 +105,7 @@ typedef struct net_addr	{
 #ifdef _WIN32
 typedef uint PSNET_SOCKET;
 typedef uint PSNET_SOCKET_RELIABLE;
+
 typedef int socklen_t;
 #else
 typedef int SOCKET;
