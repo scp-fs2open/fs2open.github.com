@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2005/02/19 07:54:33  wmcoolmon
+ * Removed trails limit
+ *
  * Revision 2.87  2005/02/18 04:54:44  wmcoolmon
  * Added $Tech Model (after +Tech Description)
  *
@@ -3989,7 +3992,7 @@ int weapon_create( vector * pos, matrix * porient, int weapon_id, int parent_obj
 	}
 
 	if (wip->wi_flags & WIF_TRAIL /*&& !(wip->wi_flags & WIF_CORKSCREW) */) {
-		wp->trail_ptr = trail_create(wip->tr_info);		
+		wp->trail_ptr = trail_create(&wip->tr_info);		
 
 		if ( wp->trail_ptr != NULL )	{
 			// Add two segments.  One to stay at launch pos, one to move.

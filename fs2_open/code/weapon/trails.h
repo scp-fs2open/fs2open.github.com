@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.h $
- * $Revision: 2.5 $
- * $Date: 2005-02-19 07:54:33 $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-20 07:39:14 $
  * $Author: wmcoolmon $
  *
  * External defs for missile trail stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/02/19 07:54:33  wmcoolmon
+ * Removed trails limit
+ *
  * Revision 2.4  2004/08/11 05:06:36  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -86,20 +89,22 @@ typedef struct trail {
 	int		head, tail;						// pointers into the queue for the trail points
 	vector	pos[NUM_TRAIL_SECTIONS];	// positions of trail points
 	float		val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
-	int		object_died;					// set to zero as long as object	
+	bool		object_died;					// set to zero as long as object	
 	int		trail_stamp;					// trail timestamp	
 
 	// trail info
 	trail_info info;							// this is passed when creating a trail
 
-	struct	trail * prev;
 	struct	trail * next;
 
-	~trail();
 } trail;
+
+// Call at the start of freespace to init trails
 
 // Call at start of level to reinit all missilie trail stuff
 void trail_level_init();
+
+void trail_level_close();
 
 // Needs to be called from somewhere to move the trails each frame
 void trail_move_all(float frametime);
@@ -111,7 +116,7 @@ void trail_render_all();
 // to deal with trails:
 
 // Returns -1 if failed
-trail *trail_create(trail_info info);
+trail *trail_create(trail_info *info);
 void trail_add_segment( trail *trailp, vector *pos );
 void trail_set_segment( trail *trailp, vector *pos );
 void trail_object_died( trail *trailp );

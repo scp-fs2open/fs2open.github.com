@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-02-19 07:54:33 $
+ * $Revision: 2.22 $
+ * $Date: 2005-02-20 07:39:14 $
  * $Author: wmcoolmon $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/02/19 07:54:33  wmcoolmon
+ * Removed trails limit
+ *
  * Revision 2.20  2004/10/31 22:02:47  taylor
  * little cleanup
  *
@@ -186,7 +189,7 @@
 
 #include "weapon/trails.h"
 #include "globalincs/systemvars.h"
-#include "globalincs/linklist.h"
+//#include "globalincs/linklist.h"
 #include "render/3d.h" 
 #include "io/timer.h"
 #include "ship/ship.h"
@@ -194,16 +197,10 @@
 
 #define MAX_TRAILS 1500
 
-trail::~trail()
-{
-	prev->next = next;
-	next->prev = prev;
-}
-
 
 int Num_trails = 0;
 //trail Trails[MAX_TRAILS];
-trail Mytrails;
+trail Trails;
 
 //trail Trail_free_list;
 //trail Trail_used_list;
@@ -211,22 +208,27 @@ trail Mytrails;
 // Reset everything between levels
 void trail_level_init()
 {
-//	int i;
-
 	Num_trails = 0;
-	list_init(&Mytrails);
-	/*list_init( &Trail_free_list );
-	list_init( &Trail_used_list );
+	Trails.next = &Trails;
+}
 
-	// Link all object slots into the free list
-	for (i=0; i<MAX_TRAILS; i++)	{
-		list_append(&Trail_free_list, &Trails[i] );
-	}*/
+void trail_level_close()
+{
+	trail *nextp;
+	for(trail *trailp = Trails.next; trailp != &Trails; trailp = nextp)
+	{
+		nextp = trailp->next;
+
+		//Now we can delete it
+		free(trailp);
+	}
+
+	Num_trails=0;
 }
 
 //returns the number of a free trail
 //returns -1 if no free trails
-trail *trail_create(trail_info info)
+trail *trail_create(trail_info *info)
 {
 	trail *trailp;
 
@@ -247,20 +249,22 @@ trail *trail_create(trail_info info)
 		return NULL;
 	}*/
 
-	// Find next available trail
-	trailp = new trail;
+	// Make a new trail
+	trailp = (trail*)malloc(sizeof(trail));
 
 	// increment counter
 	Num_trails++;
 
 	// Init the trail data
-	trailp->info = info;
+	trailp->info = *info;
 	trailp->tail = 0;
 	trailp->head = 0;	
-	trailp->object_died = 0;		
+	trailp->object_died = false;		
 	trailp->trail_stamp = timestamp(trailp->info.stamp);
 
-	list_append(&Mytrails, trailp);
+	//Append it
+	trailp->next = Trails.next;
+	Trails.next = trailp;
 
 	return trailp;
 }
@@ -439,14 +443,13 @@ void trail_render( trail * trailp )
 void trail_render( trail * trailp )
 {		
 //	if(!Cmdline_nohtl)gr_set_lighting(false,false);//this shouldn't need to be here but it does need to be here, WHY!!!!!!!?-Bobboau
-	trail_info *ti;	
 
 	if ( trailp->tail == trailp->head ) 
 	{
 		return;
 	}
 
-	ti = &trailp->info;	
+	trail_info *ti	= &trailp->info;	
 
 	vector topv, botv, *fvec, last_pos, tmp_fvec;
 	vertex  top, bot;
@@ -621,20 +624,20 @@ void trail_set_segment( trail *trailp, vector *pos )
 
 void trail_move_all(float frametime)
 {
-	int num_alive_segments;
-	trail *trailp;
+	int num_alive_segments,n;
+	float time_delta;
 	trail *next_trail;
+	trail *prev_trail = &Trails;
 
-	trailp=GET_FIRST(&Mytrails);
-
-	while ( trailp!=END_OF_LIST(&Mytrails) )
+	for(trail *trailp = Trails.next; trailp != &Trails; trailp = next_trail)
 	{
-		next_trail = GET_NEXT(trailp);
+		next_trail = trailp->next;
+
 		num_alive_segments = 0;
 
 		if ( trailp->tail != trailp->head )	{
-			int n = trailp->tail;			
-			float time_delta = frametime / trailp->info.max_life;
+			n = trailp->tail;			
+			time_delta = frametime / trailp->info.max_life;
 			do	{
 				n--;
 				if ( n < 0 ) n = NUM_TRAIL_SECTIONS-1;
@@ -648,38 +651,37 @@ void trail_move_all(float frametime)
 			} while ( n != trailp->head );
 		}		
 	
-		if ( trailp->object_died && (num_alive_segments < 1) )
+		if ( (num_alive_segments < 1) && trailp->object_died)
 		{
-			delete trailp;
+			prev_trail->next = trailp;
+			free(trailp);
 
 			// decrement counter
 			Num_trails--;
-			
 		}
-
-		trailp = next_trail;
+		else
+		{
+			prev_trail = trailp;
+		}
 	}
 }
 
 void trail_object_died( trail *trailp )
 {
-	trailp->object_died++;
+	trailp->object_died = true;
 }
 
 void trail_render_all()
 {
-	trail *trailp;
 
 	if ( !Detail.weapon_extras )	{
 		// No trails at slot 0
 		return;
 	}
 
-	trailp=GET_FIRST(&Mytrails);
-
-	while ( trailp!=END_OF_LIST(&Mytrails) )	{
+	for(trail *trailp = Trails.next; trailp!=&Trails; trailp = trailp->next )
+	{
 		trail_render(trailp);
-		trailp=GET_NEXT(trailp);
 	}
 
 }

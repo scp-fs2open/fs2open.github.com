@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-02-19 07:57:03 $
+ * $Revision: 2.18 $
+ * $Date: 2005-02-20 07:39:34 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/02/19 07:57:03  wmcoolmon
+ * Removed trails limit
+ *
  * Revision 2.16  2005/01/31 10:34:39  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -334,7 +337,7 @@ void ct_create_contrails(ship *shipp)
 
 	for(idx=0; idx<sip->ct_count; idx++){
 			//if (this is a neb mision and this is a neb trail) or an ABtrail -Bobboau
-			shipp->trail_ptr[idx] = trail_create(sip->ct_info[idx]);	
+			shipp->trail_ptr[idx] = trail_create(&sip->ct_info[idx]);	
 	
 			// add the point		
 			vm_vec_unrotate(&v1, &sip->ct_info[idx].pt, &objp->orient);
@@ -428,7 +431,7 @@ void ct_create_ABtrails(ship *shipp)
 
 		for(idx=0; idx<shipp->ab_count; idx++){
 		
-			shipp->ABtrail_ptr[idx] = trail_create(shipp->ab_info[idx]);	
+			shipp->ABtrail_ptr[idx] = trail_create(&shipp->ab_info[idx]);	
 			// get the point for the contrail
 			vm_vec_unrotate(&v1, &shipp->ab_info[idx].pt, &objp->orient);
 			vm_vec_add2(&v1, &objp->pos);
