@@ -9,13 +9,27 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.10 $
+ * $Revision: 2.11 $
  * $Author: Goober5000 $
- * $Date: 2002-12-22 17:22:47 $
+ * $Date: 2002-12-22 21:12:22 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2002/12/22 17:22:47  Goober5000
+ * Subcategories implemented. :) So far all that's been done is the Change menu, but other
+ * subcategorizations are possible.  Here are the instructions from sexp.h...
+ * "Adding more subcategories is possible with the new code.  All that needs to be done is
+ * to add a #define here (a number from 0x0000 to 0x00ff ORred with the category that it
+ * goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
+ * will return the subcategory for each sexp that uses it, and the submenu name in the
+ * op_submenu[] array in sexp_tree.cpp."
+ *
+ * Please note that I rearranged a whole bunch of sexps in the Operators[] array in sexp.cpp
+ * in order to make the subcategories work better, so if you get a whole bunch of differences
+ * or even conflicts, just ignore them. :)
+ * --Goober5000
+ *
  * Revision 2.9  2002/12/21 17:58:11  Goober5000
  * rearranged the sexp list and got the preliminary subcategories working - still need to work on the actual submenu
  * --Goober5000
@@ -506,6 +520,7 @@
 #define	OP_SPECIAL_WARP_DISTANCE			(0x0018 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_IS_SHIP_VISIBLE					(0x0019 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_TEAM_SCORE						(0x001a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+#define OP_PRIMARY_AMMO_PCT					(0x001b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -644,6 +659,7 @@
 #define OP_SPECIAL_CHECK						(0x000b | OP_CATEGORY_TRAINING)
 #define OP_SECONDARIES_DEPLETED				(0x000c | OP_CATEGORY_TRAINING)
 #define OP_FACING2								(0x000d | OP_CATEGORY_TRAINING)
+#define OP_PRIMARIES_DEPLETED					(0x000e | OP_CATEGORY_TRAINING)
 
 #define OP_SET_TRAINING_CONTEXT_FLY_PATH	(0x0080 | OP_CATEGORY_TRAINING)
 #define OP_SET_TRAINING_CONTEXT_SPEED		(0x0081 | OP_CATEGORY_TRAINING)

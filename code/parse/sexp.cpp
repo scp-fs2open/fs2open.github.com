@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.11 $
- * $Date: 2002-12-22 17:22:47 $
+ * $Revision: 2.12 $
+ * $Date: 2002-12-22 21:12:22 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2002/12/22 17:22:47  Goober5000
+ * Subcategories implemented. :) So far all that's been done is the Change menu, but other
+ * subcategorizations are possible.  Here are the instructions from sexp.h...
+ * "Adding more subcategories is possible with the new code.  All that needs to be done is
+ * to add a #define here (a number from 0x0000 to 0x00ff ORred with the category that it
+ * goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
+ * will return the subcategory for each sexp that uses it, and the submenu name in the
+ * op_submenu[] array in sexp_tree.cpp."
+ *
+ * Please note that I rearranged a whole bunch of sexps in the Operators[] array in sexp.cpp
+ * in order to make the subcategories work better, so if you get a whole bunch of differences
+ * or even conflicts, just ignore them. :)
+ * --Goober5000
+ *
  * Revision 2.10  2002/12/21 17:58:11  Goober5000
  * rearranged the sexp list and got the preliminary subcategories working - still need to work on the actual submenu
  * --Goober5000
@@ -462,6 +476,7 @@ sexp_oper Operators[] = {
 	{ "engine-recharge-pct",				OP_ENGINE_RECHARGE_PCT,				1, 1			},
 	{ "weapon-recharge-pct",				OP_WEAPON_RECHARGE_PCT,				1, 1			},
 	{ "shield-quad-low",						OP_SHIELD_QUAD_LOW,					2,	2			},
+	{ "primary-ammo-pct",					OP_PRIMARY_AMMO_PCT,				2,	2			},
 	{ "secondary-ammo-pct",					OP_SECONDARY_AMMO_PCT,				2,	2			},
 	{ "is-primary-selected",				OP_IS_PRIMARY_SELECTED,				2,	2			},
 	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
@@ -611,6 +626,7 @@ sexp_oper Operators[] = {
 	{ "path-flown",				OP_PATH_FLOWN,					0, 0,			},
 	{ "training-msg",				OP_TRAINING_MSG,				1, 4,			},
 	{ "flash-hud-gauge",			OP_FLASH_HUD_GAUGE,			1, 1,			},
+	{ "primaries-depleted",		OP_PRIMARIES_DEPLETED,		1, 1,			},
 	{ "secondaries-depleted",	OP_SECONDARIES_DEPLETED,	1, 1,			},
 	{ "special-check",			OP_SPECIAL_CHECK,				1, 1,			},
 
@@ -6425,6 +6441,49 @@ int sexp_speed(int node)
 	return 0;
 }
 
+// Goober5000
+int sexp_primaries_depleted(int node)
+{
+	int sindex, num_banks, num_depleted_banks;
+	ship *shipp;
+
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if (sindex < 0) {
+		return 0;
+	}
+
+	shipp = &Ships[sindex];
+	if (shipp->objnum < 0) {
+		return 0;
+	}
+
+	// see if ship has ballistic primary weapons
+	if (!(Ship_info[shipp->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES))
+		return 0;
+
+	// get num primary banks
+	num_banks = shipp->weapons.num_primary_banks;
+	num_depleted_banks = 0;
+
+	// get number of depleted banks
+	for (int idx=0; idx<num_banks; idx++)
+	{
+		// is this a ballistic bank?
+		if (Weapon_info[shipp->weapons.primary_bank_weapons[idx]].wi_flags2 & WIF2_BALLISTIC)
+		{
+			// is this bank out of ammo?
+			if (shipp->weapons.primary_bank_ammo[idx] == 0)
+			{
+				num_depleted_banks++;
+			}
+		}
+	}
+
+	// are they all depleted?
+	return (num_depleted_banks == num_banks);
+}
+
 int sexp_secondaries_depleted(int node)
 {
 	int sindex, num_banks, num_depleted_banks;
@@ -6687,12 +6746,84 @@ int sexp_shield_quad_low(int node)
 	return 0;	
 }
 
+// Goober5000
+int sexp_primary_ammo_pct(int node)
+{
+	ship *shipp;
+	int sindex;
+	int check, idx;
+	int ret_sum[MAX_SUPPORTED_PRIMARY_BANKS];
+	int ret = 0;
+
+	// get the ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0)
+	{
+		return 0;
+	}
+	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS))
+	{
+		return 0;
+	}
+	shipp = &Ships[sindex];
+	
+	// bank to check
+	check = atoi(CTEXT(CDR(node)));
+
+	// bogus check? (MAX_SUPPORTED_PRIMARY_BANKS == cumulative sum of all banks)
+	if((check != MAX_SUPPORTED_PRIMARY_BANKS) && (check > shipp->weapons.num_primary_banks)){
+		return 0;
+	}
+
+	// cumulative sum?
+	if(check == MAX_SUPPORTED_PRIMARY_BANKS)
+	{
+		for(idx=0; idx<shipp->weapons.num_primary_banks; idx++)
+		{
+			// ballistic
+			if (Weapon_info[shipp->weapons.primary_bank_weapons[idx]].wi_flags2 & WIF2_BALLISTIC)
+			{
+				ret_sum[idx] = (int)(((float)shipp->weapons.primary_bank_ammo[idx] / (float)shipp->weapons.primary_bank_start_ammo[idx]) * 100.0f);
+			}
+			// non-ballistic
+			else
+			{
+				ret_sum[idx] = 100;
+			}
+		}
+
+		// add it up
+		ret = 0;
+		for(idx=0; idx<shipp->weapons.num_primary_banks; idx++)
+		{
+			ret += ret_sum[idx];
+		}
+		ret = (int)((float)ret / (float)shipp->weapons.num_primary_banks);
+	}
+	else
+	{
+		// ballistic
+		if (Weapon_info[shipp->weapons.primary_bank_weapons[check]].wi_flags2 & WIF2_BALLISTIC)
+		{
+			ret = (int)(((float)shipp->weapons.primary_bank_ammo[check] / (float)shipp->weapons.primary_bank_start_ammo[check]) * 100.0f);
+		}
+		// non-ballistic
+		else
+		{
+			ret = 100;
+		}
+	}	
+
+	// return
+	return ret;
+}
+
 int sexp_secondary_ammo_pct(int node)
 {
 	ship *shipp;
 	int sindex;
 	int check, idx;
-	int ret_sum[4];
+	int ret_sum[MAX_SUPPORTED_SECONDARY_BANKS];
 	int ret = 0;
 
 	// get the ship
@@ -6708,13 +6839,13 @@ int sexp_secondary_ammo_pct(int node)
 	// bank to check
 	check = atoi(CTEXT(CDR(node)));
 
-	// bogus check? (3 == cumulative sum of all banks)
-	if((check != 3) && (check > shipp->weapons.num_secondary_banks)){
+	// bogus check? (MAX_SUPPORTED_SECONDARY_BANKS == cumulative sum of all banks)
+	if((check != MAX_SUPPORTED_SECONDARY_BANKS) && (check > shipp->weapons.num_secondary_banks)){
 		return 0;
 	}
 
 	// cumulative sum?
-	if(check == 3){
+	if(check == MAX_SUPPORTED_SECONDARY_BANKS){
 		for(idx=0; idx<shipp->weapons.num_secondary_banks; idx++){
 			ret_sum[idx] = (int)(((float)shipp->weapons.secondary_bank_ammo[idx] / (float)shipp->weapons.secondary_bank_start_ammo[idx]) * 100.0f);
 		}
@@ -8281,6 +8412,10 @@ int eval_sexp(int cur_node)
 				sexp_val = sexp_speed(node);
 				break;
 
+			case OP_PRIMARIES_DEPLETED:
+				sexp_val = sexp_primaries_depleted(node);
+				break;
+
 			case OP_SECONDARIES_DEPLETED:
 				sexp_val = sexp_secondaries_depleted(node);
 				break;
@@ -8452,6 +8587,10 @@ int eval_sexp(int cur_node)
 
 			case OP_SHIELD_QUAD_LOW:
 				sexp_val = sexp_shield_quad_low(node);
+				break;
+
+			case OP_PRIMARY_AMMO_PCT:
+				sexp_val = sexp_primary_ammo_pct(node);
 				break;
 
 			case OP_SECONDARY_AMMO_PCT:
@@ -8643,6 +8782,7 @@ int query_operator_return_type(int op)
 		case OP_DESTROYED_DEPARTED_DELAY:
 		case OP_SPECIAL_CHECK:
 		case OP_IS_TAGGED:
+		case OP_PRIMARIES_DEPLETED:
 		case OP_SECONDARIES_DEPLETED:
 		case OP_SHIELD_QUAD_LOW:
 		case OP_IS_SECONDARY_SELECTED:
@@ -8676,6 +8816,7 @@ int query_operator_return_type(int op)
 		case OP_SHIELD_RECHARGE_PCT:
 		case OP_ENGINE_RECHARGE_PCT:
 		case OP_WEAPON_RECHARGE_PCT:
+		case OP_PRIMARY_AMMO_PCT:
 		case OP_SECONDARY_AMMO_PCT:
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_SHIP_VISIBLE:
@@ -8893,6 +9034,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_SHIP_NO_GUARDIAN:
+		case OP_PRIMARIES_DEPLETED:
 		case OP_SECONDARIES_DEPLETED:
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_SET_SPECIAL_WARPOUT_NAME:
@@ -9423,6 +9565,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			}
 
+		case OP_PRIMARY_AMMO_PCT:
 		case OP_SECONDARY_AMMO_PCT:
 			if(argnum == 0){
 				return OPF_SHIP;
