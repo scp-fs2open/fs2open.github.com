@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-11-27 10:45:36 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2004-12-23 23:36:30 $
+ * $Author: wmcoolmon $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/11/27 10:45:36  taylor
+ * some fixes for position problems on the HUD in non-standard resolutions
+ * few compiler warning fixes
+ *
  * Revision 2.11  2004/10/15 13:10:06  phreak
  * Made WMCoolmon's hud target info brackets recognize alt-names
  * --phreak
@@ -852,7 +856,6 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 					end_string_at_first_hash_symbol(buffer);
 				}
 
-				end_string_at_first_hash_symbol(buffer);
 				tinfo_class = buffer;
 
 				break;
