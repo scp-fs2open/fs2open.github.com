@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.47 $
- * $Date: 2003-09-12 01:02:50 $
- * $Author: argv $
+ * $Revision: 2.48 $
+ * $Date: 2003-09-12 01:23:53 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
@@ -1043,12 +1043,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 // flags2 -- added by Goober5000
 #define SIF2_DEFAULT_IN_TECH_DATABASE		(1 << 0)	// default in tech database - Goober5000
 #define SIF2_DEFAULT_IN_TECH_DATABASE_M		(1 << 1)	// ditto - Goober5000
-// _argv[-1] - AI hint so that big ships with big frontal firepower won't circle a BIG|HUGE opponent.
-#define SIF2_BIG_GUNS_IN_FRONT				(1 << 2)
-// _argv[-1] - all beams free by default.
-#define SIF2_BEAM_FREE_BY_DEFAULT			(1 << 3)
-// _argv[-1] - singular shields.
-#define SIF2_SINGULAR_SHIELDS				(1 << 4)
+#define SIF2_BIG_GUNS_IN_FRONT				(1 << 2)	// _argv[-1] - AI hint so that big ships with big frontal firepower won't circle a BIG|HUGE opponent.
+#define SIF2_BEAM_FREE_BY_DEFAULT			(1 << 3)	// _argv[-1] - all beams free by default.
+#define SIF2_SINGULAR_SHIELDS				(1 << 4)	// _argv[-1] - singular shields.
 
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
@@ -1241,13 +1238,12 @@ extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 // DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
 // TALK TO DAVE B FIRST
 // ****************************************************************
-//#ifdef INF_BUILD
+#ifdef INF_BUILD
 // _argv[-1] - bumped from 250 to 400. I *need* this increased!
-// _argv[-1] - and just what is this INF_BUILD bs?
 #define MAX_SHIP_TYPES		400		//DTP bumped from 130 to 200
-//#else
-//#define MAX_SHIP_TYPES		130		//DTP bumped from 130 to 200
-//#endif
+#else
+#define MAX_SHIP_TYPES		130		//DTP bumped from 130 to 200
+#endif
 
 #define MAX_SHIPS_PER_WING	6
 
