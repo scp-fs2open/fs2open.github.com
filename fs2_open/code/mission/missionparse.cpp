@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-01-14 06:13:23 $
+ * $Revision: 2.19 $
+ * $Date: 2003-01-15 05:24:23 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/01/14 06:13:23  Goober5000
+ * argh - fixed the stupid message persona bug with <any wingman>
+ * Bobboau, please check your code!
+ * --Goober5000
+ *
  * Revision 2.17  2003/01/13 02:09:12  wmcoolmon
  * Added MISSION_FLAG_NO_NEB_TRAILS and removed MISSION_FLAG_ST_OVERRIDE_NEB. Also changed code to set flags as necessary
  *
@@ -2291,6 +2296,43 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		objp->nameplate = -1;
 	}
 
+	// texture replacement - Goober5000
+	if ( optional_string("$Texture Replace:") )
+	{
+		char *p;
+
+		while ((Num_texture_replacements < MAX_TEXTURE_REPLACEMENTS) && (optional_string("+old:")))
+		{
+			strcpy(Texture_replace[Num_texture_replacements].ship_name, objp->name);
+			stuff_string(Texture_replace[Num_texture_replacements].old_texture, F_NAME, NULL);
+			required_string("+new:");
+			stuff_string(Texture_replace[Num_texture_replacements].new_texture, F_NAME, NULL);
+
+			// get rid of extensions
+			p = strchr( Texture_replace[Num_texture_replacements].old_texture, '.' );
+			if ( p )
+			{
+				mprintf(( "Extraneous extension found on replacement texture %s!\n", Texture_replace[Num_texture_replacements].old_texture));
+				*p = 0;
+			}
+			p = strchr( Texture_replace[Num_texture_replacements].new_texture, '.' );
+			if ( p )
+			{
+				mprintf(( "Extraneous extension found on replacement texture %s!\n", Texture_replace[Num_texture_replacements].new_texture));
+				*p = 0;
+			}
+
+			// increment
+			Num_texture_replacements++;
+		}
+
+		// if we ran out of texture replacement slots, don't read any more
+		if (Num_texture_replacements >= MAX_TEXTURE_REPLACEMENTS)
+		{
+			skip_to_start_of_strings("#Wings", "$Name");
+		}
+	}
+
 
 	objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
 
@@ -3730,6 +3772,8 @@ void parse_mission(mission *pm, int flag)
 
 	init_parse();
 	Subsys_index = 0;
+
+	Num_texture_replacements = 0;
 
 	parse_mission_info(pm);	
 	Current_file_checksum = netmisc_calc_checksum(pm,MISSION_CHECKSUM_SIZE);
