@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.101 $
- * $Date: 2004-07-11 03:22:47 $
- * $Author: bobboau $
+ * $Revision: 2.102 $
+ * $Date: 2004-07-12 03:19:15 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2004/07/11 03:22:47  bobboau
+ * added the working decal code
+ *
  * Revision 2.100  2004/07/08 22:08:21  wmcoolmon
  * Moved set_current_hud, as well as added a conditional to hud_positions_it; it shouldn't and won't be executed on a standalone server.
  *
@@ -5588,8 +5591,8 @@ int game_poll()
 	}
 
    k = key_inkey();
-	if (k)
-		mprintf(("game_poll(): got key 0x%02x\n", k));
+	//if (k)
+	//	mprintf(("game_poll(): got key 0x%02x\n", k));
 
 #ifdef FS2_DEMO
 	demo_maybe_show_trailer(k);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/INPUTBOX.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-07-12 03:19:17 $
+ * $Author: Kazan $
  *
  * Code to implement input boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -624,10 +627,10 @@ void UI_INPUTBOX::process(int focus)
 					ascii = validate_input(key_check);
 					if ((ascii > 0) && (ascii < 255)) {
 #ifndef NDEBUG
-						if ((ascii >= 0x20) && (ascii <= 0x7e))
+						/*if ((ascii >= 0x20) && (ascii <= 0x7e))
 							mprintf(("  Inputbox: '%c'\n", ascii));
 						else
-							mprintf(("  Inputbox: 0x%02X\n", ascii));
+							mprintf(("  Inputbox: 0x%02X\n", ascii));*/
 #endif
 						if (flags & UI_INPUTBOX_FLAG_LETTER_FIRST) {
 							if ((position == 0) && !is_letter((char) ascii))
