@@ -186,7 +186,10 @@ void gr_d3d_cleanup()
 {
 	if (!GlobalD3DVars::D3D_inited) return;
 
-	d3d_tcache_cleanup();	
+	d3d_tcache_cleanup();  
+
+	// Ensures gamma options dont return to the desktop
+	gr_d3d_set_gamma(1.0);
 
 	// release surfaces
 	d3d_release_rendering_objects();
