@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-05-05 19:29:24 $
- * $Author: phreak $
+ * $Revision: 2.10 $
+ * $Date: 2003-11-06 19:35:51 $
+ * $Author: matt $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/05/05 19:29:24  phreak
+ * added my real name
+ *
  * Revision 2.8  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -224,6 +227,7 @@ char *fs2_open_credit_text =
 	"Thomas \"Random Tiger\" Whittaker\n"
 	"Will \"Unknown PLayer\" Rousnel\n"
 	"\"WMCoolmon\"\n"
+	"Matt \"Sticks\" Nischan\n"
 
 	"Web support:\n"
 	"Icefire and the staff at Volitionwatch.com\n"
