@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.67 $
- * $Date: 2003-08-06 17:37:08 $
- * $Author: phreak $
+ * $Revision: 2.68 $
+ * $Date: 2003-08-21 05:50:00 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2003/08/06 17:37:08  phreak
+ * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
+ *
  * Revision 2.66  2003/07/15 02:52:40  phreak
  * ships now decloak when firing
  *
@@ -2997,7 +3000,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 			if (sp->primary_banks[k] != -1) {
 				ship_system->weapons.primary_bank_weapons[j] = sp->primary_banks[k];
 				ship_system->weapons.primary_bank_capacity[j] = sp->primary_bank_capacity[k];	// added by Goober5000
-				ship_system->weapons.next_primary_fire_stamp[j++] = 0;
+				ship_system->weapons.next_primary_fire_stamp[j++] = timestamp(0);
 			}
 		}
 
@@ -8438,7 +8441,7 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 //
 
 #define REARM_NUM_MISSILES_PER_BATCH 4		// how many missiles are dropped in per load sound
-#define REARM_NUM_PRIMARY_BALLISTICS_PER_BATCH	100	// how many bullets are dropped in per load sound
+#define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH	100	// how many bullets are dropped in per load sound
 
 int ship_do_rearm_frame( object *objp, float frametime )
 {
@@ -8449,7 +8452,6 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	ship_info	*sip;
 	ship_subsys	*ssp;
 	ai_info		*aip;
-	weapon_info *wip;
 
 	shipp = &Ships[objp->instance];
 	swp = &shipp->weapons;
@@ -8469,6 +8471,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	// AL 12-30-97: Repair broken warp drive
 	if ( shipp->flags & SF_WARP_BROKEN ) {
 		// TODO: maybe do something here like informing player warp is fixed?
+		// like this? -- Goober5000
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Subspace drive repaired.", -1));
 		shipp->flags &= ~SF_WARP_BROKEN;
 	}
 
@@ -8585,7 +8589,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 					swp->secondary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
 
-					// Acutal loading of missiles is preceded by a sound effect which is the missile
+					// Actual loading of missiles is preceded by a sound effect which is the missile
 					// loading equipment moving into place
 					if ( aip->rearm_first_missile == TRUE )
 					{
@@ -8613,9 +8617,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		{
 			for (i = 0; i < swp->num_primary_banks; i++ )
 			{
-				wip = &Weapon_info[swp->primary_bank_weapons[i]];
-
-				if ( wip->wi_flags2 & WIF2_BALLISTIC )
+				if ( Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC )
 				{
 					if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
 					{
@@ -8640,7 +8642,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 							swp->primary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
 	
-							// Acutal loading of ballistics is preceded by a sound effect which is the ballistic
+							// Actual loading of ballistics is preceded by a sound effect which is the ballistic
 							// loading equipment moving into place
 							if ( aip->rearm_first_ballistic_primary == TRUE )
 							{
@@ -8656,7 +8658,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 									joy_ff_play_reload_effect();
 								*/
 	
-								swp->primary_bank_ammo[i] += REARM_NUM_PRIMARY_BALLISTICS_PER_BATCH;
+								swp->primary_bank_ammo[i] += REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
 								if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
 								{
 									swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i]; 
