@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.56 $
- * $Date: 2004-01-29 01:34:02 $
- * $Author: randomtiger $
+ * $Revision: 2.57 $
+ * $Date: 2004-01-31 04:06:29 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2004/01/29 01:34:02  randomtiger
+ * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
+ * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
+ *
  * Revision 2.55  2004/01/14 07:07:14  Goober5000
  * added error checking for an annoying crash when running an out-of-range
  * sound; also, Phreak misspelled "tertiary"
@@ -994,7 +998,7 @@ typedef struct ship {
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
 	int ab_count;
 
-	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
+//	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
 	int glows_active;
 	int glowmaps_active;
 	int n_decal;
