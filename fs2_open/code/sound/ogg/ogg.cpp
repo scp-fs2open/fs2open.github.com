@@ -11,43 +11,43 @@ ov_callbacks cfile_callbacks;
 ov_callbacks mmio_callbacks;
 
 //Encapsulation funcs to please the almighty ov_callbacks struct
-__inline size_t ogg_cfread(void *buf, size_t elsize, size_t elnem, void* cfile)
+size_t ogg_cfread(void *buf, size_t elsize, size_t elnem, void* cfile)
 {
 	return cfread(buf, elsize, elnem, (CFILE*)cfile);
 }
 
-__inline int ogg_cfseek(void* cfile, ogg_int64_t offset, int where)
+int ogg_cfseek(void* cfile, ogg_int64_t offset, int where)
 {
 	return cfseek((CFILE*)cfile, (int) offset, where);
 }
 
-__inline int ogg_cfclose(void* cfile)
+int ogg_cfclose(void* cfile)
 {
 	return cfclose((CFILE*) cfile);
 }
 
-__inline long ogg_cftell(void* cfile)
+long ogg_cftell(void* cfile)
 {
 	return cftell((CFILE*) cfile);
 }
 
 #ifdef WIN32
-__inline size_t ogg_mmio_read(void *buf, size_t elsize, size_t elnem, void* mmfp)
+size_t ogg_mmio_read(void *buf, size_t elsize, size_t elnem, void* mmfp)
 {
 	return mmioRead((HMMIO) mmfp, (HPSTR) buf, elsize * elnem);
 }
 
-__inline int ogg_mmio_seek(void* mmfp, ogg_int64_t offset, int where)
+int ogg_mmio_seek(void* mmfp, ogg_int64_t offset, int where)
 {
 	return mmioSeek((HMMIO) mmfp, offset, where);
 }
 
-__inline int ogg_mmio_close(void* mmfp)
+int ogg_mmio_close(void* mmfp)
 {
 	return mmioClose((HMMIO) mmfp, 0);
 }
 
-__inline long ogg_mmio_tell(void* mmfp)
+long ogg_mmio_tell(void* mmfp)
 {
 	return mmioSeek((HMMIO) mmfp, 0, SEEK_CUR);
 }
