@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.64 $
- * $Date: 2004-02-04 10:14:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.65 $
+ * $Date: 2004-02-06 05:55:46 $
+ * $Author: matt $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2004/02/04 10:14:58  Goober5000
+ * commented a decal function that someone missed
+ * --Goober5000
+ *
  * Revision 2.63  2004/01/30 07:39:08  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -1435,7 +1439,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
 					if ( D3D_enabled || OGL_inited )	{
 						light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-						if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell )
+						if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell && !Cmdline_nospec )
 							light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
 					//	interp_compute_environment_mapping(vp(p+8), Interp_list[i]);
 					} else {
@@ -1447,7 +1451,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 						if ( D3D_enabled || OGL_inited )	{
 							light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-							if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell )
+							if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell && !Cmdline_nospec )
 								light_apply_specular( &Interp_lighting->spec_r[norm], &Interp_lighting->spec_g[norm], &Interp_lighting->spec_b[norm], Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 						//	interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 
