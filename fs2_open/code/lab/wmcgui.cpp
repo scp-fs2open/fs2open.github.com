@@ -1599,12 +1599,17 @@ int Text::DoKeyPress(float frametime)
 				}
 				else if(SaveType & T_ST_INT)
 				{
-					if(!isdigit(symbol))
+					if(!isdigit(symbol) && symbol != '-')
 						return OF_FALSE;
 				}
 				else if(SaveType & T_ST_FLOAT)
 				{
-					if(!isdigit(symbol) && symbol != '.')
+					if(!isdigit(symbol) && symbol != '.' && symbol != '-')
+						return OF_FALSE;
+				}
+				else if(SaveType & T_ST_UBYTE)
+				{
+					if(!isdigit(symbol))
 						return OF_FALSE;
 				}
 				else if(!isalnum(symbol) && symbol != ' ')
@@ -1613,6 +1618,7 @@ int Text::DoKeyPress(float frametime)
 				}
 
 				//We can add the letter to the box. Cheers.
+				//If this warning bothers you, go ahead and cast it.
 				Content += symbol;
 				if(SaveType & T_ST_REALTIME)
 				{
