@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/09/11 19:45:34  argv
+ * Random beam slash, new energy system, redefinition of what hurts big ships (beams don't), subsystem display names, configurable beam whacking.
+ *
  * Revision 2.17  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -422,7 +425,7 @@
 #define WIF2_DRAIN_BIG_SHIPS			(1 << 7)	// _argv[-1] - esuck on big ships without necessarily damaging their hulls. Only makes sense on esuck weapons.
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
-#define WIF_HURTS_BIG_SHIPS			(/*WIF_BOMB | WIF_BEAM |*/ WIF_HUGE | WIF_BIG_ONLY | WIF_SUPERCAP) // _argv[-1] - not all beams are anti-capship!
+#define WIF_HURTS_BIG_SHIPS			(WIF_BOMB | /*WIF_BEAM |*/ WIF_HUGE | WIF_BIG_ONLY | WIF_SUPERCAP) // _argv[-1] - not all beams are anti-capship!
 
 #define	WEAPON_EXHAUST_DELTA_TIME	75		//	Delay in milliseconds between exhaust blobs
 
@@ -674,12 +677,12 @@ typedef struct weapon_info {
 	float lssm_lock_range;
 
 	// _argv[-1] - table specified HUD display name for weapon mounted on a turret.
-	int use_turret_display_name:1;
+	int use_turret_display_name;
 	char turret_display_name[NAME_LENGTH];
 
 	// _argv[-1] - beam whacking parameters.
-	int beam_use_mass_for_whack:1;
-	int beam_no_whack_through_shields:1;
+	int beam_use_mass_for_whack;
+	int beam_no_whack_through_shields;
 } weapon_info;
 
 //tertiary weapon types. cannot combine these (can't have a cloaking device and super jammer in one)
