@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-03-11 01:34:19 $
+ * $Revision: 1.17 $
+ * $Date: 2005-03-11 01:37:35 $
  * $Author: wmcoolmon $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/03/11 01:34:19  wmcoolmon
+ * Not really. I've got lib files in my main VC.NET libs directory, and include files in grouped subdirectories under my VC.NET include directory. it keeps my HD free of scattered SDK directories and helps keep conflicts down.
+ *
  * Revision 1.15  2005/03/10 16:16:52  taylor
  * maybe WMC can leave the include alone now ;)
  *
@@ -71,7 +74,9 @@
 #ifndef WMC
 #include "jpeglib.h"
 #else
+extern "C" {
 #include <libjpeg/jpeglib.h>
+}
 #endif
 
 #undef LOCAL // fix from a jpeg header, pstypes.h will define it again
