@@ -20,6 +20,9 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/05/03 23:47:04  phreak
+ * added multipliers for beam turrets and sensors for disruptor missiles
+ *
  * Revision 2.22  2003/05/03 16:48:08  phreak
  * changed around the way disruptor weapons work
  *
@@ -3056,7 +3059,7 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 	vm_vec_zero(&objp->phys_info.max_vel);
 	objp->phys_info.max_vel.xyz.z = wip->max_speed;
 	vm_vec_zero(&objp->phys_info.max_rotvel);
-	objp->shields[0] = wip->damage;
+	objp->shield_quadrant[0] = wip->damage;
 	if (wip->wi_flags & WIF_BOMB){
 		objp->hull_strength = 50.0f;
 	} else {
