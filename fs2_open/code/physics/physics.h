@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.7 $
- * $Date: 2004-08-11 05:06:32 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2005-01-11 21:25:58 $
+ * $Author: Goober5000 $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/08/11 05:06:32  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.6  2003/11/11 02:15:46  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -183,7 +186,7 @@ typedef struct physics_info {
 	uint		flags;			//misc physics flags
 
 	float		mass;				//the mass of this object
-
+	vector		center_of_mass;		// Goober5000 - this is never ever used by physics; currently physics assumes the center of an object is the center of mass
 	matrix	I_body_inv;		// inverse moment of inertia tensor (used to calculate rotational effects)
 
 	float		rotdamp;			//rotational velocity damping
