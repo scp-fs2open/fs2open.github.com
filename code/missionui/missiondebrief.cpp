@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-09 22:05:32 $
+ * $Revision: 2.21 $
+ * $Date: 2004-07-10 03:18:22 $
  * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/09 22:05:32  Kazan
+ * fs2netd 1.0 RC5 full support - Rank and Medal updates
+ *
  * Revision 2.19  2004/03/08 15:06:24  Kazan
  * Did, undo
  *
@@ -2348,6 +2351,8 @@ void debrief_text_init()
 
 // --------------------------------------------------------------------------------------
 //
+
+extern int Multi_debrief_stats_accept_code;
 void debrief_init()
 {
 	Assert(!Debrief_inited);
@@ -2431,7 +2436,7 @@ void debrief_init()
 		// Netgame.mission_name
 		
 			
-		if (Om_tracker_flag /*&& multi_num_players() > 1 */&& !game_hacked_data() && mValidStatus)
+		if (Om_tracker_flag && multi_num_players() > 1 && !game_hacked_data() && mValidStatus)
 		{
 			// --------------------- STICK STATS STORAGE CODE IN HERE ---------------------
 			int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);
@@ -2442,16 +2447,18 @@ void debrief_init()
 					multi_display_chat_msg("<Did not receive response from server within timeout period>",0,0);
 					multi_display_chat_msg("<Your stats may not have been stored>",0,0);
 					multi_display_chat_msg("<This is not a critical error>",0,0);
-
+					Multi_debrief_stats_accept_code = 1;
 					break;
 
 				case 0:
 					multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
+					Multi_debrief_stats_accept_code=1;
 					break;
 			
 				case 1:
-					multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
+					multi_display_chat_msg(XSTR("<stats have been tossed>",850),0,0);
 					multi_display_chat_msg("WARNING: Your pilot was invalid, this is a serious error, possible data corruption",0,0);
+					Multi_debrief_stats_accept_code=0;
 					break;
 
 				case 2:
@@ -2461,11 +2468,13 @@ void debrief_init()
 						 if (!SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port))
 						 {	 // succeed!
 							multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
+							Multi_debrief_stats_accept_code=1;
 							break;
 						 }
 					}
 
 					multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
+					Multi_debrief_stats_accept_code=0;
 					
 
 					break;
@@ -2479,8 +2488,8 @@ void debrief_init()
 		else
 		{
 			multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
+			Multi_debrief_stats_accept_code = 0;
 		}
-
 
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 		// ***** End FS2NetD Debrief ****
