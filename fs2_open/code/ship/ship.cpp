@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.149 $
- * $Date: 2005-01-11 21:38:48 $
+ * $Revision: 2.150 $
+ * $Date: 2005-01-12 04:45:33 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.149  2005/01/11 21:38:48  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.148  2005/01/11 04:05:22  taylor
  * fully working (??) -loadonlyused, allocate used_weapons[] and ship_class_used[] only when needed
  *
@@ -4761,7 +4766,6 @@ void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 	// if it's not docked, but we want to enforce this
 	Assert(object_is_docked(dying_objp));
 
-	dock_instance *ptr;
 	object *docked_objp;
 
 	float damage;
@@ -4776,10 +4780,12 @@ void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 	// mass of the whole assembly
 	total_docked_mass = dock_calc_total_docked_mass(dying_objp);
 
-	// Goober5000 - do stuff for every object directly docked to dying_objp
-	for (ptr = dying_objp->dock_list; ptr != NULL; ptr = ptr->next)
+	// Goober5000 - do stuff for every object directly docked to dying_objp.  We can't just iterate through the list
+	// because we're undocking the objects while we iterate over them and the pointers get seriously messed up.
+	// So we just repeatedly remove the first object until the dying object is no longer docked to anything.
+	while (object_is_docked(dying_objp))
 	{
-		docked_objp = ptr->docked_objp;
+		docked_objp = dock_get_first_docked_object(dying_objp);
 
 		// damage this docked object
 		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage);
