@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.111 $
- * $Date: 2004-09-23 22:51:07 $
+ * $Revision: 2.112 $
+ * $Date: 2004-09-23 23:52:58 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2004/09/23 22:51:07  Goober5000
+ * ubersexp implementation complete
+ * --Goober5000
+ *
  * Revision 2.110  2004/09/23 05:53:00  Goober5000
  * a bunch of work on the actual implementation of when-argument
  * --Goober5000
@@ -1954,6 +1958,14 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 		} else {
 			Assert(0);
+		}
+
+		// Goober5000 - assume the special argument is okay
+		if (!strcmp(Sexp_nodes[index].text, SEXP_ARGUMENT_STRING))
+		{
+			index = CDR(index);
+			argnum++;
+			continue;
 		}
 
 		switch (type) {
@@ -6354,7 +6366,7 @@ int test_argument_list_for_condition(int n, int condition_node)
 
 	// loop through all arguments
 	num_true = 0;
-	while (n >= 0)
+	while (n != -1)
 	{
 		// flush conditional to avoid short-circuiting
 		flush_sexp_tree(condition_node);
@@ -6369,6 +6381,9 @@ int test_argument_list_for_condition(int n, int condition_node)
 			num_true++;
 			Sexp_applicable_argument_list->add_data(Sexp_nodes[n].text);
 		}
+
+		// continue along argument list
+		n = CDR(n);
 	}
 
 	// clear argument, but not list, as we'll need it later
@@ -6465,6 +6480,7 @@ int eval_random_of(int arg_handler_node, int condition_node)
 		{
 			n = CDR(n);
 		}
+
 		Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
 	}
 
