@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.31 $
- * $Date: 2003-06-04 15:31:49 $
+ * $Revision: 2.32 $
+ * $Date: 2003-06-11 03:03:16 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/06/04 15:31:49  phreak
+ * fixed a small bug
+ * ai_select_primary_weapon may have a null pointer passed to it.
+ *
  * Revision 2.30  2003/04/29 01:03:21  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -2680,6 +2684,9 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 
 	if ( objp->type == OBJ_WEAPON ) {
 		if ( Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB ) {
+			if ( Weapons[objp->instance].lssm_stage==3){
+				return 0;
+			}
 			if ( obj_team(turret_parent) != Weapons[objp->instance].team ) {
 				return 1;
 			}
@@ -8799,11 +8806,14 @@ void ai_chase()
 									weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[tswp->current_secondary_bank]];
 									float firing_range;
 									
-									if (swip->wi_flags & WIF_BOMB)
+									if (swip->wi_flags2 & WIF2_LOCAL_SSM)
+										firing_range=1000000.0f;		//that should be enough
+									else if (swip->wi_flags & WIF_BOMB)
 										firing_range = swip->max_speed * swip->lifetime * 0.75f;
 									else
 										firing_range = swip->max_speed * swip->lifetime * (Game_skill_level + 1 + aip->ai_class/2)/NUM_SKILL_LEVELS;
 
+									
 									// reduce firing range in nebula
 									extern int Nebula_sec_range;
 									if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
@@ -9480,6 +9490,10 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 		}
 
 		if ( wp->homing_object != guarded_objp ) {
+			continue;
+		}
+
+		if (wp->lssm_stage==3){
 			continue;
 		}
 
