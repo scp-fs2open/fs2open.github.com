@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.51 $
- * $Date: 2003-11-29 16:11:46 $
- * $Author: fryday $
+ * $Revision: 2.52 $
+ * $Date: 2003-12-17 23:25:10 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2003/11/29 16:11:46  fryday
+ * Fixed normal loading in OpenGL HT&L.
+ * Fixed lighting in OpenGL HT&L, hopefully for the last time.
+ * Added a test if a normal is valid during model load, if not, replaced with face normal
+ *
  * Revision 2.50  2003/11/25 15:04:45  fryday
  * Got lasers to work in HT&L OpenGL
  * Messed a bit with opengl_tmapper_internal3d, draw_laser functions, and added draw_laser_htl
@@ -961,7 +966,7 @@ void gr_opengl_set_lighting(bool set, bool state)
 														//They just do, and that should suffice as an answer
 	glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE, &col.r); //changed to GL_FRONT_AND_BACK, just to make sure
 	glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR, &col.r); //changed to GL_FRONT_AND_BACK, just to make sure
-	glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,specular_exponent_value);
+	glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,(float)specular_exponent_value);
 	if((gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set){
 		ambient.r = ambient.g = ambient.b = ambient.a = gr_screen.current_alpha;
 		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &ambient.r);
@@ -4332,7 +4337,14 @@ struct opengl_vertex_buffer
 };
 
 #define MAX_SUBOBJECTS 64
-#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*(MAX_MODEL_TEXTURES/4)
+
+#ifdef INF_BUILD
+#define MAX_BUFFERS_PER_SUBMODEL 24
+#else
+#define MAX_BUFFERS_PER_SUBMODEL 16
+#endif
+
+#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*MAX_BUFFERS_PER_SUBMODEL
 
 opengl_vertex_buffer vertex_buffers[MAX_BUFFERS];
 
