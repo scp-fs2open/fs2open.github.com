@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-03-12 04:44:24 $
+ * $Revision: 2.38 $
+ * $Date: 2005-03-14 06:38:06 $
  * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/03/12 04:44:24  wmcoolmon
+ * Fixx0red odd drag problems
+ *
  * Revision 2.36  2005/03/03 06:05:29  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -3441,7 +3444,8 @@ void ss_load_anim(int ship_class)
 	Assert( icon->ss_anim == NULL );
 	icon->ss_anim = ss_load_individual_animation(ship_class);
 	if ( icon->ss_anim == NULL ) {
-		Int3();		// couldn't load anim filename.. get Alan
+		//Int3();		// couldn't load anim filename.. get Alan
+		//this is fine -WMC
 	}
 }
 
