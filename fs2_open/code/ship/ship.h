@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.74 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.75 $
+ * $Date: 2005-01-16 22:39:10 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.73  2005/01/01 07:18:48  wmcoolmon
  * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
  *
@@ -1613,7 +1618,7 @@ extern void ship_assign_sound(ship *sp);
 extern void ship_add_ship_type_count( int ship_info_flag, int num );
 extern void ship_add_ship_type_kill_count( int ship_info_flag );
 
-
+extern int ship_get_type(char* output, ship_info* sip);
 extern int ship_get_default_orders_accepted( ship_info *sip );
 extern int ship_query_general_type(int ship);
 extern int ship_query_general_type(ship *shipp);

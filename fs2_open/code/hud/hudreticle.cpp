@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-01-16 22:39:09 $
+ * $Author: wmcoolmon $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -857,7 +860,7 @@ void hud_show_reticle()
 	}
 
 	// draw the center of the reticle
-	if ( hud_gauge_active(HUD_CENTER_RETICLE) ) {
+	if ( hud_gauge_active(HUD_CENTER_RETICLE) && !(Viewer_mode & VM_TOPDOWN)) {
 		hud_show_center_reticle();
 	}
 }

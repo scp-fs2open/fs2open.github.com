@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.118 $
- * $Date: 2005-01-08 10:00:59 $
+ * $Revision: 2.119 $
+ * $Date: 2005-01-16 22:39:08 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.118  2005/01/08 10:00:59  wmcoolmon
+ * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ *
  * Revision 2.117  2005/01/01 07:18:47  wmcoolmon
  * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
  *
@@ -4162,6 +4165,22 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 	static int last_Game_mode = 0;
 	static int last_Viewer_objnum = -1;
 
+	//First, make sure we take into account 2D Missions.
+	//These replace the normal player in-cockpit view with a topdown view.
+	if(The_mission.flags & MISSION_FLAG_2D_MISSION)
+	{
+		if(!(Viewer_mode & VM_EXTERNAL)
+			&& !(Viewer_mode & VM_DEAD_VIEW)
+			&& !(Viewer_mode & VM_CHASE)
+			&& !(Viewer_mode & VM_OTHER_SHIP)
+			&& !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED)
+			&& !(Viewer_mode & VM_WARP_CHASE)
+			&& !(Viewer_mode & VM_WARPIN_ANCHOR))
+		{
+			Viewer_mode = VM_TOPDOWN;
+		}
+	}
+
 	// This code is supposed to detect camera "cuts"... like going between
 	// different views.
 
@@ -4364,6 +4383,12 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 					vm_vec_normalize(&eye_dir);
 					vm_vector_2_matrix(eye_orient, &eye_dir, &Player_obj->orient.vec.uvec, NULL);
 					Viewer_obj = NULL;
+			} else if (Viewer_mode & VM_TOPDOWN) {
+					angles rot_angles = {PI/2,0.0f,0.0f};
+					eye_pos->xyz.x = Viewer_obj->pos.xyz.x;
+					eye_pos->xyz.y = Viewer_obj->pos.xyz.y + Viewer_obj->radius * 25.0f;
+					eye_pos->xyz.z = Viewer_obj->pos.xyz.z;
+					vm_angles_2_matrix(eye_orient, &rot_angles);
 			} else {
 				// get an eye position based upon the correct type of object
 				switch(Viewer_obj->type){

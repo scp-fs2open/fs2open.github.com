@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-01-12 00:52:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.27 $
+ * $Date: 2005-01-16 22:39:09 $
+ * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/01/12 00:52:42  Goober5000
+ * two minor but important bugfixes to the multiple ship docking
+ * --Goober5000
+ *
  * Revision 2.25  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -544,6 +548,7 @@
 #include "demo/demo.h"
 #include "radar/radarsetup.h"
 #include "object/objectdock.h"
+#include "mission/missionparse.h" //For 2D Mode
 
 
 
@@ -1389,6 +1394,28 @@ obj_maybe_fire:
 		ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 	}
 
+	//2D MODE
+	//THIS IS A FREAKIN' HACK
+	//Do not let ship change position on Y axis
+	if(The_mission.flags & MISSION_FLAG_2D_MISSION)
+	{
+		angles old_angles, new_angles;
+		objp->pos.xyz.y = objp->last_pos.xyz.y;
+		vm_extract_angles_matrix(&old_angles, &objp->last_orient);
+		vm_extract_angles_matrix(&new_angles, &objp->orient);
+		new_angles.p = old_angles.p;
+		new_angles.b = old_angles.b;
+		//new_angles.h = old_angles.h;
+		vm_angles_2_matrix(&objp->orient, &new_angles);
+
+		//Phys stuff hack
+		new_angles.h = old_angles.h;
+		vm_angles_2_matrix(&objp->phys_info.last_rotmat, &new_angles);
+		objp->phys_info.vel.xyz.y = 0.0f;
+		objp->phys_info.desired_rotvel.xyz.x = 0;
+		objp->phys_info.desired_rotvel.xyz.z = 0;
+		objp->phys_info.desired_vel.xyz.y = 0.0f;
+	}
 }
 
 

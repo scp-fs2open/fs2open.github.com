@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.53 $
- * $Author: Goober5000 $
- * $Date: 2005-01-11 21:38:50 $
+ * $Revision: 2.54 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-01-16 22:39:09 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/01/11 21:38:50  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.52  2004/12/14 14:46:13  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -461,6 +466,7 @@ struct wing;
 #define MISSION_FLAG_NO_DEBRIEFING			(1<<11)	// no debriefing, just like red-alert - Goober5000
 #define MISSION_FLAG_USE_NEW_AI				(1<<12)	// use SCP AI fixes.  Allows old missions to be balanced. -phreak
 #define MISSION_FLAG_ALLOW_DOCK_TREES		(1<<13)	// toggle between hub and tree model for ship docking (see objectdock.cpp) - Gooober5000
+#define MISSION_FLAG_2D_MISSION				(1<<14) // Mission is meant to be played top-down style; 2D physics and movement.
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
