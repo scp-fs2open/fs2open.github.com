@@ -9,13 +9,30 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.33 $
- * $Date: 2003-07-06 00:19:24 $
- * $Author: randomtiger $
+ * $Revision: 2.34 $
+ * $Date: 2003-08-06 17:42:47 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/07/06 00:19:24  randomtiger
+ * Random Tiger 6/7/2003
+ *
+ * fs2_open now uses the registry entry 'VideocardFs2open' instead of 'Videocard' to store its video settings. To run fs2_open now you MUST use the launcher I have provided.
+ *
+ * Launcher binary:      http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher.rar
+ * Launcher source code: http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher_code.rar
+ *
+ * I have also taken the opertunity to fix a few bugs in the launcher and add a new feature to make selecting mods a bit easier.
+ *
+ * The launcher now uses some files in the freespace project so it should be put into CVS with the rest of the code inside the 'code' directory (still in its 'Launcher' dir of course). Currently the launcher wont compile since speech.cpp and speech.h arent in cvs yet. But once Roee has checked in that will be sorted.
+ *
+ * I have also removed the internal launcher from the D3D8 module.
+ * Please contact me if you have any problems.
+ *
+ * When trying to run the exe after updating I get an error parsing 'rank.tbl' but im fairly sure thats nothing to do with me so I'll just have to leave it for now because I'm still using a 56K modem and cant afford to find out.
+ *
  * Revision 2.32  2003/05/21 20:26:07  phreak
  * improved chase camera code.. you can now fight using this camera
  *
@@ -2374,7 +2391,7 @@ void game_init()
 #endif
 
 #ifdef _WIN32
-	movie_play( NOX("intro.mve"));
+	movie_play( NOX("intro.avi"));
 	movie_set_shutdown_fgx(true);
 
 #endif
@@ -2503,7 +2520,7 @@ void game_init()
 	
 	if (!Is_standalone && ptr && (strstr(ptr, NOX("3DFX Glide")))) {
 		// regular or hi-res ?
-		if(has_sparky_hi && strstr(ptr, NOX("(1024x768)"))){
+		if(has_sparky_hi && strstr(ptr, NOX("(1024 x 768)"))){
 			gr_init(GR_1024, GR_GLIDE);
 		} else {			
 			gr_init(GR_640, GR_GLIDE);
@@ -2511,7 +2528,7 @@ void game_init()
 
 	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("D3D8-") )))	{
 		// regular or hi-res ?
-		if(has_sparky_hi && strstr(ptr, NOX("(1024x768)"))){
+		if(has_sparky_hi && strstr(ptr, NOX("(1024 x 768)"))){
 			// Direct 3D
 			trying_d3d = 1;
 			gr_init(GR_1024, GR_DIRECT3D, depth);
@@ -2523,7 +2540,7 @@ void game_init()
 
 		}
 	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("OpenGL -") ))){
-		if (has_sparky_hi && strstr(ptr,NOX("1024x768"))){
+		if (has_sparky_hi && strstr(ptr,NOX("1024 x 768"))){
 			gr_init(GR_1024, GR_OPENGL, depth);
 		} else {
 			gr_init(GR_640, GR_OPENGL, depth);
