@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.6 $
- * $Date: 2004-08-11 05:06:23 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-24 23:31:46 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/08/11 05:06:23  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.5  2004/03/12 16:23:49  phreak
  * bumped MAX_GAME_SOUNDS to 400 if INF_BUILD is defined
  *
@@ -377,6 +380,7 @@ void common_play_highlight_sound();
 
 
 // Misc_sounds[] holds handles for misc sounds in the game (list appears in sounds.tbl)
+/* -- dynamic now - taylor
 #ifdef INF_BUILD
 #define MAX_GAME_SOUNDS					400
 #else
@@ -384,10 +388,21 @@ void common_play_highlight_sound();
 #endif
 
 #define MAX_INTERFACE_SOUNDS			70
-#define MAX_SPECIES_FLYBY_SOUNDS		4				// 4 different possible flybys for species
 
 extern game_snd Snds[MAX_GAME_SOUNDS];
-extern game_snd Snds_iface[MAX_INTERFACE_SOUNDS];
+extern game_snd Snds_iface[MAX_INTERFACE_SOUNDS]; */
+
+// match original values by default, grow from this
+#define MIN_GAME_SOUNDS					200
+#define MIN_INTERFACE_SOUNDS			70
+
+extern int Num_game_sounds;
+extern int Num_iface_sounds;
+
+#define MAX_SPECIES_FLYBY_SOUNDS		4				// 4 different possible flybys for species
+
+extern game_snd *Snds;
+extern game_snd *Snds_iface;
 
 // flyby sounds - 2 for each species (fighter and bomber flybys)
 extern game_snd Snds_flyby[MAX_SPECIES_NAMES][2];

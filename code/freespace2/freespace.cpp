@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.134 $
- * $Date: 2005-03-16 01:35:58 $
- * $Author: bobboau $
+ * $Revision: 2.135 $
+ * $Date: 2005-03-24 23:31:45 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.134  2005/03/16 01:35:58  bobboau
+ * added a geometry batcher and implemented it in sevral places
+ * namely: lasers, thrusters, and particles,
+ * these have been the primary botle necks for some time,
+ * and this seems to have smoothed them out quite a bit.
+ *
  * Revision 2.133  2005/03/14 06:36:30  wmcoolmon
  * Added memory display thingy to loading screen, if command line is specified and build is a debug build. Also made screenshots go up to 9999
  *
@@ -1267,9 +1273,9 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
 #ifdef NO_SOUND
 // defined here to avoid link errors
-game_snd Snds[MAX_GAME_SOUNDS];
-game_snd Snds_iface[MAX_INTERFACE_SOUNDS];
-int Snds_iface_handle[MAX_INTERFACE_SOUNDS];
+game_snd Snds[MIN_GAME_SOUNDS];
+game_snd Snds_iface[MIN_INTERFACE_SOUNDS];
+int Snds_iface_handle[MIN_INTERFACE_SOUNDS];
 game_snd Snds_flyby[MAX_SPECIES_NAMES][2];
 
 // dummy callback -- real one is in gamesnd.cpp
@@ -2410,8 +2416,7 @@ void game_loading_callback(int count)
 		memset( Processing_filename, 0, MAX_PATH_LEN );
 	}
 #endif
-	#define MAX_PATH          260
-extern int Cmdline_show_mem_usage;
+
 #ifndef NDEBUG
 	if(Cmdline_show_mem_usage)
 	{
@@ -2420,7 +2425,7 @@ extern int Cmdline_show_mem_usage;
 		void memblockinfo_sort_get_entry(int index, char *filename, int *size);
 
 		char mem_buffer[1000];
-		char filename[MAX_PATH];
+		char filename[35];
 		int size;
 	  	memblockinfo_sort();
 		for(int i = 0; i < 30; i++)
@@ -2443,9 +2448,10 @@ extern int Cmdline_show_mem_usage;
 		}
 		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
 		gr_string( 20, 230 + (i*10), mem_buffer);
-#endif
+#endif	// _WIN32
 	}
-#endif
+#endif	// !NDEBUG
+
 	if(cbitmap != -1)last_cbitmap = cbitmap;
 
 	if (do_flip) {
