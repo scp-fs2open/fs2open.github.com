@@ -9,9 +9,9 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.52 $
- * $Author: argv $
- * $Date: 2003-09-11 19:18:13 $
+ * $Revision: 2.53 $
+ * $Author: Goober5000 $
+ * $Date: 2003-09-11 23:21:54 $
  *
  * header for sexpression parsing
  *
@@ -537,8 +537,7 @@
 #define MAX_SEXP_VARIABLES 100
 
 #define	MAX_SEXP_TEXT	2000
-// _argv[-1] - bumped this to 4K. No, this doesn't break anything.
-#define	MAX_OPERATORS	4095 //256  // Yes, this is used, but not by the Sexp code.
+#define	MAX_OPERATORS	1024  // Yes, this is used, but not by the Sexp code.
 
 // Operator argument formats (data types of an argument)
 #define	OPF_NONE				1		// argument cannot exist at this position if it's this
@@ -599,31 +598,11 @@
 #define	OPR_STRING		6	// not really a return type, but used for type matching.
 #define	OPR_AMBIGUOUS	7	// not really a return type, but used for type matching.
 
-// _argv[-1] - support for up to 1024 sexps. Possibly up to 4096, but see below.
-// Something about distinguishing between sexp identifier and sexp array index.
-// Does that distinguishing thing ever actually happen?
-#define	OP_INSERT_FLAG				0x80000
-#define	OP_REPLACE_FLAG			0x40000
-#define	OP_NONCAMPAIGN_FLAG		0x20000
-#define	OP_CAMPAIGN_ONLY_FLAG	0x10000
-#define	FIRST_OP						0x1000
+#define	OP_INSERT_FLAG			0x8000
+#define	OP_REPLACE_FLAG			0x4000
+#define	OP_NONCAMPAIGN_FLAG		0x2000
+#define	OP_CAMPAIGN_ONLY_FLAG	0x1000
 
-#define	OP_CATEGORY_MASK			0xf000
-
-#define	OP_CATEGORY_OBJECTIVE	0x1000
-#define	OP_CATEGORY_TIME			0x2000
-#define	OP_CATEGORY_LOGICAL		0x3000
-#define	OP_CATEGORY_ARITHMETIC	0x4000
-#define	OP_CATEGORY_STATUS		0x5000
-#define	OP_CATEGORY_CHANGE		0x6000
-#define	OP_CATEGORY_CONDITIONAL	0x7000
-#define	OP_CATEGORY_DEBUG			0x8000
-#define	OP_CATEGORY_AI				0x9000  // used for AI goals
-#define	OP_CATEGORY_TRAINING		0xa000
-#define	OP_CATEGORY_UNLISTED		0xb000
-#define	OP_CATEGORY_GOAL_EVENT	0xc000
-
-/*
 // if we ever have more than 1024 (!)
 // total sexps, we're going to have to
 // figure out a different way of
@@ -650,7 +629,7 @@
 										// to avoid overlap with flags above
 
 #define	OP_CATEGORY_MASK		0x0f00	// 0000111100000000b
-*/
+
 
 // The debug category is obsolete, so
 // I removed it.  It originally took the
@@ -671,7 +650,7 @@
 // goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
 // will return the subcategory for each sexp that uses it, and the submenu name in the
 // op_submenu[] array in sexp_tree.cpp.
-#define SUBCATEGORY_MASK									0x0fff
+#define SUBCATEGORY_MASK									0x00ff
 #define CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS		(0x0000 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_AI_AND_IFF						(0x0001 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO				(0x0002 | OP_CATEGORY_CHANGE)
@@ -778,17 +757,11 @@
 #define OP_GET_OBJECT_RELATIVE_X			(0x0022 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_RELATIVE_Y			(0x0023 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_RELATIVE_Z			(0x0024 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_POWER_DRAIN						(0x0025 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // _argv[-1]
-#define OP_POWER_DRAIN_PCT					(0x0026 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // _argv[-1]
-#define OP_POWER_DRAIN_EFF					(0x0027 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // _argv[-1]
-#define OP_POWER_DRAIN_EFF_PCT				(0x0028 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // _argv[-1]
-#define OP_POWER_OUTPUT						(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // _argv[-1]
-#define OP_POWER_OUTPUT_PCT					(0x002a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // _argv[-1]
-#define OP_MAX_SPEED						(0x002b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // _argv[-1]
-#define OP_IS_AI_CLASS						(0x002c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_IS_SHIP_TYPE						(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_IS_SHIP_CLASS					(0x002e	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_NUM_SHIPS_IN_BATTLE				(0x002f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
+#define OP_IS_AI_CLASS						(0x0025 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_SHIP_TYPE						(0x0026 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_SHIP_CLASS					(0x0027	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_NUM_SHIPS_IN_BATTLE				(0x0028 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
+#define OP_MAX_SPEED						(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// _argv[-1]
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -899,13 +872,11 @@
 #define OP_NOT_KAMIKAZE						(0x0087 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_TURRET_TAGGED_SPECIFIC			(0x0088 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
 #define OP_TURRET_TAGGED_CLEAR_SPECIFIC		(0x0089 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
-#define OP_ADD_POWER_DRAIN					(0x008a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // _argv[-1]
-#define OP_ADD_POWER_DRAIN_PCT				(0x008b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // _argv[-1]
-#define OP_LOCK_ROTATING_SUBSYSTEM			(0x008c | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_FREE_ROTATING_SUBSYSTEM			(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_PLAYER_USE_AI					(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_PLAYER_NOT_USE_AI				(0x008f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_FORCE_JUMP						(0x0090 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_LOCK_ROTATING_SUBSYSTEM			(0x008a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_FREE_ROTATING_SUBSYSTEM			(0x008b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PLAYER_USE_AI					(0x008c | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PLAYER_NOT_USE_AI				(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_FORCE_JUMP						(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -994,19 +965,19 @@ char *CTEXT(int n);
 #define REF_TYPE_WAYPOINT	4
 #define REF_TYPE_PATH		5	// waypoint path
 
-#define SRC_SHIP_ARRIVAL	0x100000
-#define SRC_SHIP_DEPARTURE	0x200000
-#define SRC_WING_ARRIVAL	0x300000
-#define SRC_WING_DEPARTURE	0x400000
-#define SRC_EVENT				0x500000
-#define SRC_MISSION_GOAL	0x600000
-#define SRC_SHIP_ORDER		0x700000
-#define SRC_WING_ORDER		0x800000
-#define SRC_DEBRIEFING		0x900000
-#define SRC_BRIEFING			0xa00000
-#define SRC_UNKNOWN			0xfff00000
-#define SRC_MASK				0xfff00000
-#define SRC_DATA_MASK		0xfffff
+#define SRC_SHIP_ARRIVAL	0x10000
+#define SRC_SHIP_DEPARTURE	0x20000
+#define SRC_WING_ARRIVAL	0x30000
+#define SRC_WING_DEPARTURE	0x40000
+#define SRC_EVENT				0x50000
+#define SRC_MISSION_GOAL	0x60000
+#define SRC_SHIP_ORDER		0x70000
+#define SRC_WING_ORDER		0x80000
+#define SRC_DEBRIEFING		0x90000
+#define SRC_BRIEFING			0xa0000
+#define SRC_UNKNOWN			0xffff0000
+#define SRC_MASK				0xffff0000
+#define SRC_DATA_MASK		0xffff
 
 #define SEXP_MODE_GENERAL	0
 #define SEXP_MODE_CAMPAIGN	1
