@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2004/03/05 09:01:54  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.54  2004/02/20 04:29:57  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -1067,7 +1071,7 @@ int parse_weapon()
 			wip->laser_bitmap = bm_load( wip->pofbitmap_name );
 			if(wip->laser_bitmap < 0){	//if it couldn't find the pcx look for an ani-Bobboau
 				nprintf(("General","couldn't find pcx for %s \n", wip->name));
-				wip->laser_bitmap = bm_load_animation(wip->pofbitmap_name, &wip->laser_bitmap_nframes, &wip->laser_bitmap_fps, 1);				
+					wip->laser_bitmap = bm_load_animation(wip->pofbitmap_name, &wip->laser_bitmap_nframes, &wip->laser_bitmap_fps, 1);				
 				if(wip->laser_bitmap < 0){
 					nprintf(("General","couldn't find ani for %s \n", wip->name));
 				Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by weapon '%s'\n", wip->pofbitmap_name, wip->name );
@@ -2222,7 +2226,7 @@ void weapon_render(object *obj)
 				vector headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
-				if ( g3_draw_laser(&headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius) ) {
+				if ( g3_draw_laser(&headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT) ) {
 					wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
 				}
 			}			
@@ -2234,14 +2238,14 @@ void weapon_render(object *obj)
 
 				vector headp2;			
 				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
-				if(wip->laser_bitmap_nframes > 1){//set the proper bitmap
+				if(wip->laser_glow_bitmap_nframes > 1){//set the proper bitmap
 //					wp->gframe += ((timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes);
 					wp->gframe = (int)(wp->gframe + ((int)(flFrametime * 1000) / wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
 					gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 				}else{
 					gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 				}
-				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &obj->pos, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue);
+				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &obj->pos, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT);
 			}						
 			break;
 		}

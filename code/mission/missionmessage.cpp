@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2004-03-06 23:28:23 $
+ * $Author: bobboau $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.10  2004/02/20 04:29:55  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -835,7 +839,7 @@ void parse_msgtbl()
 // this is called at the start of each level
 void messages_init()
 {
-	int rval, i, j;
+	int rval, i;
 	static int table_read = 0;
 
 	if ( !table_read ) {
@@ -897,22 +901,12 @@ void messages_init()
 
 	memset(Message_times, 0, sizeof(int)*MAX_MISSION_MESSAGES);
 
-	//Taylor from icculus found and fixed this -Bobboau
-    // free up remaining anim data 
-    for (i=0; i<Num_message_avis; i++) { 
-            if (Message_avis[i].anim_data != NULL) { 
-                    for (j=0; j<Message_avis[i].anim_data->ref_count; j++) { 
-                            anim_free(Message_avis[i].anim_data); 
-                    } 
-            } 
-            Message_avis[i].anim_data = NULL; 
-    } 
 }
 
 // called to do cleanup when leaving a mission
 void message_mission_shutdown()
 {
-	int i;
+	int i, j;
 
 	mprintf(("Unloading in mission messages\n"));
 
@@ -926,6 +920,16 @@ void message_mission_shutdown()
 	}
 
 	fsspeech_stop();
+	//Taylor from icculus found and fixed this -Bobboau
+    // free up remaining anim data 
+    for (i=0; i<Num_message_avis; i++) { 
+            if (Message_avis[i].anim_data != NULL) { 
+                    for (j=0; j<Message_avis[i].anim_data->ref_count; j++) { 
+                            anim_free(Message_avis[i].anim_data); 
+                    } 
+            } 
+            Message_avis[i].anim_data = NULL; 
+    } 
 }
 
 // functions to deal with queuing messages to the message system.

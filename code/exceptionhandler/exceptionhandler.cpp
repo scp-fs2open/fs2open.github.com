@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-11-11 02:15:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-06 23:28:22 $
+ * $Author: bobboau $
  *
  * Main file for dealing with exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/11/11 02:15:43  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.2  2003/11/06 20:22:03  Kazan
  * slight change to .dsp - leave the release target as fs2_open_r.exe already
  * added myself to credit
@@ -343,6 +348,7 @@ static char* GetFilePart(char *source)
 //
 // --------------------
 
+extern char safe_string[512];
 
 // Entry point into the main exception handling routine.  This routine is put into an except()
 // statment at the beginning of a thread and is called anytime that there is a program exception
@@ -527,11 +533,15 @@ int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char *Message)
 	}
 #endif
 
+	
+
 	RecordModuleList(LogFile);
 
 	CloseHandle(LogFile);
 	// Return the magic value which tells Win32 that this handler didn't
 	// actually handle the exception - so that things will proceed as per
 	// normal.
+	if(safe_string[0])hprintf(LogFile, "\nlast safe point \n%s\n",safe_string);
+
 	return EXCEPTION_CONTINUE_SEARCH;
 }

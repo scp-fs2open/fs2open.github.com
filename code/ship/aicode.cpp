@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.55 $
- * $Date: 2004-03-05 09:01:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.56 $
+ * $Date: 2004-03-06 23:28:24 $
+ * $Author: bobboau $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2004/03/05 09:01:51  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.54  2004/02/28 01:36:20  Goober5000
  * commented a slide_face_ship that I missed before
  * --Goober5000
@@ -3826,7 +3830,8 @@ void ai_find_path(object *pl_objp, int objnum, int path_num, int exit_flag, int 
 
 			ship	*shipp = &Ships[objp->instance];
 			pm = model_get( shipp->modelnum );
-			Assert(pm->n_paths > path_num);
+			if(pm->n_paths <= path_num)Error(LOCATION,"ai_find_path tring to find a path (%d) that doesn't exsist, on ship %s", path_num, shipp->ship_name);
+		//	Assert(pm->n_paths > path_num);
 			aip->goal_objnum = objp-Objects;
 			aip->goal_signature = objp->signature;
 			if (exit_flag)

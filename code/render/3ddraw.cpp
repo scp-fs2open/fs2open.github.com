@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-03-05 09:01:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2004-03-06 23:28:24 $
+ * $Author: bobboau $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/03/05 09:01:51  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.16  2004/02/27 04:09:56  bobboau
  * fixed a Z buffer error in HTL submodel rendering,
  * and glow points,
@@ -405,6 +409,11 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 	Assert( G3_count == 1 );
 
 	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
+		gr_tmapper( nv, pointlist, tmap_flags );
+		return 0;
+	}
+	//don't clip in HT&L mode, the card does it for us
+	if(!Cmdline_nohtl && (tmap_flags & TMAP_FLAG_TRISTRIP)) {
 		gr_tmapper( nv, pointlist, tmap_flags );
 		return 0;
 	}

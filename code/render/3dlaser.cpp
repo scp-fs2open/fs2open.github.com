@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-03-05 09:01:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-06 23:28:24 $
+ * $Author: bobboau $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/03/05 09:01:51  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.7  2004/02/28 14:14:57  randomtiger
  * Removed a few uneeded if DIRECT3D's.
  * Set laser function to only render the effect one sided.
@@ -330,7 +334,7 @@ float g3_draw_laser(vector *headp, float head_width, vector *tailp, float tail_w
 	if (!Lasers){
 		return 0.0f;
 	}
-	if((!Cmdline_nohtl)
+	if((!Cmdline_nohtl) && tmap_flags & TMAP_HTL_3D_UNLIT
 		){
 		//&&(gr_screen.mode == GR_OPENGL)) {
 		return 
@@ -493,7 +497,7 @@ float g3_draw_laser_rgb(vector *headp, float head_width, vector *tailp, float ta
 	if (!Lasers){
 		return 0.0f;
 	}
-	if((!Cmdline_nohtl)
+	if((!Cmdline_nohtl)  && tmap_flags & TMAP_HTL_3D_UNLIT
 		){
 	  //	&&(gr_screen.mode==GR_OPENGL)) {
 		return 
