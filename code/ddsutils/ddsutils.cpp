@@ -105,7 +105,7 @@ int dds_read_bitmap(char *filename, int *size, uint* data)
 {
 	int retval;
 	DDSURFACEDESC2 ddsd;
-	int w,h,ct,bpp;
+	int w,h,ct,lvl,bpp;
 	CFILE *cfp;
 	ubyte* tmp;
 
@@ -113,7 +113,7 @@ int dds_read_bitmap(char *filename, int *size, uint* data)
 	Assert(size!=NULL);
 	
 	//read the header -- if its at this stage, it should be legal.
-	retval=dds_read_header_internal(&ddsd, filename, &w, &h, &bpp, &ct);
+	retval=dds_read_header_internal(&ddsd, filename, &w, &h, &bpp, &ct, &lvl);
 	Assert(retval==DDS_ERROR_NONE);
 
 	//get some more info from the surface
