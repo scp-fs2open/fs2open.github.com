@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.68 $
- * $Date: 2004-04-26 18:23:47 $
+ * $Revision: 2.69 $
+ * $Date: 2004-05-01 17:10:18 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2004/04/26 18:23:47  Kazan
+ * -no_fps_capping
+ *
  * Revision 2.67  2004/04/26 00:23:25  taylor
  * novbo and snd_preload cmdline options, fix moddir getting appended space
  *
@@ -1171,14 +1174,32 @@ bool SetCmdlineParams()
 		Cmdline_mod = mod_arg.str();
 
 		// be sure that this string fits in our limits
+		/* This has to be disabled because the max size is going to be mods*MAX_FILENAME_LEN
 		if ( strlen(Cmdline_mod) > MAX_FILENAME_LEN ) {
 			Cmdline_mod[MAX_FILENAME_LEN-1] = '\0';
-		}
+		}*/
 
 		// strip off blank space it it's there
 		if ( Cmdline_mod[strlen(Cmdline_mod)-1] == ' ' ) {
 			Cmdline_mod[strlen(Cmdline_mod)-1] = '\0';
 		}
+
+		// Ok - mod stacking support
+		int len = strlen(Cmdline_mod);
+		char *modlist = new char[len+1];
+		strcpy(modlist, Cmdline_mod);
+
+		modlist[len]= '\0'; // double null termination at the end
+
+		// null terminate each individual
+		for (int i = 0; i < len; i++)
+		{
+			if (modlist[i] == ',')
+				modlist[i] = '\0';
+		}
+		
+		//copy over - we don't have to delete[] Cmdline_mod because it's a pointer to an automatic global char*
+		Cmdline_mod = modlist;
 	}
 
 
