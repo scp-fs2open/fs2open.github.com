@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.14 $
- * $Date: 2002-12-17 02:22:34 $
+ * $Revision: 2.15 $
+ * $Date: 2002-12-17 03:08:18 $
  * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2002/12/17 02:22:34  DTP
+ * wrong name :)
+ *
  * Revision 2.13  2002/12/17 02:21:06  DTP
  * cleaned up after phreak :). it will make a mess in debug builds. added a couple of ifndef _debugs.
  *
@@ -703,7 +706,7 @@ int parse_cmdline(int argc, char *argv[])
 		Cmdline_mod = mod_arg.str();
 	}
 
-#ifndef _DEBUG
+#ifndef FRED //will call an unresolved link error during fred builds
 
 	if (fps_arg.found())
 	{
