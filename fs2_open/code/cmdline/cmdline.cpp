@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.65 $
- * $Date: 2004-04-06 01:11:41 $
- * $Author: Kazan $
+ * $Revision: 2.66 $
+ * $Date: 2004-04-18 19:39:12 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2004/04/06 01:11:41  Kazan
+ * make custom build work again
+ *
  * Revision 2.64  2004/04/03 18:11:20  Kazan
  * FRED fixes
  *
@@ -590,8 +593,10 @@ Flag exe_params[] =
 	"-phreak", 		  "Enable Phreaks options",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
 	"-ship_choice_3d","Enable models instead of ani",	true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
 	"-d3d_no_vsync",  "Disable vertical sync",			true,	0,				 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Disable%20V-Sync", 
+	"-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
 
 	"-nobeampierce",  "",								true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Gameplay",		"", 
+	"-radar_reduce",  "",								true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Gameplay",		"", 
 
 	"-fps",			  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 	"-window",		  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
@@ -683,6 +688,8 @@ cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys",NULL);
 cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
 cmdline_parm fred2_htl_arg("-fredhtl",NULL);
 cmdline_parm fred2_nowarn_arg("-fred_no_warn", NULL);
+
+cmdline_parm poof_2d_arg("-2d_poof", NULL);
 cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
 
 int Cmdline_show_stats = 0;
@@ -731,6 +738,7 @@ int Cmdline_d3dmipmap = 0;
 int Cmdline_rt = 0;
 char *Cmdline_start_mission = NULL;
 int Cmdline_ambient_factor  = 128;
+int Cmdline_2d_poof			= 0;
 
 // Lets keep a convention here
 int Cmdline_nohtl = 0;
@@ -980,6 +988,11 @@ bool SetCmdlineParams()
 {
 	//getcwd(FreeSpace_Directory, 256); // set the directory to our fs2 root
 
+
+	if(poof_2d_arg.found())
+	{
+		Cmdline_2d_poof = 1;
+	}
 
 	if (Radar_Range_Clamp.found())
 	{
