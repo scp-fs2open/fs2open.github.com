@@ -20,6 +20,9 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/05/03 16:48:08  phreak
+ * changed around the way disruptor weapons work
+ *
  * Revision 2.21  2003/04/29 01:03:22  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -1373,6 +1376,8 @@ int parse_weapon()
 	wip->elec_time=10000;
 	wip->elec_eng_mult=1.0f;
 	wip->elec_weap_mult=1.0f;
+	wip->elec_beam_mult=1.0f;
+	wip->elec_sensors_mult=1.0f;
 
 
 	if (optional_string("$Electronics:"))
@@ -1388,6 +1393,12 @@ int parse_weapon()
 
 		required_string("+Weapon Multiplier:");
 		stuff_float(&wip->elec_weap_mult);
+
+		required_string("+Beam Turret Multiplier:");
+		stuff_float(&wip->elec_beam_mult);
+
+		required_string("+Sensors Multiplier:");
+		stuff_float(&wip->elec_sensors_mult);
 	}
 
 	// beam weapon optional stuff
@@ -3045,7 +3056,7 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 	vm_vec_zero(&objp->phys_info.max_vel);
 	objp->phys_info.max_vel.xyz.z = wip->max_speed;
 	vm_vec_zero(&objp->phys_info.max_rotvel);
-	objp->shield_quadrant[0] = wip->damage;
+	objp->shields[0] = wip->damage;
 	if (wip->wi_flags & WIF_BOMB){
 		objp->hull_strength = 50.0f;
 	} else {
@@ -3381,7 +3392,19 @@ void weapon_do_electronics_affect(object *ship_objp, vector *blast_pos, int wi_i
 		//if its a turret or weapon subsytem, take the multiplier into account
 		if ((psub->type==SUBSYSTEM_TURRET) || (psub->type==SUBSYSTEM_WEAPONS))
 		{
-			sub_time*=wip->elec_weap_mult;
+			if ((psub->type==SUBSYSTEM_TURRET)&&(Weapon_info[psub->turret_weapon_type].wi_flags & WIF_BEAM))
+			{
+				sub_time*=wip->elec_beam_mult;
+			}
+			else
+			{
+				sub_time*=wip->elec_weap_mult;
+			}
+		}
+
+		if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags & MSS_FLAG_AWACS))
+		{
+			sub_time*=wip->elec_sensors_mult;
 		}
 	
 		//disrupt this subsystem for the predicted time, plus or minus 4 seconds
@@ -4078,7 +4101,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		sip = &Ship_info[Ships[target->instance].ship_info_index];
 
 		// get hull pct of the ship currently
-		hull_pct = target->hull_strength / shipp->ship_initial_hull_strength;
+		hull_pct = target->hull_strength / sip->initial_hull_strength;
 
 		// if it has hit a supercap ship and is not a supercap class weapon
 		if((sip->flags & SIF_SUPERCAP) && !(wip->wi_flags & WIF_SUPERCAP)){

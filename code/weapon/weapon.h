@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/05/03 16:44:18  phreak
+ * changed around the way disruptor weapons work
+ *
  * Revision 2.10  2003/03/29 09:42:05  Goober5000
  * made beams default shield piercing again
  * also added a beam no pierce command line flag
@@ -621,6 +624,8 @@ typedef struct weapon_info {
 	int elec_time;				//how long it lasts
 	float elec_eng_mult;		//multiplier on engine subsystem
 	float elec_weap_mult;		//multiplier on weapon subsystem and turrets
+	float elec_beam_mult;		//used instead of elec_weap_mult if turret is a beam turret
+	float elec_sensors_mult;	//multiplier on sensors and awacs
 
 
 } weapon_info;
