@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.4 $
- * $Date: 2002-11-02 23:04:46 $
+ * $Revision: 2.5 $
+ * $Date: 2002-11-02 23:06:59 $
  * $Author: DTP $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/11/02 23:04:46  DTP
+ * DOh, fixed that define, learn to count DTP :)
+ *
  * Revision 2.3  2002/10/27 23:59:28  DTP
  * DTP; started basic implementation of mod-support
  * plain files only for now. fs2_open.exe -mod X will look for files in fs2/ X /all-legal-subdirectories. no checking/creating dirs yet. directories must be there.
@@ -433,39 +436,39 @@ typedef struct {
 #define CF_TYPE_MOD_DATA						37
 #define CF_TYPE_MOD_MAPS						38
 #define CF_TYPE_MOD_TEXT						39
-#define CF_TYPE_MOD_MISSIONS				40
-#define CF_TYPE_MOD_MODELS					41
-#define CF_TYPE_MOD_TABLES					42
-#define CF_TYPE_MOD_SOUNDS					43
-#define CF_TYPE_MOD_SOUNDS_8B22K			44
-#define CF_TYPE_MOD_SOUNDS_16B11K			45
-#define CF_TYPE_MOD_VOICE					46
-#define CF_TYPE_MOD_VOICE_BRIEFINGS		47
-#define CF_TYPE_MOD_VOICE_CMD_BRIEF		48
-#define CF_TYPE_MOD_VOICE_DEBRIEFINGS	49
-#define CF_TYPE_MOD_VOICE_PERSONAS		50
-#define CF_TYPE_MOD_VOICE_SPECIAL			51
-#define CF_TYPE_MOD_VOICE_TRAINING		52
-#define CF_TYPE_MOD_MUSIC					53
-#define CF_TYPE_MOD_MOVIES					54
-#define CF_TYPE_MOD_INTERFACE				55
+#define CF_TYPE_MOD_MISSIONS					40
+#define CF_TYPE_MOD_MODELS						41
+#define CF_TYPE_MOD_TABLES						42
+#define CF_TYPE_MOD_SOUNDS						43
+#define CF_TYPE_MOD_SOUNDS_8B22K				44
+#define CF_TYPE_MOD_SOUNDS_16B11K				45
+#define CF_TYPE_MOD_VOICE						46
+#define CF_TYPE_MOD_VOICE_BRIEFINGS				47
+#define CF_TYPE_MOD_VOICE_CMD_BRIEF				48
+#define CF_TYPE_MOD_VOICE_DEBRIEFINGS			49
+#define CF_TYPE_MOD_VOICE_PERSONAS				50
+#define CF_TYPE_MOD_VOICE_SPECIAL				51
+#define CF_TYPE_MOD_VOICE_TRAINING				52
+#define CF_TYPE_MOD_MUSIC						53
+#define CF_TYPE_MOD_MOVIES						54
+#define CF_TYPE_MOD_INTERFACE					55
 #define CF_TYPE_MOD_FONT						56
-#define CF_TYPE_MOD_EFFECTS					57
-#define CF_TYPE_MOD_HUD						58
-#define CF_TYPE_MOD_PLAYER_MAIN			59
-#define CF_TYPE_MOD_PLAYER_IMAGES_MAIN	60
-#define CF_TYPE_MOD_CACHE					61
-#define CF_TYPE_MOD_PLAYERS					62
-#define CF_TYPE_MOD_SINGLE_PLAYERS		63
-#define CF_TYPE_MOD_MULTI_PLAYERS			64
-#define CF_TYPE_MOD_MULTI_CACHE			65
-#define CF_TYPE_MOD_CONFIG					67
-#define CF_TYPE_MOD_SQUAD_IMAGES_MAIN	68
-#define CF_TYPE_MOD_DEMOS					69
-#define CF_TYPE_MOD_CBANIMS					70
-#define CF_TYPE_MOD_INTEL_ANIMS			71
+#define CF_TYPE_MOD_EFFECTS						57
+#define CF_TYPE_MOD_HUD							58
+#define CF_TYPE_MOD_PLAYER_MAIN					59
+#define CF_TYPE_MOD_PLAYER_IMAGES_MAIN			60
+#define CF_TYPE_MOD_CACHE						61
+#define CF_TYPE_MOD_PLAYERS						62
+#define CF_TYPE_MOD_SINGLE_PLAYERS				63
+#define CF_TYPE_MOD_MULTI_PLAYERS				64
+#define CF_TYPE_MOD_MULTI_CACHE					65
+#define CF_TYPE_MOD_CONFIG						66
+#define CF_TYPE_MOD_SQUAD_IMAGES_MAIN			67
+#define CF_TYPE_MOD_DEMOS						68
+#define CF_TYPE_MOD_CBANIMS						69
+#define CF_TYPE_MOD_INTEL_ANIMS					70
 
-#define CF_MAX_PATH_TYPES				72			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
+#define CF_MAX_PATH_TYPES				71			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
 
 
 // TRUE if type is specified and valid
