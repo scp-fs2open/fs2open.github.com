@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.5 $
- * $Date: 2004-07-17 18:49:57 $
+ * $Revision: 1.6 $
+ * $Date: 2004-07-21 00:03:46 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/07/17 18:49:57  taylor
+ * oops, I can't spell
+ *
  * Revision 1.4  2004/07/17 18:43:46  taylor
  * don't use bitmap sections by default, openil_close()
  *
@@ -746,7 +749,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 			break;
 #ifndef GL_SECTIONS
 		case TCACHE_TYPE_BITMAP_SECTION:
-			flags |= BMP_TEX_OTHER;
+			flags |= BMP_TEX_XPARENT;
 			break;
 #endif // !GL_SECTIONS
 		case TCACHE_TYPE_NONDARKENING:
@@ -790,11 +793,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	tslot->bpp = bmp->bpp;
 	
 	   // DDOI - TODO
-#ifndef GL_SECTIONS
-	if ( bitmap_type != TCACHE_TYPE_AABITMAP )      {
-#else
 	if ( (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_BITMAP_SECTION) )      {
-#endif // !GL_SECTIONS
 		// max_w /= D3D_texture_divider;
 		// max_h /= D3D_texture_divider;
 
