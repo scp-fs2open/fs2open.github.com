@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.53 $
- * $Date: 2003-03-05 09:17:15 $
+ * $Revision: 2.54 $
+ * $Date: 2003-03-05 12:38:01 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2003/03/05 09:17:15  Goober5000
+ * cleaned out Bobboau's buggy code - about to rewrite with new, bug-free code :)
+ * --Goober5000
+ *
  * Revision 2.52  2003/03/03 17:15:16  Goober5000
  * fixed custom banks so that they no longer need the ":" between each entry
  * --Goober5000
@@ -1291,7 +1295,7 @@ int parse_ship()
 		subsystems[idx].stepped_rotation = NULL;
 //		subsystems[idx].ai_rotation = NULL;
 	}
-	int i, num_allowed, rtn = 0;
+	int i, j, num_allowed, rtn = 0;
 	int allowed_weapons[MAX_WEAPON_TYPES];
 	int pbank_capacity_specified, pbank_capacity_count, sbank_capacity_count;
 
@@ -1502,22 +1506,59 @@ int parse_ship()
 	{
 		sip->allowed_weapons[i] = 0;
 	}
+
+	for ( i = 0; i < MAX_SHIP_WEAPONS; i++ )
+	{
+		sip->restricted_loadout_flag[i] = 0;
+		for ( j = 0; j < MAX_WEAPON_TYPES; j++ )
+		{
+			sip->allowed_bank_restricted_weapons[i][j] = 0;
+		}
+	}
+
 char temp_error[64];
 strcpy(temp_error, parse_error_text);
+
+	// Goober5000 - fixed Bobboau's implementation of restricted banks
+	int bank;
 
 	// Set the weapons filter used in weapons loadout (for primary weapons)
 	if (optional_string("$Allowed PBanks:"))
 	{
+		bank = -1;
+
+		while (check_for_string("("))
+		{
+			bank++;
+
+			// make sure we don't specify more than we have banks for
+			if (bank > UPPER_BOUND_PRIMARY_BANK)
+			{
+				Warning(LOCATION, "$Allowed PBanks bank-specific loadout exceeds permissible number of primary banks.  Ignoring the rest...");
+				bank--;
+				break;
+			}
+
 strcat(parse_error_text,"'s primary banks");
-		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 strcpy(parse_error_text, temp_error);
 
-		// actually say which weapons are allowed
-		for ( i = 0; i < num_allowed; i++ )
-		{
-			if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+			// actually say which weapons are allowed
+			for ( i = 0; i < num_allowed; i++ )
 			{
-				sip->allowed_weapons[allowed_weapons[i]] |= 1;
+				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+				{
+					sip->allowed_bank_restricted_weapons[bank][allowed_weapons[i]] |= REGULAR_WEAPON;
+				}
+			}
+		}
+
+		// set flags if need be
+		if (bank > 0)	// meaning there was a restricted bank table entry
+		{
+			for (i=0; i<=bank; i++)
+			{
+				sip->restricted_loadout_flag[i] |= REGULAR_WEAPON;
 			}
 		}
 	}
@@ -1525,16 +1566,40 @@ strcpy(parse_error_text, temp_error);
 	// Set the weapons filter used in weapons loadout (for primary weapons)
 	if (optional_string("$Allowed Dogfight PBanks:"))
 	{
+		bank = -1;
+
+		while (check_for_string("("))
+		{
+			bank++;
+
+			// make sure we don't specify more than we have banks for
+			if (bank > UPPER_BOUND_PRIMARY_BANK)
+			{
+				Warning(LOCATION, "$Allowed Dogfight PBanks bank-specific loadout exceeds permissible number of primary banks.  Ignoring the rest...");
+				bank--;
+				break;
+			}
+
 strcat(parse_error_text,"'s primary dogfight banks");
 		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 strcpy(parse_error_text, temp_error);
 
-		// actually say which weapons are allowed
-		for ( i = 0; i < num_allowed; i++ )
-		{
-			if ( allowed_weapons[i] >= 0 )
+			// actually say which weapons are allowed
+			for ( i = 0; i < num_allowed; i++ )
 			{
-				sip->allowed_weapons[allowed_weapons[i]] |= 2;
+				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+				{
+					sip->allowed_bank_restricted_weapons[bank][allowed_weapons[i]] |= DOGFIGHT_WEAPON;
+				}
+			}
+		}
+
+		// set flags if need be
+		if (bank > 0)	// meaning there was a restricted bank table entry
+		{
+			for (i=0; i<=bank; i++)
+			{
+				sip->restricted_loadout_flag[i] |= DOGFIGHT_WEAPON;
 			}
 		}
 	}
@@ -1580,16 +1645,40 @@ strcpy(parse_error_text, temp_error);
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
 	if (optional_string("$Allowed SBanks:"))
 	{
+		bank = -1;
+
+		while (check_for_string("("))
+		{
+			bank++;
+
+			// make sure we don't specify more than we have banks for
+			if (bank > UPPER_BOUND_SECONDARY_BANK)
+			{
+				Warning(LOCATION, "$Allowed SBanks bank-specific loadout exceeds permissible number of secondary banks.  Ignoring the rest...");
+				bank--;
+				break;
+			}
+
 strcat(parse_error_text,"'s secondary banks");
 		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 strcpy(parse_error_text, temp_error);
 
-		// actually say which weapons are allowed
-		for ( i = 0; i < num_allowed; i++ )
-		{
-			if ( allowed_weapons[i] >= 0 )
+			// actually say which weapons are allowed
+			for ( i = 0; i < num_allowed; i++ )
 			{
-				sip->allowed_weapons[allowed_weapons[i]] |= 1;
+				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+				{
+					sip->allowed_bank_restricted_weapons[MAX_SUPPORTED_PRIMARY_BANKS+bank][allowed_weapons[i]] |= REGULAR_WEAPON;
+				}
+			}
+		}
+
+		// set flags if need be
+		if (bank > 0)	// meaning there was a restricted bank table entry
+		{
+			for (i=0; i<=bank; i++)
+			{
+				sip->restricted_loadout_flag[MAX_SUPPORTED_PRIMARY_BANKS+i] |= REGULAR_WEAPON;
 			}
 		}
 	}
@@ -1597,16 +1686,40 @@ strcpy(parse_error_text, temp_error);
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
 	if (optional_string("$Allowed Dogfight SBanks:"))
 	{
-strcat(parse_error_text,"'s primary dogfight banks");
+		bank = -1;
+
+		while (check_for_string("("))
+		{
+			bank++;
+
+			// make sure we don't specify more than we have banks for
+			if (bank > UPPER_BOUND_SECONDARY_BANK)
+			{
+				Warning(LOCATION, "$Allowed Dogfight SBanks bank-specific loadout exceeds permissible number of secondary banks.  Ignoring the rest...");
+				bank--;
+				break;
+			}
+
+strcat(parse_error_text,"'s secondary dogfight banks");
 		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 strcpy(parse_error_text, temp_error);
 
-		// actually say which weapons are allowed
-		for ( i = 0; i < num_allowed; i++ )
-		{
-			if ( allowed_weapons[i] >= 0 )
+			// actually say which weapons are allowed
+			for ( i = 0; i < num_allowed; i++ )
 			{
-				sip->allowed_weapons[allowed_weapons[i]] |= 2;
+				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+				{
+					sip->allowed_bank_restricted_weapons[MAX_SUPPORTED_PRIMARY_BANKS+bank][allowed_weapons[i]] |= DOGFIGHT_WEAPON;
+				}
+			}
+		}
+
+		// set flags if need be
+		if (bank > 0)	// meaning there was a restricted bank table entry
+		{
+			for (i=0; i<=bank; i++)
+			{
+				sip->restricted_loadout_flag[MAX_SUPPORTED_PRIMARY_BANKS+i] |= DOGFIGHT_WEAPON;
 			}
 		}
 	}
@@ -1641,6 +1754,19 @@ strcpy(parse_error_text, temp_error);
 		Warning(LOCATION, "Secondary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
 	}
     
+	// copy to regular allowed_weapons array
+	for (i=0; i<MAX_SHIP_WEAPONS; i++)
+	{
+		for (j=0; j<MAX_WEAPON_TYPES; j++)
+		{
+			if (sip->allowed_bank_restricted_weapons[i][j] & REGULAR_WEAPON)
+				sip->allowed_weapons[j] |= REGULAR_WEAPON;
+
+			if (sip->allowed_bank_restricted_weapons[i][j] & DOGFIGHT_WEAPON)
+				sip->allowed_weapons[j] |= DOGFIGHT_WEAPON;
+		}
+	}
+
 	required_string("$Shields:");
 	stuff_float(&sip->shields);
 
