@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.48 $
+ * $Revision: 2.49 $
  * $Author: Goober5000 $
- * $Date: 2004-10-11 22:29:25 $
+ * $Date: 2004-10-12 07:34:45 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2004/10/11 22:29:25  Goober5000
+ * added the no-bank ship flag (which works) and the affected-by-gravity flag
+ * (which won't work until I implement gravity points)
+ * --Goober5000
+ *
  * Revision 2.47  2004/09/17 07:12:22  Goober5000
  * changed around the logic for the 3D warp effect
  * --Goober5000
@@ -488,6 +493,7 @@ typedef struct mission {
 	char	squad_name[NAME_LENGTH+1];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
 	char	loading_screen[GR_NUM_RESOLUTIONS][NAME_LENGTH];
 	char	skybox_model[NAME_LENGTH];
+	int		contrail_threshold;
 } mission;
 
 // cargo defines
@@ -497,6 +503,10 @@ typedef struct mission {
 #define CARGO_INDEX_MASK	0xBF
 #define CARGO_NO_DEPLETE	0x40		// CARGO_NO_DEPLETE + CARGO_INDEX_MASK must == FF
 #define MAX_CARGO				30
+
+
+// Goober5000 - contrail threshold (previously defined in ShipContrails.cpp)
+#define CONTRAIL_THRESHOLD_DEFAULT	45
 
 extern mission The_mission;
 extern char Mission_filename[80];  // filename of mission in The_mission (Fred only)

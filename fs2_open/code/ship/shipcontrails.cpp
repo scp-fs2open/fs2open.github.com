@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-26 20:47:52 $
- * $Author: Kazan $
+ * $Revision: 2.13 $
+ * $Date: 2004-10-12 07:34:45 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/26 20:47:52  Kazan
+ * remove MCD complete
+ *
  * Revision 2.11  2004/07/12 16:33:05  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -227,7 +230,7 @@ void ct_ship_process(ship *shipp)
 // if the object is below the limit for contrails
 int ct_below_limit(object *objp)
 {
-	return objp->phys_info.fspeed < 45.0f;
+	return objp->phys_info.fspeed < (float) The_mission.contrail_threshold;
 }
 
 // if a ship has active contrails
