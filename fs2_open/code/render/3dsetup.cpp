@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-10-25 06:56:06 $
+ * $Revision: 2.9 $
+ * $Date: 2003-11-01 21:59:22 $
  * $Author: bobboau $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/10/25 06:56:06  bobboau
+ * adding FOF stuff,
+ * and fixed a small error in the matrix code,
+ * I told you it was indeed suposed to be gr_start_instance_matrix
+ * in g3_done_instance,
+ * g3_start_instance_angles needs to have an gr_ API abstraction version of it made
+ *
  * Revision 2.7  2003/10/25 03:27:21  phreak
  * fixed some old bugs that reappeared after RT committed his texture code
  *
@@ -235,6 +242,7 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 
 	G3_frame_count++;
 
+	if(!Cmdline_nohtl)gr_set_proj_matrix( ((4.0f/9.0f)*(PI)*View_zoom), Canv_w2/Canv_h2, 1.0f, 30000.0f);
 	//init_interface_vars_to_assembler();		//for the texture-mapper
 
 }
@@ -246,6 +254,7 @@ void g3_end_frame(void)
 	Assert( G3_count == 0 );
 
 	free_point_num = 0;
+	if(!Cmdline_nohtl)gr_end_proj_matrix();
 //	Assert(free_point_num==0);
 }
 
@@ -274,6 +283,10 @@ void g3_set_view_matrix(vector *view_pos,matrix *view_matrix,float zoom)
 
 	vm_vec_zero(&Object_position);
 	Object_matrix = vmd_identity_matrix;
+
+	if(!Cmdline_nohtl){
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 }
 
 
@@ -334,7 +347,7 @@ ubyte g3_rotate_vertex_popped(vertex *dest,vector *src)
 //instance at specified point with specified orientation
 //if matrix==NULL, don't modify matrix.  This will be like doing an offset   
 //if pos==NULL, no position change
-void g3_start_instance_matrix(vector *pos,matrix *orient)
+void g3_start_instance_matrix(vector *pos,matrix *orient, bool set_api)
 {
 	vector tempv;
 	matrix tempm,tempm2;
@@ -395,7 +408,7 @@ void g3_start_instance_matrix(vector *pos,matrix *orient)
 
 	vm_matrix_x_matrix(&Light_matrix,&saved_orient, orient);
 
-	if(!Cmdline_nohtl)
+	if(!Cmdline_nohtl && set_api)
 		gr_start_instance_matrix(&Object_position,&Object_matrix);
 
 }
@@ -416,7 +429,9 @@ void g3_start_instance_angles(vector *pos,angles *orient)
 
 	vm_angles_2_matrix(&tm,orient);
 
-	g3_start_instance_matrix(pos,&tm);
+	g3_start_instance_matrix(pos,&tm, false);
+
+	if(!Cmdline_nohtl)gr_start_angles_instance_matrix(pos, orient);
 
 }
 
@@ -438,7 +453,7 @@ void g3_done_instance()
 	Object_position = instance_stack[instance_depth].op;
 
 	if(!Cmdline_nohtl)
-		gr_start_instance_matrix(&Object_position,&Object_matrix);
+		gr_end_instance_matrix();
 }
 
 int G3_user_clip = 0;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.31 $
- * $Date: 2003-10-29 02:09:18 $
- * $Author: randomtiger $
+ * $Revision: 2.32 $
+ * $Date: 2003-11-01 21:59:21 $
+ * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/10/29 02:09:18  randomtiger
+ * Updated timerbar code to work properly, also added support for it in OGL.
+ * In D3D red is general processing (and generic graphics), green is 2D rendering, dark blue is 3D unlit, light blue is HT&L renders and yellow is the presentation of the frame to D3D. OGL is all red for now. Use compile flag TIMERBAR_ON with code lib to activate it.
+ * Also updated some more D3D device stuff that might get a bit more speed out of some cards.
+ *
  * Revision 2.30  2003/10/27 23:04:21  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -681,6 +686,7 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 
 	switch( ab )	{
 	case ALPHA_BLEND_NONE:							// 1*SrcPixel + 0*DestPixel	(not true anymore)
+		d3d_SetRenderState( D3DRS_ALPHATESTENABLE, TRUE );
 		d3d_SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
 		d3d_SetRenderState( D3DRS_ALPHAREF, 0x00000000); 
 		d3d_SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER); 
@@ -732,10 +738,12 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 	switch( zt )	{
 
 	case ZBUFFER_TYPE_NONE:
+		d3d_SetRenderState( D3DRS_ALPHATESTENABLE, false );
 		d3d_SetRenderState(D3DRS_ZENABLE,FALSE);
 		d3d_SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
 		break;
 	case ZBUFFER_TYPE_READ:
+		d3d_SetRenderState( D3DRS_ALPHATESTENABLE, false );
 		d3d_SetRenderState(D3DRS_ZENABLE, use_wbuffer ? D3DZB_USEW : TRUE);
 		d3d_SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
 		break;
@@ -1172,6 +1180,7 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 		}
 		
 		src_v->color = D3DCOLOR_ARGB(a, r, g, b);
+		src_v->specular = D3DCOLOR_ARGB(a, r, g, b);
 
 		src_v->sx = va->x; 
 		src_v->sy = va->y; 
@@ -1221,6 +1230,7 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 		gr_fog_set(GR_FOGMODE_NONE,0,0,0);
 	}
 
+
  	d3d_DrawPrimitive(D3DVT_LVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 	TIMERBAR_POP();
 
@@ -1244,6 +1254,8 @@ bool cell_enabled = false;
 extern bool rendering_shockwave;
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
+	d3d_set_initial_render_state();
+
 	if(!Cmdline_nohtl && (flags & TMAP_HTL_3D_UNLIT)) {
 		gr_d3d_tmapper_internal_3d_unlit(nverts, verts, flags, is_scaler);
 		return;

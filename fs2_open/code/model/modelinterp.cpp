@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.44 $
- * $Date: 2003-10-27 23:04:22 $
- * $Author: randomtiger $
+ * $Revision: 2.45 $
+ * $Date: 2003-11-01 21:59:22 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/10/27 23:04:22  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.43  2003/10/26 00:31:59  randomtiger
  * Fixed hulls not drawing (with Phreaks advise).
  * Put my 32bit PCX loading under PCX_32 compile flag until its working.
@@ -3433,11 +3441,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			}
 			gr_zbuffer_set(zbuf_mode);
 			if(!Cmdline_nohtl) {
-
-/*				gr_zbuffer_set(zbuf_mode);
-				{
-					model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
-				}*/
+				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
 			}
 			else {
 				model_interp_subcall( pm, i, detail_level );
@@ -3480,13 +3484,16 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// draw the hull of the ship
 	
 	if(!Cmdline_nohtl) {
-//		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
-		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
+		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
+//		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
 	}
 	else {
 		// Putting this in on Phreaks advise so we get hulls drawn again.
 		model_interp_subcall(pm,pm->detail[detail_level],detail_level);
 	}
+
+	gr_reset_lighting();
+	gr_set_lighting(false,false);
 
 	if (Interp_flags & MR_SHOW_PIVOTS )	{
 		model_draw_debug_points( pm, NULL );
@@ -3500,16 +3507,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	model_radius = 0.0f;
 
-	if (FULLCLOAK != -1)	model_finish_cloak(FULLCLOAK);
-
-	if ( pm->submodel[pm->detail[0]].num_arcs )	{
-		interp_render_lightning( pm, &pm->submodel[pm->detail[0]]);
-	}	
-
-	if ( Interp_flags & MR_SHOW_SHIELDS )	{
-		model_render_shields(pm);
-	}	
-			
 #ifndef NO_DIRECT3D
 	// render model insignias
 	if(gr_screen.mode == GR_DIRECT3D){
@@ -3527,6 +3524,18 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 #endif
 //	object *obj = &Objects[objnum];
 	decal_render_all(&Objects[objnum]);
+//	gr_set_lighting(false,false);
+
+	if (FULLCLOAK != -1)	model_finish_cloak(FULLCLOAK);
+
+	if ( pm->submodel[pm->detail[0]].num_arcs )	{
+		interp_render_lightning( pm, &pm->submodel[pm->detail[0]]);
+	}	
+
+	if ( Interp_flags & MR_SHOW_SHIELDS )	{
+		model_render_shields(pm);
+	}	
+			
 
 //start rendering glow points -Bobboau
 
@@ -4701,6 +4710,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		model->n_buffers++;
 	}
 }
+
 void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level){
 	int i;
 	int zbuf_mode = gr_zbuffering_mode;
@@ -4776,11 +4786,22 @@ extern vector Object_position;
 extern matrix Object_matrix;
 
 void model_render_buffers(bsp_info* model, polymodel * pm){
-	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING) );
+	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING), true );
 	gr_set_cull(1);
 
-	float msz = Model_Interp_scale_z;
-	if(Interp_thrust_scale_subobj)Model_Interp_scale_z = Interp_thrust_scale;
+	vector scale;
+
+	if(Interp_thrust_scale_subobj){
+		scale.xyz.x = 1.0f;
+		scale.xyz.y = 1.0f;
+		scale.xyz.z = Interp_thrust_scale;
+	}else{
+		scale.xyz.x = Model_Interp_scale_x;
+		scale.xyz.y = Model_Interp_scale_y;
+		scale.xyz.z = Model_Interp_scale_z;
+	}
+
+	gr_push_scale_matrix(&scale);
 
 	for(int i = 0; i<model->n_buffers; i++){
 		int texture = -1;
@@ -4821,7 +4842,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 			if((Interp_thrust_bitmap>-1) && (Interp_thrust_scale > 0.0f)) {
 				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f);
 			}
-			gr_start_instance_matrix(&Object_position,&Object_matrix);
+			
 		} else if(pm->transparent[model->buffer[i].texture] ){	//trying to get transperent textures-Bobboau
 			if(Warp_Alpha!=-1.0)gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			else gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
@@ -4839,11 +4860,6 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 	GLOWMAP = -1;
 	SPECMAP = -1;
 
-	if(Interp_thrust_scale_subobj){
-			Model_Interp_scale_z = msz;
-			gr_start_instance_matrix(&Object_position,&Object_matrix);
-	}
-	gr_end_instance_matrix();
-//	gr_set_lighting( false );
+	gr_pop_scale_matrix();
 
 }

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.13 $
- * $Date: 2003-10-27 23:04:21 $
- * $Author: randomtiger $
+ * $Revision: 2.14 $
+ * $Date: 2003-11-01 21:59:21 $
+ * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/10/27 23:04:21  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.12  2003/10/25 03:26:39  phreak
  * fixed some old bugs that reappeared after RT committed his texture code
  *
@@ -413,6 +421,11 @@ gr_line(x1,y1,x2,y2)
 #include "globalincs/pstypes.h"
 #include "graphics/tmapper.h"
 
+
+#define MATRIX_TRANSFORM_TYPE_WORLD 0
+#define MATRIX_TRANSFORM_TYPE_VIEW 1
+
+
 //MAX_POLYGON_NORMS
 #define MAX_POLYGON_TRI_POINTS 5500
 
@@ -711,7 +724,18 @@ typedef struct screen {
 	void (*gf_destroy_buffer)(int);
 	void (*gf_render_buffer)(int);
 
- 	void (*gf_start_instance_matrix)(vector *, matrix*);
+	//the projection matrix; fov, aspect ratio, near, far
+ 	void (*gf_set_proj_matrix)(float, float, float, float);
+  	void (*gf_end_proj_matrix)();
+	//the view matrix
+ 	void (*gf_set_view_matrix)(vector *, matrix*);
+  	void (*gf_end_view_matrix)();
+	//object scaleing
+	void (*gf_push_scale_matrix)(vector *);
+ 	void (*gf_pop_scale_matrix)();
+	//object position and orientation
+	void (*gf_start_instance_matrix)(vector *, matrix*);
+	void (*gf_start_angles_instance_matrix)(vector *, angles*);
 	void (*gf_end_instance_matrix)();
 
 	int	 (*gf_make_light)(light_data*, int, int );
@@ -720,7 +744,7 @@ typedef struct screen {
 	void (*gf_set_light)(light_data*);
 	void (*gf_reset_lighting)();
 
-	void (*gf_lighting)(bool);
+	void (*gf_lighting)(bool,bool);
 
 	void (*start_clip_plane)();
 	void (*end_clip_plane)();
@@ -916,8 +940,15 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)            
 #define gr_render_buffer				 GR_CALL(*gr_screen.gf_render_buffer)            
 
+#define gr_set_proj_matrix				 GR_CALL(*gr_screen.gf_set_proj_matrix)            
+#define gr_end_proj_matrix				 GR_CALL(*gr_screen.gf_end_proj_matrix)            
+#define gr_set_view_matrix				 GR_CALL(*gr_screen.gf_set_view_matrix)            
+#define gr_end_view_matrix				 GR_CALL(*gr_screen.gf_end_view_matrix)            
+#define gr_push_scale_matrix			 GR_CALL(*gr_screen.gf_push_scale_matrix)            
+#define gr_pop_scale_matrix				 GR_CALL(*gr_screen.gf_pop_scale_matrix)            
 #define gr_start_instance_matrix		 GR_CALL(*gr_screen.gf_start_instance_matrix)            
-#define gr_end_instance_matrix		 GR_CALL(*gr_screen.gf_end_instance_matrix)            
+#define gr_start_angles_instance_matrix	 GR_CALL(*gr_screen.gf_start_angles_instance_matrix)            
+#define gr_end_instance_matrix			 GR_CALL(*gr_screen.gf_end_instance_matrix)            
 
 #define	gr_make_light GR_CALL			(*gr_screen.gf_make_light)
 #define	gr_modify_light GR_CALL			(*gr_screen.gf_modify_light)

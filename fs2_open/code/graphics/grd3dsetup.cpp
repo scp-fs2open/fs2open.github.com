@@ -41,6 +41,8 @@ int GlobalD3DVars::D3D_rendition_uvs = 0;
 int GlobalD3DVars::D3D_custom_size   = -1;
 int GlobalD3DVars::D3D_zbias         = 1;
 
+ID3DXMatrixStack *world_matrix_stack, *view_matrix_stack, *proj_matrix_stack;
+
 const int multisample_max = 16;
 const D3DMULTISAMPLE_TYPE multisample_types[multisample_max] =
 {
@@ -124,6 +126,11 @@ void gr_d3d_activate(int active)
 			ShowWindow(hwnd,SW_MINIMIZE);
 		}
 	}
+//	ID3DXMatrixStack *world_matrix_stack, *view_matrix_stack, *proj_matrix_stack;
+	D3DXCreateMatrixStack(0, &world_matrix_stack);
+	D3DXCreateMatrixStack(0, &view_matrix_stack);
+	D3DXCreateMatrixStack(0, &proj_matrix_stack);
+
 }
 
 void d3d_setup_format_components(
@@ -842,8 +849,15 @@ void d3d_setup_function_pointers()
 		gr_screen.gf_destroy_buffer = gr_d3d_destroy_buffer;
 		gr_screen.gf_render_buffer = gr_d3d_render_buffer;
 
-		gr_screen.gf_start_instance_matrix = gr_d3d_start_instance_matrix;
-		gr_screen.gf_end_instance_matrix = gr_d3d_end_instance_matrix;
+		gr_screen.gf_set_proj_matrix				= gr_d3d_set_proj_matrix;
+		gr_screen.gf_end_proj_matrix				= gr_d3d_end_proj_matrix;
+		gr_screen.gf_set_view_matrix				= gr_d3d_set_view_matrix;
+		gr_screen.gf_end_view_matrix				= gr_d3d_end_view_matrix;
+		gr_screen.gf_push_scale_matrix				= gr_d3d_set_scale_matrix;
+		gr_screen.gf_pop_scale_matrix				= gr_d3d_end_scale_matrix;
+		gr_screen.gf_start_instance_matrix			= gr_d3d_start_instance_matrix;
+		gr_screen.gf_start_angles_instance_matrix	= gr_d3d_start_angles_instance_matrix;
+		gr_screen.gf_end_instance_matrix			= gr_d3d_end_instance_matrix;
 
 		gr_screen.gf_make_light = gr_d3d_make_light;
 		gr_screen.gf_modify_light = gr_d3d_modify_light;
@@ -1062,6 +1076,8 @@ bool d3d_init_device()
 	GlobalD3DVars::d3dpp.BackBufferWidth = mode.Width;
 
 	d3d_determine_texture_formats(adapter_choice, &mode);
+
+
 	return true;
 }
 

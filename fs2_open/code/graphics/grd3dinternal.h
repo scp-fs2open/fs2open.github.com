@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.11 $
- * $Date: 2003-10-24 17:35:05 $
- * $Author: randomtiger $
+ * $Revision: 2.12 $
+ * $Date: 2003-11-01 21:59:21 $
+ * $Author: bobboau $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/10/24 17:35:05  randomtiger
+ * Implemented support for 32bit TGA and JPG for D3D
+ * Also 32 bit PCX, but it still has some bugs to be worked out
+ * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
+ *
  * Revision 2.10  2003/10/17 17:18:42  randomtiger
  * Big restructure for D3D and new modules grd3dlight and grd3dsetup
  *
@@ -290,6 +295,7 @@ typedef struct {
 
 // This vertex type should be used for vertices that have already been lit
 // make sure lighting is set to off while these polygons are rendered 
+//(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX1)
 typedef struct { 
     float sx, sy, sz;
   

@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.42 $
- * $Date: 2003-10-29 02:09:18 $
- * $Author: randomtiger $
+ * $Revision: 2.43 $
+ * $Date: 2003-11-01 21:59:21 $
+ * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/10/29 02:09:18  randomtiger
+ * Updated timerbar code to work properly, also added support for it in OGL.
+ * In D3D red is general processing (and generic graphics), green is 2D rendering, dark blue is 3D unlit, light blue is HT&L renders and yellow is the presentation of the frame to D3D. OGL is all red for now. Use compile flag TIMERBAR_ON with code lib to activate it.
+ * Also updated some more D3D device stuff that might get a bit more speed out of some cards.
+ *
  * Revision 2.41  2003/10/25 03:26:39  phreak
  * fixed some old bugs that reappeared after RT committed his texture code
  *
@@ -4335,7 +4340,7 @@ void gr_opengl_set_light(light_data *light)
 	//stubb
 }
 
-void gr_opengl_set_lighting(bool state)
+void gr_opengl_set_lighting(bool set, bool state)
 {
 
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.2 $
- * $Date: 2003-10-23 18:03:24 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2003-11-01 21:59:22 $
+ * $Author: bobboau $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -178,7 +181,7 @@ int g3_compute_sky_polygon(float *points_2d,vector *vecs);
 //Instancing
 
 //instance at specified point with specified orientation
-void g3_start_instance_matrix(vector *pos,matrix *orient);
+void g3_start_instance_matrix(vector *pos,matrix *orient, bool set_api = true);
 
 //instance at specified point with specified orientation
 void g3_start_instance_angles(vector *pos,angles *orient);

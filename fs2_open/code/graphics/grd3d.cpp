@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.36 $
- * $Date: 2003-10-30 08:20:36 $
- * $Author: fryday $
+ * $Revision: 2.37 $
+ * $Date: 2003-11-01 21:59:21 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/10/30 08:20:36  fryday
+ * Added code to handle MR_NO_ZBUFFER in d3d VB rendering code.
+ *
  * Revision 2.35  2003/10/29 02:09:17  randomtiger
  * Updated timerbar code to work properly, also added support for it in OGL.
  * In D3D red is general processing (and generic graphics), green is 2D rendering, dark blue is 3D unlit, light blue is HT&L renders and yellow is the presentation of the frame to D3D. OGL is all red for now. Use compile flag TIMERBAR_ON with code lib to activate it.
@@ -567,7 +570,7 @@
 struct Vertex_buffer{
 	Vertex_buffer(): ocupied(false), n_prim(0){};
 	bool ocupied;
-	short int n_prim;
+	int n_prim;
 	IDirect3DVertexBuffer8 *buffer;
 };
 
@@ -624,7 +627,7 @@ int D3D_32bit = 0;
 
 IDirect3DSurface8 *Gr_saved_surface = NULL;
 Vertex_buffer vertex_buffer[MAX_BUFFERS];
-int n_active_lights = 0;
+extern int n_active_lights;
 
 D3DXPLANE d3d_user_clip_plane;
 
@@ -1827,7 +1830,7 @@ void gr_d3d_render_buffer(int idx)
 	TIMERBAR_PUSH(3);
 
 	if(!the_lights_are_on){
-		d3d_SetVertexShader(D3DVT_VERTEX);
+//		d3d_SetVertexShader(D3DVT_VERTEX);
 		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
 		the_lights_are_on = true;
 	}												  
@@ -1948,46 +1951,137 @@ void gr_d3d_render_buffer(int idx)
 	TIMERBAR_POP();
 }
 
-void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
-	D3DXMATRIX mat, scale;
+//*******matrix stuff*******//
 
-	D3DXMatrixPerspectiveFovLH(&mat, (4.0f/9.0f)*(D3DX_PI)*View_zoom, Canv_w2/Canv_h2, 0.2f, 30000.0f);
+/*
+	//the projection matrix; fov, aspect ratio, near, far
+ 	void (*gf_set_proj_matrix)(float, float, float, float);
+  	void (*gf_end_proj_matrix)();
+	//the view matrix
+ 	void (*gf_set_view_matrix)(vector *, matrix*);
+  	void (*gf_end_view_matrix)();
+	//object scaleing
+	void (*gf_push_scale_matrix)(vector *);
+ 	void (*gf_pop_scale_matrix)();
+	//object position and orientation
+	void (*gf_start_instance_matrix)(vector *, matrix*);
+	void (*gf_start_angles_instance_matrix)(vector *, angles*);
+	void (*gf_end_instance_matrix)();
+*/
+
+//fov = (4.0/9.0)*(PI)*View_zoom
+//ratio = screen.aspect
+//near = 1.0
+//far = 30000
+	//the projection matrix; fov, aspect ratio, near, far
+void gr_d3d_set_proj_matrix(float fov, float ratio, float n, float f){
+//	proj_matrix_stack->Push();
+	D3DXMATRIX mat;
+	D3DXMatrixPerspectiveFovLH(&mat, fov, ratio, n, f);
+//	D3DXMatrixPerspectiveFovLH(&mat, (4.0f/9.0f)*(D3DX_PI)*View_zoom, 1.0f/gr_screen.aspect, 0.2f, 30000);
+//	proj_matrix_stack->LoadMatrix(&mat);
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_PROJECTION, &mat);
+}
 
-	D3DXMATRIX world(
-		Object_matrix.vec.rvec.xyz.x, Object_matrix.vec.rvec.xyz.y, Object_matrix.vec.rvec.xyz.z, 0,
-		Object_matrix.vec.uvec.xyz.x, Object_matrix.vec.uvec.xyz.y, Object_matrix.vec.uvec.xyz.z, 0,
-		Object_matrix.vec.fvec.xyz.x, Object_matrix.vec.fvec.xyz.y, Object_matrix.vec.fvec.xyz.z, 0,
-		Object_position.xyz.x, Object_position.xyz.y, Object_position.xyz.z, 1);
-	D3DXMatrixScaling(&scale, Model_Interp_scale_x, Model_Interp_scale_y, Model_Interp_scale_z);
-	D3DXMatrixMultiply(&mat, &scale, &world);
-	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, &mat);
+void gr_d3d_end_proj_matrix(){
+//	proj_matrix_stack->Pop();
+}
 
-	D3DXMATRIX view(
-		Eye_matrix.vec.rvec.xyz.x, Eye_matrix.vec.rvec.xyz.y, Eye_matrix.vec.rvec.xyz.z, 0,
-		Eye_matrix.vec.uvec.xyz.x, Eye_matrix.vec.uvec.xyz.y, Eye_matrix.vec.uvec.xyz.z, 0,
-		Eye_matrix.vec.fvec.xyz.x, Eye_matrix.vec.fvec.xyz.y, Eye_matrix.vec.fvec.xyz.z, 0,
-		Eye_position.xyz.x, Eye_position.xyz.y, Eye_position.xyz.z, 1);
+	//the view matrix
+void gr_d3d_set_view_matrix(vector* offset, matrix *orient){
 
+//	view_matrix_stack->Push();
+
+	D3DXMATRIX mat, scale_m;
+
+	D3DXMATRIX MAT(
+		orient->vec.rvec.xyz.x, orient->vec.rvec.xyz.y, orient->vec.rvec.xyz.z, 0,
+		orient->vec.uvec.xyz.x, orient->vec.uvec.xyz.y, orient->vec.uvec.xyz.z, 0,
+		orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, orient->vec.fvec.xyz.z, 0,
+		offset->xyz.x, offset->xyz.y, offset->xyz.z, 1);
 
 	D3DXMatrixIdentity(&mat);
-	D3DXMatrixInverse(&mat, NULL, &view);
+	D3DXMatrixInverse(&mat, NULL, &MAT);
+//	view_matrix_stack->LoadMatrix(&mat);
+//	D3DXMatrixScaling(&scale_m, 3.0f, 3.0f, 3.0f);
+//	D3DXMatrixMultiply(&mat, &scale_m, &mat);
+
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_VIEW, &mat);
+
+
+}
+
+void gr_d3d_end_view_matrix(){
+//	view_matrix_stack->Pop();
+//	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_VIEW, view_matrix_stack->GetTop());
+}
+
+	//object position and orientation
+void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
+
+	world_matrix_stack->Push();
+
+	D3DXMATRIX world(
+		orient->vec.rvec.xyz.x, orient->vec.rvec.xyz.y, orient->vec.rvec.xyz.z, 0,
+		orient->vec.uvec.xyz.x, orient->vec.uvec.xyz.y, orient->vec.uvec.xyz.z, 0,
+		orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, orient->vec.fvec.xyz.z, 0,
+		offset->xyz.x, offset->xyz.y, offset->xyz.z, 1);
+
+	world_matrix_stack->LoadMatrix(&world);
+	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
+}
+
+void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient){
+
+	D3DXMATRIX current = *world_matrix_stack->GetTop();
+	world_matrix_stack->Push();
+
+	D3DXMATRIX mat;
+	D3DXMatrixRotationYawPitchRoll(&mat,orient->h,orient->p,orient->b);
+	D3DXMATRIX world(
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		offset->xyz.x, offset->xyz.y, offset->xyz.z, 1);
+	D3DXMatrixMultiply(&mat, &mat, &world);
+	D3DXMatrixMultiply(&mat, &mat, &current);
+
+	world_matrix_stack->LoadMatrix(&mat);
+	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
 
 }
 
 void gr_d3d_end_instance_matrix()
 {
-	if(the_lights_are_on){
-		d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
-		the_lights_are_on = false;
-	}
+	world_matrix_stack->Pop();
+	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
 
-	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
-	d3d_SetTexture(1, NULL);
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-	d3d_set_initial_render_state();
 }
+
+
+	//object scaleing
+void gr_d3d_set_scale_matrix(vector* scale){
+
+	D3DXMATRIX mat = *world_matrix_stack->GetTop(), scale_m;
+	world_matrix_stack->Push();
+
+	D3DXMatrixScaling(&scale_m, scale->xyz.x, scale->xyz.y, scale->xyz.z);
+	D3DXMatrixMultiply(&mat, &scale_m, &mat);
+
+	world_matrix_stack->LoadMatrix(&mat);
+	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, &mat);
+
+}
+
+void gr_d3d_end_scale_matrix()
+{
+	world_matrix_stack->Pop();
+	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
+
+}
+
+
+
 
 /**
  * Turns on clip plane clip plane

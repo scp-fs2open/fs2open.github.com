@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.87 $
- * $Date: 2003-10-25 06:56:06 $
+ * $Revision: 2.88 $
+ * $Date: 2003-11-01 21:59:22 $
  * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2003/10/25 06:56:06  bobboau
+ * adding FOF stuff,
+ * and fixed a small error in the matrix code,
+ * I told you it was indeed suposed to be gr_start_instance_matrix
+ * in g3_done_instance,
+ * g3_start_instance_angles needs to have an gr_ API abstraction version of it made
+ *
  * Revision 2.86  2003/10/23 18:03:25  randomtiger
  * Bobs changes (take 2)
  *
@@ -1116,6 +1123,7 @@
 #include "missionui/missionshipchoice.h"
 #include "hud/hudartillery.h"
 #include "species_defs/species_defs.h"
+#include "debugconsole/timerbar.h"
 
 #include "weapon/flak.h"								//phreak addded 11/05/02 for flak primaries
 
@@ -5369,7 +5377,9 @@ void ship_process_post(object * obj, float frametime)
 		// Goober5000 - player may want to use AI
 		if ( (Ships[num].ai_index >= 0) && (!(obj->flags & OF_PLAYER_SHIP) || Player_use_ai) ){
 			if (!physics_paused && !ai_paused){
+				TIMERBAR_PUSH(5);
 				ai_process( obj, Ships[num].ai_index, frametime );
+				TIMERBAR_POP();
 			}
 		}
 	}			
