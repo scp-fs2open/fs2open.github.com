@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-11-27 10:42:18 $
+ * $Revision: 2.24 $
+ * $Date: 2005-02-05 00:30:49 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/11/27 10:42:18  taylor
+ * this should get movies working again in D3D and help OGL too
+ *
  * Revision 2.22  2004/07/26 20:47:26  Kazan
  * remove MCD complete
  *
@@ -30,10 +33,13 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <windows.h>
-
-#include "movie.h"
 #include "directx/dx8show.h"
+#include "graphics/grd3dinternal.h"
+#endif
+
+#include "cutscene/movie.h"
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"	
 #include "debugconsole/dbugfile.h" 
@@ -45,19 +51,19 @@
 
 // This module links freespace movie calls to the actual API calls the play the movie.
 // This module handles all the different requires of OS and gfx API and finding the file to play
-#ifdef _WIN32
 
 void process_messages()
 {
+#ifdef _WIN32
 	MSG msg;
    	while(PeekMessage(&msg, (HWND) os_get_window(), 0, 0, PM_REMOVE))
    	{
    		TranslateMessage(&msg);
    		DispatchMessage(&msg);
    	}
+#endif
 }
 
-#include "graphics/grd3dinternal.h"
 
 // filename		- file to search for
 // out_name		- output, full path to file
@@ -129,6 +135,7 @@ bool movie_play(char *name)
 		DBUGFILE_OUTPUT_1("About to play: %s", full_name);
 	}
 
+#ifdef _WIN32
 	process_messages();
 
 	// This is a bit of a hack but it works nicely
@@ -230,6 +237,9 @@ bool movie_play(char *name)
 	if (gr_screen.mode == GR_DIRECT3D) {
 	 	GlobalD3DVars::D3D_activate = 1;
 	}
+#else
+	STUB_FUNCTION;
+#endif
 
 	return true;
 }
@@ -242,12 +252,3 @@ bool movie_play_two(char *name1, char *name2)
 
 	return result1 && result2;
 }
-
-#else
-
-// Stubs, preprocessor calls were making the win32 code more complex for no good reason.
-// Using stubs instead.
-bool movie_play(char *name) {return true;}
-bool movie_play_two(char *name1, char *name2) {return true;}
-
-#endif

@@ -1,12 +1,16 @@
 /*
  * $Logfile: $
- * $Revision: 1.2 $
- * $Date: 2004-07-26 17:39:19 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2005-02-05 00:30:49 $
+ * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/07/26 17:39:19  Goober5000
+ * more #ifndef fixorage
+ * --Goober5000
+ *
  * Revision 1.1  2004/05/24 07:00:46  taylor
  * The Great Linux Merge
  *
@@ -1300,6 +1304,18 @@ void audiostream_unpause(int i)
 void audiostream_unpause_all()
 {
 	STUB_FUNCTION;
+}
+
+void audiostream_set_sample_cutoff(int i, uint cutoff)
+{
+//	STUB_FUNCTION;
+}
+
+uint audiostream_get_samples_committed(int i)
+{
+//	STUB_FUNCTION;
+
+	return 0;
 }
 
 #endif		// Goober5000 - #ifndef WIN32
