@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.111 $
- * $Date: 2005-03-22 00:36:48 $
+ * $Revision: 2.112 $
+ * $Date: 2005-03-24 23:42:20 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2005/03/22 00:36:48  taylor
+ * fix version check for drivers that support OpenGL 2.0+
+ *
  * Revision 2.110  2005/03/20 18:05:04  phreak
  * lol forgot to commit the function pointer stuff
  *
@@ -788,8 +791,6 @@ static HDC dev_context = NULL;
 static HGLRC rend_context = NULL;
 static PIXELFORMATDESCRIPTOR pfd;
 #endif
-
-static const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
 
 int VBO_ENABLED = 0;
 
@@ -3472,6 +3473,12 @@ void gr_opengl_setup_background_fog(bool set)
 
 }
 
+void gr_opengl_draw_line_list(colored_vector *lines, int num)
+{
+	if (Cmdline_nohtl)
+		return;
+}
+
 void gr_opengl_close()
 {
 	if (currently_enabled_lights != NULL) {
@@ -3624,15 +3631,18 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_setup_background_fog = gr_opengl_setup_background_fog;
 //	gr_screen.gf_set_environment_mapping = gr_opengl_render_to_env;;
 
-	gr_screen.gf_make_render_target = gr_ogl_make_render_target;
-	gr_screen.gf_set_render_target = gr_ogl_set_render_target;
+	gr_screen.gf_make_render_target = gr_opengl_make_render_target;
+	gr_screen.gf_set_render_target = gr_opengl_set_render_target;
 
 	gr_screen.gf_start_state_block = gr_opengl_start_state_block;
 	gr_screen.gf_end_state_block = gr_opengl_end_state_block;
 	gr_screen.gf_set_state_block = gr_opengl_set_state_block;
 
+	gr_screen.gf_draw_line_list = gr_opengl_draw_line_list;
+
 	gr_screen.gf_draw_htl_line = gr_opengl_draw_htl_line;
 	gr_screen.gf_draw_htl_sphere = gr_opengl_draw_htl_sphere;
+
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 	// *****************************************************************************

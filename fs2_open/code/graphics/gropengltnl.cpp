@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.19 $
- * $Date: 2005-03-20 00:09:07 $
- * $Author: phreak $
+ * $Revision: 1.20 $
+ * $Date: 2005-03-24 23:42:21 $
+ * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/03/20 00:09:07  phreak
+ * Added gr_draw_htl_line and gr_draw_htl sphere
+ * There still needs to be D3D versions implemented, but OGL is done.
+ * Follow that or ask phreak about how its implemented/
+ *
  * Revision 1.18  2005/03/19 21:03:54  wmcoolmon
  * OpenGL display lists
  *
@@ -176,8 +181,8 @@ int opengl_check_for_errors()
 {
 	int error = 0;
 
-	if ((error=glGetError()) != GL_NO_ERROR) {
-		mprintf(("!!ERROR!!: %s\n", gluErrorString(error)));
+	if ( (error = glGetError()) != GL_NO_ERROR ) {
+		nprintf(("OpenGL", "!!ERROR!!: %s\n", gluErrorString(error)));
 		return 1;
 	}
 
@@ -858,9 +863,12 @@ void gr_opengl_set_state_block(int handle)
 
 void gr_opengl_draw_htl_line(vector *start, vector* end)
 {
-	if (Cmdline_nohtl) return;
+	if (Cmdline_nohtl)
+		return;
+
 	glBegin(GL_LINES);
 		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+		glSecondaryColor3ubvEXT(GL_zero_3ub);
 		glVertex3fv(start->a1d);
 		glVertex3fv(end->a1d);
 	glEnd();
@@ -868,6 +876,35 @@ void gr_opengl_draw_htl_line(vector *start, vector* end)
 
 void gr_opengl_draw_htl_sphere(float rad)
 {
-	glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-	auxSolidSphere(rad);
+	if (Cmdline_nohtl)
+		return;
+
+	GLUquadricObj *quad = NULL;
+
+	// FIXME: before this is used in anything other than FRED2 we need to make this creation/deletion 
+	// stuff global so that it's not so slow (it can be reused for multiple quadratic objects)
+	quad = gluNewQuadric();
+
+	Assert(quad != NULL);
+
+	if (quad == NULL)
+		return;
+
+ 	glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+
+	// FIXME: opengl_check_for_errors() needs to be modified to work with this at
+	// some point but for now I just don't care so it does nothing
+	gluQuadricCallback( quad, GLU_ERROR, NULL );
+
+	// FIXME: maybe support fill/wireframe with a future flag?
+	gluQuadricDrawStyle( quad, GLU_FILL );
+
+	// assuming unlit spheres, otherwise use GLU_SMOOTH so that it looks better
+	gluQuadricNormals( quad, GLU_NONE );
+
+	// we could set the slices/stacks at some point in the future but just use 16 now since it looks ok
+	gluSphere( quad, (GLdouble)rad, 16, 16 );
+
+	// FIXME: I just heard this scream "Globalize Me!!".  It was really scary.  I even cried.
+	gluDeleteQuadric( quad );
 }
