@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:08 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-04 05:13:00 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/22 01:22:26  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -2212,20 +2215,10 @@ void std_build_title_string(char *str)
 	memset(temp, 0, 256);
 
 	sprintf(part1, "%s %d.", XSTR("Freespace Standalone",935), FS_VERSION_MAJOR);
-	if(FS_VERSION_MINOR < 10){
-		strcpy(cat, "0");
-		strcat(cat, itoa(FS_VERSION_MINOR, temp, 10));
-	} else {
-		sprintf(cat, "%d", FS_VERSION_MINOR);
-	}
+	sprintf(cat, "%d", FS_VERSION_MINOR);
 	strcat(part1, cat);
 	strcat(part1, ".");
-	if(FS_VERSION_BUILD < 10){
-		strcpy(cat, "0");
-		strcat(cat, itoa(FS_VERSION_BUILD, temp, 10));
-	} else {
-		sprintf(cat, "%d", FS_VERSION_BUILD);
-	}
+	sprintf(cat, "%d", FS_VERSION_BUILD);
 	strcat(part1, cat);	
 
 	// first part
