@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.10 2005-03-30 16:05:42 taylor Exp $
+## $Id: Makefile.am,v 1.11 2005-04-01 07:33:07 taylor Exp $
 
 noinst_LIBRARIES = libcode.a
 noinst_PROGRAMS = @FS2_BINARY@
@@ -273,6 +273,7 @@ SOUND_SOURCES =	\
 	object/objectsnd.cpp	\
 	sound/ogg/ogg.cpp	\
 	sound/ds.cpp	\
+	sound/ds3d.cpp	\
 	sound/midifile.cpp	\
 	sound/rbaudio.cpp	\
 	sound/rtvoice.cpp	\
@@ -286,7 +287,6 @@ SOUND_SOURCES =	\
 if FS2_OS_WIN32
 SOUND_SOURCES +=	\
 	sound/dscap.cpp	\
-	sound/ds3d.cpp	\
 	sound/audiostr.cpp	\
 	sound/acm.cpp
 endif

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.11 $
- * $Date: 2005-03-28 00:40:09 $
+ * $Revision: 2.12 $
+ * $Date: 2005-04-01 07:33:08 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/28 00:40:09  taylor
+ * fix to snd_time_remaining() to make sure we are getting the correct index into Sounds[]
+ *
  * Revision 2.10  2005/02/02 10:36:23  taylor
  * merge with Linux/OSX tree - p0202
  *
@@ -142,10 +145,20 @@
 #ifndef __DS_H__
 #define __DS_H__
 
-#ifdef _WIN32
+#ifndef USE_OPENAL
 #include <windows.h>
 #include "directx/vdsound.h"
-#endif
+#else
+#ifndef __APPLE__
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <AL/alut.h>
+#else
+#include "al.h"
+#include "alc.h"
+#include "alut.h"
+#endif // !__APPLE__
+#endif // USE_OPENAL
 
 #include "sound/ogg/ogg.h"
 #include "globalincs/pstypes.h"
@@ -181,6 +194,42 @@ typedef struct sound_info {
 	int	duration;	// time in ms for duration of sound
 	ubyte	*data;
 } sound_info;
+
+
+#ifdef USE_OPENAL
+typedef struct channel
+{ 
+	int	sig;			// uniquely identifies the sound playing on the channel
+	int	snd_id;			// identifies which kind of sound is playing
+	ALuint	source_id;	// OpenAL source id
+	int	buf_id;			// currently bound buffer index (-1 if none)
+	int	looping;		// flag to indicate that the sound is looping
+	int	vol;
+	int	priority;		// implementation dependant priority
+	bool	is_voice_msg;
+	uint	last_position;
+} channel;           
+
+extern channel *Channels;
+
+/*
+#ifndef NDEBUG
+#define OpenAL_ErrorCheck()	do {		\
+	int i = alGetError();			\
+	if (i != AL_NO_ERROR) {			\
+		while(i != AL_NO_ERROR) {	\
+			nprintf(("Warning", "%s/%s:%d - OpenAL error %s\n", __FUNCTION__, __FILE__, __LINE__, alGetString(i))); \
+			i = alGetError();	\
+		}				\
+		return -1;			\
+	} 					\
+} while (0);
+#else
+#define OpenAL_ErrorCheck()
+#endif
+*/
+#endif // USE_OPENAL
+
 
 extern int							ds_initialized;
 #ifdef _WIN32

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds3d.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-03-27 06:14:30 $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-01 07:33:08 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/03/27 06:14:30  taylor
+ * update for streaming support and platform independance
+ *
  * Revision 2.5  2004/07/26 20:47:52  Kazan
  * remove MCD complete
  *
@@ -114,20 +117,32 @@
  * $NoKeywords: $
  */
 
-#ifndef USE_OPENAL	// to end of file...
-
 #include "globalincs/pstypes.h"
+
+#ifndef USE_OPENAL
 #include <windows.h>
 #include "directx/vdsound.h"
+#include "sound/channel.h"
+#else
+#ifndef __APPLE__
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <AL/alut.h>
+#else
+#include "al.h"
+#include "alc.h"
+#include "alut.h"
+#endif // !__APPLE__
+#endif // USE_OPENAL
 
 #include "sound/ds3d.h"
 #include "sound/ds.h"
-#include "sound/channel.h"
 #include "sound/sound.h"
 #include "object/object.h"
 
 
 
+#ifndef USE_OPENAL
 typedef enum 
 {
 	DSPROPERTY_VMANAGER_MODE = 0,
@@ -156,11 +171,27 @@ typedef enum
 
 extern LPDIRECTSOUND pDirectSound;
 
-int DS3D_inited = FALSE;
-
 LPDIRECTSOUND3DLISTENER	pDS3D_listener = NULL;
 
 GUID DSPROPSETID_VoiceManager_Def = {0x62a69bae, 0xdf9d, 0x11d1, {0x99, 0xa6, 0x0, 0xc0, 0x4f, 0xc9, 0x9d, 0x46}};
+#else
+
+#define OpenAL_ErrorCheck()	do {		\
+	int i = alGetError();			\
+	if (i != AL_NO_ERROR) {			\
+		while(i != AL_NO_ERROR) {	\
+			nprintf(("Warning", "%s/%s:%d - OpenAL error %s\n", __FUNCTION__, __FILE__, __LINE__, alGetString(i))); \
+			i = alGetError();	\
+		}				\
+		return -1;			\
+	} 					\
+} while (0);
+
+#endif	// !USE_OPENAL
+
+
+int DS3D_inited = FALSE;
+
 
 // ---------------------------------------------------------------------------------------
 // ds3d_update_buffer()
@@ -177,15 +208,62 @@ GUID DSPROPSETID_VoiceManager_Def = {0x62a69bae, 0xdf9d, 0x11d1, {0x99, 0xa6, 0x
 //
 int ds3d_update_buffer(int channel, float min, float max, vector *pos, vector *vel)
 {
-	HRESULT						hr;
-	LPDIRECTSOUND3DBUFFER	pds3db;
-	float							max_dist, min_dist;
-
 	if (DS3D_inited == FALSE)
 		return 0;
 
 	if ( channel == -1 )
 		return 0;
+
+#ifdef USE_OPENAL
+	// as used by DS3D
+//	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+/*
+	// set the min distance
+	alSourcef(Channels[channel].source_id, AL_REFERENCE_DISTANCE, min);
+
+	OpenAL_ErrorCheck();
+
+	// set the max distance
+//	alSourcef(Channels[channel].source_id, AL_MAX_DISTANCE, max);
+	alSourcef(Channels[channel].source_id, AL_MAX_DISTANCE, 40000.0f);
+	
+	OpenAL_ErrorCheck();
+
+	// set rolloff factor
+	alSourcef(Channels[channel].source_id, AL_ROLLOFF_FACTOR, 1.0f);
+	
+	OpenAL_ErrorCheck();
+	
+	// set doppler
+	alDopplerVelocity(10000.0f);
+	alDopplerFactor(0.0f);  // TODO: figure out why using a value of 1 sounds bad
+
+	// set the buffer position
+	if ( pos != NULL ) {
+		ALfloat alpos[] = { pos->xyz.x, pos->xyz.y, pos->xyz.z };
+		alSourcefv(Channels[channel].source_id, AL_POSITION, alpos);
+		
+		OpenAL_ErrorCheck();
+	}
+
+	// set the buffer velocity
+	if ( vel != NULL ) {
+		ALfloat alvel[] = { vel->xyz.x, vel->xyz.y, vel->xyz.z };
+		alSourcefv(Channels[channel].source_id, AL_VELOCITY, alvel);
+
+		OpenAL_ErrorCheck();
+	} else {
+		ALfloat alvel[] = { 0.0f, 0.0f, 0.0f };
+		alSourcefv(Channels[channel].source_id, AL_VELOCITY, alvel);
+
+		OpenAL_ErrorCheck();
+	}
+*/
+#else
+
+	HRESULT						hr;
+	LPDIRECTSOUND3DBUFFER	pds3db;
+	float							max_dist, min_dist;
 
 	pds3db = Channels[channel].pds3db;
 	Assert( pds3db != NULL);
@@ -210,6 +288,7 @@ int ds3d_update_buffer(int channel, float min, float max, vector *pos, vector *v
 	hr = pds3db->GetMaxDistance(&max_dist);
 //	hr = pds3db->SetMaxDistance( max, DS3D_DEFERRED );
 	hr = pds3db->SetMaxDistance( 100000.0f, DS3D_DEFERRED );
+#endif
 
 	return 0;
 }
@@ -223,10 +302,37 @@ int ds3d_update_buffer(int channel, float min, float max, vector *pos, vector *v
 //
 int ds3d_update_listener(vector *pos, vector *vel, matrix *orient)
 {
-	HRESULT			hr;
-
 	if (DS3D_inited == FALSE)
 		return 0;
+
+#ifdef USE_OPENAL
+/*	// set the listener position
+	if ( pos != NULL ) {
+		alListener3f(AL_POSITION, pos->xyz.x, pos->xyz.y, pos->xyz.z);
+
+		OpenAL_ErrorCheck();
+	}
+
+	// set the listener velocity
+	if ( vel != NULL ) {
+		alListener3f(AL_VELOCITY, vel->xyz.x, vel->xyz.y, vel->xyz.z);
+
+		OpenAL_ErrorCheck();
+	}
+
+	// set the listener orientation
+	if ( orient != NULL ) {
+		// uvec is up/top vector, fvec is at/front vector
+		ALfloat list_orien[] = { orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, (orient->vec.fvec.xyz.z * -1.0),
+									orient->vec.uvec.xyz.x, orient->vec.uvec.xyz.y, (orient->vec.uvec.xyz.z * -1.0) };
+		alListenerfv(AL_ORIENTATION, list_orien);
+
+		OpenAL_ErrorCheck();
+	}
+*/
+#else
+
+	HRESULT			hr;
 
 	if ( pDS3D_listener == NULL )
 		return -1;
@@ -262,6 +368,7 @@ int ds3d_update_listener(vector *pos, vector *vel, matrix *orient)
 		nprintf(("SOUND","Error in pDS3D_listener->CommitDeferredSettings(): %s\n", get_DSERR_text(hr) ));
 		return -1;
 	}
+#endif
 
 	return 0;
 }
@@ -275,6 +382,9 @@ int ds3d_update_listener(vector *pos, vector *vel, matrix *orient)
 //
 int ds3d_init_listener()
 {
+#ifdef USE_OPENAL
+	// this is already setup in ds_init()
+#else
 	HRESULT			hr;
 
 	if ( pDS3D_listener != NULL )
@@ -285,6 +395,7 @@ int ds3d_init_listener()
 		nprintf(("Sound","SOUND => Fatal error calling pPrimaryBuffer->QueryInterface(): %s\n", get_DSERR_text(hr) ));
 		return -1;
 	}
+#endif
 
 	return 0;		
 }
@@ -295,10 +406,12 @@ int ds3d_init_listener()
 //
 void ds3d_close_listener()
 {
+#ifndef USE_OPENAL
 	if ( pDS3D_listener != NULL ) {
 		pDS3D_listener->Release();
 		pDS3D_listener = NULL;
 	}
+#endif
 }
 
 
@@ -314,6 +427,7 @@ int ds3d_init(int voice_manager_required)
 	if ( DS3D_inited == TRUE )
 		return 0;
 
+#ifndef USE_OPENAL
 	if (voice_manager_required == 1) {
 		LPKSPROPERTYSET pset;
 		pset = (LPKSPROPERTYSET)ds_get_property_set_interface();
@@ -344,6 +458,7 @@ int ds3d_init(int voice_manager_required)
 			return -1;
 		}
 	}
+#endif
 
 	if (ds3d_init_listener() != 0) {
 		return -1;
@@ -367,5 +482,3 @@ void ds3d_close()
 	ds3d_close_listener();
 	DS3D_inited = FALSE;
 }
-
-#endif	// !USE_OPENAL
