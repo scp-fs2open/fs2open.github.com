@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.98 $
- * $Date: 2005-02-18 09:51:06 $
+ * $Revision: 2.99 $
+ * $Date: 2005-02-19 07:50:15 $
  * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2005/02/18 09:51:06  wmcoolmon
+ * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
+ *
  * Revision 2.97  2005/02/10 04:01:43  wmcoolmon
  * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
  *
@@ -1742,8 +1745,8 @@ void gr_opengl_gradient(int x1,int y1,int x2,int y2)
 {
 	int clipped = 0, swapped=0;
 
-	gr_resize_screen_pos(&x1, &y1);
-	gr_resize_screen_pos(&x2, &y2);
+	//gr_resize_screen_pos(&x1, &y1);
+	//gr_resize_screen_pos(&x2, &y2);
 
 	if ( !gr_screen.current_color.is_alphacolor )   {
 		gr_line( x1, y1, x2, y2 );
