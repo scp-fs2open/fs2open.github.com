@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.98 $
- * $Date: 2004-01-14 06:34:07 $
+ * $Revision: 2.99 $
+ * $Date: 2004-01-14 07:07:14 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2004/01/14 06:34:07  Goober5000
+ * made set-support-ship number align with general FS convention
+ * --Goober5000
+ *
  * Revision 2.97  2003/12/18 15:35:52  phreak
  * oops switched the signs in a comparison.  thats what was causing debug builds to go haywire
  *
@@ -2263,6 +2267,13 @@ strcpy(parse_error_text, temp_error);
 
 	required_string("$EngineSnd:");
 	stuff_int(&sip->engine_snd);
+	
+	// bah: ensure the sounds are in range
+	if (sip->engine_snd < -1 || sip->engine_snd >= MAX_GAME_SOUNDS)
+	{
+		Warning(LOCATION, "$EngineSnd sound index out of range on ship %s.  Must be between 0 and %d.  Forcing to -1.\n", sip->name, MAX_GAME_SOUNDS);
+		sip->engine_snd = -1;
+	}
 
 	required_string("$Closeup_pos:");
 	stuff_vector(&sip->closeup_pos);
@@ -12258,10 +12269,10 @@ int ship_fire_tertiary(object *objp)
 	Assert(twip);
 	Assert(sw);
 
-	if (sw->tertary_bank_weapon < 0)
+	if (sw->tertiary_bank_weapon < 0)
 		return 0;
 
-	twip=&Tertiary_weapon_info[sw->tertary_bank_weapon];
+	twip=&Tertiary_weapon_info[sw->tertiary_bank_weapon];
 
 	switch (twip->type)
 	{

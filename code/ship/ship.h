@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.54 $
- * $Date: 2003-12-16 20:55:13 $
- * $Author: phreak $
+ * $Revision: 2.55 $
+ * $Date: 2004-01-14 07:07:14 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2003/12/16 20:55:13  phreak
+ * disabled tertiary weapons support pending a rewrite of critical code
+ *
  * Revision 2.53  2003/11/11 02:15:41  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -571,7 +574,7 @@ typedef struct {
 
 	int primary_bank_weapons[MAX_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
 	int secondary_bank_weapons[MAX_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
-	int tertary_bank_weapon;							// Tertiary_Weapon_info[] index for the weapon in the bank
+	int tertiary_bank_weapon;							// Tertiary_Weapon_info[] index for the weapon in the bank
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
