@@ -7,8 +7,18 @@
  *
 */
 
-//header file containing definitions for HT&L lighting in OpenGL
 
+/*
+ * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
+ * $Revision: 2.2 $
+ * $Date: 2004-04-06 01:37:21 $
+ * $Author: phreak $
+ *
+ * header file containing definitions for HT&L lighting in OpenGL
+ *
+ *
+ * $NoKeywords: $
+ */
 
 #ifndef _GROPENGLLIGHT_H
 #define _GROPENGLLIGHT_H

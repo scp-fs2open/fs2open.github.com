@@ -1,5 +1,26 @@
-//This file contains function and structure definitions
-//that are needed for managing texture mapping
+/*
+ * Copyright (C) Volition, Inc. 1999.  All rights reserved.
+ *
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
+ * source.
+ *
+*/ 
+
+/*
+ * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
+ * $Revision: 2.2 $
+ * $Date: 2004-04-06 01:37:21 $
+ * $Author: phreak $
+ *
+ * This file contains function and structure definitions
+ * that are needed for managing texture mapping
+ *
+ *
+ * $NoKeywords: $
+ */
+
+
 
 #ifndef _GROPENGLTEXTURE_H
 #define _GROPENGLTEXTURE_H

@@ -1,3 +1,25 @@
+/*
+ * Copyright (C) Volition, Inc. 1999.  All rights reserved.
+ *
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
+ * source.
+ *
+*/
+
+
+/*
+ * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
+ * $Revision: 2.2 $
+ * $Date: 2004-04-06 01:37:21 $
+ * $Author: phreak $
+ *
+ * header file containing function definitions for HT&L rendering in OpenGL
+ *
+ *
+ * $NoKeywords: $
+ */
+
 #ifndef _GROPENGLTNL_H
 #define _GROPENGLTNL_H
 
