@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-11 02:15:46 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2003-12-16 21:01:14 $
+ * $Author: phreak $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/11 02:15:46  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.10  2003/09/13 08:27:28  Goober5000
  * added some minor things, such as code cleanup and the following:
  * --turrets will not fire at cargo
@@ -961,8 +966,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->forward = 1.0f;
 		}
 
-		if (Player_ship->boost_pod_engaged)
-			ci->forward = 1.0f;
+		/*if (Player_ship->boost_pod_engaged)
+			ci->forward = 1.0f;*/
 
 
 		if ( Player->flags & PLAYER_FLAGS_MATCH_TARGET ) {

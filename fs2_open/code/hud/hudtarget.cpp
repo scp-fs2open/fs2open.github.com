@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-09-13 06:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2003-12-16 21:06:21 $
+ * $Author: phreak $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.19  2003/09/09 05:51:14  Goober5000
  * if player has primitive sensors, hud will not display shield icons or message sender brackets
  * --Goober5000
@@ -5042,10 +5046,10 @@ void hud_show_secondary_weapon(int count, ship_weapon *sw, int dual_fire)
 		}
 
 		int ammo=sw->secondary_bank_ammo[i];
-		if ((Tertiary_weapon_info[Player_ship->tertiary_weapon_info_idx].type == TWT_AMMO_POD) && (i == Player_ship->ammopod_current_secondary))
+		/*if ((Tertiary_weapon_info[Player_ship->tertiary_weapon_info_idx].type == TWT_AMMO_POD) && (i == Player_ship->ammopod_current_secondary))
 		{
 			ammo+=Player_ship->ammopod_current_ammo;
-		}
+		}*/
 
 		// print out the ammo right justified
 		sprintf(ammo_str, "%d", ammo);
