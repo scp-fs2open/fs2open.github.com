@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.52 $
- * $Date: 2005-02-04 23:29:32 $
+ * $Revision: 2.53 $
+ * $Date: 2005-02-08 23:49:59 $
  * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/02/04 23:29:32  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
  * Revision 2.51  2005/01/28 11:57:36  Goober5000
  * fixed Bobboau's spelling of 'relative'
  * --Goober5000
@@ -1097,6 +1100,9 @@ void model_init();
 
 // call at the beginning of a level. after the level has been loaded
 void model_level_post_init();
+
+// call to unload a model (works like bm_unload()), "force" SHOULD NEVER BE SET outside of modelread.cpp!!!!
+void model_unload(int modelnum, int force = 0);
 
 // Call to free all existing models
 void model_free_all();

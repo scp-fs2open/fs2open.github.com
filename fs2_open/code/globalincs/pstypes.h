@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.22 $
- * $Date: 2005-02-04 10:12:29 $
+ * $Revision: 2.23 $
+ * $Date: 2005-02-08 23:49:58 $
  * $Author: taylor $
- * $Revision: 2.22 $
- * $Date: 2005-02-04 10:12:29 $
+ * $Revision: 2.23 $
+ * $Date: 2005-02-08 23:49:58 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/02/04 10:12:29  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.21  2004/12/15 15:14:03  Goober5000
  * added Verify, an error checking macro that works in both release and debug modes
  * --Goober5000
@@ -345,7 +348,8 @@
 // 4702 unreachable code.  I care, but too many to deal with
 // 4201 nonstandard extension used : nameless struct/union (happens a lot in Windows include headers)
 // 4390 emptry control statement (triggered by nprintf and mprintf's inside of one-line if's, etc)
-#pragma warning(disable: 4127 4100 4514 4201 4410 4611 4725 4710 4711 4702 4201 4390)
+// 4996 depreciated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
+#pragma warning(disable: 4127 4100 4514 4201 4410 4611 4725 4710 4711 4702 4201 4390 4996)
 
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>

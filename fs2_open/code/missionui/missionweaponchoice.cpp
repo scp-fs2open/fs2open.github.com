@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-02-02 15:09:06 $
+ * $Revision: 2.34 $
+ * $Date: 2005-02-08 23:49:59 $
  * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/02/02 15:09:06  taylor
+ * only model_load() if we using a ship other than the current one
+ *
  * Revision 2.32  2005/01/31 23:27:54  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -844,6 +847,7 @@ static int Wl_ship_name_coords[GR_NUM_RESOLUTIONS][2] = {
 typedef struct wl_ship_class_info
 {
 	int				overhead_bitmap;
+	int				model_num;
 	anim			*wl_anim;
 	anim_instance	*wl_anim_instance;
 } wl_ship_class_info;
@@ -1273,7 +1277,6 @@ void wl_render_overhead_view(float frametime)
 {
 	//For 3d ships
 	static float WeapSelectScreenShipRot = 0.0f;
-	static int WeapSelectModelNum = -1;
 
 	if ( Selected_wl_slot == -1 ) {
 		return;
@@ -1290,7 +1293,6 @@ void wl_render_overhead_view(float frametime)
 			gamesnd_play_iface(SND_ICON_DROP);
 		}
 		Last_wl_ship_class = ship_class;
-		WeapSelectModelNum = -1;
 	}
 
 	wl_ship = &Wl_ships[ship_class];
@@ -1303,20 +1305,19 @@ void wl_render_overhead_view(float frametime)
 		if (ship_class < 0)
 		{
 			mprintf(("No ship class passed for render_overhead_view"));
-			WeapSelectModelNum = -1;
 			return;
 		}
 		
 		// Load the necessary model file, if necessary
-		if(WeapSelectModelNum < 0)
+		if (wl_ship->model_num < 0)
 		{
-			WeapSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 			
 			// page in ship textures properly (takes care of nondimming pixels)
-			model_page_in_textures(WeapSelectModelNum, ship_class);
+			model_page_in_textures(wl_ship->model_num, ship_class);
 		}
 		
-		if (WeapSelectModelNum < 0)
+		if (wl_ship->model_num < 0)
 		{
 			mprintf(("Couldn't load model file in missionweaponchoice.cpp - tell WMCoolmon"));
 		}
@@ -1378,8 +1379,8 @@ void wl_render_overhead_view(float frametime)
 			light_rotate_all();
 			// lighting for techroom
 
-			model_clear_instance(WeapSelectModelNum);
-			model_render(WeapSelectModelNum, &object_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1);
+			model_clear_instance(wl_ship->model_num);
+			model_render(wl_ship->model_num, &object_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1);
 
 			//NOW render the lines for weapons
 			gr_reset_clip();
@@ -1387,7 +1388,7 @@ void wl_render_overhead_view(float frametime)
 			vector subobj_pos;
 			int x, y;
 			int xc, yc;
-			polymodel *pm = model_get(WeapSelectModelNum);
+			polymodel *pm = model_get(wl_ship->model_num);
 			int num_found = 2;
 
 			//Render selected primary lines
@@ -1882,6 +1883,7 @@ void wl_init_ship_class_data()
 	for ( i=0; i<MAX_SHIP_TYPES; i++ ) {
 		wl_ship = &Wl_ships[i];
 		wl_ship->overhead_bitmap = -1;
+		wl_ship->model_num = -1;
 		wl_ship->wl_anim = NULL;
 		wl_ship->wl_anim_instance = NULL;
 	}
@@ -1901,10 +1903,18 @@ void wl_free_ship_class_data()
 			wl_ship->overhead_bitmap = -1;
 		}
 
+		if ( wl_ship->model_num != -1 ) {
+			// this should unload the model from memory only if it's not used in the mission
+			model_unload(wl_ship->model_num);
+			wl_ship->model_num = -1;
+		}
+
+		// this should actually be freed by wl_unload_all_anims()
 		if ( wl_ship->wl_anim != NULL ) {
 			wl_ship->wl_anim = NULL;
 		}
 
+		// this should actually be freed by wl_unload_all_anim_instances()
 		if ( wl_ship->wl_anim_instance != NULL ) {
 			wl_ship->wl_anim_instance = NULL;
 		}
@@ -3425,18 +3435,20 @@ void weapon_select_close()
 	// unload bitmaps
 	help_overlay_unload(WL_OVERLAY);
 
-	bm_unload(WeaponSelectMaskBitmap);
+	bm_release(WeaponSelectMaskBitmap);
 
 	wl_unload_icons();
 	wl_unload_all_anim_instances();
 	wl_unload_all_anims();
+	// ...must be last...
+	wl_free_ship_class_data();
 
 	Selected_wl_class = -1;
 	Weapon_select_open = 0;
 
 	if(Weapon_slot_bitmap != -1)
 	{
-		bm_unload(Weapon_slot_bitmap);
+		bm_release(Weapon_slot_bitmap);
 	}
 }
 
