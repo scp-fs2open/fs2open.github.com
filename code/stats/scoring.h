@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-01-27 00:51:08 $
+ * $Author: DTP $
  *
  * Scoring system structures, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -246,7 +249,8 @@ typedef struct scoring_struct {
 	int rank;								// all time rank
 	int medals[NUM_MEDALS];				// all time medal counts
 
-	ushort kills[MAX_SHIP_TYPES];		// only valid kills (i.e. not on friendlies).
+	//ushort kills[MAX_SHIP_TYPES];		// only valid kills (i.e. not on friendlies).
+	int kills[MAX_SHIP_TYPES];		//DTP for bumped max_ships
 	int assists;							// alltime assists
 	int kill_count;						// total alltime kills
 	int kill_count_ok;					// total valid alltime kills (no friendlies)
@@ -271,8 +275,10 @@ typedef struct scoring_struct {
 	int m_promotion_earned;				// was a promotion earned.  Calculated after mission is over
 
 	int m_score;
-	ushort m_kills[MAX_SHIP_TYPES];     // this will represent all kills in the mission (bonehead or not)
-	ushort m_okKills[MAX_SHIP_TYPES];   // this will be only the "valid" kills the player made
+	//ushort m_kills[MAX_SHIP_TYPES];     // this will represent all kills in the mission (bonehead or not)
+	int m_kills[MAX_SHIP_TYPES];		//DTP max
+	//ushort m_okKills[MAX_SHIP_TYPES];   // this will be only the "valid" kills the player made
+	int m_okKills[MAX_SHIP_TYPES];			//DTP max
 	int m_kill_count;						// total kills for this mission
 	int m_kill_count_ok;             // total (non-friendly) kills for this mission
 	int m_assists;							// player assits for the mission
@@ -286,7 +292,9 @@ typedef struct scoring_struct {
 	int m_player_deaths;					// player deaths for the mission (really only useful for multiplayer)
 
 	// kills by player for multiplayer dogfight
-	ushort m_dogfight_kills[MAX_PLAYERS];
+	//ushort m_dogfight_kills[MAX_PLAYERS];
+	int m_dogfight_kills[MAX_PLAYERS];//DTP max
+
 } scoring_struct;
 
 extern rank_stuff Ranks[NUM_RANKS];
