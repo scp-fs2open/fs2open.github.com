@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.2 $
- * $Date: 2004-07-01 01:12:31 $
- * $Author: bobboau $
+ * $Revision: 1.3 $
+ * $Date: 2004-07-17 18:43:46 $
+ * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/07/01 01:12:31  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 1.1  2004/05/24 07:25:32  taylor
  * filename case change
  *
@@ -53,7 +57,9 @@ typedef struct tcache_slot_opengl {
 	ubyte bpp;
 
 	// sections
+#ifdef GL_SECTIONS
 	tcache_slot_opengl	*data_sections[MAX_BMAP_SECTIONS_X][MAX_BMAP_SECTIONS_Y];
+#endif
 	tcache_slot_opengl	*parent;
 } tcache_slot_opengl;
 

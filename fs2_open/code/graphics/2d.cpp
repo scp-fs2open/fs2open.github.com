@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-07-12 16:32:48 $
- * $Author: Kazan $
+ * $Revision: 2.27 $
+ * $Date: 2004-07-17 18:43:46 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/07/12 16:32:48  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.25  2004/07/11 03:22:48  bobboau
  * added the working decal code
  *
@@ -736,6 +739,8 @@ void gr_close()
 
 	palette_flush();
 
+	openil_close();
+
 	switch( gr_screen.mode )	{
 #ifdef _WIN32
 	case GR_DIRECT3D:		
@@ -1301,8 +1306,10 @@ int gr_get_cursor_bitmap()
 // new bitmap functions
 void gr_bitmap(int x, int y, bool allow_scaling)
 {
+#ifdef GL_SECTIONS
 	int section_x, section_y;	
 	int x_line, y_line;
+#endif
 	int w, h;
 
 	if(gr_screen.mode == GR_DIRECT3D){
@@ -1323,6 +1330,22 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_BITMAP_SECTION);
 	}
 	else if((gr_screen.mode == GR_OPENGL)) {
+#ifndef GL_SECTIONS
+		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL, NULL);
+
+		// get the section as a texture in vram					
+		gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
+
+		// I will tidy this up later - RT
+		if(allow_scaling)
+		{
+			gr_resize_screen_pos(&x, &y);
+			gr_resize_screen_pos(&w, &h);
+		}
+
+		// RT draws all hall interface stuff
+		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_BITMAP_SECTION);
+#else
 		int idx, s_idx;
 		// float u_scale, v_scale;
 		bitmap_section_info *sections;			
@@ -1361,6 +1384,7 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 			}
 			y_line += section_y;
 		}
+#endif
 	}
 }
 
