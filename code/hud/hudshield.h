@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.h $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-05-27 00:49:26 $
+ * $Author: wmcoolmon $
  *
  * Header file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -92,7 +96,8 @@ struct player;
 struct object;
 struct ship_info;
 
-void hud_shield_game_init();
+//Not needed, info is taken from ships.tbl. Dunno why Volition did it this way in the first place.
+//void hud_shield_game_init();
 void hud_shield_level_init();
 void hud_shield_show(object *objp);
 void hud_shield_equalize(object *objp, player *pl);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-05-25 00:37:49 $
+ * $Revision: 2.13 $
+ * $Date: 2004-05-27 00:49:26 $
  * $Author: wmcoolmon $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/05/25 00:37:49  wmcoolmon
+ * Updated function calls for VC7 use
+ *
  * Revision 2.11  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -327,7 +330,7 @@ static shield_hit_info	Shield_hit_data[2];
 // translate between clockwise-from-top shield quadrant ordering to way quadrants are numbered in the game
 ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS] = {1,0,2,3};
 
-void hud_shield_game_init()
+/*void hud_shield_game_init()
 {
 	char name[MAX_FILENAME_LEN+1] = "";
 
@@ -348,7 +351,7 @@ void hud_shield_game_init()
 			strcpy(Hud_shield_filenames[Hud_shield_filename_count++], name);
 		}
 	}
-}
+}*/
 
 // called at the start of each level from HUD_init.  Use Hud_shield_init so we only init Shield_gauges[] once.
 void hud_shield_level_init()
@@ -684,8 +687,16 @@ void hud_shield_assign_info(ship_info *sip, char *filename)
 	for ( i = 0; i < Hud_shield_filename_count; i++ ) {
 		if ( !stricmp(filename, Hud_shield_filenames[i]) ) {
 			sip->shield_icon_index = i;
+			return;
 		}
-	}		
+	}
+
+	//No HUD icon found. Add one!
+	Assert(Hud_shield_filename_count < MAX_SHIELD_ICONS);
+	if(Hud_shield_filename_count < MAX_SHIELD_ICONS){
+		sip->shield_icon_index = Hud_shield_filename_count;
+		strcpy(Hud_shield_filenames[Hud_shield_filename_count++], filename);
+	}
 }
 
 void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
