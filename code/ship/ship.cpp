@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.168 $
- * $Date: 2005-03-03 07:13:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.169 $
+ * $Date: 2005-03-08 02:31:51 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.168  2005/03/03 07:13:17  wmcoolmon
+ * Made HUD shield icon auto-generation off unless "generate icon" ship flag is specified for the ship.
+ *
  * Revision 2.167  2005/03/03 06:05:31  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -3008,7 +3011,9 @@ strcpy(parse_error_text, temp_error);
 						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.z);
 					}else{
 						current_trigger->absolute = false;
-						required_string("+relative_angle:");
+						if(!optional_string("+relative_angle:"))
+							required_string("+relative_angle:");
+
 						stuff_vector(&current_trigger->angle );
 	
 						current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);

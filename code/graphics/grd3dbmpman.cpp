@@ -689,8 +689,8 @@ bool gr_d3d_set_render_target(int handle, int face){
 		//we are not rendering to a texture
 		GlobalD3DVars::lpD3DDevice->GetBackBuffer(0,D3DBACKBUFFER_TYPE_MONO, &surface);
 		depth = back_depth;
-		gr_screen.max_w = gr_screen.save_max_w;
-		gr_screen.max_h = gr_screen.save_max_h;
+//		gr_screen.max_w = gr_screen.save_max_w;
+//		gr_screen.max_h = gr_screen.save_max_h;
 	}else{
 		i = 0;
 		//make sure we clear out what ever was in it before we get a new one
@@ -703,8 +703,8 @@ bool gr_d3d_set_render_target(int handle, int face){
 		}
 		depth = texture_depth;
 
-		gr_screen.max_w = d3d_bitmap_entry[n].x;
-		gr_screen.max_h = d3d_bitmap_entry[n].y;
+//		gr_screen.max_w = d3d_bitmap_entry[n].x;
+//		gr_screen.max_h = d3d_bitmap_entry[n].y;
 	}
 
 	if(D3D_OK != GlobalD3DVars::lpD3DDevice->SetRenderTarget(surface, depth))return false;
