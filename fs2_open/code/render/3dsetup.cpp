@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-11-01 21:59:22 $
- * $Author: bobboau $
+ * $Revision: 2.10 $
+ * $Date: 2003-11-06 22:49:22 $
+ * $Author: phreak $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/11/01 21:59:22  bobboau
+ * new matrix handeling code, and fixed some problems with 3D lit verts,
+ * several other small fixes
+ *
  * Revision 2.8  2003/10/25 06:56:06  bobboau
  * adding FOF stuff,
  * and fixed a small error in the matrix code,
@@ -242,7 +246,6 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 
 	G3_frame_count++;
 
-	if(!Cmdline_nohtl)gr_set_proj_matrix( ((4.0f/9.0f)*(PI)*View_zoom), Canv_w2/Canv_h2, 1.0f, 30000.0f);
 	//init_interface_vars_to_assembler();		//for the texture-mapper
 
 }
@@ -254,7 +257,6 @@ void g3_end_frame(void)
 	Assert( G3_count == 0 );
 
 	free_point_num = 0;
-	if(!Cmdline_nohtl)gr_end_proj_matrix();
 //	Assert(free_point_num==0);
 }
 
@@ -283,10 +285,6 @@ void g3_set_view_matrix(vector *view_pos,matrix *view_matrix,float zoom)
 
 	vm_vec_zero(&Object_position);
 	Object_matrix = vmd_identity_matrix;
-
-	if(!Cmdline_nohtl){
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
 }
 
 
@@ -409,7 +407,7 @@ void g3_start_instance_matrix(vector *pos,matrix *orient, bool set_api)
 	vm_matrix_x_matrix(&Light_matrix,&saved_orient, orient);
 
 	if(!Cmdline_nohtl && set_api)
-		gr_start_instance_matrix(&Object_position,&Object_matrix);
+		gr_start_instance_matrix(pos,orient);
 
 }
 
