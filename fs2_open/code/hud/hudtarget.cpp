@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-12-21 18:03:49 $
+ * $Revision: 2.8 $
+ * $Date: 2002-12-22 21:31:01 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/21 18:03:49  Goober5000
+ * commented out the warning if you don't have the new ballistic HUD graphics - it would probably get annoying (just use the old ones without comment)
+ * --Goober5000
+ *
  * Revision 2.6  2002/12/19 10:54:37  Goober5000
  * oops - squashed a bug :)
  * --Goober5000
@@ -534,9 +538,9 @@ int Weapon_gauge_primary_coords[NUM_HUD_SETTINGS][GR_NUM_RESOLUTIONS][3][2] =
 		},
 		{ // GR_1024
 			// based on the # of primaries
-			{869, 525},				// top of weapon gauge, first frame, always
-			{869, 545},				// for the first primary
-			{869, 557}				// for the second primary
+			{868, 525},				// top of weapon gauge, first frame, always
+			{868, 545},				// for the first primary
+			{868, 557}				// for the second primary
 		}
 	}
 };
@@ -571,11 +575,11 @@ int Weapon_gauge_secondary_coords[NUM_HUD_SETTINGS][GR_NUM_RESOLUTIONS][5][2] =
 		},
 		{ // GR_1024
 			// based on the # of secondaries
-			{869, 570},				// bottom of gauge, 0 secondaries
-			{869, 570},				// bottom of gauge, 1 secondaries
-			{869, 569},				// middle of gauge, 2 secondaries AND middle of gauge, 3 secondaries
-			{869, 578},				// bottom of gauge, 2 secondaries AND middle of gauge, 3 secondaries
-			{869, 587}				// bottom of gauge, 3 secondaries
+			{868, 570},				// bottom of gauge, 0 secondaries
+			{868, 570},				// bottom of gauge, 1 secondaries
+			{868, 569},				// middle of gauge, 2 secondaries AND middle of gauge, 3 secondaries
+			{868, 578},				// bottom of gauge, 2 secondaries AND middle of gauge, 3 secondaries
+			{868, 587}				// bottom of gauge, 3 secondaries
 		}
 	}
 };
@@ -594,7 +598,7 @@ int Weapon_title_coords[NUM_HUD_SETTINGS][GR_NUM_RESOLUTIONS][2] =
 			487, 274
 		},
 		{ // GR_1024
-			871, 527
+			870, 527
 		}
 	}
 };
