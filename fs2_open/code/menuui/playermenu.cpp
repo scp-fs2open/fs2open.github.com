@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.5 $
+ * $Date: 2003-08-20 08:11:00 $
+ * $Author: wmcoolmon $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.3  2003/01/14 04:00:15  Goober5000
  * allowed for up to 256 main halls
  * --Goober5000
@@ -986,12 +989,29 @@ void player_select_delete_pilot()
 	strcpy( filename, Pilots[Player_select_pilot] );
 	strcat( filename, NOX(".plr") );
 
-	// attempt to delete the pilot
-	if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
-		cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
-	} else {
-		cf_delete( filename, CF_TYPE_MULTI_PLAYERS );
-	}
+	int del_rval;
+	int popup_rval = 0;
+	do {
+		// attempt to delete the pilot
+		if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
+			del_rval = cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
+		} else {
+			del_rval = cf_delete( filename, CF_TYPE_MULTI_PLAYERS );
+		}
+
+		if(!del_rval) {
+			popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Retry", -1), XSTR("&Cancel",-1),
+				XSTR("Error\nFailed to delete pilot file.  File may be read-only.\n", -1));
+		}
+
+		//Abort
+		if(popup_rval)
+		{
+			return;
+		}
+
+		//Try again
+	} while (!del_rval);
 
 	// delete all the campaign save files for this pilot.
 	mission_campaign_delete_all_savefiles( Pilots[Player_select_pilot], (Player_select_mode != PLAYER_SELECT_MODE_SINGLE) );

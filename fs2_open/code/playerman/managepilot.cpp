@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-03 04:28:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2003-08-20 08:11:28 $
+ * $Author: wmcoolmon $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/03 04:28:36  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.4  2003/02/16 18:55:12  phreak
  * fixed typecasting warnings
  *
@@ -308,9 +312,11 @@ void write_multiplayer_options(player *p,CFILE *file);
 
 // internal function to delete a player file.  Called after a pilot is obsoleted, and when a pilot is deleted
 // used in barracks and player_select
-void delete_pilot_file( char *pilot_name, int single )
+//returns 0 on failure, 1 on success
+int delete_pilot_file( char *pilot_name, int single )
 {
 #ifdef _WIN32
+	int delreturn;
 	char filename[MAX_FILENAME_LEN];
 	char basename[MAX_FILENAME_LEN];
 
@@ -320,15 +326,21 @@ void delete_pilot_file( char *pilot_name, int single )
 	strcpy( filename, basename );
 	strcat( filename, NOX(".plr") );
 	if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE){
-		cf_delete(filename, CF_TYPE_SINGLE_PLAYERS);
+		delreturn = cf_delete(filename, CF_TYPE_SINGLE_PLAYERS);
 	} else {
-		cf_delete(filename, CF_TYPE_MULTI_PLAYERS);
+		delreturn = cf_delete(filename, CF_TYPE_MULTI_PLAYERS);
 	}
 
 	// we must try and delete the campaign save files for a pilot as well.
-	mission_campaign_delete_all_savefiles( basename, !single );
+	if(delreturn) {
+		mission_campaign_delete_all_savefiles( basename, !single );
+		return 1;
+	} else {
+		return 0;
+	}
 #else
-	// TODO - delete pilot files
+	// TODO - add delete pilot files code
+	return 0;
 #endif
 }
 
