@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2004/07/26 20:47:56  Kazan
+ * remove MCD complete
+ *
  * Revision 2.72  2004/07/17 09:25:59  taylor
  * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
  *
@@ -1380,7 +1383,12 @@ int parse_weapon(int subtype, bool replace)
 
 	// swarm missiles
 	int s_count;
+
 	wip->swarm_count = -1;
+
+    // *Default is 150  -Et1
+    wip->SwarmWait = 150;
+
 	if(optional_string("$Swarm:")){
 		wip->swarm_count = SWARM_DEFAULT_NUM_MISSILES_FIRED;
 		stuff_int(&s_count);
@@ -1388,6 +1396,27 @@ int parse_weapon(int subtype, bool replace)
 
 		// flag as being a swarm weapon
 		wip->wi_flags |= WIF_SWARM;
+
+
+        // *Swarm wait token    -Et1
+
+        if( optional_string( "+SwarmWait:" ) )
+        {
+
+            float SwarmWait;
+
+            stuff_float( &SwarmWait );
+
+            if( SwarmWait > 0.0f && SwarmWait * wip->swarm_count < wip->fire_wait )
+            {
+
+                wip->SwarmWait = int( SwarmWait * 1000 );
+
+            }
+
+
+        }
+
 	}
 
 	required_string("$LaunchSnd:");
@@ -2419,12 +2448,25 @@ void weapon_render(object *obj)
 			}			
 
 			// maybe draw laser glow bitmap
-			if(wip->laser_glow_bitmap >= 0){
-				// get the laser color
+			if(wip->laser_glow_bitmap >= 0)
+            
+            {
+
+    			// get the laser color
 				weapon_get_laser_color(&c, obj);
 
+                // *Tail point "getting bigger" as well as headpoint isn't being taken into consideration, so
+                //  it caused uneven glow between the head and tail, which really shows in big lasers. So...fixed!    -Et1
+
 				vector headp2;			
+
+                vector tailp;
+
 				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
+
+                vm_vec_scale_add( &tailp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * ( 1 -  weapon_glow_scale_l ) );
+
+
 				if(wip->laser_glow_bitmap_nframes > 1){//set the proper bitmap
 //					wp->gframe += ((timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes);
 					wp->gframe = (int)(wp->gframe + ((int)(flFrametime * 1000) / wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
@@ -2432,7 +2474,8 @@ void weapon_render(object *obj)
 				}else{
 					gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 				}
-				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &obj->pos, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
+
+				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
 			}						
 			break;
 		}
