@@ -9,15 +9,20 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.7 $
+ * $Revision: 2.8 $
  * $Author: Goober5000 $
- * $Date: 2003-09-28 21:22:58 $
+ * $Date: 2003-09-30 04:05:09 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/28 21:22:58  Goober5000
+ * added the option to import FSM missions, added a replace function, spruced
+ * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
+ * --Goober5000
+ *
  * Revision 2.6  2003/08/25 04:45:57  Goober5000
  * added replacement of $rank with the player's rank in any string that appears
  * in-game (same as with $callsign); also bumped the limit on the length of text
@@ -389,7 +394,7 @@ extern void parse_main();
 // utility
 extern void mark_int_list(int *ilp, int max_ints, int lookup_type);
 extern void compact_multitext_string(char *str);
-extern void read_file_text(char *filename, int mode = CF_TYPE_ANY );
+extern void read_file_text(char *filename, int mode = CF_TYPE_ANY, char *specified_text = NULL, char *specified_text_raw = NULL);
 extern void debug_show_mission_text();
 extern void convert_sexp_to_string(int cur_node, char *outstr, int mode);
 char *split_str_once(char *src, int max_pixel_w);
