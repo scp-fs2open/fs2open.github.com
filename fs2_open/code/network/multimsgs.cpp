@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-07-26 20:47:42 $
+ * $Revision: 2.24 $
+ * $Date: 2004-10-03 21:41:11 $
  * $Author: Kazan $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.22  2004/07/15 00:16:46  wmcoolmon
  * I though I fixed this...
  *
@@ -939,6 +942,33 @@ void multi_io_send_buffered_packets()
 	}
 }
 
+//*********************************************************************************************************
+// Game Chat Packet
+//*********************************************************************************************************
+/*
+struct fs2_game_chat_packet
+{
+	char packet_signature; //0xC3
+	short from_player_id;
+	int server_msg;
+	char mode;
+	
+	// variable record
+	if (mode) 
+		short to_player_id;
+	else
+	{
+		int i;
+		char expr[i];
+	}
+	int j;
+	char message[j];
+	    
+}
+*/
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 // send a general game chat packet (if msg_mode == MULTI_MSG_TARGET, need to pass in "to", if == MULTI_MSG_EXPR, need to pass in expr)
 void send_game_chat_packet(net_player *from, char *msg, int msg_mode, net_player *to, char *expr, int server_msg)
 {
@@ -1020,6 +1050,8 @@ void send_game_chat_packet(net_player *from, char *msg, int msg_mode, net_player
 		multi_io_send_reliable(Net_player, data, packet_size);
 	}
 }
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // process a general game chat packet, if we're the standalone we should rebroadcast
 void process_game_chat_packet( ubyte *data, header *hinfo )
@@ -1131,6 +1163,20 @@ void process_game_chat_packet( ubyte *data, header *hinfo )
 	}	
 }
 
+
+//*********************************************************************************************************
+// Hud Message packet
+//*********************************************************************************************************
+/*
+struct fs2_game_chat_packet
+{
+	char packet_signature; //0xC1 HUD_MSG
+	int msg_size;
+	char msg[msg_size];
+}
+*/
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 // broadcast a hud message to all players
 void send_hud_msg_to_all( char* msg )
 {
@@ -1144,6 +1190,8 @@ void send_hud_msg_to_all( char* msg )
 
 	multi_io_send_to_all( data, packet_size );
 }
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // process an incoming hud message packet
 void process_hud_message(ubyte* data, header* hinfo)
@@ -1162,6 +1210,20 @@ void process_hud_message(ubyte* data, header* hinfo)
 	}	
 }
 
+
+//*********************************************************************************************************
+// Join Packet
+//*********************************************************************************************************
+/*
+struct fs2_game_chat_packet
+{
+	char packet_signature; //0xC1 HUD_MSG
+	int msg_size;
+	char msg[msg_size];
+}
+*/
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 // send a join packet request to the specified address (should be a server)
 void send_join_packet(net_addr* addr,join_request *jr)
 {
@@ -1174,6 +1236,8 @@ void send_join_packet(net_addr* addr,join_request *jr)
 	
 	psnet_send(addr, data, packet_size);	
 }
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // process an incoming join request packet
 void process_join_packet(ubyte* data, header* hinfo)
@@ -1275,6 +1339,34 @@ void process_join_packet(ubyte* data, header* hinfo)
 	multi_process_valid_join_request(&jr,&addr);
 }
 
+//*********************************************************************************************************
+// New Player Packet
+//*********************************************************************************************************
+/*
+struct fs2_new_player_packet
+{
+	char packet_signature; // 0xB4 NOTIFY_NEW_PLAYER
+	int new_player_num;
+	net_addr player_addr;
+	short player_id;
+	int flags;
+	
+	int i;
+	char callsign[i];
+
+	int j;
+	char plyr_image_filename[j];
+
+	int k;
+	char plyr_squad_filename[k];
+
+	int l;
+	char plyr_pxo_squad_name[l];
+}
+*/
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 // send a notification that a new player has joined the game (if target != NULL, broadcast the packet)
 void send_new_player_packet(int new_player_num,net_player *target)
 {
@@ -1303,6 +1395,8 @@ void send_new_player_packet(int new_player_num,net_player *target)
 		multi_io_send_to_all_reliable(data, packet_size);	
 	}
 }
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // process a notification for a new player who has joined the game
 void process_new_player_packet(ubyte* data, header* hinfo)
@@ -1402,6 +1496,41 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 	}
 }
 
+//*********************************************************************************************************
+// Accept Player Data Packet
+//*********************************************************************************************************
+/*
+struct fs2_accept_player_data
+{
+	char packet_signature; //ACCEPT_PLAYER_DATA
+	ubyte stop;
+	int player_num;
+	net_addr plyr_addr;
+	int player_id;
+
+	int i;
+	char callsign[i];
+
+    int j;
+	char plr_image_filename[j];
+
+	int k;
+    char plr_squad_filename[k]
+	
+	int l
+	char plr_pxo_squadname[l];
+
+    int flags;
+
+    if (is_ingame)
+	  int net_signature;
+
+    
+};
+*/
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 #define PLAYER_DATA_SLOP	100
 
 void send_accept_player_data( net_player *npp, int is_ingame )
@@ -1473,105 +1602,8 @@ void send_accept_player_data( net_player *npp, int is_ingame )
 	multi_io_send_reliable(npp, data, packet_size);
 }
 
-// send an accept packet to a client in response to a request to join the game
-void send_accept_packet(int new_player_num, int code, int ingame_join_team)
-{
-	int packet_size, i;
-	ubyte data[MAX_PACKET_SIZE],val;
-	char notify_string[256];
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-	// sanity
-	Assert(new_player_num >= 0);
-
-	// setup his "reliable" socket
-	Net_players[new_player_num].last_heard_time = timer_get_fixed_seconds();
-
-	// build the packet header
-	packet_size = 0;
-	BUILD_HEADER(ACCEPT);	
-	
-	// add the accept code
-	ADD_DATA(code);
-	
-	// add code specific accept data
-	if (code & ACCEPT_INGAME) {
-		// the game filename
-		ADD_STRING(Game_current_mission_filename);
-
-		// if he is joining on a specific team, mark it here
-		if(ingame_join_team != -1){
-			val = 1;
-			ADD_DATA(val);
-			val = (ubyte)ingame_join_team;
-			ADD_DATA(val);
-		} else {
-			val = 0;
-			ADD_DATA(val);
-		}
-	} 
-
-	if (code & ACCEPT_OBSERVER) {
-		Assert(!(code & (ACCEPT_CLIENT | ACCEPT_HOST)));
-	}
-
-	if (code & ACCEPT_HOST) {
-		Assert(!(code & (ACCEPT_CLIENT | ACCEPT_OBSERVER | ACCEPT_INGAME)));
-	}
-
-	if (code & ACCEPT_CLIENT) {
-		Assert(!(code & (ACCEPT_HOST | ACCEPT_OBSERVER | ACCEPT_INGAME)));
-	}
-
-	// add the current skill level setting on the host
-	ADD_DATA(Game_skill_level);
-
-	// add this guys player num 
-	ADD_DATA(new_player_num);
-
-	// add his player id
-	ADD_DATA(Net_players[new_player_num].player_id);
-
-	// add netgame type flags
-	ADD_DATA(Netgame.type_flags);
-	
-//#ifndef NDEBUG
-	// char buffer[100];
-	// nprintf(("Network", "About to send accept packet to %s on port %d\n", get_text_address(buffer, addr->addr), addr->port ));
-//#endif
-
-	// actually send the packet	
-	psnet_send(&Net_players[new_player_num].p_info.addr, data, packet_size);
-
-   // if he's not an observer, inform all the other players in the game about him	
-	// inform the other players in the game about this new player
-	for (i=0; i<MAX_PLAYERS; i++) {
-		// skip unconnected players as well as this new guy himself
-		if ( !MULTI_CONNECTED(Net_players[i]) || psnet_same(&Net_players[new_player_num].p_info.addr, &(Net_players[i].p_info.addr)) || (Net_player == &Net_players[i])) {
-			continue;
-		}
-
-		// send the new packet
-		send_new_player_packet(new_player_num,&Net_players[i]);
-	}
-
-	// add a chat message
-	if(Net_players[new_player_num].player->callsign != NULL){
-		sprintf(notify_string,XSTR("<%s has joined>",717), Net_players[new_player_num].player->callsign);
-		multi_display_chat_msg(notify_string, 0, 0);
-	}	
-
-	// handle any team vs. team details
-	if (!(code & ACCEPT_OBSERVER)) {		
-		multi_team_handle_join(&Net_players[new_player_num]);		
-	}		
-
-	// NETLOG
-	if(Net_players[new_player_num].tracker_player_id >= 0){
-		ml_printf(NOX("Server accepted %s (tracker id %d) as new client"), Net_players[new_player_num].player->callsign, Net_players[new_player_num].tracker_player_id);
-	} else {
-		ml_printf(NOX("Server accepted %s as new client"), Net_players[new_player_num].player->callsign);
-	}
-}
 
 
 // process the player data from the server
@@ -1725,6 +1757,111 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 			Player->flags |= PLAYER_FLAGS_HAS_PLAYED_PXO;
 			Player->save_flags |= PLAYER_FLAGS_HAS_PLAYED_PXO;
 		}
+	}
+}
+
+
+//*********************************************************************************************************
+// Accept Player Packet
+//*********************************************************************************************************
+
+// send an accept packet to a client in response to a request to join the game
+void send_accept_packet(int new_player_num, int code, int ingame_join_team)
+{
+	int packet_size, i;
+	ubyte data[MAX_PACKET_SIZE],val;
+	char notify_string[256];
+
+	// sanity
+	Assert(new_player_num >= 0);
+
+	// setup his "reliable" socket
+	Net_players[new_player_num].last_heard_time = timer_get_fixed_seconds();
+
+	// build the packet header
+	packet_size = 0;
+	BUILD_HEADER(ACCEPT);	
+	
+	// add the accept code
+	ADD_DATA(code);
+	
+	// add code specific accept data
+	if (code & ACCEPT_INGAME) {
+		// the game filename
+		ADD_STRING(Game_current_mission_filename);
+
+		// if he is joining on a specific team, mark it here
+		if(ingame_join_team != -1){
+			val = 1;
+			ADD_DATA(val);
+			val = (ubyte)ingame_join_team;
+			ADD_DATA(val);
+		} else {
+			val = 0;
+			ADD_DATA(val);
+		}
+	} 
+
+	if (code & ACCEPT_OBSERVER) {
+		Assert(!(code & (ACCEPT_CLIENT | ACCEPT_HOST)));
+	}
+
+	if (code & ACCEPT_HOST) {
+		Assert(!(code & (ACCEPT_CLIENT | ACCEPT_OBSERVER | ACCEPT_INGAME)));
+	}
+
+	if (code & ACCEPT_CLIENT) {
+		Assert(!(code & (ACCEPT_HOST | ACCEPT_OBSERVER | ACCEPT_INGAME)));
+	}
+
+	// add the current skill level setting on the host
+	ADD_DATA(Game_skill_level);
+
+	// add this guys player num 
+	ADD_DATA(new_player_num);
+
+	// add his player id
+	ADD_DATA(Net_players[new_player_num].player_id);
+
+	// add netgame type flags
+	ADD_DATA(Netgame.type_flags);
+	
+//#ifndef NDEBUG
+	// char buffer[100];
+	// nprintf(("Network", "About to send accept packet to %s on port %d\n", get_text_address(buffer, addr->addr), addr->port ));
+//#endif
+
+	// actually send the packet	
+	psnet_send(&Net_players[new_player_num].p_info.addr, data, packet_size);
+
+   // if he's not an observer, inform all the other players in the game about him	
+	// inform the other players in the game about this new player
+	for (i=0; i<MAX_PLAYERS; i++) {
+		// skip unconnected players as well as this new guy himself
+		if ( !MULTI_CONNECTED(Net_players[i]) || psnet_same(&Net_players[new_player_num].p_info.addr, &(Net_players[i].p_info.addr)) || (Net_player == &Net_players[i])) {
+			continue;
+		}
+
+		// send the new packet
+		send_new_player_packet(new_player_num,&Net_players[i]);
+	}
+
+	// add a chat message
+	if(Net_players[new_player_num].player->callsign != NULL){
+		sprintf(notify_string,XSTR("<%s has joined>",717), Net_players[new_player_num].player->callsign);
+		multi_display_chat_msg(notify_string, 0, 0);
+	}	
+
+	// handle any team vs. team details
+	if (!(code & ACCEPT_OBSERVER)) {		
+		multi_team_handle_join(&Net_players[new_player_num]);		
+	}		
+
+	// NETLOG
+	if(Net_players[new_player_num].tracker_player_id >= 0){
+		ml_printf(NOX("Server accepted %s (tracker id %d) as new client"), Net_players[new_player_num].player->callsign, Net_players[new_player_num].tracker_player_id);
+	} else {
+		ml_printf(NOX("Server accepted %s as new client"), Net_players[new_player_num].player->callsign);
 	}
 }
 
