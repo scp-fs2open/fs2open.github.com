@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-18 10:07:01 $
- * $Author: unknownplayer $
- * $Revision: 2.5 $
- * $Date: 2003-03-18 10:07:01 $
- * $Author: unknownplayer $
+ * $Revision: 2.6 $
+ * $Date: 2003-07-15 02:58:08 $
+ * $Author: phreak $
+ * $Revision: 2.6 $
+ * $Date: 2003-07-15 02:58:08 $
+ * $Author: phreak $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/18 10:07:01  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.4  2002/08/27 13:38:57  penguin
  * Moved DirectX8 stuff to directx8 branch; reverted to previous
  *
@@ -473,18 +476,18 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 
 void cutscenes_screen_play()
 {
-	char name[MAX_FILENAME_LEN], *full_name;
+	char name[MAX_FILENAME_LEN]; // *full_name 
 	int which_cutscene;
 
 	Assert( (Selected_line >= 0) && (Selected_line < Num_files) );
 	which_cutscene = Cutscene_list[Selected_line];
 
 	strcpy(name, Cutscenes[which_cutscene].filename );
-	full_name = cf_add_ext(name, NOX(".mve"));
+//	full_name = cf_add_ext(name, NOX(".mve"));
 
 	// no soup for you!
 	gr_activate(0);
-	int rval = movie_play(full_name);
+	int rval = movie_play(name);
 	gr_activate(1);
 
 	if ( !rval ) {
