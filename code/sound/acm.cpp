@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/acm.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:52 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-03-27 06:14:30 $
+ * $Author: taylor $
  *
  * C file for interface to Audio Compression Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:52  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:33:06  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -63,6 +66,8 @@
  * $NoKeywords: $
  *
  */
+
+#ifndef USE_OPENAL	// to end of file...
 
 #include "globalincs/pstypes.h"
 #include <windows.h>
@@ -384,3 +389,5 @@ int ACM_is_inited()
 {
 	return ACM_inited;
 }
+
+#endif // !USE_OPENAL
