@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2005/02/04 20:06:10  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.84  2005/02/03 01:26:45  phreak
  * revert to default d-missile behavior if the electroinics parameters aren't specified.
  * added an option to customize the old-style disruption calculation as well.
@@ -4678,7 +4681,7 @@ void weapons_page_in()
 	for (i=0; i<Num_weapon_types; i++ )	{
 		if (Cmdline_load_only_used) {
 			if (!used_weapons[i]) {
-				printf("not loading weapon %d (%s)\n", i, Weapon_info[i].name);
+				nprintf(("Weapons", "Not loading weapon id %d (%s)\n", i, Weapon_info[i].name));
 				continue;
 			}
 		}

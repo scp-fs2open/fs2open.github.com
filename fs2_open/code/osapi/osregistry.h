@@ -23,7 +23,7 @@ extern char *Osreg_company_name;
 extern char *Osreg_class_name;
 extern char *Osreg_app_name;
 extern char *Osreg_title;
-#if defined unix
+#ifdef SCP_UNIX
 extern char *Osreg_user_dir;
 #endif
 

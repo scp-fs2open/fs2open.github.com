@@ -687,13 +687,13 @@ void parse_custom_gauge()
 
 		gauge_info* cg = &gauges[Num_gauge_types];
 		memset(cg, 0, sizeof(gauge_info));
-		//Set all the ptrs
-		cg->coord_dest = HUD_VAR(custom_gauge_coords[Num_custom_gauges]);
-		cg->size_dest = HUD_VAR(custom_gauge_sizes[Num_custom_gauges]);
-		cg->image_dest = HUD_VAR(custom_gauge_images[Num_custom_gauges]);
-		cg->frame_dest = HUD_VAR(custom_gauge_frames[Num_custom_gauges]);
-		cg->text_dest = HUD_VAR(custom_gauge_text[Num_custom_gauges]);
-		cg->color_dest = HUD_VAR(custom_gauge_colors[Num_custom_gauges]);
+		//Set all the ptrs (modified to work with GCC 3.4 - taylor)
+		cg->coord_dest = HUD_VAR(custom_gauge_coords[0]) + (Num_custom_gauges * sizeof(int));
+		cg->size_dest = HUD_VAR(custom_gauge_sizes[0]) + (Num_custom_gauges * sizeof(int));
+		cg->image_dest = HUD_VAR(custom_gauge_images[0]) + (Num_custom_gauges * sizeof(int));
+		cg->frame_dest = HUD_VAR(custom_gauge_frames[0]) + (Num_custom_gauges * sizeof(int));
+		cg->text_dest = HUD_VAR(custom_gauge_text[0]) + (Num_custom_gauges * sizeof(int));
+		cg->color_dest = HUD_VAR(custom_gauge_colors[0]) + (Num_custom_gauges * sizeof(int));
 
 		required_string("$Name:");
 		//Gotta make this a token
