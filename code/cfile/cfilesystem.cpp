@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-10-31 21:28:38 $
+ * $Revision: 2.24 $
+ * $Date: 2004-11-21 11:27:31 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/10/31 21:28:38  taylor
+ * support new pilot code, Linux code tree merge, don't use same pilot directory for Inferno builds
+ *
  * Revision 2.22  2004/07/26 20:47:25  Kazan
  * remove MCD complete
  *
@@ -778,7 +781,7 @@ typedef struct VP_FILE {
 	int	offset;
 	int	size;
 	char	filename[32];
-	time_t write_time;
+	_fs_time_t write_time;
 } VP_FILE;
 
 void cf_search_root_pack(int root_index)
