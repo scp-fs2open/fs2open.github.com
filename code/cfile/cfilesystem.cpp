@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-05-26 21:02:26 $
+ * $Revision: 2.19 $
+ * $Date: 2004-05-26 22:02:36 $
  * $Author: wmcoolmon $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/05/26 21:02:26  wmcoolmon
+ * Added weapons_expl modular table, updated cfilesystem to work with modular tables, fixed loading order, fixed ship loading error messages
+ *
  * Revision 2.17  2004/05/03 21:22:19  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -1058,6 +1061,10 @@ int cf_matches_spec(char *filespec, char *filename)
 		if (!src_ext)
 			return 1;
 	}
+	else
+	{
+		src_ext++;
+	}
 
 	if(strlen(filespec) > strlen(filename))
 	{
@@ -1068,7 +1075,14 @@ int cf_matches_spec(char *filespec, char *filename)
 	if (!dst_ext)
 		return 1;
 	
-	return !stricmp(dst_ext, src_ext);
+	if(src_ext == filespec)
+	{
+		return !stricmp(dst_ext, src_ext);
+	}
+	else
+	{
+		return (!stricmp(dst_ext, src_ext) && !strnicmp(dst_ext, src_ext, src_ext - filespec));
+	}
 }
 
 int (*Get_file_list_filter)(char *filename) = NULL;
