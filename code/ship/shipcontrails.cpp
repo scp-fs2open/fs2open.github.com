@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2004-03-17 04:07:32 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.8  2003/11/11 02:15:41  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -334,7 +338,7 @@ void ct_ship_process_ABtrails(ship *shipp)
 	sip=&Ship_info[shipp->ship_info_index];
 
 	// if this is not a ship, we don't care
-	if((objp->type != OBJ_SHIP) || (Ship_info[Ships[objp->instance].ship_info_index].ct_count <= 0)){
+	if((objp->type != OBJ_SHIP) || (Ships[objp->instance].ab_count <= 0)){
 		return;
 	}
 

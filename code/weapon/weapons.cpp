@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2004/03/06 23:28:24  bobboau
+ * fixed motion debris
+ * animated laser textures
+ * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
+ *
  * Revision 2.55  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -2245,7 +2250,7 @@ void weapon_render(object *obj)
 				}else{
 					gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 				}
-				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &obj->pos, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT);
+				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &obj->pos, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
 			}						
 			break;
 		}

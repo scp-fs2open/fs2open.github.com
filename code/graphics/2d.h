@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.25 $
- * $Date: 2004-03-08 18:36:21 $
- * $Author: randomtiger $
+ * $Revision: 2.26 $
+ * $Date: 2004-03-17 04:07:29 $
+ * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/03/08 18:36:21  randomtiger
+ * Added complete stub system to replace software.
+ *
  * Revision 2.24  2004/03/07 23:07:20  Kazan
  * [Incomplete] Readd of Software renderer so Standalone server works
  *
@@ -819,6 +822,7 @@ typedef struct screen {
 	void (*gf_end_clip_plane)();
 
 	void (*gf_zbias)(int zbias);
+	void (*gf_setup_background_fog)(bool);
 
 /*	void (*gf_begin_sprites)();//does prep work for sprites
 	void (*gf_draw_sprite)(vector*);//draws a sprite
@@ -1045,6 +1049,8 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define	gr_end_clip GR_CALL				(*gr_screen.gf_end_clip_plane)
 
 #define	gr_zbias GR_CALL				(*gr_screen.gf_zbias)
+
+#define gr_setup_background_fog GR_CALL		(*gr_screen.gf_setup_background_fog)
 
 /*
 #define	gr_begin_sprites GR_CALL		(*gr_screen.gf_begin_sprites)

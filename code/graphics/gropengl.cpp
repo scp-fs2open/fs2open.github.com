@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.67 $
- * $Date: 2004-03-08 21:57:04 $
- * $Author: phreak $
+ * $Revision: 2.68 $
+ * $Date: 2004-03-17 04:07:29 $
+ * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2004/03/08 21:57:04  phreak
+ * made a minor logical fix to gr_opengl_tmapper_internal
+ *
+ * disabled pcx32 and jpgtga flags if they were defined by the user
+ *
  * Revision 2.66  2004/03/05 04:33:09  phreak
  * fixed the lack of ships in the hud targetbox
  * prevented other functions calls to glColor3ub() from messing
@@ -4987,6 +4992,10 @@ void gr_opengl_center_alpha( int type){
 
 void gr_opengl_set_texture_addressing(int mode){
 }
+
+void gr_opengl_setup_background_fog(bool set){
+}
+
 extern char *Osreg_title;
 void gr_opengl_init(int reinit)
 {
@@ -5393,6 +5402,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_screen.gf_pop_scale_matrix = gr_opengl_pop_scale_matrix;
 		gr_screen.gf_center_alpha = gr_opengl_center_alpha;
 
+		gr_screen.gf_setup_background_fog = gr_opengl_setup_background_fog;
 //		glEnable(GL_NORMALIZE);
 	}
 	else	//use some function stubs

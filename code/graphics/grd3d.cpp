@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.59 $
- * $Date: 2004-02-28 14:14:56 $
- * $Author: randomtiger $
+ * $Revision: 2.60 $
+ * $Date: 2004-03-17 04:07:29 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2004/02/28 14:14:56  randomtiger
+ * Removed a few uneeded if DIRECT3D's.
+ * Set laser function to only render the effect one sided.
+ * Added some stuff to the credits.
+ * Set D3D fogging to fall back to vertex fog if table fog not supported.
+ *
  * Revision 2.58  2004/02/27 04:09:55  bobboau
  * fixed a Z buffer error in HTL submodel rendering,
  * and glow points,
@@ -704,7 +710,9 @@ enum stage_state{
 	GLOWMAPPED_CELL = 7, 
 	ADDITIVE_GLOWMAPPING = 8, 
 	SINGLE_PASS_SPECMAPPING = 9, 
-	SINGLE_PASS_GLOW_SPEC_MAPPING = 10};
+	SINGLE_PASS_GLOW_SPEC_MAPPING = 10,
+	BACKGROUND_FOG = 11
+	};
 
 
 // Defines and constants
@@ -756,6 +764,9 @@ Vertex_buffer vertex_buffer[MAX_BUFFERS];
 extern int n_active_lights;
 
 D3DXPLANE d3d_user_clip_plane;
+
+IDirect3DSurface8 *old_render_target = NULL;
+IDirect3DTexture8 *background_render_target = NULL;
 
 // Function declarations
 void shift_active_lights(int pos);
@@ -949,6 +960,7 @@ void d3d_set_initial_render_state()
 	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
 	d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
+	d3d_SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 0);
 
 	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
 	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
@@ -965,6 +977,20 @@ void d3d_set_initial_render_state()
 	d3d_SetTextureStageState( 4, D3DTSS_COLOROP, D3DTOP_DISABLE);
 
 	current_render_state = INITAL;
+}
+
+//BACKGROUND_FOG
+void set_stage_for_background_fog(){
+	if(current_render_state == BACKGROUND_FOG)return;
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+
+	d3d_SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEPOSITION);
+	d3d_SetTexture(0, background_render_target);
+
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+
+	current_render_state = BACKGROUND_FOG;
 }
 
 extern bool env_enabled;
@@ -2015,6 +2041,7 @@ bool the_lights_are_on;
 extern bool lighting_enabled;
 void gr_d3d_center_alpha_int(int type);
 
+
 void gr_d3d_render_buffer(int idx)
 {
 //	GlobalD3DVars::d3d_caps.MaxActiveLights = 1;
@@ -2113,7 +2140,6 @@ void gr_d3d_render_buffer(int idx)
 //	if(!lighting_enabled)		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
 
 
-
 	if(!lighting_enabled)
 	{
 		return;
@@ -2208,9 +2234,11 @@ void gr_d3d_render_buffer(int idx)
 //ratio = screen.aspect
 //near = 1.0
 //far = 30000
+float fov_corection = 1.0f;
 	//the projection matrix; fov, aspect ratio, near, far
 void gr_d3d_set_proj_matrix(float fov, float ratio, float n, float f){
 //	proj_matrix_stack->Push();
+	fov *= fov_corection;
 	D3DXMATRIX mat;
 	D3DXMatrixPerspectiveFovLH(&mat, fov, ratio, n, f);
 //	D3DXMatrixPerspectiveFovLH(&mat, (4.0f/9.0f)*(D3DX_PI)*View_zoom, 1.0f/gr_screen.aspect, 0.2f, 30000);
@@ -2373,4 +2401,27 @@ void gr_d3d_end_clip(){
 const char *d3d_error_string(HRESULT error)
 {
 	return DXGetErrorString8(error);
+}
+
+//this is an attempt to get something more like the old style fogging that used the lockable back buffer, 
+//it will render the model with the background texture then fog with black as the color
+void gr_d3d_setup_background_fog(bool set){
+	IDirect3DSurface8 *bg_surf;
+	if(!background_render_target){
+		GlobalD3DVars::lpD3DDevice->CreateTexture(
+			1024, 1024,
+			0, 
+			D3DUSAGE_RENDERTARGET,
+			D3DFMT_A8R8G8B8, 
+			D3DPOOL_DEFAULT, &background_render_target);
+	}
+	background_render_target->GetSurfaceLevel(0,&bg_surf);
+	if(set){
+		GlobalD3DVars::lpD3DDevice->GetRenderTarget(&old_render_target);
+		GlobalD3DVars::lpD3DDevice->SetRenderTarget(bg_surf , 0);
+		gr_d3d_clear();
+	}else{
+	//	GlobalD3DVars::lpD3DDevice->GetRenderTarget(&background_render_target);
+		GlobalD3DVars::lpD3DDevice->SetRenderTarget(old_render_target , 0);
+	}
 }

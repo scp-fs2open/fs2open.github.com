@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2004-03-17 04:07:30 $
+ * $Author: bobboau $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.14  2004/02/04 08:41:03  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -7773,6 +7777,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	}
 
 	// fire da beam
+	fire_info.fighter_beam = false;
 	beam_fire(&fire_info);
 }
 

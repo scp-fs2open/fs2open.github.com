@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.85 $
- * $Date: 2004-03-05 09:02:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.86 $
+ * $Date: 2004-03-17 04:07:31 $
+ * $Author: bobboau $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2004/03/05 09:02:08  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.84  2004/02/14 04:26:58  Goober5000
  * hmph... fixed some bugs
  * --Goober5000
@@ -9458,7 +9462,8 @@ void sexp_beam_fire(int node)
 	}
 
 	// fire the beam
-	if(fire_info.beam_info_index != -1){		
+	if(fire_info.beam_info_index != -1){
+		fire_info.fighter_beam = false;
 		beam_fire(&fire_info);
 	} else {
 		// it would appear the turret doesn't have any beam weapons

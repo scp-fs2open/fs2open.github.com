@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-03-05 09:01:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2004-03-17 04:07:32 $
+ * $Author: bobboau $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/03/05 09:01:54  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.15  2004/02/20 04:29:57  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -171,7 +175,7 @@
 #include "io/timer.h"
 #include "ship/ship.h"
 
-#define MAX_TRAILS 500
+#define MAX_TRAILS 1500
 
 // Stuff for missile trails doesn't need to be saved or restored... or does it?
 typedef struct trail {
@@ -432,7 +436,7 @@ void trail_render( trail * trailp )
 	}
 }
 */
-#define MAX_TRAIL_POLYS 129
+#define MAX_TRAIL_POLYS ((NUM_TRAIL_SECTIONS*2)+1)
 void trail_render( trail * trailp )
 {		
 //	if(!Cmdline_nohtl)gr_set_lighting(false,false);//this shouldn't need to be here but it does need to be here, WHY!!!!!!!?-Bobboau
@@ -579,6 +583,7 @@ void trail_render( trail * trailp )
 	if(nv>MAX_TRAIL_POLYS-1)Error( LOCATION, "too many verts in trail render\n" );
 	if(nv%2 != 1)Error( LOCATION, "even number of verts verts in trail render\n" );//there should always be three virts in the last section and 2 everyware else, therefore there should always be an odd number of verts
 
+	Assert(ti->bitmap != -1);
 	gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 	if(Cmdline_nohtl)	g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TRISTRIP );
 	else				g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );

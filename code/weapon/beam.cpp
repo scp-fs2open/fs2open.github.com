@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.35 $
- * $Date: 2004-03-05 09:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.36 $
+ * $Date: 2004-03-17 04:07:32 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.34  2004/02/07 00:48:53  Goober5000
  * made FS2 able to account for subsystem mismatches between ships.tbl and the
  * model file - e.g. communication vs. communications
@@ -498,6 +502,8 @@ typedef struct beam {
 	// exactly how the beam will behave. by passing this is multiplayer from server to client, we can ensure that
 	// everything looks the same
 	beam_info binfo;
+	bool fighter_beam;
+	int bank;
 } beam;
 
 beam Beams[MAX_BEAMS];				// all beams
@@ -750,6 +756,7 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	// for now, only allow ship targets
+	if(!fire_info->fighter_beam)
 	if((fire_info->target->type != OBJ_SHIP) && (fire_info->target->type != OBJ_ASTEROID) && (fire_info->target->type != OBJ_DEBRIS) && (fire_info->target->type != OBJ_WEAPON)){
 		return -1;
 	}	
@@ -759,8 +766,8 @@ int beam_fire(beam_fire_info *fire_info)
 	if((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= MAX_WEAPON_TYPES) || !(Weapon_info[fire_info->beam_info_index].wi_flags & WIF_BEAM)){
 		return -1;
 	}
-	wip = &Weapon_info[fire_info->beam_info_index];	
 
+	wip = &Weapon_info[fire_info->beam_info_index];	
 	// make sure a ship is firing this
 	Assert((fire_info->shooter->type == OBJ_SHIP) && (fire_info->shooter->instance >= 0) && (fire_info->shooter->instance < MAX_SHIPS));
 	if((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) && (fire_info->shooter->instance >= MAX_SHIPS)){
@@ -808,9 +815,15 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->team = (char)firing_ship->team;
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
+	new_item->fighter_beam = fire_info->fighter_beam;
+	new_item->bank = fire_info->bank;
 	
+	if(fire_info->fighter_beam){
+		new_item->type = BEAM_TYPE_C;
+	}
+
 	// if the targeted subsystem is not NULL, force it to be a type A beam
-	if(new_item->target_subsys != NULL){
+	if(new_item->target_subsys != NULL && new_item->type != BEAM_TYPE_C){
 		new_item->type = BEAM_TYPE_A;
 	}
 
@@ -1122,6 +1135,10 @@ void beam_unpause_sounds()
 	}
 }
 
+void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vector *gpos, vector *gvec, int use_angles, vector *targetp, bool fighter_beam){
+		ship_get_global_turret_gun_info(objp, ssp, gpos, gvec, use_angles, targetp);
+	if(fighter_beam)*gvec = objp->orient.vec.fvec;
+}
 
 // -----------------------------===========================------------------------------
 // BEAM MOVEMENT FUNCTIONS
@@ -1135,7 +1152,7 @@ void beam_type_a_move(beam *b)
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	ship_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2);
+	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, b->fighter_beam);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -1159,7 +1176,7 @@ void beam_type_b_move(beam *b)
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	ship_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2);
+	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, b->fighter_beam);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -1202,6 +1219,8 @@ void beam_type_c_move(beam *b)
 	vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
 	vm_vec_add2(&b->last_start, &b->objp->pos);	
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
+
+	Ships[b->objp->instance].weapon_energy -= Weapon_info[b->weapon_info_index].energy_consumed * flFrametime;
 }
 
 // type D functions
@@ -1212,7 +1231,7 @@ void beam_type_d_move(beam *b)
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	ship_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2);
+	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, b->fighter_beam);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -1269,7 +1288,7 @@ void beam_type_e_move(beam *b)
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	ship_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &turret_norm, 1, &temp);
+	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &turret_norm, 1, &temp, b->fighter_beam);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -1452,7 +1471,7 @@ void beam_move_all_post()
 		moveup->framecount++;		
 //		mprintf(("frame %d\n", moveup->framecount));
 		// type c weapons live for one frame only
-		if(moveup->type == BEAM_TYPE_C){
+/*		if(moveup->type == BEAM_TYPE_C){
 			if(moveup->framecount > 1){
 				next_one = GET_NEXT(moveup);
 				beam_delete(moveup);							
@@ -1462,7 +1481,7 @@ void beam_move_all_post()
 			}
 		}
 		// done firing, so go into the warmdown phase
-		else {
+		else*/ {
 			if((moveup->life_left <= 0.0f) && (moveup->warmdown_stamp == -1)){
 				beam_start_warmdown(moveup);
 				
@@ -2164,7 +2183,7 @@ int beam_start_firing(beam *b)
 		b->beam_sound_loop = snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].b_info.beam_loop_sound], &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
 
 		// "shot" sound
-		snd_play_3d(&Snds[SND_BEAM_SHOT], &b->last_start, &View_position);
+	//	snd_play_3d(&Snds[SND_BEAM_SHOT], &b->last_start, &View_position); //I'm sorry this thing has always pissed me off -Bobboau
 	}	
 
 	// success
@@ -2241,7 +2260,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	int skill_level;
 
 	// where the shot is originating from (b->last_start gets filled in)
-	ship_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, &turret_norm, 1, &p2);
+	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, &turret_norm, 1, &p2, b->fighter_beam);
 
 	// get a model # to work with
 	model_num = beam_get_model(b->target);	
@@ -2351,7 +2370,7 @@ void beam_aim(beam *b)
 	switch(b->type){
 	case BEAM_TYPE_A:	
 		// where the shot is originating from (b->last_start gets filled in)
-		ship_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2);
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2, b->fighter_beam);
 
 		// if we're targeting a subsystem - shoot directly at it
 		if(b->target_subsys != NULL){			
@@ -2383,7 +2402,7 @@ void beam_aim(beam *b)
 
 	case BEAM_TYPE_B:		
 		// where the shot is originating from (b->last_start gets filled in)
-		ship_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2);				
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2, b->fighter_beam);				
 
 		// set the shot point
 		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->binfo.dir_a, b->range);
@@ -2400,7 +2419,7 @@ void beam_aim(beam *b)
 
 	case BEAM_TYPE_D:				
 		// where the shot is originating from (b->last_start gets filled in)
-		ship_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2);		
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2, b->fighter_beam);		
 		
 		// point at the center of the target, then jitter based on shot_aim
 		b->last_shot = b->target->pos;		
@@ -2410,7 +2429,7 @@ void beam_aim(beam *b)
 
 	case BEAM_TYPE_E:
 		// where the shot is originating from (b->last_start gets filled in)
-		ship_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2);		
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2, b->fighter_beam);		
 
 		// point directly in the direction of the turret
 		vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, b->range);
@@ -3264,11 +3283,6 @@ float beam_get_cone_dot(beam *b)
 // if it is legal for the beam to fire, or continue firing
 int beam_ok_to_fire(beam *b)
 {
-	// type C beams are ok to fire all the time
-	if(Weapon_info[b->weapon_info_index].b_info.beam_type == BEAM_TYPE_C){
-		return 1;
-	}
-
 	// if my own object is invalid, stop firing
 	if(b->objp->signature != b->sig){
 		mprintf(("BEAM : killing beam because of invalid parent object SIGNATURE!\n"));
@@ -3280,6 +3294,19 @@ int beam_ok_to_fire(beam *b)
 		mprintf(("BEAM : killing beam because of invalid parent object TYPE!\n"));
 		return -1;
 	}	
+
+	// type C beams are ok to fire all the time
+	if(b->type == BEAM_TYPE_C){
+		ship *shipp = &Ships[b->objp->instance];
+		if(shipp->weapon_energy < 0.0){
+//			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(Weapon_info[shipp->weapons.primary_bank_weapons[b->bank]].b_info.beam_warmdown*2);
+			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(2000);
+			int ship_maybe_play_primary_fail_sound();
+			if ( &Objects[shipp->objnum] == Player_obj )ship_maybe_play_primary_fail_sound();
+			mprintf(("killing fighter beam becase it ran out of energy\n"));
+			return 0;
+		}else return 1;
+	}
 
 	// if the shooting turret is destroyed	
 	if(b->subsys->current_hits <= 0.0f){		
@@ -3298,7 +3325,7 @@ int beam_ok_to_fire(beam *b)
 	vector turret_dir, turret_pos;
 	vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 	vm_vec_normalize(&aim_dir);
-	ship_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp);
+	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
 	if(vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov){
 		mprintf(("BEAM : powering beam down because of FOV condition!\n"));
 		return 0;
@@ -3548,6 +3575,7 @@ void beam_test(int whee)
 	f.beam_info_index = beam_first + whee - 1;
 	if(Weapon_info[f.beam_info_index].wi_flags & WIF_BEAM){
 		HUD_printf("Firing %s\n", Weapon_info[f.beam_info_index].name);
+
 		beam_fire(&f);
 	}
 }

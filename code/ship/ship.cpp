@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.111 $
- * $Date: 2004-03-05 23:54:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.112 $
+ * $Date: 2004-03-17 04:07:32 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2004/03/05 23:54:48  Goober5000
+ * d'oh!
+ * --Goober5000
+ *
  * Revision 2.110  2004/03/05 23:41:04  Goober5000
  * made awacs only ask for help in the main fs2 campaign
  * --Goober5000
@@ -2280,11 +2284,11 @@ strcpy(parse_error_text, temp_error);
 	
 	if(optional_string("$Trails:")){//optional values aplyed to ABtrails -Bobboau
 //		mprintf(("ABtrails\n"));
-		char bitmap_name[MAX_FILENAME_LEN] = "";
+	//	char bitmap_name[MAX_FILENAME_LEN] = "";
 
 		required_string("+Bitmap:");
-		stuff_string(bitmap_name, F_NAME, NULL);
-		sip->ABbitmap = bm_load(bitmap_name);
+		stuff_string(sip->ABtrail_bitmap_name, F_NAME, NULL);
+		sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
 		
 		required_string("+Width:");
 		stuff_float(&sip->ABwidth_factor);
@@ -2296,7 +2300,7 @@ strcpy(parse_error_text, temp_error);
 		stuff_float(&sip->ABlife);
 	}else{
 //		mprintf(("no ABtrails\n"));
-		sip->ABbitmap = -1;	//defalts for no ABtrails-Bobboau
+		sip->ABbitmap = -2;	//defalts for no ABtrails-Bobboau
 		sip->ABwidth_factor = 1.0f;
 		sip->ABAlpha_factor = 1.0f;
 		sip->ABlife = 5.0f;
@@ -3243,6 +3247,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->current_translation=vmd_zero_vector;
 	shipp->time_until_full_cloak=timestamp(0);
 	shipp->cloak_alpha=255;
+
+//	shipp->ab_count = 0;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -6058,13 +6064,15 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	shipp->wing_status_wing_index = -1;		// wing index (0-4) in wingman status gauge
 	shipp->wing_status_wing_pos = -1;		// wing position (0-5) in wingman status gauge
 
-/*	sip->thruster_glow1 = bm_load(sip->thruster_bitmap1);
+	sip->thruster_glow1 = bm_load(sip->thruster_bitmap1);
 	sip->thruster_glow1a = bm_load(sip->thruster_bitmap1a);
 	sip->thruster_glow2 = bm_load(sip->thruster_bitmap2);
 	sip->thruster_glow2a = bm_load(sip->thruster_bitmap2a);
 	sip->thruster_glow3 = bm_load(sip->thruster_bitmap3);
 	sip->thruster_glow3a = bm_load(sip->thruster_bitmap3a);
-*/
+	
+	sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
+
 	trail_info *ci;
 	//first try at ABtrails -Bobboau	
 	shipp->ab_count = 0;
@@ -6077,19 +6085,11 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
 	
-				ci = &shipp->ab_info[shipp->ab_count++];
+				ci = &shipp->ab_info[shipp->ab_count];
 			//	ci = &sip->ct_info[sip->ct_count++];
 
-			if(sip->ct_count >= MAX_SHIP_CONTRAILS)break;
-			for(int j = 0; j < pm_orig->thrusters->num_slots; j++){
-			// this means you've reached the max # of AB trails for a ship
-			Assert(sip->ct_count < MAX_SHIP_CONTRAILS);
 
-			ci = &shipp->ab_info[shipp->ab_count++];
-			if(sip->ct_count >= MAX_SHIP_CONTRAILS)break;
-		//	ci = &sip->ct_info[sip->ct_count++];
-
-			if(pm_orig->thrusters[h].pnt[j].xyz.z < 0.5)continue;// only make ab trails for thrusters that are pointing backwards
+			if(pm_orig->thrusters[h].norm[j].xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
 
 			ci->pt = pm_orig->thrusters[h].pnt[j];//offset
 				ci->w_start = pm_orig->thrusters[h].radius[j] * sip->ABwidth_factor;//width * table loaded width factor
@@ -6106,7 +6106,8 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 
 			ci->bitmap = sip->ABbitmap; //table loaded bitmap used on this ships burner trails
 			mprintf(("ab trail point %d made\n", shipp->ab_count));
-			}
+			shipp->ab_count++;
+			Assert(MAX_SHIP_CONTRAILS > shipp->ab_count);
 			}
 		}
 	}//end AB trails -Bobboau
@@ -6296,9 +6297,58 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// was trashing mode in ai_info when it was valid due to goals.
 	//ai_object_init(&Objects[sp->objnum], sp->ai_index);
 //	Ai_info[sp->ai_index].ai_class = sip->ai_class;
+	
+	sip->thruster_glow1 = bm_load(sip->thruster_bitmap1);
+	sip->thruster_glow1a = bm_load(sip->thruster_bitmap1a);
+	sip->thruster_glow2 = bm_load(sip->thruster_bitmap2);
+	sip->thruster_glow2a = bm_load(sip->thruster_bitmap2a);
+	sip->thruster_glow3 = bm_load(sip->thruster_bitmap3);
+	sip->thruster_glow3a = bm_load(sip->thruster_bitmap3a);
+	//load it's thruster graphics
 
+	sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
 	// above removed by Goober5000 in favor of new ship_set_new_ai_class function :)
 	ship_set_new_ai_class(n, sip->ai_class);
+
+	sp->ab_count = 0;
+	if(sip->flags & SIF_AFTERBURNER)
+	{
+		polymodel * pm_orig;
+		pm_orig = model_get(sp->modelnum);
+		trail_info *ci;
+		for(int h = 0; h < pm_orig->n_thrusters; h++)
+		{
+			for(int j = 0; j < pm_orig->thrusters->num_slots; j++)
+			{
+				// this means you've reached the max # of AB trails for a ship
+				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
+	
+				ci = &sp->ab_info[sp->ab_count];
+			//	ci = &sip->ct_info[sip->ct_count++];
+
+
+			if(pm_orig->thrusters[h].norm[j].xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
+
+			ci->pt = pm_orig->thrusters[h].pnt[j];//offset
+				ci->w_start = pm_orig->thrusters[h].radius[j] * sip->ABwidth_factor;//width * table loaded width factor
+	
+				ci->w_end = 0.05f;//end width
+	
+				ci->a_start = 1.0f * sip->ABAlpha_factor;//start alpha  * table loaded alpha factor
+	
+				ci->a_end = 0.0f;//end alpha
+	
+				ci->max_life = sip->ABlife;// table loaded max life
+	
+				ci->stamp = 60;	//spew time???	
+
+			ci->bitmap = sip->ABbitmap; //table loaded bitmap used on this ships burner trails
+			mprintf(("ab trail point %d made\n", sp->ab_count));
+			sp->ab_count++;
+			Assert(MAX_SHIP_CONTRAILS > sp->ab_count);
+			}
+		}
+	}//end AB trails -Bobboau
 }
 
 #ifndef NDEBUG
@@ -6578,17 +6628,8 @@ int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 
 		shipp->was_firing_last_frame[bank_to_stop] = 0;
 
-		int weapon = swp->primary_bank_weapons[bank_to_stop];
-		weapon_info* winfo_p = &Weapon_info[weapon];
-
-
-		shipp->life_left[bank_to_stop] = winfo_p->b_info.beam_life;					//for fighter beams
-		shipp->life_total[bank_to_stop] = winfo_p->b_info.beam_life;					//for fighter beams
-		shipp->warmdown_stamp[bank_to_stop] = -1;				//for fighter beams
-		shipp->warmup_stamp[bank_to_stop] = -1;				//for fighter beams
-
-		snd_stop(shipp->fighter_beam_loop_sound[bank_to_stop]);
-		shipp->fighter_beam_loop_sound[bank_to_stop] = -1;//stops the beam looping sound -bobboau
+//		int weapon = swp->primary_bank_weapons[bank_to_stop];
+//		weapon_info* winfo_p = &Weapon_info[weapon];
 
 /*
 	if ( obj == Player_obj ){
@@ -6824,8 +6865,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			}
 
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
-			if ((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->b_info.beam_type == BEAM_TYPE_C))// fighter beams fire constantly, they only stop if they run out of power -Bobboau
-			swp->next_primary_fire_stamp[bank_to_fire] = timestamp();
+//			if ((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->b_info.beam_type == BEAM_TYPE_C))// fighter beams fire constantly, they only stop if they run out of power -Bobboau
+//			swp->next_primary_fire_stamp[bank_to_fire] = timestamp();
 		}
 
 		if (winfo_p->wi_flags2 & WIF2_CYCLE){
@@ -6847,136 +6888,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			continue;
 		}		
 		
-		if (winfo_p->wi_flags & WIF_BEAM){	// beam weapon?
-			if ( obj == Player_obj ) {//beam sounds for the player
-				sound_played = winfo_p->launch_snd;
-				if ( winfo_p->launch_snd != -1 ) {
-					weapon_info *wip;
-					ship_weapon *swp;
-
-					if(!(snd_is_playing(shipp->fighter_beam_loop_sound[bank_to_fire])) ){
-						shipp->fighter_beam_loop_sound[bank_to_fire] = -1;
-					}
-					if(shipp->fighter_beam_loop_sound[bank_to_fire] == -1 ){
-						shipp->fighter_beam_loop_sound[bank_to_fire] = snd_play_looping( &Snds[winfo_p->launch_snd], 0.0f, -1, -1, 1.0f, SND_PRIORITY_MUST_PLAY );
-					}
-	
-					swp = &Player_ship->weapons;
-					if (swp->current_primary_bank >= 0)
-					{
-						wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
-						int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
-
-						// modify force feedback for ballistics: make it stronger...
-						// will we ever have a ballistic beam? probably not, but just in case
-						if (wip->wi_flags2 & WIF2_BALLISTIC)
-							joy_ff_play_primary_shoot(force_level * 2);
-						// no ballistics
-						else
-							joy_ff_play_primary_shoot(force_level);
-					}
-				}
-			}else{//beam sounds for other fighters
-				//if the fighter doesn't have a fighter beam sound from being fired last frame give it one
-		
-		/*		if(!(snd_is_playing(shipp->fighter_beam_loop_sound[bank_to_fire])) ){
-					snd_stop(shipp->fighter_beam_loop_sound[bank_to_fire]);
-					shipp->fighter_beam_loop_sound[bank_to_fire] = -1;
-				}
-*/
-				vector pos, temp = obj->pos, temp2 = obj->pos;
-
-				vm_vec_unrotate(&temp2, &temp, &obj->orient);
-				vm_vec_add2(&temp, &temp2);
-				vm_vec_scale_add(&temp, &temp2, &obj->orient.vec.fvec, Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].b_info.range);
-
-				switch(vm_vec_dist_to_line(&View_position, &obj->pos, &temp, &pos, NULL)){
-					// behind the beam, so use the start pos
-				case -1:
-					pos = obj->pos;
-					break;
-			
-					// use the closest point
-				case 0:
-					// already calculated in vm_vec_dist_to_line(...)
-					break;
-
-					// past the beam, so use the shot pos
-				case 1:
-					pos = temp;
-					break;
-				}
-
-				if((shipp->fighter_beam_loop_sound[bank_to_fire] == -1)){				
-					shipp->fighter_beam_loop_sound[bank_to_fire] = snd_play_3d( &Snds[winfo_p->launch_snd], &pos, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
-				}else{//the fighter has a beam sound already, update it
-					snd_update_3d_pos(shipp->fighter_beam_loop_sound[bank_to_fire], &Snds[winfo_p->launch_snd], &pos);
-				}
-
-	
-			}//end of sound beam stuff
-		}
 
 		if ( po->n_guns > 0 ) {
 			int num_slots = po->gun_banks[bank_to_fire].num_slots;
 			
 			if(winfo_p->wi_flags & WIF_BEAM){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
-//mprintf(("I am going to fire a fighter beam\n"));
-								// fail unless we're forcing (energy based primaries)
-				if ( (shipp->weapon_energy < num_slots*winfo_p->energy_consumed*flFrametime) && !force) {
-					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]);
-					if ( obj == Player_obj ) {
-						if ( ship_maybe_play_primary_fail_sound() ) {
-						}
-					}
-					ship_stop_fire_primary_bank(obj, bank_to_fire);
-					continue;
-				}			
-
-
-				// deplete the weapon reserve energy by the amount of energy used to fire the weapon and the number of points and do it by the time it's been fireing becase this is a beam -Bobboau
-				shipp->weapon_energy -= num_slots*winfo_p->energy_consumed*flFrametime;
-				
-				fighter_beam_fire_info fbfire_info;
-/*
-				if(shipp->was_firing_last_frame[bank_to_fire] == 1){
-					if(shipp->warmup_stamp[bank_to_fire] < timestamp())
-						shipp->warmup_stamp[bank_to_fire] = -1;
-
-					shipp->life_left[bank_to_fire] -= flFrametime;
-				}else{
-					shipp->warmup_stamp[bank_to_fire] = timestamp() + winfo_p->b_info.beam_warmup;
-					shipp->life_left[bank_to_fire] = winfo_p->b_info.beam_life;					//for fighter beams
-					shipp->life_total[bank_to_fire] = winfo_p->b_info.beam_life;					//for fighter beams
-					shipp->warmdown_stamp[bank_to_fire] = -1;				//for fighter beams
-				
-				/*	if ( obj == Player_obj ){
-						HUD_printf("first frame");
-					}*/
-
-//				}
-				
-
-
-					shipp->warmup_stamp[bank_to_fire] = -1;
-					shipp->life_left[bank_to_fire] = 0.0f;					//for fighter beams
-					shipp->life_total[bank_to_fire] = 0.0f;					//for fighter beams
-					shipp->warmdown_stamp[bank_to_fire] = -1;				//for fighter beams
-
-				//	if ( obj == Player_obj ){
-						fbfire_info.fighter_beam_loop_sound = -1;
-				//	}else{
-				//		fbfire_info.fighter_beam_loop_sound = shipp->fighter_beam_loop_sound[bank_to_fire];		//fighterbeam loop sound -Bobboau
-				//	}
-				fbfire_info.life_left = shipp->life_left[bank_to_fire];					//for fighter beams
-				fbfire_info.life_total = shipp->life_total[bank_to_fire];					//for fighter beams
-				fbfire_info.warmdown_stamp = shipp->warmdown_stamp[bank_to_fire];				//for fighter beams
-				fbfire_info.warmup_stamp = shipp->warmup_stamp[bank_to_fire];				//for fighter beams
-//mprintf(("preliminary fighter beam data\n"));
-
-			//	if ( obj == Player_obj ){
-			//		HUD_printf("warmup %d, life left %0.3f", shipp->warmup_stamp[bank_to_fire], shipp->life_left[bank_to_fire]);
-			//	}
+				swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)((float) winfo_p->fire_wait * 1000.0f));//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
+				beam_fire_info fbfire_info;				
 
 				int points;
 				if (winfo_p->b_info.beam_shots){
@@ -6989,29 +6907,63 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					points = num_slots;
 				}
 
+				if ( shipp->weapon_energy < points*winfo_p->energy_consumed*flFrametime)
+				{
+					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]*2.0f);
+					if ( obj == Player_obj )
+					{
+						if ( ship_maybe_play_primary_fail_sound() )
+						{
+							// I guess they just deleted the commented HUD message here (they left
+							// it in in other routines)
+						}
+					}
+					ship_stop_fire_primary_bank(obj, bank_to_fire);
+					continue;
+				}			
+				//tp->turret_firing_point[ssp->turret_next_fire_pos % tp->turret_num_firing_points];
+				//tp->model_num, tp->turret_gun_sobj
+//				shipp->beam_sys_info.turret_norm = obj->orient.vec.fvec;
+//				shipp->beam_sys_info.
+				shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
+				shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
+				shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
+				shipp->beam_sys_info.model_num = shipp->modelnum;
+				shipp->beam_sys_info.turret_gun_sobj = po->detail[0];
+				shipp->beam_sys_info.turret_num_firing_points = 1;
+				shipp->beam_sys_info.turret_fov = (float)cos((winfo_p->field_of_fire != 0.0f)?winfo_p->field_of_fire:180);
+
+//				shipp->beam_sys_info.turret_fov = 0.0f;
+				shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
+				shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
+				shipp->fighter_beam_turret_data.current_hits = 1.0;
+				shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
+				fbfire_info.target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
+				fbfire_info.beam_info_index = shipp->weapons.primary_bank_weapons[bank_to_fire];
+				fbfire_info.beam_info_override = NULL;
+				fbfire_info.shooter = &Objects[shipp->objnum];
+				fbfire_info.target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+				fbfire_info.turret = &shipp->fighter_beam_turret_data;
+				fbfire_info.fighter_beam = true;
+				fbfire_info.bank = bank_to_fire;
+
+
 				int j; // fireing point cycleing for TBP
 
-//mprintf(("I am about to fire a fighter beam\n"));
 
 				for ( int v = 0; v < points; v++ ){
-//mprintf(("I am about to fire a fighter beam2\n"));
 					if(winfo_p->b_info.beam_shots){
-						j = ( (timestamp()/(int)((winfo_p->fire_wait * 2000.0f) / num_slots)) + v)%num_slots;
+						j = (shipp->last_fired_point[bank_to_fire]+1)%num_slots;
+						shipp->last_fired_point[bank_to_fire] = j;
 					}else{
 						j=v;
 					}
-//mprintf(("I am about to fire a fighter beam3\n"));					
-					fbfire_info.accuracy = 0.0f;
-					fbfire_info.beam_info_index = shipp->weapons.primary_bank_weapons[bank_to_fire];
-					fbfire_info.beam_info_override = NULL;
-					fbfire_info.shooter = &Objects[shipp->objnum];
-					fbfire_info.target = NULL;
-					fbfire_info.target_subsys = NULL;
-					fbfire_info.turret = NULL;
 					fbfire_info.targeting_laser_offset = po->gun_banks[bank_to_fire].pnt[j];			
-					winfo_p->b_info.beam_type = BEAM_TYPE_C;
+					shipp->beam_sys_info.pnt = po->gun_banks[bank_to_fire].pnt[j];
+					shipp->beam_sys_info.turret_firing_point[0] = po->gun_banks[bank_to_fire].pnt[j];
+			//		winfo_p->b_info.beam_type = BEAM_TYPE_C;
 //mprintf(("I am about to fire a fighter beam4\n"));
-					beam_fire_targeting(&fbfire_info);
+					beam_fire(&fbfire_info);
 					num_fired++;
 					//shipp->targeting_laser_objnum = beam_fire_targeting(&fire_info);			
 				}
@@ -7191,10 +7143,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 					num_fired++;
 				}
+				shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;
 				}
 			}
 			
-			shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;
 
 			if(shipp->weapon_energy < 0.0f){
 				shipp->weapon_energy = 0.0f;
@@ -11433,6 +11385,7 @@ void ship_page_in()
 					if(strcmp(sip->afterburner_thruster_particles[k].thruster_particle_bitmap01_name, "none"))sip->afterburner_thruster_particles[k].thruster_particle_bitmap01 = bm_load_animation(sip->afterburner_thruster_particles[k].thruster_particle_bitmap01_name, &sip->afterburner_thruster_particles[k].thruster_particle_bitmap01_nframes, &idontcare, 1);
 					else sip->afterburner_thruster_particles[k].thruster_particle_bitmap01 = -1;
 				}
+			sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
 		}
 	}
 

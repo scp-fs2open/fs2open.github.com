@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.44 $
- * $Date: 2004-03-05 09:02:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.45 $
+ * $Date: 2004-03-17 04:07:29 $
+ * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2004/03/05 09:02:00  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.43  2004/02/20 21:45:41  randomtiger
  * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
  * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
@@ -1101,7 +1105,7 @@ float flCAP( float x, float minx, float maxx)
 static float Interp_fog_level;
 int w_factor = 256;
 
-#define MAX_INTERNAL_POLY_VERTS 129
+#define MAX_INTERNAL_POLY_VERTS 1024
 
 /**
  * This will be used to render the 3D parts the of FS2 engine
@@ -1208,7 +1212,7 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 	
 	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
 
-	D3DLVERTEX d3d_verts[MAX_INTERNAL_POLY_VERTS];
+	static D3DLVERTEX d3d_verts[MAX_INTERNAL_POLY_VERTS];	//static so it doesn't have to reallocate it every time
 	D3DLVERTEX *src_v = d3d_verts;
 
 	float uoffset = 0.0f;
@@ -1657,7 +1661,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	
 	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
 
-	D3DTLVERTEX d3d_verts[MAX_INTERNAL_POLY_VERTS];
+	static D3DTLVERTEX d3d_verts[MAX_INTERNAL_POLY_VERTS];		//static so it doesn't have to reallocate it every time
 	D3DTLVERTEX *src_v = d3d_verts;
 
 	int x1, y1, x2, y2;

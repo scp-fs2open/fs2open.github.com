@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.6 $
- * $Date: 2004-03-05 09:01:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-03-17 04:07:32 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/05 09:01:54  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.5  2003/11/11 02:15:41  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -168,6 +172,8 @@ typedef struct beam_fire_info {
 	ship_subsys		*target_subsys;				// (optional), specific subsystem to be targeted on the target 
 	beam_info		*beam_info_override;			// (optional), pass this in to override all beam movement info (for multiplayer)
 	int				num_shots;						// (optional), only used for type D weapons
+	bool fighter_beam;
+	int bank;		//fighter beams, wich bank of the primary weapons are they in
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {

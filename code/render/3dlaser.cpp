@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-06 23:28:24 $
+ * $Revision: 2.10 $
+ * $Date: 2004-03-17 04:07:31 $
  * $Author: bobboau $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/06 23:28:24  bobboau
+ * fixed motion debris
+ * animated laser textures
+ * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
+ *
  * Revision 2.8  2004/03/05 09:01:51  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -252,6 +257,8 @@ float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, 
 
 float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, int g, int b, uint tmap_flags)
 {
+	width1 *= 0.5f;
+	width2 *= 0.5f;
 	vector uvec, fvec, rvec, center, reye;
 
 	vm_vec_sub( &fvec, p0, p1 );

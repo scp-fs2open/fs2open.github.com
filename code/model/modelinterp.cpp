@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.75 $
- * $Date: 2004-03-06 23:28:23 $
+ * $Revision: 2.76 $
+ * $Date: 2004-03-17 04:07:30 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2004/03/06 23:28:23  bobboau
+ * fixed motion debris
+ * animated laser textures
+ * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
+ *
  * Revision 2.74  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -3558,10 +3563,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		model_interp_subcall(pm,pm->detail[detail_level],detail_level);
 	}
 
-/*	if(!Cmdline_nohtl){
+	if(!Cmdline_nohtl){
 		gr_reset_lighting();
 		gr_set_lighting(false,false);
-	}*/
+	}
 
 	if (Interp_flags & MR_SHOW_PIVOTS )	{
 		model_draw_debug_points( pm, NULL );
@@ -3598,6 +3603,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}	
 			
 
+	neb2_get_fog_intensity(obj);
 //start rendering glow points -Bobboau
 
 		if ( (pm->n_glows) /*&& (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
@@ -3856,11 +3862,15 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					if ( d > 1.0f ) d = 1.0f;
 				}
 				vector npnt;
+				float fog_int = 1.0;
 				// fade them in the nebula as well
 				if(The_mission.flags & MISSION_FLAG_FULLNEB){
 				//	vector npnt;
-					vm_vec_add(&npnt, &bank->pnt[j], pos);
-					d *= (1.0f - neb2_get_fog_intensity(&npnt));
+					vm_vec_rotate(&npnt, &bank->pnt[j], orient);
+					vm_vec_add2(&npnt, pos);
+					fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
+				//	fog_int /=10;.0f;
+					d *= fog_int;
 				}
 
 					
@@ -3885,7 +3895,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 //						g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
 						if(Cmdline_nohtl)g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
-						else g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w*0.325 );
+						else g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w*0.325f );
 
 						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
 					}
@@ -3894,7 +3904,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				if(Interp_tertiary_thrust_glow_bitmap > -1){
 					//tertiary thruster glows, suposet to be a complement to the secondary thruster glows, it simulates the effect of an ion wake or something, 
 					//thus is mostly for haveing a glow that is visable from the front
-					gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (The_mission.flags & MISSION_FLAG_FULLNEB)?(1.0f - neb2_get_fog_intensity(&npnt)):1.0f );
+					gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, fog_int );
 					
 					p.sw -= w;
 					//g3_draw_bitmap(&p,0,w, TMAP_FLAG_TEXTURED );
@@ -3980,7 +3990,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					if(The_mission.flags & MISSION_FLAG_FULLNEB){
 						vector npnt;
 						vm_vec_add(&npnt, &pnt, pos);
-						d *= (1.0f - neb2_get_fog_intensity(&npnt));
+						d *= fog_int;
 					}
 
 					gr_set_cull(0);
@@ -4615,6 +4625,12 @@ poly_list list[MAX_MODEL_TEXTURES];
 poly_list flat_list;
 line_list flat_line_list;
 
+vector **htl_verts = NULL;
+vector **htl_norms = NULL;
+
+int htl_nverts = 0;
+int htl_nnorms = 0;
+
 #define parseF(dest, f, off)	{memcpy(&dest, &f[off], sizeof(float)); off += sizeof(float);}
 #define parseI(dest, f, off)	{memcpy(&dest, &f[off], sizeof(int)); off += sizeof(int);}
 #define parseV(dest, f, off)	{parseF(dest.x, f, off); parseF(dest.y, f, off); parseF(dest.z, f, off); }
@@ -4630,13 +4646,13 @@ void parse_defpoint(int off, ubyte *bsp_data){
 	int next_norm = 0;
 
 	ubyte * normcount = off+bsp_data+20;
-	vertex *dest = Interp_points;
+//	vertex *dest = Interp_points;
 	vector *src = vp(off+bsp_data+offset);
 
 	// Get pointer to lights
 	Interp_lights = off+bsp_data+20+nverts;
 
-	Assert( nverts < MAX_POLYGON_VECS );
+//	Assert( nverts < MAX_POLYGON_VECS );
 	// Assert( nnorms < MAX_POLYGON_NORMS );
 
 	Interp_num_verts = nverts;
@@ -4649,17 +4665,17 @@ void parse_defpoint(int off, ubyte *bsp_data){
 
 		for (n=0; n<nverts; n++ )	{	
 
-			Interp_verts[n] = src;	
+			htl_verts[n] = src;	
 		
 			src++;		// move to normal
 
 			for (i=0; i<normcount[n]; i++ )	{
-				Interp_norms[next_norm] = src;
+				htl_norms[next_norm] = src;
 
 				next_norm++;
 				src++;
 			}
-			dest++;
+//			dest++;
 		}
 	}
 
@@ -4707,13 +4723,13 @@ void parse_tmap(int offset, ubyte *bsp_data){
 	for(int i = 1; i<n_vert-1; i++){
 		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)];
 		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)];
-		v = Interp_verts[(int)tverts[0].vertnum];
+		v = htl_verts[(int)tverts[0].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
 		V->z = v->xyz.z;
 		V->u = tverts[0].u;
 		V->v = tverts[0].v;
-		*N = *Interp_norms[(int)tverts[0].normnum];
+		*N = *htl_norms[(int)tverts[0].normnum];
 		if(IS_VEC_NULL(N))
 			*N = *vp(p+8);
 
@@ -4723,13 +4739,13 @@ void parse_tmap(int offset, ubyte *bsp_data){
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+1];
 		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)+1];
-		v = Interp_verts[(int)tverts[i].vertnum];
+		v = htl_verts[(int)tverts[i].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
 		V->z = v->xyz.z;
 		V->u = tverts[i].u;
 		V->v = tverts[i].v;
-		*N = *Interp_norms[(int)tverts[i].normnum];
+		*N = *htl_norms[(int)tverts[i].normnum];
 		if(IS_VEC_NULL(N))
 			*N = *vp(p+8);
 
@@ -4739,13 +4755,13 @@ void parse_tmap(int offset, ubyte *bsp_data){
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+2];
 		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)+2];
-		v = Interp_verts[(int)tverts[i+1].vertnum];
+		v = htl_verts[(int)tverts[i+1].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
 		V->z = v->xyz.z;
 		V->u = tverts[i+1].u;
 		V->v = tverts[i+1].v;
-		*N = *Interp_norms[(int)tverts[i+1].normnum];
+		*N = *htl_norms[(int)tverts[i+1].normnum];
 		if(IS_VEC_NULL(N))
 			*N = *vp(p+8);
 
@@ -4911,13 +4927,42 @@ void parse_sortnorm(int offset, ubyte *bsp_data){
 }
 
 void find_tri_counts(int offset, ubyte *bsp_data);
+/*
+int htl_nverts = 0;
+int htl_nnorms = 0;
+vector *htl_verts;
+vector *htl_norms;
+*/
 
+void dealc_model_loadstuf(){
+	delete[] htl_verts;
+	delete[] htl_norms;
+}
+
+ int alocate_poly_list_nvert = 0;
+ int alocate_poly_list_nnorm = 0;
+ bool alocate_poly_list_a = true;
 void alocate_poly_list(){
 	for(int i = 0; i<MAX_MODEL_TEXTURES; i++){
 		if(list[i].vert!=NULL){delete[] list[i].vert; list[i].vert = NULL;}
 		if(list[i].norm!=NULL){delete[] list[i].norm; list[i].norm = NULL;}
 		if(tri_count[i])list[i].vert = new vertex[tri_count[i]*3];
 		if(tri_count[i])list[i].norm = new vector[tri_count[i]*3];
+	}
+	if(htl_nverts > alocate_poly_list_nvert){
+		if(htl_verts)delete[] htl_verts;
+		htl_verts = new vector*[htl_nverts];
+		alocate_poly_list_nvert = htl_nverts;
+	}
+	if(htl_nnorms > alocate_poly_list_nnorm){
+		if(htl_nnorms)delete[] htl_norms;
+		htl_norms = new vector*[htl_nnorms];
+		alocate_poly_list_nnorm = htl_nnorms;
+	}
+
+	if(alocate_poly_list_a){
+		atexit(dealc_model_loadstuf);
+		alocate_poly_list_a = false;
 	}
 }
 
@@ -4973,6 +5018,49 @@ void find_sortnorm(int offset, ubyte *bsp_data){
 	if (frontlist) find_tri_counts(offset+frontlist, bsp_data);
 	if (postlist) find_tri_counts(offset+postlist, bsp_data);
 }
+/*
+vertex *htl_points;
+vector *htl_verts;
+vector *htl_norms;
+
+int htl_nverts = 0;
+int htl_nnorms = 0;
+*/
+void find_defpoint(int off, ubyte *bsp_data){
+
+	int i, n;
+//	off+=4;
+	int nverts = w(off+bsp_data+8);	
+	int offset = w(off+bsp_data+16);
+	int next_norm = 0;
+
+	ubyte * normcount = off+bsp_data+20;
+	vector *src = vp(off+bsp_data+offset);
+
+	// Get pointer to lights
+	Interp_lights = off+bsp_data+20+nverts;
+
+	// Assert( nnorms < MAX_POLYGON_NORMS );
+
+	Interp_num_verts = nverts;
+	#ifndef NDEBUG
+	modelstats_num_verts += nverts;
+	#endif
+
+
+	int norm_num = 0;
+	for (n=0; n<nverts; n++ )	{	
+		
+		src++;		// move to normal
+
+		norm_num += normcount[n];
+	}
+
+	htl_nverts = nverts;
+	htl_nnorms = norm_num;
+
+}
+
 
 //tri_count
 void find_tri_counts(int offset, ubyte *bsp_data){
@@ -4986,7 +5074,7 @@ void find_tri_counts(int offset, ubyte *bsp_data){
 		case OP_EOF:	
 			return;
 			break;
-		case OP_DEFPOINTS:	//find_defpoint(offset, bsp_data);
+		case OP_DEFPOINTS:	find_defpoint(offset, bsp_data);
 			break;
 		case OP_SORTNORM:	find_sortnorm(offset, bsp_data);
 			break;
@@ -5148,6 +5236,10 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 			}
 			gr_zbuffer_set(GR_ZBUFF_READ);
 			
+		}else if(Interp_flags & MR_ALL_XPARENT){
+			gr_set_cull(0);
+			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_xparent_alpha );
+			gr_zbuffer_set(GR_ZBUFF_NONE);
 		}else if(Warp_Map > -1){	//trying to get transperent textures-Bobboau
 			gr_set_cull(0);
 			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
@@ -5165,6 +5257,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 		if((Interp_flags & MR_EDGE_ALPHA))gr_center_alpha(-1);
 		else if((Interp_flags & MR_CENTER_ALPHA))gr_center_alpha(1);
 		else gr_center_alpha(0);
+		
 
 		gr_render_buffer(model->buffer[i].vertex_buffer);		
 	}

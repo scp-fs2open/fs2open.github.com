@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.6 $
- * $Date: 2004-03-05 09:02:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-03-17 04:07:32 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/05 09:02:07  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.5  2003/09/10 11:38:31  fryday
  * Added Lens Flares, enabled by optional table entry in stars.tbl on a per-sun basis
  *
@@ -143,7 +147,7 @@
 #include "globalincs/pstypes.h"
 
 #define MAX_STARFIELD_BITMAP_LISTS	1
-#define MAX_STARFIELD_BITMAPS			60
+#define MAX_STARFIELD_BITMAPS			160
 #define MAX_ASTEROID_FIELDS			4
 
 
