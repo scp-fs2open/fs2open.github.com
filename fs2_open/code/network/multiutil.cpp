@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-10-15 22:03:26 $
+ * $Revision: 2.10 $
+ * $Date: 2003-10-30 15:30:23 $
  * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/15 22:03:26  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.8  2003/10/13 05:57:50  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
  * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
@@ -3253,6 +3256,10 @@ void multi_update_validate_missions_DrawString(char *str)
 
 void multi_update_valid_missions()
 {
+
+	// if we're not on FS2NetD (PXO) then don't bother with this function
+	if (!Om_tracker_flag)
+		return;
 
 	static char Server[32];
 	static int port = -1;
