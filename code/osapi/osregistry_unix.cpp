@@ -7,6 +7,8 @@
  *
 */
 
+#ifndef WIN32	// Goober5000
+
 #include <string.h>
 #include "globalincs/pstypes.h"
 #include "osapi/osregistry.h"
@@ -129,3 +131,5 @@ char * os_config_read_string_ex( char *keyname, char *name, char *default_value 
 	// mharris TODO
 	return default_value;
 }
+
+#endif		// Goober5000 - #ifndef WIN32

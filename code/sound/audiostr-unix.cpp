@@ -1,15 +1,20 @@
 /*
  * $Logfile: $
- * $Revision: 1.1 $
- * $Date: 2004-05-24 07:00:46 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-07-26 17:39:19 $
+ * $Author: Goober5000 $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/24 07:00:46  taylor
+ * The Great Linux Merge
+ *
  *
  * $NoKeywords: $
  */
+
+#ifndef WIN32	// Goober5000
 
 #include "globalincs/pstypes.h"
 #include "sound/audiostr.h"
@@ -1296,3 +1301,5 @@ void audiostream_unpause_all()
 {
 	STUB_FUNCTION;
 }
+
+#endif		// Goober5000 - #ifndef WIN32
