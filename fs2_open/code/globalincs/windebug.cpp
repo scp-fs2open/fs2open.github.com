@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-03-01 06:55:40 $
- * $Author: bobboau $
+ * $Revision: 2.18 $
+ * $Date: 2005-03-08 03:50:25 $
+ * $Author: Goober5000 $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/03/01 06:55:40  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.16  2005/02/04 10:12:29  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -937,12 +941,12 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 		dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 		dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
 
-	stay_minimised_damnit = true;
+	stay_minimised = true;
 		val = MessageBox(NULL, dumpBuffer.buffer, "Assertion Failed!", MB_OKCANCEL|flags );
 	#else
 		val = MessageBox(NULL, AssertText1, "Assertion Failed!", MB_OKCANCEL|flags );
 	#endif
-	stay_minimised_damnit = false;
+	stay_minimized = false;
 
 	ShowCursor(false);
 
@@ -981,13 +985,13 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 		dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 		dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
 
-	stay_minimised_damnit = true;
+	stay_minimized = true;
 		val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags|MB_OKCANCEL );
 	#else
 		strcat(AssertText2,"\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
 		val = MessageBox(NULL, AssertText2, "Error!", flags|MB_OKCANCEL );
 	#endif
-	stay_minimised_damnit = false;
+	stay_minimized = false;
 
 	ShowCursor(false);
 
@@ -1025,9 +1029,9 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 		sprintf(AssertText2,"%s\n\nWarning: %s\r\nFile:%s\r\nLine: %d\n\n%s", 
 			explanation, AssertText1, filename, line, end);
 
-	stay_minimised_damnit = true;
+	stay_minimized = true;
 		int result = MessageBox((HWND) os_get_window(), AssertText2, "Fred Warning", MB_ICONWARNING | MB_YESNO);//CANCEL);
-	stay_minimised_damnit = false;
+	stay_minimized = false;
 
 	ShowCursor(false);
 		switch(result)
@@ -1066,13 +1070,13 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 		dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 		dumpBuffer.Printf("\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 
-	stay_minimised_damnit = true;
+	stay_minimized = true;
 		id = MessageBox(NULL, dumpBuffer.buffer, "Warning!", MB_YESNOCANCEL|flags );
 	#else
 		strcat(AssertText2,"\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 		id = MessageBox(NULL, AssertText2, "Warning!", MB_YESNOCANCEL|flags );
 	#endif
-	stay_minimised_damnit = false;
+	stay_minimized = false;
 	ShowCursor(false);
 	if ( id == IDCANCEL )
 		exit(1);

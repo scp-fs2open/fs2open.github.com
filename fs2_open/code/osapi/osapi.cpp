@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-03-03 16:18:19 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2005-03-08 03:50:24 $
+ * $Author: Goober5000 $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/03/03 16:18:19  taylor
+ * lockup fixes, and it's Linux friendly too :)
+ *
  * Revision 2.24  2005/03/01 06:55:42  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -544,7 +547,7 @@ void change_window_active_state()
 			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
 #endif
 		}
-		if(!stay_minimised_damnit){
+		if(!stay_minimized){
 			ShowCursor(!fAppActive);
 			gr_activate(fAppActive);
 		}else{
@@ -558,7 +561,7 @@ void change_window_active_state()
 }
 
 int Got_message = 0;
-bool stay_minimised_damnit = false;
+bool stay_minimized = false;
 // message handler for the main thread
 LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
 {

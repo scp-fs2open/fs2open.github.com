@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.65 $
- * $Date: 2005-03-07 13:10:21 $
- * $Author: bobboau $
+ * $Revision: 2.66 $
+ * $Date: 2005-03-08 03:50:19 $
+ * $Author: Goober5000 $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2005/03/07 13:10:21  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.64  2005/03/04 03:24:44  bobboau
  * made all the gr_d3d_tmapper variants use dynamic a vertex buffer rather
  * than drawprimitiveup, this also means that these functions can now
@@ -226,7 +230,7 @@
  *
  * Revision 2.22  2003/10/13 05:57:48  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Commented out the "warning null vector in vector normalize" crap
  * Added "beam no whack" flag for beams - said beams NEVER whack
  * Some reliability updates in FS2NetD
  *

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.83 $
- * $Date: 2005-03-03 06:05:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.84 $
+ * $Date: 2005-03-08 03:50:22 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2005/03/03 06:05:29  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.82  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -5964,7 +5967,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 		return;
 	}
 	
-	// create a parse object, and put it onto the ship_arrival_list.  This whole thing kind of sucks.
+	// create a parse object, and put it onto the ship_arrival_list.  This whole thing kind of stinks.
 	// I want to put it into a parse object since it needs to arrive just a little later than
 	// this function is called.  I have to make some assumptions in the code about values for the parse
 	// object since I'm no longer working with a mission file.  These exceptions will be noted with

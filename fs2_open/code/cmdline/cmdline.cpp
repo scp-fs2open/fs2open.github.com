@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.95 $
- * $Date: 2005-03-03 06:05:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.96 $
+ * $Date: 2005-03-08 03:50:19 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2005/03/03 06:05:26  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.94  2005/02/16 10:00:13  wmcoolmon
  * "-ingame" command line option
  *
@@ -234,7 +237,7 @@
  * Speech now chooses voice based on reg value set by launcher v3.1
  *
  * Revision 2.43  2003/11/11 03:56:10  bobboau
- * shit load of bug fixing, much of it in nebula and bitmap drawing
+ * lots of bug fixing, much of it in nebula and bitmap drawing
  *
  * Revision 2.42  2003/11/09 06:31:38  Kazan
  * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed

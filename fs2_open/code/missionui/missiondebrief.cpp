@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-03-02 21:24:45 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2005-03-08 03:50:21 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.29  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -2585,10 +2588,10 @@ void debrief_init()
 //	/* 21-07-02 01:12 Commented out DTP, so we have the original source here 
 	// start up the appropriate music
 	if ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) {
-		// you failed the mission because you suck, so you get the suck music
+		// you failed the mission, so you get the fail music
 		common_music_init(SCORE_DEBRIEF_FAIL);
 	} else if (mission_goals_met()) {
-		// you completed all primaries and secondaries, thus you are a stud boy and you get stud boy music
+		// you completed all primaries and secondaries, so you get the win music
 		common_music_init(SCORE_DEBRIEF_SUCCESS);
 	} else {
 		// you somehow passed the mission, so you get a little something for your efforts.
