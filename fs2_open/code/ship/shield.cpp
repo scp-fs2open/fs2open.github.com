@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-10-09 17:51:23 $
+ * $Revision: 2.23 $
+ * $Date: 2004-10-31 22:05:30 $
  * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/10/09 17:51:23  taylor
+ * safer handling of missing shield ani
+ *
  * Revision 2.21  2004/08/20 05:13:08  Kazan
  * wakka wakka - fix minor booboo
  *
@@ -340,8 +343,6 @@ int Shield_bitmaps_loaded = 0;
 
 //	This is a recursive function, so prototype it.
 extern void create_shield_from_triangle(int trinum, matrix *orient, shield_info *shieldp, vector *tcp, vector *centerp, float radius, vector *rvec, vector *uvec);
-
-extern int OGL_inited;
 
 void load_shield_hit_bitmap()
 {
@@ -684,7 +685,7 @@ void render_shield(int shield_num) //, matrix *orient, vector *centerp)
 	}
 
 	//	At detail levels 1, 3, animations play at double speed to reduce load.
-	if (!D3D_enabled || !OGL_inited ||  (Detail.shield_effects == 1) || (Detail.shield_effects == 3)) {
+	if (!D3D_enabled || !OGL_enabled ||  (Detail.shield_effects == 1) || (Detail.shield_effects == 3)) {
 		Shield_hits[shield_num].start_time -= Frametime;
 	}
 
@@ -743,11 +744,11 @@ void render_shield(int shield_num) //, matrix *orient, vector *centerp)
 		}
 		gr_set_bitmap(bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
 	
-		// UnknownPlayer : Those foo OGL people ensured this routine would always be executed by making OGL_inited
+		// UnknownPlayer : Those foo OGL people ensured this routine would always be executed by making OGL_enabled
 		// evaluated via OR. So we fix this problem by evaluating by AND, which means that if we're not using
 		// either THEN do the low detail shield thing.
 	
-		if ( (!D3D_enabled && !OGL_inited) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
+		if ( (!D3D_enabled && !OGL_enabled) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
 			if ( bitmap_id != - 1 ) {
 				render_low_detail_shield_bitmap(&Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
 			}
@@ -1048,10 +1049,10 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vector *
 	//nprintf(("AI", "Frame %i: Creating explosion on %i.\n", Framecount, objnum));
 
 	// UnknownPlayer : Again with the lack of thought to exactly what was coded by the OGL people!! Gah!
-	// (!D3D_enabled || !OGL_inited) is true if either of them is false. (!D3D_enabled && !OGL_inited) will
+	// (!D3D_enabled || !OGL_enabled) is true if either of them is false. (!D3D_enabled && !OGL_enabled) will
 	// be false if either of them is true. See the difference people!
 
-	if ( (!D3D_enabled && !OGL_inited) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
+	if ( (!D3D_enabled && !OGL_enabled) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
 		create_shield_low_detail(objnum, model_num, orient, centerp, tcp, tr0, shieldp);
 		return;
 	}
