@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-05-31 08:32:25 $
+ * $Revision: 2.17 $
+ * $Date: 2004-05-31 08:54:13 $
  * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/05/31 08:32:25  wmcoolmon
+ * Custom HUD support, better loading, etc etc.
+ *
  * Revision 2.15  2004/05/03 21:22:21  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -1569,7 +1572,18 @@ void HUD_render_2d(float frametime)
 	}
 
 	//Custom hud stuff
-	for(int i = 0; i < Num_custom_gauges; i++)
+	int i;
+	static bool image_ids_set = false;
+	static int image_ids[MAX_CUSTOM_HUD_GAUGES];
+	for(i = 0; i < MAX_CUSTOM_HUD_GAUGES; i++)
+	{
+		if(!image_ids_set && strlen(current_hud->custom_gauge_images[i]))
+		{
+			image_ids[i] = bm_load(current_hud->custom_gauge_images[i]);
+		}
+	}
+	image_ids_set = true;
+	for(i = 0; i < Num_custom_gauges; i++)
 	{
 		if(strlen(current_hud->custom_gauge_text[i]))
 		{
@@ -1578,7 +1592,7 @@ void HUD_render_2d(float frametime)
 		}
 		if(strlen(current_hud->custom_gauge_images[i]))
 		{
-			GR_AABITMAP(bm_load(current_hud->custom_gauge_images[i]), current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
+			GR_AABITMAP(image_ids[i], current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
 		}
 	}
 
