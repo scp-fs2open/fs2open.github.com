@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-04-26 19:43:07 $
+ * $Revision: 2.28 $
+ * $Date: 2004-04-26 19:50:04 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/04/26 19:43:07  Goober5000
+ * rolled back Kazan's change
+ * --Goober5000
+ *
  * Revision 2.25  2004/04/25 06:31:53  Goober5000
  * made time dilation only available in cheat mode; also fixed an obscure CTD
  * --Goober5000
@@ -2459,8 +2463,9 @@ int button_function_demo_valid(int n)
 
 	case TIME_SLOW_DOWN:
 		if ( Game_mode & GM_NORMAL ) {
-			// Goober5000 - time dilation only available in cheat mode (see above)
-			if ( Game_time_compression > F1_0) {
+			// Goober5000 - time dilation only available in cheat mode (see above);
+			// now you can do it with or without pressing the tilde, per Kazan's request
+			if ( (Game_time_compression > F1_0) || (Cheats_enabled && (Game_time_compression > (F1_0/MAX_TIME_DIVIDER))) ) {
 				Game_time_compression /= 2;
 			} else {
 				gamesnd_play_error_beep();
