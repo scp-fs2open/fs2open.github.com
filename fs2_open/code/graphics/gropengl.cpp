@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.46 $
- * $Date: 2003-11-11 18:05:02 $
- * $Author: phreak $
+ * $Revision: 2.47 $
+ * $Date: 2003-11-12 00:44:52 $
+ * $Author: Kazan $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/11/11 18:05:02  phreak
+ * support for GL_ARB_vertex_buffer_object.  should run real fast now with _VERY_
+ * high poly ships
+ *
  * Revision 2.45  2003/11/07 20:55:15  phreak
  * reenabled timerbar
  *
@@ -4126,7 +4130,10 @@ uint opengl_create_vbo(uint size, void** data)
 		return 0;
 
 
-	uint buffer_name;
+	// Kazan: A) This makes that if (buffer_name) work correctly (false = 0, true = anything not 0)
+	//				if glGenBuffersARB() doesn't initialized it for some reason
+	//        B) It shuts up MSVC about may be used without been initalized
+	uint buffer_name=0;
 
 	glGenBuffersARB(1, &buffer_name);
 	
