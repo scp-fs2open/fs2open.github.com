@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.130 $
- * $Date: 2005-03-07 13:10:20 $
- * $Author: bobboau $
+ * $Revision: 2.131 $
+ * $Date: 2005-03-10 08:00:02 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.130  2005/03/07 13:10:20  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.129  2005/03/03 12:58:25  Kazan
  * !Om_tracker_flag = non-pxo
  *
@@ -4513,7 +4517,7 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 				vm_vec_scale_add2(&Player_obj->pos, &Dead_player_last_vel, flFrametime);
 				view_pos = Player_obj->pos;
 				vm_vec_scale(&Dead_player_last_vel, 0.99f);
-				vm_vec_scale_add2(&Dead_camera_pos, &Original_vec_to_deader, min(25.0f, vm_vec_mag_quick(&Dead_player_last_vel)) * flFrametime);
+				vm_vec_scale_add2(&Dead_camera_pos, &Original_vec_to_deader, MIN(25.0f, vm_vec_mag_quick(&Dead_player_last_vel)) * flFrametime);
 			}
 
 			*eye_pos = Dead_camera_pos;
@@ -5011,7 +5015,7 @@ void game_simulation_frame()
 	// single player, set Player hits_this_frame to 0
 	if ( !(Game_mode & GM_MULTIPLAYER) && Player ) {
 		Player->damage_this_burst -= (flFrametime * MAX_BURST_DAMAGE  / (0.001f * BURST_DURATION));
-		Player->damage_this_burst = max(Player->damage_this_burst, 0.0f);
+		Player->damage_this_burst = MAX(Player->damage_this_burst, 0.0f);
 	}
 
 	// supernova

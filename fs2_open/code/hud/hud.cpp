@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-03-02 21:24:44 $
+ * $Revision: 2.41 $
+ * $Date: 2005-03-10 08:00:06 $
  * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.39  2005/02/27 07:07:47  wmcoolmon
  * nonstandard res HUD stuff
  *
@@ -2198,7 +2201,7 @@ void hud_show_damage_popup()
 			
 			if ( Pl_hud_is_bright ) {
 				int alpha_color;
-				alpha_color = min(HUD_COLOR_ALPHA_MAX,HUD_color_alpha+HUD_BRIGHT_DELTA);
+				alpha_color = MIN(HUD_COLOR_ALPHA_MAX,HUD_color_alpha+HUD_BRIGHT_DELTA);
 				// gr_set_color_fast(&HUD_color_defaults[alpha_color]);
 
 				hud_set_gauge_color(HUD_DAMAGE_GAUGE, alpha_color);
@@ -2624,20 +2627,20 @@ int hud_get_dock_time( object *docker_objp )
 
 		//	For mid-range, use current speed.
 		if (d > 60.0f) {
-			d1 = min(d, 100.0f);
+			d1 = MIN(d, 100.0f);
 
 			time += (d1 - 60.0f)/rel_speed;
 		}
 
 		//	For nearby, ship will have to slow down a bit for docking maneuver.
 		if (d > 30.0f) {
-			d1 = min(d, 60.0f);
+			d1 = MIN(d, 60.0f);
 
 			time += (d1 - 30.0f)/5.0f;
 		}
 
 		//	For very nearby, ship moves quite slowly.
-		d1 = min(d, 30.0f);
+		d1 = MIN(d, 30.0f);
 		time += d1/7.5f;
 
 		return fl2i(time);
@@ -2831,7 +2834,7 @@ void hud_set_default_color()
 void hud_set_bright_color()
 {
 	int alpha_color;
-	alpha_color = min(HUD_COLOR_ALPHA_MAX,HUD_color_alpha+HUD_BRIGHT_DELTA);
+	alpha_color = MIN(HUD_COLOR_ALPHA_MAX,HUD_color_alpha+HUD_BRIGHT_DELTA);
 	gr_set_color_fast(&HUD_color_defaults[alpha_color]);
 }
 

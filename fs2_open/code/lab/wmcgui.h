@@ -17,7 +17,7 @@ protected:
 	struct LinkedList *next, *prev;
 
 	LinkedList(){next=this;prev=this;}
-	~LinkedList(){prev->next=next;next->prev=prev;}
+	virtual ~LinkedList(){prev->next=next;next->prev=prev;}
 };
 
 //*****************************ClassInfoEntry*******************************

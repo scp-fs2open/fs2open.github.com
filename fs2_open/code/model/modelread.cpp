@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.60 $
- * $Date: 2005-03-06 17:16:08 $
+ * $Revision: 2.61 $
+ * $Date: 2005-03-10 08:00:10 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/03/06 17:16:08  taylor
+ * can't believe I missed something that obvious. *hides in shame*
+ *
  * Revision 2.59  2005/03/03 06:05:30  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -2923,7 +2926,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	ry = fl_abs( pm->submodel[pm->detail[0]].max.xyz.y - pm->submodel[pm->detail[0]].min.xyz.y );
 	rz = fl_abs( pm->submodel[pm->detail[0]].max.xyz.z - pm->submodel[pm->detail[0]].min.xyz.z );
 
-	pm->core_radius = min( rx, min(ry, rz) ) / 2.0f;
+	pm->core_radius = MIN( rx, MIN(ry, rz) ) / 2.0f;
 
 	for (i=0; i<pm->n_view_positions; i++ )	{
 		if ( pm->view_positions[i].parent == pm->detail[0] )	{

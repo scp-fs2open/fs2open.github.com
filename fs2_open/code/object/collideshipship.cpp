@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-01-26 05:42:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-10 08:00:11 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/01/26 05:42:37  Goober5000
+ * fixed a nitpicky thing
+ * --Goober5000
+ *
  * Revision 2.9  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -1831,25 +1835,25 @@ int collide_ship_ship( obj_pair * pair )
 
 		// get shipA max speed
 		if (ship_is_beginning_warpout_speedup(A)) {
-			shipA_max_speed = max(ship_get_max_speed(&Ships[A->instance]), ship_get_warp_speed(A));
+			shipA_max_speed = MAX(ship_get_max_speed(&Ships[A->instance]), ship_get_warp_speed(A));
 		} else {
 			shipA_max_speed = ship_get_max_speed(&Ships[A->instance]);
 		}
 
 		// Maybe warping in or finished warping in with excessive speed
-		shipA_max_speed = max(shipA_max_speed, vm_vec_mag(&A->phys_info.vel));
-		shipA_max_speed = max(shipA_max_speed, 10.0f);
+		shipA_max_speed = MAX(shipA_max_speed, vm_vec_mag(&A->phys_info.vel));
+		shipA_max_speed = MAX(shipA_max_speed, 10.0f);
 
 		// get shipB max speed
 		if (ship_is_beginning_warpout_speedup(B)) {
-			shipB_max_speed = max(ship_get_max_speed(&Ships[B->instance]), ship_get_warp_speed(B));
+			shipB_max_speed = MAX(ship_get_max_speed(&Ships[B->instance]), ship_get_warp_speed(B));
 		} else {
 			shipB_max_speed = ship_get_max_speed(&Ships[B->instance]);
 		}
 
 		// Maybe warping in or finished warping in with excessive speed
-		shipB_max_speed = max(shipB_max_speed, vm_vec_mag(&B->phys_info.vel));
-		shipB_max_speed = max(shipB_max_speed, 10.0f);
+		shipB_max_speed = MAX(shipB_max_speed, vm_vec_mag(&B->phys_info.vel));
+		shipB_max_speed = MAX(shipB_max_speed, 10.0f);
 
 		time = 1000.0f * (dist - A->radius - B->radius) / (shipA_max_speed + shipB_max_speed);
 		time -= 200.0f;		// allow one frame slow frame at ~5 fps

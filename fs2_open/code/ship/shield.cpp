@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-03-02 21:24:47 $
+ * $Revision: 2.26 $
+ * $Date: 2005-03-10 08:00:15 $
  * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/03/02 21:24:47  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.24  2005/01/28 11:06:23  Goober5000
  * changed a bunch of transpose-rotate sequences to use unrotate instead
  * --Goober5000
@@ -1289,14 +1292,14 @@ int ship_is_shield_up( object *obj, int quadrant )
 {
 	if ( (quadrant >= 0) && (quadrant < MAX_SHIELD_SECTIONS))	{
 		// Just check one quadrant
-		if (obj->shield_quadrant[quadrant] > max(2.0f, 0.1f * get_max_shield_quad(obj)))	{
+		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * get_max_shield_quad(obj)))	{
 			return 1;
 		}
 	} else {
 		// Check all quadrants
 		float strength = get_shield_strength(obj);
 
-		if ( strength > max(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength ))	{
+		if ( strength > MAX(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength ))	{
 			return 1;
 		}
 	}

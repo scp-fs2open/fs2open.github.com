@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-10 08:00:11 $
+ * $Author: taylor $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.5  2004/07/26 20:47:45  Kazan
  * remove MCD complete
  *
@@ -715,7 +720,7 @@ int collide_subdivide(vector *p0, vector *p1, float prad, vector *q0, vector *q1
 			return 1;
 		else if (vm_vec_dist(p0, q0) < prad + qrad)
 			return 1;
-		else if (max(a_dist, b_dist) < prad + qrad + 1.0f)
+		else if (MAX(a_dist, b_dist) < prad + qrad + 1.0f)
 			return 0;
 		else {
 			int	r1, r2 = 0;

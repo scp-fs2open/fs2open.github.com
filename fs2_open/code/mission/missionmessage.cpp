@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-03-02 21:24:45 $
+ * $Revision: 2.26 $
+ * $Date: 2005-03-10 08:00:08 $
  * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.24  2004/12/23 15:58:55  phreak
  * commits for scramble-messages and unscramble-messages
  * -phreak
@@ -2394,7 +2397,7 @@ void message_maybe_distort_text(char *text)
 	while (voice_duration > 0) {
 		run = fl2i(Distort_patterns[Distort_num][Distort_next] * len);
 		if (Distort_next & 1) {
-			for ( i = curr_offset; i < min(len, curr_offset+run); i++ ) {
+			for ( i = curr_offset; i < MIN(len, curr_offset+run); i++ ) {
 				if ( text[i] != ' ' ) 
 					text[i] = '-';
 			}

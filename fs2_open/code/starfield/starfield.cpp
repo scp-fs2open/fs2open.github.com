@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-03-07 13:10:22 $
- * $Author: bobboau $
+ * $Revision: 2.46 $
+ * $Date: 2005-03-10 08:00:17 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/03/07 13:10:22  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.44  2005/03/01 23:08:23  taylor
  * make sure starfield bitmaps render when not in HTL mode
  * slight header fix for osapi.h
@@ -1713,6 +1717,7 @@ struct star_point{
 			gr_resize_screen_posf(&P2->x, &P2->y);
 		}
 */ 
+#ifndef NO_DIRECT3D
 		if(gr_screen.mode != GR_OPENGL){
 			extern float D3D_line_offset;
 			P1->sw = 0.99f;
@@ -1724,6 +1729,7 @@ struct star_point{
 			P2->sx = i2fl(P2->sx + gr_screen.offset_x)+D3D_line_offset;
 			P2->sy = i2fl(P2->sy + gr_screen.offset_y)+D3D_line_offset;
 	}
+#endif
 
 		p1.vec.set_screen_vert(*P1);
 

@@ -9,7 +9,7 @@
 #include "lighting/lighting.h"
 #include "model/model.h"
 #include "missionui/missionscreencommon.h"
-#include "weapon\beam.h"
+#include "weapon/beam.h"
 
 //All sorts of globals
 

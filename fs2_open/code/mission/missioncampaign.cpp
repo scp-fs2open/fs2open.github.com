@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-02-23 05:05:38 $
+ * $Revision: 2.18 $
+ * $Date: 2005-03-10 08:00:08 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/02/23 05:05:38  taylor
+ * compiler warning fixes (for MSVC++ 6)
+ * have the warp effect only load as many LODs as will get used
+ * head off strange bug in release when corrupt soundtrack number gets used
+ *    (will still Assert in debug)
+ * don't ever try and save a campaign savefile in multi or standalone modes
+ * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
+ *
  * Revision 2.16  2004/10/31 21:53:24  taylor
  * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
  *
@@ -1231,6 +1239,8 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 	int force_update = 0;
 	int kill_count[MAX_SHIP_TYPES];
 	int k_count;
+	int sid = -1, wid = -1;
+	int set_defaults = 1; // should we zero out tech values or not (yes by default)
 
 	Assert ( strlen(cfilename) != 0 );
 
@@ -1240,6 +1250,14 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 	}
 
 	Assert( pl != NULL );
+
+	// little quick hackery to avoid overwriting current techroom/campaing data with what's in the campaign file
+	// if and only if this campaign is what's currently active (shouldn't do this from the pilotselect screen though)
+	extern int Player_select_screen_active;
+	if (!Player_select_screen_active && !strcmp(cfilename, pl->current_campaign)) {
+		set_defaults = 0;
+		printf("filename: %s, current campaign: %s\n", cfilename, pl->current_campaign);
+	}
 
 	// probably only called from single player games anymore!!! should be anyway
 //	Assert( Game_mode & GM_NORMAL );		// get allender or DaveB.  trying to save campaign in multiplayer
@@ -1331,7 +1349,11 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		if (version >= 14) {
 			sw = cfread_ubyte( fp );
 			cfread_string_len(s_name[i], NAME_LENGTH, fp);
-			Campaign.ships_allowed[ship_info_lookup(s_name[i])] = sw;
+			sid = ship_info_lookup(s_name[i]);
+			if (sid == -1)
+				continue;
+
+			Campaign.ships_allowed[sid] = sw;
 		} else {
 			Campaign.ships_allowed[i] = cfread_ubyte( fp );
 		}
@@ -1341,7 +1363,11 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		if (version >= 14) {
 			sw = cfread_ubyte( fp );
 			cfread_string_len(w_name[i], NAME_LENGTH, fp);
-			Campaign.weapons_allowed[weapon_info_lookup(w_name[i])] = sw;
+			wid = weapon_info_lookup(w_name[i]);
+			if (wid == -1)
+				continue;
+
+			Campaign.weapons_allowed[wid] = sw;
 		} else {
 			Campaign.weapons_allowed[i] = cfread_ubyte( fp );
 		}
@@ -1473,16 +1499,18 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		Assert(intel_count <= MAX_INTEL_ENTRIES);
 
 		// zero out all data so that we can start anew
-		for (idx=0; idx<MAX_SHIP_TYPES; idx++) {
-			Ship_info[idx].flags &= ~SIF_IN_TECH_DATABASE;
-		}
+		if (set_defaults) {
+			for (idx=0; idx<MAX_SHIP_TYPES; idx++) {
+				Ship_info[idx].flags &= ~SIF_IN_TECH_DATABASE;
+			}
 		
-		for (idx=0; idx<MAX_WEAPON_TYPES; idx++) {
-			Weapon_info[idx].wi_flags &= ~WIF_IN_TECH_DATABASE;
-		}
+			for (idx=0; idx<MAX_WEAPON_TYPES; idx++) {
+				Weapon_info[idx].wi_flags &= ~WIF_IN_TECH_DATABASE;
+			}
 
-		for (idx=0; idx<MAX_INTEL_ENTRIES; idx++) {
-			Intel_info[idx].flags &= ~IIF_DEFAULT_IN_TECH_DATABASE;
+			for (idx=0; idx<MAX_INTEL_ENTRIES; idx++) {
+				Intel_info[idx].flags &= ~IIF_DEFAULT_IN_TECH_DATABASE;
+			}
 		}
 
 		// read all ships in
@@ -1490,7 +1518,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			in = cfread_ubyte(fp);
 			if (in) {
 				Ship_info[ship_info_lookup(s_name[idx])].flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
-			} else {
+			} else if (set_defaults) {
 				Ship_info[ship_info_lookup(s_name[idx])].flags &= ~SIF_IN_TECH_DATABASE;
 			}
 		}
@@ -1500,7 +1528,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			in = cfread_ubyte(fp);
 			if (in) {
 				Weapon_info[weapon_info_lookup(w_name[idx])].wi_flags |= WIF_IN_TECH_DATABASE;
-			} else {
+			} else if (set_defaults) {
 				Weapon_info[weapon_info_lookup(w_name[idx])].wi_flags &= ~WIF_IN_TECH_DATABASE;
 			}	
 		}
@@ -1510,7 +1538,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			in = cfread_ubyte(fp);
 			if (in) {
 				Intel_info[idx].flags |= IIF_IN_TECH_DATABASE;
-			} else {
+			} else if (set_defaults) {
 				Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
 			}
 		}
@@ -1526,13 +1554,19 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		// read in ship pool
 		for ( i = 0; i < ship_count; i++ ) {
 			pool_count = cfread_int(fp);
-			Player_loadout.ship_pool[ship_info_lookup(s_name[i])] = pool_count;
+			// don't set this again and again (for WMC)
+			if (set_defaults) {
+				Player_loadout.ship_pool[ship_info_lookup(s_name[i])] = pool_count;
+			}
 		}
 
 		// read in weapons pool
 		for ( i = 0; i < weapon_count; i++ ) {
 			pool_count = cfread_int(fp);
-			Player_loadout.weapon_pool[weapon_info_lookup(w_name[i])] = pool_count;
+			// don't set this again and again (for WMC)
+			if (set_defaults) {
+				Player_loadout.weapon_pool[weapon_info_lookup(w_name[i])] = pool_count;
+			}
 		}
 
 		int wep_tmp = -1;
@@ -1542,12 +1576,21 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 			slot = &Player_loadout.unit_data[i];
 			shp_tmp = cfread_int(fp);
-			slot->ship_class = ship_info_lookup(s_name[shp_tmp]);
+			// don't set this again and again (for WMC)
+			if (set_defaults) {
+				slot->ship_class = ship_info_lookup(s_name[shp_tmp]);
+			}
 
 			for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
 				wep_tmp = cfread_int(fp);
-				slot->wep_count[j] = cfread_int(fp);
-				slot->wep[j] = weapon_info_lookup(w_name[wep_tmp]);
+				// don't set this again and again (for WMC)
+				if (set_defaults) {
+					slot->wep_count[j] = cfread_int(fp);
+					slot->wep[j] = weapon_info_lookup(w_name[wep_tmp]);
+				} else {
+					// we need to read some dummy info for the wep_counts
+					wep_tmp = cfread_int(fp);
+				}
 			}
 		}
 		// end player loadout --------------------------------------------------
@@ -1556,6 +1599,9 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		// init a blank stats block before loading new
 		init_scoring_element( &pl->stats );
 
+		// TODO: need to work out the best way to not overwrite current values with this
+		//       stuff but still handle garbage collection, future stats changes properly
+		//       (don't forget to make NUM_MEDALS non-breaking on next update either!!)
 		pl->stats.score = cfread_int(fp);
 		pl->stats.rank = cfread_int(fp);
 		pl->stats.assists = cfread_int(fp);
@@ -1585,7 +1631,9 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		// end total pilot stats -----------------------------------------------
 
 		// cutscenes
-		Cutscenes_viewable = cfread_int(fp);
+		if (set_defaults) {
+			Cutscenes_viewable = cfread_int(fp);
+		}
 	}
 	// done with total stuff ---------------------------------------------------
 

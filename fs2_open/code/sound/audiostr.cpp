@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-03-06 11:23:45 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2005-03-10 08:00:16 $
+ * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/03/06 11:23:45  wmcoolmon
+ * RE-fixed stuff. Ogg support. Briefings.
+ *
  * Revision 2.13  2005/03/03 07:30:15  wmcoolmon
  * Removed my Assert(true)s :p
  *
@@ -824,7 +827,7 @@ BOOL AudioStream::ServiceBuffer (void)
 			if ( m_lCutoffVolume == -10000 ) {
 				vol = Get_Volume();
 //				nprintf(("Alan","Volume is: %d\n",vol));
-				m_lCutoffVolume = max(vol - VOLUME_ATTENUATION_BEFORE_CUTOFF, -10000);
+				m_lCutoffVolume = MAX(vol - VOLUME_ATTENUATION_BEFORE_CUTOFF, -10000);
 			}
 
 			vol = Get_Volume();

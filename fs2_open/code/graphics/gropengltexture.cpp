@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-01-30 09:27:40 $
- * $Author: Goober5000 $
+ * $Revision: 1.17 $
+ * $Date: 2005-03-10 08:00:05 $
+ * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/01/30 09:27:40  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 1.15  2005/01/21 08:54:53  taylor
  * slightly better memory management
  *
@@ -152,7 +156,7 @@ void gr_opengl_set_additive_tex_env()
 		glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_ADD);
 		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
 	}
-	else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled)
+	else if (opengl_extension_is_enabled(GL_EXT_ENV_COMBINE))
 	{
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -559,7 +563,7 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 	if ( GL_square_textures )      {
 		int new_size;
 		// Make the both be equal to larger of the two
-		new_size = max(tex_w, tex_h);
+		new_size = MAX(tex_w, tex_h);
 		tex_w = new_size;
 		tex_h = new_size;
 	}

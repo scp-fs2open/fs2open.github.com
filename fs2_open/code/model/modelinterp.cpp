@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.106 $
- * $Date: 2005-03-08 03:50:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.107 $
+ * $Date: 2005-03-10 08:00:10 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.106  2005/03/08 03:50:23  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.105  2005/03/07 13:10:22  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -2519,7 +2523,7 @@ void model_render_insignias(polymodel *pm, int detail_level)
 			vecs[k].r = (ubyte)255;*/
 //			gr_printf((0), (0), "r %d, g %d, b %d", (int)vecs[k].r, (int)vecs[k].g, (int)vecs[k].b);
 			// draw the polygon
-			g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_LIT);
+			g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
 		//	g3_draw_poly(3, vlist, 0);
 		}
 	}
@@ -3109,7 +3113,7 @@ void model_try_cache_render(int model_num, matrix *orient, vector * pos, uint fl
 	#if 0
 		if ( cr > 4.0f )	{
 			// Check orientation
-			float angle_error = max( fl_abs( mc->angs.p-new_angles.p ),fl_abs( mc->angs.h-new_angles.h ));
+			float angle_error = MAX( fl_abs( mc->angs.p-new_angles.p ),fl_abs( mc->angs.h-new_angles.h ));
 
 			// Exact
 			//if ( angle_error > 0.075f  )	{	

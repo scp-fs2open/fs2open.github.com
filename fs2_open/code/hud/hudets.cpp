@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.13 $
+ * $Date: 2005-03-10 08:00:06 $
+ * $Author: taylor $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.11  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -937,7 +940,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 		return;
 
 	// check how much there is to lose
-	count = min(2, *lose_index);
+	count = MIN(2, *lose_index);
 	if ( count <= 0 ) {
 		if ( obj == Player_obj ) {
 			snd_play( &Snds[SND_ENERGY_TRANS_FAIL], 0.0f );

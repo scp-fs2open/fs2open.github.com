@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.5 2005-03-02 21:18:18 taylor Exp $
+## $Id: Makefile.am,v 1.6 2005-03-10 07:59:59 taylor Exp $
 
 
 noinst_LIBRARIES = libcode.a
@@ -84,6 +84,8 @@ FS2_SOURCES =	\
 	irc/irc.cpp	\
 	jpgutils/jpgutils.cpp	\
 	jumpnode/jumpnode.cpp	\
+	lab/lab.cpp	\
+	lab/wmcgui.cpp	\
 	lighting/lighting.cpp	\
 	localization/fhash.cpp	\
 	localization/localize.cpp	\

@@ -9,16 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.26 $
- * $Date: 2005-03-07 13:10:20 $
- * $Author: bobboau $
- * $Revision: 2.26 $
- * $Date: 2005-03-07 13:10:20 $
- * $Author: bobboau $
+ * $Revision: 2.27 $
+ * $Date: 2005-03-10 08:00:04 $
+ * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-03-10 08:00:04 $
+ * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/03/07 13:10:20  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.25  2005/03/02 21:18:18  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -607,12 +611,13 @@ void gr_activate(int);
 	#endif	// NDEBUG && DEMO
 #endif	// INTERPLAYQA
 
-#ifndef min
-#define min(a,b) (((a) < (b)) ? (a) : (b))
+#ifndef MIN
+#define MIN(a,b) (((a) < (b)) ? (a) : (b))
 #endif
-#ifndef max
-#define max(a,b) (((a) > (b)) ? (a) : (b))
+#ifndef MAX
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
 #endif
+
 
 #define PI					3.141592654f
 #define PI2					(3.141592654f*2.0f)	// PI*2

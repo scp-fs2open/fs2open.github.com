@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-03-02 21:24:47 $
+ * $Revision: 2.37 $
+ * $Date: 2005-03-10 08:00:16 $
  * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/03/02 21:24:47  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.35  2005/02/04 10:12:33  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -1861,7 +1864,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		saturate_fabs(&sp->deathroll_rotvel.xyz.y, 0.75f*DEATHROLL_ROTVEL_CAP);
 		sp->deathroll_rotvel.xyz.z += (frand() - 0.5f) * 6.0f * rotvel_mag;
 		// make z component  2x larger than larger of x,y
-		float largest_mag = max(fl_abs(sp->deathroll_rotvel.xyz.x), fl_abs(sp->deathroll_rotvel.xyz.y));
+		float largest_mag = MAX(fl_abs(sp->deathroll_rotvel.xyz.x), fl_abs(sp->deathroll_rotvel.xyz.y));
 		if (fl_abs(sp->deathroll_rotvel.xyz.z) < 2.0f*largest_mag) {
 			sp->deathroll_rotvel.xyz.z *= (2.0f * largest_mag / fl_abs(sp->deathroll_rotvel.xyz.z));
 		}
@@ -2459,7 +2462,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 					damage = ship_obj->hull_strength - min_hull_strength;
 
 					// make sure damage is positive
-					damage = max(0, damage);
+					damage = MAX(0, damage);
 				}
 			}
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-03-02 21:24:44 $
+ * $Revision: 2.19 $
+ * $Date: 2005-03-10 08:00:08 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.17  2005/01/31 23:27:54  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -410,6 +413,8 @@ int Player_select_force_main_hall = 0;
 
 static int Player_select_no_save_pilot = 0;		// to skip save of pilot in pilot_select_close()
 
+int Player_select_screen_active = 0;	// for pilot savefile loading - taylor
+
 // notification text areas
 
 static int Player_select_bottom_text_y[GR_NUM_RESOLUTIONS] = {
@@ -475,6 +480,8 @@ void player_select_init()
 	main_hall_start_ambient();
 
 	Player_select_force_main_hall = 0;
+
+	Player_select_screen_active = 1;
 
 #ifdef FS2_DEMO
 	/*
@@ -805,6 +812,8 @@ void player_select_close()
 	if (Player_select_force_main_hall) {
 		Player->main_hall = 1;
 	}
+
+	Player_select_screen_active = 0;
 }
 
 void player_select_set_input_mode(int n)
