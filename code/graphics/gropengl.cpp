@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.112 $
- * $Date: 2005-03-24 23:42:20 $
+ * $Revision: 2.113 $
+ * $Date: 2005-04-01 07:25:54 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2005/03/24 23:42:20  taylor
+ * s/gr_ogl_/gr_opengl_/g
+ * add empty gr_opengl_draw_line_list() so that it's not a NULL pointer
+ * make gr_opengl_draw_htl_sphere() just use GLU so we don't need yet another friggin API
+ *
  * Revision 2.111  2005/03/22 00:36:48  taylor
  * fix version check for drivers that support OpenGL 2.0+
  *
@@ -3793,7 +3798,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	pfd.nVersion=1;
 	pfd.cColorBits=(ubyte)bpp;
 	pfd.dwFlags=PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pfd.cDepthBits=32;	// 24 wasn't the right size if we are using 32bpp
+	pfd.cDepthBits=24;
 	pfd.iPixelType=PFD_TYPE_RGBA;
 	pfd.cRedBits=(ubyte)Gr_red.bits;
 	pfd.cRedShift=(ubyte)Gr_red.shift;
