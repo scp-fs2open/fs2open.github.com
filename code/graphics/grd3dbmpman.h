@@ -14,6 +14,8 @@
 #define BMPMAN_NDEBUG
 #endif
 
+#include "cfile/cfile.h"
+
 #define MAX_BITMAPS 3500			// How many bitmaps the game can handle
 
 typedef struct {
@@ -71,7 +73,7 @@ void bm_d3d_release(int n);
 // It returns a negative number if it couldn't load
 // the bitmap.   On success, it returns the bitmap
 // number of the first frame and nframes is set.
-extern int bm_d3d_load_animation( char * filename, int * nframes, int *fps = NULL, int can_drop_frames = 0 );
+extern int bm_d3d_load_animation( char * filename, int * nframes, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY );
 
 // This locks down a bitmap and returns a pointer to a bitmap
 // that can be accessed until you call bm_d3d_unlock.   Only lock

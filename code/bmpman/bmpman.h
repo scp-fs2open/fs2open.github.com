@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.11 $
- * $Date: 2004-03-05 09:01:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2004-04-01 15:31:20 $
+ * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/05 09:01:54  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.10  2003/12/04 20:39:08  randomtiger
  * Added DDS image support for D3D
  * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
@@ -277,6 +281,7 @@
 #define _BMPMAN_H
 
 #include "globalincs/pstypes.h"
+#include "cfile/cfile.h"
 
 #ifndef NDEBUG
 #define BMPMAN_NDEBUG
@@ -404,7 +409,7 @@ void bm_gfx_release(int n);
 // It returns a negative number if it couldn't load
 // the bitmap.   On success, it returns the bitmap
 // number of the first frame and nframes is set.
-extern int bm_gfx_load_animation( char * filename, int * nframes, int *fps = NULL, int can_drop_frames = 0 );
+extern int bm_gfx_load_animation( char * filename, int * nframes, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY );
 
 // This locks down a bitmap and returns a pointer to a bitmap
 // that can be accessed until you call bm_unlock.   Only lock

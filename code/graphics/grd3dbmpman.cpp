@@ -417,7 +417,7 @@ static int find_block_of(int n)
 //
 // returns:		bitmap number of first frame in the animation
 //
-int bm_d3d_load_animation( char *real_filename, int *nframes, int *fps, int can_drop_frames)
+int bm_d3d_load_animation( char *real_filename, int *nframes, int *fps, int can_drop_frames, int dir_type)
 {
 	Assert(bm_d3d_inited);
 
@@ -435,7 +435,7 @@ int bm_d3d_load_animation( char *real_filename, int *nframes, int *fps, int can_
 	}
 	strcat( filename, ".ani" );
 
-	if ( (fp = cfopen(filename, "rb")) == NULL ) {
+	if ( (fp = cfopen(filename, "rb", CFILE_NORMAL, dir_type)) == NULL ) {
 		return -1;
 	}
 
