@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-01-18 01:14:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.18 $
+ * $Date: 2005-02-23 05:05:39 $
+ * $Author: taylor $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/01/18 01:14:17  wmcoolmon
+ * OGG fixes, ship selection fixes
+ *
  * Revision 2.16  2004/12/25 16:42:59  wmcoolmon
  * Fix to modular tables workaround with Fs2NetD
  *
@@ -673,6 +676,10 @@ void event_music_level_init(int force_soundtrack)
 	}
 
 	Assert(Current_soundtrack_num >= 0 && Current_soundtrack_num < Num_soundtracks);
+
+	if (Current_soundtrack_num < 0 || Current_soundtrack_num > Num_soundtracks)
+		return;
+
 	strack = &Soundtracks[Current_soundtrack_num];
 
 	// open the pattern files, and get ready to play them

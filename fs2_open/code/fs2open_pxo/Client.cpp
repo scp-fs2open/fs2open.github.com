@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-02-04 20:06:03 $
+ * $Revision: 1.18 $
+ * $Date: 2005-02-23 05:05:37 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/02/04 20:06:03  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 1.16  2004/11/21 16:07:22  Kazan
  * dumbbugfix
  *
@@ -67,7 +70,7 @@
 // 4711 = function selected for automatic inline expansion
 #pragma warning(disable: 4711)
 
-#include <iostream>
+#include <iostream.h>
 #include <time.h>
 
 
@@ -81,6 +84,9 @@
 PXO_Socket FS2OpenPXO_Socket;
 
 // NOTE: CLK_TCK is depreciated but available for compatibility, use CLOCKS_PER_SEC instead
+#ifndef CLK_TCK
+#define CLK_TCK CLOCKS_PER_SEC
+#endif
 
 #define PXO_ADDINT(n)	*((int *)cur) = (n); cur += sizeof(int);
 #define PXO_ADDSTRING(x, y) memcpy(cur, x, y); cur += y;
@@ -91,7 +97,7 @@ PXO_Socket FS2OpenPXO_Socket;
 int CheckSingleMission(const char* mission, unsigned int crc32, UDP_Socket &Socket, const char* masterserver, int port, int timeout)
 {
 	
-	timeout = timeout * CLOCKS_PER_SEC;
+	timeout = timeout * CLK_TCK;
 	int starttime = clock();
 
 	std::string sender = masterserver;
@@ -139,7 +145,7 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 
 	
 
-	timeout = timeout * CLOCKS_PER_SEC;
+	timeout = timeout * CLK_TCK;
 	int starttime = clock();
 
 
@@ -224,7 +230,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 
 	fs2open_get_pilot prq_packet;
 
-	timeout = timeout * CLOCKS_PER_SEC;
+	timeout = timeout * CLK_TCK;
 	int starttime = clock();
 
 	memset((char *) &prq_packet, 0, sizeof(fs2open_get_pilot));
@@ -309,7 +315,7 @@ file_record* GetTablesList(int &numTables, const char *masterserver, UDP_Socket 
 	fs2open_file_check fc_packet;
 	fc_packet.pid = PCKT_TABLES_RQST;
 
-	timeout = timeout * CLOCKS_PER_SEC;
+	timeout = timeout * CLK_TCK;
 	int starttime = clock();
 
 	std::string sender = masterserver;
@@ -363,7 +369,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, UDP_Soc
 	fs2open_file_check fc_packet;
 	fc_packet.pid = PCKT_MISSIONS_RQST;
 
-	timeout = timeout * CLOCKS_PER_SEC;
+	timeout = timeout * CLK_TCK;
 	int starttime = clock();
 
 	std::string sender = masterserver;
@@ -414,7 +420,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, UDP_Soc
 
 int Fs2OpenPXO_Login(const char* username, const char* password, UDP_Socket &Socket, const char* masterserver, int port, int timeout)
 {
-	timeout = timeout * CLOCKS_PER_SEC;
+	timeout = timeout * CLK_TCK;
 	int starttime = clock();
 
 	std::string sender = masterserver;
@@ -492,7 +498,7 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, UDP_So
 
 	
 	
-	timeout = timeout * CLOCKS_PER_SEC;
+	timeout = timeout * CLK_TCK;
 	int starttime = clock();
 	// ---------- Prepair and send request packet ------------	
 	serverlist_request_packet rpack;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-01-31 23:27:54 $
+ * $Revision: 2.13 $
+ * $Date: 2005-02-23 05:05:38 $
  * $Author: taylor $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.11  2004/07/26 20:47:38  Kazan
  * remove MCD complete
  *
@@ -851,7 +854,7 @@ void cmd_brief_close()
 		}
 
 		if (Cmd_brief_background_bitmap >= 0)
-			bm_unload(Cmd_brief_background_bitmap);
+			bm_release(Cmd_brief_background_bitmap);
 
 		// unload the overlay bitmap
 		help_overlay_unload(CMD_BRIEF_OVERLAY);
