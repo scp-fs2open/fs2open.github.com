@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-01-29 08:12:20 $
- * $Author: wmcoolmon $
+ * $Revision: 2.39 $
+ * $Date: 2005-01-30 09:27:40 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/01/29 08:12:20  wmcoolmon
+ * Clipping stuff
+ *
  * Revision 2.37  2004/07/26 20:47:53  Kazan
  * remove MCD complete
  *
@@ -1489,17 +1492,17 @@ void subspace_render(int env)
 {
 	if ( Subspace_model_inner == -1 )	{
 		Subspace_model_inner = model_load( "subspace_small.pof", 0, NULL );
-		Assert(Subspace_model_inner>-1);
+		Assert(Subspace_model_inner >= 0);
 	}
 
 	if ( Subspace_model_outer == -1 )	{
 		Subspace_model_outer = model_load( "subspace_big.pof", 0, NULL );
-		Assert(Subspace_model_outer>-1);
+		Assert(Subspace_model_outer >= 0);
 	}
 
 	if ( Subspace_glow_bitmap == -1 )	{
 		Subspace_glow_bitmap = bm_load( NOX("SunGlow01"));
-		Assert(Subspace_glow_bitmap>-1);
+		Assert(Subspace_glow_bitmap >= 0);
 	}
 	int framenum = 0;
 	if(!env){
@@ -1906,9 +1909,9 @@ void stars_page_in()
 	if ( Game_subspace_effect )	{
 
 		Subspace_model_inner = model_load( "subspace_small.pof", 0, NULL );
-		Assert(Subspace_model_inner>-1);
+		Assert(Subspace_model_inner >= 0);
 		Subspace_model_outer = model_load( "subspace_big.pof", 0, NULL );
-		Assert(Subspace_model_outer>-1);
+		Assert(Subspace_model_outer >= 0);
 
 		polymodel *pm;
 		

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.120 $
- * $Date: 2005-01-29 09:19:45 $
- * $Author: argv $
+ * $Revision: 2.121 $
+ * $Date: 2005-01-30 09:27:39 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.120  2005/01/29 09:19:45  argv
+ * Fixed compile errors due to several source files not having been updated to
+ * reference "Min/Max_draw_distance" instead of "MIN/MAX_DRAW_DISTANCE".
+ *
+ * -- _argv[-1]
+ *
  * Revision 2.119  2005/01/16 22:39:08  wmcoolmon
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
  *
@@ -7679,7 +7685,7 @@ void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, in
 	char str[255] = "";		
 	
 	// get the total for all his children
-	for (i=pm->submodel[sm].first_child; i>-1; i = pm->submodel[i].next_sibling )	{
+	for (i=pm->submodel[sm].first_child; i >= 0; i = pm->submodel[i].next_sibling )	{
 		game_spew_pof_info_sub(model_num, pm, i, out, &sub_total, &sub_total_destroyed);
 	}	
 
@@ -7757,7 +7763,7 @@ void game_spew_pof_info()
 					root_total = submodel_get_num_polys(model_num, pm->detail[i] );
 					total = 0;
 					destroyed_total = 0;
-					for (j=pm->submodel[pm->detail[i]].first_child; j>-1; j = pm->submodel[j].next_sibling )	{
+					for (j=pm->submodel[pm->detail[i]].first_child; j >= 0; j = pm->submodel[j].next_sibling )	{
 						game_spew_pof_info_sub(model_num, pm, j, out, &total, &destroyed_total);
 					}
 

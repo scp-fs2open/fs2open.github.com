@@ -2110,7 +2110,7 @@ void set_submodel_instance(int model_num, int sub_model_num){
 	angles orient[8];//probly only need 2 or 3, but what the hell
 	vector offset[8];
 
-	while ((sub_model_num>-1) && (pm->submodel[sub_model_num].parent > -1) ) {
+	while ((sub_model_num >= 0) && (pm->submodel[sub_model_num].parent >= 0) ) {
 
 		orient[decal_submodel_instance_depth] = pm->submodel[sub_model_num].angs;
 		offset[decal_submodel_instance_depth] = pm->submodel[sub_model_num].offset;

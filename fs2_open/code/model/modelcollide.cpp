@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-10-03 21:41:10 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2005-01-30 09:27:40 $
+ * $Author: Goober5000 $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/10/03 21:41:10  Kazan
+ * Autopilot convergence collision fix for ai_fly_to_ship() and ai_waypoints() -- mathematically expensive, only usable by autopilot
+ *
  * Revision 2.6  2004/07/26 20:47:41  Kazan
  * remove MCD complete
  *
@@ -946,7 +949,7 @@ NoHit:
 	
 	// Check all of this subobject's children
 	i = sm->first_child;
-	while ( i>-1 )	{
+	while ( i >= 0 )	{
 		bsp_info * csm = &Mc_pm->submodel[i];
 
 		// Don't check it or its children if it is destroyed

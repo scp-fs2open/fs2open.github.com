@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-26 20:47:26 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2005-01-30 09:27:39 $
+ * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/26 20:47:26  Kazan
+ * remove MCD complete
+ *
  * Revision 2.8  2004/07/12 16:32:44  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -390,7 +393,7 @@ void debris_page_in()
 	int i;
 
 	Debris_model = model_load( NOX("debris01.pof"), 0, NULL );
-	if (Debris_model>-1)	{
+	if (Debris_model >= 0)	{
 		polymodel * pm;
 		pm = model_get(Debris_model);
 		Debris_num_submodels = pm->n_models;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-11-01 20:57:03 $
- * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2005-01-30 09:27:39 $
+ * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/11/01 20:57:03  taylor
+ * make use of Knossos_warp_ani_used flag - thanks Goober5000
+ *
  * Revision 2.18  2004/10/31 02:26:15  Goober5000
  * whoops
  * --Goober5000
@@ -825,7 +828,7 @@ int fireball_free_one()
 		fb = &Fireballs[i];
 
 		// only remove the ones that aren't warp effects
-		if ( (fb->objnum>-1) && fireball_is_perishable(&Objects[fb->objnum]) )	{
+		if ( (fb->objnum >= 0) && fireball_is_perishable(&Objects[fb->objnum]) )	{
 
 			lifeleft = fb->total_time - fb->time_elapsed;
 			if ( (oldest_objnum < 0) || (lifeleft < oldest_lifeleft) )	{

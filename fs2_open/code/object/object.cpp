@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-01-29 16:31:55 $
- * $Author: phreak $
+ * $Revision: 2.30 $
+ * $Date: 2005-01-30 09:27:40 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/01/29 16:31:55  phreak
+ * smart shield stuff.  enabled by command line for now, but this will be changed in the future, i just want people to test it.
+ * -phreak
+ *
  * Revision 2.28  2005/01/29 05:34:30  Goober5000
  * docking fixes for FRED
  * --Goober5000
@@ -1705,7 +1709,7 @@ void obj_move_all_post(object *objp, float frametime)
 			int group_id = Weapons[objp->instance].group_id;
 			int cast_light = 1;
 
-			if ( (group_id>-1) && (Obj_weapon_group_id_used[group_id]==0) )	{
+			if ( (group_id >= 0) && (Obj_weapon_group_id_used[group_id]==0) )	{
 				// Mark this group as done
 				Obj_weapon_group_id_used[group_id]++;
 			} else {
