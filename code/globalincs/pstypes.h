@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.9 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
- * $Revision: 2.9 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.10 $
+ * $Date: 2003-06-08 17:38:21 $
+ * $Author: phreak $
+ * $Revision: 2.10 $
+ * $Date: 2003-06-08 17:38:21 $
+ * $Author: phreak $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.8  2003/03/02 05:27:44  penguin
  * only define min() and max() if they're not already defined
  *  - penguin
@@ -351,6 +354,7 @@ typedef struct vertex {
 	float		x, y, z;				// world space position
 	float		sx, sy, sw;			// screen space position (sw == 1/z)
 	float		u, v;					// texture position
+	vector		real_pos;			// _real_ world position
 	ubyte		r, g, b, a;			// color.  Use b for darkening;
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
 	ubyte		flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.
