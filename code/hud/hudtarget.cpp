@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.9 $
- * $Date: 2002-12-31 08:20:31 $
+ * $Revision: 2.10 $
+ * $Date: 2002-12-31 19:18:41 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
@@ -5073,6 +5073,7 @@ void hud_show_cmeasure_gague()
 void hud_show_weapons()
 {
 	ship_weapon	*sw;
+	int ship_is_ballistic;
 
 	int			np, ns;		// np == num primary, ns == num secondary
 	char			name[NAME_LENGTH];	
@@ -5084,6 +5085,7 @@ void hud_show_weapons()
 	Assert(Player_obj->instance >= 0 && Player_obj->instance < MAX_SHIPS);
 
 	sw = &Ships[Player_obj->instance].weapons;
+	ship_is_ballistic = (Ship_info[Ships[Player_obj->instance].ship_info_index].flags & SIF_BALLISTIC_PRIMARIES);
 
 	np = sw->num_primary_banks;
 	ns = sw->num_secondary_banks;
@@ -5130,8 +5132,11 @@ void hud_show_weapons()
 		emp_hud_printf(Weapon_plink_coords[gr_screen.res][0][0], Weapon_plink_coords[gr_screen.res][0][1], EG_NULL, "%c", Lcl_special_chars + 2);
 		emp_hud_printf(Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1], EG_WEAPON_P2, "%s", name);					
 
-		// display ballistic ammo if necessary - Goober5000
-		hud_show_primary_weapon_ammo(1, sw);
+		// check ballistic - Goober5000
+		if (ship_is_ballistic)
+		{
+			hud_show_primary_weapon_ammo(1, sw);
+		}
 		break;
 
 	case 2:
@@ -5175,8 +5180,12 @@ void hud_show_weapons()
 		emp_hud_printf(Weapon_pname_coords[gr_screen.res][1][0], Weapon_pname_coords[gr_screen.res][1][1], EG_WEAPON_P2, "%s", name);		
 		np = 0;
 		
-		// display ballistic ammo if necessary - Goober5000
-		hud_show_primary_weapon_ammo(2, sw);
+		// check ballistic - Goober5000
+		if (ship_is_ballistic)
+		{
+			hud_show_primary_weapon_ammo(2, sw);
+		}
+		
 		break;
 
 	default:
