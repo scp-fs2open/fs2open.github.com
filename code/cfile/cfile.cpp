@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-10-09 18:08:33 $
+ * $Revision: 2.23 $
+ * $Date: 2004-10-31 21:29:00 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/10/09 18:08:33  taylor
+ * almost forgot this for the IBX stuff
+ *
  * Revision 2.21  2004/07/26 20:47:25  Kazan
  * remove MCD complete
  *
@@ -298,7 +301,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	// Root must be index 1!!	
 	{ CF_TYPE_ROOT,					"",																									".mve .avi .mpg",						CF_TYPE_ROOT	},
 	{ CF_TYPE_DATA,					"data",																								".cfg .log .txt",			CF_TYPE_ROOT	},
-	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",																".pcx .ani .tga .jpg .dds",			CF_TYPE_DATA	},
+	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",																".pcx .ani .eff .tga .jpg .dds",			CF_TYPE_DATA	},
 	{ CF_TYPE_TEXT,					"data" DIR_SEPARATOR_STR "text",																".txt .net",				CF_TYPE_DATA	},
 	{ CF_TYPE_MISSIONS,				"data" DIR_SEPARATOR_STR "missions",														".fs2 .fc2 .ntl .ssv",	CF_TYPE_DATA	},
 	{ CF_TYPE_MODELS,					"data" DIR_SEPARATOR_STR "models",															".pof",						CF_TYPE_DATA	},
@@ -317,7 +320,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_MOVIES,					"data" DIR_SEPARATOR_STR "movies",															".mve .msb .avi .mpg",				CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE,				"data" DIR_SEPARATOR_STR "interface",														".pcx .ani .tga",			CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",															".vf",						CF_TYPE_DATA	},
-	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",															".ani .pcx .neb .tga .jpg .dds",	CF_TYPE_DATA	},
+	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",															".ani .eff .pcx .neb .tga .jpg .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_HUD,						"data" DIR_SEPARATOR_STR "hud",																".ani .pcx .tga",			CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYER_MAIN,			"data" DIR_SEPARATOR_STR "players",															"",							CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYER_IMAGES_MAIN,	"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",						".pcx",						CF_TYPE_PLAYER_MAIN	},
