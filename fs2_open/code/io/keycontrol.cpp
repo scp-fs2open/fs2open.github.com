@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-01-03 21:58:08 $
+ * $Revision: 2.9 $
+ * $Date: 2003-01-18 10:00:43 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/01/03 21:58:08  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.7  2002/12/31 18:59:43  Goober5000
  * if it ain't broke, don't fix it
  * --Goober5000
@@ -2375,7 +2382,18 @@ int button_function(int n)
 		return 0;
 	}
 
-	
+
+	// Goober5000 - if the ship doesn't have subspace drive, jump key doesn't work: so test and exit early
+	if (Player_ship->flags2 & SF2_NO_SUBSPACE_DRIVE)
+	{
+		switch(n)
+		{
+			case END_MISSION:
+				control_used(n);	// set the timestamp for when we used the control, in case we need it
+				return 1;			// pretend we took the action: if we return 0, strange stuff may happen
+		}
+	}
+
 	// Goober5000 - if we have primitive sensors, some keys don't work: so test and exit early
 	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
 	{
