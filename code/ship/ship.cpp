@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.124 $
- * $Date: 2004-05-26 21:02:27 $
+ * $Revision: 2.125 $
+ * $Date: 2004-06-07 07:36:08 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.124  2004/05/26 21:02:27  wmcoolmon
+ * Added weapons_expl modular table, updated cfilesystem to work with modular tables, fixed loading order, fixed ship loading error messages
+ *
  * Revision 2.123  2004/05/26 03:52:07  wmcoolmon
  * Ship & weapon modular table files
  *
@@ -10202,7 +10205,7 @@ int ship_can_warp(ship *sp)
 
 	engine_str = ship_get_subsystem_strength( sp, SUBSYSTEM_ENGINE );
 	// Note that ship can always warp at lowest skill level
-	if ( (Game_skill_level > 0) && (engine_str >= SHIP_MIN_ENGINES_TO_WARP) ){
+	if ( (Game_skill_level == 0) ||  (engine_str >= SHIP_MIN_ENGINES_TO_WARP) ){
 		return 1;
 	} else {
 		return 0;
