@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-02-14 00:18:31 $
+ * $Revision: 2.6 $
+ * $Date: 2004-02-16 21:22:15 $
  * $Author: randomtiger $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/02/14 00:18:31  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.4  2004/01/29 01:34:01  randomtiger
  * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
  * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
@@ -940,11 +951,9 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 
 void _cdecl Warning( char * filename, int line, char * format, ... )
 {
-	va_list args;
-
-
 #ifdef FRED
 
+	va_list args;
 	static bool show_warnings = true;
 
 	if(show_warnings == false) return;
@@ -973,6 +982,7 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 
 #ifndef NDEBUG
 
+	va_list args;
 	int id;
 
 	gr_force_windowed();
@@ -1178,20 +1188,36 @@ char *clean_filename(char *name)
 	return p;	
 }
 
-const int MAX_MEM = 600;
+#ifdef _DEBUG
+
+#ifdef _REPORT_MEM_LEAKS
+const int MAX_MEM_POINTERS = 50000;
+
+typedef struct 
+{
+	char  filename[33];
+	int   size;
+	int   line;
+	void *ptr;
+} MemPtrInfo;
+
+MemPtrInfo mem_ptr_list[MAX_MEM_POINTERS];
+
+#endif
+
+const int MAX_MEM_MODULES  = 600;
 
 typedef struct
 {
-	char filename[MAX_PATH];
+	char filename[33];
 	int  size;
 	int  magic_num1;
 	int  magic_num2;
 	bool in_use;
-	void *ptr;
 
 } MemBlockInfo;
 
-MemBlockInfo mem_block_list[MAX_MEM];
+MemBlockInfo mem_block_list[MAX_MEM_MODULES];
 
 int memblockinfo_sort_compare( const void *arg1, const void *arg2 )
 {
@@ -1209,12 +1235,12 @@ int memblockinfo_sort_compare( const void *arg1, const void *arg2 )
 
 void memblockinfo_sort()
 {
-	qsort(mem_block_list, MAX_MEM, sizeof(MemBlockInfo), memblockinfo_sort_compare );
+	qsort(mem_block_list, MAX_MEM_MODULES, sizeof(MemBlockInfo), memblockinfo_sort_compare );
 }
 
 void memblockinfo_sort_get_entry(int index, char *filename, int *size)
 {
-	Assert(index < MAX_MEM);
+	Assert(index < MAX_MEM_MODULES);
 
 	strcpy(filename, mem_block_list[index].filename);
 	*size = mem_block_list[index].size;
@@ -1226,7 +1252,7 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 {
 	if(first_time == true)
 	{
-		ZeroMemory(mem_block_list, MAX_MEM * sizeof(MemBlockInfo) );
+		ZeroMemory(mem_block_list, MAX_MEM_MODULES * sizeof(MemBlockInfo) );
 		first_time = false;
 
 		// Get current flag
@@ -1237,7 +1263,16 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 		
 		// Set flag to the new value
 		_CrtSetDbgFlag( tmpFlag );
+
+#ifdef _REPORT_MEM_LEAKS
+		ZeroMemory(mem_ptr_list, MAX_MEM_POINTERS * sizeof(MemPtrInfo)); 
+#endif
 	}
+
+	char *temp = strrchr(filename, '\\');
+
+	if(temp)
+		filename = temp + 1;
 
 	// calculate magic numbers
 	int magic1, magic2, len = strlen(filename);
@@ -1254,7 +1289,7 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 			magic2 -= filename[c];
 	}
 
-	for(int i = 0; i < MAX_MEM; i++)
+	for(int i = 0; i < MAX_MEM_MODULES; i++)
 	{
 		// Found the first empty entry, fill it
 		if(mem_block_list[i].in_use == false)
@@ -1264,7 +1299,6 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 			mem_block_list[i].magic_num1 = magic1;
 			mem_block_list[i].magic_num2 = magic2;
 			mem_block_list[i].in_use     = true;
-			mem_block_list[i].ptr		 = ptr;
 			break;
 		}
 
@@ -1277,23 +1311,71 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 			break;
 		}
 	}
+
+	// Now if system is compiled register it with the fuller system
+	#ifdef _REPORT_MEM_LEAKS
+
+	// Find empty slot
+	int count = 0;
+	while(mem_ptr_list[count].ptr != NULL)
+	{
+		count++;
+		// If you hit this just increase MAX_MEM_POINTERS
+		Assert(count < MAX_MEM_POINTERS);
+	}
+	mem_ptr_list[count].ptr  = ptr;
+	mem_ptr_list[count].line = line;
+	mem_ptr_list[count].size = size;
+	strcpy(mem_ptr_list[count].filename, filename);
+
+	#endif
 }
 
 void memblockinfo_output_memleak()
 {
 	if(!Cmdline_show_mem_usage)	return;
 
-	for(int i = 0; i < MAX_MEM; i++)
+	if(TotalRam == 0) 
+		return;
+
+	if(TotalRam < 0) {
+		 _RPT1(_CRT_WARN, "TotalRam bad value!",TotalRam);
+		return;
+	}
+
+	_RPT1(_CRT_WARN, "malloc memory leak of %d\n",TotalRam);
+
+// Now if system is compiled register it with the fuller system
+#ifdef _REPORT_MEM_LEAKS
+
+	int total = 0;
+	// Find empty slot
+	for(int f = 0; f < MAX_MEM_POINTERS; f++)
+	{
+		if(mem_ptr_list[f].ptr)
+		{
+		 	_RPT3(_CRT_WARN, "Memory leaks: (%s %d) of %d bytes\n", mem_ptr_list[f].filename, mem_ptr_list[f].line, mem_ptr_list[f].size);
+			total += mem_ptr_list[f].size;
+		}
+	}
+
+	Assert(TotalRam == total);
+
+#else
+
+	for(int i = 0; i < MAX_MEM_MODULES; i++)
 	{
 		// Found the first empty entry, fill it
 	  	if(mem_block_list[i].size > 0)
 		{
-			_RPT2(_CRT_WARN, "Memory leaks: %s %d\n", mem_block_list[i].filename, mem_block_list[i].size);
+			// Oh... bad code... making assumsions...
+		 	_RPT2(_CRT_WARN, "Possible memory leaks: %s %d\n", mem_block_list[i].filename, mem_block_list[i].size);
 		}
 	}
+#endif
 }
 
-void unregister_malloc(char *filename, int size)
+void unregister_malloc(char *filename, int size, void *ptr)
 {
 	// calculate magic numbers
 	int magic1, magic2, len = strlen(filename);
@@ -1310,8 +1392,24 @@ void unregister_malloc(char *filename, int size)
 			magic2 -= filename[c];
 	}
 
+// Now if system is compiled register it with the fuller system
+#ifdef _REPORT_MEM_LEAKS
 
-	for(int i = 0; i < MAX_MEM; i++)
+	// Find empty slot
+	for(int f = 0; f < MAX_MEM_POINTERS; f++)
+	{
+		if(mem_ptr_list[f].ptr == ptr) {
+			mem_ptr_list[f].ptr = NULL;
+			break;
+		}
+	}
+
+	// This should never happen
+	Assert(f < MAX_MEM_POINTERS);
+
+#endif
+
+	for(int i = 0; i < MAX_MEM_MODULES; i++)
 	{
 		// Found a matching entry, update it
 		if(	mem_block_list[i].magic_num1 == magic1 &&
@@ -1323,6 +1421,8 @@ void unregister_malloc(char *filename, int size)
 		}
 	}
 }
+
+#endif
 
 #ifndef NDEBUG
 void *vm_malloc( int size, char *filename, int line )
@@ -1407,7 +1507,7 @@ void vm_free( void *ptr )
 		TotalRam -= nSize;
 
 		if(Cmdline_show_mem_usage)
-			unregister_malloc(filename, nSize);
+			unregister_malloc(filename, nSize, ptr);
 
 		_free_dbg(ptr,_NORMAL_BLOCK);
 		return;
@@ -1419,7 +1519,7 @@ void vm_free( void *ptr )
 	}
 	TotalRam -= actual_size;
 	if(Cmdline_show_mem_usage)
-		unregister_malloc(filename, actual_size);
+		unregister_malloc(filename, actual_size, ptr);
 #endif
 	HeapFree( Heap, HEAP_FLAG, ptr );
 	HeapCompact(Heap, HEAP_FLAG);
