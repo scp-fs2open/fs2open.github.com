@@ -42,6 +42,7 @@ bool fsspeech_was_compiled()
 
 bool fsspeech_init()
 {
+#if FS2_SPEECH
 	if(speech_init() == false) {
 		return false;
 	}
@@ -59,6 +60,9 @@ bool fsspeech_init()
 	speech_set_voice(voice);
 
 	return true;
+#else
+	return false;
+#endif
 }
 
 void fsspeech_deinit()
