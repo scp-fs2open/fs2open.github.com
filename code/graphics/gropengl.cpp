@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-12-15 18:59:57 $
- * $Author: DTP $
+ * $Revision: 2.6 $
+ * $Date: 2002-12-16 23:28:52 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/15 18:59:57  DTP
+ * fixed a minor glitch, replaced <> with ", so that it takes project glXXX.h, and not compilers glXXX.h
+ *
  * Revision 2.4  2002/12/14 16:14:52  phreak
  * copied from grgpenglw32x.cpp.
  *
@@ -488,6 +491,7 @@ void opengl_go_fullscreen(HWND wnd)
 
 	mprintf(("opengl_go_fullscreen\n"));
 
+	os_suspend();
 	SetWindowLong( wnd, GWL_EXSTYLE, 0 );
 	SetWindowLong( wnd, GWL_STYLE, WS_POPUP );
 	ShowWindow(wnd, SW_SHOWNORMAL );
@@ -502,6 +506,7 @@ void opengl_go_fullscreen(HWND wnd)
 	dm.dmBitsPerPel=gr_screen.bits_per_pixel;
 	dm.dmFields=DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 	ChangeDisplaySettings(&dm,CDS_FULLSCREEN);
+	os_resume();
 }
 
 void opengl_minimize()
@@ -509,7 +514,10 @@ void opengl_minimize()
 	HWND wnd=(HWND)os_get_window();
 	mprintf(("opengl_minimize\n"));
 	
+	os_suspend();
 	ShowWindow(wnd, SW_MINIMIZE);
+	ChangeDisplaySettings(NULL,0);
+	os_resume();
 }
 
 
