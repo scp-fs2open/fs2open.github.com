@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-02 05:41:52 $
- * $Author: penguin $
+ * $Revision: 2.5 $
+ * $Date: 2004-01-19 00:56:09 $
+ * $Author: randomtiger $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/02 05:41:52  penguin
+ * Added some #ifndef NO_SOFTWARE_RENDERING
+ *  - penguin
+ *
  * Revision 2.3  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -654,6 +658,11 @@ extern HDC hDibDC;
 
 void gr_string_win(int x, int y, char *s)
 {
+#ifdef FRED_OGL
+  // 	gr_string(x,y,s);
+   	return;
+#endif
+
 	char *ptr;
 	SIZE size;
 
@@ -675,15 +684,14 @@ void gr_string_win(int x, int y, char *s)
 //XSTR:ON
 	}
 
-	SelectObject( hDibDC, MyhFont );
+  	SelectObject( hDibDC, MyhFont );
 
 	if ( gr_screen.bits_per_pixel==8 )
 		SetTextColor(hDibDC, PALETTEINDEX(gr_screen.current_color.raw8));
 	else
 		SetTextColor(hDibDC, RGB(gr_screen.current_color.red,gr_screen.current_color.green,gr_screen.current_color.blue));
 
-	SetBkMode(hDibDC,TRANSPARENT);
-
+ 	SetBkMode(hDibDC,TRANSPARENT);
 
 	HRGN hclip;
 	hclip = CreateRectRgn( gr_screen.offset_x, 
@@ -691,19 +699,21 @@ void gr_string_win(int x, int y, char *s)
 								  gr_screen.offset_x+gr_screen.clip_width-1, 
 								  gr_screen.offset_y+gr_screen.clip_height-1 );
 
-	SelectClipRgn(hDibDC, hclip );
+ 	SelectClipRgn(hDibDC, hclip );
+								  
+
 	x += gr_screen.offset_x;
 	y += gr_screen.offset_y;
-	//ptr = strchr(s,'\n);
-	while ((ptr = strchr(s, '\n'))!=NULL) {
-		TextOut(hDibDC, x, y, s, ptr - s);
+   //	ptr = strchr(s,'\n);  
+   	while ((ptr = strchr(s, '\n'))!=NULL) {
+	  	TextOut(hDibDC, x, y, s, ptr - s);
 		GetTextExtentPoint32(hDibDC, s, ptr - s, &size);
 		y += size.cy;
 		s = ptr + 1;
 	}
 
-	TextOut(hDibDC, x, y, s, strlen(s));
-	SelectClipRgn(hDibDC, NULL);
+  	TextOut(hDibDC, x, y, s, strlen(s));
+  	SelectClipRgn(hDibDC, NULL);
 	DeleteObject(hclip);
 }
 

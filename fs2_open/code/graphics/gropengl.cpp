@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.55 $
- * $Date: 2004-01-18 14:55:08 $
+ * $Revision: 2.56 $
+ * $Date: 2004-01-19 00:56:09 $
  * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2004/01/18 14:55:08  randomtiger
+ * Few more small changes for Fred OGL
+ *
  * Revision 2.54  2004/01/18 13:17:55  randomtiger
  * Changed the #ifndef FRED I added to #ifndef FRED_OGL so they only effect OGL FRED compile
  *
@@ -1963,7 +1966,7 @@ void gr_opengl_line(int x1,int y1,int x2,int y2)
 		
 		return;
 	}
-	
+
 	if ( x1 == x2 ) {
 		if ( sy1 < sy2 )    {
 			sy2 += 0.5f;
