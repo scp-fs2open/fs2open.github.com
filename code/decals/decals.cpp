@@ -1706,7 +1706,7 @@ void decal_create_tmappoly(ubyte * p)
 	vector norm = *pnorm;
 	vm_vec_normalize(&norm);
 
-	float back = 1.0;
+	//float back = 1.0;
 
 //	if( (back_faceing == 0) && (back < 0) )return;
 
@@ -1944,7 +1944,7 @@ int find_decal_tricounts(decal_system* system, int i){
 	decal_list_controle* list = &system->decals[i];
 	decal_list* decal = list->d_list;
 	decal_list* d;
-	int n = list->n_decals;
+	//int n = list->n_decals;
 	while(decal != NULL){
 		Assert(n--);
 		Assert((decal->dec.n_poly < MAX_DECAL_POLY) && (decal->dec.n_poly > -1));

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.22 $
- * $Author: Kazan $
- * $Date: 2004-07-26 20:47:47 $
+ * $Revision: 2.23 $
+ * $Author: Goober5000 $
+ * $Date: 2004-09-05 19:23:24 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/07/26 20:47:47  Kazan
+ * remove MCD complete
+ *
  * Revision 2.21  2004/07/12 16:33:01  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -489,6 +492,8 @@ int skip_to_start_of_strings(char *pstr1, char *pstr2, char* end)
 	len2 = strlen(pstr2);
 	if(end)
 		endlen = strlen(end);
+	else
+		endlen = 0;
 
 	while ( (*Mp != EOF_CHAR) && strnicmp(pstr1, Mp, len1) && strnicmp(pstr2, Mp, len2) ) {
 		if (end && *Mp == '#')
