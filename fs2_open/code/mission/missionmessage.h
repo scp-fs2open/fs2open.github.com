@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.7 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2004-12-10 17:21:00 $
+ * $Author: taylor $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/08/11 05:06:28  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.6  2004/06/15 21:05:30  wmcoolmon
  * Bumped MAX_MISSION_MESSAGES to 500
  *
@@ -355,11 +358,13 @@ extern int Num_builtin_messages;				// from messages.tbl -- index of message loc
 extern int Message_shipnum;					// used to display info on hud when message is sent
 
 // variable, etc for persona information
+/* it's dynamic now - taylor
 #ifndef INF_BUILD
 #define MAX_PERSONAS		13
 #else
 #define MAX_PERSONAS		25
 #endif
+*/
 #define MAX_PERSONA_TYPES		4
 
 // flags for personas.  the type flags must be sequential starting from 0, and must match
@@ -382,7 +387,8 @@ typedef struct persona_s {
 
 } Persona;
 
-extern Persona Personas[MAX_PERSONAS];
+//extern Persona Personas[MAX_PERSONAS]; // it's dynamic now - taylor
+extern Persona *Personas;
 extern int Num_personas;
 
 // function to parse a message from either messages.tbl or the mission file.  Both files have the
@@ -392,6 +398,7 @@ void	persona_parse();
 
 void	messages_init();
 void	message_mission_shutdown();
+void	message_mission_close();
 void	message_queue_process();
 int	message_is_playing();
 void	message_maybe_distort();

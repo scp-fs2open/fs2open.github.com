@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-10-09 17:58:48 $
+ * $Revision: 2.21 $
+ * $Date: 2004-12-10 17:21:00 $
  * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/10/09 17:58:48  taylor
+ * one more try to fix the memory leak and end-of-mission crash for talking head anis
+ *
  * Revision 2.19  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -607,7 +610,8 @@ int MessageQ_num;			// keeps track of number of entries on the queue.
 
 // Persona information
 int Num_personas;
-Persona Personas[MAX_PERSONAS];
+Persona *Personas = NULL;
+//Persona Personas[MAX_PERSONAS]; // it's dynamic now - taylor
 
 char *Persona_type_names[MAX_PERSONA_TYPES] = 
 {
@@ -660,9 +664,23 @@ void persona_parse()
 	int i;
 	char type[NAME_LENGTH];
 
+/* it's dynamic now - taylor
 	Assert ( Num_personas < MAX_PERSONAS );
 
 	Personas[Num_personas].flags = 0;
+*/
+	// this way should cause the least amount of problems on the various platforms - taylor
+	if (Personas == NULL) {
+		Personas = (Persona*)malloc( sizeof(Persona) );
+	} else {
+		Personas = (Persona*)realloc( Personas, sizeof(Persona) * (Num_personas + 1) );
+	}
+
+	if (Personas == NULL)
+		Error(LOCATION, "Not enough memory to allocate Personas!" );
+
+	memset(&Personas[Num_personas], 0, sizeof(Persona));
+
 	required_string("$Persona:");
 	stuff_string(Personas[Num_personas].name, F_NAME, NULL);
 
@@ -1011,6 +1029,16 @@ void message_mission_shutdown()
 	// free up remaining anim data - taylor
 	for (i=0; i<Num_message_avis; i++) {
 		message_mission_free_avi(i);
+	}
+}
+
+// call from game_shutdown() ONLY!!!
+void message_mission_close()
+{
+	// free the persona data
+	if (Personas != NULL) {
+		free( Personas );
+		Personas = NULL;
 	}
 }
 
@@ -1819,12 +1847,18 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 // type personas.  ship is the ship we should assign a persona to
 int message_get_persona( ship *shipp )
 {
-	int i, ship_type, slist[MAX_PERSONAS], count;
+	int i = 0, ship_type, count;
+//	int slist[MAX_PERSONAS]; // it's dynamic now - taylor
+	int *slist = new int[Num_personas];
+	memset( slist, 0, sizeof(int) * Num_personas );
 
 	if ( shipp != NULL ) {
 		// see if this ship has a persona
-		if ( shipp->persona_index != -1 )
-			return shipp->persona_index;
+		if ( shipp->persona_index != -1 ) {
+		//	return shipp->persona_index;
+			i = shipp->persona_index;
+			goto I_Done;
+		}
 
 		// get the type of ship (i.e. support, fighter/bomber, etc)
 		ship_type = Ship_info[shipp->ship_info_index].flags;
@@ -1859,7 +1893,8 @@ int message_get_persona( ship *shipp )
 				{
 					// if it hasn't been used - USE IT!
 					Personas[i].flags |= PERSONA_FLAG_USED;
-					return i;
+				//	return i;
+					goto I_Done;
 				}
 				else
 				{
@@ -1880,7 +1915,8 @@ int message_get_persona( ship *shipp )
 		else
 			i = slist[0];
 
-		return i;
+		//return i;
+		goto I_Done;
 
 #else
 		//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
@@ -1905,14 +1941,18 @@ int message_get_persona( ship *shipp )
 			for ( i = 0; i < Num_personas; i++ ) {
 				if ( (Personas[i].flags & persona_needed) && (Personas[i].flags & PERSONA_FLAG_VASUDAN) ) {
 					nprintf(("messaging", "assigning vasudan persona %s to %s\n", Personas[i].name, shipp->ship_name));
-					return i;
+				//	return i;
+					goto I_Done;
 				}
 			}
 
 			// make support personas use the terran persona by not returning here when looking for 
 			// Vasudan persona
-			if ( persona_needed != PERSONA_FLAG_SUPPORT )
-				return -1;			// shouldn't get here eventually, but return -1 for now to deal with missing persona
+			if ( persona_needed != PERSONA_FLAG_SUPPORT ) {
+			//	return -1;			// shouldn't get here eventually, but return -1 for now to deal with missing persona
+				i = -1;
+				goto I_Done;
+			}
 		}
 
 		// iterate through the persona list looking for one not used.  Look at the type of persona
@@ -1934,7 +1974,8 @@ int message_get_persona( ship *shipp )
 			if ( !(Personas[i].flags & PERSONA_FLAG_USED) ) {
 				nprintf(("messaging", "assigning persona %s to %s\n", Personas[i].name, shipp->ship_name));
 				Personas[i].flags |= PERSONA_FLAG_USED;
-				return i;
+			//	return i;
+				goto I_Done;
 			}
 		}
 
@@ -1957,8 +1998,11 @@ int message_get_persona( ship *shipp )
 		}
 
 		// couldn't find appropriate persona type
-		if ( count == 0 )
-			return -1;
+		if ( count == 0 ) {
+		//	return -1;
+			i = -1;
+			goto I_Done;
+		}
 
 		// now get a random one from the list
 		i = (rand() % count);
@@ -1966,7 +2010,8 @@ int message_get_persona( ship *shipp )
 			
 		nprintf(("messaging", "Couldn't find a new persona for ship %s, reusing persona %s\n", shipp->ship_name, Personas[i].name));
 
-		return i;
+		//return i;
+		goto I_Done;
 
 		// +-+-+-+-+-+ End old V Code +-+-+-+-+-+ 
 #endif
@@ -1974,7 +2019,12 @@ int message_get_persona( ship *shipp )
 
 	// for now -- we don't support other types of personas (non-wingman personas)
 	Int3();
-	return 0;
+//	return 0;
+
+I_Done:
+	delete[] slist;
+
+	return i;
 }
 
 #ifndef NO_NETWORK
