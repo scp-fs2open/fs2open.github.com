@@ -427,6 +427,37 @@ HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr)
 	return hr;
 }
 
+
+void dynamic_buffer::allocate(int n_verts, int vert_type){
+	int n_size = n_verts*vertex_types[vert_type].size;
+	if(n_size > size){
+		if(buffer)buffer->Release();
+
+		GlobalD3DVars::lpD3DDevice->CreateVertexBuffer(	
+			n_size, 
+			D3DUSAGE_WRITEONLY | D3DUSAGE_DYNAMIC, 
+			vertex_types[vert_type].fvf,
+			D3DPOOL_DEFAULT,
+			&buffer);
+		size=n_size;
+	}
+	vtype=vert_type;
+}
+
+struct Vertex_buffer;
+extern Vertex_buffer* set_buffer;
+
+void dynamic_buffer::unlock(){
+	buffer->Unlock();
+
+	set_buffer = NULL;
+	d3d_SetVertexShader(vertex_types[vtype].fvf);
+	GlobalD3DVars::lpD3DDevice->SetStreamSource(0,buffer, vertex_types[vtype].size);
+}
+
+void dynamic_buffer::draw(_D3DPRIMITIVETYPE TYPE, int num){
+	GlobalD3DVars::lpD3DDevice->DrawPrimitive(TYPE, 0, d3d_get_num_prims(num, TYPE));
+}
 /**
  * This should be called if the device is lost, this will ensure all state default are properly reset 
  *
@@ -502,6 +533,8 @@ BOOL d3d_lost_device(bool force)
 
 		void d3d_kill_state_blocks();
 		d3d_kill_state_blocks();
+
+		render_buffer.lost();
 
 		HRESULT hr = GlobalD3DVars::lpD3DDevice->Reset(&GlobalD3DVars::d3dpp);
 		if(hr != D3D_OK)return true;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.63 $
- * $Date: 2005-03-03 14:29:37 $
+ * $Revision: 2.64 $
+ * $Date: 2005-03-04 03:24:44 $
  * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/03/03 14:29:37  bobboau
+ * fixed a small error from my earlier commit.
+ *
  * Revision 2.62  2005/03/03 02:39:14  bobboau
  * added trilist suport to the poly rendering functions
  * and a gr_bitmap_list function that uses it
@@ -1177,7 +1180,9 @@ float flCAP( float x, float minx, float maxx)
 static float Interp_fog_level;
 int w_factor = 256;
 
-#define MAX_INTERNAL_POLY_VERTS 2048
+dynamic_buffer render_buffer;
+
+//#define MAX_INTERNAL_POLY_VERTS 2048
 
 /**
  * This will be used to render the 3D parts the of FS2 engine
@@ -1498,9 +1503,11 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 	
 	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 	
-	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
+//	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
 
-	static D3DLVERTEX d3d_verts[MAX_INTERNAL_POLY_VERTS];	//static so it doesn't have to reallocate it every time
+	render_buffer.allocate(nverts, D3DVT_LVERTEX);
+	D3DLVERTEX *d3d_verts;
+	render_buffer.lock((ubyte**)&d3d_verts, D3DVT_LVERTEX);
 	D3DLVERTEX *src_v = d3d_verts;
 
 	float uoffset = 0.0f;
@@ -1523,8 +1530,8 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 		}				
 	}	
 
-	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
-	if(nverts > MAX_INTERNAL_POLY_VERTS-1)Error( LOCATION, "too many verts in gr_d3d_tmapper_internal_3d_unlit\n" );
+//	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
+//	if(nverts > MAX_INTERNAL_POLY_VERTS-1)Error( LOCATION, "too many verts in gr_d3d_tmapper_internal_3d_unlit\n" );
 	if(nverts < 3)Error( LOCATION, "too few verts in gr_d3d_tmapper_internal_3d_unlit\n" );
 
 	for (int i=0; i<nverts; i++ )	{
@@ -1593,8 +1600,11 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 		gr_fog_set(GR_FOGMODE_NONE,0,0,0);
 	}
 
+	render_buffer.unlock();
+
 	TIMERBAR_PUSH(2);
- 	d3d_DrawPrimitive(D3DVT_LVERTEX, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
+	render_buffer.draw(d3d_prim_type(flags), nverts);
+ //	d3d_DrawPrimitive(D3DVT_LVERTEX, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
 	TIMERBAR_POP();
 }
 
@@ -1700,7 +1710,9 @@ void gr_d3d_tmapper_internal_2d( int nverts, vertex **verts, uint flags, int is_
 	
 	Assert(nverts < 32);
 
-	D3DVERTEX2D d3d_verts[32];
+	render_buffer.allocate(nverts, D3DVT_VERTEX2D);
+	D3DVERTEX2D *d3d_verts;
+	render_buffer.lock((ubyte**)&d3d_verts, D3DVT_VERTEX2D);
 	D3DVERTEX2D *src_v = d3d_verts;
 
 	int x1, y1, x2, y2;
@@ -1810,8 +1822,11 @@ void gr_d3d_tmapper_internal_2d( int nverts, vertex **verts, uint flags, int is_
 	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 
 	set_stage_for_defuse();
+
+	render_buffer.unlock();
 	TIMERBAR_PUSH(2);
-	d3d_DrawPrimitive(D3DVT_VERTEX2D, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
+	render_buffer.draw(d3d_prim_type(flags), nverts);
+//	d3d_DrawPrimitive(D3DVT_VERTEX2D, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
 	TIMERBAR_POP();
 }
 
@@ -1948,9 +1963,11 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	
 	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 	
-	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
+//	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
 
-	static D3DTLVERTEX d3d_verts[MAX_INTERNAL_POLY_VERTS];		//static so it doesn't have to reallocate it every time
+	render_buffer.allocate(nverts, D3DVT_TLVERTEX);
+	D3DTLVERTEX *d3d_verts;
+	render_buffer.lock((ubyte**)&d3d_verts, D3DVT_TLVERTEX);
 	D3DTLVERTEX *src_v = d3d_verts;
 
 	int x1, y1, x2, y2;
@@ -1979,7 +1996,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		}				
 	}	
 
-	if(nverts > MAX_INTERNAL_POLY_VERTS-1)Error( LOCATION, "too many verts in gr_d3d_tmapper_internal\n" );
+//	if(nverts > MAX_INTERNAL_POLY_VERTS-1)Error( LOCATION, "too many verts in gr_d3d_tmapper_internal\n" );
 	if(nverts < 3)Error( LOCATION, "too few verts in gr_d3d_tmapper_internal\n" );
 
 	for (i=0; i<nverts; i++ )	{
@@ -2127,7 +2144,10 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			d3d_verts[i].env_v = 0.0f;
 		}
 
-		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+		render_buffer.unlock();
+
+		render_buffer.draw(d3d_prim_type(flags), nverts);
+//		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 
 		if(GlobalD3DVars::d3d_caps.MaxSimultaneousTextures < 3){
 			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
@@ -2137,7 +2157,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			}
 			set_stage_for_additive_glowmapped();
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
-			d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+			render_buffer.draw(d3d_prim_type(flags), nverts);
+//			d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 			gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 		}
 
@@ -2204,8 +2225,11 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 	// Draws just about everything except stars and lines
 
+	render_buffer.unlock();
+
 	TIMERBAR_PUSH(3);
-	d3d_DrawPrimitive(D3DVT_TLVERTEX, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
+	render_buffer.draw(d3d_prim_type(flags), nverts);
+//	d3d_DrawPrimitive(D3DVT_TLVERTEX, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
 	TIMERBAR_POP();
 
 	//spec mapping
@@ -2235,7 +2259,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			//spec mapping is always done on a second pass
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 			if(flags & TMAP_FLAG_PIXEL_FOG) gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-			d3d_DrawPrimitive(D3DVT_TLVERTEX, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
+			render_buffer.draw(d3d_prim_type(flags), nverts);
+//			d3d_DrawPrimitive(D3DVT_TLVERTEX, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
 			if(flags & TMAP_FLAG_PIXEL_FOG) gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 			gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 		}
