@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.102 $
- * $Date: 2005-02-15 00:06:27 $
- * $Author: taylor $
+ * $Revision: 2.103 $
+ * $Date: 2005-02-27 23:42:07 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2005/02/15 00:06:27  taylor
+ * clean up some model related globals
+ * code to disable individual thruster glows
+ * fix issue where 1 extra OGL light pass didn't render
+ *
  * Revision 2.101  2005/02/12 12:17:54  taylor
  * fix Error() check so that it doesn't hit on MAX_BUFFERS_PER_SUBMODEL-1
  *
@@ -2074,7 +2079,7 @@ typedef struct model_path {
 */
 
 
-void interp_render_arc_segment( vector *v1, vector *v2, int depth )
+void interp_render_arc_segment( vector *v1, vector *v2, int depth, color *outside_color )
 {
 	float d = vm_vec_dist_quick( v1, v2 );
 
@@ -2084,7 +2089,10 @@ void interp_render_arc_segment( vector *v1, vector *v2, int depth )
 		g3_rotate_vertex( &p2, v2 );
 
 		//g3_draw_rod( v1, 0.2f, v2, 0.2f, NULL, 0);
+		gr_set_color_fast(outside_color);
 		g3_draw_rod( v1, 0.6f, v2, 0.6f, NULL, TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
+		gr_set_color(255,255,255);
+		g3_draw_rod( v1, 0.3f, v2, 0.3f, NULL, TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
 	//	g3_draw_line( &p1, &p2 );
 	} else {
 		// divide in half
@@ -2096,8 +2104,8 @@ void interp_render_arc_segment( vector *v1, vector *v2, int depth )
 		tmp.xyz.y += (frand()-0.5f)*d*scaler;
 		tmp.xyz.z += (frand()-0.5f)*d*scaler;
 		
-		interp_render_arc_segment( v1, &tmp, depth+1 );
-		interp_render_arc_segment( &tmp, v2, depth+1 );
+		interp_render_arc_segment( v1, &tmp, depth+1, outside_color );
+		interp_render_arc_segment( &tmp, v2, depth+1, outside_color );
 	}
 }
 
@@ -2122,6 +2130,8 @@ void interp_render_lightning( polymodel *pm, bsp_info * sm )
 
 	if (!Interp_lightning) return;
 
+	color outside_arc_color;
+
 //	if ( keyd_pressed[KEY_LSHIFT] ) return;
 //	if ( rad < 3.0f ) return;	
 	
@@ -2131,18 +2141,18 @@ void interp_render_lightning( polymodel *pm, bsp_info * sm )
 		// "normal", Freespace 1 style arcs
 		case MARC_TYPE_NORMAL:
 			if ( (rand()>>4) & 1 )	{
-				gr_set_color( 64, 64, 255 );
+				gr_init_alphacolor(&outside_arc_color, 64, 64, 255, 255 );
 			} else {
-				gr_set_color( 128, 128, 255 );
+				gr_init_alphacolor(&outside_arc_color, 128, 128, 255, 255 );
 			}
 			break;
 
 		// "EMP" style arcs
 		case MARC_TYPE_EMP:
 			if ( (rand()>>4) & 1 )	{
-				gr_set_color( AR, AG, AB );
+				gr_init_alphacolor(&outside_arc_color, AR, AG, AB, 255 );
 			} else {
-				gr_set_color( AR2, AG2, AB2 );
+				gr_init_alphacolor(&outside_arc_color, AR2, AG2, AB2, 255 );
 			}
 			break;
 
@@ -2151,7 +2161,7 @@ void interp_render_lightning( polymodel *pm, bsp_info * sm )
 		}
 
 		// render the actual arc segment
-		interp_render_arc_segment( &sm->arc_pts[i][0], &sm->arc_pts[i][1], 0 );
+		interp_render_arc_segment( &sm->arc_pts[i][0], &sm->arc_pts[i][1], 0, &outside_arc_color );
 	}
 }
 
@@ -2495,7 +2505,7 @@ void model_render_insignias(polymodel *pm, int detail_level)
 			vecs[k].r = (ubyte)255;*/
 //			gr_printf((0), (0), "r %d, g %d, b %d", (int)vecs[k].r, (int)vecs[k].g, (int)vecs[k].b);
 			// draw the polygon
-			g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+			g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_LIT);
 		//	g3_draw_poly(3, vlist, 0);
 		}
 	}
