@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-07-15 02:37:59 $
+ * $Revision: 2.25 $
+ * $Date: 2003-07-15 16:09:46 $
  * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/07/15 02:37:59  phreak
+ * models that are fully cloaked draw front-to-back
+ *
  * Revision 2.23  2003/07/04 02:28:37  phreak
  * changes for cloaking implemented
  *
@@ -2244,7 +2247,7 @@ void model_render(int model_num, matrix *orient, vector * pos, uint flags, int o
 	int num_lights = 0;
 
 	if ( !(flags & MR_NO_LIGHTING ) )	{
-		if ( D3D_enabled )	{
+		if ( D3D_enabled || OGL_inited  )	{
 			num_lights = light_filter_push( objnum, pos, pm->rad );
 		} else {
 			num_lights = light_filter_push( objnum, pos, pm->rad );
@@ -3491,7 +3494,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 	}
 
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
-		if ( D3D_enabled )	{
+		if ( D3D_enabled || OGL_inited )	{
 			light_filter_push( -1, pos, pm->submodel[submodel_num].rad );
 		} else {
 			light_filter_push( light_ignore_id, pos, pm->submodel[submodel_num].rad );
