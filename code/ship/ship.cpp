@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.177 $
- * $Date: 2005-03-30 02:32:41 $
+ * $Revision: 2.178 $
+ * $Date: 2005-03-30 05:37:22 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.177  2005/03/30 02:32:41  wmcoolmon
+ * Made it so *Snd fields in ships.tbl and weapons.tbl take the sound name
+ * as well as its index (ie "L_sidearm.wav" instead of "76")
+ *
  * Revision 2.176  2005/03/27 13:37:15  Goober5000
  * bah
  *
@@ -2714,7 +2718,7 @@ strcpy(parse_error_text, temp_error);
 		stuff_string(buf, F_NAME, NULL);
 		i = gamesnd_get_by_name(buf);
 		if(i != -1)
-			sip->engine_snd = j;
+			sip->engine_snd = i;
 		else
 			sip->engine_snd = atoi(buf);
 		
