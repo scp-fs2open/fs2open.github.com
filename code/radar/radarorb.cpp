@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.6 $
- * $Date: 2005-03-13 08:33:55 $
- * $Author: taylor $
+ * $Revision: 1.7 $
+ * $Date: 2005-03-21 23:19:55 $
+ * $Author: phreak $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/03/13 08:33:55  taylor
+ * gotta use MIN/MAX and not min/max now
+ *
  * Revision 1.5  2005/03/12 06:03:07  phreak
  * Fixed a bug where the orb would incorrectly render under alternate FOVs.
  * Updated the functions that scramble the contacts so the blips show up
@@ -652,7 +655,10 @@ void radar_orb_setup_view()
 	static vector eye={0,0,-2.25};
 	g3_end_frame();
 
-	HUD_set_clip(Current_radar_global->Radar_coords[gr_screen.res][0], Current_radar_global->Radar_coords[gr_screen.res][1],209,170);
+	int w,h;
+	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL, NULL);
+	
+	HUD_set_clip(Current_radar_global->Radar_coords[gr_screen.res][0], Current_radar_global->Radar_coords[gr_screen.res][1],w, h);
 	g3_start_frame(1);
 	
 	float old_zoom=View_zoom;
