@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.75 $
+ * $Revision: 2.76 $
  * $Author: Goober5000 $
- * $Date: 2004-09-24 02:13:00 $
+ * $Date: 2004-10-14 01:19:17 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2004/09/24 02:13:00  Goober5000
+ * some ubersexp fixes
+ * --Goober5000
+ *
  * Revision 2.74  2004/09/23 05:53:00  Goober5000
  * a bunch of work on the actual implementation of when-argument
  * --Goober5000
@@ -881,6 +885,7 @@ struct ship_subsys;
 #define OP_EVERY_OF							(0x0005 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_RANDOM_OF						(0x0006 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_NUMBER_OF						(0x0007 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_INVALIDATE_ARGUMENT				(0x0008 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 // sexpressions with side-effects
 #define OP_CHANGE_IFF						(0x0000 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
@@ -991,18 +996,19 @@ struct ship_subsys;
 #define OP_LOCK_ROTATING_SUBSYSTEM			(0x008a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FREE_ROTATING_SUBSYSTEM			(0x008b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_PLAYER_USE_AI					(0x008c | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_HUD_DISABLE_EXCEPT_MESSAGES		(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_FORCE_JUMP						(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PLAYER_NOT_USE_AI				(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_HUD_DISABLE_EXCEPT_MESSAGES		(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_FORCE_JUMP						(0x008f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 //Hud stuff
-#define OP_HUD_SET_TEXT						(0x008f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_HUD_SET_TEXT_NUM					(0x0090 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_HUD_SET_COORDS					(0x0091 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_HUD_SET_FRAME					(0x0092 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_HUD_SET_COLOR					(0x0093 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_RADAR_SET_MAXRANGE				(0x0094 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //Kazan
+#define OP_HUD_SET_TEXT						(0x0090 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_TEXT_NUM					(0x0091 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_COORDS					(0x0092 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_FRAME					(0x0093 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_COLOR					(0x0094 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_RADAR_SET_MAXRANGE				(0x0095 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //Kazan
 //
-#define OP_SHIP_TAG							(0x0095 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
-#define OP_SHIP_UNTAG						(0x0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_SHIP_TAG							(0x0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_SHIP_UNTAG						(0x0097 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -1287,7 +1293,13 @@ typedef struct sexp_node {
 	int	first;					// if first parameter is sexp, index into Sexp_nodes
 	int	rest;						// index into Sexp_nodes of rest of parameters
 	int	value;					// known to be true, known to be false, or not known
+	int flags;					// Goober5000
 } sexp_node;
+
+// Goober5000
+#define SNF_ARGUMENT_VALID		(1<<0)
+#define SNF_ARGUMENT_SELECT		(1<<1)
+#define SNF_DEFAULT_VALUE		SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {
 	int		type;
