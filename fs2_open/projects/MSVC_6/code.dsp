@@ -128,6 +128,18 @@ SOURCE=..\..\code\Bmpman\BmpMan.cpp
 SOURCE=..\..\code\Bmpman\BmpMan.h
 # End Source File
 # End Group
+# Begin Group "Camera"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\camera\camera.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\camera\camera.cpp
+# End Source File
+# End Group
 # Begin Group "CFile"
 
 # PROP Default_Filter ""
@@ -842,6 +854,26 @@ SOURCE=..\..\code\JumpNode\JumpNode.cpp
 # Begin Source File
 
 SOURCE=..\..\code\JumpNode\JumpNode.h
+# End Source File
+# End Group
+# Begin Group "Lab"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\lab\lab.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\lab\lab.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\lab\wmcgui.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\lab\wmcgui.h
 # End Source File
 # End Group
 # Begin Group "Lighting"
