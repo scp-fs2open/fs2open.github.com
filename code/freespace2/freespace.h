@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:22 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2004-10-31 21:31:34 $
+ * $Author: taylor $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:22  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/04/07 03:31:53  righteous1
  * Updated to add alt_tab_pause() function to draw pause screen and discontinue sounds when the game is minimized. -R1
  *
@@ -347,6 +350,9 @@ int game_do_cd_mission_check(char *filename);
 
 // Used to tell the player that a feature isn't available in the demo version of FreeSpace
 void game_feature_not_in_demo_popup();
+
+// Used to tell the player that a feature is disabled by build settings
+void game_feature_disabled_popup();
 
 //	Return version string for demo or full version, depending on build.
 void get_version_string(char *str);
