@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.6 $
- * $Date: 2002-11-28 00:00:37 $
- * $Author: sesquipedalian $
+ * $Revision: 2.7 $
+ * $Date: 2002-12-12 08:01:57 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/11/28 00:00:37  sesquipedalian
+ * end-mission sexp added
+ *
  * Revision 2.5  2002/11/20 21:22:31  DTP
  * DTP; fix at line 6785 in parse/SEXP.cpp, a forgotten "{", when the is tagged thing was Fixed
  *
@@ -458,6 +461,7 @@ sexp_oper Operators[] = {
 	{ "hits-left",						OP_HITS_LEFT,					1, 1, },
 	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 2, },
 	{ "distance",						OP_DISTANCE,					2, 2, },
+	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,			1, 1, },
 	{ "team-score",					OP_TEAM_SCORE,					1,	1,	}, 
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
@@ -1340,9 +1344,9 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				}
 
 				// we must get the model of the ship that is part of this sexpression and find a subsystem
-				// with that name.  This code assumes that the ship *always* preceeds the subsystem in an sexpression.
-				// if this current fact is ever not the case, the next lines of code must be changes to get the correct
-				// shipname.				
+				// with that name.  This code assumes by default that the ship is *always* the first name
+				// in the sexpression.  If this is ever not the case, the code here must be changed to
+				// get the correct ship name.
 				switch(Operators[identify_operator(CTEXT(op_index))].value){
 				case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 					ship_index = Sexp_nodes[Sexp_nodes[op_index].rest].rest;
@@ -1355,7 +1359,11 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 						ship_index = Sexp_nodes[Sexp_nodes[Sexp_nodes[op_index].rest].rest].rest;
 					}
 					break;
-				
+
+				case OP_DISTANCE_SUBSYSTEM:
+					ship_index = Sexp_nodes[Sexp_nodes[op_index].rest].rest;
+					break;
+
 				default :
 					ship_index = Sexp_nodes[op_index].rest;
 					break;
@@ -1384,19 +1392,24 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					}
 				}
 
-				for (i=0; i<Ship_info[ship_class].n_subsystems; i++){
-					if (!stricmp(Ship_info[ship_class].subsystems[i].subobj_name, CTEXT(index))){
+				for (i=0; i<Ship_info[ship_class].n_subsystems; i++)
+				{
+					if (!stricmp(Ship_info[ship_class].subsystems[i].subobj_name, CTEXT(index)))
+					{
 						break;
 					}
 				}
 
-				if (i == Ship_info[ship_class].n_subsystems){
+				if (i == Ship_info[ship_class].n_subsystems)
+				{
 					return SEXP_CHECK_INVALID_SUBSYS;
 				}
 
 				// if we're checking for an AWACS subsystem and this is not an awacs subsystem
-				if(Fred_running){
-					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_AWACS)){
+				if(Fred_running)
+				{
+					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_AWACS))
+					{
 						return SEXP_CHECK_INVALID_SUBSYS;
 					}
 				}
@@ -3560,7 +3573,7 @@ int sexp_determine_team(char *subj)
 	return team;
 }
 
-// returns the distance between two objects.  If a wing is specificed as one (or both) or the arguments
+// returns the distance between two objects.  If a wing is specified as one (or both) of the arguments
 // to this function, we are looking for the closest distance
 int sexp_distance(int n)
 {
@@ -3719,6 +3732,139 @@ int sexp_distance3(int obj1, int obj2)
 	} else {
 		return (int) vm_vec_dist_quick( &Objects[obj1].pos, &Objects[obj2].pos );
 	}
+}
+
+// locate the subsystem on a ship - Goober5000
+void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vector *subsys_world_pos)
+{
+	ship_subsys *ss;
+
+	Assert(shipnum >= 0);
+
+	// find the ship subsystem by searching ship's subsys_list
+	ss = GET_FIRST( &Ships[shipnum].subsys_list );
+	while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) )
+	{
+		// if we found the subsystem
+		if ( !stricmp(ss->system_info->subobj_name, subsys_name))
+		{
+			// find world position of subsystem on this object (the ship)
+			get_subsystem_world_pos(&Objects[Ships[shipnum].objnum], ss, subsys_world_pos);
+			return;
+		}
+
+		ss = GET_NEXT( ss );
+	}
+	// we reached end of ship subsys list without finding subsys_name
+	Int3();
+}
+
+// returns the distance between an object and a ship subsystem.  If a wing is specified as the object argument
+// to this function, we are looking for the closest distance
+int sexp_distance_subsystem(int n)	// Goober5000
+{
+	int i, team, dist, obj, dist_min = 0, inited = 0;
+	char *obj_name, *ship_with_subsys, *subsys_name;
+	vector subsys_pos;
+	wing *wingp;
+	ship_obj *so;
+
+	obj_name = CTEXT(n);
+	ship_with_subsys = CTEXT(CDR(n));
+	subsys_name = CTEXT(CDR(CDR(n)));
+
+	// check to see if either ship was destroyed or departed.  If so, then make this node known
+	// false
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, obj_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, obj_name, NULL, NULL) ||
+		  mission_log_get_time(LOG_SHIP_DESTROYED, ship_with_subsys, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_with_subsys, NULL, NULL) ) 
+		return SEXP_NAN_FOREVER;
+
+	// the object might a wing.  Check to see if the wing is detroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, obj_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, obj_name, NULL, NULL) ) 
+		return SEXP_NAN_FOREVER;
+
+	// find the ship with the subsystem
+	obj = ship_name_lookup( ship_with_subsys );
+	if ( obj < 0 )		// hmm... must not have arrived yet
+	{
+		return SEXP_NAN;
+	}
+
+	// get the subsystem's coordinates
+	sexp_get_subsystem_pos(obj, subsys_name, &subsys_pos);
+
+	// check if the first object is on a team
+	team = sexp_determine_team(obj_name);
+	if (team)	// we have a team type, so check all ships of that type
+	{
+		so = GET_FIRST(&Ship_obj_list);
+		while (so != END_OF_LIST(&Ship_obj_list))
+		{
+			// do we check this ship?
+			if (Ships[Objects[so->objnum].instance].team == team)
+			{
+				// compute distance
+				dist = (int) vm_vec_dist_quick( &Objects[so->objnum].pos, &subsys_pos );
+				
+				// check for minimum
+				if (!inited || (dist < dist_min))
+				{
+					dist_min = dist;
+					inited = 1;
+				}
+			}
+
+			so = GET_NEXT(so);
+		}
+
+		if (!inited)  // no objects were checked
+			return SEXP_NAN;
+
+		return dist_min;
+	}
+
+	// at this point, we must have a wing, ship or point for a subj
+	obj = ship_name_lookup(obj_name);
+	if ( !(obj < 0) )	// do we have a ship?
+	{
+		return (int) vm_vec_dist_quick( &Objects[obj].pos, &subsys_pos );
+	}
+
+	// at this point, we must have a wing or point for a subj
+	obj = waypoint_lookup(obj_name);
+	if ( !(obj < 0) )	// do we have a point?
+	{
+		return (int) vm_vec_dist_quick( &Objects[obj].pos, &subsys_pos );
+	}
+		
+	// at this point, we must have a wing for a subj
+	obj = wing_name_lookup(obj_name);
+	if (obj < 0)
+	{
+		return SEXP_NAN;  // we apparently don't have anything legal
+	}
+
+	// check all ships in the wing
+	wingp = &Wings[obj];
+	for (i=0; i<wingp->current_count; i++)
+	{
+		// compute distance
+		dist = (int) vm_vec_dist_quick( &Objects[Ships[wingp->ship_index[i]].objnum].pos, &subsys_pos );
+				
+		// check for minimum
+		if (!inited || (dist < dist_min))
+		{
+			dist_min = dist;
+			inited = 1;
+		}
+	}
+
+	if (!inited)  // no objects were checked
+	{
+		return SEXP_NAN;
+	}
+
+	return dist_min;
 }
 
 // funciton to determine when the last meaningful order was given to one or more ships.  Returns
@@ -7569,16 +7715,20 @@ int eval_sexp(int cur_node)
 				sexp_val = sexp_hits_left( node );
 				break;
 
-			case OP_SPECIAL_WARP_DISTANCE:
-				sexp_val = sexp_special_warp_dist( node );
-				break;
-
 			case OP_HITS_LEFT_SUBSYSTEM:
 				sexp_val = sexp_hits_left_subsystem( node );
 				break;
 
+			case OP_SPECIAL_WARP_DISTANCE:
+				sexp_val = sexp_special_warp_dist( node );
+				break;
+
 			case OP_DISTANCE:
 				sexp_val = sexp_distance( node );
+				break;
+
+			case OP_DISTANCE_SUBSYSTEM:
+				sexp_val = sexp_distance_subsystem( node );
 				break;
 
 			case OP_IS_SHIP_VISIBLE:
@@ -8288,6 +8438,7 @@ int query_operator_return_type(int op)
 		case OP_HITS_LEFT:
 		case OP_HITS_LEFT_SUBSYSTEM:
 		case OP_DISTANCE:
+		case OP_DISTANCE_SUBSYSTEM:
 		case OP_NUM_PLAYERS:
 		case OP_NUM_KILLS:
 		case OP_NUM_TYPE_KILLS:
@@ -8590,6 +8741,16 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			else
 				return OPF_SUBSYSTEM;
+
+		case OP_DISTANCE_SUBSYSTEM:
+			if (argnum == 0)
+				return OPF_SHIP_WING_POINT;
+			else if (argnum == 1)
+				return OPF_SHIP;
+			else if (argnum == 2)
+				return OPF_SUBSYSTEM;
+			else
+				Int3();		// shouldn't happen
 
 		case OP_TARGETED:
 			if (!argnum)
