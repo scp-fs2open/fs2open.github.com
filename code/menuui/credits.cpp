@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-11-02 22:11:35 $
- * $Author: DTP $
+ * $Revision: 2.6 $
+ * $Date: 2002-11-02 22:25:26 $
+ * $Author: inquisitor $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/11/02 22:11:35  DTP
+ * DOH forgot \n
+ *
  * Revision 2.4  2002/11/02 22:10:48  DTP
  * shameless self promotion
  *
@@ -194,20 +197,25 @@ char *fs2_open_credit_text =
 	"\n"
 	"Programmers:\n"
 	"\n"
-	"Bobboau\n"
+	"\"Bobboau\"\n"
 	"Dennis \"DTP\" Pedersen\n"
 	"Joe \"Righteous1\" Dowd\n"
-	"Kazan\n"
 	"Mike \"penguin\" Harris\n"
-	"Mysterial\n"
-	"PhReAk\n"
+	"\"Mysterial\"\n"
+	"\"PhReAk\"\n"
 	"Thomas \"Random Tiger\" Whittaker\n"
 	"Will \"Unknown PLayer\" Rousnel\n"
+	"\"WMCoolmon\"\n"
+
+	"Web support:\n"
+	"Icefire and the staff at Volitionwatch.com\n"
+	"Alex \"Thunder\" Avery and the staff at Hard Light Productions\n"
+
 
 	"\nSpecial thanks to:\n"
 	"\n"
 	"Volition for making FS2 such a great game\n"
-	"Dave Baranec for giving us the code\n"
+	"Dave Baranec for giving us the code and keeping us sanity checked\n"
 	"\n\n\n\n";
 
 char *unmodified_credits = "ORIGINAL VOLITION STAFF:\n\n\n";
