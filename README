@@ -1,0 +1,4 @@
+This file is required to keep autoconf/automake from complaining.
+
+See the ChangeLog to see what's new.
+See the INSTALL file for instructions on how to build fs2_open.
