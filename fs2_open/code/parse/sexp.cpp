@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.91 $
- * $Date: 2004-06-15 20:49:22 $
+ * $Revision: 2.92 $
+ * $Date: 2004-07-03 07:55:22 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2004/06/15 20:49:22  wmcoolmon
+ * Added hud-set-color and get-current-speed
+ *
  * Revision 2.90  2004/06/09 00:18:50  wmcoolmon
  * hud-set-color SEXP
  *
@@ -9672,7 +9675,7 @@ void sexp_beam_fire(int node)
 
 	// if it has no primary weapons
 	if(fire_info.turret->weapons.num_primary_banks <= 0){
-		Int3();
+		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no primary weapons", CTEXT(node), CTEXT(CDR(node));
 		return;
 	}
 
@@ -9696,7 +9699,7 @@ void sexp_beam_fire(int node)
 		beam_fire(&fire_info);
 	} else {
 		// it would appear the turret doesn't have any beam weapons
-		Int3();
+		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no beam weapons", CTEXT(node), CTEXT(CDR(node));
 	}
 }	
 
