@@ -20,66 +20,45 @@ extern int ships_inited; //Need this
 void resize_coords(int* values, float* factors);
 void set_coords_if_clear(int* dest_coords, int coord_x, int coord_y = -1);
 
-//Set up coord info array
-typedef struct coord_info
-{
-	coord_info* parent;	//Parent, used for mini-gauges, pointer to coord_info (NULL if main gauge
-	size_t variable;	//Offset of coord in hud_info
-	char fieldname[MAX_NAME_LEN];	//TBL entry token
-	int defaultx_640;	//Default 640x480 x coord
-	int defaulty_480;	//y coord
-	int defaultx_1024;	//Default 1024x768 x coord
-	int defaulty_768;	//y coord
-	size_t size_dest;	//offset of size coord in hud_info; init in load_hud_defaults() (Can be NULL)
-	size_t image_dest;	//offset of image string in hud_info; init in load_hud_defaults() (Can be NULL)
-	size_t text_dest;	//Text value
-	coord_info* addparent;	//If not NULL, coordinates are added to this
-	int show_outside;	//Show outside ship?
-} coord_info;
-
 //ADD YOUR VARIABLES HERE
 //Gauges MUST come first, and all variables MUST be in the hud struct.
-#define MAX_COORD_TYPES 64
 #define HUD_VAR(a) offsetof(hud_info, a)
-coord_info gauges[MAX_COORD_TYPES] = {
-{NULL,			HUD_VAR(Player_shield_coords),	"$Player Shield:",			396, 379, 634, 670,	NULL, NULL, NULL, NULL},
-{NULL,			HUD_VAR(Target_shield_coords),	"$Target Shield:",			142, 379, 292, 670,	NULL, NULL, NULL, NULL},
-{NULL,			HUD_VAR(Shield_mini_coords),		"$Shield Mini:",			305, 291, 497, 470, NULL, HUD_VAR(Shield_mini_fname), NULL, NULL},
-{NULL,			HUD_VAR(Aburn_coords),			"$Afterburner Energy:",		171, 265, 274, 424, HUD_VAR(Aburn_size) ,HUD_VAR(Aburn_fname), NULL, NULL},
-{NULL,			HUD_VAR(Wenergy_coords),			"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size) ,HUD_VAR(Wenergy_fname), NULL, NULL},
+gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
+{NULL,			HUD_VAR(Player_shield_coords),	"$Player Shield:",			396, 379, 634, 670,	NULL, NULL, NULL, NULL, NULL},
+{NULL,			HUD_VAR(Target_shield_coords),	"$Target Shield:",			142, 379, 292, 670,	NULL, NULL, NULL, NULL, NULL},
+{NULL,			HUD_VAR(Shield_mini_coords),	"$Shield Mini:",			305, 291, 497, 470, NULL, HUD_VAR(Shield_mini_fname), NULL, NULL, NULL},
+{NULL,			HUD_VAR(Aburn_coords),			"$Afterburner Energy:",		171, 265, 274, 424, HUD_VAR(Aburn_size) ,HUD_VAR(Aburn_fname), NULL, NULL, NULL},
+{NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size) ,HUD_VAR(Wenergy_fname), NULL, NULL, NULL},
 //Mini-gauges
 {&gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				310, 298, 502, 477,	NULL, NULL, NULL, NULL},
-{&gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			6, 0, 6, 0,	NULL, NULL, NULL, &gauges[5]},
-{&gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			2, 0, 2, 0,	NULL, NULL, NULL, &gauges[5]}};
+{&gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			6, 0, 6, 0,	NULL, NULL, NULL, NULL, &gauges[5]},
+{&gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			2, 0, 2, 0,	NULL, NULL, NULL, NULL, &gauges[5]}};
 
 //Number of gauges
 int Num_coord_types = 8;
 int Num_custom_gauges = 0;
 
-#define HUD_INT(a, b) ((int*)((char*)a + b))
-#define HUD_CHAR(a, b) ((char *)((char*)a + b))
-
 //Loads defaults for if a hud isn't specified in the table
 static void load_hud_defaults()
 {
-	coord_info* cg;
+	gauge_info* cg;
 	for(int i = 0; i < Num_coord_types; i++)
 	{
 		cg = &gauges[i];
 		if(cg->addparent && cg->fieldname)
 		{
-			HUD_INT(&default_hud, cg->variable)[0] = -1;
-			HUD_INT(&default_hud, cg->variable)[1] = -1;
+			HUD_INT(&default_hud, cg->coord_dest)[0] = -1;
+			HUD_INT(&default_hud, cg->coord_dest)[1] = -1;
 		}
 		else if(gr_screen.max_w == 640)
 		{
-			HUD_INT(&default_hud, cg->variable)[0] = cg->defaultx_640;
-			HUD_INT(&default_hud, cg->variable)[1] = cg->defaulty_480;
+			HUD_INT(&default_hud, cg->coord_dest)[0] = cg->defaultx_640;
+			HUD_INT(&default_hud, cg->coord_dest)[1] = cg->defaulty_480;
 		}
 		else
 		{
-			HUD_INT(&default_hud, cg->variable)[0] = cg->defaultx_1024;
-			HUD_INT(&default_hud, cg->variable)[1] = cg->defaulty_768;
+			HUD_INT(&default_hud, cg->coord_dest)[0] = cg->defaultx_1024;
+			HUD_INT(&default_hud, cg->coord_dest)[1] = cg->defaulty_768;
 		}
 	}
 	//X values
@@ -208,14 +187,14 @@ int stuff_coords(char* pstr, hud_info* dest_hud, size_t i, size_t image, size_t 
 static void parse_resolution(hud_info* dest_hud)
 {
 	//Parse it
-	coord_info* cg;
+	gauge_info* cg;
 	for(int i = 0; i < Num_coord_types; i++)
 	{
 		cg = &gauges[i];
 		if(!cg->parent && cg->fieldname)
 		{
 
-			stuff_coords(cg->fieldname, dest_hud, cg->variable, cg->image_dest, cg->size_dest, cg->text_dest);
+			stuff_coords(cg->fieldname, dest_hud, cg->coord_dest, cg->image_dest, cg->size_dest, cg->text_dest);
 		}
 	}
 }
@@ -223,7 +202,7 @@ static void parse_resolution(hud_info* dest_hud)
 static void parse_resolution_gauges(hud_info* dest_hud)
 {
 	char gaugename[32];
-	coord_info *cg, *parent;
+	gauge_info *cg, *parent;
 	while(!required_string_3("$Gauge:","$Resolution:","#End"))
 	{
 		required_string("$Gauge:");
@@ -243,7 +222,7 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 			}
 			else if(parent == cg->parent)
 			{
-				stuff_coords(cg->fieldname, dest_hud, cg->variable, cg->image_dest, cg->size_dest, cg->text_dest);
+				stuff_coords(cg->fieldname, dest_hud, cg->coord_dest, cg->image_dest, cg->size_dest, cg->text_dest);
 			}
 		}
 	}
@@ -254,7 +233,7 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 static void calculate_gauges(hud_info* dest_hud)
 {
 	int resize_x, resize_y;
-	coord_info* cg;
+	gauge_info* cg;
 	for(int i = 0; i < Num_coord_types; i++)
 	{
 		cg = &gauges[i];
@@ -262,16 +241,16 @@ static void calculate_gauges(hud_info* dest_hud)
 		{
 			if(cg->addparent)
 			{
-				resize_x = HUD_INT(dest_hud, cg->variable)[0] + HUD_INT(dest_hud, cg->addparent->variable)[0];
-				resize_y = HUD_INT(dest_hud, cg->variable)[1] + HUD_INT(dest_hud, cg->addparent->variable)[1];
+				resize_x = HUD_INT(dest_hud, cg->coord_dest)[0] + HUD_INT(dest_hud, cg->addparent->coord_dest)[0];
+				resize_y = HUD_INT(dest_hud, cg->coord_dest)[1] + HUD_INT(dest_hud, cg->addparent->coord_dest)[1];
 			}
 			else
 			{
-				resize_x = HUD_INT(dest_hud, cg->variable)[0];
-				resize_y = HUD_INT(dest_hud, cg->variable)[1];
+				resize_x = HUD_INT(dest_hud, cg->coord_dest)[0];
+				resize_y = HUD_INT(dest_hud, cg->coord_dest)[1];
 			}
 
-			set_coords_if_clear(HUD_INT(dest_hud, cg->variable), resize_x, resize_y);
+			set_coords_if_clear(HUD_INT(dest_hud, cg->coord_dest), resize_x, resize_y);
 		}
 	}
 }
@@ -361,18 +340,19 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 
 void parse_custom_gauge()
 {
-	if(Num_coord_types < MAX_COORD_TYPES)
+	if(Num_coord_types < MAX_HUD_GAUGE_TYPES)
 	{
 		char buffer[32], buffer2[32];
-		int i;
 
-		coord_info* cg = &gauges[Num_coord_types];
-		memset(cg, 0, sizeof(coord_info));
+		gauge_info* cg = &gauges[Num_coord_types];
+		memset(cg, 0, sizeof(gauge_info));
 		//Set all the ptrs
-		cg->variable = HUD_VAR(custom_gauge_coords[Num_custom_gauges]);
+		cg->coord_dest = HUD_VAR(custom_gauge_coords[Num_custom_gauges]);
 		cg->size_dest = HUD_VAR(custom_gauge_sizes[Num_custom_gauges]);
 		cg->image_dest = HUD_VAR(custom_gauge_images[Num_custom_gauges]);
+		cg->frame_dest = HUD_VAR(custom_gauge_frames[Num_custom_gauges]);
 		cg->text_dest = HUD_VAR(custom_gauge_text[Num_custom_gauges]);
+		//Wipe 'em
 
 		required_string("$Name:");
 		//Gotta make this a token
@@ -399,13 +379,7 @@ void parse_custom_gauge()
 		if(optional_string("$Parent:"))
 		{
 			stuff_string(buffer, F_NAME, NULL);
-			for(i = 0; i < Num_coord_types; i++)
-			{
-				if(!strnicmp(gauges[i].fieldname + sizeof(char), buffer, strlen(gauges[i].fieldname) - 2))
-				{
-					cg->parent = &gauges[i];
-				}
-			}
+			cg->parent = hud_get_gauge(buffer);
 		}
 		if(optional_string("$AddParent:"))
 		{
@@ -415,13 +389,7 @@ void parse_custom_gauge()
 				cg->addparent = cg->parent;
 			}
 
-			for(i = 0; i < Num_coord_types; i++)
-			{
-				if(!strnicmp(gauges[i].fieldname + sizeof(char), buffer, strlen(gauges[i].fieldname) - 2))
-				{
-					cg->parent = &gauges[i];
-				}
-			}
+			cg->addparent = hud_get_gauge(buffer);
 		}
 
 		Num_coord_types++;
@@ -591,5 +559,30 @@ void set_current_hud(int player_ship_num)
 
 hud_info::hud_info()
 {
-	loaded = 0;
+	loaded = false;
+	//memset(this, 0, sizeof(hud_info));
+}
+
+gauge_info* hud_get_gauge(char* name)
+{
+	int id = hud_get_gauge_index(name);
+	if(id != -1)
+	{
+		return &gauges[id];
+	}
+
+	return NULL;
+}
+
+int hud_get_gauge_index(char* name)
+{
+	for(int i = 0; i < Num_coord_types; i++)
+	{
+		if(!strnicmp(gauges[i].fieldname + sizeof(char), name, strlen(gauges[i].fieldname) - 2))
+		{
+			return i;
+		}
+	}
+
+	return -1;
 }

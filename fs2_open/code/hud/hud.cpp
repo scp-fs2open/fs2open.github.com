@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-05-31 08:54:13 $
+ * $Revision: 2.18 $
+ * $Date: 2004-06-01 07:31:56 $
  * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/05/31 08:54:13  wmcoolmon
+ * Update to make images (not animations) work
+ *
  * Revision 2.16  2004/05/31 08:32:25  wmcoolmon
  * Custom HUD support, better loading, etc etc.
  *
@@ -1574,15 +1577,30 @@ void HUD_render_2d(float frametime)
 	//Custom hud stuff
 	int i;
 	static bool image_ids_set = false;
-	static int image_ids[MAX_CUSTOM_HUD_GAUGES];
-	for(i = 0; i < MAX_CUSTOM_HUD_GAUGES; i++)
+	static hud_frames image_ids[MAX_CUSTOM_HUD_GAUGES];
+	if(!image_ids_set)
 	{
-		if(!image_ids_set && strlen(current_hud->custom_gauge_images[i]))
+		for(i = 0; i < Num_custom_gauges; i++)
 		{
-			image_ids[i] = bm_load(current_hud->custom_gauge_images[i]);
+			if(strlen(current_hud->custom_gauge_images[i]))
+			{
+				image_ids[i].first_frame = bm_load_animation(current_hud->custom_gauge_images[i], &image_ids[i].num_frames);
+				if(image_ids[i].first_frame != -1)
+				{
+					bm_page_in_aabitmap( image_ids[i].first_frame, image_ids[i].num_frames );
+				}
+				else
+				{
+					image_ids[i].first_frame = bm_load(current_hud->custom_gauge_images[i]);
+				}
+			}
+			else
+			{
+				image_ids[i].first_frame = -1;
+			}
 		}
+		image_ids_set = true;
 	}
-	image_ids_set = true;
 	for(i = 0; i < Num_custom_gauges; i++)
 	{
 		if(strlen(current_hud->custom_gauge_text[i]))
@@ -1590,9 +1608,9 @@ void HUD_render_2d(float frametime)
 			hud_num_make_mono(current_hud->custom_gauge_text[i]);
 			gr_string(current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1], current_hud->custom_gauge_text[i]);
 		}
-		if(strlen(current_hud->custom_gauge_images[i]))
+		if(image_ids[i].first_frame != -1)
 		{
-			GR_AABITMAP(image_ids[i], current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
+			GR_AABITMAP(image_ids[i].first_frame + current_hud->custom_gauge_frames[i], current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
 		}
 	}
 

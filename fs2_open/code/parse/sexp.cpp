@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.88 $
- * $Date: 2004-05-10 10:51:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.89 $
+ * $Date: 2004-06-01 07:31:56 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2004/05/10 10:51:52  Goober5000
+ * made primary and secondary banks quite a bit more friendly... added error-checking
+ * and reorganized a bunch of code
+ * --Goober5000
+ *
  * Revision 2.87  2004/05/03 21:22:22  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -736,6 +741,7 @@
 #include "weapon/emp.h"
 #include "sound/audiostr.h"
 #include "cmdline/cmdline.h"
+#include "hud/hudparse.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1019,7 +1025,13 @@ sexp_oper Operators[] = {
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
+
+	//HUD funcs -C
 	{ "toggle-hud",					OP_TOGGLE_HUD,					0, 0 },		// Goober5000
+	{ "hud-set-text",				OP_HUD_SET_TEXT,				2, 2 },	//WMCoolmon
+	{ "hud-set-text-num",			OP_HUD_SET_TEXT_NUM,			2, 2 },	//WMCoolmon
+	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
+	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -6503,6 +6515,57 @@ void sexp_toggle_hud()
 	hud_toggle_draw();
 }
 
+void sexp_hud_set_text_num(int n)
+{
+	char* gaugename = CTEXT(n);
+
+	gauge_info* cg = hud_get_gauge(gaugename);
+	if(cg)
+	{
+		itoa(sexp_get_val(CDR(n)), HUD_CHAR(current_hud, cg->text_dest), 10);
+	}
+}
+
+void sexp_hud_set_text(int n)
+{
+	char* gaugename = CTEXT(n);
+	char* text = CTEXT(CDR(n));
+
+	gauge_info* cg = hud_get_gauge(gaugename);
+	if(cg)
+	{
+		strcpy(HUD_CHAR(current_hud, cg->text_dest), text);
+	}
+}
+
+void sexp_hud_set_coords(int n)
+{
+	char* gaugename = CTEXT(n);
+	int coord_x = sexp_get_val(CDR(n));
+	int coord_y = sexp_get_val(CDR(CDR(n)));
+
+	gauge_info * cg = hud_get_gauge(gaugename);
+	if(cg)
+	{
+		HUD_INT(current_hud, cg->coord_dest)[0] = coord_x;
+		HUD_INT(current_hud, cg->coord_dest)[1] = coord_y;
+	}
+}
+
+void sexp_hud_set_frame(int n)
+{
+	char* gaugename = CTEXT(n);
+	int frame_num = sexp_get_val(CDR(n));
+
+	gauge_info * cg = hud_get_gauge(gaugename);
+	if(cg)
+	{
+		*HUD_INT(current_hud, cg->frame_dest) = frame_num;
+	}
+	return;
+}
+
+
 // Goober5000
 // trigger whether player uses the game AI for stuff
 void sexp_player_use_ai(int use_ai)
@@ -11513,6 +11576,26 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_HUD_SET_TEXT:
+				sexp_hud_set_text(node);
+				sexp_val = 1;
+				break;
+
+			case OP_HUD_SET_TEXT_NUM:
+				sexp_hud_set_text_num(node);
+				sexp_val = 1;
+				break;
+
+			case OP_HUD_SET_COORDS:
+				sexp_hud_set_coords(node);
+				sexp_val = 1;
+				break;
+
+			case OP_HUD_SET_FRAME:
+				sexp_hud_set_frame(node);
+				sexp_val = 1;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -12497,6 +12580,10 @@ int query_operator_return_type(int op)
 		case OP_NAV_SET_CARRY:		//kazan
 		case OP_NAV_UNSET_CARRY:	//kazan
 #endif
+		case OP_HUD_SET_TEXT:		//WMC
+		case OP_HUD_SET_TEXT_NUM:	//WMC
+		case OP_HUD_SET_COORDS:		//WMC
+		case OP_HUD_SET_FRAME:		//WMC
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -12925,6 +13012,18 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_TOGGLE_HUD:
 			return OPF_NONE;
+		case OP_HUD_SET_TEXT:
+			if(argnum == 0)
+				return OPF_STRING;
+			if(argnum == 1)
+				return OPF_STRING;
+		case OP_HUD_SET_TEXT_NUM:
+		case OP_HUD_SET_COORDS:
+		case OP_HUD_SET_FRAME:
+			if(argnum == 0)
+				return OPF_STRING;
+			else
+				return OPF_POSITIVE;
 
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -14357,8 +14456,14 @@ int get_subcategory(int sexp_id)
 		case OP_SET_SUPPORT_SHIP:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
-		case OP_TOGGLE_HUD:
 			return CHANGE_SUBCATEGORY_SPECIAL;
+
+		case OP_TOGGLE_HUD:
+		case OP_HUD_SET_TEXT:
+		case OP_HUD_SET_TEXT_NUM:
+		case OP_HUD_SET_COORDS:
+		case OP_HUD_SET_FRAME:
+			return CHANGE_SUBCATEGORY_HUD;
 		
 		default:
 			return -1;		// sexp doesn't have a subcategory
