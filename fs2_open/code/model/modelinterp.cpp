@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.80 $
- * $Date: 2004-05-01 17:37:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.81 $
+ * $Date: 2004-05-12 22:50:31 $
+ * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2004/05/01 17:37:09  Goober5000
+ * added an assert
+ * --Goober5000
+ *
  * Revision 2.79  2004/04/26 12:38:35  taylor
  * use d3_draw_rod() for lightning arcs (for OGL fix), fix debris making HUD in OGL disappear
  *
@@ -3323,6 +3327,8 @@ void light_set_all_relevent();
 #define mR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
 #define mP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 
+extern int Warp_model;
+
 void model_really_render(int model_num, matrix *orient, vector * pos, uint flags, int light_ignore_id )
 {
 	int i, detail_level;
@@ -3378,8 +3384,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// Set the flags we will pass to the tmapper
 	Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
-	// if we're in nebula mode
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
+	// if we're in nebula mode, fog everything except for the warp holes
+	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && (model_num != Warp_model)){
 		Interp_tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 
