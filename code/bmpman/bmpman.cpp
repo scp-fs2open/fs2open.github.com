@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.26 $
- * $Date: 2004-04-09 20:32:31 $
- * $Author: phreak $
+ * $Revision: 2.27 $
+ * $Date: 2004-04-26 12:44:54 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/04/09 20:32:31  phreak
+ * moved an assignment statement inside an #ifdef block so dds works in release mode
+ *
  * Revision 2.25  2004/04/09 20:07:56  phreak
  * fixed DDS not working in OpenGL.  there was a misplaced Assert()
  *
@@ -625,6 +628,9 @@
 #include "ship/ship.h"
 #include "ddsutils/ddsutils.h"
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
+#include "jpgutils/jpgutils.h"
+#include "openil/il_func.h" // needed for the #define's
 
 #ifndef NDEBUG
 #define BMPMAN_NDEBUG
@@ -647,10 +653,11 @@ int bm_inited = 0;
 #define	BM_TYPE_PCX			1
 #define	BM_TYPE_USER		2
 #define	BM_TYPE_ANI			3		// in-house ANI format
-#define	BM_TYPE_TGA			4		// 16 bit targa
+#define	BM_TYPE_TGA			4		// 16 or 32 bit targa
 #define BM_TYPE_DXT1		5		// 24 bit with switchable alpha		(compressed)
 #define BM_TYPE_DXT3		6		// 32 bit with 4 bit alpha			(compressed)
 #define BM_TYPE_DXT5		7		// 32 bit with 8 bit alpha			(compressed)
+#define BM_TYPE_JPG			8		// 32 bit jpeg
 
 uint Bm_next_signature = 0x1234;
 
@@ -917,10 +924,10 @@ int bm_gfx_create( int bpp, int w, int h, void * data, int flags )
 	int i, n, first_slot = MAX_BITMAPS;
 
 	// Assert((bpp==32)||(bpp==8));
-	if(bpp != 16){
+	if(bpp == 8){
 		Assert(flags & BMP_AABITMAP);
 	} else {
-		Assert(bpp == 16);
+		Assert( (bpp == 16) || (bpp == 32) );
 	}
 
 	if ( !bm_inited ) bm_init();
@@ -984,6 +991,18 @@ int bm_load_sub(char *real_filename, char *ext, int *handle)
 		filename[i] = char(tolower(filename[i]));
 	}		
 
+	// some checks to avoid endless strands of spaghetti later on
+	// this sucks --
+#if !defined(USE_DEVIL_JPG)
+	if ( !stricmp(ext, NOX(".jpg")) )
+		return -1;
+#endif // !USE_DEVIL_JPG
+#if !defined(USE_DEVIL_TGA)
+	if ( !stricmp(ext, NOX(".tga")) )
+		return -1;
+#endif // !USE_DEVIL_TGA
+	// -- end suckage
+
 	// try to find given filename to see if it has been loaded before
 	if(!Bm_ignore_duplicates){
 		for (i = 0; i < MAX_BITMAPS; i++) {
@@ -1019,6 +1038,7 @@ int bm_gfx_load( char * real_filename )
 	char filename[MAX_FILENAME_LEN];
 	int tga = 0;
 	int dds = 0;
+	int jpg = 0;
 	int handle;
 	int found = 0;
 	unsigned char type;
@@ -1030,6 +1050,11 @@ int bm_gfx_load( char * real_filename )
 		strcpy(filename,"test128");
 	}
 
+	// if no file was passed the get out now
+	if (strlen(real_filename) <= 0) {
+		return -1;
+	}
+
 	// make sure no one passed an extension
 	strcpy( filename, real_filename );
 	char *p = strchr( filename, '.' );
@@ -1039,49 +1064,97 @@ int bm_gfx_load( char * real_filename )
 		*p = 0;
 	}
 	
-	// try and find a compressed tex first	
-	// unless we're cant do so
+	if (Cmdline_jpgtga) 
+	{
+		if(!found)
+		{
+			// try and find the tga file
+			switch(bm_load_sub(filename, ".tga", &handle)){
+			// error
+			case -1:			
+				break;
+
+			// found as a file
+			case 0:			
+				found = 1;
+				strcat(filename, ".tga");
+				tga = 1;
+				break;
+
+			// found as pre-existing
+			case 1:						
+				found = 1;
+				return handle;					
+			}
+		}
+		
+		if (!found)
+		{
+			// try and fine the jpg file
+			switch(bm_load_sub(filename, ".jpg", &handle)){
+			// error
+			case -1:			
+				break;
+
+			// found as a file
+			case 0:			
+				found = 1;
+				strcat(filename, ".jpg");
+				jpg = 1;
+				break;
+
+			// found as pre-existing
+			case 1:						
+				found = 1;
+				return handle;					
+			}
+		}
+	}
+
+	// try and use a compressed texture before a pcx
 	if (Texture_compression_enabled)
 	{
-		switch(bm_load_sub(filename, ".dds", &handle)){
-		// error
-		case -1:
-			break;
+		if (!found)
+		{
+			switch(bm_load_sub(filename, ".dds", &handle)){
+			// error
+			case -1:
+				break;
 
-		// found as a file
-		case 0:
-			found = 1;
-			dds=1;
-			strcat(filename, ".dds");
-			break;
+			// found as a file
+			case 0:
+				found = 1;
+				dds=1;
+				strcat(filename, ".dds");
+				break;
 
-		// found as pre-existing
-		case 1:
-			found = 1;
-			return handle;		
+			// found as pre-existing
+			case 1:
+				found = 1;
+				return handle;		
+			}
 		}
 	}
 	 
 	if (!found)
 	{
-
 		// try and find the pcx file		
 		switch(bm_load_sub(filename, ".pcx", &handle)){
-		// error
-		case -1:
-			break;
+			// error
+			case -1:
+				break;
 	
-		// found as a file
-		case 0:
-			found = 1;
-			strcat(filename, ".pcx");
-			break;
+			// found as a file
+			case 0:
+				found = 1;
+				strcat(filename, ".pcx");
+				break;
 
 
 			// found as pre-existing
-	case 1:
-		found = 1;
-		return handle;		
+			case 1:
+				found = 1;
+				return handle;		
 		}
 	}
 
@@ -1144,6 +1217,15 @@ int bm_gfx_load( char * real_filename )
 			return -1;
 		}
 		type = BM_TYPE_TGA;
+	}
+	// if its a jpg file
+	else if(jpg){
+		int jpg_error=jpeg_read_header( filename, &w, &h, &bpp, NULL );
+		if ( jpg_error != JPEG_ERROR_NONE ) {
+			mprintf(( "jpg: Couldn't open '%s'\n", filename ));
+			return -1;
+		}
+		type = BM_TYPE_JPG;
 	}
 	// if its a pcx file
 	else {
@@ -1466,7 +1548,7 @@ static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flag
 		if(flags & BMP_AABITMAP){
 			Assert(bmp->bpp == 8);
 		} else {
-			Assert(bmp->bpp == 16);
+			Assert( (bmp->bpp == 16) || (bmp->bpp == 32) );
 		}
 	}
 
@@ -1533,9 +1615,14 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	ubyte *data, *palette;
 	ubyte pal[768];
 	palette = NULL;
+	int pcx_error;
 
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
+
+	if ( (bpp == 16) && Cmdline_pcx32) {
+		bpp = 32;
+	}
 
 	// allocate bitmap data
 	if(bpp == 8){
@@ -1549,6 +1636,12 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		bmp->bpp = 8;
 		bmp->palette = gr_palette;
 		memset( data, 0, bmp->w * bmp->h);
+	} else if (bpp == 32) {
+		data = (ubyte*)bm_malloc(bitmapnum, bmp->w * bmp->h * 4);
+		bmp->bpp = 32;
+		bmp->data = (uint)data;
+		bmp->palette = NULL;
+		memset( data, 0, bmp->w * bmp->h * 4 );
 	} else {
 		data = (ubyte*)bm_malloc(bitmapnum, bmp->w * bmp->h * 2);	
 		bmp->bpp = 16;
@@ -1567,7 +1660,7 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	Assert(!((flags & BMP_TEX_XPARENT) && (flags & BMP_TEX_NONDARK)));			// can't be a transparent texture and a nondarkening texture 
 
 	if(bpp == 8){
-		int pcx_error=pcx_read_bitmap_8bpp( be->filename, data, palette );
+		pcx_error = pcx_read_bitmap_8bpp( be->filename, data, palette );
 		if ( pcx_error != PCX_ERROR_NONE )	{
 			// Error( LOCATION, "Couldn't open '%s'\n", be->filename );
 			//Error( LOCATION, "Couldn't open '%s'\n", filename );
@@ -1578,9 +1671,14 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		if(Pofview_running){
 			bm_swizzle_8bit_for_fred(be, bmp, data, palette);
 		}
+	} else if (bpp == 32) {
+		pcx_error = pcx_read_bitmap_32( be->filename, data );
+		if ( pcx_error != PCX_ERROR_NONE )	{
+			// Error( LOCATION, "Couldn't open '%s'\n", be->filename );
+			//Error( LOCATION, "Couldn't open '%s'\n", filename );
+			//return -1;
+		}
 	} else {	
-		int pcx_error;
-
 		// load types
 		if(flags & BMP_AABITMAP){
 			pcx_error = pcx_read_bitmap_16bpp_aabitmap( be->filename, data );
@@ -1744,7 +1842,16 @@ void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, uby
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
 
-	switch( be->info.user.bpp )	{
+	if ((bpp != be->info.user.bpp) && !(flags & BMP_AABITMAP))
+		bpp = be->info.user.bpp;
+
+	switch( bpp )	{
+	case 32:	// user 32-bit bitmap
+		bmp->bpp = bpp;
+		bmp->flags = be->info.user.flags;
+		bmp->data = (uint)be->info.user.data;
+		break;
+
 	case 16:			// user 16 bit bitmap
 		bmp->bpp = bpp;
 		bmp->flags = be->info.user.flags;		
@@ -1783,47 +1890,64 @@ void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, uby
 
 void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
 {
-	ubyte *data;	
+	ubyte *data = NULL;
+	int d_size, byte_size;
 
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
+
+	// support true color targas when requested
+	if (Cmdline_jpgtga) {
+		bpp = 32;
+	}
 
 	if(Is_standalone){
 		Assert(bpp == 8);
 	} 
 	else 
 	{
-		Assert(bpp == 16);
+		Assert( (bpp == 16) || (bpp == 32) );
 	}
 
 	// should never try to make an aabitmap out of a targa
 	Assert(!(flags & BMP_AABITMAP));
 
-	// allocate bitmap data	
-	if(bpp == 16){
-		data = (ubyte*)bm_malloc(bitmapnum, bmp->w * bmp->h * 2);	
-	} else {
-		data = (ubyte*)bm_malloc(bitmapnum, bmp->w * bmp->h);	
-	}
+	// allocate bitmap data
+	byte_size = (bpp >> 3);
+	Assert(byte_size);
+
+	data = (ubyte*)bm_malloc(bitmapnum, bmp->w * bmp->h * byte_size);
+
+	if (data) {
+		memset( data, 0, bmp->w * bmp->h * byte_size);
+		d_size = byte_size;
+ 	} else {
+		return;
+ 	}
+
 	bmp->bpp = bpp;
 	bmp->data = (uint)data;
 	bmp->palette = NULL;
-	if(bpp == 16){
-		memset( data, 0, bmp->w * bmp->h * 2);	
-	} else {
-		memset( data, 0, bmp->w * bmp->h );	
-	}
 
 	Assert( &be->bm == bmp );
 	#ifdef BMPMAN_NDEBUG
 	Assert( be->data_size > 0 );
 	#endif
 	
-	int tga_error=targa_read_bitmap( be->filename, data, NULL, (bpp == 16) ? 2 : 1);
+	int tga_error;
+
+	if (bpp == 32) {
+		tga_error = targa_read_bitmap_32( be->filename, data, NULL, d_size);
+	} else {
+		tga_error = targa_read_bitmap( be->filename, data, NULL, d_size);
+	}
+
 	if ( tga_error != TARGA_ERROR_NONE )	{
 		// Error( LOCATION, "Couldn't open '%s'\n", be->filename );
 		//Error( LOCATION, "Couldn't open '%s'\n", filename );
 		//return -1;
+		data = NULL;
+		return;
 	}
 
 	#ifdef BMPMAN_NDEBUG
@@ -1862,7 +1986,61 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 }
 
+// lock a JPEG file
+void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
+{
+	ubyte *data = NULL;
+	int d_size = 0;
+	int jpg_error = JPEG_ERROR_INVALID;
 
+	// Unload any existing data
+	bm_free_data( bitmapnum );	
+
+	// support true color jpegs when requested
+	if (Cmdline_jpgtga) {
+		bpp = 32;
+	} else {
+		// not supported yet
+		return;
+	}
+
+	// should never try to make an aabitmap out of a jpeg
+	Assert(!(flags & BMP_AABITMAP));
+
+	// allocate bitmap data 
+	if (bpp == 32) {
+		data = (ubyte*)bm_malloc(bitmapnum, bmp->w * bmp->h * 4);
+
+		Assert(data);
+
+		if (data) {
+			memset( data, 0, bmp->w * bmp->h * 4);
+			d_size = 4;
+		} else {
+			return;
+		}
+	}
+ 
+	bmp->bpp = bpp;
+	bmp->data = (uint)data;
+	bmp->palette = NULL;
+
+	Assert( &be->bm == bmp );
+
+	if (bpp == 32) {
+		jpg_error = jpeg_read_bitmap_32( be->filename, data, NULL, d_size);
+	}
+ 
+	if ( jpg_error != JPEG_ERROR_NONE )	{
+		data = NULL;
+		return;
+	}
+
+	#ifdef BMPMAN_NDEBUG
+	Assert( be->data_size > 0 );
+	#endif
+
+}
 
 MONITOR( NumBitmapPage );
 MONITOR( SizeBitmapPage );
@@ -1884,6 +2062,10 @@ bitmap * bm_gfx_lock( int handle, ubyte bpp, ubyte flags )
 
 //	flags &= (~BMP_RLE);
 
+	// to fix a couple of OGL bpp passes, force 8bit on AABITMAP - taylor
+	if (flags & BMP_AABITMAP)
+		bpp = 8;
+
 	// if we're on a standalone server, aways for it to lock to 8 bits
 	if(Is_standalone){
 		bpp = 8;
@@ -1901,7 +2083,7 @@ bitmap * bm_gfx_lock( int handle, ubyte bpp, ubyte flags )
 			if(flags & BMP_AABITMAP){
 				Assert( bpp == 8 );
 			} else if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
-				Assert( bpp == 16 );
+				Assert( (bpp == 16) || (bpp == 32) );
 			}
 			else if (flags & BMP_TEX_DXT1){
 				Assert(bpp==24);
@@ -1941,14 +2123,13 @@ bitmap * bm_gfx_lock( int handle, ubyte bpp, ubyte flags )
 	int pal_changed = 0;
 	int rle_changed = 0;
 	int fake_xparent_changed = 0;	
-	if ( (bmp->data == 0) || (bpp != bmp->bpp) || pal_changed || rle_changed || fake_xparent_changed ) {
+	// don't do a bpp check here since it could be different in OGL - taylor
+	if ( (bmp->data == 0) || pal_changed || rle_changed || fake_xparent_changed ) {
 		Assert(be->ref_count == 1);
 
 		if ( be->type != BM_TYPE_USER ) {
 			if ( bmp->data == 0 ) {
 				nprintf (("BmpMan","Loading %s for the first time.\n", be->filename));
-			} else if ( bpp != bmp->bpp ) {
-				nprintf (("BmpMan","Reloading %s from bitdepth %d to bitdepth %d\n", be->filename, bmp->bpp, bpp));
 			} else if ( pal_changed ) {
 				nprintf (("BmpMan","Reloading %s to remap palette\n", be->filename));
 			} else if ( rle_changed )	{
@@ -1995,6 +2176,10 @@ bitmap * bm_gfx_lock( int handle, ubyte bpp, ubyte flags )
 			bm_lock_tga( handle, bitmapnum, be, bmp, bpp, flags );
 			break;
 
+		case BM_TYPE_JPG:
+			bm_lock_jpg( handle, bitmapnum, be, bmp, bpp, flags );
+			break;
+
 		case BM_TYPE_DXT1:
 		case BM_TYPE_DXT3:
 		case BM_TYPE_DXT5:
@@ -2008,6 +2193,13 @@ bitmap * bm_gfx_lock( int handle, ubyte bpp, ubyte flags )
 
 		// always go back to screen format
 		BM_SELECT_SCREEN_FORMAT();
+	}
+
+	// oops, this isn't good
+	if ( !(bmp->data) ) {
+		// no data was loaded, reset everything and return NULL
+		bm_free_data( bitmapnum );
+		return NULL;
 	}
 
 	if ( be->type == BM_TYPE_ANI ) {
@@ -2418,6 +2610,9 @@ void bm_gfx_page_in_stop()
 				// if preloaded == 3, load it as an xparent texture				
 				if(bm_bitmaps[i].used_flags == BMP_AABITMAP){
 					bm_lock( bm_bitmaps[i].handle, 8, bm_bitmaps[i].used_flags );
+				} else if (bm_bitmaps[i].used_flags == BMP_TEX_XPARENT) {
+					if (!gr_preload(bm_bitmaps[i].handle, 0))
+						bm_lock( bm_bitmaps[i].handle, 16, bm_bitmaps[i].used_flags );
 				} else {
 					bm_lock( bm_bitmaps[i].handle, 16, bm_bitmaps[i].used_flags );
 				}
@@ -2589,7 +2784,11 @@ void BM_SELECT_SCREEN_FORMAT()
 	}
 	else if (gr_screen.mode == GR_OPENGL)
 	{
-		bm_set_components = bm_set_components_opengl;
+		if (gr_screen.bits_per_pixel == 32) {
+				bm_set_components = bm_set_components_argb_d3d_32_screen;
+		} else {
+				bm_set_components = bm_set_components_argb_d3d_16_screen;
+		}
 	}
 #else
 	bm_set_components = bm_set_components_argb_d3d_16_screen;
@@ -2622,7 +2821,11 @@ void BM_SELECT_TEX_FORMAT()
 	}
 	else if (gr_screen.mode == GR_OPENGL)
 	{
-		bm_set_components = bm_set_components_opengl;
+		if (gr_screen.bits_per_pixel == 32) {
+				bm_set_components = bm_set_components_argb_d3d_32_tex;
+		} else {
+				bm_set_components = bm_set_components_argb_d3d_16_tex;
+		}
 	}
 #else
 	bm_set_components = bm_set_components_argb_d3d_16_tex;
@@ -2655,7 +2858,11 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 	}
 	else if (gr_screen.mode == GR_OPENGL)
 	{
-		bm_set_components = bm_set_components_opengl;
+		if (gr_screen.bits_per_pixel == 32) {
+				bm_set_components = bm_set_components_argb_d3d_32_tex;
+		} else {
+				bm_set_components = bm_set_components_argb_d3d_16_tex;
+		}
 	}
 #else
 	bm_set_components = bm_set_components_argb_d3d_16_tex;
