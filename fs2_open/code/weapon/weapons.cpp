@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2004/05/26 21:02:27  wmcoolmon
+ * Added weapons_expl modular table, updated cfilesystem to work with modular tables, fixed loading order, fixed ship loading error messages
+ *
  * Revision 2.62  2004/05/26 03:52:08  wmcoolmon
  * Ship & weapon modular table files
  *
@@ -1633,6 +1636,14 @@ int parse_weapon(int subtype, bool replace)
 		stuff_float(&wip->elec_sensors_mult);
 	}
 
+
+	//read in the spawn angle info
+	//if the weapon isn't a spawn weapon, then this is not going to be used.
+	wip->spawn_angle = 180;
+	if (optional_string("$Spawn Angle:"))
+	{
+		stuff_float(&wip->spawn_angle);
+	}
 
 	wip->lssm_warpout_delay=0;			//delay between launch and warpout (ms)
 	wip->lssm_warpin_delay=0;			//delay between warpout and warpin (ms)
@@ -3838,9 +3849,9 @@ void spawn_child_weapons(object *objp)
 		// for multiplayer, use the static randvec functions based on the network signatures to provide
 		// the randomness so that it is the same on all machines.
 		if ( Game_mode & GM_MULTIPLAYER ){
-			static_randvec(objp->net_signature + i, &tvec);
+			static_rand_cone(objp->net_signature + i, &tvec,&objp->orient.vec.fvec,wip->spawn_angle,&objp->orient);
 		} else {
-			vm_vec_rand_vec_quick(&tvec);
+			vm_vec_random_cone(&tvec,&objp->orient.vec.fvec,wip->spawn_angle,&objp->orient);
 		}
 		vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
 
