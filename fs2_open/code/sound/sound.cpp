@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-01-08 09:59:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-02-02 10:36:23 $
+ * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/01/08 09:59:10  wmcoolmon
+ * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ *
  * Revision 2.10  2004/12/25 00:23:46  wmcoolmon
  * Ogg support for WIN32
  *
@@ -335,8 +338,11 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <windows.h>
+#endif
 #include <limits.h>
+
 
 #include "render/3d.h"
 #include "sound/sound.h"
@@ -630,56 +636,21 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	si = &snd->info;
 
 	CFILE * fp = cfopen(gs->filename, "rb");
-	if(fp == NULL)
-	{
-		mprintf(("Couldn't open sound file %s\n", gs->filename));
-	}
-	//Because ds_parse_wave uses seek_set, we can get away with not resetting the stream
-	if(!ov_open_callbacks(fp, &si->ogg_info, NULL, 0, cfile_callbacks))
-	{
-		//It's an OGG
-		ov_info(&si->ogg_info, -1);
-		si->format = OGG_FORMAT_VORBIS;
-		si->n_channels = si->ogg_info.vi->channels;
-		si->sample_rate = si->ogg_info.vi->rate;
-		if(UserSampleBits == 16 || UserSampleBits == 8)
-			si->bits = UserSampleBits;				//Decode at whatever the user specifies; only 16 and 8 are supported.
-		else if(UserSampleBits > 16)
-			si->bits = 16;
-		else
-			si->bits = 8;
-		si->n_block_align = si->n_channels * 2;
-		si->avg_bytes_per_sec = si->sample_rate * si->n_block_align;
-		if(ov_pcm_total(&si->ogg_info, -1) < UINT_MAX)
-		{
-			si->size = (uint) si->sample_rate * si->n_channels * si->bits * 2;
-		}
-		else
-		{
-			mprintf(("%s is too big to play!", gs->filename));
-			return -1;
-		}
-		snd->duration = fl2i(1000.0f * (si->size / (si->bits/8.0f)) / si->sample_rate);
-	}
-	else if ( ds_parse_wave(fp, &si->data, &si->size, &header) != -1 )
-	{
-		//It's some sort of WAV
-		si->format					= header->wFormatTag;		// 16-bit flag (wFormatTag)
-		si->n_channels				= header->nChannels;			// 16-bit channel count (nChannels)
-		si->sample_rate			= header->nSamplesPerSec;	// 32-bit sample rate (nSamplesPerSec)
-		si->avg_bytes_per_sec	= header->nAvgBytesPerSec;	// 32-bit average bytes per second (nAvgBytesPerSec)
-		si->n_block_align			= header->nBlockAlign;		// 16-bit block alignment (nBlockAlign)
-		si->bits						= header->wBitsPerSample;	// Read 16-bit bits per sample	
-		snd->duration = fl2i(1000.0f * (si->size / (si->bits/8.0f)) / si->sample_rate);
 
-		//Only close the FP if it's not Vorbis...vorbis neeeds it.
-		cfclose(fp);
-	}
-	else
-	{
-		mprintf(("Could not read sound file %s", gs->filename));
-		return -1;
+	// ds_parse_sound() will do a NULL check on fp for us
+	if ( ds_parse_sound(fp, &si->data, &si->size, &header, &si->ogg_info) == -1 ) {
+		nprintf(("Sound", "Could not read sound file %s\n", gs->filename));
+ 		return -1;
 	}		
+
+	// Load was a success, should be some sort of WAV or an OGG
+	si->format				= header->wFormatTag;		// 16-bit flag (wFormatTag)
+	si->n_channels			= header->nChannels;		// 16-bit channel count (nChannels)
+	si->sample_rate			= header->nSamplesPerSec;	// 32-bit sample rate (nSamplesPerSec)
+	si->avg_bytes_per_sec	= header->nAvgBytesPerSec;	// 32-bit average bytes per second (nAvgBytesPerSec)
+	si->n_block_align		= header->nBlockAlign;		// 16-bit block alignment (nBlockAlign)
+	si->bits				= header->wBitsPerSample;	// Read 16-bit bits per sample	
+	snd->duration = fl2i(1000.0f * (si->size / (si->bits/8.0f)) / si->sample_rate);	
 
 	type = 0;
 
@@ -695,11 +666,19 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	
 	rc = ds_load_buffer(&snd->sid, &snd->hid, &snd->uncompressed_size, header, si, type);
 
-	free(header);
-	if(si->format != OGG_FORMAT_VORBIS)
-	{
-		free(si->data);	// don't want to keep this around
-	}
+	// free the header if needed
+	if (header != NULL)
+		free(header);
+
+	// we don't need to keep si->data around anymore, this should be NULL for OGG files
+	if (si->data != NULL) {
+		free(si->data);
+		si->data = NULL;
+ 	}
+ 
+	// make sure the file handle is closed, OGG should take of this itself
+	if (fp != NULL)
+		cfclose(fp);
 
 	if ( rc == -1 )
 		return -1;
@@ -771,7 +750,9 @@ void snd_close(void)
 	snd_stop_all();
 	if (!ds_initialized) return;
 	snd_unload_all();		// free the sound data stored in DirectSound secondary buffers
+#ifdef _WIN32
 	ACM_close();	// Close the Audio Compression Manager (ACM)
+#endif
 	ds3d_close();	// Close DirectSound3D
 	dscap_close();	// Close DirectSoundCapture
 	ds_close();		// Close DirectSound off
@@ -798,7 +779,7 @@ int snd_play_raw( int soundnum, float pan, float vol_scale, int priority )
 //	gs.flags = GAME_SND_VOICE | GAME_SND_USE_DS3D;
 	gs.flags = GAME_SND_VOICE;
 
-	rval = snd_play(&gs, 0.0f, vol_scale, priority, true);
+	rval = snd_play(&gs, pan, vol_scale, priority, true);
 	return rval;
 }
 
@@ -1350,7 +1331,12 @@ void snd_stop_all()
 //
 uint sound_get_ds()
 {
+#ifdef SCP_UNIX
+	// unused
+	return 0;
+#else
 	return (uint)pDirectSound;
+#endif
 }
 
 // ---------------------------------------------------------------------------------------

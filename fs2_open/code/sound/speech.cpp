@@ -6,40 +6,59 @@
  *
 */ 
 
+/*
+ * $Logfile: /Freespace2/code/sound/speech.cpp $
+ * $Revision: 1.16 $
+ * $Date: 2005-02-02 10:36:23 $
+ * $Author: taylor $
+ *
+ * Platform specific text-to-speech functions
+ *
+ * $Log: not supported by cvs2svn $
+ *
+ * $NoKeywords: $
+ */
+
+
+#include "PreProcDefines.h"
+
+#ifndef FS2_SPEECH
+#ifdef _WIN32
+#if NDEBUG
+	#pragma message( "WARNING: You have not compiled speech into this build (use FS2_SPEECH)" )
+#endif // NDEBUG
+#endif // _WIN32
+#else // to end-of-file ...
+
+#pragma warning(disable:4711)	// function selected for inlining
+
 #ifdef LAUNCHER
 #include "stdafx.h"
 #endif
 
-#include <windows.h>
-//#include <atlbase.h>
+#ifdef _WIN32
+	#include <windows.h>
+	#include <sapi.h>
+	#include <sphelper.h>
 
+	ISpVoice *Voice_device;
+#elif defined(SCP_UNIX)
+	#include <fcntl.h>
 
-#pragma warning(disable:4711)	// function selected for inlining
-
-#include "PreProcDefines.h"
-
-#if FS2_SPEECH
-#include <sapi.h>
-#include <sphelper.h>
-#pragma message( "HERE2" )
-
-#else
-#pragma message( "HERE1" )
-
-#if NDEBUG
-#pragma message( "WARNING: You have not compiled speech into this build (use FS2_SPEECH)" )
-#endif
+//	int speech_dev = -1;
+	FILE *speech_dev = NULL;
+#else 
+	#pragma error( "ERROR: Unknown platform, speech (FS2_SPEECH) is not supported" )
 #endif
 
+#include "globalincs/pstypes.h"
 #include "speech.h"
 
-#if FS2_SPEECH
-ISpVoice *Voice_device;
 bool Speech_init = false;
-unsigned short Conversion_buffer[MAX_SPEECH_CHAR_LEN];
 
 bool speech_init()
 {
+#ifdef _WIN32
     HRESULT hr = CoCreateInstance(
 		CLSID_SpVoice, 
 		NULL, 
@@ -48,6 +67,18 @@ bool speech_init()
 		(void **)&Voice_device);
 
 	Speech_init = SUCCEEDED(hr);
+#else
+
+//	speech_dev = open("/dev/speech", O_WRONLY | O_NONBLOCK);
+	speech_dev = fopen("/dev/speech", "w");
+
+	if (speech_dev == -1) {
+		printf("Couldn't open '/dev/speech', turning text-to-speech off...\n");
+		return false;
+	}
+
+	Speech_init = true;
+#endif
 
 	return Speech_init;
 }
@@ -56,7 +87,11 @@ void speech_deinit()
 {
 	if(Speech_init == false) return;
 
+#ifdef _WIN32
 	Voice_device->Release();
+#else
+	close(speech_dev);
+#endif
 }
 
 bool speech_play(char *text)
@@ -64,7 +99,9 @@ bool speech_play(char *text)
 	if(Speech_init == false) return true;
 	if(text == NULL) return false;
 
+#ifdef _WIN32
 	int len = strlen(text);
+	unsigned short Conversion_buffer[MAX_SPEECH_CHAR_LEN];
 
 	if(len > (MAX_SPEECH_CHAR_LEN - 1)) {
 		len = MAX_SPEECH_CHAR_LEN - 1;
@@ -83,43 +120,88 @@ bool speech_play(char *text)
 
 	Conversion_buffer[count] = '\0';
 
-	return speech_play(Conversion_buffer);
-}
-
-bool speech_play(unsigned short *text)
-{
-	if(Speech_init == false) return true;
-	if(text == NULL) return false;
-
 	speech_stop();
-  	return SUCCEEDED(Voice_device->Speak(text, SPF_ASYNC, NULL));
+	return SUCCEEDED(Voice_device->Speak(Conversion_buffer, SPF_ASYNC, NULL));
+#else
+	int len = strlen(text);
+	char Conversion_buffer[MAX_SPEECH_CHAR_LEN];
+
+	if(len > (MAX_SPEECH_CHAR_LEN - 1)) {
+		len = MAX_SPEECH_CHAR_LEN - 1;
+	}
+
+	int count = 0;
+	for(int i = 0; i < len; i++) {
+		if(text[i] == '$') {
+			i++;
+			continue;
+		}
+
+		Conversion_buffer[count] = text[i];
+		count++;
+	}
+
+	Conversion_buffer[count] = '\0';
+
+	if (fwrite(Conversion_buffer, count, 1, speech_dev))
+		fflush(speech_dev);
+	else
+		return false;
+
+	return true;
+#endif
 }
 
 bool speech_pause()
 {
 	if(Speech_init == false) return true;
+#ifdef _WIN32
 	return SUCCEEDED(Voice_device->Pause());
+#else
+	STUB_FUNCTION;
+
+	return true;
+#endif
 }
 
 bool speech_resume()
 {
 	if(Speech_init == false) return true;
+#ifdef _WIN32
 	return SUCCEEDED(Voice_device->Resume());
+#else
+	STUB_FUNCTION;
+
+	return true;
+#endif
 }
 
 bool speech_stop()
 {
 	if(Speech_init == false) return true;
+#ifdef _WIN32
     return SUCCEEDED(Voice_device->Speak( NULL, SPF_PURGEBEFORESPEAK, NULL ));
+#else
+	STUB_FUNCTION;
+
+	return true;
+#endif
 }
 
 bool speech_set_volume(unsigned short volume)
 {
+#ifdef _WIN32
     return SUCCEEDED(Voice_device->SetVolume(volume));
+#else
+	STUB_FUNCTION;
+
+	return true;
+#endif
 }
 
 bool speech_set_voice(int voice)
 {
+#ifdef _WIN32
 	HRESULT                             hr;
 	CComPtr<ISpObjectToken>             cpVoiceToken;
 	CComPtr<IEnumSpObjectTokens>        cpEnum;
@@ -153,6 +235,11 @@ bool speech_set_voice(int voice)
 		count++;
 	}
 	return false;
+#else
+	STUB_FUNCTION;
+
+	return true;
+#endif
 }
 
-#endif
+#endif // FS2_SPEECH

@@ -37,12 +37,12 @@ void fsspeech_play_buffer(int type);
 // stub functions (c.f. NO_SOUND)
 #define fsspeech_init()	(false)
 #define fsspeech_deinit()
-#define fsspeech_play(type, text) ((void) ((type), (text)))
+#define fsspeech_play(type, text)
 #define fsspeech_stop()
-#define fsspeech_pause(playing) ((void) (playing))
+#define fsspeech_pause(playing)
 #define fsspeech_start_buffer()
-#define fsspeech_stuff_buffer(text) ((void) (text))
-#define fsspeech_play_buffer(type) ((void) (type))
+#define fsspeech_stuff_buffer(text)
+#define fsspeech_play_buffer(type)
 #define fsspeech_was_compiled() (false)
 
 #endif

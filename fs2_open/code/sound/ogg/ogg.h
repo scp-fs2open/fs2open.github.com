@@ -1,3 +1,7 @@
+
+#ifndef _OGG_H_
+#define _OGG_H_
+
 #include "PreProcDefines.h"
 #include <vorbis/vorbisfile.h>
 
@@ -12,3 +16,5 @@ int OGG_init();
 
 //Similar to the stuff in mmreg.h
 #define  OGG_FORMAT_VORBIS		0x3000	/* OGG Files */
+
+#endif // _OGG_H_

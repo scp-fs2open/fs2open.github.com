@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.9 $
- * $Date: 2005-01-31 23:27:55 $
+ * $Revision: 2.10 $
+ * $Date: 2005-02-02 10:36:23 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/01/31 23:27:55  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.8  2004/12/25 00:23:46  wmcoolmon
  * Ogg support for WIN32
  *
@@ -187,7 +190,7 @@ extern HRESULT (__stdcall *pfn_DirectSoundCaptureCreate)(LPGUID lpGUID, LPDIRECT
 int	ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits);
 void	ds_close();
 void	ds_get_primary_format(WAVEFORMATEX *wfx, DWORD sample_rate, WORD sample_bits);
-int	ds_parse_wave(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header);
+int	ds_parse_sound(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, OggVorbis_File *ovf);
 int	ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info *si, int flags);
 void	ds_unload_buffer(int sid, int hid);
 int	ds_play(int sid, int hid, int snd_id, int priority, int volume, int pan, int looping, bool is_voice_msg = false);
