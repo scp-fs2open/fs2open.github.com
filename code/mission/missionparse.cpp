@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.65 $
- * $Date: 2004-09-01 00:22:36 $
+ * $Revision: 2.66 $
+ * $Date: 2004-10-11 22:29:25 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2004/09/01 00:22:36  Goober5000
+ * fixed a small bug in the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.64  2004/07/27 20:09:12  Kazan
  * making another bug a little bit more dead inside :D
  *
@@ -902,9 +906,9 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"primitive-sensors",
 	"no-subspace-drive",
-#if defined(ENABLE_AUTO_PILOT)
-	"nav-carry-status"
-#endif
+	"nav-carry-status",
+	"no-bank",
+	"affected-by-gravity"
 };
 
 
@@ -2036,6 +2040,12 @@ int parse_create_object(p_object *objp)
 
 	if ( objp->flags2 & P2_SF2_NO_SUBSPACE_DRIVE )
 		Ships[shipnum].flags2 |= SF2_NO_SUBSPACE_DRIVE;
+
+	if ( objp->flags2 & P2_SF2_NO_BANK )
+		Ships[shipnum].flags2 |= SF2_NO_BANK;
+
+	if ( objp->flags2 & P2_SF2_AFFECTED_BY_GRAVITY )
+		Ships[shipnum].flags2 |= SF2_AFFECTED_BY_GRAVITY;
 
 #if defined(ENABLE_AUTO_PILOT)
 	if ( objp->flags2 & P2_SF2_NAV_CARRY_STATUS )

@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.47 $
+ * $Revision: 2.48 $
  * $Author: Goober5000 $
- * $Date: 2004-09-17 07:12:22 $
+ * $Date: 2004-10-11 22:29:25 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2004/09/17 07:12:22  Goober5000
+ * changed around the logic for the 3D warp effect
+ * --Goober5000
+ *
  * Revision 2.46  2004/09/01 00:58:46  phreak
  * created the mission flag MISSION_FLAG_USE_NEW_AI
  *
@@ -745,17 +749,13 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#if defined(ENABLE_AUTO_PILOT)
-	#define MAX_PARSE_OBJECT_FLAGS_2	3
-#else
-	#define MAX_PARSE_OBJECT_FLAGS_2	2
-#endif
+#define MAX_PARSE_OBJECT_FLAGS_2	5
 
 #define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE		(1<<1)
-#if defined(ENABLE_AUTO_PILOT)
-	#define P2_SF2_NAV_CARRY_STATUS			(1<<2)
-#endif
+#define P2_SF2_NAV_CARRY_STATUS			(1<<2)
+#define P2_SF2_NO_BANK					(1<<3)
+#define P2_SF2_AFFECTED_BY_GRAVITY		(1<<4)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
