@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-08-31 06:00:41 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2003-09-05 22:35:33 $
+ * $Author: matt $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/08/31 06:00:41  bobboau
+ * an asortment of bugfixes, mostly with the specular code,
+ * HUD flickering should be completly gone now
+ *
  * Revision 2.9  2003/08/16 03:52:24  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -323,6 +327,11 @@ typedef struct star {
 	vector last_star_pos;
 	color col;
 } star;
+
+typedef struct vDist {
+	int x;
+	int y;
+} vDist;
 
 star Stars[MAX_STARS];
 
@@ -1318,10 +1327,23 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 					gr_set_color_fast( &star_aacolors[color] );
 				}
 
-				// if the two points are the same, fudge it, since some D3D cards (G200 and G400) are lame.				
+				/* if the two points are the same, fudge it, since some D3D cards (G200 and G400) are lame.				
 				if( (fl2i(p1.sx) == fl2i(p2.sx)) && (fl2i(p1.sy) == fl2i(p2.sy)) ){					
 					p1.sx += 1.0f;
-				}								
+				}
+				*/
+				vDist vDst;
+				vDst.x = fl2i(p1.sx) - fl2i(p2.sx);
+				vDst.y = fl2i(p1.sy) - fl2i(p2.sy);
+				
+
+				if( sqrt( (vDst.x * vDst.x) + (vDst.y * vDst.y) ) <= 2 )
+				{
+					p1.sx = p2.sx;
+					p1.sy = p2.sy;
+
+					p1.sx += 1.0f;
+				}
 				gr_aaline(&p1,&p2);
 			} else {
 				// use alphablended line so that dark stars don't look bad on top of nebulas
