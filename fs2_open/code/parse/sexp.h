@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.66 $
- * $Author: Kazan $
- * $Date: 2004-07-26 17:54:05 $
+ * $Revision: 2.67 $
+ * $Author: Goober5000 $
+ * $Date: 2004-07-26 21:26:45 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2004/07/26 17:54:05  Kazan
+ * Autopilot system completed -- i am dropping plans for GUI nav map
+ * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
+ * Fixed FPS counter during time compression
+ *
  * Revision 2.65  2004/07/01 16:38:19  Kazan
  * working on autonav
  *
@@ -953,6 +958,8 @@ struct ship_subsys;
 #define OP_HUD_SET_FRAME					(0x0092 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_COLOR					(0x0093 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_RADAR_SET_MAXRANGE				(0x0094 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //Kazan
+#define OP_SHIP_TAG					(0x0095 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) 	// Goober5000
+#define OP_SHIP_UNTAG					(0x0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) 	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions

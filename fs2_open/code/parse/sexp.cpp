@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.96 $
- * $Date: 2004-07-26 20:47:47 $
- * $Author: Kazan $
+ * $Revision: 2.97 $
+ * $Date: 2004-07-26 21:26:45 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2004/07/26 20:47:47  Kazan
+ * remove MCD complete
+ *
  * Revision 2.95  2004/07/26 17:54:05  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
  * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
@@ -1050,6 +1053,8 @@ sexp_oper Operators[] = {
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
+	{ "ship-tag",				OP_SHIP_TAG,				2, INT_MAX			},	// Goober5000
+	{ "ship-untag",				OP_SHIP_UNTAG,				1, INT_MAX			},	// Goober5000
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 
@@ -8619,6 +8624,30 @@ void sexp_ships_visible( int n, int visible )
 }
 
 // Goober5000
+void sexp_ships_tag( int n, int tag )
+{
+	char *ship_name;
+	int num, tag_val;
+
+	tag_val = sexp_get_val(n);
+	n=CDR(n);	
+
+	for ( ; n != -1; n = CDR(n) ) {
+		ship_name = CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+			continue;
+
+		// get the ship num
+		num = ship_name_lookup(ship_name);
+		if ( num != -1 ) {
+			// TODO: this stuff
+		}
+	}
+}
+
+// Goober5000
 void sexp_ships_stealthy(int n, int stealthy)
 {
 	char *ship_name;
@@ -8920,7 +8949,7 @@ void sexp_shields_off(int n, int shields_off ) //-Sesquipedalian
 	}
 }
 
-void sexp_kamikaze(int n)
+void sexp_kamikaze(int n, int kamikaze)
 {
 	char *ship_name;
 	int num;
@@ -8943,15 +8972,33 @@ void sexp_kamikaze(int n)
 		num = ship_name_lookup(ship_name);
 		if ( num != -1 ) {
 			aip=&Ai_info[Ships[num].ai_index];
-			aip->ai_flags |= AIF_KAMIKAZE;
-			aip->kamikaze_damage = i2fl(kdamage); 
+
+			if (kamikaze)
+			{
+				aip->ai_flags |= AIF_KAMIKAZE;
+				aip->kamikaze_damage = i2fl(kdamage); 
+			}
+			else
+			{
+				aip->ai_flags &= ~AIF_KAMIKAZE;
+				aip->kamikaze_damage = 0.0f;
+			}
 		} else {
 			p_object *parse_obj;
 	
 			parse_obj = mission_parse_get_arrival_ship( ship_name );
 			if ( parse_obj ) {
-				parse_obj->flags |= P_AIF_KAMIKAZE;
-				Ai_info[Ships[num].ai_index].kamikaze_damage = i2fl(kdamage); 
+
+				if (kamikaze)
+				{
+					parse_obj->flags |= P_AIF_KAMIKAZE;
+					parse_obj->kamikaze_damage = kdamage;
+				}
+				else
+				{
+					parse_obj->flags &= ~P_AIF_KAMIKAZE;
+					parse_obj->kamikaze_damage = 0.0f;
+				}
 			
 #ifndef NDEBUG
 			}else {
@@ -8963,47 +9010,6 @@ void sexp_kamikaze(int n)
 		n=CDR(n);
 	}
 }
-
-void sexp_not_kamikaze(int n)
-{
-	char *ship_name;
-	ai_info *aip;
-	int num;
-	
-	
-	while (n!=-1)
-	{
-		ship_name = CTEXT(n);
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			return;
-
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 ) {
-			aip= &Ai_info[Ships[num].ai_index];
-			aip->kamikaze_damage = 0.0f; 	
-			aip->ai_flags &= ~(AIF_KAMIKAZE);
-		} else {
-			p_object *parse_obj;
-	
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj ) {
-				parse_obj->flags &= ~(P_AIF_KAMIKAZE);
-				Ai_info[Ships[num].ai_index].kamikaze_damage = 0.0f; 
-			
-#ifndef	NDEBUG
-			}else {
-				Int3();	// get allender -- could be a potential problem here
-#endif
-			}
-		}
-		n=CDR(n);
-	}
-
-}
-
 
 
 int sexp_key_pressed(int node)
@@ -11622,6 +11628,13 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			// Goober5000
+			case OP_SHIP_TAG:
+			case OP_SHIP_UNTAG:
+				sexp_ships_tag(node, op_num==OP_SHIP_TAG?1:0);
+				sexp_val = 1;
+				break;
+
 			case OP_SHIP_VULNERABLE:
 			case OP_SHIP_INVULNERABLE:
 				sexp_ships_invulnerable( node, (op_num==OP_SHIP_INVULNERABLE?1:0) );
@@ -11648,15 +11661,9 @@ int eval_sexp(int cur_node)
 
 			//-Sesquipedalian
 			case OP_KAMIKAZE: 
-				sexp_kamikaze(node);
+				sexp_kamikaze(node, op_num==OP_KAMIKAZE?1:0);
 				sexp_val = 1;
 				break;
-
-			case OP_NOT_KAMIKAZE:
-				sexp_not_kamikaze(node);
-				sexp_val=1;
-				break;
-
 
 			case OP_SET_CARGO:
 				sexp_set_cargo(node);
@@ -12651,6 +12658,8 @@ int query_operator_return_type(int op)
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_SHIP_VISIBLE:
 		case OP_SHIP_INVISIBLE:
+		case OP_SHIP_TAG:
+		case OP_SHIP_UNTAG:
 		case OP_SHIP_VULNERABLE:
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_GUARDIAN:
@@ -12862,7 +12871,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TRANSFER_CARGO:
 		case OP_EXCHANGE_CARGO:
 		case OP_SHIP_INVISIBLE:
-		case OP_SHIP_VISIBLE:
+		case OP_SHIP_VISIBLE:	
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_VULNERABLE:
 		case OP_SHIP_GUARDIAN:
@@ -12896,6 +12905,15 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else
 				return OPF_SHIP;
+
+		case OP_SHIP_TAG:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else
+				return OPF_SHIP;
+
+		case OP_SHIP_UNTAG:
+			return OPF_SHIP;
 
 		case OP_FACING:
 			if (argnum == 0)
@@ -14606,6 +14624,8 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_NO_VAPORIZE:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
+		case OP_SHIP_TAG:
+		case OP_SHIP_UNTAG:
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
