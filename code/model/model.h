@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.8 $
- * $Date: 2002-12-02 23:55:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2002-12-04 09:44:34 $
+ * $Author: DTP $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/12/02 23:55:31  Goober5000
+ * fixed misspelling
+ *
  * Revision 2.7  2002/12/02 23:14:17  Goober5000
  * fixed misspelling of "category" as "catagory"
  *
@@ -305,7 +308,7 @@ struct object;
 #define MAX_PRIMARY_BANKS		3
 #define MAX_SECONDARY_BANKS	4	//	Lowered from 5 to 4 by MK on 3/25/98.  This needs to be <= MAX_WL_SECONDARY or you'll get stack overwrites.
 
-#define MAX_POLYGON_MODELS	198 //DTP bumped from 128 to 198 MAX_SHIP_TYPES - 2 = 198
+#define MAX_POLYGON_MODELS	128 //DTP reset from 198 to original value of 128
 #define MAX_DEBRIS_OBJECTS	32
 #define MAX_MODEL_TEXTURES	64
 #define FILENAME_LEN			64
