@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.35 $
- * $Date: 2004-07-17 18:59:01 $
+ * $Revision: 2.36 $
+ * $Date: 2004-07-17 19:01:15 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2004/07/17 18:59:01  taylor
+ * fix set_*_matrix overcompensation, makes OGL work again
+ *
  * Revision 2.34  2004/07/12 16:33:07  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1315,7 +1318,7 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 
 	vector v = ZERO_VECTOR;
 
-	if (!Cmdline_nohtl && !env) 
+	if (!Cmdline_nohtl && !env) {
 		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 		gr_set_view_matrix(&v, &Eye_matrix);
 	}
