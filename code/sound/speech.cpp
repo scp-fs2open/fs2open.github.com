@@ -18,7 +18,11 @@
 #if FS2_SPEECH
 #include <sapi.h>
 #include <sphelper.h>
+#pragma message( "HERE2" )
+
 #else
+#pragma message( "HERE1" )
+
 #if NDEBUG
 #pragma message( "WARNING: You have not compiled speech into this build (use FS2_SPEECH)" )
 #endif

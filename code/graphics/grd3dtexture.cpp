@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.36 $
- * $Date: 2004-04-03 06:22:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.37 $
+ * $Date: 2004-06-06 12:25:20 $
+ * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2004/04/03 06:22:32  Goober5000
+ * fixed some stub functions and a bunch of compile warnings
+ * --Goober5000
+ *
  * Revision 2.35  2004/03/19 14:51:55  randomtiger
  * New command line parameter: -d3d_lesstmem causes D3D to bypass V's secondry texture system.
  *
@@ -717,6 +721,8 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 		*v_scale = 1.0f;
 	}
 
+	bool use_dxt = (bpp == 32) && Cmdline_pcx32dds && (bitmap_type != TCACHE_TYPE_AABITMAP);
+
 	IDirect3DTexture8 *texture_handle = (IDirect3DTexture8 *) thandle; 
 	if(!reload) {
 
@@ -725,7 +731,7 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 			*tex_w, *tex_h,
 			use_mipmapping ? 0 : 1, 
 			0,
-			d3d8_format, 
+			use_dxt ? D3DFMT_DXT5 : d3d8_format, 
 			D3DPOOL_MANAGED, 
 			&texture_handle)))
 		{
@@ -734,10 +740,25 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 		}
 	}
 
-	// lock texture here
+	// Careful, these surfaces are used for difference purposes depending on the Cmdline_pcx32dds codepath
+	IDirect3DSurface8 *dds_surface = NULL; 
+	IDirect3DSurface8 *d3d_surface = NULL; 
 
+	if(use_dxt)	
+	{
+		// Get dds surface to copy to
+		texture_handle->GetSurfaceLevel(0, &dds_surface);   
+
+		// Create new surface
+		GlobalD3DVars::lpD3DDevice->CreateImageSurface(*tex_w, *tex_h, d3d8_format, &d3d_surface);
+	}
+	else
+		texture_handle->GetSurfaceLevel(0, &d3d_surface);   
+
+
+	// lock texture here
 	D3DLOCKED_RECT locked_rect;
-	if(FAILED(texture_handle->LockRect(0, &locked_rect, NULL, 0)))
+	if(FAILED(d3d_surface->LockRect(&locked_rect, NULL, 0)))
 	{
 		Assert(0);
 		return NULL;
@@ -745,7 +766,7 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 
 	ubyte *bmp_data_byte = (ubyte*)data;
 	
-	// Still restricted to 16 bit textures sadly
+	// If 16 bit 
 	if( surface_desc)
 	{
 		ushort *bmp_data = (ushort *)data;
@@ -884,10 +905,17 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 	}
 
 	// Unlock the texture 
-	if(FAILED(texture_handle->UnlockRect(0)))
+	if(FAILED(d3d_surface->UnlockRect()))
 	{
 		Assert(0);
 		return NULL;
+	}
+
+	if(use_dxt)	
+	{
+		// Copy data back and free data, this copy should compress the texture
+		D3DXLoadSurfaceFromSurface(dds_surface, NULL, NULL, d3d_surface, NULL, NULL, D3DX_FILTER_NONE, 0); 
+		d3d_surface->Release();
 	}
 
 	if( use_mipmapping ) {
