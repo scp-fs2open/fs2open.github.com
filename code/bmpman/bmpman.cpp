@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-11-22 20:55:27 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2002-12-02 20:46:41 $
+ * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/11/22 20:55:27  phreak
+ * changed around some page-in functions to work with opengl
+ * changed bm_set_components_opengl
+ * -phreak
+ *
  * Revision 2.3  2002/11/18 21:27:13  phreak
  * added bm_select_components functions for OpenGL -phreak
  *
@@ -256,7 +261,7 @@
  * Added code to print the number of bitmap slots in use between levels.
  * 
  * 82    2/16/98 3:54p John
- * Changed a bunch of mprintfs to catagorize to BmpInfo
+ * Changed a bunch of mprintfs to categorize to BmpInfo
  * 
  * 81    2/13/98 5:00p John
  * Made user bitmaps not get wrote to level cache file.
