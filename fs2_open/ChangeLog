@@ -1,6 +1,35 @@
 ChangeLog for fs2_open.  All times are UTC.  
-Updated 2002-08-06 21:27
+Updated 2002-08-13 04:31
+	
 
+2002-08-13 03:40  penguin
+
+	RELEASED: fs2_open 3.2 (tag: fs2_open3_2)
+
+2002-08-13 03:34  penguin
+
+	* code/freespace2/freespace.cpp (2.6):
+	
+	1. Disable CD checking
+	2. Add CVS tag to version string
+
+2002-08-13 03:32  penguin
+
+	* code/globalincs/version.h (2.2):
+	
+	Bumped to version 3.2
+
+2002-08-07 00:45  DTP
+
+	* code/graphics/grd3drender.cpp (2.3):
+	
+	Implented -GF4FIX commandline switch & #include "cmdline/cmdline.h"
+
+2002-08-07 00:44  DTP
+
+	* code/cmdline/: cmdline.cpp (2.4), cmdline.h (2.3):
+	
+	Implented -GF4FIX commandline switch
 
 2002-08-06 16:50  phreak
 
