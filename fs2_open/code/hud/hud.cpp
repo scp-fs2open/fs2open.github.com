@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.34 $
+ * $Date: 2005-01-12 00:17:09 $
+ * $Author: phreak $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.32  2005/01/01 07:18:47  wmcoolmon
  * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
  *
@@ -3370,7 +3375,7 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack)
 		HUD_offset_x = 0.0f;
 		HUD_offset_y = 0.0f;
 
-		vm_vec_scale_add( &tmp, &Viewer_obj->pos, &Viewer_obj->orient.vec.fvec, 100.0f );
+		vm_vec_scale_add( &tmp, &Eye_position, &Viewer_obj->orient.vec.fvec, 100.0f );
 		
 		flags = g3_rotate_vertex(&pt,&tmp);
 
