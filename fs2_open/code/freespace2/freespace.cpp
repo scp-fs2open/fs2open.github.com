@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.72 $
- * $Date: 2004-02-20 04:29:53 $
- * $Author: bobboau $
+ * $Revision: 2.73 $
+ * $Date: 2004-02-20 18:04:27 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2004/02/20 04:29:53  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.71  2004/02/16 21:22:15  randomtiger
  * Use _REPORT_MEM_LEAKS compile flag in code.lib to get a report of memory leaks from malloc calls.
  *
@@ -7635,6 +7640,13 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 int main(int argc, char *argv[])
 #endif
 {
+#ifdef _WIN32
+#ifdef _DEBUG
+	void memblockinfo_output_memleak();
+	atexit(memblockinfo_output_memleak);
+#endif
+#endif
+
 	::CoInitialize(NULL);
 
 	DBUGFILE_INIT();
@@ -7670,8 +7682,6 @@ int main(int argc, char *argv[])
 
 #ifdef _WIN32
 	_CrtDumpMemoryLeaks();
-
-
 #endif
 	
 	return result;
