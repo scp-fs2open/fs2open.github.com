@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-01-12 21:12:42 $
- * $Author: randomtiger $
+ * $Revision: 2.16 $
+ * $Date: 2004-02-04 04:28:15 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/01/12 21:12:42  randomtiger
+ * Added fix for fogging debris in D3D htl.
+ *
  * Revision 2.14  2003/11/29 10:52:10  randomtiger
  * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
@@ -1125,7 +1128,7 @@ void neb2_render_player()
 	matrix eye_orient;
 
 #ifndef NDEBUG
-	float this_area;
+//	float this_area;
 	float frame_area = max_area;
 	float total_area = 0.0f;
 #endif
