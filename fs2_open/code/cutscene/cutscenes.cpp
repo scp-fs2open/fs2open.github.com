@@ -9,16 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-03-05 09:01:58 $
- * $Author: Goober5000 $
- * $Revision: 2.10 $
- * $Date: 2004-03-05 09:01:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2004-04-26 13:11:11 $
+ * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2004-04-26 13:11:11 $
+ * $Author: taylor $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/03/05 09:01:58  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.9  2004/02/20 04:29:53  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -308,9 +312,28 @@ int cutscenes_get_cd_num( char *filename )
 void cutscene_mark_viewable(char *filename)
 {
 	int i;
+	char cut_file[MAX_FILENAME_LEN];
+	char file[MAX_FILENAME_LEN];
+
+	Assert(filename);
+
+	// strip off extension
+	strcpy( file, filename );
+	char *p = strchr( file, '.' );
+	if ( p ) {
+		*p = 0;
+	}
+
+	// change to lower case
+	strlwr(file);
 
 	for (i = 0; i < Num_cutscenes; i++ ) {
-		if ( !stricmp(Cutscenes[i].filename, filename) ) {
+		// change the cutscene file name to lower case
+		strcpy(cut_file, Cutscenes[i].filename);
+		strlwr(cut_file);
+
+		// see if the stripped filename matches the cutscene filename
+		if ( strstr(cut_file, file) != NULL ) {
 			Cutscenes_viewable |= (1<<i);
 			return;
 		}
