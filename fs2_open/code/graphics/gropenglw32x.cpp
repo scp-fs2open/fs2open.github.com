@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLw32x.cpp $
- * $Revision: 1.4 $
- * $Date: 2002-10-14 19:49:08 $
+ * $Revision: 1.5 $
+ * $Date: 2002-11-18 21:31:36 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/10/14 19:49:08  phreak
+ * screenshots, yay!
+ *
  * Revision 1.3  2002/10/13 21:43:24  phreak
  * further optimizations
  *
@@ -275,15 +278,15 @@ This file combines penguin's and the Icculus OpenGL code
 		-----------------------------
 
 
-1. Find out why animations are playing "blue" (maybe something dealing with paletting?)
+1. Find out why animations are playing "blue" (maybe something dealing with paletting?) -done
 2, Fix the texutre array from magically deleting itself (access violation occurs in 
 		opengl_tcache_frame() (about line 2050)).  This way we can use that instead of using 
 		glDrawPixels()
 
 3. Fix 32 bit mode colors (puke)
-4. Try and find suitable bm_set_components function pointers (bmpman)
+4. Try and find suitable bm_set_components function pointers (bmpman) -done
 5. Fix rendering of ships after this is all done (access violation in nvopengl.dll 
-	(opengl32.dll for nvidia cards)
+	(opengl32.dll for nvidia cards) -done (sorta)
 
 6. Switch to true 3d graphics (not ortho)
 7. Start extenstion implentation (last)
@@ -307,8 +310,9 @@ won't crash due to an integer divide by 0 error in bm_set_components (another TO
 #include <windows.h>
 #include <windowsx.h>
 
-#include <GL/gl.h>
+#include <gl/gl.h>
 #include <gl/glu.h>
+#include <gl/glext.h>
 
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
@@ -327,10 +331,10 @@ won't crash due to an integer divide by 0 error in bm_set_components (another TO
 #include "cfile/cfile.h"
 #include "io/timer.h"
 
-static int Inited = 0;
+int OGL_inited = 0;
 static HDC dev_context = NULL;
 static HGLRC rend_context = NULL;
-static ubyte *opengl_bmp_buffer = NULL;
+static PIXELFORMATDESCRIPTOR pfd;
 
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")
@@ -391,11 +395,53 @@ void d3d_zbias (int a)
 }
 */
 
+
+
 extern int D3D_32bit;		// grd3d.cpp
 extern int D3D_fog_mode;		// grd3d.cpp
 extern int D3D_inited;		// grd3d.cpp
 extern int D3D_zbias;		// grd3d.cpp
 extern int D3d_rendition_uvs ;	// grd3d.cpp
+extern int Cmdline_window;
+
+inline void opengl_go_fullscreen(HWND wnd)
+{
+	DEVMODE dd;
+
+	if (Cmdline_window)
+		return;
+
+	mprintf(("opengl_go_fullscreen\n"));
+
+	SetWindowLong( wnd, GWL_EXSTYLE, 0 );
+	SetWindowLong( wnd, GWL_STYLE, WS_POPUP );
+	ShowWindow(wnd, SW_SHOWNORMAL );
+	SetWindowPos( wnd, HWND_TOPMOST, 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );	
+	SetActiveWindow(wnd);
+	SetForegroundWindow(wnd);
+	
+	dd.dmSize=sizeof(DEVMODE);
+	dd.dmBitsPerPel=gr_screen.bits_per_pixel;
+	dd.dmPelsHeight=gr_screen.max_h;
+	dd.dmPelsWidth=gr_screen.max_w;
+	ChangeDisplaySettings(&dd,CDS_FULLSCREEN);
+
+}
+
+inline void opengl_minimize()
+{
+	HWND wnd=(HWND)os_get_window();
+	os_suspend();
+	mprintf(("opengl_minimize\n"));
+	
+	ShowWindow(wnd, SW_MINIMIZE);
+	
+	if (!Cmdline_window)
+		ChangeDisplaySettings(NULL,0);
+	
+	os_resume();
+}
+
 
 void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
 {
@@ -459,18 +505,14 @@ void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_typ
 
 void gr_opengl_activate(int active)
 {
+	HWND wnd=(HWND)os_get_window();
 	if (active) {
 		GL_activate++;
-		
-		/* TODO:
-		   make sure window is active and mouse grabbed
-		 */
+		opengl_go_fullscreen(wnd);
+
 	} else {
 		GL_deactivate++;
-		
-		/* TODO:
-		   make sure mouse is not grabbed and window minimized
-		 */
+		opengl_minimize();
 	}
 	
 	STUB_FUNCTION;
@@ -522,9 +564,9 @@ void gr_opengl_pixel(int x, int y)
 
 void gr_opengl_clear()
 {
-	glClearColor(gr_screen.current_clear_color.red / 255.0, 
-		gr_screen.current_clear_color.green / 255.0, 
-		gr_screen.current_clear_color.blue / 255.0, 1.0);
+	glClearColor(gr_screen.current_clear_color.red / 255.0f, 
+		gr_screen.current_clear_color.green / 255.0f, 
+		gr_screen.current_clear_color.blue / 255.0f, 1.0f);
 
 	glClear ( GL_COLOR_BUFFER_BIT );
 }
@@ -533,7 +575,7 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h);
 void opengl_tcache_frame ();
 void gr_opengl_flip()
 {
-	if (!Inited) return;
+	if (!OGL_inited) return;
 
 	gr_reset_clip();
 
@@ -680,203 +722,6 @@ void gr_opengl_set_shader( shader * shade )
 	}
 }
 
-#if 0
-void gr_opengl_bitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
-{
-	STUB_FUNCTION; /* who called me? */
-
-	bitmap * bmp;
-	extern int GL_last_bitmap_id;	
-	bmp = bm_lock( gr_screen.current_bitmap, 16, 0 );
-	
-	int ix, iy, iw, ih;
-	int px, py, qx, qy;
-	GLubyte *sptr, *dptr;
-	
-	float s, t;
-	
-	int cw = min(bmp->w, w);
-	int ch = min(bmp->h, h);
-
-	GL_last_bitmap_id = -1; /* HACK! */
-	
-	glColor4f(1.0, 1.0, 1.0, 1.0);	
-	glBindTexture(GL_TEXTURE_2D, bitmapTex);
-		
-	py = y;
-	for (iy = sy; iy < ch; iy += 256) {
-		px = x;
-		ih = min(256, (ch-iy));
-		qy = py+ih;
-		for (ix = sx; ix < cw; ix += 256) {
-			dptr = bitmapMem;
-			sptr = ((unsigned char *)bmp->data) + 2*(iy*bmp->w + ix);
-			
-			iw = min(256, (cw-ix));
-				
-			qx = px+iw;
-			
-			int ihx = ih;
-			while (ihx > 0) {
-				memcpy(dptr, sptr, iw*2);
-				
-				sptr += 2*bmp->w;
-				dptr += 2*iw;
-				
-				ihx--;
-			}			
-			
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, iw, ih, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, bitmapMem);
-			glBegin(GL_QUADS);
-				/* upper left */
-				s = 0.0;
-				t = 0.0;
-				glTexCoord2f(s, t);
-				glVertex2i(px, py);
-				
-				/* lower left */
-				s = 0.0;
-				t = (float)ih / 256.0;
-				glTexCoord2f(s, t);
-				glVertex2i(px, qy);
-				
-				/* lower right */
-				s = (float)iw / 256.0;
-				t = (float)ih / 256.0;
-				glTexCoord2f(s, t);
-				glVertex2i(qx, qy);
-				
-				/* upper left */
-				s = (float)iw / 256.0;
-				t = 0.0;
-				glTexCoord2f(s, t);
-				glVertex2i(qx, py);
-			glEnd();
-			
-			px = qx;
-		}
-		
-		py = qy;
-	}
-	
-	bm_unlock(gr_screen.current_bitmap);
-
-}
-
-
-void gr_opengl_bitmap_ex(int x,int y,int w,int h,int sx,int sy)
-{
-	STUB_FUNCTION; /* who called me? */
-#if 0
-	int reclip;
-	#ifndef NDEBUG
-	int count = 0;
-	#endif
-
-	int dx1=x, dx2=x+w-1;
-	int dy1=y, dy2=y+h-1;
-
-	int bw, bh;
-	bm_get_info( gr_screen.current_bitmap, &bw, &bh, NULL );
-
-	do {
-		reclip = 0;
-		#ifndef NDEBUG
-			if ( count > 1 ) Int3();
-			count++;
-		#endif
-	
-		if ((dx1 > gr_screen.clip_right ) || (dx2 < gr_screen.clip_left)) return;
-		if ((dy1 > gr_screen.clip_bottom ) || (dy2 < gr_screen.clip_top)) return;
-		if ( dx1 < gr_screen.clip_left ) { sx += gr_screen.clip_left-dx1; dx1 = gr_screen.clip_left; }
-		if ( dy1 < gr_screen.clip_top ) { sy += gr_screen.clip_top-dy1; dy1 = gr_screen.clip_top; }
-		if ( dx2 > gr_screen.clip_right )	{ dx2 = gr_screen.clip_right; }
-		if ( dy2 > gr_screen.clip_bottom )	{ dy2 = gr_screen.clip_bottom; }
-
-		if ( sx < 0 ) {
-			dx1 -= sx;
-			sx = 0;
-			reclip = 1;
-		}
-
-		if ( sy < 0 ) {
-			dy1 -= sy;
-			sy = 0;
-			reclip = 1;
-		}
-
-		w = dx2-dx1+1;
-		h = dy2-dy1+1;
-
-		if ( sx + w > bw ) {
-			w = bw - sx;
-			dx2 = dx1 + w - 1;
-		}
-
-		if ( sy + h > bh ) {
-			h = bh - sy;
-			dy2 = dy1 + h - 1;
-		}
-
-		if ( w < 1 ) return;		// clipped away!
-		if ( h < 1 ) return;		// clipped away!
-
-	} while (reclip);
-
-	// Make sure clipping algorithm works
-	#ifndef NDEBUG
-		Assert( w > 0 );
-		Assert( h > 0 );
-		Assert( w == (dx2-dx1+1) );
-		Assert( h == (dy2-dy1+1) );
-		Assert( sx >= 0 );
-		Assert( sy >= 0 );
-		Assert( sx+w <= bw );
-		Assert( sy+h <= bh );
-		Assert( dx2 >= dx1 );
-		Assert( dy2 >= dy1 );
-		Assert( (dx1 >= gr_screen.clip_left ) && (dx1 <= gr_screen.clip_right) );
-		Assert( (dx2 >= gr_screen.clip_left ) && (dx2 <= gr_screen.clip_right) );
-		Assert( (dy1 >= gr_screen.clip_top ) && (dy1 <= gr_screen.clip_bottom) );
-		Assert( (dy2 >= gr_screen.clip_top ) && (dy2 <= gr_screen.clip_bottom) );
-	#endif
-
-	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-
-	gr_opengl_bitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
-#endif	
-}
-
-void gr_opengl_bitmap(int x, int y)
-{
-	STUB_FUNCTION; /* who called me? */
-//#if 0
-	int w, h;
-
-	bm_get_info( gr_screen.current_bitmap, &w, &h, NULL );
-	int dx1=x, dx2=x+w-1;
-	int dy1=y, dy2=y+h-1;
-	int sx=0, sy=0;
-
-	if ((dx1 > gr_screen.clip_right ) || (dx2 < gr_screen.clip_left)) return;
-	if ((dy1 > gr_screen.clip_bottom ) || (dy2 < gr_screen.clip_top)) return;
-	if ( dx1 < gr_screen.clip_left ) { sx = gr_screen.clip_left-dx1; dx1 = gr_screen.clip_left; }
-	if ( dy1 < gr_screen.clip_top ) { sy = gr_screen.clip_top-dy1; dy1 = gr_screen.clip_top; }
-	if ( dx2 > gr_screen.clip_right )	{ dx2 = gr_screen.clip_right; }
-	if ( dy2 > gr_screen.clip_bottom )	{ dy2 = gr_screen.clip_bottom; }
-
-	if ( sx < 0 ) return;
-	if ( sy < 0 ) return;
-	if ( sx >= w ) return;
-	if ( sy >= h ) return;
-
-	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-
-	gr_opengl_bitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
-//#endif	
-}
-#endif	
 void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, int a)
 {
 	int saved_zbuf;
@@ -975,6 +820,9 @@ void gr_opengl_shade(int x,int y,int w,int h)
 
 void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 {
+//	mprintf(("gr_opengl_aabitmap_ex_internal: at (%3d,%3d) size (%3d,%3d) name %s\n", 
+  //				x, y, w, h, 
+ 	//			bm_get_filename(gr_screen.current_bitmap)));
 	if ( w < 1 ) return;
 	if ( h < 1 ) return;
 
@@ -1008,29 +856,27 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	y2 = i2fl(y+h+gr_screen.offset_y);
 
 	if ( gr_screen.current_color.is_alphacolor )	{
-//		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue,gr_screen.current_color.alpha);
-		glColor3ub(255,255,255);
+		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue,gr_screen.current_color.alpha);
+		//glColor3ub(255,255,255);
 	} else {
-//		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-		glColor3ub(255,255,255);
+		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+		//glColor3ub(255,255,255);
 	}
 
 	glBegin (GL_QUADS);
 	  glTexCoord2f (u0, v1);
-	  glVertex3f (x1, y2, -0.99);
+	  glVertex3f (x1, y2, -0.99f);
 
 	  glTexCoord2f (u1, v1);
-	  glVertex3f (x2, y2, -0.99);
+	  glVertex3f (x2, y2, -0.99f);
 
 	  glTexCoord2f (u1, v0);
-	  glVertex3f (x2, y1, -0.99);
+	  glVertex3f (x2, y1, -0.99f);
 
 	  glTexCoord2f (u0, v0);
-	  glVertex3f (x1, y1, -0.99);
+	  glVertex3f (x1, y1, -0.99f);
 	glEnd ();
 
-//	glRasterPos2f(x1,y1);
-//	glDrawPixels(bw,bh, GL_RGBA, GL_UNSIGNED_BYTE, 
 }
 
 void gr_opengl_aabitmap_ex(int x,int y,int w,int h,int sx,int sy)
@@ -1301,9 +1147,9 @@ void gr_opengl_gradient(int x1,int y1,int x2,int y2)
 	}
 	
 	glBegin (GL_LINES);
-	  glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, ba);
+	  glColor4ub ((ubyte)gr_screen.current_color.red, (ubyte)gr_screen.current_color.green, (ubyte)gr_screen.current_color.blue, (ubyte)ba);
 	  glVertex3f (sx2, sy2, -0.99f);
-	  glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, aa);
+	  glColor4ub ((ubyte)gr_screen.current_color.red, (ubyte)gr_screen.current_color.green, (ubyte)gr_screen.current_color.blue, (ubyte)aa);
 	  glVertex3f (sx1, sy1, -0.99f);
 	glEnd ();	
 }
@@ -1515,7 +1361,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		int a;
 		
 		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) )      {
-			sz = 1.0 - 1.0 / (1.0 + va->z / (32768.0 / 256.0));
+			sz = float(1.0 - 1.0 / (1.0 + va->z / (32768.0 / 256.0)));
 			
 			if ( sz > 0.98f ) {
 				sz = 0.98f;
@@ -1553,7 +1399,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		} else {
 			// use constant RGB values...
 		}
-		glColor4ub (r,g,b,a);
+		glColor4ub ((ubyte)r,(ubyte)g,(ubyte)b,(ubyte)a);
 	
 		extern int D3D_fog_mode;
 		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (D3D_fog_mode == 1)){
@@ -1582,7 +1428,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 			glTexCoord2f(tu, tv);
 		}
 		
-		glVertex4f(sx/rhw, sy/rhw, -sz/rhw, 1.0/rhw);
+		glVertex4f(sx/rhw, sy/rhw, -sz/rhw, 1.0f/rhw);
 	}
 	glEnd();
 }
@@ -1813,7 +1659,7 @@ void opengl_tcache_cleanup ();
 void gr_opengl_cleanup()
 {	
 	HWND wnd=(HWND)os_get_window();
-	if ( !Inited )	return;
+	if ( !OGL_inited )	return;
 
 
 	gr_reset_clip();
@@ -1821,13 +1667,13 @@ void gr_opengl_cleanup()
 	gr_flip();
 
 
-	if ( !Inited )	return;
+	if ( !OGL_inited )	return;
 	
 	gr_reset_clip();
 	gr_clear();
 	gr_flip();
 
-	Inited = 0;
+	OGL_inited = 0;
 
 	if (rend_context)
 	{
@@ -1842,8 +1688,8 @@ void gr_opengl_cleanup()
 		rend_context=NULL;
 	}
 
-	if(opengl_bmp_buffer)
-		free(opengl_bmp_buffer);
+	if (!Cmdline_window)
+		opengl_minimize();
 }
 
 void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
@@ -1878,10 +1724,10 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 		
 		gr_opengl_init_color( &gr_screen.current_fog_color, r, g, b );
 	
-		fc[0] = (float)r/255.0;
-		fc[1] = (float)g/255.0;
-		fc[2] = (float)b/255.0;
-		fc[3] = 1.0;
+		fc[0] = (float)r/255.0f;
+		fc[1] = (float)g/255.0f;
+		fc[2] = (float)b/255.0f;
+		fc[3] = 1.0f;
 		
 		glFogfv(GL_FOG_COLOR, fc);
 	}
@@ -2313,7 +2159,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 			ubyte xlat[256];
 			
 			for (i=0; i<16; i++) {
-				xlat[i] = Gr_gamma_lookup[(i*255)/15];
+				xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
 			}
 			xlat[15] = xlat[1];
 			for ( ; i<256; i++ )    {
@@ -2359,8 +2205,8 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 						}
 					}
 				}
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA_EXT,
-					GL_UNSIGNED_SHORT, texmem);
+				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA,
+					GL_UNSIGNED_SHORT_1_5_5_5_REV, texmem);
 					
 				free(texmem);
 				break;
@@ -2391,13 +2237,12 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 					v += dv;
 				}
 
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA_EXT,
-					GL_UNSIGNED_SHORT, texmem);
+				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA,
+					GL_UNSIGNED_SHORT_1_5_5_5_REV, texmem);
 					
 				free(texmem);
 				break;
 			}
-			break;
 	}
 	
 	t->bitmap_id = texture_handle;
@@ -2681,15 +2526,15 @@ void gr_opengl_flash(int r, int g, int b)
 		x2 = i2fl(gr_screen.clip_right+gr_screen.offset_x);
 		y2 = i2fl(gr_screen.clip_bottom+gr_screen.offset_y);
 		
-		glColor4ub(r, g, b, 255);
+		glColor4ub((ubyte)r, (ubyte)g, (ubyte)b, 255);
 		glBegin (GL_QUADS);
-		  glVertex3f (x1, y2, -0.99);
+		  glVertex3f (x1, y2, -0.99f);
 
-		  glVertex3f (x2, y2, -0.99);
+		  glVertex3f (x2, y2, -0.99f);
 
-		  glVertex3f (x2, y1, -0.99);
+		  glVertex3f (x2, y1, -0.99f);
 
-		  glVertex3f (x1, y1, -0.99);
+		  glVertex3f (x1, y1, -0.99f);
 		glEnd ();	  
 	}
 }
@@ -2826,13 +2671,13 @@ int gr_opengl_save_screen()
 		return -1;
 	}
 
-	Gr_saved_screen = (char*)malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel );
+	Gr_saved_screen = (char*)malloc( gr_screen.max_w * gr_screen.max_h * 2 );
 	if (!Gr_saved_screen) {
 		mprintf(( "Couldn't get memory for saved screen!\n" ));
 		return -1;
 	}
 
-	char *Gr_saved_screen_tmp = (char*)malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel );
+	char *Gr_saved_screen_tmp = (char*)malloc( gr_screen.max_w * gr_screen.max_h * 2 );
 	if (!Gr_saved_screen_tmp) {
 		mprintf(( "Couldn't get memory for temporary saved screen!\n" ));
 		return -1;
@@ -2841,16 +2686,17 @@ int gr_opengl_save_screen()
 	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
 	
 	glReadBuffer(GL_FRONT);
-	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA_EXT, GL_UNSIGNED_SHORT, Gr_saved_screen_tmp);
+	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, Gr_saved_screen_tmp);
+
 	
 	ubyte *sptr, *dptr;
 	
-	sptr = (ubyte *)&Gr_saved_screen_tmp[gr_screen.max_w*gr_screen.max_h*2];
+	sptr = (ubyte *)&Gr_saved_screen_tmp[gr_screen.max_w*gr_screen.max_h*gr_screen.bytes_per_pixel];
 	dptr = (ubyte *)Gr_saved_screen;
 	for (int j = 0; j < gr_screen.max_h; j++) {
-		sptr -= gr_screen.max_w*2;
+		sptr -= gr_screen.max_w*gr_screen.bytes_per_pixel;
 		memcpy(dptr, sptr, gr_screen.max_w*2);
-		dptr += gr_screen.max_w*2;
+		dptr += gr_screen.max_w*gr_screen.bytes_per_pixel;
 	}
 	
 	free(Gr_saved_screen_tmp);
@@ -2929,90 +2775,73 @@ void opengl_zbias(int bias)
 {
 	if (bias) {
 		glEnable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(0.0, -bias);
+		glPolygonOffset(0.0, -i2fl(bias));
 	} else {
 		glDisable(GL_POLYGON_OFFSET_FILL);
 	}
 }
-	        
-
-//these are penguins bitmap functions
-void gr_opengl_bitmap_ex(int x,int y,int w,int h,int sx,int sy)
+       
+void gr_opengl_bitmap_internal(int x,int y,int w,int h,int sx,int sy)
 {
-//TEMP
-	mprintf(("gr_opengl_bitmap_ex: at (%3d,%3d) size (%3d,%3d) name %s\n", 
-  				x, y, w, h, 
- 				bm_get_filename(gr_screen.current_bitmap)));
 
-	int i,j,k;
-	unsigned int tex;			//gl texture number
+	//int i,j,k;
+	unsigned int tex=0;			//gl texture number
 
 	bitmap * bmp;
-	unsigned char* data;
 	int size;
 
+
+	int htemp=(int)pow(2,ceil(log10(h)/log10(2)));
+	int wtemp=(int)pow(2,ceil(log10(w)/log10(2)));
+
+	//gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
 
 	glGenTextures(1, &tex);
 
 	Assert(tex !=0);
-  	Assert(opengl_screen != NULL);
-	Assert(opengl_bmp_buffer != NULL);
+  	//Assert(opengl_screen != NULL);
+	//Assert(opengl_bmp_buffer != NULL);
 
 	// mharris mod - not sure if this is right...
 	bmp = bm_lock( gr_screen.current_bitmap, 16, 0 );
 	size=w*h*4;
-	data= (unsigned char*)malloc(size);
-	
+
+	/*mprintf(("gr_opengl_bitmap_ex_internal: at (%3d,%3d) size (%3d,%3d) name %s -- temp (%d,%d)\n", 
+  				x, y, w, h, 
+ 				bm_get_filename(gr_screen.current_bitmap),wtemp,htemp));*/
+
 	const ushort * sptr = (const ushort*)bmp->data;
 
+	glColor3ub(255,255,255);
 
-	//go to 32 bit color
-	for (i=h-1; i >= 0; i-- )
-	{
-		for (j=0; j < w; j++)
-		{
-			k=(i*w*4)+(j*4);
-			if (*sptr == 0x07e0)
-			{
-				// transparent color
-				data[k] = data[k+1] = data[k+2] = data[k+3] = 0x00;
-			} 
-			else 
-			{
-				data[k] = (((*sptr & 0xf800) >> 11) / (double)0x1f) * 255 ;		//red 
-				data[k+1] = (((*sptr & 0x07e0) >>  5) / (double)0x3f) * 255;		//green
-				data[k+2] = ((*sptr & 0x001f) / (double)0x1f) * 255;		//blue
-				data[k+3] = 0xff;									//alpha			
-			}		
-			sptr ++;
-		}
-	}
+	glBindTexture(GL_TEXTURE_2D,tex);
 	
-/*	glBindTexture(GL_TEXTURE_2D,tex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w,h,0,GL_RGBA,GL_UNSIGNED_BYTE, data);
-
+	glTexImage2D(GL_TEXTURE_2D, 0, 4, wtemp, htemp, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+	glTexSubImage2D(GL_TEXTURE_2D, 0,0,0,w,h, GL_BGRA,GL_UNSIGNED_SHORT_1_5_5_5_REV, sptr);
+	
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,0);
 		glVertex2i(x,y);
 
-		glTexCoord2f(0,1);
+		glTexCoord2f(0,i2fl(h)/i2fl(htemp));
 		glVertex2i(x,y+h);
 
-		glTexCoord2f(1,1);
+		glTexCoord2f(i2fl(w)/i2fl(wtemp),i2fl(h)/i2fl(htemp));
 		glVertex2i(x+w,y+h);
 
-		glTexCoord2f(1,0);
+		glTexCoord2f(i2fl(w)/i2fl(wtemp),0);
 		glVertex2i(x+w,y);
-	glEnd();*/
+	glEnd();
 
 	bm_unlock(gr_screen.current_bitmap);
 
 	glDeleteTextures(1, &tex);
 
-
-	// set the raster pos
-	int gl_y_origin = y+h;
+//	// set the raster pos
+/*	int gl_y_origin = y+h;
 
 	glRasterPos2i(gr_screen.offset_x + x, gl_y_origin);
 
@@ -3022,8 +2851,88 @@ void gr_opengl_bitmap_ex(int x,int y,int w,int h,int sx,int sy)
 					 GL_RGBA,			// format
 					 GL_UNSIGNED_BYTE,	// type
 					 data);
+	*/
+}
+
+
+//these are penguins bitmap functions
+void gr_opengl_bitmap_ex(int x,int y,int w,int h,int sx,int sy)
+{
+	int reclip;
+	#ifndef NDEBUG
+	int count = 0;
+	#endif
+
+	int dx1=x, dx2=x+w-1;
+	int dy1=y, dy2=y+h-1;
+
+	int bw, bh;
+	bm_get_info( gr_screen.current_bitmap, &bw, &bh, NULL );
+
+	do {
+		reclip = 0;
+		#ifndef NDEBUG
+			if ( count > 1 ) Int3();
+			count++;
+		#endif
 	
-	free(data);
+		if ((dx1 > gr_screen.clip_right ) || (dx2 < gr_screen.clip_left)) return;
+		if ((dy1 > gr_screen.clip_bottom ) || (dy2 < gr_screen.clip_top)) return;
+		if ( dx1 < gr_screen.clip_left ) { sx += gr_screen.clip_left-dx1; dx1 = gr_screen.clip_left; }
+		if ( dy1 < gr_screen.clip_top ) { sy += gr_screen.clip_top-dy1; dy1 = gr_screen.clip_top; }
+		if ( dx2 > gr_screen.clip_right )	{ dx2 = gr_screen.clip_right; }
+		if ( dy2 > gr_screen.clip_bottom )	{ dy2 = gr_screen.clip_bottom; }
+
+		if ( sx < 0 ) {
+			dx1 -= sx;
+			sx = 0;
+			reclip = 1;
+		}
+
+		if ( sy < 0 ) {
+			dy1 -= sy;
+			sy = 0;
+			reclip = 1;
+		}
+
+		w = dx2-dx1+1;
+		h = dy2-dy1+1;
+
+		if ( sx + w > bw ) {
+			w = bw - sx;
+			dx2 = dx1 + w - 1;
+		}
+
+		if ( sy + h > bh ) {
+			h = bh - sy;
+			dy2 = dy1 + h - 1;
+		}
+
+		if ( w < 1 ) return;		// clipped away!
+		if ( h < 1 ) return;		// clipped away!
+
+	} while (reclip);
+
+	// Make sure clipping algorithm works
+	#ifndef NDEBUG
+		Assert( w > 0 );
+		Assert( h > 0 );
+		Assert( w == (dx2-dx1+1) );
+		Assert( h == (dy2-dy1+1) );
+		Assert( sx >= 0 );
+		Assert( sy >= 0 );
+		Assert( sx+w <= bw );
+		Assert( sy+h <= bh );
+		Assert( dx2 >= dx1 );
+		Assert( dy2 >= dy1 );
+		Assert( (dx1 >= gr_screen.clip_left ) && (dx1 <= gr_screen.clip_right) );
+		Assert( (dx2 >= gr_screen.clip_left ) && (dx2 <= gr_screen.clip_right) );
+		Assert( (dy1 >= gr_screen.clip_top ) && (dy1 <= gr_screen.clip_bottom) );
+		Assert( (dy2 >= gr_screen.clip_top ) && (dy2 <= gr_screen.clip_bottom) );
+	#endif
+
+	gr_opengl_bitmap_internal(x,y,w,h,sx,sy);
+
 }
 
 void gr_opengl_bitmap(int x, int y)
@@ -3057,108 +2966,97 @@ void gr_opengl_init()
 {
 	char *ext;
 	char *curext;
+	int bpp = gr_screen.bits_per_pixel;
 
-		int bpp = gr_screen.bits_per_pixel;
+	/*	Gr_t_red: bits=0, mask=7c00, scale=8, shift=a
+Gr_t_green: bits=0, mask=7c00, scale=8, shift=5
+Gr_t_blue: bits=0, mask=7c00, scale=8, shift=0
+Gr_t_alpha: bits=0, mask=8000, scale=255, shift=f*/
+
+	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
+
+		Gr_t_red.bits=0;
+		Gr_t_red.mask = 0x7c00;
+		Gr_t_red.shift = 10;
+		Gr_t_red.scale = 8;
+
+		Gr_t_green.bits=0;
+		Gr_t_green.mask = 0x7c00;
+		Gr_t_green.shift = 5;
+		Gr_t_green.scale = 8;
+	
+		Gr_t_blue.bits=0;
+		Gr_t_blue.mask = 0x7c00;
+		Gr_t_blue.shift = 0;
+		Gr_t_blue.scale = 8;
+
+	
+		Gr_t_alpha.bits=0;
+		Gr_t_alpha.mask=0x8000;
+		Gr_t_alpha.scale=255;
+		Gr_t_alpha.shift=15;
 	
 	switch( bpp )	{
-	case 15:
-		gr_screen.bits_per_pixel = 15;
-		gr_screen.bytes_per_pixel = 2;
-		
-		Gr_red.bits = 5;
-		Gr_red.shift = 10;
-		Gr_red.scale = 8;
-		Gr_red.mask = 0x7C00;
-
-		Gr_green.bits = 5;
-		Gr_green.shift = 5;
-		Gr_green.scale = 8;
-		Gr_green.mask = 0x3E0;
-
-		Gr_blue.bits = 5;
-		Gr_blue.shift = 0;
-		Gr_blue.scale = 8;
-		Gr_blue.mask = 0x1F;
-
-		break;
-
 	case 16:
-		gr_screen.bits_per_pixel = 16;
-		gr_screen.bytes_per_pixel = 2;
-		
-		Gr_red.bits = 5;
-		Gr_red.shift = 11;
-		Gr_red.scale = 8;
-		Gr_red.mask = 0xF800;
 
-		Gr_green.bits = 6;
-		Gr_green.shift = 5;
-		Gr_green.scale = 4;
-		Gr_green.mask = 0x7E0;
-
-		Gr_blue.bits = 5;
-		Gr_blue.shift = 0;
-		Gr_blue.scale = 8;
-		Gr_blue.mask = 0x1F;
+		Gr_red = Gr_t_red;
+		Gr_green = Gr_t_green;
+		Gr_blue = Gr_t_blue;
+		Gr_alpha= Gr_t_alpha;
 
 		break;
 
 	case 32:
-		gr_screen.bits_per_pixel = 32;
-		gr_screen.bytes_per_pixel = 4;
-		
-		Gr_red.bits = 8;
+	
+		Gr_red.bits = 0;
 		Gr_red.shift = 16;
 		Gr_red.scale = 1;
 		Gr_red.mask = 0xff0000;
 
-		Gr_green.bits = 8;
+		Gr_green.bits = 0;
 		Gr_green.shift = 8;
 		Gr_green.scale = 1;
 		Gr_green.mask = 0xff00;
 
-		Gr_blue.bits = 8;
+		Gr_blue.bits = 0;
 		Gr_blue.shift = 0;
 		Gr_blue.scale = 1;
 		Gr_blue.mask = 0xff;
 
+		Gr_alpha.bits=0;
+		Gr_alpha.shift=24;
+		Gr_alpha.mask=0xff000000;
+		Gr_alpha.scale=1;
+
+
 		break;
 
 	default:
+		mprintf(("Illegal BPP passed to gr_opengl_init() -- %d",bpp));
 		Int3();	// Illegal bpp
 	}
 
-	if ( Inited )	{
+	if ( OGL_inited )	{
 		gr_opengl_cleanup();
-		Inited = 0;
+		OGL_inited = 0;
 	}
 
-	mprintf(( "Initializing opengl graphics device...\n" ));
+	mprintf(( "Initializing opengl graphics device...\nRes:%dx%dx%d\n",gr_screen.max_w,gr_screen.max_h,gr_screen.bits_per_pixel ));
 
+	pfd.nSize=sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion=1;
+	pfd.dwVisibleMask=Gr_green.mask;
+	pfd.cColorBits=(ubyte)bpp;
+	pfd.dwFlags=PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.cDepthBits=16;
+	pfd.iPixelType=PFD_TYPE_RGBA;
 
-	static PIXELFORMATDESCRIPTOR pfd=
-	{
-		sizeof(pfd),
-		1,
-		PFD_DOUBLEBUFFER | PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW,
-		PFD_TYPE_RGBA,
-		bpp,
-		Gr_red.bits,Gr_red.shift,
-		Gr_green.bits,Gr_green.shift,
-		Gr_blue.bits,Gr_blue.shift,
-		0,0,
-		0,0,0,0,0,
-		16,
-		0,0,
-		PFD_MAIN_PLANE,
-		0,0,0
-	};
 
 	int PixelFormat;
 
 	HWND wnd=(HWND)os_get_window();
 
-	Inited = 1;
+	
 	dev_context=GetDC(wnd);
 	if (!dev_context)
 	{
@@ -3192,6 +3090,7 @@ void gr_opengl_init()
 		exit(1);
 	}
 
+	OGL_inited = 1;
 	mprintf(("OPENGL INITED!\n"));
 	mprintf(("\n"));
 	mprintf(( "Vendor     : %s\n", glGetString( GL_VENDOR ) ));
@@ -3199,6 +3098,7 @@ void gr_opengl_init()
 	mprintf(( "Version    : %s\n", glGetString( GL_VERSION ) ));
 	mprintf(( "Extensions : \n" ));
 
+	//print out extensions
 	ext=(char*)glGetString(GL_EXTENSIONS);
 
 	curext=strtok(ext, " ");
@@ -3209,6 +3109,12 @@ void gr_opengl_init()
 	}
 
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
+	if (!Cmdline_window)
+	{
+		opengl_go_fullscreen(wnd);
+	}
+
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -3231,38 +3137,49 @@ void gr_opengl_init()
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	
-	D3D_32bit = (bpp == 32) ? 1:0;              // grd3d.cpp
-	extern int D3D_enabled;
-	D3D_enabled = 1;
+//	D3D_32bit = (bpp == 32) ? 1:0;              // grd3d.cpp
+//	extern int D3D_enabled;
+//	D3D_enabled = 1;
 	/* 
 	  TODO: set fog_mode to 1 if EXT_secondary_color found and wanted 
 	  1 = use secondary color ext
 	  2 = use opengl linear fog
 	 */
-	D3D_fog_mode = 2;          // grd3d.cpp
+//	D3D_fog_mode = 2;          // grd3d.cpp
 
 	glFlush();
 	
 	Bm_pixel_format = BM_PIXEL_FORMAT_ARGB;
 	Gr_bitmap_poly = 1;
 	
+	
 	// DDOI - set these so no one else does!
+
+		/*
+Gr_ta_red: bits=0, mask=f00, scale=17, shift=8
+Gr_ta_green: bits=0, mask=f00, scale=17, shift=4
+Gr_ta_blue: bits=0, mask=f00, scale=17, shift=0
+Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
+*/
+	Gr_ta_red.bits=0;
 	Gr_ta_red.mask = 0x0f00;
 	Gr_ta_red.shift = 8;
-	Gr_ta_red.scale = 16;
+	Gr_ta_red.scale = 17;
 
-	Gr_ta_green.mask = 0x00f0;
+	Gr_ta_green.bits=0;
+	Gr_ta_green.mask = 0x0f00;
 	Gr_ta_green.shift = 4;
-	Gr_ta_green.scale = 16;
+	Gr_ta_green.scale = 17;
 	
-	Gr_ta_blue.mask = 0x000f;
+	Gr_ta_blue.bits=0;
+	Gr_ta_blue.mask = 0x0f00;
 	Gr_ta_blue.shift = 0;
-	Gr_ta_blue.scale = 16;
+	Gr_ta_blue.scale = 17;
 
+	Gr_ta_alpha.bits=0;
 	Gr_ta_alpha.mask = 0xf000;
 	Gr_ta_alpha.shift = 12;
-	Gr_ta_alpha.scale = 16;
-
+	Gr_ta_alpha.scale = 17;
 
 	opengl_tcache_init (1);
 	gr_opengl_clear();
@@ -3350,7 +3267,5 @@ void gr_opengl_init()
 	gr_clear();
 	gr_flip();
 	Mouse_hidden--;
-
-	opengl_bmp_buffer = (ubyte *)malloc(gr_screen.max_w * gr_screen.max_h * 4);  // 4 bytes for RGBA 
 }
 #endif
