@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2003/09/13 08:27:29  Goober5000
  * added some minor things, such as code cleanup and the following:
  * --turrets will not fire at cargo
@@ -145,6 +149,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _HUD_SQUADMSG
 #define _HUD_SQUADMSG
 

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.68 $
+ * $Revision: 2.69 $
  * $Author: Kazan $
- * $Date: 2004-07-27 18:52:11 $
+ * $Date: 2004-08-11 05:06:31 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2004/07/27 18:52:11  Kazan
+ * squished another
+ *
  * Revision 2.67  2004/07/26 21:26:45  Goober5000
  * outline of ship-tag and ship-untag sexps
  * --Goober5000
@@ -569,6 +572,7 @@
  * 
  */
 
+#include "PreProcDefines.h"
 #ifndef _SEXP_H
 #define _SEXP_H
 

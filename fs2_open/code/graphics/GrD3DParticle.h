@@ -1,3 +1,4 @@
+#include "PreProcDefines.h"
 #ifndef _GRD3DPARTICLE_H_
 #define _GRD3DPARTICLE_H_
 

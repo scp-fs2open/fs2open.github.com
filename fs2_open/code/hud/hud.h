@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.5 $
- * $Date: 2004-05-30 08:04:49 $
- * $Author: wmcoolmon $
+ * $Revision: 2.6 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/05/30 08:04:49  wmcoolmon
+ * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
+ *
  * Revision 2.4  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -264,7 +267,7 @@
  *
 */
 
-
+#include "PreProcDefines.h"
 #ifndef __HUD_H__
 #define __HUD_H__
 

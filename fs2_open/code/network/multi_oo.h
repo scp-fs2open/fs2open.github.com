@@ -7,6 +7,7 @@
  *
 */
 
+#include "PreProcDefines.h"
 #ifndef _MULTIPLAYER_OBJECT_UPDATE_HEADER_FILE
 #define _MULTIPLAYER_OBJECT_UPDATE_HEADER_FILE
 

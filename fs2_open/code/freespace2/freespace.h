@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.2 $
- * $Date: 2004-04-07 03:31:53 $
- * $Author: righteous1 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:22 $
+ * $Author: Kazan $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/04/07 03:31:53  righteous1
+ * Updated to add alt_tab_pause() function to draw pause screen and discontinue sounds when the game is minimized. -R1
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -149,6 +152,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _FREESPACE_H
 #define _FREESPACE_H
 #ifndef STAMPER_PROGRAM							// because of all the dependancies, I have to do this...yuck!!!  MWA 7/21/97

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.2 $
- * $Date: 2004-04-03 20:27:57 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/04/03 20:27:57  phreak
+ * OpenGL files spilt up to make developing and finding bugs much easier
+ *
  * Revision 2.1  2003/03/07 00:15:45  phreak
  * added some hacks that shutdown and restore opengl because of cutscenes
  *
@@ -39,6 +42,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _GROPENGL_H
 #define _GROPENGL_H
 

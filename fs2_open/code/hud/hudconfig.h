@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * Header file for HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2004/02/04 09:02:45  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -139,6 +143,7 @@
  *
 */
 
+#include "PreProcDefines.h"
 #ifndef _HUDCONFIG_H
 #define _HUDCONFIG_H
 

@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.7 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2004-08-11 05:06:29 $
+ * $Author: Kazan $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.6  2003/11/12 00:31:45  Kazan
  * A few multi tweaks - fixed a couple warning-killing collisions between goober and me (kazan)
  *
@@ -302,6 +306,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _MULTI_H
 #define _MULTI_H
 

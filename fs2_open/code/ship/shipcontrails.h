@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.h $
- * $Revision: 2.2 $
- * $Date: 2003-11-11 02:15:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/11/11 02:15:41  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.1  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -37,6 +42,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _FREESPACE2_SHIP_CONTRAIL_HEADER_FILE
 #define _FREESPACE2_SHIP_CONTRAIL_HEADER_FILE
 

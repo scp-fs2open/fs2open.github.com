@@ -9,16 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.18 $
- * $Date: 2004-07-05 05:09:18 $
- * $Author: bobboau $
- * $Revision: 2.18 $
- * $Date: 2004-07-05 05:09:18 $
- * $Author: bobboau $
+ * $Revision: 2.19 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
+ * $Revision: 2.19 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/07/05 05:09:18  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.17  2004/04/03 18:11:20  Kazan
  * FRED fixes
  *
@@ -286,6 +292,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 #ifndef _PSTYPES_H
 #define _PSTYPES_H
 

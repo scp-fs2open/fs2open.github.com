@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/radarsetup.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-02 22:43:03 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:33 $
+ * $Author: Kazan $
  *
  * C module containg functions switch between radar modes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/02 22:43:03  phreak
+ * orb radar rendering style
+ *
  * Revision 2.2  2004/07/03 06:08:54  wmcoolmon
  * Removed function pointer w/ default arguments for compatibility with .NET Sorry, you'll just have to add that "0" by hand. :p
  *
@@ -28,6 +31,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 #ifndef _FS2OPEN_RADARSETUP_H
 #define _FS2OPEN_RADARSETUP_H
 

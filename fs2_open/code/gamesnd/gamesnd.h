@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.5 $
- * $Date: 2004-03-12 16:23:49 $
- * $Author: phreak $
+ * $Revision: 2.6 $
+ * $Date: 2004-08-11 05:06:23 $
+ * $Author: Kazan $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/12 16:23:49  phreak
+ * bumped MAX_GAME_SOUNDS to 400 if INF_BUILD is defined
+ *
  * Revision 2.4  2003/03/20 22:58:43  Goober5000
  * moved ballistic primary reload sounds to indexes 171 and 172
  *
@@ -333,6 +336,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __GAMESND_H__
 #define __GAMESND_H__
 

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.1 $
- * $Date: 2004-05-24 07:25:32 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/24 07:25:32  taylor
+ * filename case change
+ *
  * Revision 2.3  2004/04/13 01:55:41  phreak
  * put in the correct fields for the CVS comments to register
  * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
@@ -25,6 +28,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _GROPENGLEXT_H
 #define _GROPENGLEXT_H
 

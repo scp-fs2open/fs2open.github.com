@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.h $
- * $Revision: 2.1 $
- * $Date: 2004-04-03 06:22:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:29 $
+ * $Author: Kazan $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/04/03 06:22:32  Goober5000
+ * fixed some stub functions and a bunch of compile warnings
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -29,6 +33,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _FS2_MULTI_DATA_RATE_HEADER_FILE
 #define _FS2_MULTI_DATA_RATE_HEADER_FILE
 

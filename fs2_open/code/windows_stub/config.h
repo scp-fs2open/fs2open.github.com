@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.3 $
- * $Date: 2003-03-02 06:25:31 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:36 $
+ * $Author: Kazan $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/02 06:25:31  penguin
+ * Tweaked for gcc
+ *  - penguin
+ *
  * Revision 2.2  2002/07/22 01:06:04  penguin
  * More defines for winsock compatibility
  *
@@ -18,7 +22,7 @@
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef _CONFIG_H
 #define _CONFIG_H
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.8 $
- * $Date: 2004-03-21 09:41:54 $
- * $Author: randomtiger $
+ * $Revision: 2.9 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/03/21 09:41:54  randomtiger
+ * Fixed a bug that was causing windowed movie playback and a crash.
+ * Added some batching redirection.
+ *
  * Revision 2.7  2004/03/05 09:02:01  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -123,6 +127,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _TMAPPER_H
 #define _TMAPPER_H
 

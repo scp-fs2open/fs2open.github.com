@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:20 $
+ * $Author: Kazan $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:01:58  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -53,6 +57,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _FREESPACE_CUTSCENES_SCREEN_HEADER_FILE
 #define _FREESPACE_CUTSCENES_SCREEN_HEADER_FILE
 

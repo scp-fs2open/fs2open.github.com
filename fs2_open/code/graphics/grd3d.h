@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.15 $
- * $Date: 2004-07-11 03:22:49 $
- * $Author: bobboau $
+ * $Revision: 2.16 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/07/11 03:22:49  bobboau
+ * added the working decal code
+ *
  * Revision 2.14  2004/07/05 05:09:19  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -145,6 +148,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _GRD3D_H
 #define _GRD3D_H
 

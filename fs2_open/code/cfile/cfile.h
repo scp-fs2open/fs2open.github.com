@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.8 $
- * $Date: 2004-05-26 21:02:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2004-08-11 05:06:19 $
+ * $Author: Kazan $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/05/26 21:02:26  wmcoolmon
+ * Added weapons_expl modular table, updated cfilesystem to work with modular tables, fixed loading order, fixed ship loading error messages
+ *
  * Revision 2.7  2003/08/20 08:12:08  wmcoolmon
  * Made cfile_delete return 0 on failure, 1 on success
  *
@@ -359,6 +362,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __CFILE_H__
 #define __CFILE_H__
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.h $
- * $Revision: 2.3 $
- * $Date: 2003-12-08 22:30:02 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:18 $
+ * $Author: Kazan $
  *
  * Header file for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/12/08 22:30:02  randomtiger
+ * Put render state and other direct D3D calls repetition check back in, provides speed boost.
+ * Fixed bug that caused fullscreen only crash with DXT textures
+ * Put dithering back in for tgas and jpgs
+ *
  * Revision 2.2  2003/11/11 02:15:41  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -107,6 +112,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __ANIMPLAY_H__
 #define __ANIMPLAY_H__
 

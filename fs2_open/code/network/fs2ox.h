@@ -9,16 +9,20 @@
 
 /*
  * $Logfile$
- * $Revision: 1.1 $
- * $Date: 2002-07-29 22:24:26 $
- * $Author: penguin $
+ * $Revision: 1.2 $
+ * $Date: 2004-08-11 05:06:29 $
+ * $Author: Kazan $
  *
  * Header file for PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2002/07/29 22:24:26  penguin
+ * First attempt at "fs2_open exchange" (PXO substitute) screen
+ *
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef FS2OX_H
 #define FS2OX_H
 

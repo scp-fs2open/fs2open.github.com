@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.3 $
- * $Date: 2004-07-17 18:43:46 $
- * $Author: taylor $
+ * $Revision: 1.4 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/07/17 18:43:46  taylor
+ * don't use bitmap sections by default, openil_close()
+ *
  * Revision 1.2  2004/07/01 01:12:31  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -36,7 +39,7 @@
  */
 
 
-
+#include "PreProcDefines.h"
 #ifndef _GROPENGLTEXTURE_H
 #define _GROPENGLTEXTURE_H
 

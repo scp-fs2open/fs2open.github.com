@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.6 $
- * $Date: 2004-06-28 02:13:08 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/06/28 02:13:08  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.5  2004/06/27 01:45:23  wmcoolmon
  * Commented out ogg header
  *
@@ -122,6 +126,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __DS_H__
 #define __DS_H__
 

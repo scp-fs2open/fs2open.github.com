@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:29 $
+ * $Author: Kazan $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:07  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2003/10/14 17:39:16  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -60,6 +64,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _FS2_NEB2_EFFECT_HEADER_FILE
 #define _FS2_NEB2_EFFECT_HEADER_FILE
 

@@ -9,14 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.3 $
- * $Date: 2004-05-10 10:51:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:28 $
+ * $Author: Kazan $
  *
  * $NoKeywords: $
  *
  */
 
+#include "PreProcDefines.h"
 #ifndef _MISSION_SCREEN_COMMON_HEADER_FILE
 #define _MISSION_SCREEN_COMMON_HEADER_FILE
 

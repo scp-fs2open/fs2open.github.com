@@ -7,6 +7,7 @@
  *
 */
 
+#include "PreProcDefines.h"
 #ifndef _OUTWND_H
 #define _OUTWND_H
 

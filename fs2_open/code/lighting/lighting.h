@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.h $
- * $Revision: 2.3 $
- * $Date: 2003-08-22 07:35:09 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:26 $
+ * $Author: Kazan $
  *
  * Include file for lighting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/08/22 07:35:09  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.2  2003/08/16 03:52:23  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -107,6 +112,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _LIGHTING_H
 #define _LIGHTING_H
 

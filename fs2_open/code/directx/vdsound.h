@@ -7,6 +7,8 @@
  *
  **************************************************************************/
 
+#include "PreProcDefines.h"
+
 #ifndef __DSOUND_INCLUDED__
 #define __DSOUND_INCLUDED__
 

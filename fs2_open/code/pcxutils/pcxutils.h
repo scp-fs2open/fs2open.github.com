@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.h $
- * $Revision: 2.2 $
- * $Date: 2003-11-19 20:37:24 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:32 $
+ * $Author: Kazan $
  *
  * header file for PCX utilities
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/11/19 20:37:24  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -62,6 +74,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _PCXUTILS_H
 #define _PCXUTILS_H
 

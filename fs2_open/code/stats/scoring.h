@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:35 $
+ * $Author: Kazan $
  *
  * Scoring system structures, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:05  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2003/01/27 00:51:08  DTP
  * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still cant join. narrowing it down.
  *
@@ -178,6 +182,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _SCORING_HEADER_FILE
 #define _SCORING_HEADER_FILE
 

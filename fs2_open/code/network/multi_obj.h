@@ -7,6 +7,7 @@
  *
 */
 
+#include "PreProcDefines.h"
 #ifndef _MULTI_NEW_OBJECT_UPDATE_HEADER_FILE
 #define _MULTI_NEW_OBJECT_UPDATE_HEADER_FILE
 

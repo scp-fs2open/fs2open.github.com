@@ -9,15 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:18 $
+ * $Author: Kazan $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
  * Anim files.  Also handles Anim loading, creating Anim instances (for
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -154,6 +158,7 @@
 #ifndef __PACKUNPACK_H__
 #define __PACKUNPACK_H__
 
+#include "PreProcDefines.h"
 #include "globalincs/pstypes.h"
 
 struct CFILE;

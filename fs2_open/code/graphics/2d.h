@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.34 $
- * $Date: 2004-07-11 03:22:48 $
- * $Author: bobboau $
+ * $Revision: 2.35 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2004/07/11 03:22:48  bobboau
+ * added the working decal code
+ *
  * Revision 2.33  2004/07/05 05:09:19  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -506,6 +509,7 @@ gr_line(x1,y1,x2,y2)
  
 */
 
+#include "PreProcDefines.h"
 #include "globalincs/pstypes.h"
 #include "graphics/tmapper.h"
 #include "cfile/cfile.h"

@@ -23,6 +23,7 @@ Revision History:
 // NONEWIC      No new Image Compressor types are defined
 // NOBITMAP     No extended bitmap info header definition
 
+#include "PreProcDefines.h"
 #ifndef _INC_MMREG
 /* use version number to verify compatibility */
 #define _INC_MMREG     146      // version * 100 + revision

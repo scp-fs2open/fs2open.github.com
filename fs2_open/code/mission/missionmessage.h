@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.6 $
- * $Date: 2004-06-15 21:05:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2004-08-11 05:06:28 $
+ * $Author: Kazan $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/06/15 21:05:30  wmcoolmon
+ * Bumped MAX_MISSION_MESSAGES to 500
+ *
  * Revision 2.5  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -224,6 +227,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _MISSIONMESSAGE_H
 #define _MISSIONMESSAGE_H
 

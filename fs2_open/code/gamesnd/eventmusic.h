@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.7 $
- * $Date: 2004-05-28 23:37:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2004-08-11 05:06:23 $
+ * $Author: Kazan $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/05/28 23:37:30  wmcoolmon
+ * Modular music tables
+ *
  * Revision 2.6  2004/03/05 09:02:00  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -148,6 +151,7 @@
  */
 
 
+#include "PreProcDefines.h"
 #ifndef __EVENT_MUSIC_H__
 #define __EVENT_MUSIC_H__
 

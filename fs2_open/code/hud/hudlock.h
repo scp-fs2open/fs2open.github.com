@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * Header file for missile locking code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -70,6 +73,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _HUDLOCK_H
 #define _HUDLOCK_H
 

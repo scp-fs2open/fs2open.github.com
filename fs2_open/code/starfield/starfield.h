@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.8 $
- * $Date: 2004-07-01 01:12:33 $
- * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2004-08-11 05:06:35 $
+ * $Author: Kazan $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/01 01:12:33  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.7  2004/03/17 04:07:32  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -147,6 +151,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _STARFIELD_H
 #define _STARFIELD_H
 

@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.60 $
- * $Date: 2004-08-02 22:40:59 $
- * $Author: phreak $
+ * $Revision: 2.61 $
+ * $Date: 2004-08-11 05:06:19 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2004/08/02 22:40:59  phreak
+ * added -orbradar to enable orb rendering for the radar
+ *
  * Revision 2.59  2004/08/01 02:31:18  phreak
  * -phreak command line changed to -dualscanlines
  *
@@ -434,7 +437,7 @@
  * 
  * $NoKeywords: $
  */
-
+#include "PreProcDefines.h"
 #ifndef FS_CMDLINE_HEADER_FILE
 #define FS_CMDLINE_HEADER_FILE
 

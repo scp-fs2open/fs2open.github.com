@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.43 $
- * $Date: 2004-07-11 03:22:50 $
- * $Author: bobboau $
+ * $Revision: 2.44 $
+ * $Date: 2004-08-11 05:06:28 $
+ * $Author: Kazan $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2004/07/11 03:22:50  bobboau
+ * added the working decal code
+ *
  * Revision 2.42  2004/07/01 01:12:32  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -453,6 +456,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _MODEL_H
 #define _MODEL_H
 

@@ -7,6 +7,7 @@
  *
 */ 
 
+#include "PreProcDefines.h"
 #ifndef _GLOBAL_ALPHACOLORS_HEADER_FILE
 #define _GLOBAL_ALPHACOLORS_HEADER_FILE
 

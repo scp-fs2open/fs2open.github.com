@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.h $
- * $Revision: 2.1 $
- * $Date: 2004-03-05 09:02:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:29 $
+ * $Author: Kazan $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/03/05 09:02:07  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -37,6 +41,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __FS2_NEBULA_LIGHTNING_HEADER_FILE
 #define __FS2_NEBULA_LIGHTNING_HEADER_FILE
 

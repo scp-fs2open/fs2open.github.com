@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.43 $
- * $Author: bobboau $
- * $Date: 2004-06-28 02:13:08 $
+ * $Revision: 2.44 $
+ * $Author: Kazan $
+ * $Date: 2004-08-11 05:06:28 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2004/06/28 02:13:08  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.42  2004/05/11 02:52:12  Goober5000
  * completed the FRED import conversion stuff that I started ages ago
  * --Goober5000
@@ -354,6 +358,7 @@
  * 
  */
 
+#include "PreProcDefines.h"
 #ifndef _PARSE_H
 #define _PARSE_H
 

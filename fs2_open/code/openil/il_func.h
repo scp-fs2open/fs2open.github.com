@@ -9,18 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/openil/il_func.h $
- * $Revision: 1.1 $
- * $Date: 2004-04-26 02:04:30 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-08-11 05:06:30 $
+ * $Author: Kazan $
  *
  * Callback functions for OpenIL (DevIL) to use CFILE
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/04/26 02:04:30  taylor
+ * initial checkin
+ *
  * 
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef _IL_FUNC_H
 #define _IL_FUNC_H
 

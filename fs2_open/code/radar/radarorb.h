@@ -9,17 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.h $
- * $Revision: 1.1 $
- * $Date: 2004-08-02 22:42:45 $
- * $Author: phreak $
+ * $Revision: 1.2 $
+ * $Date: 2004-08-11 05:06:33 $
+ * $Author: Kazan $
  *
  * Prototypes for radar orb code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/08/02 22:42:45  phreak
+ * orb radar rendering style
+ *
  
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _RADARORB_H
 #define _RADARORB_H
 

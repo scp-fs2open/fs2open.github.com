@@ -11,12 +11,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.h $
- * $Revision: 1.6 $
- * $Date: 2004-03-31 05:42:26 $
- * $Author: Goober5000 $
+ * $Revision: 1.7 $
+ * $Date: 2004-08-11 05:06:23 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/03/31 05:42:26  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 1.5  2004/03/09 17:59:01  Kazan
  * Disabled multithreaded TCP_Socket in favor of safer single threaded
  * FS2NetD doesn't kill the game on connection failure now - just gives warning message and effectively dsiables itself until they try to connect again
@@ -31,6 +36,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 // Enable Multithread
 //#define MT_TCP_Socket
 

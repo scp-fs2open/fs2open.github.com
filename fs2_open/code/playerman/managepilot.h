@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:32 $
+ * $Author: Kazan $
  *
  * ManagePilot.h is a header file for code to load and save pilot files, and
  * to select and manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:05  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -113,6 +117,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 #include "globalincs/pstypes.h"
 
 struct CFILE;

@@ -6,6 +6,7 @@
  *
 */ 
 
+#include "PreProcDefines.h"
 #ifndef	__GRBATCH_H__
 #define	__GRBATCH_H__
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-08-11 05:06:18 $
+ * $Author: Kazan $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/10/15 22:03:23  Kazan
  * Da Species Update :D
  *
@@ -132,6 +136,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __ASTEROID_H__
 #define __ASTEROID_H__
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2003/04/29 01:03:21  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -90,6 +94,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _SHIPHIT_H
 #define _SHIPHIT_H
 

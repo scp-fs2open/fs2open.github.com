@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.h $
- * $Revision: 2.4 $
- * $Date: 2004-05-03 21:22:20 $
+ * $Revision: 2.5 $
+ * $Date: 2004-08-11 05:06:23 $
  * $Author: Kazan $
  *
  * Header file for Game Sequencing items
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/05/03 21:22:20  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.3  2004/03/08 22:02:38  Kazan
  * Lobby GUI screen restored
  *
@@ -341,6 +346,7 @@
 
 // defines for game sequencing
 
+#include "PreProcDefines.h"
 #ifndef __GAMESEQUENCE_H__
 #define __GAMESEQUENCE_H__
 

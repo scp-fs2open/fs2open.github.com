@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.h $
- * $Revision: 2.3 $
- * $Date: 2004-04-06 03:09:53 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * Header file for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/04/06 03:09:53  phreak
+ * added a control config option for the wireframe hud targetbox i enabled ages ago
+ *
  * Revision 2.2  2004/03/05 09:02:04  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -129,6 +132,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __FREESPACE_HUDTARGETBOX_H__
 #define __FREESPACE_HUDTARGETBOX_H__
 

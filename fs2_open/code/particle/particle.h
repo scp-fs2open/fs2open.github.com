@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:32 $
+ * $Author: Kazan $
  *
  * Includes for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:09  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2004/01/24 14:31:27  randomtiger
  * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
  * Its optional and off by default, use -d3d_particle to activiate.
@@ -78,6 +82,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _PARTICLE_H
 #define _PARTICLE_H
 

@@ -25,6 +25,8 @@
    	1.0  	24-Mar-97       MEA     original
         
 ****************************************************************************/
+
+#include "PreProcDefines.h"
 #ifndef _SW_Force_SEEN
 #define _SW_Force_SEEN
 #include <winerror.h>

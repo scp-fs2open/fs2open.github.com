@@ -6,6 +6,7 @@
  *
 */ 
 
+#include "PreProcDefines.h"
 #ifndef _FSSPEECH_H_
 #define _FSSPEECH_H_
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2003/01/03 21:58:07  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -45,6 +49,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __FS2_AWACS_HEADER_FILE
 #define __FS2_AWACS_HEADER_FILE
 

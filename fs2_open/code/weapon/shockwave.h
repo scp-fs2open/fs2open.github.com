@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:01:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:36 $
+ * $Author: Kazan $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:01:54  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -90,6 +94,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __SHOCKWAVE_H__
 #define __SHOCKWAVE_H__
 

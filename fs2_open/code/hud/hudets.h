@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.h $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * Header file that supports code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -56,7 +60,7 @@
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef _HUD_ETS_H
 #define _HUD_ETS_H
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/UI.H $
- * $Revision: 2.3 $
- * $Date: 2004-03-10 18:45:09 $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:35 $
  * $Author: Kazan $
  *
  * Include file for our user interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/10 18:45:09  Kazan
+ * partially complete IRC - so i can work on it on my laptop
+ *
  * Revision 2.2  2002/08/06 03:50:48  penguin
  * inserted "class" keyword on "friend" definitions (ANSI C++ )
  *
@@ -335,6 +338,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _UI_H
 #define _UI_H
 

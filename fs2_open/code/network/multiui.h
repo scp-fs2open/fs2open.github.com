@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-09 00:02:16 $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:29 $
  * $Author: Kazan $
  *
  * Header file for the UI of the various multiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/09 00:02:16  Kazan
+ * more fs2netd stuff
+ *
  * Revision 2.2  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -316,7 +319,7 @@
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef MULTI_UI_H
 #define MULTI_UI_H
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.h $
- * $Revision: 2.2 $
- * $Date: 2004-07-07 21:00:08 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:29 $
  * $Author: Kazan $
  *
  * Header file to support misc. multiplayer support functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/07/07 21:00:08  Kazan
+ * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
+ *
  * Revision 2.1  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -141,7 +144,7 @@
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef MULTI_UTIL_H
 #define MULTI_UTIL_H
 

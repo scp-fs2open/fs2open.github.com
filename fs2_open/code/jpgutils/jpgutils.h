@@ -9,17 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.h $
- * $Revision: 1.2 $
- * $Date: 2004-04-26 12:39:49 $
- * $Author: taylor $
+ * $Revision: 1.3 $
+ * $Date: 2004-08-11 05:06:26 $
+ * $Author: Kazan $
  *
  * header for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/04/26 12:39:49  taylor
+ * correct header to keep cvs log, minor changes
+ *
  * 
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _JPEGUTILS_H
 #define _JPEGUTILS_H
 
