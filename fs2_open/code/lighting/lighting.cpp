@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-09-09 17:10:55 $
- * $Author: matt $
+ * $Revision: 2.6 $
+ * $Date: 2003-09-09 21:26:23 $
+ * $Author: fryday $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/09 17:10:55  matt
+ * Added -nospec cmd line param to disable specular -Sticks
+ *
  * Revision 2.4  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -907,6 +910,11 @@ double specular_exponent_value = 16.0;
 void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pos, vector * norm, vector * cam){
 
 	light *l;
+	vector V,nrml;
+	vm_vec_sub(&V, cam,pos);
+	vm_vec_normalize(&V);
+	nrml = *norm;
+	vm_vec_normalize(&nrml);
 	float rval = 0, gval = 0, bval = 0;
 
 	if ( nospec ) {
@@ -940,15 +948,11 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 				continue;
 			}
 
-			vector V, R, n;
-			vm_vec_sub(&V, cam,pos);
-			vm_vec_normalize(&V);
+			vector R;
 			vm_vec_sub(&R,&V, &Static_light[idx]->local_vec);
 			vm_vec_normalize(&R);
-			n = *norm;
-			vm_vec_normalize(&n);
 
-			ltmp = (float)pow((double)vm_vec_dot(&R, &n ), specular_exponent_value) * Static_light[idx]->intensity * static_light_factor;		// reflective light
+			ltmp = (float)pow((double)vm_vec_dot(&R, &nrml ), specular_exponent_value) * Static_light[idx]->intensity * static_light_factor;		// reflective light
 
 			switch(Lighting_mode)	{
 			case LM_BRIGHTEN:
@@ -1022,15 +1026,12 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 			Int3();
 		}
 
-		vector V, R, n;
-		vm_vec_sub(&V, cam,pos);
-		vm_vec_normalize(&V);
-		vm_vec_sub(&R,&V, &l->local_vec);
+		vector R;
+		vm_vec_normalize(&to_light);
+		vm_vec_add(&R,&V, &to_light);
 		vm_vec_normalize(&R);
-		n = *norm;
-		vm_vec_normalize(&n);
 
-		dot = (float)pow((double)vm_vec_dot(&R, &n ), specular_exponent_value) * l->intensity * factor;		// reflective light
+		dot = (float)pow((double)vm_vec_dot(&R, &nrml ), specular_exponent_value) * l->intensity * factor;		// reflective light
 		
 	//		dot = 1.0f;
 		if ( dot > 0.0f )	{
