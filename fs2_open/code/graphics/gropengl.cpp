@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-02-01 02:57:42 $
+ * $Revision: 2.15 $
+ * $Date: 2003-02-16 18:43:13 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/02/01 02:57:42  phreak
+ * started to finalize before 3.50 release.
+ * added support for GL_EXT_texture_filter_ansiotropic
+ *
  * Revision 2.13  2003/01/26 23:30:53  DTP
  * temporary fix, added some // so that we can do debug builds. i expect Goober5000 will fix it soon.
  *
@@ -2900,89 +2904,95 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h)
 	Gr_opengl_mouse_saved = 1;*/
 }
 
+ubyte *opengl_screen=NULL;
+GLenum screen_tex_handle;
+
 int gr_opengl_save_screen()
 {
+	GLenum fmt=0;
 	gr_reset_clip();
 
-	int bypp=gr_screen.bytes_per_pixel;
-
-	if ( Gr_saved_screen )  {
-		mprintf(( "Screen alread saved!\n" ));
+	if ( opengl_screen )  {
+		mprintf(( "Screen already saved!\n" ));
 		return -1;
 	}
 
-	Gr_saved_screen = (char*)malloc( gr_screen.max_w * gr_screen.max_h * bypp );
-	if (!Gr_saved_screen) {
+	if (gr_screen.bits_per_pixel==32)
+	{
+		fmt=GL_UNSIGNED_BYTE;
+		opengl_screen = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * 4);
+	}
+	else
+	{
+		fmt=GL_UNSIGNED_SHORT_1_5_5_5_REV;
+		opengl_screen = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * 2);
+	}
+
+	if (!opengl_screen) {
 		mprintf(( "Couldn't get memory for saved screen!\n" ));
 		return -1;
 	}
+	
 
-	char *Gr_saved_screen_tmp = (char*)malloc( gr_screen.max_w * gr_screen.max_h * bypp );
-	if (!Gr_saved_screen_tmp) {
-		mprintf(( "Couldn't get memory for temporary saved screen!\n" ));
-		return -1;
-	}
-	
-	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
-	
 	glReadBuffer(GL_FRONT);
+	glReadPixels(0,0,gr_screen.max_w-1,gr_screen.max_h-1,GL_RGBA, fmt, opengl_screen);
 
-	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, Gr_saved_screen_tmp);
-	
-	ubyte *sptr, *dptr;
-	
-	sptr = (ubyte *)&Gr_saved_screen_tmp[gr_screen.max_w*gr_screen.max_h*bypp];
-	dptr = (ubyte *)Gr_saved_screen;
-	for (int j = 0; j < gr_screen.max_h; j++) {
-		sptr -= gr_screen.max_w*bypp;
-		memcpy(dptr, sptr, gr_screen.max_w*bypp);
-		dptr += gr_screen.max_w*bypp;
-	}
-	
-	free(Gr_saved_screen_tmp);
-	
-	if (Gr_opengl_mouse_saved) {
-		sptr = (ubyte *)Gr_opengl_mouse_saved_data;
-		dptr = (ubyte *)&Gr_saved_screen[2*(Gr_opengl_mouse_saved_x1+(Gr_opengl_mouse_saved_y2)*gr_screen.max_w)];
-		for (int i = 0; i < Gr_opengl_mouse_saved_h; i++) {
-			memcpy(dptr, sptr, Gr_opengl_mouse_saved_w*2);
-		
-			sptr += 32*2;
-			dptr -= gr_screen.max_w*2;
-		}
-	}
+	glGenTextures(1, &screen_tex_handle);
+	glBindTexture(GL_TEXTURE_2D, screen_tex_handle);
+	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
 
-	// this leaks texture handles, and the opengl doesn't currently 
-	// perform some sort of garbage collection, so a hack was added
-	// to bmpman to make it free textures when released
-	Gr_saved_screen_bitmap = bm_create(16, gr_screen.max_w, gr_screen.max_h, Gr_saved_screen, 0);
+
+	int wtemp,htemp;
+
+	htemp=(int)pow(2,ceil(log10(gr_screen.max_h)/log10(2)));
+	wtemp=(int)pow(2,ceil(log10(gr_screen.max_w)/log10(2)));
 	
-	return Gr_saved_screen_bitmap;
+	glTexImage2D(GL_TEXTURE_2D, 0, 3,wtemp,htemp,0,GL_RGBA, fmt, NULL);
+	glTexSubImage2D(GL_TEXTURE_2D, 0,0,0,gr_screen.max_w,gr_screen.max_h,GL_RGBA,fmt, opengl_screen);
+
+	
+	return 1;
 }
 
 void gr_opengl_restore_screen(int id)
 {
 	gr_reset_clip();
 	
-	if ( !Gr_saved_screen ) {
+	if ( !opengl_screen ) {
 		gr_clear();
 		return;
 	}
 
+	glBindTexture(GL_TEXTURE_2D, screen_tex_handle);
 	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,0);
+		glVertex2i(0,0);
 	
-	gr_set_bitmap(Gr_saved_screen_bitmap);
-	gr_bitmap(0, 0);		
+		glTexCoord2f(1,0);
+		glVertex2i(gr_screen.max_w,0);
+		
+		glTexCoord2f(1,1);
+		glVertex2i(gr_screen.max_w,gr_screen.max_h);
+
+		glTexCoord2f(0,1);
+		glVertex2i(0,gr_screen.max_h);
+
+	glEnd();
+
+
 }
 
 void gr_opengl_free_screen(int id)
 {
-	bm_release(Gr_saved_screen_bitmap);
-	
-	if ( Gr_saved_screen )  {
-		free( Gr_saved_screen );
-		Gr_saved_screen = NULL;
-	}
+	if (!opengl_screen)
+		return;
+
+	free(opengl_screen);
+	opengl_screen=NULL;
+
+	glDeleteTextures(1, &screen_tex_handle);
 }
 
 void gr_opengl_dump_frame_start(int first_frame, int frames_between_dumps)
