@@ -1499,6 +1499,10 @@ bool shpere_tri_edge(vector* s_point, float rad, vertex vert[3]){
 			case 1:
 				d = vm_vec_dist(s_point,&point_two);
 				break;
+			default:
+				d = 0.0f;
+				Int3();
+				break;
 			}
 
 		Assert(d > 0);

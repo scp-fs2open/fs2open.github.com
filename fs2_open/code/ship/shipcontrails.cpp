@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-01-28 11:06:23 $
+ * $Revision: 2.15 $
+ * $Date: 2005-01-28 11:39:18 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/01/28 11:06:23  Goober5000
+ * changed a bunch of transpose-rotate sequences to use unrotate instead
+ * --Goober5000
+ *
  * Revision 2.13  2004/10/12 07:34:45  Goober5000
  * added contrail speed threshold
  * --Goober5000
@@ -310,7 +314,6 @@ void ct_create_contrails(ship *shipp)
 
 	vector v1;
 	int idx;
-	matrix m;
 	ship_info *sip;
 	object *objp;
 

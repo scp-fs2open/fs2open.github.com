@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.93 $
- * $Date: 2005-01-28 09:56:44 $
- * $Author: taylor $
+ * $Revision: 2.94 $
+ * $Date: 2005-01-28 11:39:17 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2005/01/28 09:56:44  taylor
+ * add model_page_out_textures() for use in techroom
+ * make model_page_in_textures() load more textures
+ *
  * Revision 2.92  2005/01/01 19:45:32  taylor
  * add MR_NO_FOGGING flag to easily render models without fog (warp model, targetbox models)
  *
@@ -5855,12 +5859,15 @@ void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* in
 //this calculates the angle at wich the rotation should start to slow down
 //and basicly fills in a bunch of other crap
 //if anyone wants the calculus behind these numbers I'll provide it
-void triggered_rotation::start(queued_animation* q){
+void triggered_rotation::start(queued_animation* q)
+{
+#ifndef NDEBUG
 	mprintf(("animation start at %d\n",timestamp()));
 	char ax[]="xyz";
+#endif
 
-	for(int axis = 0; axis < 3; axis++){
-
+	for (int axis = 0; axis < 3; axis++)
+	{
 		direction.a1d[axis] = (end_angle.a1d[axis]+q->angle.a1d[axis])-current_ang.a1d[axis];
 		if(direction.a1d[axis])direction.a1d[axis] /= (float)fabs(direction.a1d[axis]);
 
@@ -5875,7 +5882,10 @@ void triggered_rotation::start(queued_animation* q){
 		rot_accel.a1d[axis] = q->accel.a1d[axis]*direction.a1d[axis];
 	
 		slow_angle.a1d[axis]=end_angle.a1d[axis]-(((q->vel.a1d[axis]*q->vel.a1d[axis])/(2.0f*q->accel.a1d[axis]))*direction.a1d[axis]);
-	mprintf(("axis %c: direction=%d, end angle=%f, velocity=%f, acceleration=%f, slow angle=%f\n", ax[axis],(int)direction.a1d[axis],end_angle.a1d[axis],rot_vel.a1d[axis],rot_accel.a1d[axis],slow_angle.a1d[axis]));
+
+#ifndef NDEBUG
+		mprintf(("axis %c: direction=%d, end angle=%f, velocity=%f, acceleration=%f, slow angle=%f\n", ax[axis],(int)direction.a1d[axis],end_angle.a1d[axis],rot_vel.a1d[axis],rot_accel.a1d[axis],slow_angle.a1d[axis]));
+#endif
 	}
 }
 
