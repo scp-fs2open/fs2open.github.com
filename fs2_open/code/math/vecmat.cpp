@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-01-06 00:37:32 $
+ * $Revision: 2.15 $
+ * $Date: 2005-01-06 00:39:34 $
  * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/01/06 00:37:32  Goober5000
+ * changed argument from dist to dist_squared
+ * --Goober5000
+ *
  * Revision 2.13  2005/01/06 00:27:34  Goober5000
  * added vm_vec_dist_squared_to_line
  * --Goober5000
@@ -2992,5 +2996,5 @@ void vm_vec_dist_squared_to_line(vector *p, vector *l0, vector *l1, vector *near
 	vm_vec_scale_add(nearest, l0, &c, comp);
 
 	// get the distance
-	*dist = vm_vec_dist_squared(nearest, p);
+	*dist_squared = vm_vec_dist_squared(nearest, p);
 }
