@@ -227,6 +227,14 @@ SOURCE=.\Debris\Debris.h
 
 SOURCE=.\DebugConsole\Console.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=.\debugconsole\dbugfile.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\debugconsole\dbugfile.h
+# End Source File
 # End Group
 # Begin Group "DirectX"
 
