@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.25 $
- * $Date: 2003-01-03 21:58:07 $
+ * $Revision: 2.26 $
+ * $Date: 2003-01-04 23:15:39 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/01/03 21:58:07  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.24  2003/01/02 03:09:01  Goober5000
  * this is the way we squash the bugs, squash the bugs, squash the bugs
  * this is the way we squash the bugs, so early in the morning :p
@@ -465,6 +472,7 @@
 #include "hud/hudets.h"
 #include "math/fvi.h"
 #include "ship/awacs.h"
+#include "hud/hudsquadmsg.h"	// for the order sexp
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -708,7 +716,7 @@ sexp_oper Operators[] = {
 	{ "speed",						OP_SPEED,						1, 1,			},
 	{ "facing",						OP_FACING,						2, 2,			},
 	{ "facing-waypoint",			OP_FACING2,						2, 2,			},
-	{ "order",						OP_ORDER,						2, 2,			},
+	{ "order",						OP_ORDER,						2, 3,			},
 	{ "waypoint-missed",			OP_WAYPOINT_MISSED,			0, 0,			},
 	{ "waypoint-twice",			OP_WAYPOINT_TWICE,			0, 0,			},
 	{ "path-flown",				OP_PATH_FLOWN,					0, 0,			},
@@ -7287,9 +7295,17 @@ int sexp_facing2(int node)
 	return 0;
 }
 
-int sexp_order(int node)
+// implemented by Goober5000
+int sexp_order(int n)
 {
-	return 0;
+	char *ship_or_wing = CTEXT(n);
+	char *order = CTEXT(CDR(n));
+	char *target = NULL;
+
+	if (CDR(CDR(n)) != -1)
+		target = CTEXT(CDR(CDR(n)));
+
+	return hud_query_order_issued(ship_or_wing, order, target);
 }
 
 int sexp_waypoint_missed()
@@ -10013,7 +10029,7 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 1)
 				return OPF_AI_ORDER;
 			else
-				return OPF_SHIP_WING;
+				return OPF_SHIP_WING;	// arg 0 or 2
 
 		case OP_IS_DESTROYED_DELAY:
 		case OP_HAS_ARRIVED_DELAY:
