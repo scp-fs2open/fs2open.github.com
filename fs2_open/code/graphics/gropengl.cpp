@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-16 14:39:16 $
+ * $Author: unknownplayer $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 03:55:40  penguin
  * Warpcore CVS sync
  *
@@ -154,8 +157,10 @@
  * $NoKeywords: $
  */
 
-#if defined _WIN32
-#include <windows.h>
+#ifndef WIN32					// ##UnknownPlayer##
+
+#if defined _WIN32				// ##UnknownPlayer## - What's the point of this here?
+#include <windows.h>			// These should actually be the Win32 files for it I'd imagine
 #include <windowsx.h>
 #else
 #include <SDL.h>
@@ -1493,3 +1498,5 @@ int RunGLTest( int argc, char* argv[],
 	opengl_bmp_buffer = (ubyte *)malloc(w * h * 4);  // 4 bytes for RGBA 
 	return 0;
 }
+
+#endif // WIN32 //
