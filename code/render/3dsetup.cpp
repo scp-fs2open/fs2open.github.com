@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-10-09 17:54:32 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2005-01-28 11:06:22 $
+ * $Author: Goober5000 $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/10/09 17:54:32  taylor
+ * better debugging for g3_end_frame() - mostly for FRED2
+ *
  * Revision 2.17  2004/07/26 20:47:50  Kazan
  * remove MCD complete
  *
@@ -413,10 +416,8 @@ void g3_start_instance_matrix(vector *pos,matrix *orient, bool set_api)
 		vm_vec_rotate(&tempv,&View_position,orient);
 		View_position = tempv;
 
-		vm_copy_transpose_matrix(&tempm2,&Object_matrix);
-		vm_vec_rotate(&tempv,pos,&tempm2);
-		vm_vec_add(&Object_position, &Object_position, &tempv);
-//		Object_position = tempv;
+		vm_vec_unrotate(&tempv,pos,&Object_matrix);
+		vm_vec_add2(&Object_position, &tempv);
 	} else {
 		// No movement, leave View_position alone
 	}
