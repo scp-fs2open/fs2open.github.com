@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.53 $
- * $Date: 2004-02-27 04:09:56 $
- * $Author: bobboau $
+ * $Revision: 2.54 $
+ * $Date: 2004-02-28 01:36:20 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2004/02/27 04:09:56  bobboau
+ * fixed a Z buffer error in HTL submodel rendering,
+ * and glow points,
+ * and other stuff
+ *
  * Revision 2.52  2004/02/23 07:45:38  Goober5000
  * removed an old function
  * --Goober5000
@@ -5634,7 +5639,8 @@ evade_ship_l1: ;
 
 	// nprintf(("Mike", "Goal point = %7.1f %7.1f %7.1f\n", goal_point.x, goal_point.y, goal_point.z));
 	turn_towards_point(Pl_objp, &goal_point, NULL, bank_override);
-	slide_face_ship();
+	// Goober5000 - whoops, forgot to remove this before
+	// slide_face_ship();//added this -Bobboau
 
 	aip->prev_goal_point = goal_point;
 }
