@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-03-02 17:19:45 $
+ * $Revision: 2.17 $
+ * $Date: 2003-03-20 23:20:46 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/03/02 17:19:45  Goober5000
+ * commented an unneeded variable
+ * -- Goober5000
+ *
  * Revision 2.15  2003/02/26 02:56:55  bobboau
  * fixed the bug with fighter beams not giveing you kills
  *
@@ -1282,7 +1286,7 @@ void beam_move_all_post()
 	while(moveup != END_OF_LIST(&Beam_used_list)){				
 		 bwi = &Weapon_info[moveup->weapon_info_index].b_info;
 
-mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_index));
+//mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_index));
 
 		 // check the status of the beam
 		bf_status = beam_ok_to_fire(moveup);
@@ -1293,14 +1297,14 @@ mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_i
 
 			// should we be stopping?
 			if(bf_status < 0){
-				mprintf(("killing beam becase it isn't ok to be fireing\n"));
+//				mprintf(("killing beam becase it isn't ok to be fireing\n"));
 				beam_delete(moveup);
 			} else {
 				// if the warming up timestamp has expired, start firing
 				if(timestamp_elapsed(moveup->warmup_stamp)){							
 					// start firing
 					if(!beam_start_firing(moveup)){
-						mprintf(("killing beam becase it shouldn't have started fireing yet\n"));
+//						mprintf(("killing beam becase it shouldn't have started fireing yet\n"));
 						beam_delete(moveup);												
 					} 			
 					
@@ -1310,7 +1314,7 @@ mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_i
 			}
 
 			// next
-			mprintf(("beam is warming up, moveing to next\n"));
+//			mprintf(("beam is warming up, moveing to next\n"));
 			moveup = next_one;
 			continue;
 		} 
@@ -1320,22 +1324,22 @@ mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_i
 
 			// should we be stopping?
 			if(bf_status < 0){
-				mprintf(("killing beam becase it isn't ok to fire\n"));
+//				mprintf(("killing beam becase it isn't ok to fire\n"));
 				beam_delete(moveup);
 			} else {
 				// if we're done warming down, the beam is finished
 				if(timestamp_elapsed(moveup->warmdown_stamp)){	
-					mprintf(("euthaniseing beam\n"));
+//					mprintf(("euthaniseing beam\n"));
 					beam_delete(moveup);				
 				}			
 			}
 
 			// next
-			mprintf(("beam is warming down, moveing to next\n"));
+//			mprintf(("beam is warming down, moveing to next\n"));
 			moveup = next_one;
 			continue;
 		}
-		mprintf(("beam is fireing\n"));
+//		mprintf(("beam is fireing\n"));
 		// otherwise, we're firing away.........		
 
 		// add a muzzle light for the shooter
@@ -1365,7 +1369,7 @@ mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_i
 
 			// if beam should abruptly stop
 			if(bf_status == -1){
-				mprintf(("beam stoping abruptly\n"));
+//				mprintf(("beam stoping abruptly\n"));
 				beam_delete(moveup);							
 			}
 			// if the beam should just power down
@@ -1375,19 +1379,19 @@ mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_i
 			
 			// next beam
 			moveup = next_one;
-			mprintf(("beam stopping\n"));
+//			mprintf(("beam stopping\n"));
 			continue;
 		}				
 
 		// increment framecount
 		moveup->framecount++;		
-		mprintf(("frame %d\n", moveup->framecount));
+//		mprintf(("frame %d\n", moveup->framecount));
 		// type c weapons live for one frame only
 		if(moveup->type == BEAM_TYPE_C){
 			if(moveup->framecount > 1){
 				next_one = GET_NEXT(moveup);
 				beam_delete(moveup);							
-			mprintf(("type c beams only live for one frame\n"));
+//			mprintf(("type c beams only live for one frame\n"));
 				moveup = next_one;
 				continue;
 			}
@@ -1398,26 +1402,26 @@ mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_i
 				beam_start_warmdown(moveup);
 				
 				moveup = GET_NEXT(moveup);	
-				mprintf(("warming beam down\n"));
+//				mprintf(("warming beam down\n"));
 				continue;
 			}				
 		}	
-		mprintf(("starting collisions\n"));
+//		mprintf(("starting collisions\n"));
 
 		// handle any collisions which occured collision (will take care of applying damage to all objects which got hit)
 		beam_handle_collisions(moveup);						
 
-		mprintf(("recalcing sounds\n"));
+//		mprintf(("recalcing sounds\n"));
 		// recalculate beam sounds
 		beam_recalc_sounds(moveup);
 
 		// next item
 		moveup = GET_NEXT(moveup);
-		mprintf(("moved, getting next\n"));
+//		mprintf(("moved, getting next\n"));
 	}
 
 	// apply all beam lighting
-	mprintf(("applying light\n"));
+//	mprintf(("applying light\n"));
 	beam_apply_lighting();
 
 	// process beam culling info
@@ -1444,7 +1448,7 @@ mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_i
 	}
 	*/
 #endif
-	mprintf(("done beam_move_all_post\n"));
+//	mprintf(("done beam_move_all_post\n"));
 }
 
 // -----------------------------===========================------------------------------
