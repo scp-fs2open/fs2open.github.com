@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.5 $
- * $Date: 2005-01-15 05:53:18 $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-12 04:44:24 $
  * $Author: wmcoolmon $
  *
  * $NoKeywords: $
@@ -209,7 +209,7 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index);
 int restore_wss_data(ubyte *block);
 
 struct ship_info;
-void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip);
+void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip, bool resize=true);
 ///////////////////////////////////////////////////////////
 // NEWSTUFF END
 ///////////////////////////////////////////////////////////

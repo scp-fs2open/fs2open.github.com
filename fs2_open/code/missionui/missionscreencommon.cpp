@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-03-02 21:24:45 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2005-03-12 04:44:24 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.14  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -1694,7 +1697,7 @@ int restore_wss_data(ubyte *block)
 }
 
 extern float View_zoom;
-void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip)
+void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, bool resize)
 {
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = {0.0f,0.0f,0.0f};
@@ -1721,7 +1724,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	}
 	vm_angles_2_matrix(&object_orient, &rot_angles);
 	
-	gr_set_clip(x, y, w, h);
+	gr_set_clip(x, y, w, h, resize);
 	g3_start_frame(1);
 	if(sip != NULL)
 	{
@@ -1750,13 +1753,17 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 
 		//Find the center of teh submodel
 		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
-		weap_closeup.xyz.y = bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f;
+		weap_closeup.xyz.y = -(bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f);
 		weap_closeup.xyz.z = (weap_closeup.xyz.x/tanf(zoom / 2.0f));
 
 		y_closeup = -(weap_closeup.xyz.y/tanf(zoom / 2.0f));
 		if(y_closeup < weap_closeup.xyz.z)
 		{
 			weap_closeup.xyz.z = y_closeup;
+		}
+		if(bs->min.xyz.x < weap_closeup.xyz.z)
+		{
+			weap_closeup.xyz.z = bs->min.xyz.x;
 		}
 //		weap_closeup.xyz.x = bs->min.xyz.x + (bs->max.xyz.x - bs->min.xyz.x)/2.0f;
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, zoom);
