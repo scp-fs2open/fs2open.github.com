@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-11-14 06:15:03 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2002-12-02 23:16:45 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/11/14 06:15:03  bobboau
+ * added nameplate code
+ *
  * Revision 2.6  2002/11/14 04:18:16  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -2666,7 +2669,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	uint save_gr_zbuffering_mode;
 	int zbuf_mode;
 	int objnum = light_ignore_id;
-	ship *shipp = &Ships[Objects[objnum].instance];
+//	ship *shipp = &Ships[Objects[objnum].instance];
 
 
 	MONITOR_INC( NumModelsRend, 1 );	
