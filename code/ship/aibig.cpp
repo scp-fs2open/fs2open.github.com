@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 19:29:28 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-15 07:09:09 $
+ * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 19:29:28  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -404,7 +407,7 @@
 
 // forward declarations
 void	ai_big_evade_ship();
-void	ai_big_chase_attack(ai_info *aip, ship_info *sip, vector *enemy_pos, float dist_to_enemy);
+void	ai_big_chase_attack(ai_info *aip, ship_info *sip, vector *enemy_pos, float dist_to_enemy, int modelnum);
 void	ai_big_avoid_ship();
 int	ai_big_maybe_follow_subsys_path(int do_dot_check=1);
 
@@ -862,11 +865,11 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 }
 
 //	ATTACK submode handler for chase mode.
-void ai_big_chase_attack(ai_info *aip, ship_info *sip, vector *enemy_pos, float dist_to_enemy)
+void ai_big_chase_attack(ai_info *aip, ship_info *sip, vector *enemy_pos, float dist_to_enemy, int modelnum)
 {
 	int		start_bank;
 	float		dot_to_enemy, time_to_hit;
-	polymodel *po = model_get( sip->modelnum );
+	polymodel *po = model_get( modelnum );
 
 	//	Maybe evade an incoming weapon.
 	if (((time_to_hit = ai_endangered_by_weapon(aip)) < 4.0f) && (time_to_hit >= 0.0f)) {
@@ -1215,7 +1218,7 @@ void ai_big_chase()
 	case SM_ATTACK:
 	case SM_SUPER_ATTACK:
 	case SM_ATTACK_FOREVER:
-		ai_big_chase_attack(aip, sip, &enemy_pos, dist_to_enemy);
+		ai_big_chase_attack(aip, sip, &enemy_pos, dist_to_enemy, shipp->modelnum);
 		break;
 
 	case SM_EVADE:
@@ -1446,7 +1449,7 @@ void ai_big_attack_get_data(vector *enemy_pos, float *dist_to_enemy, float *dot_
 		predicted_enemy_pos=*enemy_pos;
 	} else {
 		vector	gun_pos, pnt;
-		polymodel *po = model_get( Ship_info[shipp->ship_info_index].modelnum );
+		polymodel *po = model_get( shipp->modelnum );
 		float		weapon_speed;
 
 		//	Compute position of gun in absolute space and use that as fire position.

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.33 $
- * $Date: 2003-01-13 23:20:00 $
+ * $Revision: 2.34 $
+ * $Date: 2003-01-15 07:09:09 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/01/13 23:20:00  Goober5000
+ * bug hunting; fixed the beam whack effect bug
+ * --Goober5000
+ *
  * Revision 2.32  2003/01/10 04:14:18  Goober5000
  * I found these two beautiful functions in ship.cpp - ship_change_model
  * and change_ship_type - so I made them into sexps :)
@@ -2704,12 +2708,12 @@ void subsys_set(int objnum, int ignore_subsys_info)
 //	Render docking information, NOT while in object's reference frame.
 void render_dock_bays(object *objp)
 {
-	ship_info	*sip;
+//	ship_info	*sip;
 	polymodel	*pm;
 	dock_bay		*db;
 
-	sip = &Ship_info[Ships[objp->instance].ship_info_index];
-	pm = model_get( sip->modelnum );
+//	sip = &Ship_info[Ships[objp->instance].ship_info_index];
+	pm = model_get( Ships[objp->instance].modelnum );
 
 	if (pm->docking_bays == NULL)
 		return;
@@ -4689,7 +4693,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 	// Copy the number of primary and secondary banks to ship, and verify that
 	// model is in synch
-	po = model_get( sip->modelnum );
+	po = model_get( shipp->modelnum );
 
 	// Primary banks
 	if ( po->n_guns > sip->num_primary_banks ) {
@@ -5205,7 +5209,10 @@ void ship_model_change(int n, int ship_type)
 	}
 
 	Objects[sp->objnum].radius = model_get_radius(model_num);
-	sip->modelnum = model_num;
+
+	if (Fred_running)
+		sip->modelnum = model_num;
+
 	sp->modelnum = model_num;
 
 	polymodel * pm;
@@ -5822,7 +5829,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			continue;
 		}		
 
-		polymodel *po = model_get( Ship_info[shipp->ship_info_index].modelnum );
+		polymodel *po = model_get( shipp->modelnum );
 		
 		if (winfo_p->wi_flags & WIF_BEAM){	// beam weapon?
 			if ( obj == Player_obj ) {//beam sounds for the player
@@ -6629,7 +6636,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		}
 	}
 
-	po = model_get( Ship_info[shipp->ship_info_index].modelnum );
+	po = model_get( shipp->modelnum );
 	if ( po->n_missiles > 0 ) {
 		int check_ammo;		// used to tell if we should check ammo counts or not
 		int num_slots;
@@ -10154,18 +10161,18 @@ void ship_page_in()
 
 	for (i=0; i<MAX_SHIP_TYPES; i++ )	{
 		if ( ship_class_used[i]  )	{
-			ship_info *si = &Ship_info[i];
+			ship_info *sip = &Ship_info[i];
 
 			num_ship_types_used++;
 
 			// Page in the small hud icons for each ship
-			hud_ship_icon_page_in(si);
+			hud_ship_icon_page_in(sip);
 
 			// See if this model was previously loaded by another ship
 			int model_previously_loaded = -1;
 			int ship_previously_loaded = -1;
 			for (j=0; j<MAX_SHIP_TYPES; j++ )	{
-				if ( (Ship_info[j].modelnum > -1) && !stricmp(si->pof_file, Ship_info[j].pof_file) )	{
+				if ( (Ship_info[j].modelnum > -1) && !stricmp(sip->pof_file, Ship_info[j].pof_file) )	{
 					// Model already loaded
 					model_previously_loaded = Ship_info[j].modelnum;
 					ship_previously_loaded = j;
@@ -10180,41 +10187,41 @@ void ship_page_in()
 				if ( ship_previously_loaded != i )	{
 
 					// update the model number.
-					si->modelnum = model_previously_loaded;
+					sip->modelnum = model_previously_loaded;
 
-					for ( j = 0; j < si->n_subsystems; j++ )	{
-						si->subsystems[j].model_num = -1;
+					for ( j = 0; j < sip->n_subsystems; j++ )	{
+						sip->subsystems[j].model_num = -1;
 					}
 
-					ship_copy_subsystem_fixup(si);
+					ship_copy_subsystem_fixup(sip);
 
 					#ifndef NDEBUG
-						for ( j = 0; j < si->n_subsystems; j++ )	{
-							Assert( si->subsystems[j].model_num == si->modelnum );
+						for ( j = 0; j < sip->n_subsystems; j++ )	{
+							Assert( sip->subsystems[j].model_num == sip->modelnum );
 						}
 					#endif
 
 				} else {
 					// Just to be safe (I mean to check that my code works...)
-					Assert( si->modelnum > -1 );
-					Assert( si->modelnum == model_previously_loaded );
+					Assert( sip->modelnum > -1 );
+					Assert( sip->modelnum == model_previously_loaded );
 
 					#ifndef NDEBUG
-						for ( j = 0; j < si->n_subsystems; j++ )	{
-							Assert( si->subsystems[j].model_num == si->modelnum );
+						for ( j = 0; j < sip->n_subsystems; j++ )	{
+							Assert( sip->subsystems[j].model_num == sip->modelnum );
 						}
 					#endif
 				}
 			} else {
 				// Model not loaded... so load it and page in its textures
-				si->modelnum = model_load(si->pof_file, si->n_subsystems, &si->subsystems[0]);
+				sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 
-				Assert( si->modelnum > -1 );
+				Assert( sip->modelnum > -1 );
 
 				// Verify that all the subsystem model numbers are updated
 				#ifndef NDEBUG
-					for ( j = 0; j < si->n_subsystems; j++ )	{
-						Assert( si->subsystems[j].model_num == si->modelnum );	// JAS
+					for ( j = 0; j < sip->n_subsystems; j++ )	{
+						Assert( sip->subsystems[j].model_num == sip->modelnum );	// JAS
 					}
 				#endif
 
@@ -10225,12 +10232,12 @@ void ship_page_in()
 
 	for (i=0; i<MAX_SHIP_TYPES; i++ )	{
 		if ( ship_class_used[i]  )	{
-			ship_info *si = &Ship_info[i];
+			ship_info *sip = &Ship_info[i];
 
-			if ( si->modelnum > -1 )	{
-				polymodel *pm = model_get(si->modelnum);
+			if ( sip->modelnum > -1 )	{
+				polymodel *pm = model_get(sip->modelnum);
 				
-				nprintf(( "Paging", "Paging in textures for model '%s'\n", si->pof_file ));
+				nprintf(( "Paging", "Paging in textures for model '%s'\n", sip->pof_file ));
 
 				for (j=0; j<pm->n_textures; j++ )	{
 					int bitmap_num = pm->original_textures[j];
@@ -10246,7 +10253,7 @@ void ship_page_in()
 				}
 
 			} else {
-				nprintf(( "Paging", "Couldn't load model '%s'\n", si->pof_file ));
+				nprintf(( "Paging", "Couldn't load model '%s'\n", sip->pof_file ));
 			}
 		}
 	}

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.20 $
- * $Date: 2003-01-06 17:14:52 $
+ * $Revision: 2.21 $
+ * $Date: 2003-01-15 07:09:09 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/01/06 17:14:52  Goober5000
+ * added wing configurable squad logos - put +Squad Logo: filename.pcx as
+ * the last entry in each wing that you want (but the player's squad logo will
+ * still be the squad logo for the player's wing)
+ * --Goober5000
+ *
  * Revision 2.19  2003/01/05 01:26:35  Goober5000
  * added capability of is-iff and change-iff to have wings as well as ships
  * as their arguments; also allowed a bunch of sexps to accept the player
@@ -606,7 +612,8 @@ typedef struct ship {
 	int	objnum;
 	int	ai_index;			// Index in Ai_info of ai_info associated with this ship.
 	int	ship_info_index;	// Index in ship_info for this ship
-	int	modelnum;	
+	int	modelnum;
+	int alt_modelnum;	// Goober5000
 	int	hotkey;
 	int	escort_priority;
 	int	score;
