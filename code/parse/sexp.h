@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.69 $
- * $Author: Kazan $
- * $Date: 2004-08-11 05:06:31 $
+ * $Revision: 2.70 $
+ * $Author: Goober5000 $
+ * $Date: 2004-08-23 04:32:06 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2004/08/11 05:06:31  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.68  2004/07/27 18:52:11  Kazan
  * squished another
  *
@@ -653,6 +656,8 @@ struct ship_subsys;
 #if defined(ENABLE_AUTO_PILOT)
 #define OPF_NAV_POINT			49		// Kazan	  - a Nav Point name
 #endif
+
+#define OPF_SSM_CLASS			50		// Goober5000 - an SSM class
 
 // Operand return types
 #define	OPR_NUMBER		1	// returns number

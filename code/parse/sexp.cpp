@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.100 $
- * $Date: 2004-08-23 04:00:15 $
+ * $Revision: 2.101 $
+ * $Date: 2004-08-23 04:32:05 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2004/08/23 04:00:15  Goober5000
+ * ship-tag and ship-untag
+ * --Goober5000
+ *
  * Revision 2.99  2004/07/29 23:41:21  Kazan
  * bugfixes
  *
@@ -7080,7 +7084,7 @@ void sexp_warp_effect(int n)
 	}
 	else if (sexp_get_val(n) == 1)
 	{
-		extra_flags |= FBF_WARP_FORCE_OLD;
+		extra_flags |= FBF_WARP_BOBBOAU;
 	}
 	else
 	{
