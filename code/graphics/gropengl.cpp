@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-05-04 23:52:40 $
+ * $Revision: 2.20 $
+ * $Date: 2003-05-07 00:52:36 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/05/04 23:52:40  phreak
+ * added additional error info incase gr_opengl_flip() fails for some unknown reason
+ *
  * Revision 2.18  2003/05/04 20:49:18  phreak
  * minor fix in gr_opengl_flip()
  *
@@ -2913,41 +2916,43 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 	glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 }
 
-#define MAX_SAVE_SIZE (24*24)
+#define MAX_SAVE_SIZE (32*32)
 static ubyte Gr_opengl_mouse_saved_data[MAX_SAVE_SIZE*2];
 
 #define CLAMP(x,r1,r2) do { if ( (x) < (r1) ) (x) = (r1); else if ((x) > (r2)) (x) = (r2); } while(0)
 
 void gr_opengl_save_mouse_area(int x, int y, int w, int h)
 {
-/*	Gr_opengl_mouse_saved_x1 = x;
+	Gr_opengl_mouse_saved_x1 = x;
 	Gr_opengl_mouse_saved_y1 = y;
 	Gr_opengl_mouse_saved_x2 = x+w-1;
 	Gr_opengl_mouse_saved_y2 = y+h-1;
-	
+        
 	CLAMP(Gr_opengl_mouse_saved_x1, gr_screen.clip_left, gr_screen.clip_right );
 	CLAMP(Gr_opengl_mouse_saved_x2, gr_screen.clip_left, gr_screen.clip_right );
 	CLAMP(Gr_opengl_mouse_saved_y1, gr_screen.clip_top, gr_screen.clip_bottom );
 	CLAMP(Gr_opengl_mouse_saved_y2, gr_screen.clip_top, gr_screen.clip_bottom );
-	
+        
 	Gr_opengl_mouse_saved_w = Gr_opengl_mouse_saved_x2 - Gr_opengl_mouse_saved_x1 + 1;
 	Gr_opengl_mouse_saved_h = Gr_opengl_mouse_saved_y2 - Gr_opengl_mouse_saved_y1 + 1;
 
 	if ( Gr_opengl_mouse_saved_w < 1 ) return;
 	if ( Gr_opengl_mouse_saved_h < 1 ) return;
-	
+        
 	Assert( (Gr_opengl_mouse_saved_w*Gr_opengl_mouse_saved_h) <= MAX_SAVE_SIZE );
 
 	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
-	
+        
 	glReadBuffer(GL_BACK);
-	glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_BGRA_EXT, GL_UNSIGNED_SHORT, Gr_opengl_mouse_saved_data);
-	
-	Gr_opengl_mouse_saved = 1;*/
+	glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, Gr_opengl_mouse_saved_data);
+        
+	Gr_opengl_mouse_saved = 1;
 }
 
 ubyte *opengl_screen=NULL;
 GLenum screen_tex_handle;
+int scr_bm;
+float maxu, maxv;
 
 int gr_opengl_save_screen()
 {
@@ -2959,40 +2964,53 @@ int gr_opengl_save_screen()
 		return -1;
 	}
 
-	if (gr_screen.bits_per_pixel==32)
+	fmt=GL_UNSIGNED_SHORT_1_5_5_5_REV;
+	opengl_screen = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel);
+
+	ubyte *opengl_screen_tmp = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel );
+	if (!opengl_screen_tmp) 
 	{
-		fmt=GL_UNSIGNED_BYTE;
-		opengl_screen = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * 4);
-	}
-	else
-	{
-		fmt=GL_UNSIGNED_SHORT_1_5_5_5_REV;
-		opengl_screen = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * 2);
+		mprintf(( "Couldn't get memory for temporary saved screen!\n" ));
+		return -1;
 	}
 
-	if (!opengl_screen) {
+	if (!opengl_screen) 
+	{
 		mprintf(( "Couldn't get memory for saved screen!\n" ));
 		return -1;
 	}
 	
 
 	glReadBuffer(GL_FRONT);
-	glReadPixels(0,0,gr_screen.max_w-1,gr_screen.max_h-1,GL_RGBA, fmt, opengl_screen);
+	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, fmt, opengl_screen_tmp);
+        
+	ubyte *sptr, *dptr;
+        
+	sptr = (ubyte *)&opengl_screen_tmp[gr_screen.max_w*gr_screen.max_h*2];
+	dptr = (ubyte *)opengl_screen;
+	for (int j = 0; j < gr_screen.max_h; j++)
+	{
+		sptr -= gr_screen.max_w*2;
+		memcpy(dptr, sptr, gr_screen.max_w*2);
+		dptr += gr_screen.max_w*2;
+	}
+        
+	free(opengl_screen_tmp);
+        
+	if (Gr_opengl_mouse_saved)
+	{
+		sptr = (ubyte *)Gr_opengl_mouse_saved_data;
+		dptr = (ubyte *)&opengl_screen[2*(Gr_opengl_mouse_saved_x1+(Gr_opengl_mouse_saved_y2)*gr_screen.max_w)];
+		for (int i = 0; i < Gr_opengl_mouse_saved_h; i++)
+		{
+			memcpy(dptr, sptr, Gr_opengl_mouse_saved_w*2);
+			sptr += 32*2;
+			dptr -= gr_screen.max_w*2;
+		}
+	}
 
-	glGenTextures(1, &screen_tex_handle);
-	glBindTexture(GL_TEXTURE_2D, screen_tex_handle);
-	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
+	scr_bm=bm_create(16, gr_screen.max_w, gr_screen.max_h, opengl_screen, 0);
 
-
-	int wtemp,htemp;
-
-	htemp=(int)pow(2,ceil(log10(gr_screen.max_h)/log10(2)));
-	wtemp=(int)pow(2,ceil(log10(gr_screen.max_w)/log10(2)));
-	
-	glTexImage2D(GL_TEXTURE_2D, 0, 3,wtemp,htemp,0,GL_RGBA, fmt, NULL);
-	glTexSubImage2D(GL_TEXTURE_2D, 0,0,0,gr_screen.max_w,gr_screen.max_h,GL_RGBA,fmt, opengl_screen);
-
-	
 	return 1;
 }
 
@@ -3005,23 +3023,8 @@ void gr_opengl_restore_screen(int id)
 		return;
 	}
 
-	glBindTexture(GL_TEXTURE_2D, screen_tex_handle);
-	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
-
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,0);
-		glVertex2i(0,0);
-	
-		glTexCoord2f(1,0);
-		glVertex2i(gr_screen.max_w,0);
-		
-		glTexCoord2f(1,1);
-		glVertex2i(gr_screen.max_w,gr_screen.max_h);
-
-		glTexCoord2f(0,1);
-		glVertex2i(0,gr_screen.max_h);
-
-	glEnd();
+	gr_set_bitmap(scr_bm);
+	gr_bitmap(0,0);
 
 
 }
@@ -3034,7 +3037,7 @@ void gr_opengl_free_screen(int id)
 	free(opengl_screen);
 	opengl_screen=NULL;
 
-	glDeleteTextures(1, &screen_tex_handle);
+	bm_release(scr_bm);
 }
 
 void gr_opengl_dump_frame_start(int first_frame, int frames_between_dumps)
