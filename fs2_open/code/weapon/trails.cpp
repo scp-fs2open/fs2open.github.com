@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-11-11 03:56:13 $
- * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2003-11-16 04:09:20 $
+ * $Author: Goober5000 $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/11/11 03:56:13  bobboau
+ * lots of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.7  2003/11/09 06:31:40  Kazan
  * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
  * conflicts in cmdline and timerbar.h log entries

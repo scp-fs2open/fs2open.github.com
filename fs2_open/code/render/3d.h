@@ -9,15 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.5 $
- * $Date: 2003-11-11 18:04:06 $
- * $Author: phreak $
+ * $Revision: 2.6 $
+ * $Date: 2003-11-16 04:09:27 $
+ * $Author: Goober5000 $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/11/11 18:04:06  phreak
+ * made g3_done_instance take a parameter that decides wether to pop the matrix stack.
+ * without it, underflows would have been caused
+ *
  * Revision 2.4  2003/11/11 03:56:12  bobboau
- * shit load of bug fixing, much of it in nebula and bitmap drawing
+ * lots of bug fixing, much of it in nebula and bitmap drawing
  *
  * Revision 2.3  2003/11/01 21:59:22  bobboau
  * new matrix handeling code, and fixed some problems with 3D lit verts,

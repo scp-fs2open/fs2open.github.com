@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-11-11 03:56:11 $
- * $Author: bobboau $
+ * $Revision: 2.13 $
+ * $Date: 2003-11-16 04:09:22 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/11/11 03:56:11  bobboau
+ * lots of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.11  2003/11/11 02:15:44  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-11-11 03:56:12 $
- * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2003-11-16 04:09:27 $
+ * $Author: Goober5000 $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/11/11 03:56:12  bobboau
+ * lots of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.7  2003/10/29 18:18:52  randomtiger
  * D3D particle flicker fix, also fixes explosions and thruster glows
  *

@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-11-11 03:56:10 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-16 04:09:19 $
+ * $Author: Goober5000 $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/11/11 03:56:10  bobboau
+ * lots of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.9  2003/09/26 14:37:13  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
