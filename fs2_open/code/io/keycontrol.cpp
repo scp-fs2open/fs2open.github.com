@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-04-24 15:44:21 $
- * $Author: Kazan $
+ * $Revision: 2.25 $
+ * $Date: 2004-04-25 06:31:53 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/04/24 15:44:21  Kazan
+ * Fixed Lobby screen showing up while exiting from non-tracker games
+ * Time dialiation up to 1/4
+ *
  * Revision 2.23  2004/04/06 03:09:26  phreak
  * added a control config option for the wireframe hud targetbox i enabled ages ago
  *
@@ -445,6 +449,12 @@ typedef	struct asteroid_field {
 	float		speed;							// Average speed of field
 	int		num_initial_asteroids;		//	Number of asteroids at creation.
 } asteroid_field;
+
+// time compression/dilation values - Goober5000
+// (Volition sez "can't compress below 0.25"... not sure if
+// this is arbitrary or dictated by code)
+#define MAX_TIME_MULTIPLIER		64
+#define MAX_TIME_DIVIDER		4
 
 #define CHEAT_BUFFER_LEN	20
 #define CHEATSPOT				(CHEAT_BUFFER_LEN - 1)
@@ -952,18 +962,38 @@ void process_debug_keys(int k)
 			HUD_printf(XSTR( "Countermeasure firing: %s", 6), Countermeasures_enabled ? XSTR( "ENABLED", 7) : XSTR( "DISABLED", 8));
 			break;
 
+// Goober5000: this should only be compiled in debug builds, since it crashes release
+#ifndef NDEBUG
 		case KEY_DEBUGGED + KEY_E:
 			gameseq_post_event(GS_EVENT_EVENT_DEBUG);
 			break;
+#endif
 
-		case KEY_DEBUGGED + KEY_COMMA:
-			if ( Game_time_compression > (F1_0/4) ){		// can't compress below 0.25
-				Game_time_compression /= 2;
+		// Goober5000: handle time dilation in cheat section
+		case KEY_DEBUGGED + KEY_SHIFTED + KEY_COMMA:
+		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_COMMA:
+			if ( Game_mode & GM_NORMAL ) {
+				if ( Game_time_compression > (F1_0/MAX_TIME_DIVIDER) ) {
+					Game_time_compression /= 2;
+				} else {
+					gamesnd_play_error_beep();
+				}
+			} else {
+				gamesnd_play_error_beep();
 			}
 			break;
-		case KEY_DEBUGGED + KEY_PERIOD:
-			if ( Game_time_compression < (F1_0*8) ){
-				Game_time_compression *= 2;
+
+		// Goober5000: handle as normal here
+		case KEY_DEBUGGED + KEY_SHIFTED + KEY_PERIOD:
+		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_PERIOD:
+			if ( Game_mode & GM_NORMAL ) {
+				if ( Game_time_compression < (F1_0*MAX_TIME_MULTIPLIER) ) {
+					Game_time_compression *= 2;
+				} else {
+					gamesnd_play_error_beep();
+				}
+			} else {
+				gamesnd_play_error_beep();
 			}
 			break;
 
@@ -2425,9 +2455,8 @@ int button_function_demo_valid(int n)
 
 	case TIME_SLOW_DOWN:
 		if ( Game_mode & GM_NORMAL ) {
-			//if ( Game_time_compression > F1_0) {
-			// Let's see how low i can get this
-			if ( Game_time_compression > (F1_0/4)) {
+			// Goober5000 - time dilation only available in cheat mode (see above)
+			if ( Game_time_compression > F1_0) {
 				Game_time_compression /= 2;
 			} else {
 				gamesnd_play_error_beep();
@@ -2440,9 +2469,7 @@ int button_function_demo_valid(int n)
 
 	case TIME_SPEED_UP:
 		if ( Game_mode & GM_NORMAL ) {
-			//if ( Game_time_compression < (F1_0*4) ) {
-			// Let's see how high I can get this -- kazan
-			if ( Game_time_compression < (F1_0*64) ) {
+			if ( Game_time_compression < (F1_0*MAX_TIME_MULTIPLIER) ) {
 				Game_time_compression *= 2;
 			} else {
 				gamesnd_play_error_beep();
