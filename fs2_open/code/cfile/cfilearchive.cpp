@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * Low-level code for reading data out of large archive files or normal files.  All

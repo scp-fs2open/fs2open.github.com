@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2002/05/17 03:05:08  mharris
+ * more porting tweaks
+ *
+ * Revision 1.6  2002/05/16 06:06:23  mharris
+ * ifndef NO_JOYSTICK
+ *
+ * Revision 1.5  2002/05/14 21:56:40  mharris
+ * added more ifndef NO_SOUND
+ *
+ * Revision 1.4  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.3  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
+ * Revision 1.2  2002/05/07 02:58:44  mharris
+ * make Buttons[] static
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -218,13 +236,11 @@
 #include "eventmusic.h"
 #include "mainhallmenu.h"
 #include "audiostr.h"
-#include "multi.h"
 #include "psnet.h"
 #include "popup.h"
 #include "popupdead.h"
 #include "missionbriefcommon.h"
 #include "optionsmenu.h"
-#include "optionsmenumulti.h"
 #include "joy.h"
 #include "mouse.h"
 #include "osregistry.h"
@@ -233,6 +249,10 @@
 #include "neb.h"
 #include "beam.h"
 
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "optionsmenumulti.h"
+#endif
 
 // will display a notification warning message
 #define OPTIONS_NOTIFY_TIME			3500
@@ -294,7 +314,7 @@ struct options_buttons {
 	options_buttons(char *name, int x1, int y1, int h, int t, int f = 0) : filename(name), x(x1), y(y1), hotspot(h), tab(t), flags(f) {}
 };
 
-options_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
+static options_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 	{	// GR_640
 		options_buttons("OPT_00",	17,	2,		0,		-1),							// options tab
 		options_buttons("OPT_01",	102,	2,		1,		-1),							// multiplayer tab
@@ -420,7 +440,9 @@ static struct {
 
 static int Tab = 0;
 static int Options_menu_inited = 0;
+#ifndef NO_NETWORK
 static int Options_multi_inited = 0;
+#endif
 static int Options_detail_inited = 0;
 static int Button_bms[NUM_COMMONS][MAX_BMAPS_PER_GADGET];
 
@@ -428,9 +450,11 @@ static UI_WINDOW Ui_window;
 UI_GADGET Options_bogus;
 
 static int Backup_skill_level;
+#ifndef NO_SOUND
 static float Backup_sound_volume;
 static float Backup_music_volume;
 static float Backup_voice_volume;
+#endif
 
 static int Backup_briefing_voice_enabled;
 static int Backup_use_mouse_to_fly;
@@ -669,7 +693,7 @@ void options_play_voice_clip()
 		Voice_vol_handle=-1;
 	}
 
-	snd_id = snd_load(&Snds_iface[SND_VOICE_SLIDER_CLIP]);
+	snd_id = snd_load(&Snds_iface[SND_VOICE_SLIDER_CLIP], 0);
 	Voice_vol_handle = snd_play_raw( snd_id, 0.0f, 1.0f, SND_PRIORITY_SINGLE_INSTANCE );
 }
 
@@ -756,8 +780,9 @@ void options_tab_setup(int set_palette)
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
 #if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
+#ifndef NO_NETWORK
 			options_multi_select();
-			
+#endif			
 			// need to hide the hud config and control config buttons
 			// Buttons[gr_screen.res][CONTROL_CONFIG_BUTTON].button.hide();
 			// Buttons[gr_screen.res][HUD_CONFIG_BUTTON].button.hide();
@@ -776,7 +801,9 @@ void options_tab_close()
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
 #if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
+#ifndef NO_NETWORK
 			options_multi_unselect();		
+#endif
 #endif
 			break;
 
@@ -798,6 +825,7 @@ void options_change_tab(int n)
 #endif
 
 	switch (n) {
+#ifndef NO_NETWORK
 		case MULTIPLAYER_TAB:
 			if ( !Options_multi_inited ) {
 				// init multiplayer
@@ -809,6 +837,7 @@ void options_change_tab(int n)
 			}
 
 			break;
+#endif
 
 		case DETAIL_LEVELS_TAB:
 			if (!Options_detail_inited) {
@@ -859,22 +888,28 @@ void set_sound_volume()
 
 void set_music_volume()
 {
+#ifndef NO_SOUND
 	event_music_set_volume_all(Master_event_music_volume);
+#endif
 }
 
 void set_voice_volume()
 {
+#ifndef NO_SOUND
 	audiostream_set_volume_all(Master_voice_volume, ASF_VOICE);
+#endif
 }
 
 void options_cancel_exit()
 {
+#ifndef NO_SOUND
 	Master_sound_volume = Backup_sound_volume;
 	set_sound_volume();
 	Master_event_music_volume = Backup_music_volume;
 	set_music_volume();
 	Master_voice_volume = Backup_voice_volume;
 	set_voice_volume();
+#endif
 
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		Game_skill_level = Backup_skill_level;
@@ -941,12 +976,15 @@ void options_button_pressed(int n)
 #ifdef FS2_DEMO
 			game_feature_not_in_demo_popup();
 #else
+
+#ifndef NO_NETWORK
 			// can't go to the hud config screen when a multiplayer observer
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 				options_add_notify(XSTR( "Cannot use HUD config when an observer!", 375));
 				break;
 			}
+#endif  // ifndef NO_NETWORK
 
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_HUD_CONFIG);
@@ -1047,6 +1085,7 @@ void options_button_pressed(int n)
 
 void options_sliders_update()
 {
+#ifndef NO_SOUND
 	// sound slider
 	if (Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos != Sound_volume_int) {
 		Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos;
@@ -1074,12 +1113,14 @@ void options_sliders_update()
 		set_voice_volume();
 		options_play_voice_clip();
 	}
+#endif
 
 	if (Mouse_sensitivity != Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos) {
 		Mouse_sensitivity = Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos;
 		gamesnd_play_iface(SND_USER_SELECT);
 	}
 
+#ifndef NO_JOYSTICK
 	if (Joy_sensitivity != Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos) {
 		Joy_sensitivity = Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos;
 		gamesnd_play_iface(SND_USER_SELECT);
@@ -1089,6 +1130,7 @@ void options_sliders_update()
 		Dead_zone_size = Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5;
 		gamesnd_play_iface(SND_USER_SELECT);
 	}
+#endif
 
 	if (Game_skill_level != Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos) {
 		Game_skill_level = Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos;
@@ -1098,18 +1140,22 @@ void options_sliders_update()
 
 void options_accept()
 {
+#ifndef NO_NETWORK
 	// apply the selected multiplayer options
 	if ( Options_multi_inited ) {
 		#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 		options_multi_accept();
 		#endif
 	}
+#endif  // ifndef NO_NETWORK
 
+#ifndef NO_SOUND
 	// If music is zero volume, disable
 	if ( Master_event_music_volume <= 0.0f ) {
 //		event_music_disable();
 		event_music_level_close();
 	}
+#endif
 
 	// apply other options (display options, etc)
 	// note: return in here (and play failed sound) if they can't accept yet for some reason
@@ -1197,9 +1243,11 @@ void options_menu_init()
 	options_tab_setup(0);
 
 	Backup_skill_level = Game_skill_level;
+#ifndef NO_SOUND
 	Backup_sound_volume = Master_sound_volume;
 	Backup_music_volume = Master_event_music_volume;
 	Backup_voice_volume = Master_voice_volume;
+#endif
 	Backup_briefing_voice_enabled = Briefing_voice_enabled;
 	Backup_use_mouse_to_fly = Use_mouse_to_fly;
 	
@@ -1220,11 +1268,23 @@ void options_menu_init()
 	
 	// setup slider values 
 	// note slider scale is 0-9, while Master_ values calc with 1-10 scale (hence the -1)
+#ifndef NO_SOUND
 	Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos = (int) (Master_sound_volume * 9.0f + 0.5f);
 	Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos = (int) (Master_event_music_volume * 9.0f + 0.5f);	
 	Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos = (int) (Master_voice_volume * 9.0f + 0.5f);
+#else
+	Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos = 0;
+	Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos = 0;
+	Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos = 0;
+#endif
+
+#ifndef NO_JOYSTICK
 	Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos = Joy_sensitivity;	
 	Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos = Dead_zone_size / 5;	
+#else
+	Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos = 0;	
+	Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos = 0;	
+#endif
 	Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos = Mouse_sensitivity;
 	Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos = Game_skill_level;
 
@@ -1259,7 +1319,9 @@ void options_menu_close()
 	}
 
 #if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
+#ifndef NO_NETWORK
 	options_multi_close();
+#endif
 #endif
 
 	Ui_window.destroy();
@@ -1272,7 +1334,9 @@ void options_menu_close()
 	//audiostream_unpause_all();
 	
 	Options_menu_inited = 0;
+#ifndef NO_NETWORK
 	Options_multi_inited = 0;
+#endif
 	Options_detail_inited = 0;
 
 
@@ -1371,12 +1435,14 @@ void options_menu_do_frame(float frametime)
 
 		case KEY_TAB:
 		case KEY_RIGHT:  // activate next tab
+#ifndef NO_NETWORK
 			// check to see if the multiplayer options screen wants to eat the tab kay
 			if ((k == KEY_TAB) && (Tab == MULTIPLAYER_TAB)) {
 				if (options_multi_eat_tab()) {
 					break;
 				}
 			}
+#endif
 
 			i = Tab + 1;
 			if (i >= NUM_TABS)
@@ -1426,9 +1492,13 @@ void options_menu_do_frame(float frametime)
 	options_sliders_update();
 
 	// if we're in the multiplayer options tab, get the background bitmap from the options multi module
+#ifndef NO_NETWORK
 	if(Tab == MULTIPLAYER_TAB){
 		i = options_multi_background_bitmap();
-	} else {
+	}
+	else
+#endif
+	{
 		i = Backgrounds[gr_screen.res][Tab].bitmap;
 	}
 
@@ -1445,7 +1515,9 @@ void options_menu_do_frame(float frametime)
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
 #if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
+#ifndef NO_NETWORK
 			options_multi_do(k);
+#endif
 #endif
 			break;
 
@@ -1515,10 +1587,12 @@ void options_menu_do_frame(float frametime)
 	}
 	//==============================================================================
 
+#ifndef NO_NETWORK
 	// maybe blit a waveform
 	if(Tab == MULTIPLAYER_TAB){
 		options_multi_vox_process_waveform();
 	}
+#endif
 	
 /*  Debug code: Graphs the joystick range scaling
 {

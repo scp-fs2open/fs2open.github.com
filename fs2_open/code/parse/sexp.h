@@ -9,9 +9,9 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 1.1 $
+ * $Revision: 2.0 $
  * $Author: penguin $
- * $Date: 2002-06-03 03:26:01 $
+ * $Date: 2002-06-03 04:02:27 $
  *
  * header for sexpression parsing
  *

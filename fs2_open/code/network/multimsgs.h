@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:00 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:26 $
  * $Author: penguin $
  *
  * Header file for the building and sending of multiplayer packets

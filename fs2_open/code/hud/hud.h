@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * Header file for functions that contain HUD functions at a high level

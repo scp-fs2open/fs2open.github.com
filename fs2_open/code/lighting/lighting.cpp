@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -596,7 +599,7 @@ int light_filter_push( int objnum, vector *pos, float rad )
 
 int is_inside( vector *min, vector *max, vector * p0, float rad )
 {
-	float *origin = (float *)&p0->x;
+	float *origin = (float *)&p0->xyz.x;
 	float *minB = (float *)min;
 	float *maxB = (float *)max;
 	int i;

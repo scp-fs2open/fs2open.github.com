@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/17 06:45:53  mharris
+ * More porting tweaks.  It links!  but segfaults...
+ *
+ * Revision 1.3  2002/05/17 03:06:13  mharris
+ * more porting tweaks
+ *
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -167,6 +176,11 @@
 #include <io.h>
 #include <string.h>
 #include <setjmp.h>
+#include <errno.h>
+#if defined unix
+	#include <sys/stat.h>
+	#include <glob.h>
+#endif
 
 #include "key.h"
 #include "ui.h"
@@ -376,16 +390,17 @@ void mission_campaign_maybe_add( char *filename, int multiplayer )
 // global variables
 void mission_campaign_build_list( int multiplayer )
 {
-	int find_handle;
-	_finddata_t find;
-	char wild_card[256];
-
 	Num_campaigns = 0;
 	mission_campaign_maybe_add( BUILTIN_CAMPAIGN, multiplayer);
 
+	char wild_card[256];
 	memset(wild_card, 0, 256);
-	strcpy(wild_card, NOX("data\\missions\\*"));
+	strcpy(wild_card, NOX("data" DIR_SEPARATOR_STR "missions" DIR_SEPARATOR_STR "*"));
 	strcat(wild_card, FS_CAMPAIGN_FILE_EXT);
+
+#if defined WIN32
+	int find_handle;
+	_finddata_t find;
 	find_handle = _findfirst( wild_card, &find );
 	if( find_handle != -1 )	{
 		if ( !(find.attrib & _A_SUBDIR) && stricmp(find.name, BUILTIN_CAMPAIGN) ){
@@ -403,7 +418,31 @@ void mission_campaign_build_list( int multiplayer )
 			}
 		}
 	}
+#elif defined unix
+	glob_t globinfo;
+	memset(&globinfo, 0, sizeof(globinfo));
+	int status = glob(wild_card, 0, NULL, &globinfo);
+	if (status == 0) {
+		for (unsigned int i = 0;  i < globinfo.gl_pathc;  i++) {
+			// Determine if this is a regular file
+			struct stat statbuf;
+			memset(&statbuf, 0, sizeof(statbuf));
+			stat(globinfo.gl_pathv[i], &statbuf);
+			if (S_ISREG(statbuf.st_mode) &&
+				 (strcasecmp(globinfo.gl_pathv[i], BUILTIN_CAMPAIGN) != 0))
+			{
+				if ( Num_campaigns >= MAX_CAMPAIGNS ){
+					break;
+				} else {
+					mission_campaign_maybe_add(globinfo.gl_pathv[i], multiplayer);
+				}
+			}
+		}
+		globfree(&globinfo);
+	}
+#endif
 }
+
 
 // gets optional ship/weapon information
 void mission_campaign_get_sw_info()
@@ -705,18 +744,24 @@ void mission_campaign_savefile_generate_root(char *filename)
 
 	Assert ( strlen(Campaign.filename) != 0 );
 
+#ifdef WIN32
 	// build up the filename for the save file.  There could be a problem with filename length,
 	// but this problem can get fixed in several ways -- ignore the problem for now though.
 	_splitpath( Campaign.filename, NULL, NULL, base, NULL );
+#else
+	// mharris FIXME: this may not work...
+	strcpy(base, Campaign.filename);
+#endif
+
 	Assert ( (strlen(base) + strlen(Player->callsign) + 1) < _MAX_FNAME );
 
 	sprintf( filename, NOX("%s.%s."), Player->callsign, base );
 }
 
+
 // mission_campaign_savefile_save saves the state of the campaign.  This function will probably always be called
 // then the player is done flying a mission in the campaign path.  It will save the missions played, the
 // state of the goals, etc.
-
 int mission_campaign_savefile_save()
 {
 	char filename[_MAX_FNAME];
@@ -828,6 +873,7 @@ int mission_campaign_savefile_save()
 	return 0;
 }
 
+
 // The following function always only ever ever ever called by CSFE!!!!!
 int campaign_savefile_save(char *pname)
 {
@@ -852,7 +898,12 @@ void mission_campaign_savefile_delete( char *cfilename, int is_multi )
 {
 	char filename[_MAX_FNAME], base[_MAX_FNAME];
 
+#ifdef WIN32
 	_splitpath( cfilename, NULL, NULL, base, NULL );
+#else
+	// mharris FIXME: this may not work...
+	strcpy(base, cfilename);
+#endif
 
 	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
 		return;	// no such thing as a multiplayer campaign savefile
@@ -862,6 +913,7 @@ void mission_campaign_savefile_delete( char *cfilename, int is_multi )
 
 	cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
 }
+
 
 void campaign_delete_save( char *cfn, char *pname)
 {
@@ -919,7 +971,12 @@ void mission_campaign_savefile_load( char *cfilename )
 
 	// build up the filename for the save file.  There could be a problem with filename length,
 	// but this problem can get fixed in several ways -- ignore the problem for now though.
+#ifdef WIN32
 	_splitpath( cfilename, NULL, NULL, base, NULL );
+#else
+	// mharris FIXME: this may not work...
+	strcpy(base, cfilename);
+#endif
 	Assert ( (strlen(base) + strlen(Player->callsign) + 1) < _MAX_FNAME );
 
 	if(Game_mode & GM_MULTIPLAYER)
@@ -1073,6 +1130,7 @@ void mission_campaign_savefile_load( char *cfilename )
 	cfclose(fp);
 
 }
+
 
 // the following code only ever called by CSFE!!!!
 void campaign_savefile_load(char *fname, char *pname)

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:00 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:26 $
  * $Author: penguin $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -703,7 +706,7 @@ typedef struct net_player_info {
 
 // NETPLAYER COMMON INFORMATION
 typedef struct net_player {
-	player			*player;								// stuff pertaining directly to the player (callsign, etc).
+	player_t			*player;								// stuff pertaining directly to the player (callsign, etc).
 	short				player_id;							// player id (always use this instead of ip address for identification purposes)
 	int				tracker_player_id;            // the tracker id for this player, only matters in
 																// tracker games.	

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * Header file for drawing the target monitor box on the HUD

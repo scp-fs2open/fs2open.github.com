@@ -9,12 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *  
@@ -78,18 +84,6 @@ typedef struct ssm_info {
 
 int Ssm_info_count = 0;
 ssm_info Ssm_info[MAX_SSM_TYPES];
-
-#define MAX_SSM_STRIKES			10
-#define MAX_SSM_COUNT			10
-
-// creation info for the strike (useful for multiplayer)
-typedef struct ssm_firing_info {
-	int			delay_stamp[MAX_SSM_COUNT];	// timestamps
-	vector		start_pos[MAX_SSM_COUNT];		// start positions
-	
-	int			ssm_index;							// index info ssm_info array
-	vector		target;								// target for the strike	
-} ssm_firing_info;
 
 // the strike itself
 typedef struct ssm_strike {
@@ -166,7 +160,7 @@ void ssm_get_random_start_pos(vector *out, vector *start, matrix *orient, int ss
 	vm_vec_random_in_circle(&temp, start, orient, s->radius, 1);
 
 	// offset it a bit
-	vm_vec_scale_add(out, &temp, &orient->fvec, s->offset);
+	vm_vec_scale_add(out, &temp, &orient->vec.fvec, s->offset);
 }
 
 // level init
@@ -246,10 +240,12 @@ void ssm_create(vector *target, vector *start, int ssm_index, ssm_firing_info *o
 			ssm_get_random_start_pos(&ssm->sinfo.start_pos[idx], start, &dir, ssm_index);
 		}
 
+#ifndef NO_NETWORK
 		// if we're the server, send a packet
 		if(MULTIPLAYER_MASTER){
 			//
 		}
+#endif
 	}
 
 	// clear timestamps, handles, etc

@@ -3,7 +3,7 @@
 ** All Rights Reserved.
 **
 **
-** $Header: /cvs/cvsroot/fs2open/fs2_open/code/glide/sst1vid.h,v 1.1 2002-06-03 03:25:57 penguin Exp $
+** $Header: /cvs/cvsroot/fs2open/fs2_open/code/glide/sst1vid.h,v 2.0 2002-06-03 04:02:22 penguin Exp $
 ** $Log: not supported by cvs2svn $
 ** Revision 1.1  2002/05/02 18:03:07  mharris
 ** Initial checkin - converted filenames and includes to lower case

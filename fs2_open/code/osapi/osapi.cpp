@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/09 13:52:01  mharris
+ * debug_int3() calls abort()
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -696,7 +699,11 @@ void os_poll()
 
 void debug_int3()
 {
+#ifdef WIN32
 	gr_activate(0);
 	_asm { int 3 };
 	gr_activate(1);
+#else
+   abort();
+#endif
 }

@@ -1164,7 +1164,7 @@ static int Encode1(t_Sample* bufIn, t_Sample* bufOut, int size, int sizeOut)
                         t_PacketRL1 packet;
                         packet.Mode = e_emRL_HF;
                         packet.ModeEx = 0;
-                        packet.Length = unsigned short(len);
+                        packet.Length = (unsigned short)len;
                         *(t_PacketRL1*)out = packet;
                         out += sizeof packet;
                         // packetPos remains at 1
@@ -1350,11 +1350,11 @@ static int Encode1(t_Sample* bufIn, t_Sample* bufOut, int size, int sizeOut)
                 packet.Mode = e_emRL_HF;
                 packet.ModeEx = 1;
 				// HF1 packets include table number unconditionally
-				packet.Table = unsigned short(tableNum = table);
-				packet.Data2 = unsigned short(EncTable[table][*in++]);
-				packet.Data1 = unsigned short(EncTable[table][*in++]);
+				packet.Table = (unsigned short)(tableNum = table);
+				packet.Data2 = (unsigned short)(EncTable[table][*in++]);
+				packet.Data1 = (unsigned short)(EncTable[table][*in++]);
 				finalPacketData = 
-				packet.Data0 = unsigned short(EncTable[table][*in]);
+				packet.Data0 = (unsigned short)(EncTable[table][*in]);
 				data0 = *in++;
                 *(t_PacketHF1*)out = packet;
                 out += sizeof packet;
@@ -1432,20 +1432,20 @@ static int Encode1(t_Sample* bufIn, t_Sample* bufOut, int size, int sizeOut)
 				if (table > tableNum || table < tableNum-1)
 				{
 					packet.Table = 1;
-					packet.DataT = unsigned short(table);
+					packet.DataT = (unsigned short)(table);
 				}
 				else // use previous table
 				{
 					packet.Table = 0;
 					table = tableNum;
-					packet.DataT = unsigned short(EncTable[table][datat+ZERO]);
+					packet.DataT = (unsigned short)(EncTable[table][datat+ZERO]);
 					in++;
 				}
 
-				packet.Data3 = unsigned short(val3 = EncTable[table][data3+ZERO]);
-				packet.Data2 = unsigned short(val2 = EncTable[table][data2+ZERO]);
-				packet.Data1 = unsigned short(val1 = EncTable[table][data1+ZERO]);
-				packet.Data0 = unsigned short(val0 = EncTable[table][data0+ZERO]);
+				packet.Data3 = (unsigned short)(val3 = EncTable[table][data3+ZERO]);
+				packet.Data2 = (unsigned short)(val2 = EncTable[table][data2+ZERO]);
+				packet.Data1 = (unsigned short)(val1 = EncTable[table][data1+ZERO]);
+				packet.Data0 = (unsigned short)(val0 = EncTable[table][data0+ZERO]);
 
 				// break if the data is relatively smooth or if we encounter
 				// data (two 0's) that would cause us to encode a packet that
@@ -1537,6 +1537,7 @@ static int ComputeNomData(t_Sample*& in, const int deltas[], int& level)
 // esi in
 // ebp data
 
+#if defined(WINDOWS)
 #if defined(CODEC_DEMO)
 static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level,
                           t_Sample*& levels)
@@ -1600,6 +1601,14 @@ static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level)
     }
     return data;
 }
+#else // if defined(WINDOWS)
+#if defined(CODEC_DEMO)
+int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level,
+									t_Sample*& levels);
+#else
+int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level);
+#endif
+#endif // if defined(WINDOWS)
 
 #define VERIFY_ASM
 

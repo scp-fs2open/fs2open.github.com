@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -395,6 +401,7 @@ void radar_plot_object( object *objp )
 	vector	*world_pos = &objp->pos;	
 	float		awacs_level;
 
+#ifndef NO_NETWORK
 	// don't process anything here.  Somehow, a jumpnode object caused this function
 	// to get entered on server side.
 	if( Game_mode & GM_STANDALONE_SERVER ){
@@ -405,6 +412,7 @@ void radar_plot_object( object *objp )
 	if ( MULTIPLAYER_CLIENT && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ){
 		return;
 	}
+#endif
 
 	// get team-wide awacs level for the object if not ship
 	int ship_is_visible = 0;
@@ -468,13 +476,13 @@ void radar_plot_object( object *objp )
 		return;
 	}
 
-	if ( dist < pos.z ) {
+	if ( dist < pos.xyz.z ) {
 		rscale = 0.0f;
 	} else {
-		rscale = (float) acos( pos.z/dist ) / 3.14159f;		//2.0f;	 
+		rscale = (float) acos( pos.xyz.z/dist ) / 3.14159f;		//2.0f;	 
 	}
 
-	zdist = fl_sqrt( (pos.x*pos.x)+(pos.y*pos.y) );
+	zdist = fl_sqrt( (pos.xyz.x*pos.xyz.x)+(pos.xyz.y*pos.xyz.y) );
 
 	float new_x_dist, clipped_x_dist;
 	float new_y_dist, clipped_y_dist;
@@ -484,8 +492,8 @@ void radar_plot_object( object *objp )
 		new_y_dist = 0.0f;
 	}
 	else {
-		new_x_dist = (pos.x/zdist) * rscale * radx;
-		new_y_dist = (pos.y/zdist) * rscale * rady;
+		new_x_dist = (pos.xyz.x/zdist) * rscale * radx;
+		new_y_dist = (pos.xyz.y/zdist) * rscale * rady;
 
 		// force new_x_dist and new_y_dist to be inside the radar
 

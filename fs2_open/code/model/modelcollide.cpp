@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -328,12 +331,12 @@ int mc_ray_boundingbox( vector *min, vector *max, vector * p0, vector *pdir, vec
 
 		vector sphere_mod_min, sphere_mod_max;
 
-		sphere_mod_min.x = min->x - Mc->radius;
-		sphere_mod_max.x = max->x + Mc->radius;
-		sphere_mod_min.y = min->y - Mc->radius;
-		sphere_mod_max.y = max->y + Mc->radius;
-		sphere_mod_min.z = min->z - Mc->radius;
-		sphere_mod_max.z = max->z + Mc->radius;
+		sphere_mod_min.xyz.x = min->xyz.x - Mc->radius;
+		sphere_mod_max.xyz.x = max->xyz.x + Mc->radius;
+		sphere_mod_min.xyz.y = min->xyz.y - Mc->radius;
+		sphere_mod_max.xyz.y = max->xyz.y + Mc->radius;
+		sphere_mod_min.xyz.z = min->xyz.z - Mc->radius;
+		sphere_mod_max.xyz.z = max->xyz.z + Mc->radius;
 
 		return fvi_ray_boundingbox( &sphere_mod_min, &sphere_mod_max, p0, pdir, hitpos );
 	} else {
@@ -550,8 +553,8 @@ static void mc_check_sphereline_face( int nv, vector ** verts, vector * plane_pn
 				Mc->num_hits++;
 
 			//	nprintf(("Physics", "edge sphere time: %f, normal: (%f, %f, %f) hit_point: (%f, %f, %f)\n", sphere_time,
-			//		Mc->hit_normal.x, Mc->hit_normal.y, Mc->hit_normal.z,
-			//		hit_point.x, hit_point.y, hit_point.z));
+			//		Mc->hit_normal.xyz.x, Mc->hit_normal.xyz.y, Mc->hit_normal.xyz.z,
+			//		hit_point.xyz.x, hit_point.xyz.y, hit_point.xyz.z));
 			} else  {	// Not best so far
 				Assert(Mc->num_hits>0);
 				Mc->num_hits++;

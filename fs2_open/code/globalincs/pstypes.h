@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/09 13:50:20  mharris
+ * define AsmInt3() to abort()
+ *
+ * Revision 1.3  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -213,6 +222,7 @@
 #include <memory.h>
 #include <malloc.h>
 #include <string.h>
+#include "config.h"
 
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
@@ -230,7 +240,16 @@
 
 #define LOCAL static			// make module local varilable static.
 
+#if defined( WINDOWS ) && defined( MSVC )
 typedef __int64 longlong;
+typedef unsigned __int64 ulonglong;
+#elif defined ( __GNUC__ )
+typedef long long longlong;
+typedef unsigned long long ulonglong;
+#else
+#error unknown compiler/architecture
+#endif
+
 typedef long fix;
 typedef unsigned char ubyte;
 typedef unsigned short ushort;
@@ -247,7 +266,7 @@ typedef struct vector {
 	union {
 		struct {
 			float x,y,z;
-		};
+		} xyz;
 		float a1d[3];
 	};
 } vector;
@@ -268,13 +287,13 @@ typedef struct vert2df {
 
 typedef struct angles {
 	float	p, b, h;
-} angles;
+} angles_t;
 
 typedef struct matrix {
 	union {
 		struct {
 			vector	rvec, uvec, fvec;
-		};
+		} vec;
 		float a2d[3][3];
 		float a1d[9];
 	};
@@ -366,7 +385,11 @@ void gr_activate(int);
 
 	// define to call from Warning function above since it calls Int3, so without this, we
 	// get put into infinite dialog boxes
-	#define AsmInt3() _asm { int 3 }
+   #ifdef WIN32
+	  #define AsmInt3() _asm { int 3 }
+   #else
+     #define AsmInt3() abort()
+   #endif
 
 #else
 	#if defined(NDEBUG)
@@ -503,13 +526,13 @@ void dc_printf( char *format, ... );
 //======================================================================================
 
 
-
+#include "config.h"
 #include "fix.h"
 #include "floating.h"
 
 // Some constants for stuff
-#define MAX_FILENAME_LEN	32			// Length for filenames, ie "title.pcx"
-#define MAX_PATH_LEN			128		// Length for pathnames, ie "c:\bitmaps\title.pcx"
+//  #define MAX_FILENAME_LEN	32			// Length for filenames, ie "title.pcx"
+//  #define MAX_PATH_LEN			128		// Length for pathnames, ie "c:\bitmaps\title.pcx"
 
 // contants and defined for byteswapping routines (useful for mac)
 

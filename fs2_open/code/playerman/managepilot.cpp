@@ -9,14 +9,38 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2002/05/17 03:06:13  mharris
+ * more porting tweaks
+ *
+ * Revision 1.8  2002/05/16 06:06:23  mharris
+ * ifndef NO_JOYSTICK
+ *
+ * Revision 1.7  2002/05/15 15:02:24  mharris
+ * TEMP PORT FIX: ifdef out the "delete pilot file" code in non-Win32
+ *
+ * Revision 1.6  2002/05/14 21:56:40  mharris
+ * added more ifndef NO_SOUND
+ *
+ * Revision 1.5  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.4  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.3  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -195,12 +219,12 @@
  *
 */
 
+#include <errno.h>
 #include "managepilot.h"
 #include "2d.h"
 #include "freespace.h"
 #include "hudsquadmsg.h"
 #include "sound.h"
-#include "multi.h"
 #include "eventmusic.h"
 #include "audiostr.h"
 #include "osregistry.h"
@@ -215,6 +239,10 @@
 #include "mouse.h"
 #include "cutscenes.h"
 #include "bmpman.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#endif
 
 // update this when altering data that is read/written to .PLR file
 #define CURRENT_PLAYER_FILE_VERSION					140
@@ -266,6 +294,7 @@ void write_multiplayer_options(player *p,CFILE *file);
 // used in barracks and player_select
 void delete_pilot_file( char *pilot_name, int single )
 {
+#ifdef WIN32
 	char filename[MAX_FILENAME_LEN];
 	char basename[MAX_FILENAME_LEN];
 
@@ -282,6 +311,9 @@ void delete_pilot_file( char *pilot_name, int single )
 
 	// we must try and delete the campaign save files for a pilot as well.
 	mission_campaign_delete_all_savefiles( basename, !single );
+#else
+	// TODO - delete pilot files
+#endif
 }
 
 // check if a pilot file is valid or not (i.e. is usable, not out of date, etc)
@@ -664,6 +696,7 @@ int read_pilot_file(char *callsign, int single, player *p)
 	// read in the cutscenes which have been viewed
 	Cutscenes_viewable = cfread_int(file);
 
+#ifndef NO_SOUND
 	Master_sound_volume = cfread_float(file);
 	Master_event_music_volume = cfread_float(file);
 	Master_voice_volume = cfread_float(file);
@@ -676,6 +709,11 @@ int read_pilot_file(char *callsign, int single, player *p)
 	} else {
 		Event_music_enabled = 0;
 	}
+#else
+	(void) cfread_float(file);
+	(void) cfread_float(file);
+	(void) cfread_float(file);
+#endif
 
 	cfread( &Detail, sizeof(detail_levels), 1, file );
 
@@ -716,6 +754,7 @@ int read_pilot_file(char *callsign, int single, player *p)
 
 	// restore the default netgame protocol mode
 	int protocol_temp = cfread_int(file);
+#ifndef NO_NETWORK
 	switch(protocol_temp){
 	// plain TCP
 	case NET_VMT:	
@@ -727,6 +766,7 @@ int read_pilot_file(char *callsign, int single, player *p)
 		Multi_options_g.protocol = NET_IPX;
 		break;			
 	}	
+#endif
 
 	// restore wingman status used by red alert missions
 	red_alert_read_wingman_status(file, Player_file_version);
@@ -739,8 +779,13 @@ int read_pilot_file(char *callsign, int single, player *p)
 
 	Use_mouse_to_fly = cfread_int(file);
 	Mouse_sensitivity = cfread_int(file);
+#ifndef NO_JOYSTICK
 	Joy_sensitivity = cfread_int(file);
 	Dead_zone_size = cfread_int(file);
+#else
+	(void) cfread_int(file);
+	(void) cfread_int(file);
+#endif
 
 	if (cfclose(file))
 		return errno;
@@ -943,10 +988,18 @@ int write_pilot_file_core(player *p)
 	cfwrite_int(Cutscenes_viewable, file);
 
 	// store the digital sound fx volume, and music volume
+#ifndef NO_SOUND
 	cfwrite_float(Master_sound_volume, file);
 	cfwrite_float(Master_event_music_volume, file);
 	cfwrite_float(Master_voice_volume, file);
-
+#else
+	{
+		float dummy = 0.0f;
+		cfwrite_float(dummy, file);
+		cfwrite_float(dummy, file);
+		cfwrite_float(dummy, file);
+	}
+#endif
 
 	cfwrite( &Detail, sizeof(detail_levels), 1, file );
 
@@ -977,12 +1030,17 @@ int write_pilot_file_core(player *p)
 	cfwrite_int(p->readyroom_listing_mode, file);
    cfwrite_int(Briefing_voice_enabled, file);
 
+#ifndef NO_NETWORK
 	// store the default netgame protocol mode for this pilot
 	if (Multi_options_g.protocol == NET_TCP) {		
 		cfwrite_int(NET_TCP, file);		
 	} else {
 		cfwrite_int(NET_IPX, file);
 	}	
+#else
+	// write a value to file so format doesn't change
+	cfwrite_int(0, file);
+#endif
 
 	red_alert_write_wingman_status(file);
 	pilot_write_techroom_data(file);
@@ -992,8 +1050,13 @@ int write_pilot_file_core(player *p)
 
 	cfwrite_int(Use_mouse_to_fly, file);
 	cfwrite_int(Mouse_sensitivity, file);
+#ifndef NO_JOYSTICK
 	cfwrite_int(Joy_sensitivity, file);
 	cfwrite_int(Dead_zone_size, file);
+#else
+	cfwrite_int(0, file);
+	cfwrite_int(0, file);
+#endif
 
 	if (!cfclose(file))
 		return 0;
@@ -1181,8 +1244,10 @@ void init_new_pilot(player *p, int reset)
 		mprintf(( "Setting detail level to %d because of new pilot\n", cur_speed ));
 		Use_mouse_to_fly = 0;
 		Mouse_sensitivity = 4;
+#ifndef NO_JOYSTICK
 		Joy_sensitivity = 9;
 		Dead_zone_size = 10;
+#endif
 	}
 
 	// unassigned squadron
@@ -1210,11 +1275,13 @@ void init_new_pilot(player *p, int reset)
 
 	p->tips = 1;
 
+#ifndef NO_NETWORK
 	Multi_options_g.protocol = NET_TCP;	
 
 	// initialize default multiplayer options
 	multi_options_set_netgame_defaults(&p->m_server_options);
 	multi_options_set_local_defaults(&p->m_local_options);
+#endif
 
 	Player_loadout.filename[0] = 0;
 

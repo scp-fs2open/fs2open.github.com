@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -284,9 +290,11 @@
 #include "bmpman.h"
 #include "3d.h"
 #include "linklist.h"
-#include "multi.h"
 #include "emp.h"
 
+#ifndef NO_NETWORK
+#include "multi.h"
+#endif
 
 static float Lock_start_dist;
 static int Rotate_time_id = 1;	// timer id for controlling how often to rotate triangles around lock indicator
@@ -583,7 +591,10 @@ int hud_abort_lock()
 	// if the target is friendly, don't lock!
 	if ( hud_team_matches_filter(Player_ship->team, target_team)) {
 		// if we're in multiplayer dogfight, ignore this
-		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))){
+#ifndef NO_NETWORK
+		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
+#endif
+		{
 			return 1;
 		}
 	}
@@ -626,7 +637,7 @@ void hud_lock_check_if_target_in_lock_cone(vector *lock_world_pos)
 	vector	vec_to_target;
 
 	dist = vm_vec_normalized_dir(&vec_to_target, lock_world_pos, &Player_obj->pos);
-	dot = vm_vec_dot(&Player_obj->orient.fvec, &vec_to_target);
+	dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
 	if ( dot > 0.85) {
 		Player->target_in_lock_cone = 1;
@@ -681,10 +692,12 @@ void hud_update_lock_indicator(float frametime)
 	weapon_info	*wip;
 	vector		lock_world_pos;
 
+#ifndef NO_NETWORK
 	// if i'm a multiplayer observer, bail here
 	if((Game_mode & GM_MULTIPLAYER) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)) ){
 		return;
 	}
+#endif
 
 	Assert(Player_ai->target_objnum != -1);
 
@@ -1166,7 +1179,7 @@ void hud_lock_get_new_lock_pos(object *target_objp, vector *lock_world_pos)
 		lock_in_range = hud_lock_world_pos_in_range(lock_world_pos, &vec_to_lock);
 		vm_vec_normalize(&vec_to_lock);
 		if ( lock_in_range ) {
-			best_lock_dot=vm_vec_dot(&Player_obj->orient.fvec, &vec_to_lock);
+			best_lock_dot=vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_lock);
 		} 
 		// take center if reasonable dot
 		if ( best_lock_dot > 0.95 ) {
@@ -1182,7 +1195,7 @@ void hud_lock_get_new_lock_pos(object *target_objp, vector *lock_world_pos)
 
 			if ( hud_lock_world_pos_in_range(&subsys_world_pos, &vec_to_lock) ) {
 				vm_vec_normalize(&vec_to_lock);
-				lock_dot=vm_vec_dot(&Player_obj->orient.fvec, &vec_to_lock);
+				lock_dot=vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_lock);
 				if ( lock_dot > best_lock_dot ) {
 					best_lock_dot=lock_dot;
 					Player->locking_on_center=0;

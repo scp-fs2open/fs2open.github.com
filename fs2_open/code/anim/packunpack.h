@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
@@ -18,6 +18,9 @@
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:07  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -195,7 +198,7 @@ typedef struct anim {
 	int			file_offset;	// file offset to start of frame data
 	int			cache_file_offset;
 	ubyte			*cache;
-} anim;
+} anim_t;
 
 // the direction to play the anim (forwards or backwards)
 #define ANIM_DIRECT_FORWARD 0
@@ -227,7 +230,7 @@ typedef struct anim_instance {
 	int      paused;        // pause the anim
 	int		file_offset;	// current offset into frame (like data, put offset into file)
 	int		loop_count;		// starts at 0, and is incremented each time it loops
-} anim_instance;
+} anim_instance_t;
 
 extern int packer_code;
 

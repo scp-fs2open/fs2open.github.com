@@ -9,11 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/05/16 06:07:38  mharris
+ * more ifndef NO_SOUND
+ *
+ * Revision 1.4  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.3  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -280,8 +292,6 @@
 #include "missionshipchoice.h"
 #include "missionweaponchoice.h"
 #include "missionbrief.h"
-#include "multi.h"
-#include "multimsgs.h"
 #include "timer.h"
 #include "sound.h"
 #include "gamesequence.h"
@@ -291,19 +301,24 @@
 #include "palman.h"
 #include "mouse.h"
 #include "contexthelp.h"
-#include "chatbox.h"
 #include "time.h"
 #include "joy.h"
 #include "cmdline.h"
 #include "linklist.h"
 #include "staticrand.h"	// for rand_alt()
 #include "popup.h"
-#include "multiutil.h"
-#include "multiteamselect.h"
 #include "hudwingmanstatus.h"
-#include "multi_endgame.h"
 #include "uidefs.h"
 #include "animplay.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multimsgs.h"
+#include "multiutil.h"
+#include "multiteamselect.h"
+#include "multi_endgame.h"
+#include "chatbox.h"
+#endif
 
 //////////////////////////////////////////////////////////////////
 // Game Globals
@@ -521,6 +536,7 @@ void set_active_ui(UI_WINDOW *ui_window)
 
 void common_music_init(int score_index)
 {
+#ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
@@ -542,10 +558,12 @@ void common_music_init(int score_index)
 	briefing_load_music( Spooled_music[Mission_music[score_index]].filename );
 	// Use this id to trigger the start of music playing on the briefing screen
 	Briefing_music_begin_timestamp = timestamp(BRIEFING_MUSIC_DELAY);
+#endif
 }
 
 void common_music_do()
 {
+#ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
@@ -555,10 +573,12 @@ void common_music_do()
 		Briefing_music_begin_timestamp = 0;
 		briefing_start_music();
 	}
+#endif
 }
 
 void common_music_close()
 {
+#ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
@@ -567,6 +587,7 @@ void common_music_close()
 		return;
 
 	briefing_stop_music();
+#endif
 }
 
 // function that sets the current palette to the interface palette.  This function
@@ -692,24 +713,30 @@ void common_select_init()
 
 	Common_select_inited = 1;
 
+#ifndef NO_NETWORK
 	// this handles the case where the player played a multiplayer game but now is in single player (in one instance
 	// of Freespace)
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		chatbox_close();
 	}
+#endif
 
 	// get the value of the team
 	Common_team = 0;							// assume the first team -- we'll change this value if we need to
+#ifndef NO_NETWORK
 	if ( (Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_TEAMS )
 		Common_team = Net_player->p_info.team;
+#endif
 
 	ship_select_common_init();	
 	weapon_select_common_init();
 	common_flash_button_init();
 
+#ifndef NO_NETWORK
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		multi_ts_common_init();
 	}
+#endif
 
 	// restore loadout from Player_loadout if this is the same mission as the one previously played
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -780,7 +807,11 @@ int common_select_do(float frametime)
 		Active_ui_window->set_ignore_gadgets(0);
 	}
 
+#ifndef NO_NETWORK
 	k = chatbox_process();
+#else
+	k = 0;
+#endif
 	if ( Game_mode & GM_NORMAL ) {
 		new_k = Active_ui_window->process(k);
 	} else {
@@ -939,18 +970,21 @@ void common_check_keys(int k)
 		case KEY_ESC: {
 
 			if ( Current_screen == ON_BRIEFING_SELECT ) {
-				if ( brief_get_closeup_icon() != NULL ) {
+				if ( brief_get_closeup_icon() != 0 ) {
 					brief_turn_off_closeup_icon();
 					break;
 				}
 			}
 
+#ifndef NO_NETWORK
 			// prompt the host of a multiplayer game
 			if(Game_mode & GM_MULTIPLAYER){
 				multi_quit_game(PROMPT_ALL);
 			}
-			// go through the single player quit process
-			else {
+			else
+#endif
+			{
+				// go through the single player quit process
 				// return to the main menu
 /*
 				int return_to_menu, pf_flags;
@@ -1110,9 +1144,11 @@ void common_select_close()
 	nprintf(("Alan","entering common_select_close()\n"));
 	
 	weapon_select_close();
+#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
 		multi_ts_close();
 	} 
+#endif
 	ship_select_close();	
 	brief_close();	
 
@@ -1466,9 +1502,12 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 
 	// add a netplayer address to identify who should play the sound
 	player_id = -1;
+#ifndef NO_NETWORK
 	if(player_index != -1){
 		player_id = Net_players[player_index].player_id;		
 	}
+#endif
+
 	memcpy(block+offset,&player_id,sizeof(player_id));
 	offset += sizeof(player_id);
 
@@ -1558,6 +1597,7 @@ int restore_wss_data(ubyte *block)
 	memcpy(&player_id,block+offset,sizeof(player_id));
 	offset += sizeof(short);
 	
+#ifndef NO_NETWORK
 	// determine if I'm the guy who should be playing the sound
 	if((Net_player != NULL) && (Net_player->player_id == player_id)){
 		// play the sound
@@ -1569,6 +1609,8 @@ int restore_wss_data(ubyte *block)
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		ss_synch_interface();
 	}	
+#endif
+
 	return offset;
 }
 

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.3  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -372,20 +381,23 @@
 #include "gamesnd.h"
 #include "sound.h"
 #include "freespace.h"
-#include "multi.h"
-#include "multimsgs.h"
 #include "gamesequence.h"
 #include "animplay.h"
 #include "controlsconfig.h"
 #include "audiostr.h"
 #include "hudsquadmsg.h"
-#include "multiutil.h"
 #include "hud.h"
 #include "subsysdamage.h"
 #include "emp.h"
 #include "localize.h"
 #include "demo.h"
 #include "hudconfig.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multimsgs.h"
+#include "multiutil.h"
+#endif
 
 // here is a text list of the builtin message names.  These names are used to match against
 // names read in for builtin message radio bits to see what message to play.  These are
@@ -664,7 +676,11 @@ void message_parse( )
 		}
 
 		// only bother with filters if multiplayer and TvT
+#ifndef NO_NETWORK
 		if(Fred_running || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) ){
+#else
+		if (Fred_running) {
+#endif
 			msgp->multi_team = mt;
 		}
 	}
@@ -1021,7 +1037,7 @@ void message_load_wave(int index, const char *filename)
 	game_snd tmp_gs;
 	memset(&tmp_gs, 0, sizeof(game_snd));
 	strcpy( tmp_gs.filename, filename );
-	Message_waves[index].num = snd_load( &tmp_gs );
+	Message_waves[index].num = snd_load( &tmp_gs, 0 );
 	if ( Message_waves[index].num == -1 ) {
 		nprintf (("messaging", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name ));
 	}
@@ -1703,6 +1719,7 @@ int message_get_persona( ship *shipp )
 	return 0;
 }
 
+#ifndef NO_NETWORK
 // given a message id#, should it be filtered for me?
 int message_filter_multi(int id)
 {
@@ -1741,6 +1758,7 @@ int message_filter_multi(int id)
 	
 	return 0;
 }
+#endif  // ifndef NO_NETWORK
 
 // send_unique_to_player sends a mission unique (specific) message to the player (possibly a multiplayer
 // person).  These messages are *not* the builtin messages
@@ -1801,7 +1819,10 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 			// if ( !(Game_mode & GM_MULTIPLAYER) || ((multi_target == -1) || (multi_target == MY_NET_PLAYER_NUM)) ){
 
 			// maybe filter it out altogether
-			if(!message_filter_multi(i)){
+#ifndef NO_NETWORK
+			if(!message_filter_multi(i))
+#endif
+			{
 				message_queue_message( i, priority, MESSAGE_TIME_ANYTIME, who_from, source, group, delay );
 			}
 
@@ -1811,10 +1832,12 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 			}
 			// }
 
+#ifndef NO_NETWORK
 			// send a message packet to a player if destined for everyone or only a specific person
 			if ( MULTIPLAYER_MASTER ){
 				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1);
 			}			
+#endif
 
 			return;		// all done with displaying		
 		}
@@ -1890,20 +1913,25 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			// determine what we should actually do with this dang message.  In multiplayer, we must
 			// deal with the fact that this message might not get played on my machine if I am a server
 
+#ifndef NO_NETWORK
 			// not multiplayer or this message is for me, then queue it
 			if ( !(Game_mode & GM_MULTIPLAYER) || ((multi_target == -1) || (multi_target == MY_NET_PLAYER_NUM)) ){
 
 				// if this filter matches mine
 				if( (multi_team_filter < 0) || !(Netgame.type_flags & NG_TYPE_TEAM) || ((Net_player != NULL) && (Net_player->p_info.team == multi_team_filter)) ){
+#endif
 					message_queue_message( i, priority, timing, who_from, source, group, delay, type );
 
 					// post a builtin message
 					if(Game_mode & GM_DEMO_RECORD){
 						demo_POST_builtin_message(type, shipp, priority, timing);
 					}
+#ifndef NO_NETWORK
 				}
 			}
+#endif
 
+#ifndef NO_NETWORK
 			// send a message packet to a player if destined for everyone or only a specific person
 			if ( MULTIPLAYER_MASTER ) {
 				// only send a message if it is of a particular type
@@ -1915,6 +1943,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 					send_mission_message_packet( i, who_from, priority, timing, source, type, multi_target, multi_team_filter );
 				}
 			}
+#endif
 
 			return;		// all done with displaying
 		}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:28 $
  * $Author: penguin $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/13 21:09:29  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -231,10 +234,12 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	int idx;
 	ship *shipp;	
 
+#ifndef NO_NETWORK
 	// if the viewer is me, and I'm a multiplayer observer, its always viewable
 	if((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM])){
 		return 1.5f;
 	}
+#endif
 
 	// ships on the same teamare always viewable
 	if((target->type == OBJ_SHIP) && (Ships[target->instance].team == viewer->team)){

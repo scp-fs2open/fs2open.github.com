@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -149,10 +155,12 @@
 #include "hudwingmanstatus.h"
 #include "timer.h"
 #include "freespace.h"
+
+#ifndef NO_NETWORK
 #include "multi.h"
 #include "multiutil.h"
 #include "multimsgs.h"
-
+#endif
 
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
 int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *pair );
@@ -205,6 +213,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *worl
 	float		blast = wip->mass;
 	vm_vec_copy_scale(&force, &weapon_obj->phys_info.vel, blast );	
 
+#ifndef NO_NETWORK
 	// send player pain packet
 	if ( (MULTIPLAYER_MASTER) && !(shipp->flags & SF_DYING) ){
 		int np_index = multi_find_player_by_object(ship_obj);
@@ -214,6 +223,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *worl
 			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, ship_obj), &force, hitpos);
 		}
 	}	
+#endif
 
 	ship_apply_local_damage(ship_obj, weapon_obj, world_hitpos, damage, quadrant_num, CREATE_SPARKS, submodel_num);
 
@@ -228,7 +238,10 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *worl
 	// Apply a wack.  This used to be inside of ship_hit... duh! Ship_hit
 	// is to apply damage, not physics, so I moved it here.
 	// don't apply whack for multiplayer_client from laser - will occur with pain packet
-	if( !((wip->subtype == WP_LASER) && MULTIPLAYER_CLIENT) ) {		
+#ifndef NO_NETWORK
+	if (!((wip->subtype == WP_LASER) && MULTIPLAYER_CLIENT) )
+#endif
+	{		
 		// apply a whack		
 		ship_apply_whack( &force, hitpos, ship_obj );
 	}
@@ -359,7 +372,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 
 			vm_vec_normalized_dir(&vec_to_ship, &ship_obj->pos, &weapon_obj->pos);
 
-			if (vm_vec_dot(&vec_to_ship, &weapon_obj->orient.fvec) < 0.0f) {
+			if (vm_vec_dot(&vec_to_ship, &weapon_obj->orient.vec.fvec) < 0.0f) {
 				// check if we're colliding against "invisible" ship
 				if (!(Ship_info[shipp->ship_info_index].flags & SIF_DONT_COLLIDE_INVIS)) {
 					wp->lifeleft = 0.001f;
@@ -429,7 +442,7 @@ float estimate_ship_speed_upper_limit( object *ship, float time )
 	float delta_v;
 	float factor;
 
-	delta_v = Ship_info[Ships[ship->instance].ship_info_index].max_vel.z - ship->phys_info.speed;
+	delta_v = Ship_info[Ships[ship->instance].ship_info_index].max_vel.xyz.z - ship->phys_info.speed;
 	if (ship->phys_info.forward_accel_time_const == 0) {
 		return ship->phys_info.speed;
 	}
@@ -462,13 +475,13 @@ int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *p
 	if (max_error < 2)
 		max_error = 2.0f;
 
-	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon->pos)) / (weapon->phys_info.max_vel.z - ship->phys_info.max_vel.z);
+	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon->pos)) / (weapon->phys_info.max_vel.xyz.z - ship->phys_info.max_vel.xyz.z);
 	ship_speed_at_exit_sphere = estimate_ship_speed_upper_limit( ship, time_to_exit_sphere );
 	// update estimated time to exit sphere
-	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon->pos)) / (weapon->phys_info.max_vel.z - ship_speed_at_exit_sphere);
-	vm_vec_scale_add( &error_vel, &ship->phys_info.vel, &weapon->orient.fvec, -vm_vec_dotprod(&ship->phys_info.vel, &weapon->orient.fvec) );
+	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon->pos)) / (weapon->phys_info.max_vel.xyz.z - ship_speed_at_exit_sphere);
+	vm_vec_scale_add( &error_vel, &ship->phys_info.vel, &weapon->orient.vec.fvec, -vm_vec_dotprod(&ship->phys_info.vel, &weapon->orient.vec.fvec) );
 	error_vel_mag = vm_vec_mag_quick( &error_vel );
-	error_vel_mag += 0.5f * (ship->phys_info.max_vel.z - error_vel_mag)*(time_to_exit_sphere/ship->phys_info.forward_accel_time_const);
+	error_vel_mag += 0.5f * (ship->phys_info.max_vel.xyz.z - error_vel_mag)*(time_to_exit_sphere/ship->phys_info.forward_accel_time_const);
 	// error_vel_mag is now average velocity over period
 	error_at_exit_sphere = error_vel_mag * time_to_exit_sphere;
 	time_to_max_error = max_error / error_at_exit_sphere * time_to_exit_sphere;

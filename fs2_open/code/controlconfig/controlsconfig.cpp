@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/16 06:06:23  mharris
+ * ifndef NO_JOYSTICK
+ *
+ * Revision 1.3  2002/05/10 20:42:43  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -310,12 +319,15 @@
 #include "font.h"
 #include "hud.h"
 #include "managepilot.h"
-#include "multi_pmsg.h"
 #include "contexthelp.h"
 #include "popup.h"
 #include "uidefs.h"
-#include "multiutil.h"
 #include "alphacolors.h"
+
+#ifndef NO_NETWORK
+#include "multi_pmsg.h"
+#include "multiutil.h"
+#endif
 
 #define NUM_SYSTEM_KEYS			14
 #define NUM_BUTTONS				19
@@ -1137,12 +1149,15 @@ int control_config_clear_all()
 	return 0;
 }
 
+#ifndef NO_JOYSTICK
 extern Joy_info joystick;
+#endif
 
 int control_config_axis_default(int axis)
 {
 	Assert(axis >= 0);
 
+#ifndef NO_JOYSTICK
 	if ( axis > 1 ) {
 		if (Axis_map_to_defaults[axis] < 0)
 			return -1;
@@ -1152,6 +1167,9 @@ int control_config_axis_default(int axis)
 	}
 
 	return Axis_map_to_defaults[axis];
+#else
+	return -1;
+#endif
 }
 
 int control_config_do_reset()
@@ -1328,7 +1346,7 @@ void control_config_do_bind()
 	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
 
 	for (i=0; i<JOY_TOTAL_BUTTONS; i++){
-		joy_down_count(i);  // clear checking status of all joystick buttons
+		joy_down_count(i, 1);  // clear checking status of all joystick buttons
 	}
 
 	control_config_detect_axis_reset();
@@ -1356,7 +1374,7 @@ void control_config_do_search()
 	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
 
 	for (i=0; i<JOY_TOTAL_BUTTONS; i++){
-		joy_down_count(i);  // clear checking status of all joystick buttons
+		joy_down_count(i, 1);  // clear checking status of all joystick buttons
 	}
 
 	Binding_mode = 0;
@@ -1704,7 +1722,7 @@ void control_config_do_frame(float frametime)
 					bind = 1;
 
 				for (i=0; i<JOY_TOTAL_BUTTONS; i++)
-					if (joy_down_count(i))
+					if (joy_down_count(i, 1))
 						bind = 1;
 
 				if (bind) {
@@ -1785,7 +1803,7 @@ void control_config_do_frame(float frametime)
 				}
 
 				for (i=0; i<JOY_TOTAL_BUTTONS; i++)
-					if (joy_down_count(i)) {
+					if (joy_down_count(i, 1)) {
 						z = Cc_lines[Selected_line].cc_index;
 						Assert(!(z & JOY_AXIS));
 						control_config_bind_joy(z, i);
@@ -1870,7 +1888,7 @@ void control_config_do_frame(float frametime)
 			}
 
 			for (i=0; i<JOY_TOTAL_BUTTONS; i++)
-				if (joy_down_count(i)) {
+				if (joy_down_count(i, 1)) {
 					j = i;
 					for (i=0; i<CCFG_MAX; i++)
 						if (Control_config[i].joy_id == j) {
@@ -2378,13 +2396,15 @@ int check_control(int id, int key)
 
 	last_key = key;
 
+#ifndef NO_NETWORK
 	// if we're in multiplayer text enter (for chat) mode, check to see if we should ignore controls
 	if ((Game_mode & GM_MULTIPLAYER) && multi_ignore_controls()){
 		return 0;
 	}
+#endif
 
 	if (Control_config[id].type == CC_TYPE_CONTINUOUS) {
-		if (joy_down(Control_config[id].joy_id) || joy_down_count(Control_config[id].joy_id)) {
+		if (joy_down(Control_config[id].joy_id) || joy_down_count(Control_config[id].joy_id, 1)) {
 			control_used(id);
 			return 1;
 		}
@@ -2424,7 +2444,7 @@ int check_control(int id, int key)
 		return 0;
 	}
 
-	if ((Control_config[id].key_id == key) || joy_down_count(Control_config[id].joy_id) || mouse_down_count(1 << Control_config[id].joy_id)) {
+	if ((Control_config[id].key_id == key) || joy_down_count(Control_config[id].joy_id, 1) || mouse_down_count(1 << Control_config[id].joy_id)) {
 		control_used(id);
 		return 1;
 	}

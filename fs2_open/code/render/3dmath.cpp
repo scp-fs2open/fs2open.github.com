@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dMath.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:28 $
  * $Author: penguin $
  *
  * 3d Math routines used by the Renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -98,19 +101,19 @@ ubyte g3_code_vector(vector * p)
 {
 	ubyte cc=0;
 
-	if (p->x > p->z)
+	if (p->xyz.x > p->xyz.z)
 		cc |= CC_OFF_RIGHT;
 
-	if (p->y > p->z)
+	if (p->xyz.y > p->xyz.z)
 		cc |= CC_OFF_TOP;
 
-	if (p->x < -p->z)
+	if (p->xyz.x < -p->xyz.z)
 		cc |= CC_OFF_LEFT;
 
-	if (p->y < -p->z)
+	if (p->xyz.y < -p->xyz.z)
 		cc |= CC_OFF_BOT;
 
-	if (p->z < MIN_Z )
+	if (p->xyz.z < MIN_Z )
 		cc |= CC_BEHIND;
 
 	if ( G3_user_clip )	{
@@ -172,21 +175,21 @@ ubyte g3_rotate_vertex(vertex *dest,vector *src)
 
 	MONITOR_INC( NumRotations, 1 );	
 
-	tx = src->x - View_position.x;
-	ty = src->y - View_position.y;
-	tz = src->z - View_position.z;
+	tx = src->xyz.x - View_position.xyz.x;
+	ty = src->xyz.y - View_position.xyz.y;
+	tz = src->xyz.z - View_position.xyz.z;
 
-	x = tx * View_matrix.rvec.x;
-	x += ty * View_matrix.rvec.y;
-	x += tz * View_matrix.rvec.z;
+	x = tx * View_matrix.vec.rvec.xyz.x;
+	x += ty * View_matrix.vec.rvec.xyz.y;
+	x += tz * View_matrix.vec.rvec.xyz.z;
 
-	y = tx * View_matrix.uvec.x;
-	y += ty * View_matrix.uvec.y;
-	y += tz * View_matrix.uvec.z;
+	y = tx * View_matrix.vec.uvec.xyz.x;
+	y += ty * View_matrix.vec.uvec.xyz.y;
+	y += tz * View_matrix.vec.uvec.xyz.z;
 
-	z = tx * View_matrix.fvec.x;
-	z += ty * View_matrix.fvec.y;
-	z += tz * View_matrix.fvec.z;
+	z = tx * View_matrix.vec.fvec.xyz.x;
+	z += ty * View_matrix.vec.fvec.xyz.y;
+	z += tz * View_matrix.vec.fvec.xyz.z;
 
 	codes = 0;
 
@@ -248,12 +251,12 @@ ubyte g3_project_vector(vector *p, float *sx, float *sy )
 
 	Assert( G3_count == 1 );
 
-	if ( p->z <= MIN_Z ) return PF_OVERFLOW;
+	if ( p->xyz.z <= MIN_Z ) return PF_OVERFLOW;
 
-	w=1.0f / p->z;
+	w=1.0f / p->xyz.z;
 
-	*sx = (Canvas_width + (p->x*Canvas_width*w))*0.5f;
-	*sy = (Canvas_height - (p->y*Canvas_height*w))*0.5f;
+	*sx = (Canvas_width + (p->xyz.x*Canvas_width*w))*0.5f;
+	*sy = (Canvas_height - (p->xyz.y*Canvas_height*w))*0.5f;
 	return PF_PROJECTED;
 }
 
@@ -297,12 +300,12 @@ void g3_point_to_vec(vector *v,int sx,int sy)
 
 	Assert( G3_count == 1 );
 
-	tempv.x =  ((float)sx - Canv_w2) / Canv_w2;
-	tempv.y = -((float)sy - Canv_h2) / Canv_h2;
-	tempv.z = 1.0f;
+	tempv.xyz.x =  ((float)sx - Canv_w2) / Canv_w2;
+	tempv.xyz.y = -((float)sy - Canv_h2) / Canv_h2;
+	tempv.xyz.z = 1.0f;
 
-	tempv.x = tempv.x * Matrix_scale.z / Matrix_scale.x;
-	tempv.y = tempv.y * Matrix_scale.z / Matrix_scale.y;
+	tempv.xyz.x = tempv.xyz.x * Matrix_scale.xyz.z / Matrix_scale.xyz.x;
+	tempv.xyz.y = tempv.xyz.y * Matrix_scale.xyz.z / Matrix_scale.xyz.y;
 
 	vm_vec_normalize(&tempv);
 	vm_vec_unrotate(v, &tempv, &Unscaled_matrix);
@@ -315,12 +318,12 @@ void g3_point_to_vec_delayed(vector *v,int sx,int sy)
 {
 	vector	tempv;
 
-	tempv.x =  ((float)sx - Canv_w2) / Canv_w2;
-	tempv.y = -((float)sy - Canv_h2) / Canv_h2;
-	tempv.z = 1.0f;
+	tempv.xyz.x =  ((float)sx - Canv_w2) / Canv_w2;
+	tempv.xyz.y = -((float)sy - Canv_h2) / Canv_h2;
+	tempv.xyz.z = 1.0f;
 
-	tempv.x = tempv.x * Matrix_scale.z / Matrix_scale.x;
-	tempv.y = tempv.y * Matrix_scale.z / Matrix_scale.y;
+	tempv.xyz.x = tempv.xyz.x * Matrix_scale.xyz.z / Matrix_scale.xyz.x;
+	tempv.xyz.y = tempv.xyz.y * Matrix_scale.xyz.z / Matrix_scale.xyz.y;
 
 	vm_vec_normalize(&tempv);
 	vm_vec_unrotate(v, &tempv, &Unscaled_matrix);
@@ -335,9 +338,9 @@ vector *g3_rotate_delta_vec(vector *dest,vector *src)
 //	vms_vector tempv;
 //	vms_matrix tempm;
 //
-//	tempv.x =  fixmuldiv(fixdiv((sx<<16) - Canv_w2,Canv_w2),Matrix_scale.z,Matrix_scale.x);
-//	tempv.y = -fixmuldiv(fixdiv((sy<<16) - Canv_h2,Canv_h2),Matrix_scale.z,Matrix_scale.y);
-//	tempv.z = f1_0;
+//	tempv.xyz.x =  fixmuldiv(fixdiv((sx<<16) - Canv_w2,Canv_w2),Matrix_scale.xyz.z,Matrix_scale.xyz.x);
+//	tempv.xyz.y = -fixmuldiv(fixdiv((sy<<16) - Canv_h2,Canv_h2),Matrix_scale.xyz.z,Matrix_scale.xyz.y);
+//	tempv.xyz.z = f1_0;
 //
 //	vm_vec_normalize(&tempv);
 //
@@ -353,9 +356,9 @@ void g3_point_2_vec(vector *v,int sx,int sy)
 	vector tempv;
 	matrix tempm;
 
-	tempv.x =  fixmuldiv(fixdiv((sx<<16) - Canv_w2,Canv_w2),Matrix_scale.z,Matrix_scale.x);
-	tempv.y = -fixmuldiv(fixdiv((sy<<16) - Canv_h2,Canv_h2),Matrix_scale.z,Matrix_scale.y);
-	tempv.z = f1_0;
+	tempv.xyz.x =  fixmuldiv(fixdiv((sx<<16) - Canv_w2,Canv_w2),Matrix_scale.xyz.z,Matrix_scale.xyz.x);
+	tempv.xyz.y = -fixmuldiv(fixdiv((sy<<16) - Canv_h2,Canv_h2),Matrix_scale.xyz.z,Matrix_scale.xyz.y);
+	tempv.xyz.z = f1_0;
 
 	vm_vec_normalize(&tempv);
 
@@ -368,27 +371,27 @@ void g3_point_2_vec(vector *v,int sx,int sy)
 //delta rotation functions
 vms_vector *g3_rotate_delta_x(vms_vector *dest,fix dx)
 {
-	dest->x = fixmul(View_matrix.rvec.x,dx);
-	dest->y = fixmul(View_matrix.uvec.x,dx);
-	dest->z = fixmul(View_matrix.fvec.x,dx);
+	dest->x = fixmul(View_matrix.vec.rvec.xyz.x,dx);
+	dest->y = fixmul(View_matrix.vec.uvec.xyz.x,dx);
+	dest->z = fixmul(View_matrix.vec.fvec.xyz.x,dx);
 
 	return dest;
 }
 
 vms_vector *g3_rotate_delta_y(vms_vector *dest,fix dy)
 {
-	dest->x = fixmul(View_matrix.rvec.y,dy);
-	dest->y = fixmul(View_matrix.uvec.y,dy);
-	dest->z = fixmul(View_matrix.fvec.y,dy);
+	dest->x = fixmul(View_matrix.vec.rvec.xyz.y,dy);
+	dest->y = fixmul(View_matrix.vec.uvec.xyz.y,dy);
+	dest->z = fixmul(View_matrix.vec.fvec.xyz.y,dy);
 
 	return dest;
 }
 
 vms_vector *g3_rotate_delta_z(vms_vector *dest,fix dz)
 {
-	dest->x = fixmul(View_matrix.rvec.z,dz);
-	dest->y = fixmul(View_matrix.uvec.z,dz);
-	dest->z = fixmul(View_matrix.fvec.z,dz);
+	dest->x = fixmul(View_matrix.vec.rvec.xyz.z,dz);
+	dest->y = fixmul(View_matrix.vec.uvec.xyz.z,dz);
+	dest->z = fixmul(View_matrix.vec.fvec.xyz.z,dz);
 
 	return dest;
 }
@@ -410,9 +413,9 @@ float g3_calc_point_depth(vector *pnt)
 {
 	float q;
 
-	q = (pnt->x - View_position.x) * View_matrix.fvec.x;
-	q += (pnt->y - View_position.y) * View_matrix.fvec.y;
-	q += (pnt->z - View_position.z) * View_matrix.fvec.z;
+	q  = (pnt->xyz.x - View_position.xyz.x) * View_matrix.vec.fvec.xyz.x;
+	q += (pnt->xyz.y - View_position.xyz.y) * View_matrix.vec.fvec.xyz.y;
+	q += (pnt->xyz.z - View_position.xyz.z) * View_matrix.vec.fvec.xyz.z;
 
 	return q;
 }

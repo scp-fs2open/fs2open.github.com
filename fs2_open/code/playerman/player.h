@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/Player.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  *  Header file for player information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -326,7 +329,7 @@ typedef struct player {
 
 	int				failures_this_session;					// number of times dude has failed the mission he is on this session
 	ubyte				show_skip_popup;							// false if dude clicked "don't show this again" -- persists for current mission only
-} player;
+} player_t;
 
 extern player Players[MAX_PLAYERS];
 

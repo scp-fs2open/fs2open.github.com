@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -178,17 +181,17 @@
 
 //#define _INLINE_VECMAT
 
-#define vm_is_vec_nan(v) (_isnan((v)->x) || _isnan((v)->y) || _isnan((v)->z))
+#define vm_is_vec_nan(v) (_isnan((v)->xyz.x) || _isnan((v)->xyz.y) || _isnan((v)->xyz.z))
 
 //Macros/functions to fill in fields of structures
 
 //macro to check if vector is zero
-#define IS_VEC_NULL(v) (((v)->x == (float)0.0) && ((v)->y == (float)0.0) && ((v)->z == (float)0.0))
+#define IS_VEC_NULL(v) (((v)->xyz.x == (float)0.0) && ((v)->xyz.y == (float)0.0) && ((v)->xyz.z == (float)0.0))
 
 //macro to set a vector to zero.  we could do this with an in-line assembly
 //macro, but it's probably better to let the compiler optimize it.
 //Note: NO RETURN VALUE
-#define vm_vec_zero(v) (v)->x=(v)->y=(v)->z=(float)0.0
+#define vm_vec_zero(v) (v)->xyz.x=(v)->xyz.y=(v)->xyz.z=(float)0.0
 
 /*
 //macro set set a matrix to the identity. Note: NO RETURN VALUE
@@ -199,7 +202,7 @@
 */
 extern void vm_set_identity(matrix *m);
 
-#define vm_vec_make(v,_x,_y,_z) (((v)->x=(_x), (v)->y=(_y), (v)->z=(_z)), (v))
+#define vm_vec_make(v,_x,_y,_z) (((v)->xyz.x=(_x), (v)->xyz.y=(_y), (v)->xyz.z=(_z)), (v))
 
 //Global constants
 
@@ -220,7 +223,7 @@ extern matrix vmd_identity_matrix;
 #define vm_angvec_make(v,_p,_b,_h) (((v)->p=(_p), (v)->b=(_b), (v)->h=(_h)), (v))
 
 //negate a vector
-#define vm_vec_negate(v) do {(v)->x = - (v)->x; (v)->y = - (v)->y; (v)->z = - (v)->z;} while (0);
+#define vm_vec_negate(v) do {(v)->xyz.x = - (v)->xyz.x; (v)->xyz.y = - (v)->xyz.y; (v)->xyz.z = - (v)->xyz.z;} while (0);
 
 typedef struct plane {
 	float	A, B, C, D;
@@ -232,9 +235,9 @@ typedef struct plane {
 //ok for dest to equal either source, but should use vm_vec_add2() if so
 #ifdef _INLINE_VECMAT
 #define vm_vec_add( dst, src0, src1 ) do {	\
-	(dst)->x = (src0)->x + (src1)->x;					\
-	(dst)->y = (src0)->y + (src1)->y;					\
-	(dst)->z = (src0)->z + (src1)->z;					\
+	(dst)->xyz.x = (src0)->xyz.x + (src1)->xyz.x;					\
+	(dst)->xyz.y = (src0)->xyz.y + (src1)->xyz.y;					\
+	(dst)->xyz.z = (src0)->xyz.z + (src1)->xyz.z;					\
 } while(0) 
 #else
 void vm_vec_add(vector *dest,vector *src0,vector *src1);
@@ -243,9 +246,9 @@ void vm_vec_add(vector *dest,vector *src0,vector *src1);
 //adds src onto dest vector, returns ptr to dest
 #ifdef _INLINE_VECMAT
 #define vm_vec_add2( dst, src ) do {	\
-	(dst)->x += (src)->x;					\
-	(dst)->y += (src)->y;					\
-	(dst)->z += (src)->z;					\
+	(dst)->xyz.x += (src)->xyz.x;					\
+	(dst)->xyz.y += (src)->xyz.y;					\
+	(dst)->xyz.z += (src)->xyz.z;					\
 } while(0) 
 #else
 void vm_vec_add2(vector *dest,vector *src);
@@ -257,9 +260,9 @@ void vm_vec_add2(vector *dest,vector *src);
 #ifdef _INLINE_VECMAT
 #define vm_vec_scale_sub2( dst, src, k ) do {	\
 	float tmp_k = (k);								\
-	(dst)->x -= (src)->x*tmp_k;					\
-	(dst)->y -= (src)->y*tmp_k;					\
-	(dst)->z -= (src)->z*tmp_k;					\
+	(dst)->xyz.x -= (src)->xyz.x*tmp_k;					\
+	(dst)->xyz.y -= (src)->xyz.y*tmp_k;					\
+	(dst)->xyz.z -= (src)->xyz.z*tmp_k;					\
 } while(0) 
 #else
 void vm_vec_scale_sub2(vector *dest,vector *src, float k);
@@ -269,9 +272,9 @@ void vm_vec_scale_sub2(vector *dest,vector *src, float k);
 //ok for dest to equal either source, but should use vm_vec_sub2() if so
 #ifdef _INLINE_VECMAT
 #define vm_vec_sub( dst, src0, src1 ) do {	\
-	(dst)->x = (src0)->x - (src1)->x;					\
-	(dst)->y = (src0)->y - (src1)->y;					\
-	(dst)->z = (src0)->z - (src1)->z;					\
+	(dst)->xyz.x = (src0)->xyz.x - (src1)->xyz.x;					\
+	(dst)->xyz.y = (src0)->xyz.y - (src1)->xyz.y;					\
+	(dst)->xyz.z = (src0)->xyz.z - (src1)->xyz.z;					\
 } while(0) 
 #else
 void vm_vec_sub(vector *dest,vector *src0,vector *src1);
@@ -282,9 +285,9 @@ void vm_vec_sub(vector *dest,vector *src0,vector *src1);
 //dest can equal source
 #ifdef _INLINE_VECMAT
 #define vm_vec_sub2( dst, src ) do {	\
-	(dst)->x -= (src)->x;					\
-	(dst)->y -= (src)->y;					\
-	(dst)->z -= (src)->z;					\
+	(dst)->xyz.x -= (src)->xyz.x;					\
+	(dst)->xyz.y -= (src)->xyz.y;					\
+	(dst)->xyz.z -= (src)->xyz.z;					\
 } while(0) 
 #else
 void vm_vec_sub2(vector *dest,vector *src);
@@ -303,9 +306,9 @@ vector *vm_vec_avg4(vector *dest,vector *src0,vector *src1,vector *src2,vector *
 #ifdef _INLINE_VECMAT
 #define vm_vec_scale( dst, k ) do {	\
 	float tmp_k = (k);								\
-	(dst)->x *= tmp_k;					\
-	(dst)->y *= tmp_k;					\
-	(dst)->z *= tmp_k;					\
+	(dst)->xyz.x *= tmp_k;					\
+	(dst)->xyz.y *= tmp_k;					\
+	(dst)->xyz.z *= tmp_k;					\
 } while(0) 
 #else
 void vm_vec_scale(vector *dest,float s);
@@ -315,9 +318,9 @@ void vm_vec_scale(vector *dest,float s);
 #ifdef _INLINE_VECMAT
 #define vm_vec_copy_scale( dst, src, k ) do {	\
 	float tmp_k = (k);								\
-	(dst)->x = (src)->x * tmp_k;					\
-	(dst)->y = (src)->y * tmp_k;					\
-	(dst)->z = (src)->z * tmp_k;					\
+	(dst)->xyz.x = (src)->xyz.x * tmp_k;					\
+	(dst)->xyz.y = (src)->xyz.y * tmp_k;					\
+	(dst)->xyz.z = (src)->xyz.z * tmp_k;					\
 } while(0) 
 #else
 void vm_vec_copy_scale(vector *dest,vector *src,float s);
@@ -328,9 +331,9 @@ void vm_vec_copy_scale(vector *dest,vector *src,float s);
 #ifdef _INLINE_VECMAT
 #define vm_vec_scale_add( dst, src1, src2, k ) do {	\
 	float tmp_k = (k);								\
-	(dst)->x = (src1)->x + (src2)->x * tmp_k;					\
-	(dst)->y = (src1)->y + (src2)->y * tmp_k;					\
-	(dst)->z = (src1)->z + (src2)->z * tmp_k;					\
+	(dst)->xyz.x = (src1)->xyz.x + (src2)->xyz.x * tmp_k;					\
+	(dst)->xyz.y = (src1)->xyz.y + (src2)->xyz.y * tmp_k;					\
+	(dst)->xyz.z = (src1)->xyz.z + (src2)->xyz.z * tmp_k;					\
 } while(0) 
 #else
 void vm_vec_scale_add(vector *dest,vector *src1,vector *src2,float k);
@@ -342,9 +345,9 @@ void vm_vec_scale_add(vector *dest,vector *src1,vector *src2,float k);
 #ifdef _INLINE_VECMAT
 #define vm_vec_scale_add2( dst, src, k ) do {	\
 	float tmp_k = (k);								\
-	(dst)->x += (src)->x * tmp_k;					\
-	(dst)->y += (src)->y * tmp_k;					\
-	(dst)->z += (src)->z * tmp_k;					\
+	(dst)->xyz.x += (src)->xyz.x * tmp_k;					\
+	(dst)->xyz.y += (src)->xyz.y * tmp_k;					\
+	(dst)->xyz.z += (src)->xyz.z * tmp_k;					\
 } while(0) 
 #else
 void vm_vec_scale_add2(vector *dest,vector *src,float k);
@@ -355,9 +358,9 @@ void vm_vec_scale_add2(vector *dest,vector *src,float k);
 #ifdef _INLINE_VECMAT
 #define vm_vec_scale2( dst, n, d ) do {	\
 	float tmp_k = (n)/(d);								\
-	(dst)->x *= tmp_k;					\
-	(dst)->y *= tmp_k;					\
-	(dst)->z *= tmp_k;					\
+	(dst)->xyz.x *= tmp_k;					\
+	(dst)->xyz.y *= tmp_k;					\
+	(dst)->xyz.z *= tmp_k;					\
 } while(0) 
 #else
 void vm_vec_scale2(vector *dest,float n,float d);
@@ -417,15 +420,15 @@ float vm_vec_normalized_dir_quick(vector *dest,vector *end,vector *start);
 
 ////returns dot product of two vectors
 #ifdef _INLINE_VECMAT
-#define vm_vec_dotprod( v0, v1 ) (((v1)->x*(v0)->x)+((v1)->y*(v0)->y)+((v1)->z*(v0)->z))
-#define vm_vec_dot( v0, v1 ) (((v1)->x*(v0)->x)+((v1)->y*(v0)->y)+((v1)->z*(v0)->z))
+#define vm_vec_dotprod( v0, v1 ) (((v1)->xyz.x*(v0)->xyz.x)+((v1)->xyz.y*(v0)->xyz.y)+((v1)->xyz.z*(v0)->xyz.z))
+#define vm_vec_dot( v0, v1 ) (((v1)->xyz.x*(v0)->xyz.x)+((v1)->xyz.y*(v0)->xyz.y)+((v1)->xyz.z*(v0)->xyz.z))
 #else
 float vm_vec_dotprod(vector *v0,vector *v1);
 #define vm_vec_dot vm_vec_dotprod
 #endif
 
 #ifdef _INLINE_VECMAT
-#define vm_vec_dot3( x1, y1, z1, v ) (((x1)*(v)->x)+((y1)*(v)->y)+((z1)*(v)->z))
+#define vm_vec_dot3( x1, y1, z1, v ) (((x1)*(v)->xyz.x)+((y1)*(v)->xyz.y)+((z1)*(v)->xyz.z))
 #else
 float vm_vec_dot3(float x,float y,float z,vector *v);
 #endif

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:00 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:26 $
  * $Author: penguin $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -199,9 +202,8 @@
  */
 
 #include <winsock.h>
+#include "pstypes.h"
 #include "multiutil.h"
-#include "multimsgs.h"
-#include "multi.h"
 #include "linklist.h"
 #include "gamesequence.h"
 #include "hudmessage.h"
@@ -217,26 +219,32 @@
 #include "missionshipchoice.h"
 #include "missionscreencommon.h"
 #include "missionweaponchoice.h"
-#include "multi_xfer.h"
 #include "stand_gui.h"
 #include "shipfx.h"
 #include "object.h"
 #include "managepilot.h"
-#include "multiteamselect.h"
 #include "shiphit.h"
 #include "missiondebrief.h"
 #include "observer.h"
 #include "missionmessage.h"
-#include "multilag.h"
 #include "popup.h"
 #include "popupdead.h"
 #include "hudconfig.h"
-#include "multiui.h"
 #include "optionsmenu.h"
 #include "missionhotkey.h"
 #include "missiongoals.h"
 #include "afterburner.h"
 #include "chatbox.h"
+#include "osregistry.h"
+#include "hudescort.h"
+
+#include "multi.h"
+#ifndef NO_NETWORK
+#include "multimsgs.h"
+#include "multi_xfer.h"
+#include "multiteamselect.h"
+#include "multilag.h"
+#include "multiui.h"
 #include "multi_kick.h"
 #include "multi_data.h"
 #include "multi_voice.h"
@@ -252,8 +260,8 @@
 #include "multi_obj.h"
 #include "multi_log.h"
 #include "multi_rate.h"
-#include "osregistry.h"
-#include "hudescort.h"
+#endif
+
 
 extern int MSG_WINDOW_X_START;	// used to position multiplayer text messages
 extern int MSG_WINDOW_Y_START;
@@ -261,6 +269,13 @@ extern int MSG_WINDOW_HEIGHT;
 
 extern int ascii_table[];
 extern int shifted_ascii_table[];
+
+// network object management
+ushort Next_ship_signature;										// next permanent network signature to assign to an object
+ushort Next_asteroid_signature;									// next signature for an asteroid
+ushort Next_non_perm_signature;									// next non-permanent network signature to assign to an object
+ushort Next_debris_signature;										// next debris signature
+
 
 // if a client doesn't receive an update for an object after this many seconds, query server
 // as to the objects status.
@@ -414,6 +429,33 @@ object *multi_get_network_object( ushort net_signature )
 
 	return objp;
 }
+
+
+// -------------------------------------------------------------------------------------------------
+// netmisc_calc_checksum() calculates the checksum of a block of memory.
+//
+//
+ushort netmisc_calc_checksum( void * vptr, int len )
+{
+	ubyte * ptr = (ubyte *)vptr;
+	unsigned int sum1,sum2;
+
+	sum1 = sum2 = 0;
+
+	while(len--)	{
+		sum1 += *ptr++;
+		if (sum1 >= 255 ) sum1 -= 255;
+		sum2 += sum1;
+	}
+	sum2 %= 255;
+	
+	return (unsigned short)((sum1<<8)+ sum2);
+}
+
+
+// -------------remainder of file is not used if NO_NETWORK is on
+
+#ifndef NO_NETWORK
 
 
 // -------------------------------------------------------------------------------------------------
@@ -1163,28 +1205,6 @@ void multi_cull_zombies()
 	}
 #endif
 }
-
-// -------------------------------------------------------------------------------------------------
-// netmisc_calc_checksum() calculates the checksum of a block of memory.
-//
-//
-ushort netmisc_calc_checksum( void * vptr, int len )
-{
-	ubyte * ptr = (ubyte *)vptr;
-	unsigned int sum1,sum2;
-
-	sum1 = sum2 = 0;
-
-	while(len--)	{
-		sum1 += *ptr++;
-		if (sum1 >= 255 ) sum1 -= 255;
-		sum2 += sum1;
-	}
-	sum2 %= 255;
-	
-	return (unsigned short)((sum1<<8)+ sum2);
-}
-
 
 // -------------------------------------------------------------------------------------------------
 // fill_net_addr() calculates the checksum of a block of memory.
@@ -4047,3 +4067,5 @@ int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, ve
 	}
 }
 #pragma optimize("", on)
+
+#endif  // ifndef NO_NETWORK

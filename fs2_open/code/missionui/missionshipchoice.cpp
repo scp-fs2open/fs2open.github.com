@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -391,18 +397,21 @@
 #include "gamesnd.h"
 #include "sound.h"
 #include "missionhotkey.h"
-#include "multi.h"
-#include "multimsgs.h"
 #include "missionload.h"
 #include "eventmusic.h"
 #include "chatbox.h"
 #include "popup.h"
-#include "multiui.h"
-#include "multiteamselect.h"
-#include "multiutil.h"
 #include "hudwingmanstatus.h"
 #include "alphacolors.h"
 #include "localize.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multimsgs.h"
+#include "multiui.h"
+#include "multiteamselect.h"
+#include "multiutil.h"
+#endif
 
 //////////////////////////////////////////////////////
 // Game-wide Globals
@@ -430,8 +439,8 @@ typedef struct ss_icon_info
 {
 	int				icon_bmaps[NUM_ICON_FRAMES];
 	int				current_icon_bitmap;
-	anim				*anim;
-	anim_instance	*anim_instance;
+	anim_t			*anim;
+	anim_instance_t *anim_instance;
 } ss_icon_info;
 
 typedef struct ss_slot_info
@@ -469,7 +478,7 @@ int Hot_ss_slot;			// index for slot that mouse is over (0..11)
 ////////////////////////////////////////////////////////////
 UI_WINDOW	Ship_select_ui_window;	
 
-static Ship_anim_coords[GR_NUM_RESOLUTIONS][2] = {
+static int Ship_anim_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
 		257, 84		// GR_640
 	},
@@ -478,7 +487,7 @@ static Ship_anim_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-static Ship_info_coords[GR_NUM_RESOLUTIONS][2] = {
+static int Ship_info_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
 		28, 78				// GR_640
 	},
@@ -988,11 +997,13 @@ void ship_select_init()
 	common_set_interface_palette("ShipPalette");
 	common_flash_button_init();
 
+#ifndef NO_NETWORK
 	// if in multiplayer -- set my state to be ship select
 	if ( Game_mode & GM_MULTIPLAYER ){		
 		// also set the ship which is mine as the default
 		maybe_change_selected_wing_ship(Net_player->p_info.ship_index/4,Net_player->p_info.ship_index % 4);
 	}
+#endif
 
 	set_active_ui(&Ship_select_ui_window);
 	Current_screen = ON_SHIP_SELECT;
@@ -1356,7 +1367,7 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Max Velocity",742));	
 	y_start += 10;
-	sprintf(str,XSTR("%d m/s",743),(int)sip->max_vel.z);
+	sprintf(str,XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
 	gr_set_color_fast(text);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,str);	
 	y_start += 10;
@@ -1662,10 +1673,12 @@ void ship_select_do(float frametime)
 
 	gr_flip();
 
+#ifndef NO_NETWORK
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		if ( Selected_ss_class >= 0 )
 			Net_player->p_info.ship_class = Selected_ss_class;
 	}	 
+#endif
 
 	if(!Background_playing){
 		// should render this as close to last as possible so it overlaps all controls
@@ -2000,6 +2013,7 @@ void commit_pressed()
 
 	// move to the next stage
 	// in multiplayer this is the final mission sync
+#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){		
 		Multi_sync_mode = MULTI_SYNC_POST_BRIEFING;
 		gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);	
@@ -2010,7 +2024,9 @@ void commit_pressed()
 		}
 	}
 	// in single player we jump directly into the mission
-	else {
+	else
+#endif
+	{
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
 }
@@ -2181,12 +2197,13 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 				if ( ws->status & WING_SLOT_LOCKED ) {					
 					bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED];
 
+#ifndef NO_NETWORK
 					// in multiplayer, determine if this it the special case where the slot is disabled, and 
 					// it is also _my_ slot (ie, team capatains/host have not locked players yet)
 					if((Game_mode & GM_MULTIPLAYER) && multi_ts_disabled_high_slot(slot_index)){
 						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED_HIGH];
 					}
-
+#endif
 					break;
 				}
 
@@ -2621,6 +2638,7 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 		sp = &Ships[wp->ship_index[wing_slot]];
 
 		// in multiplayer, return the callsigns of the players who are in the ships
+#ifndef NO_NETWORK
 		if(Game_mode & GM_MULTIPLAYER){
 			int player_index = multi_find_player_by_object(&Objects[sp->objnum]);
 			if(player_index != -1){
@@ -2628,7 +2646,10 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 			} else {
 				strcpy(name,sp->ship_name);
 			}
-		} else {		
+		}
+		else
+#endif
+		{		
 			strcpy(name, sp->ship_name);
 		}
 	}
@@ -2861,10 +2882,12 @@ int ss_disabled_slot(int slot_num)
 		return 0;
 	}
 
+#ifndef NO_NETWORK
 	// HACK HACK HACK - call the team select function in multiplayer
 	if(Game_mode & GM_MULTIPLAYER) {
 		return multi_ts_disabled_slot(slot_num);
 	} 
+#endif
 	return ( Ss_wings[slot_num/4].ss_slots[slot_num%4].status & WING_SLOT_IGNORE );
 }
 
@@ -3029,10 +3052,12 @@ void ss_init_units()
 		}	// end for
 	}	// end for
 
+#ifndef NO_NETWORK
 	// lock/unlock any necessary slots for multiplayer
 	if(Game_mode & GM_MULTIPLAYER){
 		ss_recalc_multiplayer_slots();
 	}
+#endif
 }
 
 // set the necessary pointers
@@ -3065,10 +3090,14 @@ void ship_select_init_team_data(int team_num)
 
 	// determine how many wings we should be checking for
 	Wss_num_wings = 0;
+#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		// now setup wings for easy reference		
 		ss_init_wing_info(0,team_num);			
-	} else {			
+	}
+	else
+#endif
+	{			
 		// now setup wings for easy reference
 		for(idx=0;idx<MAX_PLAYER_WINGS;idx++){
 			ss_init_wing_info(idx,idx);	
@@ -3091,6 +3120,7 @@ void ship_select_common_init()
 	int idx;
 
 	// initialize team critical data for all teams
+#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){		
 		// initialize for all teams in the game
 		for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){	
@@ -3099,7 +3129,10 @@ void ship_select_common_init()
 
 		// finally, intialize team data for myself
 		ship_select_init_team_data(Common_team);
-	} else {			
+	}
+	else
+#endif
+	{			
 		ship_select_init_team_data(Common_team);
 	}
 	
@@ -3346,6 +3379,7 @@ void ss_drop(int from_slot,int from_list,int to_slot,int to_list,int player_inde
 	}	
 }
 
+#ifndef NO_NETWORK
 // lock/unlock any necessary slots for multiplayer
 void ss_recalc_multiplayer_slots()
 {
@@ -3390,4 +3424,4 @@ void ss_recalc_multiplayer_slots()
 		}
 	}
 } 
-
+#endif

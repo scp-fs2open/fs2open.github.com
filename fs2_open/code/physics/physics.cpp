@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:09  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -398,25 +401,25 @@ void physics_init( physics_info * pi )
 	pi->side_slip_time_const = 0.05f;					
 	pi->rotdamp = 0.1f;
 
-	pi->max_vel.x = 100.0f;		//sideways
-	pi->max_vel.y = 100.0f;		//up/down
-	pi->max_vel.z = 100.0f;		//forward
+	pi->max_vel.xyz.x = 100.0f;		//sideways
+	pi->max_vel.xyz.y = 100.0f;		//up/down
+	pi->max_vel.xyz.z = 100.0f;		//forward
 	pi->max_rear_vel = 100.0f;	//backward -- controlled seperately
 
-	pi->max_rotvel.x = 2.0f;		//pitch	
-	pi->max_rotvel.y = 1.0f;		//heading
-	pi->max_rotvel.z = 2.0f;		//bank
+	pi->max_rotvel.xyz.x = 2.0f;		//pitch	
+	pi->max_rotvel.xyz.y = 1.0f;		//heading
+	pi->max_rotvel.xyz.z = 2.0f;		//bank
 
-	pi->prev_ramp_vel.x = 0.0f;
-	pi->prev_ramp_vel.y = 0.0f;
-	pi->prev_ramp_vel.z = 0.0f;
+	pi->prev_ramp_vel.xyz.x = 0.0f;
+	pi->prev_ramp_vel.xyz.y = 0.0f;
+	pi->prev_ramp_vel.xyz.z = 0.0f;
 
-	pi->desired_vel.x = 0.0f;
-	pi->desired_vel.y = 0.0f;
-	pi->desired_vel.z = 0.0f;
+	pi->desired_vel.xyz.x = 0.0f;
+	pi->desired_vel.xyz.y = 0.0f;
+	pi->desired_vel.xyz.z = 0.0f;
 
-	pi->slide_accel_time_const=pi->side_slip_time_const;	// slide using max_vel.x & .y
-	pi->slide_decel_time_const=pi->side_slip_time_const;	// slide using max_vel.x & .y
+	pi->slide_accel_time_const=pi->side_slip_time_const;	// slide using max_vel.xyz.x & .xyz.y
+	pi->slide_decel_time_const=pi->side_slip_time_const;	// slide using max_vel.xyz.x & .xyz.y
 
 	pi->afterburner_decay = 1;	
 	pi->forward_thrust = 0.0f;
@@ -424,9 +427,9 @@ void physics_init( physics_info * pi )
 	pi->flags = 0;
 
 	// default values for moment of inetaia
-	vm_vec_make( &pi->I_body_inv.rvec, 1e-5f, 0.0f, 0.0f );
-	vm_vec_make( &pi->I_body_inv.uvec, 0.0f, 1e-5f, 0.0f );
-	vm_vec_make( &pi->I_body_inv.fvec, 0.0f, 0.0f, 1e-5f );
+	vm_vec_make( &pi->I_body_inv.vec.rvec, 1e-5f, 0.0f, 0.0f );
+	vm_vec_make( &pi->I_body_inv.vec.uvec, 0.0f, 1e-5f, 0.0f );
+	vm_vec_make( &pi->I_body_inv.vec.fvec, 0.0f, 0.0f, 1e-5f );
 
 }
 
@@ -519,9 +522,9 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	}
 
 	// Do rotational physics with given damping
-	apply_physics( rotdamp, pi->desired_rotvel.x, pi->rotvel.x, sim_time, &new_vel.x, NULL );
-	apply_physics( rotdamp, pi->desired_rotvel.y, pi->rotvel.y, sim_time, &new_vel.y, NULL );
-	apply_physics( rotdamp, pi->desired_rotvel.z, pi->rotvel.z, sim_time, &new_vel.z, NULL );
+	apply_physics( rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time, &new_vel.xyz.x, NULL );
+	apply_physics( rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time, &new_vel.xyz.y, NULL );
+	apply_physics( rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time, &new_vel.xyz.z, NULL );
 
 	/*
 #ifdef ROT_DEBUG
@@ -534,9 +537,9 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 
 	pi->rotvel = new_vel;
 
-	tangles.p = pi->rotvel.x*sim_time;
-	tangles.h = pi->rotvel.y*sim_time;
-	tangles.b = pi->rotvel.z*sim_time;
+	tangles.p = pi->rotvel.xyz.x*sim_time;
+	tangles.h = pi->rotvel.xyz.y*sim_time;
+	tangles.b = pi->rotvel.xyz.z*sim_time;
 
 	// If this is the viewer_object, keep track of the
 	// changes in banking so that rotated bitmaps look correct.
@@ -615,20 +618,20 @@ void physics_sim_rot_editor(matrix * orient, physics_info * pi, float sim_time)
 	matrix	tmp;
 	angles	t1, t2;
 
-	apply_physics( pi->rotdamp, pi->desired_rotvel.x, pi->rotvel.x, sim_time, 
-								 &new_vel.x, NULL );
+	apply_physics( pi->rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time, 
+								 &new_vel.xyz.x, NULL );
 
-	apply_physics( pi->rotdamp, pi->desired_rotvel.y, pi->rotvel.y, sim_time, 
-								 &new_vel.y, NULL );
+	apply_physics( pi->rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time, 
+								 &new_vel.xyz.y, NULL );
 
-	apply_physics( pi->rotdamp, pi->desired_rotvel.z, pi->rotvel.z, sim_time, 
-								 &new_vel.z, NULL );
+	apply_physics( pi->rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time, 
+								 &new_vel.xyz.z, NULL );
 	
 	pi->rotvel = new_vel;
 
-	tangles.p = pi->rotvel.x*sim_time;
-	tangles.h = pi->rotvel.y*sim_time;
-	tangles.b = pi->rotvel.z*sim_time;
+	tangles.p = pi->rotvel.xyz.x*sim_time;
+	tangles.h = pi->rotvel.xyz.y*sim_time;
+	tangles.b = pi->rotvel.xyz.z*sim_time;
 
 	t1 = t2 = tangles;
 	t1.h = 0.0f;  t1.b = 0.0f;
@@ -676,9 +679,9 @@ void physics_sim_vel(vector * position, physics_info * pi, float sim_time, matri
 		} else {
 			// damp is multiplied by fraction and not fraction^2, gives better collision separation
 			float reduced_damp_fraction_time_left = timestamp_until( pi->reduced_damp_decay ) / (float) REDUCED_DAMP_TIME;
-			damp.x = pi->side_slip_time_const * ( 1 + (REDUCED_DAMP_FACTOR-1) * reduced_damp_fraction_time_left );
-			damp.y = pi->side_slip_time_const * ( 1 + (REDUCED_DAMP_FACTOR-1) * reduced_damp_fraction_time_left );
-			damp.z = pi->side_slip_time_const * reduced_damp_fraction_time_left * REDUCED_DAMP_FACTOR;
+			damp.xyz.x = pi->side_slip_time_const * ( 1 + (REDUCED_DAMP_FACTOR-1) * reduced_damp_fraction_time_left );
+			damp.xyz.y = pi->side_slip_time_const * ( 1 + (REDUCED_DAMP_FACTOR-1) * reduced_damp_fraction_time_left );
+			damp.xyz.z = pi->side_slip_time_const * reduced_damp_fraction_time_left * REDUCED_DAMP_FACTOR;
 		}
 	} else {
 		// regular damping
@@ -696,10 +699,10 @@ void physics_sim_vel(vector * position, physics_info * pi, float sim_time, matri
 	vm_vec_rotate (&local_desired_vel, &pi->desired_vel, orient);
 
 	// find updated LOCAL velocity and position in the local x direction
-	apply_physics (damp.x, local_desired_vel.x, local_v_in.x, sim_time, &local_v_out.x, &local_disp.x);
+	apply_physics (damp.xyz.x, local_desired_vel.xyz.x, local_v_in.xyz.x, sim_time, &local_v_out.xyz.x, &local_disp.xyz.x);
 
 	// find updated LOCAL velocity and position in the local y direction
-	apply_physics (damp.y, local_desired_vel.y, local_v_in.y, sim_time, &local_v_out.y, &local_disp.y);
+	apply_physics (damp.xyz.y, local_desired_vel.xyz.y, local_v_in.xyz.y, sim_time, &local_v_out.xyz.y, &local_disp.xyz.y);
 
 	// find updated LOCAL velocity and position in the local z direction
 	// for player ship, damp should normally be zero, but may be altered in a shockwave
@@ -708,21 +711,21 @@ void physics_sim_vel(vector * position, physics_info * pi, float sim_time, matri
 	// become (0.01x in 3 sec)
 
 	int special_warp_in = FALSE;
-	float excess = local_v_in.z - pi->max_vel.z;
+	float excess = local_v_in.xyz.z - pi->max_vel.xyz.z;
 	if (excess > 5 && (pi->flags & PF_SPECIAL_WARP_IN)) {
 		special_warp_in = TRUE;
 		float exp_factor = float(exp(-sim_time / SPECIAL_WARP_T_CONST));
-		local_v_out.z = pi->max_vel.z + excess * exp_factor;
-		local_disp.z = (pi->max_vel.z * sim_time) + excess * (float(SPECIAL_WARP_T_CONST) * (1.0f - exp_factor));
+		local_v_out.xyz.z = pi->max_vel.xyz.z + excess * exp_factor;
+		local_disp.xyz.z = (pi->max_vel.xyz.z * sim_time) + excess * (float(SPECIAL_WARP_T_CONST) * (1.0f - exp_factor));
 	} else if (pi->flags & PF_SPECIAL_WARP_OUT) {
 		float exp_factor = float(exp(-sim_time / SPECIAL_WARP_T_CONST));
 		vector temp;
 		vm_vec_rotate(&temp, &pi->prev_ramp_vel, orient);
-		float deficeit = temp.z - local_v_in.z;
-		local_v_out.z = local_v_in.z + deficeit * (1.0f - exp_factor);
-		local_disp.z = (local_v_in.z * sim_time) + deficeit * (sim_time - (float(SPECIAL_WARP_T_CONST) * (1.0f - exp_factor)));
+		float deficeit = temp.xyz.z - local_v_in.xyz.z;
+		local_v_out.xyz.z = local_v_in.xyz.z + deficeit * (1.0f - exp_factor);
+		local_disp.xyz.z = (local_v_in.xyz.z * sim_time) + deficeit * (sim_time - (float(SPECIAL_WARP_T_CONST) * (1.0f - exp_factor)));
 	} else {
-		apply_physics (damp.z, local_desired_vel.z, local_v_in.z, sim_time, &local_v_out.z, &local_disp.z);
+		apply_physics (damp.xyz.z, local_desired_vel.xyz.z, local_v_in.xyz.z, sim_time, &local_v_out.xyz.z, &local_disp.xyz.z);
 	}
 
 	// maybe turn off special warp in flag
@@ -764,7 +767,7 @@ void physics_sim(vector* position, matrix* orient, physics_info* pi, float sim_t
 		physics_sim_rot(orient, pi, sim_time);
 
 		pi->speed = vm_vec_mag(&pi->vel);							//	Note, cannot use quick version, causes cumulative error, increasing speed.
-		pi->fspeed = vm_vec_dot(&orient->fvec, &pi->vel);		// instead of vector magnitude -- use only forward vector since we are only interested in forward velocity
+		pi->fspeed = vm_vec_dot(&orient->vec.fvec, &pi->vel);		// instead of vector magnitude -- use only forward vector since we are only interested in forward velocity
 	}
 
 }
@@ -778,20 +781,20 @@ void physics_sim_editor(vector *position, matrix * orient, physics_info * pi, fl
 	physics_sim_vel(position, pi, sim_time, orient);
 	physics_sim_rot_editor(orient, pi, sim_time);
 	pi->speed = vm_vec_mag_quick(&pi->vel);
-	pi->fspeed = vm_vec_dot(&orient->fvec, &pi->vel);		// instead of vector magnitude -- use only forward vector since we are only interested in forward velocity
+	pi->fspeed = vm_vec_dot(&orient->vec.fvec, &pi->vel);		// instead of vector magnitude -- use only forward vector since we are only interested in forward velocity
 }
 
 // function to predict an object's position given the delta time and an objects physics info
 void physics_predict_pos(physics_info *pi, float delta_time, vector *predicted_pos)
 {
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.x, pi->vel.x, delta_time, 
-								 NULL, &predicted_pos->x );
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time, 
+								 NULL, &predicted_pos->xyz.x );
 
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.y, pi->vel.y, delta_time, 
-								 NULL, &predicted_pos->y );
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time, 
+								 NULL, &predicted_pos->xyz.y );
 
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.z, pi->vel.z, delta_time, 
-								 NULL, &predicted_pos->z );
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time, 
+								 NULL, &predicted_pos->xyz.z );
 }
 
 // function to predict an object's velocity given the parameters
@@ -800,14 +803,14 @@ void physics_predict_vel(physics_info *pi, float delta_time, vector *predicted_v
 	if (pi->flags & PF_CONST_VEL) {
 		predicted_vel = &pi->vel;
 	} else {
-		apply_physics( pi->side_slip_time_const, pi->desired_vel.x, pi->vel.x, delta_time, 
-									 &predicted_vel->x, NULL );
+		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time, 
+									 &predicted_vel->xyz.x, NULL );
 
-		apply_physics( pi->side_slip_time_const, pi->desired_vel.y, pi->vel.y, delta_time, 
-									 &predicted_vel->y, NULL );
+		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time, 
+									 &predicted_vel->xyz.y, NULL );
 
-		apply_physics( pi->side_slip_time_const, pi->desired_vel.z, pi->vel.z, delta_time, 
-									 &predicted_vel->z, NULL );
+		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time, 
+									 &predicted_vel->xyz.z, NULL );
 	}
 }
 
@@ -815,14 +818,14 @@ void physics_predict_vel(physics_info *pi, float delta_time, vector *predicted_v
 void physics_predict_pos_and_vel(physics_info *pi, float delta_time, vector *predicted_vel, vector *predicted_pos)
 {
 
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.x, pi->vel.x, delta_time, 
-	                      &predicted_vel->x, &predicted_pos->x );
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time, 
+	                      &predicted_vel->xyz.x, &predicted_pos->xyz.x );
 
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.y, pi->vel.y, delta_time, 
-	                      &predicted_vel->y, &predicted_pos->y );
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time, 
+	                      &predicted_vel->xyz.y, &predicted_pos->xyz.y );
 
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.z, pi->vel.z, delta_time, 
-	                      &predicted_vel->z, &predicted_pos->z );
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time, 
+	                      &predicted_vel->xyz.z, &predicted_pos->xyz.z );
 }
 
 // physics_read_flying_controls() 
@@ -856,9 +859,9 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	// give control imput to cause rotation in engine wash
 	extern int Wash_on;
 	if ( wash_rot && Wash_on ) {
-		ci->pitch += wash_rot->x;
-		ci->bank += wash_rot->z;
-		ci->heading += wash_rot->y;
+		ci->pitch += wash_rot->xyz.x;
+		ci->bank += wash_rot->xyz.z;
+		ci->heading += wash_rot->xyz.y;
 	}
 
 	if (ci->pitch > 1.0f ) ci->pitch = 1.0f;
@@ -882,8 +885,8 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	if (ci->forward > 1.0f ) ci->forward = 1.0f;
 	else if (ci->forward < -1.0f ) ci->forward = -1.0f;
 
-	pi->desired_rotvel.x = ci->pitch * pi->max_rotvel.x;
-	pi->desired_rotvel.y = ci->heading * pi->max_rotvel.y;
+	pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
+	pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
 
 	float	delta_bank;
 
@@ -891,27 +894,27 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	//	To change direction of bank, negate the whole expression.
 	//	To increase magnitude of banking, decrease denominator.
 	//	Adam: The following statement is all the math for banking while turning.
-	delta_bank = - (ci->heading * pi->max_rotvel.y)/2.0f;
+	delta_bank = - (ci->heading * pi->max_rotvel.xyz.y)/2.0f;
 #else
 	delta_bank = 0.0f;
 #endif
 
-	pi->desired_rotvel.z = ci->bank * pi->max_rotvel.z + delta_bank;
+	pi->desired_rotvel.xyz.z = ci->bank * pi->max_rotvel.xyz.z + delta_bank;
 	pi->forward_thrust = ci->forward;
 
 	if ( pi->flags & PF_AFTERBURNER_ON ) {
-		goal_vel.x = ci->sideways*pi->afterburner_max_vel.x;
-		goal_vel.y = ci->vertical*pi->afterburner_max_vel.y;
-		goal_vel.z = ci->forward* pi->afterburner_max_vel.z;
+		goal_vel.xyz.x = ci->sideways*pi->afterburner_max_vel.xyz.x;
+		goal_vel.xyz.y = ci->vertical*pi->afterburner_max_vel.xyz.y;
+		goal_vel.xyz.z = ci->forward* pi->afterburner_max_vel.xyz.z;
 	}
 	else {
-		goal_vel.x = ci->sideways*pi->max_vel.x;
-		goal_vel.y = ci->vertical*pi->max_vel.y;
-		goal_vel.z = ci->forward* pi->max_vel.z;
+		goal_vel.xyz.x = ci->sideways*pi->max_vel.xyz.x;
+		goal_vel.xyz.y = ci->vertical*pi->max_vel.xyz.y;
+		goal_vel.xyz.z = ci->forward* pi->max_vel.xyz.z;
 	}
 
-	if ( goal_vel.z < -pi->max_rear_vel ) 
-		goal_vel.z = -pi->max_rear_vel;
+	if ( goal_vel.xyz.z < -pi->max_rear_vel ) 
+		goal_vel.xyz.z = -pi->max_rear_vel;
 
 
 	if ( pi->flags & PF_ACCELERATES )	{
@@ -938,13 +941,13 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		if (pi->flags & PF_SLIDE_ENABLED)  {
 			// determine the local velocity
 			// deterimine whether accelerating or decleration toward goal for x
-			if ( goal_vel.x > 0.0f )  {
-				if ( goal_vel.x >= pi->prev_ramp_vel.x ) 
+			if ( goal_vel.xyz.x > 0.0f )  {
+				if ( goal_vel.xyz.x >= pi->prev_ramp_vel.xyz.x ) 
 					ramp_time_const = pi->slide_accel_time_const;
 				else
 					ramp_time_const = pi->slide_decel_time_const;
-			} else  {  // goal_vel.x <= 0.0
-				if ( goal_vel.x <= pi->prev_ramp_vel.x )
+			} else  {  // goal_vel.xyz.x <= 0.0
+				if ( goal_vel.xyz.x <= pi->prev_ramp_vel.xyz.x )
 					ramp_time_const = pi->slide_accel_time_const;
 				else
 					ramp_time_const = pi->slide_decel_time_const;
@@ -953,16 +956,16 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			if ( pi->flags & PF_REDUCED_DAMP ) {
 				ramp_time_const *= reduced_damp_ramp_time_expansion;
 			}
-			pi->prev_ramp_vel.x = velocity_ramp(pi->prev_ramp_vel.x, goal_vel.x, ramp_time_const, sim_time);
+			pi->prev_ramp_vel.xyz.x = velocity_ramp(pi->prev_ramp_vel.xyz.x, goal_vel.xyz.x, ramp_time_const, sim_time);
 
 			// deterimine whether accelerating or decleration toward goal for y
-			if ( goal_vel.y > 0.0f )  {
-				if ( goal_vel.y >= pi->prev_ramp_vel.y ) 
+			if ( goal_vel.xyz.y > 0.0f )  {
+				if ( goal_vel.xyz.y >= pi->prev_ramp_vel.xyz.y ) 
 					ramp_time_const = pi->slide_accel_time_const;
 				else
 					ramp_time_const = pi->slide_decel_time_const;
-			} else  {  // goal_vel.y <= 0.0
-				if ( goal_vel.y <= pi->prev_ramp_vel.y )
+			} else  {  // goal_vel.xyz.y <= 0.0
+				if ( goal_vel.xyz.y <= pi->prev_ramp_vel.xyz.y )
 					ramp_time_const = pi->slide_accel_time_const;
 				else
 					ramp_time_const = pi->slide_decel_time_const;
@@ -971,15 +974,15 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			if ( pi->flags & PF_REDUCED_DAMP ) {
 				ramp_time_const *= reduced_damp_ramp_time_expansion;
 			}
-			pi->prev_ramp_vel.y = velocity_ramp( pi->prev_ramp_vel.y, goal_vel.y, ramp_time_const, sim_time);
+			pi->prev_ramp_vel.xyz.y = velocity_ramp( pi->prev_ramp_vel.xyz.y, goal_vel.xyz.y, ramp_time_const, sim_time);
 		} else  {
 			// slide not enabled
-			pi->prev_ramp_vel.x = 0.0f;
-			pi->prev_ramp_vel.y = 0.0f;
+			pi->prev_ramp_vel.xyz.x = 0.0f;
+			pi->prev_ramp_vel.xyz.y = 0.0f;
 		}
 
 		// find ramp velocity in the forward direction
-		if ( goal_vel.z >= pi->prev_ramp_vel.z )  {
+		if ( goal_vel.xyz.z >= pi->prev_ramp_vel.xyz.z )  {
 			if ( pi->flags & PF_AFTERBURNER_ON )
 				ramp_time_const = pi->afterburner_forward_accel_time_const;
 			else
@@ -991,15 +994,15 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		if ( pi->flags & PF_REDUCED_DAMP ) {
 			ramp_time_const *= reduced_damp_ramp_time_expansion;
 		}
-		pi->prev_ramp_vel.z = velocity_ramp( pi->prev_ramp_vel.z, goal_vel.z, ramp_time_const, sim_time);
+		pi->prev_ramp_vel.xyz.z = velocity_ramp( pi->prev_ramp_vel.xyz.z, goal_vel.xyz.z, ramp_time_const, sim_time);
 
 
 		// this translates local desired velocities to world velocities
 
 		vm_vec_zero(&pi->desired_vel);
-		vm_vec_scale_add2( &pi->desired_vel, &orient->rvec, pi->prev_ramp_vel.x );
-		vm_vec_scale_add2( &pi->desired_vel, &orient->uvec, pi->prev_ramp_vel.y );
-		vm_vec_scale_add2( &pi->desired_vel, &orient->fvec, pi->prev_ramp_vel.z );
+		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x );
+		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y );
+		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z );
 	} else  // object does not accelerate  (PF_ACCELERATES not set)
 		pi->desired_vel = pi->vel;
 }
@@ -1048,7 +1051,7 @@ void physics_apply_whack(vector *impulse, vector *pos, physics_info *pi, matrix 
 //	vector	npos;
 
 	//	Detect null vector.
-	if ((fl_abs(impulse->x) <= WHACK_LIMIT) && (fl_abs(impulse->y) <= WHACK_LIMIT) && (fl_abs(impulse->z) <= WHACK_LIMIT))
+	if ((fl_abs(impulse->xyz.x) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.y) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.z) <= WHACK_LIMIT))
 		return;
 
 	// first do the rotational velocity
@@ -1069,7 +1072,7 @@ void physics_apply_whack(vector *impulse, vector *pos, physics_info *pi, matrix 
 	}
 #endif
 
-	//mprintf(("Whack: %7.3f %7.3f %7.3f\n", pi->rotvel.x, pi->rotvel.y, pi->rotvel.z));
+	//mprintf(("Whack: %7.3f %7.3f %7.3f\n", pi->rotvel.xyz.x, pi->rotvel.xyz.y, pi->rotvel.xyz.z));
 
 	// instant whack on the velocity
 	// reduce damping on all axes
@@ -1162,17 +1165,17 @@ void physics_apply_shock(vector *direction_vec, float pressure, physics_info *pi
 
 	vm_vec_normalize_safe ( direction_vec );
 
-	area.x = (max->y - min->z) * (max->z - min->z);
-	area.y = (max->x - min->x) * (max->z - min->z);
-	area.z = (max->x - min->x) * (max->y - min->y);
+	area.xyz.x = (max->xyz.y - min->xyz.z) * (max->xyz.z - min->xyz.z);
+	area.xyz.y = (max->xyz.x - min->xyz.x) * (max->xyz.z - min->xyz.z);
+	area.xyz.z = (max->xyz.x - min->xyz.x) * (max->xyz.y - min->xyz.y);
 
-	normal.x = vm_vec_dotprod( direction_vec, &orient->rvec );
-	normal.y = vm_vec_dotprod( direction_vec, &orient->uvec );
-	normal.z = vm_vec_dotprod( direction_vec, &orient->fvec );
+	normal.xyz.x = vm_vec_dotprod( direction_vec, &orient->vec.rvec );
+	normal.xyz.y = vm_vec_dotprod( direction_vec, &orient->vec.uvec );
+	normal.xyz.z = vm_vec_dotprod( direction_vec, &orient->vec.fvec );
 
-	sin.x = fl_sqrt( fl_abs(1.0f - normal.x*normal.x) );
-	sin.y = fl_sqrt( fl_abs(1.0f - normal.y*normal.y) );
-	sin.z = fl_sqrt( fl_abs(1.0f - normal.z*normal.z) );	
+	sin.xyz.x = fl_sqrt( fl_abs(1.0f - normal.xyz.x*normal.xyz.x) );
+	sin.xyz.y = fl_sqrt( fl_abs(1.0f - normal.xyz.y*normal.xyz.y) );
+	sin.xyz.z = fl_sqrt( fl_abs(1.0f - normal.xyz.z*normal.xyz.z) );	
 
 	vm_vec_make( &torque, 0.0f, 0.0f, 0.0f );
 
@@ -1186,28 +1189,28 @@ void physics_apply_shock(vector *direction_vec, float pressure, physics_info *pi
 	//  more massive objects get less rotation
 
 	// find torque due to forces on the right/left face
-	if ( normal.x < 0.0f )		// normal < 0, hits the right face
-		vm_vec_copy_scale( &impact_vec, &orient->rvec, max->x * pressure * area.x *  normal.x * sin.x / pi->mass );
+	if ( normal.xyz.x < 0.0f )		// normal < 0, hits the right face
+		vm_vec_copy_scale( &impact_vec, &orient->vec.rvec, max->xyz.x * pressure * area.xyz.x *  normal.xyz.x * sin.xyz.x / pi->mass );
 	else								// normal > 0, hits the left face
-		vm_vec_copy_scale( &impact_vec, &orient->rvec, min->x * pressure * area.x * -normal.x * sin.x / pi->mass );
+		vm_vec_copy_scale( &impact_vec, &orient->vec.rvec, min->xyz.x * pressure * area.xyz.x * -normal.xyz.x * sin.xyz.x / pi->mass );
 
 	vm_vec_crossprod( &temp_torque, &impact_vec, direction_vec );
 	vm_vec_add2( &torque, &temp_torque );
 
 	// find torque due to forces on the up/down face
-	if ( normal.y < 0.0f )
-		vm_vec_copy_scale( &impact_vec, &orient->uvec, max->y * pressure * area.y *  normal.y * sin.y / pi->mass );
+	if ( normal.xyz.y < 0.0f )
+		vm_vec_copy_scale( &impact_vec, &orient->vec.uvec, max->xyz.y * pressure * area.xyz.y *  normal.xyz.y * sin.xyz.y / pi->mass );
 	else
-		vm_vec_copy_scale( &impact_vec, &orient->uvec, min->y * pressure * area.y * -normal.y * sin.y / pi->mass );
+		vm_vec_copy_scale( &impact_vec, &orient->vec.uvec, min->xyz.y * pressure * area.xyz.y * -normal.xyz.y * sin.xyz.y / pi->mass );
 
 	vm_vec_crossprod( &temp_torque, &impact_vec, direction_vec );
 	vm_vec_add2( &torque, &temp_torque );
 
 	// find torque due to forces on the forward/backward face
-	if ( normal.z < 0.0f )
-		vm_vec_copy_scale( &impact_vec, &orient->fvec, max->z * pressure * area.z *  normal.z * sin.z / pi->mass );
+	if ( normal.xyz.z < 0.0f )
+		vm_vec_copy_scale( &impact_vec, &orient->vec.fvec, max->xyz.z * pressure * area.xyz.z *  normal.xyz.z * sin.xyz.z / pi->mass );
 	else
-		vm_vec_copy_scale( &impact_vec, &orient->fvec, min->z * pressure * area.z * -normal.z * sin.z / pi->mass );
+		vm_vec_copy_scale( &impact_vec, &orient->vec.fvec, min->xyz.z * pressure * area.xyz.z * -normal.xyz.z * sin.xyz.z / pi->mass );
 
 	vm_vec_crossprod( &temp_torque, &impact_vec, direction_vec );
 	vm_vec_add2( &torque, &temp_torque );
@@ -1275,7 +1278,7 @@ void physics_collide_whack( vector *impulse, vector *world_delta_rotvel, physics
 	vector	body_delta_rotvel;
 
 	//	Detect null vector.
-	if ((fl_abs(impulse->x) <= WHACK_LIMIT) && (fl_abs(impulse->y) <= WHACK_LIMIT) && (fl_abs(impulse->z) <= WHACK_LIMIT))
+	if ((fl_abs(impulse->xyz.x) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.y) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.z) <= WHACK_LIMIT))
 		return;
 
 	vm_vec_rotate( &body_delta_rotvel, world_delta_rotvel, orient );
@@ -1325,32 +1328,32 @@ int check_rotvel_limit( physics_info *pi )
 	if ( !(pi->flags & PF_DEAD_DAMP) ) {
 		// case of normal, live ship
 		// -- Commented out by MK: Assert( vm_vec_mag_squared(&pi->max_rotvel) > ROTVEL_TOL );
-		// Assert( (pi->max_rotvel.x <= ROTVEL_CAP) && (pi->max_rotvel.y <= ROTVEL_CAP) && (pi->max_rotvel.z <= ROTVEL_CAP) );
-		//		Warning(LOCATION,"Excessive rotvel (wx: %f, wy: %f, wz:%f)\n", pi->rotvel.x, pi->rotvel.y, pi->rotvel.z);
-		if ( fl_abs(pi->rotvel.x) > pi->max_rotvel.x ) {
-			pi->rotvel.x = (pi->rotvel.x / fl_abs(pi->rotvel.x)) * (pi->max_rotvel.x - (float) ROTVEL_TOL);
+		// Assert( (pi->max_rotvel.xyz.x <= ROTVEL_CAP) && (pi->max_rotvel.xyz.y <= ROTVEL_CAP) && (pi->max_rotvel.xyz.z <= ROTVEL_CAP) );
+		//		Warning(LOCATION,"Excessive rotvel (wx: %f, wy: %f, wz:%f)\n", pi->rotvel.xyz.x, pi->rotvel.xyz.y, pi->rotvel.xyz.z);
+		if ( fl_abs(pi->rotvel.xyz.x) > pi->max_rotvel.xyz.x ) {
+			pi->rotvel.xyz.x = (pi->rotvel.xyz.x / fl_abs(pi->rotvel.xyz.x)) * (pi->max_rotvel.xyz.x - (float) ROTVEL_TOL);
 			change_made = 1;
 		}
-		if ( fl_abs(pi->rotvel.y) > pi->max_rotvel.y ) {
-			pi->rotvel.y = (pi->rotvel.y / fl_abs(pi->rotvel.y)) * (pi->max_rotvel.y - (float) ROTVEL_TOL);
+		if ( fl_abs(pi->rotvel.xyz.y) > pi->max_rotvel.xyz.y ) {
+			pi->rotvel.xyz.y = (pi->rotvel.xyz.y / fl_abs(pi->rotvel.xyz.y)) * (pi->max_rotvel.xyz.y - (float) ROTVEL_TOL);
 			change_made = 1;
 		}
-		if ( fl_abs(pi->rotvel.z) > pi->max_rotvel.z ) {
-			pi->rotvel.z = (pi->rotvel.z / fl_abs(pi->rotvel.z)) * (pi->max_rotvel.z - (float) ROTVEL_TOL);
+		if ( fl_abs(pi->rotvel.xyz.z) > pi->max_rotvel.xyz.z ) {
+			pi->rotvel.xyz.z = (pi->rotvel.xyz.z / fl_abs(pi->rotvel.xyz.z)) * (pi->max_rotvel.xyz.z - (float) ROTVEL_TOL);
 			change_made = 1;
 		}
 	} else { 
 		// case of dead ship
-		if ( fl_abs(pi->rotvel.x) > DEAD_ROTVEL_CAP ) {
-			pi->rotvel.x = (pi->rotvel.x / fl_abs(pi->rotvel.x)) * (float) (DEAD_ROTVEL_CAP - ROTVEL_TOL);
+		if ( fl_abs(pi->rotvel.xyz.x) > DEAD_ROTVEL_CAP ) {
+			pi->rotvel.xyz.x = (pi->rotvel.xyz.x / fl_abs(pi->rotvel.xyz.x)) * (float) (DEAD_ROTVEL_CAP - ROTVEL_TOL);
 			change_made = 1;
 		}
-		if ( fl_abs(pi->rotvel.y) > DEAD_ROTVEL_CAP ) {
-			pi->rotvel.y = (pi->rotvel.y / fl_abs(pi->rotvel.y)) * (float) (DEAD_ROTVEL_CAP - ROTVEL_TOL);
+		if ( fl_abs(pi->rotvel.xyz.y) > DEAD_ROTVEL_CAP ) {
+			pi->rotvel.xyz.y = (pi->rotvel.xyz.y / fl_abs(pi->rotvel.xyz.y)) * (float) (DEAD_ROTVEL_CAP - ROTVEL_TOL);
 			change_made = 1;
 		}
-		if ( fl_abs(pi->rotvel.z) > DEAD_ROTVEL_CAP ) {
-			pi->rotvel.z = (pi->rotvel.z / fl_abs(pi->rotvel.z)) * (float) (DEAD_ROTVEL_CAP - ROTVEL_TOL);
+		if ( fl_abs(pi->rotvel.xyz.z) > DEAD_ROTVEL_CAP ) {
+			pi->rotvel.xyz.z = (pi->rotvel.xyz.z / fl_abs(pi->rotvel.xyz.z)) * (float) (DEAD_ROTVEL_CAP - ROTVEL_TOL);
 			change_made = 1;
 		}
 	}

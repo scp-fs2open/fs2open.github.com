@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Include file for joystick stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/24 15:38:55  mharris
+ * Fixed boneheaded mistake in #defines for NO_JOYSTICK and NO_SOUND
+ *
+ * Revision 1.2  2002/05/10 06:05:08  mharris
+ * Porting... added ifndef NO_JOYSTICK
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -100,6 +106,7 @@ typedef struct Joy_info {
 extern int Joy_sensitivity;
 extern int Dead_zone_size;  // percentage of range that is dead zone
 
+#ifndef NO_JOYSTICK
 int	joy_init();
 void	joy_flush();
 int	joy_get_pos(int * x, int * y, int *z, int *r);
@@ -117,5 +124,33 @@ int	joystick_read_raw_axis( int num_axes, int * axis );
 void joy_get_delta(int *dx, int *dy);
 int joy_get_scaled_reading(int raw, int axn);
 int joy_get_unscaled_reading(int raw, int axn);
+void joy_close();
+#else
+#define	joy_init()          (1)
+#define	joy_flush()
+inline int joy_get_pos(int * x, int * y, int *z, int *r)
+{ 
+	if (x) *x = 0;  if (y) *y = 0;
+	if (z) *z = 0;  if (r) *r = 0;
+	return 0;
+}
+#define	joy_down_count(btn, reset_count)			((btn), (reset_count), 0)
+#define	joy_down(btn)									((btn), 0)
+#define	joy_up_count(btn)								((btn), 0)
+#define	joy_down_time(btn)							((btn), 0.0f)
+#define	joy_get_cal_vals(axis_min, axis_center, axis_max) \
+		  ((void) ((axis_min), (axis_center), (axis_max)))
+#define	joy_set_cal_vals(axis_min, axis_center, axis_max) \
+		  ((void) ((axis_min), (axis_center), (axis_max)))
+#define	joy_set_ul()
+#define	joy_set_lr()
+#define	joy_set_cen()
+#define	joy_cheap_cal();
+#define	joystick_read_raw_axis(num_axes, axis)	((num_axes), (axis), 0)
+#define	joy_get_delta(dx, dy)						((void)((dx), (dy)))
+#define	joy_get_scaled_reading(raw, axn)			((raw), (axn), 0)
+#define	joy_get_unscaled_reading(raw, axn)		((raw), (axn), 0)
+#define  joy_close()
+#endif // ifndef NO_JOYSTICK
 
 #endif	/* __JOY_H__ */

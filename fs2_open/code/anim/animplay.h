@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * Header file for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:07  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -95,6 +98,8 @@
 
 #ifndef __ANIMPLAY_H__
 #define __ANIMPLAY_H__
+
+#include "pstypes.h"
 
 struct anim;
 struct anim_info;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -413,11 +416,14 @@
 #include "bmpman.h"
 #include "font.h"
 #include "gamesnd.h"
-#include "multi.h"
 #include "missiongoals.h"
 #include "alphacolors.h"
 #include "beam.h"
 #include "audiostr.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#endif
 
 /* replaced with those static ints that follow
 #define LIST_X		46
@@ -799,11 +805,13 @@ void HUD_fixed_printf(float duration, char * format, ...)
 	char		tmp[HUD_MSG_LENGTH_MAX];
 	int		msg_length;
 
+#ifndef NO_NETWORK
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state != NETGAME_STATE_IN_MISSION)){
 		nprintf(("Network","HUD_fixed_printf bailing because not in multiplayer game play state\n"));
 		return;
 	}
+#endif
 
 	va_start(args, format);
 	vsprintf(tmp, format, args);
@@ -901,11 +909,13 @@ void HUD_printf(char *format, ...)
 	char tmp[HUD_MSG_LENGTH_MAX];
 	int len;
 
+#ifndef NO_NETWORK
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
 		nprintf(("Network","HUD_printf bailing because not in multiplayer game play state\n"));
 		return;
 	}
+#endif
 
 	va_start(args, format);
 	vsprintf(tmp, format, args);
@@ -947,11 +957,13 @@ void HUD_sourced_printf(int source, char *format, ...)
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
 
+#ifndef NO_NETWORK
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
 		nprintf(("Network","HUD_sourced_printf bailing because not in multiplayer game play state\n"));
 		return;
 	}
+#endif
 	
 	va_start(args, format);
 	vsprintf(tmp, format, args);

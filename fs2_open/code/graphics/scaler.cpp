@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Scaler.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * Routines to scale a bitmap.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/08 02:36:01  mharris
+ * porting
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -350,6 +353,8 @@ ubyte *scaler_create_compiled_code8_stippled( int w, fix u, fix du )
 	return compiled_code;
 }
 
+
+#if 0 // never used
 void test_code1()
 {
 	_asm mov ebx, -1
@@ -370,6 +375,8 @@ void test_code1()
 //     mov ebx, [ecx+ebx]	; blend it
 //     mov [edi+????], bl   ; write it
 }
+#endif
+
 
 /*
   00130	b8 00 00 00 00	mov	eax, 0
@@ -862,6 +869,8 @@ void gr8_scaler(vertex *va, vertex *vb )
 				}
 			} 
 */
+
+#ifdef WIN32
 			_asm push esi
 			_asm push edi
 			_asm push edx
@@ -883,6 +892,9 @@ void gr8_scaler(vertex *va, vertex *vb )
 			_asm pop edx
 			_asm pop edi
 			_asm pop esi
+#else
+#warning not implemented
+#endif
 		}
 #else	
 		if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER )	{
@@ -1095,6 +1107,7 @@ void gr8_aascaler(vertex *va, vertex *vb )
 				tmp_u += du;
 			}
 		} else {
+#ifdef WIN32
 			_asm push esi
 			_asm push edi
 			_asm push ecx
@@ -1110,6 +1123,9 @@ void gr8_aascaler(vertex *va, vertex *vb )
 			_asm pop ecx
 			_asm pop edi
 			_asm pop esi
+#else
+#warning not implemented
+#endif
 		}
 #else	
 		if ( Gr_scaler_zbuffering && gr_zbuffering )	{

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/16 00:39:47  mharris
+ * Added ifdef WIN32 around cd stuff
+ *
+ * Revision 1.3  2002/05/13 21:43:37  mharris
+ * A little more network and sound cleanup
+ *
+ * Revision 1.2  2002/05/07 02:57:33  mharris
+ * make Buttons[] static
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -163,7 +172,7 @@ int Cutscenes_viewable;
 int Description_index;
 cutscene_info Cutscenes[MAX_CUTSCENES];
 
-extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
+//extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
 
 // initialization stuff for cutscenes
 void cutscene_init()
@@ -214,6 +223,7 @@ void cutscene_init()
 // returns -1 on failure.
 int cutscenes_get_cd_num( char *filename )
 {
+#ifdef WIN32
 #if defined(OEM_BUILD)
 	return 0;				// only 1 cd for OEM
 #else
@@ -227,6 +237,9 @@ int cutscenes_get_cd_num( char *filename )
 
 	return -1;
 #endif // defined(OEM_BUILD)
+#else  // !WIN32
+   return -1;
+#endif // ifdef WIN32
 }
 
 // marks a cutscene as viewable
@@ -263,7 +276,7 @@ static int Background_bitmap;
 static UI_BUTTON List_region;
 static UI_WINDOW Ui_window;
 
-ui_button_info Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
+static ui_button_info Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 	{ // GR_640
 		ui_button_info("TDB_00",	7,		5,		37,	7,		0),			// tech database 1
 		ui_button_info("TDB_01",	7,		19,	37,	23,	1),			// tech database 2
@@ -344,6 +357,7 @@ static char *Text_lines[MAX_TEXT_LINES];
 
 int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 {
+#ifdef WIN32
 	int cd_present = 0;
 	int cd_drive_num;
 	int cd_mve_is_on;
@@ -411,6 +425,9 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 	}
 
 	return cd_present;
+#else  // !WIN32
+	return 0;
+#endif // ifdef WIN32
 }
 
 void cutscenes_screen_play()
@@ -585,8 +602,8 @@ void cutscenes_screen_init()
 	//Cutscenes_viewable = 0xffffffff;			// makes all cutscenes viewble.
 #endif
 
-	if (All_movies_enabled)
-		Cutscenes_viewable = 0xffffffff;		//	Cheat code enables all movies.
+//  	if (All_movies_enabled)
+//  		Cutscenes_viewable = 0xffffffff;		//	Cheat code enables all movies.
 
 	Num_files = 0;
 	for ( i = 0; i < Num_cutscenes; i++ ) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -225,12 +228,12 @@
 
 
 typedef struct vei {
-	angles	angles;			//	Angles defining viewer location.
+	angles_t	angles;			//	Angles defining viewer location.
 	float		distance;		//	Distance from which to view, plus 2x radius.
 } vei;
 
 typedef struct vci {	
-	angles	angles;			
+	angles_t	angles;			
 	float		distance;		// Distance from which to view, plus 3x radius
 } vci;
 

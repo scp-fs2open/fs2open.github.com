@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multilag.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:00 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:26 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/07 03:02:07  mharris
+ * #ifndef WINDOWS should be #ifdef
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -90,7 +96,9 @@
 	// #define MULTI_USE_LAG								
 #endif
 
+#ifdef WINDOWS
 struct fd_set;
+#endif
 struct timeval;
 
 // initialize multiplayer lagloss. in non-debug situations, this call does nothing

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Header file for code that controls the Options menu

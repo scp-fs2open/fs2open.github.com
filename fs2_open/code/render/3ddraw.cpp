@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -274,7 +277,7 @@ int do_facing_check(vector *norm,vertex **vertlist,vector *p)
 
 	if (norm) {		//have normal
 
-		Assert(norm->x || norm->y || norm->z);
+		Assert(norm->xyz.x || norm->xyz.y || norm->xyz.z);
 
 		return g3_check_normal_facing(p,norm);
 	}
@@ -503,7 +506,7 @@ int g3_draw_sphere(vertex *pnt,float rad)
 		if (! (pnt->codes & PF_OVERFLOW)) {
 			float r2,t;
 
-			r2 = rad*Matrix_scale.x;
+			r2 = rad*Matrix_scale.xyz.x;
 
 			t=r2*Canv_w2/pnt->z;
 
@@ -576,10 +579,10 @@ int g3_draw_bitmap(vertex *pnt,int orient, float rad,uint tmap_flags)
 		return 1;
 
 	t = (width*Canv_w2)/pnt->z;
-	w = t*Matrix_scale.x;
+	w = t*Matrix_scale.xyz.x;
 
 	t = (height*Canv_h2)/pnt->z;
-	h = t*Matrix_scale.y;
+	h = t*Matrix_scale.xyz.y;
 
 	float z,sw;
 	z = pnt->z - rad/2.0f;
@@ -656,10 +659,10 @@ int g3_get_bitmap_dims(int bitmap, vertex *pnt, float rad, int *x, int *y, int *
 	}
 
 	t = (width*Canv_w2)/pnt->z;
-	*w = (int)(t*Matrix_scale.x);
+	*w = (int)(t*Matrix_scale.xyz.x);
 
 	t = (height*Canv_h2)/pnt->z;
-	*h = (int)(t*Matrix_scale.y);	
+	*h = (int)(t*Matrix_scale.xyz.y);	
 
 	*x = (int)(pnt->sx - *w/2.0f);
 	*y = (int)(pnt->sy - *h/2.0f);	
@@ -727,29 +730,29 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags)
 	}
 
 
-	v[0].x = (-width*ca + height*sa)*Matrix_scale.x + pnt->x;
-	v[0].y = (-width*sa - height*ca)*Matrix_scale.y + pnt->y;
+	v[0].x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
+	v[0].y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
 	v[0].z = pnt->z;
 	v[0].sw = 0.0f;
 	v[0].u = 0.0f;
 	v[0].v = 1.0f;
 
-	v[1].x = (width*ca + height*sa)*Matrix_scale.x + pnt->x;
-	v[1].y = (width*sa - height*ca)*Matrix_scale.y + pnt->y;
+	v[1].x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
+	v[1].y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
 	v[1].z = pnt->z;
 	v[1].sw = 0.0f;
 	v[1].u = 1.0f;
 	v[1].v = 1.0f;
 
-	v[2].x = (width*ca - height*sa)*Matrix_scale.x + pnt->x;
-	v[2].y = (width*sa + height*ca)*Matrix_scale.y + pnt->y;
+	v[2].x = (width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
+	v[2].y = (width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
 	v[2].z = pnt->z;
 	v[2].sw = 0.0f;
 	v[2].u = 1.0f;
 	v[2].v = 0.0f;
 
-	v[3].x = (-width*ca - height*sa)*Matrix_scale.x + pnt->x;
-	v[3].y = (-width*sa + height*ca)*Matrix_scale.y + pnt->y;
+	v[3].x = (-width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
+	v[3].y = (-width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
 	v[3].z = pnt->z;
 	v[3].sw = 0.0f;
 	v[3].u = 0.0f;
@@ -778,7 +781,7 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags)
 	return 0;
 }
 
-#define TRIANGLE_AREA(_p, _q, _r)	do { vector a, b, cross; a.x = _q->x - _p->x; a.y = _q->y - _p->y; a.z = 0.0f; b.x = _r->x - _p->x; b.y = _r->y - _p->y; b.z = 0.0f; vm_vec_crossprod(&cross, &a, &b); total_area += vm_vec_mag(&cross) * 0.5f; } while(0);
+#define TRIANGLE_AREA(_p, _q, _r)	do { vector a, b, cross; a.xyz.x = _q->x - _p->x; a.xyz.y = _q->y - _p->y; a.xyz.z = 0.0f; b.xyz.x = _r->x - _p->x; b.xyz.y = _r->y - _p->y; b.xyz.z = 0.0f; vm_vec_crossprod(&cross, &a, &b); total_area += vm_vec_mag(&cross) * 0.5f; } while(0);
 float g3_get_poly_area(int nv, vertex **pointlist)
 {
 	int idx;
@@ -934,29 +937,29 @@ float g3_draw_rotated_bitmap_area(vertex *pnt,float angle, float rad,uint tmap_f
 	}
 
 
-	v[0].x = (-width*ca + height*sa)*Matrix_scale.x + pnt->x;
-	v[0].y = (-width*sa - height*ca)*Matrix_scale.y + pnt->y;
+	v[0].x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
+	v[0].y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
 	v[0].z = pnt->z;
 	v[0].sw = 0.0f;
 	v[0].u = 0.0f;
 	v[0].v = 1.0f;
 
-	v[1].x = (width*ca + height*sa)*Matrix_scale.x + pnt->x;
-	v[1].y = (width*sa - height*ca)*Matrix_scale.y + pnt->y;
+	v[1].x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
+	v[1].y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
 	v[1].z = pnt->z;
 	v[1].sw = 0.0f;
 	v[1].u = 1.0f;
 	v[1].v = 1.0f;
 
-	v[2].x = (width*ca - height*sa)*Matrix_scale.x + pnt->x;
-	v[2].y = (width*sa + height*ca)*Matrix_scale.y + pnt->y;
+	v[2].x = (width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
+	v[2].y = (width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
 	v[2].z = pnt->z;
 	v[2].sw = 0.0f;
 	v[2].u = 1.0f;
 	v[2].v = 0.0f;
 
-	v[3].x = (-width*ca - height*sa)*Matrix_scale.x + pnt->x;
-	v[3].y = (-width*sa + height*ca)*Matrix_scale.y + pnt->y;
+	v[3].x = (-width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
+	v[3].y = (-width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
 	v[3].z = pnt->z;
 	v[3].sw = 0.0f;
 	v[3].u = 0.0f;
@@ -1010,10 +1013,10 @@ void g3_draw_horizon_line()
 //	color_swap = 0;		//assume no swap
 //	sky_ground_flag = 0;	//assume both
 
-//	if ( View_matrix.uvec.y < 0.0f )
+//	if ( View_matrix.uvec.xyz.y < 0.0f )
 //		color_swap = 1;
-//	else if ( View_matrix.uvec.y == 0.0f )	{
-//		if ( View_matrix.uvec.x > 0.0f )
+//	else if ( View_matrix.uvec.xyz.y == 0.0f )	{
+//		if ( View_matrix.uvec.xyz.x > 0.0f )
 //			color_swap = 1;
 //	}
 
@@ -1030,15 +1033,15 @@ void g3_draw_horizon_line()
 
 	//compute horizon_vector
 	
-	horizon_vec.x = Unscaled_matrix.rvec.y*Matrix_scale.y*Matrix_scale.z;
-	horizon_vec.y = Unscaled_matrix.uvec.y*Matrix_scale.x*Matrix_scale.z;
-	horizon_vec.z = Unscaled_matrix.fvec.y*Matrix_scale.x*Matrix_scale.y;
+	horizon_vec.xyz.x = Unscaled_matrix.vec.rvec.xyz.y*Matrix_scale.xyz.y*Matrix_scale.xyz.z;
+	horizon_vec.xyz.y = Unscaled_matrix.vec.uvec.xyz.y*Matrix_scale.xyz.x*Matrix_scale.xyz.z;
+	horizon_vec.xyz.z = Unscaled_matrix.vec.fvec.xyz.y*Matrix_scale.xyz.x*Matrix_scale.xyz.y;
 
 	// now compute values & flag for 4 corners.
-	up_right = horizon_vec.x + horizon_vec.y + horizon_vec.z;
-	down_right = horizon_vec.x - horizon_vec.y + horizon_vec.z;
-	down_left = -horizon_vec.x - horizon_vec.y + horizon_vec.z;
-	up_left = -horizon_vec.x + horizon_vec.y + horizon_vec.z;
+	up_right = horizon_vec.xyz.x + horizon_vec.xyz.y + horizon_vec.xyz.z;
+	down_right = horizon_vec.xyz.x - horizon_vec.xyz.y + horizon_vec.xyz.z;
+	down_left = -horizon_vec.xyz.x - horizon_vec.xyz.y + horizon_vec.xyz.z;
+	up_left = -horizon_vec.xyz.x + horizon_vec.xyz.y + horizon_vec.xyz.z;
 
 	//check flags for all sky or all ground.
 	if ( (up_right<0.0f)&&(down_right<0.0f)&&(down_left<0.0f)&&(up_left<0.0f) )	{
@@ -1051,11 +1054,11 @@ void g3_draw_horizon_line()
 		return;
 	}
 
-//mprintf(( "Horizon vec = %.4f, %.4f, %.4f\n", horizon_vec.x, horizon_vec.y, horizon_vec.z ));
+//mprintf(( "Horizon vec = %.4f, %.4f, %.4f\n", horizon_vec.xyz.x, horizon_vec.xyz.y, horizon_vec.xyz.z ));
 //mprintf(( "%.4f, %.4f, %.4f, %.4f\n", up_right, down_right, down_left, up_left ));
 
 	
-//	mprintf(( "u: %.4f %.4f %.4f  c: %.4f %.4f %.4f %.4f\n",Unscaled_matrix.uvec.y,Unscaled_matrix.uvec.z,Unscaled_matrix.uvec.x,up_left,up_right,down_right,down_left ));
+//	mprintf(( "u: %.4f %.4f %.4f  c: %.4f %.4f %.4f %.4f\n",Unscaled_matrix.vec.uvec.xyz.y,Unscaled_matrix.vec.uvec.xyz.z,Unscaled_matrix.vec.uvec.xyz.x,up_left,up_right,down_right,down_left ));
 	// check for intesection with each of four edges & compute horizon line
 	cpnt = 0;
 	
@@ -1064,7 +1067,7 @@ void g3_draw_horizon_line()
 	s2 = down_left > 0.0f;
 	if ( s1 != s2 )	{
 		horz_pts[cpnt].x = 0.0f;
-		horz_pts[cpnt].y = fl_abs(up_left * Canv_h2 / horizon_vec.y);
+		horz_pts[cpnt].y = fl_abs(up_left * Canv_h2 / horizon_vec.xyz.y);
 		horz_pts[cpnt].edge = 0;
 		cpnt++;
 	}
@@ -1073,7 +1076,7 @@ void g3_draw_horizon_line()
 	s1 = up_left > 0.0f;
 	s2 = up_right > 0.0f;
 	if ( s1 != s2 )	{
-		horz_pts[cpnt].x = fl_abs(up_left * Canv_w2 / horizon_vec.x);
+		horz_pts[cpnt].x = fl_abs(up_left * Canv_w2 / horizon_vec.xyz.x);
 		horz_pts[cpnt].y = 0.0f;
 		horz_pts[cpnt].edge = 1;
 		cpnt++;
@@ -1085,7 +1088,7 @@ void g3_draw_horizon_line()
 	s2 = down_right > 0.0f;
 	if ( s1 != s2 )	{
 		horz_pts[cpnt].x = i2fl(Canvas_width)-1;
-		horz_pts[cpnt].y = fl_abs(up_right * Canv_h2 / horizon_vec.y);
+		horz_pts[cpnt].y = fl_abs(up_right * Canv_h2 / horizon_vec.xyz.y);
 		horz_pts[cpnt].edge = 2;
 		cpnt++;
 	}
@@ -1094,7 +1097,7 @@ void g3_draw_horizon_line()
 	s1 = down_right > 0.0f;
 	s2 = down_left > 0.0f;
 	if ( s1 != s2 )	{
-		horz_pts[cpnt].x = fl_abs(down_left * Canv_w2 / horizon_vec.x);
+		horz_pts[cpnt].x = fl_abs(down_left * Canv_w2 / horizon_vec.xyz.x);
 		horz_pts[cpnt].y = i2fl(Canvas_height)-1;
 		horz_pts[cpnt].edge = 3;
 		cpnt++;
@@ -1363,12 +1366,12 @@ compute_horz_end_vec:
 	pop	eax	;get ratio, x part
 
 	fixdiv	ecx
-	mov	[edi].z,eax
+	mov	[edi].xyz.z,eax
 
 	mov	eax,f1_0
 	fixdiv	ecx
 
-	mov	[edi].x,eax
+	mov	[edi].xyz.x,eax
 
 	jmp	finish_end
 
@@ -1389,23 +1392,23 @@ do_xz:
 	pop	eax	;get ratio, x part
 
 	fixdiv	ecx
-	mov	[edi].x,eax
+	mov	[edi].xyz.x,eax
 
 	mov	eax,f1_0
 	fixdiv	ecx
 
-	mov	[edi].z,eax
+	mov	[edi].xyz.z,eax
 
 finish_end:	xor	eax,eax	;y = 0
-	mov	[edi].y,eax
+	mov	[edi].xyz.y,eax
 
 ;now make sure that this vector is in front of you, not behind
 
-	mov	eax,[edi].x
+	mov	eax,[edi].xyz.x
 	imul	View_matrix.m3
 	mov	ebx,eax
 	mov	ecx,edx
-	mov	eax,[edi].z
+	mov	eax,[edi].xyz.z
 	imul	View_matrix.m9
 	add	eax,ebx
 	adc	edx,ecx
@@ -1413,8 +1416,8 @@ finish_end:	xor	eax,eax	;y = 0
 
 ;z is neg, flip vector
 
-	neg	[edi].x
-	neg	[edi].z
+	neg	[edi].xyz.x
+	neg	[edi].xyz.z
 vec_ok:
 	ret
 
@@ -1510,7 +1513,7 @@ z_too_small:
 
 	fixdiv	ecx	;eax = x/z
 
-	mov	[edi].x,eax	;save x
+	mov	[edi].xyz.x,eax	;save x
 
 ;now do y/z
 
@@ -1526,23 +1529,23 @@ z_too_small:
 
 	fixdiv	ecx
 
-	mov	[edi].y,eax
+	mov	[edi].xyz.y,eax
 
-	mov	[edi].z,f1_0
+	mov	[edi].xyz.z,f1_0
 
 	mov	esi,edi
 	call	vm_vec_normalize
 
 ;make sure this vec is pointing in right direction
 
-	lea	edi,View_matrix.fvec
+	lea	edi,View_matrix.vec.fvec
 	call	vm_vec_dotprod
 	or	eax,eax	;check sign
 	jg	vec_sign_ok
 
-	neg	[esi].x
-	neg	[esi].y
-	neg	[esi].z
+	neg	[esi].xyz.x
+	neg	[esi].xyz.y
+	neg	[esi].xyz.z
 vec_sign_ok:
 
 	ret
@@ -1617,9 +1620,9 @@ void stars_project_2d_onto_sphere( vector *pnt, float rho, float phi, float thet
 	float sin_a = (float)sin(a);	
 
 	// coords
-	pnt->z = rho * sin_a * (float)cos(b);
-	pnt->y = rho * sin_a * (float)sin(b);
-	pnt->x = rho * (float)cos(a);
+	pnt->xyz.z = rho * sin_a * (float)cos(b);
+	pnt->xyz.y = rho * sin_a * (float)sin(b);
+	pnt->xyz.x = rho * (float)cos(a);
 }
 
 // draw a perspective bitmap based on angles and radius

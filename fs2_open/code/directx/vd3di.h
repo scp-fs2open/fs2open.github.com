@@ -6,7 +6,7 @@
  *  Content:	Direct3D internal include file
  *@@BEGIN_MSINTERNAL
  * 
- *  $Id: vd3di.h,v 1.1 2002-06-03 03:25:56 penguin Exp $
+ *  $Id: vd3di.h,v 2.0 2002-06-03 04:02:21 penguin Exp $
  *
  *  History:
  *   Date	By	Reason

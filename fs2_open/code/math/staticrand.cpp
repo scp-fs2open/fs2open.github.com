@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * static random functions.  Return "random" number based on integer inut
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -37,6 +40,7 @@
  * 1     8/08/97 3:38p Allender
  */
 
+#include "pstypes.h"
 #include "staticrand.h"
 #include "vecmat.h"
 
@@ -93,9 +97,9 @@ float static_randf_range(int num, float min, float max)
 
 void static_randvec(int num, vector *vp)
 {
-	vp->x = static_randf(num) - 0.5f;
-	vp->y = static_randf(num+1) - 0.5f;
-	vp->z = static_randf(num+2) - 0.5f;
+	vp->xyz.x = static_randf(num) - 0.5f;
+	vp->xyz.y = static_randf(num+1) - 0.5f;
+	vp->xyz.z = static_randf(num+2) - 0.5f;
 
 	vm_vec_normalize_quick(vp);
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:00 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -281,12 +284,6 @@ int Multi_display_netinfo = 1;
 // net player vars		
 net_player Net_players[MAX_PLAYERS];							// array of all netplayers in the game
 net_player *Net_player;												// pointer to console's net_player entry
-
-// network object management
-ushort Next_ship_signature;										// next permanent network signature to assign to an object
-ushort Next_asteroid_signature;									// next signature for an asteroid
-ushort Next_non_perm_signature;									// next non-permanent network signature to assign to an object
-ushort Next_debris_signature;										// next debris signature
 
 // netgame vars
 netgame_info Netgame;												// netgame information

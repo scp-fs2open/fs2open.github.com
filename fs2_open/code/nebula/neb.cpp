@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:00 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/09 13:49:30  mharris
+ * Added ifndef NO_DIRECT3D
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -74,6 +80,7 @@
  * $NoKeywords: $
  */
 
+#include "pstypes.h"
 #include "neb.h"
 #include "vecmat.h"
 #include "3d.h"
@@ -728,28 +735,28 @@ int crossed_border()
 	neb2_get_eye_pos(&eye_pos);
 
 	// check left, right (0, and 1, x and -x)
-	if(cube_cen.x - eye_pos.x > ws){
+	if(cube_cen.xyz.x - eye_pos.xyz.x > ws){
 		// -x
 		return 0;
-	} else if(eye_pos.x - cube_cen.x > ws){
+	} else if(eye_pos.xyz.x - cube_cen.xyz.x > ws){
 		// +x
 		return 1;
 	}
 
 	// check up, down (2, and 3, y and -y)
-	if(cube_cen.y - eye_pos.y > hs){
+	if(cube_cen.xyz.y - eye_pos.xyz.y > hs){
 		// -y
 		return 2;
-	} else if(eye_pos.y - cube_cen.y > hs){
+	} else if(eye_pos.xyz.y - cube_cen.xyz.y > hs){
 		// +y
 		return 3;
 	}
 
 	// check front, back (4, and 5, z and -z)
-	if(cube_cen.z - eye_pos.z > ds){
+	if(cube_cen.xyz.z - eye_pos.xyz.z > ds){
 		// -z
 		return 4;
-	} else if(eye_pos.z - cube_cen.z > ds){
+	} else if(eye_pos.xyz.z - cube_cen.xyz.z > ds){
 		// +z
 		return 5;
 	}
@@ -805,18 +812,18 @@ void neb2_gen_slice(int xyz, int src, vector *cube_center)
 	ds = Nd->cube_dim / (float)Neb2_slices;	
 	h_incd = ds / 2.0f;
 	cube_corner = *cube_center;		
-	cube_corner.x -= (Nd->cube_dim / 2.0f);			
-	cube_corner.y -= (Nd->cube_dim / 2.0f);	
-	cube_corner.z -= (Nd->cube_dim / 2.0f);	
+	cube_corner.xyz.x -= (Nd->cube_dim / 2.0f);			
+	cube_corner.xyz.y -= (Nd->cube_dim / 2.0f);	
+	cube_corner.xyz.z -= (Nd->cube_dim / 2.0f);	
 	switch(xyz){
 	case 0:
 		for(idx1=0; idx1<Neb2_slices; idx1++){
 			for(idx2=0; idx2<Neb2_slices; idx2++){
 				v = &Neb2_cubes[src][idx1][idx2].pt;
 
-				v->x = h_incw + (ws * (float)src) + frand_range(-Nd->wj, Nd->wj);
-				v->y = h_inch + (hs * (float)idx1) + frand_range(-Nd->hj, Nd->hj);
-				v->z = h_incd + (ds * (float)idx2) + frand_range(-Nd->dj, Nd->dj);
+				v->xyz.x = h_incw + (ws * (float)src) + frand_range(-Nd->wj, Nd->wj);
+				v->xyz.y = h_inch + (hs * (float)idx1) + frand_range(-Nd->hj, Nd->hj);
+				v->xyz.z = h_incd + (ds * (float)idx2) + frand_range(-Nd->dj, Nd->dj);
 				vm_vec_add2(v, &cube_corner);
 
 				// set the bitmap
@@ -834,9 +841,9 @@ void neb2_gen_slice(int xyz, int src, vector *cube_center)
 			for(idx2=0; idx2<Neb2_slices; idx2++){
 				v = &Neb2_cubes[idx1][src][idx2].pt;
 				
-				v->x = h_incw + (ws * (float)idx1) + frand_range(-Nd->wj, Nd->wj);
-				v->y = h_inch + (hs * (float)src) + frand_range(-Nd->hj, Nd->hj);
-				v->z = h_incd + (ds * (float)idx2) + frand_range(-Nd->dj, Nd->dj);
+				v->xyz.x = h_incw + (ws * (float)idx1) + frand_range(-Nd->wj, Nd->wj);
+				v->xyz.y = h_inch + (hs * (float)src) + frand_range(-Nd->hj, Nd->hj);
+				v->xyz.z = h_incd + (ds * (float)idx2) + frand_range(-Nd->dj, Nd->dj);
 				vm_vec_add2(v, &cube_corner);
 
 				// set the bitmap
@@ -854,9 +861,9 @@ void neb2_gen_slice(int xyz, int src, vector *cube_center)
 			for(idx2=0; idx2<Neb2_slices; idx2++){
 				v = &Neb2_cubes[idx1][idx2][src].pt;
 
-				v->x = h_incw + (ws * (float)idx1) + frand_range(-Nd->wj, Nd->wj);
-				v->y = h_inch + (hs * (float)idx2) + frand_range(-Nd->hj, Nd->hj);
-				v->z = h_incd + (ds * (float)src) + frand_range(-Nd->dj, Nd->dj);
+				v->xyz.x = h_incw + (ws * (float)idx1) + frand_range(-Nd->wj, Nd->wj);
+				v->xyz.y = h_inch + (hs * (float)idx2) + frand_range(-Nd->hj, Nd->hj);
+				v->xyz.z = h_incd + (ds * (float)src) + frand_range(-Nd->dj, Nd->dj);
 				vm_vec_add2(v, &cube_corner);
 				
 				// set the bitmap
@@ -955,7 +962,7 @@ void neb2_render_player()
 			break;
 		// -x
 		case 0 :
-			cube_cen.x -= Nd->cube_dim / (float)Neb2_slices;
+			cube_cen.xyz.x -= Nd->cube_dim / (float)Neb2_slices;
 			for(idx1=Neb2_slices-1; idx1>0; idx1--){
 				neb2_copy(0, idx1-1, idx1);
 			}
@@ -963,7 +970,7 @@ void neb2_render_player()
 			break;
 		// x
 		case 1 :
-			cube_cen.x += Nd->cube_dim / (float)Neb2_slices;
+			cube_cen.xyz.x += Nd->cube_dim / (float)Neb2_slices;
 			for(idx1=0; idx1<Neb2_slices-1; idx1++){
 				neb2_copy(0, idx1+1, idx1);
 			}				
@@ -971,7 +978,7 @@ void neb2_render_player()
 			break;
 		// -y
 		case 2 :			
-			cube_cen.y -= Nd->cube_dim / (float)Neb2_slices;
+			cube_cen.xyz.y -= Nd->cube_dim / (float)Neb2_slices;
 			for(idx1=Neb2_slices-1; idx1>0; idx1--){
 				neb2_copy(1, idx1-1, idx1);
 			}				
@@ -979,7 +986,7 @@ void neb2_render_player()
 			break;
 		// y
 		case 3 :						
-			cube_cen.y += Nd->cube_dim / (float)Neb2_slices;
+			cube_cen.xyz.y += Nd->cube_dim / (float)Neb2_slices;
 			for(idx1=0; idx1<Neb2_slices-1; idx1++){
 				neb2_copy(1, idx1+1, idx1);
 			}				
@@ -987,7 +994,7 @@ void neb2_render_player()
 			break;
 		// -z
 		case 4 :			
-			cube_cen.z -= Nd->cube_dim / (float)Neb2_slices;
+			cube_cen.xyz.z -= Nd->cube_dim / (float)Neb2_slices;
 			for(idx1=Neb2_slices-1; idx1>0; idx1--){
 				neb2_copy(2, idx1-1, idx1);
 			}								
@@ -995,7 +1002,7 @@ void neb2_render_player()
 			break;
 		// z
 		case 5 :						
-			cube_cen.z += Nd->cube_dim / (float)Neb2_slices;
+			cube_cen.xyz.z += Nd->cube_dim / (float)Neb2_slices;
 			for(idx1=0; idx1<Neb2_slices-1; idx1++){
 				neb2_copy(2, idx1+1, idx1);
 			}												
@@ -1024,7 +1031,7 @@ void neb2_render_player()
 				
 				// optimization 1 - don't draw backfacing poly's
 				// useless
-				if(vm_vec_dot_to_point(&eye_orient.fvec, &eye_pos, &Neb2_cubes[idx1][idx2][idx3].pt) <= 0.0f){
+				if(vm_vec_dot_to_point(&eye_orient.vec.fvec, &eye_pos, &Neb2_cubes[idx1][idx2][idx3].pt) <= 0.0f){
 					pneb_tossed_dot++;
 					continue;
 				}
@@ -1192,11 +1199,13 @@ void neb2_pre_render(vector *eye_pos, matrix *eye_orient)
 
 	Neb2_render_mode = neb_save;	
 
+#ifndef NO_DIRECT3D
 	// HACK - flush d3d here so everything is rendered
 	if(gr_screen.mode == GR_DIRECT3D){
 		extern void d3d_flush();
 		d3d_flush();
 	}
+#endif
 
 	// grab the region
 	gr_get_region(0, this_esize, this_esize, (ubyte*)tpixels);	
@@ -1216,11 +1225,13 @@ void neb2_pre_render(vector *eye_pos, matrix *eye_orient)
 	
 	gr_clear();	
 
+#ifndef NO_DIRECT3D
 	// HACK - flush d3d here so everything is properly cleared
 	if(gr_screen.mode == GR_DIRECT3D){
 		extern void d3d_flush();
 		d3d_flush();
 	}
+#endif
 
 	// if the size has changed between frames, make a new bitmap
 	if(this_esize != last_esize){
@@ -1772,9 +1783,9 @@ void neb2_add_inner(neb2 *neb, int num_poofs, matrix *orient, float ang)
 			// now add in the center of the nebula so its placed properly (ie, not around the origin)
 			vm_vec_add(&neb->pts[idx], &pt3, &Objects[neb->objnum].pos);
 		} else {
-			neb->pts[idx].x = frand_range(-1.0f * neb->inner_radius, neb->inner_radius) + Objects[neb->objnum].pos.x;
-			neb->pts[idx].y = frand_range(-1.0f * neb->inner_radius, neb->inner_radius) + Objects[neb->objnum].pos.y;
-			neb->pts[idx].z = frand_range(-1.0f * neb->inner_radius, neb->inner_radius) + Objects[neb->objnum].pos.z;
+			neb->pts[idx].xyz.x = frand_range(-1.0f * neb->inner_radius, neb->inner_radius) + Objects[neb->objnum].pos.xyz.x;
+			neb->pts[idx].xyz.y = frand_range(-1.0f * neb->inner_radius, neb->inner_radius) + Objects[neb->objnum].pos.xyz.y;
+			neb->pts[idx].xyz.z = frand_range(-1.0f * neb->inner_radius, neb->inner_radius) + Objects[neb->objnum].pos.xyz.z;
 		}
 
 		neb->bmaps[idx] = (int)frand_range(0.0f, (float)2);
@@ -1811,9 +1822,9 @@ void neb2_add_outer(neb2 *neb, int num_poofs, matrix *orient, float ang)
 			phi = fl_radian(frand_range(0.0f, 360.0f));
 			theta = fl_radian(frand_range(0.0f, 360.f));
 	
-			neb->pts[idx].x = neb->outer_radius * (float)sin(phi) * (float)cos(theta);
-			neb->pts[idx].y = neb->outer_radius * (float)sin(phi) * (float)sin(theta);
-			neb->pts[idx].z = neb->outer_radius * (float)cos(phi);			
+			neb->pts[idx].xyz.x = neb->outer_radius * (float)sin(phi) * (float)cos(theta);
+			neb->pts[idx].xyz.y = neb->outer_radius * (float)sin(phi) * (float)sin(theta);
+			neb->pts[idx].xyz.z = neb->outer_radius * (float)cos(phi);			
 		}
 
 		// pick a random bitmap and increment the # of poofs

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -769,9 +772,9 @@ void particle_emit( particle_emitter *pe, int type, uint optional_data, float ra
 
 		float life = (( pe->max_life - pe->min_life ) * frand()) + pe->min_life;
 
-		normal.x = pe->normal.x + (frand()*2.0f - 1.0f)*pe->normal_variance;
-		normal.y = pe->normal.y + (frand()*2.0f - 1.0f)*pe->normal_variance;
-		normal.z = pe->normal.z + (frand()*2.0f - 1.0f)*pe->normal_variance;
+		normal.xyz.x = pe->normal.xyz.x + (frand()*2.0f - 1.0f)*pe->normal_variance;
+		normal.xyz.y = pe->normal.xyz.y + (frand()*2.0f - 1.0f)*pe->normal_variance;
+		normal.xyz.z = pe->normal.xyz.z + (frand()*2.0f - 1.0f)*pe->normal_variance;
 		vm_vec_normalize_safe( &normal );
 		vm_vec_scale_add( &tmp_vel, &pe->vel, &normal, speed );
 

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:28 $
  * $Author: penguin $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 21:09:29  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.2  2002/05/07 03:00:17  mharris
+ * make Goal_text static
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -1904,7 +1910,7 @@ void validate_mission_goals(int objnum, ai_info *aip)
 }
 
 //XSTR:OFF
-char *Goal_text[5] = {
+static char *Goal_text[5] = {
 "EVENT_SHIP",
 "EVENT_WING",
 "PLAYER_SHIP",
@@ -1975,9 +1981,11 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	current_goal = &aip->goals[0];
 
+#ifndef NO_NETWORK
 	if ( MULTIPLAYER_MASTER ){
 		send_ai_info_update_packet( objp, AI_UPDATE_ORDERS );
 	}
+#endif
 
 	// if this object was flying in formation off of another object, remove the flag that tells him
 	// to do this.  The form-on-my-wing command is removed from the goal list as soon as it is called, so

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/UiDefs.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * Include file for stuff used internally by the UI code.

@@ -9,13 +9,28 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2002/05/28 20:24:12  mharris
+ * Changed alphacolor (in hud_auto_speed_match_icon) to static
+ *
+ * Revision 1.5  2002/05/26 14:12:03  mharris
+ * Changed alphacolors from automatic to static
+ *
+ * Revision 1.4  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.3  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -913,9 +928,11 @@ void hud_target_hotkey_add_remove( int k, object *ctarget, int how_to_add )
 {
 	htarget_list *hitem, *plist;
 
+#ifndef NO_NETWORK
 	// don't do anything if a standalone multiplayer server
 	if ( MULTIPLAYER_STANDALONE )
 		return;
+#endif
 
 	if ( k < 0 || k > 7 ) {
 		nprintf(("Warning", "Bogus hotkey %d sent to hud_target_hotkey_add_remove\n"));
@@ -1366,7 +1383,10 @@ void hud_target_common(int team, int next_flag)
 
 			if ( !hud_team_matches_filter(team, shipp->team) ) {
 				// if we're in multiplayer dogfight, ignore this
-				if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))){
+#ifndef NO_NETWORK
+				if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
+#endif
+				{
 					continue;
 				}
 			}
@@ -1792,7 +1812,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 					
 					if (!auto_advance && get_closest_turret && !only_player_target) {
 						// if within 3 degrees and not previous subsys, use subsys in front
-						dot = vm_vec_dotprod(&vec_to_subsys, &Player_obj->orient.fvec);
+						dot = vm_vec_dotprod(&vec_to_subsys, &Player_obj->orient.vec.fvec);
 						if ((dot > 0.9986) && facing) {
 							use_straigh_ahead_turret = TRUE;
 							break;
@@ -2111,7 +2131,10 @@ void evaluate_ship_as_closest_target(esct *esct)
 	// filter on team, except in multiplayer
 	if ( !hud_team_matches_filter(esct->team, esct->shipp->team) ) {
 		// if we're in multiplayer dogfight, ignore this
-		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))){
+#ifndef NO_NETWORK
+		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
+#endif
+		{
 			return;
 		}
 	}
@@ -2454,7 +2477,7 @@ void hud_target_in_reticle_new()
 	Reticle_save_timestamp = timestamp(RESET_TARGET_IN_RETICLE);
 
 	//	Get 3d vector through center of reticle
-	vm_vec_scale_add(&terminus, &Eye_position, &Player_obj->orient.fvec, TARGET_IN_RETICLE_DISTANCE);
+	vm_vec_scale_add(&terminus, &Eye_position, &Player_obj->orient.vec.fvec, TARGET_IN_RETICLE_DISTANCE);
 
 	mc.model_num = 0;
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
@@ -2569,7 +2592,7 @@ void hud_target_in_reticle_old()
 		}
 
 		dist = vm_vec_normalized_dir(&vec_to_target, &A->pos, &Eye_position);
-		dot = vm_vec_dot(&Player_obj->orient.fvec, &vec_to_target);
+		dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
 		if ( dot > MIN_DOT_FOR_TARGET ) {
 			hud_reticle_list_update(A, dot, 1);
@@ -2633,7 +2656,7 @@ void hud_target_subsystem_in_reticle()
 		get_subsystem_world_pos(targetp, subsys, &subobj_pos);
 
 		dist = vm_vec_normalized_dir(&vec_to_target, &subobj_pos, &Eye_position);
-		dot = vm_vec_dot(&Player_obj->orient.fvec, &vec_to_target);
+		dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
 		if ( dot > best_dot ) {
 			best_dot = dot;
@@ -2675,9 +2698,9 @@ void hud_render_orientation_tee(object *from_objp, object *to_objp, matrix *from
 	// 0 - vectors are perpendicular
 	// 1 - vectors are collinear and in the same direction (target is facing player)
 	// -1 - vectors are collinear and in the opposite direction (target is facing away from player)
-	dot_product = vm_vec_dotprod(&from_orientp->fvec, &target_to_obj);
+	dot_product = vm_vec_dotprod(&from_orientp->vec.fvec, &target_to_obj);
 
-	if (vm_vec_dotprod(&from_orientp->rvec, &target_to_obj) >= 0) {
+	if (vm_vec_dotprod(&from_orientp->vec.rvec, &target_to_obj) >= 0) {
 		if (dot_product >= 0){
 			dot_product = -PI/2*dot_product + PI;
 		} else {
@@ -3830,7 +3853,7 @@ void polish_predicted_target_pos(vector *enemy_pos, vector *predicted_enemy_pos,
 	for (iteration=0; iteration < num_polish_steps; iteration++) {
 		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &player_pos);
 		time_to_enemy = dist_to_enemy/weapon_speed;
-//		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &Objects[Player_ai->target_objnum].orient.fvec, en_physp->speed * time_to_enemy);
+//		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &Objects[Player_ai->target_objnum].orient.vec.fvec, en_physp->speed * time_to_enemy);
 		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &Objects[Player_ai->target_objnum].phys_info.vel, time_to_enemy);
 		vm_vec_sub(last_delta_vec, predicted_enemy_pos, &last_predicted_enemy_pos);
 		last_predicted_enemy_pos= *predicted_enemy_pos;
@@ -4243,7 +4266,7 @@ void hud_draw_offscreen_indicator(vertex* target_point, vector *tpos, float dist
 	// to range between 0 -> 1.
 	vm_vec_sub(&targ_to_player, &Player_obj->pos, tpos);
 	vm_vec_normalize(&targ_to_player);
-	dist_behind = vm_vec_dot(&Player_obj->orient.fvec, &targ_to_player);
+	dist_behind = vm_vec_dot(&Player_obj->orient.vec.fvec, &targ_to_player);
 
 	in_front = 0;
 
@@ -4284,7 +4307,7 @@ void hud_draw_offscreen_indicator(vertex* target_point, vector *tpos, float dist
 	vertex real_eye_vertex;
 	eye_vertex = &real_eye_vertex;	// this is needed since clip line takes a **vertex
 	vector eye_pos;
-	vm_vec_add( &eye_pos, &Eye_position, &View_matrix.fvec);
+	vm_vec_add( &eye_pos, &Eye_position, &View_matrix.vec.fvec);
 	g3_rotate_vertex(eye_vertex, &eye_pos);
 
 	ubyte codes_or;
@@ -4884,7 +4907,11 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	// If playing on lowest skill level, sensors don't affect targeting
 	// If dead, still allow player to target, despite any subsystem damage
 	// If i'm a multiplayer observer, allow me to target
+#ifndef NO_NETWORK
 	if ( (Game_skill_level == 0) || (Game_mode & GM_DEAD) || ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)) ) {
+#else
+	if ( (Game_skill_level == 0) || (Game_mode & GM_DEAD) ) {
+#endif
 		return 1;
 	}
 
@@ -4979,8 +5006,11 @@ void hud_target_next_list(int hostile, int next_flag)
 
 		// choose from the correct team
 		if ( !hud_team_matches_filter(valid_team, shipp->team) ) {
+#ifndef NO_NETWORK
 			// if we're in multiplayer dogfight, ignore this
-			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))){
+			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
+#endif
+			{
 				continue;
 			}
 		}
@@ -5073,7 +5103,7 @@ void hud_auto_target_icon()
 
 	// draw the text on top
 	if (frame_offset == 1) {
-		color text_color;
+		static color text_color;
 		gr_init_alphacolor(&text_color, 0, 0, 0, Toggle_text_alpha);
 		gr_set_color_fast(&text_color);
 	
@@ -5099,7 +5129,7 @@ void hud_auto_speed_match_icon()
 
 	// draw the text on top
 	if (frame_offset == 3) {
-		color text_color;
+		static color text_color;
 		gr_init_alphacolor(&text_color, 0, 0, 0, Toggle_text_alpha);
 		gr_set_color_fast(&text_color);
 	}
@@ -5173,8 +5203,11 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 		// only consider friendly ships
 		if ( !hud_team_matches_filter(Player_ship->team, shipp->team)) {
+#ifndef NO_NETWORK
 			// if we're in multiplayer dogfight, ignore this
-			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))){
+			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
+#endif
+			{
 				continue;
 			}
 		}

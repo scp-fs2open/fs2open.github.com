@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/21 15:36:25  mharris
+ * Added ifdef WIN32
+ *
+ * Revision 1.3  2002/05/09 13:49:30  mharris
+ * Added ifndef NO_DIRECT3D
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -461,6 +470,7 @@
  * $NoKeywords: $
  */
 
+#include <ctype.h>
 #include "pstypes.h"
 #include "pcxutils.h"
 #include "bmpman.h"
@@ -831,10 +841,10 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 	bm_bitmaps[n].type = BM_TYPE_USER;
 	bm_bitmaps[n].palette_checksum = 0;
 
-	bm_bitmaps[n].bm.w = short(w);
-	bm_bitmaps[n].bm.h = short(h);
-	bm_bitmaps[n].bm.rowsize = short(w);
-	bm_bitmaps[n].bm.bpp = unsigned char(bpp);
+	bm_bitmaps[n].bm.w = (short) w;
+	bm_bitmaps[n].bm.h = (short) h;
+	bm_bitmaps[n].bm.rowsize = (short) w;
+	bm_bitmaps[n].bm.bpp = (unsigned char) bpp;
 	bm_bitmaps[n].bm.flags = 0;
 	bm_bitmaps[n].bm.flags |= flags;
 	bm_bitmaps[n].bm.data = 0;
@@ -1312,7 +1322,7 @@ static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flag
 					g /= Gr_t_green.scale;
 					b /= Gr_t_blue.scale;
 					a /= Gr_t_alpha.scale;
-					((ushort*)bmp->data)[idx] = unsigned short((a<<Gr_t_alpha.shift) | (r << Gr_t_red.shift) | (g << Gr_t_green.shift) |	(b << Gr_t_blue.shift));
+					((ushort*)bmp->data)[idx] = (unsigned short)((a<<Gr_t_alpha.shift) | (r << Gr_t_red.shift) | (g << Gr_t_green.shift) |	(b << Gr_t_blue.shift));
 					break;
 				default:
 					Int3();
@@ -1718,11 +1728,11 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	int pal_changed = 0;
 	int rle_changed = 0;
 	int fake_xparent_changed = 0;	
-	if ( (bmp->data == NULL) || (bpp != bmp->bpp) || pal_changed || rle_changed || fake_xparent_changed ) {
+	if ( (bmp->data == 0) || (bpp != bmp->bpp) || pal_changed || rle_changed || fake_xparent_changed ) {
 		Assert(be->ref_count == 1);
 
 		if ( be->type != BM_TYPE_USER ) {
-			if ( bmp->data == NULL ) {
+			if ( bmp->data == 0 ) {
 				nprintf (("BmpMan","Loading %s for the first time.\n", be->filename));
 			} else if ( bpp != bmp->bpp ) {
 				nprintf (("BmpMan","Reloading %s from bitdepth %d to bitdepth %d\n", be->filename, bmp->bpp, bpp));
@@ -2130,8 +2140,10 @@ void bm_page_in_start()
 
 }
 
+#ifndef NO_DIRECT3D
 extern void gr_d3d_preload_init();
 extern int gr_d3d_preload(int bitmap_num, int is_aabitmap );
+#endif
 
 void bm_page_in_stop()
 {	
@@ -2147,9 +2159,10 @@ void bm_page_in_stop()
 	Bm_ram_freed = 0;
 	#endif
 
+#ifndef NO_DIRECT3D
 	int d3d_preloading = 1;
-
 	gr_d3d_preload_init();
+#endif
 
 	for (i = 0; i < MAX_BITMAPS; i++)	{
 		if ( bm_bitmaps[i].type != BM_TYPE_NONE )	{
@@ -2177,12 +2190,14 @@ void bm_page_in_stop()
 				}
 				bm_unlock( bm_bitmaps[i].handle );
 
+#ifndef NO_DIRECT3D
 				if ( d3d_preloading )	{
 					if ( !gr_d3d_preload(bm_bitmaps[i].handle, (bm_bitmaps[i].preloaded==2) ) )	{
 						mprintf(( "Out of VRAM.  Done preloading.\n" ));
 						d3d_preloading = 0;
 					}
 				}
+#endif
 
 				n++;
 				#ifdef BMPMAN_NDEBUG
@@ -2238,7 +2253,9 @@ void bm_24_to_16(int bit_24, ushort *bit_16)
 	bm_set_components((ubyte*)bit_16, (ubyte*)&pixel[0], (ubyte*)&pixel[1], (ubyte*)&pixel[2], &alpha);	
 }
 
+#ifndef NO_DIRECT3D
 extern int D3D_32bit;
+#endif
 
 void (*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 
@@ -2320,19 +2337,27 @@ void BM_SELECT_SCREEN_FORMAT()
 	Gr_current_alpha = &Gr_alpha;
 
 	// setup pointers
+#ifdef WIN32
 	if(gr_screen.mode == GR_GLIDE){
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
 			bm_set_components = bm_set_components_d3d;
 		} else {
+#ifndef NO_DIRECT3D
 			if(D3D_32bit){
 				bm_set_components = bm_set_components_argb_d3d_32_screen;
 			} else {
 				bm_set_components = bm_set_components_argb_d3d_16_screen;
 			}
+#else
+			bm_set_components = bm_set_components_argb_d3d_16_screen;
+#endif  // ifndef NO_DIRECT3D
 		}
 	}
+#else
+	bm_set_components = bm_set_components_argb_d3d_16_screen;
+#endif  // ifdef WIN32
 }
 
 void BM_SELECT_TEX_FORMAT()
@@ -2343,19 +2368,27 @@ void BM_SELECT_TEX_FORMAT()
 	Gr_current_alpha = &Gr_t_alpha;
 
 	// setup pointers
+#ifdef WIN32
 	if(gr_screen.mode == GR_GLIDE){
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
 			bm_set_components = bm_set_components_d3d;
 		} else {
+#ifndef NO_DIRECT3D
 			if(D3D_32bit){
 				bm_set_components = bm_set_components_argb_d3d_32_tex;
 			} else {
 				bm_set_components = bm_set_components_argb_d3d_16_tex;
 			}
+#else
+			bm_set_components = bm_set_components_argb_d3d_16_tex;
+#endif
 		}
 	}
+#else
+	bm_set_components = bm_set_components_argb_d3d_16_tex;
+#endif  // ifdef WIN32
 }
 
 void BM_SELECT_ALPHA_TEX_FORMAT()
@@ -2366,19 +2399,27 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 	Gr_current_alpha = &Gr_ta_alpha;
 
 	// setup pointers
+#ifdef WIN32
 	if(gr_screen.mode == GR_GLIDE){
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
 			bm_set_components = bm_set_components_d3d;
 		} else {
+#ifndef NO_DIRECT3D
 			if(D3D_32bit){
 				bm_set_components = bm_set_components_argb_d3d_32_tex;
 			} else {
 				bm_set_components = bm_set_components_argb_d3d_16_tex;
 			}
+#else
+			bm_set_components = bm_set_components_argb_d3d_16_tex;
+#endif
 		}
 	}
+#else
+	bm_set_components = bm_set_components_argb_d3d_16_tex;
+#endif  // ifdef WIN32
 }
 
 // set the rgba components of a pixel, any of the parameters can be -1
@@ -2460,10 +2501,12 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 {
 	int bit_32 = 0;
 
+#ifndef NO_DIRECT3D
 	// pick a byte size - 32 bits only if 32 bit mode d3d and screen format
 	if(D3D_32bit && (Gr_current_red == &Gr_red)){
 		bit_32 = 1;
 	}
+#endif
 
 	if(r != NULL){
 		if(bit_32){

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -336,9 +339,9 @@ void supernova_apply_shake(matrix *eye_orient, float intensity)
 
 	matrix	tm, tm2;
 	vm_angles_2_matrix(&tm, &tangles);
-	Assert(vm_vec_mag(&tm.fvec) > 0.0f);
-	Assert(vm_vec_mag(&tm.rvec) > 0.0f);
-	Assert(vm_vec_mag(&tm.uvec) > 0.0f);
+	Assert(vm_vec_mag(&tm.vec.fvec) > 0.0f);
+	Assert(vm_vec_mag(&tm.vec.rvec) > 0.0f);
+	Assert(vm_vec_mag(&tm.vec.uvec) > 0.0f);
 	vm_matrix_x_matrix(&tm2, eye_orient, &tm);
 	*eye_orient = tm2;	
 }
@@ -373,8 +376,8 @@ void supernova_set_view(vector *eye_pos, matrix *eye_orient)
 	// always set the camera pos
 	matrix whee;
 	vm_vector_2_matrix(&whee, &move, NULL, NULL);
-	vm_vec_scale_add(&Supernova_camera_pos, &Player_obj->pos, &whee.rvec, sn_cam_distance);
-	vm_vec_scale_add2(&Supernova_camera_pos, &whee.uvec, 30.0f);
+	vm_vec_scale_add(&Supernova_camera_pos, &Player_obj->pos, &whee.vec.rvec, sn_cam_distance);
+	vm_vec_scale_add2(&Supernova_camera_pos, &whee.vec.uvec, 30.0f);
 	*eye_pos = Supernova_camera_pos;
 
 	// if we're no longer moving the camera

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:56 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:21 $
  * $Author: penguin $
  *
  * Prototypes for Bitmap Manager functions

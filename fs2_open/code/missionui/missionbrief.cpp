@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:25 $
  * $Author: penguin $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.4  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.3  2002/05/09 23:02:59  mharris
+ * Not using default values for audiostream functions, since they may
+ * be macros (if NO_SOUND is defined)
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -279,25 +292,29 @@
 #include "eventmusic.h"
 #include "missioncampaign.h"
 #include "object.h"
-#include "multi.h"
 #include "snazzyui.h"
 #include "bmpman.h"
 #include "missionbrief.h"
 #include "missionbriefcommon.h"
 #include "missiongrid.h"
 #include "bmpman.h"
-#include "multimsgs.h"
 #include "cmdline.h"
 #include "contexthelp.h"
-#include "chatbox.h"
-#include "multiteamselect.h"
-#include "multiui.h"
 #include "asteroid.h"
 #include "popup.h"
 #include "sexp.h"
 #include "alphacolors.h"
 #include "font.h"
 #include "missionmessage.h"
+#include "player.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#include "multimsgs.h"
+#include "multiteamselect.h"
+#include "multiui.h"
+#include "chatbox.h"
+#endif
 
 /*
 #define OBJECTIVES_X	65
@@ -799,6 +816,7 @@ void brief_button_do(int i)
 			brief_exit_loop_pressed();
 			break;
 
+#ifndef NO_NETWORK
 		case BRIEF_BUTTON_MULTI_LOCK:
 			Assert(Game_mode & GM_MULTIPLAYER);			
 			// the "lock" button has been pressed
@@ -809,6 +827,7 @@ void brief_button_do(int i)
 				Brief_buttons[gr_screen.res][BRIEF_BUTTON_MULTI_LOCK].button.disable();
 			}
 			break;
+#endif
 	} // end switch
 }
 
@@ -910,6 +929,7 @@ void brief_buttons_init()
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		Brief_buttons[gr_screen.res][BRIEF_BUTTON_MULTI_LOCK].button.hide();
 		Brief_buttons[gr_screen.res][BRIEF_BUTTON_MULTI_LOCK].button.disable();
+#ifndef NO_NETWORK
 	} else {
 		// if we're not the host of the game (or a tema captain in team vs. team mode), disable the lock button
 		if(Netgame.type_flags & NG_TYPE_TEAM){
@@ -921,6 +941,7 @@ void brief_buttons_init()
 				Brief_buttons[gr_screen.res][BRIEF_BUTTON_MULTI_LOCK].button.disable();
 			}
 		}
+#endif
 	}
 
 	// create close button for closeup popup
@@ -1000,9 +1021,13 @@ void brief_load_bitmaps()
 //
 void brief_ui_init()
 {
+#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER) {
 		Brief_background_bitmap = bm_load(Brief_multi_filename[gr_screen.res]);
-	} else {
+	}
+	else
+#endif
+	{
 		Brief_background_bitmap = bm_load(Brief_filename[gr_screen.res]);	
 	}
 
@@ -1112,11 +1137,13 @@ void brief_init()
 	demo_reset_trailer_timer();
 #endif
 
+#ifndef NO_NETWORK
 	// for multiplayer, change the state in my netplayer structure
 	// and initialize the briefing chat area thingy
 	if ( Game_mode & GM_MULTIPLAYER ){
 		Net_player->state = NETPLAYER_STATE_BRIEFING;
 	}
+#endif
 
 	// Non standard briefing in red alert mission
 	if ( red_alert_mission() ) {
@@ -1125,9 +1152,13 @@ void brief_init()
 	}
 
 	// get a pointer to the appropriate briefing structure
+#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		Briefing = &Briefings[Net_player->p_info.team];
-	} else {
+	}
+	else
+#endif
+	{
 		Briefing = &Briefings[0];			
 	}
 
@@ -1174,9 +1205,13 @@ void brief_init()
 	nprintf(("Alan","Entering brief_init()\n"));
 	common_select_init();
 
+#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER) {
 		BriefingMaskBitmap = bm_load(Brief_multi_mask_filename[gr_screen.res]);
-	} else {
+	}
+	else
+#endif
+	{
 		BriefingMaskBitmap = bm_load(Brief_mask_filename[gr_screen.res]);
 	}
 
@@ -1215,9 +1250,13 @@ void brief_init()
 	// init common UI
 	Brief_ui_window.create( 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );
 
+#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
 		Brief_ui_window.set_mask_bmap(Brief_mask_multi[gr_screen.res]);
-	} else {
+	}
+	else
+#endif
+	{
 		Brief_ui_window.set_mask_bmap(Brief_mask_single[gr_screen.res]);
 	}
 
@@ -1225,6 +1264,7 @@ void brief_init()
 	common_buttons_init(&Brief_ui_window);
 	brief_buttons_init();
 
+#ifndef NO_NETWORK
 	// if multiplayer, initialize a few other systems
 	if(Game_mode & GM_MULTIPLAYER){		
 		// again, should not be necessary, but we'll leave it for now
@@ -1233,6 +1273,7 @@ void brief_init()
 		// force the chatbox to be small
 		chatbox_force_small();
 	}
+#endif
 
 	// set up the screen regions
 	brief_init_screen(Brief_multiplayer);
@@ -1438,12 +1479,16 @@ void brief_render(float frametime)
 
 	// output mission title
 	gr_set_color_fast(&Color_bright_white);
+#ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {
 		char buf[256];
 		strncpy(buf, The_mission.name, 256);
 		gr_force_fit_string(buf, 255, Title_coords_multi[gr_screen.res][2]);
 		gr_string(Title_coords_multi[gr_screen.res][0], Title_coords_multi[gr_screen.res][1], buf);
-	} else {
+	}
+	else
+#endif
+	{
 		gr_get_string_size(&w, NULL, The_mission.name);
 		gr_string(Title_coords[gr_screen.res][0] - w, Title_coords[gr_screen.res][1], The_mission.name);
 	}
@@ -1568,7 +1613,7 @@ int brief_setup_closeup(brief_icon *bi)
 	
 	if ( Closeup_icon->modelnum == -1 ) {
 		if ( sip == NULL ) {
-			Closeup_icon->modelnum = model_load(pof_filename, NULL, NULL);
+			Closeup_icon->modelnum = model_load(pof_filename, 0, NULL);
 		} else {
 			Closeup_icon->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 		}
@@ -1577,7 +1622,7 @@ int brief_setup_closeup(brief_icon *bi)
 
 	vm_set_identity(&Closeup_orient);
 	vm_vec_make(&tvec, 0.0f, 0.0f, -1.0f);
-	Closeup_orient.fvec = tvec;
+	Closeup_orient.vec.fvec = tvec;
 	vm_vec_zero(&Closeup_pos);
 	Closeup_angles.p  = 0.0f;
 	Closeup_angles.b  = 0.0f;
@@ -1777,7 +1822,7 @@ void brief_do_frame(float frametime)
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
 					if (sip->modelnum < 0)
-						sip->modelnum = model_load(sip->pof_file, NULL, NULL);
+						sip->modelnum = model_load(sip->pof_file, 0, NULL);
 
 					mprintf(("Shiptype = %d (%s)\n", Closeup_icon->ship_class, sip->name));
 					mprintf(("Modelnum = %d (%s)\n", sip->modelnum, sip->pof_file));
@@ -1793,7 +1838,7 @@ void brief_do_frame(float frametime)
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
 					if (sip->modelnum < 0)
-						sip->modelnum = model_load(sip->pof_file, NULL, NULL);
+						sip->modelnum = model_load(sip->pof_file, 0, NULL);
 
 					mprintf(("Shiptype = %d (%s)\n", Closeup_icon->ship_class, sip->name));
 					mprintf(("Modelnum = %d (%s)\n", sip->modelnum, sip->pof_file));
@@ -1804,42 +1849,42 @@ void brief_do_frame(float frametime)
 			}
 
 			case KEY_A:
-				Closeup_cam_pos.z += 1;
+				Closeup_cam_pos.xyz.z += 1;
 				cam_change = 1;
 				break;
 
 			case KEY_A + KEY_SHIFTED:
-				Closeup_cam_pos.z += 10;
+				Closeup_cam_pos.xyz.z += 10;
 				cam_change = 1;
 				break;
 
 			case KEY_Z:
-				Closeup_cam_pos.z -= 1;
+				Closeup_cam_pos.xyz.z -= 1;
 				cam_change = 1;
 				break;
 
 			case KEY_Z + KEY_SHIFTED:
-				Closeup_cam_pos.z -= 10;
+				Closeup_cam_pos.xyz.z -= 10;
 				cam_change = 1;
 				break;
 			
 			case KEY_Y:
-				Closeup_cam_pos.y += 1;
+				Closeup_cam_pos.xyz.y += 1;
 				cam_change = 1;
 				break;
 
 			case KEY_Y + KEY_SHIFTED:
-				Closeup_cam_pos.y += 10;
+				Closeup_cam_pos.xyz.y += 10;
 				cam_change = 1;
 				break;
 
 			case KEY_H:
-				Closeup_cam_pos.y -= 1;
+				Closeup_cam_pos.xyz.y -= 1;
 				cam_change = 1;
 				break;
 
 			case KEY_H + KEY_SHIFTED:
-				Closeup_cam_pos.y -= 10;
+				Closeup_cam_pos.xyz.y -= 10;
 				cam_change = 1;
 				break;
 
@@ -1877,7 +1922,7 @@ void brief_do_frame(float frametime)
 
 #ifndef NDEBUG
 	if ( cam_change ) {
-		nprintf(("General","Camera pos: %.2f, %.2f %.2f // ", Closeup_cam_pos.x, Closeup_cam_pos.y, Closeup_cam_pos.z));
+		nprintf(("General","Camera pos: %.2f, %.2f %.2f // ", Closeup_cam_pos.xyz.x, Closeup_cam_pos.xyz.y, Closeup_cam_pos.xyz.z));
 		nprintf(("General","Camera zoom: %.2f\n", Closeup_zoom));
 	}
 #endif
@@ -1997,6 +2042,7 @@ void brief_do_frame(float frametime)
 			brief_render_closeup(Closeup_icon->ship_class, frametime);
 		}
 
+#ifndef NO_NETWORK
 		// render some extra stuff in multiplayer
 		if (Game_mode & GM_MULTIPLAYER) {
 			// should render this last so that it overlaps all controls
@@ -2023,6 +2069,7 @@ void brief_do_frame(float frametime)
 				}
 			}
 		}
+#endif
 	}		
 
 	// maybe flash a button if player hasn't done anything for a while
@@ -2037,9 +2084,13 @@ void brief_do_frame(float frametime)
 	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
 	// the ship model is not in memory
 	if (Commit_pressed) {
+#ifndef NO_NETWORK
 		if (Game_mode & GM_MULTIPLAYER) {
 			multi_ts_commit_pressed();
-		} else {
+		}
+		else
+#endif
+		{
 			commit_pressed();
 		}
 
@@ -2119,7 +2170,7 @@ void brief_close()
 void briefing_stop_music()
 {
 	if ( Briefing_music_handle != -1 ) {
-		audiostream_close_file(Briefing_music_handle);
+		audiostream_close_file(Briefing_music_handle, 1);
 		Briefing_music_handle = -1;
 	}
 }
@@ -2141,7 +2192,7 @@ void briefing_start_music()
 {
 	if ( Briefing_music_handle != -1 ) {
 		if ( !audiostream_is_playing(Briefing_music_handle) )
-			audiostream_play(Briefing_music_handle, Master_event_music_volume);
+			audiostream_play(Briefing_music_handle, Master_event_music_volume, 1);
 	}
 	else {
 		nprintf(("Warning", "No music file exists to play music at this briefing!\n"));

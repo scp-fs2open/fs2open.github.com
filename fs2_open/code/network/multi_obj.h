@@ -18,6 +18,10 @@ struct object;
 struct header;
 struct net_player;
 
+#ifdef NO_NETWORK
+#error do not use
+#endif
+
 // client button info flags
 #define OOC_FIRE_SECONDARY			(1<<0)
 #define OOC_TARGET_LOCKED			(1<<1)
@@ -36,9 +40,6 @@ typedef struct np_update {
 	ushort	pos_chksum;					// positional checksum
 	ushort	orient_chksum;				// orient checksum
 } np_update;
-
-// safer version of timestamp
-#define timestamp_elapsed_safe(_a, _b)		( (_a != 0) ? (((timestamp_ticker >= (_a)) || (timestamp_ticker < (_a - (_b + 100)))) ? 1 : 0) : 1 )
 
 // ---------------------------------------------------------------------------------------------------
 // OBJECT UPDATE FUNCTIONS

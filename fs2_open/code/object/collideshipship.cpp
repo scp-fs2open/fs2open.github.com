@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -758,7 +761,8 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 			pm = model_get(Ships[heavy_obj->instance].modelnum);
 
 			// turn off all rotating submodels and test for collision
-			for (int i=0; i<num_rotating_submodels; i++) {
+			int i;
+			for (i=0; i<num_rotating_submodels; i++) {
 				pm->submodel[submodel_list[i]].blown_off = 1;
 			}
 
@@ -1399,7 +1403,7 @@ void mcp_1(object *player_objp, object *planet_objp)
 //	Hack: Just checking first six letters of name.
 int is_planet(object *objp)
 {
-	return (strnicmp(Ships[objp->instance].ship_name, NOX("planet"), 6) == NULL);
+	return (strnicmp(Ships[objp->instance].ship_name, NOX("planet"), 6) == 0);
 }
 
 
@@ -1528,12 +1532,12 @@ void maybe_push_little_ship_from_fast_big_ship(object *big, object *small, float
 	if (Ship_info[Ships[big->instance].ship_info_index].flags & (SIF_CAPITAL|SIF_SUPERCAP)) {
 		if (Ship_info[Ships[small->instance].ship_info_index].flags & (SIF_SMALL_SHIP)) {
 			float big_speed = vm_vec_mag_quick(&big->phys_info.vel);
-			if (big_speed > 3*big->phys_info.max_vel.z) {
+			if (big_speed > 3*big->phys_info.max_vel.xyz.z) {
 				// push player away in direction perp to forward of big ship
 				// get perp vec
 				vector temp, perp;
 				vm_vec_sub(&temp, &small->pos, &big->pos);
-				vm_vec_scale_add(&perp, &temp, &big->orient.fvec, -vm_vec_dotprod(&temp, &big->orient.fvec));
+				vm_vec_scale_add(&perp, &temp, &big->orient.vec.fvec, -vm_vec_dotprod(&temp, &big->orient.vec.fvec));
 				vm_vec_normalize_quick(&perp);
 
 				// don't drive into sfc we just collided with
@@ -1720,10 +1724,10 @@ int collide_ship_ship( obj_pair * pair )
 				if ( Ships[A->instance].team == Ships[B->instance].team ) {
 					vector	collision_vec, right_angle_vec;
 					vm_vec_normalized_dir(&collision_vec, &ship_ship_hit_info.hit_pos, &A->pos);
-					if (vm_vec_dot(&collision_vec, &A->orient.fvec) > 0.999f){
-						right_angle_vec = A->orient.rvec;
+					if (vm_vec_dot(&collision_vec, &A->orient.vec.fvec) > 0.999f){
+						right_angle_vec = A->orient.vec.rvec;
 					} else {
-						vm_vec_cross(&right_angle_vec, &A->orient.uvec, &collision_vec);
+						vm_vec_cross(&right_angle_vec, &A->orient.vec.uvec, &collision_vec);
 					}
 
 					vm_vec_scale_add2( &A->phys_info.vel, &right_angle_vec, +2.0f);

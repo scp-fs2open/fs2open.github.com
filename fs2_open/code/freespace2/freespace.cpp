@@ -9,13 +9,63 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2002/06/03 03:39:28  mharris
+ * Added pause code back in (now that fAppActive is working, and we're
+ * getting the correct keycode for the pause key)
+ *
+ * Revision 1.15  2002/05/26 14:09:03  mharris
+ * Testing
+ *
+ * Revision 1.14  2002/05/21 15:38:49  mharris
+ * Minor debug tweaks
+ *
+ * Revision 1.13  2002/05/17 23:39:07  mharris
+ * temp workaround to test on linux
+ *
+ * Revision 1.12  2002/05/17 06:45:53  mharris
+ * More porting tweaks.  It links!  but segfaults...
+ *
+ * Revision 1.11  2002/05/17 02:57:52  mharris
+ * Rework that annoying try/catch block.  Commented out most of it except
+ * when in WIN32.  No exceptions are thrown anywhere; why do we need it?
+ *
+ * Revision 1.10  2002/05/16 00:41:00  mharris
+ * Added ifdef WIN32 around CD stuff.  More NO_SOUND and NO_NETWORK
+ * tweaks.
+ *
+ * Revision 1.9  2002/05/15 14:59:29  mharris
+ * Added another ifndef NO_SOUND
+ * For non-Win32, use stat() rather than access() to check
+ * for sparky_hi_fs2.vp
+ *
+ * Revision 1.8  2002/05/13 21:43:37  mharris
+ * A little more network and sound cleanup
+ *
+ * Revision 1.7  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.6  2002/05/10 20:42:43  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.5  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
+ * Revision 1.4  2002/05/09 13:49:30  mharris
+ * Added ifndef NO_DIRECT3D
+ *
+ * Revision 1.3  2002/05/08 17:29:17  mharris
+ * more port tweaks
+ *
+ * Revision 1.2  2002/05/07 02:56:50  mharris
+ * porting...
+ *
  * Revision 1.1  2002/05/02 18:03:06  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -424,6 +474,11 @@
 #include <time.h>
 #include <direct.h>
 
+#ifndef WIN32
+#include <unistd.h>
+#include <sys/stat.h>
+#endif
+
 #include "pstypes.h"
 #include "systemvars.h"
 #include "key.h"
@@ -456,10 +511,27 @@
 #include "bmpman.h"
 #include "joy.h"
 #include "joy_ff.h"
-#include "multi.h"
-#include "multiutil.h"
-#include "multimsgs.h"
-#include "multiui.h"
+
+#ifndef NO_NETWORK
+# include "multi.h"
+# include "multiutil.h"
+# include "multimsgs.h"
+# include "multiui.h"
+# include "multi_xfer.h"
+# include "multiteamselect.h"
+# include "multilag.h"
+# include "multi_ingame.h"
+# include "multi_voice.h"
+# include "multi_pmsg.h"
+# include "multi_pause.h"
+# include "multi_endgame.h"
+# include "multi_respawn.h"
+# include "multi_obj.h"
+# include "multi_log.h"
+# include "multi_dogfight.h"
+# include "multi_rate.h"
+#endif
+
 #include "cfile.h"
 #include "player.h"
 #include "freespace.h"
@@ -504,40 +576,27 @@
 #include "stand_gui.h"
 #include "pcxutils.h"
 #include "hudtargetbox.h"
-#include "multi_xfer.h"
 #include "hudescort.h"
-#include "multiutil.h"
 #include "sexp.h"
 #include "medals.h"
-#include "multiteamselect.h"
 #include "ds3d.h"
 #include "shipfx.h"
 #include "readyroom.h"
 #include "mainhallmenu.h"
-#include "multilag.h"
 #include "trails.h"
 #include "particle.h"
 #include "popup.h"
-#include "multi_ingame.h"
 #include "snazzyui.h"
 #include "asteroid.h"
 #include "popupdead.h"
-#include "multi_voice.h"
 #include "missioncmdbrief.h"
 #include "redalert.h"
 #include "gameplayhelp.h"
-#include "multilag.h"
 #include "staticrand.h"
-#include "multi_pmsg.h"
 #include "levelpaging.h"
 #include "observer.h"
-#include "multi_pause.h"
-#include "multi_endgame.h"
 #include "cutscenes.h"
-#include "multi_respawn.h"
 // #include "movie.h"
-#include "multi_obj.h"
-#include "multi_log.h"
 #include "emp.h"
 #include "localize.h"
 #include "osregistry.h"
@@ -552,8 +611,6 @@
 #include "shipcontrails.h"
 #include "awacs.h"
 #include "beam.h"
-#include "multi_dogfight.h"
-#include "multi_rate.h"
 #include "muzzleflash.h"
 #include "encrypt.h"
 #include "demo.h"
@@ -944,9 +1001,12 @@ static char *Game_demo_title_screen_fname[GR_NUM_RESOLUTIONS] = {
 };
 #endif
 
+
+#ifdef WIN32
 // cdrom stuff
 char Game_CDROM_dir[MAX_PATH_LEN];
 int init_cdrom();
+#endif
 
 // How much RAM is on this machine. Set in WinMain
 uint Freespace_total_ram = 0;
@@ -963,12 +1023,13 @@ int Game_shudder_time = -1;
 int Game_shudder_total = 0;
 float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 
+#ifndef NO_SOUND
 // EAX stuff
 sound_env Game_sound_env;
-//sound_env Game_default_sound_env = {SND_ENV_AUDITORIUM, 0.25f, 0.35f, 3.0f};
 sound_env Game_default_sound_env = {SND_ENV_GENERIC, 0.2F,0.2F,1.0F};
-
 int Game_sound_env_update_timestamp;
+#endif
+
 
 // WARPIN CRAP BEGIN --------------------------------------------------------------------------------------------
 
@@ -1017,6 +1078,7 @@ void game_framerate_check_init()
 		
 	// nebula missions
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+#if defined WIN32
 		// if this is a glide card
 		if(gr_screen.mode == GR_GLIDE){
 			extern GrHwConfiguration hwconfig;
@@ -1034,7 +1096,13 @@ void game_framerate_check_init()
 		else {
 			Gf_critical = 15.0f;			
 		}
+#else
+		Gf_critical = 15.0f;			
+#endif
+
 	} else {
+
+#ifdef WIN32
 		// if this is a glide card
 		if(gr_screen.mode == GR_GLIDE){
 			extern GrHwConfiguration hwconfig;
@@ -1052,6 +1120,10 @@ void game_framerate_check_init()
 		else {
 			Gf_critical = 25.0f;
 		}
+#else
+		Gf_critical = 25.0f;
+#endif
+
 	}
 }
 
@@ -1172,7 +1244,7 @@ void game_sunspot_process(float frametime)
 			vector light_dir;				
 			light_get_global_dir(&light_dir, 0);
 			float dot;
-			dot = vm_vec_dot( &light_dir, &Eye_matrix.fvec );
+			dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec );
 			
 			if(dot >= 0.0f){
 				// scale it some more
@@ -1231,7 +1303,7 @@ void game_sunspot_process(float frametime)
 					vector light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
-					float dot = vm_vec_dot( &light_dir, &Eye_matrix.fvec )*0.5f+0.5f;
+					float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
 
 					Sun_spot_goal += (float)pow(dot,85.0f);
 
@@ -1361,7 +1433,9 @@ void game_level_close()
 	event_music_level_close();
 	game_stop_looped_sounds();
 	snd_stop_all();
+#ifndef NO_SOUND
 	obj_snd_level_close();					// uninit object-linked persistant sounds
+#endif
 	gamesnd_unload_gameplay_sounds();	// unload gameplay sounds from memory
 	anim_level_close();						// stop and clean up any anim instances
 	shockwave_level_close();
@@ -1390,11 +1464,15 @@ void game_level_init(int seed)
 		// if no seed was passed, seed the generator either from the time value, or from the
 		// netgame security flags -- ensures that all players in multiplayer game will have the
 		// same randon number sequence (with static rand functions)
+#ifndef NO_NETWORK
 		if ( Game_mode & GM_NORMAL ) {
 			Game_level_seed = time(NULL);
 		} else {
 			Game_level_seed = Netgame.security;
 		}
+#else
+		Game_level_seed = time(NULL);
+#endif  // ifndef NO_NETWORK
 	} else {
 		// mwa 9/17/98 -- maybe this assert isn't needed????
 		Assert( !(Game_mode & GM_MULTIPLAYER) );
@@ -1437,7 +1515,9 @@ void game_level_init(int seed)
 	mission_init_goals();
 	mission_log_init();
 	messages_init();
+#ifndef NO_SOUND
 	obj_snd_level_init();					// init object-linked persistant sounds
+#endif
 	anim_level_init();
 	shockwave_level_init();
 	afterburner_level_init();
@@ -1482,6 +1562,7 @@ void freespace_stop_mission()
 	Game_mode &= ~GM_IN_MISSION;
 }
 
+#ifndef NO_NETWORK
 // called at frame interval to process networking stuff
 void game_do_networking()
 {
@@ -1502,6 +1583,7 @@ void game_do_networking()
 		multi_pause_do_frame();
 	}	
 }
+#endif // ifndef NO_NETWORK
 
 
 // Loads the best palette for this level, based
@@ -1585,7 +1667,9 @@ static int Game_loading_ani_coords[GR_NUM_RESOLUTIONS][2] = {
 // was set.
 void game_loading_callback(int count)
 {	
+#ifndef NO_NETWORK
 	game_do_networking();
+#endif
 
 	Assert( Game_loading_callback_inited==1 );
 	Assert( Game_loading_ani != NULL );
@@ -1702,9 +1786,10 @@ void game_assign_sound_environment()
 		Game_sound_env = Game_default_sound_env;
 	}
 	*/
-
+#ifndef NO_SOUND
 	Game_sound_env = Game_default_sound_env;
 	Game_sound_env_update_timestamp = timestamp(1);
+#endif
 }
 
 // function which gets called before actually entering the mission.  It is broken down into a funciton
@@ -1720,7 +1805,7 @@ void freespace_mission_load_stuff()
 
 		game_loading_callback_init();
 		
-		event_music_level_init();	// preloads the first 2 seconds for each event music track
+		event_music_level_init(-1);	// preloads the first 2 seconds for each event music track
 		game_busy();
 
 		gamesnd_unload_interface_sounds();		// unload interface sounds from memory
@@ -1768,22 +1853,28 @@ int game_start_mission()
 	game_level_init();
 	load_gl_init = time(NULL) - load_gl_init;
 	
+#ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {
 		Player->flags |= PLAYER_FLAGS_IS_MULTI;
 
 		// clear multiplayer stats
 		init_multiplayer_stats();
 	}
+#endif
 
 	load_mission_load = time(NULL);
 	if (mission_load()) {
+#ifndef NO_NETWORK
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
 			popup(PF_BODY_BIG, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 		} else {
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_LOAD_FAIL);
 		}
-
+#else
+			popup(PF_BODY_BIG, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+#endif // ifndef NO_NETWORK
 		return 0;
 	}
 	load_mission_load = time(NULL) - load_mission_load;
@@ -1803,12 +1894,12 @@ int game_start_mission()
 	game_post_level_init();
 	load_post_level_init = time(NULL) - load_post_level_init;
 
-	#ifndef NDEBUG
+#ifndef NDEBUG
 	{
 		void Do_model_timings_test();
 		Do_model_timings_test();	
 	}
-	#endif
+#endif
 
 	load_mission_stuff = time(NULL);
 	freespace_mission_load_stuff();
@@ -1825,7 +1916,9 @@ DCF_BOOL( show_framerate, Show_framerate )
 DCF_BOOL( show_target_debug_info, Show_target_debug_info )
 DCF_BOOL( show_target_weapons, Show_target_weapons )
 DCF_BOOL( lead_target_cheat, Players[Player_num].lead_target_cheat )
+#ifndef NO_SOUND
 DCF_BOOL( sound, Sound_enabled )
+#endif
 DCF_BOOL( zbuffer, game_zbuffer )
 DCF_BOOL( shield_system, New_shield_system )
 DCF_BOOL( show_shield_mesh, Show_shield_mesh)
@@ -2016,43 +2109,36 @@ void game_init()
 
 	char whee[1024];
 	GetCurrentDirectory(1024, whee);
-	strcat(whee, "\\");
+	strcat(whee, DIR_SEPARATOR_STR);
 	strcat(whee, EXE_FNAME);
 
 	//Initialize the libraries
 	s1 = timer_get_milliseconds();
+#ifdef WIN32
 	if(cfile_init(whee, Game_CDROM_dir)){			// initialize before calling any cfopen stuff!!!
+#else
+	if(cfile_init(whee, NULL)){			// initialize before calling any cfopen stuff!!!
+#endif
 		exit(1);
 	}		
 	e1 = timer_get_milliseconds();
 
-	// time a bunch of cfopens	
-	/*
-	s2 = timer_get_milliseconds();	
-	CFILE *whee;
-	for(int idx=0; idx<10000; idx++){
-		whee = cfopen("capital01.pof", "rb", CFILE_NORMAL, CF_TYPE_MODELS);
-		if(whee != NULL){
-			cfclose(whee);
-		}
-		whee = NULL;
-		//cf_exist("capital01.pof", CF_TYPE_MODELS);
-	}
-	e2 = timer_get_milliseconds();	
-	*/
-
+#ifndef NO_NETWORK
 	if (Is_standalone) {
 		std_init_standalone();
-	} else {		
+	}
+	else
+#else
+	Assert(!Is_standalone);
+#endif
+	{		
 		os_init( Osreg_class_name, Osreg_app_name );
 		os_set_title(Osreg_title);
 	}
 
 	// initialize localization module. Make sure this is down AFTER initialzing OS.
-//	int t1 = timer_get_milliseconds();
 	lcl_init();	
 	lcl_xstr_init();
-//	mprintf(("LCL_INIT() TOOK %d MS\n", timer_get_milliseconds()-t1));
 
 	// verify that he has a valid ships.tbl (will Game_ships_tbl_valid if so)
 	verify_ships_tbl();
@@ -2106,6 +2192,7 @@ void game_init()
 	
 	ptr = os_config_read_string(NULL, NOX("Videocard"), NULL);	
 	if (ptr == NULL) {
+#ifdef WIN32
 		MessageBox((HWND)os_get_window(), XSTR("Please configure your system in the Launcher before running FS2.\n\n The Launcher will now be started!", 1446), XSTR("Attention!", 1447), MB_OK);
 
 		// fire up the UpdateLauncher executable
@@ -2132,33 +2219,57 @@ void game_init()
 			MessageBox((HWND)os_get_window(), XSTR("The Launcher could not be restarted.", 1450), XSTR("Error", 1451), MB_OK);
 		}
 		exit(1);
+#else
+		mprintf(("No video card defined... exiting\n"));
+		// TEMP mharris FIXME
+		ptr = "dummy";
+//		exit(1);
+#endif
 	}
 
+
+#ifdef WIN32
+	// Only check for 3d-accel in Win32
 	if(!Is_standalone){
-		
 		if(!stricmp(ptr, "Aucune accélération 3D") || !stricmp(ptr, "Keine 3D-Beschleunigerkarte") || !stricmp(ptr, "No 3D acceleration")){
 			MessageBox((HWND)os_get_window(), XSTR("Warning, Freespace 2 requires Glide or Direct3D hardware accleration. You will not be able to run Freespace 2 without it.", 1448), XSTR("Warning", 1449), MB_OK);		
 			exit(1);
 		}
 	}
+#endif
 
 	// check for hi res pack file 
 	int has_sparky_hi = 0;
 
 	// check if sparky_hi exists -- access mode 0 means does file exist
-	char dir[128];
-	_getcwd(dir, 128);
-	if ( _access("sparky_hi_fs2.vp", 0) == 0) {
-		has_sparky_hi = 1;
-	} else {
-		mprintf(("No sparky_hi_fs2.vp in directory %s\n", dir));
+#ifdef WIN32
+	{
+		char dir[128];
+		_getcwd(dir, 128);
+		if ( _access("sparky_hi_fs2.vp", 0) == 0) {
+			has_sparky_hi = 1;
+		} else {
+			mprintf(("No sparky_hi_fs2.vp in directory %s\n", dir));
+		}
 	}
+#else
+	{
+		struct stat sbuf;
+		if (stat("sparky_hi_fs2.vp", &sbuf) == 0) {
+			has_sparky_hi = 1;
+		} else {
+			mprintf(("No sparky_hi_fs2.vp\n"));
+		}
+	}
+#endif
 
 	// see if we've got 32 bit in the string
 	if(strstr(ptr, "32 bit")){
 		depth = 32;
 	}
 
+#ifdef WIN32
+	// initialize the graphics system (win32)
 	int trying_d3d = 0;
 	
 	if (!Is_standalone && ptr && (strstr(ptr, NOX("3DFX Glide")))) {
@@ -2223,6 +2334,17 @@ void game_init()
 		exit(1);
 		return;
 	}
+#elif defined unix
+	// initialize the graphics system (unix)
+	extern int Gr_inited;
+	gr_init(GR_640, GR_OPENGL);
+	if (!Gr_inited) {
+		mprintf(("Could not initialize graphics... exiting\n"));
+		exit(1);
+	}
+#else
+#error unknown operating system
+#endif // ifdef WIN32
 
 	// Set the gamma
 	ptr = os_config_read_string(NULL,NOX("Gamma"),NOX("1.80"));
@@ -2245,6 +2367,7 @@ void game_init()
 	}
 #endif
 	
+#ifndef NO_NETWORK
 	// attempt to load up master tracker registry info (login and password)
 	Multi_tracker_id = -1;		
 
@@ -2272,6 +2395,7 @@ void game_init()
 	} else {		
 		strcpy(Multi_tracker_squad_name, ptr);
 	}
+#endif  // ifndef NO_NETWORK
 
 	// If less than 48MB of RAM, use low memory model.
 	if ( (Freespace_total_ram < 48*1024*1024) || Use_low_mem )	{
@@ -2297,7 +2421,9 @@ void game_init()
 	gamesnd_parse_soundstbl();
 	radar_init();
 	gameseq_init();
+#ifndef NO_NETWORK
 	multi_init();	
+#endif  // ifndef NO_NETWORK
 
 	// standalone's don't use hte joystick and it seems to sometimes cause them to not get shutdown properly
 	if(!Is_standalone){
@@ -2322,8 +2448,10 @@ void game_init()
 //	navmap_init();						// init the navigation map system
 	context_help_init();			
 	techroom_intel_init();			// parse species.tbl, load intel info	
+#ifndef NO_NETWORK
 	// initialize psnet
 	psnet_init( Multi_options_g.protocol, Multi_options_g.port );						// initialize the networking code		
+#endif
 	init_animating_pointer();	
 	asteroid_init();
 	mission_brief_common_init();	// Mark all the briefing structures as empty.		
@@ -2349,7 +2477,9 @@ void game_init()
 //	Game_music_paused = 0;
 	Game_paused = 0;
 
+#ifdef WIN32
 	timeBeginPeriod(1);	
+#endif
 
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
@@ -2445,6 +2575,7 @@ void game_show_framerate()
 
 		gr_set_color_fast(&HUD_color_debug);
 
+#ifndef NO_DIRECT3D
 		{
 			extern int D3D_textures_in;
 			extern int D3D_textures_in_frame;
@@ -2458,6 +2589,8 @@ void game_show_framerate()
 			gr_printf( sx, sy, NOX("EXP VRAM: %dKB\n"), (Glide_explosion_vram)/1024 );
 			sy += dy;
 		}
+#endif
+
 //		gr_printf( sx, sy, "BPP: %d", gr_screen.bits_per_pixel );
 //		sy += dy;
 		gr_printf( sx, sy, NOX("DMA: %s"), transfer_text );
@@ -2522,10 +2655,15 @@ void game_show_framerate()
 
 		gr_printf( sx, sy, NOX("BMP: %d KB\n"), bm_texture_ram/1024 );
 		sy += dy;
+
+#ifndef NO_SOUND
 		gr_printf( sx, sy, NOX("S-SRAM: %d KB\n"), Snd_sram/1024 );		// mem used to store game sound
 		sy += dy;
 		gr_printf( sx, sy, NOX("S-HRAM: %d KB\n"), Snd_hram/1024 );		// mem used to store game sound
 		sy += dy;
+#endif
+
+#ifndef NO_DIRECT3D
 		{
 			extern int D3D_textures_in;
 			extern int Glide_textures_in;
@@ -2538,6 +2676,7 @@ void game_show_framerate()
 			gr_printf( sx, sy, NOX("EXP VRAM: %dKB\n"), (Glide_explosion_vram)/1024 );
 			sy += dy;
 		}
+#endif
 	}
 
 
@@ -2545,7 +2684,7 @@ void game_show_framerate()
 		int sx, sy;
 		sx = 320;
 		sy = 100;
-		gr_printf(sx, sy, NOX("Player Pos: (%d,%d,%d)"), fl2i(Player_obj->pos.x), fl2i(Player_obj->pos.y), fl2i(Player_obj->pos.z));
+		gr_printf(sx, sy, NOX("Player Pos: (%d,%d,%d)"), fl2i(Player_obj->pos.xyz.x), fl2i(Player_obj->pos.xyz.y), fl2i(Player_obj->pos.xyz.z));
 	}
 
 	MONITOR_INC(NumPolys, modelstats_num_polys);
@@ -2559,6 +2698,7 @@ void game_show_framerate()
 #endif
 }
 
+#ifndef NO_NETWORK
 void game_show_standalone_framerate()
 {
 	float frame_rate=30.0f;
@@ -2585,6 +2725,7 @@ void game_show_standalone_framerate()
 	std_set_standalone_fps(frame_rate);
 	Framecount++;
 }
+#endif
 
 // function to show the time remaining in a mission.  Used only when the end-mission sexpression is used
 void game_show_time_left()
@@ -2943,6 +3084,7 @@ extern void render_shields();
 
 void player_repair_frame(float frametime)
 {
+#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 		int idx;
 		for(idx=0;idx<MAX_PLAYERS;idx++){
@@ -2959,6 +3101,7 @@ void player_repair_frame(float frametime)
 			}
 		}
 	}	
+#endif  // ifndef NO_NETWORK
 	if ( (Player_obj != NULL) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER) && (Player_ship != NULL) && !(Player_ship->flags & SF_DYING) ) {
 		ai_do_repair_frame(Player_obj, &Ai_info[Ships[Player_obj->instance].ai_index], frametime);
 	}
@@ -3108,6 +3251,7 @@ void say_view_target()
 				Show_viewing_from_self = 1;
 			}
 		} else {
+#ifndef NO_NETWORK
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER) && (Player_obj->type == OBJ_OBSERVER)){
 				HUD_fixed_printf(2.0f,XSTR( "Viewing from observer\n", 187));
 				Show_viewing_from_self = 1;
@@ -3115,6 +3259,10 @@ void say_view_target()
 				if (Show_viewing_from_self)
 					HUD_fixed_printf(2.0f, XSTR( "Viewing from self\n", 188));
 			}
+#else
+				if (Show_viewing_from_self)
+					HUD_fixed_printf(2.0f, XSTR( "Viewing from self\n", 188));
+#endif  // NO_NETWORK
 		}
 	}
 
@@ -3193,7 +3341,7 @@ void apply_hud_shake(matrix *eye_orient)
 			vm_vec_rand_vec_quick(&rand_vec);
 
 			// play the effect
-			joy_ff_play_dir_effect(intensity*rand_vec.x, intensity*rand_vec.y);
+			joy_ff_play_dir_effect(intensity*rand_vec.xyz.x, intensity*rand_vec.xyz.y);
 		}
 
 	
@@ -3218,9 +3366,9 @@ void apply_hud_shake(matrix *eye_orient)
 
 		matrix	tm, tm2;
 		vm_angles_2_matrix(&tm, &tangles);
-		Assert(vm_vec_mag(&tm.fvec) > 0.0f);
-		Assert(vm_vec_mag(&tm.rvec) > 0.0f);
-		Assert(vm_vec_mag(&tm.uvec) > 0.0f);
+		Assert(vm_vec_mag(&tm.vec.fvec) > 0.0f);
+		Assert(vm_vec_mag(&tm.vec.rvec) > 0.0f);
+		Assert(vm_vec_mag(&tm.vec.uvec) > 0.0f);
 		vm_matrix_x_matrix(&tm2, eye_orient, &tm);
 		*eye_orient = tm2;
 	}
@@ -3376,11 +3524,11 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 				vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);
 				vm_matrix_x_matrix(&tm, &Viewer_obj->orient, &tm2);
 
-				vm_vec_scale_add(eye_pos, &Viewer_obj->pos, &tm.fvec, 2.0f * Viewer_obj->radius + Viewer_external_info.distance);
+				vm_vec_scale_add(eye_pos, &Viewer_obj->pos, &tm.vec.fvec, 2.0f * Viewer_obj->radius + Viewer_external_info.distance);
 
 				vm_vec_sub(&eye_dir, &Viewer_obj->pos, eye_pos);
 				vm_vec_normalize(&eye_dir);
-				vm_vector_2_matrix(eye_orient, &eye_dir, &Viewer_obj->orient.uvec, NULL);
+				vm_vector_2_matrix(eye_orient, &eye_dir, &Viewer_obj->orient.vec.uvec, NULL);
 				Viewer_obj = NULL;
 
 				//	Modify the orientation based on head orientation.
@@ -3390,25 +3538,25 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 				vector	move_dir;
 
 				if ( Viewer_obj->phys_info.speed < 0.1 )
-					move_dir = Viewer_obj->orient.fvec;
+					move_dir = Viewer_obj->orient.vec.fvec;
 				else {
 					move_dir = Viewer_obj->phys_info.vel;
 					vm_vec_normalize(&move_dir);
 				}
 
 				vm_vec_scale_add(eye_pos, &Viewer_obj->pos, &move_dir, -3.0f * Viewer_obj->radius - Viewer_chase_info.distance);
-				vm_vec_scale_add2(eye_pos, &Viewer_obj->orient.uvec, 0.75f * Viewer_obj->radius);
+				vm_vec_scale_add2(eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius);
 				vm_vec_sub(&eye_dir, &Viewer_obj->pos, eye_pos);
 				vm_vec_normalize(&eye_dir);
 
 				// JAS: I added the following code because if you slew up using
-				// Descent-style physics, eye_dir and Viewer_obj->orient.uvec are
+				// Descent-style physics, eye_dir and Viewer_obj->orient.vec.uvec are
 				// equal, which causes a zero-length vector in the vm_vector_2_matrix
 				// call because the up and the forward vector are the same.   I fixed
 				// it by adding in a fraction of the right vector all the time to the
 				// up vector.
-				vector tmp_up = Viewer_obj->orient.uvec;
-				vm_vec_scale_add2( &tmp_up, &Viewer_obj->orient.rvec, 0.00001f );
+				vector tmp_up = Viewer_obj->orient.vec.uvec;
+				vm_vec_scale_add2( &tmp_up, &Viewer_obj->orient.vec.rvec, 0.00001f );
 
 				vm_vector_2_matrix(eye_orient, &eye_dir, &tmp_up, NULL);
 				Viewer_obj = NULL;
@@ -3422,7 +3570,7 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 
 					vm_vec_sub(&eye_dir, &shipp->warp_effect_pos, eye_pos);
 					vm_vec_normalize(&eye_dir);
-					vm_vector_2_matrix(eye_orient, &eye_dir, &Player_obj->orient.uvec, NULL);
+					vm_vector_2_matrix(eye_orient, &eye_dir, &Player_obj->orient.vec.uvec, NULL);
 					Viewer_obj = NULL;
 			} else {
 				// get an eye position based upon the correct type of object
@@ -3468,15 +3616,21 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	g3_set_view_matrix( eye_pos, eye_orient, Viewer_zoom );
 
 	// maybe offset the HUD (jitter stuff)
+#ifndef NO_NETWORK
 	dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
+#else
+   dont_offset = 0;
+#endif
 	HUD_set_offsets(Viewer_obj, !dont_offset);
 	
 	// for multiplayer clients, call code in Shield.cpp to set up the Shield_hit array.  Have to
 	// do this becaues of the disjointed nature of this system (in terms of setup and execution).
 	// must be done before ships are rendered
+#ifndef NO_NETWORK
 	if ( MULTIPLAYER_CLIENT ) {
 		shield_point_multi_setup();
 	}
+#endif
 
 	if ( Game_subspace_effect )	{
 		stars_draw(0,0,0,1);
@@ -3510,40 +3664,46 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 #endif
 
 #ifndef NDEBUG
+#ifndef NO_SOUND
 	extern void snd_spew_debug_info();
 	snd_spew_debug_info();
+#endif
 #endif
 
 	//================ END OF 3D RENDERING STUFF ====================
 
 	hud_show_radar();
 
+#ifndef NO_NETWORK
 	if( (Game_detail_flags & DETAIL_FLAG_HUD) && !(Game_mode & GM_MULTIPLAYER) || ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER) ) ) {
+#else
+	if (Game_detail_flags & DETAIL_FLAG_HUD) {
+#endif
 		hud_maybe_clear_head_area();
 		anim_render_all(0, flFrametime);
 	}
 
+#ifndef NO_NETWORK
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){
 		extern void multi_display_netinfo();
 		multi_display_netinfo();
 	}	
+#endif
 
 	game_tst_frame_pre();
 
 #ifndef NDEBUG
 	do_timing_test(flFrametime);
-#endif
 
-#ifndef NDEBUG
+#ifndef NO_NETWORK
 	extern int OO_update_index;	
 	multi_rate_display(OO_update_index, 375, 0);
-#endif
 
-#ifndef NDEBUG
 	// test
 	extern void oo_display();
 	oo_display();			
+#endif
 #endif
 	
 	g3_end_frame();
@@ -3567,8 +3727,8 @@ void john_debug_stuff(vector *eye_pos, matrix *eye_orient)
 				ship_model_start(tobj);
 
 				model_find_world_point(eye_pos, &turret->turret_firing_point[0], turret->model_num, turret->turret_gun_sobj, &tobj->orient, &tobj->pos );
-				model_find_world_dir(&fvec, &turret->turret_matrix.fvec, turret->model_num, turret->turret_gun_sobj, &tobj->orient, NULL );
-				model_find_world_dir(&uvec, &turret->turret_matrix.uvec, turret->model_num, turret->turret_gun_sobj, &tobj->orient, NULL );
+				model_find_world_dir(&fvec, &turret->turret_matrix.vec.fvec, turret->model_num, turret->turret_gun_sobj, &tobj->orient, NULL );
+				model_find_world_dir(&uvec, &turret->turret_matrix.vec.uvec, turret->model_num, turret->turret_gun_sobj, &tobj->orient, NULL );
 				
 				vm_vector_2_matrix( eye_orient, &fvec, &uvec, NULL );
 
@@ -3706,6 +3866,7 @@ void game_flip_page_and_time_it()
 
 void game_simulation_frame()
 {
+#ifndef NO_NETWORK
 	// blow ships up in multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
 		// blow up all non-player ships
@@ -3732,6 +3893,7 @@ void game_simulation_frame()
 
 		dogfight_blown = 1;
 	}
+#endif  // ifndef NO_NETWORK
 
 	// process AWACS stuff - do this first thing
 	awacs_process();
@@ -3788,6 +3950,8 @@ void game_simulation_frame()
 #define	VM_PADLOCK_LEFT				(1 << 9)
 #define	VM_PADLOCK_RIGHT				(1 << 10)
 		
+
+#ifndef NO_NETWORK
 	// evaluate mission departures and arrivals before we process all objects.
 	if ( !(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && !multi_endgame_ending()) ) {
 
@@ -3812,12 +3976,24 @@ void game_simulation_frame()
 			mission_eval_goals();
 		}
 	}
+#else  // NO_NETWORK
+	// mharris FIXME -- this is too fragile - too much of this stuff is
+	// copied from the ifndef block above...
+		if ( !(Game_mode & GM_DEMO_PLAYBACK)) {
+			mission_parse_eval_stuff();
+		}
+		obj_move_all(flFrametime);
+		if ( !(Game_mode & GM_DEMO_PLAYBACK)) {
+			mission_eval_goals();
+		}
+#endif  // ifndef NO_NETWORK
 
 	// always check training objectives, even in multiplayer missions. we need to do this so that the directives gauge works properly on clients
 	if(!(Game_mode & GM_DEMO_PLAYBACK)){
 		training_check_objectives();
 	}
 	
+#ifndef NO_NETWORK
 	// do all interpolation now
 	if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !multi_endgame_ending() && !(Netgame.flags & NG_FLAG_SERVER_LOST)) {
 		// client side processing of warping in effect stages
@@ -3831,6 +4007,7 @@ void game_simulation_frame()
 		// move all objects - does interpolation now as well
 		obj_move_all(flFrametime);
 	}
+#endif  // ifndef NO_NETWORK
 
 	// only process the message queue when the player is "in" the game
 	if ( !Pre_player_entry ){
@@ -3869,7 +4046,9 @@ void game_simulation_frame()
 		// subspace missile strikes
 		ssm_process();
 
+#ifndef NO_SOUND
 		obj_snd_do_frame();						// update the object-linked persistant sounds
+#endif
 		game_maybe_update_sound_environment();
 		snd_update_listener(&View_position, &Player_obj->phys_info.vel, &Player_obj->orient);
 
@@ -3942,6 +4121,7 @@ void game_maybe_do_dead_popup(float frametime)
 				break;
 			}
 		} else {
+#ifndef NO_NETWORK
 			switch( choice ) {
 
 			case POPUPDEAD_DO_MAIN_HALL:
@@ -3962,6 +4142,10 @@ void game_maybe_do_dead_popup(float frametime)
 				leave_popup = 0;
 				break;
 			}
+#else
+			// should never really be here if NO_NETWORK...
+			Assert( Game_mode & GM_NORMAL );
+#endif  // ifndef NO_NETWORK
 		}
 
 		if ( leave_popup ) {
@@ -4049,11 +4233,15 @@ void game_frame()
 	// var to hold which state we are in
 	actually_playing = game_actually_playing();
 	
+#ifndef NO_NETWORK
 	if ((!(Game_mode & GM_MULTIPLAYER)) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) {
 		if (!(Game_mode & GM_STANDALONE_SERVER)){
 			Assert( OBJ_INDEX(Player_obj) >= 0 );
 		}
 	}
+#else
+	Assert( OBJ_INDEX(Player_obj) >= 0 );
+#endif  // ifndef NO_NETWORK
 
 	if (Missiontime > Entry_delay_time){
 		Pre_player_entry = 0;
@@ -4083,10 +4271,12 @@ void game_frame()
 				}
 			}
 			
+#ifndef NO_NETWORK
 			// if we're not the master, we may have to send the server-critical ship status button_info bits
 			if ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)){
 				multi_maybe_send_ship_status();
 			}
+#endif  // ifndef NO_NETWORK
 		}
 	}
 
@@ -4097,9 +4287,11 @@ void game_frame()
 	// otherwise too many lights are added.
 	light_reset();
 
+#ifndef NO_NETWORK
 	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state == NETGAME_STATE_SERVER_TRANSFER)){
 		return;
 	}
+#endif  // ifndef NO_NETWORK
 	
 	game_simulation_frame();	
 
@@ -4124,16 +4316,19 @@ void game_frame()
 			game_render_frame_setup(&eye_pos, &eye_orient);
 			game_render_frame( &eye_pos, &eye_orient );
 
+#ifndef NO_NETWORK
 			// save the eye position and orientation
 			if ( Game_mode & GM_MULTIPLAYER ) {
 				Net_player->s_info.eye_pos = eye_pos;
 				Net_player->s_info.eye_orient = eye_orient;
 			}
+#endif  // ifndef NO_NETWORK
 
 			hud_show_target_model();
 
 			// check to see if we should display the death died popup
 			if(Game_mode & GM_DEAD_BLEW_UP){				
+#ifndef NO_NETWORK
 				if(Game_mode & GM_MULTIPLAYER){
 					// catch the situation where we're supposed to be warping out on this transition
 					if(Net_player->flags & NETINFO_FLAG_WARPING_OUT){
@@ -4143,11 +4338,16 @@ void game_frame()
 						popupdead_start();
 					}
 				} else {
+#endif  // ifndef NO_NETWORK
+
 					if((Player_died_popup_wait != -1) && (timestamp_elapsed(Player_died_popup_wait))){
 						Player_died_popup_wait = -1;
 						popupdead_start();
 					}
+
+#ifndef NO_NETWORK
 				}
+#endif
 			}
 
 			// hack - sometimes this seems to slip by in multiplayer. this should guarantee that we catch it
@@ -4202,7 +4402,10 @@ void game_frame()
 			game_maybe_dump_frame();			// used to dump pcx files for building trailers
 #endif		
 		} else {
+
+#ifndef NO_NETWORK
 			game_show_standalone_framerate();
+#endif
 		}
 	}
 
@@ -4243,9 +4446,11 @@ int saved_timestamp_ticker = -1;
 
 void game_reset_time()
 {
+#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state == NETGAME_STATE_SERVER_TRANSFER)){
 		return ;
 	}
+#endif
 	
 	//	Last_time = timer_get_fixed_seconds();
 	game_start_time();
@@ -4363,13 +4568,14 @@ void game_set_frametime(int state)
 		cap = F1_0/Framerate_cap;
 		if (Frametime < cap) {
 			thistime = cap - Frametime;
-			//mprintf(("Sleeping for %6.3f seconds.\n", f2fl(thistime)));
+//  			mprintf(("Sleeping for %6.3f seconds.\n", f2fl(thistime)));
 			Sleep( DWORD(f2fl(thistime) * 1000.0f) );
 			Frametime = cap;
 			thistime = timer_get_fixed_seconds();
 		}
 	}
 
+#ifndef NO_NETWORK
 	if((Game_mode & GM_STANDALONE_SERVER) && 
 		(f2fl(Frametime) < ((float)1.0/(float)Multi_options_g.std_framecap))){
 
@@ -4380,6 +4586,7 @@ void game_set_frametime(int state)
 
 		Frametime = thistime - Last_time;
    }
+#endif
 
 	// If framerate is too low, cap it.
 	if (Frametime > MAX_FRAMETIME)	{
@@ -4421,9 +4628,11 @@ void game_do_frame()
 	game_set_frametime(GS_STATE_GAME_PLAY);
 	game_update_missiontime();
 
+#ifndef NO_NETWORK
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_multi_set_standalone_missiontime(f2fl(Missiontime));
 	}
+#endif
 
 	if ( game_single_step && (last_single_step == game_single_step) ) {
 		os_set_title( NOX("SINGLE STEP MODE (Pause exits, any other key steps)") );
@@ -4444,12 +4653,14 @@ void game_do_frame()
 	monitor_update();			// Update monitor variables
 }
 
+#ifndef NO_NETWORK
 void multi_maybe_do_frame()
 {
 	if ( (Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_IN_MISSION) && !Multi_pause_status){
 		game_do_frame(); 
 	}
 }
+#endif  // ifndef NO_NETWORK
 
 int Joymouse_button_status = 0;
 
@@ -4555,7 +4766,8 @@ int game_poll()
 
 	if (!os_foreground()) {		
 		game_stop_time();
-		os_sleep(100);
+//		os_sleep(100);
+		os_sleep(1);
 		game_start_time();
 
 		// If we're in a single player game, pause it.
@@ -4567,6 +4779,8 @@ int game_poll()
 	}
 
    k = key_inkey();
+	if (k)
+		mprintf(("game_poll(): got key 0x%02x\n", k));
 
 #ifdef FS2_DEMO
 	demo_maybe_show_trailer(k);
@@ -4603,10 +4817,12 @@ int game_poll()
 		}
 	}
 
+#ifndef NO_NETWORK
 	// if we should be ignoring keys because of some multiplayer situations
 	if((Game_mode & GM_MULTIPLAYER) && multi_ignore_controls(k)){
 		return 0;
 	}
+#endif  // ifndef NO_NETWORK
 
 	// If a popup is running, don't process all the Fn keys
 	if( popup_active() ) {
@@ -4631,9 +4847,11 @@ int game_poll()
 //			if (state != GS_STATE_INITIAL_PLAYER_SELECT) {
 
 			// don't allow f2 while warping out in multiplayer	
+#ifndef NO_NETWORK
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_WARPING_OUT)){
 				break;
 			}
+#endif
 
 			switch (state) {
 				case GS_STATE_INITIAL_PLAYER_SELECT:
@@ -4687,10 +4905,11 @@ int game_poll()
 
 		case KEY_ESC | KEY_SHIFTED:
 			// make sure to quit properly out of multiplayer
+#ifndef NO_NETWORK
 			if(Game_mode & GM_MULTIPLAYER){
 				multi_quit_game(PROMPT_NONE);
 			}
-
+#endif
 			gameseq_post_event( GS_EVENT_QUIT_GAME );
 			k = 0;
 
@@ -4701,7 +4920,7 @@ int game_poll()
 
 		case KEY_PRINT_SCRN: 
 			{
-				static counter = 0;
+				static int counter = 0;
 				char tmp_name[127];
 
 				game_stop_time();
@@ -4766,13 +4985,13 @@ void camera_set_orient( matrix *orient )
 
 void camera_set_velocity( vector *vel, int instantaneous )
 {
-	Camera_desired_velocity.x = 0.0f;
-	Camera_desired_velocity.y = 0.0f;
-	Camera_desired_velocity.z = 0.0f;
+	Camera_desired_velocity.xyz.x = 0.0f;
+	Camera_desired_velocity.xyz.y = 0.0f;
+	Camera_desired_velocity.xyz.z = 0.0f;
 
-	vm_vec_scale_add2( &Camera_desired_velocity, &Camera_orient.rvec, vel->x );
-	vm_vec_scale_add2( &Camera_desired_velocity, &Camera_orient.uvec, vel->y );
-	vm_vec_scale_add2( &Camera_desired_velocity, &Camera_orient.fvec, vel->z );
+	vm_vec_scale_add2( &Camera_desired_velocity, &Camera_orient.vec.rvec, vel->xyz.x );
+	vm_vec_scale_add2( &Camera_desired_velocity, &Camera_orient.vec.uvec, vel->xyz.y );
+	vm_vec_scale_add2( &Camera_desired_velocity, &Camera_orient.vec.fvec, vel->xyz.z );
 
 	if ( instantaneous )	{
 		Camera_velocity = Camera_desired_velocity;
@@ -4785,13 +5004,13 @@ void camera_move()
 {
 	vector new_vel, delta_pos;
 
-	apply_physics( Camera_damping, Camera_desired_velocity.x, Camera_velocity.x, flFrametime, &new_vel.x, &delta_pos.x );
-	apply_physics( Camera_damping, Camera_desired_velocity.y, Camera_velocity.y, flFrametime, &new_vel.y, &delta_pos.y );
-	apply_physics( Camera_damping, Camera_desired_velocity.z, Camera_velocity.z, flFrametime, &new_vel.z, &delta_pos.z );
+	apply_physics( Camera_damping, Camera_desired_velocity.xyz.x, Camera_velocity.xyz.x, flFrametime, &new_vel.xyz.x, &delta_pos.xyz.x );
+	apply_physics( Camera_damping, Camera_desired_velocity.xyz.y, Camera_velocity.xyz.y, flFrametime, &new_vel.xyz.y, &delta_pos.xyz.y );
+	apply_physics( Camera_damping, Camera_desired_velocity.xyz.z, Camera_velocity.xyz.z, flFrametime, &new_vel.xyz.z, &delta_pos.xyz.z );
 
 	Camera_velocity = new_vel;
 
-//	mprintf(( "Camera velocity = %.1f,%.1f, %.1f\n", Camera_velocity.x, Camera_velocity.y, Camera_velocity.z ));
+//	mprintf(( "Camera velocity = %.1f,%.1f, %.1f\n", Camera_velocity.xyz.x, Camera_velocity.xyz.y, Camera_velocity.xyz.z ));
 
 	vm_vec_add2( &Camera_pos, &delta_pos );
 
@@ -4802,17 +5021,17 @@ void camera_move()
 	if ( (ot < 0.667f) && ( Camera_time >= 0.667f ) )	{
 		vector tmp;
 		
-		tmp.z = 4.739f;		// always go this fast forward.
+		tmp.xyz.z = 4.739f;		// always go this fast forward.
 
 		// pick x and y velocities so they are always on a 
 		// circle with a 25 m radius.
 
 		float tmp_angle = frand()*PI2;
 	
-		tmp.x = 22.0f * (float)sin(tmp_angle);
-		tmp.y = -22.0f * (float)cos(tmp_angle);
+		tmp.xyz.x = 22.0f * (float)sin(tmp_angle);
+		tmp.xyz.y = -22.0f * (float)cos(tmp_angle);
 
-		//mprintf(( "Angle = %.1f, vx=%.1f, vy=%.1f\n", tmp_angle, tmp.x, tmp.y ));
+		//mprintf(( "Angle = %.1f, vx=%.1f, vy=%.1f\n", tmp_angle, tmp.xyz.x, tmp.xyz.y ));
 
 		//mprintf(( "Changing velocity!\n" ));
 		camera_set_velocity( &tmp, 0 );
@@ -4907,6 +5126,7 @@ void game_process_event( int current_state, int event )
 			}
 #endif
 
+#ifndef NO_NETWORK
 			if (Game_mode & GM_MULTIPLAYER) {
 				// if we're respawning, make sure we change the view mode so that the hud shows up
 				if (current_state == GS_STATE_DEATH_BLEW_UP) {
@@ -4923,6 +5143,9 @@ void game_process_event( int current_state, int event )
 			// clear multiplayer button info			
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
+#else
+				gameseq_set_state(GS_STATE_GAME_PLAY, 1);
+#endif
 
 			Start_time = f2fl(timer_get_approx_seconds());
 			//Framecount = 0;
@@ -5183,9 +5406,9 @@ void game_process_event( int current_state, int event )
 				vector tmp = Player_obj->pos;
 				matrix tmp_m;
 				ship_get_eye( &tmp, &tmp_m, Player_obj );
-				vm_vec_scale_add2( &tmp, &Player_obj->orient.rvec, 0.0f );
-				vm_vec_scale_add2( &tmp, &Player_obj->orient.uvec, 0.952f );
-				vm_vec_scale_add2( &tmp, &Player_obj->orient.fvec, -1.782f );
+				vm_vec_scale_add2( &tmp, &Player_obj->orient.vec.rvec, 0.0f );
+				vm_vec_scale_add2( &tmp, &Player_obj->orient.vec.uvec, 0.952f );
+				vm_vec_scale_add2( &tmp, &Player_obj->orient.vec.fvec, -1.782f );
 				Camera_time = 0.0f;
 				camera_set_position( &tmp );
 				camera_set_orient( &Player_obj->orient );
@@ -5322,11 +5545,13 @@ void game_leave_state( int old_state, int new_state )
 				}
 			}
 			
+#ifndef NO_NETWORK
 			// COMMAND LINE OPTION
 			if (Cmdline_multi_stream_chat_to_file){
 				cfwrite_string(NOX("-------------------------------------------\n"),Multi_chat_stream);
 				cfclose(Multi_chat_stream);
 			}
+#endif  // ifndef NO_NETWORK
 			break;
 
 		case GS_STATE_DEBRIEF:
@@ -5335,9 +5560,11 @@ void game_leave_state( int old_state, int new_state )
 			}
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_DOGFIGHT_DEBRIEF:
 			multi_df_debrief_close();
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_LOAD_MISSION_MENU:
 			mission_load_menu_close();
@@ -5410,9 +5637,11 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_OPTIONS_MENU:
 			//game_start_time();
+#ifndef NO_NETWORK
 			if(new_state == GS_STATE_MULTI_JOIN_GAME){
 				multi_join_clear_game_list();
 			}
+#endif  // ifndef NO_NETWORK
 			options_menu_close();
 			break;
 
@@ -5436,7 +5665,9 @@ void game_leave_state( int old_state, int new_state )
 				game_stop_looped_sounds();
 			}
 
+#ifndef NO_SOUND
 			sound_env_disable();
+#endif
 			joy_ff_stop_effects();
 
 			// stop game time under certain conditions
@@ -5453,9 +5684,11 @@ void game_leave_state( int old_state, int new_state )
 				// when in multiplayer and going back to the main menu, send a leave game packet
 				// right away (before calling stop mission).  stop_mission was taking to long to
 				// close mission down and I want people to get notified ASAP.
+#ifndef NO_NETWORK
 				if ( (Game_mode & GM_MULTIPLAYER) && (new_state == GS_STATE_MAIN_MENU) ){
 					multi_quit_game(PROMPT_NONE);
 				}
+#endif  // ifndef NO_NETWORK
 
 				freespace_stop_mission();			
 				Game_time_compression = F1_0;
@@ -5488,6 +5721,7 @@ void game_leave_state( int old_state, int new_state )
 			hud_config_close();
 			break;
 
+#ifndef NO_NETWORK
 		// join/start a game
 		case GS_STATE_MULTI_JOIN_GAME:
 			if(new_state != GS_STATE_OPTIONS_MENU){
@@ -5517,6 +5751,7 @@ void game_leave_state( int old_state, int new_state )
 				}
 			}			
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_CONTROL_CONFIG:
 			control_config_close();
@@ -5570,6 +5805,7 @@ void game_leave_state( int old_state, int new_state )
 			}
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_MISSION_SYNC:
 			// if we're moving into the options menu, don't do anything
 			if(new_state == GS_STATE_OPTIONS_MENU){
@@ -5589,11 +5825,13 @@ void game_leave_state( int old_state, int new_state )
 				Game_mode |= GM_IN_MISSION;
 			}			
 			break;		
+#endif  // ifndef NO_NETWORK
    
 		case GS_STATE_VIEW_CUTSCENES:
 			cutscenes_screen_close();
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_close();
 	  		break;
@@ -5618,11 +5856,13 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_STANDALONE_POSTGAME:
 			multi_standalone_postgame_close();
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_INITIAL_PLAYER_SELECT:			
 			player_select_close();			
 			break;		
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_START_GAME:
 			multi_start_game_close();
 			break;
@@ -5630,6 +5870,7 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_MULTI_HOST_OPTIONS:
 			multi_host_options_close();
 			break;				
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_END_OF_CAMPAIGN:
 			mission_campaign_end_close();
@@ -5652,11 +5893,13 @@ void game_enter_state( int old_state, int new_state )
 {
 	switch (new_state) {
 		case GS_STATE_MAIN_MENU:				
+#ifndef NO_NETWORK
 			// in multiplayer mode, be sure that we are not doing networking anymore.
 			if ( Game_mode & GM_MULTIPLAYER ) {
 				Assert( Net_player != NULL );
 				Net_player->flags &= ~NETINFO_FLAG_DO_NETWORKING;
 			}
+#endif  // ifndef NO_NETWORK
 
 			Game_time_compression = F1_0;
 	
@@ -5709,9 +5952,11 @@ void game_enter_state( int old_state, int new_state )
 			}
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_DOGFIGHT_DEBRIEF:
 			multi_df_debrief_init();
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_LOAD_MISSION_MENU:
 			mission_load_menu_init();
@@ -5769,9 +6014,11 @@ void game_enter_state( int old_state, int new_state )
 			weapon_select_init();
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_TEAM_SELECT:		
 			multi_ts_init();
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_GAME_PAUSED:
 			game_stop_time();
@@ -5863,6 +6110,7 @@ void mouse_force_pos(int x, int y);
 					game_start_time();
 
 			// when coming from the multi paused state, reset the timestamps
+#ifndef NO_NETWORK
 			if ( (Game_mode & GM_MULTIPLAYER) && (old_state == GS_STATE_MULTI_PAUSED) ){
 				multi_reset_timestamps();
 			}
@@ -5889,6 +6137,7 @@ void mouse_force_pos(int x, int y);
 			if(Game_mode & GM_MULTIPLAYER){
 				multi_ping_reset_players();
 			}
+#endif  // ifndef NO_NETWORK
 
 			Game_subspace_effect = 0;
 			if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
@@ -5898,18 +6147,23 @@ void mouse_force_pos(int x, int y);
 				}
 			}
 
+#ifndef NO_SOUND
 			sound_env_set(&Game_sound_env);
+#endif
 			joy_ff_mission_init(Ship_info[Player_ship->ship_info_index].rotation_time);
 
+#ifndef NO_NETWORK
 			// clear multiplayer button info			i
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
+#endif
 			break;
 
 		case GS_STATE_HUD_CONFIG:
 			hud_config_init();
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_JOIN_GAME:
 			multi_join_clear_game_list();
 
@@ -5933,6 +6187,7 @@ void mouse_force_pos(int x, int y);
 			}
 
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_CONTROL_CONFIG:
 			control_config_init();
@@ -6001,6 +6256,7 @@ void mouse_force_pos(int x, int y);
 			mission_hotkey_init();
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_MISSION_SYNC:
 			// if we're coming from the options screen, don't do any
 			if(old_state == GS_STATE_OPTIONS_MENU){
@@ -6032,11 +6288,13 @@ void mouse_force_pos(int x, int y);
 				break;
 			}
 			break;		
+#endif  // ifndef NO_NETWORK
    
 		case GS_STATE_VIEW_CUTSCENES:
 			cutscenes_screen_init();
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_init();
 			break;
@@ -6060,11 +6318,13 @@ void mouse_force_pos(int x, int y);
 		case GS_STATE_STANDALONE_POSTGAME:
 			multi_standalone_postgame_init();
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_INITIAL_PLAYER_SELECT:
 			player_select_init();
 			break;		
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_START_GAME:
 			multi_start_game_init();
 			break;
@@ -6072,6 +6332,7 @@ void mouse_force_pos(int x, int y);
 		case GS_STATE_MULTI_HOST_OPTIONS:
 			multi_host_options_init();
 			break;		
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_END_OF_CAMPAIGN:
 			mission_campaign_end_init();
@@ -6091,6 +6352,7 @@ void game_do_state_common(int state,int no_networking)
 	snd_do_frame();								// update sound system
 	event_music_do_frame();						// music needs to play across many states
 
+#ifndef NO_NETWORK
 	multi_log_process();	
 
 	if (no_networking) {
@@ -6115,6 +6377,7 @@ void game_do_state_common(int state,int no_networking)
 		
 		game_do_networking();
 	}
+#endif  // ifndef NO_NETWORK
 }
 
 // Called once a frame.
@@ -6203,10 +6466,12 @@ void game_do_state(int state)
 			debrief_do_frame(flFrametime);
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_DOGFIGHT_DEBRIEF:
 			game_set_frametime(GS_STATE_MULTI_DOGFIGHT_DEBRIEF);
 			multi_df_debrief_do();
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_SHIP_SELECT:
 			game_set_frametime(GS_STATE_SHIP_SELECT);
@@ -6228,6 +6493,7 @@ void game_do_state(int state)
 			hud_config_do_frame(flFrametime);
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_JOIN_GAME:
 			game_set_frametime(GS_STATE_MULTI_JOIN_GAME);
 			multi_join_game_do_frame();
@@ -6242,6 +6508,7 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_MULTI_CLIENT_SETUP);
 			multi_game_client_setup_do_frame();
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_CONTROL_CONFIG:
 			game_set_frametime(GS_STATE_CONTROL_CONFIG);
@@ -6301,6 +6568,7 @@ void game_do_state(int state)
 			cutscenes_screen_do_frame();
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_STD_WAIT:
 			game_set_frametime(GS_STATE_STANDALONE_MAIN);
 			multi_standalone_wait_do();
@@ -6325,6 +6593,7 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_INGAME_PRE_JOIN);
 			multi_ingame_select_do();
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_EVENT_DEBUG:
 	#ifndef NDEBUG
@@ -6333,16 +6602,19 @@ void game_do_state(int state)
 	#endif
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_STANDALONE_POSTGAME:
 			game_set_frametime(GS_STATE_STANDALONE_POSTGAME);
 			multi_standalone_postgame_do();
 			break;
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_INITIAL_PLAYER_SELECT:
 			game_set_frametime(GS_STATE_INITIAL_PLAYER_SELECT);
 			player_select_do();
 			break;
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_MISSION_SYNC:
 			game_set_frametime(GS_STATE_MULTI_MISSION_SYNC);
 			multi_sync_do();
@@ -6357,6 +6629,7 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_MULTI_HOST_OPTIONS);
 			multi_host_options_do();
 			break;		
+#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_END_OF_CAMPAIGN:
 			mission_campaign_end_do();
@@ -6376,6 +6649,7 @@ void game_do_state(int state)
 }
 
 
+#ifdef WIN32
 // return 0 if there is enough RAM to run FreeSpace, otherwise return -1
 int game_do_ram_check(int ram_in_bytes)
 {
@@ -6408,6 +6682,7 @@ int game_do_ram_check(int ram_in_bytes)
 
 	return 0;
 }
+
 
 // Check if there is a freespace.exe in the /update directory (relative to where fs.exe is installed).
 // If so, copy it over and remove the update directory.
@@ -6447,6 +6722,7 @@ void game_maybe_update_launcher(char *exe_dir)
 	strcat(update_dir, NOX("\\update"));
 	RemoveDirectory(update_dir);
 }
+#endif // ifdef WIN32
 
 void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, int *out_total, int *out_destroyed_total)
 {
@@ -6569,10 +6845,15 @@ DCF(pofspew, "")
 	game_spew_pof_info();
 }
 
+#ifdef WIN32
 int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdShow)
+#else
+int WinMainSub(int argc, char *argv[])
+#endif
 {
 	int state;		
 
+#ifdef WIN32
 	// Don't let more than one instance of Freespace run.
 	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
 	if ( hwnd )	{
@@ -6609,70 +6890,6 @@ int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCm
 	free(tmp_mem);
 	tmp_mem = NULL;
 
-/* this code doesn't work, and we will hit an error about being unable to load the direct draw
-	dll before we get here anyway if it's not installed (unless we load it manually, which doesn't
-	seem worth bothering with.
-
-	LONG lResult;
-
-	lResult = RegOpenKeyEx(
-		HKEY_LOCAL_MACHINE,					// Where it is
-		"Software\\Microsoft\\DirectX",	// name of key
-		NULL,										// DWORD reserved
-		KEY_QUERY_VALUE,						// Allows all changes
-		&hKey										// Location to store key
-	);
-
-	if (lResult == ERROR_SUCCESS) {
-		char version[32];
-		DWORD dwType, dwLen;
-
-		dwLen = 32;
-		lResult = RegQueryValueEx(
-			hKey,									// Handle to key
-			"Version",							// The values name
-			NULL,									// DWORD reserved
-			&dwType,								// What kind it is
-			(ubyte *) version, 				// value to set
-			&dwLen								// How many bytes to set
-		);
-
-		if (lResult == ERROR_SUCCESS) {
-			dx_version = atoi(strstr(version, ".") + 1);
-
-		} else {
-			int val;
-			DWORD dwType, dwLen;
-
-			dwLen = 4;
-			lResult = RegQueryValueEx(
-				hKey,									// Handle to key
-				"InstalledVersion",				// The values name
-				NULL,									// DWORD reserved
-				&dwType,								// What kind it is
-				(ubyte *) &val,					// value to set
-				&dwLen								// How many bytes to set
-			);
-
-			if (lResult == ERROR_SUCCESS) {
-				dx_version = val;
-			}
-		}
-
-		RegCloseKey(hKey);
-	}
-
-	if (dx_version < 3) {
-		MessageBox(NULL, "DirectX 3.0 or higher is required and wasn't detected.  You can get the\n"
-			"latest version of DirectX at:\n\n"
-			"http://www.microsoft.com/msdownload/directx/dxf/enduser5.0/default.htm", "DirectX required", MB_OK);
-
-		MessageBox(NULL, "DirectX 3.0 or higher is required and wasn't detected.  You can install\n"
-			"DirectX 5.2 by pressing the 'Install DirectX' button on the FreeSpace Launcher", "DirectX required", MB_OK);
-
-		return 0;
-	}
-*/
 	//=====================================================
 	// Make sure we're running in the right directory.
 	char exe_dir[1024];
@@ -6694,6 +6911,9 @@ int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCm
 		// check for updated freespace.exe
 		game_maybe_update_launcher(exe_dir);
 	}
+#else
+   // mharris TODO: how should we determine what the "right" directory is?
+#endif
 
 	
 	#ifndef NDEBUG				
@@ -6702,9 +6922,16 @@ int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCm
 		windebug_memwatch_init();
 	}
 	#endif
-	
-	parse_cmdline(szCmdLine);	
 
+
+#ifdef WIN32
+	parse_cmdline(szCmdLine);	
+#else
+   parse_cmdline(argc, argv);
+#endif
+
+
+#ifndef NO_NETWORK
 #ifdef STANDALONE_ONLY_BUILD
 	Is_standalone = 1;
 	nprintf(("Network", "Standalone running"));
@@ -6713,8 +6940,13 @@ int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCm
 		nprintf(("Network", "Standalone running"));
 	}
 #endif
+#endif  // ifndef NO_NETWORK
 
+
+#ifdef WIN32
 	init_cdrom();
+#endif
+
 	game_init();
 	game_stop_time();
 
@@ -6732,13 +6964,15 @@ int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCm
 		char *plist[5];
 		if( (cf_get_file_list(2, plist, CF_TYPE_MULTI_PLAYERS, NOX("*.plr"))	<= 0) && (cf_get_file_list(2, plist, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"))	<= 0) ){
 			// prompt for cd 2
+#ifdef WIN32
 #if defined(OEM_BUILD)
 			game_do_cd_check_specific(FS_CDROM_VOLUME_1, 1);
 #else
 			game_do_cd_check_specific(FS_CDROM_VOLUME_2, 2);
 #endif // defined(OEM_BUILD)
+#endif // ifdef WIN32
 		}
-#endif
+#endif // ifdef RELEASE_REAL
 	}
 
 	if ( !Is_standalone ) {
@@ -6761,10 +6995,10 @@ int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCm
 			movie_play( NOX("intro.mve"), 0 );
 #endif
 */
-		#endif
+		#endif // defined(NDEBUG)
 	}
 
-#endif	
+#endif // ifndef DEMO
 
 	if (Is_standalone){
 		gameseq_post_event(GS_EVENT_STANDALONE_MAIN);
@@ -6792,27 +7026,44 @@ int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCm
 #endif
 
 	game_shutdown();
+#ifdef WIN32
 	return 1;
+#else
+	return 0;
+#endif
 }
 
+#ifdef WIN32
 int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdShow)
+#else
+int main(int argc, char *argv[])
+#endif
 {
 	int result = -1;
 
-	__try
-	{
+#ifdef WIN32
+	__try	{
 		result = WinMainSub(hInst, hPrev, szCmdLine, nCmdShow);
-	}
-	__except(RecordExceptionInfo(GetExceptionInformation(), "Freespace 2 Main Thread"))
-	{
+	}	__except(RecordExceptionInfo(GetExceptionInformation(), "Freespace 2 Main Thread"))	{
 		// Do nothing here - RecordExceptionInfo() has already done
 		// everything that is needed. Actually this code won't even
 		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
 		// the __except clause.
 	}
+#else
+	try {
+		result = WinMainSub(argc, argv);
+	} catch ( ... ) {
+		fprintf(stderr, "Caught exception in main\n");
+//		RecordExceptionInfo(GetExceptionInformation(), "Freespace 2 Main Thread");
+		result = 1;
+	}
+#endif
+
 	return result;
 }
 
+#ifdef WIN32
 // launcher the fslauncher program on exit
 void game_launch_launcher_on_exit()
 {
@@ -6829,7 +7080,7 @@ void game_launch_launcher_on_exit()
 
 	// set up command line
 	strcpy(cmd_line, original_path);
-	strcat(cmd_line, "\\");
+	strcat(cmd_line, DIR_SEPARATOR_STR);
 	strcat(cmd_line, LAUNCHER_FNAME);
 	strcat(cmd_line, " -straight_to_update");		
 
@@ -6847,6 +7098,7 @@ void game_launch_launcher_on_exit()
 	// to eliminate build warnings
 	ret;
 }
+#endif
 
 
 // game_shutdown()
@@ -6855,7 +7107,9 @@ void game_launch_launcher_on_exit()
 //
 void game_shutdown(void)
 {
+#ifdef WIN32
 	timeEndPeriod(1);
+#endif
 
 	// don't ever flip a page on the standalone!
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
@@ -6870,8 +7124,10 @@ void game_shutdown(void)
 		write_pilot_file();
 	}
 
+#ifndef NO_NETWORK
 	// load up common multiplayer icons
 	multi_unload_common_icons();
+#endif  // ifndef NO_NETWORK
 	
 	shockwave_close();			// release any memory used by shockwave system	
 	fireball_close();				// free fireball system
@@ -6880,11 +7136,13 @@ void game_shutdown(void)
 	unload_animating_pointer();// frees the frames used for the animating mouse pointer
 	bm_unload_all();				// free bitmaps
 	mission_campaign_close();	// close out the campaign stuff
+#ifndef NO_NETWORK
 	multi_voice_close();			// close down multiplayer voice (including freeing buffers, etc)
 	multi_log_close();
 #ifdef MULTI_USE_LAG
 	multi_lag_close();
 #endif
+#endif  // ifndef NO_NETWORK
 
 	// the menu close functions will unload the bitmaps if they were displayed during the game
 #if !defined(PRESS_TOUR_BUILD) && !defined(PD_BUILD)
@@ -6893,21 +7151,26 @@ void game_shutdown(void)
 	training_menu_close();
 	gr_close();
 
-	extern void joy_close();
 	joy_close();
 
 	audiostream_close();
 	snd_close();
 	event_music_close();
+#ifndef NO_NETWORK
 	psnet_close();
+#endif
 	os_cleanup();
 
+#ifdef WIN32
+#ifndef NO_NETWORK
 	// HACKITY HACK HACK
 	// if this flag is set, we should be firing up the launcher when exiting freespace
 	extern int Multi_update_fireup_launcher_on_exit;
 	if(Multi_update_fireup_launcher_on_exit){
 		game_launch_launcher_on_exit();
 	}
+#endif
+#endif
 }
 
 // game_stop_looped_sounds()
@@ -6923,7 +7186,9 @@ void game_stop_looped_sounds()
 	hud_stop_looped_engine_sounds();
 	afterburner_stop_sounds();
 	player_stop_looped_sounds();
+#ifndef NO_SOUND
 	obj_snd_stop_all();		// stop all object-linked persistant sounds
+#endif
 	game_stop_subspace_ambient_sound();
 	snd_stop(Radar_static_looping);
 	Radar_static_looping = -1;
@@ -6978,6 +7243,10 @@ void load_animating_pointer(char *filename, int dx, int dy)
 	animating_obj *am;
 
 	init_animating_pointer();
+
+//TEMP
+	mprintf(("loading animated cursor \"%s\"\n", filename));
+
 
 	am = &Animating_mouse;
 	am->first_frame = bm_load_animation(filename, &am->num_frames, &fps);
@@ -7328,7 +7597,7 @@ void Time_model( int modelnum )
 	eye_orient = model_orient = vmd_identity_matrix;
 	eye_pos = model_pos = vmd_zero_vector;
 
-	eye_pos.z = -pm->rad*2.0f;
+	eye_pos.xyz.z = -pm->rad*2.0f;
 
 	vector eye_to_model;
 
@@ -7418,7 +7687,7 @@ void Do_model_timings_test()
 	
 	// Load them all
 	for (i=0; i<Num_ship_types; i++ )	{
-		Ship_info[i].modelnum = model_load( Ship_info[i].pof_file, NULL, NULL );
+		Ship_info[i].modelnum = model_load( Ship_info[i].pof_file, 0, NULL );
 
 		model_used[Ship_info[i].modelnum%MAX_POLYGON_MODELS]++;
 		model_id[Ship_info[i].modelnum%MAX_POLYGON_MODELS] = Ship_info[i].modelnum;
@@ -7927,6 +8196,8 @@ void game_stop_subspace_ambient_sound()
 //
 // ----------------------------------------------------------------
 
+
+#ifdef WIN32
 // ----------------------------------------------------------------
 //
 // CDROM detection code START
@@ -7960,7 +8231,7 @@ uint game_get_cd_used_space(char *path)
 			// subsearch
 			strcpy(sub_path, path);
 			strcat(sub_path, find.cFileName);
-			strcat(sub_path, "\\");
+			strcat(sub_path, DIR_SEPARATOR_STR);
 			total += game_get_cd_used_space(sub_path);	
 		} else {
 			total += (uint)find.nFileSizeLow;
@@ -8375,6 +8646,13 @@ int game_do_cd_mission_check(char *filename)
 // CDROM detection code END
 //
 // ----------------------------------------------------------------
+#else  // !WIN32
+int game_do_cd_mission_check(char *filename)
+{	
+	return 1;
+}
+#endif  // ifdef WIN32
+
 
 // ----------------------------------------------------------------
 // SHIPS TBL VERIFICATION STUFF
@@ -8533,11 +8811,13 @@ void display_title_screen()
 		return;
 	}
 
+#ifndef NO_DIRECT3D
 	// d3d	
 	if((gr_screen.mode == GR_DIRECT3D) && (Gr_bitmap_poly)){
 		extern void d3d_start_frame();
 		d3d_start_frame();
 	}
+#endif
 
 	// set
 	gr_set_bitmap(title_bitmap);
@@ -8545,11 +8825,13 @@ void display_title_screen()
 	// draw
 	gr_bitmap(0, 0);
 
+#ifndef NO_DIRECT3D
 	// d3d	
 	if((gr_screen.mode == GR_DIRECT3D) && (Gr_bitmap_poly)){
 		extern void d3d_stop_frame();
 		d3d_stop_frame();
 	}
+#endif
 
 	// flip
 	gr_flip();

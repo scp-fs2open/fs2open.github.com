@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:02 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/24 15:38:55  mharris
+ * Fixed boneheaded mistake in #defines for NO_JOYSTICK and NO_SOUND
+ *
+ * Revision 1.2  2002/05/10 06:08:08  mharris
+ * Porting... added ifndef NO_SOUND
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -243,6 +249,7 @@ extern float	Master_voice_volume;		// 0 -> 1.0
 extern int		Snd_sram;					// System memory consumed by sound data	
 extern int		Snd_hram;					// Soundcard memory consumed by sound data
 
+#ifndef NO_SOUND
 //int	snd_load( char *filename, int hardware=0, int three_d=0, int *sig=NULL );
 int	snd_load( game_snd *gs, int allow_hardware_load = 0);
 
@@ -328,6 +335,61 @@ void snd_set_pos(int snd_handle, game_snd *sg, float val,int as_pct);		// set th
 
 void snd_get_format(int handle, int *bits_per_sample, int *frequency);
 int snd_time_remaining(int handle, int bits_per_sample=8, int frequency=11025);
+
+#else
+
+#define	snd_load(gs, allow_hardware_load)				  ((gs), (allow_hardware_load), 0)
+#define	snd_unload(sndnum)									  ((sndnum), 0)
+#define	snd_unload_all()
+inline int	snd_play( game_snd *gs, float pan=0.0f, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, bool voice_message = false )
+{ return 0; }
+inline int	snd_play_raw( int soundnum, float pan, float vol_scale=1.0f, int priority = SND_PRIORITY_MUST_PLAY )
+{ return 0; }
+inline int	snd_play_3d(game_snd *gs, vector *source_pos, vector *listen_pos, float radius=0.0f, vector *vel = NULL, int looping = 0, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, vector *sound_fvec = NULL, float range_factor = 1.0f, int force = 0 )
+{ return 0; }
+#define	snd_update_3d_pos(soundnum, gs, new_pos)		  ((void)((soundnum), (gs), (new_pos)))
+inline int	snd_play_looping( game_snd *gs, float pan=0.0f, int start_loop=-1, int stop_loop=-1, float vol_scale=1.0f, int priority = SND_PRIORITY_MUST_PLAY, int force = 0 )
+{ return 0; }
+#define	snd_stop(snd_handle)									  ((void)(snd_handle))
+#define	snd_set_volume(snd_handle, volume)				  ((void)((snd_handle), (volume)))
+#define	snd_set_pan(snd_handle, pan)						  ((void)((snd_handle), (pan)))
+#define	snd_set_pitch(snd_handle, pitch)					  ((void)((snd_handle), (pitch)))
+#define	snd_get_pitch(snd_handle)							  ((snd_handle), 0)
+#define	snd_stop_all()
+#define	snd_is_playing(snd_handle)							  ((snd_handle), 0)
+#define	snd_chg_loop_status(snd_handle, loop)			  ((void)((snd_handle), (loop)))
+#define	snd_get_duration(snd_id)							  ((snd_id), 0)
+inline int	snd_get_3d_vol_and_pan(game_snd *gs, vector *pos, float* vol, float *pan, float radius=0.0f)
+{
+	if (vol) *vol = 0.0f;  if (pan) *pan = 0.0f;
+	return 0;
+}
+#define	snd_init(use_a3d, use_eax)							  ((use_a3d), (use_eax), 0)
+#define	snd_close()
+#define	snd_is_inited()										  (0)
+#define	sound_get_ds()											  (0)
+#define	snd_update_listener(pos, vel, orient)			  ((void)((pos), (vel), (orient)))
+#define 	snd_use_lib(lib_id)									  ((void)(lib_id))
+#define	snd_num_playing()										  (0)
+inline int	snd_get_data(int handle, char *data)
+{
+	if (data) *data = '\0';
+	return 0;
+}
+inline int	snd_size(int handle, int *size)
+{
+	if (size) *size = 0;
+	return 0;
+}
+#define	snd_do_frame()
+#define	snd_rewind(snd_handle, sg, seconds)							((void)((snd_handle), (sg), (seconds)))
+#define	snd_ffwd(snd_handle, sg, seconds)							((void)((snd_handle), (sg), (seconds)))
+#define	snd_set_pos(snd_handle, sg, val, as_pct)					((void)((snd_handle), (sg), (val), (as_pct)))
+#define	snd_get_format(handle, bits_per_sample, frequency)		((void)((handle), (bits_per_sample), (frequency)))
+inline int snd_time_remaining(int handle, int bits_per_sample=8, int frequency=11025)
+{ return 0; }
+
+#endif  // ifndef NO_SOUND
 
 // sound environment
 

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.3  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -438,12 +447,15 @@
 #include "timer.h"
 #include "gamesequence.h"
 #include "missionmessage.h"
-#include "multiutil.h"
 #include "linklist.h"
 #include "missiongoals.h"
 #include "hudsquadmsg.h"
-#include "multi_obj.h"
 #include "observer.h"
+
+#ifndef NO_NETWORK
+#include "multiutil.h"
+#include "multi_obj.h"
+#endif
 
 ////////////////////////////////////////////////////////////
 // Global object and other interesting player type things
@@ -1041,10 +1053,12 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (check_control(FIRE_SECONDARY)) {
 			ci->fire_secondary_count++;
 
+#ifndef NO_NETWORK
 			// if we're a multiplayer client, set our accum bits now
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 				Net_player->s_info.accum_buttons |= OOC_FIRE_SECONDARY;
 			}
+#endif
 		}
 
 		// keyboard: launch countermeasures
@@ -1179,7 +1193,7 @@ void read_player_controls(object *objp, float frametime)
 
 	// the ships maximum velocity now depends on the energy flowing to engines
 	if(objp->type != OBJ_OBSERVER){
-		objp->phys_info.max_vel.z = Ships[objp->instance].current_max_speed;
+		objp->phys_info.max_vel.xyz.z = Ships[objp->instance].current_max_speed;
 	} 
 	if(Player_obj->type == OBJ_SHIP){	
 		// only read player control info if player ship is not dead
@@ -1237,10 +1251,12 @@ void player_match_target_speed(char *no_target_text, char *match_off_text, char 
 		return;
 	}
 
+#ifndef NO_NETWORK
 	// multiplayer observers can't match target speed
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)) ){
 		return;
 	}
+#endif
 
 	if ( Player_ai->target_objnum == -1) {
 		if ( no_target_text ) {
@@ -1363,11 +1379,15 @@ void player_save_target_and_weapon_link_prefs()
 
 	if ( Player->flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
 		// multiplayer observers can't match target speed
-		if(!((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER))) ){				
+#ifndef NO_NETWORK
+		if(!((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER))) )
+#endif
+		{
 			Player->save_flags |= PLAYER_FLAGS_AUTO_MATCH_SPEED;
 		}		
 	}
 
+#ifndef NO_NETWORK
 	// if we're in multiplayer mode don't do this because we will desync ourselves with the server
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		if ( Player_ship->flags & SF_PRIMARY_LINKED ) {
@@ -1381,6 +1401,7 @@ void player_save_target_and_weapon_link_prefs()
 			Player->flags &= ~PLAYER_FLAGS_LINK_SECONDARY;
 		}
 	}
+#endif
 }
 
 // Store some player preferences to Player->save_flags
@@ -1646,6 +1667,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 				Assert( Game_mode & GM_MULTIPLAYER );
 
+#ifndef NO_NETWORK
 				// get a player num from the object, then get a callsign from the player structure.
 				pn = multi_find_player_by_object( cargo_objp );
 				// Assert( pn != -1 );
@@ -1654,6 +1676,12 @@ int player_inspect_cargo(float frametime, char *outstr)
 				} else {
 					sprintf(outstr, "%s", Net_players[pn].player->short_callsign );
 				}
+#else
+				// should never be here
+				Error(__FILE__, __LINE__,
+						"Illegal state in player_inspect_cargo(), Game_mode=%d\n",
+						Game_mode);
+#endif
 			}
 		} else {
 			sprintf(outstr, XSTR( "Scanned", 85) );
@@ -1671,7 +1699,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
-		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.fvec);
+		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
 		if ( dot < CARGO_MIN_DOT_TO_REVEAL ) {
 			if ( !(cargo_sp->flags & SF_SCANNABLE) )
 				sprintf(outstr,XSTR( "cargo: <unknown>", 86));
@@ -1772,7 +1800,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &subsys_pos, &Player_obj->pos);
-		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.fvec);
+		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
 		int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy);
 		subsys_in_view = hud_targetbox_subsystem_in_view(cargo_objp, &x, &y);
 
@@ -2079,17 +2107,17 @@ void player_get_padlock_orient(matrix *eye_orient)
 	old_eye_orient = *eye_orient;
 
 	if ( Viewer_mode & VM_PADLOCK_UP ) {
-		eye_orient->fvec = old_eye_orient.uvec;
-		vm_vec_copy_scale( &eye_orient->uvec, &old_eye_orient.fvec, -1.0f );
+		eye_orient->vec.fvec = old_eye_orient.vec.uvec;
+		vm_vec_copy_scale( &eye_orient->vec.uvec, &old_eye_orient.vec.fvec, -1.0f );
 	} else if ( Viewer_mode & VM_PADLOCK_REAR ) {
-		vm_vec_negate(&eye_orient->fvec);
-		vm_vec_negate(&eye_orient->rvec);
+		vm_vec_negate(&eye_orient->vec.fvec);
+		vm_vec_negate(&eye_orient->vec.rvec);
 	} else if ( Viewer_mode & VM_PADLOCK_LEFT ) {
-		vm_vec_copy_scale( &eye_orient->fvec, &old_eye_orient.rvec, -1.0f );
-		eye_orient->rvec = old_eye_orient.fvec;
+		vm_vec_copy_scale( &eye_orient->vec.fvec, &old_eye_orient.vec.rvec, -1.0f );
+		eye_orient->vec.rvec = old_eye_orient.vec.fvec;
 	} else if ( Viewer_mode & VM_PADLOCK_RIGHT ) {
-		eye_orient->fvec = old_eye_orient.rvec;
-		vm_vec_copy_scale( &eye_orient->rvec, &old_eye_orient.fvec, -1.0f );
+		eye_orient->vec.fvec = old_eye_orient.vec.rvec;
+		vm_vec_copy_scale( &eye_orient->vec.rvec, &old_eye_orient.vec.fvec, -1.0f );
 	} else {
 		Int3();
 	}
@@ -2227,11 +2255,11 @@ void player_get_eye(vector *eye_pos, matrix *eye_orient)
 			vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);
 			vm_matrix_x_matrix(&tm, &viewer_obj->orient, &tm2);
 
-			vm_vec_scale_add(eye_pos, &viewer_obj->pos, &tm.fvec, 2.0f * viewer_obj->radius + Viewer_external_info.distance);
+			vm_vec_scale_add(eye_pos, &viewer_obj->pos, &tm.vec.fvec, 2.0f * viewer_obj->radius + Viewer_external_info.distance);
 
 			vm_vec_sub(&eye_dir, &viewer_obj->pos, eye_pos);
 			vm_vec_normalize(&eye_dir);
-			vm_vector_2_matrix(eye_orient, &eye_dir, &viewer_obj->orient.uvec, NULL);
+			vm_vector_2_matrix(eye_orient, &eye_dir, &viewer_obj->orient.vec.uvec, NULL);
 			viewer_obj = NULL;
 
 			//	Modify the orientation based on head orientation.
@@ -2240,25 +2268,25 @@ void player_get_eye(vector *eye_pos, matrix *eye_orient)
 			vector	move_dir;
 
 			if ( viewer_obj->phys_info.speed < 0.1 ){
-				move_dir = viewer_obj->orient.fvec;
+				move_dir = viewer_obj->orient.vec.fvec;
 			} else {
 				move_dir = viewer_obj->phys_info.vel;
 				vm_vec_normalize_safe(&move_dir);
 			}
 
 			vm_vec_scale_add(eye_pos, &viewer_obj->pos, &move_dir, -3.0f * viewer_obj->radius - Viewer_chase_info.distance);
-			vm_vec_scale_add2(eye_pos, &viewer_obj->orient.uvec, 0.75f * viewer_obj->radius);
+			vm_vec_scale_add2(eye_pos, &viewer_obj->orient.vec.uvec, 0.75f * viewer_obj->radius);
 			vm_vec_sub(&eye_dir, &viewer_obj->pos, eye_pos);
 			vm_vec_normalize(&eye_dir);
 
 			// JAS: I added the following code because if you slew up using
-			// Descent-style physics, eye_dir and Viewer_obj->orient.uvec are
+			// Descent-style physics, eye_dir and Viewer_obj->orient.vec.uvec are
 			// equal, which causes a zero-length vector in the vm_vector_2_matrix
 			// call because the up and the forward vector are the same.   I fixed
 			// it by adding in a fraction of the right vector all the time to the
 			// up vector.
-			vector tmp_up = viewer_obj->orient.uvec;
-			vm_vec_scale_add2( &tmp_up, &viewer_obj->orient.rvec, 0.00001f );
+			vector tmp_up = viewer_obj->orient.vec.uvec;
+			vm_vec_scale_add2( &tmp_up, &viewer_obj->orient.vec.rvec, 0.00001f );
 
 			vm_vector_2_matrix(eye_orient, &eye_dir, &tmp_up, NULL);
 			viewer_obj = NULL;
@@ -2272,7 +2300,7 @@ void player_get_eye(vector *eye_pos, matrix *eye_orient)
 
 			vm_vec_sub(&eye_dir, &shipp->warp_effect_pos, eye_pos);
 			vm_vec_normalize(&eye_dir);
-			vm_vector_2_matrix(eye_orient, &eye_dir, &Player_obj->orient.uvec, NULL);
+			vm_vector_2_matrix(eye_orient, &eye_dir, &Player_obj->orient.vec.uvec, NULL);
 			viewer_obj = NULL;
 		} else {
 			// get an eye position based upon the correct type of object

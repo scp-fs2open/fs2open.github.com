@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -282,7 +285,7 @@ int collide_debris_ship( obj_pair * pair )
 			ship_max_speed = ship_get_max_speed(shipp);
 		}
 		ship_max_speed = max(ship_max_speed, 10.0f);
-		ship_max_speed = max(ship_max_speed, pship->phys_info.vel.z);
+		ship_max_speed = max(ship_max_speed, pship->phys_info.vel.xyz.z);
 
 		debris_speed = pdebris->phys_info.speed;
 
@@ -355,7 +358,7 @@ int collide_asteroid_ship( obj_pair * pair )
 				return 0;
 
 			// limit damage from impulse by making max impulse (for damage) 2*m*v_max_relative
-			float max_ship_impulse = (2.0f*pship->phys_info.max_vel.z+vm_vec_mag_quick(&asteroid_vel)) * 
+			float max_ship_impulse = (2.0f*pship->phys_info.max_vel.xyz.z+vm_vec_mag_quick(&asteroid_vel)) * 
 				(pship->phys_info.mass*pasteroid->phys_info.mass) / (pship->phys_info.mass + pasteroid->phys_info.mass);
 
 			if (asteroid_hit_info.impulse > max_ship_impulse) {
@@ -433,7 +436,7 @@ int collide_asteroid_ship( obj_pair * pair )
 			ship_max_speed = ship_get_max_speed(shipp);
 		}
 		ship_max_speed = max(ship_max_speed, 10.0f);
-		ship_max_speed = max(ship_max_speed, pship->phys_info.vel.z);
+		ship_max_speed = max(ship_max_speed, pship->phys_info.vel.xyz.z);
 
 
 		time = 1000.0f * (dist - pship->radius - pasteroid->radius - 10.0f) / (asteroid_max_speed + ship_max_speed);		// 10.0f is a safety factor

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrGlide.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:57 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:22 $
  * $Author: penguin $
  *
  * Code that uses 3DFX's Glide graphics library

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:01 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:27 $
  * $Author: penguin $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/13 21:43:38  mharris
+ * A little more network and sound cleanup
+ *
+ * Revision 1.3  2002/05/13 21:09:28  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.2  2002/05/10 20:42:44  mharris
+ * use "ifndef NO_NETWORK" all over the place
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -895,8 +904,10 @@ void obj_delete(int objnum)
 			}
 
 			physics_init(&objp->phys_info);
-			
+
+#ifndef NO_SOUND			
 			obj_snd_delete(OBJ_INDEX(objp));
+#endif
 			return;
 		} else
 			ship_delete( objp );
@@ -944,8 +955,10 @@ void obj_delete(int objnum)
 		Error( LOCATION, "Unhandled object type %d in obj_delete_all_that_should_be_dead", objp->type );
 	}
 
+#ifndef NO_SOUND			
 	// if a persistant sound has been created, delete it
 	obj_snd_delete(OBJ_INDEX(objp));		
+#endif
 
 	objp->type = OBJ_NONE;		//unused!
 	objp->signature = 0;		
@@ -1083,7 +1096,10 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	}
 
 	// single player pilots, and all players in multiplayer take care of firing their own primaries
-	if(!(Game_mode & GM_MULTIPLAYER) || (objp == Player_obj)){
+#ifndef NO_NETWORK
+	if(!(Game_mode & GM_MULTIPLAYER) || (objp == Player_obj))
+#endif
+	{
 		if ( ci.fire_primary_count ) {
 			// flag the ship as having the trigger down
 			if(shipp != NULL){
@@ -1104,8 +1120,11 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		}
 	}
 
+#ifndef NO_NETWORK
 	// single player and multiplayer masters do all of the following
-	if ( !MULTIPLAYER_CLIENT ) {		
+	if ( !MULTIPLAYER_CLIENT ) 
+#endif
+	{		
 		if ( ci.fire_secondary_count ){
 			ship_fire_secondary( objp );
 
@@ -1186,12 +1205,14 @@ void obj_move_call_physics(object *objp, float frametime)
 				}
 			}			
 
+#ifndef NO_NETWORK
 			// in multiplayer, if this object was just updatd (i.e. clients send their own positions),
 			// then reset the flag and don't move the object.
 			if ( MULTIPLAYER_MASTER && (objp->flags & OF_JUST_UPDATED) ) {
 				objp->flags &= ~OF_JUST_UPDATED;
 				goto obj_maybe_fire;
 			}
+#endif
 
 			if ( (objp->type == OBJ_ASTEROID) && (Model_caching && (!D3D_enabled) ) )	{
 				// If we're doing model caching, don't rotate asteroids
@@ -1332,6 +1353,7 @@ void obj_set_flags( object *obj, uint new_flags )
 		return;
 	}
 
+#ifndef NO_NETWORK
 	// for a multiplayer host -- use this debug code to help trap when non-player ships are getting
 	// marked as OF_COULD_BE_PLAYER
 	// this code is pretty much debug code and shouldn't be relied on to always do the right thing
@@ -1368,6 +1390,7 @@ void obj_set_flags( object *obj, uint new_flags )
 
 		return;
 	}
+#endif  // ifndef NO_NETWORK
 
 	// Check for unhandled flag changing
 	if ( (new_flags&IMPORTANT_FLAGS) != (obj->flags&IMPORTANT_FLAGS) ) {
@@ -1620,7 +1643,10 @@ void obj_move_all(float frametime)
 	obj_merge_created_list();
 
 	// Clear the table that tells which groups of weapons have cast light so far.
-	if(!(Game_mode & GM_MULTIPLAYER) || (MULTIPLAYER_MASTER)){
+#ifndef NO_NETWORK
+	if(!(Game_mode & GM_MULTIPLAYER) || (MULTIPLAYER_MASTER))
+#endif
+	{
 		obj_clear_weapon_group_id_list();
 	}
 
@@ -1657,6 +1683,7 @@ void obj_move_all(float frametime)
 			objp->last_pos = cur_pos;
 			objp->last_orient = objp->orient;
 
+#ifndef NO_NETWORK
 			// if this is an object which should be interpolated in multiplayer, do so
 			if(multi_oo_is_interp_object(objp)){
 				multi_oo_interp(objp);
@@ -1664,6 +1691,10 @@ void obj_move_all(float frametime)
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
+#else
+				// physics
+				obj_move_call_physics(objp, frametime);
+#endif
 
 			// move post
 			obj_move_all_post(objp, frametime);
@@ -1800,13 +1831,15 @@ void obj_client_pre_interpolate()
 	// duh
 	obj_delete_all_that_should_be_dead();
 
+#ifndef NO_NETWORK
 	// client side processing of warping in effect stages
 	multi_do_client_warp(flFrametime);     
-	
+
 	// client side movement of an observer
 	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)){
 		obj_observer_move(flFrametime);   
 	}
+#endif
 	
 	// run everything except ships through physics (and ourselves of course)	
 	obj_merge_created_list();						// must merge any objects created by the host!
@@ -1921,6 +1954,7 @@ void obj_client_simulate(float frametime)
 
 void obj_observer_move(float flFrametime)
 {
+#ifndef NO_NETWORK
 	object *objp;
 	float ft;
 
@@ -1940,6 +1974,7 @@ void obj_observer_move(float flFrametime)
 	obj_move_call_physics( objp, ft );
 	obj_move_all_post(objp, flFrametime);
    objp->flags &= ~OF_JUST_UPDATED;
+#endif
 }
 
 // function to return a vector of the average position of all ships in the mission.

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/24 16:46:47  mharris
+ * Fixed stupid error I made in timer_get_fixed_seconds()
+ *
+ * Revision 1.3  2002/05/17 06:45:53  mharris
+ * More porting tweaks.  It links!  but segfaults...
+ *
+ * Revision 1.2  2002/05/09 13:50:50  mharris
+ * temporarily ifdef out asm
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -69,7 +78,12 @@
  * $NoKeywords: $
  */
 
-#include <windows.h>
+#if defined WIN32
+	#include <windows.h>
+#elif defined unix
+	#include <sys/time.h>
+	#include <unistd.h>
+#endif
 
 #include	"limits.h"
 #include "pstypes.h"
@@ -81,8 +95,12 @@
 	#define USE_TIMING
 #endif
 
+#if defined WIN32
 static longlong Timer_last_value, Timer_base;
 static uint Timer_freq=0;
+#elif defined unix
+static struct timeval Timer_last_value, Timer_base;
+#endif
 
 static int Timer_inited = 0;
 
@@ -99,6 +117,7 @@ void timer_close()
 void timer_init()
 {
 	if ( !Timer_inited )	{
+#if defined WIN32
 		LARGE_INTEGER tmp;
 		QueryPerformanceFrequency(&tmp);
 		Assert( tmp.HighPart == 0 );
@@ -106,7 +125,10 @@ void timer_init()
 
 		QueryPerformanceCounter((LARGE_INTEGER *)&Timer_base);
 		QueryPerformanceCounter((LARGE_INTEGER *)&Timer_last_value);
-
+#elif defined unix
+		gettimeofday(&Timer_base, NULL);
+		gettimeofday(&Timer_last_value, NULL);
+#endif
 		InitializeCriticalSection(&Timer_lock);
 		
 		Timer_inited = 1;
@@ -116,10 +138,15 @@ void timer_init()
 }
 
 // Fills Time_now with the ticks since program start
+#if defined WIN32
 static void timer_get(LARGE_INTEGER * out)
+#elif defined unix
+static void timer_get(timeval * out)
+#endif
 {
 	EnterCriticalSection(&Timer_lock);
 
+#if defined WIN32
 	longlong time_tmp;
 	longlong Time_now;
 
@@ -136,20 +163,30 @@ static void timer_get(LARGE_INTEGER * out)
 	Timer_last_value = time_tmp;
 
 	out->QuadPart = Time_now;
+#elif defined unix
+	timeval time_tmp;
+	gettimeofday(&time_tmp, NULL);
+	out->tv_usec = time_tmp.tv_usec - Timer_base.tv_usec;
+	out->tv_sec  = time_tmp.tv_sec  - Timer_base.tv_sec;
+	if (out->tv_usec < 0) {
+		out->tv_usec += 1000000;
+		out->tv_sec  -= 1;
+	}		
+#endif
 
 	LeaveCriticalSection(&Timer_lock);
 }
 
 fix timer_get_fixed_seconds()
 {
-	int tmp;
-	LARGE_INTEGER temp_large;
-
 	if (!Timer_inited) {
 		Int3();					// Make sure you call timer_init before anything that uses timer functions!
 		return 0;
 	}
 
+#if defined(WIN32) && defined(MSVC)
+	int tmp;
+	LARGE_INTEGER temp_large;
 	timer_get(&temp_large);
 
 	// Timing in fixed point (16.16) seconds.
@@ -173,6 +210,18 @@ sub_again:
 	_asm mov tmp, eax
 
 	return tmp;
+
+#elif defined unix
+
+	timeval tmp_tv;
+	timer_get(&tmp_tv);
+	// TODO: we are not handling overflow properly
+	return ((tmp_tv.tv_sec & 0x7fff) << 16)
+		| ((tmp_tv.tv_usec << 11) / 31250);
+
+#else
+#error unknown architecture/compiler
+#endif
 }
 
 fix timer_get_fixed_secondsX()
@@ -187,13 +236,14 @@ fix timer_get_approx_seconds()
 
 int timer_get_milliseconds()
 {
-	int tmp;
-	LARGE_INTEGER temp_large;
-
 	if (!Timer_inited) {
 		Int3();					// Make sure you call timer_init before anything that uses timer functions!
 		return 0;
 	}
+
+#if defined(WIN32) && defined(MSVC)
+	int tmp;
+	LARGE_INTEGER temp_large;
 
 	timer_get(&temp_large);
 
@@ -219,17 +269,27 @@ sub_again:
 	_asm mov tmp, eax
 
 	return tmp;
+
+#else
+
+	timeval tmp_tv;
+	timer_get(&tmp_tv);
+	return (tmp_tv.tv_sec * 1000) + (tmp_tv.tv_usec / 1000);
+
+#endif
+
 }
 
 int timer_get_microseconds()
 {
-	int tmp;
-	LARGE_INTEGER temp_large;
-
 	if (!Timer_inited) {
 		Int3();					// Make sure you call timer_init before anything that uses timer functions!
 		return 0;
 	}
+
+#if defined(WIN32) && defined(MSVC)
+	int tmp;
+	LARGE_INTEGER temp_large;
 
 	timer_get(&temp_large);
 
@@ -255,6 +315,14 @@ sub_again:
 	_asm mov tmp, eax
 
 	return tmp;
+
+#elif defined unix
+
+	timeval tmp_tv;
+	timer_get(&tmp_tv);
+	return (tmp_tv.tv_sec * 1000000) + tmp_tv.tv_usec;
+
+#endif
 }
 
 // 0 means invalid,

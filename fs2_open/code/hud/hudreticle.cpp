@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:58 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:23 $
  * $Author: penguin $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 15:11:03  mharris
+ * More NO_NETWORK ifndefs added
+ *
+ * Revision 1.2  2002/05/03 22:07:08  mharris
+ * got some stuff to compile
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -194,9 +200,12 @@
 #include "math.h"
 #include "gamesnd.h"
 #include "hudtargetbox.h"
-#include "multi.h"
 #include "emp.h"
 #include "localize.h"
+
+#ifndef NO_NETWORK
+#include "multi.h"
+#endif
 
 static int Reticle_inited = 0;
 
@@ -406,9 +415,11 @@ void hud_update_reticle( player *pp )
 	int rval;
 	ship *shipp;
 
+#ifndef NO_NETWORK
 	// multiplayer clients won't call this routine
 	if ( MULTIPLAYER_CLIENT || MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM]))
 		return;
+#endif
 
 	shipp = &Ships[Objects[pp->objnum].instance];
 
@@ -532,7 +543,7 @@ void hud_show_throttle()
 
 	max_speed = Ships[Player_obj->instance].current_max_speed;
 	if ( max_speed <= 0 ) {
-		max_speed = sip->max_vel.z;
+		max_speed = sip->max_vel.xyz.z;
 	}
 
 	desired_speed = Player->ci.forward * max_speed;
@@ -548,7 +559,7 @@ void hud_show_throttle()
 	percent_aburn_max = 0.0f;
 	if ( percent_max > 1 ) {
 		percent_max = 1.0f;
-		percent_aburn_max = (current_speed - max_speed) / (sip->afterburner_max_vel.z - max_speed);
+		percent_aburn_max = (current_speed - max_speed) / (sip->afterburner_max_vel.xyz.z - max_speed);
 		if ( percent_aburn_max > 1.0f ) {
 			percent_aburn_max = 1.0f;
 		}

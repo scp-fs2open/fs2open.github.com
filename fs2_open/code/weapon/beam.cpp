@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:26:03 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:29 $
  * $Author: penguin $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/05/13 21:09:29  mharris
+ * I think the last of the networking code has ifndef NO_NETWORK...
+ *
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -718,10 +724,12 @@ int beam_fire(beam_fire_info *fire_info)
 		return -1;
 	}
 
+#ifndef NO_NETWORK
 	// if we're a multiplayer master - send a packet
 	if(MULTIPLAYER_MASTER){
 		send_beam_fired_packet(fire_info->shooter, fire_info->turret, fire_info->target, fire_info->beam_info_index, &new_item->binfo);
 	}
+#endif
 
 	// start the warmup phase
 	beam_start_warmup(new_item);		
@@ -791,7 +799,7 @@ int beam_fire_targeting(beam_fire_info *fire_info)
 	new_item->warmdown_stamp = -1;
 	new_item->weapon_info_index = fire_info->beam_info_index;	
 	new_item->objp = fire_info->shooter;
-	new_item->sig = NULL;
+	new_item->sig = 0;
 	new_item->subsys = NULL;
 	new_item->life_left = 0;	
 	new_item->life_total = 0;
@@ -799,7 +807,7 @@ int beam_fire_targeting(beam_fire_info *fire_info)
 	new_item->f_collision_count = 0;
 	new_item->target = NULL;
 	new_item->target_subsys = NULL;
-	new_item->target_sig = NULL;	
+	new_item->target_sig = 0;	
 	new_item->beam_sound_loop = -1;
 	new_item->type = BEAM_TYPE_C;	
 	new_item->targeting_laser_offset = fire_info->targeting_laser_offset;
@@ -1041,7 +1049,7 @@ void beam_type_c_move(beam *b)
 	temp = b->targeting_laser_offset;
 	vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
 	vm_vec_add2(&b->last_start, &b->objp->pos);	
-	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.fvec, BEAM_FAR_LENGTH);
+	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, BEAM_FAR_LENGTH);
 }
 
 // type D functions
@@ -2147,7 +2155,7 @@ void beam_aim(beam *b)
 		temp = b->targeting_laser_offset;	
 		vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
 		vm_vec_add2(&b->last_start, &b->objp->pos);
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.fvec, BEAM_FAR_LENGTH);		
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, BEAM_FAR_LENGTH);		
 		break;
 
 	case BEAM_TYPE_D:				
@@ -2773,14 +2781,20 @@ void beam_handle_collisions(beam *b)
 			case OBJ_WEAPON:
 				// detonate the missile
 				Assert(Weapon_info[Weapons[Objects[target].instance].weapon_info_index].subtype == WP_MISSILE);
-				if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER){
+#ifndef NO_NETWORK
+				if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER)
+#endif
+				{
 					weapon_hit(&Objects[target], NULL, &Objects[target].pos);
 				}
 				break;
 
 			case OBJ_ASTEROID:
 				// hit the asteroid
-				if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER){
+#ifndef NO_NETWORK
+				if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER)
+#endif
+				{
 					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, Weapon_info[b->weapon_info_index].damage);
 				}
 				break;

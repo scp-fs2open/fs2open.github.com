@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 1.1 $
- * $Date: 2002-06-03 03:25:59 $
+ * $Revision: 2.0 $
+ * $Date: 2002-06-03 04:02:24 $
  * $Author: penguin $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/05/04 04:52:22  mharris
+ * 1st draft at porting
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -75,6 +78,7 @@
  * $NoKeywords: $
  */
 
+#include <ctype.h>
 #include "2d.h"
 #include "font.h"
 #include "ui.h"
@@ -273,7 +277,7 @@ typedef struct hash_node {
 } hash_node;
 
 static hash_node *Campaign_mission_hash_table[CAMPAIGN_MISSION_HASH_SIZE];
-static Hash_table_inited;
+static int Hash_table_inited;
 
 // special icons (1.04 + stuff)
 #define NUM_MISSION_ICONS			1
@@ -304,11 +308,11 @@ void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb = N
 //
 // returns hash value
 int hash_filename(char *filename) {
-	unsigned __int64 hash_val = 0;
+	ulonglong hash_val = 0;
 	char *ptr = filename;
 	
 	// Dont hash .fsm extension, convert all to upper case
-	for (int i=0; i < (signed int(strlen(filename)) - 4); i++) {
+	for (int i=0; i < ((signed int)(strlen(filename)) - 4); i++) {
 		hash_val = (hash_val << 4) + toupper(*ptr++);
 	}
 
