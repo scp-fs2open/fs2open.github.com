@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-09-20 20:02:00 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-10 05:42:42 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/09/20 20:02:00  phreak
+ * lead indicator for dumbfire missiles
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -566,12 +569,26 @@ int Weapon_secondary_y[GR_NUM_RESOLUTIONS][3] = {
 		579						// y location of where to draw text for the third secondary
 	}
 };
+int Weapon_primary_y[GR_NUM_RESOLUTIONS][2] = {
+	{ // GR_640
+		285,						// y location of where to draw text for the first primary
+		295							// y location of where to draw text for the second primary
+	},
+	{ // GR_1024
+		537,						// y location of where to draw text for the first primary
+		547							// y location of where to draw text for the second primary
+	}
+};
 int Weapon_secondary_name_x[GR_NUM_RESOLUTIONS] = {
 	536,							// x location of where to draw weapon name
 	919
 };
 int Weapon_secondary_ammo_x[GR_NUM_RESOLUTIONS] = {
 	525,							// x location of where to draw weapon ammo count
+	908
+};
+int Weapon_primary_ammo_x[GR_NUM_RESOLUTIONS] = {
+	525,							// x location of where to draw primary weapon ammo count
 	908
 };
 int Weapon_secondary_reload_x[GR_NUM_RESOLUTIONS] = {
@@ -927,8 +944,8 @@ object *hud_reticle_pick_target()
 	return return_objp;
 }
 
-// hud_target_hotkey_add_remove takes as it's parameter which hotkey (1-0) to add/remove the current
-// target from.  This functio behaves like the Shift-<selection> does in Windows -- using shift # will toggle
+// hud_target_hotkey_add_remove takes as its parameter which hotkey (1-0) to add/remove the current
+// target from.  This function behaves like the Shift-<selection> does in Windows -- using shift # will toggle
 // the current target in and out of the selection set.
 void hud_target_hotkey_add_remove( int k, object *ctarget, int how_to_add )
 {
@@ -3188,7 +3205,7 @@ void hud_show_remote_detonate_missile()
 	}
 }
 
-// routine to possibly draw a bouding box around a ship sending a message to the player
+// routine to possibly draw a bounding box around a ship sending a message to the player
 void hud_show_message_sender()
 {
 	object *targetp;
@@ -3814,18 +3831,28 @@ int hud_get_best_primary_bank(float *range)
 		num_to_test = min(1, swp->num_primary_banks);
 	}
 
-	for ( i = 0; i < num_to_test; i++ ) {
-		
-		bank_to_fire = (swp->current_primary_bank+i)%2;	//	Max supported banks is 2
+	for ( i = 0; i < num_to_test; i++ )
+	{	
+		bank_to_fire = (swp->current_primary_bank+i)%MAX_SUPPORTED_PRIMARY_BANKS;	//	Max supported banks is 2
 
-		// calculate the range of the weapon, and only display the lead target indicator when
+		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
 		Assert(bank_to_fire >= 0);
 		Assert(swp->primary_bank_weapons[bank_to_fire] >= 0);
 		wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
 		weapon_range = wip->max_speed * wip->lifetime;
 
-		if ( weapon_range > farthest_weapon_range ) {
+		// don't consider this primary if it's a ballistic that's out of ammo - Goober5000
+		if ( wip->wi_flags2 & WIF2_BALLISTIC )
+		{
+			if ( swp->primary_bank_ammo[bank_to_fire] <= 0)
+			{
+				continue;
+			}
+		}
+
+		if ( weapon_range > farthest_weapon_range )
+		{
 			best_bank = bank_to_fire;
 			farthest_weapon_range = weapon_range;
 		}
@@ -3975,17 +4002,24 @@ void hud_show_lead_indicator(vector *target_world_pos)
 
 	srange = ship_get_secondary_weapon_range(Player_ship);
 
-	if ( swp->current_secondary_bank >= 0 ) {
+	if ( swp->current_secondary_bank >= 0 )
+	{
 		int bank = swp->current_secondary_bank;
 		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( tmp->wi_flags & WIF_HOMING_ASPECT ) {
-			if ( !Player->target_in_lock_cone ) {
+		if ( tmp->wi_flags & WIF_HOMING_ASPECT )
+		{
+			if ( !Player->target_in_lock_cone )
+			{
 				srange = -1.0f;
 			}
 		}
 	}
 
-	//frame_offset=hudtarget_lead_indicator_pick_frame(prange, srange, dist_to_target);
+	frame_offset = hudtarget_lead_indicator_pick_frame(prange, srange, dist_to_target);
+
+	/* Commented out by Goober5000, because it's a bit buggy.  The original Volition code
+	// is A-1 SUPAR and ought to work for dumbfires as well. O_o
+	--------------- Phreak's Non-Working Code (TM) ------------
 	if (dist_to_target < prange)
 	{
 		frame_offset=2;
@@ -4006,10 +4040,11 @@ void hud_show_lead_indicator(vector *target_world_pos)
 		{
 			if((dist_to_target < srange) && (tmp->wi_flags & WIF_HOMING_HEAT))
 			{
-				frame_offset=0;
+				frame_offset=0;		// and this probably should be 2 - Goober5000
 			}
 		}
 	}
+	-----------------------------------------------------------	*/
 	
 	if ( frame_offset < 0 ) {
 		return;
@@ -4617,16 +4652,27 @@ void hud_show_weapon_energy_gauge()
 	float percent_left;
 	int	clip_h, i, w, h;
 
-	if ( Energy_bar_gauges.first_frame == -1 ){
+	if ( Energy_bar_gauges.first_frame == -1 )
+	{
 		return;
 	}
 
-	if ( Player_ship->weapons.num_primary_banks <= 0 ){
+	if ( Player_ship->weapons.num_primary_banks <= 0 )
+	{
 		return;
 	}
+
+	// also leave if no energy can be stored for weapons
+	// to avoid round-off errors, this is not exactly zero
+	if (Ship_info[Player_ship->ship_info_index].max_weapon_reserve < 0.01f)
+	{
+		return;
+	}
+
 
 	percent_left = Player_ship->weapon_energy/Ship_info[Player_ship->ship_info_index].max_weapon_reserve;
-	if ( percent_left > 1 ) {
+	if ( percent_left > 1 )
+	{
 		percent_left = 1.0f;
 	}
 	
@@ -4641,9 +4687,12 @@ void hud_show_weapon_energy_gauge()
 	}
 
 	hud_set_gauge_color(HUD_WEAPONS_ENERGY);
-	for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ ) {
-		if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[i]) ) {
-			if ( Weapon_flash_info.is_bright & (1<<i) ) {
+	for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ )
+	{
+		if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[i]) )
+		{
+			if ( Weapon_flash_info.is_bright & (1<<i) )
+			{
 				// hud_set_bright_color();
 				hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_BRIGHT);
 				break;
@@ -4708,7 +4757,7 @@ void hud_show_target_triangle_indicator(vertex *projected_v)
 	}
 }
 
-// called from hud_show_weapons() to plot out the secondary weapon name and amo 
+// called from hud_show_weapons() to plot out the secondary weapon name and ammo
 void hud_show_secondary_weapon(int count, ship_weapon *sw, int dual_fire)
 {
 	char	ammo_str[32];
@@ -4761,6 +4810,29 @@ void hud_show_secondary_weapon(int count, ship_weapon *sw, int dual_fire)
 		emp_hud_string(Weapon_secondary_ammo_x[gr_screen.res] - w, Weapon_secondary_y[gr_screen.res][i] - np*12, EG_NULL, ammo_str);		
 
 		hud_set_gauge_color(HUD_WEAPONS_GAUGE);
+	}
+}
+
+// called from hud_show_weapons() to plot out the primary weapon ammo - Goober5000
+void hud_show_primary_weapon_ammo(int count, ship_weapon *sw)
+{
+	char ammo_str[32];
+	int	i, w, h;
+
+	for ( i = 0; i < count; i++ )
+	{
+		// for all ballistic weapons
+		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC)
+		{
+			// print out the ammo right justified
+			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
+			hud_num_make_mono(ammo_str);
+			gr_get_string_size(&w, &h, ammo_str);
+
+			emp_hud_string(Weapon_primary_ammo_x[gr_screen.res] - w, Weapon_primary_y[gr_screen.res][i], EG_NULL, ammo_str);
+
+			hud_set_gauge_color(HUD_WEAPONS_GAUGE);
+		}
 	}
 }
 
@@ -4838,6 +4910,8 @@ void hud_show_cmeasure_gague()
 void hud_show_weapons()
 {
 	ship_weapon	*sw;
+	int ship_is_ballistic;
+
 	int			np, ns;		// np == num primary, ns == num secondary
 	char			name[NAME_LENGTH];	
 
@@ -4848,6 +4922,7 @@ void hud_show_weapons()
 	Assert(Player_obj->instance >= 0 && Player_obj->instance < MAX_SHIPS);
 
 	sw = &Ships[Player_obj->instance].weapons;
+	ship_is_ballistic = (Ship_info[Ships[Player_obj->instance].ship_info_index].flags & SIF_BALLISTIC_PRIMARIES);
 
 	np = sw->num_primary_banks;
 	ns = sw->num_secondary_banks;
@@ -4893,6 +4968,12 @@ void hud_show_weapons()
 		
 		emp_hud_printf(Weapon_plink_coords[gr_screen.res][0][0], Weapon_plink_coords[gr_screen.res][0][1], EG_NULL, "%c", Lcl_special_chars + 2);
 		emp_hud_printf(Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1], EG_WEAPON_P2, "%s", name);					
+
+		// check ballistic - Goober5000
+		if (ship_is_ballistic)
+		{
+			hud_show_primary_weapon_ammo(1, sw);
+		}
 		break;
 
 	case 2:
@@ -4935,6 +5016,13 @@ void hud_show_weapons()
 		}
 		emp_hud_printf(Weapon_pname_coords[gr_screen.res][1][0], Weapon_pname_coords[gr_screen.res][1][1], EG_WEAPON_P2, "%s", name);		
 		np = 0;
+		
+		// check ballistic - Goober5000
+		if (ship_is_ballistic)
+		{
+			hud_show_primary_weapon_ammo(2, sw);
+		}
+		
 		break;
 
 	default:
