@@ -231,8 +231,7 @@ void init_decals(){
 void check_ship_decals(){
 #ifndef DECAL_DEBUGGING	
 	return;
-#endif
-#ifndef NDEBUG
+#else
 	for(int i = 0; i<MAX_SHIPS; i++){
 		ship *shipp = &Ships[i];
 
