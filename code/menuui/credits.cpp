@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-11-11 02:15:43 $
+ * $Revision: 2.14 $
+ * $Date: 2003-11-12 06:05:00 $
  * $Author: Goober5000 $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/11/11 02:15:43  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.12  2003/11/07 07:12:21  Goober5000
  * added some credit stuff
  * --Goober5000
@@ -232,7 +237,7 @@ char *fs2_open_credit_text =
 	"\n"
 	"Programmers:\n"
 	"\n"
-	"\"Bobboau\"\n"
+	"Mike \"Bobboau\" Abegg\n"
 	"Dennis \"DTP\" Pedersen\n"
 	"Derek \"Kazan\" Meek\n"
 	"Ian \"Goober5000\" Warfield\n"
