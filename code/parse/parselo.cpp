@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.6 $
- * $Author: penguin $
- * $Date: 2003-03-02 06:10:58 $
+ * $Revision: 2.7 $
+ * $Author: Goober5000 $
+ * $Date: 2003-08-22 07:01:57 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/03/02 06:10:58  penguin
+ * Made a debug error message less confusing
+ *  - penguin
+ *
  * Revision 2.5  2003/01/30 23:19:33  phreak
  * cleaned up debug output
  *
@@ -880,10 +884,6 @@ void stuff_string_line(char *pstr, int len)
 
 	diag_printf("Stuffed string = [%.30s]\n", pstr);
 }
-
-// 1K on the stack? seems to work...
-// JH: 1k isn't enough!  Command briefs can be 16k max, so changed this.
-#define MAX_TMP_STRING_LENGTH 16384
 
 // Exactly the same as stuff string only Malloc's the buffer. 
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
