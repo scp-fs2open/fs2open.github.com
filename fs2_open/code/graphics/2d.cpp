@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-01-24 12:47:48 $
+ * $Revision: 2.14 $
+ * $Date: 2004-02-14 00:18:31 $
  * $Author: randomtiger $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/01/24 12:47:48  randomtiger
+ * Font and other small changes for Fred
+ *
  * Revision 2.12  2003/11/17 06:52:52  bobboau
  * got assert to work again
  *
@@ -549,11 +552,8 @@
 // #include "amd3d.h"
 
 // Includes for different rendering systems
-#include "graphics/grsoft.h"
 #include "graphics/grd3dsetup.h"
-#include "graphics/grglide.h"
 #include "graphics/gropengl.h"
-#include "graphics/grdirectdraw.h"
 
 screen gr_screen;
 
@@ -585,6 +585,86 @@ float Gr_gamma = 1.8f;
 int Gr_gamma_int = 180;
 int Gr_gamma_lookup[256];
 
+/**
+ * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
+ * lengths in order to keep the correctly scaled to nonstandard resolutions
+ *
+ * @param int *x - x value (width to be scaled), can be NULL
+ * @param int *y - y value (height to be scaled), can be NULL
+ * @return always true
+ */
+bool gr_resize_screen_pos(int *x, int *y)
+{
+	if(gr_screen.custom_size < 0)	return false;
+
+	int div_by_x = (gr_screen.custom_size == GR_1024) ? 1024 : 640;
+	int div_by_y = (gr_screen.custom_size == GR_1024) ?  768 : 480;
+			
+	if(x) {
+		(*x) *= gr_screen.max_w;
+		(*x) /= div_by_x;
+	}
+
+	if(y) {
+		(*y) *= gr_screen.max_h;
+		(*y) /= div_by_y;
+	}
+
+	return true;
+}
+
+/**
+ *
+ * @param int *x - x value (width to be unsacled), can be NULL
+ * @param int *y - y value (height to be unsacled), can be NULL
+ * @return always true
+ */
+bool gr_unsize_screen_pos(int *x, int *y)
+{
+	if(gr_screen.custom_size < 0)	return false;
+
+	int mult_by_x = (gr_screen.custom_size == GR_1024) ? 1024 : 640;
+	int mult_by_y = (gr_screen.custom_size == GR_1024) ?  768 : 480;
+			
+	if(x) {
+		(*x) *= mult_by_x;
+		(*x) /= gr_screen.max_w;
+	}
+
+	if(y) {
+		(*y) *= mult_by_y;
+		(*y) /= gr_screen.max_h;
+	}
+
+	return true;
+}
+
+/**
+ *
+ * @param int *x - x value (width to be unsacled), can be NULL
+ * @param int *y - y value (height to be unsacled), can be NULL
+ * @return always true
+ */
+bool gr_unsize_screen_posf(float *x, float *y)
+{
+	if(gr_screen.custom_size < 0)	return false;
+
+	float mult_by_x = (float) ((gr_screen.custom_size == GR_1024) ? 1024 : 640);
+	float mult_by_y = (float) ((gr_screen.custom_size == GR_1024) ?  768 : 480);
+			
+	if(x) {
+		(*x) *= mult_by_x;
+		(*x) /= (float) gr_screen.max_w;
+	}
+
+	if(y) {
+		(*y) *= mult_by_y;
+		(*y) /= (float) gr_screen.max_h;
+	}
+
+	return true;
+}
+
 void gr_close()
 {
 	if ( !Gr_inited )	return;
@@ -594,30 +674,13 @@ void gr_close()
 
 	switch( gr_screen.mode )	{
 #ifdef _WIN32
-	case GR_DIRECTDRAW:
-		Int3();
-		gr_directdraw_cleanup();
-		break;
 	case GR_DIRECT3D:		
 		gr_d3d_cleanup();
 		break;
-	case GR_GLIDE:
-		gr_glide_cleanup();
-		break;
 #endif
-
-#ifndef NO_SOFTWARE_RENDERING
-	case GR_SOFTWARE:		
-		gr_soft_cleanup();
-		break;
-#endif  // ifndef NO_SOFTWARE_RENDERING
-
-#ifdef USE_OPENGL
 	case GR_OPENGL:
-		DBUGFILE_OUTPUT_0("About to gr_opengl_cleanup");
 		gr_opengl_cleanup();
 		break;
-#endif  // ifdef USE_OPENGL
 
 	default:
 		Int3();		// Invalid graphics mode
@@ -638,16 +701,8 @@ DCF(gr,"Changes graphics mode")
 	if ( Dc_command )	{
 		dc_get_arg(ARG_STRING);
 		
-		if ( !strcmp( Dc_arg, "a"))	{
-			Int3();
-			mode = GR_SOFTWARE;
-		} else if ( !strcmp( Dc_arg, "b"))	{
-			Int3();
-			mode = GR_DIRECTDRAW;
-		} else if ( !strcmp( Dc_arg, "d"))	{
+		if ( !strcmp( Dc_arg, "d"))	{
 			mode = GR_DIRECT3D;
-		} else if ( !strcmp( Dc_arg, "g"))	{
-			mode = GR_GLIDE;
 		} else if ( !strcmp( Dc_arg, "o"))	{
 			mode = GR_OPENGL;
 		} else {
@@ -679,19 +734,8 @@ DCF(gr,"Changes graphics mode")
 
 	if ( Dc_status )	{
 		switch( gr_screen.mode )	{
-		case GR_SOFTWARE:
-			Int3();
-			dc_printf( "Win32 software windowed\n" );
-			break;
-		case GR_DIRECTDRAW:
-			Int3();
-			dc_printf( "DirectDraw software windowed\n" );
-			break;
 		case GR_DIRECT3D:
 			dc_printf( "Direct3D\n" );
-			break;
-		case GR_GLIDE:
-			dc_printf( "3Dfx Glide\n" );
 			break;
 		case GR_OPENGL:
 			dc_printf( "OpenGl\n" );
@@ -957,36 +1001,29 @@ void gr_detect_cpu(int *cpu, int *mmx, int *amd3d, int *katmai )
 
 // RT Created because D3D8 resolution is chosen in the D3D init function not from the launcher
 // Everything but D3D calls this before device initialisation
-void gr_init_res(int res, int mode, int fred_x, int fred_y)
+void gr_init_res(int res, int mode, int max_w, int max_h)
 {
-	int max_w, max_h;
-
-	max_w = -1;
-	max_h = -1;
-	if(!Fred_running && !Pofview_running){
-		// set resolution based on the res type
-		switch(res){
-		case GR_640:
-			max_w = 640;
-			max_h = 480;
-			break;
-
-		case GR_1024:
-			max_w = 1024;
-			max_h = 768;
-			break;
-
-		default :
-			Int3();
-		}
-	} else {		
-		max_w = fred_x;
-		max_h = fred_y;
-
-		// Make w a multiple of 8
-		max_w = ( max_w / 8 )*8;
-		if ( max_w < 8 ) max_w = 8;
-		if ( max_h < 8 ) max_h = 8;
+	if(Fred_running || Pofview_running)
+	{		   
+		gr_screen.custom_size = -1;
+	} 
+	else if(max_w == 640 && max_h == 480) 
+	{
+		gr_screen.custom_size = -1;
+		res = GR_640;
+	} 
+	else if(max_w == 1024 && max_h == 768) 
+	{
+		gr_screen.custom_size = -1;
+   
+		// Hi res vp is not present, use 640x480 art in 1024x768!
+		if(res != GR_1024)
+			gr_screen.custom_size = res;
+	} 
+	else 
+	{
+		// Will fall back to 640x480 if sparky hi res isnt there
+		gr_screen.custom_size = res;
 	}
 
 	gr_screen.signature = Gr_signature++;
@@ -1005,7 +1042,7 @@ void gr_init_res(int res, int mode, int fred_x, int fred_y)
 	gr_screen.clip_height = gr_screen.max_h;
 }
 
-int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
+bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 {
 	int first_time = 0;
 
@@ -1018,32 +1055,16 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 
 	// If already inited, shutdown the previous graphics
 	if ( Gr_inited )	{
-		DBUGFILE_OUTPUT_0("Shutting dwon previous gfx system");
 		switch( gr_screen.mode )	{
 #ifdef _WIN32
-		case GR_DIRECTDRAW:
-			Int3();
-			gr_directdraw_cleanup();
-			break;
 		case GR_DIRECT3D:
 			gr_d3d_cleanup();
 			break;
-		case GR_GLIDE:
-			gr_glide_cleanup();
-			break;
 #endif  // ifdef _WIN32
 
-#ifndef NO_SOFTWARE_RENDERING
-		case GR_SOFTWARE:			
-			gr_soft_cleanup();
-			break;
-#endif  // ifndef NO_SOFTWARE_RENDERING
-
-#ifdef USE_OPENGL
 		case GR_OPENGL:
 			gr_opengl_cleanup();
 			break;
-#endif  // USE_OPENGL
 
 		default:
 			Int3();		// Invalid graphics mode
@@ -1052,64 +1073,31 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 		first_time = 1;
 	}
 
-#if defined(HARDWARE_ONLY) && defined(_WIN32)
-	if(!Fred_running && !Pofview_running && !Nebedit_running && !Is_standalone){
-		if((mode != GR_GLIDE) && (mode != GR_DIRECT3D)  && (mode != GR_OPENGL)){
-			mprintf(("Forcing glide startup!\n"));
-			mode = GR_GLIDE;
-		}	
-	}
-#endif
-
 	D3D_enabled = 0;
 	Gr_inited = 1;
 
 	// Moved memset to out here so its not all scrubbed when D3D8 needs to call it again to revise 
 	// the mode selection through its own launcher
 	memset( &gr_screen, 0, sizeof(screen) );
-	gr_init_res(res, mode, fred_x, fred_y);
+	gr_init_res(res, mode, custom_x, custom_y);
+	gr_screen.bits_per_pixel = depth;
+	gr_screen.bytes_per_pixel= depth / 8;
 
-	DBUGFILE_OUTPUT_1("About to init %d", mode);
 	switch( mode )	{
 #ifdef _WIN32
-		// directdraw, direct3d, 
-		case GR_DIRECTDRAW:
-			Int3();
-			gr_directdraw_init();
-			break;
 		case GR_DIRECT3D:
 
 			if(gr_d3d_init() == false)
 			{
-				DBUGFILE_OUTPUT_0("Bad startup");
 				Gr_inited = 0;
-				return 1;
+				return false;
 			}
-			break;
-		case GR_GLIDE:
-			// if we're in high-res. force polygon interface
-			if(gr_screen.res == GR_1024){
-				Gr_bitmap_poly = 1;
-			}
-			gr_glide_init();
 			break;
 #endif  // ifdef WIN32
 
-#ifndef NO_SOFTWARE_RENDERING
-		case GR_SOFTWARE:
-			Assert(Fred_running || Pofview_running || Is_standalone || Nebedit_running);
-			gr_soft_init();
-			break;
-#endif  // ifndef NO_SOFTWARE_RENDERING
-
-#ifdef USE_OPENGL
 		case GR_OPENGL:
-			Gr_bitmap_poly=1;
-			gr_screen.bits_per_pixel=depth;
-			gr_screen.bytes_per_pixel=depth/8;
 			gr_opengl_init();
 			break;
-#endif  // ifdef USE_OPENGL
 
 		default:
 			Int3();		// Invalid graphics mode
@@ -1138,7 +1126,7 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 	// Call some initialization functions
 	gr_set_shader(NULL);
 
-	return 0;
+	return true;
 }
 
 void gr_force_windowed()
@@ -1147,39 +1135,14 @@ void gr_force_windowed()
 
 	switch( gr_screen.mode )	{
 #ifdef _WIN32
-		case GR_DIRECTDRAW:
-			{
-				Int3();
-				extern void gr_directdraw_force_windowed();
-				gr_directdraw_force_windowed();
-			}
-			break;
 		case GR_DIRECT3D:
-			break;
-		case GR_GLIDE:
-			{
-				extern void gr_glide_force_windowed();
-				gr_glide_force_windowed();
-			}
 			break;
 #endif  // ifdef WIN32
 
-#ifndef NO_SOFTWARE_RENDERING
-		case GR_SOFTWARE:
-			{				
-				extern void gr_soft_force_windowed();
-				gr_soft_force_windowed();
-			}
-			break;
-#endif  // ifndef NO_SOFTWARE_RENDERING
-
-#ifdef USE_OPENGL
 		case GR_OPENGL:
 			extern void opengl_minimize();
 			opengl_minimize();
 			break;
-
-#endif  // ifdef USE_OPENGL
 
 		default:
 			Int3();		// Invalid graphics mode
@@ -1196,14 +1159,6 @@ void gr_activate(int active)
 
 	switch( gr_screen.mode )	{
 #ifdef _WIN32
-		case GR_DIRECTDRAW:
-			{
-				Int3();
-				extern void gr_dd_activate(int active);
-				gr_dd_activate(active);
-				return;
-			}
-			break;
 		case GR_DIRECT3D:
 			{	
 				extern void gr_d3d_activate(int active);
@@ -1211,31 +1166,12 @@ void gr_activate(int active)
 				return;
 			}
 			break;
-		case GR_GLIDE:
-			{
-				extern void gr_glide_activate(int active);
-				gr_glide_activate(active);
-				return;
-			}
-			break;
 #endif  // ifdef WIN32
 
-#ifndef NO_SOFTWARE_RENDERING
-		case GR_SOFTWARE:
-			{				
-				extern void gr_soft_activate(int active);
-				gr_soft_activate(active);
-				return;
-			}
-			break;
-#endif  // ifndef NO_SOFTWARE_RENDERING
-
-#ifdef USE_OPENGL
 		case GR_OPENGL:
 			extern void gr_opengl_activate(int active);
 			gr_opengl_activate(active);
 			break;
-#endif  // ifdef USE_OPENGL
 
 		default:
 			Int3();		// Invalid graphics mode
@@ -1277,19 +1213,6 @@ int gr_get_cursor_bitmap()
 	return Gr_cursor;
 }
 
-
-int Gr_bitmap_poly = 0;
-DCF(bmap, "")
-{
-	Gr_bitmap_poly = !Gr_bitmap_poly;
-
-	if(Gr_bitmap_poly){
-		dc_printf("Using poly bitmaps\n");
-	} else {
-		dc_printf("Using LFB bitmaps\n");
-	}
-}
-
 // new bitmap functions
 void gr_bitmap(int x, int y, bool allow_scaling)
 {
@@ -1297,8 +1220,24 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 	int x_line, y_line;
 	int w, h;
 
-	// d3d and glide support texture poly shiz, ogl does too
-	if(((gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_GLIDE) || (gr_screen.mode== GR_OPENGL)) && Gr_bitmap_poly){		
+	if(gr_screen.mode == GR_DIRECT3D){
+
+		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL, NULL);
+
+		// get the section as a texture in vram					
+		gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
+
+		// I will tidy this up later - RT
+		if(allow_scaling)
+		{
+			gr_resize_screen_pos(&x, &y);
+			gr_resize_screen_pos(&w, &h);
+		}
+
+		// RT draws all hall interface stuff
+		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_BITMAP_SECTION);
+	}
+	else if((gr_screen.mode == GR_OPENGL)) {
 		int idx, s_idx;
 		// float u_scale, v_scale;
 		bitmap_section_info *sections;			
@@ -1319,77 +1258,25 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 				// determine the width and height of this section
 				bm_get_section_size(gr_screen.current_bitmap, s_idx, idx, &section_x, &section_y);
 
-				// I will tidy this up later - RT
-				if(gr_screen.mode == GR_DIRECT3D && allow_scaling)
-				{
-					extern bool gr_d3d_resize_screen_pos(int *x, int *y);
+				int px1 = x + x_line;
+				int py1 = y + y_line;
+				int px2 = section_x;
+				int py2 = section_y;
 
-				  	gr_d3d_resize_screen_pos(&x, &y);
-				  	gr_d3d_resize_screen_pos(&section_x, &section_y);
+				// I will tidy this up later - RT
+				if(allow_scaling)
+				{
+					gr_resize_screen_pos(&px1, &py1);
+					gr_resize_screen_pos(&px2, &py2);
 				}
 
 				// RT draws all hall interface stuff
-			   	g3_draw_2d_poly_bitmap(x + x_line, y + y_line, section_x, section_y, TMAP_FLAG_BITMAP_SECTION);
+			   	g3_draw_2d_poly_bitmap(px1, py1, px2, py2, TMAP_FLAG_BITMAP_SECTION);
 				x_line += section_x;
 			}
 			y_line += section_y;
 		}
-
-		// done. whee!
-		return;
 	}			
-
-	// old school bitmaps
-	switch(gr_screen.mode){
-#ifdef _WIN32
-	case GR_DIRECTDRAW:
-		grx_bitmap(x, y);
-		break;
-
-	case GR_GLIDE:		
-		gr_glide_bitmap(x, y);		
-		break;
-#endif  // ifdef WIN32
-
-#ifndef NO_SOFTWARE_RENDERING
-	case GR_SOFTWARE:
-		grx_bitmap(x, y);
-		break;
-#endif  // ifndef NO_SOFTWARE_RENDERING
-
-#ifdef USE_OPENGL
-	case GR_OPENGL:
-		gr_opengl_bitmap(x, y);
-		break;
-#endif  // ifdef USE_OPENGL
-
-	}
-}
-
-void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy)
-{
-	switch(gr_screen.mode){
-#ifdef _WIN32
-	case GR_DIRECTDRAW:
-		grx_bitmap_ex(x, y, w, h, sx, sy);
-		break;
-
-	case GR_GLIDE:
-		gr_glide_bitmap_ex(x, y, w, h, sx, sy);
-		break;
-#endif  // ifdef WIN32
-
-#ifndef NO_SOFTWARE_RENDERING
-	case GR_SOFTWARE:
-		grx_bitmap_ex(x, y, w, h, sx, sy);
-		break;
-#endif  // ifndef NO_SOFTWARE_RENDERING
-
-#ifdef USE_OPENGL
-	case GR_OPENGL:
-		gr_opengl_bitmap_ex(x, y, w, h, sx, sy);
-#endif // ifdef USE_OPENGL
-	}
 }
 
 // given endpoints, and thickness, calculate coords of the endpoint

@@ -32,14 +32,6 @@
 
 #include "graphics/grd3dbmpman.h"
 
-int max_bitmap_size = 256;
-
-void bm_d3d_set_max_bitmap_size(int size)
-{
-	DBUGFILE_OUTPUT_1("Setting max bitmap size %d", size);
-	max_bitmap_size = size;
-}
-
 extern bitmap_entry bm_bitmaps[];
 
 D3DBitmapData d3d_bitmap_entry[MAX_BITMAPS];
@@ -152,30 +144,6 @@ void bm_d3d_get_frame_usage(int *ntotal, int *nnew)
 {
 }
 
-// given a loaded bitmap with valid info, calculate sections
-void bm_d3d_calc_sections(bitmap *be)
-{
-	int idx;
-
-	// number of x and y sections
-	be->sections.num_x = (ubyte)(be->w / max_bitmap_size);
-	if((be->sections.num_x * max_bitmap_size) < be->w){
-		be->sections.num_x++;
-	}
-	be->sections.num_y = (ubyte)(be->h / max_bitmap_size);
-	if((be->sections.num_y * max_bitmap_size) < be->h){
-		be->sections.num_y++;
-	}
-
-	// calculate the offsets for each section
-	for(idx=0; idx<be->sections.num_x; idx++){
-		be->sections.sx[idx] = (ushort)(max_bitmap_size * idx);
-	}
-	for(idx=0; idx<be->sections.num_y; idx++){
-		be->sections.sy[idx] = (ushort)(max_bitmap_size * idx);
-	}
-}
-
 // Creates a bitmap that exists in RAM somewhere, instead
 // of coming from a disk file.  You pass in a pointer to a
 // block of 32 (or 8)-bit-per-pixel data.  Right now, the only
@@ -235,9 +203,6 @@ int bm_d3d_create( int bpp, int w, int h, void * data, int flags )
 
 	d3d_bitmap_entry[n].tinterface = NULL;
 
-	// fill in section info
-	bm_d3d_calc_sections(&bm_bitmaps[n].bm);
-	
 	return bm_bitmaps[n].handle;
 }
 
@@ -402,7 +367,6 @@ int bm_d3d_load( char * real_filename )
 
 	d3d_bitmap_entry[n].tinterface = NULL;
 
-	bm_d3d_calc_sections(&bm_bitmaps[n].bm);
 	return bm_bitmaps[n].handle;
 }
 
@@ -534,9 +498,6 @@ int bm_d3d_load_animation( char *real_filename, int *nframes, int *fps, int can_
 		bm_bitmaps[n+i].handle = first_handle*MAX_BITMAPS + n+i;
 		bm_bitmaps[n+i].last_used = -1;
 
-		// fill in section info
-		bm_d3d_calc_sections(&bm_bitmaps[n+i].bm);
-
 		if ( i == 0 )	{
 			sprintf( bm_bitmaps[n+i].filename, "%s", filename );
 		} else {
@@ -553,6 +514,7 @@ void bm_d3d_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, 
 	Assert(bm_d3d_inited);
 
 	bitmap * bmp;
+	if (sections != NULL) *sections = NULL;
 
 	int bitmapnum = handle % MAX_BITMAPS;
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!	
@@ -563,7 +525,6 @@ void bm_d3d_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, 
 		if (flags) *flags = 0;
 		if (nframes) *nframes=0;
 		if (fps) *fps=0;
-		if (sections != NULL) *sections = NULL;
 		return;
 	}
 
@@ -586,9 +547,6 @@ void bm_d3d_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, 
 		if (fps) {
 			*fps= 0;
 		}
-	}
-	if(sections != NULL){
-		*sections = &bm_bitmaps[bitmapnum].bm.sections;
 	}
 }
 
@@ -675,23 +633,18 @@ void bm_d3d_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, 
 		if(bpp == 16){
 		
 			// load types
-			if(flags & BMP_AABITMAP){
-				pcx_error = pcx_read_bitmap_16bpp_aabitmap( be->filename, data );
-			} else if(flags & BMP_TEX_NONDARK){
-				pcx_error = pcx_read_bitmap_16bpp_nondark( be->filename, data );
-			} else {
-				pcx_error = pcx_read_bitmap_16bpp( be->filename, data );
-			}
+			Assert(!(flags & BMP_AABITMAP));
+			Assert(!(flags & BMP_TEX_NONDARK));
+
+			pcx_error = pcx_read_bitmap_16bpp( be->filename, data );
+
+			bm_d3d_convert_format( bitmapnum, bmp, bpp, flags );
+			
 		} else {
 			pcx_error = pcx_read_bitmap_32( be->filename, data );
 		}
 
 		Assert(pcx_error == PCX_ERROR_NONE );
-	}
-
-	bmp->flags = 0;	
-	if(bpp != 32){
-		bm_d3d_convert_format( bitmapnum, bmp, bpp, flags );
 	}
 }
 
@@ -723,11 +676,7 @@ void bm_d3d_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, 
 	}
 
 	bm = &bm_bitmaps[first_frame].bm;
-	if(bpp == 16){
-		size = bm->w * bm->h * 2;
-	} else {
-		size = bm->w * bm->h;
-	}
+	size = bm->w * bm->h * bpp / 8;
 		
 	for ( i=0; i<nframes; i++ )	{
 		be = &bm_bitmaps[first_frame+i];
@@ -1378,7 +1327,6 @@ void bm_d3d_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 void bm_d3d_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h)
 {
 	int bw, bh;
-	bitmap_section_info *sections;
 
 	// bogus input?
 	Assert((w != NULL) && (h != NULL));
@@ -1387,9 +1335,9 @@ void bm_d3d_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h)
 	}
 
 	// get bitmap info
-	bm_get_info(bitmapnum, &bw, &bh, NULL, NULL, NULL, &sections);
+	bm_get_info(bitmapnum, &bw, &bh, NULL, NULL, NULL, NULL);
 
 	// determine the width and height of this section
-	*w = sx < (sections->num_x - 1) ? max_bitmap_size : bw - sections->sx[sx];
-	*h = sy < (sections->num_y - 1) ? max_bitmap_size : bh - sections->sy[sy];										
+	*w = bw;
+	*h = bh;										
 }

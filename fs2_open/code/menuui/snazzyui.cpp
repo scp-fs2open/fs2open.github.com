@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/SnazzyUI.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-10-27 23:04:22 $
+ * $Revision: 2.3 $
+ * $Date: 2004-02-14 00:18:33 $
  * $Author: randomtiger $
  *
  *  Code to drive the Snazzy User Interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/10/27 23:04:22  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -207,6 +215,7 @@
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "graphics/2d.h"
 
 
 extern int ascii_table[];
@@ -258,10 +267,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 	mouse_get_pos( &x, &y ); 
 
 	// This keeps mouse position detection correct for non standard modes
-	{
-		extern bool gr_d3d_unsize_screen_pos(int *x, int *y);
-		gr_d3d_unsize_screen_pos(&x, &y);
-	}
+	gr_unsize_screen_pos(&x, &y);
 
 	// boundary conditions
 	if((y > mask_h - 1) || (x > mask_w - 1)){

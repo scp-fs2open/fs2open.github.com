@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.68 $
- * $Date: 2004-01-29 01:34:01 $
+ * $Revision: 2.69 $
+ * $Date: 2004-02-14 00:18:30 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2004/01/29 01:34:01  randomtiger
+ * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
+ * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
+ *
  * Revision 2.67  2004/01/24 15:52:25  randomtiger
  * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
  * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
@@ -1001,7 +1005,6 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #include "globalincs/version.h"
 #include "menuui/mainhalltemp.h"
 #include "exceptionhandler/exceptionhandler.h"
-#include "glide/glide.h"
 #include "starfield/supernova.h"
 #include "hud/hudshield.h"
 #include "ship/shiphit.h"
@@ -1496,52 +1499,9 @@ void game_framerate_check_init()
 		
 	// nebula missions
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
-#if defined _WIN32
-		// if this is a glide card
-		if(gr_screen.mode == GR_GLIDE){
-			extern GrHwConfiguration hwconfig;
-
-			// voodoo 2/3
-			if(hwconfig.SSTs[0].sstBoard.VoodooConfig.fbRam >= 4){
-				Gf_critical = 15.0f;
-			}
-			// voodoo 1
-			else {
-				Gf_critical = 10.0f;
-			}
-		}
-		// d3d. only care about good cards here I guess (TNT)
-		else {
-			Gf_critical = 15.0f;			
-		}
-#else
 		Gf_critical = 15.0f;			
-#endif
-
 	} else {
-
-#ifdef _WIN32
-		// if this is a glide card
-		if(gr_screen.mode == GR_GLIDE){
-			extern GrHwConfiguration hwconfig;
-
-			// voodoo 2/3
-			if(hwconfig.SSTs[0].sstBoard.VoodooConfig.fbRam >= 4){
-				Gf_critical = 25.0f;
-			}
-			// voodoo 1
-			else {
-				Gf_critical = 20.0f;
-			}
-		}
-		// d3d. only care about good cards here I guess (TNT)
-		else {
-			Gf_critical = 25.0f;
-		}
-#else
 		Gf_critical = 25.0f;
-#endif
-
 	}
 }
 
@@ -2335,7 +2295,7 @@ int game_start_mission()
 	game_post_level_init();
 	load_post_level_init = time(NULL) - load_post_level_init;
 
-#if (!defined(NDEBUG)) && (!defined(NO_SOFTWARE_RENDERING))
+#ifndef NDEBUG
 	{
 		void Do_model_timings_test();
 		Do_model_timings_test();	
@@ -2519,10 +2479,59 @@ DCF(gamma,"Sets Gamma factor")
 	}
 }
 
+void run_launcher()
+{
+	int download = MessageBox((HWND)os_get_window(), 
+		"Run the fs2_open launcher to fix your problem. "
+		"Would you like to download the latest version of the launcher? "
+		"You must have at least v4.0 to run OGL and v3.0 to run D3D8.", 
+		"Question", MB_YESNO | MB_ICONQUESTION);
+
+	if(download == IDYES)
+	{
+		// Someone should change this to the offical link
+		WinExec("explorer.exe \"http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher.rar\"",SW_SHOW);
+		return;
+	}
+
+	// fire up the UpdateLauncher executable
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+
+	memset( &si, 0, sizeof(STARTUPINFO) );
+	si.cb = sizeof(si);
+
+	BOOL launcher_ran = CreateProcess(	LAUNCHER_FNAME,	// pointer to name of executable module 
+								NULL,							// pointer to command line string
+								NULL,							// pointer to process security attributes 
+								NULL,							// pointer to thread security attributes 
+								FALSE,							// handle inheritance flag 
+								CREATE_DEFAULT_ERROR_MODE,		// creation flags 
+								NULL,							// pointer to new environment block 
+								NULL,	// pointer to current directory name 
+								&si,	// pointer to STARTUPINFO 
+								&pi 	// pointer to PROCESS_INFORMATION  
+							);			
+
+	// If the Launcher could not be started up, let the user know and give them the option of downloading it
+	if (!launcher_ran) 
+	{
+		download = MessageBox((HWND)os_get_window(), 
+			"The Launcher could not be started, you cant run fs2_open without it. "
+			"Would you like to download it?", "FS2_Open Startup Error", MB_YESNO | MB_ICONQUESTION);
+
+		if(download == IDYES)
+		{
+			// Someone should change this to the offical link
+			WinExec("explorer.exe \"http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher.rar\"",SW_SHOW);
+
+		}
+	}
+}
+
 void game_init()
 {
 	char *ptr;
-	int depth = 16;
 
 	Game_current_mission_filename[0] = 0;
 
@@ -2646,80 +2655,13 @@ void game_init()
 /////////////////////////////
 // SOUND INIT END
 /////////////////////////////
-	
-	// We cannot continue without this, quit, but try to help the user out first
-	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
-
-	if (ptr == NULL || strstr(ptr, NOX("Direct 3D -") )) {
-
-		// This problem is fatal so lets allow the user to see the cursor for message box interation
-		ShowCursor(TRUE);
-
-#ifdef _WIN32
-		if(ptr == NULL)
-		{
-			MessageBox((HWND)os_get_window(), 
-				"Please configure your system in the Launcher (v2.0 or better) before running fs2_open. "
-				"If you have it the Launcher will now automatically load.", 
-				"FS2_Open Startup Error", MB_OK | MB_ICONERROR);
-		}
-		else if(strstr(ptr, NOX("Direct 3D -")))
-		{
-			MessageBox((HWND)os_get_window(), 
-				"Direct3D5 not supported in this build, please use launcher to set D3D8 or OGL settings", 
-				"FS2_Open Startup Error", MB_OK | MB_ICONERROR);
-		}
-
-		// fire up the UpdateLauncher executable
-		STARTUPINFO si;
-		PROCESS_INFORMATION pi;
-
-		memset( &si, 0, sizeof(STARTUPINFO) );
-		si.cb = sizeof(si);
-
-		BOOL launcher_ran = CreateProcess(	LAUNCHER_FNAME,	// pointer to name of executable module 
-									NULL,							// pointer to command line string
-									NULL,							// pointer to process security attributes 
-									NULL,							// pointer to thread security attributes 
-									FALSE,							// handle inheritance flag 
-									CREATE_DEFAULT_ERROR_MODE,		// creation flags 
-									NULL,							// pointer to new environment block 
-									NULL,	// pointer to current directory name 
-									&si,	// pointer to STARTUPINFO 
-									&pi 	// pointer to PROCESS_INFORMATION  
-								);			
-
-		// If the Launcher could not be started up, let the user know and give them the option of downloading it
-		if (!launcher_ran) 
-		{
-			int download = MessageBox((HWND)os_get_window(), 
-				"The Launcher could not be started, you cant run fs2_open without it. "
-				"Would you like to download it?", "FS2_Open Startup Error", MB_YESNO | MB_ICONQUESTION);
-
-			if(download == IDYES)
-			{
-				// Someone should change this to the offical link
-				WinExec("explorer.exe \"http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher.rar\"",SW_SHOW);
-
-			}
-		}
-
-		exit(1);
-
-#else // !Win32
-		mprintf(("No video card defined...\n"));
-		// TEMP mharris FIXME
-		ptr = "dummy";
-//		exit(1);
-#endif
-	}
 
 
 #ifdef _WIN32
 	// Only check for 3d-accel in Win32
 	if(!Is_standalone){
 		if(!stricmp(ptr, "Aucune accélération 3D") || !stricmp(ptr, "Keine 3D-Beschleunigerkarte") || !stricmp(ptr, "No 3D acceleration")){
-			MessageBox((HWND)os_get_window(), XSTR("Warning, Freespace 2 requires Glide or Direct3D hardware accleration. You will not be able to run Freespace 2 without it.", 1448), XSTR("Warning", 1449), MB_OK);		
+			MessageBox((HWND)os_get_window(), XSTR("Warning, Freespace 2 requires OpenGL or Direct3D hardware accleration. You will not be able to run Freespace 2 without it.", 1448), XSTR("Warning", 1449), MB_OK);		
 			exit(1);
 		}
 	}
@@ -2750,67 +2692,64 @@ void game_init()
 	}
 #endif
 
-	// see if we've got 32 bit in the string
-	if(strstr(ptr, "32 bit")){
-		depth = 32;
-	}
-
 #ifdef _WIN32
-	// initialize the graphics system (win32)
-	if (!Is_standalone && ptr && (strstr(ptr, NOX("3DFX Glide")))) {
-		// regular or hi-res ?
-		if(has_sparky_hi && strstr(ptr, NOX("(1024 x 768)"))){
-			gr_init(GR_1024, GR_GLIDE);
-		} else {			
-			gr_init(GR_640, GR_GLIDE);
+
+	if(!Is_standalone)
+	{
+		int width, height, cdepth;
+		extern char Device_init_error[512];		
+
+		// We cannot continue without this, quit, but try to help the user out first
+		ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
+
+		if(ptr == NULL)
+		{
+			strcpy(Device_init_error, "Cant get 'videocardFs2open' reg entry.");
 		}
-
-	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("D3D8-") )))	{
-
-		bool use_hi_res = !strstr(ptr, NOX("(640x480)")) && has_sparky_hi;
-
-		// Direct 3D
-		gr_init(use_hi_res ? GR_1024 : GR_640, GR_DIRECT3D, depth);
+		else 
+		{
+			bool is_640x480 = strstr(ptr, "640") && strstr(ptr, "480"); 
+			int res = (!is_640x480 && has_sparky_hi) ? GR_1024 : GR_640;
+			
+			if (strstr(ptr, NOX("D3D8-") ))	
+			{
+				if(sscanf(ptr, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) 
+					strcpy(Device_init_error, "Cant understand 'videocardFs2open' D3D8 reg entry.");
+				else
+					gr_init(res, GR_DIRECT3D, cdepth, width, height);
+			} 
+			else if (strstr(ptr, NOX("OGL -") ))
+			{
+				if(sscanf(ptr, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) 
+					strcpy(Device_init_error, "Cant understand 'videocardFs2open' OGL reg entry.");
+				else
+					gr_init(res, GR_OPENGL, cdepth, width, height);
+			} 
+			else if (strstr(ptr, NOX("3DFX Glide"))) 
+			{
+				strcpy(Device_init_error, "Glide is not supported any more.");
+			} 
+			else if(strstr(ptr, NOX("Direct 3D -")))
+			{
+				strcpy(Device_init_error, "Direct3D5 not supported any more.");
+			}
+			else 
+			{
+				strcpy(Device_init_error, "Software mode is unsupported. GET A PROGRAMMER!!");
+			}
+		}
+			
 		extern int Gr_inited;
-
-		if(!Gr_inited) {
+		if(!Gr_inited)
+		{
 			ClipCursor(NULL);
+			ShowCursor(TRUE);
 			ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
-			extern char Device_init_error[512];		
-			MessageBox( NULL, Device_init_error, "Error intializing Direct3D", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
+			MessageBox( NULL, Device_init_error, "Error intializing graphics", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
+			run_launcher();
 			exit(1);
 			return;
 		}
-
-
-	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("OpenGL -") ))){
-		if (has_sparky_hi && strstr(ptr,NOX("1024 x 768"))){
-			gr_init(GR_1024, GR_OPENGL, depth);
-		} else {
-			gr_init(GR_640, GR_OPENGL, depth);
-		}
-
-	} else {
-		// Software
-		//NOT USED ANYMORE
-		if (!Is_standalone)
-			Error(LOCATION,"Software mode is unsupported, use hardware acceleration.  If not using software mode, then something was misspelled.  GET A PROGRAMMER!!");
-		
-		//  -------- THIS MUST BE UNCOMMENTED FOR THE STAND ALONE TO WORK! --------
-		#ifndef NDEBUG
-			if ( Use_fullscreen_at_startup && !Is_standalone)	{		
-				gr_init(GR_640, GR_DIRECTDRAW);
-			} else {
-				gr_init(GR_640, GR_SOFTWARE); // STANDALONE SERVER
-			}
-		#else
-			if ( !Is_standalone ) {
-				gr_init(GR_640, GR_DIRECTDRAW);
-			} else {
-				gr_init(GR_640, GR_SOFTWARE); // STANDALONE SERVER
-			}
-		#endif
-		
 	}
 
 #elif defined unix
@@ -2839,7 +2778,7 @@ void game_init()
 		ptr = os_config_read_string(NULL, NOX("Gamma"), NOX("1.80"));
 		Freespace_gamma = (float)atof(ptr);
 		
-		// Keep the old system for the benifit of OGL and glide
+		// Keep the old system for the benifit of OGL
 		if ( Freespace_gamma < 0.1f )	{
 			Freespace_gamma = 0.1f;
 		} else if ( Freespace_gamma > 5.0f )	{
@@ -3162,14 +3101,9 @@ void game_show_framerate()
 		{
 			extern int D3D_textures_in;
 			extern int D3D_textures_in_frame;
-			extern int Glide_textures_in;
-			extern int Glide_textures_in_frame;
-			extern int Glide_explosion_vram;
-			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (D3D_textures_in+Glide_textures_in)/1024 );
+			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (D3D_textures_in)/1024 );
 			sy += dy;
-			gr_printf( sx, sy, NOX("VRAM: +%d KB\n"), (Glide_textures_in_frame+D3D_textures_in_frame)/1024 );
-			sy += dy;
-			gr_printf( sx, sy, NOX("EXP VRAM: %dKB\n"), (Glide_explosion_vram)/1024 );
+			gr_printf( sx, sy, NOX("VRAM: +%d KB\n"), (D3D_textures_in_frame)/1024 );
 			sy += dy;
 		}
 #endif
@@ -3249,14 +3183,7 @@ void game_show_framerate()
 #ifndef NO_DIRECT3D
 		{
 			extern int D3D_textures_in;
-			extern int Glide_textures_in;
-			extern int Glide_textures_in_frame;
-			extern int Glide_explosion_vram;
-			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (D3D_textures_in+Glide_textures_in)/1024 );
-			sy += dy;
-			gr_printf( sx, sy, NOX("VRAM: +%d KB\n"), (Glide_textures_in_frame)/1024 );
-			sy += dy;
-			gr_printf( sx, sy, NOX("EXP VRAM: %dKB\n"), (Glide_explosion_vram)/1024 );
+			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (D3D_textures_in)/1024 );
 			sy += dy;
 		}
 #endif
@@ -5529,10 +5456,6 @@ int game_poll()
 			gameseq_post_event( GS_EVENT_TOGGLE_FULLSCREEN );
 			break;
 
-		case KEY_DEBUGGED + KEY_F4:
-			gameseq_post_event( GS_EVENT_TOGGLE_GLIDE );
-			break;
-		
 		case KEY_F4:
 			if(Game_mode & GM_MULTIPLAYER){
 				if((state == GS_STATE_GAME_PLAY) || (state == GS_STATE_MULTI_PAUSED)){
@@ -5842,28 +5765,6 @@ void game_process_event( int current_state, int event )
 			gameseq_pop_state();
 			break;
 
-		case GS_EVENT_TOGGLE_FULLSCREEN:
-			#ifndef HARDWARE_ONLY
-				#ifndef NDEBUG
-				if ( gr_screen.mode == GR_SOFTWARE )	{
-					gr_init( GR_640, GR_DIRECTDRAW );
-				} else if ( gr_screen.mode == GR_DIRECTDRAW )	{
-					gr_init( GR_640, GR_SOFTWARE );
-				}
-				#endif
-			#endif
-			break;
-
-		case GS_EVENT_TOGGLE_GLIDE:
-			#ifndef NDEBUG
-			if ( gr_screen.mode != GR_GLIDE )	{
-				gr_init( GR_640, GR_GLIDE );
-			} else {
-				gr_init( GR_640, GR_SOFTWARE );
-			}
-			#endif
-			break;						
- 
 		case GS_EVENT_LOAD_MISSION_MENU:
 			gameseq_set_state(GS_STATE_LOAD_MISSION_MENU);
 			break;
@@ -8229,12 +8130,11 @@ void game_show_event_debug(float frametime)
 
 #endif // NDEBUG
 
-#if (!defined(NDEBUG)) && (!defined(NO_SOFTWARE_RENDERING))
+#ifndef NDEBUG
 FILE * Time_fp;
 FILE * Texture_fp;
 
-extern int Tmap_npixels;
-
+int Tmap_npixels=0;
 int Tmap_num_too_big = 0;
 int Num_models_needing_splitting = 0;
 
@@ -9608,7 +9508,7 @@ void display_title_screen()
 	*/
 #ifndef NO_DIRECT3D
 	// d3d	
-	if((gr_screen.mode == GR_DIRECT3D) && (Gr_bitmap_poly)){
+	if(gr_screen.mode == GR_DIRECT3D){
 		extern void d3d_start_frame();
 		d3d_start_frame();
 	}
@@ -9642,7 +9542,7 @@ void display_title_screen()
 
 #ifndef NO_DIRECT3D
 	// d3d	
-	if((gr_screen.mode == GR_DIRECT3D) && (Gr_bitmap_poly)){
+	if(gr_screen.mode == GR_DIRECT3D){
 		extern void d3d_stop_frame();
 		d3d_stop_frame();
 	}

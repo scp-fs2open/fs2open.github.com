@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dMath.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-10-23 18:03:24 $
+ * $Revision: 2.4 $
+ * $Date: 2004-02-14 00:18:35 $
  * $Author: randomtiger $
  *
  * 3d Math routines used by the Renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.2  2003/06/08 17:39:35  phreak
  * the real position is now copied in g3_rotate_vertex
  *
@@ -304,11 +307,8 @@ int g3_project_vertex(vertex *p)
 		p->sx = (Canvas_width + (p->x*Canvas_width*w))*0.5f;
 		p->sy = (Canvas_height - (p->y*Canvas_height*w))*0.5f;
 
-		if(gr_screen.mode == GR_GLIDE){
-			if ( w > 61439.0f ) w = 61439.0f;
-		} else {
-			if ( w > 1.0f ) w = 1.0f;		
-		}
+		if ( w > 1.0f ) w = 1.0f;		
+		
 		p->sw = w;
 		p->flags |= PF_PROJECTED;
 	}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-01-29 01:34:01 $
+ * $Revision: 2.5 $
+ * $Date: 2004-02-14 00:18:31 $
  * $Author: randomtiger $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/01/29 01:34:01  randomtiger
+ * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
+ * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
+ *
  * Revision 2.3  2004/01/24 12:47:48  randomtiger
  * Font and other small changes for Fred
  *
@@ -939,7 +943,7 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 	va_list args;
 
 
-#ifdef FRED_OGL
+#ifdef FRED
 
 	static bool show_warnings = true;
 

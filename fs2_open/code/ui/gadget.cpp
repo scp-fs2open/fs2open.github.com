@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/GADGET.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-10-27 23:04:23 $
+ * $Revision: 2.4 $
+ * $Date: 2004-02-14 00:18:36 $
  * $Author: randomtiger $
  *
  * Functions for the base gadget class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/10/27 23:04:23  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.2  2003/03/18 10:07:06  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -168,6 +176,7 @@
 #include "ui/ui.h"
 #include "bmpman/bmpman.h"
 #include "anim/animplay.h"
+#include "graphics/2d.h"
 
 // constructor
 UI_GADGET::UI_GADGET()
@@ -517,10 +526,8 @@ int UI_GADGET::is_mouse_on()
 	int mouse_x = ui_mouse.x;
 	int mouse_y = ui_mouse.y;
 	// This keeps mouse position detection correct for non standard modes
-	{
-		extern bool gr_d3d_unsize_screen_pos(int *x, int *y);
-		gr_d3d_unsize_screen_pos(&mouse_x, &mouse_y);
-	}
+
+	gr_unsize_screen_pos(&mouse_x, &mouse_y);
 
 	// if linked to a hotspot, use the mask for determination
 	if (linked_to_hotspot) {

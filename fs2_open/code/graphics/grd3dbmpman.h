@@ -34,9 +34,6 @@ void bm_d3d_init();
 
 int bm_d3d_get_cache_slot( int bitmap_id, int separate_ani_frames );
 
-// how many bytes of textures are used.
-extern int bm_d3d_texture_ram;
-
 // This loads a bitmap so we can draw with it later.
 // It returns a negative number if it couldn't load
 // the bitmap.   On success, it returns the bitmap
@@ -151,6 +148,5 @@ void bm_d3d_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 
 // given a bitmap and a section, return the size (w, h)
 void bm_d3d_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h);
-void bm_d3d_set_max_bitmap_size(int size);
 
 #endif

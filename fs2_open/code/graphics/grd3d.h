@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.7 $
- * $Date: 2003-11-17 04:25:56 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2004-02-14 00:18:31 $
+ * $Author: randomtiger $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/11/17 04:25:56  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.6  2003/11/01 21:59:21  bobboau
  * new matrix handeling code, and fixed some problems with 3D lit verts,
  * several other small fixes
@@ -106,7 +112,6 @@ struct line_list;
 #include "globalincs/systemvars.h"
 #include <d3dx8math.h>
 
-bool gr_d3d_resize_screen_pos(int *x, int *y);
 void gr_d3d_exb_flush(int end_of_frame);
 
 void d3d_start_frame();

@@ -258,8 +258,6 @@ void CloseClip(HWND ghApp)
 
 void CloseInterfaces(void)
 {
-    HRESULT hr;
-
     // Relinquish ownership (IMPORTANT!) after hiding video window
     if(pVW)
         pVW->put_Visible(OAFALSE);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-11-16 04:09:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2004-02-14 00:18:30 $
+ * $Author: randomtiger $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/11/16 04:09:19  Goober5000
+ * language
+ *
  * Revision 2.7  2003/11/11 03:56:10  bobboau
  * lots of bug fixing, much of it in nebula and bitmap drawing
  *
@@ -558,10 +561,6 @@ void fireball_init()
 
 MONITOR( NumFireballsRend );	
 
-//extern int tcache_hit(int);
-//extern int Glide_expl_textures_in_frame;
-//extern float Glide_avg_exp_text_per_sec;
-
 void fireball_render(object * obj)
 {
 //	if(!Cmdline_nohtl)gr_set_lighting(false,false);
@@ -608,21 +607,6 @@ void fireball_render(object * obj)
 			/*
 			if (!tcache_hit(Fireballs[num].current_bitmap)) {
 				// if we're over 200k exp vram upload this frame, change to lower lod
-				if (Glide_expl_textures_in_frame > 1024 * 200) {
-					// change fireball instance to lower LOD or don't draw
-
-					// get current LOD and number of LODs
-					int cur_lod = Fireballs[num].lod;
-					int num_lods = Fireball_info[Fireballs[num].fireball_info_index].lod_count;
-
-					if (num_lods > cur_lod+1) {
-						// bump lod
-						int frame = Fireballs[num].current_bitmap - Fireball_info[Fireballs[num].fireball_info_index].lod[cur_lod].bitmap_id;
-						Fireballs[num].lod++;
-						Fireballs[num].current_bitmap = Fireball_info[Fireballs[num].fireball_info_index].lod[cur_lod+1].bitmap_id + frame;
-						mprintf(("bumping down lod for fireball %s, frame %d\n", Fireball_info[Fireballs[num].fireball_info_index].lod[cur_lod].filename, frame));
-					}
-				}
 			}*/
 
 		case FIREBALL_ASTEROID:

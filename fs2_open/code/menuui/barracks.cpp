@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-02-10 21:47:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-02-14 00:18:33 $
+ * $Author: randomtiger $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/02/10 21:47:47  Goober5000
+ * fixed the barracks crash bug
+ * --Goober5000
+ *
  * Revision 2.4  2003/08/20 08:11:00  wmcoolmon
  * Added error screens to the barracks and start screens when a pilot file can't be deleted
  *
@@ -1236,8 +1240,8 @@ void barracks_display_pilot_stats()
 
 			gr_get_string_size(&w, &h, str);
 			i = Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y + h / 2 - 1;			
-			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD], i, Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] - w - 2, i);
-			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] + 1, i, Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD], i);
+			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD], i, Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] - w - 2, i,true);
+			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] + 1, i, Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD], i,true);
 
 		} else {
 			gr_set_color_fast(&Color_text_normal);

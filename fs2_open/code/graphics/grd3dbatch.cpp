@@ -9,6 +9,10 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/01/24 15:52:26  randomtiger
+ * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
+ * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
+ *
  * Revision 2.9  2003/12/08 22:30:02  randomtiger
  * Put render state and other direct D3D calls repetition check back in, provides speed boost.
  * Fixed bug that caused fullscreen only crash with DXT textures
@@ -388,7 +392,7 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 		v1 = v_scale*i2fl(sy+h)/ fbh;
 	} 
 
-	if(GlobalD3DVars::D3D_custom_size == -1)
+	if(gr_screen.custom_size == -1)
 	{
 		x1 = i2fl(x+gr_screen.offset_x);
 		y1 = i2fl(y+gr_screen.offset_y);
@@ -396,15 +400,14 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 		y2 = i2fl(y+h+gr_screen.offset_y);
 
 	} else {
-		extern bool gr_d3d_resize_screen_pos(int *x, int *y);
 
 		int nx = x+gr_screen.offset_x;
 		int ny = y+gr_screen.offset_y;
 		int nw = x+w+gr_screen.offset_x;
 		int nh = y+h+gr_screen.offset_y;
 
-		gr_d3d_resize_screen_pos(&nx, &ny);
-		gr_d3d_resize_screen_pos(&nw, &nh);
+		gr_resize_screen_pos(&nx, &ny);
+		gr_resize_screen_pos(&nw, &nh);
 
 		x1 = i2fl(nx);
 		y1 = i2fl(ny);
@@ -413,7 +416,7 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 	}
 
 #if 1
-	if(GlobalD3DVars::D3D_custom_size != -1)
+	if(gr_screen.custom_size != -1)
 	{
 		u1 -= GlobalD3DVars::texture_adjust_u;
 		v1 -= GlobalD3DVars::texture_adjust_v;

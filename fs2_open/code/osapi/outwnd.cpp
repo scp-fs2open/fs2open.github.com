@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-02-04 09:02:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-02-14 00:18:35 $
+ * $Author: randomtiger $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/02/04 09:02:44  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.5  2003/03/18 10:07:05  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -500,10 +504,6 @@ void outwnd_print(char *id, char *tmp)
 	int i, nrows, ccol;
 	outwnd_filter_struct *temp;
 
-	if(gr_screen.mode == GR_DIRECT3D){
-	//	return;
-	}
-
 	if (!outwnd_inited)
 		return;
 
@@ -611,13 +611,6 @@ void outwnd_print(char *id, char *tmp)
 		}
 		sptr++;
 	} 
-
-	if(gr_screen.mode == GR_DIRECT3D){
-	  //	return;
-	}
-//	if ( D3D_enabled )	{
-//		return;		// Direct3D seems to hang sometimes printing to window
-//	}
 
 	if ( outwnd_disabled ){
 		return;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-02-03 18:29:30 $
+ * $Revision: 2.5 $
+ * $Date: 2004-02-14 00:18:35 $
  * $Author: randomtiger $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/02/03 18:29:30  randomtiger
+ * Fixed OGL fogging in HTL
+ * Changed htl laser function to work in D3D, commented out until function flat bug is fixed
+ *
  * Revision 2.3  2003/11/25 15:04:46  fryday
  * Got lasers to work in HT&L OpenGL
  * Messed a bit with opengl_tmapper_internal3d, draw_laser functions, and added draw_laser_htl
@@ -379,11 +383,7 @@ float g3_draw_laser(vector *headp, float head_width, vector *tailp, float tail_w
 	v[3].v = 1.0f;
 	v[3].b = 191;
 
-	if(gr_screen.mode == GR_GLIDE){
-		gr_tmapper(4, vertlist, tmap_flags);	
-	} else {
-		gr_tmapper(4, vertlist, tmap_flags | TMAP_FLAG_CORRECT);	
-	}
+	gr_tmapper(4, vertlist, tmap_flags | TMAP_FLAG_CORRECT);	
 
 	return depth;
 }
@@ -557,11 +557,7 @@ float g3_draw_laser_rgb(vector *headp, float head_width, vector *tailp, float ta
 	v[3].b = (ubyte)b;
 	v[3].a = 255;
 	
-	if(gr_screen.mode == GR_GLIDE){
-		gr_tmapper(4, vertlist, tmap_flags | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
-	} else {
-		gr_tmapper(4, vertlist, tmap_flags | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
-	}	
+	gr_tmapper(4, vertlist, tmap_flags | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
 
 	return depth;
 }

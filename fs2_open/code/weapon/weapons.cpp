@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2004/02/05 14:31:45  Goober5000
+ * fixed a few random bugs
+ * --Goober5000
+ *
  * Revision 2.51  2004/02/04 04:28:14  Goober5000
  * fixed Asserts in two places and commented out an unneeded variable
  * --Goober5000
@@ -2184,8 +2188,7 @@ MONITOR( NumWeaponsRend );
 float weapon_glow_scale_f = 2.3f;
 float weapon_glow_scale_r = 2.3f;
 float weapon_glow_scale_l = 1.5f;
-float weapon_glow_alpha_d3d = 0.85f;
-float weapon_glow_alpha_glide = 0.99f;
+float weapon_glow_alpha = 0.85f;
 void weapon_render(object *obj)
 {
 	int num;
@@ -2235,9 +2238,9 @@ void weapon_render(object *obj)
 				if(wip->laser_bitmap_nframes > 1){//set the proper bitmap
 //					wp->gframe += ((timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes);
 					wp->gframe = (int)(wp->gframe + ((int)(flFrametime * 1000) / wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
-					gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, ((gr_screen.mode == GR_DIRECT3D)||(gr_screen.mode == GR_OPENGL)) ? weapon_glow_alpha_d3d : weapon_glow_alpha_glide);
+					gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 				}else{
-					gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, ((gr_screen.mode == GR_DIRECT3D)||(gr_screen.mode == GR_OPENGL)) ? weapon_glow_alpha_d3d : weapon_glow_alpha_glide);
+					gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 				}
 				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &obj->pos, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue);
 			}						
@@ -4236,12 +4239,7 @@ void weapons_page_in()
 						int bitmap_num = pm->original_textures[j];
 
 						if ( bitmap_num > -1 )	{
-							// if we're in Glide (and maybe later with D3D), use nondarkening textures
-							if(gr_screen.mode == GR_GLIDE){
-								bm_page_in_nondarkening_texture( bitmap_num );
-							} else {
-								bm_page_in_texture( bitmap_num );
-							}
+							bm_page_in_texture( bitmap_num );
 						}
 					}
 				}

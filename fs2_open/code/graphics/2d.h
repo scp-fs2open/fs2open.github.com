@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.19 $
- * $Date: 2004-01-21 17:33:47 $
- * $Author: phreak $
+ * $Revision: 2.20 $
+ * $Date: 2004-02-14 00:18:31 $
+ * $Author: randomtiger $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/01/21 17:33:47  phreak
+ * added MAX_DRAW_DISTANCE constant
+ *
  * Revision 2.18  2003/12/16 20:42:36  phreak
  * created two constants
  * MAX_DRAW_DISTANCE = 250000
@@ -480,8 +483,6 @@ typedef struct color {
 	int		magic;		
 } color;
 
-#define TL_COMPATABLE D3D_enabled || OGL_inited
-
 //this should be basicly just like it is in the VB
 //a list of triangles and there assosiated normals
 
@@ -560,6 +561,8 @@ typedef struct screen {
 	void		*offscreen_buffer;				// NEVER ACCESS!  This+rowsize*y = screen offset
 	void		*offscreen_buffer_base;			// Pointer to lowest address of offscreen buffer
 
+	int custom_size;
+
 	//switch onscreen, offscreen
 	void (*gf_flip)();
 	void (*gf_flip_window)(uint _hdc, int x, int y, int w, int h );
@@ -629,7 +632,7 @@ typedef struct screen {
 	void (*gf_circle)(int x, int y, int r);
 
 	// Integer line. Used to draw a fast but pixely line.  
-	void (*gf_line)(int x1, int y1, int x2, int y2);
+	void (*gf_line)(int x1, int y1, int x2, int y2, bool resize = false);
 
 	// Draws an antialiased line is the current color is an 
 	// alphacolor, otherwise just draws a fast line.  This
@@ -719,7 +722,6 @@ typedef struct screen {
 	void (*gf_set_clear_color)(int r, int g, int b);
 
 	// Here be the bitmap functions
-	void (*gf_bm_set_max_bitmap_size)(int size);
 	int (*gf_bm_get_next_handle)();
 	void (*gf_bm_close)();
 	void (*gf_bm_init)();
@@ -802,10 +804,7 @@ extern int Gr_mmx;
 //--------------------------------------
 // Call this at application startup
 
-#define GR_SOFTWARE					(100)		// Software renderer using standard Win32 functions in a window.
-#define GR_DIRECTDRAW				(101)		// Software renderer using DirectDraw fullscreen.
 #define GR_DIRECT3D					(102)		// Use Direct3d hardware renderer
-#define GR_GLIDE						(103)		// Use Glide hardware renderer
 #define GR_OPENGL						(104)		// Use OpenGl hardware renderer
 
 // resolution constants   - always keep resolutions in ascending order and starting from 0  
@@ -813,7 +812,7 @@ extern int Gr_mmx;
 #define GR_640							0		// 640 x 480
 #define GR_1024						1		// 1024 x 768
 
-extern int gr_init(int res, int mode, int depth = 16, int fred_x = -1, int fred_y = -1 );
+extern bool gr_init(int res, int mode, int depth = 16, int fred_x = -1, int fred_y = -1 );
 
 // Call this when your app ends.
 extern void gr_close();
@@ -824,6 +823,10 @@ extern screen gr_screen;
 #define GR_ZBUFF_WRITE	(1<<0)
 #define GR_ZBUFF_READ	(1<<1)
 #define GR_ZBUFF_FULL	(GR_ZBUFF_WRITE|GR_ZBUFF_READ)
+
+bool gr_unsize_screen_pos(int *x, int *y);
+bool gr_resize_screen_pos(int *x, int *y);
+bool gr_unsize_screen_posf(float *x, float *y);
 
 // Returns -1 if couldn't init font, otherwise returns the
 // font id number.  If you call this twice with the same typeface,
@@ -947,7 +950,6 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 
 
 // Here be the bitmap functions
-#define bm_set_max_bitmap_size     GR_CALL(*gr_screen.gf_bm_set_max_bitmap_size)
 #define bm_get_next_handle         GR_CALL(*gr_screen.gf_bm_get_next_handle)
 #define bm_close                   GR_CALL(*gr_screen.gf_bm_close)
 #define bm_init                    GR_CALL(*gr_screen.gf_bm_init)
@@ -1008,11 +1010,8 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define	gr_display_sprites GR_CALL		(*gr_screen.gf_display_sprites)
 */
 
-
 // new bitmap functions
-extern int Gr_bitmap_poly;
 void gr_bitmap(int x, int y, bool resize = true);
-void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.

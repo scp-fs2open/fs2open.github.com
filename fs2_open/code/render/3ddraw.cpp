@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-02-13 04:17:14 $
+ * $Revision: 2.15 $
+ * $Date: 2004-02-14 00:18:35 $
  * $Author: randomtiger $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/02/13 04:17:14  randomtiger
+ * Turned off fog in OGL for Fred.
+ * Simulated speech doesnt say tags marked by $ now.
+ * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
+ * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
+ * Error now given on missing briefing icon and bad ship normal data.
+ * Solved more species divide by zero error.
+ * Fixed neb cube crash.
+ *
  * Revision 2.13  2004/01/24 14:31:27  randomtiger
  * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
  * Its optional and off by default, use -d3d_particle to activiate.
@@ -222,7 +231,6 @@
 
 #include "render/3dinternal.h"
 #include "graphics/tmapper.h"
-#include "graphics/scaler.h"
 #include "graphics/2d.h"
 #include "math/floating.h"
 #include "physics/physics.h"		// For Physics_viewer_bank for g3_draw_rotated_bitmap
@@ -1937,12 +1945,6 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	// turn off culling
 	gr_set_cull(0);
 
-#ifndef FRED_OGL
-	// draw the bitmap
-	if(Fred_running){
-		tmap_flags &= ~(TMAP_FLAG_CORRECT);
-	}
-#endif
 	// render all polys
 	for(idx=0; idx<div_x; idx++){
 		for(s_idx=0; s_idx<div_y; s_idx++){						

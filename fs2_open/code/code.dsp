@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "..\Debug\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "." /I "c:\mssdk\include\\" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENGL" /D "MORE_SPECIES" /U "NDEBUG" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "." /I "c:\mssdk\include\\" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "MORE_SPECIES" /D "DBUGFILE_ACTIVE" /U "NDEBUG" /FR /YX /FD /GZ  /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -277,10 +277,6 @@ SOURCE=.\DirectX\vd3dvec.inl
 # End Source File
 # Begin Source File
 
-SOURCE=.\DirectX\vDdraw.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\DirectX\vDinput.h
 # End Source File
 # Begin Source File
@@ -310,10 +306,6 @@ SOURCE=.\DirectX\vDinput.lib
 # Begin Source File
 
 SOURCE=.\DirectX\vDsound.lib
-# End Source File
-# Begin Source File
-
-SOURCE=.\directx\ddraw.lib
 # End Source File
 # Begin Source File
 
@@ -392,46 +384,6 @@ SOURCE=.\Gamesnd\GameSnd.cpp
 SOURCE=.\Gamesnd\GameSnd.h
 # End Source File
 # End Group
-# Begin Group "Glide"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\Glide\3DFX.H
-# End Source File
-# Begin Source File
-
-SOURCE=.\Glide\FXDLL.H
-# End Source File
-# Begin Source File
-
-SOURCE=.\Glide\FXGLOB.H
-# End Source File
-# Begin Source File
-
-SOURCE=.\Glide\FXOS.H
-# End Source File
-# Begin Source File
-
-SOURCE=.\Glide\Glide.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Glide\glide.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Glide\glidesys.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Glide\glideutl.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Glide\SST1VID.H
-# End Source File
-# End Group
 # Begin Group "GlobalIncs"
 
 # PROP Default_Filter ""
@@ -488,51 +440,11 @@ SOURCE=.\GlobalIncs\WinDebug.cpp
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\Graphics\Bitblt.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Bitblt.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Circle.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Circle.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Colors.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Colors.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\Graphics\Font.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\Graphics\Font.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Gradient.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Gradient.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrSoft.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrSoft.h
 # End Source File
 # Begin Source File
 
@@ -544,95 +456,7 @@ SOURCE=.\Graphics\GrZbuffer.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\Graphics\Line.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\Graphics\Line.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Pixel.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Pixel.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Rect.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Rect.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Scaler.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Scaler.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Shade.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Shade.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\Tmapper.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\TmapScanline.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\TmapScanline.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\TmapScanTiled128x128.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\TmapScanTiled16x16.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\TmapScanTiled256x256.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\TmapScanTiled32x32.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\TmapScanTiled64x64.cpp
-# End Source File
-# End Group
-# Begin Group "GlideGr"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\Graphics\GrGlide.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrGlide.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrGlideInternal.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrGlideTexture.cpp
 # End Source File
 # End Group
 # Begin Group "D3D8Gr"
@@ -707,18 +531,6 @@ SOURCE=.\graphics\GrD3Dsetup.cpp
 SOURCE=.\Graphics\GrD3DTexture.cpp
 # End Source File
 # End Group
-# Begin Group "DDrawGr"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\Graphics\GrDirectDraw.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrDirectDraw.h
-# End Source File
-# End Group
 # Begin Group "OpenGLGr"
 
 # PROP Default_Filter ""
@@ -741,15 +553,7 @@ SOURCE=.\Graphics\2d.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\Graphics\aaline.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\Graphics\GrInternal.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\TmapGenericScans.cpp
 # End Source File
 # Begin Source File
 

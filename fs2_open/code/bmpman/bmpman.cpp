@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.19 $
- * $Date: 2004-01-18 14:03:22 $
+ * $Revision: 2.20 $
+ * $Date: 2004-02-14 00:18:29 $
  * $Author: randomtiger $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/01/18 14:03:22  randomtiger
+ * A couple of FRED_OGL changes.
+ *
  * Revision 2.18  2004/01/17 21:59:52  randomtiger
  * Some small changes to the main codebase that allow Fred_open OGL to compile.
  *
@@ -1423,14 +1426,12 @@ static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flag
 	int idx;	
 	int r, g, b, a;
 
-#ifndef FRED_OGL
-	if(Fred_running || Pofview_running || Is_standalone){
+	if(Pofview_running || Is_standalone){
 		Assert(bmp->bpp == 8);
 
 		return;
 	} 
 	else 
-#endif
 	{
 		if(flags & BMP_AABITMAP){
 			Assert(bmp->bpp == 8);
@@ -1544,13 +1545,10 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 			//return -1;
 		}
 
-#ifndef FRED_OGL
-
 		// now swizzle the thing into the proper format
-		if(Fred_running || Pofview_running){
+		if(Pofview_running){
 			bm_swizzle_8bit_for_fred(be, bmp, data, palette);
 		}
-#endif
 	} else {	
 		int pcx_error;
 
@@ -1618,13 +1616,11 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		bm_free_data( first_frame+i );
 
 		bm->flags = 0;
-#ifndef FRED_OGL
 
 		// briefing editor in Fred2 uses aabitmaps (ani's) - force to 8 bit
-		if(Fred_running || Is_standalone){
+		if(Is_standalone){
 			bm->bpp = 8;
 		} else 
-#endif
 		{
 			bm->bpp = bpp;
 		}
@@ -1763,12 +1759,10 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
 
-#ifndef FRED_OGL
-	if(Fred_running || Is_standalone){
+	if(Is_standalone){
 		Assert(bpp == 8);
 	} 
 	else 
-#endif
 	{
 		Assert(bpp == 16);
 	}
@@ -1867,14 +1861,12 @@ bitmap * bm_gfx_lock( int handle, ubyte bpp, ubyte flags )
 	} 
 	// otherwise do it as normal
 	else {
-#ifndef FRED_OGL
 
-		if(Fred_running || Pofview_running){
+		if(Pofview_running){
 			Assert( bpp == 8 );
 			Assert( (bm_bitmaps[bitmapnum].type == BM_TYPE_PCX) || (bm_bitmaps[bitmapnum].type == BM_TYPE_ANI) || (bm_bitmaps[bitmapnum].type == BM_TYPE_TGA));
 		} 
 		else 
-#endif
 		{
 			if(flags & BMP_AABITMAP){
 				Assert( bpp == 8 );
@@ -2272,11 +2264,7 @@ void bm_gfx_page_in_texture( int bitmapnum, int nframes )
 			}
 
 		}
-		if ( D3D_enabled || OGL_inited )	{
-			bm_bitmaps[n+i].used_flags = BMP_TEX_OTHER;
-		} else {			
-			bm_bitmaps[n+i].used_flags = 0;
-		}
+		bm_bitmaps[n+i].used_flags = BMP_TEX_OTHER;
 	}
 }
 
@@ -2290,11 +2278,7 @@ void bm_gfx_page_in_nondarkening_texture( int bitmapnum, int nframes )
 
 		bm_bitmaps[n+i].preloaded = 4;
 
-		if ( D3D_enabled || OGL_inited )	{			
-			bm_bitmaps[n+i].used_flags = BMP_TEX_NONDARK;
-		} else {
-			bm_bitmaps[n+i].used_flags = 0;
-		}
+		bm_bitmaps[n+i].used_flags = BMP_TEX_NONDARK;
 	}
 }
 
@@ -2328,12 +2312,7 @@ void bm_gfx_page_in_xparent_texture( int bitmapnum, int nframes)
 			}
 
 		}
-		if ( D3D_enabled || OGL_inited )	{
-			// bm_bitmaps[n+i].used_flags = BMP_NO_PALETTE_MAP;
-			bm_bitmaps[n+i].used_flags = BMP_TEX_XPARENT;
-		} else {
-			bm_bitmaps[n+i].used_flags = 0;
-		}
+		bm_bitmaps[n+i].used_flags = BMP_TEX_XPARENT;
 	}
 }
 
@@ -2347,11 +2326,7 @@ void bm_gfx_page_in_aabitmap( int bitmapnum, int nframes )
 
 		bm_bitmaps[n+i].preloaded = 2;
 	
-		if ( D3D_enabled || OGL_inited )	{
-			bm_bitmaps[n+i].used_flags = BMP_AABITMAP;
-		} else {
-			bm_bitmaps[n+i].used_flags = 0;
-		}
+		bm_bitmaps[n+i].used_flags = BMP_AABITMAP;
 	}
 }
 
@@ -2586,9 +2561,7 @@ void BM_SELECT_SCREEN_FORMAT()
 
 	// setup pointers
 #ifdef _WIN32
-	if(gr_screen.mode == GR_GLIDE){
-		bm_set_components = bm_set_components_argb;
-	} else if(gr_screen.mode == GR_DIRECT3D){
+	if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
 			bm_set_components = bm_set_components_d3d;
 		} else {
@@ -2603,13 +2576,10 @@ void BM_SELECT_SCREEN_FORMAT()
 #endif  // ifndef NO_DIRECT3D
 		}
 	}
-
-#ifdef USE_OPENGL
 	else if (gr_screen.mode == GR_OPENGL)
 	{
 		bm_set_components = bm_set_components_opengl;
 	}
-#endif	
 #else
 	bm_set_components = bm_set_components_argb_d3d_16_screen;
 #endif  // ifdef WIN32
@@ -2624,9 +2594,7 @@ void BM_SELECT_TEX_FORMAT()
 
 	// setup pointers
 #ifdef _WIN32
-	if(gr_screen.mode == GR_GLIDE){
-		bm_set_components = bm_set_components_argb;
-	} else if(gr_screen.mode == GR_DIRECT3D){
+	if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
 			bm_set_components = bm_set_components_d3d;
 		} else {
@@ -2641,12 +2609,10 @@ void BM_SELECT_TEX_FORMAT()
 #endif
 		}
 	}
-#ifdef USE_OPENGL
 	else if (gr_screen.mode == GR_OPENGL)
 	{
 		bm_set_components = bm_set_components_opengl;
 	}
-#endif	
 #else
 	bm_set_components = bm_set_components_argb_d3d_16_tex;
 #endif  // ifdef WIN32
@@ -2661,9 +2627,7 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 
 	// setup pointers
 #ifdef _WIN32
-	if(gr_screen.mode == GR_GLIDE){
-		bm_set_components = bm_set_components_argb;
-	} else if(gr_screen.mode == GR_DIRECT3D){
+	if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
 			bm_set_components = bm_set_components_d3d;
 		} else {
@@ -2678,12 +2642,10 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 #endif
 		}
 	}
-#ifdef USE_OPENGL
 	else if (gr_screen.mode == GR_OPENGL)
 	{
 		bm_set_components = bm_set_components_opengl;
 	}
-#endif	
 #else
 	bm_set_components = bm_set_components_argb_d3d_16_tex;
 #endif  // ifdef WIN32
