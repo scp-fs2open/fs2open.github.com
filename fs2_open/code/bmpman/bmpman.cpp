@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.30 $
- * $Date: 2004-05-11 23:08:55 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2004-06-26 19:23:54 $
+ * $Author: wmcoolmon $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/05/11 23:08:55  taylor
+ * do page in unlock but not for gr_preload() stuff
+ *
  * Revision 2.29  2004/05/06 22:35:25  taylor
  * DDS mipmap reading, remove unneeded bm_unlock() during page in
  *
@@ -930,8 +933,6 @@ void bm_calc_sections(bitmap *be)
 // is called on that bitmap.
 int bm_gfx_create( int bpp, int w, int h, void * data, int flags )
 {
-	int i, n, first_slot = MAX_BITMAPS;
-
 	// Assert((bpp==32)||(bpp==8));
 	if(bpp == 8){
 		Assert(flags & BMP_AABITMAP);
@@ -941,14 +942,15 @@ int bm_gfx_create( int bpp, int w, int h, void * data, int flags )
 
 	if ( !bm_inited ) bm_init();
 
-	for (i = MAX_BITMAPS-1; i >= 0; i-- ) {
+	int n = MAX_BITMAPS;
+
+	for (int i = MAX_BITMAPS-1; i >= 0; i-- ) {
 		if ( bm_bitmaps[i].type == BM_TYPE_NONE )	{
-			first_slot = i;
+			n = i;
 			break;
 		}
 	}
 
-	n = first_slot;
 	Assert( n > -1 );
 
 	// Out of bitmap slots
