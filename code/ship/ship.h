@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.68 $
- * $Date: 2004-10-15 09:21:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.69 $
+ * $Date: 2004-11-21 11:35:17 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2004/10/15 09:21:55  Goober5000
+ * cleaned up some sexp stuff and added wing capability to kamikaze sexp
+ * --Goober5000
+ *
  * Revision 2.67  2004/10/12 22:47:15  Goober5000
  * added toggle-subsystem-scanning ship flag
  * --Goober5000
@@ -1719,7 +1723,7 @@ int ship_get_texture(int bitmap);
 void ship_page_in();
 
 // Goober5000 - helper for above
-void ship_page_in_model_textures(int modelnum);
+void ship_page_in_model_textures(int modelnum, ship_info *sip = NULL);
 
 // update artillery lock info
 void ship_update_artillery_lock();
