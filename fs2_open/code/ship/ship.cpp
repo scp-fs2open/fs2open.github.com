@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.128 $
- * $Date: 2004-07-10 08:03:13 $
- * $Author: wmcoolmon $
+ * $Revision: 2.129 $
+ * $Date: 2004-07-11 03:22:52 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.128  2004/07/10 08:03:13  wmcoolmon
+ * Fixed bug with the base ship flag I unwittingly introduced.
+ *
  * Revision 2.127  2004/07/01 01:54:32  phreak
  * function pointer radar update.
  * will enable us to make different radar styles that we can switch between
@@ -2563,8 +2566,23 @@ strcpy(parse_error_text, temp_error);
 		sip->flags |= SIF_SHIP_CLASS_STEALTH;
 	}
 
-
 	// parse contrail info
+#ifdef DECALS_ENABLED
+	if ( optional_string("$max deals:") ){
+		stuff_int(&sip->max_decals);
+	}else{
+		if(sip->flags & SIF_SMALL_SHIP){
+			sip->max_decals = 50;
+		}else if(sip->flags & SIF_BIG_SHIP){
+			sip->max_decals = 100;
+		}else if(SIF_HUGE_SHIP){
+			sip->max_decals = 300;
+		}else{
+			sip->max_decals = 10;
+		}
+	}
+#endif
+
 	char trail_name[MAX_FILENAME_LEN] = "";
 	trail_info *ci;
 	memset(&sip->ct_info, 0, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
@@ -3427,6 +3445,12 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->cloak_alpha=255;
 
 //	shipp->ab_count = 0;
+#ifdef DECALS_ENABLED
+	shipp->ship_decal_system.n_decal_textures = 0;
+	shipp->ship_decal_system.decals = NULL;
+	shipp->ship_decal_system.decals_modified = false;
+	shipp->ship_decal_system.max_decals = sip->max_decals;
+#endif
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -3635,6 +3659,13 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		if (ship_system->awacs_intensity > 0) {
 			ship_system->system_info->flags |= MSS_FLAG_AWACS;
 		}
+
+#ifdef DECALS_ENABLED
+		ship_system->system_info->model_decal_system.decals = NULL;
+		ship_system->system_info->model_decal_system.n_decal_textures = 0;
+		ship_system->system_info->model_decal_system.decals_modified = false;
+		ship_system->system_info->model_decal_system.max_decals = shipp->ship_decal_system.max_decals / 10;
+#endif
 
 		// turn_rate, turn_accel
 		// model_set_instance_info
@@ -4079,6 +4110,24 @@ void ship_subsystem_delete(ship *shipp)
 	}
 }
 
+void ship_clear_decals(ship	*shipp){
+#ifdef DECALS_ENABLED
+	clear_decals(&shipp->ship_decal_system);
+
+	ship_subsys *sys = GET_FIRST(&shipp->subsys_list);;
+	while(sys != END_OF_LIST(&shipp->subsys_list)){
+		model_subsystem* psub = sys->system_info;
+		if(!psub){
+			sys = GET_NEXT(sys);
+			continue;
+		}
+		clear_decals(&psub->model_decal_system);
+		sys = GET_NEXT(sys);
+	}
+#endif
+}
+
+
 void ship_delete( object * obj )
 {
 	ship	*shipp;
@@ -4118,6 +4167,7 @@ void ship_delete( object * obj )
 
 	// call the contrail system
 	ct_ship_delete(shipp);
+	ship_clear_decals(shipp);
 }
 
 // function used by ship_destroyed and ship_departed which is called if the ship
@@ -4266,6 +4316,7 @@ void ship_destroyed( int num )
 			event_music_hostile_ship_destroyed();
 		}
 	}
+	ship_clear_decals(shipp);
 }
 
 void ship_vanished(int num)
@@ -4290,6 +4341,7 @@ void ship_vanished(int num)
 	}
 
 	ai_ship_destroy(num, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
+	ship_clear_decals(sp);
 }
 
 void ship_departed( int num )
@@ -4345,6 +4397,7 @@ void ship_departed( int num )
 			ship_wing_cleanup( num, wingp );
 		}
 	}
+	ship_clear_decals(sp);
 }
 
 // --------------------------------------------------------------------------------------------------------------------

@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/06/05 19:15:39  phreak
+ * spawn weapons can now be specified to be spawned at different angles other than
+ * the sphere thats used in retail
+ *
  * Revision 2.28  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -692,6 +696,9 @@ typedef struct weapon_info {
 	int cs_delay;
 
 	int decal_texture;
+	int decal_glow_texture;
+	int decal_burn_texture;
+	int decal_burn_time;
 	int decal_backface_texture;
 	float decal_rad;
 

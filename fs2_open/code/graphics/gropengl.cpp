@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.79 $
- * $Date: 2004-07-01 01:12:31 $
+ * $Revision: 2.80 $
+ * $Date: 2004-07-11 03:22:49 $
  * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2004/07/01 01:12:31  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.78  2004/06/28 02:13:07  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -3137,6 +3141,8 @@ void gr_opengl_set_texture_addressing(int mode){
 void gr_opengl_setup_background_fog(bool set){
 }
 
+void gr_opengl_render_to_env(int FACE);
+
 extern char *Osreg_title;
 void gr_opengl_init(int reinit)
 {
@@ -3555,6 +3561,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_screen.gf_center_alpha = gr_opengl_center_alpha;
 
 		gr_screen.gf_setup_background_fog = gr_opengl_setup_background_fog;
+		gr_screen.gf_set_environment_mapping = gr_opengl_render_to_env;;
+		
 //		glEnable(GL_NORMALIZE);
 	}
 	else	//use some function stubs

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.84 $
- * $Date: 2004-07-05 05:09:20 $
+ * $Revision: 2.85 $
+ * $Date: 2004-07-11 03:22:50 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2004/07/05 05:09:20  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.83  2004/07/01 01:12:32  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -3601,6 +3607,19 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		model_interp_subcall(pm,pm->detail[detail_level],detail_level);
 	}
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+
+
+	if(!Cmdline_nohtl)gr_set_lighting(true,true);
+
+	vector decal_z_corection = View_position;
+//	vm_vec_sub(&decal_z_corection, &Eye_position, pos);
+	vm_vec_normalize(&decal_z_corection);
+	float corection = 0.1f;
+	vm_vec_scale(&decal_z_corection, corection);
+	g3_start_instance_matrix(&decal_z_corection, NULL, use_api);		
+	decal_render_all(&Objects[objnum]);
+	g3_done_instance(use_api);
+
 
 	if(!Cmdline_nohtl){
 		gr_reset_lighting();

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.63 $
- * $Date: 2004-05-10 10:51:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.64 $
+ * $Date: 2004-07-11 03:22:53 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2004/05/10 10:51:51  Goober5000
+ * made primary and secondary banks quite a bit more friendly... added error-checking
+ * and reorganized a bunch of code
+ * --Goober5000
+ *
  * Revision 2.62  2004/05/10 08:03:31  Goober5000
  * fixored the handling of no lasers and no engines... the tests should check the ship,
  * not the object
@@ -1006,6 +1011,10 @@ typedef struct ship {
 	int cloak_alpha;
 	fix time_until_uncloak;
 
+#ifdef DECALS_ENABLED
+	decal_system ship_decal_system;
+#endif
+
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 } ship;
 
@@ -1281,6 +1290,7 @@ typedef struct ship_info {
 
 	int splodeing_texture;
 	char splodeing_texture_name[NAME_LENGTH];
+	int max_decals;
 
 } ship_info;
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.42 $
- * $Date: 2004-07-01 01:12:32 $
+ * $Revision: 2.43 $
+ * $Date: 2004-07-11 03:22:50 $
  * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2004/07/01 01:12:32  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.41  2004/06/28 02:13:08  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -455,6 +459,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH
 #include "graphics/2d.h"
+#include "decals/decals.h"
 
 struct object;
 
@@ -519,7 +524,6 @@ typedef struct submodel_instance_info {
 	float		turn_accel;
 	int		axis_set;
 	int		step_zero_timestamp;		// timestamp determines when next step is to begin (for stepped rotation)
-
 } submodel_instance_info;
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
@@ -593,6 +597,9 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int		secondary_banks[MAX_SHIP_SECONDARY_BANKS];				// default secondary weapons -hoffoss
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
+#ifdef DECALS_ENABLED
+	decal_system model_decal_system;
+#endif
 } model_subsystem;
 
 typedef struct model_special {

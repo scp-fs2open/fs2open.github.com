@@ -3,12 +3,23 @@
 #ifndef _DECAL_H
 #define _DECAL_H
 
-#define MAX_DECAL_POLY 20
+
+#include "object/object.h"
+
+//#define DECALS_ENABLED
+
+#define MAX_DECAL_POLY 40
 #define MAX_DECAL_POLY_POINT 10
-#define MAX_DECAL_DEFPOINTS 1000
+#define MAX_DECAL_DEFPOINTS 10000
 #define MAX_DECAL_POINT 10
 #define MAX_SHIP_DECALS 25
+#define MAX_GLOBAL_DECAL_POLYS 11000
+#define QUICKFIND_SUBDIVISION 100
+#define QUICKFIND_SEGMENT_LENGTH (MAX_GLOBAL_DECAL_POLYS/QUICKFIND_SUBDIVISION)
+#define MAX_GLOBAL_DECALS 5000
+
 #include "globalincs/pstypes.h"
+//#include "ship/ship.h"
 
 #define DP_EOF 			0
 #define DP_DEFPOINTS 	1
@@ -17,63 +28,82 @@
 #define DP_SORTNORM		4
 #define DP_BOUNDBOX		5
 
-typedef struct decal_model{	//this will store a triangulated version of the ships polygons
-	struct{
-		int point[3];		//an index to the vert list-Bobboau
-		vector center;		//the center of the poly
-		float radius;		//the max radius of the poly
-	}poly[MAX_DECAL_POLY];
-	vector vert[MAX_DECAL_DEFPOINTS];	//the defpoints-Bobboau
-	int n_polys;
-}decal_model;
+struct decal;
+struct decal_list;
+struct decal_list_controle;
 
-//extern decal_model d_model;
+struct decal_poly{
+	vector norm[3];
+	vertex point[3];
+	decal_poly *next;
+	decal* parent;
+	int idx;
+};
 
-typedef struct decal{
-	struct{
-		int backfaced;		//flag that this poly uses the backfaced texture
-		uv_pair uv[MAX_DECAL_POLY_POINT];		//uv coordanants
-		int point[MAX_DECAL_POLY_POINT];		//an index to the vert list-Bobboau
-		int n_poly;
-		vector norm;		//the normal used for lighting
-	}poly[MAX_DECAL_POLY];
-	vector position;
+struct decal{
+	int n_poly;
+	int timestamp;	//when this decal was created
+	int burn_time;	//how long it takes for the glow texture to fade
+	int vertex_buffer_start;	//were is the start of this decal's polys in the vertex buffer
+	decal_poly* poly;
+	decal_poly* add_poly();
+	decal_poly* get_last_poly();
+	void remove_last_poly();
+	decal_list_controle *parent;
+};
+
+struct decal_list{
+	decal dec;
+	decal_list *next;
+};
+
+struct decal_item{
+	decal_list dec;
+	bool used;
+};
+
+struct decal_list_controle{
+	int n_decals;
+	int buffer;
+	int texture;
+	int n_poly;
+	int burn_texture;
+	int glow_texture;
+	bool modifyed;
+	decal_list *d_list;
+	decal_list *end;
+	decal_list *add_new();
+	void trim();
+	void clear();
+	~decal_list_controle();
+	decal_list_controle();
+};
+
+struct decal_system{
+	decal_list_controle *decals;
+	int n_decal_textures;
+	bool decals_modified;
+	int max_decals;
+	decal_system():decals(NULL),n_decal_textures(0),decals_modified(false){};
+};
+
+
+//this is used to give all the data to the generation data to the functions that make them
+
+struct decal_point{
+	vector pnt;
+	matrix orient;
 	float radius;
-	int submodel_parent;	//the submodel this is part of
-	vector vert[1000];		//the defpoints-Bobboau
-	int frames;				//number of frames in an animation
-	int fps;				//frames per second
-	int starting_keyframe;	//the frame that indicates the end of the inital nonlooped portion and the start of the middle looped part
-	int ending_keyframe;	//the frame that indicates the end of the loopable portion and the start of the end part
-	int texture;			//the texture to be used, first in animation
-	int backfaced_texture;	//the texture to be used by backfaced polys, first in animation
-	int is_valid;			//this means it is a good decal that should be rendered-Bobboau
-	int n_poly;				//the number of polys
-	int timestamp;			//this is when the decal was made-Bobboau
-	int lifetime;			//this is how long the decal should be alive for-Bobboau
-	int importance;			//this is for big things large beam marks and bomb craters should last longer than the odd laser impacts-Bobboau
-	int state;				//1 starting, 2 looping(mostly for beams), 3 ending, 4 static
-}decal;
+};
 
-typedef struct decal_point{
-vector pnt;
-matrix orient;
-float radius;
-}decal_point;
-
-int decal_create(object * obj, decal_point *point, int subobject, int texture, int backfaced_texture = -1);//makes the decal
-
-#endif
+int decal_create(object * obj, decal_point *point, int subobject, int texture, int backfaced_texture = -1, int glow_texture = -1, int burn_texture = -1, int burn_time = 1000);//makes the decal
 
 int decal_create_simple(object * obj, decal_point *point, int texture);//makes a simple non-clipped decal
 
 void decal_render_all(object * obj);	//renders all decals
 
-int decal_create(object * obj, decal_point *point, int subobject, int texture, int backfaced_texture);//makes the decal
-
 int decal_create_sub(void *model_ptr);
 
-/*
+void clear_decals(decal_system	*system);
 
-int decal_is_in_face(int n, vertex vertlist[n]);//sees if a poly is inside a decal: 0 is yes, 1 is sort of, -1 is no
-*/
+#endif
