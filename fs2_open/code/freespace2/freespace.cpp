@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.8 $
- * $Date: 2002-08-27 13:38:57 $
- * $Author: penguin $
+ * $Revision: 2.9 $
+ * $Date: 2002-08-28 10:51:04 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/08/27 13:38:57  penguin
+ * Moved DirectX8 stuff to directx8 branch; reverted to previous
+ *
  * Revision 2.6  2002/08/13 03:34:00  penguin
  * 1. Disable CD checking
  * 2. Add CVS tag to version string
@@ -647,6 +650,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "hud/hudshield.h"
 #include "ship/shiphit.h"
 #include "missionui/missionloopbrief.h"
+#include "debugconsole/dbugfile.h"
 
 #ifdef NDEBUG
 #ifdef FRED
@@ -7102,6 +7106,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 int main(int argc, char *argv[])
 #endif
 {
+	DBUGFILE_INIT();
 	int result = -1;
 
 #ifdef _WIN32
@@ -7123,6 +7128,7 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+	DBUGFILE_DEINIT()
 	return result;
 }
 
