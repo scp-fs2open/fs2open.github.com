@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.24 $
- * $Date: 2003-01-16 06:49:11 $
+ * $Revision: 2.25 $
+ * $Date: 2003-01-17 01:48:49 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/01/16 06:49:11  Goober5000
+ * yay! got texture replacement to work!!!
+ * --Goober5000
+ *
  * Revision 2.23  2003/01/15 23:23:30  Goober5000
  * NOW the model duplicates work! :p
  * still gotta do the textures, but it shouldn't be hard now
@@ -603,8 +607,7 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 // Bits for ship.flags2
 // None are in FRED
 #define	SF2_LIGHTS_ON				(1<<0)		// ship has 'GLOW' lights turned on (Bobboau's lights)
-#define SF2_PRIMITIVE_SENSORS		(1<<1)
-
+#define SF2_PRIMITIVE_SENSORS		(1<<1)		// Goober5000 - primitive sensor display
 
 
 #define MAX_DAMAGE_SLOTS	32
@@ -817,7 +820,9 @@ typedef struct ship {
 	// Goober5000 - range of primitive sensors
 	int primitive_sensor_range;
 	
-	int nameplate;											//nameplate texture for this ship
+	// Goober5000 - revised nameplate implementation
+	int *replacement_textures;
+	int replacement_textures_buf[MAX_MODEL_TEXTURES];	// replacement texture for this ship
 
 	short ABtrail_num[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
 	trail_info ab_info[MAX_SHIP_CONTRAILS];

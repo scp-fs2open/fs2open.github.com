@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-01-15 07:09:09 $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-17 01:48:49 $
  * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/15 07:09:09  Goober5000
+ * changed most references to modelnum to use ship instead of ship_info --
+ * this will help with the change-model sexp and any other instances of model
+ * changing
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -2020,7 +2026,7 @@ static void half_ship_render_ship_and_debris(clip_ship* half_ship,ship *shipp)
 			// Draw debris, but not live debris
 			if ( !is_live_debris ) {
 				model_find_world_point(&tmp, &tmp1, shipp->modelnum, -1, &half_ship->orient, &temp_pos);
-				submodel_render(shipp->modelnum, pm->debris_objects[i], &half_ship->orient, &tmp, render_flags);
+				submodel_render(shipp->modelnum, pm->debris_objects[i], &half_ship->orient, &tmp, render_flags, -1, shipp->replacement_textures);
 			}
 
 			// make free piece of debris
@@ -2068,7 +2074,7 @@ static void half_ship_render_ship_and_debris(clip_ship* half_ship,ship *shipp)
 	vm_vec_unrotate(&model_clip_plane_pt, &temp, &half_ship->orient);
 	vm_vec_add2(&model_clip_plane_pt, &orig_ship_world_center);
 	g3_start_user_clip_plane( &model_clip_plane_pt, &clip_plane_norm );
-	model_render(shipp->modelnum, &half_ship->orient, &orig_ship_world_center, render_flags);
+	model_render(shipp->modelnum, &half_ship->orient, &orig_ship_world_center, render_flags, -1, -1, shipp->replacement_textures);
 }
 
 void shipfx_large_blowup_level_init()
@@ -2337,7 +2343,7 @@ void shipfx_large_blowup_render(ship* shipp)
 {
 // This actually renders the original model like it should render.
 //	object *objp = &Objects[shipp->objnum];
-//	model_render( shipp->modelnum, &objp->orient, &objp->pos, MR_NORMAL );
+//	model_render( shipp->modelnum, &objp->orient, &objp->pos, MR_NORMAL, -1, -1, shipp->replacement_textures );
 //	return;
 
 	Assert( Split_ships_inited );

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.15 $
- * $Date: 2003-01-16 06:49:11 $
+ * $Revision: 2.16 $
+ * $Date: 2003-01-17 01:48:49 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/01/16 06:49:11  Goober5000
+ * yay! got texture replacement to work!!!
+ * --Goober5000
+ *
  * Revision 2.14  2003/01/15 08:57:23  Goober5000
  * assigning duplicate models to ships now works; committing so I have a base
  * to fall back to as I work on texture replacement
@@ -518,7 +522,6 @@ typedef struct bsp_info {
 
 	int		is_thruster;
 	int		is_damaged;
-	int		is_nameplate;		//will render with the current nameplate texture
 
 	// Tree info
 	int		parent;					// what is parent for each submodel, -1 if none
@@ -749,7 +752,6 @@ typedef struct polymodel {
 	int			num_frames[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			fps[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			is_ani[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
-	int			nameplate[MAX_MODEL_TEXTURES];				// use the nameplate texture-Bobboau
 	int			is_ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
 	int			is_transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau
 
@@ -810,6 +812,7 @@ typedef struct texture_replace {
 	char ship_name[NAME_LENGTH];
 	char old_texture[TEXTURE_NAME_LENGTH];
 	char new_texture[TEXTURE_NAME_LENGTH];
+	int new_texture_id;
 } texture_replace;
 
 extern int Num_texture_replacements;
@@ -882,12 +885,17 @@ void model_set_detail_level(int n);
 
 // Renders a model and all it's submodels.
 // See MR_? defines for values for flags
-void model_render(int model_num, matrix *orient, vector * pos, uint flags = MR_NORMAL, int objnum = -1, int lighting_skip = -1 );
+void model_render(int model_num, matrix *orient, vector * pos, uint flags = MR_NORMAL, int objnum = -1, int lighting_skip = -1, int *replacement_textures = NULL);
 
 // Renders just one particular submodel on a model.
 // See MR_? defines for values for flags
-void submodel_render(int model_num,int submodel_num, matrix *orient, vector * pos, uint flags=MR_NORMAL, int light_ignore_id=-1 );
+void submodel_render(int model_num,int submodel_num, matrix *orient, vector * pos, uint flags=MR_NORMAL, int light_ignore_id=-1, int *replacement_textures = NULL);
 
+// forward references - moved out here by Goober5000
+int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check);
+void set_warp_gloabals(float, float, float, int, float);
+void model_try_cache_render(int model_num, matrix *orient, vector * pos, uint flags, int objnum, int num_lights);
+void model_really_render(int model_num, matrix *orient, vector * pos, uint flags, int light_ignore_id);
 
 // Returns the radius of a model
 float model_get_radius(int modelnum);
@@ -1229,6 +1237,8 @@ int model_is_pirate_ship(int modelnum);
 
 void set_warp_gloabals(float, float, float, int, float);
 
-void model_set_nameplate_bitmap(int bmap);
+void model_set_replacement_bitmap(int bmap);
+
+void model_set_replacement_textures(int *replacement_textures);
 
 int decal_make_model(polymodel * pm);

@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.17 $
+ * $Revision: 2.18 $
  * $Author: Goober5000 $
- * $Date: 2003-01-15 05:24:23 $
+ * $Date: 2003-01-17 01:48:50 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/01/15 05:24:23  Goober5000
+ * added texture replacement parse - will be implemented later
+ * --Goober5000
+ *
  * Revision 2.16  2003/01/13 02:09:12  wmcoolmon
  * Added MISSION_FLAG_NO_NEB_TRAILS and removed MISSION_FLAG_ST_OVERRIDE_NEB. Also changed code to set flags as necessary
  *
@@ -500,8 +504,10 @@ typedef struct p_object {
 	int	respawn_priority;					// priority this ship has for controlling respawn points
 
 	char	alt_type_index;					// optional alt type index
-	int		nameplate;						// optional nameplate -Bobboau
-	int texture_replace_index;				//
+
+	// Goober5000
+	int num_texture_replacements;
+	texture_replace replacement_textures[MAX_MODEL_TEXTURES];	// replacement textures - Goober5000
 } p_object;
 
 // defines for flags used for p_objects when they are created.  Used to help create special
