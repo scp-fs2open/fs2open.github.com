@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.92 $
- * $Date: 2004-07-03 07:55:22 $
+ * $Revision: 2.93 $
+ * $Date: 2004-07-03 08:23:00 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2004/07/03 07:55:22  wmcoolmon
+ * Error handling for fire_beam instead of just calling Int3()
+ *
  * Revision 2.91  2004/06/15 20:49:22  wmcoolmon
  * Added hud-set-color and get-current-speed
  *
@@ -2686,7 +2689,8 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				break;						
 
 			default:
-				Int3();  // currently unhandled argument format (so add it now)
+				Error(LOCATION, "Unhandled argument format");
+				//Int3();  // currently unhandled argument format (so add it now)
 		}
 
 		index = Sexp_nodes[index].rest;
@@ -2889,7 +2893,7 @@ int stuff_sexp_variable_list()
 			type = SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_EXP;
 		} else {
 			type = SEXP_VARIABLE_UNKNOWN;
-			Int3();
+			Error(LOCATION, "SEXP variable '%s' is an unknown type!", var_name);
 		}
 
 		// possibly get player-persistent
@@ -4207,7 +4211,7 @@ int sexp_ship_type_destroyed( int n )
 
 	// bogus if we reach the end of this array!!!!
 	if ( type == MAX_SHIP_TYPE_COUNTS ) {
-		Int3();
+		Warning(LOCATION, "Invalid shiptype passed to sexp_ship_type_destroyed");
 		return 0;
 	}
 
@@ -4572,7 +4576,7 @@ int sexp_team_score(int node)
 				return Multi_team1_score;
 			} else {
 				// invalid team index
-				Int3();
+				Warning(LOCATION, "sexp-team-score: team %d is not a valid team #", team);
 				return 0;
 			}
 		}
@@ -4621,7 +4625,7 @@ int sexp_hits_left_subsystem(int n)
 				ss = GET_NEXT( ss );
 			}
 			// we reached end of ship subsys list without finding subsys_name
-			Int3();
+			Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
 
 		} else {
 			percent = (int)(ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f);
@@ -4839,6 +4843,7 @@ void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vector *subsys_world
 		ss = GET_NEXT( ss );
 	}
 	// we reached end of ship subsys list without finding subsys_name
+	Error(LOCATION, "sexp_get_subsystem_pos could not find subsystem '%s'", subsys_name);
 	Int3();
 }
 
@@ -4965,7 +4970,7 @@ int sexp_vec_coordinate(vector *v, int index)
 		case 2:
 			return (int)v->xyz.z;
 		default:
-			Int3();
+			Error(LOCATION, "Invalid coordinate index %d passed to sexp_vec_coordinate", index);
 			return 0;
 	}
 }
@@ -5482,7 +5487,7 @@ int sexp_percent_ships_depart_destroy_disarm_disable(int n, int what)
 			else if ( what == OP_PERCENT_SHIPS_DESTROYED )
 				count += Wings[wingnum].total_destroyed;
 			else
-				Int3();			// this would be very bogus!
+				Error(LOCATION, "Invalid status check '%d' for wing '%s' in sexp_percent_ships_depart_destroy_disarm_disable", what, name);
 		} else {
 			// must be a ship, so increment the total by 1, then determine if this ship has departed
 			total++;
@@ -5499,7 +5504,7 @@ int sexp_percent_ships_depart_destroy_disarm_disable(int n, int what)
 				if ( mission_log_get_time(LOG_SHIP_DISARMED, name, NULL, NULL) )
 					count++;
 			} else
-				Int3();			// this would be very bogus as well.
+				Error("Invalid status check '%d' for ship '%s' in sexp_percent_ships_depart_destroy_disarm_disable", what, name);
 
 		}
 	}
@@ -5940,7 +5945,7 @@ void sexp_set_scanned_unscanned(int n, int flag)
 		// if we didn't find the subsystem -- bad
 		if (!subsys_set)
 		{
-			Int3();
+			Error(LOCATION, "Couldn't find subsystem '%s' on ship '%s' in sexp_set_scanned_unscanned", subsys_name, ship_name);
 		}
 
 		// but if it did, loop again
@@ -9675,7 +9680,7 @@ void sexp_beam_fire(int node)
 
 	// if it has no primary weapons
 	if(fire_info.turret->weapons.num_primary_banks <= 0){
-		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no primary weapons", CTEXT(node), CTEXT(CDR(node));
+		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no primary weapons", CTEXT(node), CTEXT(CDR(node)));
 		return;
 	}
 
@@ -9699,7 +9704,7 @@ void sexp_beam_fire(int node)
 		beam_fire(&fire_info);
 	} else {
 		// it would appear the turret doesn't have any beam weapons
-		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no beam weapons", CTEXT(node), CTEXT(CDR(node));
+		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no beam weapons", CTEXT(node), CTEXT(CDR(node)));
 	}
 }	
 
