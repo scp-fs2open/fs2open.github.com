@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-01-29 08:08:24 $
+ * $Revision: 2.23 $
+ * $Date: 2005-01-30 03:27:09 $
  * $Author: wmcoolmon $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/01/29 08:08:24  wmcoolmon
+ * Various updates; shader, assert, and clipping
+ *
  * Revision 2.21  2004/10/31 21:53:23  taylor
  * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
  *
@@ -967,8 +970,7 @@ void main_hall_init(int main_hall_num)
 	Main_hall->region_descript[5] = XSTR( "Campaign Room - View all available campaigns", 358);
 	Main_hall->region_descript[6] = XSTR( "Multiplayer - Start or join a multiplayer game", 359);
 	
-	// init tooltip shader
-	float gray_intensity = 0.02f;													// nearly black
+	// init tooltip shader													// nearly black
 	gr_create_shader(&Main_hall_tooltip_shader, 5, 5, 5, 168);
 
 	// load the background bitmap
