@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-07-26 20:47:50 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-10-09 17:54:32 $
+ * $Author: taylor $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/07/26 20:47:50  Kazan
+ * remove MCD complete
+ *
  * Revision 2.16  2004/07/12 16:33:04  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -283,8 +286,10 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 }
 
 //this doesn't do anything, but is here for completeness
-void g3_end_frame(void)
+void g3_end_frame_func(char *filename, int lineno)
 {
+//	mprintf(( "g3_end_frame called from %s, line %d\n", filename, lineno ));
+
 	G3_count--;
 	Assert( G3_count == 0 );
 

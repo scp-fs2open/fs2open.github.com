@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.7 $
- * $Date: 2004-08-11 05:06:33 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2004-10-09 17:54:32 $
+ * $Author: taylor $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/08/11 05:06:33  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.6  2003/11/16 04:09:27  Goober5000
  * language
  *
@@ -163,6 +166,9 @@
 // use the g3_start_frame macro instead of calling this directly.
 extern void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno);
 
+//end the frame
+#define g3_end_frame() g3_end_frame_func( __FILE__, __LINE__ )
+extern void g3_end_frame_func(char *filename, int lineno);
 
 //set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
 void g3_set_view_angles(vector *view_pos,angles *view_orient,float zoom);
@@ -182,9 +188,6 @@ extern vector		Eye_position;		// Where the viewer's eye is at in World coordinat
 
 extern vector Object_position;
 extern matrix	Object_matrix;			// Where the opject is pointing in World coordinates
-
-//end the frame
-void g3_end_frame(void);
 
 //draw a horizon
 void g3_draw_horizon(int sky_color,int ground_color);
