@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.47 $
- * $Date: 2004-02-27 04:09:55 $
- * $Author: bobboau $
+ * $Revision: 2.48 $
+ * $Date: 2004-03-19 11:44:04 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2004/02/27 04:09:55  bobboau
+ * fixed a Z buffer error in HTL submodel rendering,
+ * and glow points,
+ * and other stuff
+ *
  * Revision 2.46  2004/02/16 11:47:31  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -459,7 +464,6 @@ extern int Cmdline_timerbar;
 extern int Cmdline_query_speech;
 extern int Cmdline_ship_choice_3d;
 extern int Cmdline_d3d_particle;
-extern int Cmdline_d3d_notmanaged;
 
 extern int Cmdline_ambient_factor;
 extern int Cmdline_show_mem_usage;

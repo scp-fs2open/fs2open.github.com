@@ -194,7 +194,6 @@ HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **bu
 		vertex_types[D3DVT_VERTEX].size * size, 
 		usage, 
 		vertex_types[D3DVT_VERTEX].fvf,
-	   	Cmdline_d3d_notmanaged ? D3DPOOL_DEFAULT : 
 		D3DPOOL_MANAGED,
 		(IDirect3DVertexBuffer8**) buffer);
 }
