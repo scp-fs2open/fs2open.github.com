@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.28 $
- * $Date: 2003-10-23 18:03:25 $
- * $Author: randomtiger $
+ * $Revision: 2.29 $
+ * $Date: 2003-11-09 07:36:52 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/10/23 18:03:25  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.27  2003/10/22 23:10:14  phreak
  * commented out some mprintfs that kazan missed
  *
@@ -3327,7 +3330,7 @@ void beam_apply_whack(beam *b, object *objp, vector *hit_point)
 	}
 
 	// don't whack docking ships - and don't whack if the beam isn't supposed to
-	if(Ai_info[shipp->ai_index].ai_flags & AIF_DOCKED || wip->wi_flags2 & WIG2_BEAM_NO_WHACK){
+	if(Ai_info[shipp->ai_index].ai_flags & AIF_DOCKED || wip->wi_flags2 & WIF2_BEAM_NO_WHACK){
 		return;
 	}
 
