@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-11-22 20:52:29 $
+ * $Author: phreak $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/25 04:50:07  wmcoolmon
  * Added Bobboau's fighter-beam code.
  *
@@ -180,7 +183,7 @@
 #include "fireball/fireballs.h"
 #include "math/fix.h"
 #include "bmpman/bmpman.h"
-#include	"object/object.h"
+#include "object/object.h"
 #include "playerman/player.h"		//	#include of "player.h" is only for debugging!
 #include "io/timer.h"
 #include "freespace2/freespace.h"
@@ -268,6 +271,8 @@ int Shield_bitmaps_loaded = 0;
 
 //	This is a recursive function, so prototype it.
 extern void create_shield_from_triangle(int trinum, matrix *orient, shield_info *shieldp, vector *tcp, vector *centerp, float radius, vector *rvec, vector *uvec);
+
+extern int OGL_inited;
 
 void load_shield_hit_bitmap()
 {
@@ -588,7 +593,7 @@ void render_shield(int shield_num) //, matrix *orient, vector *centerp)
 	}
 
 	//	At detail levels 1, 3, animations play at double speed to reduce load.
-	if (!D3D_enabled || (Detail.shield_effects == 1) || (Detail.shield_effects == 3)) {
+	if (!D3D_enabled || !OGL_inited ||  (Detail.shield_effects == 1) || (Detail.shield_effects == 3)) {
 		Shield_hits[shield_num].start_time -= Frametime;
 	}
 
@@ -645,7 +650,7 @@ void render_shield(int shield_num) //, matrix *orient, vector *centerp)
 	}
 	gr_set_bitmap(bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
 
-	if (!D3D_enabled || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
+	if (!D3D_enabled || !OGL_inited || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
 		if ( bitmap_id != - 1 ) {
 			render_low_detail_shield_bitmap(&Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
 		}
@@ -944,7 +949,7 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vector *
 
 	//nprintf(("AI", "Frame %i: Creating explosion on %i.\n", Framecount, objnum));
 
-	if (!D3D_enabled || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
+	if (!D3D_enabled || !OGL_inited || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
 		create_shield_low_detail(objnum, model_num, orient, centerp, tcp, tr0, shieldp);
 		return;
 	}
