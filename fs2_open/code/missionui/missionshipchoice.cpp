@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-12-05 18:17:06 $
- * $Author: randomtiger $
+ * $Revision: 2.17 $
+ * $Date: 2004-01-21 17:37:04 $
+ * $Author: phreak $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/12/05 18:17:06  randomtiger
+ * D3D now supports loading for DXT1-5 into the texture itself, defaults to on same as OGL.
+ * Fixed bug in old ship choice screen that stopped ani repeating.
+ * Changed all builds (demo, OEM) to use retail reg path, this means launcher can set all them up successfully.
+ *
  * Revision 2.15  2003/12/04 20:39:10  randomtiger
  * Added DDS image support for D3D
  * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
@@ -1844,7 +1849,7 @@ void ship_select_do(float frametime)
 		// render the ship
 		g3_start_frame(1);
 		g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
-		if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1f,30000);
+		if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 	
 		// lighting for techroom
 		light_reset();
