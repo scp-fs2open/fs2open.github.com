@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.40 $
- * $Date: 2003-04-29 01:03:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2003-07-04 02:30:54 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/04/29 01:03:21  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.39  2003/03/30 07:27:34  Goober5000
  * resolved a nasty bug that caused some missions to crash
  * --Goober5000
@@ -914,6 +918,13 @@ typedef struct ship {
 	int glows_active;
 	int glowmaps_active;
 	int n_decal;
+
+	//cloaking stuff
+	vector texture_translation_key;		//translate the texture matrix for a cool effect
+	vector current_translation;
+	int cloak_stage;
+	fix time_until_full_cloak;
+
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -1264,6 +1275,7 @@ typedef struct wing {
 extern wing Wings[MAX_WINGS];
 extern int Starting_wings[MAX_PLAYER_WINGS];
 extern int ai_paused;
+extern int CLOAKMAP;
 
 extern int Num_reinforcements;
 extern int Num_ship_types;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-07-04 02:30:54 $
+ * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -242,5 +245,15 @@ void shipfx_engine_wash_level_init();
 
 // pause engine wash sounds
 void shipfx_stop_engine_wash_sound();
+
+// =====================================================
+// CLOAKING
+// =====================================================
+
+//translate the texture matrix some
+void shipfx_cloak_frame(ship *shipp, float frametime);
+void shipfx_start_cloak(ship *shipp);
+void shipfx_stop_cloak(ship *shipp);
+
 
 #endif

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.64 $
- * $Date: 2003-06-25 03:19:40 $
+ * $Revision: 2.65 $
+ * $Date: 2003-07-04 02:30:54 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2003/06/25 03:19:40  phreak
+ * added support for weapons that only fire when tagged
+ *
  * Revision 2.63  2003/06/16 03:36:08  phreak
  * fixed a small bug where rotating subobjects wouldn't work on a player ship
  * also changed "+PBank Capacity:" to "$PBank Capacity:" when parsing
@@ -2308,6 +2311,9 @@ void ship_init()
 		ship_iff_init_colors();
 	}
 
+	//loadup the cloaking map
+	CLOAKMAP = bm_load("cloakmap");
+
 	ship_level_init();	// needed for FRED
 }
 
@@ -3320,6 +3326,18 @@ void ship_render(object * obj)
 			model_set_fog_level(neb2_get_fog_intensity(obj));
 		}
 
+		if (shipp->cloak_stage>0)
+		{
+			//cloaking
+			if (shipp->cloak_stage==2)
+			{
+				model_setup_cloak(&shipp->current_translation,1);
+				model_set_forced_texture(CLOAKMAP);
+				render_flags |= MR_FORCE_TEXTURE | MR_NO_LIGHTING;
+			}
+			else model_setup_cloak(&shipp->current_translation,0);
+		}
+
 		// small ships
 		if((The_mission.flags & MISSION_FLAG_FULLNEB) && (si->flags & SIF_SMALL_SHIP)){			
 			// force detail levels
@@ -3351,6 +3369,12 @@ void ship_render(object * obj)
 			g3_stop_user_clip_plane();
 		}
 	} 
+
+//	if (shipp->cloak_stage>0)
+//	{
+///		int full_cloak=shipp->cloak_stage==2;
+//		model_finish_cloak(full_cloak);
+//	}
 
 /*	if (Mc.shield_hit_tri != -1) {
 		//render_shield_explosion(model_num, orient, pos, &Hit_point, Hit_tri);
@@ -4835,6 +4859,8 @@ void ship_process_post(object * obj, float frametime)
 	ship_subsys_disrupted_maybe_check(shipp);
 
 	ship_dying_frame(obj, num);
+
+	shipfx_cloak_frame(shipp, frametime);
 
 	ship_chase_shield_energy_targets(shipp, obj, frametime);
 
@@ -8730,6 +8756,7 @@ object *ship_find_repair_ship( object *requester_obj )
 // called in game_shutdown() to free malloced memory
 //
 // NOTE: do not call this function.  It is only called from game_shutdown()
+int CLOAKMAP=-1;
 void ship_close()
 {
 	int i;
@@ -8747,6 +8774,8 @@ void ship_close()
 			free(Ship_info[i].subsystems);
 		}
 	}
+
+	bm_release(CLOAKMAP);
 }	
 
 // -------------------------------------------------------------------------------------------------

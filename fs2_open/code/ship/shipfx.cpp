@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-05-21 21:07:31 $
+ * $Revision: 2.13 $
+ * $Date: 2003-07-04 02:30:54 $
  * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/05/21 21:07:31  phreak
+ * fixed *minor* problem where ships that were disabled during warpout were not
+ * registering on sensors
+ *
  * Revision 2.11  2003/05/21 20:28:53  phreak
  * fixed disappearing ship bug when a ship is disabled during warpout
  *
@@ -3070,4 +3074,56 @@ void shipfx_stop_engine_wash_sound()
 		snd_stop(Player_engine_wash_loop);
 		Player_engine_wash_loop = -1;
 	}
+}
+
+void shipfx_start_cloak(ship *shipp)
+{
+
+	//get a random vector to translate the texture matrix
+	//since we don't need a z-value, zero it and renormalize
+	vm_vec_rand_vec_quick(&shipp->texture_translation_key);
+	shipp->texture_translation_key.xyz.z=0;
+	vm_vec_normalize_quick(&shipp->texture_translation_key);
+	vm_vec_zero(&shipp->current_translation);
+	
+	shipp->time_until_full_cloak=timestamp(5000);
+	shipp->cloak_stage=1;
+}
+
+void shipfx_cloak_frame(ship *shipp, float frametime)
+{
+	switch (shipp->cloak_stage)
+	{
+		case 1:
+			if (timestamp_elapsed(shipp->time_until_full_cloak))
+			{
+				shipp->cloak_stage=2;
+				shipp->flags2 |= SF2_STEALTH;
+			}
+			break;
+		
+		case 2:
+			break;
+		
+		case 3:
+			if (timestamp_elapsed(shipp->time_until_full_cloak))
+			{
+				shipp->cloak_stage=0;
+			}
+			break;
+		
+		default:
+			return;
+	}
+
+	//do something to the texture matrix
+	vm_vec_scale_add2(&shipp->current_translation,&shipp->texture_translation_key,frametime);
+}
+
+void shipfx_stop_cloak(ship *shipp)
+{
+	shipp->cloak_stage=3;
+	shipp->time_until_full_cloak=timestamp(5000);
+	if (!(Ship_info[shipp->ship_info_index].flags & SIF_SHIP_CLASS_STEALTH))
+		shipp->flags2 &= ~(SF2_STEALTH);
 }
