@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-02-16 05:14:29 $
+ * $Revision: 2.6 $
+ * $Date: 2003-02-25 06:22:49 $
  * $Author: bobboau $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/02/16 05:14:29  bobboau
+ * added glow map nebula bug fix for d3d, someone should add a fix for glide too
+ * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
+ *
  * Revision 2.4  2003/01/19 01:07:41  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -1103,7 +1107,6 @@ float Avg_delay_total;
 void obj_player_fire_stuff( object *objp, control_info ci )
 {
 	ship *shipp;
-	int has_fired = -1;	//stop fireing stuff-Bobboau
 
 	Assert( objp->flags & OF_PLAYER_SHIP);
 
@@ -1126,18 +1129,20 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 
 			// fire non-streaming primaries here
 			ship_fire_primary( objp, 0 );
-			has_fired = 1;
+	//			ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 		} else {
 			// unflag the ship as having the trigger down
 			if(shipp != NULL){
 				shipp->flags &= ~(SF_TRIGGER_DOWN);
-				has_fired = -1;
+				ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 			}
 		}
 
 		if ( ci.fire_countermeasure_count ){
 			ship_launch_countermeasure( objp );
 		}
+	}else{
+//		ship_stop_fire_primary(objp);
 	}
 
 #ifndef NO_NETWORK
@@ -1164,10 +1169,6 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		afterburners_stop( objp, 1 );
 	}
 	
-	if(has_fired == -1){
-		ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
-	}
-
 }
 
 void obj_move_call_physics(object *objp, float frametime)
@@ -1264,6 +1265,7 @@ obj_maybe_fire:
 			if ( (objp->flags & OF_PLAYER_SHIP) && (objp->type != OBJ_OBSERVER) && (objp == Player_obj)) {
 				player *pp;
 				if(Player != NULL){
+//					has_fired = 1;
 					pp = Player;
 					obj_player_fire_stuff( objp, pp->ci );				
 				}
@@ -1272,10 +1274,12 @@ obj_maybe_fire:
 			// fire streaming weapons for ships in here - ALL PLAYERS, regardless of client, single player, server, whatever.
 			// do stream weapon firing for all ships themselves. 
 			if(objp->type == OBJ_SHIP){
-			has_fired = 1;
-				if(ship_fire_primary(objp, 1, 0) == 0){
+				ship_fire_primary(objp, 1, 0);
+//				if(ship_fire_primary(objp, 1, 0) < 1){
 					has_fired = 1;
-				}
+//				}else{
+//					has_fired = -1;
+//				}
 			}
 		}
 	}

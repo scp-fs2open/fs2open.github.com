@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-07 01:37:41 $
+ * $Revision: 2.3 $
+ * $Date: 2003-02-25 06:22:48 $
  * $Author: bobboau $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/07 01:37:41  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -652,14 +658,18 @@ float vm_vec_dist_quick(vector *v0,vector *v1)
 //normalize a vector. returns mag of source vec
 float vm_vec_copy_normalize(vector *dest,vector *src)
 {
+	static ben_warned = false;//added this so the warning could be sounded and you can still get on with playing-Bobboau
 	float m;
 
 	m = vm_vec_mag(src);
 
 	//	Mainly here to trap attempts to normalize a null vector.
 	if (m <= 0.0f) {
-		Warning(LOCATION,	"Null vector in vector normalize.\n"
+		if(!ben_warned){
+			Warning(LOCATION,	"Null vector in vector normalize.\n"
 								"Trace out of vecmat.cpp and find offending code.\n");
+			ben_warned = true;
+		}
 		dest->xyz.x = 1.0f;
 		dest->xyz.y = 0.0f;
 		dest->xyz.z = 0.0f;

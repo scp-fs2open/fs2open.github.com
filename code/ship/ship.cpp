@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.48 $
- * $Date: 2003-02-16 05:14:29 $
+ * $Revision: 2.49 $
+ * $Date: 2003-02-25 06:22:49 $
  * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2003/02/16 05:14:29  bobboau
+ * added glow map nebula bug fix for d3d, someone should add a fix for glide too
+ * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
+ *
  * Revision 2.47  2003/02/05 06:57:56  Goober5000
  * made my fighterbay code more forgiving of eccentric modeling hacks...
  * ships can now use the Faustus hangar again :)
@@ -1478,39 +1482,70 @@ int parse_ship()
 	}
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ){
-		sip->allowed_weapons[i] = 0;
+		for ( int k = 0; k < MAX_SECONDARY_BANKS; k++ )sip->allowed_weapons[i][k] = 0;
 	}
 char temp_error[64];
 strcpy(temp_error, parse_error_text);
+
+	int b = 0;
 	// Set the weapons filter used in weapons loadout (for primary weapons)
 	if (optional_string("$Allowed PBanks:")) {
-
-strcat(parse_error_text,"'s primary banks");
-		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-strcpy(parse_error_text, temp_error);
 		
-
-		// actually say which weapons are allowed
-		for ( i = 0; i < num_allowed; i++ ) {
-			if ( allowed_weapons[i] >= 0 ) {		//	MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
-				sip->allowed_weapons[allowed_weapons[i]] |= 1;
+	strcat(parse_error_text,"'s primary banks");
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+	strcpy(parse_error_text, temp_error);
+		
+			// actually say which weapons are allowed
+			for ( i = 0; i < num_allowed; i++ ) {
+				if ( allowed_weapons[i] >= 0 ) {		//	MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+					for ( b = 0; b < MAX_PRIMARY_BANKS; b++ )sip->allowed_weapons[allowed_weapons[i]][b] |= 1;
+				}
 			}
+			b = 1;
+			for ( i = 0; i < MAX_WEAPON_TYPES; i++ )allowed_weapons[i] = -1;
+		
+		while(optional_string(":")){
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			for ( i = 0; i < MAX_WEAPON_TYPES; i++ )sip->allowed_weapons[i][b] = 0;
+			for ( i = 0; i < num_allowed; i++ ) {
+				if ( allowed_weapons[i] >= 0 ) {		//	MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+					sip->allowed_weapons[allowed_weapons[i]][b] |= 1;
+				}
+			}
+			b++;
+
 		}
+		b=0;
 	}
 
 	// Set the weapons filter used in weapons loadout (for primary weapons)
 	if (optional_string("$Allowed Dogfight PBanks:")) {
 
-strcat(parse_error_text,"'s primary dogfight banks");
-		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-strcpy(parse_error_text, temp_error);
+	strcat(parse_error_text,"'s primary dogfight banks");
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+	strcpy(parse_error_text, temp_error);
 
-		// actually say which weapons are allowed
-		for ( i = 0; i < num_allowed; i++ ) {
-			if ( allowed_weapons[i] >= 0 ) {
-				sip->allowed_weapons[allowed_weapons[i]] |= 2;
+			// actually say which weapons are allowed
+			for ( i = 0; i < num_allowed; i++ ) {
+				if ( allowed_weapons[i] >= 0 ) {		//	MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+					for ( b = 0; b < MAX_PRIMARY_BANKS; b++ )sip->allowed_weapons[allowed_weapons[i]][b] |= 2;
+				}
 			}
+			b = 1;
+			for ( i = 0; i < MAX_WEAPON_TYPES; i++ )allowed_weapons[i] = -1;
+		
+		while(optional_string(":")){
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			for ( i = 0; i < MAX_WEAPON_TYPES; i++ )sip->allowed_weapons[i][b] = 0;
+			for ( i = 0; i < num_allowed; i++ ) {
+				if ( allowed_weapons[i] >= 0 ) {		//	MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+					sip->allowed_weapons[allowed_weapons[i]][b] |= 2;
+				}
+			}
+			b++;
+
 		}
+		b=0;
 	}
 
 	//	Get default primary bank weapons
@@ -1547,34 +1582,65 @@ strcpy(parse_error_text, temp_error);
 		{
 			Warning(LOCATION, "Primary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
 		}
+			b = 0;
 	}
 	
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
 	if (optional_string("$Allowed SBanks:")) {
-strcat(parse_error_text,"'s secondary banks");
-		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-strcpy(parse_error_text, temp_error);
+	strcat(parse_error_text,"'s secondary banks");
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+	strcpy(parse_error_text, temp_error);
 
-		// actually say which weapons are allowed
-		for ( i = 0; i < num_allowed; i++ ) {
-			if ( allowed_weapons[i] >= 0 ) {
-				sip->allowed_weapons[allowed_weapons[i]] |= 1;
+			// actually say which weapons are allowed
+			for ( i = 0; i < num_allowed; i++ ) {
+				if ( allowed_weapons[i] >= 0 ) {		//	MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+					for ( b = 0; b < MAX_SECONDARY_BANKS; b++ )sip->allowed_weapons[allowed_weapons[i]][b] |= 1;
+				}
 			}
+			b = 1;
+			for ( i = 0; i < MAX_WEAPON_TYPES; i++ )allowed_weapons[i] = -1;
+		
+		while(optional_string(":")){
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			for ( i = 0; i < MAX_WEAPON_TYPES; i++ )sip->allowed_weapons[i][b] = 0;
+			for ( i = 0; i < num_allowed; i++ ) {
+				if ( allowed_weapons[i] >= 0 ) {		//	MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+					sip->allowed_weapons[allowed_weapons[i]][b] |= 1;
+				}
+			}
+			b++;
+
 		}
+		b=0;
 	}
 
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
 	if (optional_string("$Allowed Dogfight SBanks:")) {
-strcat(parse_error_text,"'s primary dogfight banks");
-		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-strcpy(parse_error_text, temp_error);
+	strcat(parse_error_text,"'s primary dogfight banks");
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+	strcpy(parse_error_text, temp_error);
 
-		// actually say which weapons are allowed
-		for ( i = 0; i < num_allowed; i++ ) {
-			if ( allowed_weapons[i] >= 0 ) {
-				sip->allowed_weapons[allowed_weapons[i]] |= 2;
+			// actually say which weapons are allowed
+			for ( i = 0; i < num_allowed; i++ ) {
+				if ( allowed_weapons[i] >= 0 ) {		//	MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+					for ( b = 0; b < MAX_SECONDARY_BANKS; b++ )sip->allowed_weapons[allowed_weapons[i]][b] |= 2;
+				}
 			}
+			b = 1;
+			for ( i = 0; i < MAX_WEAPON_TYPES; i++ )allowed_weapons[i] = -1;
+		
+		while(optional_string(":")){
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			for ( i = 0; i < MAX_WEAPON_TYPES; i++ )sip->allowed_weapons[i][b] = 0;
+			for ( i = 0; i < num_allowed; i++ ) {
+				if ( allowed_weapons[i] >= 0 ) {		//	MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+					sip->allowed_weapons[allowed_weapons[i]][b] |= 2;
+				}
+			}
+			b++;
+
 		}
+		b=0;
 	}
 
 	//	Get default secondary bank weapons
@@ -1747,42 +1813,39 @@ strcpy(parse_error_text, temp_error);
 		required_string("+Aburn Rec Rate:");
 		stuff_float(&sip->afterburner_recover_rate);
 
-		if(optional_string("$Trails:")){//optional values aplyed to ABtrails -Bobboau
-			mprintf(("ABtrails\n"));
-			char bitmap_name[MAX_FILENAME_LEN] = "";
-
-			required_string("+Bitmap:");
-			stuff_string(bitmap_name, F_NAME, NULL);
-			sip->ABbitmap = bm_load(bitmap_name);
-			
-			required_string("+Width:");
-			stuff_float(&sip->ABwidth_factor);
-			
-			required_string("+Alpha:");
-			stuff_float(&sip->ABAlpha_factor);
-			
-			required_string("+Life:");
-			stuff_float(&sip->ABlife);
-		}else{
-			mprintf(("no ABtrails\n"));
-			sip->ABbitmap = -1;	//defalts for no ABtrails-Bobboau
-			sip->ABwidth_factor = 1.0f;
-			sip->ABAlpha_factor = 1.0f;
-			sip->ABlife = 5.0f;
-		}
-
 	} else {
+	
 		mprintf(("no AB or ABtrails\n"));
 		sip->afterburner_max_vel.xyz.x = 0.0f;
 		sip->afterburner_max_vel.xyz.y = 0.0f;
 		sip->afterburner_max_vel.xyz.z = 0.0f;
 
+	}
+	
+	if(optional_string("$Trails:")){//optional values aplyed to ABtrails -Bobboau
+		mprintf(("ABtrails\n"));
+		char bitmap_name[MAX_FILENAME_LEN] = "";
+
+		required_string("+Bitmap:");
+		stuff_string(bitmap_name, F_NAME, NULL);
+		sip->ABbitmap = bm_load(bitmap_name);
+		
+		required_string("+Width:");
+		stuff_float(&sip->ABwidth_factor);
+			
+		required_string("+Alpha:");
+		stuff_float(&sip->ABAlpha_factor);
+			
+		required_string("+Life:");
+		stuff_float(&sip->ABlife);
+	}else{
+		mprintf(("no ABtrails\n"));
 		sip->ABbitmap = -1;	//defalts for no ABtrails-Bobboau
 		sip->ABwidth_factor = 1.0f;
 		sip->ABAlpha_factor = 1.0f;
 		sip->ABlife = 5.0f;
-
 	}
+
 
 	required_string("$Countermeasures:");
 	stuff_int(&sip->cmeasure_max);
@@ -5793,6 +5856,7 @@ int ship_stop_fire_primary_bank(object * obj, int bank_to_stop){//stops a single
 	if(obj->type != OBJ_SHIP){
 		return 0;
 	}
+//		gr_set_color( 250, 50, 750 );
 
 	shipp = &Ships[obj->instance];
 
@@ -5818,6 +5882,7 @@ int ship_stop_fire_primary_bank(object * obj, int bank_to_stop){//stops a single
 
 /*
 	if ( obj == Player_obj ){
+		gr_printf(10, 20 + (bank_to_stop*10), "stoped bank %d", bank_to_stop);
 		HUD_printf("stoped bank %d", bank_to_stop);
 	}
 */
@@ -5828,6 +5893,7 @@ int ship_stop_fire_primary_bank(object * obj, int bank_to_stop){//stops a single
 
 int ship_stop_fire_primary(object * obj){	//stuff to do when the ship has stoped fireing all primary weapons-Bobboau
 
+//	gr_set_color( 250, 50, 75 );
 
 	int num_primary_banks = 0, bank_to_stop = 0;
 	ship			*shipp;
@@ -5849,6 +5915,8 @@ int ship_stop_fire_primary(object * obj){	//stuff to do when the ship has stoped
 
 	swp = &shipp->weapons;
 
+	bank_to_stop = swp->current_primary_bank;
+
 	if ( shipp->flags & SF_PRIMARY_LINKED ) {
 		num_primary_banks = swp->num_primary_banks;
 	} else {
@@ -5856,13 +5924,15 @@ int ship_stop_fire_primary(object * obj){	//stuff to do when the ship has stoped
 	}
 
 	for ( int i = 0; i < num_primary_banks; i++ ) {	
-		if(shipp->was_firing_last_frame[bank_to_stop]){
-		ship_stop_fire_primary_bank(obj, bank_to_stop);
+		bank_to_stop = (swp->current_primary_bank+i)%2;
+		//only stop if it was fireing last frame
+		if(shipp->was_firing_last_frame[bank_to_stop] ){
+			ship_stop_fire_primary_bank(obj, bank_to_stop);
 		}
 	}
 
 /*	if ( obj == Player_obj ){
-		HUD_printf("stoped all");
+		gr_printf(10, 10, "stoped all");
 	}
 */
 
@@ -6098,7 +6168,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 				vm_vec_unrotate(&temp2, &temp, &obj->orient);
 				vm_vec_add2(&temp, &temp2);
-				vm_vec_scale_add(&temp, &temp2, &obj->orient.vec.fvec, 10000);
+				vm_vec_scale_add(&temp, &temp2, &obj->orient.vec.fvec, Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].b_info.range);
 
 				switch(vm_vec_dist_to_line(&View_position, &obj->pos, &temp, &pos, NULL)){
 					// behind the beam, so use the start pos
@@ -6222,6 +6292,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					winfo_p->b_info.beam_type = BEAM_TYPE_C;
 //mprintf(("I am about to fire a fighter beam4\n"));
 					beam_fire_targeting(&fbfire_info);
+					num_fired++;
 					//shipp->targeting_laser_objnum = beam_fire_targeting(&fire_info);			
 				}
 

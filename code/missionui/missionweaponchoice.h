@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-02-25 06:22:49 $
+ * $Author: bobboau $
  *
  * Header file for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -171,7 +174,7 @@ void wl_reset_to_defaults();
 // Set selected slot to first placed ship
 void wl_reset_selected_slot();
 
-void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class);
+void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class, int bank);
 void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count);
 void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_count);
 

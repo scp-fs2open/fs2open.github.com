@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-15 06:50:49 $
- * $Author: DTP $
+ * $Revision: 2.3 $
+ * $Date: 2003-02-25 06:22:48 $
+ * $Author: bobboau $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/15 06:50:49  DTP
+ * FIX; player can now have all ships set in FRED2 as allowed playerships in singleplayer
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -3286,7 +3289,7 @@ int ss_grab_from_list(int from_list, int to_slot, int *sound)
 
 	// take weapons from list->slot
 	wl_get_default_weapons(from_list, to_slot, wep, wep_count);
-	wl_remove_weps_from_pool(wep, wep_count, slot->ship_class);
+	wl_remove_weps_from_pool(wep, wep_count, slot->ship_class, to_slot);
 	for ( i = 0; i < MAX_WL_WEAPONS; i++ ) {
 		slot->wep[i] = wep[i];
 		slot->wep_count[i] = wep_count[i];
@@ -3329,7 +3332,7 @@ int ss_swap_list_slot(int from_list, int to_slot, int *sound)
 
 	// take weapons from list->slot
 	wl_get_default_weapons(from_list, to_slot, wep, wep_count);
-	wl_remove_weps_from_pool(wep, wep_count, slot->ship_class);
+	wl_remove_weps_from_pool(wep, wep_count, slot->ship_class, to_slot);
 	for ( i = 0; i < MAX_WL_WEAPONS; i++ ) {
 		slot->wep[i] = wep[i];
 		slot->wep_count[i] = wep_count[i];

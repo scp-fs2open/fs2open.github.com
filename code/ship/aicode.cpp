@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-02-16 05:14:29 $
+ * $Revision: 2.26 $
+ * $Date: 2003-02-25 06:22:49 $
  * $Author: bobboau $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/02/16 05:14:29  bobboau
+ * added glow map nebula bug fix for d3d, someone should add a fix for glide too
+ * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
+ *
  * Revision 2.24  2003/01/27 07:46:32  Goober5000
  * finished up my fighterbay code - ships will not be able to arrive from or depart into
  * fighterbays that have been destroyed (but you have to explicitly say in the tables
@@ -5602,8 +5606,9 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	// Debugging //
 	
 	sip = &Ship_info[shipp->ship_info_index];
-
-	if (flags & WIF_PUNCTURE) 
+//made it so it only selects puncture weapons if the active goal is to disable something -Bobboau
+	if ((flags & WIF_PUNCTURE) && (Ai_info[shipp->ai_index].goals[0].ai_mode & AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP)) 
+//	if (flags & WIF_PUNCTURE) 
 	{
 		if (swp->current_primary_bank >= 0) 
 		{
@@ -5674,7 +5679,37 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
 		return i_hullfactor_prev_bank;							// Return
 	}
-	
+
+	//if the shields are above lets say 10% defanantly use a pierceing weapon if there are any-Bobboau
+	if (enemy_remaining_shield >= 0.10f){
+		if (swp->current_primary_bank >= 0) 
+		{
+			int	bank_index;
+
+			bank_index = swp->current_primary_bank;
+
+			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags2 & WIF2_PIERCE) 
+			{
+				return swp->current_primary_bank;
+			}
+		}
+		for (int i=0; i<swp->num_primary_banks; i++) 
+		{
+			int	weapon_info_index;
+
+			weapon_info_index = swp->primary_bank_weapons[i];
+
+			if (weapon_info_index > -1)
+			{
+				if (Weapon_info[weapon_info_index].wi_flags2 & WIF2_PIERCE) 
+				{
+					swp->current_primary_bank = i;
+					return i;
+				}
+			}
+		}
+	}
+
 	// Is the target shielded by less then 50%?
 	if (enemy_remaining_shield <= 0.50f)	
 	{
@@ -8710,8 +8745,9 @@ void ai_chase()
 					else
 						scale = 0.0f;
 					if (dist_to_enemy < pwip->max_speed * (1.0f + scale)) {
-						has_fired = 1;
-						if(! ai_fire_primary_weapon(Pl_objp)){
+						if(ai_fire_primary_weapon(Pl_objp) == 1){
+							has_fired = 1;
+						}else{
 							has_fired = -1;
 						//	ship_stop_fire_primary(Pl_objp);
 						}

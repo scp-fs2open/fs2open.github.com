@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-02-16 05:14:29 $
+ * $Revision: 2.11 $
+ * $Date: 2003-02-25 06:22:49 $
  * $Author: bobboau $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/02/16 05:14:29  bobboau
+ * added glow map nebula bug fix for d3d, someone should add a fix for glide too
+ * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
+ *
  * Revision 2.9  2003/01/19 22:20:22  Goober5000
  * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
  * and departure into hangars should now all work properly
@@ -2354,7 +2358,7 @@ mprintf(("aplying damage to hull\n"));
 					scoring_add_damage(ship_obj, &Objects[other_obj->parent], damage);
 				}
 				break;
-			case OBJ_BEAM://give kills for fighter beams
+			case OBJ_BEAM://give kills for fighter beams-Bobboau
 				object beam_obj = Objects[beam_get_parent(other_obj)];
 				if((beam_obj.instance < 0) || (beam_obj.instance >= MAX_OBJECTS)){
 					scoring_add_damage(ship_obj, NULL, damage);

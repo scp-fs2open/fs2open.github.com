@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-02-16 18:55:59 $
- * $Author: phreak $
+ * $Revision: 2.13 $
+ * $Date: 2003-02-25 06:22:50 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/02/16 18:55:59  phreak
+ * fixed typecasting warnings
+ *
  * Revision 2.11  2003/02/16 05:14:29  bobboau
  * added glow map nebula bug fix for d3d, someone should add a fix for glide too
  * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
@@ -1520,7 +1523,9 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 
 		// set the right texture with additive alpha, and draw the poly
 		gr_set_bitmap(bwi->sections[s_idx].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
-		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			
+		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT); 
+		// added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			
+		// added TMAP_FLAG_RGB and TMAP_FLAG_GOURAUD so the beam would apear to fade along it's length-Bobboau
 	}		
 	
 	// turn backface culling back on
@@ -2466,19 +2471,19 @@ int beam_collide_ship(obj_pair *pair)
 	if(widest > pair->b->radius * BEAM_AREA_PERCENT){
 		test_collide.radius = beam_get_widest(b) * 0.5f;
 		//if the shields have any juice check them otherwise check the model
-		if ( (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for beams wich have a positive sheild factor -Bobboau
-			mprintf(("I think this ship has shields\n"));
+		if ( !(bwi->wi_flags2 & WIF2_PIERCE) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for beams wich have a positive sheild factor -Bobboau
+//			mprintf(("I think this ship has shields\n"));
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_SPHERELINE;	
 		}else{	
-			mprintf(("I'm checking the model\n"));
+//			mprintf(("I'm checking the model\n"));
 			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 		}
 	} else {	
-		if ( (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for type c beams -Bobboau
-			mprintf(("there is a shield, isn't it\n"));
+		if ( !(bwi->wi_flags2 & WIF2_PIERCE) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for type c beams -Bobboau
+//			mprintf(("there is a shield, isn't it\n"));
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_RAY;	
 		}else{	
-			mprintf(("the model is being checked\n"));
+//			mprintf(("the model is being checked\n"));
 			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
 		}
 	}
@@ -2489,7 +2494,7 @@ int beam_collide_ship(obj_pair *pair)
 	if(test_collide.flags & MC_CHECK_SHIELD)	//if we're checking shields
 	{
 		quad = get_quadrant(&test_collide.hit_point);//find which quadrant we hit
-mprintf(("the thing I hit was hit in quadrant %d\n", quad));
+//mprintf(("the thing I hit was hit in quadrant %d\n", quad));
 		//then if the beam does more damage than that quadrant can take
 		if(Objects[shipp->objnum].shields[quad] < (bwi->damage * bwi->shield_factor * 2.0f))
 		//if(!(ship_is_shield_up(&Objects[shipp->objnum], get_quadrant(&test_collide.hit_point))))
@@ -2783,6 +2788,10 @@ int beam_collide_early_out(object *a, object *b)
 		return 1;
 	}
 
+	if((vm_vec_dist(&bm->last_start, &b->pos)-b->radius) > bwi->b_info.range){
+		return 1;
+	}//if the object is too far away, don't bother trying to colide with it-Bobboau
+
 	// baseline bails
 	switch(b->type){
 	case OBJ_SHIP:
@@ -2847,7 +2856,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 		bc->c_objnum = OBJ_INDEX(hit_object);
 		bc->cinfo = *cinfo;
 
-		decal_point dec;
+/*		decal_point dec;
 		vector bfvec;
 		vm_vec_sub(&bfvec, &b->last_shot, &b->last_start);
 		dec.orient.vec.fvec = bfvec;//cinfo->hit_normal;
@@ -2863,7 +2872,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 
 //		decal_create_simple(hit_object, &dec, bwi->b_info.beam_glow_bitmap);//this is the old decals, not the new/better ones
 		decal_create(hit_object, &dec, bc->cinfo.hit_submodel, bwi->decal_texture, bwi->decal_backface_texture);
-
+*/
 		
 		if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam sheild hit code -Bobboau
 			quadrant_num = get_quadrant(&cinfo->hit_point);
@@ -2936,6 +2945,7 @@ void beam_handle_collisions(beam *b)
 	qsort(b->f_collisions, b->f_collision_count, sizeof(beam_collision), beam_sort_collisions_func);
 
 	// now apply all collisions until we reach a ship which "stops" the beam or we reach the end of the list
+	float dam = wi->damage;
 	for(idx=0; idx<b->f_collision_count; idx++){	
 		int model_num = -1;
 		int do_damage = 0;
@@ -3035,7 +3045,8 @@ mprintf(("play the sound\n"));
 				mprintf(("beam hitting a ship %s, shield quadrant %d\n", Ships[Objects[target].instance].ship_name, b->f_collisions[idx].quadrant));
 				// hit the ship - again, the innards of this code handle multiplayer cases
 				// maybe vaporize ship.
-				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world), b->f_collisions[idx].quadrant);
+				dam = beam_get_ship_damage(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
+				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, dam, b->f_collisions[idx].quadrant);
 
 
 				// GAH!! Bobboau, the shields are almost always up!  Anyway, some people complained.
@@ -3043,11 +3054,11 @@ mprintf(("play the sound\n"));
 				// if this is the first hit on the player ship. whack him
 				if(do_damage)	// && !(b->f_collisions[idx].quadrant)) //I didn't want the beam wacking things if it's hitting just sheilds -Bobboau
 				{
-
 					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
 				}
 				break;
-			}									
+			}		
+			if(dam == 0)break;
 		}				
 mprintf(("out of handeling colisions\n"));
 
@@ -3258,7 +3269,7 @@ void beam_apply_whack(beam *b, object *objp, vector *hit_point)
 //now also atenuates for distance-Bobboau
 float beam_get_ship_damage(beam *b, object *objp, vector *hit_pos)
 {
-	float dist = vm_vec_dist(&b->last_shot, hit_pos);
+	float dist = vm_vec_dist(&b->last_start, hit_pos);
 	if(dist > b->range)return 0.0f;
 
 	float aten = 1.0;
@@ -3281,6 +3292,11 @@ float beam_get_ship_damage(beam *b, object *objp, vector *hit_pos)
 	}
 
 	// normal damage
+//		gr_printf(10, 20, "atened to %f", aten);
+//		HUD_printf("atened to %f", aten);
+
+	//atenuated damage, if I did everything right this should act like normal 
+	//unless you specificly specify it in the tables -Bobboau
 	return Weapon_info[b->weapon_info_index].damage * aten;
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-01-15 21:29:05 $
- * $Author: anonymous $
+ * $Revision: 2.7 $
+ * $Date: 2003-02-25 06:22:48 $
+ * $Author: bobboau $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/01/15 21:29:05  anonymous
+ * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
+ *
  * Revision 2.5  2002/12/31 18:59:43  Goober5000
  * if it ain't broke, don't fix it
  * --Goober5000
@@ -1272,16 +1275,20 @@ void wl_set_disabled_weapons(int ship_class)
 	{
 		//	Determine whether weapon #i is allowed on this ship class in the current type of mission.
 		//	As of 9/6/99, the only difference is dogfight missions have a different list of legal weapons.
-		Wl_icons[i].can_use = weapon_allowed_for_game_type(sip->allowed_weapons[i]);
+		for ( int k = 0; k < MAX_SECONDARY_BANKS; k++ ){//bank specific loadouts-Bobboau
+			Wl_icons[i].can_use = weapon_allowed_for_game_type(sip->allowed_weapons[i][k]);
 
-		// Goober5000: ballistic primaries
-		if (Weapon_info[i].wi_flags2 & WIF2_BALLISTIC)
-		{
-			// not allowed if this ship is not ballistic
-			if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
+			// Goober5000: ballistic primaries
+			if (Weapon_info[i].wi_flags2 & WIF2_BALLISTIC)
 			{
-				Wl_icons[i].can_use = 0;
+				// not allowed if this ship is not ballistic
+				if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
+				{
+					Wl_icons[i].can_use = 0;
+				}
 			}
+
+			if(Wl_icons[i].can_use != 0)break;
 		}
 	}
 }
@@ -1895,7 +1902,7 @@ void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_co
 }
 
 // ensure that there aren't any bogus weapons assigned by default
-void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
+void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count, int bank)
 {
 	int i;
 	for ( i=0; i < MAX_WL_WEAPONS; i++ ) {
@@ -1903,7 +1910,7 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 			continue;
 		}
 
-		if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep[i]]) ) {
+		if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep[i]][bank]) ) {
 //			wep[i] = -1;
 			wep_count[i] = 0;
 		}
@@ -1950,7 +1957,7 @@ void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_cou
 	}
 
 	// ensure that there aren't any bogus weapons assigned by default
-	wl_cull_illegal_weapons(ship_class, wep, wep_count);	
+	wl_cull_illegal_weapons(ship_class, wep, wep_count, slot_num);	
 }
 
 // function to add a weapon_class to ui lists
@@ -1979,7 +1986,7 @@ void wl_add_index_to_list(int wi_index)
 }
 
 // remove the weapons specified by wep[] and wep_count[] from Wl_pool[].
-void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
+void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class, int bank)
 {
 	int i, wi_index;
 
@@ -2010,7 +2017,7 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 								continue;
 							}
 
-							if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep_pool_index]) ) {
+							if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep_pool_index][bank]) ) {
 								continue;
 							}
 
@@ -2072,7 +2079,7 @@ void wl_fill_slots()
 
 		// get the weapons info that should be on ship by default
 		wl_get_default_weapons(Wss_slots[i].ship_class, i, wep, wep_count);
-		wl_remove_weps_from_pool(wep, wep_count, Wss_slots[i].ship_class);
+		wl_remove_weps_from_pool(wep, wep_count, Wss_slots[i].ship_class, i);
 
 		// copy to Wss_slots[]
 		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
@@ -3675,6 +3682,17 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 		return 0;
 	}
 
+	//ensure that the two banks are both compatable types-Bobboau
+	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[Carried_wl_icon.weapon_class][to_bank])){
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, to_bank+1);
+		return 0;
+	}
+	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[slot->wep[to_bank]][from_bank])){
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, from_bank+1);
+		return 0;
+	}
+//Warning(LOCATION,"slot slot");
+
 	// ensure that the banks are both of the same class
 	if ( (IS_BANK_PRIMARY(from_bank) && IS_BANK_SECONDARY(to_bank)) || (IS_BANK_SECONDARY(from_bank) && IS_BANK_PRIMARY(to_bank)) ) {
 		// put from_bank back into list
@@ -3793,6 +3811,12 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 		return 0;
 	}
 
+	//ensure that this bank can have this weapon-Bobboau
+	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[Carried_wl_icon.weapon_class][to_bank])){
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, to_bank+1);
+		return 0;
+	}
+//Warning(LOCATION,"list");
 	// find how much dest bank can fit
 	if ( to_bank < MAX_WL_PRIMARY )
 	{
@@ -3847,6 +3871,12 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound)
 		return 0;
 	}
 
+	//ensure that this bank can have this weapon-Bobboau
+	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[Carried_wl_icon.weapon_class][to_bank])){
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, to_bank+1);
+		return 0;
+	}
+//Warning(LOCATION,"list slot");
 	// dump slot weapon back into list
 	Wl_pool[slot->wep[to_bank]] += slot->wep_count[to_bank];
 	slot->wep_count[to_bank] = 0;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-01-19 01:07:41 $
+ * $Revision: 2.16 $
+ * $Date: 2003-02-25 06:22:49 $
  * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/01/19 01:07:41  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.14  2003/01/17 01:48:49  Goober5000
  * added capability to the $Texture replace code to substitute the textures
  * without needing and extra model, however, this way you can't substitute
@@ -784,7 +787,7 @@ texture_replace Texture_replace[MAX_TEXTURE_REPLACEMENTS];
 // Anything greater than or equal to PM_COMPATIBLE_VERSION and 
 // whose major version is less than or equal to this is considered
 // compatible.  
-#define PM_OBJFILE_MAJOR_VERSION 21
+#define PM_OBJFILE_MAJOR_VERSION 30
 
 static int Model_signature = 0;
 
@@ -1773,7 +1776,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							}
 						bank->glow_bitmap = bm_load( glow_texture_name );
 						if (bank->glow_bitmap < 0)	{
-							Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
+							Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
 						}else{
 							mprintf(( "glowbank texture num is %d\n", bank->glow_bitmap ));
 						}
