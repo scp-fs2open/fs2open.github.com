@@ -9,6 +9,7 @@
 #include "ship/ship.h"
 #include "hud/hudparse.h"
 #include "hud/hud.h"
+#include "hud/hudescort.h"
 
 //Global stuffs
 hud_info* current_hud;
@@ -22,76 +23,117 @@ extern int ships_inited; //Need this
 
 //ADD YOUR VARIABLES HERE
 //Gauges MUST come first, and all variables MUST be in the hud struct.
+
+//Use this when setting gauge variables. It gets the OFFSET of the value in the hud_info struct
 #define HUD_VAR(a) offsetof(hud_info, a)
+
 gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 {NULL,			HUD_VAR(Player_shield_coords),	"$Player Shield:",			396, 379, 634, 670,	NULL, NULL, NULL, NULL, NULL},
 {NULL,			HUD_VAR(Target_shield_coords),	"$Target Shield:",			142, 379, 292, 670,	NULL, NULL, NULL, NULL, NULL},
 {NULL,			HUD_VAR(Shield_mini_coords),	"$Shield Mini:",			305, 291, 497, 470, NULL, HUD_VAR(Shield_mini_fname), NULL, NULL, NULL},
 {NULL,			HUD_VAR(Aburn_coords),			"$Afterburner Energy:",		171, 265, 274, 424, HUD_VAR(Aburn_size) ,HUD_VAR(Aburn_fname), NULL, NULL, NULL},
 {NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size) ,HUD_VAR(Wenergy_fname), NULL, NULL, NULL},
+{NULL,			HUD_VAR(Escort_coords),			"$Escort List:",			486, 206, 865, 330, NULL, HUD_VAR(Escort_filename[0]), NULL, HUD_VAR(Escort_htext), NULL},
 //Mini-gauges
-{&gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				5, 7, 5, 7,			NULL, NULL, NULL, NULL},
-{&gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			11, 7, 11, 7,		NULL, NULL, NULL, NULL},
-{&gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			7, 7, 7, 7,			NULL, NULL, NULL, NULL}
+{&gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				5, 7, 5, 7,			NULL},
+{&gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			11, 7, 11, 7,		NULL},
+{&gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			7, 7, 7, 7,			NULL},
+{&gauges[5],	HUD_VAR(Escort_htext_coords),	"$Header Text:",			3, 2, 4, 1,			NULL},
+{&gauges[5],	HUD_VAR(Escort_list),			"$List:",					0, 12, 0, 13,		NULL, NULL, NULL, NULL, NULL, HG_NOADD},
+{&gauges[5],	HUD_VAR(Escort_entry),			"$Ship:",					0, 11, 0, 11,		NULL, HUD_VAR(Escort_filename[1]), NULL, NULL, NULL, HG_NOADD},
+{&gauges[5],	HUD_VAR(Escort_entry_last),		"$Last Ship:",				0, 11, 0, 11,		NULL, HUD_VAR(Escort_filename[2]), NULL, NULL, NULL, HG_NOADD},
+{&gauges[5],	HUD_VAR(Escort_name),			"$Ship Name:",				3, 0, 4, 0,			NULL, NULL, NULL, NULL, NULL, HG_NOADD},
+{&gauges[5],	HUD_VAR(Escort_integrity),		"$Ship Hull:",				128, 0, 116, 0,		NULL, NULL, NULL, NULL, NULL, HG_NOADD},
+{&gauges[5],	HUD_VAR(Escort_status),			"$Ship Status:",			-12, 0, -11, 0,		NULL, NULL, NULL, NULL, NULL, HG_NOADD}
 };
 
 //Number of gauges
-int Num_coord_types = 8;
+int Num_gauge_types = sizeof(gauges)/sizeof(gauge_info);
 int Num_custom_gauges = 0;
 
 //Loads defaults for if a hud isn't specified in the table
-static void load_hud_defaults()
+static void load_hud_defaults(hud_info *hud)
 {
 	//X values
 	if(gr_screen.max_w == 640)
 	{
 		//Size defaults
-		default_hud.Aburn_size[0] = default_hud.Wenergy_size[0] = 60;
+		hud->Aburn_size[0] = hud->Wenergy_size[0] = 60;
 
 		//Image defaults
-		strcpy(default_hud.Aburn_fname, "energy2");
-		strcpy(default_hud.Wenergy_fname, "energy2");
+		strcpy(hud->Aburn_fname, "energy2");
+		strcpy(hud->Wenergy_fname, "energy2");
 
-		//Don't change
-		default_hud.resolution[0] = 640;
-		default_hud.resolution[0] = 480;
+		/**************************************************/
+		//DO NOT CHANGE
+		hud->resolution[0] = 640;
+		hud->resolution[1] = 480;
+		/**************************************************/
 	}
 	else
 	{
 		//Size defaults
-		default_hud.Aburn_size[0] = default_hud.Wenergy_size[0] = 96;
+		hud->Aburn_size[0] = hud->Wenergy_size[0] = 96;
 
 		//Image defaults
-		strcpy(default_hud.Aburn_fname, "2_energy2");
-		strcpy(default_hud.Wenergy_fname, "2_energy2");
+		strcpy(hud->Aburn_fname, "2_energy2");
+		strcpy(hud->Wenergy_fname, "2_energy2");
 
-		//Don't change
-		default_hud.resolution[0] = 1024;
-		default_hud.resolution[1] = 768;
+		/**************************************************/
+		//DO NOT CHANGE
+		hud->resolution[0] = 1024;
+		hud->resolution[1] = 768;
+		/**************************************************/
 	}
 
 	//Neither
-	strcpy(default_hud.Shield_mini_fname, "targhit1");
+	strcpy(hud->Shield_mini_fname, "targhit1");
+	strcpy(hud->Escort_filename[0], "escort1");
+	strcpy(hud->Escort_filename[1], "escort2");
+	strcpy(hud->Escort_filename[2], "escort3");
+	strcpy(hud->Escort_htext, XSTR( "monitoring", 285));
 
+	/**************************************************/
 	//NONE OF THIS NEEDS TO BE MODIFIED TO SETUP VARS
 	gauge_info* cg;
-	for(int i = 0; i < Num_coord_types; i++)
+	for(int i = 0; i < Num_gauge_types; i++)
 	{
 		cg = &gauges[i];
 		if(gr_screen.max_w == 640)
 		{
-			HUD_INT(&default_hud, cg->coord_dest)[0] = cg->defaultx_640;
-			HUD_INT(&default_hud, cg->coord_dest)[1] = cg->defaulty_480;
+			HUD_INT(hud, cg->coord_dest)[0] = cg->defaultx_640;
+			HUD_INT(hud, cg->coord_dest)[1] = cg->defaulty_480;
 		}
 		else
 		{
-			HUD_INT(&default_hud, cg->coord_dest)[0] = cg->defaultx_1024;
-			HUD_INT(&default_hud, cg->coord_dest)[1] = cg->defaulty_768;
+			HUD_INT(hud, cg->coord_dest)[0] = cg->defaultx_1024;
+			HUD_INT(hud, cg->coord_dest)[1] = cg->defaulty_768;
 		}
 	}
 }
 
+static void calculate_gauges(hud_info* dest_hud)
+{
+	//Put any post-loading calculation code after the beep. *BEEP*
+
+	/**************************************************/
+	//DO NOT MODIFY this stuff, unless you're changing the loading system.
+	//Calculate parent gauge info
+	gauge_info* cg;
+	for(int i = 0; i < Num_gauge_types; i++)
+	{
+		cg = &gauges[i];
+		if(cg->parent && !(cg->placement_flags & HG_NOADD))
+		{
+			HUD_INT(dest_hud, cg->coord_dest)[0] = HUD_INT(dest_hud, cg->coord_dest)[0] + HUD_INT(dest_hud, cg->parent->coord_dest)[0];
+			HUD_INT(dest_hud, cg->coord_dest)[1] = HUD_INT(dest_hud, cg->coord_dest)[1] + HUD_INT(dest_hud, cg->parent->coord_dest)[1];
+		}
+	}
+}
+
+/****************************************************************************************************/
 /* You shouldn't have to modify anything past here to add gauges */
+/****************************************************************************************************/
 
 //This doesn't belong in parse_lo, it's not really that low.
 static int size_temp[2];
@@ -211,7 +253,7 @@ static void parse_resolution(hud_info* dest_hud)
 {
 	//Parse it
 	gauge_info* cg;
-	for(int i = 0; i < Num_coord_types; i++)
+	for(int i = 0; i < Num_gauge_types; i++)
 	{
 		cg = &gauges[i];
 		if(!cg->parent && cg->fieldname)
@@ -233,7 +275,7 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 
 		parent = NULL;
 
-		for(int i = 0; i < Num_coord_types; i++)
+		for(int i = 0; i < Num_gauge_types; i++)
 		{
 			cg = &gauges[i];
 			if(!parent)
@@ -251,20 +293,6 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 	}
 
 	dest_hud->loaded = true;
-}
-
-static void calculate_gauges(hud_info* dest_hud)
-{
-	gauge_info* cg;
-	for(int i = 0; i < Num_coord_types; i++)
-	{
-		cg = &gauges[i];
-		if(cg->parent)
-		{
-			HUD_INT(dest_hud, cg->coord_dest)[0] = HUD_INT(dest_hud, cg->coord_dest)[0] + HUD_INT(dest_hud, cg->parent->coord_dest)[0];
-			HUD_INT(dest_hud, cg->coord_dest)[1] = HUD_INT(dest_hud, cg->coord_dest)[1] + HUD_INT(dest_hud, cg->parent->coord_dest)[1];
-		}
-	}
 }
 
 /*
@@ -353,11 +381,11 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 
 void parse_custom_gauge()
 {
-	if(Num_coord_types < MAX_HUD_GAUGE_TYPES)
+	if(Num_gauge_types < MAX_HUD_GAUGE_TYPES)
 	{
 		char buffer[32];
 
-		gauge_info* cg = &gauges[Num_coord_types];
+		gauge_info* cg = &gauges[Num_gauge_types];
 		memset(cg, 0, sizeof(gauge_info));
 		//Set all the ptrs
 		cg->coord_dest = HUD_VAR(custom_gauge_coords[Num_custom_gauges]);
@@ -395,7 +423,7 @@ void parse_custom_gauge()
 			cg->parent = hud_get_gauge(buffer);
 		}
 
-		Num_coord_types++;
+		Num_gauge_types++;
 		Num_custom_gauges++;
 	}
 }
@@ -418,6 +446,10 @@ int parse_hud_gauges_tbl(char* longname)
 
 	read_file_text(longname);
 
+	if(optional_string("$Max Escort Ships:"))
+	{
+		stuff_int(&Max_escort_ships);
+	}
 	
 	if(optional_string("#Custom Gauges"))
 	{
@@ -528,7 +560,7 @@ int parse_hud_gauges_tbl(char* longname)
 
 void hud_positions_init()
 {
-	load_hud_defaults();
+	load_hud_defaults(&default_hud);
 
 	if(!parse_hud_gauges_tbl("hud_gauges.tbl"))
 	{
@@ -585,7 +617,7 @@ gauge_info* hud_get_gauge(char* name)
 
 int hud_get_gauge_index(char* name)
 {
-	for(int i = 0; i < Num_coord_types; i++)
+	for(int i = 0; i < Num_gauge_types; i++)
 	{
 		if(!strnicmp(gauges[i].fieldname + sizeof(char), name, strlen(gauges[i].fieldname) - 2))
 		{

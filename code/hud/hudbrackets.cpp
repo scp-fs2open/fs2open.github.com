@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-06-26 00:27:20 $
+ * $Revision: 2.7 $
+ * $Date: 2004-06-26 03:19:53 $
  * $Author: wmcoolmon $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/06/26 00:27:20  wmcoolmon
+ * Basic target info next to targeted object.
+ *
  * Revision 2.5  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -830,6 +833,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 					case ASTEROID_TYPE_MEDIUM:
 					case ASTEROID_TYPE_BIG:
 						tinfo_name = NOX("Asteroid");
+						break;
 					default:
 						tinfo_name = XSTR( "Debris", 348);
 				}
