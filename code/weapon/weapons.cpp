@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2005/03/30 02:32:41  wmcoolmon
+ * Made it so *Snd fields in ships.tbl and weapons.tbl take the sound name
+ * as well as its index (ie "L_sidearm.wav" instead of "76")
+ *
  * Revision 2.102  2005/03/27 12:28:35  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -802,6 +806,8 @@ int missile_model = -1;
 
 char	*Weapon_names[MAX_WEAPON_TYPES];
 
+int     First_secondary_index = -1;
+
 extern int Cmdline_load_only_used;
 static int *used_weapons = NULL;
 
@@ -1146,7 +1152,7 @@ void parse_wi_flags(weapon_info *weaponp)
 	}
 	if (weaponp->wi_flags2 & WIF2_LOCAL_SSM)
 	{
-		if (!(weaponp->wi_flags & WIF_HOMING))
+		if (!(weaponp->wi_flags & WIF_HOMING) || (weaponp->subtype !=WP_MISSILE))
 		{
 			Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
 		}
@@ -2581,6 +2587,62 @@ void create_weapon_names()
 	for (i=0; i<Num_weapon_types; i++)
 		Weapon_names[i] = Weapon_info[i].name;
 }
+
+void sort_weapons_by_type()
+{
+	weapon_info lasers[MAX_WEAPON_TYPES]; int num_lasers=0;
+	weapon_info beams[MAX_WEAPON_TYPES]; int num_beams=0;
+	weapon_info missiles[MAX_WEAPON_TYPES]; int num_missiles=0;
+	int i;
+
+	for (i=0; i < MAX_WEAPON_TYPES; i++)
+	{
+		switch (Weapon_info[i].subtype)
+		{
+			case WP_LASER:
+				lasers[num_lasers++]=Weapon_info[i];
+				break;
+		
+			case WP_BEAM:
+				beams[num_beams++]=Weapon_info[i];
+				break;
+
+			case WP_MISSILE:
+				missiles[num_missiles++]=Weapon_info[i];
+				break;
+			default:
+				continue;
+		}
+	}
+
+	for (i=0; i < num_lasers; i++)
+	{
+		Weapon_info[i] = lasers[i];
+	}
+
+	for (i=0; i < num_beams; i++)
+	{
+		Weapon_info[i+num_lasers] = beams[i];
+	}
+
+	First_secondary_index = num_lasers+num_beams;
+
+	for (i=0; i < num_missiles; i++)
+	{
+		Weapon_info[i+num_lasers+num_beams] = missiles[i];
+	}
+}
+
+void reset_weapon_info()
+{
+	memset(Weapon_info, 0, sizeof(weapon_info)*MAX_WEAPON_TYPES);
+
+	for (int i = 0; i < MAX_WEAPON_TYPES; i++)
+	{
+		Weapon_info[i].subtype = WP_UNUSED;
+	}
+}
+
 void weapons_info_close();
 // This will get called once at game startup
 void weapon_init()
@@ -2614,6 +2676,7 @@ void weapon_init()
 		}
 		else
 		{	
+			reset_weapon_info();
 			Num_weapon_types = 0;
 			Num_spawn_types = 0;
 			parse_weaponstbl("weapons.tbl", false);
@@ -2627,6 +2690,7 @@ void weapon_init()
 				parse_weaponstbl(tbl_file_names[i], true);
 			}
 			create_weapon_names();
+			sort_weapons_by_type();
 			Weapons_inited = 1;
 		}
 	}
