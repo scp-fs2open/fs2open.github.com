@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.70 $
- * $Date: 2004-02-16 11:47:32 $
+ * $Revision: 2.71 $
+ * $Date: 2004-02-16 21:22:15 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2004/02/16 11:47:32  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.69  2004/02/14 00:18:30  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -7650,6 +7657,12 @@ int main(int argc, char *argv[])
 
 #ifdef _WIN32
 	_CrtDumpMemoryLeaks();
+
+#ifdef _DEBUG
+	void memblockinfo_output_memleak();
+	memblockinfo_output_memleak();
+#endif
+
 #endif
 	
 	return result;
@@ -7752,11 +7765,6 @@ void game_shutdown(void)
 	event_music_close();
 #ifndef NO_NETWORK
 	psnet_close();
-#endif
-
-#ifdef _WIN32
-	void memblockinfo_output_memleak();
-	memblockinfo_output_memleak();
 #endif
 
 	os_cleanup();
