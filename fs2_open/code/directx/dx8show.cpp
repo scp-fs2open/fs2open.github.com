@@ -1,3 +1,5 @@
+#ifndef NO_DSHOW_CODE
+
 #include <dshow.h>
 #include <stdio.h>
 
@@ -320,3 +322,15 @@ bool dx8show_stream_movie(void)
     return false;
 }
 
+#else
+
+#pragma message( "WARNING: You have not compiled the movie code into this build (remove NO_DSHOW_CODE)" )
+
+#include "windows.h"
+
+bool OpenClip(HWND ghApp, char *g_szFileName) {return false;};
+void CloseClip(HWND ghApp) {};
+bool dx8show_stream_movie(void) {return true;};
+void PassMsgToVideoWindow(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {};
+
+#endif
