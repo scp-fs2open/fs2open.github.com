@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.55 $
- * $Date: 2004-06-06 12:25:19 $
- * $Author: randomtiger $
+ * $Revision: 2.56 $
+ * $Date: 2004-06-19 22:15:48 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2004/06/06 12:25:19  randomtiger
+ * Added new compression option -pcx32dds, build posted in RSB forum.
+ * Changed flag because of launcher bug, have fixed launcher bug, will distribute later.
+ * Also removed experimental flag from launcher flag list, stupid people were reporting bugs on unfinished code.
+ *
  * Revision 2.54  2004/04/26 18:23:47  Kazan
  * -no_fps_capping
  *
@@ -484,6 +489,7 @@ extern int Cmdline_no_set_gamma;
 extern int Cmdline_d3d_no_vsync;
 extern int Cmdline_pcx32;
 extern int Cmdline_pcx32dds;
+extern int Cmdline_nomotiondebris;
 
 extern int Cmdline_noglow;
 extern int Cmdline_timerbar;
