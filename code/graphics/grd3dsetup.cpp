@@ -902,6 +902,7 @@ void d3d_setup_function_pointers()
 		gr_screen.gf_reset_lighting = gr_d3d_reset_lighting;
 
 		gr_screen.gf_lighting = gr_d3d_lighting;
+		gr_screen.gf_center_alpha = gr_d3d_center_alpha;
 
 		gr_screen.start_clip_plane = d3d_start_clip;
 		gr_screen.end_clip_plane = d3d_end_clip;

@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.68 $
- * $Date: 2004-02-14 00:18:34 $
- * $Author: randomtiger $
+ * $Revision: 2.69 $
+ * $Date: 2004-02-15 03:04:25 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2004/02/14 00:18:34  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.67  2004/02/13 04:17:14  randomtiger
  * Turned off fog in OGL for Fred.
  * Simulated speech doesnt say tags marked by $ now.
@@ -5144,6 +5155,9 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 			gr_set_bitmap( texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 1.0 );
 			gr_zbuffer_set(GR_ZBUFF_FULL);
 		}
+		if((Interp_flags & MR_EDGE_ALPHA))gr_center_alpha(-1);
+		else if((Interp_flags & MR_CENTER_ALPHA))gr_center_alpha(1);
+		else gr_center_alpha(0);
 
 		gr_render_buffer(model->buffer[i].vertex_buffer);		
 	}

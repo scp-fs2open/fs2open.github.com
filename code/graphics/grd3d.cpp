@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.51 $
- * $Date: 2004-02-14 00:18:31 $
- * $Author: randomtiger $
+ * $Revision: 2.52 $
+ * $Date: 2004-02-15 03:04:25 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2004/02/14 00:18:31  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.50  2004/01/24 14:31:27  randomtiger
  * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
  * Its optional and off by default, use -d3d_particle to activiate.
@@ -1956,8 +1967,11 @@ void gr_d3d_render_line_buffer(int idx){
 	gr_d3d_set_cull(1);
 }
 
+extern int GR_center_alpha;
 bool the_lights_are_on;
 extern bool lighting_enabled;
+void gr_d3d_center_alpha_int(int type);
+
 void gr_d3d_render_buffer(int idx)
 {
 	TIMERBAR_PUSH(3);
@@ -1976,13 +1990,13 @@ void gr_d3d_render_buffer(int idx)
 		material.Diffuse.a = gr_screen.current_alpha;
 		material.Specular.a = gr_screen.current_alpha;
 		material.Emissive.a = gr_screen.current_alpha;
-		
 	}else{
 		material.Ambient.a = 1.0;
 		material.Diffuse.a = 1.0;
 		material.Specular.a = 1.0;
 		material.Emissive.a = 1.0f;
 	}
+	if(GR_center_alpha)
 	if(!lighting_enabled){
 		int l = int(255.0f*gr_screen.current_alpha);
 		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(l,l,l,l));
@@ -2026,9 +2040,11 @@ void gr_d3d_render_buffer(int idx)
 	}else
 			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
 
+	if(GR_center_alpha){
 	pre_render_lights_init();
 	if(lighting_enabled){
 		shift_active_lights(0);
+	}
 	}
 
 //	bool single_pass_spec = false;
@@ -2050,6 +2066,7 @@ void gr_d3d_render_buffer(int idx)
 
 	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DVERTEX));
 
+	gr_d3d_center_alpha_int(GR_center_alpha);
 //	if(!lighting_enabled)		d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
 	GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
 //	if(!lighting_enabled)		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
@@ -2083,9 +2100,16 @@ void gr_d3d_render_buffer(int idx)
 	set_stage_for_defuse();
 
 
+	d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(0,0,0,0));
 	for(int i = 1; i<passes; i++){
 		shift_active_lights(i);
 		GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+	}
+	if(!lighting_enabled){
+		int l = int(255.0f*gr_screen.current_alpha);
+		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(l,l,l,l));
+	}else{
+		d3d_SetRenderState(D3DRS_AMBIENT, ambient_light);
 	}
 
 	pre_render_lights_init();
@@ -2104,6 +2128,7 @@ void gr_d3d_render_buffer(int idx)
 		if(set_stage_for_spec_mapped()){
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 			GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+			d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(0,0,0,0));
 			for(int i = 1; i<passes; i++){
 				shift_active_lights(i);
 				GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);

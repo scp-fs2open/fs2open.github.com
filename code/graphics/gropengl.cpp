@@ -2,13 +2,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.62 $
- * $Date: 2004-02-14 00:18:32 $
- * $Author: randomtiger $
+ * $Revision: 2.63 $
+ * $Date: 2004-02-15 03:04:25 $
+ * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2004/02/14 00:18:32  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.61  2004/02/13 04:17:12  randomtiger
  * Turned off fog in OGL for Fred.
  * Simulated speech doesnt say tags marked by $ now.
@@ -4938,6 +4949,10 @@ void opengl_render_timer_bar(int colour, float x, float y, float w, float h)
 	glEnd();
 }
 
+void gr_opengl_center_alpha( int type){
+	//do stuff here
+}
+
 extern char *Osreg_title;
 void gr_opengl_init(int reinit)
 {
@@ -5348,6 +5363,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 
 		gr_screen.gf_lighting = gr_opengl_set_lighting;
+		gr_screen.gf_center_alpha = gr_opengl_center_alpha;
+
 
 
 	}
