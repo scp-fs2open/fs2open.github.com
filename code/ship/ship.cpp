@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.127 $
- * $Date: 2004-07-01 01:54:32 $
- * $Author: phreak $
+ * $Revision: 2.128 $
+ * $Date: 2004-07-10 08:03:13 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.127  2004/07/01 01:54:32  phreak
+ * function pointer radar update.
+ * will enable us to make different radar styles that we can switch between
+ *
  * Revision 2.126  2004/06/18 04:59:54  wmcoolmon
  * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
  *
@@ -2730,7 +2734,7 @@ strcpy(parse_error_text, temp_error);
 	if ( sip->flags & SIF_SHIP_COPY ) {
 		int index;
 
-		index = ship_info_base_lookup( Num_ship_types );		// Num_ship_types is our current entry into the array
+		index = ship_info_base_lookup( Num_ship_types - 1 );		// Num_ship_types - 1 is our current entry into the array
 		if ( index == -1 ) {
 			char name[NAME_LENGTH];
 
