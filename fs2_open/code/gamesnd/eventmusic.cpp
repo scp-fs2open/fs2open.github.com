@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-07-26 20:47:30 $
- * $Author: Kazan $
+ * $Revision: 2.15 $
+ * $Date: 2004-12-11 09:03:08 $
+ * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/26 20:47:30  Kazan
+ * remove MCD complete
+ *
  * Revision 2.13  2004/07/17 09:26:00  taylor
  * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
  *
@@ -425,7 +428,7 @@ void event_music_init()
 	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
 	char *tbl_file_names[MAX_TBL_PARTS];
 
-	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-msc.tbm", CF_SORT_REVERSE);
+	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-mus.tbm", CF_SORT_REVERSE);
 	for(int i = 0; i < num_files; i++)
 	{
 		//HACK HACK HACK
