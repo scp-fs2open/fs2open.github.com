@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.45 $
- * $Date: 2003-03-19 06:23:27 $
+ * $Revision: 2.46 $
+ * $Date: 2003-03-20 00:08:08 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/03/19 06:23:27  Goober5000
+ * added warp-effect sexp
+ * --Goober5000
+ *
  * Revision 2.44  2003/03/18 13:38:07  unknownplayer
  * Fixed up a bug in the code which was causing all mission loads to crash.
  * As of this update, the DX merge is officially functional and complete within the CVS main branch. Tell Inquisitor we won't need to roll back at all, but Goober5000 needs to go and look at his SEXP code since he messed up a bunch of checking functions with it
@@ -5972,6 +5976,7 @@ void sexp_warp_effect(int n)
 	radius = atoi(CTEXT(n));
 	n = CDR(n);
 	duration = atoi(CTEXT(n));
+	if (duration < 4) duration = 4;
 	n = CDR(n);
 
 	warp_open_sound_index = atoi(CTEXT(n));
@@ -6040,7 +6045,23 @@ void sexp_emp_effect(int n)
 		"\t4: Intensity\r\n"
 		"\t5: Duration in seconds" },*/
 {
+	vector origin;
+	int intensity, duration;
 
+	// read in data --------------------------------
+	origin.xyz.x = (float)atoi(CTEXT(n));
+	n = CDR(n);
+	origin.xyz.y = (float)atoi(CTEXT(n));
+	n = CDR(n);
+	origin.xyz.z = (float)atoi(CTEXT(n));
+	n = CDR(n);
+
+	intensity = atoi(CTEXT(n));
+	n = CDR(n);
+	duration = atoi(CTEXT(n));
+
+
+	// start emp effect
 }
 
 void sexp_send_message( int n )
