@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-01-17 04:57:17 $
+ * $Revision: 2.24 $
+ * $Date: 2003-01-18 09:25:41 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/01/17 04:57:17  Goober5000
+ * Allowed selection of either $Texture Replace, which keeps track of individual
+ * replacement textures for a ship, or $Duplicate Model Texture Replace, which
+ * duplicates a model and reskins it.  Use $Duplicate Model Texture Replace
+ * if you want to substitute an animated texture or a transparent texture.
+ * --Goober5000
+ *
  * Revision 2.22  2003/01/17 01:48:50  Goober5000
  * added capability to the $Texture replace code to substitute the textures
  * without needing and extra model, however, this way you can't substitute
@@ -712,6 +719,7 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 
 char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"primitive-sensors"
+	"no-subspace-drive"
 };
 
 char *Starting_wing_names[MAX_STARTING_WINGS+1] = {
@@ -1734,20 +1742,23 @@ int parse_create_object(p_object *objp)
 	if ( objp->flags & P_SF_HIDDEN_FROM_SENSORS )
 		Ships[shipnum].flags |= SF_HIDDEN_FROM_SENSORS;
 
+	if ( objp->flags & P_SF_VAPORIZE )
+		Ships[shipnum].flags |= SF_VAPORIZE;
+
+	if ( objp->flags & P_SF2_STEALTH )
+		Ships[shipnum].flags2 |= SF2_STEALTH;
+
+	if ( objp->flags & P_SF2_FRIENDLY_STEALTH_INVIS )
+		Ships[shipnum].flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
+
+	if ( objp->flags & P_SF2_DONT_COLLIDE_INVIS )
+		Ships[shipnum].flags2 |= SF2_DONT_COLLIDE_INVIS;
+
 	if ( objp->flags2 & P2_SF2_PRIMITIVE_SENSORS )
 		Ships[shipnum].flags2 |= SF2_PRIMITIVE_SENSORS;
 
-	if ( objp->flags & P_SIF_STEALTH )
-		Ship_info[Ships[shipnum].ship_info_index].flags |= SIF_STEALTH;
-
-	if ( objp->flags & P_SIF_DONT_COLLIDE_INVIS )
-		Ship_info[Ships[shipnum].ship_info_index].flags |= SIF_DONT_COLLIDE_INVIS;
-
-	if ( objp->flags & P_SIF2_FRIENDLY_STEALTH_INVISIBLE )
-		Ship_info[Ships[shipnum].ship_info_index].flags2 |= SIF2_FRIENDLY_STEALTH_INVISIBLE;
-
-	if ( objp->flags & P_SF_VAPORIZE )
-		Ship_info[Ships[shipnum].ship_info_index].flags |= SF_VAPORIZE;
+	if ( objp->flags2 & P2_SF2_NO_SUBSPACE_DRIVE )
+		Ships[shipnum].flags2 |= SF2_NO_SUBSPACE_DRIVE;
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
@@ -2211,6 +2222,7 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	required_string("$Determination:");
 	stuff_int(&objp->determination);
 
+	// set flags
 	objp->flags = 0;
 	if (optional_string("+Flags:")) {
 		count = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS);
@@ -2243,6 +2255,13 @@ int parse_object(mission *pm, int flag, p_object *objp)
 				Warning(LOCATION, "Unknown flag2 in mission file: %s\n", flag_strings_2[i]);
 		}
 	}
+
+	// set certain flags that used to be in ship_info - Goober5000
+	if (Ship_info[objp->ship_class].flags & SIF_SHIP_CLASS_STEALTH)
+		objp->flags |= P_SF2_STEALTH;
+	if (Ship_info[objp->ship_class].flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
+		objp->flags |= P_SF2_DONT_COLLIDE_INVIS;
+
 
 	// always store respawn priority, just for ease of implementation
 	objp->respawn_priority = 0;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-31 07:26:40 $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-18 09:25:41 $
  * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/31 07:26:40  Goober5000
+ * added damaged-escort-priority-all sexp
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/31 05:17:13  Goober5000
  * fixed escort list behavior for stealthy ships
  * --Goober5000
@@ -379,12 +383,12 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 			}
 
 			// don't process most stealth ships
-			if ( (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_STEALTH) )
+			if ( (Ships[objp->instance].flags2 & SF2_STEALTH) )
 			{
 				if ( Ships[objp->instance].team == TEAM_FRIENDLY )
 				{
 					// friendly stealths are only not seen when explicitly specified
-					if ( Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_FRIENDLY_STEALTH_INVISIBLE )
+					if ( Ships[objp->instance].flags2 & SF2_FRIENDLY_STEALTH_INVIS )
 					{
 						continue;
 					}

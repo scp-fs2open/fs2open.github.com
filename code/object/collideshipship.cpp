@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-18 09:25:42 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/26 16:17:46  penguin
  * renamed 'big' and 'small' (conflict w/ MS include file)
  *
@@ -732,7 +735,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 	mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);			// flags
 
 	//	Only check invisible face polygons for ship:ship of different teams.
-	if ( !(Ship_info[Ships[heavy_obj->instance].ship_info_index].flags & SIF_DONT_COLLIDE_INVIS) ) {
+	if ( !(Ships[heavy_obj->instance].flags & SF2_DONT_COLLIDE_INVIS) ) {
 		if ((heavy_obj->flags & OF_PLAYER_SHIP) || (light_obj->flags & OF_PLAYER_SHIP) || (Ships[heavy_obj->instance].team != Ships[light_obj->instance].team) ) {
 			mc.flags |= MC_CHECK_INVISIBLE_FACES;
 		}
@@ -1533,6 +1536,7 @@ void do_kamikaze_crash(object *obj1, object *obj2)
 
 // response when hit by fast moving cap ship
 void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_obj, float impulse, vector *normal)
+
 {
 	// Move player out of the way of a BIG|HUGE ship warping in or out
 	if (Ship_info[Ships[big_obj->instance].ship_info_index].flags & (SIF_CAPITAL|SIF_SUPERCAP)) {

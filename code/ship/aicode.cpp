@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-01-15 07:09:09 $
+ * $Revision: 2.16 $
+ * $Date: 2003-01-18 09:25:40 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/01/15 07:09:09  Goober5000
+ * changed most references to modelnum to use ship instead of ship_info --
+ * this will help with the change-model sexp and any other instances of model
+ * changing
+ * --Goober5000
+ *
  * Revision 2.14  2003/01/07 20:06:44  Goober5000
  * added ai-chase-any-except sexp
  * --Goober5000
@@ -1187,7 +1193,7 @@ void ai_level_init()
 int is_object_stealth_ship(object* objp)
 {
 	if (objp->type == OBJ_SHIP) {
-		if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_STEALTH) {
+		if (Ships[objp->instance].flags2 & SF2_STEALTH) {
 			return 1;
 		}
 	}
@@ -1277,7 +1283,7 @@ int ai_is_stealth_visible(object *viewer_objp, object *stealth_objp)
 	Assert(viewer_objp->type == OBJ_SHIP);
 
 	// check if stealth ship
-	Assert(Ship_info[shipp->ship_info_index].flags & SIF_STEALTH);
+	Assert(shipp->flags2 & SF2_STEALTH);
 
 	// check if in neb and below awac level for visible
 	if ( !ship_is_visible_by_team_new(stealth_objp, &Ships[viewer_objp->instance]) ) {
@@ -2032,7 +2038,7 @@ int object_is_targetable(object *target, ship *viewer)
 	// if target is ship, check if visible by team
 	if (target->type == OBJ_SHIP)
 	{
-		stealth_ship = (Ship_info[Ships[target->instance].ship_info_index].flags & SIF_STEALTH);
+		stealth_ship = (Ships[target->instance].flags2 & SF2_STEALTH);
 		if ( ship_is_visible_by_team_new(target, viewer) == 1)
 		{
 			return 1;
@@ -2339,6 +2345,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 {
 	ai_info	*aip;
 	ship_subsys	*attacking_subsystem;
+	ship *shipp = &Ships[eno->trial_objp->instance];
 
 	aip = &Ai_info[Ships[Objects[eno->objnum].instance].ai_index];
 
@@ -2351,11 +2358,11 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 				return;
 #endif
 			//	If only supposed to attack ship in a specific wing, don't attack other ships.
-			if ((eno->enemy_wing != -1) && (Ships[eno->trial_objp->instance].wingnum != eno->enemy_wing))
+			if ((eno->enemy_wing != -1) && (shipp->wingnum != eno->enemy_wing))
 				return;
 
 			//	Don't keep firing at a ship that is in its death throes.
-			if (Ships[eno->trial_objp->instance].flags & SF_DYING)
+			if (shipp->flags & SF_DYING)
 				return;
 
 			if (is_ignore_object(aip, ((eno->trial_objp)-Objects)))
@@ -2364,10 +2371,10 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 			if (eno->trial_objp->flags & OF_PROTECTED)
 				return;
 
-			if (Ships[eno->trial_objp->instance].flags & SF_ARRIVING)
+			if (shipp->flags & SF_ARRIVING)
 				return;
 
-			ship_info *sip = &Ship_info[Ships[eno->trial_objp->instance].ship_info_index];
+			ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 			if (sip->flags & (SIF_NO_SHIP_TYPE | SIF_NAVBUOY))
 				return;
@@ -2383,7 +2390,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 					// a wing?
 					if (aigp->special_object_flags & (1<<i))
 					{
-						test_num = Ships[eno->trial_objp->instance].wingnum;
+						test_num = shipp->wingnum;
 						
 					}
 					// a ship
@@ -2398,7 +2405,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 				}
 			}
 
-			if (Ships[eno->trial_objp->instance].team & eno->enemy_team_mask) {
+			if (shipp->team & eno->enemy_team_mask) {
 				float	dist;
 				int	num_attacking;
 
@@ -2408,7 +2415,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 					// check if can be targeted if inside nebula
 					if ( !object_is_targetable(eno->trial_objp, &Ships[Objects[eno->objnum].instance]) ) {
 						// check if stealth ship is visible, but not "targetable"
-						if ( !((sip->flags & SIF_STEALTH) && ai_is_stealth_visible(&Objects[eno->objnum], eno->trial_objp)) ) {
+						if ( !((shipp->flags2 & SF2_STEALTH) && ai_is_stealth_visible(&Objects[eno->objnum], eno->trial_objp)) ) {
 							return;
 						}
 					}
@@ -2430,7 +2437,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 				}
 				
 				//	Make it more likely that fighters (or bombers) will be picked as an enemy by scaling up distance for other types.
-				if ((Ship_info[Ships[eno->trial_objp->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))) {
+				if ((Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))) {
 					dist = dist * 0.5f;
 				}
 
@@ -8182,7 +8189,7 @@ void ai_chase()
 	ship			*shipp = &Ships[Pl_objp->instance];
 	ship_weapon	*swp = &shipp->weapons;
 	ai_info		*aip = &Ai_info[shipp->ai_index];
-	int			enemy_sip_flags;
+	int			enemy_sip_flags, enemy_shipp_flags2;
 	int has_fired = -1;
 
 	if (aip->mode != AIM_CHASE) {
@@ -8204,8 +8211,10 @@ void ai_chase()
 
 	if ( En_objp->type == OBJ_SHIP ) {
 		enemy_sip_flags = Ship_info[Ships[En_objp->instance].ship_info_index].flags;
+		enemy_shipp_flags2 = Ships[En_objp->instance].flags2;
 	} else {
 		enemy_sip_flags = 0;
+		enemy_shipp_flags2 = 0;
 	}
 
 	if ( enemy_sip_flags > 0 ) {
@@ -8233,7 +8242,7 @@ void ai_chase()
 	real_dot_to_enemy = vm_vec_dot(&real_vec_to_enemy, &Pl_objp->orient.vec.fvec);
 
 	int is_stealthy_ship = 0;
-	if ( (enemy_sip_flags > 0) && (enemy_sip_flags & SIF_STEALTH) ) {
+	if ( (enemy_sip_flags > 0) && (enemy_shipp_flags2 & SF2_STEALTH) ) {
 		if ( ai_is_stealth_visible(Pl_objp, En_objp) != STEALTH_FULLY_TARGETABLE ) {
 			is_stealthy_ship = 1;
 		}
@@ -14147,7 +14156,7 @@ void ai_frame(int objnum)
 	// set base stealth info each frame
 	aip->ai_flags &= ~AIF_STEALTH_PURSUIT;
 	if (En_objp && En_objp->type == OBJ_SHIP) {
-		if (Ship_info[Ships[En_objp->instance].ship_info_index].flags & SIF_STEALTH) {
+		if (Ships[En_objp->instance].flags2 & SF2_STEALTH) {
 			int stealth_state = ai_is_stealth_visible(Pl_objp, En_objp);
 			float dist = vm_vec_dist_quick(&En_objp->pos, &Pl_objp->pos);
 

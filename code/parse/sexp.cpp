@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.31 $
- * $Date: 2003-01-15 21:29:05 $
- * $Author: anonymous $
+ * $Revision: 2.32 $
+ * $Date: 2003-01-18 09:25:41 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/01/15 21:29:05  anonymous
+ * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
+ *
  * Revision 2.30  2003/01/13 23:20:00  Goober5000
  * bug hunting; fixed the beam whack effect bug
  * --Goober5000
@@ -3706,7 +3709,7 @@ int sexp_is_ship_stealthy(int n)
 		return SEXP_NAN;
 	}
 
-	if (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_STEALTH)
+	if (Ships[shipnum].flags2 & SF2_STEALTH)
 		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
@@ -3730,7 +3733,7 @@ int sexp_is_friendly_stealth_visible(int n)
 		return SEXP_NAN;
 	}
 
-	if (Ship_info[Ships[shipnum].ship_info_index].flags2 & SIF2_FRIENDLY_STEALTH_INVISIBLE)
+	if (Ships[shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS)
 		return SEXP_FALSE;
 	else
 		return SEXP_TRUE;
@@ -6694,11 +6697,11 @@ void sexp_dont_collide_invisible( int n, int dont_collide )
 		{
 			if ( dont_collide )
 			{
-				Ship_info[Ships[num].ship_info_index].flags |= SIF_DONT_COLLIDE_INVIS;
+				Ships[num].flags2 |= SF2_DONT_COLLIDE_INVIS;
 			}
 			else
 			{
-				Ship_info[Ships[num].ship_info_index].flags &= ~SIF_DONT_COLLIDE_INVIS;
+				Ships[num].flags2 &= ~SF2_DONT_COLLIDE_INVIS;
 			}
 
 		}
@@ -6710,9 +6713,9 @@ void sexp_dont_collide_invisible( int n, int dont_collide )
 			if ( parse_obj )
 			{
 				if ( dont_collide )
-					parse_obj->flags |= P_SIF_DONT_COLLIDE_INVIS;
+					parse_obj->flags |= P_SF2_DONT_COLLIDE_INVIS;
 				else
-					parse_obj->flags &= ~P_SIF_DONT_COLLIDE_INVIS;
+					parse_obj->flags &= ~P_SF2_DONT_COLLIDE_INVIS;
 
 	#ifndef NDEBUG
 			}
@@ -6845,11 +6848,11 @@ void sexp_ships_stealthy(int n, int stealthy)
 		{
 			if ( stealthy )
 			{
-				Ship_info[Ships[num].ship_info_index].flags |= SIF_STEALTH;
+				Ships[num].flags2 |= SF2_STEALTH;
 			}
 			else
 			{
-				Ship_info[Ships[num].ship_info_index].flags &= ~SIF_STEALTH;
+				Ships[num].flags2 &= ~SF2_STEALTH;
 
 				// add to escort list because we became visible
 				if (Ships[num].flags & SF_ESCORT)
@@ -6868,11 +6871,11 @@ void sexp_ships_stealthy(int n, int stealthy)
 			{
 				if ( stealthy )
 				{
-					parse_obj->flags |= P_SIF_STEALTH;
+					parse_obj->flags |= P_SF2_STEALTH;
 				}
 				else
 				{
-					parse_obj->flags &= ~P_SIF_STEALTH;
+					parse_obj->flags &= ~P_SF2_STEALTH;
 				}
 
 	#ifndef NDEBUG
@@ -6905,11 +6908,11 @@ void sexp_friendly_stealth_invisible(int n, int invisible)
 		{
 			if ( invisible )
 			{
-				Ship_info[Ships[num].ship_info_index].flags2 |= SIF2_FRIENDLY_STEALTH_INVISIBLE;
+				Ships[num].flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
 			}
 			else
 			{
-				Ship_info[Ships[num].ship_info_index].flags2 &= ~SIF2_FRIENDLY_STEALTH_INVISIBLE;
+				Ships[num].flags2 &= ~SF2_FRIENDLY_STEALTH_INVIS;
 
 				// add to escort list because we became visible
 				if (Ships[num].flags & SF_ESCORT)
@@ -6928,11 +6931,11 @@ void sexp_friendly_stealth_invisible(int n, int invisible)
 			{
 				if ( invisible )
 				{
-					parse_obj->flags |= P_SIF2_FRIENDLY_STEALTH_INVISIBLE;
+					parse_obj->flags |= P_SF2_FRIENDLY_STEALTH_INVIS;
 				}
 				else
 				{
-					parse_obj->flags &= ~P_SIF2_FRIENDLY_STEALTH_INVISIBLE;
+					parse_obj->flags &= ~P_SF2_FRIENDLY_STEALTH_INVIS;
 				}
 
 	#ifndef NDEBUG

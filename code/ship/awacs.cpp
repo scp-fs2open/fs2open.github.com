@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-03 21:58:07 $
+ * $Revision: 2.5 $
+ * $Date: 2003-01-18 09:25:40 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/03 21:58:07  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/27 02:57:50  Goober5000
  * removed the existing stealth sexps and replaced them with the following...
  * ship-stealthy
@@ -286,16 +293,17 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 #endif
 
 	// Goober5000
-	sip = &Ship_info[Ships[target->instance].ship_info_index];
-	friendly_invisible = (sip->flags & SIF_STEALTH) && (sip->flags2 & SIF2_FRIENDLY_STEALTH_INVISIBLE);
+	shipp = &Ships[target->instance];
+	sip = &Ship_info[shipp->ship_info_index];
+	friendly_invisible = (shipp->flags2 & SF2_STEALTH) && (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS);
 	
-	int stealth_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (sip->flags & SIF_STEALTH);
+	int stealth_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (shipp->flags2 & SF2_STEALTH);
 	int nebula_mission = (The_mission.flags & MISSION_FLAG_FULLNEB);
 	int check_huge_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (sip->flags & SIF_HUGE_SHIP);
 
 	// ships on the same team are always viewable
 	// not necessarily now! :) -- Goober5000
-	if((target->type == OBJ_SHIP) && (Ships[target->instance].team == viewer->team) && (!friendly_invisible))
+	if((target->type == OBJ_SHIP) && (shipp->team == viewer->team) && (!friendly_invisible))
 	{
 		return FULLY_TARGETABLE;
 	}
@@ -348,7 +356,6 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 
 	// check for a tagged ship. TAG'd ships are _always_ visible
 	if(target->type == OBJ_SHIP){
-		shipp = &Ships[target->instance];
 		if(shipp->tag_left > 0.0f || shipp->level2_tag_left > 0.0f){
 			return FULLY_TARGETABLE;
 		}
@@ -612,7 +619,7 @@ int ship_is_visible_by_team_new(object *target, ship *viewer)
 	Assert(viewer);
 	Assert(target->type == OBJ_SHIP);
 
-	ship_info *target_sip = &Ship_info[Ships[target->instance].ship_info_index];
+	ship *target_shipp = &Ships[target->instance];
 
 	// not visible if viewer has primitive sensors
 	if (viewer->flags2 & SF2_PRIMITIVE_SENSORS)
@@ -622,11 +629,11 @@ int ship_is_visible_by_team_new(object *target, ship *viewer)
 
 	// friendly stealthed ships are not visible if they have the friendly-stealth-invisible
 	// flag set
-	if (Ships[target->instance].team == viewer->team)
+	if (target_shipp->team == viewer->team)
 	{
-		if (target_sip->flags & SIF_STEALTH)
+		if (target_shipp->flags2 & SF2_STEALTH)
 		{
-			if (target_sip->flags2 & SIF2_FRIENDLY_STEALTH_INVISIBLE)
+			if (target_shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS)
 			{
 				return 0;
 			}

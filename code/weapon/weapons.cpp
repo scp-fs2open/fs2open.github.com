@@ -2384,7 +2384,7 @@ void weapon_home(object *obj, int num, float frame_time)
 			if (wp->homing_object) {
 				if (wp->homing_object->type == OBJ_SHIP) {
 					ship *shipp = &Ships[wp->homing_object->instance];
-					if (Ship_info[shipp->ship_info_index].flags & SIF_DONT_COLLIDE_INVIS) {
+					if (shipp->flags2 & SF2_DONT_COLLIDE_INVIS) {
 						kill_missile = FALSE;
 					}
 				}
