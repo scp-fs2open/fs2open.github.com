@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.cpp $
- * $Revision: 1.4 $
- * $Date: 2004-02-21 00:59:43 $
- * $Author: Kazan $
+ * $Revision: 1.5 $
+ * $Date: 2004-03-31 05:42:26 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/02/21 00:59:43  Kazan
+ * FS2NETD License Comments
+ *
  * Revision 1.3  2003/11/11 02:15:42  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -27,6 +30,9 @@
  *
  *
  */
+
+#pragma warning(disable:4710)	// function not inlined
+#pragma warning(disable:4711)	// function inlined
 
 #include "udpsocket.h"
 

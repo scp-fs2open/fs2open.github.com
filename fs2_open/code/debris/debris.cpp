@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:01:59 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-31 05:42:26 $
  * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:01:59  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2003/10/15 22:03:24  Kazan
  * Da Species Update :D
  *
@@ -1042,7 +1046,7 @@ void debris_hit(object *debris_obj, object *other_obj, vector *hitpos, float dam
 //	Return true if hit, else return false.
 //
 #pragma warning ( push )
-#pragma warning ( disable : 4701 )
+#pragma warning ( disable : 4701 )	// possible use of variable without initialization
 int debris_check_collision(object *pdebris, object *other_obj, vector *hitpos, collision_info_struct *debris_hit_info)
 {
 	mc_info	mc;

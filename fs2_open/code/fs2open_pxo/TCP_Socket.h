@@ -11,12 +11,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.h $
- * $Revision: 1.5 $
- * $Date: 2004-03-09 17:59:01 $
- * $Author: Kazan $
+ * $Revision: 1.6 $
+ * $Date: 2004-03-31 05:42:26 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/03/09 17:59:01  Kazan
+ * Disabled multithreaded TCP_Socket in favor of safer single threaded
+ * FS2NetD doesn't kill the game on connection failure now - just gives warning message and effectively dsiables itself until they try to connect again
+ *
  * Revision 1.4  2004/02/21 00:59:43  Kazan
  * FS2NETD License Comments
  *
@@ -37,7 +41,11 @@
 // Windows Version
 #include <windows.h>
 #include <process.h>
+
+#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <string>
+#pragma warning(pop)
+
 //#include <winsock2.h>
 
 #if !defined(STYPE)

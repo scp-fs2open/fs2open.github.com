@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.8 $
- * $Date: 2004-03-09 17:59:01 $
- * $Author: Kazan $
+ * $Revision: 1.9 $
+ * $Date: 2004-03-31 05:42:26 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/03/09 17:59:01  Kazan
+ * Disabled multithreaded TCP_Socket in favor of safer single threaded
+ * FS2NetD doesn't kill the game on connection failure now - just gives warning message and effectively dsiables itself until they try to connect again
+ *
  * Revision 1.7  2004/03/05 09:01:56  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -43,10 +47,10 @@
  *
  */
 
-#pragma warning(disable:4100)
-#pragma warning(disable:4511)
-#pragma warning(disable:4512)
-#pragma warning(disable:4711)
+#pragma warning(disable:4100)	// unreferenced formal parameter
+#pragma warning(disable:4511)	// copy constructor could not be generated
+#pragma warning(disable:4512)	// assignment operator could not be generated
+#pragma warning(disable:4711)	// function selected for inlining
 
 #include "TCP_Socket.h"
 //#include <process.h>
@@ -198,7 +202,7 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 }
 
 #pragma warning(push)
-#pragma warning(disable:4127)
+#pragma warning(disable:4127)	// conditional expression is constant
 bool TCP_Socket::DataReady()
 {
 	timeval wait;

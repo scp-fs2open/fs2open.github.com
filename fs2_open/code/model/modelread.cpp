@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.36 $
- * $Date: 2004-03-21 10:34:05 $
- * $Author: bobboau $
+ * $Revision: 2.37 $
+ * $Date: 2004-03-31 05:42:28 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2004/03/21 10:34:05  bobboau
+ * fixed a texture loading bug
+ *
  * Revision 2.35  2004/03/20 21:17:13  bobboau
  * fixed -spec comand line option,
  * probly some other stuf
@@ -3086,7 +3089,7 @@ void model_get_rotating_submodel_axis(vector *model_axis, vector *world_axis, in
 
 // Does stepped rotation of a submodel
 #pragma warning ( push )
-#pragma warning (disable : 4701)
+#pragma warning (disable : 4701)	// possible use of variable without initialization
 void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 {
 	Assert(psub->flags & MSS_FLAG_STEPPED_ROTATE);

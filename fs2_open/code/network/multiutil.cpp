@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-03-05 21:19:39 $
- * $Author: Kazan $
+ * $Revision: 2.16 $
+ * $Date: 2004-03-31 05:42:27 $
+ * $Author: Goober5000 $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/03/05 21:19:39  Kazan
+ * Fixed mission validation (was returning false positives)
+ *
  * Revision 2.14  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -303,6 +306,9 @@
 #include "cfile/cfile.h"
 
 #pragma warning(push)
+// 4018 = signed/unsigned mismatch
+// 4663 = new template specification syntax
+// 4245 = signed/unsigned mismatch in conversion of const value
 #pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
 #pragma warning(pop)

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-03-05 09:01:53 $
+ * $Revision: 2.7 $
+ * $Date: 2004-03-31 05:42:25 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.5  2004/02/14 00:18:29  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -1222,7 +1226,7 @@ void asteroid_process_pre( object *objp, float frame_time)
 }
 
 #pragma warning ( push )
-#pragma warning ( disable : 4701 )
+#pragma warning ( disable : 4701 )	// possible use of variable without initialization
 int asteroid_check_collision(object *pasteroid, object *other_obj, vector *hitpos, collision_info_struct *asteroid_hit_info)
 {
 	if (!Asteroids_enabled) {

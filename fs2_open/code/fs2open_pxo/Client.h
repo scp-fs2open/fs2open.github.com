@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.13 $
- * $Date: 2004-03-09 00:02:16 $
- * $Author: Kazan $
+ * $Revision: 1.14 $
+ * $Date: 2004-03-31 05:42:26 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2004/03/09 00:02:16  Kazan
+ * more fs2netd stuff
+ *
  * Revision 1.12  2004/03/07 23:07:20  Kazan
  * [Incomplete] Readd of Software renderer so Standalone server works
  *
@@ -46,12 +49,12 @@
  *
  */
 
-#pragma warning(disable:4018)
-#pragma warning(disable:4100)
-#pragma warning(disable:4511)
-#pragma warning(disable:4512)
-#pragma warning(disable:4663)
-#pragma warning(disable:4710)
+#pragma warning(disable:4018)	// signed/unsigned mismatch
+#pragma warning(disable:4100)	// unreferenced formal parameter
+#pragma warning(disable:4511)	// copy constructor could not be generated
+#pragma warning(disable:4512)	// assignment operator could not be generated
+#pragma warning(disable:4663)	// new template specification syntax
+#pragma warning(disable:4710)	// function not inlined
 
 #if !defined(__pxo_client_h_)
 #define __pxo_client_h_

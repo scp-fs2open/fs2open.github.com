@@ -9,7 +9,7 @@
 
 #include "dbugfile.h"
 
-#pragma warning(disable:4711)
+#pragma warning(disable:4711)	// function selected for inlining
 
 int  dbugfile_counters[MAX_COUNTERS];
 bool dbugfile_init_var = false;

@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/protocol.h $
- * $Revision: 1.10 $
- * $Date: 2004-03-07 23:07:20 $
- * $Author: Kazan $
+ * $Revision: 1.11 $
+ * $Date: 2004-03-31 05:42:26 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2004/03/07 23:07:20  Kazan
+ * [Incomplete] Readd of Software renderer so Standalone server works
+ *
  * Revision 1.9  2004/02/21 00:59:43  Kazan
  * FS2NETD License Comments
  *
@@ -36,7 +39,7 @@
 #if !defined(__pxo_protocol_h_)
 #define __pxo_protocol_h_
 
-#pragma warning(disable:4663)
+#pragma warning(disable:4663)	// new template specification syntax
 
 #define PXO_PROTO_VER "1.2"
 // PUT the Protocol into TCP mode

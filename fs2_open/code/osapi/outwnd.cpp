@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-06 23:28:23 $
- * $Author: bobboau $
+ * $Revision: 2.10 $
+ * $Date: 2004-03-31 05:42:28 $
+ * $Author: Goober5000 $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/06 23:28:23  bobboau
+ * fixed motion debris
+ * animated laser textures
+ * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
+ *
  * Revision 2.8  2004/03/05 09:02:08  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -169,7 +174,7 @@
 #include <string.h>
 
 // to disable otherwise well-lodged compiler warning
-#pragma warning(disable: 4201)
+#pragma warning(disable: 4201)	// nameless struct/union
 
 #include <winioctl.h>
 #include <conio.h>

@@ -11,11 +11,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.14 $
- * $Date: 2004-03-09 17:59:01 $
- * $Author: Kazan $
+ * $Revision: 1.15 $
+ * $Date: 2004-03-31 05:42:26 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2004/03/09 17:59:01  Kazan
+ * Disabled multithreaded TCP_Socket in favor of safer single threaded
+ * FS2NetD doesn't kill the game on connection failure now - just gives warning message and effectively dsiables itself until they try to connect again
+ *
  * Revision 1.13  2004/03/08 15:06:23  Kazan
  * Did, undo
  *
@@ -66,8 +70,11 @@
  *
  */
 
-
+// 4018 = signed/unsigned mismatch
+// 4663 = new template specification syntax
+// 4245 = signed/unsigned mismatch in conversion of const value
 #pragma warning(disable: 4663 4018 4663 4245)
+
 #include "Client.h"
 #include "protocol.h"
 #include "TCP_Socket.h"
