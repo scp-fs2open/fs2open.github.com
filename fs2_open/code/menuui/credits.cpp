@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.9 $
+ * $Date: 2003-05-05 19:29:24 $
+ * $Author: phreak $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.7  2002/12/03 22:14:06  Goober5000
  * added myself to the credits list :)
  * ~Goober5000
@@ -217,7 +220,7 @@ char *fs2_open_credit_text =
 	"Joe \"Righteous1\" Dowd\n"
 	"Mike \"penguin\" Harris\n"
 	"\"Mysterial\"\n"
-	"\"PhReAk\"\n"
+	"Nick \"PhReAk\" Iannetta\n"
 	"Thomas \"Random Tiger\" Whittaker\n"
 	"Will \"Unknown PLayer\" Rousnel\n"
 	"\"WMCoolmon\"\n"
