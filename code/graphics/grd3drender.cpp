@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.32 $
- * $Date: 2003-11-01 21:59:21 $
+ * $Revision: 2.33 $
+ * $Date: 2003-11-02 05:50:08 $
  * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/11/01 21:59:21  bobboau
+ * new matrix handeling code, and fixed some problems with 3D lit verts,
+ * several other small fixes
+ *
  * Revision 2.31  2003/10/29 02:09:18  randomtiger
  * Updated timerbar code to work properly, also added support for it in OGL.
  * In D3D red is general processing (and generic graphics), green is 2D rendering, dark blue is 3D unlit, light blue is HT&L renders and yellow is the presentation of the frame to D3D. OGL is all red for now. Use compile flag TIMERBAR_ON with code lib to activate it.
@@ -1031,6 +1035,8 @@ float flCAP( float x, float minx, float maxx)
 static float Interp_fog_level;
 int w_factor = 256;
 
+#define MAX_INTERNAL_POLY_VERTS 129
+
 /**
  * This will be used to render the 3D parts the of FS2 engine
  *
@@ -1140,9 +1146,9 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 	
 	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 	
-	Assert(nverts < 32);
+	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
 
-	D3DLVERTEX d3d_verts[32];
+	D3DLVERTEX d3d_verts[MAX_INTERNAL_POLY_VERTS];
 	D3DLVERTEX *src_v = d3d_verts;
 
 	float uoffset = 0.0f;
@@ -1164,6 +1170,10 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 			maxv = 1.0f - voffset;
 		}				
 	}	
+
+	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
+	if(nverts > MAX_INTERNAL_POLY_VERTS-1)Error( LOCATION, "too many verts in gr_d3d_tmapper_internal_3d_unlit\n" );
+	if(nverts < 3)Error( LOCATION, "too few verts in gr_d3d_tmapper_internal_3d_unlit\n" );
 
 	for (int i=0; i<nverts; i++ )	{
 		vertex * va = verts[i];		
@@ -1231,7 +1241,7 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 	}
 
 
- 	d3d_DrawPrimitive(D3DVT_LVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+ 	d3d_DrawPrimitive(D3DVT_LVERTEX, (flags & TMAP_FLAG_TRISTRIP)?D3DPT_TRIANGLESTRIP :D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 	TIMERBAR_POP();
 
 }
@@ -1365,9 +1375,9 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	
 	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 	
-	Assert(nverts < 32);
+	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
 
-	D3DTLVERTEX d3d_verts[32];
+	D3DTLVERTEX d3d_verts[MAX_INTERNAL_POLY_VERTS];
 	D3DTLVERTEX *src_v = d3d_verts;
 
 	int x1, y1, x2, y2;
@@ -1395,6 +1405,9 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			maxv = 1.0f - voffset;
 		}				
 	}	
+
+	if(nverts > MAX_INTERNAL_POLY_VERTS-1)Error( LOCATION, "too many verts in gr_d3d_tmapper_internal\n" );
+	if(nverts < 3)Error( LOCATION, "too few verts in gr_d3d_tmapper_internal\n" );
 
 	for (i=0; i<nverts; i++ )	{
 		vertex * va = verts[i];		
@@ -1617,7 +1630,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 	// Draws just about everything except stars and lines
 
- 	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+	d3d_DrawPrimitive(D3DVT_TLVERTEX, (flags & TMAP_FLAG_TRISTRIP)?D3DPT_TRIANGLESTRIP :D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 
 	//spec mapping
 	if(has_spec && (SPECMAP > 0)){
@@ -1646,7 +1659,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			//spec mapping is always done on a second pass
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 			if(flags & TMAP_FLAG_PIXEL_FOG) gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-			d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+			d3d_DrawPrimitive(D3DVT_TLVERTEX, (flags & TMAP_FLAG_TRISTRIP)?D3DPT_TRIANGLESTRIP :D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 			if(flags & TMAP_FLAG_PIXEL_FOG) gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 			gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 		}

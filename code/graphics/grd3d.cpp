@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.37 $
- * $Date: 2003-11-01 21:59:21 $
+ * $Revision: 2.38 $
+ * $Date: 2003-11-02 05:50:08 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/11/01 21:59:21  bobboau
+ * new matrix handeling code, and fixed some problems with 3D lit verts,
+ * several other small fixes
+ *
  * Revision 2.36  2003/10/30 08:20:36  fryday
  * Added code to handle MR_NO_ZBUFFER in d3d VB rendering code.
  *
@@ -1831,8 +1835,8 @@ void gr_d3d_render_buffer(int idx)
 
 	if(!the_lights_are_on){
 //		d3d_SetVertexShader(D3DVT_VERTEX);
-		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
-		the_lights_are_on = true;
+//		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
+//		the_lights_are_on = true;
 	}												  
 
 	extern D3DMATERIAL8 material;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.45 $
- * $Date: 2003-11-01 21:59:22 $
+ * $Revision: 2.46 $
+ * $Date: 2003-11-02 05:50:08 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/11/01 21:59:22  bobboau
+ * new matrix handeling code, and fixed some problems with 3D lit verts,
+ * several other small fixes
+ *
  * Revision 2.44  2003/10/27 23:04:22  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -3310,6 +3314,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	if (!(Game_detail_flags & DETAIL_FLAG_MODELS) )	{
 		gr_set_color(0,128,0);
 		g3_draw_sphere_ez( pos, pm->rad );
+		gr_set_lighting(false,false);
 		return;
 	}
 
