@@ -456,7 +456,7 @@ BOOL d3d_lost_device()
 			int m = 1;
 
 			while ( m > 0 ) {
-				global_index_buffer->Release();
+				m = global_index_buffer->Release();
 			}
 
 			global_index_buffer = NULL;
