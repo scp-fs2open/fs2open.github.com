@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-07-26 20:47:26 $
- * $Author: Kazan $
+ * $Revision: 2.23 $
+ * $Date: 2004-11-27 10:42:18 $
+ * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/07/26 20:47:26  Kazan
+ * remove MCD complete
+ *
  * Revision 2.21  2004/07/12 16:32:43  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -109,12 +112,6 @@ bool movie_play(char *name)
 		cutscene_mark_viewable(name);
 	}
 
-	// reset the gr_* stuff before trying to play a movie
-	// fixes white flash in OGL and possibly other wierd stuff
-	gr_reset_clip();
-	gr_clear();
-	gr_flip();
-
 	extern int Is_standalone;
 	if(Is_standalone) return false;
  	if(Cmdline_dnoshowvid) return false;
@@ -140,8 +137,12 @@ bool movie_play(char *name)
    		GlobalD3DVars::D3D_activate = 0;
 		GlobalD3DVars::lpD3DDevice->EndScene();
 	  	GlobalD3DVars::lpD3DDevice->Present(NULL,NULL,NULL,NULL);
-		d3d_lost_device();
+	//	d3d_lost_device();
 	}
+
+	// reset the gr_* stuff before trying to play a movie
+	gr_flip(); // in the case of D3D this should recover the device
+	gr_clear();
 
 	// This clears the screen
  	InvalidateRect((HWND) os_get_window(), NULL, TRUE);
@@ -225,7 +226,11 @@ bool movie_play(char *name)
 
 	// We finished playing the movie
 	CloseClip((HWND) os_get_window());
- 	GlobalD3DVars::D3D_activate = 1;
+
+	if (gr_screen.mode == GR_DIRECT3D) {
+	 	GlobalD3DVars::D3D_activate = 1;
+	}
+
 	return true;
 }
 
