@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.110 $
- * $Date: 2005-03-24 23:36:13 $
+ * $Revision: 2.111 $
+ * $Date: 2005-03-25 01:10:51 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2005/03/24 23:36:13  taylor
+ * fix compiler warnings with mismatched types and unused variables
+ * cleanup some debug messages so they can be turned off if needed
+ * get rid of extra strstr() check for thrusters since it should never get that far anyway
+ * page_in/page_out of model glows should be better now
+ * removed a bunch of unneeded casts and get type specific math functions right
+ *
  * Revision 2.109  2005/03/20 20:01:15  phreak
  * draw paths and docking points using HTL
  *
@@ -4183,10 +4190,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 				scale = magnitude*(MAX_SCALE-(MIN_SCALE/2))+(MIN_SCALE/2);
 																				    
-+			//	vertex h1[4];				// halves of a beam section	
-+			//	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
-+				vector fvec, norm2;
-+			//	vector top1, bottom1, top2, bottom2;
+			//	vertex h1[4];				// halves of a beam section	
+			//	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
+				vector fvec, norm2;
+			//	vector top1, bottom1, top2, bottom2;
 
 				d = vm_vec_dot(&tempv,&norm);
 				d += 0.75f;
