@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-03-19 18:02:34 $
- * $Author: bobboau $
+ * $Revision: 1.18 $
+ * $Date: 2005-03-19 21:03:54 $
+ * $Author: wmcoolmon $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/03/19 18:02:34  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 1.16  2005/02/23 05:11:13  taylor
  * more consolidation of various graphics variables
  * some header cleaning
@@ -796,19 +800,54 @@ void gr_opengl_render_to_env(int FACE)
 }
 */
 
-//start recording a state block, no rendering should occur after this call untill the recording is ended
-void gr_opengl_start_state_block(){
+//************************************State blocks************************************
+
+//this is an array of reference counts for state block IDs
+static GLuint *state_blocks = NULL;
+static uint n_state_blocks = 0;
+static GLuint current_state_block;
+
+//this is used for places in the array that a state block ID no longer exists
+#define EMPTY_STATE_BOX_REF_COUNT	0xFFFFFFFF
+
+int opengl_get_new_state_block_internal()
+{
+	for(uint i = 0; i < n_state_blocks; i++)
+		if(state_blocks[i] == EMPTY_STATE_BOX_REF_COUNT) return i;
+
+	//oh crap, we need more state blocks
+	//"i" should be n_state_blocks + 1 since we got here.
+	state_blocks = (GLuint*)realloc(state_blocks, i);
+
+	state_blocks[n_state_blocks]=0;
+	n_state_blocks++;
+
+	return n_state_blocks-1;
+}
+
+void gr_opengl_start_state_block()
+{
 	gr_screen.recording_state_block = true;
+	current_state_block = opengl_get_new_state_block_internal();
+	glNewList(current_state_block, GL_COMPILE);
 }
 
-//stops recording of a state block, returns a handle to be used by set_render_state
-int gr_opengl_end_state_block(){
+int gr_opengl_end_state_block()
+{
+	//sanity check
+	if(!gr_screen.recording_state_block)
+		return -1;
+
+	//End the display list
 	gr_screen.recording_state_block = false;
+	glEndList();
 
-	return -1;//standard error return
+	//now return
+	return current_state_block;
 }
 
-//takes a handle to a state_block
-void gr_opengl_set_state_block(int handle){
-	if(handle == -1)return;
+void gr_opengl_set_state_block(int handle)
+{
+	if(handle < 0) return;
+	glCallList(handle);
 }
