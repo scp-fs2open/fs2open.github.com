@@ -7,6 +7,7 @@
 #define __pxo_protocol_h_
 
 
+#define PXO_PROTO_VER "1.1"
 // PUT the Protocol into TCP mode
 #define PXO_TCP
 

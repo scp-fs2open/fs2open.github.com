@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.29 $
- * $Date: 2003-09-25 21:12:22 $
+ * $Revision: 2.30 $
+ * $Date: 2003-10-12 03:41:37 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/09/25 21:12:22  Kazan
+ * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
+ * Also D3D8 Screenshots work now.
+ *
  * Revision 2.28  2003/09/23 02:42:52  Kazan
  * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
  *
@@ -285,6 +289,7 @@ int parse_cmdline(char *cmdline);
 int parse_cmdline(int argc, char *argv[]);
 #endif
 
+int fred2_parse_cmdline(int argc, char *argv[]);
 // COMMAND LINE SETTINGS
 // This section is for reference by all the *_init() functions. For example, the multiplayer init function
 // could check to see if (int Cmdline_multi_stream_chat_to_file) has been set by the command line parser.

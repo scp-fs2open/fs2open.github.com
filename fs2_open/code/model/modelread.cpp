@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-10-10 03:59:41 $
- * $Author: matt $
+ * $Revision: 2.24 $
+ * $Date: 2003-10-12 03:41:37 $
+ * $Author: Kazan $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/10/10 03:59:41  matt
+ * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
+ * out now. -Sticks
+ *
  * Revision 2.22  2003/09/26 14:37:15  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -814,6 +818,7 @@
 #include "freespace2/freespace.h"		// For flFrameTime
 #include "math/fvi.h"
 
+#include <direct.h>
 
 #define MAX_SUBMODEL_COLLISION_ROT_ANGLE (PI / 6.0f)	// max 30 degrees per frame
 
@@ -1391,6 +1396,10 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 #ifndef NDEBUG
 	strcpy(Global_filename, filename);
 #endif
+
+	// little test code i used in fred2
+	//char pwd[128];
+	//getcwd(pwd, 128);
 
 	fp = cfopen(filename,"rb");
 	if (!fp){

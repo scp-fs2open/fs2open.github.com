@@ -5,16 +5,54 @@
 
 
 #include "TCP_Socket.h"
-
+#include <process.h>
 #include <iostream.h>
 //**************************************************************************
 // TCP_Socket Implementation
 //**************************************************************************
 
+extern void ml_printf(char *, ...);
+
+#if defined(FS2_TCP_RMultithread)
+void _cdecl tcp_socket_mt_run(void *arg)
+{
+	TCP_Socket *socket = (TCP_Socket *)arg;
+
+
+	while (!socket->MtDie)
+	{
+		if (socket->DataReady())
+		{
+			//ml_printf("Got Some Data via multithreads!");
+			if (socket->GetDataFromNetwork() == 0)
+			{
+				// socket has died!
+				socket->IgnorePackets();
+				socket->Close();
+				socket->Initialized = false; 
+				break;
+			}
+		}
+	}
+	_endthread();
+
+
+}
+#endif
+
 
 // arguments are ignored if we're in ServerMode
 bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 {
+
+#if defined(FS2_TCP_RMultithread)
+		QueueLen = 0;
+
+		memset(ReceiveBuffer, 0, FS2_TCP_MaxWaiting * FS2_TCP_ReceiveBuffer);
+		memset(ReceiveLen, 0, sizeof(int) * FS2_TCP_MaxWaiting);
+		Lock = false;
+		MtDie = false;
+#endif
 
 	sockaddr_in adr_inet;
 
@@ -96,12 +134,16 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 	}
 	else
 	{
-		if (connect(mySocket, (sockaddr *)&adr_inet, sizeof(sockaddr_in) == -1)
+		if (connect(mySocket, (sockaddr *)&adr_inet, sizeof(sockaddr_in)) == -1)
 		{
 			cout << "Couldn't Connect to Remote system" << endl;
 			return fasle;
 		}
 	}
+#endif
+
+#if defined(FS2_TCP_RMultithread)
+	_beginthread(tcp_socket_mt_run, 0, (void *)this);
 #endif
 
 	Initialized = true;
@@ -112,56 +154,108 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 
 bool TCP_Socket::DataReady()
 {
-#if defined(WIN32)
 	timeval wait;
-	wait.tv_sec = 0;
-	wait.tv_usec = 1;
+	wait.tv_sec = 1;
+	wait.tv_usec = 0;
 
 	fd_set recvs;
 
-	/*
-	recvs.fd_count = 1;
-	recvs.fd_array[0] = mySocket;*/
 	FD_ZERO(&recvs);
 	FD_SET(mySocket, &recvs);
 
-	int status = select(NULL, &recvs, NULL, NULL, &wait);
+	int status = select(1, &recvs, NULL, NULL, &wait);
 
 	return (status != 0 && status != SOCKET_ERROR);
-#else
+
 	// --------- IMPLEMENT ME!!! ------------
 	return false; 
-#endif
+
 }
 
 bool TCP_Socket::OOBDataReady()
 {
-#if defined(WIN32)
+
 	timeval wait;
 	wait.tv_sec = 0;
 	wait.tv_usec = 1;
 
 	fd_set recvs;
 
-	/*
-	recvs.fd_count = 1;
-	recvs.fd_array[0] = mySocket;*/
 	FD_ZERO(&recvs);
 	FD_SET(mySocket, &recvs);
 
-	int status = select(NULL, NULL, NULL, &recvs, &wait);
+	int status = select(1, NULL, NULL, &recvs, &wait);
 
 	return (status != 0 && status != SOCKET_ERROR);
-#else
-	// --------- IMPLEMENT ME!!! ------------
-	return false; 
-#endif
+
+}
+
+#if defined(FS2_TCP_RMultithread)
+
+
+int TCP_Socket::GetDataFromNetwork()
+{
+	char buffer[FS2_TCP_ReceiveBuffer];
+	memset(buffer, 0, FS2_TCP_ReceiveBuffer);
+
+	
+	int size = recv(mySocket, buffer, FS2_TCP_ReceiveBuffer, 0);
+
+	if (size > 0)
+	{
+		while (Lock);
+		Lock = true;
+
+		while (QueueLen >= FS2_TCP_MaxWaiting)
+			RemoveFirstPacket();
+
+		memcpy(ReceiveBuffer[QueueLen], buffer, size);
+		ReceiveLen[QueueLen] = size;
+		QueueLen++;
+
+		Lock = false;
+	}
+
+	return size;
 }
 
 
+void TCP_Socket::RemoveFirstPacket()
+{
+
+	for (int i = 0; i < QueueLen-1; i++)
+	{
+		memcpy(ReceiveBuffer[i], ReceiveBuffer[i+1], FS2_TCP_ReceiveBuffer);
+		ReceiveLen[i] = ReceiveLen[i+1];
+	}
+	memset(ReceiveBuffer[QueueLen-1], 0, FS2_TCP_ReceiveBuffer);
+	QueueLen--;
+}
+#endif
 
 int TCP_Socket::GetData(char *buffer, int blen, bool OOB)
 {
+#if defined(FS2_TCP_RMultithread)
+	if (MT_DataReady())
+	{
+		while (Lock);
+		Lock = true;
+
+		int cpylen = ReceiveLen[0];
+		if (cpylen > blen)
+			cpylen = blen;
+
+		memcpy(buffer, ReceiveBuffer[0], cpylen);
+	
+
+		RemoveFirstPacket();
+		Lock = false;
+
+		return cpylen;
+	}
+	else
+		return 0;
+#else
 	// clear the buffer
 	memset(buffer, 0, blen);
 
@@ -171,7 +265,7 @@ int TCP_Socket::GetData(char *buffer, int blen, bool OOB)
 		flags = flags | MSG_OOB;
 
 	return recv(mySocket, buffer, blen, flags);
-
+#endif
 	
 }
 
