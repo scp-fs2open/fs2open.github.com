@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-10-30 06:26:11 $
+ * $Author: DTP $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/29 19:52:48  penguin
  * added #ifdef _WIN32 around windows-specific system headers
  *
@@ -123,6 +126,7 @@
 #include <sys/stat.h>
 #endif
 
+#include "Cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"
@@ -248,10 +252,12 @@ int cf_get_packfile_count(cf_root *root)
 	packfile_count = 0;
 	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
 		strcpy( filespec, root->path );
-
-		if(strlen(Pathtypes[i].path)){
-			strcat( filespec, Pathtypes[i].path );
-			strcat( filespec, DIR_SEPARATOR_STR );
+		
+		if((!(Cmdline_mod)) && (i != CF_TYPE_MOD_ROOT)) {
+			if(strlen(Pathtypes[i].path)) { //DTP dont add slash for roots
+				strcat( filespec, Pathtypes[i].path );
+				strcat( filespec, DIR_SEPARATOR_STR );
+			}
 		}
 
 #if defined _WIN32
@@ -337,11 +343,14 @@ void cf_build_pack_list( cf_root *root )
 	root_index = 0;
 	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
 		strcpy( filespec, root->path );
-
-		if(strlen(Pathtypes[i].path)){
-			strcat( filespec, Pathtypes[i].path );		
+		
+		if((i != CF_TYPE_ROOT) && (i != CF_TYPE_MOD_ROOT))	{ //DTP dont add slash for roots
+			//strlen(Pathtypes[i].path)) {
+			strcat( filespec, Pathtypes[i].path );
 			strcat( filespec, DIR_SEPARATOR_STR );
 		}
+		
+
 
 #if defined _WIN32
 		strcat( filespec, "*.vp" );
@@ -362,12 +371,12 @@ void cf_build_pack_list( cf_root *root )
 
 					// fill in all the proper info
 					strcpy(rptr_sort->path, root->path);
-
-					if(strlen(Pathtypes[i].path)){
-						strcat(rptr_sort->path, Pathtypes[i].path );					
+					if((i != CF_TYPE_ROOT) && (i != CF_TYPE_MOD_ROOT))	{//DTP dont add slash for roots
+						//				if(strlen(Pathtypes[i].path)) {
+						strcat(rptr_sort->path, Pathtypes[i].path );
 						strcat(rptr_sort->path, DIR_SEPARATOR_STR);
 					}
-
+					
 					strcat(rptr_sort->path, find.name );
 					rptr_sort->roottype = CF_ROOTTYPE_PACK;
 					rptr_sort->cf_type = i;
@@ -434,11 +443,9 @@ void cf_build_root_list(char *cdrom_dir)
 
 	cf_root	*root;
 
-   //======================================================
-	// First, check the current directory.
-	// strcpy( root->path, "d:\\projects\\freespace\\" );
-
 	root = cf_create_root();
+	
+	
 
 	if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
 		Error(LOCATION, "Can't get current working directory -- %d", errno );
@@ -448,6 +455,20 @@ void cf_build_root_list(char *cdrom_dir)
 	if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
 		strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 	}
+
+			
+	if(Cmdline_mod) { //add root here since it will then use files inside this pack before it uses
+					  //matching files Vp files found in ../freespace2/
+		cf_root *modroot;
+		modroot = cf_create_root();
+		
+		strcpy(modroot->path,cf_add_modname(modroot->path,Pathtypes[CF_TYPE_MOD_ROOT].path));
+		cf_build_pack_list(modroot);
+		modroot->roottype = CF_ROOTTYPE_PATH;
+	}
+	
+		
+   
 	root->roottype = CF_ROOTTYPE_PATH;
 
    //======================================================
@@ -500,7 +521,8 @@ void cf_search_root_path(int root_index)
 
 		strcpy( search_path, root->path );
 
-		if(strlen(Pathtypes[i].path)){
+		if((i != CF_TYPE_ROOT) && (i != CF_TYPE_MOD_ROOT))	{ //DTP dont add slash for roots
+		//if(strlen(Pathtypes[i].path) {
 			strcat( search_path, Pathtypes[i].path );
 			strcat( search_path, DIR_SEPARATOR_STR );
 		} 
@@ -593,9 +615,7 @@ typedef struct VP_FILE {
 } VP_FILE;
 
 void cf_search_root_pack(int root_index)
-{
-	int i;
-
+{	
 	cf_root *root = cf_get_root(root_index);
 
 	//mprintf(( "Searching root pack '%s'\n", root->path ));
@@ -621,6 +641,7 @@ void cf_search_root_pack(int root_index)
 	strcpy( search_path, "" );
 	
 	// Go through all the files
+	int i;
 	for (i=0; i<VP_header.num_files; i++ )	{
 		VP_FILE find;
 
@@ -644,36 +665,33 @@ void cf_search_root_pack(int root_index)
 			//mprintf(( "Current dir = '%s'\n", search_path ));
 		} else {
 	
-			int j;
+			int j;			
+							
 			for (j=CF_TYPE_ROOT; j<CF_MAX_PATH_TYPES; j++ )	{
-
+				
 				if ( !stricmp( search_path, Pathtypes[j].path ))	{
-
 					char *ext = strchr( find.filename, '.' );
 					if ( ext )	{
 						if ( is_ext_in_list( Pathtypes[j].extensions, ext ) )	{
 							// Found a file!!!!
 							cf_file *file = cf_create_file();
-							
 							strcpy( file->name_ext, find.filename );
 							file->root_index = root_index;
 							file->pathtype_index = j;
 							file->write_time = find.write_time;
 							file->size = find.size;
-							file->pack_offset = find.offset;			// Mark as a non-packed file
-
+							file->pack_offset = find.offset;			// Mark as a packed file
 							//mprintf(( "Found pack file '%s'\n", file->name_ext ));
 						}
 					}
-					
-
 				}
 			}
-
 		}
 	}
 	fclose(fp);
+	
 }
+
 
 
 void cf_build_file_list()
@@ -705,7 +723,7 @@ void cf_build_secondary_filelist(char *cdrom_dir)
 
 	// Init the path types
 	for (i=0; i<CF_MAX_PATH_TYPES; i++ )	{
-		Assert( Pathtypes[i].index == i );
+		//Assert( Pathtypes[i].index == i );
 		// [mharris]  can't modify constant strings, why do this anyhow???
 		// just need to make sure exts are all lc in the definition...
 //  		if ( Pathtypes[i].extensions )	{
@@ -868,8 +886,8 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 							strcat( pack_filename, DIR_SEPARATOR_STR );
 							strcat( pack_filename, f->name_ext );
 						}
-					}				
-					return 1;		
+					}
+					return 1;
 				}
 				// restore original filespec
 				strcpy(filespec, temp);
@@ -892,12 +910,13 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 
 						strcat( pack_filename, f->name_ext );
 					}
-				}				
-				return 1;		
+				}
+				
+				return 1;
 			}
 		}
-	
-	return 0;
+		
+		return 0;
 }
 
 
@@ -953,6 +972,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 
 	if (max < 1) {
 		Get_file_list_filter = NULL;
+
 		return 0;
 	}
 
@@ -973,6 +993,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 	if (find_handle != -1) {
 		do {
 			if (num_files >= max)
+
 				break;
 
 			if (!(find.attrib & _A_SUBDIR)) {
@@ -1047,8 +1068,9 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 			}
 
 			if (num_files >= max)
-				break;
 
+				break;
+			
 			if ( !cf_matches_spec( filter,f->name_ext))	{
 				continue;
 			}
@@ -1091,6 +1113,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 	}
 
 	Get_file_list_filter = NULL;
+
 	return num_files;
 }
 
@@ -1124,6 +1147,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 
 	if (max < 1) {
 		Get_file_list_filter = NULL;
+
 		return 0;
 	}
 
@@ -1154,7 +1178,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	find_handle = _findfirst( filespec, &find );
 	if (find_handle != -1) {
 		do {
-			if (num_files >= max)
+			if (num_files >= max)			
 				break;
 
 			if (!(find.attrib & _A_SUBDIR)) {
@@ -1229,6 +1253,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 			}
 
 			if (num_files >= max)
+						
 				break;
 
 			if ( !cf_matches_spec( filter,f->name_ext))	{
@@ -1269,6 +1294,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	}
 
 	Get_file_list_filter = NULL;
+
 	return num_files;
 }
 
@@ -1301,7 +1327,7 @@ void cf_create_default_path_string( char *path, int pathtype, char *filename, bo
 
 		// Don't add slash for root directory
 		if (Pathtypes[pathtype].path[0] != '\0') {
-			strcat(path, DIR_SEPARATOR_STR);
+		strcat(path, DIR_SEPARATOR_STR);
 		}
 
 		// add filename
