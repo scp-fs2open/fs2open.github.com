@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:05 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2003-11-19 20:37:24 $
+ * $Author: randomtiger $
  *
  * code to deal with pcx files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:05  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.2  2002/10/02 11:40:19  randomtiger
  * Bmpmap has been reverted to an old non d3d8 version.
  * All d3d8 code is now in the proper place.
@@ -593,6 +596,113 @@ int pcx_read_bitmap_16bpp_nondark( char * real_filename, ubyte *org_data )
 		org_data += (xsize * 2);
 	}
 	cfclose(PCXfile);
+	return PCX_ERROR_NONE;
+}
+
+int pcx_read_bitmap_32(char *real_filename, ubyte *org_data )
+{
+	PCXHeader header;
+	CFILE * PCXfile;
+	ubyte data=0;
+	int row, col, count;
+	int buffer_pos;
+	char filename[MAX_FILENAME_LEN];
+	ubyte palette[768];	
+	
+	strcpy( filename, real_filename );
+	char *p = strchr( filename, '.' );
+	if ( p ) *p = 0;
+	strcat( filename, ".pcx" );
+
+	
+	PCXfile = cfopen( filename , "rb" );
+	if ( !PCXfile ){
+	
+		return PCX_ERROR_OPENING;
+	}
+
+	// read 128 char PCX header
+	if (cfread( &header, sizeof(PCXHeader), 1, PCXfile )!=1)	{
+		cfclose( PCXfile );
+	
+		return PCX_ERROR_OPENING;
+	}
+
+	// Is it a 256 color PCX file?
+	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{
+		cfclose( PCXfile );
+		return PCX_ERROR_OPENING;
+	}
+
+	// Find the size of the image
+	int src_xsize = header.Xmax - header.Xmin + 1;
+	int src_ysize = header.Ymax - header.Ymin + 1;
+
+	// Read the extended palette at the end of PCX file
+	// Read in a character which should be 12 to be extended palette file
+	cfseek( PCXfile, -768, CF_SEEK_END );
+	cfread( palette, 3, 256, PCXfile );
+	cfseek( PCXfile, sizeof(PCXHeader), CF_SEEK_SET );
+	
+	int buffer_size = 1024;
+	ubyte buffer[1024];
+	buffer_pos = 0;
+	
+	buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
+
+	count = 0; 
+	
+	typedef struct {ubyte b,g,r,a;} COLOR32;
+
+	for (row=0; row < src_ysize;row++)      {
+	
+		COLOR32 *pixdata = (COLOR32 *) org_data;
+
+		for (col=0; col < header.BytesPerLine;col++)     {
+			if ( count == 0 )	{
+				data = buffer[buffer_pos++];
+				if ( buffer_pos == buffer_size )	{
+					buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
+					Assert( buffer_size > 0 );
+					buffer_pos = 0;
+				}
+				if ((data & 0xC0) == 0xC0)     {
+					count = data & 0x3F;
+					data = buffer[buffer_pos++];
+					if ( buffer_pos == buffer_size )	{
+						buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
+						Assert( buffer_size > 0 );
+						buffer_pos = 0;
+					}
+				} else {
+					count = 1;
+				}
+			}
+			// stuff the pixel
+			if ( col < src_xsize ){	  
+				
+				if((0 == (int)palette[data*3]) && (255 == (int)palette[data*3+1]) && (0 == (int)palette[data*3+2])){
+					pixdata->r = pixdata->b = pixdata->g = pixdata->a = 0;					
+				} else {
+
+					// stuff the 24 bit value				
+					pixdata->r = palette[data*3];
+					pixdata->g = palette[data*3 + 1];
+					pixdata->b = palette[data*3 + 2];
+	
+					pixdata->a = 255;
+				}
+
+				pixdata++;
+			}
+			count--;
+		}
+
+		org_data += (src_xsize * 4);
+	}
+	
+	cfclose(PCXfile);
+
 	return PCX_ERROR_NONE;
 }
 

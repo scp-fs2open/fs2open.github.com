@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-11-17 06:52:52 $
- * $Author: bobboau $
+ * $Revision: 2.20 $
+ * $Date: 2003-11-19 20:37:24 $
+ * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/11/17 06:52:52  bobboau
+ * got assert to work again
+ *
  * Revision 2.18  2003/11/16 04:09:23  Goober5000
  * language
  *
@@ -630,7 +633,7 @@ void d3d_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h
 // bmap_h == height of source bitmap
 // tex_w == width of final texture
 // tex_h == height of final texture
-int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_d3d *t, int reload, int fail_on_full)
+int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort *data, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_d3d *t, int reload, int fail_on_full)
 {
 	Assert(*data != 0xdeadbeef);
 	if(t == NULL)
@@ -658,23 +661,22 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 	}
 
 	int i,j;	
-	ushort *bmp_data;
 
-	PIXELFORMAT *surface_desc;
+	PIXELFORMAT *surface_desc = NULL;
 	D3DFORMAT d3d8_format;
 
 	switch( bitmap_type ) {
 		case TCACHE_TYPE_AABITMAP:		
-			surface_desc = &AlphaTextureFormat;
-			d3d8_format  = default_alpha_tformat;
+			surface_desc = (bpp == 32) ? NULL : &AlphaTextureFormat;
+			d3d8_format  = (bpp == 32) ? D3DFMT_A8R8G8B8 : default_alpha_tformat;
 			break;
 
 		case TCACHE_TYPE_XPARENT:
 			Int3();
 
 		default:
-			surface_desc = &NonAlphaTextureFormat;
-			d3d8_format  = default_non_alpha_tformat;
+			surface_desc = (bpp == 32) ? NULL : &NonAlphaTextureFormat;
+			d3d8_format  = (bpp == 32) ? D3DFMT_A8R8G8B8 : default_non_alpha_tformat;
 			break;
 	}	
 
@@ -697,9 +699,6 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 		t->v_scale = 1.0f;
 	}
 
-	bmp_data = (ushort *)data;
-	ubyte *bmp_data_byte = (ubyte*)data;
-
 	if(!reload) {
 
 		DBUGFILE_INC_COUNTER(0);
@@ -710,6 +709,7 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 			d3d8_format, 
 			D3DPOOL_MANAGED, &t->d3d8_thandle)))
 		{
+			Assert(0);
 			return 0;
 		}
 	}
@@ -719,49 +719,23 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 	D3DLOCKED_RECT locked_rect;
 	if(FAILED(t->d3d8_thandle->LockRect(0, &locked_rect, NULL, 0)))
 	{
+		Assert(0);
 		return 0;
 	}
+
+	ubyte *bmp_data_byte = (ubyte*)data;
 	
 	// Still restricted to 16 bit textures sadly
-	Assert( surface_desc->dwRGBBitCount == 16);
-
-	// Each RGB bit count requires different pointers
-/*	// Obsolete as per the DX 8.1 merge
-	ushort *lpSP;	
-	ushort xlat[256];
-	int r, g, b, a;
-
-	switch( bitmap_type )	{		
-		case TCACHE_TYPE_AABITMAP:			
-			// setup convenient translation table
-			for (i=0; i<16; i++ )	{
-				r = 255;
-				g = 255;
-				b = 255;
-				a = Gr_gamma_lookup[(i*255)/15];
-				r /= Gr_ta_red.scale;
-				g /= Gr_ta_green.scale;
-				b /= Gr_ta_blue.scale;
-				a /= Gr_ta_alpha.scale;
-				xlat[i] = (unsigned short)(((a<<Gr_ta_alpha.shift) | (r << Gr_ta_red.shift) | (g << Gr_ta_green.shift) | (b << Gr_ta_blue.shift)));
-			}			
-			
-			xlat[15] = xlat[1];			
-			for ( ; i<256; i++ )	{
-				xlat[i] = xlat[0];						
-			}			
-			
-			for (j = 0; j < tex_h; j++) {				
-				lpSP = (unsigned short*)(((char*)ddsd.lpSurface) +	ddsd.lPitch * j);
-*/
+	if( surface_desc)
 	{
+		ushort *bmp_data = (ushort *)data;
 		ushort *lpSP;	
-		ushort xlat[256];
 
-		int r, g, b, a;
-
-		ushort *dest_data_start = (ushort *) locked_rect.pBits;
 		int pitch = locked_rect.Pitch / sizeof(ushort); 
+		ushort *dest_data_start = (ushort *) locked_rect.pBits;
+
+		ushort xlat[256];
+		int r, g, b, a;
 
 		switch( bitmap_type ) {		
 			case TCACHE_TYPE_AABITMAP:			
@@ -799,7 +773,7 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 		case TCACHE_TYPE_BITMAP_SECTION:  
 			for (j = 0; j < src_h; j++) {
 				// the proper line in the temp ram
-  				lpSP = dest_data_start + pitch * j;
+  				lpSP = dest_data_start + (pitch * j);
 		
 				// nice and clean
 				for (i = 0; i < src_w; i++) {												
@@ -809,7 +783,8 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 			}
 			break;
 		
-		default:	{	// normal:		
+		// Stretches bitmaps to 2 power of n format
+		default: {	// normal:		
 				fix u, utmp, v, du, dv;
 		
 				u = v = 0;
@@ -832,12 +807,66 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 			break;
 		}
 	}
+	// Its 32 bit
+	else
+	{
+		D3DCOLOR *bmp_data = (D3DCOLOR *)data;
+		D3DCOLOR *lpSP;	
 
+		int pitch = locked_rect.Pitch / sizeof(D3DCOLOR); 
+		D3DCOLOR *dest_data_start = (D3DCOLOR *) locked_rect.pBits;
+
+		for (j = 0; j < tex_h; j++)  
+			for (i = 0; i < tex_w; i++) 
+				  	((D3DCOLOR*)locked_rect.pBits)[(pitch * j) + i]	= 0xff0000ff;
+
+		switch( bitmap_type ) {
+
+			case TCACHE_TYPE_AABITMAP: Assert(0); break; 
+
+			case TCACHE_TYPE_BITMAP_SECTION: 
+			{
+				for (j = 0; j < src_h; j++) {
+					// the proper line in the temp ram
+  					lpSP = dest_data_start + (pitch * j);
+				
+					// nice and clean
+					for (i = 0; i < src_w; i++) {												
+						// stuff the texture into vram
+					  	*lpSP++ = bmp_data[((j+sy) * bmap_w) + sx + i];
+					}			
+				}
+				break; 
+			}
+
+			default: {
+				fix u, utmp, v, du, dv;
+		
+				u = v = 0;
+		
+				du = ( (bmap_w-1)*F1_0 ) / tex_w;
+				dv = ( (bmap_h-1)*F1_0 ) / tex_h;
+												
+				for (j = 0; j < tex_h; j++) {
+					lpSP = dest_data_start + pitch * j;
+		
+					utmp = u;				
+					
+					for (i = 0; i < tex_w; i++) {
+				 		*lpSP++ = bmp_data[f2i(v)*bmap_w+f2i(utmp)];
+						utmp += du;
+					}
+					v += dv;
+				}	
+				break;
+			}
+		}
+	}
 
 	// Unlock the texture 
 	if(FAILED(t->d3d8_thandle->UnlockRect(0)))
 	{
-		DBUGFILE_OUTPUT_0("Failed to unlock");
+		Assert(0);
 		return 0;
 	}
 
@@ -848,7 +877,7 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 	t->bitmap_id = texture_handle;
 	t->time_created = D3D_frame_count;
 	t->used_this_frame = 0;	
-	t->size = tex_w * tex_h * 2;	
+	t->size = tex_w * tex_h * bpp / 8;	
 	t->w = (ushort)tex_w;
 	t->h = (ushort)tex_h;
 	D3D_textures_in_frame += t->size;
@@ -918,7 +947,7 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 		}
 	}
 
- 	int ret_val = d3d_create_texture_sub(bitmap_type, bitmap_handle, (ushort*)bmp->data, 0, 0, bmp->w, bmp->h, bmp->w, bmp->h, max_w, max_h, tslot, reload, fail_on_full);
+ 	int ret_val = d3d_create_texture_sub(bitmap_type, bitmap_handle, bmp->bpp, (ushort*)bmp->data, 0, 0, bmp->w, bmp->h, bmp->w, bmp->h, max_w, max_h, tslot, reload, fail_on_full);
 
 	// unlock the bitmap
 	bm_unlock(bitmap_handle);
@@ -969,7 +998,7 @@ int d3d_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_slot
 	}
 
 	// call the helper
-	int ret_val = d3d_create_texture_sub(bitmap_type, bitmap_handle, (ushort*)bmp->data, bmp->sections.sx[sx], bmp->sections.sy[sy], section_x, section_y, bmp->w, bmp->h, section_x, section_y, tslot, reload, fail_on_full);
+	int ret_val = d3d_create_texture_sub(bitmap_type, bitmap_handle, bmp->bpp, (ushort*)bmp->data, bmp->sections.sx[sx], bmp->sections.sy[sy], section_x, section_y, bmp->w, bmp->h, section_x, section_y, tslot, reload, fail_on_full);
 
 	// unlock the bitmap
 	bm_unlock(bitmap_handle);
@@ -1378,167 +1407,47 @@ int d3d_get_valid_texture_size(int value, bool width)
 	return -1;
 }
 
-void *d3d_lock_32_pcx(char *real_filename, float *u, float *v)
+IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags, int use_alpha_format) 
 {
-	PCXHeader header;
-	CFILE * PCXfile;
-	int row, col, count;
-	ubyte data=0;
-	int buffer_pos;
-	char filename[MAX_FILENAME_LEN];
-	ubyte palette[768];	
-	ubyte r, g, b, al;
-		
-	
-	strcpy( filename, real_filename );
-	char *p = strchr( filename, '.' );
-	if ( p ) *p = 0;
-	strcat( filename, ".pcx" );
-
-	
-	PCXfile = cfopen( filename , "rb" );
-	if ( !PCXfile ){
-	
+	D3DXIMAGE_INFO source_desc;
+	if(FAILED(D3DXGetImageInfoFromFileInMemory(data, size,	&source_desc))) {
 		return NULL;
+	} 
+
+	D3DFORMAT use_format;
+
+	bool d3dx_format  = ((type == BM_TYPE_TGA) || (type == BM_TYPE_JPG)) && Cmdline_32bit_textures;
+
+	if(d3dx_format) {
+		use_format = use_alpha_format ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8;
+	} else {
+		use_format = use_alpha_format ? default_alpha_tformat : default_non_alpha_tformat;
+
+		// Special case
+		if(type == BM_TYPE_TGA && source_desc.Format != D3DFMT_A8R8G8B8)
+			use_format = default_non_alpha_tformat;
 	}
+	  
+	bool use_mipmapping = Cmdline_d3dmipmap && (flags != TCACHE_TYPE_BITMAP_SECTION);
 
-	// read 128 char PCX header
-	if (cfread( &header, sizeof(PCXHeader), 1, PCXfile )!=1)	{
-		cfclose( PCXfile );
-	
-		return NULL;
-	}
+	IDirect3DTexture8 *ptexture = NULL;
+	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(
+		GlobalD3DVars::lpD3DDevice,
+		data, size,
+	  	// Opertunity to control sizes here.
+		D3DX_DEFAULT,
+		D3DX_DEFAULT,
+		use_mipmapping ? 0 : 1, 
+		0, 
+		use_format,
+		D3DPOOL_MANAGED, 
+		D3DX_FILTER_LINEAR, // Linear, enough to smooth rescales but not too much blur
+	 	D3DX_DEFAULT,
+		0, 
+		&source_desc, 
+		NULL, &ptexture);
 
-	// Is it a 256 color PCX file?
-	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{
-		cfclose( PCXfile );
-		return NULL;
-	}
-
-	
-	// Find the size of the image
-	int src_xsize = header.Xmax - header.Xmin + 1;
-	int src_ysize = header.Ymax - header.Ymin + 1;
-
-	int dst_xsize = d3d_get_valid_texture_size(src_xsize, true);
-	int dst_ysize = d3d_get_valid_texture_size(src_ysize, false);
-
-	// To big to fit into texture memory
-	if(dst_xsize == -1 && dst_ysize == -1) {
-		cfclose(PCXfile);
-		return NULL;
-	}
-
-	if(u) {
-		*u = ((float) src_xsize) / ((float) dst_xsize);
-	}
-
-	if(v) {
-		*v = ((float) src_ysize) / ((float) dst_ysize);
-	}
-	
-	// Read the extended palette at the end of PCX file
-	// Read in a character which should be 12 to be extended palette file
-
-	cfseek( PCXfile, -768, CF_SEEK_END );
-	cfread( palette, 3, 256, PCXfile );
-	cfseek( PCXfile, sizeof(PCXHeader), CF_SEEK_SET );
-	
-	int buffer_size = 1024;
-	ubyte buffer[1024];
-	buffer_pos = 0;
-	
-	buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
-	
-	IDirect3DTexture8 *p_texture = NULL;
-	// OK, we are ready to go, lets get some D3D texture space
-	if(FAILED(GlobalD3DVars::lpD3DDevice->CreateTexture(
-			dst_xsize, dst_ysize,
-			0, 
-			0,
-			D3DFMT_A8R8G8B8, 
-			D3DPOOL_MANAGED, &p_texture)))
-	{
-		cfclose(PCXfile);
-		return NULL;
-	}
-
-	// lock texture here
-
-	D3DLOCKED_RECT locked_rect;
-	if(FAILED(p_texture->LockRect(0, &locked_rect, NULL, 0)))
-	{
-		p_texture->Release();
-		cfclose(PCXfile);
-		return NULL;
-	}
-
-	count = 0; 
-	
-#ifdef _DEBUG
-
-	D3DCOLOR *temp = (D3DCOLOR *)locked_rect.pBits;
-
-	for(int i = 0; i < dst_xsize * dst_ysize; i++)
-	{
-		temp[i] = D3DCOLOR_RGBA(0,0,255,255);
-	}
-#endif
-
-	D3DCOLOR *org_data = (D3DCOLOR *)locked_rect.pBits;
-
-	for (row=0; row < src_ysize;row++)      {
-	
-		D3DCOLOR *pixdata = org_data;
-
-		for (col=0; col < header.BytesPerLine;col++)     {
-			if ( count == 0 )	{
-				data = buffer[buffer_pos++];
-				if ( buffer_pos == buffer_size )	{
-					buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
-					Assert( buffer_size > 0 );
-					buffer_pos = 0;
-				}
-				if ((data & 0xC0) == 0xC0)     {
-					count = data & 0x3F;
-					data = buffer[buffer_pos++];
-					if ( buffer_pos == buffer_size )	{
-						buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
-						Assert( buffer_size > 0 );
-						buffer_pos = 0;
-					}
-				} else {
-					count = 1;
-				}
-			}
-			// stuff the pixel
-			if ( col < src_xsize ){								
-				// stuff the 24 bit value				
-				r = palette[data*3];
-				g = palette[data*3 + 1];
-				b = palette[data*3 + 2];
-
-					
-				// if the color matches the transparent color, make it so
-				al = 255;
-				if((0 == (int)palette[data*3]) && (255 == (int)palette[data*3+1]) && (0 == (int)palette[data*3+2])){
-					r = b = g = al = 0;					
-				} 
-
-				*pixdata = D3DCOLOR_RGBA(r,g,b,al);
-
-				pixdata++;
-			}
-			count--;
-		}
-
-		org_data += dst_xsize;
-	}
-	
-	cfclose(PCXfile);
-
-	p_texture->UnlockRect(0);
-	return p_texture;
+	return SUCCEEDED(hr) ? ptexture : NULL;
 }
 
 void *d3d_lock_d3dx_types(char *file, int type, ubyte flags )
@@ -1575,48 +1484,12 @@ void *d3d_lock_d3dx_types(char *file, int type, ubyte flags )
 
 	cfclose(targa_file);
 	targa_file = NULL;
-
-	D3DXIMAGE_INFO source_desc;
-	if(FAILED(D3DXGetImageInfoFromFileInMemory(tga_data, size,	&source_desc))) {
-		return NULL;
-	} 
 	
-	D3DFORMAT use_format;
-	if(Cmdline_32bit_textures) {
-		use_format = use_alpha_format ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8;
-	} else {
-		use_format = use_alpha_format ? default_alpha_tformat : default_non_alpha_tformat;
-
-		// Special case
-		if(type == BM_TYPE_TGA && source_desc.Format != D3DFMT_A8R8G8B8)
-			use_format = default_non_alpha_tformat;
-	}
-	  
-	IDirect3DTexture8 *ptexture = NULL; 
-	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(
-		GlobalD3DVars::lpD3DDevice,
-		tga_data, size,
-	  	// Opertunity to control sizes here.
-		D3DX_DEFAULT, D3DX_DEFAULT,
-		D3DX_DEFAULT,
-		0, 
-		use_format,
-		D3DPOOL_MANAGED, 
-		D3DX_FILTER_LINEAR, // Linear, enough to smooth rescales but not too much blur
-	 	D3DX_DEFAULT,
-		0, 
-		&source_desc, 
-		NULL, &ptexture);
+	IDirect3DTexture8 *ptexture = d3d_make_texture(tga_data, size, type, flags, use_alpha_format);
 
 	free(tga_data);
 
-	if(FAILED(hr))
-	{
-		return NULL;
-	}
-	
 	return ptexture;
-
 }
 
 bool d3d_read_header_d3dx(char *file, int type, int *w, int *h)

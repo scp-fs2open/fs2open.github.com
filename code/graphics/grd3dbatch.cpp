@@ -5,9 +5,11 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
-
+/* 
+ * $Log: not supported by cvs2svn $
+ */
 
 #include "globalincs/pstypes.h"
 #include "grd3dbatch.h"
@@ -668,8 +670,6 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 		} 
 	}
 
-	Assert(len < MAX_STRING_LEN);
-	
 	int char_count = 0;
 
 	while (*s)	{
@@ -753,6 +753,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 		if(char_count == 0) {
 			array[new_id].free_slot		  = true;
 			array[new_id].used_this_frame = false;
+			continue;
 		}
 
 		d3d_SetVertexShader(FONT_VTYPE);

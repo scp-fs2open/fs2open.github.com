@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.44 $
- * $Date: 2003-11-17 06:52:52 $
- * $Author: bobboau $
+ * $Revision: 2.45 $
+ * $Date: 2003-11-19 20:37:24 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/11/17 06:52:52  bobboau
+ * got assert to work again
+ *
  * Revision 2.43  2003/11/17 04:25:55  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -2002,8 +2005,16 @@ void gr_d3d_render_buffer(int idx)
 		}
 
 
-	if(!vertex_buffer[idx].ocupied)return;
-	if(vertex_buffer[idx].type == LINELIST_){gr_d3d_render_line_buffer(idx); TIMERBAR_POP(); return;}
+		if(!vertex_buffer[idx].ocupied) {
+			TIMERBAR_POP();
+			return;
+		}
+	if(vertex_buffer[idx].type == LINELIST_) {
+		gr_d3d_render_line_buffer(idx); 
+		TIMERBAR_POP(); 
+		return;
+	}
+
 	float u_scale = 1.0f, v_scale = 1.0f;
 
 	gr_alpha_blend ab = ALPHA_BLEND_NONE;
@@ -2028,7 +2039,7 @@ void gr_d3d_render_buffer(int idx)
 
 //	bool single_pass_spec = false;
 
-	if(GLOWMAP > -1){
+	if(GLOWMAP > -1 && !Cmdline_noglow){
 		//glowmapped
 			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 		 	d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);
@@ -2051,7 +2062,11 @@ void gr_d3d_render_buffer(int idx)
 
 
 
-	if(!lighting_enabled)return;
+	if(!lighting_enabled)
+	{
+		TIMERBAR_POP();
+		return;
+	}
 	//single pass specmap rendering ends here
 /*	if(single_pass_spec){
 		return;
@@ -2088,6 +2103,7 @@ void gr_d3d_render_buffer(int idx)
 		if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
 				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
 			//	Error(LOCATION, "Not rendering specmap texture because it didn't fit in VRAM!");
+				TIMERBAR_POP();
 				return;
 			}
 

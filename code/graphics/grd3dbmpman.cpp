@@ -643,6 +643,9 @@ void bm_d3d_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, 
 	bm_d3d_free_data( bitmapnum );	
 
 	// allocate bitmap data
+	if(bpp == 16 && Cmdline_pcx32) {
+		bpp = 32;
+	}
 
 	data = (ubyte *)bm_d3d_malloc(bitmapnum, bmp->w * bmp->h * (bpp / 8));
 	bmp->data = (uint)data;
@@ -671,21 +674,27 @@ void bm_d3d_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, 
 	} else {	
 		int pcx_error;
 
-		// load types
-		if(flags & BMP_AABITMAP){
-			pcx_error = pcx_read_bitmap_16bpp_aabitmap( be->filename, data );
-		} else if(flags & BMP_TEX_NONDARK){
-			pcx_error = pcx_read_bitmap_16bpp_nondark( be->filename, data );
+		if(bpp == 16){
+		
+			// load types
+			if(flags & BMP_AABITMAP){
+				pcx_error = pcx_read_bitmap_16bpp_aabitmap( be->filename, data );
+			} else if(flags & BMP_TEX_NONDARK){
+				pcx_error = pcx_read_bitmap_16bpp_nondark( be->filename, data );
+			} else {
+				pcx_error = pcx_read_bitmap_16bpp( be->filename, data );
+			}
 		} else {
-			pcx_error = pcx_read_bitmap_16bpp( be->filename, data );
+			pcx_error = pcx_read_bitmap_32( be->filename, data );
 		}
-		if ( pcx_error != PCX_ERROR_NONE )	{
-			//return -1;
-		}
+
+		Assert(pcx_error == PCX_ERROR_NONE );
 	}
 
 	bmp->flags = 0;	
-	bm_d3d_convert_format( bitmapnum, bmp, bpp, flags );
+	if(bpp != 32){
+		bm_d3d_convert_format( bitmapnum, bmp, bpp, flags );
+	}
 }
 
 void bm_d3d_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
@@ -844,29 +853,16 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 
 
 	// Turn off 32bit PCX for now, its still buggy
-	int valid_pcx   = (bm_bitmaps[bitmapnum].type == BM_TYPE_PCX || bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32) && Cmdline_pcx32;
-	int valid_other = bm_bitmaps[bitmapnum].type == BM_TYPE_TGA || bm_bitmaps[bitmapnum].type == BM_TYPE_JPG;
+	int valid_type = bm_bitmaps[bitmapnum].type == BM_TYPE_TGA || bm_bitmaps[bitmapnum].type == BM_TYPE_JPG;
 
-	if(valid_pcx || valid_other)	
+	if(valid_type)	
 	{
 		// There is no internal texture
 		bm_d3d_lock(handle, bpp, flags );
-		bm_unlock(handle);	
-	}
-
-	if(bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32 || valid_other)
-	{
-		if(!valid_other)
-		{
-		  	if(u_scale) *u_scale = d3d_bitmap_entry[bitmapnum].uscale;
-	   	  	if(v_scale) *v_scale = d3d_bitmap_entry[bitmapnum].vscale;
-		}
-	  	else
-		{
-	 		if(u_scale) *u_scale = 1.0;
-	 		if(v_scale) *v_scale = 1.0;
-		}
-
+		bm_unlock(handle); 
+		
+	 	if(u_scale) *u_scale = 1.0;
+	 	if(v_scale) *v_scale = 1.0;
 
 		d3d_SetTexture(stage, d3d_bitmap_entry[bitmapnum].tinterface);
 		return true;
@@ -896,7 +892,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 	} 
 	// otherwise do it as normal
 	else if(flags & BMP_AABITMAP){
-		Assert( bpp == 8 );
+ //		Assert( bpp == 8 );
 	} 
 	else {
 		Assert( bpp == 16 );
@@ -904,13 +900,6 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 
 	be = &bm_bitmaps[bitmapnum];
 	bmp = &be->bm;
-
-	// Give pcx control to D3D if we are expected to load it into 32 bit
-	// 8 bit images are likely to be masks, data needs to be passed back
-	if(be->type == BM_TYPE_PCX && bpp != 8 && Cmdline_pcx32)
-	{
-   	 	be->type = BM_TYPE_PCX_32; 
-	}
 
 	// If you hit this assert, chances are that someone freed the
 	// wrong bitmap and now someone is trying to use that bitmap.
@@ -931,14 +920,6 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 		if(d3d_bitmap_entry[bitmapnum].tinterface == NULL)
 		{
 			switch ( be->type ) {
-			case BM_TYPE_PCX_32:
-			{
-				d3d_bitmap_entry[bitmapnum].tinterface = 
-					(IDirect3DBaseTexture8 *) d3d_lock_32_pcx(be->filename, 
-						&d3d_bitmap_entry[bitmapnum].uscale, 
-						&d3d_bitmap_entry[bitmapnum].vscale);
-				break;
-			}
 		
 			// We'll let D3DX handle this
 			case BM_TYPE_JPG:

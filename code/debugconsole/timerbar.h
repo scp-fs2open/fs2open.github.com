@@ -8,11 +8,16 @@
 
 /*
  * $Logfile: /Freespace2/code/debugconsole/timerbar.h $
- * $Revision: 1.6 $
- * $Date: 2003-11-09 06:31:39 $
- * $Author: Kazan $
+ * $Revision: 1.7 $
+ * $Date: 2003-11-19 20:37:23 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2003/11/09 06:31:39  Kazan
+ * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
+ * conflicts in cmdline and timerbar.h log entries
+ * cvs stopped acting like it was on crack obviously
+ *
  * Revision 1.5  2003/11/09 04:09:17  Goober5000
  * edited for language
  * --Goober5000
@@ -52,8 +57,8 @@ void timerbar_switch_type(int num);
 #define TIMERBAR_END_FRAME()      if (Cmdline_timerbar) timerbar_end_frame();
 #define TIMERBAR_SWITCH_TYPE(n)   if (Cmdline_timerbar) timerbar_switch_type(n);
 
-#define TIMERBAR_PUSH(v) timerbar_push(v);
-#define TIMERBAR_POP()   timerbar_pop();
+#define TIMERBAR_PUSH(v) if (Cmdline_timerbar) timerbar_push(v);
+#define TIMERBAR_POP()   if (Cmdline_timerbar) timerbar_pop();
 
 #else
 

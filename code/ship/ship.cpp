@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.92 $
- * $Date: 2003-11-17 06:52:52 $
- * $Author: bobboau $
+ * $Revision: 2.93 $
+ * $Date: 2003-11-19 20:37:25 $
+ * $Author: randomtiger $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2003/11/17 06:52:52  bobboau
+ * got assert to work again
+ *
  * Revision 2.91  2003/11/16 09:42:36  Goober5000
  * clarified and pruned debug spew messages
  * --Goober5000
@@ -9221,7 +9224,8 @@ void ship_close()
 		}
 	}
 
-	bm_release(CLOAKMAP);
+	if(CLOAKMAP != -1)
+		bm_release(CLOAKMAP);
 }	
 
 // -------------------------------------------------------------------------------------------------
