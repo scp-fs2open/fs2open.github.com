@@ -20,20 +20,20 @@ ClassInfoEntry::ClassInfoEntry()
 	Coords[0] = Coords[1] = INT_MAX;
 	for(uint i = 0; i < CIE_NUM_HANDLES; i++)
 	{
-		Handle[i] = -1;
+		Handles[i].Image = -1;
 	}
 }
 ClassInfoEntry::~ClassInfoEntry()
 {
 	//Unload image handles
-	if(Type == CIE_IMAGE_NMCSD || Type == CIE_IMAGE)
+	if(Type == CIE_IMAGE_NMCSD || Type == CIE_IMAGE || Type == CIE_IMAGE_BORDER)
 	{
 		int i = 0;
 		int num = sizeof(Handle)/sizeof(int);
 		for(; i < num; i++)
 		{
-			if(Handle[i] != -1)
-				bm_unload(Handle[i]);
+			if(Handles[i].Image != -1)
+				bm_unload(Handles[i].Image);
 		}
 	}
 }
@@ -52,31 +52,31 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 		{
 			Type = in_type;
 			stuff_string(buf, F_NAME, NULL, sizeof(buf));
-			Handle[CIE_HANDLE_N] = bm_load(buf);
+			Handles[CIE_HANDLE_N].Image = bm_load(buf);
 			if(in_type == CIE_IMAGE_NMCSD)
 			{
 				if(optional_string("+Mouseover:"))
 				{
 					stuff_string(buf, F_NAME, NULL, sizeof(buf));
-					Handle[CIE_HANDLE_M] = bm_load(buf);
+					Handles[CIE_HANDLE_M].Image = bm_load(buf);
 				}
 				if(optional_string("+Clicked:"))
 				{
 					stuff_string(buf, F_NAME, NULL, sizeof(buf));
-					Handle[CIE_HANDLE_C] = bm_load(buf);
+					Handles[CIE_HANDLE_C].Image = bm_load(buf);
 				}
 				if(optional_string("+Selected:"))
 				{
 					stuff_string(buf, F_NAME, NULL, sizeof(buf));
-					Handle[CIE_HANDLE_S] = bm_load(buf);
+					Handles[CIE_HANDLE_S].Image = bm_load(buf);
 				}
 				if(optional_string("+Disabled:"))
 				{
 					stuff_string(buf, F_NAME, NULL, sizeof(buf));
-					Handle[CIE_HANDLE_D] = bm_load(buf);
+					Handles[CIE_HANDLE_D].Image = bm_load(buf);
 				}
 			}
-			if(optional_string("+Coords"))
+			if(optional_string("+Coords:"))
 				stuff_int_list(Coords, 2, RAW_INTEGER_TYPE);
 		}
 		else if(in_type == CIE_IMAGE_BORDER)
@@ -84,43 +84,46 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 			if(optional_string("+Top Left:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handle[CIE_HANDLE_TL] = bm_load(buf);
+				Handles[CIE_HANDLE_TL].Image = bm_load(buf);
 			}
 			if(optional_string("+Top Mid:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handle[CIE_HANDLE_ML] = bm_load(buf);
+				Handles[CIE_HANDLE_TM].Image = bm_load(buf);
 			}
 			if(optional_string("+Top Right:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handle[CIE_HANDLE_TR] = bm_load(buf);
+				Handles[CIE_HANDLE_TR].Image = bm_load(buf);
 			}
 			if(optional_string("+Mid Left:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handle[CIE_HANDLE_ML] = bm_load(buf);
+				Handles[CIE_HANDLE_ML].Image = bm_load(buf);
 			}
 			if(optional_string("+Mid Right:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handle[CIE_HANDLE_MR] = bm_load(buf);
+				Handles[CIE_HANDLE_MR].Image = bm_load(buf);
 			}
 			if(optional_string("+Bottom left:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handle[CIE_HANDLE_BL] = bm_load(buf);
+				Handles[CIE_HANDLE_BL].Image = bm_load(buf);
 			}
 			if(optional_string("+Bottom Mid:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handle[CIE_HANDLE_BM] = bm_load(buf);
+				Handles[CIE_HANDLE_BM].Image = bm_load(buf);
 			}
 			if(optional_string("+Bottom Right:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handle[CIE_HANDLE_BR] = bm_load(buf);
+				Handles[CIE_HANDLE_BR].Image = bm_load(buf);
 			}
+		}
+		else if(in_type == CIE_TEXT)
+		{
 		}
 	}
 
@@ -130,12 +133,12 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 	if(Type == CIE_IMAGE || Type == CIE_IMAGE_NMCSD)
 	{
 		int w,h,cw,ch;
-		bm_get_info(Handle[0], &w, &h);
+		bm_get_info(Handles[0].Image, &w, &h);
 		for(uint i = 1; i < CIE_NUM_HANDLES; i++)
 		{
-			if(Handle[i] != -1)
+			if(Handles[i].Image != -1)
 			{
-				bm_get_info(Handle[i], &cw, &ch);
+				bm_get_info(Handles[i].Image, &cw, &ch);
 				if(cw != w || ch != h)
 				{
 					Warning(LOCATION, "Grouped image size unequal; Handle number %d under $%s: has a different size than base image type", i, tag);
@@ -653,17 +656,17 @@ int GUIObject::GetCIECoords(int id, int *x, int *y)
 		int rv = InfoEntry[id].GetCoords(x,y);
 		if(rv & CIE_GC_X_SET)
 		{
-			if(x < 0)
-				x += Coords[2];
+			if(*x < 0)
+				*x += Coords[2];
 			else
-				x += Coords[0];
+				*x += Coords[0];
 		}
 		if(rv & CIE_GC_Y_SET)
 		{
-			if(y < 0)
-				y += Coords[2];
+			if(*y < 0)
+				*y += Coords[3];
 			else
-				y += Coords[0];
+				*y += Coords[1];
 		}
 
 		return rv;
@@ -710,26 +713,27 @@ void Window::CalculateSize()
 {
 	int w, h;
 
+
 	//Determine left border's width
-	if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_ML) != -1)
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_ML), &BorderSizes[0], NULL);
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &BorderSizes[0], NULL);
 	else
 		BorderSizes[0] = W_BORDERHEIGHT;
 
 	//Determine right border's width
-	if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_MR) != -1)
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_MR), &BorderSizes[2], NULL);
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR), &BorderSizes[2], NULL);
 	else
 		BorderSizes[2] = W_BORDERWIDTH;
 
 	//Determine top border height
 	bool custom_top = true;
-	if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TL) != -1)
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TL), NULL, &BorderSizes[1]);
-	else if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TR) != -1)
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TR), NULL, &BorderSizes[1]);
-	else if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TM) != -1)
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TM), NULL,  &BorderSizes[1]);
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL), NULL, &BorderSizes[1]);
+	else if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), NULL, &BorderSizes[1]);
+	else if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM), NULL,  &BorderSizes[1]);
 	else
 	{
 		custom_top = false;
@@ -737,14 +741,37 @@ void Window::CalculateSize()
 	}
 
 	//Determine bottom border height
-	if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BL) != -1)
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BL), NULL, &BorderSizes[3]);
-	else if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BR) != -1)
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BR), NULL, &BorderSizes[3]);
-	else if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BM) != -1)
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BM), NULL,  &BorderSizes[3]);
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), NULL, &BorderSizes[3]);
+	else if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR), NULL, &BorderSizes[3]);
+	else if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), NULL,  &BorderSizes[3]);
 	else
 		BorderSizes[3] = W_BORDERHEIGHT;
+
+
+	//Determine corner sizes
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[0], NULL);
+	else
+		CornerWidths[0] = BorderSizes[0];
+
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), &CornerWidths[1], NULL);
+	else
+		CornerWidths[1] = BorderSizes[2];
+
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[2], NULL);
+	else
+		CornerWidths[2] = BorderSizes[0];
+
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR) != -1)
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[3], NULL);
+	else
+		CornerWidths[3] = BorderSizes[2];
+
 
 	//Do child stuff
 	ChildCoords[0] = Coords[0] + BorderSizes[0];
@@ -785,15 +812,15 @@ void Window::CalculateSize()
 	if(!(Style & WS_NOTITLEBAR))
 	{
 		gr_get_string_size(&w, &h, (char *)Caption.c_str());
-		if(GetCIEHandle(WCI_CAPTION) != -1)
-			bm_get_info(GetCIEHandle(WCI_CAPTION), &w, &h);
+		if(GetCIEImageHandle(WCI_CAPTION) != -1)
+			bm_get_info(GetCIEImageHandle(WCI_CAPTION), &w, &h);
 		else
 			h += 5;
 
-		if(GetCIEHandle(WCI_CAPTION) != -1)
+		if(GetCIEImageHandle(WCI_CAPTION) != -1)
 		{
 			CaptionCoords[0] = Coords[0] + BorderSizes[0];
-			CaptionCoords[1] = Coords[1];
+			CaptionCoords[1] = Coords[1] + BorderSizes[1];
 			GetCIECoords(WCI_CAPTION, &CaptionCoords[0], &CaptionCoords[1]);
 		}
 		else
@@ -805,8 +832,8 @@ void Window::CalculateSize()
 		CaptionCoords[3] = CaptionCoords[1] + h;
 
 		//Find close coordinates now
-		if(GetCIEHandle(WCI_CLOSE) != -1)
-			bm_get_info(GetCIEHandle(WCI_CLOSE), &w, &h);
+		if(GetCIEImageHandle(WCI_CLOSE) != -1)
+			bm_get_info(GetCIEImageHandle(WCI_CLOSE), &w, &h);
 		else
 			gr_get_string_size(&w, &h, "X");
 
@@ -817,16 +844,28 @@ void Window::CalculateSize()
 		CloseCoords[3] = CloseCoords[1] + h;
 
 		//Find hide coordinates now
-		if(GetCIEHandle(WCI_HIDE) != -1)
-			bm_get_info(GetCIEHandle(WCI_HIDE), &w, &h);
+		if(GetCIEImageHandle(WCI_HIDE) != -1)
+			bm_get_info(GetCIEImageHandle(WCI_HIDE), &w, &h);
 		else
 			gr_get_string_size(&w, &h, "-");
 
-		HideCoords[0] = CloseCoords[0] - w - 1;
+		HideCoords[0] = CloseCoords[0] - w;
 		HideCoords[1] = CloseCoords[1];
 		GetCIECoords(WCI_HIDE, &HideCoords[0], &HideCoords[1]);
 		HideCoords[2] = HideCoords[0] + w;
 		HideCoords[3] = HideCoords[1] + h;
+	}
+
+	//Do bitmap stuff
+	float num;
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM) != -1)
+	{
+		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM));
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), &w, &h);
+		num = (float)((Coords[2]-CornerWidths[3])-(Coords[0]+CornerWidths[2])) / (float)w;
+		BorderRectLists[CIE_HANDLE_BM].resize(1);
+		BorderRectLists[CIE_HANDLE_BM][0] = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[3]-h, fl2i(Coords[0]+CornerWidths[2]+w*num),h,0,0,num,1.0f);
+		//gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
 	}
 
 	if(Parent!=NULL)Parent->CalculateSize();
@@ -941,49 +980,64 @@ void Window::DoDraw(float frametime)
 {
 	gr_set_color_fast(&Color_text_normal);
 	int w, h;
+	std::vector<bitmap_2d_list> bmlist;
+	bitmap_2d_list b2l;
+	unsigned int num;
+	unsigned int i;
 	
-	if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TL) != -1)
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL) != -1)
 	{
-		gr_set_bitmap(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TL));
+		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL));
 		gr_bitmap(Coords[0], Coords[1], false);
 	}
 
-	if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TR) != -1)
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR) != -1)
 	{
-		gr_set_bitmap(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TR));
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TR), &w, NULL);
+		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR));
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), &w, NULL);
 		gr_bitmap(Coords[2] - w, Coords[1], false);
 	}
 
-	if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BL) != -1)
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL) != -1)
 	{
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BL), NULL, &h);
-		gr_set_bitmap(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BL));
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), NULL, &h);
+		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL));
 		gr_bitmap(Coords[0], Coords[3] - h, false);
 	}
 
-	if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BR) != -1)
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR) != -1)
 	{
-		gr_set_bitmap(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BR));
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BR), &w, &h);
-		gr_bitmap(Coords[2] - w, Coords[3] - h, false);
+		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR));
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR), &w, &h);
+		//gr_bitmap(Coords[2] - w, Coords[3] - h, false);
+		gr_bitmap(Coords[2]-w, Coords[3] - h, false);
 	}
 
-	if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BM) != -1)
+	if(BorderRectLists[CIE_HANDLE_BM].size())
 	{
-		gr_set_bitmap(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BM));
-		bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_BR), NULL, &h);
-		gr_bitmap(Coords[0] + BorderSizes[0], Coords[1] - h, false);
+		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM));
+		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM][0], BorderRectLists[CIE_HANDLE_BM].size(), false);
 	}
 	else
 	{
 		gr_line(Coords[0] + BorderSizes[0], Coords[3], Coords[2] - BorderSizes[2], Coords[3]);
 	}
 
-	if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TM) != -1)
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM) != -1)
 	{
-		gr_set_bitmap(GetCIEHandle(WCI_BORDER, CIE_HANDLE_TM));
-		gr_bitmap(Coords[0] + BorderSizes[0], Coords[1], false);
+		bmlist.clear();
+		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM));
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM), &w, &h);
+		num = ((Coords[2]-CornerWidths[1])-(Coords[0]+CornerWidths[0])) / w;
+		b2l.w = w;
+		b2l.h = h;
+		b2l.y = Coords[1];
+		for(i = 0; i < num; i++)
+		{
+			b2l.x = Coords[0] + CornerWidths[0] + w*i;
+			bmlist.push_back(b2l);
+		}
+		gr_bitmap_list(&bmlist[0], bmlist.size(), false);
 	}
 	else
 	{
@@ -992,17 +1046,16 @@ void Window::DoDraw(float frametime)
 
 	if(!(Style & GS_HIDDEN))
 	{
-		if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_ML) != -1)
+		if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML) != -1)
 		{
-			std::vector<bitmap_2d_list> bmlist;
-			bitmap_2d_list b2l;
-			gr_set_bitmap(GetCIEHandle(WCI_BORDER, CIE_HANDLE_ML));
-			bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_ML), &w, &h);
-			unsigned int num = (Coords[3]-Coords[1]) / h;
+			bmlist.clear();
+			gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML));
+			bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &w, &h);
+			num = ((Coords[3]-BorderSizes[3])-(Coords[1]+BorderSizes[1])) / h;
 			b2l.w = w;
 			b2l.h = h;
 			b2l.x = Coords[0];
-			for(unsigned int i = 0; i < num; i++)
+			for(i = 0; i < num; i++)
 			{
 				b2l.y = Coords[1] + BorderSizes[1] + h*i;
 				bmlist.push_back(b2l);
@@ -1015,11 +1068,22 @@ void Window::DoDraw(float frametime)
 			gr_line(Coords[0], Coords[1] + BorderSizes[1], Coords[0], Coords[3] - BorderSizes[3]);
 		}
 
-		if(GetCIEHandle(WCI_BORDER, CIE_HANDLE_MR) != -1)
+		if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR) != -1)
 		{
-			gr_set_bitmap(GetCIEHandle(WCI_BORDER, CIE_HANDLE_MR));
-			bm_get_info(GetCIEHandle(WCI_BORDER, CIE_HANDLE_MR), &w, &h);
-			gr_bitmap(Coords[2] - w, Coords[1] + BorderSizes[1], false);
+			bmlist.clear();
+			gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR));
+			bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR), &w, &h);
+			num = ((Coords[3]-BorderSizes[3])-(Coords[1]+BorderSizes[1])) / h;
+			b2l.w = w;
+			b2l.h = h;
+			b2l.x = Coords[2]-w;
+			for(i = 0; i < num; i++)
+			{
+				b2l.y = Coords[1] + BorderSizes[1] + h*i;
+				bmlist.push_back(b2l);
+			}
+			gr_bitmap_list(&bmlist[0], bmlist.size(), false);
+			//gr_bitmap(Coords[2] - w, Coords[1] + BorderSizes[1], false);
 		}
 		else
 		{
@@ -1030,9 +1094,9 @@ void Window::DoDraw(float frametime)
 	if(!(Style & WS_NOTITLEBAR))
 	{
 		//Draw the caption background
-		if(GetCIEHandle(WCI_CAPTION) != -1)
+		if(GetCIEImageHandle(WCI_CAPTION) != -1)
 		{
-			gr_set_bitmap(GetCIEHandle(WCI_CAPTION));
+			gr_set_bitmap(GetCIEImageHandle(WCI_CAPTION));
 			gr_bitmap(CaptionCoords[0], CaptionCoords[1], false);
 		}
 		else
@@ -1041,14 +1105,14 @@ void Window::DoDraw(float frametime)
 		}
 
 		//Close button
-		if(GetCIEHandle(WCI_CLOSE) != -1)
+		if(GetCIEImageHandle(WCI_CLOSE) != -1)
 		{
-			if(CloseHighlight && GetCIEHandle(WCI_CLOSE, CIE_HANDLE_M) != -1)
-				gr_set_bitmap(GetCIEHandle(WCI_CLOSE, CIE_HANDLE_M));
+			if(CloseHighlight && GetCIEImageHandle(WCI_CLOSE, CIE_HANDLE_M) != -1)
+				gr_set_bitmap(GetCIEImageHandle(WCI_CLOSE, CIE_HANDLE_M));
 			else
-				gr_set_bitmap(GetCIEHandle(WCI_CLOSE));
+				gr_set_bitmap(GetCIEImageHandle(WCI_CLOSE));
 
-			gr_bitmap(HideCoords[0], HideCoords[1], false);
+			gr_bitmap(CloseCoords[0], CloseCoords[1], false);
 		}
 		else
 		{
@@ -1062,12 +1126,12 @@ void Window::DoDraw(float frametime)
 		
 
 		//Hide button
-		if(GetCIEHandle(WCI_HIDE) != -1)
+		if(GetCIEImageHandle(WCI_HIDE) != -1)
 		{
-			if(HideHighlight && GetCIEHandle(WCI_HIDE, CIE_HANDLE_M) != -1)
-				gr_set_bitmap(GetCIEHandle(WCI_HIDE, CIE_HANDLE_M));
+			if(HideHighlight && GetCIEImageHandle(WCI_HIDE, CIE_HANDLE_M) != -1)
+				gr_set_bitmap(GetCIEImageHandle(WCI_HIDE, CIE_HANDLE_M));
 			else
-				gr_set_bitmap(GetCIEHandle(WCI_HIDE));
+				gr_set_bitmap(GetCIEImageHandle(WCI_HIDE));
 			gr_bitmap(HideCoords[0], HideCoords[1],false);
 		}
 		else

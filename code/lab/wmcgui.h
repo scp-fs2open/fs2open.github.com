@@ -44,6 +44,7 @@ protected:
 #define CIE_IMAGE_NMCSD		1
 #define CIE_IMAGE_BORDER	2
 #define CIE_COORDS			3
+#define CIE_TEXT			4
 
 //NMCAD Handles
 #define CIE_HANDLE_N	0
@@ -62,6 +63,12 @@ protected:
 #define CIE_HANDLE_BM	6
 #define CIE_HANDLE_BR	7
 
+//Text
+#define CIE_COLOR_R		0
+#define CIE_COLOR_G		1
+#define CIE_COLOR_B		2
+#define CIE_COLOR_A		3
+
 //Return vals
 #define CIE_GC_NONE_SET	0
 #define CIE_GC_X_SET	(1<<0)
@@ -69,11 +76,16 @@ protected:
 
 //Global stuff
 #define CIE_NUM_HANDLES	8
+union Handle
+{
+	ubyte Colors[4];
+	int Image;
+};
 class ClassInfoEntry
 {
 	int Type;
 
-	int Handle[CIE_NUM_HANDLES];	//We need 8 for border
+	Handle Handles[CIE_NUM_HANDLES];	//We need 8 for border
 	int Coords[2];
 
 public:
@@ -85,7 +97,8 @@ public:
 	void Parse(char* tag, int in_type);
 
 	//--GET FUNCTIONS
-	int GetHandle(int ID=CIE_HANDLE_N){if(this==NULL){return-1;}else{return Handle[ID];}}
+	int GetImageHandle(int ID=CIE_HANDLE_N){if(this==NULL){return-1;}else{return Handles[ID].Image;}}
+	ubyte GetColorHandle(int ColorID, int ID=CIE_HANDLE_N){if(this==NULL){return 0;}else{return Handles[ID].Colors[ColorID];}}
 	//Copies the coordinates to the given location if coordinates are set.
 	int GetCoords(int *x, int *y);
 };
@@ -177,7 +190,7 @@ protected:
 	virtual void CalculateSize(){if(Parent!=NULL)Parent->CalculateSize();}
 
 	//PRIVATE CIE FUNCTIONS
-	int GetCIEHandle(int id, int handleid=0){if(InfoEntry!=NULL){return InfoEntry[id].GetHandle(handleid);}else{return -1;}}
+	int GetCIEImageHandle(int id, int handleid=0){if(InfoEntry!=NULL){return InfoEntry[id].GetImageHandle(handleid);}else{return -1;}}
 	int GetCIECoords(int id, int *x, int *y);
 	void SetCIEHandle();
 public:
@@ -282,9 +295,11 @@ class Window : public GUIObject
 	int UnhiddenHeight;
 
 	//Skinning stuff
+	//Top left, top right, bottom left, bottom right
+	int CornerWidths[4];
 	//Left width, top height, right width, bottom height
 	int BorderSizes[4];
-	int BorderCoords[4];
+	std::vector<bitmap_rect_list> BorderRectLists[8];
 
 	//Functions
 	void CalculateSize();
