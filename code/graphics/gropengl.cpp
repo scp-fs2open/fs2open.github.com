@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.37 $
- * $Date: 2003-10-19 01:10:05 $
+ * $Revision: 2.38 $
+ * $Date: 2003-10-20 22:32:37 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/10/19 01:10:05  phreak
+ * clipping planes now work
+ *
  * Revision 2.36  2003/10/18 01:22:39  phreak
  * hardware transformation is working.  now lighting needs to be done
  *
@@ -1933,16 +1936,8 @@ void opengl_reset_spec_mapping()
 
 }
 
-void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, int is_scaler )
+void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type, int flags, int is_scaler)
 {
-	int i;
-	float u_scale = 1.0f, v_scale = 1.0f;
-
-	// Make nebula use the texture mapper... this blends the colors better.
-	if ( flags & TMAP_FLAG_NEBULA ){
-		Int3 ();
-	}
-
 	gr_texture_source texture_source = (gr_texture_source)-1;
 	gr_alpha_blend alpha_blend = (gr_alpha_blend)-1;
 	gr_zbuffer_type zbuffer_type = (gr_zbuffer_type)-1;
@@ -1957,11 +1952,7 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 		zbuffer_type = ZBUFFER_TYPE_NONE;
 	}
 	
-	int alpha;
-
-	int tmap_type = TCACHE_TYPE_NORMAL;
-
-	int r, g, b;
+	tmap_type = TCACHE_TYPE_NORMAL;
 
 	if ( flags & TMAP_FLAG_TEXTURED )       {
 		r = g = b = 255;
@@ -2028,18 +2019,30 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 		} else {
 			texture_source = TEXTURE_SOURCE_DECAL;
 		}
-
-		gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
-
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-		{
-			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			return;
-		}
 	}
-	else
+
+	gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
+}
+
+void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, int is_scaler )
+{
+	int i;
+	float u_scale = 1.0f, v_scale = 1.0f;
+
+	// Make nebula use the texture mapper... this blends the colors better.
+	if ( flags & TMAP_FLAG_NEBULA ){
+		Int3 ();
+	}
+
+	int alpha,tmap_type, r, g, b;
+
+	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
+
+
+	if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 	{
-		gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
+		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+		return;
 	}
 	
 	if (flags & TMAP_FLAG_PIXEL_FOG) {
@@ -2127,22 +2130,22 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 	//maybe do a spec map
 	if (SPECMAP > -1)
 	{
-			gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
-			GLOWMAP=-1;
+		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		GLOWMAP=-1;
 
-			if ( !gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-			{
-				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-				return;
-			}
+		if ( !gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+		{
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
+		}
 
-			glBlendFunc(GL_ONE,GL_ONE);
-			glDepthMask(GL_FALSE);
-			glDepthFunc(GL_EQUAL);
-			gr_opengl_set_tex_env_scale(4.0f);
-			opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,1);
+		glBlendFunc(GL_ONE,GL_ONE);
+		glDepthMask(GL_FALSE);
+		glDepthFunc(GL_EQUAL);
+		gr_opengl_set_tex_env_scale(4.0f);
+		opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,1);
 			
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	}
 }
@@ -2157,104 +2160,18 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 		Int3 ();
 	}
 
-	gr_texture_source texture_source = (gr_texture_source)-1;
-	gr_alpha_blend alpha_blend = (gr_alpha_blend)-1;
-	gr_zbuffer_type zbuffer_type = (gr_zbuffer_type)-1;
 	
-	if ( gr_zbuffering )    {
-		if ( is_scaler || (gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER)   )       {
-			zbuffer_type = ZBUFFER_TYPE_READ;
-		} else {
-			zbuffer_type = ZBUFFER_TYPE_FULL;
-		}
-	} else {
-		zbuffer_type = ZBUFFER_TYPE_NONE;
-	}
+	int alpha,tmap_type, r, g, b;
+
+	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
+
 	
-	int alpha;
-
-	int tmap_type = TCACHE_TYPE_NORMAL;
-
-	int r, g, b;
-
-	if ( flags & TMAP_FLAG_TEXTURED )       {
-		r = g = b = 255;
-	} else {
-		r = gr_screen.current_color.red;
-		g = gr_screen.current_color.green;
-		b = gr_screen.current_color.blue;
-//		opengl_switch_arb0(0);
-//		opengl_switch_arb1(0);
-	}
-
-	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER )        
+	if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 	{
-		if (1) {
-			tmap_type = TCACHE_TYPE_NORMAL;
-			alpha_blend = ALPHA_BLEND_ALPHA_ADDITIVE;
-			
-			// Blend with screen pixel using src*alpha+dst
-			float factor = gr_screen.current_alpha;
-			
-			alpha = 255;
-			
-			if ( factor <= 1.0f )   {
-				int tmp_alpha = fl2i(gr_screen.current_alpha*255.0f);
-				r = (r*tmp_alpha)/255;
-				g = (g*tmp_alpha)/255;
-				b = (b*tmp_alpha)/255;
-			}
-		} else {
-			tmap_type = TCACHE_TYPE_XPARENT;
-			
-			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-			
-			// Blend with screen pixel using src*alpha+dst
-			float factor = gr_screen.current_alpha;
-				
-			if ( factor > 1.0f )    {
-				alpha = 255;
-			} else {
-				alpha = fl2i(gr_screen.current_alpha*255.0f);
-			}
-		}
-	} else {
-		if(Bm_pixel_format == BM_PIXEL_FORMAT_ARGB) {
-			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-		} else {
-			alpha_blend = ALPHA_BLEND_NONE;
-		}
-		alpha = 255;
-	}
-
-	if(flags & TMAP_FLAG_BITMAP_SECTION){
-		tmap_type = TCACHE_TYPE_BITMAP_SECTION;
+		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+		return;
 	}
 	
-	texture_source = TEXTURE_SOURCE_NONE;
-	
-	if ( flags & TMAP_FLAG_TEXTURED )       {
-		texture_source=TEXTURE_SOURCE_DECAL;
-			
-		// use nonfiltered textures for bitmap sections
-		if(flags & TMAP_FLAG_BITMAP_SECTION){
-			texture_source = TEXTURE_SOURCE_NO_FILTERING;
-		} else {
-			texture_source = TEXTURE_SOURCE_DECAL;
-		}
-
-		gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
-
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-		{
-			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			return;
-		}
-	}
-	else
-	{
-		gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
-	}
 	
 	if (flags & TMAP_FLAG_PIXEL_FOG) {
 		int r, g, b;
@@ -2303,9 +2220,9 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 
 	if ((SPECMAP > -1) && (flags & TMAP_FLAG_TEXTURED))
 	{
-			opengl_set_spec_mapping(tmap_type,&u_scale,&v_scale);
-			opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha,1);
-			opengl_reset_spec_mapping();
+		opengl_set_spec_mapping(tmap_type,&u_scale,&v_scale);
+		opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha,1);
+		opengl_reset_spec_mapping();
 	}
 
 }
@@ -4149,7 +4066,7 @@ void gr_opengl_render_buffer(int idx)
 	glClientActiveTextureARB(GL_TEXTURE0_ARB);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
-	
+
 	if (GLOWMAP > -1)
 	{
 		glClientActiveTextureARB(GL_TEXTURE1_ARB);
@@ -4157,15 +4074,38 @@ void gr_opengl_render_buffer(int idx)
 		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
 	}
 
-	gr_opengl_set_state(TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
+	if ((Interp_multitex_cloakmap>0) && (max_multitex > 2))
+	{
+		glClientActiveTextureARB(GL_TEXTURE2_ARB);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+	}
 
-	gr_tcache_set(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
+
+	int r,g,b,a,tmap_type;
+
+	opengl_setup_render_states(r,g,b,a,tmap_type,TMAP_FLAG_TEXTURED,0);
+
+	if (gr_screen.current_bitmap==CLOAKMAP)
+	{
+		glBlendFunc(GL_ONE,GL_ONE);
+		r=g=b=Interp_cloakmap_alpha;
+		a=255;
+	}
+
+	gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
 	
 	glLockArraysEXT(0,vbp->n_poly*3);
 
 	glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3);
 
 	glUnlockArraysEXT();
+
+	if (ogl_maybe_pop_arb1)
+	{
+		gr_pop_texture_matrix(1);
+		ogl_maybe_pop_arb1=0;
+	}
 
 #if defined(DRAW_DEBUG_LINES) && defined(_DEBUG)
 	glBegin(GL_LINES);
@@ -4280,21 +4220,35 @@ void gr_opengl_end_instance_matrix()
 
 }
 
-int	 gr_opengl_make_light(light_data* light, int idx, int priority){
+int gr_opengl_make_light(light_data* light, int idx, int priority)
+{
 	//stubb
-	return-1;
+	return -1;
 }
 
-void gr_opengl_modify_light(light_data* light, int idx, int priority){
+void gr_opengl_modify_light(light_data* light, int idx, int priority)
+{
 	//stubb
 }
 
-void gr_opengl_destroy_light(int idx){
+void gr_opengl_destroy_light(int idx)
+{
 	//stubb
 }
 
-void gr_opengl_set_light(light_data *light){
+void gr_opengl_set_light(light_data *light)
+{
 	//stubb
+}
+
+void gr_opengl_set_lighting(bool state)
+{
+
+}
+
+void gr_opengl_reset_lighting()
+{
+
 }
 
 void gr_opengl_end_clip_plane()
@@ -4328,12 +4282,7 @@ void gr_opengl_start_clip_plane()
 	glEnable(GL_CLIP_PLANE0);
 }
 
-void gr_opengl_set_lighting(bool state)
-{}
 
-void gr_opengl_reset_lighting()
-{
-}
 
 
 extern char *Osreg_title;
