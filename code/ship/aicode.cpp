@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.38 $
- * $Date: 2003-07-15 02:51:01 $
+ * $Revision: 2.39 $
+ * $Date: 2003-08-03 23:38:08 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/07/15 02:51:01  phreak
+ * fixed a warning.
+ * previous cvs message should read: cloaked ship will decloak if a turret fires
+ *
  * Revision 2.37  2003/07/15 02:41:41  phreak
  * cloaked ships now are less visible with distance
  *
@@ -6157,6 +6161,9 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	}
 #endif
 
+	if (priority1 == 0)
+		ignore_mask |= WIF_HOMING;
+
 	//	Stuff weapon_bank_list with bank index of available weapons.
 	num_weapon_types = get_available_secondary_weapons(objp, weapon_id_list, weapon_bank_list);
 
@@ -6174,6 +6181,9 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 				priority2_index = weapon_bank_list[i];	//	Found second priority, but might still find first priority.
 		}
 	}
+
+	if (priority2 == 0)
+		ignore_mask |= WIF_HOMING;
 
 	//	If didn't find anything above, then pick any secondary weapon.
 	if (i == num_weapon_types) {
@@ -6193,12 +6203,20 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		}
 	}
 
+
+	ai_info	*aip = &Ai_info[Ships[objp->instance].ai_index];
 	//	If switched banks, force reacquisition of aspect lock.
 	if (swp->current_secondary_bank != initial_bank) {
-		ai_info	*aip = &Ai_info[Ships[objp->instance].ai_index];
-		
 		aip->aspect_locked_time = 0.0f;
 		aip->current_target_is_locked = 0;
+	}
+
+	weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+	
+	//rapid dumbfire? let it rip!
+	if ( (!(wip->wi_flags & WIF_HOMING)) && (wip->fire_wait < .5f))
+	{	
+		aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
 	}
 
 
@@ -7941,6 +7959,9 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		} else if (subsystem_strength > 100.0f) {
 			priority1 = WIF_PUNCTURE;
 			priority2 = WIF_HOMING;
+		} else if ((en_objp->type == OBJ_ASTEROID))	{	//prefer dumbfires if its an asteroid	
+			priority1 = 0;								
+			priority2 = 0;
 		} else {
 			priority1 = WIF_HOMING;
 			priority2 = 0;
