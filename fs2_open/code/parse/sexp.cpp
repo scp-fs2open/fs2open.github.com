@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.107 $
- * $Date: 2004-09-22 06:56:44 $
+ * $Revision: 2.108 $
+ * $Date: 2004-09-22 08:32:05 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.107  2004/09/22 06:56:44  Goober5000
+ * checking in framework for when-argument special ubersexp
+ * --Goober5000
+ *
  * Revision 2.106  2004/09/17 08:07:52  Goober5000
  * a bit of reordering
  * --Goober5000
@@ -12963,7 +12967,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_RED_ALERT:
 		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
-		case OP_ARGUMENT:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -14174,7 +14177,9 @@ int sexp_query_type_match(int opf, int opr)
 
 		// Goober5000
 		case OPF_ANYTHING:
-			return 1;
+			// this violates the designation of "anything", but is necessary to prevent
+			// nesting of flexible-argument sexps, which would be a nightmare to code
+			return (opr != OPR_FLEXIBLE_ARGUMENT);
 
 		case OPF_AI_GOAL:
 			return (opr == OPR_AI_GOAL);
