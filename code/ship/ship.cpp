@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.121 $
- * $Date: 2004-05-10 13:07:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.122 $
+ * $Date: 2004-05-26 02:31:39 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.121  2004/05/10 13:07:22  Goober5000
+ * fixed the AWACS help message
+ * --Goober5000
+ *
  * Revision 2.120  2004/05/10 10:51:51  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -1624,14 +1628,36 @@ int ship_get_num_ships()
 }
 
 // parse an engine wash info record
-void parse_engine_wash()
+void parse_engine_wash(bool replace)
 {
 	engine_wash_info *ewp;
 	ewp = &Engine_wash_info[Num_engine_wash_types];
-
 	// name of engine wash info
 	required_string("$Name:");
 	stuff_string(ewp->name, F_NAME, NULL);
+
+	//Does this engine wash exist already?
+	//If so, load this new info into it
+	//Otherwise, increment Num_engine_wash_types
+	int e_w_id;
+	e_w_id = get_engine_wash_index(ewp->name);
+	if(e_w_id != -1)
+	{
+		if(replace)
+		{
+			Warning(LOCATION, "More than one version of engine wash %s exists; using newer version.", ewp->name);
+			ewp = &Engine_wash_info[e_w_id];
+		}
+		else
+		{
+			Error(LOCATION, "Error:  Engine wash %s already exists.  All engine wash names must be unique.", ewp->name);
+		}
+	}
+	else
+	{
+		Num_engine_wash_types++;
+	}
+
 
 	// half angle of cone of wash from thruster
 	required_string("$Angle:");
@@ -1658,7 +1684,7 @@ void parse_engine_wash()
 
 
 // function to parse the information for a specific ship type.	
-int parse_ship()
+int parse_ship(bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH + 1];
 	ship_info *sip;
@@ -1709,8 +1735,24 @@ int parse_ship()
 	}
 
 	diag_printf ("Ship name -- %s\n", sip->name);
-	if ( ship_info_lookup( sip->name ) != -1 ){
-		Error(LOCATION, "Error:  Ship name %s already exists in ships.tbl.  All ship class names must be unique.", sip->name);
+	//Check if ship exists already
+	int ship_id;
+	ship_id = ship_info_lookup( sip->name );
+	if(ship_id != -1)
+	{
+		if(replace)
+		{
+			Warning(LOCATION, "More than one version of ship %s exists; using newer version.", sip->name);
+			sip = &Ship_info[ship_id];
+		}
+		else
+		{
+			Error(LOCATION, "Error:  Ship name %s already exists in ships.tbl.  All ship class names must be unique.", sip->name);
+		}
+	}
+	else
+	{
+		Num_ship_types++;
 	}
 
 	required_string("$Short name:");
@@ -2701,53 +2743,103 @@ char get_engine_wash_index(char *engine_wash_name)
 	return -1;
 }
 
-void parse_shiptbl()
+char current_ship_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
+void parse_shiptbl(char* longname, bool is_chunk, int location)
 {
+	strcpy(current_ship_table, longname);
 	// open localization
 	lcl_ext_open();
 	
-	read_file_text("ships.tbl");
+	read_file_text(longname, location);
 	reset_parse();
 
 	// parse default ship
-	required_string("#Default Player Ship");
-	required_string("$Name:");
-	stuff_string(default_player_ship, F_NAME, NULL, 254);
-	required_string("#End");
+	if(!is_chunk)
+	{
+		required_string("#Default Player Ship");
+		required_string("$Name:");
+		stuff_string(default_player_ship, F_NAME, NULL, 254);
+		required_string("#End");
 
-	Num_engine_wash_types = 0;
-	Num_ship_types = 0;
+		required_string("#Engine Wash Info");
+		while (required_string_either("#End", "$Name:")) {
+			Assert( Num_engine_wash_types < MAX_ENGINE_WASH_TYPES );
 
-	required_string("#Engine Wash Info");
-	while (required_string_either("#End", "$Name:")) {
-		Assert( Num_engine_wash_types < MAX_ENGINE_WASH_TYPES );
-
-		parse_engine_wash();
-		Num_engine_wash_types++;
-	}
-
-	required_string("#End");
-	required_string("#Ship Classes");
-
-	while (required_string_either("#End","$Name:")) {
-		Assert( Num_ship_types <= MAX_SHIP_TYPES );	// Goober5000 - should be <=
-
-		if ( parse_ship() ) {
-			continue;
+			parse_engine_wash(false);
 		}
 
-		Num_ship_types++;
-	}
+		required_string("#End");
 
-	required_string("#End");
+		required_string("#Ship Classes");
+
+		while (required_string_either("#End","$Name:")) {
+			Assert( Num_ship_types <= MAX_SHIP_TYPES );	// Goober5000 - should be <=
+
+			if ( parse_ship(false) ) {
+				continue;
+			}
+		}
+
+		required_string("#End");
+	}
+	else
+	{
+		//Override default player ship
+		if(optional_string("#Default Player Ship"))
+		{
+			required_string("$Name:");
+			stuff_string(default_player_ship, F_NAME, NULL, 254);
+			required_string("#End");
+		}
+		//Add engine washes
+		//This will override if they already exist
+		if(optional_string("#Engine Wash Info"))
+		{
+			while (required_string_either("#End", "$Name:"))
+			{
+				Assert( Num_engine_wash_types < MAX_ENGINE_WASH_TYPES );
+
+				parse_engine_wash(true);
+			}
+
+			required_string("#End");
+		}
+
+		//Add ship classes
+		if(optional_string("#Ship Classes"))
+		{
+
+			while (required_string_either("#End","$Name:")) {
+				Assert( Num_ship_types <= MAX_SHIP_TYPES );	// Goober5000 - should be <=
+
+				if ( parse_ship(true) ) {
+					continue;
+				}
+				
+			}
+
+			required_string("#End");
+		}
+	}
+	
 
 	// Read in a list of ship_info indicies that are an ordering of the player ship precedence.
 	// This list is used to select an alternate ship when a particular ship is not available
 	// during ship selection.
-	required_string("$Player Ship Precedence:");
-strcpy(parse_error_text,"'player ship precedence");
-	Num_player_ship_precedence = stuff_int_list(Player_ship_precedence, MAX_PLAYER_SHIP_CHOICES, SHIP_INFO_TYPE);
-strcpy(parse_error_text, "");
+	strcpy(parse_error_text,"'player ship precedence");
+	if(!is_chunk)
+	{
+		required_string("$Player Ship Precedence:");
+		Num_player_ship_precedence = stuff_int_list(Player_ship_precedence, MAX_PLAYER_SHIP_CHOICES, SHIP_INFO_TYPE);
+	}
+	else
+	{
+		if(optional_string("$Player Ship Precedence:"))
+		{
+			Num_player_ship_precedence = stuff_int_list(Player_ship_precedence, MAX_PLAYER_SHIP_CHOICES, SHIP_INFO_TYPE);
+		}
+	}
+	strcpy(parse_error_text, "");
 
 	// close localization
 	lcl_ext_close();
@@ -2768,9 +2860,26 @@ void ship_init()
 	if ( !ships_inited ) {
 		
 		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing 'ships.tbl'\r\nError code = %i.\r\n", rval);
-		} else {			
-			parse_shiptbl();
+			Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", current_ship_table, rval);
+		} 
+		else
+		{			
+			Num_engine_wash_types = 0;
+			Num_ship_types = 0;
+
+			//Parse main TBL first
+			parse_shiptbl("ships.tbl", false, CF_TYPE_ANY);
+
+			//Then other ones
+			const int MAX_TBL_PARTS = 10;
+			char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-shp.tbm");
+			for(int i = 0; i < num_files; i++)
+			{
+				//HACK HACK HACK
+				strcat(tbl_files[i], ".tbm");
+				parse_shiptbl(tbl_files[i], true, CF_TYPE_TABLES);
+			}
 			ships_inited = 1;
 		}
 
