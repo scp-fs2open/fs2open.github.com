@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.8 $
+ * $Revision: 2.9 $
  * $Author: Goober5000 $
- * $Date: 2002-12-17 02:21:42 $
+ * $Date: 2002-12-21 17:58:11 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/12/17 02:21:42  Goober5000
+ * cosmetic fixed; also OP_SET_SCANNED and OP_SET_UNSCANNED added in preparation for the set-scanned and set-unscanned sexp commit
+ * --Goober5000
+ *
  * Revision 2.7  2002/12/12 08:01:57  Goober5000
  * added distance-ship-subsystem sexp
  * ~Goober5000~
@@ -384,6 +388,7 @@
 #define	OP_NONCAMPAIGN_FLAG		0x2000
 #define	OP_CAMPAIGN_ONLY_FLAG	0x1000
 #define	FIRST_OP						0x0100
+
 #define	OP_CATEGORY_MASK			0x0f00
 
 #define	OP_CATEGORY_OBJECTIVE	0x0100
@@ -399,8 +404,18 @@
 #define	OP_CATEGORY_UNLISTED		0x0b00
 #define	OP_CATEGORY_GOAL_EVENT	0x0c00
 
+#define SUBCATEGORY_MASK									0x000f
+
+#define CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS		(0x0000 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_AI_AND_IFF						(0x0001 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO				(0x0002 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_SHIP_STATUS						(0x0003 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS				(0x0004 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN				(0x0005 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_SPECIAL							(0x0006 | OP_CATEGORY_CHANGE)
+
 #define	OP_PLUS									(0x0000 | OP_CATEGORY_ARITHMETIC)
-#define	OP_MINUS									(0x0001 | OP_CATEGORY_ARITHMETIC)
+#define	OP_MINUS								(0x0001 | OP_CATEGORY_ARITHMETIC)
 #define	OP_MOD									(0x0002 | OP_CATEGORY_ARITHMETIC)
 #define	OP_MUL									(0x0003 | OP_CATEGORY_ARITHMETIC)
 #define	OP_DIV									(0x0004 | OP_CATEGORY_ARITHMETIC)
@@ -859,5 +874,8 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 int sexp_variable_allocate_block(const char* block_name, int block_type);
 void sexp_variable_condense_block();
 void sexp_variable_block_free(const char *ship_name, int start_index, int block_type);
+
+// menu and category stuff
+extern int get_subcategory(int sexp_id);
 
 #endif
