@@ -33,8 +33,12 @@ void CloseInterfaces(void);
 char error_buffer[512];
 char *ParseDShowError(HRESULT hr)
 {
+#ifndef NDEBUG
  	AMGetErrorText(hr, error_buffer, 512);
 	return error_buffer;
+#else
+	return "DShow error";
+#endif
 }
 
 //

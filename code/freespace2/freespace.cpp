@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.67 $
- * $Date: 2004-01-24 15:52:25 $
+ * $Revision: 2.68 $
+ * $Date: 2004-01-29 01:34:01 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2004/01/24 15:52:25  randomtiger
+ * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
+ * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
+ *
  * Revision 2.66  2004/01/23 00:14:27  randomtiger
  * Fixed serious memory leak causes by use of -pcx32 flag
  *
@@ -852,6 +856,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
  #include <process.h>
  #include <direct.h>
  #include <io.h>
+ #include <crtdbg.h>
 #else
  #include <unistd.h>
  #include <sys/stat.h>
@@ -3070,13 +3075,48 @@ void game_get_framerate()
 		gr_string( 20, 180, mem_buffer);
 
 		extern int Wasted_space;
+		extern int D3d_tuse;   
 
-		sprintf(mem_buffer,"Wasted memory %d Meg", Wasted_space/1024/1024);
+		sprintf(mem_buffer,"Wasted memory %d Meg, D3D Texture mem: %d", 
+			Wasted_space/1024/1024,
+			D3d_tuse/1024/1024);
 		gr_string( 20, 200, mem_buffer);
 
 
-
 	}
+
+#ifndef NDEBUG
+	if(Cmdline_show_mem_usage)
+	{
+		void memblockinfo_sort();
+		void memblockinfo_sort_get_entry(int index, char *filename, int *size);
+
+		char mem_buffer[1000];
+		char filename[MAX_PATH];
+		int size;
+	  	memblockinfo_sort();
+		for(int i = 0; i < 30; i++)
+		{
+			memblockinfo_sort_get_entry(i, filename, &size);
+
+			size /= 1024;
+
+			if(size == 0)
+				break;
+
+			char *short_name = strrchr(filename, '\\');
+			if(short_name == NULL)
+				short_name = filename;
+			else
+				short_name++;
+
+			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
+			gr_string( 20, 220 + (i*10), mem_buffer);
+		}
+		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
+		gr_string( 20, 230 + (i*10), mem_buffer);
+	}
+#endif
 }
 
 void game_show_framerate()
@@ -7694,6 +7734,10 @@ int main(int argc, char *argv[])
 	DBUGFILE_DEINIT()
 
 	::CoUninitialize();
+
+#ifdef _WIN32
+	_CrtDumpMemoryLeaks();
+#endif
 	
 	return result;
 }
@@ -7796,6 +7840,12 @@ void game_shutdown(void)
 #ifndef NO_NETWORK
 	psnet_close();
 #endif
+
+#ifdef _WIN32
+	void memblockinfo_output_memleak();
+	memblockinfo_output_memleak();
+#endif
+
 	os_cleanup();
 
 #if 0  // don't have an updater for fs2_open

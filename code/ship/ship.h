@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.55 $
- * $Date: 2004-01-14 07:07:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.56 $
+ * $Date: 2004-01-29 01:34:02 $
+ * $Author: randomtiger $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2004/01/14 07:07:14  Goober5000
+ * added error checking for an annoying crash when running an out-of-range
+ * sound; also, Phreak misspelled "tertiary"
+ * --Goober5000
+ *
  * Revision 2.54  2003/12/16 20:55:13  phreak
  * disabled tertiary weapons support pending a rewrite of critical code
  *
@@ -495,7 +500,7 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 		#define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); DTP bumped from 100 to 400
 	#endif
 #else
-#define	MAX_SHIPS					400			// max number of ship instances there can be.DTP; bumped from 200 to 400
+#define MAX_SHIPS					400			// max number of ship instances there can be.DTP; bumped from 200 to 400
 #define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400
 #endif
 

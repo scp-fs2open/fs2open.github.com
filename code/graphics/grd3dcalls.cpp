@@ -14,6 +14,7 @@
 #include <d3d8.h>
 #include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
+#include "cmdline/cmdline.h"
 
 // Uncomment this to disable checking if states are already set, slower but useful for searching for bugs
 #define D3D_CALLS_CHECK 1
@@ -192,6 +193,7 @@ HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **bu
 		vertex_types[D3DVT_VERTEX].size * size, 
 		usage, 
 		vertex_types[D3DVT_VERTEX].fvf,
+	   	Cmdline_d3d_notmanaged ? D3DPOOL_DEFAULT : 
 		D3DPOOL_MANAGED,
 		(IDirect3DVertexBuffer8**) buffer);
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-01-26 20:03:51 $
+ * $Revision: 2.27 $
+ * $Date: 2004-01-29 01:34:02 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/01/26 20:03:51  randomtiger
+ * Fix to blurring of interface bitmaps from TGA and JPG.
+ * Changes to the pointsprite system, better but not perfect yet.
+ *
  * Revision 2.25  2004/01/20 23:01:52  Goober5000
  * added some initialization to get rid of warnings
  * --Goober5000
@@ -723,12 +727,11 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort 
 	}	
 
 	// get final texture size
+//	mprintf(("%dx%d=(%d) =>",tex_w, tex_h,tex_w * tex_h*bpp/8));
+
 	d3d_tcache_get_adjusted_texture_size(tex_w, tex_h, &tex_w, &tex_h);
 
-	if ( (tex_w < 1) || (tex_h < 1) ) {
-		mprintf(("Bitmap is to small at %dx%d.\n", tex_w, tex_h ));	  
-		return 0;
-	}
+   //	mprintf(("%dx%d=(%d)\n",tex_w, tex_h,tex_w * tex_h*bpp/8));
 
 	if ( bitmap_type == TCACHE_TYPE_AABITMAP ) {
 		t->u_scale = (float)bmap_w / (float)tex_w;
@@ -741,19 +744,18 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort 
 		t->v_scale = 1.0f;
 	}
 
-	// I wouldnt advise using this - RT
-	const bool use_experiemental_mode = false;
-
 	if(!reload) {
 
+		extern int D3d_tuse;
+		D3d_tuse += tex_w * tex_h * bpp / 8;
 		DBUGFILE_INC_COUNTER(0);
 		if(FAILED(GlobalD3DVars::lpD3DDevice->CreateTexture(
 			tex_w, tex_h,
 			use_mipmapping ? 0 : 1, 
-			use_experiemental_mode ? D3DUSAGE_DYNAMIC : 0,
+		   	Cmdline_d3d_notmanaged ? D3DUSAGE_DYNAMIC : 0,
 		   //	Cmdline_dxt ? default_compressed_format : 
 			d3d8_format, 
-			use_experiemental_mode ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, 
+			Cmdline_d3d_notmanaged ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, 
 			&t->d3d8_thandle)))
 		{
 			Assert(0);
@@ -764,7 +766,9 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort 
 	// lock texture here
 
 	D3DLOCKED_RECT locked_rect;
-	if(FAILED(t->d3d8_thandle->LockRect(0, &locked_rect, NULL, use_experiemental_mode ? D3DLOCK_DISCARD : 0)))
+	if(FAILED(t->d3d8_thandle->LockRect(0, &locked_rect, NULL, 
+		0)))
+//		Cmdline_d3d_tnotmanaged ? D3DLOCK_DISCARD : 0)))
 	{
 		Assert(0);
 		return 0;

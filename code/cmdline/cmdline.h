@@ -11,11 +11,17 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.44 $
- * $Date: 2004-01-24 14:31:27 $
+ * $Revision: 2.45 $
+ * $Date: 2004-01-29 01:34:00 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2004/01/24 14:31:27  randomtiger
+ * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
+ * Its optional and off by default, use -d3d_particle to activiate.
+ * Also bumped up D3D ambient light setting, it was way too dark.
+ * Its now set to something similar to the original game.
+ *
  * Revision 2.43  2003/12/08 22:30:02  randomtiger
  * Put render state and other direct D3D calls repetition check back in, provides speed boost.
  * Fixed bug that caused fullscreen only crash with DXT textures
@@ -442,5 +448,8 @@ extern int Cmdline_timerbar;
 extern int Cmdline_query_speech;
 extern int Cmdline_ship_choice_3d;
 extern int Cmdline_d3d_particle;
+extern int Cmdline_d3d_notmanaged;
+
+extern int Cmdline_show_mem_usage;
 
 #endif
