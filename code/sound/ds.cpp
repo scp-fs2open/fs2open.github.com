@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-12-25 00:23:46 $
+ * $Revision: 2.12 $
+ * $Date: 2004-12-25 17:45:38 $
  * $Author: wmcoolmon $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/12/25 00:23:46  wmcoolmon
+ * Ogg support for WIN32
+ *
  * Revision 2.10  2004/09/05 19:23:24  Goober5000
  * fixed a few warnings
  * --Goober5000
@@ -803,7 +806,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 			final_sound_size = 0;
 			convert_buffer = (byte*) malloc(si->size);
 			Assert(convert_buffer != NULL);
-			while(final_sound_size < si->size)
+			while(final_sound_size < (int) si->size)
 			{
 				//Assume little endian for now
 				//Ignores frequency changes, I think we're screwed if that happens anyway.
