@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.2 $
- * $Date: 2004-11-23 00:10:06 $
+ * $Revision: 1.3 $
+ * $Date: 2004-12-05 01:28:39 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/11/23 00:10:06  taylor
+ * try and protect the bitmap_entry stuff a bit better
+ * fix the transparent support ship, again, but correctly this time
+ *
  * Revision 1.1  2004/10/31 21:21:11  taylor
  * initial import from bmpman merge
  *
@@ -81,6 +85,10 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 
 			case DDS_DXT5:
 				*c_type = BM_TYPE_DXT5;
+				break;
+
+			case DDS_UNCOMPRESSED:
+				*c_type = BM_TYPE_DDS;
 				break;
 
 			default:
@@ -195,6 +203,7 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 				bm_lock_jpg( handle, bitmapnum, be, bmp, bpp, flags );
 				break;
 
+			case BM_TYPE_DDS:
 			case BM_TYPE_DXT1:
 			case BM_TYPE_DXT3:
 			case BM_TYPE_DXT5:

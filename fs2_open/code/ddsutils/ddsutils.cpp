@@ -13,7 +13,7 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	CFILE *ddsfile;
 	char real_name[MAX_FILENAME_LEN];
 	int retval = DDS_ERROR_NONE;
-	int ct;
+	int ct = DDS_UNCOMPRESSED;
 	int bits = 0;
 
 	if (img_cfp == NULL) {
@@ -50,7 +50,59 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	// read the header
 	cfread(&dds_header, sizeof(DDSURFACEDESC2), 1, ddsfile);
 
+	// calculate the type and size of the data
+	if (dds_header.ddpfPixelFormat.dwFlags & DDPF_FOURCC) {
+		*size = dds_header.dwMipMapCount > 1 ? dds_header.dwPitchOrLinearSize * 2 : dds_header.dwPitchOrLinearSize;
+
+		switch (dds_header.ddpfPixelFormat.dwFourCC) {
+			case FOURCC_DXT1:
+				bits=24;
+				ct=DDS_DXT1;
+				break;
+
+			case FOURCC_DXT3:
+				bits=32;
+				ct=DDS_DXT3;
+				break;
+
+			case FOURCC_DXT5:
+				bits=32;
+				ct=DDS_DXT5;
+				break;
+
+			// dxt2 and dxt4 aren't supported
+			case FOURCC_DXT2:
+			case FOURCC_DXT4:
+				retval = DDS_ERROR_INVALID_FORMAT;
+				ct = DDS_DXT_INVALID;
+				break;
+
+			// none of the above
+			default:
+				retval = DDS_ERROR_UNSUPPORTED;
+				ct = DDS_DXT_INVALID;
+				break;
+		}
+	} else if (dds_header.ddpfPixelFormat.dwFlags & DDPF_RGB) {
+		if (dds_header.dwDepth == 0)
+			dds_header.dwDepth = 1;
+
+		*size = dds_header.dwWidth * dds_header.dwHeight * dds_header.dwDepth * (dds_header.ddpfPixelFormat.dwRGBBitCount / 8);
+
+		bits = dds_header.ddpfPixelFormat.dwRGBBitCount;
+		ct = DDS_UNCOMPRESSED;
+	} else {
+		// it's not a readable format
+		retval = DDS_ERROR_UNSUPPORTED;
+	}
+
 	// stuff important info
+	if (bpp)
+		*bpp = bits;
+
+	if (compression_type)
+		*compression_type = ct;
+
 	if (width)
 		*width = dds_header.dwWidth;
 
@@ -59,50 +111,6 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 
 	if (levels)
 		*levels = dds_header.dwMipMapCount;
-
-	// calculate the size of the data
-	if (dds_header.dwFlags & DDSD_LINEARSIZE) {
-		*size = dds_header.dwMipMapCount > 1 ? dds_header.dwPitchOrLinearSize * 2 : dds_header.dwPitchOrLinearSize;
-	} else {
-		// it's not a compressed format
-		retval = DDS_ERROR_UNCOMPRESSED;
-	}
-
-	switch (dds_header.ddpfPixelFormat.dwFourCC) {
-		case FOURCC_DXT1:
-			bits=24;
-			ct=DDS_DXT1;
-			break;
-
-		case FOURCC_DXT3:
-			bits=32;
-			ct=DDS_DXT3;
-			break;
-
-		case FOURCC_DXT5:
-			bits=32;
-			ct=DDS_DXT5;
-			break;
-
-		// dxt2 and dxt4 aren't supported
-		case FOURCC_DXT2:
-		case FOURCC_DXT4:
-			retval = DDS_ERROR_INVALID_FORMAT;
-			ct = DDS_DXT_INVALID;
-			break;
-
-		// none of the above
-		default:
-			retval = DDS_ERROR_UNCOMPRESSED;
-			ct = DDS_DXT_INVALID;
-			break;
-	}
-
-	if (bpp)
-		*bpp = bits;
-
-	if (compression_type)
-		*compression_type = ct;
 
 	if (img_cfp == NULL) {
 		// close file and return
@@ -182,8 +190,8 @@ const char *dds_error_string(int code)
 		case DDS_ERROR_INVALID_FORMAT:
 			return "File was compressed, but it was DXT2 or DXT4";
 			
-		case DDS_ERROR_UNCOMPRESSED:
-			return "*.DDS files must be compressed and use DXT1, DXT3, or DXT5 compression";
+		case DDS_ERROR_UNSUPPORTED:
+			return "*.DDS files must be uncompressed or use DXT1, DXT3, or DXT5 compression";
 
 		default:
 			return "Abort, retry, fail?";

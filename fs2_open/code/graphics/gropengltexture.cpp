@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.11 $
- * $Date: 2004-12-02 11:14:29 $
+ * $Revision: 1.12 $
+ * $Date: 2004-12-05 01:28:39 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2004/12/02 11:14:29  taylor
+ * not used at the moment but that code was stupid
+ *
  * Revision 1.10  2004/11/29 18:02:01  taylor
  * make sure we are checking the right bitmap_id
  *
@@ -495,8 +498,13 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 {
 	int ret_val = 1;
 	int byte_mult = 0;
-	GLenum tex_format;
+	GLenum texFormat = GL_UNSIGNED_BYTE;
+	GLenum glFormat = GL_BGRA_EXT;
+	GLuint intFormat = GL_RGBA;
 	ubyte saved_bpp = 0;
+	int mipmap_w = 0, mipmap_h = 0;
+	int dsize = 0, doffset = 0;
+	int i,j,k;
 
 	// bogus
 	if(t == NULL){
@@ -524,6 +532,10 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 		mprintf(("Bitmap is to small at %dx%d.\n", tex_w, tex_h ));
 		return 0;
 	}
+
+	// for everything that might use mipmaps
+	mipmap_w = tex_w;
+	mipmap_h = tex_h;
 
 #ifdef GL_SECTIONS
 	if ( bitmap_type == TCACHE_TYPE_AABITMAP )      {
@@ -559,14 +571,25 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 	// set the byte per pixel multiplier
 	byte_mult = (t->bpp >> 3);
 
+	// GL_BGRA_EXT is *much* faster with some hardware/drivers but never slower
 	if (byte_mult == 4) {
-		tex_format = GL_UNSIGNED_INT_8_8_8_8_REV;
+		texFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
+		intFormat = GL_RGBA;
+		glFormat = GL_BGRA_EXT;
+	} else if (byte_mult == 3) {
+		texFormat = GL_UNSIGNED_BYTE;
+		intFormat = GL_RGB;
+		glFormat = GL_BGR_EXT;
 	} else if (byte_mult == 2) {
-		tex_format = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+		texFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+		intFormat = GL_RGBA;
+		glFormat = GL_BGRA_EXT;
 	} else if (byte_mult == 1) {
-		tex_format = GL_UNSIGNED_BYTE;
+		texFormat = GL_UNSIGNED_BYTE;
 	} else {
-		tex_format = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+		texFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+		intFormat = GL_RGBA;
+		glFormat = GL_BGRA_EXT;
 	}
 
 	glBindTexture (GL_TEXTURE_2D, t->texture_handle);
@@ -582,10 +605,6 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 		{
 			GLenum ctype = UNINITIALIZED;
 			int block_size = 0;
-			int dds_h = tex_h;
-			int dds_w = tex_w;
-			int dsize = 0;
-			int doffset = 0;
 
 			switch (bm_is_compressed(texture_handle))
 			{
@@ -609,20 +628,19 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 			}
 
 			if (block_size > 0) {
-				int i;
 				// render for each mipmap level
 				for (i = 0; i<bm_get_num_mipmaps(texture_handle); i++) {
 					// size of data block (4x4)
-					dsize = ((dds_h + 3) / 4) * ((dds_w + 3) / 4) * block_size;
+					dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
 					
-					glCompressedTexImage2D(GL_TEXTURE_2D, i, ctype, dds_w, dds_h, 0, dsize, (ubyte*)data + doffset);
+					glCompressedTexImage2D(GL_TEXTURE_2D, i, ctype, mipmap_w, mipmap_h, 0, dsize, (ubyte*)data + doffset);
 
 					// adjust the data offset for the next block
 					doffset += dsize;
 
 					// reduce size by half for the next pass
-					dds_w = (dds_w / 2);
-					dds_h = (dds_h / 2);
+					mipmap_w /= 2;
+					mipmap_h /= 2;
 				}
 			}
 		}
@@ -630,7 +648,6 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 	
 		case TCACHE_TYPE_AABITMAP:
 		{
-			int i,j;
 			ubyte *bmp_data = ((ubyte*)data);
 			ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
 			ubyte *texmemp = texmem;
@@ -658,7 +675,11 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 				}
 			}
 
-			glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_w, tex_h, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
+			if (!reload)
+				glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_w, tex_h, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
+			else // faster anis
+				glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, tex_w, tex_h, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
+
 			free (texmem);
 		}
 		break;
@@ -666,7 +687,6 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 
 		case TCACHE_TYPE_BITMAP_SECTION:
 		{
-			int i,j,k;
 			ubyte *bmp_data = ((ubyte*)data);
 			ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*byte_mult);
 			ubyte *texmemp = texmem;
@@ -687,14 +707,25 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 				}
 			}
 
-			glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA, tex_format, texmem);
+			for (i = 0; i<bm_get_num_mipmaps(texture_handle); i++) {
+				dsize = mipmap_h * mipmap_w * byte_mult;
+
+				if (!reload)
+					glTexImage2D (GL_TEXTURE_2D, i, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, texmem + doffset);
+				else // faster anis
+					glTexSubImage2D (GL_TEXTURE_2D, i, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, texmem + doffset);
+
+				doffset += dsize;
+				mipmap_h /= 2;
+				mipmap_w /= 2;
+			}
+
 			free(texmem);
 			break;
 		}
 
 		default:
 		{
-			int i,j,k;
 			ubyte *bmp_data = ((ubyte*)data);
 			ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*byte_mult);
 			ubyte *texmemp = texmem;
@@ -719,7 +750,19 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 				v += dv;
 			}
 
-			glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA, tex_format, texmem);
+			for (i = 0; i<bm_get_num_mipmaps(texture_handle); i++) {
+				dsize = mipmap_h * mipmap_w * byte_mult;
+
+				if (!reload)
+					glTexImage2D (GL_TEXTURE_2D, i, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, texmem + doffset);
+				else // faster anis
+					glTexSubImage2D (GL_TEXTURE_2D, i, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, texmem + doffset);
+
+				doffset += dsize;
+				mipmap_h /= 2;
+				mipmap_w /= 2;
+			}
+
 			free(texmem);
 			break;
 		}
