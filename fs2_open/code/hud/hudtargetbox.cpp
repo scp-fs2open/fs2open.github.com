@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-12-14 01:55:04 $
+ * $Revision: 2.6 $
+ * $Date: 2002-12-14 17:09:28 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/14 01:55:04  Goober5000
+ * added mission flag to show subsystem damage for fighterbays
+ * ~Goober5000~
+ *
  * Revision 2.4  2002/10/22 23:02:40  randomtiger
  * Made Phreaks alternative scanning style optional under the command line tag "-phreak"
  * Fixed bug that changes HUD colour when targetting debris in a full nebula. - RT
@@ -1056,7 +1060,7 @@ void hud_render_target_ship_info(object *target_objp)
 		// AL 23-3-98: Fighter bays are a special case.  Player cannot destroy them, so don't
 		//					show the subsystem strength
 		// Goober5000: display fighterbay damage if mission flag set
-		if ( strnicmp(NOX("fighter"), Player_ai->targeted_subsys->system_info->name, 7) || The_mission.flags & MISSION_FLAG_FIGHTERBAY_SHOW_DAMAGE )
+		if ( strnicmp(NOX("fighter"), Player_ai->targeted_subsys->system_info->name, 7) || Player_ai->targeted_subsys->system_info->max_hits > FIGHTERBAY_DAMAGE_THRESHOLD )
 		{
 			sprintf(outstr,XSTR( "%d%%", 341),screen_integrity);
 			gr_get_string_size(&w,&h,outstr);

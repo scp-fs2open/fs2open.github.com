@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.9 $
- * $Date: 2002-12-13 08:13:28 $
+ * $Revision: 2.10 $
+ * $Date: 2002-12-14 17:09:27 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2002/12/13 08:13:28  Goober5000
+ * small tweaks and bug fixes for the ballistic primary conversion
+ * ~Goober5000~
+ *
  * Revision 2.8  2002/12/10 05:43:33  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -287,7 +291,10 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 #endif
 
 #define	HULL_DAMAGE_THRESHOLD_PERCENT	0.25f	//	Apply damage to hull, not shield if shield < this
+
+// the #defines below are to avoid round-off errors
 #define WEAPON_RESERVE_THRESHOLD		0.01f	// energy threshold where ship is considered to have no weapon energy system
+#define FIGHTERBAY_DAMAGE_THRESHOLD		0.01f	// max_hits threshold where fighterbay is considered to take damage
 
 #define	HP_SCALE						1.2			//	1.2 means die when 20% of hits remaining
 #define	MAX_SHIP_HITS				8				// hits to kill a ship
