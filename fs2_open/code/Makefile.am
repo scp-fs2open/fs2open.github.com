@@ -1,9 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.7 2005-03-10 16:15:18 taylor Exp $
-
-INCLUDES =	\
-	-I../libjpeg
+## $Id: Makefile.am,v 1.8 2005-03-12 07:42:05 taylor Exp $
 
 noinst_LIBRARIES = libcode.a
 noinst_PROGRAMS = @FS2_BINARY@
