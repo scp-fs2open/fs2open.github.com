@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.2 $
- * $Date: 2002-07-29 08:28:00 $
+ * $Revision: 2.3 $
+ * $Date: 2002-07-29 08:31:52 $
  * $Author: DTP $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/29 08:28:00  DTP
+ * BUMPED MAX_POLYGON_MODELS TO 198 , MAX_SHIP_TYPES - 2 = 198
+ *
  * Revision 2.1  2002/07/10 18:42:14  wmcoolmon
  * Added  Bobboau's glow code; all comments include "-Bobboau"
  *
@@ -346,7 +349,7 @@ typedef struct submodel_instance_info {
 
 } submodel_instance_info;
 
-#define MAX_MODEL_SUBSYSTEMS		128				// used in ships.cpp (only place?) for local stack variable
+#define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 															// when reading in ships.tbl
 
 #define MSS_FLAG_ROTATES			(1<<0)		// This means the object rotates automatically with "turn_rate"
