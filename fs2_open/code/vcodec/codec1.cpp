@@ -446,8 +446,12 @@ int Encode(t_Sample* bufIn, t_Sample* bufOut, int sizeIn, int sizeOut,
 // theoretically evil but is not really all that dangerous in practice...
 
 // disable compiler padding of structures
+#if defined _MSC_VER
 #pragma pack(push, packet_declarations)
+#endif
+
 #pragma pack(1)
+
 
 // most general notion of a packet pair
 struct t_PacketPair
@@ -544,8 +548,13 @@ struct t_PacketMF0
 };
 
 // restore state of compiler padding of structures
+#if defined _MSC_VER
 #pragma pack(pop, packet_declarations)
-
+#elif defined __GNUC__
+#pragma pack()
+#else
+#error unknown compiler
+#endif
 
 
 
@@ -1540,7 +1549,7 @@ static int ComputeNomData(t_Sample*& in, const int deltas[], int& level)
 // esi in
 // ebp data
 
-#if defined(_WINDOWS)
+#if defined(_WIN32)
 #if defined(CODEC_DEMO)
 static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level,
                           t_Sample*& levels)
@@ -1549,6 +1558,7 @@ static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level)
 #endif
 {
     int data;
+#if defined _MSC_VER
     __asm
     {
         push ebp
@@ -1602,16 +1612,22 @@ static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level)
         mov [eax], esi          // inp = esi
         mov [data], ebx
     }
+#elif defined __GNUC__
+#warning asm not implemented
+	 Error(LOCATION, "asm not implemented");
+#else
+#error unknown compiler
+#endif
     return data;
 }
-#else // if defined(_WINDOWS)
+#else // if defined(_WIN32)
 #if defined(CODEC_DEMO)
 int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level,
 									t_Sample*& levels);
 #else
 int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level);
 #endif
-#endif // if defined(_WINDOWS)
+#endif // if defined(_WIN32)
 
 #define VERIFY_ASM
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-02-26 02:56:55 $
- * $Author: bobboau $
+ * $Revision: 2.13 $
+ * $Date: 2003-03-02 06:20:16 $
+ * $Author: penguin $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/02/26 02:56:55  bobboau
+ * fixed the bug with fighter beams not giveing you kills
+ *
  * Revision 2.11  2003/02/25 06:22:49  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -2365,6 +2368,7 @@ mprintf(("aplying damage to hull\n"));
 				}
 				break;
 			case OBJ_BEAM://give kills for fighter beams-Bobboau
+			  {
 //				object beam_obj = Objects[beam_get_parent(other_obj)];
 				if((other_obj->parent < 0) || (other_obj->parent >= MAX_OBJECTS)){
 					scoring_add_damage(ship_obj, NULL, damage);
@@ -2372,6 +2376,7 @@ mprintf(("aplying damage to hull\n"));
 					scoring_add_damage(ship_obj, &Objects[other_obj->parent], damage);
 				}
 				break;
+			  }
 			default:
 				break;
 			}
@@ -2538,7 +2543,6 @@ mprintf(("doing TAG stuff\n"));
 		} else if (Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_level == 3) {
 		// tag C creates an SSM strike, yay -Bobboau
 			struct ssm_firing_info;
-			extern void ssm_create(vector *target, vector *start, int ssm_index, ssm_firing_info *override);
 
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Firing artillery", 1570));
 
