@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-01-06 17:19:14 $
+ * $Revision: 2.15 $
+ * $Date: 2003-01-06 20:29:28 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/01/06 17:19:14  Goober5000
+ * hmm... moved +Squad Logo to immediately beneath $Name
+ * --Goober5000
+ *
  * Revision 2.13  2003/01/06 17:14:52  Goober5000
  * added wing configurable squad logos - put +Squad Logo: filename.pcx as
  * the last entry in each wing that you want (but the player's squad logo will
@@ -2824,29 +2828,33 @@ void parse_wing(mission *pm)
 
 		stuff_string(wingp->wing_squad_filename, F_NAME, NULL);
 
-		// check all previous wings to see if we already loaded it (we want to save memory)
-		for (i = 0; i < num_wings; i++)
+		// load it only if FRED isn't running
+		if (!Fred_running)
 		{
-			// do we have a previous texture?
-			if (Wings[i].wing_insignia_texture != -1)
+			// check all previous wings to see if we already loaded it (we want to save memory)
+			for (i = 0; i < num_wings; i++)
 			{
-				// if we have a match
-				if (!stricmp(Wings[i].wing_squad_filename, wingp->wing_squad_filename))
+				// do we have a previous texture?
+				if (Wings[i].wing_insignia_texture != -1)
 				{
-					flag = i;
-					break;
+					// if we have a match
+					if (!stricmp(Wings[i].wing_squad_filename, wingp->wing_squad_filename))
+					{
+						flag = i;
+						break;
+					}
 				}
 			}
-		}
 
-		// if we have loaded it already, just use the old bitmap index
-		if (flag != -1)
-		{
-			wingp->wing_insignia_texture = Wings[flag].wing_insignia_texture;
-		}
-		else
-		{
-			wing_load_squad_bitmap(wingp);
+			// if we have loaded it already, just use the old bitmap index
+			if (flag != -1)
+			{
+				wingp->wing_insignia_texture = Wings[flag].wing_insignia_texture;
+			}
+			else
+			{
+				wing_load_squad_bitmap(wingp);
+			}
 		}
 	}
 
