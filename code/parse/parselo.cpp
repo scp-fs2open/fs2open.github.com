@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.24 $
- * $Author: taylor $
- * $Date: 2004-10-31 21:57:30 $
+ * $Revision: 2.25 $
+ * $Author: Goober5000 $
+ * $Date: 2004-12-14 17:23:52 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/10/31 21:57:30  taylor
+ * support external parsing sources without hurting currently parsing file (for EFF code)
+ *
  * Revision 2.23  2004/09/05 19:23:24  Goober5000
  * fixed a few warnings
  * --Goober5000
@@ -2306,35 +2309,33 @@ int subsystem_stricmp(char *s1, char *s2)
 // Goober5000
 char *stristr(const char *str, const char *substr)
 {
+	// check for null
 	Assert(str);
 	Assert(substr);
+	if (str == NULL || substr == NULL)
+		return NULL;
 
-	int pos;
+	// get number of chars to compare
+	unsigned int substr_len = strlen(substr);
 
-	// copy each string
-	char *l_str = strdup((char *)str);
-	char *l_substr = strdup((char *)substr);
+	// sanity
+	if (substr_len == 0)
+		return const_cast<char *>(str);
 
-	// convert to lowercase
-	strlwr(l_str);
-	strlwr(l_substr);
-
-	// test
-	char *result = strstr(l_str, l_substr);
-
-	// fix result to point to the original string
-	if (result)
+	// iterate the position through the parent string
+	char *pos = const_cast<char *>(str);
+	while (strlen(pos) >= substr_len)
 	{
-		pos = result - l_str;
-		result = ((char *) str) + pos;	// must use casting to remove const attribute
+		// see if the substr appears at this position
+		if (strnicmp(pos, substr, substr_len) == 0)
+			return pos;
+
+		// advance
+		pos++;
 	}
 
-	// free the duplicated strings
-	free(l_str);
-	free(l_substr);
-
-	// return
-	return result;
+	// not found
+	return NULL;
 }
 
 // Goober5000
