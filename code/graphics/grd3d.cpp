@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.72 $
- * $Date: 2004-10-31 21:38:25 $
- * $Author: taylor $
+ * $Revision: 2.73 $
+ * $Date: 2004-12-20 20:28:15 $
+ * $Author: fryday $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2004/10/31 21:38:25  taylor
+ * reinit device if lost - one of the D3D people should make sure this isn't stupid
+ *
  * Revision 2.71  2004/09/26 16:24:51  taylor
  * handle lost devices better, fix movie crash
  *
@@ -2703,6 +2706,13 @@ void d3d_init_environment(){
 		D3DFORMAT use_format;
 		use_format =  D3DFMT_X8R8G8B8;
 		GlobalD3DVars::lpD3DDevice->CreateCubeTexture(512, 1, D3DUSAGE_RENDERTARGET , use_format, D3DPOOL_DEFAULT, &cube_map);
+
+		// Check if it succeeds in allocating the cube map - it fails on a card that doesn't support
+		// cubemaps, silly!
+		if (NULL == cube_map) {
+			mprintf(("Failed in creating a cube-map in d3d_init_environment!"));
+			return;
+		}
 	}
 
 	if(!old_render_target){
@@ -2726,6 +2736,13 @@ void d3d_render_to_env(int FACE){
 		D3DFORMAT use_format;
 		use_format =  D3DFMT_X8R8G8B8;
 		GlobalD3DVars::lpD3DDevice->CreateCubeTexture(512, 1, D3DUSAGE_RENDERTARGET , use_format, D3DPOOL_DEFAULT, &cube_map);
+
+		// Check if it succeeds in allocating the cube map - it fails on a card that doesn't support
+		// cubemaps, silly!
+		if (NULL == cube_map) {
+			mprintf(("Failed in creating a cube-map in d3d_render_to_env!"));
+			return;
+		}
 	}
 
 	if(!old_render_target){
