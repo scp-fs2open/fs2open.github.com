@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.9 $
- * $Date: 2005-03-28 00:40:09 $
+ * $Revision: 2.10 $
+ * $Date: 2005-04-05 05:53:25 $
  * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/03/28 00:40:09  taylor
+ * fix to snd_time_remaining() to make sure we are getting the correct index into Sounds[]
+ *
  * Revision 2.8  2005/03/24 23:27:25  taylor
  * make sounds.tbl dynamic
  * have snd_time_remaining() be less stupid
@@ -308,10 +311,10 @@ int snd_play_raw( int soundnum, float pan, float vol_scale=1.0f, int priority = 
 // Plays a sound with volume between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.  It scales
 // the pan and volume relative to the current viewer's location.
-int snd_play_3d(game_snd *gs, vector *source_pos, vector *listen_pos, float radius=0.0f, vector *vel = NULL, int looping = 0, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, vector *sound_fvec = NULL, float range_factor = 1.0f, int force = 0 );
+int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius=0.0f, vec3d *vel = NULL, int looping = 0, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, vec3d *sound_fvec = NULL, float range_factor = 1.0f, int force = 0 );
 
 // update the given 3d sound with a new position
-void snd_update_3d_pos(int soudnnum, game_snd *gs, vector *new_pos);
+void snd_update_3d_pos(int soudnnum, game_snd *gs, vec3d *new_pos);
 
 // Use these for looping sounds.
 // Returns the handle of the sound. -1 if failed.
@@ -347,7 +350,7 @@ void	snd_chg_loop_status(int snd_handle, int loop);
 int snd_get_duration(int snd_id);
 
 // get a 3D vol and pan for a particular sound
-int	snd_get_3d_vol_and_pan(game_snd *gs, vector *pos, float* vol, float *pan, float radius=0.0f);
+int	snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius=0.0f);
 
 int	snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits);
 void	snd_close();
@@ -358,7 +361,7 @@ int	snd_is_inited();
 // Returns a pointer to the direct sound object
 uint	sound_get_ds();
 
-void	snd_update_listener(vector *pos, vector *vel, matrix *orient);
+void	snd_update_listener(vec3d *pos, vec3d *vel, matrix *orient);
 
 void 	snd_use_lib(int lib_id);
 
@@ -385,7 +388,7 @@ inline int	snd_play( game_snd *gs, float pan=0.0f, float vol_scale=1.0f, int pri
 { return 0; }
 inline int	snd_play_raw( int soundnum, float pan, float vol_scale=1.0f, int priority = SND_PRIORITY_MUST_PLAY )
 { return 0; }
-inline int	snd_play_3d(game_snd *gs, vector *source_pos, vector *listen_pos, float radius=0.0f, vector *vel = NULL, int looping = 0, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, vector *sound_fvec = NULL, float range_factor = 1.0f, int force = 0 )
+inline int	snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius=0.0f, vec3d *vel = NULL, int looping = 0, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, vec3d *sound_fvec = NULL, float range_factor = 1.0f, int force = 0 )
 { return 0; }
 #define	snd_update_3d_pos(soundnum, gs, new_pos)		  ((void)((soundnum), (gs), (new_pos)))
 inline int	snd_play_looping( game_snd *gs, float pan=0.0f, int start_loop=-1, int stop_loop=-1, float vol_scale=1.0f, int priority = SND_PRIORITY_MUST_PLAY, int force = 0 )
@@ -399,7 +402,7 @@ inline int	snd_play_looping( game_snd *gs, float pan=0.0f, int start_loop=-1, in
 #define	snd_is_playing(snd_handle)							  ((snd_handle), 0)
 #define	snd_chg_loop_status(snd_handle, loop)			  ((void)((snd_handle), (loop)))
 #define	snd_get_duration(snd_id)							  ((snd_id), 0)
-inline int	snd_get_3d_vol_and_pan(game_snd *gs, vector *pos, float* vol, float *pan, float radius=0.0f)
+inline int	snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius=0.0f)
 {
 	if (vol) *vol = 0.0f;  if (pan) *pan = 0.0f;
 	return 0;

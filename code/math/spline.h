@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/spline.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:27 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:27  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -56,22 +59,22 @@ struct color;
 // bezier class. whee
 class bez_spline {
 public :
-	vector	pts[MAX_BEZ_PTS];
+	vec3d	pts[MAX_BEZ_PTS];
 	int		num_pts;
 
 public :
 	// constructor
 	bez_spline();
-	bez_spline(int _num_pts, vector *_pts[MAX_BEZ_PTS]);
+	bez_spline(int _num_pts, vec3d *_pts[MAX_BEZ_PTS]);
 
 	// set the points
-	void bez_set_points(int _num_pts, vector *_pts[MAX_BEZ_PTS]);
+	void bez_set_points(int _num_pts, vec3d *_pts[MAX_BEZ_PTS]);
 
 	// bezier blend function
 	float BEZ(int k, int n, float u);
 	
 	// get a point on the bez curve. u goes from 0.0 to 1.0
-	void bez_get_point(vector *out, float u);
+	void bez_get_point(vec3d *out, float u);
 
 	// render a bezier
 	void bez_render(int divs, color *c);
@@ -81,22 +84,22 @@ public :
 #define MAX_HERM_PTS			3
 class herm_spline {
 public :
-	vector	pts[MAX_HERM_PTS];			// control points
-	vector	d_pts[MAX_HERM_PTS];			// derivative of control points (think of as velocity)
+	vec3d	pts[MAX_HERM_PTS];			// control points
+	vec3d	d_pts[MAX_HERM_PTS];			// derivative of control points (think of as velocity)
 	int		num_pts;
 public :
 	// constructor
 	herm_spline();
-	herm_spline(int _num_pts, vector *_pts[MAX_HERM_PTS], vector *_d_pts[MAX_HERM_PTS]);
+	herm_spline(int _num_pts, vec3d *_pts[MAX_HERM_PTS], vec3d *_d_pts[MAX_HERM_PTS]);
 
 	// set the points
-	void herm_set_points(int _num_pts, vector *_pts[MAX_HERM_PTS], vector *_d_pts[MAX_HERM_PTS]);	
+	void herm_set_points(int _num_pts, vec3d *_pts[MAX_HERM_PTS], vec3d *_d_pts[MAX_HERM_PTS]);	
 	
 	// get a point on the hermite curve.
-	void herm_get_point(vector *out, float u, int k);
+	void herm_get_point(vec3d *out, float u, int k);
 
 	// the derivative of a point on the hermite curve
-	void herm_get_deriv(vector *deriv, float u, int k);
+	void herm_get_deriv(vec3d *deriv, float u, int k);
 
 	// render a bezier
 	void herm_render(int divs, color *c);

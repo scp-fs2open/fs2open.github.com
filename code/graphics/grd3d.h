@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.17 $
- * $Date: 2005-03-07 13:10:21 $
- * $Author: bobboau $
+ * $Revision: 2.18 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/03/07 13:10:21  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.16  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -226,12 +230,12 @@ int gr_d3d_make_line_buffer(line_list *list);
 
 void gr_d3d_set_proj_matrix(float fov, float ratio, float n, float f);
 void gr_d3d_end_proj_matrix();
-void gr_d3d_set_view_matrix(vector* offset, matrix *orient);
+void gr_d3d_set_view_matrix(vec3d* offset, matrix *orient);
 void gr_d3d_end_view_matrix();
-void gr_d3d_set_scale_matrix(vector* scale);
+void gr_d3d_set_scale_matrix(vec3d* scale);
 void gr_d3d_end_scale_matrix();
-void gr_d3d_start_instance_matrix(vector*, matrix*);
-void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient);
+void gr_d3d_start_instance_matrix(vec3d*, matrix*);
+void gr_d3d_start_angles_instance_matrix(vec3d* offset, angles *orient);
 void gr_d3d_end_instance_matrix();
 
 void d3d_set_texture_panning(float u, float v, bool enable);

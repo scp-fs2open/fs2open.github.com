@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-04-01 07:33:08 $
+ * $Revision: 2.20 $
+ * $Date: 2005-04-05 05:53:25 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/04/01 07:33:08  taylor
+ * fix hanging on exit with OpenAL
+ * some better error handling on OpenAL init and make it more Windows friendly too
+ * basic 3d sound stuff for OpenAL, not working right yet
+ *
  * Revision 2.18  2005/03/28 00:40:09  taylor
  * fix to snd_time_remaining() to make sure we are getting the correct index into Sounds[]
  *
@@ -3149,7 +3154,7 @@ void ds_chg_loop_status(int channel, int loop)
 //	returns:			0				=> sound started successfully
 //						-1				=> sound could not be played
 //
-int ds3d_play(int sid, int hid, int snd_id, vector *pos, vector *vel, int min, int max, int looping, int max_volume, int estimated_vol, int priority )
+int ds3d_play(int sid, int hid, int snd_id, vec3d *pos, vec3d *vel, int min, int max, int looping, int max_volume, int estimated_vol, int priority )
 {
 #ifdef USE_OPENAL
 	int channel;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-29 07:03:16 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/29 07:03:16  wmcoolmon
+ * Removed some warnings under Linux/GCC
+ *
  * Revision 2.10  2005/03/25 06:57:34  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -116,7 +119,7 @@ void jumpnode_level_close()
 	if(Num_jump_nodes!=0)Warning(LOCATION, "Num_jump_nodes should be 0, but is actually %d.", Num_jump_nodes);
 }
 
-void jump_node::render(vector *pos, vector *view_pos)
+void jump_node::render(vec3d *pos, vec3d *view_pos)
 {
 	if(m_flags & JN_HIDE)
 		return;
@@ -199,7 +202,7 @@ void jump_node::set_alphacolor(int r, int g, int b, int alpha)
 }
 
 // create a jump node object and return pointer to it.
-jump_node::jump_node(vector *pos)
+jump_node::jump_node(vec3d *pos)
 {
 	int obj;
 

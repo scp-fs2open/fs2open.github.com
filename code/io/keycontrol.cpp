@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-03-27 13:23:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.49 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/03/27 13:23:05  Goober5000
+ * rewrote the weapon cheat cycle functions to avoid recursion
+ * --Goober5000
+ *
  * Revision 2.47  2005/03/27 12:28:33  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -535,9 +539,9 @@
 // Externals
 // --------------------------------------------------------------
 typedef	struct asteroid_field {
-	vector	min_bound;						//	Minimum range of field.
-	vector	max_bound;						//	Maximum range of field.
-	vector	vel;								//	Average asteroid moves at this velocity.
+	vec3d	min_bound;						//	Minimum range of field.
+	vec3d	max_bound;						//	Maximum range of field.
+	vec3d	vel;								//	Average asteroid moves at this velocity.
 	float		speed;							// Average speed of field
 	int		num_initial_asteroids;		//	Number of asteroids at creation.
 } asteroid_field;
@@ -591,7 +595,7 @@ bool Perspective_locked=false;
 extern int AI_watch_object;
 extern int Countermeasures_enabled;
 
-extern float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, float damage);
+extern float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, float damage);
 
 extern void mission_goal_mark_all_true( int type );
 
@@ -996,9 +1000,9 @@ extern int Framerate_delay;
 extern void snd_stop_any_sound();
 
 extern float Viewer_zoom;
-extern vector Eye_position;
+extern vec3d Eye_position;
 extern matrix Eye_matrix;
-extern void g3_set_view_matrix(vector *view_pos,matrix *view_matrix,float zoom);
+extern void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom);
 
 extern int Show_cpu;
 
@@ -1238,7 +1242,7 @@ void process_debug_keys(int k)
 				object	*objp = &Objects[Player_ai->target_objnum];
 				if ( objp->type == OBJ_SHIP ) {
 					ship		*sp = &Ships[objp->instance];
-					vector	g_subobj_pos;
+					vec3d	g_subobj_pos;
 
 					get_subsystem_world_pos(objp, Player_ai->targeted_subsys, &g_subobj_pos);
 
@@ -1261,7 +1265,7 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED1 + KEY_ALTED + KEY_K:
 			{
 				float	shield, integrity;
-				vector	pos, randvec;
+				vec3d	pos, randvec;
 
 				vm_vec_rand_vec_quick(&randvec);
 				vm_vec_scale_add(&pos, &Player_obj->pos, &randvec, Player_obj->radius);
@@ -1393,7 +1397,7 @@ void process_debug_keys(int k)
 			extern asteroid_field Asteroid_field;
 			object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int subtype);
 			object *objp = asteroid_create(&Asteroid_field, 0, 0);
-			vector vel;
+			vec3d vel;
 			vm_vec_copy_scale(&vel, &Player_obj->orient.vec.fvec, 50.0f);
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
@@ -1648,7 +1652,7 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_Y:
 			/*
 			// blast a debug lightning bolt in front of the player
-			vector start, strike;
+			vec3d start, strike;
 			
 			vm_vec_scale_add(&start, &Player_obj->pos, &Player_obj->orient.fvec, 300.0f);
 			vm_vec_scale_add2(&start, &Player_obj->orient.rvec, -300.0f);
@@ -1779,7 +1783,7 @@ void ppsk_hotkeys(int k)
 			break;
 /*		case KEY_SHIFTED + KEY_U:
 			{
-			object *debris_create(object *source_obj, int model_num, int submodel_num, vector *pos, vector *exp_center, int hull_flag, float exp_force);
+			object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force);
 
 			object *temp = debris_create(Player_obj, Ships[0].modelnum, model_get(Ships[0].modelnum)->debris_objects[0], &Player_obj->pos, &Player_obj->pos, 1, 1.0f);
 			if (temp) {
@@ -1934,8 +1938,8 @@ void game_process_pause_key()
 	polymodel *pm = model_get(s_check->modelnum); \
 	collided = 0; \
 	if(pm != NULL){ \
-		vector temp = new_obj->pos; \
-		vector gpos; \
+		vec3d temp = new_obj->pos; \
+		vec3d gpos; \
 		vm_vec_sub2(&temp, &hit_check->pos); \
 		vm_vec_rotate(&gpos, &temp, &hit_check->orient); \
 		if((gpos.xyz.x >= pm->mins.xyz.x * scale) && (gpos.xyz.y >= pm->mins.xyz.y * scale) && (gpos.xyz.z >= pm->mins.xyz.z * scale) && (gpos.xyz.x <= pm->maxs.xyz.x * scale) && (gpos.xyz.y <= pm->maxs.xyz.y * scale) && (gpos.xyz.z <= pm->maxs.xyz.z * scale)) { \
@@ -2031,7 +2035,7 @@ void game_process_cheats(int k)
 		HUD_printf(NOX("Walk the plank"));
 		
 		for(int idx=0; idx<1; idx++){
-			vector add = Player_obj->pos;
+			vec3d add = Player_obj->pos;
 			add.xyz.x += frand_range(-700.0f, 700.0f);
 			add.xyz.y += frand_range(-700.0f, 700.0f);
 			add.xyz.z += frand_range(-700.0f, 700.0f);
@@ -2104,7 +2108,7 @@ void game_process_cheats(int k)
 		HUD_printf(NOX("Walk the plank"));
 		
 		for(int idx=0; idx<1; idx++){
-			vector add;
+			vec3d add;
 			add.xyz.x = frand_range(-1000.0f, 1000.0f);
 			add.xyz.y = frand_range(-1000.0f, 1000.0f);
 			add.xyz.z = frand_range(-1000.0f, 1000.0f);

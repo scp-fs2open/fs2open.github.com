@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-04-03 08:48:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2005-04-05 05:53:19 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/04/03 08:48:30  Goober5000
+ * brought weapon loadout banks into agreement with ship info banks
+ * improved error reporting on apply-to-all
+ * --Goober5000
+ *
  * Revision 2.18  2005/03/31 11:11:56  Goober5000
  * changed a bunch of literal constants to their #define'd keywords
  * --Goober5000
@@ -1759,7 +1764,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 			bs = &pm->submodel[0];
 		}
 
-		vector weap_closeup;
+		vec3d weap_closeup;
 		float y_closeup;
 
 		//Find the center of teh submodel
@@ -1787,7 +1792,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	if(!(flags & MR_NO_LIGHTING))
 	{
 		light_reset();
-		vector light_dir = vmd_zero_vector;
+		vec3d light_dir = vmd_zero_vector;
 		light_dir.xyz.x = -0.5;
 		light_dir.xyz.y = 2.0f;
 		light_dir.xyz.z = -2.0f;	

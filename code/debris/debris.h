@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:20 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:15 $
+ * $Author: taylor $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:20  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:01:59  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -175,7 +178,7 @@ typedef struct debris {
 	fix		time_started;		// time when debris was created
 	int		next_distance_check;	//	timestamp to determine whether to delete this piece of debris.
 
-	vector	arc_pts[MAX_DEBRIS_ARCS][2];		// The endpoints of each arc
+	vec3d	arc_pts[MAX_DEBRIS_ARCS][2];		// The endpoints of each arc
 	int		arc_timestamp[MAX_DEBRIS_ARCS];	// When this times out, the spark goes away.  -1 is not used
 	int		arc_frequency;							// Starts at 0, gets bigger
 	
@@ -204,9 +207,9 @@ void debris_render( object * obj );
 void debris_delete( object * obj );
 void debris_process_pre( object * obj, float frame_time);
 void debris_process_post( object * obj, float frame_time);
-object *debris_create( object * source_obj, int model_num, int submodel_num, vector *pos, vector *exp_center, int hull_flag, float exp_force );
-int debris_check_collision( object * obj, object * other_obj, vector * hitpos, collision_info_struct *debris_hit_info=NULL );
-void debris_hit( object * debris_obj, object * other_obj, vector * hitpos, float damage );
+object *debris_create( object * source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force );
+int debris_check_collision( object * obj, object * other_obj, vec3d * hitpos, collision_info_struct *debris_hit_info=NULL );
+void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage );
 int debris_get_team(object *objp);
 void debris_clear_expired_flag(debris *db);
 

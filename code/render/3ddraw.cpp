@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-03-25 22:36:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.39 $
+ * $Date: 2005-04-05 05:53:23 $
+ * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/03/25 22:36:01  Goober5000
+ * removed unreferenced variable
+ * --Goober5000
+ *
  * Revision 2.37  2005/03/23 20:08:33  phreak
  * Some specular values in g3_draw_perspective_bitmap() were being incorrectly set.  fixed that
  *
@@ -425,9 +429,9 @@ int g3_draw_line(vertex *p0,vertex *p1)
 
 //returns true if a plane is facing the viewer. takes the unrotated surface
 //normal of the plane, and a point on it.  The normal need not be normalized
-int g3_check_normal_facing(vector *v,vector *norm)
+int g3_check_normal_facing(vec3d *v,vec3d *norm)
 {
-	vector tempv;
+	vec3d tempv;
 
 	Assert( G3_count == 1 );
 
@@ -436,7 +440,7 @@ int g3_check_normal_facing(vector *v,vector *norm)
 	return (vm_vec_dot(&tempv,norm) > 0.0f);
 }
 
-int do_facing_check(vector *norm,vertex **vertlist,vector *p)
+int do_facing_check(vec3d *norm,vertex **vertlist,vec3d *p)
 {
 	Assert( G3_count == 1 );
 
@@ -448,13 +452,13 @@ int do_facing_check(vector *norm,vertex **vertlist,vector *p)
 	}
 	else {	//normal not specified, so must compute
 
-		vector tempv;
+		vec3d tempv;
 
 		//get three points (rotated) and compute normal
 
-		vm_vec_perp(&tempv,(vector *)&vertlist[0]->x,(vector *)&vertlist[1]->x,(vector *)&vertlist[2]->x);
+		vm_vec_perp(&tempv,(vec3d *)&vertlist[0]->x,(vec3d *)&vertlist[1]->x,(vec3d *)&vertlist[2]->x);
 
-		return (vm_vec_dot(&tempv,(vector *)&vertlist[1]->x ) < 0.0);
+		return (vm_vec_dot(&tempv,(vec3d *)&vertlist[1]->x ) < 0.0);
 	}
 }
 
@@ -464,7 +468,7 @@ int do_facing_check(vector *norm,vertex **vertlist,vector *p)
 //is passed, this function works like g3_check_normal_facing() plus
 //g3_draw_poly().
 //returns -1 if not facing, 1 if off screen, 0 if drew
-int g3_draw_poly_if_facing(int nv,vertex **pointlist,uint tmap_flags,vector *norm,vector *pnt)
+int g3_draw_poly_if_facing(int nv,vertex **pointlist,uint tmap_flags,vec3d *norm,vec3d *pnt)
 {
 	Assert( G3_count == 1 );
 
@@ -730,7 +734,7 @@ int g3_draw_sphere(vertex *pnt,float rad)
 	return 0;
 }
 
-int g3_draw_sphere_ez(vector *pnt,float rad)
+int g3_draw_sphere_ez(vec3d *pnt,float rad)
 {
 	vertex pt;
 	ubyte flags;
@@ -767,9 +771,9 @@ int g3_draw_bitmap_3d_batched(vertex *pnt,int orient, float rad,uint tmap_flags,
 
 //return 0;
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
-	vector PNT;
+	vec3d PNT;
 	vm_vert2vec(pnt, &PNT);
-	vector p[4];
+	vec3d p[4];
 	//unused variables that were there for some reason
 //	matrix m;
 //	vm_set_identity(&m);
@@ -782,7 +786,7 @@ int g3_draw_bitmap_3d_batched(vertex *pnt,int orient, float rad,uint tmap_flags,
 	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
 
 	for(int i = 0; i<4; i++){
-		vector t = p[i];
+		vec3d t = p[i];
 	  	vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 	  	vm_vec_add2(&p[i],&PNT);//move it
 	}		
@@ -824,9 +828,9 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 
 //return 0;
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
-	vector PNT;
+	vec3d PNT;
 	vm_vert2vec(pnt, &PNT);
-	vector p[4];
+	vec3d p[4];
 	vertex P[4];
 	//unused variables that were there for some reason
 //	matrix m;
@@ -841,7 +845,7 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
 
 	for(int i = 0; i<4; i++){
-		vector t = p[i];
+		vec3d t = p[i];
 		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 		vm_vec_add2(&p[i],&PNT);//move it
 	}
@@ -872,11 +876,11 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 
 //	rad*=3.0f;
-	vector PNT;
+	vec3d PNT;
 	vm_vert2vec(pnt, &PNT);
-	vector p[4];
+	vec3d p[4];
 	vertex P[4];
-	vector fvec, rvec, uvec;
+	vec3d fvec, rvec, uvec;
 
 	vm_vec_sub(&fvec, &View_position, &PNT);
 	vm_vec_normalize(&fvec);
@@ -905,7 +909,7 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 //	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
 
 //	for(int i = 0; i<4; i++){
-//		vector t = p[i];
+//		vec3d t = p[i];
 //		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 //		vm_vec_add2(&p[i],&PNT);//move it
 //	}
@@ -932,9 +936,9 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float depth, float c){
 //return 0;
 //	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
-	vector PNT;
+	vec3d PNT;
 	vm_vert2vec(pnt, &PNT);
-	vector p[4];
+	vec3d p[4];
 	vertex P[4];
 	int i;
 	//unused variables that were there for some reason
@@ -950,7 +954,7 @@ int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float
 	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
 
 	for(i = 0; i<4; i++){
-		vector t = p[i];
+		vec3d t = p[i];
 		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 		vm_vec_add2(&p[i],&PNT);//move it
 	}
@@ -1154,9 +1158,9 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	float sa = (float)sin(angle);
 	float ca = (float)cos(angle);
 
-	vector PNT;
+	vec3d PNT;
 	vm_vert2vec(pnt, &PNT);
-	vector p[4];
+	vec3d p[4];
 	vertex P[4];
 	matrix m;
 	vm_set_identity(&m);
@@ -1170,7 +1174,7 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	p[3].xyz.x = (-rad*ca - rad*sa) * aspect;	p[3].xyz.y = (-rad*sa + rad*ca);	p[3].xyz.z = -depth;
 
 	for(int i = 0; i<4; i++){
-		vector t = p[i];
+		vec3d t = p[i];
 		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 		vm_vec_add2(&p[i],&PNT);//move it
 	}
@@ -1206,11 +1210,11 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	else if ( angle > PI2 )
 		angle -= PI2;
 
-	vector PNT;
+	vec3d PNT;
 	vm_vert2vec(pnt, &PNT);
-	vector p[4];
+	vec3d p[4];
 	vertex P[4];
-	vector fvec, rvec, uvec;
+	vec3d fvec, rvec, uvec;
 
 	vm_vec_sub(&fvec, &View_position, &PNT);
 	vm_vec_normalize(&fvec);
@@ -1369,7 +1373,7 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, f
 	return 0;
 }
 
-#define TRIANGLE_AREA(_p, _q, _r)	do { vector a, b, cross; a.xyz.x = _q->x - _p->x; a.xyz.y = _q->y - _p->y; a.xyz.z = 0.0f; b.xyz.x = _r->x - _p->x; b.xyz.y = _r->y - _p->y; b.xyz.z = 0.0f; vm_vec_crossprod(&cross, &a, &b); total_area += vm_vec_mag(&cross) * 0.5f; } while(0);
+#define TRIANGLE_AREA(_p, _q, _r)	do { vec3d a, b, cross; a.xyz.x = _q->x - _p->x; a.xyz.y = _q->y - _p->y; a.xyz.z = 0.0f; b.xyz.x = _r->x - _p->x; b.xyz.y = _r->y - _p->y; b.xyz.z = 0.0f; vm_vec_crossprod(&cross, &a, &b); total_area += vm_vec_mag(&cross) * 0.5f; } while(0);
 float g3_get_poly_area(int nv, vertex **pointlist)
 {
 	int idx;
@@ -1596,7 +1600,7 @@ void g3_draw_horizon_line()
 //	int color_swap;		//flag for if we swapped
 //	int sky_ground_flag;	//0=both, 1=all sky, -1=all gnd
 
-	vector horizon_vec;
+	vec3d horizon_vec;
 	
 	float up_right, down_right,down_left,up_left;
 
@@ -1896,7 +1900,7 @@ sky_loop:	pushm	eax,ecx,edi
 	popm	ebx,ecx,edx,esi,edi
 	ret
 
-;compute vector describing horizon intersection with a point.
+;compute vec3d describing horizon intersection with a point.
 ;takes esi=2d point, edi=vec. trashes eax,ebx,ecx,edx
 compute_horz_end_vec:
 
@@ -1944,7 +1948,7 @@ compute_horz_end_vec:
 
 	fixdiv	ebx
 	
-;now eax = z/x ratio.  Compute vector by normalizing and correcting sign
+;now eax = z/x ratio.  Compute vec3d by normalizing and correcting sign
 
 	push	eax	;save ratio
 
@@ -1970,7 +1974,7 @@ do_xz:
 	xchg	eax,ebx
 	fixdiv	ebx
 	
-;now eax = x/z ratio.  Compute vector by normalizing and correcting sign
+;now eax = x/z ratio.  Compute vec3d by normalizing and correcting sign
 
 	push	eax	;save ratio
 
@@ -1992,7 +1996,7 @@ do_xz:
 finish_end:	xor	eax,eax	;y = 0
 	mov	[edi].xyz.y,eax
 
-;now make sure that this vector is in front of you, not behind
+;now make sure that this vec3d is in front of you, not behind
 
 	mov	eax,[edi].xyz.x
 	imul	View_matrix.m3
@@ -2019,7 +2023,7 @@ sub2	macro	dest,src
 	sub	dest,eax
 	endm
 
-;compute vector decribing a corner of the screen.
+;compute vec3d decribing a corner of the screen.
 ;takes edi=vector, eax=corner num
 compute_corner_vec:
 
@@ -2151,9 +2155,9 @@ _TEXT	ends
 // Draws a polygon always facing the viewer.
 // compute the corners of a rod.  fills in vertbuf.
 // Verts has any needs uv's or l's or can be NULL if none needed.
-int g3_draw_rod(vector *p0,float width1,vector *p1,float width2, vertex * verts, uint tmap_flags)
+int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, uint tmap_flags)
 {
-	vector uvec, fvec, rvec, center;
+	vec3d uvec, fvec, rvec, center;
 
 	vm_vec_sub( &fvec, p0, p1 );
 	vm_vec_normalize_safe( &fvec );
@@ -2174,7 +2178,7 @@ int g3_draw_rod(vector *p0,float width1,vector *p1,float width2, vertex * verts,
 	// of the face.
 
 	int i;
-	vector vecs[4];
+	vec3d vecs[4];
 	vertex pts[4];
 	vertex *ptlist[4] = { &pts[3], &pts[2], &pts[1], &pts[0] };
 
@@ -2224,7 +2228,7 @@ int g3_draw_rod(vector *p0,float width1,vector *p1,float width2, vertex * verts,
 }
 
 // draw a perspective bitmap based on angles and radius
-vector g3_square[4] = {
+vec3d g3_square[4] = {
 	{-1.0f, -1.0f, 20.0f},
 	{-1.0f, 1.0f, 20.0f},
 	{1.0f, 1.0f, 20.0f},
@@ -2233,7 +2237,7 @@ vector g3_square[4] = {
 
 #define MAX_PERSPECTIVE_DIVISIONS			5				// should never even come close to this limit
 
-void stars_project_2d_onto_sphere( vector *pnt, float rho, float phi, float theta )
+void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta )
 {		
 	float a = 3.14159f * phi;
 	float b = 6.28318f * theta;
@@ -2250,8 +2254,8 @@ float p_phi = 10.0f;
 float p_theta = 10.0f;
 int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags)
 {
-	vector s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
-	vector t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
+	vec3d s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
+	vec3d t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
 	vertex v[4];
 	vertex *verts[4];
 	matrix m, m_bank;
@@ -2662,13 +2666,13 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 	return ret;
 }
 
-void g3_draw_htl_line(vector *start, vector *end)
+void g3_draw_htl_line(vec3d *start, vec3d *end)
 {
 	if (Cmdline_nohtl) return;
 	gr_draw_htl_line(start,end);
 }
 
-void g3_draw_htl_sphere(vector* position, float radius)
+void g3_draw_htl_sphere(vec3d* position, float radius)
 {
 	if (Cmdline_nohtl) return;
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
@@ -2679,7 +2683,7 @@ void g3_draw_htl_sphere(vector* position, float radius)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //flash ball stuff
 
-void flash_ball::initalise(int number, float min_ray_width, float max_ray_width, vector* dir, vector*pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b){
+void flash_ball::initalise(int number, float min_ray_width, float max_ray_width, vec3d* dir, vec3d*pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b){
 	if(number < 1)return;
 
 	center = *pcenter;
@@ -2712,7 +2716,7 @@ void flash_ball::initalise(int number, float min_ray_width, float max_ray_width,
 	//rays
 		if(dir == &vmd_zero_vector || outer >= PI2){
 			//random sphere
-			vector start, end;
+			vec3d start, end;
 
 			vm_vec_rand_vec_quick(&start);
 			vm_vec_rand_vec_quick(&end);
@@ -2721,7 +2725,7 @@ void flash_ball::initalise(int number, float min_ray_width, float max_ray_width,
 			ray[i].end = end;
 		}else{
 			//random cones
-			vector start, end;
+			vec3d start, end;
 
 			vm_vec_random_cone(&start, dir, outer, inner);
 			vm_vec_random_cone(&end, dir, outer, inner);
@@ -2739,7 +2743,7 @@ void flash_ball::initalise(int number, float min_ray_width, float max_ray_width,
 #define uw(p)	(*((uint *) (p)))
 #define w(p)	(*((int *) (p)))
 #define wp(p)	((int *) (p))
-#define vp(p)	((vector *) (p))
+#define vp(p)	((vec3d *) (p))
 #define fl(p)	(*((float *) (p)))
 
 void flash_ball::defpoint(int off, ubyte *bsp_data)
@@ -2751,7 +2755,7 @@ void flash_ball::defpoint(int off, ubyte *bsp_data)
 	int next_norm = 0;
 
 	ubyte * normcount = off+bsp_data+20;
-	vector *src = vp(off+bsp_data+offset);
+	vec3d *src = vp(off+bsp_data+offset);
 
 
 	if(n_rays < nverts){
@@ -2763,7 +2767,7 @@ void flash_ball::defpoint(int off, ubyte *bsp_data)
 	{
 
 
-		vector temp;
+		vec3d temp;
 		for (n=0; n<nverts; n++ )	{
 
 			temp = *src;
@@ -2821,7 +2825,7 @@ void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
 }
 
 
-void flash_ball::initalise(ubyte *bsp_data, float min_ray_width, float max_ray_width, vector* dir , vector*pcenter , float outer , float inner , ubyte max_r , ubyte max_g , ubyte max_b , ubyte min_r , ubyte min_g , ubyte min_b ){
+void flash_ball::initalise(ubyte *bsp_data, float min_ray_width, float max_ray_width, vec3d* dir , vec3d*pcenter , float outer , float inner , ubyte max_r , ubyte max_g , ubyte max_b , ubyte min_r , ubyte min_g , ubyte min_b ){
 	center = *pcenter;
 	vm_vec_negate(&center);
 	parse_bsp(0,bsp_data);
@@ -2849,14 +2853,14 @@ void flash_ball::initalise(ubyte *bsp_data, float min_ray_width, float max_ray_w
 	//rays
 		if(dir == &vmd_zero_vector || outer >= PI2){
 			//random sphere
-			vector end;
+			vec3d end;
 
 			vm_vec_rand_vec_quick(&end);
 
 			ray[i].end = end;
 		}else{
 			//random cones
-			vector end;
+			vec3d end;
 
 			vm_vec_random_cone(&end, dir, outer, inner);
 
@@ -2873,8 +2877,8 @@ void flash_ball::initalise(ubyte *bsp_data, float min_ray_width, float max_ray_w
 void flash_ball::render(float rad, float intinsity, float life){
 	flash_ball::batcher.allocate(n_rays);
 	for(int i = 0; i<n_rays; i++){
-		vector end;
-		vm_vec_interp_constant(&end, (vector*)&ray[i].start.x,  (vector*)&ray[i].end.x, life);
+		vec3d end;
+		vm_vec_interp_constant(&end, (vec3d*)&ray[i].start.x,  (vec3d*)&ray[i].end.x, life);
 		vm_vec_scale(&end, rad);
 		vm_vec_add2(&end, &center);
 		flash_ball::batcher.draw_beam(&center, &end, ray[i].width*rad, intinsity);

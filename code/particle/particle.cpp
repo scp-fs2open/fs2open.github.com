@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-03-24 23:37:25 $
+ * $Revision: 2.13 $
+ * $Date: 2005-04-05 05:53:23 $
  * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/03/24 23:37:25  taylor
+ * fix GCC building
+ *
  * Revision 2.11  2005/03/16 01:35:59  bobboau
  * added a geometry batcher and implemented it in sevral places
  * namely: lasers, thrusters, and particles,
@@ -231,8 +234,8 @@
 
 typedef struct particle {
 	// old style data
-	vector	pos;					// position
-	vector	velocity;			// velocity
+	vec3d	pos;					// position
+	vec3d	velocity;			// velocity
 	float		age;					// How long it's been alive
 	float		max_life;			// How much life we had
 	float		radius;				// radius
@@ -431,7 +434,7 @@ KillAnother:
 	}
 }
 
-void particle_create( vector *pos, vector *vel, float lifetime, float rad, int type, uint optional_data )
+void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, uint optional_data )
 {
 	particle_info pinfo;
 
@@ -545,7 +548,7 @@ void particle_render_all()
 	float pct_complete;
 	float alpha = 1.0f;
 	vertex pos;
-	vector ts, te, temp;
+	vec3d ts, te, temp;
 	int rotate = 1;
 	int i;
 
@@ -813,10 +816,10 @@ void particle_render_all()
 typedef struct particle_emitter {
 	int		num_low;				// Lowest number of particles to create
 	int		num_high;			// Highest number of particles to create
-	vector	pos;					// Where the particles emit from
-	vector	vel;					// Initial velocity of all the particles
+	vec3d	pos;					// Where the particles emit from
+	vec3d	vel;					// Initial velocity of all the particles
 	float		lifetime;			// How long the particles live
-	vector	normal;				// What normal the particle emit arond
+	vec3d	normal;				// What normal the particle emit arond
 	float		normal_variance;	//	How close they stick to that normal 0=good, 1=360 degree
 	float		min_vel;				// How fast the slowest particle can move
 	float		max_vel;				// How fast the fastest particle can move
@@ -869,8 +872,8 @@ void particle_emit( particle_emitter *pe, int type, uint optional_data, float ra
 
 	for (i=0; i<n; i++ )	{
 		// Create a particle
-		vector tmp_vel;
-		vector normal;				// What normal the particle emit arond
+		vec3d tmp_vel;
+		vec3d normal;				// What normal the particle emit arond
 
 		float radius = (( pe->max_rad - pe->min_rad ) * frand()) + pe->min_rad;
 

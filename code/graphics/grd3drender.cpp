@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.68 $
- * $Date: 2005-03-20 00:09:07 $
- * $Author: phreak $
+ * $Revision: 2.69 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2005/03/20 00:09:07  phreak
+ * Added gr_draw_htl_line and gr_draw_htl sphere
+ * There still needs to be D3D versions implemented, but OGL is done.
+ * Follow that or ask phreak about how its implemented/
+ *
  * Revision 2.67  2005/03/13 08:44:10  wmcoolmon
  * Squashed compiler warnings
  *
@@ -3869,7 +3874,7 @@ void gr_d3d_push_texture_matrix(int unit)
 {}
 void gr_d3d_pop_texture_matrix(int unit)
 {}
-void gr_d3d_translate_texture_matrix(int unit, vector *shift)
+void gr_d3d_translate_texture_matrix(int unit, vec3d *shift)
 {}
 
 void gr_d3d_draw_line_list(colored_vector*lines, int num){
@@ -3897,7 +3902,7 @@ void gr_d3d_draw_line_list(colored_vector*lines, int num){
 	render_buffer.draw(D3DPT_LINELIST, num);
 }
 
-void gr_d3d_draw_htl_line(vector *start, vector* end)
+void gr_d3d_draw_htl_line(vec3d *start, vec3d* end)
 {}
 
 void gr_d3d_draw_htl_sphere(float rad)

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-03-25 06:57:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.7  2005/03/10 08:00:11  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -522,7 +525,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 			// check if debris is behind laser
 			float vdot;
 			if (Weapon_info[Weapons[B->instance].weapon_info_index].subtype == WP_LASER) {
-				vector velocity_rel_weapon;
+				vec3d velocity_rel_weapon;
 				vm_vec_sub(&velocity_rel_weapon, &B->phys_info.vel, &A->phys_info.vel);
 				vdot = -vm_vec_dot(&velocity_rel_weapon, &B->orient.vec.fvec);
 			} else {
@@ -531,7 +534,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 			if ( vdot <= 0.0f )	{
 				// They're heading in opposite directions...
 				// check their positions
-				vector weapon2other;
+				vec3d weapon2other;
 				vm_vec_sub( &weapon2other, &A->pos, &B->pos );
 				float pdot = vm_vec_dot( &B->orient.vec.fvec, &weapon2other );
 				if ( pdot <= -A->radius )	{
@@ -542,7 +545,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 			}
 
 			// check dist vs. dist moved during weapon lifetime
-			vector delta_v;
+			vec3d delta_v;
 			vm_vec_sub(&delta_v, &B->phys_info.vel, &A->phys_info.vel);
 			if (vm_vec_dist_squared(&A->pos, &B->pos) > (vm_vec_mag_squared(&delta_v)*Weapons[B->instance].lifeleft*Weapons[B->instance].lifeleft)) {
 				return;
@@ -716,7 +719,7 @@ void obj_check_all_collisions()
 
 //	See if two lines intersect by doing recursive subdivision.
 //	Bails out if larger distance traveled is less than sum of radii + 1.0f.
-int collide_subdivide(vector *p0, vector *p1, float prad, vector *q0, vector *q1, float qrad)
+int collide_subdivide(vec3d *p0, vec3d *p1, float prad, vec3d *q0, vec3d *q1, float qrad)
 {
 	float	a_dist, b_dist, ab_dist;
 
@@ -735,7 +738,7 @@ int collide_subdivide(vector *p0, vector *p1, float prad, vector *q0, vector *q1
 			return 0;
 		else {
 			int	r1, r2 = 0;
-			vector	pa, qa;
+			vec3d	pa, qa;
 
 			vm_vec_avg(&pa, p0, p1);
 			vm_vec_avg(&qa, q0, q1);
@@ -763,7 +766,7 @@ int collide_subdivide(vector *p0, vector *p1, float prad, vector *q0, vector *q1
 int objects_will_collide(object *A, object *B, float duration, float radius_scale)
 {
 	object	A_future;
-	vector	hitpos;
+	vec3d	hitpos;
 
 
 	A_future = *A;
@@ -773,7 +776,7 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 		return ship_check_collision_fast(B, &A_future, &hitpos );
 	} else {
 		float		size_A, size_B, dist, r;
-		vector	nearest_point;
+		vec3d	nearest_point;
 
 		size_A = A->radius * radius_scale;
 		size_B = B->radius * radius_scale;
@@ -795,10 +798,10 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 }
 
 //	Return true if the vector from *start_pos to *end_pos is within objp->radius*radius_scale of *objp
-int vector_object_collision(vector *start_pos, vector *end_pos, object *objp, float radius_scale)
+int vector_object_collision(vec3d *start_pos, vec3d *end_pos, object *objp, float radius_scale)
 {
 	float		dist, r;
-	vector	nearest_point;
+	vec3d	nearest_point;
 
 	r = find_nearest_point_on_line(&nearest_point, start_pos, end_pos, &objp->pos);
 	if ((r >= 0.0f) && (r <= 1.0f)) {
@@ -829,7 +832,7 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 
 		float vdot;
 		if (Weapon_info[Weapons[weapon->instance].weapon_info_index].subtype == WP_LASER) {
-			vector velocity_rel_weapon;
+			vec3d velocity_rel_weapon;
 			vm_vec_sub(&velocity_rel_weapon, &weapon->phys_info.vel, &other->phys_info.vel);
 			vdot = -vm_vec_dot(&velocity_rel_weapon, &weapon->orient.vec.fvec);
 		} else {
@@ -838,7 +841,7 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 		if ( vdot <= 0.0f )	{
 			// They're heading in opposite directions...
 			// check their positions
-			vector weapon2other;
+			vec3d weapon2other;
 			vm_vec_sub( &weapon2other, &other->pos, &weapon->pos );
 			float pdot = vm_vec_dot( &weapon->orient.vec.fvec, &weapon2other );
 			if ( pdot <= -other->radius )	{
@@ -891,7 +894,7 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
 		// Since direction of Vs is unknown, solve for (Vs*t) and find norm of both sides
 		if ( !(Weapon_info[Weapons[weapon->instance].weapon_info_index].wi_flags & WIF_TURNS) ) {
-			vector delta_x, laser_vel;
+			vec3d delta_x, laser_vel;
 			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
 
@@ -984,7 +987,7 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 //	Return true if vector from *curpos to *goalpos intersects with object *goalobjp
 //	Else, return false.
 //	radius is radius of object moving from curpos to goalpos.
-int pp_collide(vector *curpos, vector *goalpos, object *goalobjp, float radius)
+int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius)
 {
 	mc_info mc;
 
@@ -1009,7 +1012,7 @@ int pp_collide(vector *curpos, vector *goalpos, object *goalobjp, float radius)
 
 //	Setup and call pp_collide for collide_predict_large_ship
 //	Returns true if objp will collide with objp2 before it reaches goal_pos.
-int cpls_aux(vector *goal_pos, object *objp2, object *objp)
+int cpls_aux(vec3d *goal_pos, object *objp2, object *objp)
 {
 	float	radius;
 	
@@ -1030,7 +1033,7 @@ int cpls_aux(vector *goal_pos, object *objp2, object *objp)
 int collide_predict_large_ship(object *objp, float distance)
 {
 	object	*objp2;
-	vector	cur_pos, goal_pos;
+	vec3d	cur_pos, goal_pos;
 	ship_info	*sip;
 
 	sip = &Ship_info[Ships[objp->instance].ship_info_index];
@@ -1050,7 +1053,7 @@ int collide_predict_large_ship(object *objp, float distance)
 			}
 		} else if (!(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) && (objp2->type == OBJ_ASTEROID)) {
 			if (vm_vec_dist_quick(&objp2->pos, &objp->pos) < (distance + objp2->radius)*2.5f) {
-				vector	pos, delvec;
+				vec3d	pos, delvec;
 				int		count;
 				float		d1;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:36 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:36  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -47,7 +50,7 @@
 
 struct weapon;
 struct object;
-struct vector;
+struct vec3d;
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 // FLAK FUNCTIONS
@@ -66,20 +69,20 @@ void flak_create(weapon *wp);
 void flak_delete(int flak_index);
 
 // given a just fired flak shell, pick a detonating distance for it
-void flak_pick_range(object *objp, vector *predicted_target_pos, float weapon_subsys_strength);
+void flak_pick_range(object *objp, vec3d *predicted_target_pos, float weapon_subsys_strength);
 
 // add some jitter to a flak gun's aiming direction, take into account range to target so that we're never _too_ far off
 // assumes dir is normalized
-void flak_jitter_aim(vector *dir, float dist_to_target, float weapon_subsys_strength);
+void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength);
 
 // create a muzzle flash from a flak gun based upon firing position and weapon type
-void flak_muzzle_flash(vector *pos, vector *dir, int turret_weapon_class);
+void flak_muzzle_flash(vec3d *pos, vec3d *dir, int turret_weapon_class);
 
 // maybe detonate a flak shell early/late (call from weapon_process_pre(...))
 void flak_maybe_detonate(object *obj);
 
 // set the range on a flak object
-void flak_set_range(object *objp, vector *start_pos, float range);
+void flak_set_range(object *objp, vec3d *start_pos, float range);
 
 // get the current range for the flak object
 float flak_get_range(object *objp);

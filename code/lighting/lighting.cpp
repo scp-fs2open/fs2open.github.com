@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-03-01 06:55:41 $
- * $Author: bobboau $
+ * $Revision: 2.17 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/03/01 06:55:41  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.15  2004/07/26 20:47:35  Kazan
  * remove MCD complete
  *
@@ -278,10 +282,10 @@
 int cell_shaded_lightmap = -1;
 typedef struct light {
 	int		type;							// What type of light this is
-	vector	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
-	vector	vec2;							// second point on a tube light
-	vector	local_vec;					// rotated light vector
-	vector	local_vec2;					// rotated 2nd light vector for a tube light
+	vec3d	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
+	vec3d	vec2;							// second point on a tube light
+	vec3d	local_vec;					// rotated light vector
+	vec3d	local_vec2;					// rotated 2nd light vector for a tube light
 	float		intensity;					// How bright the light is.
 	float		rad1, rad1_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
 	float		rad2, rad2_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
@@ -420,7 +424,7 @@ void light_reset()
 		for(int i = 0; i<MAX_LIGHTS; i++)gr_destroy_light(i);
 	}
 }
-extern vector Object_position;
+extern vec3d Object_position;
 // Rotates the light into the current frame of reference
 void light_rotate(light * l)
 {
@@ -437,7 +441,7 @@ void light_rotate(light * l)
 		break;
 	
 	case LT_POINT:	{
-			vector tempv;
+			vec3d tempv;
 			// Rotate the point into local coordinates
 	
 			vm_vec_sub(&tempv, &l->vec, &Light_base );
@@ -451,7 +455,7 @@ void light_rotate(light * l)
 		break;
 	
 	case LT_TUBE:{
-			vector tempv;
+			vec3d tempv;
 
 			// Rotate the point into local coordinates
 			vm_vec_sub(&tempv, &l->vec, &Light_base );
@@ -464,7 +468,7 @@ void light_rotate(light * l)
 			if(!Cmdline_nohtl) {
 
 				//move the point to the neares to the object on the line
-					vector pos;
+					vec3d pos;
 
 	/*				vm_vec_unrotate(&temp2, &temp, &obj->orient);
 					vm_vec_add2(&temp, &temp2);
@@ -505,7 +509,7 @@ void light_set_ambient(float ambient_light)
 {
 }
 
-void light_add_directional( vector *dir, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular )
+void light_add_directional( vec3d *dir, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular )
 {
 	if(!specular){
 		spec_r = r;
@@ -556,7 +560,7 @@ void light_add_directional( vector *dir, float intensity, float r, float g, floa
 }
 
 
-void light_add_point( vector * pos, float rad1, float rad2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
+void light_add_point( vec3d * pos, float rad1, float rad2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
 {
 	Assert(rad1 >0);
 	Assert(rad2 >0);
@@ -607,7 +611,7 @@ void light_add_point( vector * pos, float rad1, float rad2, float intensity, flo
 //	l->API_index = gr_make_light(L);
 }
 
-void light_add_point_unique( vector * pos, float rad1, float rad2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
+void light_add_point_unique( vec3d * pos, float rad1, float rad2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
 {
 	Assert(rad1 >0);
 	Assert(rad2 >0);
@@ -658,7 +662,7 @@ void light_add_point_unique( vector * pos, float rad1, float rad2, float intensi
 }
 
 // for now, tube lights only affect one ship (to keep the filter stuff simple)
-void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
+void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
 {
 	Assert(r1 >0);
 	Assert(r2 >0);
@@ -731,7 +735,7 @@ void light_filter_reset()
 
 // Makes a list of only the lights that will affect
 // the sphere specified by 'pos' and 'rad' and 'objnum'
-int light_filter_push( int objnum, vector *pos, float rad )
+int light_filter_push( int objnum, vec3d *pos, float rad )
 {
 	int i;
 	light *l;
@@ -760,7 +764,7 @@ int light_filter_push( int objnum, vector *pos, float rad )
 				// if this is a "unique" light source, it only affects one guy
 				if(l->affected_objnum >= 0){
 					if(objnum == l->affected_objnum){
-						vector to_light;
+						vec3d to_light;
 						float dist_squared, max_dist_squared;
 						vm_vec_sub( &to_light, &l->vec, pos );
 						dist_squared = vm_vec_mag_squared(&to_light);
@@ -776,7 +780,7 @@ int light_filter_push( int objnum, vector *pos, float rad )
 				// otherwise check all relevant objects
 				else {
 					// if ( (l->ignore_objnum<0) || (l->ignore_objnum != objnum) )	{
-						vector to_light;
+						vec3d to_light;
 						float dist_squared, max_dist_squared;
 						vm_vec_sub( &to_light, &l->vec, pos );
 						dist_squared = vm_vec_mag_squared(&to_light);
@@ -808,7 +812,7 @@ int light_filter_push( int objnum, vector *pos, float rad )
 	return Num_relevent_lights[n2];
 }
 
-int is_inside( vector *min, vector *max, vector * p0, float rad )
+int is_inside( vec3d *min, vec3d *max, vec3d * p0, float rad )
 {
 	float *origin = (float *)&p0->xyz.x;
 	float *minB = (float *)min;
@@ -826,7 +830,7 @@ int is_inside( vector *min, vector *max, vector * p0, float rad )
 }
 
 
-int light_filter_push_box( vector *min, vector *max )
+int light_filter_push_box( vec3d *min, vec3d *max )
 {
 	int i;
 	light *l;
@@ -920,7 +924,7 @@ int light_get_global_count()
 	return Static_light_count;
 }
 
-int light_get_global_dir(vector *pos, int n)
+int light_get_global_dir(vec3d *pos, int n)
 {
 	if((n > MAX_STATIC_LIGHTS) || (n > Static_light_count-1)){
 		return 0;
@@ -957,7 +961,7 @@ void light_set_all_relevent(){
 }
 
 
-ubyte light_apply( vector *pos, vector * norm, float static_light_level )
+ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_level )
 {
 	int i, idx;
 	float lval;
@@ -1021,7 +1025,7 @@ ubyte light_apply( vector *pos, vector * norm, float static_light_level )
 	for (i=0; i<Num_relevent_lights[n]; i++ )	{
 		l = Relevent_lights[i][n];
 
-		vector to_light;
+		vec3d to_light;
 		float dot, dist;
 		vm_vec_sub( &to_light, &l->local_vec, pos );
 		dot = vm_vec_dot(&to_light, norm );
@@ -1051,7 +1055,7 @@ float static_tube_factor = 1.0f;
 float static_point_factor = 1.0f;
 double specular_exponent_value = 16.0;
 
-void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pos, vector * norm, vector * cam){
+void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos, vec3d * norm, vec3d * cam){
 
 	light *l;
 	float rval = 0, gval = 0, bval = 0;
@@ -1077,7 +1081,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 		return;
 	}
 
-	vector V, N;
+	vec3d V, N;
 	vm_vec_sub(&V, cam,pos);
 	vm_vec_normalize(&V);
 
@@ -1094,7 +1098,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 				continue;
 			}
 
-			vector R;
+			vec3d R;
 			vm_vec_sub(&R,&V, &Static_light[idx]->local_vec);
 			vm_vec_normalize(&R);
 
@@ -1142,9 +1146,9 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 	l_num_lights += Num_relevent_lights[n];
 	l_num_points++;
 
-	vector to_light;
+	vec3d to_light;
 	float dot, dist;
-	vector temp;
+	vec3d temp;
 	float factor = 1.0f;
 	for ( int i=0; i<Num_relevent_lights[n]; i++ )	{
 		l = Relevent_lights[i][n];
@@ -1172,7 +1176,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 			Int3();
 		}
 
-		vector R;
+		vec3d R;
 		vm_vec_normalize(&to_light);
 		vm_vec_add(&R,&V, &to_light);
 		vm_vec_normalize(&R);
@@ -1226,7 +1230,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 	*param_b = ubyte(fl2i(bval*254.0f));
 }
 
-void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pos, vector * norm, float static_light_level )
+void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos, vec3d * norm, float static_light_level )
 {
 	int i, idx;
 	float rval, gval, bval;
@@ -1312,9 +1316,9 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *po
 	l_num_lights += Num_relevent_lights[n];
 	l_num_points++;
 
-	vector to_light;
+	vec3d to_light;
 	float dot, dist;
-	vector temp;
+	vec3d temp;
 	for (i=0; i<Num_relevent_lights[n]; i++ )	{
 		l = Relevent_lights[i][n];
 break;
@@ -1402,7 +1406,7 @@ break;
 
 
 /*
-float light_apply( vector *pos, vector * norm )
+float light_apply( vec3d *pos, vec3d * norm )
 {
 #if 1
 	float r,g,b;

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Observer/Observer.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:46 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:22 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  */
@@ -40,7 +40,7 @@ void observer_init()
 	Num_observer_obs = 0;
 }
 
-int observer_create(matrix *orient, vector *pos)
+int observer_create(matrix *orient, vec3d *pos)
 {
 	int objnum,idx;	
 	physics_info *pi;
@@ -107,10 +107,10 @@ void observer_delete(object *obj)
 }
 
 // get the eye position and orientation for the passed observer object
-void observer_get_eye(vector *eye_pos, matrix *eye_orient, object *obj)
+void observer_get_eye(vec3d *eye_pos, matrix *eye_orient, object *obj)
 {
 	// copy in the observer position and orientation
-	memcpy(eye_pos,&obj->pos,sizeof(vector));
+	memcpy(eye_pos,&obj->pos,sizeof(vec3d));
 	memcpy(eye_orient,&obj->orient,sizeof(matrix));
 
 	// if we're in a weird padlock view

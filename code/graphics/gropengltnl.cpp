@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.21 $
- * $Date: 2005-03-27 02:59:27 $
- * $Author: wmcoolmon $
+ * $Revision: 1.22 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2005/03/27 02:59:27  wmcoolmon
+ * Forgot to define 'i' outside of for scope...ironically, in the OGL code.
+ *
  * Revision 1.20  2005/03/24 23:42:21  taylor
  * s/gr_ogl_/gr_opengl_/g
  * add empty gr_opengl_draw_line_list() so that it's not a NULL pointer
@@ -138,8 +141,8 @@ extern int VBO_ENABLED;
 extern int GLOWMAP;
 extern int CLOAKMAP;
 extern int SPECMAP;
-extern vector G3_user_clip_normal;
-extern vector G3_user_clip_point;
+extern vec3d G3_user_clip_normal;
+extern vec3d G3_user_clip_point;
 extern int Interp_multitex_cloakmap;
 extern int Interp_cloakmap_alpha;
 
@@ -304,7 +307,7 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		// generate the array
 		for (i=0; i<list->n_verts; i++) {
 			vertex *vl = &list->vert[i];
-			vector *nl = &list->norm[i];
+			vec3d *nl = &list->norm[i];
 
 			// don't try to generate more data than what's available
 			Assert( int((arsize * sizeof(float)) + vbp->stride) <= list_size );
@@ -582,7 +585,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 #endif // GL_NO_HTL
 }
 
-void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
+void gr_opengl_start_instance_matrix(vec3d *offset, matrix* rotation)
 {
 	if (Cmdline_nohtl)
 		return;
@@ -598,7 +601,7 @@ void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 
-	vector axis;
+	vec3d axis;
 	float ang;
 	vm_matrix_to_rot_axis_and_angle(rotation,&ang,&axis);
 	glTranslatef(offset->xyz.x,offset->xyz.y,offset->xyz.z);
@@ -606,7 +609,7 @@ void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
 	GL_modelview_matrix_depth++;
 }
 
-void gr_opengl_start_instance_angles(vector *pos, angles* rotation)
+void gr_opengl_start_instance_angles(vec3d *pos, angles* rotation)
 {
 	if (Cmdline_nohtl)
 		return;
@@ -657,7 +660,7 @@ void gr_opengl_end_projection_matrix()
 	GL_htl_projection_matrix_set = 0;
 }
 
-void gr_opengl_set_view_matrix(vector *pos, matrix* orient)
+void gr_opengl_set_view_matrix(vec3d *pos, matrix* orient)
 {
 	if (Cmdline_nohtl)
 		return;
@@ -669,8 +672,8 @@ void gr_opengl_set_view_matrix(vector *pos, matrix* orient)
 
 	glPushMatrix();
 	
-	vector fwd;
-	vector *uvec=&orient->vec.uvec;
+	vec3d fwd;
+	vec3d *uvec=&orient->vec.uvec;
 
 	vm_vec_add(&fwd, pos, &orient->vec.fvec);
 
@@ -746,7 +749,7 @@ void gr_opengl_end_2d_matrix()
 	GL_htl_2d_matrix_depth = 0;
 }
 
-void gr_opengl_push_scale_matrix(vector *scale_factor)
+void gr_opengl_push_scale_matrix(vec3d *scale_factor)
 {
 	if (Cmdline_nohtl)
 		return;
@@ -787,8 +790,8 @@ void gr_opengl_start_clip_plane()
 		return;
 
 	double clip_equation[4];
-	vector n;
-	vector p;
+	vec3d n;
+	vec3d p;
 
 	n=G3_user_clip_normal;	
 	p=G3_user_clip_point;
@@ -867,7 +870,7 @@ void gr_opengl_set_state_block(int handle)
 }
 
 
-void gr_opengl_draw_htl_line(vector *start, vector* end)
+void gr_opengl_draw_htl_line(vec3d *start, vec3d* end)
 {
 	if (Cmdline_nohtl)
 		return;

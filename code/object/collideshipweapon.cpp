@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-03-19 20:45:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/03/19 20:45:23  Goober5000
+ * corrected misinformation in comment about surface shields (implicit surface
+ * shields were removed for meshed ships)
+ * --Goober5000
+ *
  * Revision 2.16  2005/03/02 21:24:46  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -270,13 +275,13 @@ void update_danger_weapon(object *ship_obj, object *weapon_obj)
 
 // function to actually deal with weapon-ship hit stuff.  separated from check_collision routine below
 // because of multiplayer reasons.
-void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *world_hitpos, vector *hitpos, int quadrant_num, int submodel_num, vector /*not a pointer intentionaly*/ hit_dir)
+void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world_hitpos, vec3d *hitpos, int quadrant_num, int submodel_num, vec3d /*not a pointer intentionaly*/ hit_dir)
 {
 	weapon	*wp = &Weapons[weapon_obj->instance];
 	weapon_info	*wip = &Weapon_info[wp->weapon_info_index];
 	ship *shipp = &Ships[ship_obj->instance];	
 	float damage;
-	vector force;		
+	vec3d force;		
 
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, ship_obj,  world_hitpos);
@@ -324,7 +329,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *worl
 		weapon_info	*wip = &Weapon_info[Weapons[weapon_obj->instance].weapon_info_index];
 		decal_point dec;
 		dec.orient = weapon_obj->orient;
-		vector hit_fvec;
+		vec3d hit_fvec;
 		vm_vec_negate(&hit_dir);
 		vm_vec_avg(&hit_fvec, &hit_dir, &weapon_obj->orient.vec.fvec);
 		vm_vec_normalize(&hit_fvec);
@@ -384,7 +389,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 	int	quadrant_num = -1;
 
 	//	total time is flFrametime + time_limit (time_limit used to predict collisions into the future)
-	vector weapon_end_pos;
+	vec3d weapon_end_pos;
 	vm_vec_scale_add( &weapon_end_pos, &weapon_obj->pos, &weapon_obj->phys_info.vel, time_limit );
 
 	memset(&mc, -1, sizeof(mc_info));
@@ -474,7 +479,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 		ship_weapon_do_hit_stuff(ship_obj, weapon_obj, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 	} else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->wi_flags & WIF_HOMING) && (wp->homing_object == ship_obj)) {
 		if (dist < wip->inner_radius) {
-			vector	vec_to_ship;
+			vec3d	vec_to_ship;
 
 			vm_vec_normalized_dir(&vec_to_ship, &ship_obj->pos, &weapon_obj->pos);
 
@@ -572,7 +577,7 @@ float estimate_ship_speed_upper_limit( object *ship, float time )
 // return 0 if pair can not be culled
 int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *pair )
 {
-	vector error_vel;		// vel perpendicular to laser
+	vec3d error_vel;		// vel perpendicular to laser
 	float error_vel_mag;	// magnitude of error_vel
 	float time_to_max_error, time_to_exit_sphere;
 	float ship_speed_at_exit_sphere, error_at_exit_sphere;	

@@ -38,15 +38,15 @@ struct net_player;
 // interpolation info struct 
 typedef struct interp_info {
 	// position and timestamp
-	vector pos;
+	vec3d pos;
 	int pos_time;
 
 	// velocity and timestamp
-	vector vel;
+	vec3d vel;
 	int vel_time;
 
 	// desired velocity and timestamp
-	vector desired_vel;
+	vec3d desired_vel;
 	int desired_vel_time;
 
 	// orientation and timestamp
@@ -54,11 +54,11 @@ typedef struct interp_info {
 	int orient_time;
 
 	// rotvel and timestamp
-	vector rotvel;
+	vec3d rotvel;
 	int rotvel_time;
 
 	// desired rotvel and timestamp
-	vector desired_rotvel;
+	vec3d desired_rotvel;
 	int desired_rotvel_time;
 
 	// ping info (in ms)

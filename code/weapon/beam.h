@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.8 $
- * $Date: 2004-08-11 05:06:36 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/08/11 05:06:36  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.7  2004/03/17 04:07:32  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -146,7 +149,7 @@ struct object;
 struct ship_subsys;
 struct obj_pair;
 struct beam_weapon_info;
-struct vector;
+struct vec3d;
 
 // beam types
 // REMINDER : if you change the behavior of any of these beam types, make sure to update their "cones" of possible
@@ -163,7 +166,7 @@ struct vector;
 
 // uses to define beam behavior ahead of time - needed for multiplayer
 typedef struct beam_info {
-	vector			dir_a, dir_b;						// direction vectors for beams	
+	vec3d			dir_a, dir_b;						// direction vectors for beams	
 	float				delta_ang;							// angle between dir_a and dir_b
 	ubyte				shot_count;							// # of shots	
 	float				shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit	
@@ -173,7 +176,7 @@ typedef struct beam_info {
 typedef struct beam_fire_info {
 	int				beam_info_index;				// weapon info index 
 	object			*shooter;						// whos shooting
-	vector			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
+	vec3d			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
 	ship_subsys		*turret;							// where he's shooting from
 	float				accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
 	object			*target;							// whos getting shot
@@ -187,7 +190,7 @@ typedef struct beam_fire_info {
 typedef struct fighter_beam_fire_info {
 	int				beam_info_index;				// weapon info index 
 	object			*shooter;						// whos shooting
-	vector			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
+	vec3d			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
 	ship_subsys		*turret;							// where he's shooting from
 	float				accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
 	object			*target;							// whos getting shot
@@ -237,7 +240,7 @@ int beam_get_parent(object *bm);
 int beam_get_weapon_info_index(object *bm);
 
 // render the beam itself
-void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrink = 1.0f);
+void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *shot, float shrink = 1.0f);
 
 // given a beam object, get the # of collisions which happened during the last collision check (typically, last frame)
 int beam_get_num_collisions(int objnum);
@@ -290,5 +293,5 @@ void beam_test(int whee);
 void beam_test_new(int whee);
 
 #endif
-void beam_calc_facing_pts(vector *top, vector *bot, vector *fvec, vector *pos, float w, float z_add);
+void beam_calc_facing_pts(vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add);
 

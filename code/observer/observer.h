@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Observer/Observer.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:30 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-04-05 05:53:22 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  */
@@ -21,7 +21,7 @@
 #define _OBSERVER_HEADER_FILE
 
 struct object;
-struct vector;
+struct vec3d;
 struct matrix;
 
 #define OBS_MAX_VEL_X     (85.0f) // side to side
@@ -44,10 +44,10 @@ extern observer Observers[MAX_OBSERVER_OBS];
 extern int Num_observer_obs;
 
 void observer_init();
-int observer_create(matrix *orient, vector *pos);  // returns objnum
+int observer_create(matrix *orient, vec3d *pos);  // returns objnum
 void observer_delete(object *obj);
 
 // get the eye position and orientation for the passed observer object
-void observer_get_eye(vector *eye_pos, matrix *eye_orient, object *obj);
+void observer_get_eye(vec3d *eye_pos, matrix *eye_orient, object *obj);
 
 #endif

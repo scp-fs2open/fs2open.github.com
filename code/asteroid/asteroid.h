@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.5 $
- * $Date: 2004-08-11 05:06:18 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-05 05:53:14 $
+ * $Author: taylor $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/08/11 05:06:18  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.4  2004/03/05 09:01:53  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -265,7 +268,7 @@ typedef	struct asteroid {
 	int		final_death_time;		// timestamp to swap in new models after explosion starts
 	int		collide_objnum;		// set to objnum that asteroid will be impacting soon
 	int		collide_objsig;		// object signature corresponding to collide_objnum
-	vector	death_hit_pos;			// hit pos that caused death
+	vec3d	death_hit_pos;			// hit pos that caused death
 	int		target_objnum;			//	Yes, hah!  Asteroids can have targets.  See asteroid_aim_at_target().
 } asteroid;
 
@@ -294,12 +297,12 @@ typedef enum {
 #define	MAX_ACTIVE_DEBRIS_TYPES	3
 
 typedef	struct asteroid_field {
-	vector	min_bound;						//	Minimum range of field.
-	vector	max_bound;						//	Maximum range of field.
+	vec3d	min_bound;						//	Minimum range of field.
+	vec3d	max_bound;						//	Maximum range of field.
 	int		has_inner_bound;
-	vector	inner_min_bound;
-	vector	inner_max_bound;
-	vector	vel;								//	Average asteroid moves at this velocity.
+	vec3d	inner_min_bound;
+	vec3d	inner_max_bound;
+	vec3d	vel;								//	Average asteroid moves at this velocity.
 	float		speed;							// Average speed of field
 	int		num_initial_asteroids;		//	Number of asteroids at creation.
 	field_type_t		field_type;			// active throws and wraps, passive does not
@@ -323,17 +326,17 @@ void	asteroid_render( object *asteroid_objp );
 void	asteroid_delete( object *asteroid_objp );
 void	asteroid_process_pre( object *asteroid_objp, float frame_time);
 void	asteroid_process_post( object *asteroid_objp, float frame_time);
-int	asteroid_check_collision( object *asteroid_objp, object * other_obj, vector * hitpos, collision_info_struct *asteroid_hit_info=NULL );
-void	asteroid_hit( object *asteroid_objp, object *other_objp, vector *hitpos, float damage );
+int	asteroid_check_collision( object *asteroid_objp, object * other_obj, vec3d * hitpos, collision_info_struct *asteroid_hit_info=NULL );
+void	asteroid_hit( object *asteroid_objp, object *other_objp, vec3d *hitpos, float damage );
 int	asteroid_count();
 int	asteroid_collide_objnum(object *asteroid_objp);
 float asteroid_time_to_impact(object *asteroid_objp);
 void	asteroid_show_brackets();
 void	asteroid_target_closest_danger();
-int	asteroid_get_random_in_cone(vector *pos, vector *dir, float ang, int danger = 0);
+int	asteroid_get_random_in_cone(vec3d *pos, vec3d *dir, float ang, int danger = 0);
 
 // need to extern for multiplayer
-void asteroid_sub_create(object *parent_objp, int asteroid_type, vector *relvec);
+void asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec);
 
 void asteroid_frame();
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-02-20 23:11:51 $
- * $Author: wmcoolmon $
+ * $Revision: 2.25 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/02/20 23:11:51  wmcoolmon
+ * Fix0r3d trails
+ *
  * Revision 2.23  2005/02/20 08:24:19  wmcoolmon
  * More trails updating goodness
  *
@@ -258,9 +261,9 @@ trail *trail_create(trail_info *info)
 // fvec == forward vector (eye viewpoint basically. in world coords)
 // pos == world coordinate of the point we're calculating "around"
 // w == width of the diff between top and bottom around pos
-void trail_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos, float w )
+void trail_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w )
 {
-	vector uvec, rvec;
+	vec3d uvec, rvec;
 
 	vm_vec_sub( &rvec, &Eye_position, pos );
 	vm_vec_normalize( &rvec );
@@ -330,14 +333,14 @@ void trail_render( trail * trailp )
 
 	int i;
 
-	vector topv, botv, *fvec, last_pos, tmp_fvec;
+	vec3d topv, botv, *fvec, last_pos, tmp_fvec;
 	vertex  top, bot;
 	vertex *vlist[MAX_TRAIL_POLYS];
 	vertex v_list[MAX_TRAIL_POLYS];
 	int nv = 0;
 	float w;
 	ubyte l;
-	vector centerv;
+	vec3d centerv;
 
 	for (i=0; i<num_sections; i++ )	{
 
@@ -348,7 +351,7 @@ void trail_render( trail * trailp )
 		w = trailp->val[n]*(ti->w_end - ti->w_start) + ti->w_start;
 		l = (ubyte)fl2i((trailp->val[n]*(ti->a_end - ti->a_start) + ti->a_start)*255.0f);
 
-		vector pos;
+		vec3d pos;
 
 		pos = trailp->pos[n];
 
@@ -444,7 +447,7 @@ void trail_render( trail * trailp )
 
 
 
-void trail_add_segment( trail *trailp, vector *pos )
+void trail_add_segment( trail *trailp, vec3d *pos )
 {
 	int next = trailp->tail;
 	trailp->tail++;
@@ -462,7 +465,7 @@ void trail_add_segment( trail *trailp, vector *pos )
 	trailp->val[next] = 0.0f;
 }		
 
-void trail_set_segment( trail *trailp, vector *pos )
+void trail_set_segment( trail *trailp, vec3d *pos )
 {
 	int next = trailp->tail-1;
 	if ( next < 0 )	{

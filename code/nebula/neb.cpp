@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-03-03 06:05:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.35 $
+ * $Date: 2005-04-05 05:53:20 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/03/03 06:05:30  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.33  2005/02/23 04:55:08  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -470,16 +473,16 @@ int Neb2_regen = 0;
 //
 
 // return the alpha the passed poof should be rendered with, for a 2 shell nebula
-float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_num, vector *v);
+float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_num, vec3d *v);
 
 // return an alpha value for a bitmap offscreen based upon "break" value
 float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha);
 
 // do a pre-render of the background nebula
-void neb2_pre_render(vector *eye_pos, matrix *eye_orient);
+void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient);
 
 // fill in the position of the eye for this frame
-void neb2_get_eye_pos(vector *eye);
+void neb2_get_eye_pos(vec3d *eye);
 
 // fill in the eye orient for this frame
 void neb2_get_eye_orient(matrix *eye);
@@ -705,7 +708,7 @@ void neb2_level_close()
 }
 
 // call before beginning all rendering
-void neb2_render_setup(vector *eye_pos, matrix *eye_orient)
+void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient)
 {
 	// standalone servers can bail here
 	if(Game_mode & GM_STANDALONE_SERVER){
@@ -918,11 +921,11 @@ float neb2_get_lod_scale(int objnum)
 //
 
 // return the alpha the passed poof should be rendered with, for a 2 shell nebula
-float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_num, vector *v)
+float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_num, vec3d *v)
 {			
 	float dist;
 	float alpha;
-	vector eye_pos;
+	vec3d eye_pos;
 
 	// get the eye position
 	neb2_get_eye_pos(&eye_pos);
@@ -1007,11 +1010,11 @@ float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha)
 // WACKY LOCAL PLAYER NEBULA STUFF
 //
 
-vector cube_cen;
+vec3d cube_cen;
 
 int crossed_border()
 {
-	vector eye_pos;
+	vec3d eye_pos;
 	float ws = Nd->cube_dim / (float)Neb2_slices;
 	float hs = Nd->cube_dim / (float)Neb2_slices;
 	float ds = Nd->cube_dim / (float)Neb2_slices;
@@ -1082,13 +1085,13 @@ void neb2_copy(int xyz, int src, int dest)
 	}
 }
 
-void neb2_gen_slice(int xyz, int src, vector *cube_center)
+void neb2_gen_slice(int xyz, int src, vec3d *cube_center)
 {
 	int idx1, idx2;	
 	float h_incw, h_inch, h_incd;
 	float ws, hs, ds;
-	vector cube_corner;	
-	vector *v;
+	vec3d cube_corner;	
+	vec3d *v;
 
 	ws = Nd->cube_dim / (float)Neb2_slices;
 	h_incw = ws / 2.0f;
@@ -1171,7 +1174,7 @@ void neb2_gen_slice(int xyz, int src, vector *cube_center)
 void neb2_regen()
 {
 	int idx;
-	vector eye_pos;	
+	vec3d eye_pos;	
 	matrix eye_orient;
 
 	mprintf(("Regenerating local nebula!\n"));
@@ -1207,7 +1210,7 @@ void neb2_render_player()
 	int idx1, idx2, idx3;
 	float alpha;
 	int frame_rendered;	
-	vector eye_pos;
+	vec3d eye_pos;
 	matrix eye_orient;
 
 #ifndef NDEBUG
@@ -1479,7 +1482,7 @@ float neb2_get_fog_intensity(object *obj)
 
 //this only gets called after the one above has been called as it assumes you have set the near and far planes properly
 //doun't use this outside of ship rendering
-float neb2_get_fog_intensity(vector *pos)
+float neb2_get_fog_intensity(vec3d *pos)
 {
 	float pct;
 
@@ -1514,7 +1517,7 @@ int tbmap = -1;
 // It doesn't use much, but it APPEARS to be fairly useless unless someone wants
 // to enlighten me.
 //
-void neb2_pre_render(vector *eye_pos, matrix *eye_orient)
+void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient)
 {	
 	if(Neb2_render_mode == NEB2_RENDER_HTL) return;
 
@@ -1698,7 +1701,7 @@ void neb2_set_backg_color(int r, int g, int b)
 }
 
 // fill in the position of the eye for this frame
-void neb2_get_eye_pos(vector *eye)
+void neb2_get_eye_pos(vec3d *eye)
 {
 	*eye = Eye_position;
 }
@@ -1993,7 +1996,7 @@ float magic2 = -1.0f;
 float magic3 = 700.0f;
 DCF(neb2_def, "create a default nebula")
 {
-	vector a,b,c,d,e,f;
+	vec3d a,b,c,d,e,f;
 	vm_vec_make(&a, 0.0f, 0.0f, 0.0f);
 	vm_vec_make(&b, 3600.0f, 700.0f, 0.0f);
 	vm_vec_make(&c, -3000.0f, 20.0f, 480.0f);
@@ -2031,7 +2034,7 @@ DCF(neb2_stats, "display info about the nebula rendering")
 
 // create a nebula object, return objnum of the nebula or -1 on fail
 // NOTE : in most cases you will want to pass -1.0f for outer_radius. Trust me on this
-int neb2_create(vector *offset, int num_poofs, float inner_radius, float outer_radius, float max_poof_radius)
+int neb2_create(vec3d *offset, int num_poofs, float inner_radius, float outer_radius, float max_poof_radius)
 {	
 	Int3();
 	return -1;
@@ -2069,7 +2072,7 @@ void neb2_process_post(object *objp)
 void neb2_add_inner(neb2 *neb, int num_poofs, matrix *orient, float ang)
 {	
 	int idx;
-	vector pt, pt2, pt3;
+	vec3d pt, pt2, pt3;
 	int final_index = (neb->num_poofs + num_poofs) > neb->max_poofs ? neb->max_poofs : (neb->num_poofs + num_poofs);
 
 	// add the points a pick a random bitmap
@@ -2104,7 +2107,7 @@ void neb2_add_outer(neb2 *neb, int num_poofs, matrix *orient, float ang)
 {
 	int idx;
 	float phi, theta;
-	vector pt, pt2, pt3;
+	vec3d pt, pt2, pt3;
 	int final_index = (neb->num_poofs + num_poofs) > neb->max_poofs ? neb->max_poofs : (neb->num_poofs + num_poofs);
 
 	// add the points a pick a random bitmap
@@ -2142,7 +2145,7 @@ float neb2_get_alpha_1shell(neb2 *neb, int poof_index)
 {
 	float dist;
 	float alpha;
-	vector eye_pos;
+	vec3d eye_pos;
 
 	// get the eye position
 	neb2_get_eye_pos(&eye_pos);

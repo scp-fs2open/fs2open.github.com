@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-03-25 06:57:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/03/25 06:57:34  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.11  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -399,7 +402,7 @@ char Lockspin_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
 	"2_lockspin"
 };
 
-void hud_lock_determine_lock_point(vector *lock_world_pos_out);
+void hud_lock_determine_lock_point(vec3d *lock_world_pos_out);
 
 // hud_init_missile_lock() is called at the beginning of a mission
 //
@@ -554,7 +557,7 @@ int hud_lock_has_homing_point()
 int Nebula_sec_range = 0;
 DCF_BOOL(nebula_sec_range, Nebula_sec_range)
 
-int hud_lock_world_pos_in_range(vector *target_world_pos, vector *vec_to_target)
+int hud_lock_world_pos_in_range(vec3d *target_world_pos, vec3d *vec_to_target)
 {
 	float			dist_to_target, weapon_range;
 	weapon_info	*wip;
@@ -593,7 +596,7 @@ int hud_lock_world_pos_in_range(vector *target_world_pos, vector *vec_to_target)
 // Determine if point to lock on is in range
 int hud_lock_target_in_range()
 {
-	vector		target_world_pos, vec_to_target;
+	vec3d		target_world_pos, vec_to_target;
 	object		*targetp;
 
 	if ( !hud_lock_has_homing_point() ) {
@@ -656,7 +659,7 @@ int hud_abort_lock()
 int hud_lock_on_subsys_ok()
 {
 	ship_subsys		*subsys;
-	vector			subobj_pos;
+	vec3d			subobj_pos;
 	object			*target_objp;
 	int				in_sight=0;
 	
@@ -681,10 +684,10 @@ int hud_lock_on_subsys_ok()
 }
 
 // Determine if locking point is in the locking cone
-void hud_lock_check_if_target_in_lock_cone(vector *lock_world_pos)
+void hud_lock_check_if_target_in_lock_cone(vec3d *lock_world_pos)
 {
 	float		dist, dot;
-	vector	vec_to_target;
+	vec3d	vec_to_target;
 
 	dist = vm_vec_normalized_dir(&vec_to_target, lock_world_pos, &Player_obj->pos);
 	dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
@@ -740,7 +743,7 @@ void hud_update_lock_indicator(float frametime)
 {
 	ship_weapon *swp;
 	weapon_info	*wip;
-	vector		lock_world_pos;
+	vec3d		lock_world_pos;
 
 #ifndef NO_NETWORK
 	// if i'm a multiplayer observer, bail here
@@ -1189,7 +1192,7 @@ void hud_stop_looped_locking_sounds()
 }
 
 // Get a new world pos for the locking point
-void hud_lock_update_lock_pos(object *target_objp, vector *lock_world_pos)
+void hud_lock_update_lock_pos(object *target_objp, vec3d *lock_world_pos)
 {
 	if ( Player_ai->targeted_subsys ) {
 		get_subsystem_world_pos(target_objp, Player_ai->targeted_subsys, lock_world_pos);
@@ -1205,13 +1208,13 @@ void hud_lock_update_lock_pos(object *target_objp, vector *lock_world_pos)
 }
 
 // Try and find a new locking point
-void hud_lock_get_new_lock_pos(object *target_objp, vector *lock_world_pos)
+void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 {
 	ship			*target_shipp=NULL;
 	int			lock_in_range=0;
 	float			best_lock_dot=-1.0f, lock_dot=-1.0f;
 	ship_subsys	*ss;
-	vector		subsys_world_pos, vec_to_lock;
+	vec3d		subsys_world_pos, vec_to_lock;
 
 	if ( target_objp->type == OBJ_SHIP ) {
 		target_shipp = &Ships[target_objp->instance];
@@ -1266,9 +1269,9 @@ void hud_lock_get_new_lock_pos(object *target_objp, vector *lock_world_pos)
 }
 
 // Decide which point lock should be homing on
-void hud_lock_determine_lock_point(vector *lock_world_pos_out)
+void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 {
-	vector	lock_world_pos;
+	vec3d	lock_world_pos;
 	vertex	lock_point;
 	object	*target_objp;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-02 21:24:42 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:20 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/02 21:24:42  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.6  2005/02/04 20:06:04  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -148,7 +151,7 @@ storm_type Storm_types[MAX_STORM_TYPES];
 #define LINK_RIGHT	1
 #define LINK_CHILD	2
 typedef struct l_node {
-	vector	pos;				// world position
+	vec3d	pos;				// world position
 	l_node	*links[3];		// 3 links for lightning children
 
 	l_node *next, *prev;		// for used and free-lists only
@@ -172,7 +175,7 @@ typedef struct l_bolt {
 	char type;
 
 	// bolt info
-	vector start, strike, midpoint;
+	vec3d start, strike, midpoint;
 	int delay;					// delay stamp
 	int strikes_left;			// #of strikes left
 	float width;
@@ -191,14 +194,14 @@ typedef struct l_section {
 } l_section;
 
 // points on the basic cross section
-vector Nebl_ring[3] = {	
+vec3d Nebl_ring[3] = {	
 	{ -1.0f, 0.0f, 0.0f },
 	{ 1.0f, 0.70f, 0.0f },
 	{ 1.0f, -0.70f, 0.0f }	
 };
 
 // pinched off cross-section
-vector Nebl_ring_pinched[3] = {	
+vec3d Nebl_ring_pinched[3] = {	
 	{ -0.05f, 0.0f, 0.0f },
 	{ 0.05f, 0.035f, 0.0f },
 	{ 0.05f, -0.035f, 0.0f }	
@@ -215,8 +218,8 @@ int Nebl_stamp = -1;				// random timestamp for making bolts
 float Nebl_bolt_len;				// length of the current bolt being generated
 bolt_type *Nebl_type;			// bolt type
 matrix Nebl_bolt_dir;			// orientation matrix of the bolt being generated
-vector Nebl_bolt_start;			// start point of the bolt being generated
-vector Nebl_bolt_strike;		// strike point of the bolt being generated
+vec3d Nebl_bolt_start;			// start point of the bolt being generated
+vec3d Nebl_bolt_strike;		// strike point of the bolt being generated
 
 // the type of active storm
 storm_type *Storm = NULL;
@@ -329,13 +332,13 @@ void nebl_delete(l_node *lp);
 void nebl_release(l_node *bolt_head);
 
 // generate a lightning bolt, returns l_left (the "head") and l_right (the "tail")
-int nebl_gen(vector *left, vector *right, float depth, float max_depth, int child, l_node **l_left, l_node **l_right);
+int nebl_gen(vec3d *left, vec3d *right, float depth, float max_depth, int child, l_node **l_left, l_node **l_right);
 
 // output top and bottom vectors
 // fvec == forward vector (eye viewpoint basically. in world coords)
 // pos == world coordinate of the point we're calculating "around"
 // w == width of the diff between top and bottom around pos
-void nebl_calc_facing_pts_smart( vector *top, vector *bot, vector *fvec, vector *pos, float w, float z_add );
+void nebl_calc_facing_pts_smart( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add );
 
 // render a section of the bolt
 void nebl_render_section(bolt_type *bi, l_section *a, l_section *b);
@@ -740,25 +743,25 @@ void nebl_process()
 			// sanity
 			} while((s1 == e1) && (s2 == e2) && (s3 == e3));
 
-			vector start = Neb2_cubes[s1][s2][s3].pt;
-			vector strike = Neb2_cubes[e1][e2][e3].pt;
+			vec3d start = Neb2_cubes[s1][s2][s3].pt;
+			vec3d strike = Neb2_cubes[e1][e2][e3].pt;
 
 			// add some flavor to the bolt. mmmmmmmm, lightning
 			if(!IS_VEC_NULL(&Storm->flavor)){			
 				// start with your basic hot sauce. measure how much you have			
-				vector your_basic_hot_sauce;
+				vec3d your_basic_hot_sauce;
 				vm_vec_sub(&your_basic_hot_sauce, &strike, &start);
 				float how_much_hot_sauce = vm_vec_normalize(&your_basic_hot_sauce);
 
 				// now figure out how much of that good wing sauce to add
-				vector wing_sauce = Storm->flavor;
+				vec3d wing_sauce = Storm->flavor;
 				if(frand_range(0.0, 1.0f) < 0.5f){
 					vm_vec_scale(&wing_sauce, -1.0f);
 				}
 				float how_much_of_that_good_wing_sauce_to_add = vm_vec_normalize(&wing_sauce);
 
 				// mix the two together, taking care not to add too much
-				vector the_mixture;
+				vec3d the_mixture;
 				if(how_much_of_that_good_wing_sauce_to_add > 1000.0f){
 					how_much_of_that_good_wing_sauce_to_add = 1000.0f;
 				}
@@ -781,9 +784,9 @@ void nebl_process()
 }
 
 // create a lightning bolt
-void nebl_bolt(int type, vector *start, vector *strike)
+void nebl_bolt(int type, vec3d *start, vec3d *strike)
 {
-	vector dir;
+	vec3d dir;
 	l_bolt *bolt;
 	l_node *tail;
 	int idx;
@@ -966,7 +969,7 @@ void nebl_release(l_node *whee)
 	nebl_delete(whee);
 }
 
-int nebl_gen(vector *left, vector *right, float depth, float max_depth, int child, l_node **l_left, l_node **l_right)
+int nebl_gen(vec3d *left, vec3d *right, float depth, float max_depth, int child, l_node **l_left, l_node **l_right)
 {
 	l_node *child_node = NULL;
 	float d = vm_vec_dist_quick( left, right );		
@@ -1003,17 +1006,17 @@ int nebl_gen(vector *left, vector *right, float depth, float max_depth, int chil
 	}  
 
 	// divide in half
-	vector tmp;
+	vec3d tmp;
 	vm_vec_avg( &tmp, left, right );
 
 	// sometimes generate children
 	if(!child && (frand() <= Nebl_type->b_rand)){
 		// get a point on the plane of the strike
-		vector tmp2;
+		vec3d tmp2;
 		vm_vec_random_in_circle(&tmp2, &Nebl_bolt_strike, &Nebl_bolt_dir, Nebl_bolt_len * Nebl_type->b_scale, 0);
 
 		// maybe move away from the plane
-		vector dir;
+		vec3d dir;
 		vm_vec_sub(&dir, &tmp2, &tmp);		
 		vm_vec_scale_add(&tmp2, &tmp, &dir, Nebl_type->b_shrink);
 
@@ -1083,10 +1086,10 @@ int nebl_gen(vector *left, vector *right, float depth, float max_depth, int chil
 // fvec == forward vector (eye viewpoint basically. in world coords)
 // pos == world coordinate of the point we're calculating "around"
 // w == width of the diff between top and bottom around pos
-void nebl_calc_facing_pts_smart( vector *top, vector *bot, vector *fvec, vector *pos, float w, float z_add )
+void nebl_calc_facing_pts_smart( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add )
 {
-	vector uvec, rvec;
-	vector temp;	
+	vec3d uvec, rvec;
+	vec3d temp;	
 
 	temp = *pos;
 
@@ -1168,12 +1171,12 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 // generate a section
 void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_section *c, l_section *cap, int pinch_a, int pinch_b)
 {
-	vector dir;
-	vector dir_normal;
+	vec3d dir;
+	vec3d dir_normal;
 	matrix m;
 	int idx;	
-	vector temp, pt;
-	vector glow_a, glow_b;
+	vec3d temp, pt;
+	vec3d glow_a, glow_b;
 
 	// direction matrix
 	vm_vec_sub(&dir, &a->pos, &b->pos);
@@ -1334,7 +1337,7 @@ void nebl_render(bolt_type *bi, l_node *whee, float width, l_section *prev)
 void nebl_jitter(l_bolt *b)
 {
 	matrix m;
-	vector temp;
+	vec3d temp;
 	float length;
 	l_node *moveup;
 	bolt_type *bi = NULL;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.42 $
- * $Date: 2005-03-20 00:09:07 $
- * $Author: phreak $
+ * $Revision: 2.43 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/03/20 00:09:07  phreak
+ * Added gr_draw_htl_line and gr_draw_htl sphere
+ * There still needs to be D3D versions implemented, but OGL is done.
+ * Follow that or ask phreak about how its implemented/
+ *
  * Revision 2.41  2005/03/07 13:10:21  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -595,11 +600,11 @@ void gr_d3d_diamond(int x, int y, int width, int height);
 void gr_d3d_print_screen(char *filename);
 void gr_d3d_push_texture_matrix(int unit);
 void gr_d3d_pop_texture_matrix(int unit);
-void gr_d3d_translate_texture_matrix(int unit, vector *shift);
+void gr_d3d_translate_texture_matrix(int unit, vec3d *shift);
 void gr_d3d_zbias(int zbias);
 void gr_d3d_set_fill_mode(int mode);
 
-void gr_d3d_draw_htl_line(vector *start, vector* end);
+void gr_d3d_draw_htl_line(vec3d *start, vec3d* end);
 void gr_d3d_draw_htl_sphere(float rad);
 
 void d3d_render_timer_bar(int colour, float x, float y, float w, float h);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-03-11 14:14:05 $
+ * $Revision: 2.33 $
+ * $Date: 2005-04-05 05:53:21 $
  * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/03/11 14:14:05  taylor
+ * forgot to remove this with the MIN/MAX change
+ *
  * Revision 2.31  2005/03/10 08:00:11  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -1894,7 +1897,7 @@ void multi_create_standalone_object()
 {
 	// now create a dummy ship for the standalone
 	matrix m = IDENTITY_MATRIX;
-	vector v;
+	vec3d v;
 	int objnum, pobj_num;
 
 	vm_vec_zero(&v);
@@ -4070,7 +4073,7 @@ int bitbuffer_get_signed( bitbuffer *bitbuf, int bit_count )
 // Packs/unpacks an object position.
 // Returns number of bytes read or written.
 // #define OO_POS_RET_SIZE							9
-int multi_pack_unpack_position( int write, ubyte *data, vector *pos)
+int multi_pack_unpack_position( int write, ubyte *data, vec3d *pos)
 {
 	bitbuffer buf;
 
@@ -4167,7 +4170,7 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 
 	bitbuffer_init(&buf, data + 1);
 
-	vector rot_axis;	
+	vec3d rot_axis;	
 	float theta;
 	int a, b, c, d;
 	angles ang;	
@@ -4308,7 +4311,7 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 
 	bitbuffer_init(&buf,data);
 
-	vector rot_axis;	
+	vec3d rot_axis;	
 	float theta;
 	int a, b, c, d;
 
@@ -4377,7 +4380,7 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 // Packs/unpacks velocity
 // Returns number of bytes read or written.
 // #define OO_VEL_RET_SIZE							4
-int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vector *pos, physics_info *pi)
+int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi)
 {
 	bitbuffer buf;
 
@@ -4425,14 +4428,14 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vector *pos, 
 // Packs/unpacks desired_velocity
 // Returns number of bytes read or written.
 // #define OO_DESIRED_VEL_RET_SIZE				3
-int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vector *pos, physics_info *pi, ship_info *sip)
+int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip)
 {
 	bitbuffer buf;
 
 	bitbuffer_init(&buf,data);
 
 	int a;
-	vector	max_vel;
+	vec3d	max_vel;
 	float r,u,f;
 	int fields = 0;
 
@@ -4525,7 +4528,7 @@ int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vecto
 // Packs/unpacks rotational velocity
 // Returns number of bytes read or written.
 // #define OO_ROTVEL_RET_SIZE						4
-int multi_pack_unpack_rotvel( int write, ubyte *data, matrix *orient, vector *pos, physics_info *pi)
+int multi_pack_unpack_rotvel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi)
 {
 	bitbuffer buf;
 
@@ -4565,7 +4568,7 @@ int multi_pack_unpack_rotvel( int write, ubyte *data, matrix *orient, vector *po
 // Packs/unpacks desired rotvel
 // Returns number of bytes read or written.
 // #define OO_DESIRED_ROTVEL_RET_SIZE			3
-int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, vector *pos, physics_info *pi, ship_info *sip)
+int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip)
 {
 	bitbuffer buf;
 	int fields = 0;

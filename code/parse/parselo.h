@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.22 $
- * $Author: wmcoolmon $
- * $Date: 2005-03-30 02:32:40 $
+ * $Revision: 2.23 $
+ * $Author: taylor $
+ * $Date: 2005-04-05 05:53:22 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/03/30 02:32:40  wmcoolmon
+ * Made it so *Snd fields in ships.tbl and weapons.tbl take the sound name
+ * as well as its index (ie "L_sidearm.wav" instead of "76")
+ *
  * Revision 2.21  2005/03/01 06:55:43  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -424,8 +428,8 @@ extern void stuff_byte(ubyte *i);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type);
 extern int stuff_float_list(float* flp, int max_floats);
-extern int stuff_vector_list(vector *vlp, int max_vecs);
-extern void stuff_vector(vector *vp);
+extern int stuff_vector_list(vec3d *vlp, int max_vecs);
+extern void stuff_vector(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
 extern int string_lookup(char *str1, char *strlist[], int max, char *description = NULL, int say_errors = 0);
 extern void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, char *description);
@@ -433,7 +437,7 @@ extern int match_and_stuff(int f_type, char *strlist[], int max, char *descripti
 extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
 	int max, char *description);
 extern int get_string(char *str);
-extern void stuff_parenthesized_vector(vector *vp);
+extern void stuff_parenthesized_vector(vec3d *vp);
 void stuff_boolean(int *i);
 int check_for_string(char *pstr);
 int check_for_string_raw(char *pstr);

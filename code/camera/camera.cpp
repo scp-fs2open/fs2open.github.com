@@ -49,13 +49,13 @@ void camera::reset()
 	rotation_rate = rotation_vel_limit = rotation_acc_limit = vmd_zero_vector;
 }
 
-void camera::set_position(vector *in_position, float in_translation_time, float in_translation_acceleration_time)
+void camera::set_position(vec3d *in_position, float in_translation_time, float in_translation_acceleration_time)
 {
 	position = *in_position;
 
 }
 
-void camera::set_translation_velocity(vector *in_velocity)
+void camera::set_translation_velocity(vec3d *in_velocity)
 {
 	if(in_velocity == NULL)
 		translation_velocity = *in_velocity;
@@ -160,13 +160,13 @@ void camera::set_rotation(angles *in_angles, float in_rotation_time, float in_ro
 	set_rotation(&temp_matrix, in_rotation_time, in_rotation_acceleration_time);
 }
 
-void camera::set_rotation_facing(vector *in_target, float in_rotation_time, float in_rotation_acceleration_time)
+void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float in_rotation_acceleration_time)
 {
 	matrix temp_matrix = IDENTITY_MATRIX;
 
 	if(in_target != NULL)
 	{
-		vector targetvec;
+		vec3d targetvec;
 		vm_vec_normalized_dir(&targetvec, in_target, &position);
 		vm_vector_2_matrix(&temp_matrix, &targetvec, NULL, NULL);
 	}
@@ -174,7 +174,7 @@ void camera::set_rotation_facing(vector *in_target, float in_rotation_time, floa
 	set_rotation(&temp_matrix, in_rotation_time, in_rotation_acceleration_time);
 }
 
-void camera::set_rotation_velocity(vector *in_rotation_rate)
+void camera::set_rotation_velocity(vec3d *in_rotation_rate)
 {
 	if(in_rotation_rate != NULL)
 		rotation_rate = *in_rotation_rate;
@@ -205,7 +205,7 @@ void camera::do_frame(float in_frametime)
 	if(desired_orientation != NULL)
 	{
 		matrix ori_out;
-		vector vel_out;
+		vec3d vel_out;
 
 		vm_matrix_interpolate(desired_orientation, &orientation, &rotation_rate, in_frametime, &ori_out, &vel_out, &rotation_vel_limit, &rotation_acc_limit, 1);
 		orientation = ori_out;

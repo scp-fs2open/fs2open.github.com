@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Corkscrew.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-19 07:54:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * C module for managing corkscrew missiles
  * 
@@ -49,10 +49,10 @@ typedef struct cscrew_info {
 	int flags;												// flags for the missile
 	
 	// info about the corkscrew effect for this missile
-	vector cen_p;											// vector pointing to the "center" of the corkscrew	
+	vec3d cen_p;											// vector pointing to the "center" of the corkscrew	
 	float radius;											// radius of the corkscrew
 	matrix real_orient;									// the orientation used when calling physics (bashed before rendering)
-	vector last_corkscrew_pos;							// last position along the corkscrew
+	vec3d last_corkscrew_pos;							// last position along the corkscrew
 } cscrew_info;
 
 #define MAX_CORKSCREW_MISSILES	100
@@ -149,7 +149,7 @@ int cscrew_create(object *obj)
 	}
 
 	// get the "center" pointing vector
-	vector neg;
+	vec3d neg;
 	neg = obj->orient.vec.uvec;
 	if(Corkscrew_down_first){
 		vm_vec_negate(&neg);
@@ -203,8 +203,8 @@ void cscrew_process_pre(object *objp)
 // post process the corkscrew weapon by putting him back to the right spot on his corkscrew
 void cscrew_process_post(object *objp)
 {	
-	vector cen, neg;
-	vector new_pt;	
+	vec3d cen, neg;
+	vec3d new_pt;	
 	weapon *wp;
 	weapon_info *wip;
 	cscrew_info *ci;
@@ -236,7 +236,7 @@ void cscrew_process_post(object *objp)
 
 	// rotate the missile itself
 	if(Corkscrew_helix){		
-		vector dir;
+		vec3d dir;
 	
 		// compute a "fake" orient and store the old one for safekeeping
 		ci->real_orient = objp->orient;

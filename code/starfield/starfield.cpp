@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-03-23 20:09:23 $
- * $Author: phreak $
+ * $Revision: 2.51 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/03/23 20:09:23  phreak
+ * Starfield bitmaps should now draw in non-htl mode
+ *
  * Revision 2.49  2005/03/20 20:02:29  phreak
  * export the functions that deal with the creation and destruction of the starfield buffer.
  * FRED needs them
@@ -431,8 +434,8 @@ typedef struct debris_vclip {
 } debris_vclip;
 
 typedef struct {
-	vector pos;
-	vector last_pos;
+	vec3d pos;
+	vec3d last_pos;
 	int active;
 	int vclip;
 	float size;	
@@ -467,8 +470,8 @@ color star_colors[8];
 color star_aacolors[8];
 
 typedef struct star {
-	vector pos;
-	vector last_star_pos;
+	vec3d pos;
+	vec3d last_star_pos;
 	color col;
 } star;
 
@@ -560,14 +563,14 @@ void perspective_bitmap_alocate_poly_list(int x, int y){
 
 // draw a perspective bitmap based on angles and radius
 #define MAX_PERSPECTIVE_DIVISIONS			5
-void stars_project_2d_onto_sphere( vector *pnt, float rho, float phi, float theta );
+void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta );
 void stars_create_perspective_bitmap_buffer(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags, int env, short *index_buffer)
 {
 	float p_phi = 10.0f;
 	float p_theta = 10.0f;
 
-	vector s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
-	vector t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
+	vec3d s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
+	vec3d t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
 
 	vertex v;
 	matrix m, m_bank;
@@ -1010,7 +1013,7 @@ void stars_init()
 void stars_level_init()
 {
 	int i;
-	vector v;
+	vec3d v;
 	float dist, dist_max;
 	ubyte red,green,blue,alpha;
 
@@ -1227,9 +1230,9 @@ extern int Sun_drew;
 extern float Viewer_zoom;
 
 // get the world coords of the sun pos on the unit sphere.
-void stars_get_sun_pos(int sun_n, vector *pos)
+void stars_get_sun_pos(int sun_n, vec3d *pos)
 {
-	vector temp;
+	vec3d temp;
 	matrix rot;
 
 	// sanity
@@ -1251,8 +1254,8 @@ void stars_get_sun_pos(int sun_n, vector *pos)
 void stars_draw_sun( int show_sun, int env )
 {	
 	int idx;
-	vector sun_pos;
-	vector sun_dir;
+	vec3d sun_pos;
+	vec3d sun_dir;
 	vertex sun_vex;	
 	starfield_bitmap *bm;
 	float local_scale = 1.0f;
@@ -1339,7 +1342,7 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 void stars_draw_sun_glow(int sun_n)
 {
 	starfield_bitmap *bm;		
-	vector sun_pos, sun_dir;
+	vec3d sun_pos, sun_dir;
 	vertex sun_vex;	
 	float local_scale = 1.0f;
 
@@ -1421,7 +1424,7 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 	if(st___ == -1)
 		st___ = bm_load("subspacenode01a");
 
-	vector v = ZERO_VECTOR;
+	vec3d v = ZERO_VECTOR;
 
 	if (!Cmdline_nohtl && !env) {
 		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
@@ -1491,7 +1494,7 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 }
 
 /*
-void calculate_bitmap_matrix(starfield_bitmaps *bm, vector *v)
+void calculate_bitmap_matrix(starfield_bitmaps *bm, vec3d *v)
 {
 	vm_vector_2_matrix(&bm->m, v, NULL, NULL);
 	vm_orthogonalize_matrix(&bm->m);
@@ -1500,7 +1503,7 @@ void calculate_bitmap_matrix(starfield_bitmaps *bm, vector *v)
 void calculate_bitmap_points(starfield_bitmaps *bm, float bank)
 {
 	int i;
-	vector fvec, uvec, rvec, tmp;
+	vec3d fvec, uvec, rvec, tmp;
 	angles tangles;
 
 	vm_orthogonalize_matrix(&bm->m);
@@ -1664,7 +1667,7 @@ void subspace_render(int env)
 		Interp_subspace_offset_u = 1.0f - subspace_offset_u;
 		Interp_subspace_offset_v = 0.0f;
 
-		vector temp;
+		vec3d temp;
 		temp.xyz.x = 1.0f;
 		temp.xyz.y = 1.0f;
 		temp.xyz.z = 1.0f;
@@ -1685,7 +1688,7 @@ void subspace_render(int env)
 		Interp_subspace_offset_u = 1.0f - subspace_offset_u;
 		Interp_subspace_offset_v = 0.0f;
 
-		vector temp;
+		vec3d temp;
 		temp.xyz.x = 1.0f;
 		temp.xyz.y = 1.0f;
 		temp.xyz.z = 1.0f;
@@ -1708,7 +1711,7 @@ void subspace_render(int env)
 
 		model_set_outline_color(255,255,255);
 
-//		vector temp;
+//		vec3d temp;
 		temp.xyz.x = 1.0f;
 		temp.xyz.y = 1.0f;
 		temp.xyz.z = 1.0f;
@@ -1871,7 +1874,7 @@ void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interfac
 
 		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) )	{
 
-			dist = vm_vec_dist_quick( &sp->last_star_pos, (vector *)&p2.x );
+			dist = vm_vec_dist_quick( &sp->last_star_pos, (vec3d *)&p2.x );
 
 			if ( dist > Star_max_length )	{
  				ratio = Star_max_length / dist;
@@ -1985,7 +1988,7 @@ void stars_draw_stars()
 
 		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) )	{
 
-			dist = vm_vec_dist_quick( &sp->last_star_pos, (vector *)&p2.x );
+			dist = vm_vec_dist_quick( &sp->last_star_pos, (vec3d *)&p2.x );
 
 			if ( dist > Star_max_length )	{
  				ratio = Star_max_length / dist;
@@ -2065,7 +2068,7 @@ void stars_draw_debris()
 {
 	int i;
 	float vdist;
-	vector tmp;
+	vec3d tmp;
 	vertex p;
 	gr_set_color( 0, 0, 0 );
 

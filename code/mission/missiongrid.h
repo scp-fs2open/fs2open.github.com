@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGrid.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:19 $
+ * $Author: taylor $
  *
  * Type and defines for grids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:28  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -65,19 +68,19 @@
 
 typedef struct grid {
 	int		nrows, ncols;
-	vector	center;
+	vec3d	center;
 	matrix	gmatrix;
 	physics_info	physics;
 	float	square_size;
 	float	planeD;		//	D component of plane equation (A, B, C are uvec in gmatrix)
-	vector	gpoints1[MAX_GRIDLINE_POINTS];  // 1 -4 are edge gridpoints for small grid.
-	vector	gpoints2[MAX_GRIDLINE_POINTS];
-	vector	gpoints3[MAX_GRIDLINE_POINTS];
-	vector	gpoints4[MAX_GRIDLINE_POINTS];
-	vector	gpoints5[MAX_GRIDLINE_POINTS];  // 5-8 are edge gridpoints for large grid.
-	vector	gpoints6[MAX_GRIDLINE_POINTS];
-	vector	gpoints7[MAX_GRIDLINE_POINTS];
-	vector	gpoints8[MAX_GRIDLINE_POINTS];
+	vec3d	gpoints1[MAX_GRIDLINE_POINTS];  // 1 -4 are edge gridpoints for small grid.
+	vec3d	gpoints2[MAX_GRIDLINE_POINTS];
+	vec3d	gpoints3[MAX_GRIDLINE_POINTS];
+	vec3d	gpoints4[MAX_GRIDLINE_POINTS];
+	vec3d	gpoints5[MAX_GRIDLINE_POINTS];  // 5-8 are edge gridpoints for large grid.
+	vec3d	gpoints6[MAX_GRIDLINE_POINTS];
+	vec3d	gpoints7[MAX_GRIDLINE_POINTS];
+	vec3d	gpoints8[MAX_GRIDLINE_POINTS];
 } grid;
 
 typedef struct tline {
@@ -89,12 +92,12 @@ extern grid	*The_grid;
 extern int	double_fine_gridlines;
 
 void grid_read_camera_controls( control_info * ci, float frametime );
-void maybe_create_new_grid(grid *gridp, vector *pos, matrix *orient, int force = 0);
-grid *create_grid(grid *gridp, vector *forward, vector *right, vector *center, int nrows, int ncols, float square_size);
+void maybe_create_new_grid(grid *gridp, vec3d *pos, matrix *orient, int force = 0);
+grid *create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int nrows, int ncols, float square_size);
 grid *create_default_grid(void);
 void render_grid(grid *gridp);
 void modify_grid(grid *gridp);
-void rpd_line(vector *v0, vector *v1);
-void grid_render_elevation_line(vector *pos, grid* gridp);
+void rpd_line(vec3d *v0, vec3d *v1);
+void grid_render_elevation_line(vec3d *pos, grid* gridp);
 
 #endif

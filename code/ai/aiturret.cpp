@@ -46,8 +46,8 @@ typedef struct eval_enemy_obj_struct {
 	int			weapon_system_ok;					// is the weapon subsystem of turret ship ok
 	bool		big_only_flag;						// turret fires only at big and huge ships
 	bool		small_only_flag;					// turret fires only at small ships
-	vector		*tpos;
-	vector		*tvec;
+	vec3d		*tpos;
+	vec3d		*tvec;
 	ship_subsys *turret_subsys;
 	int			current_enemy;
 
@@ -121,9 +121,9 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 
 // return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
 //	dist = distance from turret to center point of object
-int object_in_turret_fov(object *objp, model_subsystem *tp, vector *tvec, vector *tpos, float dist)
+int object_in_turret_fov(object *objp, model_subsystem *tp, vec3d *tvec, vec3d *tpos, float dist)
 {
-	vector	v2e;
+	vec3d	v2e;
 	float		dot;
 	vm_vec_normalized_dir(&v2e, &objp->pos, tpos);
 	dot = vm_vec_dot(&v2e, tvec);
@@ -141,7 +141,7 @@ int object_in_turret_fov(object *objp, model_subsystem *tp, vector *tvec, vector
 int bomb_headed_towards_ship(object *bomb_objp, object *ship_objp)
 {
 	float		dot;
-	vector	bomb_to_ship_vector;
+	vec3d	bomb_to_ship_vector;
 
 	vm_vec_normalized_dir(&bomb_to_ship_vector, &ship_objp->pos, &bomb_objp->pos);
 	dot = vm_vec_dot(&bomb_objp->orient.vec.fvec, &bomb_to_ship_vector);
@@ -509,7 +509,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 //				tpos						=> position of turret (world coords)
 //				tvec						=> forward vector of turret (world coords)
 //				current_enemy			=>	objnum of current turret target
-int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vector *tpos, vector *tvec, int current_enemy, bool big_flag)
+int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vec3d *tpos, vec3d *tvec, int current_enemy, bool big_flag)
 {
 	//float					weapon_travel_dist;
 	int					weapon_system_ok;
@@ -622,7 +622,7 @@ DCF_BOOL(use_parent_target, Use_parent_target)
 //				tpos				=> position of turret (world coords)
 //				tvec				=> forward vector of turret (world coords)
 //				current_enemy	=>	objnum of current turret target
-int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vector *tpos, vector *tvec, int current_enemy, float fov)
+int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d *tvec, int current_enemy, float fov)
 {
 	int					enemy_team_mask, enemy_objnum;
 	model_subsystem	*tp;
@@ -673,7 +673,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vector *tpos, vect
 						// check for tagged only and tagged ship
 						if ( (turret_subsys->weapons.flags & SW_FLAG_TAGGED_ONLY) && ship_is_tagged(&Objects[aip->target_objnum]) ) {
 							// select new target if aip->target_objnum is out of field of view
-							vector v2e;
+							vec3d v2e;
 							float dot, dist;
 							dist = vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, tpos);
 							dot = vm_vec_dot(&v2e, tvec);
@@ -706,7 +706,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vector *tpos, vect
 //	of the turret.   The gun normal is the unrotated gun normal, (the center of the FOV cone), not
 // the actual gun normal given using the current turret heading.  But it _is_ rotated into the model's orientation
 //	in global space.
-void ship_get_global_turret_info(object *objp, model_subsystem *tp, vector *gpos, vector *gvec)
+void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos, vec3d *gvec)
 {
 //	vm_vec_unrotate(gpos, &tp->turret_avg_firing_point, &objp->orient);
 	vm_vec_unrotate(gpos, &tp->pnt, &objp->orient);
@@ -721,9 +721,9 @@ void ship_get_global_turret_info(object *objp, model_subsystem *tp, vector *gpos
 //	Stuffs:
 //		*gpos: absolute position of gun firing point
 //		*gvec: vector fro *gpos to *targetp
-void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vector *gpos, vector *gvec, int use_angles, vector *targetp)
+void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp)
 {
-	vector * gun_pos;
+	vec3d * gun_pos;
 	model_subsystem *tp = ssp->system_info;
 
 	ship_model_start(objp);
@@ -750,11 +750,11 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vector *gpo
 //	Some obscure model thing only John Slagel knows about.
 //	Sets predicted enemy position.
 //	If the turret (*ss) has a subsystem targeted, the subsystem is used as the predicted point.
-void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object *objp, object *lep, vector *predicted_enemy_pos, vector *gvec)
+void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object *objp, object *lep, vec3d *predicted_enemy_pos, vec3d *gvec)
 {
 	if (ss->turret_enemy_objnum != -1)	{
 		model_subsystem *tp = ss->system_info;
-		vector	gun_pos, gun_vec;
+		vec3d	gun_pos, gun_vec;
 		//float		weapon_speed;
 		float		weapon_system_strength;
 		//HACK HACK HACK -WMC
@@ -772,7 +772,7 @@ void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object
 
 		ship_get_global_turret_info(&Objects[parent_objnum], tp, &gun_pos, &gun_vec);
 
-		vector	enemy_point;
+		vec3d	enemy_point;
 		if (ss->targeted_subsys != NULL) {
 			if (ss->turret_enemy_objnum != -1) {
 				vm_vec_unrotate(&enemy_point, &ss->targeted_subsys->system_info->pnt, &Objects[ss->turret_enemy_objnum].orient);
@@ -789,14 +789,14 @@ void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object
 		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &lep->phys_info.vel, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
 
 		if (weapon_system_strength < 0.7f) {
-			vector	rand_vec;
+			vec3d	rand_vec;
 
 			static_randvec(Missiontime >> 18, &rand_vec);	//	Return same random number for two seconds.
 			//	Add to predicted_enemy_pos value in .45 to 1.5x radius of enemy ship, so will often miss, but not by a huge amount.
 			vm_vec_scale_add2(predicted_enemy_pos, &rand_vec, (1.0f - weapon_system_strength)*1.5f * lep->radius);
 		}
 
-		vector	v2e;
+		vec3d	v2e;
 		vm_vec_normalized_dir(&v2e, predicted_enemy_pos, &gun_pos);
 		if (vm_vec_dot(&v2e, gvec) > tp->turret_fov) {
 
@@ -809,16 +809,16 @@ void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object
 
 //	Determine if subsystem *enemy_subsysp is hittable from objp.
 //	If so, return dot product of vector from point abs_gunposp to *enemy_subsysp
-float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vector *abs_gunposp, ship_subsys *turret_subsysp, ship_subsys *enemy_subsysp)
+float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunposp, ship_subsys *turret_subsysp, ship_subsys *enemy_subsysp)
 {
 	float	dot_out;
-	vector	subobj_pos, vector_out;
+	vec3d	subobj_pos, vector_out;
 
 	vm_vec_unrotate(&subobj_pos, &enemy_subsysp->system_info->pnt, &enemy_objp->orient);
 	vm_vec_add2(&subobj_pos, &enemy_objp->pos);
 
 	if (ship_subsystem_in_sight(enemy_objp, enemy_subsysp, abs_gunposp, &subobj_pos, 1, &dot_out, &vector_out)) {
-		vector	turret_norm;
+		vec3d	turret_norm;
 
 		vm_vec_rotate(&turret_norm, &turret_subsysp->system_info->turret_norm, &objp->orient);
 		return vm_vec_dot(&turret_norm, &vector_out);
@@ -860,7 +860,7 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 	*dot_out = best_dot;
 
 	//	Compute absolute gun position.
-	vector	abs_gun_pos;
+	vec3d	abs_gun_pos;
 	vm_vec_unrotate(&abs_gun_pos, &ssp->system_info->pnt, &objp->orient);
 	vm_vec_add2(&abs_gun_pos, &objp->pos);
 
@@ -1048,7 +1048,7 @@ void turret_update_enemy_in_range(ship_subsys *turret, float seconds)
 }
 
 // Fire a weapon from a turret
-void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vector *turret_pos, vector *turret_fvec, vector *predicted_pos = NULL)
+void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL)
 {
 	matrix	turret_orient;
 	int weapon_objnum;
@@ -1176,7 +1176,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 {
 	int weapon_objnum;
 	matrix turret_orient;
-	vector turret_pos, turret_fvec;
+	vec3d turret_pos, turret_fvec;
 
 	// parent not alive, quick out.
 	if (Objects[tsi->parent_objnum].type != OBJ_SHIP) {
@@ -1245,11 +1245,11 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
     // *Weapon minimum firing range -Et1
     float WeaponMinRange;
 
-	vector	v2e;
+	vec3d	v2e;
 	object	*lep;		//	Last enemy pointer
 	model_subsystem	*tp = ss->system_info;
 	ship_weapon *swp = &ss->weapons;
-	vector	predicted_enemy_pos;
+	vec3d	predicted_enemy_pos;
 	object	*objp;
 	//ai_info	*aip;
 
@@ -1293,7 +1293,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	//aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	// Use the turret info for all guns, not one gun in particular.
-	vector	 gvec, gpos;
+	vec3d	 gvec, gpos;
 	ship_get_global_turret_info(&Objects[parent_objnum], tp, &gpos, &gvec);
 
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
@@ -1489,7 +1489,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	// Ok, the turret is lined up... now line up a particular gun.
 	bool ok_to_fire = false;
 	bool something_was_ok_to_fire=false;
-	vector tv2e;	//so flak can get their jitter without screwing up other guns
+	vec3d tv2e;	//so flak can get their jitter without screwing up other guns
 
 	if (dot > tp->turret_fov ) {
 		// We're ready to fire... now get down to specifics, like where is the

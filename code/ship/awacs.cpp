@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-02 21:24:47 $
+ * $Revision: 2.12 $
+ * $Date: 2005-04-05 05:53:24 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/02 21:24:47  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.10  2004/07/26 20:47:51  Kazan
  * remove MCD complete
  *
@@ -296,7 +299,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	Assert(target);	// Goober5000
 	Assert(viewer);	// Goober5000
 
-	vector dist_vec, subsys_pos;
+	vec3d dist_vec, subsys_pos;
 	float closest = 0.0f;
 	float test;
 	int closest_index = -1;

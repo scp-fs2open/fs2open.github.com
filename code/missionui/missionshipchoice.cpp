@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-04-03 08:48:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.43 $
+ * $Date: 2005-04-05 05:53:19 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/04/03 08:48:30  Goober5000
+ * brought weapon loadout banks into agreement with ship info banks
+ * improved error reporting on apply-to-all
+ * --Goober5000
+ *
  * Revision 2.41  2005/03/31 11:11:56  Goober5000
  * changed a bunch of literal constants to their #define'd keywords
  * --Goober5000
@@ -2110,7 +2115,7 @@ void ship_select_do(float frametime)
 	
 		// lighting for techroom
 		light_reset();
-		vector light_dir = vmd_zero_vector;
+		vec3d light_dir = vmd_zero_vector;
 		light_dir.xyz.y = 1.0f;	
 		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
 		// light_filter_reset();

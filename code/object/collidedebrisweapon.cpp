@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisWeapon.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:45 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:45  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:59  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -82,11 +85,11 @@
 typedef struct ship_weapon_debris_struct {
 	object	*ship_object;
 	object	*debris_object;
-	vector	ship_collision_cm_pos;
-	vector	r_ship;
-	vector	collision_normal;
+	vec3d	ship_collision_cm_pos;
+	vec3d	r_ship;
+	vec3d	collision_normal;
 	int		shield_hit_tri;
-	vector	shield_hit_tri_point;
+	vec3d	shield_hit_tri_point;
 	float		impulse;
 } ship_weapon_debris_struct;
 
@@ -95,7 +98,7 @@ typedef struct ship_weapon_debris_struct {
 // Returns 1 if all future collisions between these can be ignored
 int collide_debris_weapon( obj_pair * pair )
 {
-	vector	hitpos;
+	vec3d	hitpos;
 	int		hit;
 	object *pdebris = pair->a;
 	object *weapon = pair->b;
@@ -130,7 +133,7 @@ int collide_asteroid_weapon( obj_pair * pair )
 	if (!Asteroids_enabled)
 		return 0;
 
-	vector	hitpos;
+	vec3d	hitpos;
 	int		hit;
 	object	*pasteroid = pair->a;
 	object	*weapon = pair->b;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.6 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-05 05:53:24 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.5  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -152,7 +157,7 @@ struct object;
 struct ship;
 struct ship_subsys;
 struct shockwave_create_info;
-struct vector;
+struct vec3d;
 struct matrix;
 
 // Make sparks fly off of ship n
@@ -162,15 +167,15 @@ struct matrix;
 void shipfx_emit_spark( int n, int sn );
 
 // Does the special effects to blow a subsystem off a ship
-extern void shipfx_blow_off_subsystem(object *ship_obj,ship *ship_p,ship_subsys *subsys, vector *exp_center);
+extern void shipfx_blow_off_subsystem(object *ship_obj,ship *ship_p,ship_subsys *subsys, vec3d *exp_center);
 
 
 // Creates "ndebris" pieces of debris on random verts of the the "submodel" in the 
 // ship's model.
-extern void shipfx_blow_up_model(object *obj,int model, int submodel, int ndebris, vector *exp_center);
+extern void shipfx_blow_up_model(object *obj,int model, int submodel, int ndebris, vec3d *exp_center);
 
 // put here for multiplayer purposes
-void shipfx_blow_up_hull(object *obj,int model, vector *exp_center );
+void shipfx_blow_up_hull(object *obj,int model, vec3d *exp_center );
 
 
 // =================================================
@@ -195,13 +200,13 @@ extern void shipfx_warpout_frame( object *objp, float frametime );
 
 // Given point p0, in object's frame of reference, find if 
 // it can see the sun.
-int shipfx_point_in_shadow( vector *p0, matrix *src_orient, vector *src_pos, float radius );
+int shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float radius );
 
 // Given an ship see if it is in a shadow.
 int shipfx_in_shadow( object * src_obj );
 
 // Given world point see if it is in a shadow.
-int shipfx_eye_in_shadow( vector *eye_pos, object *src_obj, int sun_n);
+int shipfx_eye_in_shadow( vec3d *eye_pos, object *src_obj, int sun_n);
 
 
 // =================================================
@@ -216,7 +221,7 @@ void shipfx_flash_init();
 // accordingly.
 // Set is_primary to non-zero if this is a primary weapon.
 // Gun_pos should be in object's frame of reference, not world!!!
-void shipfx_flash_create(object *objp, ship * shipp, vector *gun_pos, vector *gun_dir, int is_primary, int weapon_info_index);
+void shipfx_flash_create(object *objp, ship * shipp, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index);
 
 // Sets the flash lights in the model used by this
 // ship to the appropriate values.  There might not
@@ -244,7 +249,7 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime);
 void shipfx_large_blowup_render(ship *shipp);
 
 // sound manager fore big ship sub explosions sounds
-void do_sub_expl_sound(float radius, vector* sound_pos, int* sound_handle);
+void do_sub_expl_sound(float radius, vec3d* sound_pos, int* sound_handle);
 
 // do all shockwaves for a ship blowing up
 void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci);
@@ -275,7 +280,7 @@ void shipfx_stop_engine_wash_sound();
 void shipfx_cloak_frame(ship *shipp, float frametime);
 void shipfx_start_cloak(ship *shipp, int warmup = 5000, int recalc_transform = 0, int device=0);
 void shipfx_stop_cloak(ship *shipp, int warpdown = 5000);
-float shipfx_calc_visibility(object *obj, vector *view_pt);
+float shipfx_calc_visibility(object *obj, vec3d *view_pt);
 
 float shipfx_calculate_warp_time(object *objp);
 float shipfx_calculate_warp_dist(object *objp);

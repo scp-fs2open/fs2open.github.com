@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-03-27 12:28:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.27 $
+ * $Date: 2005-04-05 05:53:23 $
+ * $Author: taylor $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/03/27 12:28:34  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.25  2005/03/25 06:57:37  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -1340,7 +1344,7 @@ void read_player_controls(object *objp, float frametime)
 		// only read player control info if player ship is not dead
 		// or if Player_use_ai is disabed
 		if ( !(Ships[Player_obj->instance].flags & SF_DYING) ) {
-			vector wash_rot;
+			vec3d wash_rot;
 			if ((Ships[objp->instance].wash_intensity > 0) && !((Player->control_mode == PCM_WARPOUT_STAGE1) || (Player->control_mode == PCM_WARPOUT_STAGE2) || (Player->control_mode == PCM_WARPOUT_STAGE3)) ) {
 				float intensity = 0.3f * MIN(Ships[objp->instance].wash_intensity, 1.0f);
 				vm_vec_copy_scale(&wash_rot, &Ships[objp->instance].wash_rot_axis, intensity);
@@ -1755,7 +1759,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 	object		*cargo_objp;
 	ship			*cargo_sp;
 	ship_info	*cargo_sip;
-	vector		vec_to_cargo;
+	vec3d		vec_to_cargo;
 	float			dot;
 	int scan_subsys;
 
@@ -1891,7 +1895,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	object		*cargo_objp;
 	ship			*cargo_sp;
 	ship_info	*cargo_sip;
-	vector		vec_to_cargo;
+	vec3d		vec_to_cargo;
 	float			dot;
 	ship_subsys	*subsys;
 
@@ -1939,7 +1943,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	}
 
 	// see if player is within inspection range [ok for subsys]
-	vector	subsys_pos;
+	vec3d	subsys_pos;
 	float		subsys_rad;
 	int		subsys_in_view, x, y;
 	float scan_dist;
@@ -2319,14 +2323,14 @@ void player_display_packlock_view()
 
 // get the player's eye position and orient
 // NOTE : this is mostly just copied from game_render_frame_setup()
-extern vector Dead_player_last_vel;
-extern vector Camera_pos;
+extern vec3d Dead_player_last_vel;
+extern vec3d Camera_pos;
 extern void compute_slew_matrix(matrix *orient, angles *a);
 #define	MIN_DIST_TO_DEAD_CAMERA			50.0f
-void player_get_eye(vector *eye_pos, matrix *eye_orient)
+void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
 {
 	object *viewer_obj = NULL;
-	vector eye_dir;
+	vec3d eye_dir;
 
 	// if the player object is NULL, return
 	if(Player_obj == NULL){
@@ -2347,7 +2351,7 @@ void player_get_eye(vector *eye_pos, matrix *eye_orient)
 	Assert(eye_orient != NULL);
 
 	if (Game_mode & GM_DEAD) {
-		vector	vec_to_deader, view_pos;
+		vec3d	vec_to_deader, view_pos;
 		float		dist;		
 		if (Player_ai->target_objnum != -1) {
 			int view_from_player = 1;
@@ -2429,7 +2433,7 @@ void player_get_eye(vector *eye_pos, matrix *eye_orient)
 			//	Modify the orientation based on head orientation.
 			compute_slew_matrix(eye_orient, &Viewer_slew_angles);
 		} else if ( Viewer_mode & VM_CHASE ) {
-			vector	move_dir;
+			vec3d	move_dir;
 
 			if ( viewer_obj->phys_info.speed < 0.1 ){
 				move_dir = viewer_obj->orient.vec.fvec;
@@ -2449,7 +2453,7 @@ void player_get_eye(vector *eye_pos, matrix *eye_orient)
 			// call because the up and the forward vector are the same.   I fixed
 			// it by adding in a fraction of the right vector all the time to the
 			// up vector.
-			vector tmp_up = viewer_obj->orient.vec.uvec;
+			vec3d tmp_up = viewer_obj->orient.vec.uvec;
 			vm_vec_scale_add2( &tmp_up, &viewer_obj->orient.vec.rvec, 0.00001f );
 
 			vm_vector_2_matrix(eye_orient, &eye_dir, &tmp_up, NULL);

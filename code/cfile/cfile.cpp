@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-03-02 03:13:00 $
+ * $Revision: 2.29 $
+ * $Date: 2005-04-05 05:53:14 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/03/02 03:13:00  taylor
+ * that one should never have slipped passed me (Linux specific)
+ *
  * Revision 2.27  2005/01/30 18:32:41  taylor
  * merge with Linux/OSX tree - p0130
  * remove extra brace in cfile.cpp
@@ -1306,7 +1309,7 @@ ubyte cfread_ubyte(CFILE *file, int ver, ubyte deflt)
 	return b;
 }
 
-void cfread_vector(vector *vec, CFILE *file, int ver, vector *deflt)
+void cfread_vector(vec3d *vec, CFILE *file, int ver, vec3d *deflt)
 {
 	if (file->version < ver) {
 		if (deflt)
@@ -1412,7 +1415,7 @@ int cfwrite_ubyte(ubyte b, CFILE *file)
 	return cfwrite(&b, sizeof(b), 1, file);
 }
 
-int cfwrite_vector(vector *vec, CFILE *file)
+int cfwrite_vector(vec3d *vec, CFILE *file)
 {
 	if(!cfwrite_float(vec->xyz.x, file)){
 		return 0;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-03-07 13:10:21 $
- * $Author: bobboau $
+ * $Revision: 2.18 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/03/07 13:10:21  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.16  2005/03/03 06:05:28  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -613,7 +617,7 @@ void draw_bounding_brackets_subobject()
 			int		target_objnum;
 			object* targetp;
 			vertex subobj_vertex;
-			vector	subobj_pos;
+			vec3d	subobj_pos;
 			int x1,x2,y1,y2;
 
 			subsys = Player_ai->targeted_subsys;

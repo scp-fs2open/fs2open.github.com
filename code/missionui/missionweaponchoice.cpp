@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-04-03 11:47:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2005-04-05 05:53:20 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/04/03 11:47:01  Goober5000
+ * tweaks
+ * --Goober5000
+ *
  * Revision 2.48  2005/04/03 08:48:30  Goober5000
  * brought weapon loadout banks into agreement with ship info banks
  * improved error reporting on apply-to-all
@@ -1475,7 +1479,7 @@ void wl_render_overhead_view(float frametime)
 			if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 			light_reset();
-			vector light_dir = vmd_zero_vector;
+			vec3d light_dir = vmd_zero_vector;
 			light_dir.xyz.x = 0.5;
 			light_dir.xyz.y = 2.0f;
 			light_dir.xyz.z = -2.0f;	
@@ -1490,7 +1494,7 @@ void wl_render_overhead_view(float frametime)
 			//NOW render the lines for weapons
 			gr_reset_clip();
 			vertex draw_point;
-			vector subobj_pos;
+			vec3d subobj_pos;
 			int x, y;
 			int xc, yc;
 			polymodel *pm = model_get(wl_ship->model_num);
@@ -1524,8 +1528,8 @@ void wl_render_overhead_view(float frametime)
 						//test - couldn't get it to work, probably because
 						//most gunpoints are somewhat inside the model.
 						/*
-						vector eye_to_pos;
-						vector terminus;
+						vec3d eye_to_pos;
+						vec3d terminus;
 
 						vm_vec_normalized_dir(&eye_to_pos, &pm->gun_banks[x].pnt[y], &Eye_position);
 						vm_vec_scale_add(&terminus, &Eye_position, &eye_to_pos, 100000.0f);
@@ -3429,7 +3433,7 @@ void weapon_select_do(float frametime)
 		angles rot_angles						= {0.0f,0.0f,0.0f};
 		polymodel *pm;
 		bsp_info *bs;
-		vector weap_closeup;
+		vec3d weap_closeup;
 		float y_closeup;
 
 		WeapSelectScreenWeapRot += PI2 * frametime / REVOLUTION_RATE;
@@ -3493,7 +3497,7 @@ void weapon_select_do(float frametime)
 		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		light_reset();
-		vector light_dir = vmd_zero_vector;
+		vec3d light_dir = vmd_zero_vector;
 		light_dir.xyz.x = -0.5;
 		light_dir.xyz.y = 2.0f;
 		light_dir.xyz.z = -2.0f;	
@@ -3512,7 +3516,7 @@ void weapon_select_do(float frametime)
 			if (ft > 1.0f)
 				ft = 1.0f;
 
-			vector temp;
+			vec3d temp;
 			temp.xyz.x = ft;
 			temp.xyz.y = ft;
 			temp.xyz.z = ft;

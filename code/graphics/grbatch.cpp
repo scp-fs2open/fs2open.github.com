@@ -215,11 +215,11 @@ void geometry_batcher::add_alocate(int quad, int n_tri){
 void geometry_batcher::draw_bitmap(vertex *pnt, float rad, float depth){
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 
-	vector PNT;
+	vec3d PNT;
 	vm_vert2vec(pnt, &PNT);
-	vector p[4];
+	vec3d p[4];
 	vertex *P = &vert[n_to_render*3];
-	vector fvec, rvec, uvec;
+	vec3d fvec, rvec, uvec;
 
 	vm_vec_sub(&fvec, &View_position, &PNT);
 	vm_vec_normalize(&fvec);
@@ -291,11 +291,11 @@ void geometry_batcher::draw_bitmap(vertex *pnt, float rad, float angle, float de
 	else if ( angle > PI2 )
 		angle -= PI2;
 
-	vector PNT;
+	vec3d PNT;
 	vm_vert2vec(pnt, &PNT);
-	vector p[4];
+	vec3d p[4];
 	vertex *P = &vert[n_to_render*3];
-	vector fvec, rvec, uvec;
+	vec3d fvec, rvec, uvec;
 
 	vm_vec_sub(&fvec, &View_position, &PNT);
 	vm_vec_normalize(&fvec);
@@ -375,11 +375,11 @@ void geometry_batcher::draw_quad(vertex* verts){
 }
 
 
-void geometry_batcher::draw_beam(vector*start,vector*end, float width, float intinsity){
-	vector p[4];
+void geometry_batcher::draw_beam(vec3d*start,vec3d*end, float width, float intinsity){
+	vec3d p[4];
 	vertex *P = &vert[n_to_render*3];
 
-	vector fvec, uvecs, uvece, evec;
+	vec3d fvec, uvecs, uvece, evec;
 
 	vm_vec_sub(&fvec, end, start);
 	vm_vec_normalize(&fvec);
@@ -433,12 +433,12 @@ void geometry_batcher::draw_beam(vector*start,vector*end, float width, float int
 	n_to_render += 2;
 }
 
-float geometry_batcher::draw_laser(vector *p0,float width1,vector *p1,float width2, int r, int g, int b){
+float geometry_batcher::draw_laser(vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b){
 
 	width1 *= 0.5f;
 	width2 *= 0.5f;
 
-	vector uvec, fvec, rvec, center, reye;
+	vec3d uvec, fvec, rvec, center, reye;
 
 	vm_vec_sub( &fvec, p0, p1 );
 	vm_vec_normalize_safe( &fvec );
@@ -459,12 +459,12 @@ float geometry_batcher::draw_laser(vector *p0,float width1,vector *p1,float widt
 	// Now have uvec, which is up vector and rvec which is the normal
 	// of the face.
 
-	vector start, end;
+	vec3d start, end;
 
 	vm_vec_scale_add(&start, p0, &fvec, -width1);
 	vm_vec_scale_add(&end, p1, &fvec, width2);
 
-	vector vecs[4];
+	vec3d vecs[4];
 
 	vertex *pts = &vert[n_to_render*3];
 
@@ -554,7 +554,7 @@ int find_good_batch_item(int texture){
 	return -1;
 }
 
-float add_laser(int texture, vector *p0,float width1,vector *p1,float width2, int r, int g, int b){
+float add_laser(int texture, vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b){
 	geometry_batcher* item = &geometry_map[find_good_batch_item(texture)].batch;
 
 	item->add_alocate(1);

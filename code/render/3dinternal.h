@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dInternal.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:33 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:24 $
+ * $Author: taylor $
  *
  * Used internally by the 3d renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:33  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -53,11 +56,11 @@
 extern int Canvas_width,Canvas_height;	//the actual width & height
 extern float Canv_w2,Canv_h2;			//fixed-point width,height/2
 
-extern vector Window_scale;
+extern vec3d Window_scale;
 extern int free_point_num;
 
 extern float View_zoom;
-extern vector View_position,Matrix_scale;
+extern vec3d View_position,Matrix_scale;
 extern matrix View_matrix,Unscaled_matrix;
 
 
@@ -73,10 +76,10 @@ extern void clip_line(vertex **p0,vertex **p1,ubyte codes_or, uint flags);
 extern int G3_count;
 
 extern int G3_user_clip;
-extern vector G3_user_clip_normal;
-extern vector G3_user_clip_point;
+extern vec3d G3_user_clip_normal;
+extern vec3d G3_user_clip_point;
 
 // Returns TRUE if point is behind user plane
-extern int g3_point_behind_user_plane( vector *pnt );
+extern int g3_point_behind_user_plane( vec3d *pnt );
 
 #endif

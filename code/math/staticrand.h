@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:27 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  * header for Static Random functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:27  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/06/05 19:14:42  phreak
  * added static_random_cone which is used for spawn angle features in multi
  *
@@ -55,9 +58,9 @@ extern int Semirand[SEMIRAND_MAX];			// this array is saved by the ai code on sa
 extern void init_semirand();
 extern int static_rand(int num);
 extern float static_randf(int num);
-extern void static_randvec(int num, vector *vp);
+extern void static_randvec(int num, vec3d *vp);
 extern float static_randf_range(int num, float min, float max);
-void static_rand_cone(int num, vector *out, vector *in, float max_angle, matrix *orient);
+void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *orient);
 
 // Alternate random number generator that doesn't affect rand() sequence
 

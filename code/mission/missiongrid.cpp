@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGrid.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-05 05:53:19 $
+ * $Author: taylor $
  *
  * C module for grid specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -123,11 +126,11 @@ void grid_read_camera_controls( control_info * ci, float frametime )
 
 //	Project the viewer's position onto the grid plane.  If more than threshold distance
 //	from grid center, move grid center.
-void maybe_create_new_grid(grid* gridp, vector *pos, matrix *orient, int force)
+void maybe_create_new_grid(grid* gridp, vec3d *pos, matrix *orient, int force)
 {
 	int roundoff;
 	plane	tplane;
-	vector	gpos, tmp, c;
+	vec3d	gpos, tmp, c;
 	float	dist_to_plane;
 	float	square_size, ux, uy, uz;
 
@@ -146,7 +149,7 @@ void maybe_create_new_grid(grid* gridp, vector *pos, matrix *orient, int force)
 	}
 	
 	if (fvi_ray_plane(&gpos, &gridp->center, &gridp->gmatrix.vec.uvec, pos, &orient->vec.fvec, 0.0f)<0.0f)	{
-		vector p;
+		vec3d p;
 		vm_vec_scale_add(&p,pos,&orient->vec.fvec, 100.0f );
 		compute_point_on_plane(&gpos, &tplane, &p );
 	}
@@ -198,10 +201,10 @@ void maybe_create_new_grid(grid* gridp, vector *pos, matrix *orient, int force)
 //	(In fact, it will be the xz plane because it is centered on the origin.)
 //
 //	Stuffs grid in *gridp.  If gridp == NULL, mallocs and returns a grid.
-grid *create_grid(grid *gridp, vector *forward, vector *right, vector *center, int nrows, int ncols, float square_size)
+grid *create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int nrows, int ncols, float square_size)
 {
 	int	i, ncols2, nrows2, d = 1;
-	vector	dfvec, drvec, cur, cur2, tvec, uvec, save, save2;
+	vec3d	dfvec, drvec, cur, cur2, tvec, uvec, save, save2;
 
 	Assert(square_size > 0.0);
 	if (double_fine_gridlines)
@@ -289,7 +292,7 @@ grid *create_grid(grid *gridp, vector *forward, vector *right, vector *center, i
 grid *create_default_grid(void)
 {
 	grid	*rgrid;
-	vector	fvec, rvec, cvec;
+	vec3d	fvec, rvec, cvec;
 
 	rgrid = create_grid(&Global_grid, vm_vec_make(&fvec, 0.0f, 0.0f, 1.0f),
 		vm_vec_make(&rvec, 1.0f, 0.0f, 0.0f),
@@ -300,7 +303,7 @@ grid *create_default_grid(void)
 }
 
 //	Rotate and project points and draw a line.
-void rpd_line(vector *v0, vector *v1)
+void rpd_line(vec3d *v0, vec3d *v1)
 {
 	vertex	tv0, tv1;
 
@@ -316,13 +319,13 @@ void modify_grid(grid *gridp)
 		gridp->nrows, gridp->ncols, gridp->square_size);
 }
 
-void grid_render_elevation_line(vector *pos, grid* gridp)
+void grid_render_elevation_line(vec3d *pos, grid* gridp)
 {
-	vector	gpos;	//	Location of point on grid.
-	vector	tpos;
+	vec3d	gpos;	//	Location of point on grid.
+	vec3d	tpos;
 	float		dxz;
 	plane		tplane;
-	vector	*gv;
+	vec3d	*gv;
 	
 	tplane.A = gridp->gmatrix.vec.uvec.xyz.x;
 	tplane.B = gridp->gmatrix.vec.uvec.xyz.y;

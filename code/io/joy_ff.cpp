@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy_ff.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:33 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  * Code for joystick Force Feedback.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:33  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:51  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -412,7 +415,7 @@ void joy_ff_stop_effects()
 	joy_ff_afterburn_off();
 }
 
-void joy_ff_mission_init(vector v)
+void joy_ff_mission_init(vec3d v)
 {
 	v.xyz.z = 0.0f;
 //	joy_ff_handling_scaler = (int) ((vm_vec_mag(&v) - 1.3f) * 10.5f);
@@ -682,9 +685,9 @@ void joy_ff_play_dir_effect(float x, float y)
 	//nprintf(("Joystick", "FF: Dir: %d, Mag = %d\n", idegs, imag));
 }
 
-void joy_ff_play_vector_effect(vector *v, float scaler)
+void joy_ff_play_vector_effect(vec3d *v, float scaler)
 {
-	vector vf;
+	vec3d vf;
 	float x, y;
 
 	nprintf(("Joystick", "FF: vec = { %f, %f, %f } s = %f\n", v->xyz.x, v->xyz.y, v->xyz.z, scaler));

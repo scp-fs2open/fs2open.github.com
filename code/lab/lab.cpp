@@ -539,7 +539,7 @@ void show_ship(float frametime)
 
 	// lighting for techroom
 	light_reset();
-	vector light_dir = vmd_zero_vector;
+	vec3d light_dir = vmd_zero_vector;
 	light_dir.xyz.y = 1.0f;	
 	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
 	// light_filter_reset();
@@ -598,14 +598,14 @@ void lab_init()
 	cbp->SetPosition(gr_screen.clip_right - cbp->GetWidth() - 2, 1);
 }
 
-extern void game_render_frame_setup(vector *eye_pos, matrix *eye_orient);
-extern void game_render_frame(vector *eye_pos, matrix *eye_orient);
+extern void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient);
+extern void game_render_frame(vec3d *eye_pos, matrix *eye_orient);
 void lab_do_frame(float frametime)
 {
 	gr_clear();
 	if(gameseq_get_pushed_state() == GS_STATE_GAME_PLAY)
 	{
-		vector eye_pos;
+		vec3d eye_pos;
 		matrix eye_orient;
 		game_render_frame_setup(&eye_pos, &eye_orient);
 		game_render_frame( &eye_pos, &eye_orient );

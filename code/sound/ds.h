@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.12 $
- * $Date: 2005-04-01 07:33:08 $
+ * $Revision: 2.13 $
+ * $Date: 2005-04-05 05:53:25 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/04/01 07:33:08  taylor
+ * fix hanging on exit with OpenAL
+ * some better error handling on OpenAL init and make it more Windows friendly too
+ * basic 3d sound stuff for OpenAL, not working right yet
+ *
  * Revision 2.11  2005/03/28 00:40:09  taylor
  * fix to snd_time_remaining() to make sure we are getting the correct index into Sounds[]
  *
@@ -281,7 +286,7 @@ unsigned int ds_get_property_set_interface();
 // Returns the number of channels that are actually playing
 int ds_get_number_channels();
 
-int ds3d_play( int sid, int hid, int snd_id, vector *pos, vector *vel, int min, int max, int looping, int max_volume, int estimated_vol, int priority=DS_MUST_PLAY );
+int ds3d_play( int sid, int hid, int snd_id, vec3d *pos, vec3d *vel, int min, int max, int looping, int max_volume, int estimated_vol, int priority=DS_MUST_PLAY );
 
 // Get a character string for the error code
 char	*get_DSERR_text(int DSResult);

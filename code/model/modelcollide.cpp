@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-03-25 06:57:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10 $
+ * $Date: 2005-04-05 05:53:20 $
+ * $Author: taylor $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.8  2005/01/30 09:27:40  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -332,14 +335,14 @@ static int			Mc_submodel;	// The current submodel we're checking
 
 static matrix		Mc_orient;		// A matrix to rotate a world point into the current
 											// submodel's frame of reference.
-static vector		Mc_base;			// A point used along with Mc_orient.
+static vec3d		Mc_base;			// A point used along with Mc_orient.
 
-static vector		Mc_p0;			// The ray origin rotated into the current submodel's frame of reference
-static vector		Mc_p1;			// The ray end rotated into the current submodel's frame of reference
+static vec3d		Mc_p0;			// The ray origin rotated into the current submodel's frame of reference
+static vec3d		Mc_p1;			// The ray end rotated into the current submodel's frame of reference
 static float		Mc_mag;			// The length of the ray
-static vector		Mc_direction;	// A vector from the ray's origin to it's end, in the current submodel's frame of reference
+static vec3d		Mc_direction;	// A vector from the ray's origin to its end, in the current submodel's frame of reference
 
-static vector *	Mc_point_list[MAX_POLYGON_VECS];	// A pointer to the current submodel's vertex list
+static vec3d *	Mc_point_list[MAX_POLYGON_VECS];	// A pointer to the current submodel's vertex list
 
 static float		Mc_edge_time;
 
@@ -347,10 +350,10 @@ static float		Mc_edge_time;
 // Returns non-zero if vector from p0 to pdir 
 // intersects the bounding box.
 // hitpos could be NULL, so don't fill it if it is.
-int mc_ray_boundingbox( vector *min, vector *max, vector * p0, vector *pdir, vector *hitpos )
+int mc_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d *hitpos )
 {
 
-	vector tmp_hitpos;
+	vec3d tmp_hitpos;
 	if ( hitpos == NULL )	{
 		hitpos = &tmp_hitpos;
 	}
@@ -361,7 +364,7 @@ int mc_ray_boundingbox( vector *min, vector *max, vector * p0, vector *pdir, vec
 		// In the case of a sphere, just increase the size of the box by the radius 
 		// of the sphere in all directions.
 
-		vector sphere_mod_min, sphere_mod_max;
+		vec3d sphere_mod_min, sphere_mod_max;
 
 		sphere_mod_min.xyz.x = min->xyz.x - Mc->radius;
 		sphere_mod_max.xyz.x = max->xyz.x + Mc->radius;
@@ -390,9 +393,9 @@ int mc_ray_boundingbox( vector *min, vector *max, vector * p0, vector *pdir, vec
 // detects whether or not a vector has collided with a polygon.  vector points stored in global
 // Mc_p0 and Mc_p1.  Results stored in global mc_info * Mc.
 
-static void mc_check_face(int nv, vector **verts, vector *plane_pnt, float face_rad, vector *plane_norm, uv_pair *uvl_list, int ntmap, ubyte *poly)
+static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_rad, vec3d *plane_norm, uv_pair *uvl_list, int ntmap, ubyte *poly)
 {
-	vector	hit_point;
+	vec3d	hit_point;
 	float		dist;
 	float		u, v;
 
@@ -452,9 +455,9 @@ static void mc_check_face(int nv, vector **verts, vector *plane_pnt, float face_
 //				plane_pnt	=>		center point in plane (about which radius is measured)
 //				face_rad		=>		radius of face 
 //				plane_norm	=>		normal of face
-static void mc_check_sphereline_face( int nv, vector ** verts, vector * plane_pnt, float face_rad, vector * plane_norm, uv_pair * uvl_list, int ntmap, ubyte *poly)
+static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt, float face_rad, vec3d * plane_norm, uv_pair * uvl_list, int ntmap, ubyte *poly)
 {
-	vector	hit_point;
+	vec3d	hit_point;
 	float		u, v;
 	float		delta_t;			// time sphere takes to cross from one side of plane to the other
 	float		face_t;			// time at which face touches plane
@@ -488,8 +491,8 @@ static void mc_check_sphereline_face( int nv, vector ** verts, vector * plane_pn
 	}
 
 
-	vector temp_sphere;
-	vector temp_dir;
+	vec3d temp_sphere;
+	vec3d temp_dir;
 	float temp_dist;
 	// DA 11/5/97  Above is used to test distance between hit_point and sphere_hit_point.
 	// This can be as large as 0.003 on a unit sphere.  I suspect that with larger spheres,
@@ -611,7 +614,7 @@ void model_collide_defpoints(ubyte * p)
 	int offset = w(p+16);	
 
 	ubyte * normcount = p+20;
-	vector *src = vp(p+offset);
+	vec3d *src = vp(p+offset);
 	
 	Assert( nverts < MAX_POLYGON_VECS );
 
@@ -627,8 +630,8 @@ void model_collide_defpoints(ubyte * p)
 // Flat Poly
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      center
+// +8      vec3d      normal
+// +20     vec3d      center
 // +32     float       radius
 // +36     int         nverts
 // +40     byte        red
@@ -640,7 +643,7 @@ void model_collide_flatpoly(ubyte * p)
 {
 	int i;
 	int nv;
-	vector * points[TMAP_MAX_VERTS];
+	vec3d * points[TMAP_MAX_VERTS];
 	short *verts;
 
 	nv = w(p+36);
@@ -663,8 +666,8 @@ void model_collide_flatpoly(ubyte * p)
 // Textured Poly
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      normal_point
+// +8      vec3d      normal
+// +20     vec3d      normal_point
 // +32     int         tmp = 0
 // +36     int         nverts
 // +40     int         tmap_num
@@ -674,7 +677,7 @@ void model_collide_tmappoly(ubyte * p)
 	int i;
 	int nv;
 	uv_pair uvlist[TMAP_MAX_VERTS];
-	vector * points[TMAP_MAX_VERTS];
+	vec3d * points[TMAP_MAX_VERTS];
 	model_tmap_vert *verts;
 
 	nv = w(p+36);
@@ -707,8 +710,8 @@ void model_collide_tmappoly(ubyte * p)
 // Sortnorms
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      center
+// +8      vec3d      normal
+// +20     vec3d      center
 // +32     float       radius
 // 36     int     front offset
 // 40     int     back offset
@@ -782,7 +785,7 @@ int model_collide_sub(void *model_ptr )
 void mc_check_shield()
 {
 	int i, j;
-	vector * points[3];
+	vec3d * points[3];
 	float dist;
 	float sphere_check_closest_shield_dist = FLT_MAX;
 
@@ -798,7 +801,7 @@ void mc_check_shield()
 		}
 		
 		for (i = 0; i < poct1->nshield_tris; i++) {
-			vector hitpoint;
+			vec3d hitpoint;
 			shield_tri	* tri;
 			tri = poct1->shield_tris[i];
 
@@ -859,8 +862,8 @@ void mc_check_shield()
 // for a collision with a vector.
 void mc_check_subobj( int mn )
 {
-	vector tempv;
-	vector hitpt;		// used in bounding box check
+	vec3d tempv;
+	vec3d hitpt;		// used in bounding box check
 	bsp_info * sm;
 	int i;
 
@@ -949,7 +952,7 @@ NoHit:
 	
 	// Save instance (Mc_orient, Mc_base, Mc_point_base)
 	matrix saved_orient = Mc_orient;
-	vector saved_base = Mc_base;
+	vec3d saved_base = Mc_base;
 	
 	// Check all of this subobject's children
 	i = sm->first_child;

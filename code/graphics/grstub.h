@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.15 $
- * $Date: 2005-02-27 10:38:06 $
- * $Author: wmcoolmon $
+ * $Revision: 2.16 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  */
@@ -103,7 +103,7 @@ void gr_stub_bitmap_ex(int x,int y,int w,int h,int sx,int sy) {}
 void gr_stub_bitmap(int x, int y) {}
 void gr_stub_push_texture_matrix(int unit) {}
 void gr_stub_pop_texture_matrix(int unit) {}
-void gr_stub_translate_texture_matrix(int unit, vector *shift) {}
+void gr_stub_translate_texture_matrix(int unit, vec3d *shift) {}
 void stub_init_vertex_buffers() {}
 int stub_find_first_free_buffer() {return 0;}
 int stub_check_for_errors() {return 0;}
@@ -113,14 +113,14 @@ int gr_stub_make_buffer(poly_list *list, uint flags) {return 0;}
 void gr_stub_destroy_buffer(int idx) {}
 void gr_stub_render_buffer(int start, int n_prim, short* index_list) {}
 void gr_stub_set_buffer(int idx) {}
-void gr_stub_start_instance_matrix(vector *offset, matrix* rotation) {}
-void gr_stub_start_instance_angles(vector *pos, angles* rotation) {}
+void gr_stub_start_instance_matrix(vec3d *offset, matrix* rotation) {}
+void gr_stub_start_instance_angles(vec3d *pos, angles* rotation) {}
 void gr_stub_end_instance_matrix() {}
 void gr_stub_set_projection_matrix(float fov, float aspect, float z_near, float z_far) {}
 void gr_stub_end_projection_matrix() {}
-void gr_stub_set_view_matrix(vector *pos, matrix* orient) {}
+void gr_stub_set_view_matrix(vec3d *pos, matrix* orient) {}
 void gr_stub_end_view_matrix() {}
-void gr_stub_push_scale_matrix(vector *scale_factor) {}
+void gr_stub_push_scale_matrix(vec3d *scale_factor) {}
 void gr_stub_pop_scale_matrix() {}
 void gr_stub_end_clip_plane() {}
 void gr_stub_start_clip_plane() {}

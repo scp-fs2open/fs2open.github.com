@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.5 $
- * $Date: 2005-02-04 10:12:31 $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-05 05:53:21 $
  * $Author: taylor $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/02/04 10:12:31  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.4  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -261,7 +264,7 @@ struct ship_subsys;
 #define ADD_FLOAT(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); float swap = INTEL_FLOAT(&d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
 #define ADD_STRING(s) do { Assert((packet_size + strlen(s) + 4) < MAX_PACKET_SIZE);int len = strlen(s); int len_tmp = INTEL_INT(len); ADD_DATA(len_tmp); memcpy(data+packet_size, s, len ); packet_size += len; } while(0)
 #define ADD_ORIENT(d) { Assert((packet_size + 17) < MAX_PACKET_SIZE); ubyte dt[17]; multi_pack_orient_matrix(dt,&d); memcpy(data+packet_size,dt,17); packet_size += 17; }
-#define ADD_VECTOR(d) do { vector tmpvec = ZERO_VECTOR; tmpvec.xyz.x = INTEL_FLOAT(&d.xyz.x); tmpvec.xyz.y = INTEL_FLOAT(&d.xyz.y); tmpvec.xyz.z = INTEL_FLOAT(&d.xyz.z); ADD_DATA(tmpvec); } while(0)
+#define ADD_VECTOR(d) do { vec3d tmpvec = ZERO_VECTOR; tmpvec.xyz.x = INTEL_FLOAT(&d.xyz.x); tmpvec.xyz.y = INTEL_FLOAT(&d.xyz.y); tmpvec.xyz.z = INTEL_FLOAT(&d.xyz.z); ADD_DATA(tmpvec); } while(0)
 
 #define GET_DATA(d) do { memcpy(&d, data+offset, sizeof(d) ); offset += sizeof(d); } while(0)
 #define GET_SHORT(d) do { short swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(0)
@@ -271,7 +274,7 @@ struct ship_subsys;
 #define GET_FLOAT(d) do { float swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_FLOAT(&swap); offset += sizeof(d); } while(0)
 #define GET_STRING(s) do { int len;  memcpy(&len, data+offset, sizeof(len)); len = INTEL_INT(len); offset += sizeof(len); memcpy(s, data+offset, len); offset += len; s[len] = '\0'; } while(0)
 #define GET_ORIENT(d) { ubyte dt[17]; memcpy(dt,data+offset,17); offset+=17; multi_unpack_orient_matrix(dt,&d); }
-#define GET_VECTOR(d) do { vector tmpvec = ZERO_VECTOR; GET_DATA(tmpvec); d.xyz.x = INTEL_FLOAT(&tmpvec.xyz.x); d.xyz.y = INTEL_FLOAT(&tmpvec.xyz.y); d.xyz.z = INTEL_FLOAT(&tmpvec.xyz.z); } while(0)
+#define GET_VECTOR(d) do { vec3d tmpvec = ZERO_VECTOR; GET_DATA(tmpvec); d.xyz.x = INTEL_FLOAT(&tmpvec.xyz.x); d.xyz.y = INTEL_FLOAT(&tmpvec.xyz.y); d.xyz.z = INTEL_FLOAT(&tmpvec.xyz.z); } while(0)
 
 #define PACKET_SET_SIZE() do { hinfo->bytes_processed = offset; } while(0)
 
@@ -573,7 +576,7 @@ void send_ingame_final_packet(int net_sig);
 void send_file_sig_packet(ushort sum_sig,int length_sig);
 void send_file_sig_request(char *file_name);
 
-void send_subsystem_destroyed_packet( ship *shipp, int index, vector worldpos );
+void send_subsystem_destroyed_packet( ship *shipp, int index, vec3d worldpos );
 
 void send_netplayer_load_packet(net_player *pl);
 
@@ -585,7 +588,7 @@ void send_mission_sync_packet(int mode,int start_campaign = 0);
 
 void send_store_stats_packet(int accept);
 
-void send_debris_create_packet(object *objp, ushort net_signature, int model_num, vector exp_center );
+void send_debris_create_packet(object *objp, ushort net_signature, int model_num, vec3d exp_center );
 void send_debris_update_packet(object *objp,int code);
 
 void send_ship_weapon_change( ship *shipp, int what, int new_bank, int link_status );
@@ -645,7 +648,7 @@ void send_post_sync_data_packet(net_player *p = NULL, int std_request = 1);
 
 void send_wss_slots_data_packet(int team_num, int final, net_player *p = NULL, int std_request = 1);
 
-void send_shield_explosion_packet(int objnum, int tri_num, vector hit_pos);
+void send_shield_explosion_packet(int objnum, int tri_num, vec3d hit_pos);
 
 void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = NULL);
 
@@ -661,9 +664,9 @@ void send_game_active_packet(net_addr* addr);
 void send_ai_info_update_packet(object *objp, char what);
 void process_ai_info_update_packet(ubyte *data, header *hinfo);
 
-void send_asteroid_create(object *new_objp, object *parent_objp, int asteroid_type, vector *relvec);
+void send_asteroid_create(object *new_objp, object *parent_objp, int asteroid_type, vec3d *relvec);
 void send_asteroid_throw(object *objp);
-void send_asteroid_hit(object *objp, object *other_objp, vector *hitpos, float damage);
+void send_asteroid_hit(object *objp, object *other_objp, vec3d *hitpos, float damage);
 void process_asteroid_info(ubyte *data, header *hinfo);
 
 void send_countermeasure_success_packet(int objnum);
@@ -730,11 +733,11 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 void process_flak_fired_packet(ubyte *data, header *hinfo);
 
 // player pain packet
-void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vector *force, vector *hitpos);
+void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos);
 void process_player_pain_packet(ubyte *data, header *hinfo);
 
 // lightning packet
-void send_lightning_packet(int bolt_type, vector *start, vector *strike);
+void send_lightning_packet(int bolt_type, vec3d *start, vec3d *strike);
 void process_lightning_packet(ubyte *data, header *hinfo);
 
 // bytes sent

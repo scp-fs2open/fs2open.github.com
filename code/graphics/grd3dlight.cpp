@@ -282,7 +282,7 @@ void gr_d3d_lighting(bool set, bool state)
 //0 == none
 //should be called after lighting has been set up, 
 //currently not designed for use with lit models
-extern vector Eye_position, Object_position;
+extern vec3d Eye_position, Object_position;
 int GR_center_alpha = false;
 /**** !!!>>>---yes this fixes a bug---<<<!!! ****/
 void gr_d3d_center_alpha(int type){
@@ -296,7 +296,7 @@ void gr_d3d_center_alpha_int(int type){
 	}
 //	pre_render_lights_init();
 //	type*=-1;
-	vector dir;
+	vec3d dir;
 	vm_vec_sub(&dir, &Eye_position, &Object_position);
 	vm_vec_normalize(&dir);
 

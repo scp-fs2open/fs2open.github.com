@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.11 $
- * $Date: 2005-03-29 06:28:52 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/29 06:28:52  wmcoolmon
+ * Fixed extern to compile under Linux
+ *
  * Revision 2.10  2005/03/29 03:42:07  phreak
  * global variable "Jump_nodes" needs external linkage for FRED
  *
@@ -78,7 +81,7 @@
 #include "globalincs/linklist.h"
 #include "graphics/2d.h"
 
-struct vector;
+struct vec3d;
 struct object;
 
 //#define MAX_JUMP_NODES	50
@@ -100,7 +103,7 @@ class jump_node : public linked_list<jump_node>
 	color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
 public:
 	//Construction
-	jump_node(vector *pos);
+	jump_node(vec3d *pos);
 	~jump_node();
 	
 	//Getting
@@ -116,7 +119,7 @@ public:
 	void show(bool show){if(show){m_flags&=~JN_HIDE;}else{m_flags|=JN_HIDE;}}
 
 	//Rendering
-	void render(vector *pos, vector *view_pos = NULL);
+	void render(vec3d *pos, vec3d *view_pos = NULL);
 };
 
 //-----Globals------

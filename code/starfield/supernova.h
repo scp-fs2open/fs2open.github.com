@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.h $
- * $Revision: 2.1 $
- * $Date: 2004-08-11 05:06:35 $
- * $Author: Kazan $
+ * $Revision: 2.2 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/08/11 05:06:35  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -48,7 +51,7 @@
 // SUPERNOVA DEFINES/VARS
 //
 
-struct vector;
+struct vec3d;
 struct matrix;
 
 // supernova timing stuff
@@ -98,6 +101,6 @@ float supernova_pct_complete();
 int supernova_camera_cut();
 
 // get view params from supernova
-void supernova_set_view(vector *eye_pos, matrix *eye_orient);
+void supernova_set_view(vec3d *eye_pos, matrix *eye_orient);
 
 #endif

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.h $
- * $Revision: 1.1 $
- * $Date: 2005-03-25 06:45:12 $
- * $Author: wmcoolmon $
+ * $Revision: 1.2 $
+ * $Date: 2005-04-05 05:53:13 $
+ * $Author: taylor $
  *
  * Header file for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/03/25 06:45:12  wmcoolmon
+ * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
+ *
  * Revision 2.2  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -83,7 +86,7 @@
 
 struct object;
 struct ai_info;
-struct vector;
+struct vec3d;
 struct ship_subsys;
 
 void	ai_big_ship(object *objp);
@@ -94,8 +97,8 @@ void	ai_big_subsys_path_cleanup(ai_info *aip);
 void	ai_big_strafe();
 int	ai_big_maybe_enter_strafe_mode(object *objp, int weapon_objnum, int consider_target_only=0);
 void	ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp);
-void ai_big_pick_attack_point(object *objp, object *attacker_objp, vector *attack_point, float fov=1.0f);
-void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vector *gpos, vector *gvec, vector *attack_point, float weapon_travel_dist, float fov=1.0f);
+void ai_big_pick_attack_point(object *objp, object *attacker_objp, vec3d *attack_point, float fov=1.0f);
+void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, vec3d *attack_point, float weapon_travel_dist, float fov=1.0f);
 
 
 #endif

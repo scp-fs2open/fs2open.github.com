@@ -24,7 +24,7 @@ int num_turrets_attacking(object *turret_parent, int target_objnum);
 int object_is_targetable(object *target, ship *viewer);
 
 //Returns the number of enemy fighters within threshold of pos.
-int num_nearby_fighters(int enemy_team_mask, vector *pos, float threshold);
+int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold);
 
 //Returns true if OK for *aip to fire its current weapon at its current target.
 int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip);

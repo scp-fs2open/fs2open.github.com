@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:32 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-04-05 05:53:23 $
+ * $Author: taylor $
  *
  * Includes for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:32  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/03/05 09:02:09  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -127,8 +130,8 @@ void particle_kill_all();
 // particle creation stuff
 typedef struct particle_info {
 	// old-style particle info
-	vector pos;
-	vector vel;
+	vec3d pos;
+	vec3d vel;
 	float lifetime;
 	float rad;
 	int type;
@@ -143,7 +146,7 @@ typedef struct particle_info {
 
 // Creates a single particle. See the PARTICLE_?? defines for types.
 void particle_create( particle_info *pinfo );
-void particle_create( vector *pos, vector *vel, float lifetime, float rad, int type, uint optional_data = 0 );
+void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, uint optional_data = 0 );
 
 
 //============================================================================
@@ -154,11 +157,11 @@ void particle_create( vector *pos, vector *vel, float lifetime, float rad, int t
 typedef struct particle_emitter {
 	int		num_low;				// Lowest number of particles to create
 	int		num_high;			// Highest number of particles to create
-	vector	pos;					// Where the particles emit from
-	vector	vel;					// Initial velocity of all the particles
+	vec3d	pos;					// Where the particles emit from
+	vec3d	vel;					// Initial velocity of all the particles
 	float		min_life;			// How long the particles live
 	float		max_life;			// How long the particles live
-	vector	normal;				// What normal the particle emit arond
+	vec3d	normal;				// What normal the particle emit arond
 	float		normal_variance;	//	How close they stick to that normal 0=good, 1=360 degree
 	float		min_vel;				// How fast the slowest particle can move
 	float		max_vel;				// How fast the fastest particle can move

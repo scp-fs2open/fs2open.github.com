@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds3d.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-01 07:33:08 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:25 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/01 07:33:08  taylor
+ * fix hanging on exit with OpenAL
+ * some better error handling on OpenAL init and make it more Windows friendly too
+ * basic 3d sound stuff for OpenAL, not working right yet
+ *
  * Revision 2.6  2005/03/27 06:14:30  taylor
  * update for streaming support and platform independance
  *
@@ -206,7 +211,7 @@ int DS3D_inited = FALSE;
 //					-1		=>		failure
 //
 //
-int ds3d_update_buffer(int channel, float min, float max, vector *pos, vector *vel)
+int ds3d_update_buffer(int channel, float min, float max, vec3d *pos, vec3d *vel)
 {
 	if (DS3D_inited == FALSE)
 		return 0;
@@ -300,7 +305,7 @@ int ds3d_update_buffer(int channel, float min, float max, vector *pos, vector *v
 //	returns:		0		=>		success
 //					-1		=>		failure
 //
-int ds3d_update_listener(vector *pos, vector *vel, matrix *orient)
+int ds3d_update_listener(vec3d *pos, vec3d *vel, matrix *orient)
 {
 	if (DS3D_inited == FALSE)
 		return 0;

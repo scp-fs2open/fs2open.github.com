@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.143 $
- * $Date: 2005-03-27 13:00:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.144 $
+ * $Date: 2005-04-05 05:53:22 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.143  2005/03/27 13:00:40  Goober5000
+ * two new sexps
+ * --Goober5000
+ *
  * Revision 2.142  2005/03/27 12:28:34  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -4683,7 +4687,7 @@ int sexp_special_warp_dist( int n)
 	}
 
 	// get distance
-	vector hit_pt;
+	vec3d hit_pt;
 	float dist = fvi_ray_plane(&hit_pt, &warp_objp->pos, &warp_objp->orient.vec.fvec, &ship_objp->pos, &ship_objp->orient.vec.fvec, 0.0f);
 	polymodel *pm = model_get(Ships[shipnum].modelnum);
 	dist += pm->mins.xyz.z;
@@ -5204,7 +5208,7 @@ int sexp_distance3(int obj1, int obj2)
 }
 
 // locate the subsystem on a ship - Goober5000
-void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vector *subsys_world_pos)
+void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vec3d *subsys_world_pos)
 {
 	Assert(subsys_name);
 	Assert(subsys_world_pos);
@@ -5241,7 +5245,7 @@ int sexp_distance_subsystem(int n)	// Goober5000
 {
 	int i, team, dist, obj, dist_min = 0, inited = 0;
 	char *obj_name, *ship_with_subsys, *subsys_name;
-	vector subsys_pos;
+	vec3d subsys_pos;
 	wing *wingp;
 	ship_obj *so;
 
@@ -5344,7 +5348,7 @@ int sexp_distance_subsystem(int n)	// Goober5000
 }
 
 // Goober5000
-int sexp_vec_coordinate(vector *v, int index)
+int sexp_vec_coordinate(vec3d *v, int index)
 {
 	Assert(v);
 
@@ -5364,11 +5368,11 @@ int sexp_vec_coordinate(vector *v, int index)
 }
 
 // Goober5000
-int sexp_calculate_new_world_coordinate(vector *origin, matrix *orient, vector *relative_location, int index)
+int sexp_calculate_new_world_coordinate(vec3d *origin, matrix *orient, vec3d *relative_location, int index)
 {
 	Assert(origin && orient && relative_location);
 
-	vector new_world_pos;
+	vec3d new_world_pos;
 
 	vm_vec_unrotate(&new_world_pos, relative_location, orient);
 	vm_vec_add2(&new_world_pos, origin);
@@ -5379,7 +5383,7 @@ int sexp_calculate_new_world_coordinate(vector *origin, matrix *orient, vector *
 // Goober5000
 int sexp_get_object_relative_coordinates(int n, int index)
 {
-	vector relative_location;
+	vec3d relative_location;
 	ship_obj *so;
 	char *object_name = CTEXT(n);
 	n = CDR(n);
@@ -5424,7 +5428,7 @@ int sexp_get_object_relative_coordinates(int n, int index)
 		// see if we have a subsys
 		if (n != -1)
 		{
-			vector subsys_pos;
+			vec3d subsys_pos;
 			sexp_get_subsystem_pos(obj, CTEXT(n), &subsys_pos);
 
 			return sexp_calculate_new_world_coordinate(&subsys_pos, &Objects[Ships[obj].objnum].orient, &relative_location, index);
@@ -5493,7 +5497,7 @@ int sexp_get_object_coordinates(int n, int index)
 		// see if we have a subsys
 		if (n != -1)
 		{
-			vector subsys_pos = ZERO_VECTOR;
+			vec3d subsys_pos = ZERO_VECTOR;
 			sexp_get_subsystem_pos(obj, CTEXT(n), &subsys_pos);
 
 			return sexp_vec_coordinate(&subsys_pos, index);
@@ -5530,7 +5534,7 @@ void sexp_set_object_position(int n)
 	char *object_name = CTEXT(n);
 	n = CDR(n);
 
-	vector targetvec,orig_leader_vector;
+	vec3d targetvec,orig_leader_vector;
 
 	targetvec.xyz.x = i2fl(eval_num(n));
 	n = CDR(n);
@@ -5647,11 +5651,11 @@ void sexp_set_ship_position(int n)
 }
 
 // Goober5000
-void sexp_set_ship_orient(int ship_num, vector *location, int turn_time, int bank)
+void sexp_set_ship_orient(int ship_num, vec3d *location, int turn_time, int bank)
 {
 	Assert(location);
 
-	vector v_orient;
+	vec3d v_orient;
 	matrix m_orient;
 	object *obj;
 
@@ -5673,7 +5677,7 @@ void sexp_set_ship_orient(int ship_num, vector *location, int turn_time, int ban
 
 
 	// calculate orientation matrix ----------------
-	memset(&v_orient, 0, sizeof(vector));
+	memset(&v_orient, 0, sizeof(vec3d));
 
 	vm_vec_sub(&v_orient, location, &obj->pos);
 
@@ -5693,7 +5697,7 @@ void sexp_set_ship_orient(int ship_num, vector *location, int turn_time, int ban
 // Goober5000
 void sexp_set_ship_facing(int n)
 {
-	vector location;
+	vec3d location;
 	char *ship_name;
 	int ship_num, turn_time, bank;
 	
@@ -7648,7 +7652,7 @@ void sexp_start_music(int node)
 // Goober5000
 void sexp_play_sound_from_table(int n)
 {
-	vector origin;
+	vec3d origin;
 	int sound_index;
 
 	// read in data --------------------------------
@@ -7710,7 +7714,7 @@ void sexp_explosion_effect(int n)
 // it does stuff accordingly.  In some places, it has to tiptoe around a little because the
 // code often expects a parent object when in fact there is none. <.<  >.>
 {
-	vector origin;
+	vec3d origin;
 	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, fireball_type, sound_index;
 	int emp_intensity, emp_duration;
 	shockwave_create_info sci;
@@ -7828,7 +7832,7 @@ void sexp_explosion_effect(int n)
 				{
 					case OBJ_SHIP:
 						ship_apply_global_damage( objp, NULL, &origin, t_damage );
-						vector force, vec_ship_to_impact;
+						vec3d force, vec_ship_to_impact;
 						vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
 						vm_vec_copy_normalize( &force, &vec_ship_to_impact );
 						vm_vec_scale( &force, (float)max_blast );
@@ -7875,7 +7879,7 @@ void sexp_warp_effect(int n)
 		"\t12: Shape (0 for 2-D [default], 1 for 3-D)" },
 */
 {
-	vector origin, location, v_orient;
+	vec3d origin, location, v_orient;
 	matrix m_orient;
 	int radius, duration, warp_open_sound_index, warp_close_sound_index, fireball_type, extra_flags;
 	extra_flags = FBF_WARP_VIA_SEXP;
@@ -7939,7 +7943,7 @@ void sexp_warp_effect(int n)
 
 
 	// calculate orientation matrix ----------------
-	memset(&v_orient, 0, sizeof(vector));
+	memset(&v_orient, 0, sizeof(vec3d));
 
 	vm_vec_sub(&v_orient, &location, &origin);
 
@@ -9537,7 +9541,7 @@ void sexp_ship_tag( int n, int tag )
 	tag_time = eval_num(n);
 
 	// get SSM info if needed
-	vector start;
+	vec3d start;
 	if (tag_level == 3)
 	{
 		n = CDR(n);
@@ -10268,7 +10272,7 @@ int sexp_facing(int node)
 {
 	int obj, sh;
 	float a1, a2;
-	vector v1, v2;
+	vec3d v1, v2;
 
 	if (ship_query_state(CTEXT(node)) < 0){
 		return SEXP_KNOWN_FALSE;
@@ -10298,7 +10302,7 @@ int sexp_facing2(int node)
 {
 	int i;
 	float a1, a2;
-	vector v1, v2;
+	vec3d v1, v2;
 
 	// bail if Player_obj is not good
 	if (!Player_obj) {
@@ -12496,7 +12500,7 @@ void sexp_fade_out(int n)
 void sexp_set_camera_position(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
-	vector camera_vec;
+	vec3d camera_vec;
 	//float camera_time = 0.0f;
 
 	camera_vec.xyz.x = i2fl(eval_num(n));
@@ -12536,7 +12540,7 @@ void sexp_set_camera_rotation(int n)
 void sexp_set_camera_facing(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
-	vector location;
+	vec3d location;
 	matrix cam_orient;
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
@@ -12556,7 +12560,7 @@ void sexp_set_camera_facing(int n)
 	}
 
 	//Calc to matrix
-	vector destvec;
+	vec3d destvec;
 	vm_vec_sub(&destvec, &location, Free_camera->get_position());
 
 	if (IS_VEC_NULL(&destvec))
@@ -12596,7 +12600,7 @@ void sexp_set_camera_facing_object(int n)
 	}
 
 	//Team for target
-//	vector destvec;
+//	vec3d destvec;
 	ship_obj *so;
 	int index;
 

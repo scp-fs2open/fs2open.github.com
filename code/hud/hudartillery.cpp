@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-03-25 06:57:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/03/25 06:57:34  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.8  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -176,9 +179,9 @@ void ssm_init()
 	}
 }
 
-void ssm_get_random_start_pos(vector *out, vector *start, matrix *orient, int ssm_index)
+void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, int ssm_index)
 {
-	vector temp;
+	vec3d temp;
 	ssm_info *s = &Ssm_info[ssm_index];
 
 	// get a random vector in the circle of the firing plane
@@ -204,7 +207,7 @@ void ssm_level_init()
 }
 
 // start a subspace missile effect
-void ssm_create(vector *target, vector *start, int ssm_index, ssm_firing_info *override)
+void ssm_create(vec3d *target, vec3d *start, int ssm_index, ssm_firing_info *override)
 {	
 	ssm_strike *ssm;		
 	matrix dir;
@@ -252,7 +255,7 @@ void ssm_create(vector *target, vector *start, int ssm_index, ssm_firing_info *o
 	// single player or the server
 	else {
 		// forward orientation
-		vector temp;
+		vec3d temp;
 		vm_vec_sub(&temp, target, start);
 		vm_vec_normalize(&temp);
 		vm_vector_2_matrix(&dir, &temp, NULL, NULL);
@@ -323,7 +326,7 @@ void ssm_process()
 					// if the warp effect is half done, fire the missile
 					if((1.0f - fireball_lifeleft_percent(&Objects[moveup->fireballs[idx]])) >= 0.5f){
 						// get an orientation
-						vector temp;
+						vec3d temp;
 						matrix orient;
 
 						vm_vec_sub(&temp, &moveup->sinfo.target, &moveup->sinfo.start_pos[idx]);
@@ -340,7 +343,7 @@ void ssm_process()
 				// maybe create his warpin effect
 				else if((moveup->sinfo.delay_stamp[idx] >= 0) && timestamp_elapsed(moveup->sinfo.delay_stamp[idx])){
 					// get an orientation
-					vector temp;
+					vec3d temp;
 					matrix orient;
 
 					vm_vec_sub(&temp, &moveup->sinfo.target, &moveup->sinfo.start_pos[idx]);

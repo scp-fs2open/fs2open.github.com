@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:25 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * Header file for HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:25  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/03/05 09:02:04  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -380,12 +383,12 @@ void	hud_target_prev_subobject();
 void	hud_cease_subsystem_targeting(int print_message=1);
 void	hud_cease_targeting();
 void	hud_restore_subsystem_target(ship* shipp);
-int	subsystem_in_sight(object* objp, ship_subsys* subsys, vector *eye, vector* subsystem);
-vector* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vector* world_pos);
+int	subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye, vec3d* subsystem);
+vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos);
 void	hud_target_change_check();
 
 void hud_show_target_triangle_indicator(vertex *projected_v);
-void hud_show_lead_indicator(vector *target_world_pos);
+void hud_show_lead_indicator(vec3d *target_world_pos);
 void hud_show_orientation_tee();
 void hud_show_hostile_triangle();
 void hud_show_target_data();
@@ -396,7 +399,7 @@ void hud_show_auto_icons();
 void hud_show_weapon_energy_gauge();
 void hud_show_cmeasure_gague();
 void hud_show_brackets(object *targetp, vertex *projected_v);
-void hud_draw_offscreen_indicator(vertex* target_point, vector *tpos, float distance=0.0f);
+void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float distance=0.0f);
 void hud_show_homing_missiles(void);
 
 int hud_sensors_ok(ship *sp, int show_msg = 1);

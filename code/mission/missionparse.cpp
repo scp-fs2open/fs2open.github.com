@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.86 $
- * $Date: 2005-03-27 12:28:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.87 $
+ * $Date: 2005-04-05 05:53:19 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2005/03/27 12:28:33  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.85  2005/03/25 06:57:35  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -995,7 +999,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 
 int Num_reinforcement_type_names = sizeof(Reinforcement_type_names) / sizeof(char *);
 
-vector Parse_viewer_pos;
+vec3d Parse_viewer_pos;
 matrix Parse_viewer_orient;
 
 int Loading_screen_bm_index=-1;
@@ -1035,7 +1039,7 @@ void post_process_mission();
 int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
-int mission_set_arrival_location(int anchor, int location, int distance, int objnum, vector *new_pos, matrix *new_orient);
+int mission_set_arrival_location(int anchor, int location, int distance, int objnum, vec3d *new_pos, matrix *new_orient);
 int get_parse_name_index(char *name);
 int get_anchor(char *name);
 void mission_parse_do_initial_docks();
@@ -1872,14 +1876,14 @@ void position_ship_for_knossos_warpin(p_object *objp, int shipnum, int objnum)
 		Ships[shipnum].special_warp_objnum = knossos_num;
 
 		// position self for warp on plane of device
-		vector new_point;
+		vec3d new_point;
 		float dist = fvi_ray_plane(&new_point, &Objects[knossos_num].pos, &Objects[knossos_num].orient.vec.fvec, &objp->pos, &objp->orient.vec.fvec, 0.0f);
 		polymodel *pm = model_get(Ships[shipnum].modelnum);
 		float desired_dist = -pm->mins.xyz.z;
 		vm_vec_scale_add2(&Objects[objnum].pos, &Objects[objnum].orient.vec.fvec, (dist - desired_dist));
 		// if ship is BIG or HUGE, make it go through the center of the knossos
 		if (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_HUGE_SHIP) {
-			vector offset;
+			vec3d offset;
 			vm_vec_sub(&offset, &Objects[knossos_num].pos, &new_point);
 			vm_vec_add2(&Objects[objnum].pos, &offset);
 		}
@@ -2385,7 +2389,7 @@ int parse_create_object(p_object *objp)
 		}
 
 		for (i = 0; i < num_sparks; i++ ) {
-			vector v1, v2;
+			vec3d v1, v2;
 
 			// DA 10/20/98 - sparks must be chosen on the hull and not any submodel
 			submodel_get_two_random_points(shipp->modelnum, pm->detail[0], &v1, &v2);
@@ -3900,7 +3904,7 @@ void parse_waypoint_list(mission *pm)
 
 void parse_waypoints(mission *pm)
 {
-	vector pos;
+	vec3d pos;
 
 	required_string("#Waypoints");
 
@@ -4827,7 +4831,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 		}
 	} else {
 		object *leader_objp;
-		vector pos;
+		vec3d pos;
 		matrix orient;
 		int wing_index;
 
@@ -5070,10 +5074,10 @@ p_object *mission_parse_get_arrival_ship( ushort net_signature )
 
 // mission_set_arrival_location() sets the arrival location of a parse object according to the arrival location
 // of the object.  Returns true if object set to new position, false if not.
-int mission_set_arrival_location(int anchor, int location, int dist, int objnum, vector *new_pos, matrix *new_orient)
+int mission_set_arrival_location(int anchor, int location, int dist, int objnum, vec3d *new_pos, matrix *new_orient)
 {
 	int shipnum, anchor_objnum;
-	vector anchor_pos, rand_vec, new_fvec;
+	vec3d anchor_pos, rand_vec, new_fvec;
 	matrix orient;
 
 	if ( location == ARRIVE_AT_LOCATION )
@@ -5125,7 +5129,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 
 	// if arriving from docking bay, then set ai mode and call function as per AL's instructions.
 	if ( location == ARRIVE_FROM_DOCK_BAY ) {
-		vector pos, fvec;
+		vec3d pos, fvec;
 
 		// if we get an error, just let the ship arrive(?)
 		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, &pos, &fvec) == -1 ) {
@@ -5154,7 +5158,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			else
 				static_randvec( Objects[objnum].net_signature, &rand_vec );
 		} else if ( location == ARRIVE_IN_FRONT_OF_SHIP ) {
-			vector t1, t2, t3;
+			vec3d t1, t2, t3;
 			int r1, r2;
 			float x;
 
@@ -5202,7 +5206,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 
 	// set the new_pos parameter since it might be used outside the function (i.e. when dealing with wings).
 	if ( new_pos )
-		memcpy(new_pos, &Objects[objnum].pos, sizeof(vector) );
+		memcpy(new_pos, &Objects[objnum].pos, sizeof(vec3d) );
 
 	if ( new_orient )
 		memcpy( new_orient, &Objects[objnum].orient, sizeof(matrix) );
@@ -5583,7 +5587,7 @@ int mission_do_departure( object *objp )
 {
 	ship *shipp;
 	int temp = -1;
-//	vector v;
+//	vec3d v;
 
 	Assert ( objp->type == OBJ_SHIP );
 	shipp = &Ships[objp->instance];
@@ -5932,11 +5936,11 @@ void mission_add_to_arriving_support( object *requester_objp )
 #endif
 }
 
-extern int pp_collide_any(vector *curpos, vector *goalpos, float radius, object *ignore_objp1, object *ignore_objp2, int big_only_flag);
+extern int pp_collide_any(vec3d *curpos, vec3d *goalpos, float radius, object *ignore_objp1, object *ignore_objp2, int big_only_flag);
 
 //	Set the warp in position for a support ship relative to an object.
 //	Caller tries several positions, passing vector in x, y, z.
-int get_warp_in_pos(vector *pos, object *objp, float x, float y, float z)
+int get_warp_in_pos(vec3d *pos, object *objp, float x, float y, float z)
 {
 	float	rand_val;
 
@@ -5959,7 +5963,7 @@ int get_warp_in_pos(vector *pos, object *objp, float x, float y, float z)
 // modified by Goober5000 to allow more flexibility in support ships
 void mission_bring_in_support_ship( object *requester_objp )
 {
-	vector center, warp_in_pos;
+	vec3d center, warp_in_pos;
 	//float mag;
 	p_object *pobj;
 	ship *requester_shipp;

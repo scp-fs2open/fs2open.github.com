@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.10 $
- * $Date: 2005-01-30 12:50:08 $
+ * $Revision: 2.11 $
+ * $Date: 2005-04-05 05:53:14 $
  * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/01/30 12:50:08  taylor
+ * merge with Linux/OSX tree - p0130
+ *
  * Revision 2.9  2004/08/11 05:06:19  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -601,7 +604,7 @@ ushort cfread_ushort(CFILE *file, int ver = 0, ushort deflt = 0);
 int cfread_int(CFILE *file, int ver = 0, int deflt = 0);
 uint cfread_uint(CFILE *file, int ver = 0, uint deflt = 0);
 float cfread_float(CFILE *file, int ver = 0, float deflt = 0.0f);
-void cfread_vector(vector *vec, CFILE *file, int ver = 0, vector *deflt = NULL);
+void cfread_vector(vec3d *vec, CFILE *file, int ver = 0, vec3d *deflt = NULL);
 void cfread_angles(angles *ang, CFILE *file, int ver = 0, angles *deflt = NULL);
 
 // Reads variable length, null-termined string.   Will only read up
@@ -619,7 +622,7 @@ int cfwrite_uint(uint i, CFILE *file);
 int cfwrite_short(short s, CFILE *file);
 int cfwrite_ushort(ushort s, CFILE *file);
 int cfwrite_ubyte(ubyte u, CFILE *file);
-int cfwrite_vector(vector *vec, CFILE *file);
+int cfwrite_vector(vec3d *vec, CFILE *file);
 int cfwrite_angles(angles *ang, CFILE *file);
 
 // writes variable length, null-termined string.

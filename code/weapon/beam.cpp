@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-03-08 03:50:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.49 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/03/08 03:50:17  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.47  2005/03/03 16:40:28  taylor
  * animated beam muzzle glows
  *
@@ -520,7 +524,7 @@ typedef struct beam {
 	int		target_sig;				// target sig
 	ship_subsys *subsys;				// subsys its being fired from
 	beam		*next, *prev;			// link list stuff
-	vector	targeting_laser_offset;
+	vec3d	targeting_laser_offset;
 	int		framecount;				// how many frames the beam has been active
 	int		flags;					// see BF_* defines 	
 	float		shrink;					// shrink factor	
@@ -535,8 +539,8 @@ typedef struct beam {
 	// the vector between it and last_start is where the beam will be aiming. AFTER performing collision checks, it is the
 	// literal world collision point on the object (or meaningless, if we hit nothing). The function beam_move_all_pre() is
 	// responsible for then setting it up pre-collision time
-	vector	last_shot;				
-	vector	last_start;				
+	vec3d	last_shot;				
+	vec3d	last_start;				
 	int		shot_index;				// for type D beam weapons
 
 	// recent collisions
@@ -563,7 +567,7 @@ typedef struct beam {
 	int bank;
 
 	int Beam_muzzle_stamp;
-	vector local_pnt;
+	vec3d local_pnt;
 } beam;
 
 beam Beams[MAX_BEAMS];				// all beams
@@ -626,7 +630,7 @@ typedef struct beam_light_info {
 	beam *bm;					// beam casting the light
 	int objnum;					// object getting light cast on it
 	ubyte source;				// 0 to light the shooter, 1 for lighting any ship the beam passes, 2 to light the collision ship
-	vector c_point;			// collision point for type 2 lights
+	vec3d c_point;			// collision point for type 2 lights
 } beam_light_info;
 
 beam_light_info Beam_lights[MAX_BEAM_LIGHT_INFO];
@@ -685,7 +689,7 @@ void beam_type_d_get_status(beam *b, int *shot_index, int *fire_wait);
 void beam_type_e_move(beam *b);
 
 // given a model #, and an object, stuff 2 good world coord points
-void beam_get_octant_points(int modelnum, object *objp, int oct_index, int oct_array[BEAM_NUM_GOOD_OCTANTS][4], vector *v1, vector *v2);
+void beam_get_octant_points(int modelnum, object *objp, int oct_index, int oct_array[BEAM_NUM_GOOD_OCTANTS][4], vec3d *v1, vec3d *v2);
 
 // given an object, return its model num
 int beam_get_model(object *objp);
@@ -701,7 +705,7 @@ float beam_get_cone_dot(beam *b);
 // fvec == forward vector (eye viewpoint basically. in world coords)
 // pos == world coordinate of the point we're calculating "around"
 // w == width of the diff between top and bottom around pos
-void beam_calc_facing_pts(vector *top, vector *bot, vector *fvec, vector *pos, float w, float z_add);
+void beam_calc_facing_pts(vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add);
 
 // render the muzzle glow for a beam weapon
 void beam_render_muzzle_glow(beam *b);
@@ -737,7 +741,7 @@ int beam_sort_collisions_func(const void *e1, const void *e2);
 float beam_get_widest(beam *b);
 
 // mark an object as being lit
-void beam_add_light(beam *b, int objnum, int source, vector *c_point);
+void beam_add_light(beam *b, int objnum, int source, vec3d *c_point);
 
 // apply lighting from any beams
 void beam_apply_lighting();
@@ -746,7 +750,7 @@ void beam_apply_lighting();
 void beam_recalc_sounds(beam *b);
 
 // apply a whack to a ship
-void beam_apply_whack(beam *b, object *objp, vector *hit_point);
+void beam_apply_whack(beam *b, object *objp, vec3d *hit_point);
 
 // return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
 float beam_get_ship_damage(beam *b, object *objp);
@@ -1196,7 +1200,7 @@ void beam_unpause_sounds()
 	}
 }
 
-void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vector *gpos, vector *gvec, int use_angles, vector *targetp, bool fighter_beam){
+void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp, bool fighter_beam){
 		ship_get_global_turret_gun_info(objp, ssp, gpos, gvec, use_angles, targetp);
 	if(fighter_beam)*gvec = objp->orient.vec.fvec;
 }
@@ -1208,8 +1212,8 @@ void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vector *gpo
 // move a type A beam weapon
 void beam_type_a_move(beam *b)
 {
-	vector dir;
-	vector temp, temp2;	
+	vec3d dir;
+	vec3d temp, temp2;	
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
@@ -1231,8 +1235,8 @@ void beam_type_a_move(beam *b)
 #define BEAM_T(b)						( ((b->binfo.delta_ang / b->life_total) * (b->life_total - b->life_left)) / b->binfo.delta_ang )
 void beam_type_b_move(beam *b)
 {		
-	vector actual_dir;
-	vector temp, temp2;
+	vec3d actual_dir;
+	vec3d temp, temp2;
 	float dot_save;	
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
@@ -1267,7 +1271,7 @@ void beam_type_b_move(beam *b)
 // type C functions
 void beam_type_c_move(beam *b)
 {	
-	vector temp;
+	vec3d temp;
 
 	// ugh
 	if(b->objp == NULL){
@@ -1288,7 +1292,7 @@ void beam_type_c_move(beam *b)
 void beam_type_d_move(beam *b)
 {
 	int shot_index, fire_wait;
-	vector temp, temp2, dir;	
+	vec3d temp, temp2, dir;	
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
@@ -1345,7 +1349,7 @@ void beam_type_d_get_status(beam *b, int *shot_index, int *fire_wait)
 // type e functions
 void beam_type_e_move(beam *b)
 {
-	vector temp, turret_norm;	
+	vec3d temp, turret_norm;	
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
@@ -1605,13 +1609,13 @@ void beam_move_all_post()
 #define P_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 int poly_beam = 0;
 float U_offset =0.0f; // beam texture offset -Bobboau
-void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrink)
+void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *shot, float shrink)
 {	
 //	mprintf(("about to render a beam\n"));
 	int idx, s_idx;
 	vertex h1[4];				// halves of a beam section	
 	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
-	vector fvec, top1, bottom1, top2, bottom2;
+	vec3d fvec, top1, bottom1, top2, bottom2;
 	float scale;	
 	float u_scale;	// beam tileing -Bobboau
 	float length;	// beam tileing -Bobboau
@@ -1726,7 +1730,7 @@ void beam_generate_muzzle_particles(beam *b)
 	int particle_count;
 	int idx;
 	weapon_info *wip;
-	vector turret_norm, turret_pos, particle_pos, particle_dir, p_temp;
+	vec3d turret_norm, turret_pos, particle_pos, particle_dir, p_temp;
 	matrix m;
 	particle_info pinfo;
 
@@ -1906,10 +1910,10 @@ void beam_render_all()
 // fvec == forward vector (eye viewpoint basically. in world coords)
 // pos == world coordinate of the point we're calculating "around"
 // w == width of the diff between top and bottom around pos
-void beam_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos, float w, float z_add )
+void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add )
 {
-	vector uvec, rvec;
-	vector temp;
+	vec3d uvec, rvec;
+	vec3d temp;
 
 	temp = *pos;
 
@@ -1932,7 +1936,7 @@ DCF(blight, "")
 }
 
 // call to add a light source to a small object
-void beam_add_light_small(beam *bm, object *objp, vector *pt_override = NULL)
+void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 {
 	weapon_info *wip;
 	beam_weapon_info *bwi;
@@ -1963,7 +1967,7 @@ void beam_add_light_small(beam *bm, object *objp, vector *pt_override = NULL)
 	float light_rad = beam_get_widest(bm) * blight * noise;	
 
 	// nearest point on the beam, and its distance to the ship
-	vector near_pt;
+	vec3d near_pt;
 	if(pt_override == NULL){
 		float dist;
 		vm_vec_dist_to_line(&objp->pos, &bm->last_start, &bm->last_shot, &near_pt, &dist);
@@ -1985,7 +1989,7 @@ void beam_add_light_small(beam *bm, object *objp, vector *pt_override = NULL)
 }
 
 // call to add a light source to a large object
-void beam_add_light_large(beam *bm, object *objp, vector *pt0, vector *pt1)
+void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 {
 	weapon_info *wip;
 	beam_weapon_info *bwi;
@@ -2026,7 +2030,7 @@ void beam_add_light_large(beam *bm, object *objp, vector *pt0, vector *pt1)
 }
 
 // mark an object as being lit
-void beam_add_light(beam *b, int objnum, int source, vector *c_point)
+void beam_add_light(beam *b, int objnum, int source, vec3d *c_point)
 {
 	beam_light_info *l;
 
@@ -2058,7 +2062,7 @@ void beam_apply_lighting()
 {
 	int idx;
 	beam_light_info *l;
-	vector pt, dir;
+	vec3d pt, dir;
 	beam_weapon_info *bwi;
 
 	// convert all beam lights into real lights
@@ -2291,7 +2295,7 @@ void beam_start_warmdown(beam *b)
 void beam_recalc_sounds(beam *b)
 {
 	beam_weapon_info *bwi;
-	vector pos;	
+	vec3d pos;	
 
 	Assert(b->weapon_info_index >= 0);
 	if(b->weapon_info_index < 0){
@@ -2331,10 +2335,10 @@ void beam_recalc_sounds(beam *b)
 // fills in binfo
 void beam_get_binfo(beam *b, float accuracy, int num_shots)
 {
-	vector p2;
+	vec3d p2;
 	int model_num, idx;	
-	vector oct1, oct2;
-	vector turret_point, turret_norm;
+	vec3d oct1, oct2;
+	vec3d turret_point, turret_norm;
 	beam_weapon_info *bwi;
 	int skill_level;
 
@@ -2427,7 +2431,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 // aim the beam (setup last_start and last_shot - the endpoints). also recalculates collision pairs
 void beam_aim(beam *b)
 {
-	vector temp, p2;
+	vec3d temp, p2;
 	int model_num;	
 	
 	// type C beam weapons have no target
@@ -2524,9 +2528,9 @@ void beam_aim(beam *b)
 }
 
 // given a model #, and an object, stuff 2 good world coord points
-void beam_get_octant_points(int modelnum, object *objp, int oct_index, int oct_array[BEAM_NUM_GOOD_OCTANTS][4], vector *v1, vector *v2)
+void beam_get_octant_points(int modelnum, object *objp, int oct_index, int oct_array[BEAM_NUM_GOOD_OCTANTS][4], vec3d *v1, vec3d *v2)
 {	
-	vector t1, t2, temp;
+	vec3d t1, t2, temp;
 	polymodel *m = model_get(modelnum);
 
 	// bad bad bad bad bad bad
@@ -2552,7 +2556,7 @@ void beam_get_octant_points(int modelnum, object *objp, int oct_index, int oct_a
 // throw some jitter into the aim - based upon shot_aim
 void beam_jitter_aim(beam *b, float aim)
 {
-	vector forward, circle;
+	vec3d forward, circle;
 	matrix m;
 	float subsys_strength;
 
@@ -2971,7 +2975,7 @@ int beam_collide_early_out(object *a, object *b)
 	beam *bm;
 	weapon_info *bwi;
 	float cull_dist, cull_dot;
-	vector dot_test, dot_test2, dist_test;	
+	vec3d dot_test, dot_test2, dist_test;	
 		
 	// get the beam
 	Assert(a->instance >= 0);
@@ -3067,7 +3071,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad)
 		bc->cinfo = *cinfo;
 
 /*		decal_point dec;
-		vector bfvec;
+		vec3d bfvec;
 		vm_vec_sub(&bfvec, &b->last_shot, &b->last_start);
 		dec.orient.vec.fvec = bfvec;//cinfo->hit_normal;
 		//get a good orientation matrix baised on the normal of the hit face and the orientation of the ship it hit-Bobboau
@@ -3401,8 +3405,8 @@ int beam_ok_to_fire(beam *b)
 	}
 
 	// if the beam will be firing out of its FOV, power it down
-	vector aim_dir, temp;
-	vector turret_dir, turret_pos;
+	vec3d aim_dir, temp;
+	vec3d turret_dir, turret_pos;
 	vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 	vm_vec_normalize(&aim_dir);
 	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
@@ -3439,7 +3443,7 @@ float beam_get_widest(beam *b)
 }  
 
 // apply a whack to a ship
-void beam_apply_whack(beam *b, object *objp, vector *hit_point)
+void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 {
 	weapon_info *wip;	
 	ship *shipp;
@@ -3482,7 +3486,7 @@ void beam_apply_whack(beam *b, object *objp, vector *hit_point)
 	}
 
 	// whack direction
-	vector whack_dir, temp;
+	vec3d whack_dir, temp;
 	vm_vec_dist_to_line(&objp->pos, &b->last_start, &b->last_shot, &temp, &dist);
 	vm_vec_sub(&whack_dir, &objp->pos, &temp);
 	vm_vec_normalize(&whack_dir);

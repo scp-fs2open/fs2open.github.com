@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.8 $
- * $Date: 2005-01-11 21:25:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-05 05:53:23 $
+ * $Author: taylor $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/01/11 21:25:58  Goober5000
+ * fixed two small things with physics
+ * --Goober500
+ *
  * Revision 2.7  2004/08/11 05:06:32  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -186,17 +190,17 @@ typedef struct physics_info {
 	uint		flags;			//misc physics flags
 
 	float		mass;				//the mass of this object
-	vector		center_of_mass;		// Goober5000 - this is never ever used by physics; currently physics assumes the center of an object is the center of mass
+	vec3d		center_of_mass;		// Goober5000 - this is never ever used by physics; currently physics assumes the center of an object is the center of mass
 	matrix	I_body_inv;		// inverse moment of inertia tensor (used to calculate rotational effects)
 
 	float		rotdamp;			//rotational velocity damping
 	float		side_slip_time_const;	// time const for achieving desired velocity in the local sideways direction
 												//   value should be zero for no sideslip and increase depending on desired slip
 
-	vector	max_vel;			//maximum foward velocity in x,y,z
-	vector	afterburner_max_vel;	// maximum foward velocity in x,y,z while afterburner engaged
-	vector booster_max_vel;
-	vector	max_rotvel;		//maximum p,b,h rotational velocity
+	vec3d	max_vel;			//maximum foward velocity in x,y,z
+	vec3d	afterburner_max_vel;	// maximum foward velocity in x,y,z while afterburner engaged
+	vec3d booster_max_vel;
+	vec3d	max_rotvel;		//maximum p,b,h rotational velocity
 	float		max_rear_vel;	//maximum velocity in the backwards Z direction
 
 	// Acceleration rates.  Only used if flag PF_ACCELERATES is set
@@ -213,20 +217,20 @@ typedef struct physics_info {
 
 	// These get changed by the control code.  The physics uses these
 	// as input values when doing physics.
-	vector	prev_ramp_vel;				// follows the user's desired velocity
-	vector	desired_vel;				// in world coord
-	vector	desired_rotvel;			// in local coord
+	vec3d	prev_ramp_vel;				// follows the user's desired velocity
+	vec3d	desired_vel;				// in world coord
+	vec3d	desired_rotvel;			// in local coord
 	float		forward_thrust;			// How much the forward thruster is applied.  0-1.
 	float		side_thrust;			// How much the forward thruster is +x.  0-1.
 	float		vert_thrust;			// How much the forward thruster is +y.  0-1.
 		
 	// Data that changes each frame.  Physics fills these in each frame.
-	vector	vel;						// The current velocity vector of this object
-	vector	rotvel;					// The current rotational velecity (angles)
+	vec3d	vel;						// The current velocity vector of this object
+	vec3d	rotvel;					// The current rotational velecity (angles)
 	float		speed;					// Yes, this can be derived from velocity, but that's expensive!
 	float		fspeed;					//	Speed in the forward direction.
 	float		heading;
-	vector	prev_fvec;				//	Used in AI for momentum.
+	vec3d	prev_fvec;				//	Used in AI for momentum.
 	matrix	last_rotmat;			//	Used for moving two objects together and for editor.
 
 	int		afterburner_decay;	// timestamp used to control how long ship shakes after afterburner released
@@ -265,23 +269,23 @@ extern int physics_paused;				//	Set means don't do physics, except for player.
 //   physics_read_flying_controls( &ViewerOrient, &ViewerPhysics, FrameSecs, &ci );
 //   physics_sim(&ViewerPos, &ViewerOrient, &ViewerPhysics, FrameSecs );		
 extern void physics_init( physics_info * pi );
-extern void physics_read_flying_controls( matrix * orient, physics_info * pi, control_info * ci, float sim_time, vector *wash_rot=NULL);
-extern void physics_sim(vector *position, matrix * orient, physics_info * pi, float sim_time );
-extern void physics_sim_editor(vector *position, matrix * orient, physics_info * pi, float sim_time);
+extern void physics_read_flying_controls( matrix * orient, physics_info * pi, control_info * ci, float sim_time, vec3d *wash_rot=NULL);
+extern void physics_sim(vec3d *position, matrix * orient, physics_info * pi, float sim_time );
+extern void physics_sim_editor(vec3d *position, matrix * orient, physics_info * pi, float sim_time);
 
-extern void physics_sim_vel(vector * position, physics_info * pi, float sim_time, matrix * orient);
+extern void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix * orient);
 extern void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time );
-extern void physics_apply_whack(vector *force, vector *pos, physics_info *pi, matrix *orient, float mass);
-extern void physics_apply_shock(vector *direction_vec, float pressure, physics_info *pi, matrix *orient, vector *min, vector *max, float radius);
-extern void physics_collide_whack(vector *impulse, vector *delta_rotvel, physics_info *pi, matrix *orient);
+extern void physics_apply_whack(vec3d *force, vec3d *pos, physics_info *pi, matrix *orient, float mass);
+extern void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius);
+extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_info *pi, matrix *orient);
 int check_rotvel_limit( physics_info *pi );
 
 
 
 // functions which use physics calcs to predict position and velocity
-void physics_predict_pos(physics_info *pi, float delta_time, vector *predicted_pos);
-void physics_predict_vel(physics_info *pi, float delta_time, vector *predicted_vel);
-void physics_predict_pos_and_vel(physics_info *pi, float delta_time, vector *predicted_vel, vector *predicted_pos);
+void physics_predict_pos(physics_info *pi, float delta_time, vec3d *predicted_pos);
+void physics_predict_vel(physics_info *pi, float delta_time, vec3d *predicted_vel);
+void physics_predict_pos_and_vel(physics_info *pi, float delta_time, vec3d *predicted_vel, vec3d *predicted_pos);
 
 // If physics_set_viewer is called with the viewer's physics_info, then
 // this variable tracks the viewer's bank.  This is used for g3_draw_rotated_bitmap.

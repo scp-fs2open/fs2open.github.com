@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.136 $
- * $Date: 2005-03-25 06:57:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.137 $
+ * $Date: 2005-04-05 05:53:16 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.136  2005/03/25 06:57:33  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.135  2005/03/24 23:31:45  taylor
  * make sounds.tbl dynamic
  * "filename" will never be larger than 33 chars so having it 260 is a waste (freespace.cpp)
@@ -1333,9 +1336,9 @@ float Viewer_zoom = VIEWER_ZOOM_DEFAULT;
 
 // JAS: Code for warphole camera.
 // Needs to be cleaned up.
-vector Camera_pos = { 0.0f, 0.0f, 0.0f };
-vector Camera_velocity = { 0.0f, 0.0f, 0.0f };
-vector Camera_desired_velocity = { 0.0f, 0.0f, 0.0f };
+vec3d Camera_pos = { 0.0f, 0.0f, 0.0f };
+vec3d Camera_velocity = { 0.0f, 0.0f, 0.0f };
+vec3d Camera_desired_velocity = { 0.0f, 0.0f, 0.0f };
 matrix Camera_orient = IDENTITY_MATRIX;
 float Camera_damping = 1.0f;
 float Camera_time = 0.0f;
@@ -1877,7 +1880,7 @@ void game_sunspot_process(float frametime)
 			float pct;
 			pct = (1.0f - (supernova_time_left() / SUPERNOVA_CUT_TIME));
 
-			vector light_dir;				
+			vec3d light_dir;				
 			light_get_global_dir(&light_dir, 0);
 			float dot;
 			dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec );
@@ -1935,10 +1938,10 @@ void game_sunspot_process(float frametime)
 
 			// check
 			for(idx=0; idx<n_lights; idx++){
-				//(vector *eye_pos, matrix *eye_orient)
+				//(vec3d *eye_pos, matrix *eye_orient)
 				if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
 
-					vector light_dir;				
+					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
 					sbm=stars_lookup_sun(&Suns[idx]);
@@ -3648,7 +3651,7 @@ void game_show_framerate()
 }
 
 extern int Cmdline_show_pos;
-void game_show_eye_pos(vector *eye_pos, matrix* eye_orient)
+void game_show_eye_pos(vec3d *eye_pos, matrix* eye_orient)
 {
 	if(!Cmdline_show_pos)
 		return;
@@ -3917,7 +3920,7 @@ extern int Tool_enabled;
 int tst = 0;
 int tst_time = 0;
 int tst_big = 0;
-vector tst_pos;
+vec3d tst_pos;
 int tst_bitmap = -1;
 float tst_x, tst_y;
 float tst_offset, tst_offset_total;
@@ -4347,7 +4350,7 @@ void apply_hud_shake(matrix *eye_orient)
 			float intensity = FF_SCALE * Ships[Player_obj->instance].wash_intensity;
 
 			// vector rand_vec
-			vector rand_vec;
+			vec3d rand_vec;
 			vm_vec_rand_vec_quick(&rand_vec);
 
 			// play the effect
@@ -4387,11 +4390,11 @@ void apply_hud_shake(matrix *eye_orient)
 extern void compute_slew_matrix(matrix *orient, angles *a);	// TODO: move code to proper place and extern in header file
 
 //	Player's velocity just before he blew up.  Used to keep camera target moving.
-vector	Dead_player_last_vel = {1.0f, 1.0f, 1.0f};
+vec3d	Dead_player_last_vel = {1.0f, 1.0f, 1.0f};
 
 
 inline void render_environment(int&i, matrix*new_orient, float new_zoom){
-vector nv = ZERO_VECTOR;
+vec3d nv = ZERO_VECTOR;
 	gr_set_render_target(
 		(Game_subspace_effect)?
 			gr_screen.dynamic_environment_map 
@@ -4414,14 +4417,14 @@ vector nv = ZERO_VECTOR;
 }
 
 extern float View_zoom, Canv_w2, Canv_h2;
-void setup_environment_mapping(vector *eye_pos, matrix *eye_orient){
+void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient){
 	if(gr_screen.mode != GR_DIRECT3D)return;
 	if(!Cmdline_nohtl){
 //		matrix old_orient = Eye_matrix;
-//		vector old_position = Eye_position;
+//		vec3d old_position = Eye_position;
 		matrix new_orient;
 		float old_zoom = View_zoom, new_zoom = 0.925f;
-//		vector nv = ZERO_VECTOR;
+//		vec3d nv = ZERO_VECTOR;
 		int i = 0;
 
 		{
@@ -4472,9 +4475,9 @@ void setup_environment_mapping(vector *eye_pos, matrix *eye_orient){
 }
 
 //	Set eye_pos and eye_orient based on view mode.
-void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
+void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 {
-	vector	eye_dir;
+	vec3d	eye_dir;
 
 	static int last_Viewer_mode = 0;
 	static int last_Game_mode = 0;
@@ -4537,7 +4540,7 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 		game_set_view_clip(flRealframetime);
 
 	if (Game_mode & GM_DEAD) {
-		vector	vec_to_deader, view_pos;
+		vec3d	vec_to_deader, view_pos;
 		float		dist;
 
 		Viewer_mode |= VM_DEAD_VIEW;
@@ -4652,8 +4655,8 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 				compute_slew_matrix(eye_orient, &Viewer_slew_angles);
 
 			} else if ( Viewer_mode & VM_CHASE ) {
-				vector	move_dir;
-				vector aim_pt;
+				vec3d	move_dir;
+				vec3d aim_pt;
 								
 				
 
@@ -4690,7 +4693,7 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 				// call because the up and the forward vector are the same.   I fixed
 				// it by adding in a fraction of the right vector all the time to the
 				// up vector.
-				vector tmp_up = Viewer_obj->orient.vec.uvec;
+				vec3d tmp_up = Viewer_obj->orient.vec.uvec;
 				vm_vec_scale_add2( &tmp_up, &Viewer_obj->orient.vec.rvec, 0.00001f );
 
 				vm_vector_2_matrix(eye_orient, &eye_dir, &tmp_up, NULL);
@@ -4758,7 +4761,7 @@ extern float View_zoom, Canv_h2, Canv_w2;
 extern int Cmdline_nohtl;
 
 // Does everything needed to render a frame
-void game_render_frame( vector * eye_pos, matrix * eye_orient )
+void game_render_frame( vec3d * eye_pos, matrix * eye_orient )
 {
 	int dont_offset;
 
@@ -4911,7 +4914,7 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 //#define JOHNS_DEBUG_CODE	1
 
 #ifdef JOHNS_DEBUG_CODE
-void john_debug_stuff(vector *eye_pos, matrix *eye_orient)
+void john_debug_stuff(vec3d *eye_pos, matrix *eye_orient)
 {
 	//if ( keyd_pressed[KEY_LSHIFT] )		
 	{
@@ -4920,7 +4923,7 @@ void john_debug_stuff(vector *eye_pos, matrix *eye_orient)
 			model_subsystem *turret = tsys->system_info;
 
 			if (turret->type == SUBSYSTEM_TURRET )	{
-				vector fvec, uvec;
+				vec3d fvec, uvec;
 				object * tobj = &Objects[Players[Player_num].targeted_subobject_parent];
 
 				ship_model_start(tobj);
@@ -5405,7 +5408,7 @@ void game_render_hud_2d()
 }
 
 // Draw the 3D-dependant HUD gauges
-void game_render_hud_3d(vector *eye_pos, matrix *eye_orient)
+void game_render_hud_3d(vec3d *eye_pos, matrix *eye_orient)
 {
 	g3_start_frame(0);		// 0 = turn zbuffering off
 	g3_set_view_matrix( eye_pos, eye_orient, Viewer_zoom );
@@ -5475,7 +5478,7 @@ void game_frame(int paused)
 	fix render3_time1=0, render3_time2=0;
 	fix flip_time1=0, flip_time2=0;
 	fix clear_time1=0, clear_time2=0;
-	vector eye_pos;
+	vec3d eye_pos;
 	matrix eye_orient;
 
 #ifndef NDEBUG
@@ -5620,10 +5623,10 @@ void game_frame(int paused)
 			if(cp_model != -2)
 			{
 				
-				vector		camera_eye = {0.0f,0.0f,0.0f};
-				vector orient_vec = {0.0f,0.0f,0.0f};
-				vector obj_pos = {0.0f,0.0f,0.0f};
-				vector up_vector = {0.0f,0.0f,0.0f};
+				vec3d		camera_eye = {0.0f,0.0f,0.0f};
+				vec3d orient_vec = {0.0f,0.0f,0.0f};
+				vec3d obj_pos = {0.0f,0.0f,0.0f};
+				vec3d up_vector = {0.0f,0.0f,0.0f};
 				matrix camera_orient = IDENTITY_MATRIX;
 				float factor = 2;
 				float Hud_target_object_factor = 2.2f;
@@ -6396,7 +6399,7 @@ void os_close()
 void apply_physics( float damping, float desired_vel, float initial_vel, float t, float * new_vel, float * delta_pos );
 
 
-void camera_set_position( vector *pos )
+void camera_set_position( vec3d *pos )
 {
 	Camera_pos = *pos;
 }
@@ -6406,7 +6409,7 @@ void camera_set_orient( matrix *orient )
 	Camera_orient = *orient;
 }
 
-void camera_set_velocity( vector *vel, int instantaneous )
+void camera_set_velocity( vec3d *vel, int instantaneous )
 {
 	Camera_desired_velocity.xyz.x = 0.0f;
 	Camera_desired_velocity.xyz.y = 0.0f;
@@ -6425,7 +6428,7 @@ void camera_set_velocity( vector *vel, int instantaneous )
 //
 void camera_move()
 {
-	vector new_vel, delta_pos;
+	vec3d new_vel, delta_pos;
 
 	apply_physics( Camera_damping, Camera_desired_velocity.xyz.x, Camera_velocity.xyz.x, flFrametime, &new_vel.xyz.x, &delta_pos.xyz.x );
 	apply_physics( Camera_damping, Camera_desired_velocity.xyz.y, Camera_velocity.xyz.y, flFrametime, &new_vel.xyz.y, &delta_pos.xyz.y );
@@ -6442,7 +6445,7 @@ void camera_move()
 	Camera_time += flFrametime;
 
 	if ( (ot < 0.667f) && ( Camera_time >= 0.667f ) )	{
-		vector tmp;
+		vec3d tmp;
 		
 		tmp.xyz.z = 4.739f;		// always go this fast forward.
 
@@ -6461,7 +6464,7 @@ void camera_move()
 	}
 
 	if ( (ot < 3.0f ) && ( Camera_time >= 3.0f ) )	{
-		vector tmp = { 0.0f, 0.0f, 0.0f };
+		vec3d tmp = { 0.0f, 0.0f, 0.0f };
 		camera_set_velocity( &tmp, 0 );
 	}
 	
@@ -6813,7 +6816,7 @@ void game_process_event( int current_state, int event )
 				Player->saved_viewer_mode = Viewer_mode;
 				Viewer_mode |= VM_WARP_CHASE;
 				
-				vector tmp = Player_obj->pos;
+				vec3d tmp = Player_obj->pos;
 				matrix tmp_m;
 				ship_get_eye( &tmp, &tmp_m, Player_obj );
 				vm_vec_scale_add2( &tmp, &Player_obj->orient.vec.rvec, 0.0f );
@@ -6822,7 +6825,7 @@ void game_process_event( int current_state, int event )
 				Camera_time = 0.0f;
 				camera_set_position( &tmp );
 				camera_set_orient( &Player_obj->orient );
-				vector tmp_vel = { 0.0f, 5.1919f, 14.7f };
+				vec3d tmp_vel = { 0.0f, 5.1919f, 14.7f };
 
 				//mprintf(( "Rad = %.1f\n", Player_obj->radius ));
 				camera_set_velocity( &tmp_vel, 1);
@@ -9116,7 +9119,7 @@ void Time_model( int modelnum )
 {
 //	mprintf(( "Timing ship '%s'\n", si->name ));
 
-	vector eye_pos, model_pos;
+	vec3d eye_pos, model_pos;
 	matrix eye_orient, model_orient;
 
 	polymodel *pm = model_get( modelnum );
@@ -9164,7 +9167,7 @@ void Time_model( int modelnum )
 
 	eye_pos.xyz.z = -pm->rad*2.0f;
 
-	vector eye_to_model;
+	vec3d eye_to_model;
 
 	vm_vec_sub( &eye_to_model, &model_pos, &eye_pos );
 	vm_vector_2_matrix( &eye_orient, &eye_to_model, NULL, NULL );

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-03-29 07:03:16 $
- * $Author: wmcoolmon $
+ * $Revision: 2.30 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/03/29 07:03:16  wmcoolmon
+ * Removed some warnings under Linux/GCC
+ *
  * Revision 2.28  2005/03/27 12:28:33  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -573,7 +576,7 @@ void hud_shield_show(object *objp)
 			g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
 		/*else
 		{
-			vector finger_vec = {0.0f, 0.0f, 176.0f};
+			vec3d finger_vec = {0.0f, 0.0f, 176.0f};
 			g3_set_view_matrix( &finger_vec, &vmd_identity_matrix, 1.0f);
 		}*/
 

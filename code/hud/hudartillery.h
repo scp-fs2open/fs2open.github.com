@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.h $
- * $Revision: 2.4 $
- * $Date: 2004-09-17 07:11:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  * 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/09/17 07:11:02  Goober5000
+ * moved ssm stuff to header file so it would work in FRED
+ * --Goober5000
+ *
  * Revision 2.3  2004/08/23 04:00:15  Goober5000
  * ship-tag and ship-untag
  * --Goober5000
@@ -73,10 +77,10 @@ typedef struct ssm_info {
 // creation info for the strike (useful for multiplayer)
 typedef struct ssm_firing_info {
 	int			delay_stamp[MAX_SSM_COUNT];	// timestamps
-	vector		start_pos[MAX_SSM_COUNT];		// start positions
+	vec3d		start_pos[MAX_SSM_COUNT];		// start positions
 	
 	int			ssm_index;							// index info ssm_info array
-	vector		target;								// target for the strike	
+	vec3d		target;								// target for the strike	
 } ssm_firing_info;
 
 // the strike itself
@@ -109,7 +113,7 @@ void hud_artillery_update();
 void hud_artillery_render();
 
 // start a subspace missile effect
-void ssm_create(vector *target, vector *start, int ssm_index, ssm_firing_info *override);
+void ssm_create(vec3d *target, vec3d *start, int ssm_index, ssm_firing_info *override);
 
 // Goober5000
 extern int ssm_info_lookup(char *name);

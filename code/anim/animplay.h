@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:18 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:14 $
+ * $Author: taylor $
  *
  * Header file for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:18  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2003/12/08 22:30:02  randomtiger
  * Put render state and other direct D3D calls repetition check back in, provides speed boost.
  * Fixed bug that caused fullscreen only crash with DXT textures
@@ -131,7 +134,7 @@ typedef struct {
 	int start_at;
 	int stop_at;
 	int screen_id;
-	vector *world_pos;
+	vec3d *world_pos;
 	float radius;
 	int framerate_independent;
 	void *color;

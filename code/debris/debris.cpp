@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-03-27 12:28:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2005-04-05 05:53:15 $
+ * $Author: taylor $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/03/27 12:28:32  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.11  2005/03/02 21:24:43  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -615,7 +619,7 @@ void debris_process_post(object * obj, float frame_time)
 
 			int n, n_arcs = ((rand()>>5) % 3)+1;		// Create 1-3 sparks
 
-			vector v1, v2, v3, v4;
+			vec3d v1, v2, v3, v4;
 			submodel_get_two_random_points( db->model_num, db->submodel_num, &v1, &v2 );
 			submodel_get_two_random_points( db->model_num, db->submodel_num, &v3, &v4 );
 
@@ -658,7 +662,7 @@ void debris_process_post(object * obj, float frame_time)
 	
 			// rotate v2 out of local coordinates into world.
 			// Use v2 since it is used in every bolt.  See above switch().
-			vector snd_pos;
+			vec3d snd_pos;
 			vm_vec_unrotate(&snd_pos, &v2, &obj->orient);
 			vm_vec_add2(&snd_pos, &obj->pos );
 
@@ -695,7 +699,7 @@ void debris_process_post(object * obj, float frame_time)
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = myrand();
 				if ( mr < RAND_MAX/5 )	{
-					vector v1, v2;
+					vec3d v1, v2;
 					submodel_get_two_random_points( db->model_num, db->submodel_num, &v1, &v2 );
 					db->arc_pts[i][mr % 2] = v1;
 				}
@@ -731,7 +735,7 @@ int debris_find_oldest()
 }
 
 #define	DEBRIS_ROTVEL_SCALE	5.0f
-void calc_debris_physics_properties( physics_info *pi, vector *min, vector *max );
+void calc_debris_physics_properties( physics_info *pi, vec3d *min, vec3d *max );
 // ---------------------------------------------------------------------------------------
 // debris_create()
 //
@@ -739,7 +743,7 @@ void calc_debris_physics_properties( physics_info *pi, vector *min, vector *max 
 //
 //	exp_force:	Explosion force, used to assign velocity to pieces.
 //					1.0f assigns velocity like before.  2.0f assigns twice as much to non-inherited part of velocity
-object *debris_create(object *source_obj, int model_num, int submodel_num, vector *pos, vector *exp_center, int hull_flag, float exp_force)
+object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force)
 {
 	int		i, n, objnum, parent_objnum;
 	object	*obj;
@@ -814,7 +818,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vecto
 
 	for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
 		db->arc_timestamp[i] = timestamp(-1);
-		//	vector	arc_pts[MAX_DEBRIS_ARCS][2];		// The endpoints of each arc
+		//	vec3d	arc_pts[MAX_DEBRIS_ARCS][2];		// The endpoints of each arc
 	}
 
 	if ( db->is_hull )	{
@@ -877,7 +881,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vecto
 
 	Num_debris_pieces++;
 
-	vector rotvel, radial_vel, to_center;
+	vec3d rotvel, radial_vel, to_center;
 
 	if ( exp_center )
 		vm_vec_sub( &to_center,pos, exp_center );
@@ -893,7 +897,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vecto
 
 		// set up physics mass and I_inv for hull debris pieces
 		pm = model_get(model_num);
-		vector *min, *max;
+		vec3d *min, *max;
 		min = &pm->submodel[submodel_num].min;
 		max = &pm->submodel[submodel_num].max;
 		calc_debris_physics_properties( &obj->phys_info, min, max );
@@ -932,7 +936,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vecto
 	// DA: here we need to vel_from_rot = w x to_center, where w is world is unrotated to world coords and offset is the 
 	// displacement fromt the center of the parent object to the center of the debris piece
 
-	vector world_rotvel, vel_from_rotvel;
+	vec3d world_rotvel, vel_from_rotvel;
 	vm_vec_unrotate ( &world_rotvel, &source_obj->phys_info.rotvel, &source_obj->orient );
 	vm_vec_crossprod ( &vel_from_rotvel, &world_rotvel, &to_center );
 	vm_vec_scale ( &vel_from_rotvel, DEBRIS_ROTVEL_SCALE);
@@ -1009,7 +1013,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vecto
 //	Alas, poor debris_obj got whacked.  Fortunately, we know who did it, where and how hard, so we
 //	can do something about it.
 //
-void debris_hit(object *debris_obj, object *other_obj, vector *hitpos, float damage)
+void debris_hit(object *debris_obj, object *other_obj, vec3d *hitpos, float damage)
 {
 	debris	*debris_p = &Debris[debris_obj->instance];
 
@@ -1021,7 +1025,7 @@ void debris_hit(object *debris_obj, object *other_obj, vector *hitpos, float dam
 		pe.pos = *hitpos;								// Where the particles emit from
 		pe.vel = debris_obj->phys_info.vel;		// Initial velocity of all the particles
 
-		vector tmp_norm;
+		vec3d tmp_norm;
 		vm_vec_sub( &tmp_norm, hitpos, &debris_obj->pos );
 		vm_vec_normalize_safe(&tmp_norm);
 			
@@ -1075,7 +1079,7 @@ void debris_hit(object *debris_obj, object *other_obj, vector *hitpos, float dam
 //
 #pragma warning ( push )
 #pragma warning ( disable : 4701 )	// possible use of variable without initialization
-int debris_check_collision(object *pdebris, object *other_obj, vector *hitpos, collision_info_struct *debris_hit_info)
+int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, collision_info_struct *debris_hit_info)
 {
 	mc_info	mc;
 	int		num;
@@ -1116,7 +1120,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vector *hitpos, c
 	object *heavy_obj = heavy;
 	object *light_obj = light;
 
-	vector zero, p0, p1;
+	vec3d zero, p0, p1;
 	vm_vec_zero(&zero);
 	vm_vec_sub(&p0, &light->last_pos, &heavy->last_pos);
 	vm_vec_sub(&p1, &light->pos, &heavy->pos);
@@ -1126,7 +1130,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vector *hitpos, c
 	mc.p1 = &p1;									// Point 2 of ray to check
 
 	// find the light object's position in the heavy object's reference frame at last frame and also in this frame.
-	vector p0_temp, p0_rotated;
+	vec3d p0_temp, p0_rotated;
 		
 	// Collision detection from rotation enabled if at rotaion is less than 30 degree in frame
 	// This should account for all ships
@@ -1153,7 +1157,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vector *hitpos, c
 
 		// copy important data
 		int copy_flags = mc.flags;  // make a copy of start end positions of sphere in  big ship RF
-		vector copy_p0, copy_p1;
+		vec3d copy_p0, copy_p1;
 		copy_p0 = *mc.p0;
 		copy_p1 = *mc.p1;
 
@@ -1224,7 +1228,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vector *hitpos, c
 							}
 
 							// find position in submodel RF of light object at collison
-							vector int_light_pos, diff;
+							vec3d int_light_pos, diff;
 							vm_vec_sub(&diff, mc.p1, mc.p0);
 							vm_vec_scale_add(&int_light_pos, mc.p0, &diff, mc.hit_dist);
 							model_find_world_point(&debris_hit_info->light_collision_cm_pos, &int_light_pos, mc.model_num, mc.hit_submodel, &heavy_obj->orient, &zero);
@@ -1256,7 +1260,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vector *hitpos, c
 					}
 
 					// find position in submodel RF of light object at collison
-					vector diff;
+					vec3d diff;
 					vm_vec_sub(&diff, mc.p1, mc.p0);
 					vm_vec_scale_add(&debris_hit_info->light_collision_cm_pos, mc.p0, &diff, mc.hit_dist);
 
@@ -1288,7 +1292,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vector *hitpos, c
 			}
 
 			// find position in submodel RF of light object at collison
-			vector diff;
+			vec3d diff;
 			vm_vec_sub(&diff, mc.p1, mc.p0);
 			vm_vec_scale_add(&debris_hit_info->light_collision_cm_pos, mc.p0, &diff, mc.hit_dist);
 
@@ -1338,7 +1342,7 @@ int debris_get_team(object *objp)
 }
 
 // fills in debris physics properties when created, specifically mass and moment of inertia
-void calc_debris_physics_properties( physics_info *pi, vector *mins, vector *maxs )
+void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs )
 {
 	float dx, dy, dz, mass;
 	dx = maxs->xyz.x - mins->xyz.x;

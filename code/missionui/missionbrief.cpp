@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-03-02 21:24:45 $
+ * $Revision: 2.24 $
+ * $Date: 2005-04-05 05:53:19 $
  * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.22  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -556,13 +559,13 @@ int Closeup_one_revolution_time=ONE_REV_TIME;
 brief_icon *Closeup_icon;
 angles Closeup_angles;
 matrix Closeup_orient;
-vector Closeup_pos;
+vec3d Closeup_pos;
 int Closeup_font_height;
 int Closeup_x1, Closeup_y1;
 
 // used for the 3d view of a closeup ship
 float Closeup_zoom;
-vector Closeup_cam_pos;
+vec3d Closeup_cam_pos;
 
 // Mask bitmap pointer and Mask bitmap_id
 bitmap* BriefingMaskPtr;		// bitmap pointer to the briefing select mask bitmap
@@ -1653,7 +1656,7 @@ int brief_setup_closeup(brief_icon *bi)
 {
 	char				pof_filename[NAME_LENGTH];
 	ship_info		*sip=NULL;
-	vector			tvec;
+	vec3d			tvec;
 
 	Closeup_icon = bi;
 	Closeup_icon->ship_class = bi->ship_class;

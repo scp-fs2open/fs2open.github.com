@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.9 $
- * $Date: 2005-02-04 10:12:31 $
+ * $Revision: 2.10 $
+ * $Date: 2005-04-05 05:53:21 $
  * $Author: taylor $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/02/04 10:12:31  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.8  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -708,7 +711,7 @@ typedef struct net_player_server_info {
 	ubyte				cur_link_status;									// if (1<<0) - primaries linked. if (1<<1) - secondaries are linked
 
 	// information regarding the current view position of this player.
-	vector			eye_pos;								// eye position and orientation
+	vec3d			eye_pos;								// eye position and orientation
 	matrix			eye_orient;
 
 	// ets information

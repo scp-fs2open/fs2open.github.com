@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * Header file for all the Collide????.cpp modules
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -127,15 +130,15 @@ struct mc_info;
 typedef struct collision_info_struct {
 	object	*heavy;
 	object	*light;
-	vector	heavy_collision_cm_pos;	// should be zero
-	vector	light_collision_cm_pos;	// relative cm collision pos
-	vector	r_heavy;						// relative to A
-	vector	r_light;						// relative to B
-	vector	hit_pos;					// relative hit position in A's rf (r_heavy)
-	vector	collision_normal;		// normal outward from heavy
+	vec3d	heavy_collision_cm_pos;	// should be zero
+	vec3d	light_collision_cm_pos;	// relative cm collision pos
+	vec3d	r_heavy;						// relative to A
+	vec3d	r_light;						// relative to B
+	vec3d	hit_pos;					// relative hit position in A's rf (r_heavy)
+	vec3d	collision_normal;		// normal outward from heavy
 	float		hit_time;				// time normalized [0,1] when sphere hits model
 	float		impulse;					// damage scales according to impulse
-	vector	light_rel_vel;			// velocity of light relative to heavy before collison
+	vec3d	light_rel_vel;			// velocity of light relative to heavy before collison
 	int		collide_rotate;		// if collision is detected purely from rotation
 	int		submodel_num;			// submodel of heavy object that is hit
 	int		edge_hit;				// if edge is hit, need to change collision normal
@@ -186,7 +189,7 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 //	See if two lines intersect by doing recursive subdivision.
 //	Bails out if larger distance traveled is less than sum of radii + 1.0f.
 // CODE is locatated in CollideGeneral.cpp
-int collide_subdivide(vector *p0, vector *p1, float prad, vector *q0, vector *q1, float qrad);
+int collide_subdivide(vec3d *p0, vec3d *p1, float prad, vec3d *q0, vec3d *q1, float qrad);
 
 
 //===============================================================================
@@ -202,7 +205,7 @@ int collide_weapon_weapon( obj_pair * pair );
 // Returns 1 if all future collisions between these can be ignored
 // CODE is locatated in CollideShipWeapon.cpp
 int collide_ship_weapon( obj_pair * pair );
-void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *world_hitpos, vector *hitpos, int quadrant_num, int submodel_num = -1);
+void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world_hitpos, vec3d *hitpos, int quadrant_num, int submodel_num = -1);
 
 // Checks debris-weapon collisions.  pair->a is debris and pair->b is weapon.
 // Returns 1 if all future collisions between these can be ignored
@@ -224,7 +227,7 @@ int collide_ship_ship( obj_pair * pair );
 
 //	Predictive functions.
 //	Returns true if vector from curpos to goalpos with radius radius will collide with object goalobjp
-int pp_collide(vector *curpos, vector *goalpos, object *goalobjp, float radius);
+int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius);
 
 //	Return true if objp will collide with some large ship if it moves distance distance.
 int collide_predict_large_ship(object *objp, float distance);
@@ -232,9 +235,9 @@ int collide_predict_large_ship(object *objp, float distance);
 // function to remove old weapons when no more weapon slots available.
 int collide_remove_weapons(void);
 
-void collide_ship_ship_do_sound(vector *world_hit_pos, object *A, object *B, int player_involved);
+void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int player_involved);
 void collide_ship_ship_sounds_init();
 
-int get_ship_quadrant_from_global(vector *global_pos, object *objp);
+int get_ship_quadrant_from_global(vec3d *global_pos, object *objp);
 
 #endif

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.h $
- * $Revision: 2.4 $
- * $Date: 2005-02-04 10:12:31 $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:21 $
  * $Author: taylor $
  *
  * Header file to support misc. multiplayer support functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/02/04 10:12:31  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.3  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -325,7 +328,7 @@ void multi_get_mission_checksum(char *filename);
 // Packs/unpacks an object position.
 // Returns number of bytes read or written.
 #define OO_POS_RET_SIZE							9
-int multi_pack_unpack_position(int write, ubyte *data, vector *pos);
+int multi_pack_unpack_position(int write, ubyte *data, vec3d *pos);
 
 // Packs/unpacks an orientation matrix.
 // Returns number of bytes read or written.
@@ -335,22 +338,22 @@ int multi_pack_unpack_orient(int write, ubyte *data, matrix *orient);
 // Packs/unpacks velocity
 // Returns number of bytes read or written.
 #define OO_VEL_RET_SIZE							4
-int multi_pack_unpack_vel(int write, ubyte *data, matrix *orient, vector *pos, physics_info *pi);
+int multi_pack_unpack_vel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi);
 
 // Packs/unpacks desired_velocity
 // Returns number of bytes read or written.
 #define OO_DESIRED_VEL_RET_SIZE				3
-int multi_pack_unpack_desired_vel(int write, ubyte *data, matrix *orient, vector *pos, physics_info *pi, ship_info *sip);
+int multi_pack_unpack_desired_vel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip);
 
 // Packs/unpacks rotational velocity
 // Returns number of bytes read or written.
 #define OO_ROTVEL_RET_SIZE						4
-int multi_pack_unpack_rotvel(int write, ubyte *data, matrix *orient, vector *pos, physics_info *pi);
+int multi_pack_unpack_rotvel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi);
 
 // Packs/unpacks desired rotvel
 // Returns number of bytes read or written.
 #define OO_DESIRED_ROTVEL_RET_SIZE			3
-int multi_pack_unpack_desired_rotvel(int write, ubyte *data, matrix *orient, vector *pos, physics_info *pi, ship_info *sip);
+int multi_pack_unpack_desired_rotvel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip);
 
 char multi_unit_to_char(float unit);
 float multi_char_to_unit(float val);

@@ -41,9 +41,9 @@ float oo_arrive_time_next[MAX_SHIPS];			// how many seconds have gone by. should
 
 // interp stuff
 int oo_interp_count[MAX_SHIPS];
-vector oo_interp_points[MAX_SHIPS][2];
+vec3d oo_interp_points[MAX_SHIPS][2];
 bez_spline oo_interp_splines[MAX_SHIPS][2];
-void multi_oo_calc_interp_splines(int ship_index, vector *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vector *new_pos, matrix *new_orient, physics_info *new_phys_info);
+void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info);
 
 // how much data we're willing to put into a given oo packet
 #define OO_MAX_SIZE					480
@@ -160,8 +160,8 @@ int multi_oo_sort_func(const void *ship1, const void *ship2)
 	short index1, index2;
 	float dist1, dist2;
 	float dot1, dot2;
-	vector v1, v2;
-	vector vn1, vn2;
+	vec3d v1, v2;
+	vec3d vn1, vn2;
 
 	// get the 2 indices
 	memcpy(&index1, ship1, sizeof(short));
@@ -766,7 +766,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	}	
 
 	// new info
-	vector new_pos = pobjp->pos;
+	vec3d new_pos = pobjp->pos;
 	physics_info new_phys_info = pobjp->phys_info;
 	matrix new_orient = pobjp->orient;
 	
@@ -1088,8 +1088,8 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	ubyte oo_flags;
 	int stamp;
 	int player_index;
-	vector player_eye;
-	vector obj_dot;
+	vec3d player_eye;
+	vec3d obj_dot;
 	float eye_dot, dist;
 	int in_cone;
 	int range;
@@ -1200,7 +1200,7 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	}		
 
 	// get current position and orient checksums		
-	cur_pos_chksum = cf_add_chksum_short(cur_pos_chksum, (char*)(&obj->pos), sizeof(vector));
+	cur_pos_chksum = cf_add_chksum_short(cur_pos_chksum, (char*)(&obj->pos), sizeof(vec3d));
 	cur_orient_chksum = cf_add_chksum_short(cur_orient_chksum, (char*)(&obj->orient), sizeof(matrix));
 
 	// if position or orientation haven't changed	
@@ -1850,7 +1850,7 @@ void multi_oo_interp(object *objp)
 
 	// otherwise, blend the two curves together to get the new point
 	float u = 0.5f + (t * 0.5f);
-	vector p_bad, p_good;
+	vec3d p_bad, p_good;
 	oo_interp_splines[objp->instance][0].bez_get_point(&p_bad, u);
 	oo_interp_splines[objp->instance][1].bez_get_point(&p_good, u);		
 	vm_vec_scale(&p_good, t);
@@ -1865,7 +1865,7 @@ void multi_oo_interp(object *objp)
 
 	// blend velocity vectors together with an average weight
 	/*
-	vector v_bad, v_good;
+	vec3d v_bad, v_good;
 	oo_interp_splines[objp->instance][0].herm_get_deriv(&v_bad, u, 0);
 	oo_interp_splines[objp->instance][1].herm_get_deriv(&v_good, u, 0);	
 
@@ -1879,7 +1879,7 @@ void multi_oo_interp(object *objp)
 	*/
 
 	/*
-	vector v_bad, v_good;
+	vec3d v_bad, v_good;
 	oo_interp_splines[objp->instance][0].herm_get_point(&v_bad, u, 0);
 	oo_interp_splines[objp->instance][1].herm_get_point(&v_good, u, 0);	
 
@@ -1901,21 +1901,21 @@ DCF(oo_error, "")
 	oo_error = Dc_arg_float;
 }
 
-void multi_oo_calc_interp_splines(int ship_index, vector *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vector *new_pos, matrix *new_orient, physics_info *new_phys_info)
+void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info)
 {
-	vector a, b, c;
-	// vector da, db, dc;
+	vec3d a, b, c;
+	// vec3d da, db, dc;
 	matrix m_copy;
 	physics_info p_copy;
-	vector *pts[3] = {&a, &b, &c};	
-	// vector *d_pts[3] = {&da, &db, &dc};
+	vec3d *pts[3] = {&a, &b, &c};	
+	// vec3d *d_pts[3] = {&da, &db, &dc};
 	
 	// average time between packets
 	float avg_diff = oo_arrive_time_avg_diff[ship_index];	
 
 	// would this cause us to rubber-band?
-	vector v_norm = cur_phys_info->vel;	
-	vector v_dir;
+	vec3d v_norm = cur_phys_info->vel;	
+	vec3d v_dir;
 	vm_vec_sub(&v_dir, new_pos, cur_pos);	
 	if(!IS_VEC_NULL(&v_norm) && !IS_VEC_NULL(&v_dir)){
 		vm_vec_normalize(&v_dir);

@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.57 $
- * $Author: Goober5000 $
- * $Date: 2005-03-27 12:28:33 $
+ * $Revision: 2.58 $
+ * $Author: taylor $
+ * $Date: 2005-04-05 05:53:19 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/03/27 12:28:33  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.56  2005/03/25 06:57:35  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -679,7 +683,7 @@ typedef struct subsys_status {
 typedef struct p_object {
 	struct p_object *next, *prev;
 	char	name[NAME_LENGTH];
-	vector	pos;
+	vec3d	pos;
 	matrix	orient;
 	int	ship_class;
 	int	iff;
@@ -837,7 +841,7 @@ extern team_data Team_data[MAX_TEAMS];
 extern subsys_status *Subsys_status;
 extern int Subsys_index;
 
-extern vector Parse_viewer_pos;
+extern vec3d Parse_viewer_pos;
 extern matrix Parse_viewer_orient;
 
 extern int Mission_arrival_timestamp;
