@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.72 $
- * $Date: 2004-12-25 09:28:09 $
+ * $Revision: 2.73 $
+ * $Date: 2005-01-01 07:18:48 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2004/12/25 09:28:09  wmcoolmon
+ * Sync to current NEW_HUD code
+ *
  * Revision 2.71  2004/12/14 14:46:12  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -1052,7 +1055,7 @@ typedef struct ship {
 #endif
 
 #ifdef NEW_HUD
-	struct hud_info ship_hud;
+	hud ship_hud;
 #endif
 
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing

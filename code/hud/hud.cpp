@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.31 $
- * $Date: 2004-12-26 22:45:58 $
- * $Author: taylor $
+ * $Revision: 2.32 $
+ * $Date: 2005-01-01 07:18:47 $
+ * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/12/26 22:45:58  taylor
+ * fix some hud stuff getting drawn multiple times, don't show target data if HUD_disabled_except_messages is set
+ *
  * Revision 2.30  2004/12/26 20:46:34  Goober5000
  * hud-disable-except-messages now resets after each mission
  * --Goober5000
@@ -1683,15 +1686,16 @@ void HUD_render_2d(float frametime)
 
 	//Custom hud stuff
 #ifdef NEW_HUD
-		int i;
+	//Player_ship->ship_hud.show();
+	//	int i;
 	//	gauge_data* cg;
-	for(i = 0; i < current_hud->num_gauges; i++)
+/*	for(i = 0; i < current_hud->num_gauges; i++)
 	{
 		if(current_hud->gauges[i].type == HG_MAINGAUGE)
 		{
 			current_hud->gauges[i].update(current_hud->owner);
 		}
-	}
+	}*/
 #else
 	int i;
 	static bool image_ids_set = false;
