@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.13 $
- * $Date: 2005-01-13 04:55:57 $
+ * $Revision: 1.14 $
+ * $Date: 2005-02-12 10:44:10 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/01/13 04:55:57  taylor
+ * plug leak from VBO crash fix
+ *
  * Revision 1.12  2005/01/03 18:45:22  taylor
  * dynamic allocation of num supported OpenGL lights
  * add config option for more realistic light settings
@@ -119,9 +122,7 @@ struct opengl_vertex_buffer
 	int n_prim;
 	int n_verts;
 	float *array_list;	// interleaved array
-	uv_pair *uv_list;	// texture coords
 	uint vbo;			// buffer for VBO
-	uint vbo_uv;		// buffer for VBO of only texture coords
 	uint flags;			// FVF
 };
 
@@ -233,7 +234,7 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 
 	//we have a valid buffer
 	if (buffer_num > -1) {
-		int arsize = 0;
+		int arsize = 0, make_vbo = 0;
 		int list_size, i;
 
 		gr_opengl_set_buffer( buffer_num );
@@ -243,6 +244,10 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		// defaults
 		vbp->format = 0;
 		vbp->vbo = 0;
+
+		// don't create vbo for small stuff, performance gain
+		if (VBO_ENABLED && (list->n_verts >= 250))
+			make_vbo = 1;
 
 		// setup using flags
 		if ( (flags & VERTEX_FLAG_UV1) && (flags & VERTEX_FLAG_NORMAL) && (flags & VERTEX_FLAG_POSITION) ) {
@@ -270,11 +275,6 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		
 		memset(vbp->array_list, 0, list_size);
 
-		// for textures only, this fixes the VBO crash with some drivers
-		vbp->uv_list = (uv_pair*)malloc(list->n_verts * sizeof(uv_pair));
-		memset(vbp->uv_list, 0, list->n_verts * sizeof(uv_pair));
-		uv_pair *uvs = vbp->uv_list;
-
 		// generate the array
 		for (i=0; i<list->n_verts; i++) {
 			vertex *vl = &list->vert[i];
@@ -289,9 +289,6 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 			if (flags & VERTEX_FLAG_UV1) {
 				vbp->array_list[arsize++] = vl->u;
 				vbp->array_list[arsize++] = vl->v;
-				uvs->u = vl->u;
-				uvs->v = vl->v;
-				uvs++;
 			}
 
 			// normals
@@ -316,19 +313,12 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		vbp->n_verts = list->n_verts;
 
 		// maybe load it into a vertex buffer object
-		if (VBO_ENABLED) {
+		if (make_vbo) {
 			vbp->vbo = opengl_create_vbo( list_size, vbp->array_list );
 
 			if (vbp->vbo) {
 				free(vbp->array_list);
 				vbp->array_list = NULL;
-			}
-
-			vbp->vbo_uv = opengl_create_vbo( (list->n_verts * sizeof(uv_pair)), (float*)vbp->uv_list );
-
-			if (vbp->vbo_uv) {
-				free(vbp->uv_list);
-				vbp->uv_list = NULL;
 			}
 		}
 	}
@@ -357,14 +347,6 @@ void gr_opengl_destroy_buffer(int idx)
 
 	if (vbp->vbo)
 		glDeleteBuffersARB(1, &vbp->vbo);
-
-	if (vbp->uv_list) {
-		free(vbp->uv_list);
-		vbp->uv_list = NULL;
-	}
-
-	if (vbp->vbo_uv)
-		glDeleteBuffersARB(1, &vbp->vbo_uv);
 
 	memset(vbp, 0, sizeof(opengl_vertex_buffer));
 
@@ -430,10 +412,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 
 		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo_uv) {
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_uv);
-			glTexCoordPointer( 2, GL_FLOAT, 0, (void*)0 );
-		} else if (vbp->vbo) {
+		if (vbp->vbo) {
 			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)0 );
 		} else {
@@ -449,10 +428,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	if ( (GLOWMAP > -1) && !Cmdline_noglow && (vbp->flags & VERTEX_FLAG_UV1) ) {
 		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo_uv) {
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_uv);
-			glTexCoordPointer( 2, GL_FLOAT, 0, (void*)0 );
-		} else if (vbp->vbo) { // this may crash on some OGL drivers due to memory access violations with multitexture
+		if (vbp->vbo) {
 			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)0 );
 		} else {
@@ -501,10 +477,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 
 		glClientActiveTextureARB(GL_TEXTURE0_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo_uv) {
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_uv);
-			glTexCoordPointer( 2, GL_FLOAT, 0, (void*)0 );
-		} else if (vbp->vbo) {
+		if (vbp->vbo) {
 			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
 		} else {
@@ -549,18 +522,20 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 
 	TIMERBAR_POP();
 
-	if (VBO_ENABLED) {
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	// make sure everthing gets turned back off, fixes hud issue with spec lighting and VBO crash in starfield
+	for (i = 0; i < 4; i++) {
+		opengl_switch_arb(i, 0);
+
+		glClientActiveTextureARB(GL_TEXTURE0_ARB+i);
+
+		glDisableClientState( GL_VERTEX_ARRAY );
+		glDisableClientState( GL_NORMAL_ARRAY );
+		glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+
+		if (VBO_ENABLED) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		}
 	}
-
-	// make sure all arbs are off, fixes hud issue with spec lighting
-	opengl_switch_arb(0, 0);
-	opengl_switch_arb(1, 0);
-	opengl_switch_arb(2, 0);
-
-	glDisableClientState( GL_VERTEX_ARRAY );
-	glDisableClientState( GL_NORMAL_ARRAY );
-	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 
 #if defined(DRAW_DEBUG_LINES) && defined(_DEBUG)
 	glBegin(GL_LINES);

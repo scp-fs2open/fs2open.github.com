@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.42 $
- * $Date: 2005-02-10 14:38:50 $
+ * $Revision: 2.43 $
+ * $Date: 2005-02-12 10:44:10 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/02/10 14:38:50  taylor
+ * fix an issue with bm_set_components()
+ * abs is for ints fabsf is for floats (camera.cpp)
+ * make the in-cockpit stuff OGL friendly
+ *
  * Revision 2.41  2005/02/04 23:29:31  taylor
  * merge with Linux/OSX tree - p0204-3
  *
@@ -3023,8 +3028,13 @@ void bm_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h)
 	bm_get_info(bitmapnum, &bw, &bh, NULL, NULL, NULL, &sections);
 
 	// determine the width and height of this section
-	*w = sx < (sections->num_x - 1) ? MAX_BMAP_SECTION_SIZE : bw - sections->sx[sx];
-	*h = sy < (sections->num_y - 1) ? MAX_BMAP_SECTION_SIZE : bh - sections->sy[sy];										
+	if (sections == NULL) {
+		*w = bw;
+		*h = bw;
+	} else {
+		*w = sx < (sections->num_x - 1) ? MAX_BMAP_SECTION_SIZE : bw - sections->sx[sx];
+		*h = sy < (sections->num_y - 1) ? MAX_BMAP_SECTION_SIZE : bh - sections->sy[sy];										
+	}
 }
 
 // needed only for compressed bitmaps
