@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.6 $
- * $Date: 2005-01-03 18:45:22 $
- * $Author: taylor $
+ * $Revision: 1.7 $
+ * $Date: 2005-01-07 14:00:04 $
+ * $Author: argv $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/01/03 18:45:22  taylor
+ * dynamic allocation of num supported OpenGL lights
+ * add config option for more realistic light settings
+ * don't render spec maps in nebula to address lighting issue
+ *
  * Revision 1.5  2005/01/01 11:24:23  taylor
  * good OpenGL spec mapping
  * fix VBO crash with multitexture using same uv coord data
@@ -68,6 +73,7 @@
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"
+#include "osapi/osregistry.h"
 
 
 
