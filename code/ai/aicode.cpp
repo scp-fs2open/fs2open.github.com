@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.3 $
- * $Date: 2005-03-27 12:28:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2005-03-29 07:03:15 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/03/27 12:28:31  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 1.2  2005/03/25 07:01:53  wmcoolmon
  * Added taylor's old-weapon code fix
  *
@@ -4323,7 +4327,7 @@ int get_base_path_info(int path_cur, int goal_objnum, model_path **pmp, mp_vert 
 	ship *shipp = &Ships[Objects[goal_objnum].instance];
 //	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 	polymodel	*pm = model_get(shipp->modelnum);
-	static		int	debug_last_index = -1;
+	//static		int	debug_last_index = -1;
 	*pmpv = NULL;
 	*pmp = NULL;
 

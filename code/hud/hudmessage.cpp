@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-03-05 18:59:28 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-29 07:03:16 $
+ * $Author: wmcoolmon $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/05 18:59:28  taylor
+ * don't let hud messages walk off screen when res is GR_640
+ *
  * Revision 2.9  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -601,7 +604,6 @@ static int Num_obj_lines;
 static int Scroll_offset;
 static int Scroll_max;
 static int Scrollback_mode = SCROLLBACK_MODE_OBJECTIVES;
-static int Selected_line;
 // static int Status_bitmap;
 static int Background_bitmap;
 static UI_WINDOW Ui_window;

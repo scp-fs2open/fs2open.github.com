@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-03-25 06:57:34 $
+ * $Revision: 2.57 $
+ * $Date: 2005-03-29 07:03:16 $
  * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/03/25 06:57:34  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.55  2005/03/13 08:32:28  wmcoolmon
  * Hud fixing goodness. I also removed some obsolete code for displaying HUD weapons.
  *
@@ -1936,7 +1939,6 @@ void hud_target_missile(object *source_obj, int next_flag)
 	// if no bomb is found, search for bombers
 		ship_obj *start, *so;
 
-		extern ship_obj *Ship_objs;
 		if ( (aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP) && (Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & SIF_BOMBER) ) {
 			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
 			start = get_ship_obj_ptr_from_index(index);

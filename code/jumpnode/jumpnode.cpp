@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-03-25 06:57:34 $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-29 07:03:16 $
  * $Author: wmcoolmon $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/25 06:57:34  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.9  2005/03/20 21:07:10  phreak
  * Add a function to check whether any duplicate jumpnode names exist
  *
