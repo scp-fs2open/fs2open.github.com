@@ -11,11 +11,19 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.40 $
- * $Date: 2003-11-29 10:52:09 $
+ * $Revision: 2.41 $
+ * $Date: 2003-12-03 19:27:00 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/11/29 10:52:09  randomtiger
+ * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Added stats command for ingame stats on memory usage.
+ * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
+ * Added fix for fonts wrapping round in non standard hi res modes.
+ * Changed D3D mipmapping to a good value to suit htl mode.
+ * Added new fog colour method which makes use of the bitmap, making this htl feature backcompatible again.
+ *
  * Revision 2.39  2003/11/19 20:37:23  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -404,12 +412,13 @@ extern double specular_exponent_value;
 
 extern int Cmdline_cell;
 extern int Cmdline_nohtl;
-extern int Cmdline_32bit_textures;
+extern int Cmdline_jpgtga;
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_d3d_no_vsync;
 extern int Cmdline_pcx32;
 
 extern int Cmdline_noglow;
 extern int Cmdline_timerbar;
+extern int Cmdline_query_speech;
 
 #endif

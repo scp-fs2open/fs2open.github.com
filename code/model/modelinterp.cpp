@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.57 $
- * $Date: 2003-11-29 17:13:54 $
+ * $Revision: 2.58 $
+ * $Date: 2003-12-03 19:27:01 $
  * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2003/11/29 17:13:54  randomtiger
+ * Undid my node fix, it introduced a lot of bugs, update again if you have that version.
+ *
  * Revision 2.56  2003/11/29 16:11:46  fryday
  * Fixed normal loading in OpenGL HT&L.
  * Fixed lighting in OpenGL HT&L, hopefully for the last time.
@@ -3385,7 +3388,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	if ( pm->n_detail_levels > 1 )	{
 
 		if ( Interp_flags & MR_LOCK_DETAIL )	{
-			i = Interp_detail_level+1;
+			// RT, why use lower texture for just one ship, means we have to cache in another texture.
+			// If the ship is in target the model and its texture are already loaded and cached
+			i = Interp_detail_level;//+1;
 		} else {
 
 			//gr_set_color(0,128,0);
@@ -3541,7 +3546,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// draw the hull of the ship
 	
 	// When in htl mode render with htl method unless its a jump node
-	if(!Cmdline_nohtl){
+	if(!Cmdline_nohtl){// && !(flags & (MR_NO_POLYS|MR_SHOW_OUTLINE_PRESET))){
 		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
 //		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
 	}

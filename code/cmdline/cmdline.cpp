@@ -9,11 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.47 $
- * $Date: 2003-11-29 10:52:09 $
+ * $Revision: 2.48 $
+ * $Date: 2003-12-03 19:27:00 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/11/29 10:52:09  randomtiger
+ * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Added stats command for ingame stats on memory usage.
+ * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
+ * Added fix for fonts wrapping round in non standard hi res modes.
+ * Changed D3D mipmapping to a good value to suit htl mode.
+ * Added new fog colour method which makes use of the bitmap, making this htl feature backcompatible again.
+ *
  * Revision 2.46  2003/11/19 20:37:23  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -486,12 +494,13 @@ cmdline_parm MissionCRCs("-missioncrcs", NULL);
 cmdline_parm TableCRCs("-tablecrcs", NULL);
 cmdline_parm nohtl_arg("-htl", NULL); //Use HT&L	  
 cmdline_parm cell_arg("-cell", NULL);
-cmdline_parm textures_32bit_arg("-t32",NULL);
+cmdline_parm jpgtga_arg("-jpgtga",NULL);
 cmdline_parm no_set_gamma_arg("-no_set_gamma",NULL);
 cmdline_parm d3d_no_vsync_arg("-d3d_no_vsync", NULL);
 cmdline_parm pcx32_arg("-pcx32",NULL);
 cmdline_parm timerbar_arg("-timerbar", NULL);
 cmdline_parm stats_arg("-stats", NULL);
+cmdline_parm query_speech_arg("-query_speech", NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -536,10 +545,11 @@ int Cmdline_d3dmipmap = 0;
 
 // Lets keep a convention here
 int Cmdline_nohtl = 0;
-int Cmdline_32bit_textures = 0;
+int Cmdline_jpgtga = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_d3d_no_vsync = 0;
 int Cmdline_pcx32 = 0;
+int Cmdline_query_speech = 0;
 
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
@@ -976,9 +986,9 @@ void SetCmdlineParams()
 		Cmdline_nohtl = 1;
 	}
 
-	if( textures_32bit_arg.found() )
+	if( jpgtga_arg.found() )
 	{	  
-		Cmdline_32bit_textures = 1;
+		Cmdline_jpgtga = 1;
 	}
 
 	if( no_set_gamma_arg.found() )
@@ -999,6 +1009,11 @@ void SetCmdlineParams()
 	if(noglow_arg.found() )
 	{
 		Cmdline_noglow = 1;
+	}
+
+	if(query_speech_arg.found() )
+	{
+		Cmdline_query_speech = 1;
 	}
 }
 
