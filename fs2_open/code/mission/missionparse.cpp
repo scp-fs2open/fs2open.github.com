@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.78 $
- * $Date: 2005-01-21 08:56:50 $
- * $Author: taylor $
+ * $Revision: 2.79 $
+ * $Date: 2005-01-26 21:42:19 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2005/01/21 08:56:50  taylor
+ * make Subsys_status dynamic but allocate in blocks for speed and to help prevent memory fragmentation
+ *
  * Revision 2.77  2005/01/18 00:14:37  Goober5000
  * clarified a bunch of sexp stuff and fixed a bug
  * --Goober5000
@@ -4895,7 +4898,7 @@ void mission_parse_do_initial_docks()
 					if (ship_docking_valid(shipnum, Objects[objnum].instance))  // only dock if they are allowed to be docked.
 						ai_dock_with_object(&Objects[Ships[shipnum].objnum], p1, &Objects[objnum], p2, 89, AIDO_DOCK_NOW);
 					else
-						ai_dock_with_object(&Objects[objnum], p1, &Objects[Ships[shipnum].objnum], p2, 89, AIDO_DOCK_NOW);
+						ai_dock_with_object(&Objects[objnum], p2, &Objects[Ships[shipnum].objnum], p1, 89, AIDO_DOCK_NOW);
 						
 				} else
 					Int3();		//	Curious.  Two ships told to dock, but one of the dock points is bogus.  
