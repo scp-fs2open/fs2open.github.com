@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.37 $
- * $Date: 2004-07-26 20:47:53 $
- * $Author: Kazan $
+ * $Revision: 2.38 $
+ * $Date: 2005-01-29 08:12:20 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2004/07/26 20:47:53  Kazan
+ * remove MCD complete
+ *
  * Revision 2.36  2004/07/17 19:01:15  taylor
  * stupid braces...
  *
@@ -1320,7 +1323,7 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 	vector v = ZERO_VECTOR;
 
 	if (!Cmdline_nohtl && !env) {
-		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&v, &Eye_matrix);
 	}
 
@@ -1543,7 +1546,7 @@ void subspace_render(int env)
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	if (!Cmdline_nohtl && !env) {
-		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 
@@ -2005,7 +2008,7 @@ void stars_draw_background(int env)
 	model_set_alpha(1.0f);	
 
 	if (!Cmdline_nohtl && !env) {
-		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 
