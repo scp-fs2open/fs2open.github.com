@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/rtvoice.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:37:24 $
  * $Author: penguin $
  *
  * Header file for real-time voice code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -66,6 +69,7 @@
 #ifndef __RTVOICE_H__
 #define __RTVOICE_H__
 
+#ifndef NO_SOUND
 // general
 void  rtvoice_set_qos(int qos);
 
@@ -93,5 +97,32 @@ int	rtvoice_play_uncompressed(int handle, unsigned char *data, int size);
 // pass in buffer handle returned from rtvoice_create_playback_buffer(), kills the _sound_ only
 void	rtvoice_stop_playback(int handle);
 void	rtvoice_stop_playback_all();
+
+#else  // NO_SOUND
+
+#define  rtvoice_set_qos(qos)								((void)(qos))
+#define	rtvoice_init_recording(qos)					((qos), -1)
+#define	rtvoice_close_recording()
+#define	rtvoice_start_recording(user_callback, callback_time)	((user_callback), (callback_time), -1)
+#define	rtvoice_stop_recording()
+#define	rtvoice_get_data(outbuf, compressed_size, uncompressed_size, gain, outbuf_raw, outbuf_size_raw) \
+	do {	*(outbuf)=NULL; *(compressed_size)=0; *(uncompressed_size)=0; \
+			(void)(gain); (void)(outbuf_raw); (void)(outbuf_size_raw); \
+	} while (0)
+#define	rtvoice_init_playback()							(-1)
+#define	rtvoice_close_playback()
+#define	rtvoice_get_decode_buffer_size()				(0)
+#define	rtvoice_create_playback_buffer()				(-1)
+#define	rtvoice_free_playback_buffer(index)			((void)(index))
+#define	rtvoice_uncompress(data_in, size_in, gain, data_out, size_out) \
+	((void)((data_in), (size_in), (gain), (data_out), (size_out)))
+#define	rtvoice_play_compressed(handle, data, compressed_size, uncompressed_size, gain) \
+	((handle), (data), (compressed_size), (uncompressed_size), (gain), -1)
+#define	rtvoice_play_uncompressed(handle, data, size) \
+	((handle), (data), (size), -1)
+#define	rtvoice_stop_playback(handle)					((void)(handle))
+#define	rtvoice_stop_playback_all()
+
+#endif // #ifndef NO_SOUND
 
 #endif
