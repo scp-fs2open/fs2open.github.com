@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.12 $
- * $Date: 2002-10-19 03:50:28 $
+ * $Revision: 2.13 $
+ * $Date: 2002-10-22 17:42:09 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2002/10/19 03:50:28  randomtiger
+ * Added special pause mode for easier action screenshots.
+ * Added new command line parameter for accessing all single missions in tech room. - RT
+ *
  * Revision 2.11  2002/10/05 16:46:09  randomtiger
  * Added us fs2_open people to the credits. Worth looking at just for that.
  * Added timer bar code, by default its not compiled in.
@@ -4315,87 +4319,91 @@ void game_frame(int paused)
 		demo_close();
 	}
 #endif
+	
+		// start timing frame
+		timing_frame_start();
+	
+		total_time1 = timer_get_fixed_seconds();
 
-	if(!paused)
+	if(paused)
 	{
-
-	// start timing frame
-	timing_frame_start();
-
-	total_time1 = timer_get_fixed_seconds();
-
-	// var to hold which state we are in
-	actually_playing = game_actually_playing();
-
+		// Reset the lights here or they just keep on increasing
+		light_reset();
+	}
+	else
+	{
+		// var to hold which state we are in
+		actually_playing = game_actually_playing();
 	
-#ifndef NO_NETWORK
-	if ((!(Game_mode & GM_MULTIPLAYER)) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) {
-		if (!(Game_mode & GM_STANDALONE_SERVER)){
-			Assert( OBJ_INDEX(Player_obj) >= 0 );
+		
+	#ifndef NO_NETWORK
+		if ((!(Game_mode & GM_MULTIPLAYER)) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) {
+			if (!(Game_mode & GM_STANDALONE_SERVER)){
+				Assert( OBJ_INDEX(Player_obj) >= 0 );
+			}
 		}
-	}
-#else
-	Assert( OBJ_INDEX(Player_obj) >= 0 );
-#endif  // ifndef NO_NETWORK
-
-	if (Missiontime > Entry_delay_time){
-		Pre_player_entry = 0;
-	} else {
-		; //nprintf(("AI", "Framecount = %i, time = %7.3f\n", Framecount, f2fl(Missiontime)));
-	}
-
-	//	Note: These are done even before the player enters, else buffers can overflow.
-	if (! (Game_mode & GM_STANDALONE_SERVER)){
-		radar_frame_init();
-	}
-
-	shield_frame_init();
-
-	if ( Player->control_mode != PCM_NORMAL )
-		camera_move();
-
-	if ( !Pre_player_entry && actually_playing ) {		   		
-		if (! (Game_mode & GM_STANDALONE_SERVER) ) {
-
-			if( (!popup_running_state()) && (!popupdead_is_active()) ){
-				game_process_keys();
-
-				// don't read flying controls if we're playing a demo back
-				if(!(Game_mode & GM_DEMO_PLAYBACK)){
-					read_player_controls( Player_obj, flFrametime);
+	#else
+		Assert( OBJ_INDEX(Player_obj) >= 0 );
+	#endif  // ifndef NO_NETWORK
+	
+		if (Missiontime > Entry_delay_time){
+			Pre_player_entry = 0;
+		} else {
+			; //nprintf(("AI", "Framecount = %i, time = %7.3f\n", Framecount, f2fl(Missiontime)));
+		}
+	
+		//	Note: These are done even before the player enters, else buffers can overflow.
+		if (! (Game_mode & GM_STANDALONE_SERVER)){
+			radar_frame_init();
+		}
+	
+		shield_frame_init();
+	
+		if ( Player->control_mode != PCM_NORMAL )
+			camera_move();
+	
+		if ( !Pre_player_entry && actually_playing ) {		   		
+			if (! (Game_mode & GM_STANDALONE_SERVER) ) {
+	
+				if( (!popup_running_state()) && (!popupdead_is_active()) ){
+					game_process_keys();
+	
+					// don't read flying controls if we're playing a demo back
+					if(!(Game_mode & GM_DEMO_PLAYBACK)){
+						read_player_controls( Player_obj, flFrametime);
+					}
 				}
+				
+	#ifndef NO_NETWORK
+				// if we're not the master, we may have to send the server-critical ship status button_info bits
+				if ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)){
+					multi_maybe_send_ship_status();
+				}
+	#endif  // ifndef NO_NETWORK
 			}
-			
-#ifndef NO_NETWORK
-			// if we're not the master, we may have to send the server-critical ship status button_info bits
-			if ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)){
-				multi_maybe_send_ship_status();
-			}
-#endif  // ifndef NO_NETWORK
 		}
-	}
-
-	// Reset the whack stuff
-	game_whack_reset();
-
-	// These two lines must be outside of Pre_player_entry code,
-	// otherwise too many lights are added.
-	light_reset();
-
-#ifndef NO_NETWORK
-	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state == NETGAME_STATE_SERVER_TRANSFER)){
-		return;
-	}
-#endif  // ifndef NO_NETWORK
 	
-	game_simulation_frame(); 
+		// Reset the whack stuff
+		game_whack_reset();
 	
-	// if not actually in a game play state, then return.  This condition could only be true in 
-	// a multiplayer game.
-	if (!actually_playing ) {
-		Assert( Game_mode & GM_MULTIPLAYER );
-		return;
-	}
+		// These two lines must be outside of Pre_player_entry code,
+		// otherwise too many lights are added.
+		light_reset();
+	
+	#ifndef NO_NETWORK
+		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state == NETGAME_STATE_SERVER_TRANSFER)){
+			return;
+		}
+	#endif  // ifndef NO_NETWORK
+		
+		game_simulation_frame(); 
+		
+		// if not actually in a game play state, then return.  This condition could only be true in 
+		// a multiplayer game.
+		if (!actually_playing ) {
+			Assert( Game_mode & GM_MULTIPLAYER );
+			return;
+		}
 
 	}
 
@@ -4515,17 +4523,15 @@ void game_frame(int paused)
 	// process lightning (nebula only)
 	nebl_process();
 
-	if(!paused)
-	{
-		total_time2 = timer_get_fixed_seconds();
-		
-		// Got some timing numbers
-		Timing_total = f2fl( total_time2 - total_time1 ) * 1000.0f;
-		Timing_clear = f2fl( clear_time2 - clear_time1 ) * 1000.0f;
-		Timing_render2 = f2fl( render2_time2- render2_time1 ) * 1000.0f;
-		Timing_render3 = f2fl( render3_time2- render3_time1 ) * 1000.0f;
-		Timing_flip = f2fl( flip_time2 - flip_time1 ) * 1000.0f;
-	}
+	total_time2 = timer_get_fixed_seconds();
+	
+	// Got some timing numbers
+	Timing_total = f2fl( total_time2 - total_time1 ) * 1000.0f;
+	Timing_clear = f2fl( clear_time2 - clear_time1 ) * 1000.0f;
+	Timing_render2 = f2fl( render2_time2- render2_time1 ) * 1000.0f;
+	Timing_render3 = f2fl( render3_time2- render3_time1 ) * 1000.0f;
+	Timing_flip = f2fl( flip_time2 - flip_time1 ) * 1000.0f;
+
 #ifdef DEMO_SYSTEM
 	demo_do_frame_end();
 	if(Demo_error){
