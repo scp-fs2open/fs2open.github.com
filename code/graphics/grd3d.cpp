@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-08-05 23:45:18 $
+ * $Revision: 2.15 $
+ * $Date: 2003-08-09 06:07:24 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/08/05 23:45:18  bobboau
+ * glow maps, for some reason they wern't in here, they should be now,
+ * also there is some debug code for changeing the FOV in game,
+ * and I have some changes to the init code to try and get a 32 or 24 bit back buffer
+ * if posable, this may cause problems for people
+ * the changes were all marked and if needed can be undone
+ *
  * Revision 2.13  2003/07/06 00:19:25  randomtiger
  * Random Tiger 6/7/2003
  *
@@ -2382,8 +2389,9 @@ int d3d_match_mode(int adapter)
  */
 
 //trying to use a higher bit depth in the back buffer, the deepest one posale -Bobboau
-enum _D3DFORMAT format_type[5] = {D3DFMT_D32, D3DFMT_D24X8, D3DFMT_D24S8, D3DFMT_D24X4S4, D3DFMT_D16};
-char formatnames[5][16] = {"D3DFMT_D32", "D3DFMT_D24X8", "D3DFMT_D24S8", "D3DFMT_D24X4S4" , "D3DFMT_D16"};
+#define N_FORMATS 3
+enum _D3DFORMAT format_type[N_FORMATS] = {D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D16};
+//enum _D3DFORMAT format_type[N_FORMATS] = {D3DFMT_D32, D3DFMT_D24X8, D3DFMT_D24S8, D3DFMT_D24X4S4, D3DFMT_D16};
 
 bool gr_d3d_init()
 {
@@ -2478,7 +2486,7 @@ bool gr_d3d_init()
 
 	//it trys to use the highest suported back buffer through trial and error, I wraped the existing code in a for loop to cycle through the diferent formats
 	//-Bobboau
-	for(int t = 0; t > -1 && t < 5; t++){
+	for(int t = 0; t > -1 && t < N_FORMATS; t++){
 		d3dpp.AutoDepthStencilFormat = format_type[t];
 		if( FAILED( lpD3D->CreateDevice(adapter_choice, D3DDEVTYPE_HAL, 
 								(HWND) os_get_window(),
@@ -2493,11 +2501,23 @@ bool gr_d3d_init()
 						            &d3dpp, &lpD3DDevice) ) ) {
 
 				DBUGFILE_OUTPUT_0("Failed to create software vertex processing device");
-				if(t>5)strcpy(Device_init_error, "Failed to create device!");
+				if(t>N_FORMATS){
+					strcpy(Device_init_error, "Failed to create device!");
+				}
 			} else {
+				if(2==N_FORMATS){
+					DBUGFILE_OUTPUT_0("useing old stiyle backbuffer, you will have clipping");
+				}else{
+					DBUGFILE_OUTPUT_0("useing new stiyle backbuffer, you should not have any clipping problems, unless you REALY try");
+				}
 				t=-2;
 			}
 		} else {
+			if(2==N_FORMATS){
+				DBUGFILE_OUTPUT_0("useing old stiyle backbuffer, you will have clipping");
+			}else {
+				DBUGFILE_OUTPUT_0("useing new stiyle backbuffer, you should not have any clipping problems, unless you REALY try");
+			}
 			t=-2;
 			DBUGFILE_OUTPUT_0("Using hardware vertex processing");
 		}
