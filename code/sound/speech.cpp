@@ -142,14 +142,17 @@ bool speech_set_voice(int voice)
 #else
 
 // Stubs
-bool speech_init() {return false;}
-void speech_deinit() {}
-bool speech_play(char *text) {return false;}
-bool speech_play(unsigned short *text) {return false;}
-bool speech_pause() {return false;}
-bool speech_resume() {return false;}
-bool speech_stop() {return false;}
-bool speech_set_volume(int volume) {return false;}
-bool speech_set_voice(int voice) {return false;}
+
+// Goober5000: see, the *real* way to do stubs (avoiding the warnings)
+// is to just use #defines (c.f. NO_SOUND)
+#define speech_init() (false)
+#define speech_deinit()
+#define speech_play(text) ((void) text)
+#define speech_play(text) ((void) text)
+#define speech_pause() (false)
+#define speech_resume() (false)
+#define speech_stop() (false)
+#define speech_set_volume(volume) ((void) volume)
+#define speech_set_voice(voice) ((void voice)
 
 #endif
