@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-01-09 21:19:25 $
- * $Author: phreak $
+ * $Revision: 2.9 $
+ * $Date: 2003-01-09 22:23:38 $
+ * $Author: inquisitor $
  *
  * Code to load and manage all bitmaps for the game
  *
@@ -2015,13 +2015,6 @@ int bm_unload( int handle )
 
 	nprintf(("BmpMan", "unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
 	bm_free_data(n);		// clears flags, bbp, data, etc
-
-	if (GLOWMAP[n]!=-1)
-	{
-		bm_unload(GLOWMAP[n]);		//unload the glowmaps
-	}
-
-	GLOWMAP[n]=-1;
 
 	return 1;
 }
