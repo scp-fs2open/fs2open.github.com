@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-10-10 03:59:41 $
+ * $Revision: 2.10 $
+ * $Date: 2003-10-13 19:39:20 $
  * $Author: matt $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/10 03:59:41  matt
+ * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
+ * out now. -Sticks
+ *
  * Revision 2.8  2003/09/26 14:37:14  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -907,11 +911,12 @@ void light_set_shadow( int state )
 
 void light_set_all_relevent(){
 	int set_lights = 0;
-	for(int i=0; i<MAX_LIGHTS; i++ )gr_set_light(i, false);
-	for(int idx=0; idx<Static_light_count; idx++)gr_set_light(Static_light[idx]->instance, true);
+	int i = 0;
+	gr_reset_lighting();
+	for(int idx=0; idx<Static_light_count; idx++)gr_set_light((light_data*)(void*)Static_light[idx]);
 //	for simplicity sake were going to forget about dynamic lights for the moment
 	int n = Num_light_levels-1;
-	for( i=0; i<Num_relevent_lights[n]; i++ )gr_set_light(Relevent_lights[i][n]->instance, true);
+	for( i=0; i<Num_relevent_lights[n]; i++ )gr_set_light((light_data*)(void*)Relevent_lights[i][n]);
 }
 
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.5 $
- * $Date: 2003-10-10 03:59:40 $
+ * $Revision: 2.6 $
+ * $Date: 2003-10-13 19:39:19 $
  * $Author: matt $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/10/10 03:59:40  matt
+ * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
+ * out now. -Sticks
+ *
  * Revision 2.4  2003/09/26 14:37:14  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -689,7 +693,8 @@ typedef struct screen {
 	int	 (*gf_make_light)(light_data*, int, int );
 	void (*gf_modify_light)(light_data*, int, int );
 	void (*gf_destroy_light)(int);
-	void (*gf_set_light)(int, bool);
+	void (*gf_set_light)(light_data*);
+	void (*gf_reset_lighting)();
 
 	void (*gf_lighting)(bool);
 
@@ -897,6 +902,7 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define	gr_modify_light GR_CALL			(*gr_screen.gf_modify_light)
 #define	gr_destroy_light GR_CALL		(*gr_screen.gf_destroy_light)
 #define	gr_set_light GR_CALL			(*gr_screen.gf_set_light)
+#define gr_reset_lighting GR_CALL		(*gr_screen.gf_reset_lighting)
 
 #define	gr_set_lighting GR_CALL			(*gr_screen.gf_lighting)
 

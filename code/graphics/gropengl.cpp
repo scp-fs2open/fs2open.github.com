@@ -2,13 +2,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.33 $
- * $Date: 2003-10-13 05:57:48 $
- * $Author: Kazan $
+ * $Revision: 2.34 $
+ * $Date: 2003-10-13 19:39:19 $
+ * $Author: matt $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/10/13 05:57:48  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  * Revision 2.32  2003/10/10 03:59:41  matt
  * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
  * out now. -Sticks
@@ -4236,7 +4242,7 @@ void gr_opengl_destroy_light(int idx){
 	//stubb
 }
 
-void gr_opengl_set_light(int idx, bool state){
+void gr_opengl_set_light(light_data *light){
 	//stubb
 }
 
@@ -4250,6 +4256,10 @@ void gr_opengl_start_clip()
 
 void gr_opengl_set_lighting(bool state)
 {}
+
+void gr_opengl_reset_lighting()
+{
+}
 
 
 extern char *Osreg_title;
@@ -4636,6 +4646,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_screen.gf_modify_light = gr_opengl_modify_light;
 		gr_screen.gf_destroy_light = gr_opengl_destroy_light;
 		gr_screen.gf_set_light = gr_opengl_set_light;
+		gr_screen.gf_reset_lighting = gr_opengl_reset_lighting;
 
 		gr_screen.start_clip_plane = gr_opengl_end_clip;
 		gr_screen.end_clip_plane = gr_opengl_start_clip;
