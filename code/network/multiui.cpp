@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-11-11 02:15:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2003-11-12 00:31:45 $
+ * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/11/11 02:15:45  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.11  2003/11/06 20:22:13  Kazan
  * slight change to .dsp - leave the release target as fs2_open_r.exe already
  * added myself to credit
@@ -1455,7 +1460,7 @@ void multi_join_game_init()
 		if (PXO_SID  != -1)
 		{
 			
-			Kaz_NoBackGround_DrawString("Getting Pilot Stats");
+			Kaz_NoBackGround_DrawString("Getting Pilot Stats\n(30 sec timeout)");
 			// Load the Current Pilots data
 			// Players[Player_num] == ME!
 			
@@ -1463,13 +1468,13 @@ void multi_join_game_init()
 			//SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port);
 
 			// load our players data -- allow creation of the player
-			int rescode = GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true);
+			int rescode = GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
 
 			switch (rescode)
 			{ // 0 = pilot retrieved, 1 = pilot created, 2 = invalid pilot, 3 = invalid (expired?) sid, 4 = pilot already exists
 				case -1:
 					ml_printf("Network (FS2OpenPXO): UNKNOWN ERROR when fetching pilot data\n");
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"An Unknown Error occured when trying to get your pilot data.");
+					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"An Unknown Error (probably a timeout) occured when trying to get your pilot data.");
 					break;
 
 				case 0:
@@ -1493,7 +1498,7 @@ void multi_join_game_init()
 
 
 				default:
-					ml_printf("Network (FS2OpenPXO): Unknown return case for GetPlayerData(int, char *, player *, UDP_Socket &, int, bool, int)\n");
+					ml_printf("Network (FS2OpenPXO): Unknown return case for GetPlayerData(int, char *, player *, TCP_Socket &, int, bool, int)\n");
 					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Unkown return case from GetPlayerData() - Contact Kazan!");
 					break;
 			}
@@ -1501,6 +1506,7 @@ void multi_join_game_init()
 		}
 	}
 
+	
 	
 	char textbuffer[17];
 	memset(textbuffer, 0, 17);
@@ -1514,7 +1520,7 @@ void multi_join_game_init()
 			Cur = Cur->next;
 		} while (Cur != Active_game_head);
 	}
-
+	
 	// initialize any and all timestamps	
 	Multi_join_glr_stamp = -1;
 	Multi_join_ping_stamp = -1;
@@ -2936,8 +2942,8 @@ int Msg_rank_list_coords[GR_NUM_RESOLUTIONS][4] = {
 // button defs
 #define MULTI_SG_NUM_BUTTONS	10
 #define MSG_OPEN_GAME			0
-//#define MSG_CLOSED_GAME			1
-//#define MSG_RESTRICTED_GAME		2
+#define MSG_CLOSED_GAME			1
+#define MSG_RESTRICTED_GAME		2
 #define MSG_PASSWD_GAME			1
 #define MSG_RANK_SET_GAME		2
 #define MSG_RANK_SCROLL_UP		3
@@ -2957,8 +2963,8 @@ int Multi_sg_bitmap;														// the background bitmap
 ui_button_info Multi_sg_buttons[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_BUTTONS] = {
 	{ // GR_640
 		ui_button_info("MSG_00",	1,		184,	34,	191,	2),		// open
-//		ui_button_info("MSG_01",	1,		159,	34,	166,	1),		// closed
-//		ui_button_info("MSG_02",	1,		184,	34,	191,	2),		// restricted
+		ui_button_info("MSG_01",	1,		159,	34,	166,	1),		// closed
+		ui_button_info("MSG_02",	1,		184,	34,	191,	2),		// restricted
 		ui_button_info("MSG_03",	1,		209,	34,	218,	3),		// password
 		ui_button_info("MSG_04",	1,		257,	34,	266,	4),		// rank set
 		ui_button_info("MSG_05",	1,		282,	-1,	-1,	5),		// rank scroll up
@@ -2971,8 +2977,8 @@ ui_button_info Multi_sg_buttons[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_BUTTONS] = {
 	},
 	{ // GR_1024
 		ui_button_info("2_MSG_00",	2,		295,	51,	307,	2),		// open
-//		ui_button_info("2_MSG_01",	2,		254,	51,	267,	1),		// closed
-//		ui_button_info("2_MSG_02",	2,		295,	51,	307,	2),		// restricted
+		ui_button_info("2_MSG_01",	2,		254,	51,	267,	1),		// closed
+		ui_button_info("2_MSG_02",	2,		295,	51,	307,	2),		// restricted
 		ui_button_info("2_MSG_03",	2,		335,	51,	350,	3),		// password
 		ui_button_info("2_MSG_04",	2,		412,	51,	426,	4),		// rank set
 		ui_button_info("2_MSG_05",	2,		452,	-1,	-1,	5),		// rank scroll up
@@ -2989,8 +2995,8 @@ ui_button_info Multi_sg_buttons[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_BUTTONS] = {
 UI_XSTR Multi_sg_text[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_TEXT] = {
 	{ // GR_640
 		{"Open",					1322,		34,	191,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_OPEN_GAME].button},
-//		{"Closed",				1323,		34,	166,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_CLOSED_GAME].button},
-//		{"Restricted",			1324,		34,	191,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_RESTRICTED_GAME].button},
+		{"Closed",				1323,		34,	166,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_CLOSED_GAME].button},
+		{"Restricted",			1324,		34,	191,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_RESTRICTED_GAME].button},
 		{"Password Protected",	1325,	34,	218,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_PASSWD_GAME].button},
 		{"Allow Rank",			1326,		34,	266,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_RANK_SET_GAME].button},
 		{"Above",				1327,		210,	290,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_RANK_ABOVE].button},
@@ -3004,8 +3010,8 @@ UI_XSTR Multi_sg_text[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_TEXT] = {
 	},
 	{ // GR_1024
 		{"Open",					1322,		51,	307,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_OPEN_GAME].button},
-//		{"Closed",				1323,		51,	267,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_CLOSED_GAME].button},
-//		{"Restricted",			1324,		51,	307,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_RESTRICTED_GAME].button},
+		{"Closed",				1323,		51,	267,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_CLOSED_GAME].button},
+		{"Restricted",			1324,		51,	307,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_RESTRICTED_GAME].button},
 		{"Password Protected",	1325,	51,	350,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_PASSWD_GAME].button},
 		{"Allow Rank",			1326,		51,	426,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_RANK_SET_GAME].button},
 		{"Above",				1327,		335,	465,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_RANK_ABOVE].button},
@@ -3316,7 +3322,7 @@ void multi_sg_button_pressed(int n)
 		}
 		break;
 
-		/*
+		
 	// the open button was pressed
 	case MSG_CLOSED_GAME:		
 		// if the closed option is selected
@@ -3333,7 +3339,7 @@ void multi_sg_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-*/
+
 	// toggle password protection
 	case MSG_PASSWD_GAME:		
 		// if we selected it
@@ -3353,7 +3359,7 @@ void multi_sg_button_pressed(int n)
 		}			
 		break;
 
-/*
+
 	// toggle "restricted" on or off
 	case MSG_RESTRICTED_GAME:
 		if(Multi_sg_netgame->mode != NG_MODE_RESTRICTED){
@@ -3366,7 +3372,7 @@ void multi_sg_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-*/
+
 	// turn off all rank requirements
 	case MSG_RANK_SET_GAME:		
 		// if either is set, then turn then both off
@@ -3570,18 +3576,18 @@ void multi_sg_draw_radio_buttons()
 	case NG_MODE_OPEN:
 		Multi_sg_buttons[gr_screen.res][MSG_OPEN_GAME].button.draw_forced(2);
 		break;
-/*
+
 	case NG_MODE_CLOSED:
 		Multi_sg_buttons[gr_screen.res][MSG_CLOSED_GAME].button.draw_forced(2);
 		break;
-		*/
+		
 	case NG_MODE_PASSWORD:
 		Multi_sg_buttons[gr_screen.res][MSG_PASSWD_GAME].button.draw_forced(2);
 		break;
-/*	case NG_MODE_RESTRICTED:
+	case NG_MODE_RESTRICTED:
 		Multi_sg_buttons[gr_screen.res][MSG_RESTRICTED_GAME].button.draw_forced(2);
 		break;
-		*/
+		
 	case NG_MODE_RANK_ABOVE:
 		Multi_sg_buttons[gr_screen.res][MSG_RANK_SET_GAME].button.draw_forced(2);
 		Multi_sg_buttons[gr_screen.res][MSG_RANK_ABOVE].button.draw_forced(2);
@@ -3656,11 +3662,11 @@ void multi_sg_rank_display_stuff()
 	}
 
 	// display the selected rank
-	/*
+	
 	gr_set_color_fast(&Color_bright);
 	multi_sg_rank_build_name(Ranks[Multi_sg_netgame->rank_base].name,rank_name);
 	gr_string(Msg_rank_sel_coords[gr_screen.res][MSG_X_COORD],Msg_rank_sel_coords[gr_screen.res][MSG_Y_COORD],rank_name);
-	*/
+	
 }
 
 void multi_sg_rank_process_select()
