@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.17 $
- * $Author: Goober5000 $
- * $Date: 2004-05-11 02:52:11 $
+ * $Revision: 2.18 $
+ * $Author: wmcoolmon $
+ * $Date: 2004-05-29 02:52:17 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/05/11 02:52:11  Goober5000
+ * completed the FRED import conversion stuff that I started ages ago
+ * --Goober5000
+ *
  * Revision 2.16  2004/03/05 09:02:08  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1557,6 +1561,29 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 	}
 
 	Mp++;
+
+	return count;
+}
+
+//Stuffs an integer list like stuff_int_list.
+int stuff_float_list(float* flp, int max_floats)
+{
+	int count = 0;
+	ignore_white_space();
+
+	if (*Mp != '(') {
+		error_display(1, "Reading float list.  Found [%c].  Expecting '('.\n", *Mp);
+		longjmp(parse_abort, 6);
+	}
+
+	Mp++;
+	ignore_white_space();
+	while(*Mp != ')')
+	{
+		Assert(count < max_floats);
+		stuff_float(&flp[count++]);
+		ignore_white_space();
+	}
 
 	return count;
 }
