@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.6 $
+ * $Date: 2003-03-20 07:15:37 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.4  2003/03/05 09:17:14  Goober5000
  * cleaned out Bobboau's buggy code - about to rewrite with new, bug-free code :)
  * --Goober5000
@@ -2033,7 +2036,9 @@ void commit_pressed()
 	// and remove them from the hotkey linked lists.
 	mission_hotkey_validate();
 
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	// Goober5000 - no sound when skipping briefing
+	if (!(The_mission.flags & MISSION_FLAG_NO_BRIEFING))
+		gamesnd_play_iface(SND_COMMIT_PRESSED);
 
 	// save the player loadout
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {

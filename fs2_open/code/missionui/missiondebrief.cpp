@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.8 $
+ * $Date: 2003-03-20 07:15:37 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.6  2003/01/27 00:51:46  DTP
  * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still cant join. narrowing it down.
  *
@@ -1741,7 +1744,8 @@ void debrief_accept(int ok_to_post_start_game_event)
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 		}
 
-		if ( play_commit_sound ) {
+		// Goober5000
+		if ( play_commit_sound && !(The_mission.flags & MISSION_FLAG_NO_DEBRIEFING)) {
 			gamesnd_play_iface(SND_COMMIT_PRESSED);
 		}
 
@@ -2689,6 +2693,17 @@ void debrief_do_frame(float frametime)
 	char buf[256];
 
 	Assert(Debrief_inited);	
+
+	// Goober5000 - accept immediately if skipping debriefing
+	if (The_mission.flags & MISSION_FLAG_NO_DEBRIEFING)
+	{
+		// make sure that we can actually advance - we don't want an endless loop!!!
+		if ( !((/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE)) )
+		{
+			debrief_accept();
+			return;
+		}
+	}
 
 #ifndef NO_NETWORK
 	// first thing is to load the files
