@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-04-01 15:29:39 $
+ * $Revision: 2.21 $
+ * $Date: 2004-04-14 00:37:36 $
  * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/04/01 15:29:39  taylor
+ * close out briefing menu bitmaps before entering mission
+ *
  * Revision 2.19  2004/03/05 09:01:55  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1845,6 +1848,7 @@ void ship_select_do(float frametime)
 		g3_start_frame(1);
 		g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
 		if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	
 		// lighting for techroom
 		light_reset();
