@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.56 $
- * $Date: 2004-04-13 05:42:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.57 $
+ * $Date: 2004-05-03 21:22:22 $
+ * $Author: Kazan $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2004/04/13 05:42:45  Goober5000
+ * fixed the custom hitpoints subsystem bug
+ * --Goober5000
+ *
  * Revision 2.55  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -863,8 +867,15 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 
 char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"primitive-sensors",
+#if defined(ENABLE_AUTO_PILOT)
+	"no-subspace-drive",
+	"nav-carry-status"
+#else
 	"no-subspace-drive"
+#endif
 };
+
+
 
 char *Starting_wing_names[MAX_STARTING_WINGS+1] = {
 	"Alpha",
@@ -1998,6 +2009,11 @@ int parse_create_object(p_object *objp)
 	if ( objp->flags2 & P2_SF2_NO_SUBSPACE_DRIVE )
 		Ships[shipnum].flags2 |= SF2_NO_SUBSPACE_DRIVE;
 
+#if defined(ENABLE_AUTO_PILOT)
+	if ( objp->flags2 & P2_SF2_NAV_CARRY_STATUS )
+		Ships[shipnum].flags2 |= SF2_NAVPOINT_CARRY;
+#endif
+
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
 	if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NO_ARRIVAL_WARP) )
@@ -2005,6 +2021,12 @@ int parse_create_object(p_object *objp)
 
 	if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NO_DEPARTURE_WARP) )
 		Ships[shipnum].flags |= SF_NO_DEPARTURE_WARP;
+
+#if defined(ENABLE_AUTO_PILOT)
+	// Kazan
+	if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NAV_CARRY) )
+		Ships[shipnum].flags2 |= SF2_NAVPOINT_CARRY;
+#endif
 
 	// Goober5000 - arg... if ship is in a wing, copy the wing's depature information to the ship
 	if ( Ships[shipnum].wingnum != -1 )
@@ -3418,6 +3440,12 @@ void parse_wing(mission *pm)
 				wingp->flags |= WF_NO_DEPARTURE_WARP;
 			else if ( !stricmp( wing_flag_strings[i], NOX("no-dynamic")) )
 				wingp->flags |= WF_NO_DYNAMIC;
+
+#if defined(ENABLE_AUTO_PILOT)
+			else if ( !stricmp( wing_flag_strings[i], NOX("nav-carry-status")) )
+				wingp->flags |= WF_NAV_CARRY;
+#endif
+
 			else
 				Warning(LOCATION, "unknown wing flag\n%s\n\nSkipping.", wing_flag_strings[i]);
 		}

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-04-26 19:50:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.29 $
+ * $Date: 2004-05-03 21:22:21 $
+ * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/04/26 19:50:04  Goober5000
+ * added back in Kazan's line: now you can slow down in cheat mode
+ * whether you press tilde or not
+ * --Goober5000
+ *
  * Revision 2.27  2004/04/26 19:43:07  Goober5000
  * rolled back Kazan's change
  * --Goober5000
@@ -443,6 +448,10 @@
 #include "missionui/missionpause.h"
 #include "hud/hudgauges.h"
 
+#if defined(ENABLE_AUTO_PILOT)
+#include "autopilot/autopilot.h"
+#endif
+
 // --------------------------------------------------------------
 // Global to file 
 // --------------------------------------------------------------
@@ -614,7 +623,14 @@ int Normal_key_set[] = {
 	MULTI_SELF_DESTRUCT,
 
 	TOGGLE_HUD,
+#if defined(ENABLE_AUTO_PILOT)
+	HUD_TARGETBOX_TOGGLE_WIREFRAME,
+	AUTO_PILOT_TOGGLE,
+	NAV_CYCLE
+#else
 	HUD_TARGETBOX_TOGGLE_WIREFRAME
+#endif
+
 };
 
 int Dead_key_set[] = {
@@ -741,7 +757,14 @@ int Non_critical_key_set[] = {
 	MULTI_SELF_DESTRUCT,
 
 	TOGGLE_HUD,
+#if defined(ENABLE_AUTO_PILOT)
+	HUD_TARGETBOX_TOGGLE_WIREFRAME,
+	AUTO_PILOT_TOGGLE,
+	NAV_CYCLE
+#else
 	HUD_TARGETBOX_TOGGLE_WIREFRAME
+#endif
+
 };
 
 
@@ -3114,6 +3137,37 @@ int button_function(int n)
 			gamesnd_play_iface(SND_USER_SELECT);
 			hud_targetbox_switch_wireframe_mode();
 			break;	
+
+#if defined(ENABLE_AUTO_PILOT)
+		// Autopilot key control
+		case AUTO_PILOT_TOGGLE:
+			if (AutoPilotEngaged)
+			{
+				EndAutoPilot();
+			}
+			else
+			{
+				if (CurrentNav == -1)
+				{
+					gamesnd_play_iface(SND_GENERAL_FAIL);
+				}
+				else
+				{
+					if (CanAutopilot())
+					{
+						StartAutopilot();
+					}
+					else
+						gamesnd_play_iface(SND_GENERAL_FAIL);
+				}
+			}
+			break;
+
+		case NAV_CYCLE:
+			if (!Sel_NextNav())
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+			break;
+#endif
 
 		// following are not handled here, but we need to bypass the Int3()
 		case LAUNCH_COUNTERMEASURE:

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.60 $
- * $Date: 2004-03-17 04:07:32 $
- * $Author: bobboau $
+ * $Revision: 2.61 $
+ * $Date: 2004-05-03 21:22:23 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2004/03/17 04:07:32  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.59  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -746,6 +753,9 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 #define SF2_DONT_COLLIDE_INVIS		(1<<4)		// Goober5000 - is this particular ship don't-collide-invisible
 #define SF2_NO_SUBSPACE_DRIVE		(1<<5)		// Goober5000 - this ship has no subspace drive
 
+#if defined(ENABLE_AUTO_PILOT)
+#define SF2_NAVPOINT_CARRY			(1<<6)		// Kazan      - This ship autopilots with the player
+#endif
 
 #define MAX_DAMAGE_SLOTS	32
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
@@ -1306,6 +1316,10 @@ extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 #define WF_NO_DYNAMIC				(1<<10)		// members of this wing relentlessly pursue their ai goals
 #define WF_DEPARTURE_ORDERED		(1<<11)		// departure of this wing was ordered by player
 #define WF_NEVER_EXISTED			(1<<12)		// this wing never existed because something prevented it from being created (like its mother ship being destroyed)
+
+#if defined(ENABLE_AUTO_PILOT)
+#define WF_NAV_CARRY				(1<<13)		// Kazan - Wing has nav-carry-status
+#endif
 
 //	Defines a wing of ships.
 typedef struct wing {

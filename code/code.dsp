@@ -685,6 +685,14 @@ SOURCE=.\Hud\HUDmessage.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\hud\HUDNavigation.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\hud\HUDNavigation.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\Hud\HUDObserver.cpp
 # End Source File
 # Begin Source File
@@ -2549,6 +2557,18 @@ SOURCE=.\jpgutils\jpgutils.cpp
 # Begin Source File
 
 SOURCE=.\jpgutils\jpgutils.h
+# End Source File
+# End Group
+# Begin Group "Autopilot"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\Autopilot\Autopilot.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Autopilot\Autopilot.h
 # End Source File
 # End Group
 # End Target

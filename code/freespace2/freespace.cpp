@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.90 $
- * $Date: 2004-04-27 20:41:58 $
- * $Author: taylor $
+ * $Revision: 2.91 $
+ * $Date: 2004-05-03 21:22:20 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2004/04/27 20:41:58  taylor
+ * add NULL check to game_hacked_data() to prevent crash
+ *
  * Revision 2.89  2004/04/26 18:23:48  Kazan
  * -no_fps_capping
  *
@@ -1045,6 +1048,10 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 
+#if defined(ENABLE_AUTO_PILOT)
+#include "autopilot/autopilot.h"
+#endif
+
 #ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multi_dogfight.h"
@@ -1984,6 +1991,10 @@ void game_level_init(int seed)
 	mflash_level_init();
 	ssm_level_init();	
 	supernova_level_init();
+
+#if defined(ENABLE_AUTO_PILOT)
+	NavSystem_Init();				// zero out the nav system
+#endif
 
 	// multiplayer dogfight hack
 	dogfight_blown = 0;
@@ -4506,6 +4517,11 @@ void game_simulation_frame()
 	awacs_process();
 //mprintf(("awacs procesed\n"));
 
+#if defined(ENABLE_AUTO_PILOT)
+	//Do autopilot stuff
+	NavSystem_Do();
+#endif
+
 	// single player, set Player hits_this_frame to 0
 	if ( !(Game_mode & GM_MULTIPLAYER) && Player ) {
 		Player->damage_this_burst -= (flFrametime * MAX_BURST_DAMAGE  / (0.001f * BURST_DURATION));
@@ -4619,6 +4635,8 @@ void game_simulation_frame()
 
 		// move all objects - does interpolation now as well
 		obj_move_all(flFrametime);
+
+
 	}
 //	mprintf(("interpolation procesed\n"));
 
@@ -4644,6 +4662,8 @@ void game_simulation_frame()
 
 		hud_update_frame();						// update hud systems
 //mprintf(("HUD updated\n"));
+
+
 
 		if (!physics_paused)	{
 			// Move particle system
@@ -4958,6 +4978,8 @@ void game_frame(int paused)
 
 			hud_show_target_model();
 
+			
+
 			// check to see if we should display the death died popup
 			if(Game_mode & GM_DEAD_BLEW_UP){				
 #ifndef NO_NETWORK
@@ -5007,6 +5029,7 @@ void game_frame(int paused)
 				game_render_hud_2d();
 			}
 
+			
 			game_set_view_clip();
 
 			// Draw 3D HUD gauges			
@@ -9727,6 +9750,11 @@ void alt_tab_pause()
 //	audiostream_pause_all();
 
 	//  Call pause_init immediately so pause screen will be drawn.
+
+	// Protection against flipping out -- Kazan
+	if (!GameState_Stack_Valid())
+		return;
+
 	if (!(Game_mode & GM_MULTIPLAYER)){
 		if ( (gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active()) )	{
 			pause_init(0);

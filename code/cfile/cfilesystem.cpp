@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-05-01 21:47:43 $
+ * $Revision: 2.17 $
+ * $Date: 2004-05-03 21:22:19 $
  * $Author: Kazan $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/05/01 21:47:43  Kazan
+ * bah! stupid me "NULL" not "null" - i hate when i do that
+ *
  * Revision 2.15  2004/05/01 21:45:31  Kazan
  * changed delete[] to free(), checked for null, if null ERROR
  *
@@ -484,38 +487,37 @@ void cf_build_root_list(char *cdrom_dir)
 	Num_roots = 0;
 
 	cf_root	*root;
-	char *str_temp, *cur_pos;
+	char str_temp[128], *cur_pos;
 
 	if(Cmdline_mod) {
 		// stackable Mod support -- Kazan
 		//This for statement is a work of art :D
 		for (cur_pos=Cmdline_mod; strlen(cur_pos) != 0; cur_pos+= (strlen(cur_pos)+1))
 		{
-			str_temp = strdup(cur_pos);
+			
+			//strdup was not behaving reliably
+			//str_temp = strdup(cur_pos);
 
-			if (str_temp != NULL)
-			{
-				strcat(str_temp, DIR_SEPARATOR_STR);
-				root = cf_create_root();
-	
-				if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
-					Error(LOCATION, "Can't get current working directory -- %d", errno );
-				}
+			memset(str_temp, 0, 128);
+			strcpy(str_temp, cur_pos);
 
-				// do we already have a slash? as in the case of a root directory install
-				if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
-					strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
-				}
-	
-				strcat(root->path, str_temp);
-				root->roottype = CF_ROOTTYPE_PATH;
-				cf_build_pack_list(root);
-				free(str_temp);
+
+
+			strcat(str_temp, DIR_SEPARATOR_STR);
+			root = cf_create_root();
+
+			if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
+				Error(LOCATION, "Can't get current working directory -- %d", errno );
 			}
-			else
-			{
-				Error(LOCATION, "strdup() failure!", errno );
+
+			// do we already have a slash? as in the case of a root directory install
+			if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+				strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 			}
+
+			strcat(root->path, str_temp);
+			root->roottype = CF_ROOTTYPE_PATH;
+			cf_build_pack_list(root);
 		}
 	}
 
