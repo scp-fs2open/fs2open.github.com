@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/LISTBOX.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-10 18:45:09 $
+ * $Author: Kazan $
  *
  * Code to implement a listbox gadget.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -109,7 +112,9 @@
 
 #define KEY_BUFFER_TIMEOUT		1000		// time to clear buffer in milliseconds
 
-#define DEFAULT_LISTBOX_ITEM_LENGTH 40
+// bumped up by kazan
+//#define DEFAULT_LISTBOX_ITEM_LENGTH 40
+#define DEFAULT_LISTBOX_ITEM_LENGTH 128
 
 // --------------------------------------------------------------------
 // UI_LISTBOX::link_hotspot
@@ -142,6 +147,7 @@ int UI_LISTBOX::set_bmaps(char *lbox_fname, char *b_up_fname, char *b_down_fname
 
 void UI_LISTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _numitems, char **_list, char *_check_list, int _max_items)
 {
+
 	int tw, th, nrows;
 	int real_h;
 
@@ -177,7 +183,16 @@ void UI_LISTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _num
 	} else {
 		has_scrollbar = 0;
 	}
+
+	// kazan
+	draw_frame = 1;
 };
+
+
+void UI_LISTBOX::set_drawframe(int mode)
+{
+	draw_frame = mode;
+}
 
 void UI_LISTBOX::draw()
 {
@@ -205,12 +220,15 @@ void UI_LISTBOX::draw()
 		gr_set_color_fast(&CBLACK);
 		gr_set_clip( x, y, w, h );
 		ui_rect( 0, 0, w-1, h-1 );
-		gr_reset_clip();		
-		if (has_scrollbar) {
-			ui_draw_sunken_border( x-2, y-2, x+w+scrollbar.w+4, y+h+1 );
+		gr_reset_clip();	
+		if (draw_frame)
+		{
+			if (has_scrollbar) {
+				ui_draw_sunken_border( x-2, y-2, x+w+scrollbar.w+4, y+h+1 );
 
-		} else {
-			ui_draw_sunken_border( x-2, y-2, x+w+4, y+h+1 );
+			} else {
+				ui_draw_sunken_border( x-2, y-2, x+w+4, y+h+1 );
+			}
 		}
 	}
 
@@ -590,6 +608,29 @@ void UI_LISTBOX::set_new_list(int _numitems, char **_list)
  	num_items = _numitems;
 	list = _list;
 	current_item = 0;
+}
+
+void UI_LISTBOX::ScrollEnd()
+{
+	if (num_items > num_items_displayed)
+		first_item = num_items - num_items_displayed + 1;
+}
+
+void UI_LISTBOX::RemoveFirstItem()
+{
+	for (int i = 0; i < num_items-1; i++)
+		list[i] = list[i+1];
+	num_items--;
+}
+
+int UI_LISTBOX::MaxSize()
+{
+	return max_items;
+}
+
+int UI_LISTBOX::CurSize()
+{
+	return num_items;
 }
 
 int UI_LISTBOX::add_string(char *str)
