@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.56 $
- * $Date: 2004-01-19 00:56:09 $
- * $Author: randomtiger $
+ * $Revision: 2.57 $
+ * $Date: 2004-01-20 22:59:09 $
+ * $Author: Goober5000 $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2004/01/19 00:56:09  randomtiger
+ * Some more small changes for Fred OGL
+ *
  * Revision 2.55  2004/01/18 14:55:08  randomtiger
  * Few more small changes for Fred OGL
  *
@@ -2608,7 +2611,8 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 	for (i=0; i < nv; i++)
 	{
 		va=verts[i];
-		if(flags & TMAP_FLAG_RGB) glColor3ub(Gr_gamma_lookup[va->r],Gr_gamma_lookup[va->g],Gr_gamma_lookup[va->b]);
+		if(flags & TMAP_FLAG_RGB)
+			glColor3ub((ubyte)Gr_gamma_lookup[va->r], (ubyte)Gr_gamma_lookup[va->g], (ubyte)Gr_gamma_lookup[va->b]);
 		glTexCoord2f(va->u, va->v);
 		glVertex3f(va->x,va->y,va->z);
 	}
