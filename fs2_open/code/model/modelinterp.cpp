@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.100 $
- * $Date: 2005-02-04 23:29:32 $
+ * $Revision: 2.101 $
+ * $Date: 2005-02-12 12:17:54 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2005/02/04 23:29:32  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
  * Revision 2.99  2005/01/30 10:49:26  Goober5000
  * bah - rolled back the HTL fix that doesn't really work
  * --Goober5000
@@ -5274,6 +5277,10 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 
 	for(i=0; i<MAX_MODEL_TEXTURES; i++){	
 		if(!list[i].n_verts)continue;
+
+		if (model->n_buffers >= MAX_BUFFERS_PER_SUBMODEL)
+			Error(LOCATION, "Submodel %s on model %s has more than %d textures.\nFind a high-limit build or remap the model.", model->name, pm->filename, MAX_BUFFERS_PER_SUBMODEL);
+
 		model->buffer[model->n_buffers].index_buffer.allocate_index_buffer(list[i].n_verts);
 		for(int j = 0; j < list[i].n_verts; j++){
 			if ( ibuffer_info.read != NULL ) {
@@ -5293,8 +5300,6 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		model->buffer[model->n_buffers].n_prim = tri_count[i];
 		model->buffer[model->n_buffers].texture = i;
 		model->n_buffers++;
-		if(model->n_buffers>=MAX_BUFFERS_PER_SUBMODEL)
-			Error(LOCATION, "Submodel %s on model %s has more than %d textures.\nFind a high-limit build or remap the model.", model->name, pm->filename, MAX_BUFFERS_PER_SUBMODEL);
 	}
 
 }
