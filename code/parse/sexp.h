@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.71 $
+ * $Revision: 2.72 $
  * $Author: Goober5000 $
- * $Date: 2004-09-17 00:18:18 $
+ * $Date: 2004-09-17 00:28:32 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2004/09/17 00:18:18  Goober5000
+ * changed toggle-hud to hud-disable; added hud-disable-except-messages
+ * --Goober5000
+ *
  * Revision 2.70  2004/08/23 04:32:06  Goober5000
  * ship-tag and ship-untag sexps
  * --Goober5000
@@ -966,7 +970,7 @@ struct ship_subsys;
 #define OP_LOCK_ROTATING_SUBSYSTEM			(0x008a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FREE_ROTATING_SUBSYSTEM			(0x008b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_PLAYER_USE_AI					(0x008c | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_PLAYER_NOT_USE_AI				(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_HUD_DISABLE_EXCEPT_MESSAGES		(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FORCE_JUMP						(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 //Hud stuff
 #define OP_HUD_SET_TEXT						(0x008f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
@@ -978,7 +982,6 @@ struct ship_subsys;
 //
 #define OP_SHIP_TAG							(0x0095 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SHIP_UNTAG						(0x0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
-#define OP_HUD_DISABLE_EXCEPT_MESSAGES		(0x0097 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
