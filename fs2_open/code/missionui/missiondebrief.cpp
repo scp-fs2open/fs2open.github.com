@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-20 23:50:53 $
+ * $Author: DTP $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.5  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -2328,7 +2331,7 @@ void debrief_init()
 		common_music_init(SCORE_DEBRIEF_FAIL);
 	}
 	*/
-
+	/* 21-07-02 01:12 Commented out DTP, so we have the original source here 
 	// start up the appropriate music
 	if (Campaign.next_mission == Campaign.current_mission) {
 		// you failed the mission because you suck, so you get the suck music
@@ -2348,7 +2351,38 @@ void debrief_init()
 		// clear his retries info regardless of whether or not he accepts
 		Player->failures_this_session = 0;
 	}
+	*/ //commented out stop
+	// 21-07-02 01:12 DTP; New checks for setting debreifing music. at lot like the old.
+	// this is for single player
+	if (Campaign.next_mission == Campaign.current_mission && (Game_mode & GM_NORMAL)) {	//DTP
+		common_music_init(SCORE_DEBRIEF_FAIL);	//DTP
+	}
+	else if (mission_goals_met() && (Game_mode & GM_NORMAL)) { //DTP
+		common_music_init(SCORE_DEBRIEF_SUCCESS);	//DTP
+	} else {
+		if (Game_mode & GM_NORMAL) {				//DTP
+		common_music_init(SCORE_DEBRIEF_AVERAGE);	//DTP
+		}
+	}
 
+	if (Campaign.next_mission == Campaign.current_mission && (Game_mode & GM_NORMAL) ) {	
+		// better luck next time, increase his retries
+		Player->failures_this_session++;
+	} else {
+		if (Game_mode & GM_NORMAL) {
+		// clear his retries info regardless of whether or not he accepts
+		Player->failures_this_session = 0;
+		}
+	}
+	// 21-07-02 01:14 DTP; if multiplayer then music gets set here.
+	if (mission_evaluate_primary_goals() == PRIMARY_GOALS_COMPLETE && (Game_mode & GM_MULTIPLAYER)) { // DTP
+		common_music_init(SCORE_DEBRIEF_SUCCESS);	//DTP
+	} else {						//DTP
+		if (Game_mode & GM_MULTIPLAYER) {		//DTP
+			common_music_init(SCORE_DEBRIEF_FAIL);	//DTP
+		}
+		
+	}
 #ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_debrief_init();
