@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-03-20 07:15:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2003-06-25 03:13:48 $
+ * $Author: phreak $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/03/20 07:15:37  Goober5000
+ * implemented mission flags for no briefing or no debriefing - yay!
+ * --Goober5000
+ *
  * Revision 2.7  2003/03/18 10:07:04  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -1629,7 +1633,9 @@ void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_lo
 // what to do when the accept button is hit
 void debrief_accept(int ok_to_post_start_game_event)
 {
+	extern int Weapon_energy_cheat;
 	int go_loop = 0;
+	Weapon_energy_cheat=0;
 
 	if ( (/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE) ) {
 		char *str;
