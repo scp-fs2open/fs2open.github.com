@@ -12,7 +12,6 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	char code[5];
 	CFILE *ddsfile;
 	char real_name[MAX_FILENAME_LEN];
-	char *p;
 	int retval = DDS_ERROR_NONE;
 	int ct;
 	int bits = 0;
@@ -23,7 +22,7 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 
 		// make sure there is an extension
 		strcpy(real_name, filename);
-		p = strchr(real_name, '.');
+		char *p = strchr(real_name, '.');
 		if (p) { *p=0; }
 		strcat(real_name, ".dds");
 
@@ -121,16 +120,26 @@ int dds_read_bitmap(char *filename, ubyte **data, ubyte *bpp)
 	int w,h,ct,lvl;
 	int size = 0, bits = 0;
 	CFILE *cfp;
+	char real_name[MAX_FILENAME_LEN];
+
+	// this better not happen.. ever
+	Assert(filename != NULL);
+
+	// make sure there is an extension
+	strcpy(real_name, filename);
+	char *p = strchr(real_name, '.');
+	if (p) { *p = 0; }
+	strcat(real_name, ".dds");
 
 	// open it up and go to the data section
-	cfp = cfopen(filename, "rb");
+	cfp = cfopen(real_name, "rb");
 
 	// just in case
 	if (cfp == NULL)
 		return DDS_ERROR_INVALID_FILENAME;
 
 	// read the header -- if its at this stage, it should be legal.
-	retval = dds_read_header(filename, cfp, &w, &h, &bits, &ct, &lvl, &size);
+	retval = dds_read_header(real_name, cfp, &w, &h, &bits, &ct, &lvl, &size);
 
 	Assert(retval == DDS_ERROR_NONE);
 
