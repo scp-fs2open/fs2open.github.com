@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-03-25 06:57:34 $
+ * $Revision: 2.46 $
+ * $Date: 2005-03-27 04:16:19 $
  * $Author: wmcoolmon $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/03/25 06:57:34  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.44  2005/03/03 06:05:28  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -1001,7 +1004,10 @@ int get_prev_weapon_looped(int current_weapon, int subtype)
 		}
 	}
 	
-	return get_prev_weapon_looped(Num_weapon_types, subtype);
+	if(current_weapon != Num_weapon_types)
+		return get_prev_weapon_looped(Num_weapon_types, subtype);
+	else
+		return -1;
 }
 
 int get_next_weapon_looped(int current_weapon, int subtype)
@@ -1014,7 +1020,10 @@ int get_next_weapon_looped(int current_weapon, int subtype)
 		}
 	}
 	
-	return get_next_weapon_looped(0, subtype);
+	if(current_weapon != 0)
+		return get_next_weapon_looped(0, subtype);
+	else
+		return -1;
 }
 
 void process_debug_keys(int k)
