@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.53 $
- * $Date: 2004-04-26 00:23:26 $
- * $Author: taylor $
+ * $Revision: 2.54 $
+ * $Date: 2004-04-26 18:23:47 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2004/04/26 00:23:26  taylor
+ * novbo and snd_preload cmdline options, fix moddir getting appended space
+ *
  * Revision 2.52  2004/04/18 19:39:12  randomtiger
  * Added -2d_poof command which allows access to 2D poof rendering
  * Added -radar_reduce to launcher flag description structure
@@ -499,6 +502,7 @@ extern int CmdLine_FRED2_NoWarn;
 
 extern int Cmdline_novbo;
 extern int Cmdline_snd_preload;
+extern int Cmdline_NoFPSCap;
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif
