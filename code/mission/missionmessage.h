@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-06-15 21:05:30 $
+ * $Author: wmcoolmon $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2004/02/12 22:29:55  phreak
  * fixed a bug where the inferno build would get lower limits for MAX_PERSONAS if INF_BUILD was defined
  *
@@ -228,7 +232,8 @@
 
 struct ship;
 
-#define MAX_MISSION_MESSAGES	300
+#define MAX_MISSION_MESSAGES	500
+//Bumped to 500 from 300 06/15/2004 -C
 
 // keep seperate lists of AVI's and wav files.  I suspect that many messages will have
 // duplicate avi's for different messages.  Seperate list for wave files since some messages
