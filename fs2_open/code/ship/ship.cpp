@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.47 $
- * $Date: 2003-02-05 06:57:56 $
- * $Author: Goober5000 $
+ * $Revision: 2.48 $
+ * $Date: 2003-02-16 05:14:29 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/02/05 06:57:56  Goober5000
+ * made my fighterbay code more forgiving of eccentric modeling hacks...
+ * ships can now use the Faustus hangar again :)
+ * --Goober5000
+ *
  * Revision 2.46  2003/01/27 07:46:32  Goober5000
  * finished up my fighterbay code - ships will not be able to arrive from or depart into
  * fighterbays that have been destroyed (but you have to explicitly say in the tables
@@ -5811,11 +5816,11 @@ int ship_stop_fire_primary_bank(object * obj, int bank_to_stop){//stops a single
 		snd_stop(shipp->fighter_beam_loop_sound[bank_to_stop]);
 		shipp->fighter_beam_loop_sound[bank_to_stop] = -1;//stops the beam looping sound -bobboau
 
-
-/*	if ( obj == Player_obj ){
+/*
+	if ( obj == Player_obj ){
 		HUD_printf("stoped bank %d", bank_to_stop);
-	}*/
-
+	}
+*/
 
 	return 1;
 }
@@ -5858,8 +5863,8 @@ int ship_stop_fire_primary(object * obj){	//stuff to do when the ship has stoped
 
 /*	if ( obj == Player_obj ){
 		HUD_printf("stoped all");
-	}*/
-
+	}
+*/
 
 	return 1;
 }
@@ -6084,11 +6089,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			}else{//beam sounds for other fighters
 				//if the fighter doesn't have a fighter beam sound from being fired last frame give it one
 		
-				if(!(snd_is_playing(shipp->fighter_beam_loop_sound[bank_to_fire])) ){
+		/*		if(!(snd_is_playing(shipp->fighter_beam_loop_sound[bank_to_fire])) ){
 					snd_stop(shipp->fighter_beam_loop_sound[bank_to_fire]);
 					shipp->fighter_beam_loop_sound[bank_to_fire] = -1;
 				}
-
+*/
 				vector pos, temp = obj->pos, temp2 = obj->pos;
 
 				vm_vec_unrotate(&temp2, &temp, &obj->orient);

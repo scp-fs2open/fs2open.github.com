@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-01-19 01:07:43 $
+ * $Revision: 2.11 $
+ * $Date: 2003-02-16 05:14:29 $
  * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/01/19 01:07:43  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.9  2003/01/13 23:20:01  Goober5000
  * bug hunting; fixed the beam whack effect bug
  * --Goober5000
@@ -335,9 +338,6 @@
 // BEAM WEAPON DEFINES/VARS
 //
 
-// use this to extend a beam to "infinity"
-#define BEAM_FAR_LENGTH				30000.0f
-
 // this is the constant which defines when a beam is an "area" beam. meaning, when we switch on sphereline checking and when 
 // a beam gets "stopped" by an object. It is a percentage of the object radius which the beam must be wider than
 #define BEAM_AREA_PERCENT			0.4f
@@ -403,6 +403,9 @@ typedef struct beam {
 
 	// team 
 	char		team;
+
+	float range;
+	float damage_threshold;
 
 	// exactly how the beam will behave. by passing this is multiplayer from server to client, we can ensure that
 	// everything looks the same
@@ -592,7 +595,7 @@ void beam_recalc_sounds(beam *b);
 void beam_apply_whack(beam *b, object *objp, vector *hit_point);
 
 // return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
-float beam_get_ship_damage(beam *b, object *objp);
+float beam_get_ship_damage(beam *b, object *objp, vector *hit_pos);
 
 // if the beam is likely to tool a given target before its lifetime expires
 int beam_will_tool_target(beam *b, object *objp);
@@ -715,6 +718,8 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->shot_index = 0;
 	new_item->shrink = 1.0f;	
 	new_item->team = (char)firing_ship->team;
+	new_item->range = wip->b_info.range;
+	new_item->damage_threshold = wip->b_info.damage_threshold;
 	
 	// if the targeted subsystem is not NULL, force it to be a type A beam
 	if(new_item->target_subsys != NULL){
@@ -856,6 +861,8 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	new_item->shot_index = 0;
 	new_item->shrink = 1.0f;	
 	new_item->team = (char)firing_ship->team;
+	new_item->range = wip->b_info.range;
+	new_item->damage_threshold = wip->b_info.damage_threshold;
 
 	// type c is a very special weapon type - binfo has no meaning
 
@@ -1049,7 +1056,7 @@ void beam_type_a_move(beam *b)
 	// put the "last_shot" point arbitrarily far away
 	vm_vec_sub(&dir, &b->last_shot, &b->last_start);
 	vm_vec_normalize_quick(&dir);
-	vm_vec_scale_add(&b->last_shot, &b->last_start, &dir, BEAM_FAR_LENGTH);
+	vm_vec_scale_add(&b->last_shot, &b->last_start, &dir, b->range);
 	Assert(is_valid_vec(&b->last_shot));
 }
 
@@ -1081,12 +1088,12 @@ void beam_type_b_move(beam *b)
 	}
 
 	// now recalculate shot_point to be shooting through our new point
-	vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, BEAM_FAR_LENGTH);
+	vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, b->range);
 	int is_valid = is_valid_vec(&b->last_shot);
 	Assert(is_valid);
 	if(!is_valid){
 		actual_dir = b->binfo.dir_a;
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, BEAM_FAR_LENGTH);
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, b->range);
 	}
 }
 
@@ -1105,7 +1112,7 @@ void beam_type_c_move(beam *b)
 	temp = b->targeting_laser_offset;
 	vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
 	vm_vec_add2(&b->last_start, &b->objp->pos);	
-	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, BEAM_FAR_LENGTH);
+	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 }
 
 // type D functions
@@ -1144,7 +1151,7 @@ void beam_type_d_move(beam *b)
 	// put the "last_shot" point arbitrarily far away
 	vm_vec_sub(&dir, &b->last_shot, &b->last_start);
 	vm_vec_normalize_quick(&dir);
-	vm_vec_scale_add(&b->last_shot, &b->last_start, &dir, BEAM_FAR_LENGTH);
+	vm_vec_scale_add(&b->last_shot, &b->last_start, &dir, b->range);
 	Assert(is_valid_vec(&b->last_shot));
 }
 void beam_type_d_get_status(beam *b, int *shot_index, int *fire_wait)
@@ -1181,7 +1188,7 @@ void beam_type_e_move(beam *b)
 	}	
 
 	// put the "last_shot" point arbitrarily far away
-	vm_vec_scale_add(&b->last_shot, &b->last_start, &turret_norm, BEAM_FAR_LENGTH);	
+	vm_vec_scale_add(&b->last_shot, &b->last_start, &turret_norm, b->range);	
 	Assert(is_valid_vec(&b->last_shot));
 }
 
@@ -1483,9 +1490,33 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 		verts[3]->u = (0 + (U_offset * bwi->sections[s_idx].translation));
 		verts[0]->u = (0 + (U_offset * bwi->sections[s_idx].translation));
 
+		Assert(length != 0);
+
+		float per = bwi->range / length;
+		if(per > 1.0f)per = 1.0f;
+		if(per < 0.0f)per = 0.0f;
+
+		verts[1]->r = (255 * per);
+		verts[2]->r = (255 * per);
+		verts[1]->g = (255 * per);
+		verts[2]->g = (255 * per);
+		verts[1]->b = (255 * per);
+		verts[2]->b = (255 * per);
+		verts[1]->a = (255 * per);
+		verts[2]->a = (255 * per);
+
+		verts[0]->r = 255;
+		verts[3]->r = 255;
+		verts[0]->g = 255;
+		verts[3]->g = 255;
+		verts[0]->b = 255;
+		verts[3]->b = 255;
+		verts[0]->a = 255;
+		verts[3]->a = 255;
+
 		// set the right texture with additive alpha, and draw the poly
 		gr_set_bitmap(bwi->sections[s_idx].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
-		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			
+		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			
 	}		
 	
 	// turn backface culling back on
@@ -2244,7 +2275,7 @@ void beam_aim(beam *b)
 		ship_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2);				
 
 		// set the shot point
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->binfo.dir_a, BEAM_FAR_LENGTH);
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->binfo.dir_a, b->range);
 		Assert(is_valid_vec(&b->last_shot));		
 		break;
 
@@ -2253,7 +2284,7 @@ void beam_aim(beam *b)
 		temp = b->targeting_laser_offset;	
 		vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
 		vm_vec_add2(&b->last_start, &b->objp->pos);
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, BEAM_FAR_LENGTH);		
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);		
 		break;
 
 	case BEAM_TYPE_D:				
@@ -2271,7 +2302,7 @@ void beam_aim(beam *b)
 		ship_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2);		
 
 		// point directly in the direction of the turret
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, BEAM_FAR_LENGTH);
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, b->range);
 		break;
 
 	default:
@@ -3000,7 +3031,7 @@ mprintf(("play the sound\n"));
 				mprintf(("beam hitting a ship %s, shield quadrant %d\n", Ships[Objects[target].instance].ship_name, b->f_collisions[idx].quadrant));
 				// hit the ship - again, the innards of this code handle multiplayer cases
 				// maybe vaporize ship.
-				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), b->f_collisions[idx].quadrant);
+				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world), b->f_collisions[idx].quadrant);
 
 
 				// GAH!! Bobboau, the shields are almost always up!  Anyway, some people complained.
@@ -3220,8 +3251,16 @@ void beam_apply_whack(beam *b, object *objp, vector *hit_point)
 }
 
 // return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
-float beam_get_ship_damage(beam *b, object *objp)
-{	
+//now also atenuates for distance-Bobboau
+float beam_get_ship_damage(beam *b, object *objp, vector *hit_pos)
+{
+	float dist = vm_vec_dist(&b->last_shot, hit_pos);
+	if(dist > b->range)return 0.0f;
+
+	float aten = 1.0;
+	float pre = b->range*b->damage_threshold;
+	if((b->range != pre)&&(dist > pre))aten = 1.0 - (dist - pre)/(b->range - pre);
+
 	// if the beam is on the same team as the object
 	Assert((objp != NULL) && (b != NULL));
 	if((objp == NULL) || (b == NULL)){
@@ -3238,7 +3277,7 @@ float beam_get_ship_damage(beam *b, object *objp)
 	}
 
 	// normal damage
-	return Weapon_info[b->weapon_info_index].damage;
+	return Weapon_info[b->weapon_info_index].damage * aten;
 }
 
 // if the beam is likely to tool a given target before its lifetime expires
