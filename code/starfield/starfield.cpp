@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-06 19:33:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-01-19 01:07:42 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/06 19:33:21  Goober5000
+ * cleaned up some stuff with model_set_thrust and a commented Assert that
+ * shouldn't have been
+ * --Goober5000
+ *
  * Revision 2.3  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -397,7 +402,9 @@ void stars_init()
 				strcpy(bm->filename, filename);
 				bm->xparent = 0;
 				bm->bitmap = bm_load(bm->filename);				
-				Assert(bm->bitmap != -1);
+				if(bm->bitmap == -1){
+					Warning(LOCATION, "cannot find bitmap %s", filename);
+				}
 
 				// if fred is running we should lock the bitmap now
 				if(Fred_running && (bm->bitmap >= 0)){
@@ -414,7 +421,9 @@ void stars_init()
 				strcpy(bm->filename, filename);
 				bm->xparent = 1;
 				bm->bitmap = bm_load(bm->filename);
-				Assert(bm->bitmap != -1);
+				if(bm->bitmap == -1){
+					Warning(LOCATION, "cannot find bitmap %s", filename);
+				}
 
 				// if fred is running we should lock as a 0, 255, 0 bitmap now
 				if(Fred_running && (bm->bitmap >= 0)){
@@ -450,8 +459,12 @@ void stars_init()
 				bm->xparent = 1;
 				bm->bitmap = bm_load(bm->filename);
 				bm->glow_bitmap = bm_load(bm->glow_filename);
-				Assert(bm->bitmap != -1);
-				Assert(bm->glow_bitmap != -1);
+				if(bm->bitmap == -1){
+					Warning(LOCATION, "cannot find bitmap %s", filename);
+				}
+				if(bm->glow_bitmap == -1){
+					Warning(LOCATION, "cannot find bitmap %s", glow_filename);
+				}
 				bm->r = r;
 				bm->g = g;
 				bm->b = b;

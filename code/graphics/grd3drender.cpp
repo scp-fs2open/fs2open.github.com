@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-01-09 21:20:21 $
- * $Author: phreak $
+ * $Revision: 2.7 $
+ * $Date: 2003-01-19 01:07:41 $
+ * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/01/09 21:20:21  phreak
+ * fixed a small error in bob's code
+ *
  * Revision 2.5  2003/01/05 23:41:50  bobboau
  * disabled decals (for now), removed the warp ray thingys,
  * made some better error mesages while parseing weapons and ships tbls,
@@ -722,6 +725,7 @@ float flCAP( float x, float minx, float maxx)
 }
 
 #define NEBULA_COLORS 20
+static float Interp_fog_level;
 
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
@@ -986,10 +990,11 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		src_v++;
 	}
 
+	int ra = 0, ga = 0, ba = 0;		
 	// if we're rendering against a fullneb background
 	if(flags & TMAP_FLAG_PIXEL_FOG){	
 		int r, g, b;
-		int ra, ga, ba;		
+//		int ra, ga, ba;		
 		ra = ga = ba = 0;		
 
 		// get the average pixel color behind the vertices
@@ -1011,9 +1016,9 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 
 	//this is my hack to get some sort of luminence mapping-Bobboau
-	if(GLOWMAP[gr_screen.current_bitmap % MAX_BITMAPS] > 0){
+	if(GLOWMAP > 0){
 
-		gr_screen.gf_set_bitmap(GLOWMAP[gr_screen.current_bitmap  % MAX_BITMAPS], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0f);
+		gr_screen.gf_set_bitmap(GLOWMAP, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0f);
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
 			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
@@ -1022,9 +1027,18 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, zbuffer_type );
 
 		for (i=0; i<nverts; i++ )	{
-			d3d_verts[i].color = RGBA_MAKE(255, 255, 255, 0);
+			int ifl = int(Interp_fog_level * 255.0);
+			if(flags & TMAP_FLAG_PIXEL_FOG)
+				d3d_verts[i].color = RGBA_MAKE(ifl, ifl, ifl, 0);
+			else
+				d3d_verts[i].color = RGBA_MAKE(255, 255, 255, 0);
+//			if(flags & TMAP_FLAG_PIXEL_FOG)d3d_verts[i].color = RGBA_MAKE(gr_screen.current_fog_color.red, gr_screen.current_fog_color.green, gr_screen.current_fog_color.blue, gr_screen.current_fog_color.alpha);
+//			if(D3D_fog_mode == 1)d3d_verts[i].color = RGBA_MAKE(128, 128, 128, 0);
+			if(flags & TMAP_FLAG_PIXEL_FOG)d3d_verts[i].specular = 0;
 		}
+		if(flags & TMAP_FLAG_PIXEL_FOG)d3d_SetRenderState(D3DRENDERSTATE_FOGENABLE, FALSE );
 		d3d_DrawPrimitive(D3DPT_TRIANGLEFAN, D3DVT_TLVERTEX, (LPVOID)d3d_verts, nverts, NULL);
+		if(flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 	}
 	// turn off fog
 	// if(flags & TMAP_FLAG_PIXEL_FOG){

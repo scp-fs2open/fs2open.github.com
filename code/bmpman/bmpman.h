@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
- * $Revision: 2.2 $
- * $Date: 2003-01-18 19:55:16 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-19 01:07:41 $
+ * $Author: bobboau $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/18 19:55:16  phreak
+ * fixed around the bmpman system to now accept compressed textures
+ *
  * Revision 2.1  2003/01/05 23:41:50  bobboau
  * disabled decals (for now), removed the warp ray thingys,
  * made some better error mesages while parseing weapons and ships tbls,
@@ -359,7 +362,7 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 // given a bitmap and a section, return the size (w, h)
 void bm_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h);
 
-extern int GLOWMAP[MAX_BITMAPS];	//this holds a reference to a map that is a fully lit version of it's index -Bobboau
+extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of it's index -Bobboau
 
 int bm_is_compressed(int num);
 int bm_get_size(int num);

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.40 $
- * $Date: 2003-01-18 09:25:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2003-01-19 01:07:42 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/01/18 09:25:40  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.39  2003/01/17 07:59:08  Goober5000
  * fixed some really strange behavior with strings not being truncated at the
  * # symbol
@@ -1711,7 +1716,7 @@ strcpy(parse_error_text, temp_error);
 		stuff_float(&sip->afterburner_recover_rate);
 
 		if(optional_string("$Trails:")){//optional values aplyed to ABtrails -Bobboau
-			
+			mprintf(("ABtrails\n"));
 			char bitmap_name[MAX_FILENAME_LEN] = "";
 
 			required_string("+Bitmap:");
@@ -1727,6 +1732,7 @@ strcpy(parse_error_text, temp_error);
 			required_string("+Life:");
 			stuff_float(&sip->ABlife);
 		}else{
+			mprintf(("no ABtrails\n"));
 			sip->ABbitmap = -1;	//defalts for no ABtrails-Bobboau
 			sip->ABwidth_factor = 1.0f;
 			sip->ABAlpha_factor = 1.0f;
@@ -1734,6 +1740,7 @@ strcpy(parse_error_text, temp_error);
 		}
 
 	} else {
+		mprintf(("no AB or ABtrails\n"));
 		sip->afterburner_max_vel.xyz.x = 0.0f;
 		sip->afterburner_max_vel.xyz.y = 0.0f;
 		sip->afterburner_max_vel.xyz.z = 0.0f;
@@ -5290,8 +5297,18 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 				ci = &shipp->ab_info[shipp->ab_count++];
 			//	ci = &sip->ct_info[sip->ct_count++];
 
-				ci->pt = pm_orig->thrusters[h].pnt[j];//offset
+			if(sip->ct_count >= MAX_SHIP_CONTRAILS)break;
+			for(int j = 0; j < pm_orig->thrusters->num_slots; j++){
+			// this means you've reached the max # of AB trails for a ship
+			Assert(sip->ct_count < MAX_SHIP_CONTRAILS);
 
+			ci = &shipp->ab_info[shipp->ab_count++];
+			if(sip->ct_count >= MAX_SHIP_CONTRAILS)break;
+		//	ci = &sip->ct_info[sip->ct_count++];
+
+			if(pm_orig->thrusters[h].pnt[j].xyz.z < 0.5)continue;// only make ab trails for thrusters that are pointing backwards
+
+			ci->pt = pm_orig->thrusters[h].pnt[j];//offset
 				ci->w_start = pm_orig->thrusters[h].radius[j] * sip->ABwidth_factor;//width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
@@ -5304,7 +5321,9 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	
 				ci->stamp = 60;	//spew time???	
 
-				ci->bitmap = sip->ABbitmap; //table loaded bitmap used on this ships burner trails
+			ci->bitmap = sip->ABbitmap; //table loaded bitmap used on this ships burner trails
+			mprintf(("ab trail point %d made\n", shipp->ab_count));
+			}
 			}
 		}
 	}//end AB trails -Bobboau
@@ -10515,7 +10534,7 @@ void ship_page_in_model_textures(int modelnum)
 			// see about different kinds of textures... load frames, too, in case we have an ani
 
 			// transparent?
-			if (pm->is_transparent[i])
+			if (pm->transparent[i])
 			{
 				bm_page_in_xparent_texture( bitmap_num, pm->num_frames[i] );
 			}

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-01-17 01:48:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-19 01:07:42 $
+ * $Author: bobboau $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/17 01:48:49  Goober5000
+ * added capability to the $Texture replace code to substitute the textures
+ * without needing and extra model, however, this way you can't substitute
+ * transparent or animated textures
+ * --Goober5000
+ *
  * Revision 2.2  2003/01/15 07:09:09  Goober5000
  * changed most references to modelnum to use ship instead of ship_info --
  * this will help with the change-model sexp and any other instances of model
@@ -1099,9 +1105,9 @@ void shipfx_warpout_start( object *objp )
 	if (shipp->special_warp_objnum >= 0) {
 		// cap radius to size of knossos
 		effect_radius = min(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
-		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, shipp->special_warp_objnum, effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
 	} else {
-		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
 	}
 	if (warp_objnum < 0 )	{	// JAS: This must always be created, if not, just warp the ship in
 		shipfx_actually_warpout(shipp,objp);

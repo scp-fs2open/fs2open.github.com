@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-11-14 04:18:17 $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-19 01:07:41 $
  * $Author: bobboau $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/11/14 04:18:17  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.2  2002/10/19 19:29:27  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -1779,6 +1784,8 @@ void obj_move_all(float frametime)
 
 	// update artillery locking info now
 	ship_update_artillery_lock();
+
+	mprintf(("moved all objects\n"));
 }
 
 
