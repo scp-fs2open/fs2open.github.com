@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2004/08/11 05:06:36  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.32  2004/07/31 08:57:22  et1
  * Implemented "+SwarmWait:"-token
  *
@@ -734,7 +737,11 @@ typedef struct weapon_info {
 
     // *
                
-    int SwarmWait; // *Swarm firewait, default is 150  -Et1
+    int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
+
+    float WeaponMinRange;           // *Mínimum weapon range, default is 0 -Et1
+
+
 
 
 } weapon_info;
