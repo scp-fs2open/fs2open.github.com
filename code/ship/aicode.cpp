@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.39 $
- * $Date: 2003-08-03 23:38:08 $
- * $Author: phreak $
+ * $Revision: 2.40 $
+ * $Date: 2003-08-28 20:42:18 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/08/03 23:38:08  phreak
+ * ai now properly uses rapid fire dumbfires
+ *
  * Revision 2.38  2003/07/15 02:51:01  phreak
  * fixed a warning.
  * previous cvs message should read: cloaked ship will decloak if a turret fires
@@ -11691,14 +11694,7 @@ void process_subobjects(int objnum)
 		}
 
 		// do solar/radar/gas/activator rotation here
-		if ( psub->flags & MSS_FLAG_ROTATES )	{
-			if (psub->flags & MSS_FLAG_STEPPED_ROTATE	) {
-				submodel_stepped_rotate(psub, &pss->submodel_info_1);
-			} else {
-				submodel_rotate(psub, &pss->submodel_info_1 );
-			}
-		}
-
+		ship_do_submodel_rotation(shipp, psub, pss);
 	}
 
 	//	Deal with a ship with blown out engines.

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.27 $
- * $Date: 2003-08-22 07:35:09 $
- * $Author: bobboau $
+ * $Revision: 2.28 $
+ * $Date: 2003-08-28 20:42:18 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/08/22 07:35:09  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.26  2003/08/12 03:18:33  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -461,7 +466,7 @@ typedef struct submodel_instance_info {
 } submodel_instance_info;
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
-															// when reading in ships.tbl
+													// when reading in ships.tbl
 
 #define MSS_FLAG_ROTATES			(1<<0)		// This means the object rotates automatically with "turn_rate"
 #define MSS_FLAG_STEPPED_ROTATE	(1<<1)		// This means that the rotation occurs in steps
@@ -469,6 +474,7 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_CREWPOINT			(1<<3)		// If set, this is a crew point.
 #define MSS_FLAG_TURRET_MATRIX	(1<<4)		// If set, this has it's turret matrix created correctly.
 #define MSS_FLAG_AWACS				(1<<5)		// If set, this subsystem has AWACS capability
+#define MSS_FLAG_ARTILLERY		(1<<6)		// if this rotates when weapons are fired - Goober5000
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -480,18 +486,13 @@ typedef struct stepped_rotation {
 	float max_turn_accel;	// max accel going between steps
 } stepped_rotation_t;
 
-typedef struct ai_rotation {
+/*typedef struct ai_rotation {
 //	void *p_rotation;
 	uint type;			//flags for what animation type
 	float max;
 	float min;
 	int time;
-} ai_rotation_t;
-
-#define MSS_AI_DOCK			(1<<0)		//model that animates when docking
-#define MSS_AI_ENGINE		(1<<1)		//model that animates baised on wich direction you're turning 
-#define MSS_AI_GUN			(1<<2)		//model that animates when you're fireing
-
+} ai_rotation_t;*/
 
 // definition for model subsystems.
 typedef struct model_subsystem {					/* contains rotation rate info */
@@ -520,10 +521,11 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	// engine wash info
 	char		engine_wash_index;					// index into Engine_wash_info
 
-	// Rotation specific info
-	float		turn_rate;								// The turning rate of this subobject, if MSS_FLAG_ROTATES is set.
-	stepped_rotation_t *stepped_rotation;			// turn rotation struct
-	ai_rotation_t ai_rotation;						// ai controlled rotation struct
+	// rotation specific info
+	float		turn_rate;							// The turning rate of this subobject, if MSS_FLAG_ROTATES is set.
+	int			weapon_rotation_pbank;				// weapon-controlled rotation - Goober5000
+	stepped_rotation_t	*stepped_rotation;			// turn rotation struct
+//	ai_rotation_t		ai_rotation;				// ai controlled rotation struct - by Bobboau
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.70 $
- * $Date: 2003-08-22 07:35:09 $
- * $Author: bobboau $
+ * $Revision: 2.71 $
+ * $Date: 2003-08-28 20:42:18 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2003/08/22 07:35:09  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.69  2003/08/21 06:11:09  Goober5000
  * Ballistic primaries will now deplete ammo correctly - that is, ammo will be
  * reduced by the number of firing points, not necessarily 1.
@@ -5053,13 +5058,7 @@ void ship_process_post(object * obj, float frametime)
 				psub = pss->system_info;
 
 				// do solar/radar/gas/activator rotation here
-				if ( psub->flags & MSS_FLAG_ROTATES )	{
-					if (psub->flags & MSS_FLAG_STEPPED_ROTATE	) {
-						submodel_stepped_rotate(psub, &pss->submodel_info_1);
-					} else {
-						submodel_rotate(psub, &pss->submodel_info_1 );
-					}
-				}
+				ship_do_submodel_rotation(shipp, psub, pss);
 			}
 
 			player_maybe_fire_turret(obj);
@@ -11825,4 +11824,29 @@ int ship_fire_tertiary(object *objp)
 	return 1;
 }
 
-	
+// Goober5000
+void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss)
+{
+	// check if we actually can rotate
+	if ( !(psub->flags & MSS_FLAG_ROTATES) )
+		return;
+
+	// check for rotating artillery
+	if ( psub->flags & MSS_FLAG_ARTILLERY )
+	{
+		// rotate only if trigger is down
+		if ( !(shipp->flags & SF_TRIGGER_DOWN) )
+			return;
+
+		// rotate only if it belongs to the firing bank (or firing is linked)
+		if ( !(psub->weapon_rotation_pbank == shipp->weapons.current_primary_bank) && !(shipp->flags & SF_PRIMARY_LINKED) )
+			return;
+	}
+
+	// if we got this far, we can rotate - so choose which method to use
+	if (psub->flags & MSS_FLAG_STEPPED_ROTATE	) {
+		submodel_stepped_rotate(psub, &pss->submodel_info_1);
+	} else {
+		submodel_rotate(psub, &pss->submodel_info_1 );
+	}
+}

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.44 $
- * $Date: 2003-08-22 07:35:09 $
- * $Author: bobboau $
+ * $Revision: 2.45 $
+ * $Date: 2003-08-28 20:42:18 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/08/22 07:35:09  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.43  2003/08/06 17:37:08  phreak
  * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
  *
@@ -1650,5 +1655,8 @@ extern int ship_subsys_takes_damage(ship_subsys *ss);
 
 //phreak
 extern int ship_fire_tertiary(object *objp);
+
+// Goober5000 - handles submodel rotation, incorporating conditions such as gun barrels when firing
+extern void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss);
 
 #endif
