@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 19:29:27 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-02 20:47:28 $
+ * $Author: Goober5000 $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 19:29:27  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.1  2002/10/17 20:40:50  randomtiger
  * Added ability to remove HUD ingame on keypress shift O
  * So I've added a new key to the bind list and made use of already existing hud removal code.
@@ -299,7 +302,7 @@
 typedef struct config_item {
 	short key_default;  // default key bound to action
 	short joy_default;  // default joystick button bound to action
-	char tab;				// what tab (catagory) it belongs in
+	char tab;				// what tab (category) it belongs in
 	char *text;				// describes the action in the config screen
 	char type;				// manner control should be checked in
 	short key_id;  // actual key bound to action

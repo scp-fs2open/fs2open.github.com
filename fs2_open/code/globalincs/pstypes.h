@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.4 $
- * $Date: 2002-08-06 01:49:08 $
- * $Author: penguin $
+ * $Revision: 2.5 $
+ * $Date: 2002-12-02 20:49:14 $
+ * $Author: Goober5000 $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/08/06 01:49:08  penguin
+ * Renamed ccode members to cc_or and cc_and
+ *
  * Revision 2.3  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -497,7 +500,7 @@ extern float Dc_arg_float;	// If Dc_arg_type & ARG_FLOAT is set, then this is th
 void dc_printf( char *format, ... );
 
 // Each dc_arg_type can have one or more of these flags set.
-// This is because some things can fit into two catagories.
+// This is because some things can fit into two categories.
 // Like 1 can be an integer, a float, a string, or a true boolean
 // value.
 #define ARG_NONE		(1<<0)	// no argument
