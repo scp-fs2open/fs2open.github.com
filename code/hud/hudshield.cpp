@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-04-29 01:03:23 $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-09 05:51:14 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/17 10:37:32  Goober5000
  * pressing Q no longer makes a sound if the player's ship doesn't have shields
  * --Goober5000
@@ -390,6 +394,10 @@ void hud_shield_show(object *objp)
 	hud_frames	*sgp;
 
 	if ( objp->type != OBJ_SHIP )
+		return;
+
+	// Goober5000 - don't show if primitive sensors
+	if ( Ships[Player_obj->instance].flags2 & SF2_PRIMITIVE_SENSORS )
 		return;
 
 	sp = &Ships[objp->instance];
