@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-04-06 03:09:26 $
- * $Author: phreak $
+ * $Revision: 2.24 $
+ * $Date: 2004-04-24 15:44:21 $
+ * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/04/06 03:09:26  phreak
+ * added a control config option for the wireframe hud targetbox i enabled ages ago
+ *
  * Revision 2.22  2004/04/06 01:11:41  Kazan
  * make custom build work again
  *
@@ -2422,7 +2425,9 @@ int button_function_demo_valid(int n)
 
 	case TIME_SLOW_DOWN:
 		if ( Game_mode & GM_NORMAL ) {
-			if ( Game_time_compression > F1_0) {
+			//if ( Game_time_compression > F1_0) {
+			// Let's see how low i can get this
+			if ( Game_time_compression > (F1_0/4)) {
 				Game_time_compression /= 2;
 			} else {
 				gamesnd_play_error_beep();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-03-28 17:49:54 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2004-04-24 15:44:21 $
+ * $Author: Kazan $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/03/28 17:49:54  taylor
+ * runtime language selection, mantis:0000133
+ *
  * Revision 2.11  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1425,7 +1428,7 @@ void hud_show_mission_time()
 	// display time compression as xN
 	time_comp = f2fl(Game_time_compression);
 	if ( time_comp < 1 ) {
-		gr_printf(Mission_time_text_val_coords[gr_screen.res][0], Mission_time_text_val_coords[gr_screen.res][1], XSTR( "x%.1f", 215), time_comp);
+		gr_printf(Mission_time_text_val_coords[gr_screen.res][0], Mission_time_text_val_coords[gr_screen.res][1], /*XSTR(*/"1/%.0f"/*, 215)*/, 1/time_comp);
 	} else {
 		gr_printf(Mission_time_text_val_coords[gr_screen.res][0], Mission_time_text_val_coords[gr_screen.res][1], XSTR( "x%.0f", 216), time_comp);
 	}

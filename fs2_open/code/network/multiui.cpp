@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-04-03 06:22:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2004-04-24 15:44:22 $
+ * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/04/03 06:22:32  Goober5000
+ * fixed some stub functions and a bunch of compile warnings
+ * --Goober5000
+ *
  * Revision 2.24  2004/03/10 20:51:16  Kazan
  * irc
  *
@@ -1699,7 +1703,10 @@ void multi_join_game_do_frame()
 		} else {		
 			// #kazan# changed for chat
 			//gameseq_post_event(GS_EVENT_MAIN_MENU);
-			gameseq_post_event(GS_EVENT_NET_CHAT);
+			if (Om_tracker_flag)
+				gameseq_post_event(GS_EVENT_NET_CHAT);
+			else
+				gameseq_post_event(GS_EVENT_MAIN_MENU);
 			gamesnd_play_iface(SND_USER_SELECT);
 		}
 		break;
