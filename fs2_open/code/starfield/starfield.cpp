@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-09-13 06:02:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2003-09-15 12:34:09 $
+ * $Author: fryday $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/09/13 06:02:08  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.13  2003/09/09 17:18:25  matt
  * Broke stars last commit, fixed -Sticks
  *
@@ -417,7 +421,11 @@ void stars_init()
 	char glow_filename[MAX_FILENAME_LEN+1] = "";
 	float r, g, b, i, spec_r, spec_g, spec_b;
 	int sun_glare;
+	int flarecount,flaretexcount, isflare;
+	flare_info flares[MAX_FLARE_COUNT];
+	char flare_filenames[MAX_FLARE_BMP][MAX_FILENAME_LEN+1];
 
+	flarecount = flaretexcount = isflare = 0; //get rid of warnings
 	// parse stars.tbl
 	read_file_text("stars.tbl");
 	reset_parse();
@@ -518,6 +526,55 @@ void stars_init()
 				spec_g = g;
 				spec_b = b;
 			}
+			//lens flare stuff
+			if(optional_string("$Flare:")) {
+				isflare = 1;
+				required_string("+FlareCount:");
+				stuff_int(&flarecount);
+
+				required_string("$FlareTexture1:"); //if there's a flare, it has to have at least one texture
+				stuff_string(flare_filenames[0],F_NAME,NULL);
+
+				flaretexcount = 1;
+
+				for(int j = 1; j < MAX_FLARE_BMP; j++)
+				{
+					char tempf[16]; //allow 9999 textures (theoretically speaking, that is)
+					sprintf(tempf,"$FlareTexture%d:",j+1);
+					if (optional_string(tempf))
+					{
+						flaretexcount++;
+						stuff_string(flare_filenames[j],F_NAME,NULL);
+					}
+//					else break; //don't allow flaretexture1 and then 3, etc.
+				}
+
+				required_string("$FlareGlow1:");
+				required_string("+FlareTexture:");
+				stuff_int(&flares[0].tex_num);
+				required_string("+FlarePos:");
+				stuff_float(&flares[0].pos);
+				required_string("+FlareScale:");
+				stuff_float(&flares[0].scale);
+				
+				flarecount = 1;
+
+				for(j = 1; j < MAX_FLARE_COUNT; j++)
+				{
+					char tempf[13]; //allow a lot of glows
+					sprintf(tempf,"$FlareGlow%d:",j+1);
+					if (optional_string(tempf))
+					{
+						flarecount++;
+						required_string("+FlareTexture:");
+						stuff_int(&flares[j].tex_num);
+						required_string("+FlarePos:");
+						stuff_float(&flares[j].pos);
+						required_string("+FlareScale:");
+						stuff_float(&flares[j].scale);
+					} //else break; //don't allow "flare 1" and then "flare 3"
+				}
+			}
 
 			sun_glare=!optional_string("$NoGlare:");
 
@@ -538,6 +595,20 @@ void stars_init()
 					bm->glow_bitmap = bm_load_animation(bm->glow_filename,  &bm->glow_n_frames, &bm->glow_fps, 1);
 					if(bm->glow_bitmap == -1){
 						Warning(LOCATION, "cannot find bitmap %s", filename);
+					}
+				}
+				if(isflare) { //more flare stuff - texture loading
+					bm->flare = 1;
+					bm->flare_n_flares = flarecount;
+					bm->flare_n_tex = flaretexcount;
+					for ( int j = 0; j < flarecount; j++) //yes, a memcpy would be simpler, but this is clearer, and hopefully the M$ compiler can optimize this
+						bm->flare_infos[j] = flares[j];
+					for ( j = 0; j < flaretexcount; j++)
+					{
+						strcpy(bm->flare_filenames[j], flare_filenames[j]);
+						bm->flare_bitmaps[j] = bm_load(bm->flare_filenames[j]);
+						if (bm->flare_bitmaps[j] == -1)
+							Warning(LOCATION, "Cannot find bitmap %s", bm->flare_filenames[j]);
 					}
 				}
 				bm->r = r;
@@ -878,6 +949,30 @@ void stars_draw_sun( int show_sun )
 		}
 	}
 }
+// draw a star's lens-flare
+void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
+{
+	starfield_bitmap *bm;
+	int i,j;
+	float dx,dy;
+	vertex flare_vex = *sun_vex; //copy over to flare_vex to get all sorts of properties
+	bm = stars_lookup_sun(&Suns[sun_n]);
+	
+	dx = 2.0f*(i2fl(gr_screen.clip_right-gr_screen.clip_left)*0.5f - sun_vex->sx); // (dx,dy) is a 2d vector equal to two times the vector from the sun's position to the center fo the screen
+	dy = 2.0f*(i2fl(gr_screen.clip_bottom-gr_screen.clip_top)*0.5f - sun_vex->sy); // meaning it is the vector to the opposite position on the screen
+	for(j = 0; j<bm->flare_n_tex; j++)
+	{
+		gr_set_bitmap(bm->flare_bitmaps[j], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+		for(i = 0; i<bm->flare_n_flares; i++)
+		if( bm->flare_infos[i].tex_num == j) //draw sorted by texture, to minimize texture changes. not the most efficient way, but better than non-sorted
+		{
+//		gr_set_bitmap(bm->flare_bitmaps[bm->flare_infos[i].tex_num], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+			flare_vex.sx = sun_vex->sx + dx * bm->flare_infos[i].pos;
+			flare_vex.sy = sun_vex->sy + dy * bm->flare_infos[i].pos;
+			g3_draw_bitmap(&flare_vex, 0, 0.05f * bm->flare_infos[i].scale, TMAP_FLAG_TEXTURED);
+		}
+	}
+}
 
 // draw the corresponding glow for sun_n
 void stars_draw_sun_glow(int sun_n)
@@ -921,8 +1016,14 @@ void stars_draw_sun_glow(int sun_n)
 	}
 //	gr_set_bitmap(bm->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
 	g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
-	g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);	
+	g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);
+	if(!(sun_vex.codes & CC_OFF)) //if sun isn't off-screen, and is visible (since stars_draw_sun_glow() is called only if it is) then draw the lens-flare
+		stars_draw_lens_flare(&sun_vex, sun_n);
 }
+
+
+
+
 
 // draw bitmaps
 void stars_draw_bitmaps( int show_bitmaps )
