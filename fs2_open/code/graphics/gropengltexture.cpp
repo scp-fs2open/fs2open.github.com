@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.8 $
- * $Date: 2004-09-05 19:23:24 $
- * $Author: Goober5000 $
+ * $Revision: 1.9 $
+ * $Date: 2004-10-31 21:46:10 $
+ * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/09/05 19:23:24  Goober5000
+ * fixed a few warnings
+ * --Goober5000
+ *
  * Revision 1.7  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -53,11 +57,9 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <windows.h>
-
-#include "graphics/gl/gl.h"
-#include "graphics/gl/glu.h"
-#include "graphics/gl/glext.h"
+#endif
 
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
@@ -71,6 +73,7 @@
 #include "graphics/gropenglextension.h"
 #include "graphics/grinternal.h"
 
+#include "ddsutils/ddsutils.h"
 
 
 static tcache_slot_opengl *Textures = NULL;
@@ -582,17 +585,17 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 
 			switch (bm_is_compressed(texture_handle))
 			{
-				case 1:
+				case DDS_DXT1:
 					ctype = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 					block_size = 8;
 					break;
 
-				case 2:
+				case DDS_DXT3:
 					ctype = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
 					block_size = 16;
 					break;
 
-				case 3:
+				case DDS_DXT5:
 					ctype = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 					block_size = 16;
 					break;
@@ -767,17 +770,17 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	
 	switch (bm_is_compressed(bitmap_handle))
 	{
-		case 1:				//dxt1
+		case DDS_DXT1:				//dxt1
 			bpp = 24;
 			flags |= BMP_TEX_DXT1;
 			break;
 
-		case 2:				//dxt3
+		case DDS_DXT3:				//dxt3
 			bpp = 32;
 			flags |= BMP_TEX_DXT3;
 			break;
 
-		case 3:				//dxt5
+		case DDS_DXT5:				//dxt5
 			bpp = 32;
 			flags |= BMP_TEX_DXT5;
 			break;
@@ -1055,7 +1058,7 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		gr_opengl_set_additive_tex_env();
 
-		r2=gr_opengl_tcache_set_internal(Interp_multitex_cloakmap, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 1);
+		r2=gr_opengl_tcache_set_internal(Interp_multitex_cloakmap, bm_get_tcache_type(Interp_multitex_cloakmap), u_scale, v_scale, fail_on_full, sx, sy, force, 1);
 
 		r3=1;
 		opengl_switch_arb(2,0);
@@ -1069,7 +1072,7 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		gr_opengl_set_additive_tex_env();
 
-		r2=gr_opengl_tcache_set_internal(GLOWMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 1);
+		r2=gr_opengl_tcache_set_internal(GLOWMAP, bm_get_tcache_type(GLOWMAP), u_scale, v_scale, fail_on_full, sx, sy, force, 1);
 	}
 	else
 	{
@@ -1085,7 +1088,7 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 		glActiveTextureARB(GL_TEXTURE2_ARB);
 		// tex env thingy - batteries not included
 
-		r3=gr_opengl_tcache_set_internal(SPECMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 2);
+		r3=gr_opengl_tcache_set_internal(SPECMAP, bm_get_tcache_type(SPECMAP), u_scale, v_scale, fail_on_full, sx, sy, force, 2);
 	}
 	else
 	{
@@ -1132,5 +1135,28 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 	return retval;
 }
 
-void gr_opengl_set_texture_panning(float u, float v, bool enable){
+static int GL_texture_panning_enabled = 0;
+void gr_opengl_set_texture_panning(float u, float v, bool enable)
+{
+	if (Cmdline_nohtl)
+		return;
+
+	GLint current_matrix;
+
+	if (enable) {
+		glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
+		glMatrixMode( GL_TEXTURE );
+		glPushMatrix();
+		glTranslatef( u, v, 0.0f );
+		glMatrixMode(current_matrix);
+
+		GL_texture_panning_enabled = 1;
+	} else if (GL_texture_panning_enabled) {
+		glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
+		glMatrixMode( GL_TEXTURE );
+		glPopMatrix();
+		glMatrixMode(current_matrix);
+	
+		GL_texture_panning_enabled = 0;
+	}
 }
