@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.54 $
- * $Date: 2004-01-18 13:17:55 $
+ * $Revision: 2.55 $
+ * $Date: 2004-01-18 14:55:08 $
  * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2004/01/18 13:17:55  randomtiger
+ * Changed the #ifndef FRED I added to #ifndef FRED_OGL so they only effect OGL FRED compile
+ *
  * Revision 2.53  2004/01/17 21:59:53  randomtiger
  * Some small changes to the main codebase that allow Fred_open OGL to compile.
  *
@@ -4988,10 +4991,9 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	HWND wnd=(HWND)os_get_window();
 
-#ifndef FRED_OGL
 	Assert(wnd);
-	
 	dev_context=GetDC(wnd);
+
 	if (!dev_context)
 	{
 		MessageBox(wnd, "Unable to get Device context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
@@ -5057,8 +5059,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		free(extlist);
 	}
 
-#endif
-
 	glGetIntegerv(GL_MAX_LIGHTS, &max_gl_lights); //Get the max number of lights supported
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
@@ -5101,18 +5101,12 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	glEnable(GL_COLOR_SUM_EXT);
 	
-	
-#ifndef FRED_OGL
-
 	if (!reinit)
+	{
 		//start extension
 		opengl_get_extensions();
-
-#endif
-
-	if (!reinit)
 		opengl_tcache_init (1);
-
+	}
 
 	gr_opengl_clear();
 
