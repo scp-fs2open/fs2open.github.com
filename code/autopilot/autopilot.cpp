@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.6 $
- * $Date: 2004-07-25 19:27:51 $
+ * $Revision: 1.7 $
+ * $Date: 2004-07-26 17:54:04 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/07/25 19:27:51  Kazan
+ * only disable afterburning during AIM_WAYPOINTS and AIM_FLY_TO_SHIP while AutoPilotEngaged
+ *
  * Revision 1.5  2004/07/25 18:46:28  Kazan
  * -fred_no_warn has become -no_warn and applies to both fred and fs2
  * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
@@ -290,14 +293,30 @@ void EndAutoPilot()
 	// assign ship goals
 	// when assigning goals to individual ships only do so if Ships[shipnum].wingnum != -1 
 	// we will assign wing goals below
-	int i;
+	int i,j;
 
 	for (i = 0; i < MAX_SHIPS; i++)
 
 	{
-		if (Ships[i].objnum != -1 && Ships[i].flags2 & SF2_NAVPOINT_CARRY && Ships[i].wingnum == -1 )
+		if (Ships[i].objnum != -1 && 
+			(
+				Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY )
+			 )
+		   )
 		{
-			ai_clear_ship_goals( &(Ai_info[Ships[i].ai_index]) );
+			// old "dumb" routine
+			//ai_clear_ship_goals( &(Ai_info[Ships[i].ai_index]) );
+			for (j = 0; j < MAX_AI_GOALS; j++)
+			{
+				if (Ai_info[Ships[i].ai_index].goals[j].ai_mode == AI_GOAL_WAYPOINTS_ONCE ||
+					Ai_info[Ships[i].ai_index].goals[j].ai_mode == AI_GOAL_FLY_TO_SHIP ||
+					Ai_info[Ships[i].ai_index].goals[j].ai_mode == AIM_WAYPOINTS ||
+					Ai_info[Ships[i].ai_index].goals[j].ai_mode == AIM_FLY_TO_SHIP)
+				{
+					ai_remove_ship_goal( &(Ai_info[Ships[i].ai_index]), j );
+				}
+			}
 		}
 	}
 
@@ -306,7 +325,20 @@ void EndAutoPilot()
 	{
 		if (Wings[i].flags & WF_NAV_CARRY )
 		{
-			ai_clear_wing_goals( i );
+			// old "dumb" routine
+			//ai_clear_wing_goals( i );
+			for (j = 0; j < MAX_AI_GOALS; j++)
+			{
+				if (Wings[i].ai_goals[j].ai_mode == AI_GOAL_WAYPOINTS_ONCE ||
+					Wings[i].ai_goals[j].ai_mode == AI_GOAL_FLY_TO_SHIP ||
+					Wings[i].ai_goals[j].ai_mode == AIM_WAYPOINTS ||
+					Wings[i].ai_goals[j].ai_mode == AIM_FLY_TO_SHIP)
+				{
+					Wings[i].ai_goals[j].ai_mode = AI_GOAL_NONE;
+					Wings[i].ai_goals[j].signature = -1;
+					Wings[i].ai_goals[j].priority = -1;
+				}
+			}
 		}
 	}
 }
