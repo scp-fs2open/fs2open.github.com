@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-08-12 03:18:33 $
+ * $Revision: 2.3 $
+ * $Date: 2003-08-16 03:52:23 $
  * $Author: bobboau $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/08/12 03:18:33  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -196,6 +214,7 @@ typedef struct light {
 	float		rad1, rad1_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
 	float		rad2, rad2_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
 	float		r,g,b;						// The color components of the light
+	float		spec_r,spec_g,spec_b;		// The specular color components of the light
 	int		ignore_objnum;				// Don't light this object.  Used to optimize weapons casting light on parents.
 	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
 } light;
@@ -364,8 +383,13 @@ void light_set_ambient(float ambient_light)
 {
 }
 
-void light_add_directional( vector *dir, float intensity, float r, float g, float b )
+void light_add_directional( vector *dir, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular )
 {
+	if(!specular){
+		spec_r = r;
+		spec_g = g;
+		spec_b = b;
+	}
 	light * l;
 
 	if ( Lighting_off ) return;
@@ -385,6 +409,9 @@ void light_add_directional( vector *dir, float intensity, float r, float g, floa
 	l->r = r;
 	l->g = g;
 	l->b = b;
+	l->spec_r = spec_r;
+	l->spec_g = spec_g;
+	l->spec_b = spec_b;
 	l->intensity = intensity;
 	l->rad1 = 0.0f;
 	l->rad2 = 0.0f;
@@ -402,8 +429,13 @@ void light_add_directional( vector *dir, float intensity, float r, float g, floa
 }
 
 
-void light_add_point( vector * pos, float rad1, float rad2, float intensity, float r, float g, float b, int ignore_objnum )
+void light_add_point( vector * pos, float rad1, float rad2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
 {
+	if(!specular){
+		spec_r = r;
+		spec_g = g;
+		spec_b = b;
+	}
 	light * l;
 
 	if ( Lighting_off ) return;
@@ -424,6 +456,9 @@ void light_add_point( vector * pos, float rad1, float rad2, float intensity, flo
 	l->r = r;
 	l->g = g;
 	l->b = b;
+	l->spec_r = spec_r;
+	l->spec_g = spec_g;
+	l->spec_b = spec_b;
 	l->intensity = intensity;
 	l->rad1 = rad1;
 	l->rad2 = rad2;
@@ -436,8 +471,13 @@ void light_add_point( vector * pos, float rad1, float rad2, float intensity, flo
 //	Relevent_lights[Num_relevent_lights[Num_light_levels-1]++][Num_light_levels-1] = l;
 }
 
-void light_add_point_unique( vector * pos, float rad1, float rad2, float intensity, float r, float g, float b, int affected_objnum)
+void light_add_point_unique( vector * pos, float rad1, float rad2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
 {
+	if(!specular){
+		spec_r = r;
+		spec_g = g;
+		spec_b = b;
+	}
 	light * l;
 
 	if ( Lighting_off ) return;
@@ -458,6 +498,9 @@ void light_add_point_unique( vector * pos, float rad1, float rad2, float intensi
 	l->r = r;
 	l->g = g;
 	l->b = b;
+	l->spec_r = spec_r;
+	l->spec_g = spec_g;
+	l->spec_b = spec_b;
 	l->intensity = intensity;
 	l->rad1 = rad1;
 	l->rad2 = rad2;
@@ -470,8 +513,13 @@ void light_add_point_unique( vector * pos, float rad1, float rad2, float intensi
 }
 
 // for now, tube lights only affect one ship (to keep the filter stuff simple)
-void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum)
+void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
 {
+	if(!specular){
+		spec_r = r;
+		spec_g = g;
+		spec_b = b;
+	}
 	light * l;
 
 	if ( Lighting_off ) return;
@@ -493,6 +541,9 @@ void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity,
 	l->r = r;
 	l->g = g;
 	l->b = b;
+	l->spec_r = spec_r;
+	l->spec_g = spec_g;
+	l->spec_b = spec_b;
 	l->intensity = intensity;
 	l->rad1 = r1;
 	l->rad2 = r2;
@@ -878,9 +929,9 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 			switch(Lighting_mode)	{
 			case LM_BRIGHTEN:
 				if ( ltmp > 0.0f )	{
-					rval += Static_light[idx]->r * ltmp * Static_light[idx]->r;
-					gval += Static_light[idx]->g * ltmp * Static_light[idx]->g;
-					bval += Static_light[idx]->b * ltmp * Static_light[idx]->b;
+					rval += Static_light[idx]->spec_r * ltmp;
+					gval += Static_light[idx]->spec_g * ltmp;
+					bval += Static_light[idx]->spec_b * ltmp;
 				}
 				break;
 			case LM_DARKEN:
@@ -955,7 +1006,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 		n = *norm;
 		vm_vec_normalize(&n);
 
-		dot = (float)pow((double)vm_vec_dot(&R, &n ), specular_exponent_value) * Static_light[idx]->intensity * factor;		// reflective light
+		dot = (float)pow((double)vm_vec_dot(&R, &n ), specular_exponent_value) * l->intensity * factor;		// reflective light
 		
 		dot = vm_vec_dot(&to_light, norm);
 	//		dot = 1.0f;
@@ -966,21 +1017,21 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 			}
 			if ( dist < l->rad1_squared )	{
 				float ratio;
-				ratio = l->intensity*dot;
+				ratio = l->intensity*dot*factor;
 				ratio *= 0.25f;
-				rval += l->r*ratio;
-				gval += l->g*ratio;
-				bval += l->b*ratio;
+				rval += l->spec_r*ratio;
+				gval += l->spec_g*ratio;
+				bval += l->spec_b*ratio;
 			} else if ( dist < l->rad2_squared )	{
 				float ratio;
 				// dist from 0 to 
 				float n = dist - l->rad1_squared;
 				float d = l->rad2_squared - l->rad1_squared;
-				ratio = (1.0f - n / d)*dot*l->intensity;
+				ratio = (1.0f - n / d)*dot*l->intensity*factor;
 				ratio *= 0.25f;
-				rval += l->r*ratio;
-				gval += l->g*ratio;
-				bval += l->b*ratio;
+				rval += l->spec_r*ratio;
+				gval += l->spec_g*ratio;
+				bval += l->spec_b*ratio;
 			}
 		}
 	}

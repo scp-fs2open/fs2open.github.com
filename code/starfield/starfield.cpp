@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-05-05 21:27:46 $
- * $Author: phreak $
+ * $Revision: 2.9 $
+ * $Date: 2003-08-16 03:52:24 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/05/05 21:27:46  phreak
+ * if "Show Background" is not set it FRED,
+ * it used to show background bitmaps and suns
+ * not anymore
+ *
  * Revision 2.7  2003/05/05 20:13:07  phreak
  * minor fred bug fixed
  *
@@ -381,7 +386,7 @@ void stars_init()
 	int count, idx;
 	char filename[MAX_FILENAME_LEN+1] = "";
 	char glow_filename[MAX_FILENAME_LEN+1] = "";
-	float r, g, b, i;
+	float r, g, b, i, spec_r, spec_g, spec_b;
 	int sun_glare;
 
 	// parse stars.tbl
@@ -461,7 +466,18 @@ void stars_init()
 			stuff_float(&b);
 			stuff_float(&i);
 
+			if(optional_string("$SunSpecularRGB:")){
+				stuff_float(&spec_r);
+				stuff_float(&spec_g);
+				stuff_float(&spec_b);
+			}else{
+				spec_r = r;
+				spec_g = g;
+				spec_b = b;
+			}
+
 			sun_glare=!optional_string("$NoGlare:");
+
 			if(count < MAX_STARFIELD_BITMAPS){
 				bm = &Sun_bitmaps[count++];
 				strcpy(bm->filename, filename);
@@ -480,6 +496,9 @@ void stars_init()
 				bm->b = b;
 				bm->i = i;
 				bm->glare=sun_glare;
+				bm->spec_r = spec_r;
+				bm->spec_g = spec_g;
+				bm->spec_b = spec_b;
 
 				// if fred is running we should lock the bitmap now
 				if(Fred_running){
@@ -791,7 +810,7 @@ void stars_draw_sun( int show_sun )
 		vm_vec_normalize(&sun_dir);
 
 		// add the light source corresponding to the sun
-		light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b);
+		light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b, bm->spec_r, bm->spec_g, bm->spec_b, true);
 
 		// if supernova
 		if(supernova_active()){

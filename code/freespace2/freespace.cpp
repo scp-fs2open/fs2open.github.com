@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.36 $
- * $Date: 2003-08-12 03:18:33 $
+ * $Revision: 2.37 $
+ * $Date: 2003-08-16 03:52:23 $
  * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/08/12 03:18:33  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.35  2003/08/09 06:07:23  bobboau
  * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
  *
@@ -854,6 +872,7 @@ void common_play_highlight_sound()
 }
 #endif
 
+extern bool frame_rate_display;
 
 void game_level_init(int seed = -1);
 void game_post_level_init();
@@ -2432,7 +2451,7 @@ void game_init()
 	
 	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
 
-	if (ptr == NULL )Error( LOCATION, "error reading registry, registry string 'VideocardFs2open' not present, this is why you are crashing, be sure to use the NEW launcher to set up you're registry" );
+	if (ptr == NULL )Error( LOCATION, "error reading registry, registry string 'VideocardFs2open' not present,\n this is why you are crashing,\n be sure to use the NEW launcher to set up you're registry,\n make sure you run it without internet explorer or windows explorer running" );
 
 	if (ptr == NULL || strstr(ptr, NOX("Direct 3D -") )) {
 #ifdef _WIN32
@@ -2597,6 +2616,7 @@ void game_init()
 #endif // ifdef WIN32
 
 	bm_init();
+//	ENVMAP = bm_load("environment");
 
 	// Set the gamma
 	ptr = os_config_read_string(NULL,NOX("Gamma"),NOX("1.80"));
@@ -2804,6 +2824,11 @@ void game_show_framerate()
 	}
 
 	//mprintf(( "%s\n", text ));
+/*	if(frame_rate_display && (flFrametime != 0.0f)){
+		gr_set_color( 128, 255, 192 );
+		gr_printf(15, 500, "fps: %f", 1.0f / flFrametime);
+	}
+*/
 
 #ifndef NDEBUG
 	if ( Debug_dump_frames )
@@ -3952,6 +3977,7 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 		hud_maybe_clear_head_area();
 		anim_render_all(0, flFrametime);
 	}
+		
 
 #ifndef NO_NETWORK
 	extern int Multi_display_netinfo;

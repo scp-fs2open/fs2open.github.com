@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.4 $
- * $Date: 2003-07-04 02:27:48 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2003-08-16 03:52:23 $
+ * $Author: bobboau $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/07/04 02:27:48  phreak
+ * added support for cloaking.
+ * i will need to contact someone who knows d3d to get this to work
+ *
  * Revision 2.3  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -210,6 +214,12 @@ extern int D3D_32bit;
 
 extern const char* d3d_error_string(HRESULT error);
 
+void set_stage_for_defuse();
+void set_stage_for_glow_mapped_defuse();
+void set_stage_for_defuse_and_non_mapped_spec();
+void set_stage_for_glow_mapped_defuse_and_non_mapped_spec();
+bool set_stage_for_spec_mapped();
+
 void d3d_tcache_init();
 void d3d_tcache_cleanup();
 void d3d_tcache_flush();
@@ -219,6 +229,7 @@ void d3d_tcache_frame();
 void d3d_flush();
 
 int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_ratio, float *v_ratio, int fail_on_full=0, int sx = -1, int sy = -1, int force = 0);
+int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_ratio, float *v_ratio, int fail_on_full=0, int sx = -1, int sy = -1, int force = 0, int stage = 0);
 
 // Functions in GrD3DRender.cpp stuffed into gr_screen structure
 void gr_d3d_flash(int r, int g, int b);
@@ -278,6 +289,7 @@ typedef struct {
     DWORD color; 
     DWORD specular; 
     float tu, tv; 
+    float env_u, env_v; 
 
 } D3DTLVERTEX;
 

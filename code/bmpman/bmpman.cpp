@@ -10,13 +10,31 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.14 $
- * $Date: 2003-08-12 03:18:32 $
+ * $Revision: 2.15 $
+ * $Date: 2003-08-16 03:52:22 $
  * $Author: bobboau $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/08/12 03:18:32  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.13  2003/06/07 21:08:09  phreak
  * bmp_gfx_get_components now works with 32 bit opengl
  *
@@ -562,6 +580,7 @@ extern int Texture_compression_enabled;
 
 int GLOWMAP = -1;
 int SPECMAP = -1;
+int ENVMAP = -1;
 
 #define MAX_BMAP_SECTION_SIZE 256
 

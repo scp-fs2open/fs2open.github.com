@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-08-12 03:18:33 $
+ * $Revision: 2.17 $
+ * $Date: 2003-08-16 03:52:23 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/08/12 03:18:33  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.15  2003/08/09 06:07:24  bobboau
  * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
  *
@@ -886,9 +904,13 @@ void d3d_release_rendering_objects()
 	DBUGFILE_OUTPUT_COUNTER(0, "Number of unfreed textures");
 }
 
+enum stage_state{INITAL, DEFUSE, GLOW_MAPPED_DEFUSE, NONMAPPED_SPECULAR, GLOWMAPPED_NONMAPPED_SPECULAR, MAPPED_SPECULAR};
+stage_state state;
+
 // This function calls these render state one when the device is initialised and when the device is lost.
 void d3d_set_initial_render_state()
 {
+	if(state == INITAL)return;
 	d3d_SetRenderState(D3DRS_DITHERENABLE, TRUE );
 
 	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
@@ -907,17 +929,124 @@ void d3d_set_initial_render_state()
 	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
 	
 	d3d_SetTexture(1, NULL);
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	
 	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
 
 	d3d_SetTextureStageState(1, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
 	d3d_SetTextureStageState(1, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
 
+	d3d_SetTextureStageState( 2, D3DTSS_TEXCOORDINDEX, 0);
 
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 4, D3DTSS_COLOROP, D3DTOP_DISABLE);
+
+	state = INITAL;
 }
 
+extern bool env_enabled;
 
+void set_stage_for_defuse(){
+	if(state == DEFUSE)return;
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+
+	state = DEFUSE;
+		
+}
+
+void set_stage_for_glow_mapped_defuse(){
+	if(state == GLOW_MAPPED_DEFUSE)return;
+	if(GLOWMAP < 0){
+		set_stage_for_defuse();
+		return;
+	}
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
+		
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
+//	d3d_SetTexture(1, GLOWMAP);
+
+	state = GLOW_MAPPED_DEFUSE;
+}
+
+void set_stage_for_defuse_and_non_mapped_spec(){
+	if(state == NONMAPPED_SPECULAR)return;
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_SPECULAR);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
+
+	state = NONMAPPED_SPECULAR;
+}
+
+void set_stage_for_glow_mapped_defuse_and_non_mapped_spec(){
+	if(state == GLOWMAPPED_NONMAPPED_SPECULAR)return;
+	if(GLOWMAP < 0){
+		set_stage_for_defuse_and_non_mapped_spec();
+		return;
+	}
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
+		
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
+//	d3d_SetTexture(1, GLOWMAP);
+
+	d3d_SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_SPECULAR);
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_ADD);
+
+	state = GLOWMAPPED_NONMAPPED_SPECULAR;
+}
+
+bool set_stage_for_spec_mapped(){
+	if(state == MAPPED_SPECULAR)return true;
+	if(SPECMAP < 0){
+		false;
+	}
+
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_SPECULAR);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE4X);
+//	d3d_SetTexture(0, SPECMAP);
+
+	//spec mapping is always done on a second pass
+	gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+
+	state = MAPPED_SPECULAR;
+	return true;
+}
+
+void set_stage_for_mapped_environment_mapping(){
+	if(ENVMAP > 0 && env_enabled){
+		d3d_SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 1);
+	
+		d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_CURRENT);
+		d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_ADD);
+		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	}else{
+		d3d_SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 0);
+		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	}
+
+	state = INITAL;
+}
 
 void d3d_setup_format_components(
 	DDPIXELFORMAT *surface, color_gun *r_gun, color_gun *g_gun, color_gun *b_gun, color_gun *a_gun)
