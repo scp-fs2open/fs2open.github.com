@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.8 $
+ * $Date: 2003-10-17 17:18:43 $
+ * $Author: randomtiger $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.6  2003/01/15 21:29:04  anonymous
  * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
  *
@@ -1339,18 +1342,6 @@ void main_hall_do(float frametime)
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_ARGB_D3D){		
 			gr_string(320, gr_screen.max_h - 10, "D3D ARGB");
 		}
-		extern int D3d_rendition_uvs;
-		extern int D3D_32bit;
-		extern int D3D_fog_mode;	
-		extern int D3D_zbias;
-		if(D3d_rendition_uvs){
-			gr_string(320, gr_screen.max_h - 20, "D3D rendition");
-		}
-		if(D3D_32bit){
-			gr_string(320, gr_screen.max_h - 30, "D3D 32bit");
-		}
-		gr_printf(320, gr_screen.max_h - 40, "Fog : %d", D3D_fog_mode);
-		gr_printf(320, gr_screen.max_h - 50, "Zbias : %d", D3D_zbias);
 	} else if(gr_screen.mode == GR_GLIDE){
 		extern int Glide_voodoo3;
 		if(Glide_voodoo3){

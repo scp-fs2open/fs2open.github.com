@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.30 $
- * $Date: 2003-10-12 03:41:37 $
- * $Author: Kazan $
+ * $Revision: 2.31 $
+ * $Date: 2003-10-17 17:18:42 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/10/12 03:41:37  Kazan
+ * #Kazan# FS2NetD client code gone multithreaded, some Fred2 Open -mod stuff [obvious code.lib] including a change in cmdline.cpp, changed Stick's "-nohtl" to "-htl" - HTL is _OFF_ by default here (Bobboau and I decided this was a better idea for now)
+ *
  * Revision 2.29  2003/09/25 21:12:22  Kazan
  * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
  * Also D3D8 Screenshots work now.
@@ -345,5 +348,6 @@ extern float static_point_factor;
 extern double specular_exponent_value;
 
 extern int Cmdline_cell;
+extern int Cmdline_nohtl;
 
 #endif

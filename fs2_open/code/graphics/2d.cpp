@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-10-16 00:17:14 $
+ * $Revision: 2.10 $
+ * $Date: 2003-10-17 17:18:42 $
  * $Author: randomtiger $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/16 00:17:14  randomtiger
+ * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
+ * As well as initialised in a different mode, bitmaps are stretched and for these modes
+ * previously point filtered textures now use linear to keep them smooth.
+ * I also had to shuffle some of the GR_1024 a bit.
+ * Put my HT&L flags in ready for my work to sort out some of the render order issues.
+ * Tided some other stuff up.
+ *
  * Revision 2.8  2003/10/10 03:59:40  matt
  * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
  * out now. -Sticks
@@ -528,7 +536,7 @@
 
 // Includes for different rendering systems
 #include "graphics/grsoft.h"
-#include "graphics/grd3d.h"
+#include "graphics/grd3dsetup.h"
 #include "graphics/grglide.h"
 #include "graphics/gropengl.h"
 #include "graphics/grdirectdraw.h"

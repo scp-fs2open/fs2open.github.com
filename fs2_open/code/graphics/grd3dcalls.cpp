@@ -8,6 +8,7 @@
 */ 
 
 #include <d3d8.h>
+#include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
 
 // Uncomment this to disable checking if states are already set, slower but useful for searching for bugs
@@ -164,7 +165,7 @@ HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_
 	}
 #endif
 
-	HRESULT hr = lpD3DDevice->SetRenderState(render_state_type, render_state );
+	HRESULT hr = GlobalD3DVars::lpD3DDevice->SetRenderState(render_state_type, render_state );
 
 	// A set render state should never fail because we should always know the caps.
 	if(FAILED(hr)) {
@@ -182,7 +183,7 @@ int D3D_vertex_type = -1;
 
 HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **buffer)
 {
-	return lpD3DDevice->CreateVertexBuffer(
+	return GlobalD3DVars::lpD3DDevice->CreateVertexBuffer(
 		vertex_types[D3DVT_VERTEX].size * size, 
 		usage, 
 		vertex_types[D3DVT_VERTEX].fvf,
@@ -239,7 +240,7 @@ HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pv
 	}
 
 
-	hr = lpD3DDevice->DrawPrimitiveUP(prim_type, prim_count, pvertices, vertex_types[vertex_type].size);
+	hr = GlobalD3DVars::lpD3DDevice->DrawPrimitiveUP(prim_type, prim_count, pvertices, vertex_types[vertex_type].size);
 
 	if(FAILED(hr)) {
 		mprintf(("Failed to draw primitive"));
@@ -254,7 +255,7 @@ HRESULT d3d_SetVertexShader(int vertex_type)
 	if(D3D_vertex_type != vertex_type) 
 #endif
 	{
-		HRESULT hr = lpD3DDevice->SetVertexShader(	vertex_types[vertex_type].fvf );
+		HRESULT hr = GlobalD3DVars::lpD3DDevice->SetVertexShader(	vertex_types[vertex_type].fvf );
 		
 		if(FAILED(hr)) {
 			mprintf(("Failed to set vertex shader"));
@@ -332,7 +333,7 @@ HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWO
 	}
 #endif
 
-	HRESULT hr = lpD3DDevice->SetTextureStageState(stage, type, value);
+	HRESULT hr = GlobalD3DVars::lpD3DDevice->SetTextureStageState(stage, type, value);
 
 	if(FAILED(hr)) {
 		mprintf(("Failed to set TextureStageState %d for stage %d", type, stage));
@@ -363,7 +364,7 @@ HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr)
 	}
 #endif
 
-	HRESULT hr = lpD3DDevice->SetTexture(stage, texture_ptr);
+	HRESULT hr = GlobalD3DVars::lpD3DDevice->SetTexture(stage, texture_ptr);
 		//changed from this -Bobboau
 //	HRESULT hr = lpD3DDevice->SetTexture(0, texture_ptr);
 
@@ -391,7 +392,7 @@ void d3d_lost_device()
 	// from video memory, and all state information to be lost. Before calling the Reset method for a 
 	// device, an application should release any explicit render targets, depth stencil surfaces, 
 	// additional swap chains and D3DPOOL_DEFAULT resources associated with the device.
-	lpD3DDevice->Reset(&d3dpp); 
+	GlobalD3DVars::lpD3DDevice->Reset(&GlobalD3DVars::d3dpp); 
 
 	d3d_reset_render_states();
 	d3d_reset_texture_stage_states();	 

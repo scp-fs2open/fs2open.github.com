@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.6 $
- * $Date: 2003-10-13 19:39:19 $
- * $Author: matt $
+ * $Revision: 2.7 $
+ * $Date: 2003-10-17 17:18:42 $
+ * $Author: randomtiger $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/10/13 19:39:19  matt
+ * prelim reworking of lighting code, dynamic lights work properly now
+ * albeit at only 8 lights per object, although it looks just as good as
+ * the old software version --Sticks
+ *
  * Revision 2.5  2003/10/10 03:59:40  matt
  * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
  * out now. -Sticks
@@ -785,7 +790,6 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define gr_print_screen		GR_CALL(gr_screen.gf_print_screen)
 
 #define gr_flip				GR_CALL(gr_screen.gf_flip)
-#define gr_flip_window		GR_CALL(gr_screen.gf_flip_window)
 
 #define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
 #define gr_reset_clip		GR_CALL(gr_screen.gf_reset_clip)
@@ -844,8 +848,6 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define gr_get_region		GR_CALL(gr_screen.gf_get_region)
 
 #define gr_fog_set			GR_CALL(gr_screen.gf_fog_set)
-
-#define gr_get_pixel			GR_CALL(gr_screen.gf_get_pixel)
 
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
 

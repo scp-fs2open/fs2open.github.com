@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.9 $
- * $Date: 2003-10-16 00:17:14 $
+ * $Revision: 2.10 $
+ * $Date: 2003-10-17 17:18:42 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/16 00:17:14  randomtiger
+ * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
+ * As well as initialised in a different mode, bitmaps are stretched and for these modes
+ * previously point filtered textures now use linear to keep them smooth.
+ * I also had to shuffle some of the GR_1024 a bit.
+ * Put my HT&L flags in ready for my work to sort out some of the render order issues.
+ * Tided some other stuff up.
+ *
  * Revision 2.8  2003/10/14 17:39:13  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -109,7 +117,6 @@
  * This is the scub of UP's previous code with the more up to date RT code.
  * For full details check previous dev e-mails
  *
->>>>>>> 2.1.2.9
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -225,30 +232,133 @@
 #define _GRD3DINTERNAL_H
 
 #include <windows.h>
-#include <windowsx.h>
-
-#include "directx/vddraw.h"
-
-// To remove an otherwise well-lodged compiler error
-// 4201 nonstandard extension used : nameless struct/union (happens a lot in Windows include headers)
-#pragma warning(disable: 4201)
 
 #include <d3d8.h>
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 
-extern IDirect3D8 *lpD3D;
-extern IDirect3DDevice8 *lpD3DDevice;	 
-extern D3DVIEWPORT8 viewport;
-extern D3DCAPS8 d3d_caps;
-extern D3DPRESENT_PARAMETERS d3dpp; 
+/* Structures */
 
-extern int D3D_texture_divider;
+// Keeping the globals in here now to try and keep some order
+typedef struct {
+
+	static IDirect3D8 *lpD3D;
+	static IDirect3DDevice8 *lpD3DDevice;
+	static D3DCAPS8 d3d_caps;
+	static D3DPRESENT_PARAMETERS d3dpp; 
+
+	static bool D3D_inited;
+	static bool D3D_activate;
+	static bool D3D_Antialiasing;
+	static bool D3D_window;
+
+	static int D3D_rendition_uvs;
+	static int D3D_custom_size;
+	static int D3D_zbias;
+
+} GlobalD3DVars;
+
+/*
+ * Stolen definion of DDPIXELFORMAT
+ */
+typedef struct
+{
+    bool	dw_is_alpha_mode;	// pixel format flags
+	DWORD	dwRGBBitCount;		// how many bits per pixel
+	DWORD	dwRBitMask;			// mask for red bit
+	DWORD	dwGBitMask;			// mask for green bits
+	DWORD	dwBBitMask;			// mask for blue bits
+	DWORD	dwRGBAlphaBitMask;	// mask for alpha channel
+
+} PIXELFORMAT;
+
+// This vertex type tells D3D that it has already been transformed an lit
+// D3D will simply display the polygon with no extra processing
+typedef struct { 
+    float sx, sy, sz; 
+	float rhw; 
+
+    DWORD color; 
+    DWORD specular; 
+    float tu, tv; 
+    float env_u, env_v; 
+
+} D3DTLVERTEX;
+
+// This vertex type should be used for vertices that have already been lit
+// make sure lighting is set to off while these polygons are rendered 
+typedef struct { 
+    float sx, sy, sz;
+  
+    DWORD color; 
+    DWORD specular; 
+    float tu, tv; 
+
+} D3DLVERTEX;
+
+// Renders a normal polygon that is to be transformed and lit by D3D
+typedef struct { 
+    float sx, sy, sz;
+  	float nx, ny, nz;
+
+    float tu, tv, tu2, tv2; 
+
+} D3DVERTEX;
+
+typedef struct {
+	int fvf;
+	int size;
+
+} VertexTypeInfo;
+
+/* Enums and typedefs */
+
+enum
+{
+	D3DVT_TLVERTEX,
+	D3DVT_LVERTEX,
+	D3DVT_VERTEX,
+	D3DVT_MAX
+};
+
+typedef float D3DVALUE;
+
+typedef enum gr_texture_source {
+	TEXTURE_SOURCE_NONE,
+	TEXTURE_SOURCE_DECAL,
+	TEXTURE_SOURCE_NO_FILTERING,
+} gr_texture_source;
+
+typedef enum gr_alpha_blend {
+	ALPHA_BLEND_NONE,							// 1*SrcPixel + 0*DestPixel
+	ALPHA_BLEND_ALPHA_ADDITIVE,			// Alpha*SrcPixel + 1*DestPixel
+	ALPHA_BLEND_ALPHA_BLEND_ALPHA,		// Alpha*SrcPixel + (1-Alpha)*DestPixel
+	ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel
+} gr_alpha_blend;
+
+typedef enum gr_zbuffer_type {
+	ZBUFFER_TYPE_NONE,
+	ZBUFFER_TYPE_READ,
+	ZBUFFER_TYPE_WRITE,
+	ZBUFFER_TYPE_FULL,
+	ZBUFFER_TYPE_DEFAULT,
+} gr_zbuffer_type;
+
+/* External vars - booo! */
+
 extern int D3D_32bit;
-extern int D3D_custom_size;
 
+extern D3DFORMAT default_32_non_alpha_tformat;
+extern D3DFORMAT default_32_alpha_tformat;
 
-extern const char* d3d_error_string(HRESULT error);
+// 16 bit formats for pcx media
+extern D3DFORMAT default_non_alpha_tformat;
+extern D3DFORMAT default_alpha_tformat;
+
+extern PIXELFORMAT AlphaTextureFormat;
+extern PIXELFORMAT NonAlphaTextureFormat;
+
+/* Functions */
 
 void set_stage_for_defuse();
 void set_stage_for_glow_mapped_defuse();
@@ -264,7 +374,6 @@ void d3d_tcache_cleanup();
 void d3d_tcache_flush();
 void d3d_tcache_frame();
 
-// Flushes any pending operations
 void d3d_flush();
 
 int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_ratio, float *v_ratio, int fail_on_full=0, int sx = -1, int sy = -1, int force = 0);
@@ -311,97 +420,8 @@ void gr_d3d_translate_texture_matrix(int unit, vector *shift);
 
 void d3d_render_timer_bar(int colour, float x, float y, float w, float h);
 
-enum
-{
-	D3DVT_TLVERTEX,
-	D3DVT_LVERTEX,
-	D3DVT_VERTEX,
-	D3DVT_MAX
-};
-
-// This vertex type tells D3D that it has already been transformed an lit
-// D3D will simply display the polygon with no extra processing
-typedef struct { 
-    float sx, sy, sz; 
-	float rhw; 
-
-    DWORD color; 
-    DWORD specular; 
-    float tu, tv; 
-    float env_u, env_v; 
-
-} D3DTLVERTEX;
-
-// This vertex type should be used for vertices that have already been lit
-// make sure lighting is set to off while these polygons are rendered 
-typedef struct { 
-    float sx, sy, sz;
-  
-    DWORD color; 
-    DWORD specular; 
-    float tu, tv; 
-
-} D3DLVERTEX;
-
-// Renders a normal polygon that is to be transformed and lit by D3D
-typedef struct { 
-    float sx, sy, sz;
-  	float nx, ny, nz;
-
-    float tu, tv, tu2, tv2; 
-
-} D3DVERTEX;
-
-typedef struct {
-	int fvf;
-	int size;
-
-} VertexTypeInfo;
-
-typedef float D3DVALUE;
-
-// 32 bit formats, only for use in a 32 bit mode.
-extern D3DFORMAT default_32_non_alpha_tformat;
-extern D3DFORMAT default_32_alpha_tformat;
-
-// 16 bit formats for pcx media
-extern D3DFORMAT default_non_alpha_tformat;
-extern D3DFORMAT default_alpha_tformat;
-
-extern DDPIXELFORMAT AlphaTextureFormat;
-extern DDPIXELFORMAT NonAlphaTextureFormat;
-
-typedef enum gr_texture_source {
-	TEXTURE_SOURCE_NONE,
-	TEXTURE_SOURCE_DECAL,
-	TEXTURE_SOURCE_NO_FILTERING,
-} gr_texture_source;
-
-typedef enum gr_alpha_blend {
-	ALPHA_BLEND_NONE,							// 1*SrcPixel + 0*DestPixel
-	ALPHA_BLEND_ALPHA_ADDITIVE,			// Alpha*SrcPixel + 1*DestPixel
-	ALPHA_BLEND_ALPHA_BLEND_ALPHA,		// Alpha*SrcPixel + (1-Alpha)*DestPixel
-	ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel
-} gr_alpha_blend;
-
-typedef enum gr_zbuffer_type {
-	ZBUFFER_TYPE_NONE,
-	ZBUFFER_TYPE_READ,
-	ZBUFFER_TYPE_WRITE,
-	ZBUFFER_TYPE_FULL,
-	ZBUFFER_TYPE_DEFAULT,
-} gr_zbuffer_type;
-
-// INTERNAL D3D Functions
-
-// GrD3D functions
-void d3d_set_initial_render_state();
-int d3d_get_mode_bit(D3DFORMAT type);
-
 // GrD3DRender functions
 void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt );
-
-// GrD3DTexture functions
 
 // GrD3DCall functions
 void d3d_reset_render_states();
