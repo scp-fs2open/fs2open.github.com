@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.13 $
- * $Date: 2002-12-17 02:21:06 $
+ * $Revision: 2.14 $
+ * $Date: 2002-12-17 02:22:34 $
  * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2002/12/17 02:21:06  DTP
+ * cleaned up after phreak :). it will make a mess in debug builds. added a couple of ifndef _debugs.
+ *
  * Revision 2.12  2002/12/14 17:09:08  phreak
  * added a command line that displays frames per second when enabled.
  * use "-fps"
