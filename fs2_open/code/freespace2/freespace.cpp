@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.31 $
- * $Date: 2003-05-09 23:54:59 $
+ * $Revision: 2.32 $
+ * $Date: 2003-05-21 20:26:07 $
  * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/05/09 23:54:59  phreak
+ * game_loading_callback_init() now displays a user-defined loading screen
+ *
  * Revision 2.30  2003/03/29 08:52:59  sesquipedalian
  * Added is-missile-locked sexp
  *
@@ -3751,6 +3754,9 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 
 			} else if ( Viewer_mode & VM_CHASE ) {
 				vector	move_dir;
+				vector aim_pt;
+								
+				
 
 				if ( Viewer_obj->phys_info.speed < 0.1 )
 					move_dir = Viewer_obj->orient.vec.fvec;
@@ -3759,11 +3765,26 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 					vm_vec_normalize(&move_dir);
 				}
 
-				vm_vec_scale_add(eye_pos, &Viewer_obj->pos, &move_dir, -3.0f * Viewer_obj->radius - Viewer_chase_info.distance);
-				vm_vec_scale_add2(eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius);
-				vm_vec_sub(&eye_dir, &Viewer_obj->pos, eye_pos);
-				vm_vec_normalize(&eye_dir);
+				//create a better 3rd person view if this is the player ship
+				if (Viewer_obj==Player_obj)
+				{
+					//get a point 1000m forward of ship
+					vm_vec_copy_scale(&aim_pt,&Viewer_obj->orient.vec.fvec,1000.0f);
+					vm_vec_add2(&aim_pt,&Viewer_obj->pos);
 
+					vm_vec_scale_add(eye_pos, &Viewer_obj->pos, &move_dir, -2.25f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(eye_pos, &Viewer_obj->orient.vec.uvec, .625f * Viewer_obj->radius);
+					vm_vec_sub(&eye_dir, &aim_pt, eye_pos);
+					vm_vec_normalize(&eye_dir);
+				}
+				else
+				{
+					vm_vec_scale_add(eye_pos, &Viewer_obj->pos, &move_dir, -3.0f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius);
+					vm_vec_sub(&eye_dir, &Viewer_obj->pos, eye_pos);
+					vm_vec_normalize(&eye_dir);
+				}
+					
 				// JAS: I added the following code because if you slew up using
 				// Descent-style physics, eye_dir and Viewer_obj->orient.vec.uvec are
 				// equal, which causes a zero-length vector in the vm_vector_2_matrix
