@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-07-15 02:51:43 $
+ * $Revision: 2.15 $
+ * $Date: 2003-07-15 16:06:24 $
  * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/07/15 02:51:43  phreak
+ * cloaked ships will reduce brightness with distance
+ *
  * Revision 2.13  2003/07/04 02:30:54  phreak
  * support for cloaking added.  needs a cloakmap.pcx
  * to cloak the players ship, activate cheats and press tilde + x
@@ -1660,6 +1663,8 @@ DCF(particle_life, "Multiplier for the lifetime of particles created")
 	}
 }
 
+extern int OGL_inited;
+
 // Make sparks fly off of ship n.
 // sn = spark number to spark, corrosponding to element in
 //      ship->hitpos array.  If this isn't -1, it is a just
@@ -1788,7 +1793,7 @@ void shipfx_emit_spark( int n, int sn )
 				}
 			}
 
-			if ( D3D_enabled ) {
+			if ( D3D_enabled || OGL_inited ) {
 				pe.num_low  = 25;				// Lowest number of particles to create (hardware)
 				pe.num_high = 30;				// Highest number of particles to create (hardware)
 			} else {
@@ -1806,7 +1811,7 @@ void shipfx_emit_spark( int n, int sn )
 
 			pe.min_rad = 0.7f;				// Min radius
 			pe.max_rad = 1.3f;				// Max radius
-			if ( D3D_enabled ) {
+			if ( D3D_enabled || OGL_inited ) {
 				pe.num_low  = int (20 * spark_num_scale);		// Lowest number of particles to create (hardware)
 				pe.num_high = int (50 * spark_num_scale);		// Highest number of particles to create (hardware)
 			} else {
