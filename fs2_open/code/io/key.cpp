@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Key.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-02-04 10:12:30 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-03 16:18:19 $
  * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.6  2004/07/26 20:47:33  Kazan
  * remove MCD complete
  *
@@ -165,9 +168,10 @@
 #include "io/key.h"
 #include "math/fix.h"
 #include "io/timer.h"
-#include "osapi/osapi.h"
 #include "localization/localize.h"
 
+#define THREADED	// to use the proper set of macros
+#include "osapi/osapi.h"
 
 
 #define KEY_BUFFER_SIZE 16

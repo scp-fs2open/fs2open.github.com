@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-04 10:12:30 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-03 16:18:19 $
  * $Author: taylor $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.5  2004/07/26 20:47:33  Kazan
  * remove MCD complete
  *
@@ -106,6 +109,8 @@
 #include "io/timer.h"
 #include "graphics/2d.h"
 #include "globalincs/alphacolors.h"
+
+#define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"	// for multi-thread macros
 
 

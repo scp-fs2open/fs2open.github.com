@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-03-03 06:05:28 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-03 16:18:19 $
+ * $Author: taylor $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/03/03 06:05:28  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.8  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -172,6 +175,8 @@
 
 #include "io/mouse.h"
 #include "graphics/2d.h"
+
+#define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
 
 #ifdef WIN32
