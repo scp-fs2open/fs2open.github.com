@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-10-27 23:59:28 $
+ * $Author: DTP $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:58  penguin
  * Back-port to MSVC
  *
@@ -415,7 +418,51 @@ typedef struct {
 #define CF_TYPE_CBANIMS					34
 #define CF_TYPE_INTEL_ANIMS			35
 
-#define CF_MAX_PATH_TYPES				36			// Can be as high as you'd like
+// DTP; MOD_ROOT must be 36!!
+// if you want to add more directories for some reason
+// the mod defines identified by CF_TYPE_MOD_XXX must be changed accordingly
+// since we are duplicating the path of the existing directories 1 time and then modifying
+// these to our mod`s path. to add to this, you must create an additional "duplicate" directory
+// path for each new directory you want to add.
+
+#define CF_TYPE_MOD_ROOT						36			
+#define CF_TYPE_MOD_DATA						37
+#define CF_TYPE_MOD_MAPS						38
+#define CF_TYPE_MOD_TEXT						39
+#define CF_TYPE_MOD_MISSIONS				40
+#define CF_TYPE_MOD_MODELS					41
+#define CF_TYPE_MOD_TABLES					42
+#define CF_TYPE_MOD_SOUNDS					43
+#define CF_TYPE_MOD_SOUNDS_8B22K			44
+#define CF_TYPE_MOD_SOUNDS_16B11K			45
+#define CF_TYPE_MOD_VOICE					46
+#define CF_TYPE_MOD_VOICE_BRIEFINGS		47
+#define CF_TYPE_MOD_VOICE_CMD_BRIEF		48
+#define CF_TYPE_MOD_VOICE_DEBRIEFINGS	49
+#define CF_TYPE_MOD_VOICE_PERSONAS		50
+#define CF_TYPE_MOD_VOICE_SPECIAL			51
+#define CF_TYPE_MOD_VOICE_TRAINING		52
+#define CF_TYPE_MOD_MUSIC					53
+#define CF_TYPE_MOD_MOVIES					54
+#define CF_TYPE_MOD_INTERFACE				55
+#define CF_TYPE_MOD_FONT						56
+#define CF_TYPE_MOD_EFFECTS					57
+#define CF_TYPE_MOD_HUD						58
+#define CF_TYPE_MOD_PLAYER_MAIN			59
+#define CF_TYPE_MOD_PLAYER_IMAGES_MAIN	60
+#define CF_TYPE_MOD_CACHE					61
+#define CF_TYPE_MOD_PLAYERS					62
+#define CF_TYPE_MOD_SINGLE_PLAYERS		63
+#define CF_TYPE_MOD_MULTI_PLAYERS			65
+#define CF_TYPE_MOD_MULTI_CACHE			66
+#define CF_TYPE_MOD_CONFIG					66
+#define CF_TYPE_MOD_SQUAD_IMAGES_MAIN	67
+#define CF_TYPE_MOD_DEMOS					68
+#define CF_TYPE_MOD_CBANIMS					69
+#define CF_TYPE_MOD_INTEL_ANIMS			70
+
+#define CF_MAX_PATH_TYPES				71			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
+
 
 // TRUE if type is specified and valid
 #define CF_TYPE_SPECIFIED(path_type) (((path_type)>CF_TYPE_INVALID) && ((path_type)<CF_MAX_PATH_TYPES))
@@ -449,6 +496,8 @@ int cfile_init(char *exe_dir,char *cdrom_dir=NULL);
 void cfile_refresh();
 
 // add an extension to a filename if it doesn't already have it
+int checkout_mod(char *checkmod);
+char *cf_add_modname(char *filename, char *ext);
 char *cf_add_ext(char *filename, char *ext);
 
 // return CF_TYPE (directory location type) of a CFILE you called cfopen() successfully on.
