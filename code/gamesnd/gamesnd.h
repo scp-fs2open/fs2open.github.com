@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.4 $
- * $Date: 2003-03-20 22:58:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-12 16:23:49 $
+ * $Author: phreak $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/20 22:58:43  Goober5000
+ * moved ballistic primary reload sounds to indexes 171 and 172
+ *
  * Revision 2.3  2003/03/18 01:44:31  Goober5000
  * fixed some misspellings
  * --Goober5000
@@ -370,7 +373,12 @@ void common_play_highlight_sound();
 
 
 // Misc_sounds[] holds handles for misc sounds in the game (list appears in sounds.tbl)
+#ifdef INF_BUILD
+#define MAX_GAME_SOUNDS					400
+#else
 #define MAX_GAME_SOUNDS					200
+#endif
+
 #define MAX_INTERFACE_SOUNDS			70
 #define MAX_SPECIES_FLYBY_SOUNDS		4				// 4 different possible flybys for species
 
