@@ -1273,7 +1273,7 @@ int parse_weapon()
 	if( optional_string("$EMP Time:") ){
 		stuff_float(&wip->emp_time);
 	} else {
-		wip->emp_intensity = EMP_DEFAULT_TIME;
+		wip->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
 	}
 
 	// Energy suck optional stuff (if WIF_ENERGY_SUCK is not set, none of this matters anyway)
