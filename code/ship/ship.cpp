@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-20 23:49:46 $
- * $Author: DTP $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-25 04:50:07 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/20 23:49:46  DTP
+ * Fixed Secondary bank bug, where next valid secondary bank inherits current
+ * valid banks FULL fire delay
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -5161,11 +5165,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}		
 		weapon_info* winfo_p = &Weapon_info[weapon];
 
-		// if this is a targeting laser, start it up
-		if((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->b_info.beam_type == BEAM_TYPE_C)){
+		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
+		if((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->tag_level == 3) && (shipp->flags & SF_TRIGGER_DOWN) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
 			ship_start_targeting_laser(shipp);
-			continue;
 		}
+
 
 		// if we're firing stream weapons and this is a non stream weapon, skip it
 		if(stream_weapons && !(winfo_p->wi_flags & WIF_STREAM)){
@@ -5223,6 +5227,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			}
 
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
+			if ((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->b_info.beam_type == BEAM_TYPE_C))// fighter beams fire constantly, they only stop if they run out of power -Bobboau
+			swp->next_primary_fire_stamp[bank_to_fire] = timestamp();
 		}
 
 		// Here is where we check if weapons subsystem is capable of firing the weapon.
@@ -5240,47 +5246,88 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if ( po->n_guns > 0 ) {
 			int num_slots = po->gun_banks[bank_to_fire].num_slots;
 
-			// fail unless we're forcing (energy based primaries)
-			if ( (shipp->weapon_energy < num_slots*winfo_p->energy_consumed) && !force) {
-				if ( obj == Player_obj ) {
-					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]);
-					if ( ship_maybe_play_primary_fail_sound() ) {
-					}
-				}
-				continue;
-			}			
 
-			// deplete the weapon reserve energy by the amount of energy used to fire the weapon
-			shipp->weapon_energy -= num_slots*winfo_p->energy_consumed;
+			if(winfo_p->wi_flags & WIF_BEAM){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
+
+								// fail unless we're forcing (energy based primaries)
+				if ( (shipp->weapon_energy < num_slots*winfo_p->energy_consumed*flFrametime) && !force) {
+					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]);
+					if ( obj == Player_obj ) {
+						if ( ship_maybe_play_primary_fail_sound() ) {
+						}
+					}
+					continue;
+				}			
+
+
+				// deplete the weapon reserve energy by the amount of energy used to fire the weapon and the number of points and do it by the time it's been fireing becase this is a beam -Bobboau
+				shipp->weapon_energy -= num_slots*winfo_p->energy_consumed*flFrametime;
+				
+				beam_fire_info fbfire_info;
+				//int j = (timestamp()/100)%num_slots; // fireing point cycleing for TBP
+				for ( int j = 0; j < num_slots; j++ ){
+					fbfire_info.accuracy = 0.0f;
+					fbfire_info.beam_info_index = shipp->weapons.primary_bank_weapons[bank_to_fire];
+					fbfire_info.beam_info_override = NULL;
+					fbfire_info.shooter = &Objects[shipp->objnum];
+					fbfire_info.target = NULL;
+					fbfire_info.target_subsys = NULL;
+					fbfire_info.turret = NULL;
+					fbfire_info.targeting_laser_offset = po->gun_banks[bank_to_fire].pnt[j];			
+
+					beam_fire_targeting(&fbfire_info);
+					//shipp->targeting_laser_objnum = beam_fire_targeting(&fire_info);			
+				}
+			}else{ //if this insn't a fighter beam, do it normaly -Bobboau
+				//Assert (!(winfo_p->wi_flags & WIF_BEAM))
+			
+				// fail unless we're forcing (energy based primaries)
+				if ( (shipp->weapon_energy < num_slots*winfo_p->energy_consumed) && !force) {
+					if ( obj == Player_obj ) {
+						swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]);
+						if ( ship_maybe_play_primary_fail_sound() ) {
+						}
+					}
+					continue;
+				}			
+				
+				// deplete the weapon reserve energy by the amount of energy used to fire the weapon
+				shipp->weapon_energy -= num_slots*winfo_p->energy_consumed;
+				if(shipp->weapon_energy < 0.0f){
+					shipp->weapon_energy = 0.0f;
+				}			
+			
+				// Mark all these weapons as in the same group
+				int new_group_id = weapon_create_group_id();
+			
+				for ( j = 0; j < num_slots; j++ ) {
+					pnt = po->gun_banks[bank_to_fire].pnt[j];
+					vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
+					vm_vec_add(&firing_pos, &gun_point, &obj->pos);
+					
+					// create the weapon -- the network signature for multiplayer is created inside
+					// of weapon_create
+					weapon_objnum = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj),0, new_group_id );
+					weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
+					
+					// create the muzzle flash effect
+					shipfx_flash_create( obj, shipp, &pnt, &obj->orient.vec.fvec, 1, weapon );
+				
+					// maybe shudder the ship - if its me
+					if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+						// calculate some arbitrary value between 100
+						// (mass * velocity) / 10
+						game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) / 10.0f);
+					}
+					
+					num_fired++;
+				}						
+			}						
+
 			if(shipp->weapon_energy < 0.0f){
 				shipp->weapon_energy = 0.0f;
-			}			
+			}
 
-			// Mark all these weapons as in the same group
-			int new_group_id = weapon_create_group_id();
-			
-			for ( j = 0; j < num_slots; j++ ) {
-				pnt = po->gun_banks[bank_to_fire].pnt[j];
-				vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
-				vm_vec_add(&firing_pos, &gun_point, &obj->pos);
-
-				// create the weapon -- the network signature for multiplayer is created inside
-				// of weapon_create
-				weapon_objnum = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj),0, new_group_id );
-				weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
-
-				// create the muzzle flash effect
-				shipfx_flash_create( obj, shipp, &pnt, &obj->orient.vec.fvec, 1, weapon );
-
-				// maybe shudder the ship - if its me
-				if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
-					// calculate some arbitrary value between 100
-					// (mass * velocity) / 10
-					game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) / 10.0f);
-				}
-
-				num_fired++;
-			}						
 
 			banks_fired |= (1<<bank_to_fire);				// mark this bank as fired.
 		}		
@@ -5399,8 +5446,8 @@ void ship_start_targeting_laser(ship *shipp)
 
 void ship_stop_targeting_laser(ship *shipp)
 {
-	shipp->targeting_laser_bank = -1;
-	shipp->targeting_laser_objnum = -1;
+	//shipp->targeting_laser_bank = -1;
+	//shipp->targeting_laser_objnum = -1; // erase old laser obj num if it has any -Bobboau
 }
 
 void ship_process_targeting_lasers()
