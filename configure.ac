@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.8 2005-03-30 16:05:41 taylor Exp $
+dnl $Id: configure.ac,v 1.9 2005-03-31 21:12:23 mrduckman Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -190,9 +190,22 @@ if test "$fs2_debug" = "yes" ; then
 	FS2_LDFLAGS="$FS2_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		FS2_CXXFLAGS="$FS2_CXXFLAGS 'wx-config --cxxflags'"
-		FS2_LDFLAGS="$FS2_LDFLAGS 'wx-config --libs'"
-		AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
+	AM_OPTIONS_WXCONFIG
+	AM_PATH_WXCONFIG(2.4.2, wxWin=1)
+	     if test "$wxWin" != 1; then
+	        AC_MSG_ERROR([
+	        wxWindows must be installed on your system
+	        but wx-config script couldn't be found.
+	     
+	        Please check that wx-config is in path, the directory
+	        where wxWindows libraries are installed (returned by
+	        'wx-config --libs' command) is in LD_LIBRARY_PATH or
+	        equivalent variable and wxWindows version is 2.3.4 or above.
+	        ])
+	     fi
+		FS2_CXXFLAGS="$FS2_CXXFLAGS $WX_CXXFLAGS_ONLY"
+		FS2_LDFLAGS="$FS2_LDFLAGS $WX_LIBS"
+	AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
 	else
 		AC_SUBST(FS2_BINARY, ["fs2_open_d"])
 	fi
@@ -202,8 +215,21 @@ else
 	FS2_LDFLAGS="$FS2_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		FS2_CXXFLAGS="$FS2_CXXFLAGS `wx-config --cxxflags`"
-		FS2_LDFLAGS="$FS2_LDFLAGS `wx-config --libs`"
+	AM_OPTIONS_WXCONFIG
+	AM_PATH_WXCONFIG(2.4.2, wxWin=1)
+	     if test "$wxWin" != 1; then
+	        AC_MSG_ERROR([
+	        wxWindows must be installed on your system
+	        but wx-config script couldn't be found.
+	     
+	        Please check that wx-config is in path, the directory
+	        where wxWindows libraries are installed (returned by
+	        'wx-config --libs' command) is in LD_LIBRARY_PATH or
+	        equivalent variable and wxWindows version is 2.3.4 or above.
+	        ])
+	     fi
+		FS2_CXXFLAGS="$FS2_CXXFLAGS $WX_CXXFLAGS_ONLY"
+		FS2_LDFLAGS="$FS2_LDFLAGS $WX_LIBS"
 		AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
 	else
 		AC_SUBST(FS2_BINARY, ["fs2_open_r"])
