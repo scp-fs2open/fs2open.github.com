@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-02 05:30:26 $
  * $Author: penguin $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -116,12 +119,26 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <stdio.h>
-#include <crtdbg.h>
 
 #include "globalincs/pstypes.h"
 
+#ifdef _MSC_VER
+#include <crtdbg.h>
+
 //Uncomment SHOW_CALL_STACK to show the call stack in Asserts, Warnings, and Errors
 #define SHOW_CALL_STACK
+#endif // _MSC_VER
+
+
+#ifndef __ASSERT
+  #ifndef _DEBUG
+    #define _ASSERT(expr) ((void)0)
+  #else
+    #define _ASSERT(expr) (assert(expr))
+//    #error _ASSERT is not defined yet for debug mode with non-MSVC compilers
+  #endif
+#endif
+
 
 #ifdef SHOW_CALL_STACK
 
@@ -1006,8 +1023,6 @@ void getmem()
 
 #ifndef NDEBUG
 
-#include <crtdbg.h>
-
 int TotalRam = 0;
 
 #define nNoMansLandSize 4
@@ -1030,6 +1045,9 @@ typedef struct _CrtMemBlockHeader
 
 #define pHdr(pbData) (((_CrtMemBlockHeader *)pbData)-1)
 
+
+// this block of code is never referenced...
+#if 0
 int __cdecl MyAllocHook(
    int      nAllocType,
    void   * pvData,
@@ -1067,6 +1085,9 @@ int __cdecl MyAllocHook(
 
    return( TRUE );         // Allow the memory operation to proceed
 }
+#endif  // #if 0
+
+
  
 void windebug_memwatch_init()
 {
@@ -1120,7 +1141,7 @@ void *vm_malloc( int size, char *filename, int line )
 void *vm_malloc( int size )
 #endif
 {
-	#ifndef NDEBUG
+	#if (!defined(NDEBUG)) && defined(_MSC_VER)
 	if ( !Heap )	{
 		TotalRam += size;
 
@@ -1179,27 +1200,23 @@ void vm_free( void *ptr )
 		return;
 	}
 
-	#ifndef NDEBUG
+#if (!defined(NDEBUG)) && defined(_MSC_VER)
 	if ( !Heap )	{
-		#ifndef NDEBUG
 		_CrtMemBlockHeader *phd = pHdr(ptr);
 		int nSize = phd->nDataSize;
 
 		TotalRam -= nSize;
-		#endif
 
 		_free_dbg(ptr,_NORMAL_BLOCK);
 		return;
 	}
-	#endif
 
-	#ifndef NDEBUG
-		int actual_size = HeapSize(Heap, HEAP_FLAG, ptr);
-		if ( Watch_malloc )	{
-			mprintf(( "Free %d bytes [%s(%d)]\n", actual_size, clean_filename(filename), line ));
-		}
-		TotalRam -= actual_size;
-	#endif
+	int actual_size = HeapSize(Heap, HEAP_FLAG, ptr);
+	if ( Watch_malloc )	{
+		mprintf(( "Free %d bytes [%s(%d)]\n", actual_size, clean_filename(filename), line ));
+	}
+	TotalRam -= actual_size;
+#endif
 	HeapFree( Heap, HEAP_FLAG, ptr );
 	HeapCompact(Heap, HEAP_FLAG);
 }
