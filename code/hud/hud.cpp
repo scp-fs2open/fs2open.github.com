@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-01-30 03:26:11 $
+ * $Revision: 2.37 $
+ * $Date: 2005-02-13 08:38:54 $
  * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/01/30 03:26:11  wmcoolmon
+ * HUD updates
+ *
  * Revision 2.35  2005/01/17 06:35:35  wmcoolmon
  * Attempt to fix the crash when a player ship's subsystems receives damage, and it has a lot (ie player ship is a capital ship).This seems to be controlled by SUBSYSTEM_MAX, which also controls the number of subsystems saved in red alert missions.
  *
@@ -3430,12 +3433,12 @@ void HUD_reset_clip()
 }
 
 // Basically like gr_set_clip only it accounts for hud jittering
-void HUD_set_clip(int x, int y, int w, int h)
+void HUD_set_clip(int x, int y, int w, int h, bool resize)
 {
 	int hx = fl2i(HUD_offset_x);
 	int hy = fl2i(HUD_offset_y);
 
-	gr_set_clip(hx+x, hy+y, w, h );
+	gr_set_clip(hx+x, hy+y, w, h, resize );
 }
 
 // -------------------------------------------------------------------------------------

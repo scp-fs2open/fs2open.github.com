@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.10 $
- * $Date: 2005-01-30 03:26:11 $
+ * $Revision: 2.11 $
+ * $Date: 2005-02-13 08:38:54 $
  * $Author: wmcoolmon $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/01/30 03:26:11  wmcoolmon
+ * HUD updates
+ *
  * Revision 2.9  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -375,7 +378,7 @@ void HUD_reset_clip();
 void hud_save_restore_camera_data(int save);
 
 // Basically like gr_set_clip only it accounts for hud jittering
-void HUD_set_clip(int x, int y, int w, int h);
+void HUD_set_clip(int x, int y, int w, int h, bool resize = true);
 
 // do flashing text gauge
 void hud_start_text_flash(char *txt, int t);
