@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.79 $
- * $Date: 2005-01-11 21:38:48 $
+ * $Revision: 2.80 $
+ * $Date: 2005-01-12 00:52:41 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2005/01/11 21:38:48  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.78  2005/01/01 10:38:23  taylor
  * asteroid targetting code for capships, enabled by default, matches FS1 behavior
  *
@@ -10808,7 +10813,8 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		break;
 
 	case REPAIR_INFO_ABORT:
-		if (repair_objp != NULL)
+		// undock if necessary (we may be just waiting for a repair in which case we aren't docked)
+		if ((repair_objp != NULL) && dock_check_find_direct_docked_object(repair_objp, repaired_objp))
 		{
 			ai_do_objects_undocked_stuff(repair_objp, repaired_objp);
 		}
