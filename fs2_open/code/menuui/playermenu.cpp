@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-04 05:12:42 $
  * $Author: penguin $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -1329,7 +1332,8 @@ void player_select_display_copyright()
 //	strcpy(Copyright_msg1, XSTR("Descent: FreeSpace - The Great War, Copyright c 1998, Volition, Inc.", -1));
 	gr_set_color_fast(&Color_white);
 
-	sprintf(Copyright_msg1, NOX("FreeSpace 2"));
+//	sprintf(Copyright_msg1, NOX("FreeSpace 2"));
+	get_version_string(Copyright_msg1);
 #if defined(GERMAN_BUILD)
 	sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\xA8');
 #else
