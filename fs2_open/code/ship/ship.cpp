@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.68 $
- * $Date: 2003-08-21 05:50:00 $
+ * $Revision: 2.69 $
+ * $Date: 2003-08-21 06:11:09 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2003/08/21 05:50:00  Goober5000
+ * "Fixed" the ballistic primary rearm bug.  I have no idea how... I have to assume
+ * it's a bug in MSVC.
+ * --Goober5000
+ *
  * Revision 2.67  2003/08/06 17:37:08  phreak
  * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
  *
@@ -6647,7 +6652,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					// deplete ammo
 					if ( Weapon_energy_cheat == 0 )
 					{
-						swp->primary_bank_ammo[bank_to_fire]--;
+						swp->primary_bank_ammo[bank_to_fire] -= num_slots;
+
+						// make sure we don't go below zero; any such error is excusable
+						// because it only happens when the bank is depleted in one shot
+						if (swp->primary_bank_ammo[bank_to_fire] < 0)
+						{
+							swp->primary_bank_ammo[bank_to_fire] = 0;
+						}
 					}
 				}
 
