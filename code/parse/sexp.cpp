@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.13 $
- * $Date: 2002-12-23 05:18:52 $
+ * $Revision: 2.14 $
+ * $Date: 2002-12-23 05:41:08 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2002/12/23 05:18:52  Goober5000
+ * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
+ * one ship would return after only dealing with the first ship.
+ *
+ * Also added the following sexps:
+ * is-ship-stealthed
+ * ship-force-stealth
+ * ship-force-nostealth
+ * ship-remove-stealth-forcing
+ *
+ * They toggle the stealth flag on and off.  If a ship is forced stealthy, it won't even
+ * show up for friendly ships.
+ * --Goober5000
+ *
  * Revision 2.12  2002/12/22 21:12:22  Goober5000
  * added primaries-depleted and primary-ammo-pct sexps -- useful for ships with
  * ballistic primaries
@@ -2441,7 +2455,7 @@ int rand_internal(int low, int high)
 }
 
 
-int rand_sexp(int n, int multiple=0)
+int rand_sexp(int n, int multiple = 1)	// was 0 - changed to 1 by Goober5000
 {
 	int low = 0;
 	int high = 0;
