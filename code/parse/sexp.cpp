@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.26 $
- * $Date: 2003-01-04 23:15:39 $
+ * $Revision: 2.27 $
+ * $Date: 2003-01-05 01:26:35 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/01/04 23:15:39  Goober5000
+ * fixed the order sexp
+ * --Goober5000
+ *
  * Revision 2.25  2003/01/03 21:58:07  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -1517,7 +1521,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				}
 
 				shipname = CTEXT(ship_index);
-				shipnum = ship_name_lookup(shipname);
+				shipnum = ship_name_lookup(shipname, 1);
 				if (shipnum >= 0){
 					ship_class = Ships[shipnum].ship_info_index;
 				} else {
@@ -1887,7 +1891,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					int ship_num, model, i, z;
 
 					z = find_parent_operator(op_index);
-					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[z].rest));
+					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[z].rest), 1);
 					if (ship_num < 0) {
 						if (bad_index)
 							*bad_index = Sexp_nodes[z].rest;
@@ -1914,7 +1918,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if (Fred_running) {
 					int ship_num, model, i, z;
 
-					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_index].rest));
+					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_index].rest), 1);
 					if (ship_num < 0) {
 						if (bad_index)
 							*bad_index = Sexp_nodes[op_index].rest;
@@ -4885,10 +4889,12 @@ int eval_cond( int n )
 	return val;
 }
 
+// Goober5000 - added wing capability
 int sexp_is_iff( int n )
 {
-	char *ship_name, *iff;
-	int num, team;
+	char *ship_or_wing_name, *iff;
+	int i, ship_num, wing_num, team;
+	wing *wingp;
 
 	Assert ( n >= 0 );
 
@@ -4914,25 +4920,45 @@ int sexp_is_iff( int n )
 	n = CDR(n);
 	for ( ; n != -1; n = CDR(n) )
 	{
-		ship_name = CTEXT(n);
+		ship_or_wing_name = CTEXT(n);
 
-		// find the ship and check to be sure that it is still around.
-		num = ship_name_lookup(ship_name);
-		if ( num < 0 )			// if the ship is gone, can't check it's iff.
-			continue;
+		ship_num = ship_name_lookup(ship_or_wing_name);
+		wing_num = wing_name_lookup(ship_or_wing_name);
 
-		// if the team doesn't match the team specified, return false immediately
-		if ( Ships[num].team != team)
-			return SEXP_FALSE;
+		if (ship_num != -1)
+		{
+			// if the team doesn't match the team specified, return false immediately
+			if (!ship_is_iff(ship_num, team))
+			{
+				return SEXP_FALSE;
+			}
+		}
+
+		if (wing_num != -1)
+		{
+			wingp = &Wings[wing_num];
+			
+			for (i=0; i<wingp->current_count; i++)
+			{
+				// if the team doesn't match the team specified, return false immediately
+				if (!ship_is_iff(wingp->ship_index[i], team))
+				{
+					return SEXP_FALSE;
+				}
+			}
+		}
 	}
 
+	// got this far: we must be okay for all ships
 	return SEXP_TRUE;
 }
 
+// Goober5000 - added wing capability
 void sexp_change_iff( int n )
 {
-	char *ship_name, *new_iff;
-	int num, new_team;
+	char *ship_or_wing_name, *new_iff;
+	int i, ship_num, wing_num, new_team;
+	wing *wingp;
 
 	Assert ( n >= 0 );
 	new_iff = CTEXT(n);
@@ -4953,20 +4979,29 @@ void sexp_change_iff( int n )
 	}
 
 	n = CDR(n);
-	for ( ; n != -1; n = CDR(n) ) {
-		ship_name = CTEXT(n);
+	for ( ; n != -1; n = CDR(n) )
+	{
+		ship_or_wing_name = CTEXT(n);
 
-		// find the ship and check to be sure that it is still around.
-		num = ship_name_lookup(ship_name);
-		if ( num >= 0 ) { 					// only change iff if we found the ship
-			Ships[num].team = new_team;
+		// see if we can find anything
+		ship_num = ship_name_lookup(ship_or_wing_name);
+		wing_num = wing_name_lookup(ship_or_wing_name);
 
-#ifndef NO_NETWORK
-			// send a network packet if we need to
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[num].objnum >= 0)){
-				send_change_iff_packet(Objects[Ships[num].objnum].net_signature, new_team);
+		// change ship
+		if (ship_num != -1)
+		{
+			ship_change_iff(ship_num, new_team);
+		}
+
+		// change wing
+		if (wing_num != -1)
+		{
+			wingp = &Wings[wing_num];
+			
+			for (i=0; i<wingp->current_count; i++)
+			{
+				ship_change_iff(wingp->ship_index[i], new_team);
 			}
-#endif
 		}
 	}
 }
@@ -10107,7 +10142,7 @@ int query_operator_argument_type(int op, int argnum)
 			if (!argnum)
 				return OPF_IFF;
 			else
-				return OPF_SHIP;
+				return OPF_SHIP_WING;
 
 		case OP_ADD_SHIP_GOAL:
 			if (!argnum)
