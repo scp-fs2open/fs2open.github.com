@@ -9,13 +9,24 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-02-14 00:18:35 $
- * $Author: randomtiger $
+ * $Revision: 2.15 $
+ * $Date: 2004-02-16 16:09:59 $
+ * $Author: phreak $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/02/14 00:18:35  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.13  2004/01/24 15:52:26  randomtiger
  * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
  * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
@@ -715,6 +726,7 @@ BOOL win32_create_window()
 	if(Cmdline_window)			// Let it here be known that I hate the coding style they use for {'s - UP
 	{
 		int hires = 1;
+		int cdepth, width, height;
 		char *ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);
 		
 		// Lets work this out the other way round, assume its hi-res
@@ -723,13 +735,23 @@ BOOL win32_create_window()
 			hires = 0;
 		}
 
+		//make windowed mode use non-standard resolutions
+		if (strstr(ptr, NOX("D3D8-") ))	
+		{
+			sscanf(ptr, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth);
+		} 
+		else if (strstr(ptr, NOX("OGL -") ))
+		{
+			sscanf(ptr, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth);			
+		} 
+
 
 		hwndApp = CreateWindow( szWinClass, szWinTitle,
 									style,   
 									CW_USEDEFAULT,
 									CW_USEDEFAULT,
-									(hires ? 1024 : 640) + x_add,
-									(hires ? 768 : 480) + y_add,
+									width + x_add,
+									height + y_add,
 									NULL, (HMENU)NULL, hInst, (LPSTR)NULL);	
 	} 
 	else 
