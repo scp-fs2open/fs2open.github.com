@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-08-22 07:35:08 $
+ * $Revision: 2.20 $
+ * $Date: 2003-08-31 06:00:41 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/08/22 07:35:08  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.18  2003/08/21 20:54:38  randomtiger
  * Fixed switching - RT
  *
@@ -920,34 +925,34 @@ stage_state current_render_state = NONE;
 void d3d_set_initial_render_state()
 {
 	if(current_render_state == INITAL)return;
-	d3d_SetRenderState(D3DRS_DITHERENABLE, TRUE );
 
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+	if(current_render_state == NONE){//this only needs to be done the first time-Bobboau
+		d3d_SetRenderState(D3DRS_DITHERENABLE, TRUE );
+		d3d_SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD );
+		d3d_SetRenderState(D3DRS_SPECULARENABLE, FALSE ); 
 
+		// Turn lighting off here, its on by default!
+		d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
+	}
+
+
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
 	d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
 
-	d3d_SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD );
-	d3d_SetRenderState(D3DRS_SPECULARENABLE, FALSE ); 
-
-	// Turn lighting off here, its on by default!
-	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
-
-	//new glowmapping code,yay!!!-Bobboau
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
 	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	
-	d3d_SetTexture(1, NULL);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
 	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-	
 	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
-
 	d3d_SetTextureStageState(1, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
 	d3d_SetTextureStageState(1, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
+	d3d_SetTexture(1, NULL);
 
 	d3d_SetTextureStageState( 2, D3DTSS_TEXCOORDINDEX, 0);
-
 	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+
 	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	d3d_SetTextureStageState( 4, D3DTSS_COLOROP, D3DTOP_DISABLE);
 
@@ -1095,6 +1100,7 @@ void set_stage_for_glow_mapped_defuse_and_non_mapped_spec(){
 bool set_stage_for_spec_mapped(){
 	if(current_render_state == MAPPED_SPECULAR)return true;
 	if(SPECMAP < 0){
+	//	Error(LOCATION, "trying to set stage when there is no specmap");
 		return false;
 	}
 

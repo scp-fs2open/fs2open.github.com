@@ -9,14 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-08-16 03:52:24 $
+ * $Revision: 2.10 $
+ * $Date: 2003-08-31 06:00:41 $
  * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/08/16 03:52:24  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.8  2003/05/05 21:27:46  phreak
  * if "Show Background" is not set it FRED,
  * it used to show background bitmaps and suns
@@ -379,6 +388,8 @@ void stars_load_debris()
 	stars_debris_loaded = 1;
 }
 
+
+
 // call on game startup
 void stars_init()
 {
@@ -396,12 +407,20 @@ void stars_init()
 	// make all bitmaps invalid
 	for(idx=0; idx<MAX_STARFIELD_BITMAPS; idx++){
 		Starfield_bitmaps[idx].bitmap = -1;
+		Starfield_bitmaps[idx].n_frames = 0;
+		Starfield_bitmaps[idx].fps = 0;
 		Starfield_bitmaps[idx].glow_bitmap = -1;		
+		Starfield_bitmaps[idx].glow_n_frames = 1;
+		Starfield_bitmaps[idx].glow_fps = 0;
 		strcpy(Starfield_bitmaps[idx].filename, "");
 		strcpy(Starfield_bitmaps[idx].glow_filename, "");
 
 		Sun_bitmaps[idx].bitmap = -1;		
+		Sun_bitmaps[idx].n_frames = 0;
+		Sun_bitmaps[idx].fps = 0;
 		Sun_bitmaps[idx].glow_bitmap = -1;		
+		Sun_bitmaps[idx].glow_n_frames = 1;
+		Sun_bitmaps[idx].glow_fps = 0;
 		strcpy(Sun_bitmaps[idx].filename, "");
 		strcpy(Sun_bitmaps[idx].glow_filename, "");
 	}
@@ -418,7 +437,10 @@ void stars_init()
 				bm->xparent = 0;
 				bm->bitmap = bm_load(bm->filename);				
 				if(bm->bitmap == -1){
-					Warning(LOCATION, "cannot find bitmap %s", filename);
+					bm->bitmap = bm_load_animation(bm->filename,  &bm->n_frames, &bm->fps, 1);
+					if(bm->bitmap == -1){
+						Warning(LOCATION, "cannot find bitmap %s", filename);
+					}
 				}
 
 				// if fred is running we should lock the bitmap now
@@ -437,7 +459,10 @@ void stars_init()
 				bm->xparent = 1;
 				bm->bitmap = bm_load(bm->filename);
 				if(bm->bitmap == -1){
-					Warning(LOCATION, "cannot find bitmap %s", filename);
+					bm->bitmap = bm_load_animation(bm->filename,  &bm->n_frames, &bm->fps, 1);
+					if(bm->bitmap == -1){
+						Warning(LOCATION, "cannot find bitmap %s", filename);
+					}
 				}
 
 				// if fred is running we should lock as a 0, 255, 0 bitmap now
@@ -486,10 +511,16 @@ void stars_init()
 				bm->bitmap = bm_load(bm->filename);
 				bm->glow_bitmap = bm_load(bm->glow_filename);
 				if(bm->bitmap == -1){
-					Warning(LOCATION, "cannot find bitmap %s", filename);
+					bm->bitmap = bm_load_animation(bm->filename,  &bm->n_frames, &bm->fps, 1);
+					if(bm->bitmap == -1){
+						Warning(LOCATION, "cannot find bitmap %s", filename);
+					}
 				}
 				if(bm->glow_bitmap == -1){
-					Warning(LOCATION, "cannot find bitmap %s", glow_filename);
+					bm->glow_bitmap = bm_load_animation(bm->glow_filename,  &bm->glow_n_frames, &bm->glow_fps, 1);
+					if(bm->glow_bitmap == -1){
+						Warning(LOCATION, "cannot find bitmap %s", filename);
+					}
 				}
 				bm->r = r;
 				bm->g = g;
@@ -818,7 +849,11 @@ void stars_draw_sun( int show_sun )
 		}
 
 		// draw the sun itself, keep track of how many we drew
-		gr_set_bitmap(bm->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+		if(bm->fps){
+			gr_set_bitmap(bm->bitmap + ((timestamp() / (int)(bm->fps) % bm->n_frames)), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+		}else{
+			gr_set_bitmap(bm->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+		}
 		g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
 		if(!g3_draw_bitmap(&sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, TMAP_FLAG_TEXTURED)){
 			Sun_drew++;
@@ -861,7 +896,12 @@ void stars_draw_sun_glow(int sun_n)
 	}
 
 	// draw the sun itself, keep track of how many we drew
-	gr_set_bitmap(bm->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
+	if(bm->glow_fps){
+		gr_set_bitmap(bm->glow_bitmap + ((timestamp() / (int)(bm->glow_fps) % bm->glow_n_frames)), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
+	}else{
+		gr_set_bitmap(bm->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
+	}
+//	gr_set_bitmap(bm->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
 	g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
 	g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);	
 }
@@ -895,11 +935,21 @@ void stars_draw_bitmaps( int show_bitmaps )
 			gr_set_bitmap(Starfield_bitmaps[star_index].bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
 			g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);
 		} else {
+			
 			if(Starfield_bitmaps[star_index].xparent){
-				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap);		
+				if(Starfield_bitmaps[star_index].fps){
+					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps) % Starfield_bitmaps[star_index].n_frames)));		
+				}else{
+					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap);
+				}
 				g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
 			} else {				
-				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
+				if(Starfield_bitmaps[star_index].fps){
+					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps) % Starfield_bitmaps[star_index].n_frames)), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
+				}else{
+					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
+				}
+					
 				g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);
 			}
 		}

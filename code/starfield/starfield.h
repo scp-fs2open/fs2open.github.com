@@ -9,14 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.3 $
- * $Date: 2003-08-16 03:52:24 $
+ * $Revision: 2.4 $
+ * $Date: 2003-08-31 06:00:41 $
  * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/08/16 03:52:24  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.2  2002/09/20 20:04:54  phreak
  * added glare variable for ambient suns
  * if glare is 0 then the sun glare whiteout is not shown when looking at the sun
@@ -138,7 +147,11 @@ typedef struct starfield_bitmap {
 	char filename[MAX_FILENAME_LEN+1];				// bitmap filename
 	char glow_filename[MAX_FILENAME_LEN+1];		// only for suns	
 	int bitmap;												// bitmap handle
+	int n_frames;
+	int fps;
 	int glow_bitmap;										// only for suns
+	int glow_n_frames;
+	int glow_fps;
 	int xparent;	
 	float r, g, b, i, spec_r, spec_g, spec_b;										// only for suns
 	int glare;												// only for suns

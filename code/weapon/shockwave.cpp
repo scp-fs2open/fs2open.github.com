@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-08-22 07:35:09 $
+ * $Revision: 2.4 $
+ * $Date: 2003-08-31 06:00:42 $
  * $Author: bobboau $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/08/22 07:35:09  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.2  2003/03/18 08:44:06  Goober5000
  * added explosion-effect sexp and did some other minor housekeeping
  * --Goober5000
@@ -528,6 +533,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 //
 //	input:	objp	=>		pointer to shockwave object
 //
+bool rendering_shockwave = false;
 void shockwave_render(object *objp)
 {
 	shockwave		*sw;
@@ -565,7 +571,9 @@ void shockwave_render(object *objp)
 
 		model_set_detail_level((int)(dist / (sw->radius * 10.0f)));
 		gr_set_cull(0);
+		rendering_shockwave = true;
 		model_render( shockwave_model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL);
+		rendering_shockwave = false;
 		gr_set_cull(1);
 
 		model_Interp_scale_x = 1.0f;

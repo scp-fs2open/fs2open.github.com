@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-08-22 07:35:08 $
+ * $Revision: 2.17 $
+ * $Date: 2003-08-31 06:00:41 $
  * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/08/22 07:35:08  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.15  2003/08/16 03:52:23  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -1216,7 +1221,7 @@ extern int spec;
 bool env_enabled = false;
 extern int cell_shaded_lightmap;
 bool cell_enabled = false;
-
+extern bool rendering_shockwave;
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
 	int i;
@@ -1565,6 +1570,16 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		}
 	}
 
+	if(rendering_shockwave && (flags & TMAP_FLAG_PIXEL_FOG)){
+		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);//don't fog shockwaves
+		for (i=0; i<nverts; i++ )	{
+			f_float = (gr_screen.fog_far - verts[i]->z) / (gr_screen.fog_far - gr_screen.fog_near);
+			if(f_float < 0.0f)f_float = 0.0f;
+
+			d3d_verts[i].color = D3DCOLOR_RGBA((ubyte)((int)verts[i]->r * f_float), (ubyte)((int)verts[i]->g * f_float), (ubyte)((int)verts[i]->b * f_float), verts[i]->a);
+		}
+	}
+
 	// Draws just about everything except stars and lines
  	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 
@@ -1573,6 +1588,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 		if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
 				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
+			//	Error(LOCATION, "Not rendering specmap texture because it didn't fit in VRAM!");
 				return;
 			}
 		for (i=0; i<nverts; i++ )	{
@@ -1735,6 +1751,8 @@ void gr_d3d_scaler(vertex *va, vertex *vb )
 	v[3].z = va->z;
 	v[3].u = clipped_u0;
 	v[3].v = clipped_v1;
+
+	d3d_set_initial_render_state();
 
 	gr_d3d_tmapper_internal( 4, vl, TMAP_FLAG_TEXTURED, 1 );
 }
@@ -2203,6 +2221,8 @@ void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy)
 		Assert( (dy2 >= gr_screen.clip_top ) && (dy2 <= gr_screen.clip_bottom) );
 	#endif
 
+	d3d_set_initial_render_state();
+
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
 	gr_d3d_aabitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
 }
@@ -2233,6 +2253,8 @@ void gr_d3d_aabitmap(int x, int y)
 	if ( sy < 0 ) return;
 	if ( sx >= w ) return;
 	if ( sy >= h ) return;
+
+	d3d_set_initial_render_state();
 
 	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
 	gr_aabitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
