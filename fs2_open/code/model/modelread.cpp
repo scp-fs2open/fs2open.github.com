@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-08-22 07:35:09 $
- * $Author: bobboau $
+ * $Revision: 2.21 $
+ * $Date: 2003-08-28 20:42:18 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/08/22 07:35:09  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.19  2003/08/12 03:18:34  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -1098,6 +1103,51 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		get_user_prop_value(p+7, buf);
 		turn_time = (float)atof(buf);
 
+		// CASE OF WEAPON ROTATION (primary only)
+		if ( (p = strstr(props, "$pbank")) != NULL)	{
+			subsystemp->flags |= MSS_FLAG_ARTILLERY;
+
+			// get which pbank should trigger rotation
+			get_user_prop_value(p+6, buf);
+			subsystemp->weapon_rotation_pbank = (int)atoi(buf);
+		} // end of weapon rotation stuff
+
+/* Bobboau's code commented by Goober5000 - this will need to be substantially reworked;
+// in any case, weapon rotation was implemented by me above - it might be a good pattern
+// to follow for future stuff
+		// CASE OF AI ROTATION
+		if ( (p = strstr(props, "$ai")) != NULL) {
+			get_user_prop_value(p+3, buf);
+			subsystemp->flags |= MSS_FLAG_AI_ROTATE;
+//reading early animation suport-Bobboau
+			if(!stricmp("dock",buf)){
+				subsystemp->ai_rotation.type &= MSS_AI_DOCK;
+				mprintf(("model has AI animation, %s", buf));
+				if((p = strstr(props, "$up")) != NULL){
+					get_user_prop_value(p+3, buf);
+//					mprintf((" up"));
+					subsystemp->ai_rotation.min = (float)(atof("90"));
+				}
+				if((p = strstr(props, "$down")) != NULL){
+//					mprintf(("down"));
+					get_user_prop_value(p+5, buf);
+					subsystemp->ai_rotation.max = (float)atof("0");
+				}
+//				if((p = strstr(props, "$time")) != NULL){
+//					mprintf(("time"));
+//					get_user_prop_value(p+5, buf);
+					subsystemp->ai_rotation.time = (int)(turn_time * 1000);
+//				}
+mprintf(("animation values, %f %f %d", subsystemp->ai_rotation.min, subsystemp->ai_rotation.max, subsystemp->ai_rotation.time));
+			}
+			// get parameters - ie, speed / dist / other ??
+			// time to activate
+			// condition
+		}
+*/
+
+		// *** determine how the subsys rotates ***
+
 		// CASE OF STEPPED ROTATION
 		if ( (p = strstr(props, "$stepped")) != NULL) {
 
@@ -1143,46 +1193,19 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 
 			subsystemp->stepped_rotation->max_turn_accel = PI2 / (fraction*(1.0f - fraction) * num_steps * t_trans*t_trans);
 			subsystemp->stepped_rotation->max_turn_rate =  PI2 / ((1.0f - fraction) * num_steps *t_trans);
-
-		}
-
-		// CASE OF AI ROTATION
-		else if ( (p = strstr(props, "$ai")) != NULL) {
-			get_user_prop_value(p+3, buf);
-			subsystemp->flags |= MSS_FLAG_AI_ROTATE;
-//reading early animation suport-Bobboau
-			if(!stricmp("dock",buf)){
-				subsystemp->ai_rotation.type &= MSS_AI_DOCK;
-				mprintf(("model has AI animation, %s", buf));
-				if((p = strstr(props, "$up")) != NULL){
-					get_user_prop_value(p+3, buf);
-//					mprintf((" up"));
-					subsystemp->ai_rotation.min = (float)(atof("90"));
-				}
-				if((p = strstr(props, "$down")) != NULL){
-//					mprintf(("down"));
-					get_user_prop_value(p+5, buf);
-					subsystemp->ai_rotation.max = (float)atof("0");
-				}
-//				if((p = strstr(props, "$time")) != NULL){
-//					mprintf(("time"));
-//					get_user_prop_value(p+5, buf);
-					subsystemp->ai_rotation.time = (int)(turn_time * 1000);
-//				}
-mprintf(("animation values, %f %f %d", subsystemp->ai_rotation.min, subsystemp->ai_rotation.max, subsystemp->ai_rotation.time));
-			}
-			// get parameters - ie, speed / dist / other ??
-			// time to activate
-			// condition
 		}
 
 		// CASE OF NORMAL CONTINUOUS ROTATION
 		else {
-			if ( fabs(turn_time) < 1 ) {				
+			// commented by Goober5000 to allow faster than 1sec rotation
+/*			if ( fabs(turn_time) < 1 )
+			{
 				// Warning(LOCATION, "%s has subsystem %s with rotation time less than 1 sec", dname, Global_filename );
 				subsystemp->flags &= ~MSS_FLAG_ROTATES;
 				subsystemp->turn_rate = 0.0f;
-			} else {
+			}
+			else */
+			{
 				subsystemp->turn_rate = PI2 / turn_time;
 			}
 		}
@@ -3022,7 +3045,6 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	}
 }
 #pragma warning ( pop )
-
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
