@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-09-09 17:10:55 $
+ * $Revision: 2.13 $
+ * $Date: 2003-09-09 17:18:25 $
  * $Author: matt $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/09/09 17:10:55  matt
+ * Added -nospec cmd line param to disable specular -Sticks
+ *
  * Revision 2.11  2003/09/05 22:35:33  matt
  * Minor d3d star popping fix
  *
@@ -1347,7 +1350,7 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 
 					p1.sx += 1.0f;
 				}
-				PlantStar(&p2);
+				gr_aaline(&p1,&p2);
 			} else {
 				// use alphablended line so that dark stars don't look bad on top of nebulas
 				if (!Fred_running)
@@ -1591,9 +1594,3 @@ int stars_find_sun(char *name)
 	// not found 
 	return -1;
 }
-
-
-void PlantStar(vector p2)
-{
-	StarParticle *starpart;
-

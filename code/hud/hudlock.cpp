@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-09-09 17:10:55 $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-09 17:18:24 $
  * $Author: matt $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/09/09 17:10:55  matt
+ * Added -nospec cmd line param to disable specular -Sticks
+ *
  * Revision 2.3  2003/06/25 03:13:02  phreak
  * display lock triangle for local ssms only if its in range specified in weapons.tbl
  *
@@ -812,7 +815,7 @@ void hud_update_lock_indicator(float frametime)
 
 // hud_draw_lock_triangles() will draw the 4 rotating triangles around a lock indicator
 // (This is done when a lock has been acquired)
-#define ROTATE_DELAY 10
+#define ROTATE_DELAY 40
 void hud_draw_lock_triangles_old(int center_x, int center_y, int radius)
 {
 	static float ang = 0.0f;
