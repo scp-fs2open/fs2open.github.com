@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-03-02 21:24:45 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2005-03-03 08:41:53 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.38  2005/02/27 14:09:27  Goober5000
  * First stage of "apply to all ships in this wing" weapon loadout button code.
  * Button hooks only, pending interface art.  The "apply-to-all" code itself
@@ -700,20 +703,20 @@ struct wl_buttons {
 
 static wl_buttons Buttons[GR_NUM_RESOLUTIONS][MAX_WEAPON_BUTTONS] = {
 	{
-		wl_buttons("WLB_26",		24,		125,	-1,		-1,		26),	// WL_BUTTON_SCROLL_PRIMARY_UP
-		wl_buttons("WLB_27",		24,		276,	-1,		-1,		27),	// WL_BUTTON_SCROLL_PRIMARY_DOWN
-		wl_buttons("WLB_08",		24,		303,	-1,		-1,		8),		// WL_BUTTON_SCROLL_SECONDARY_UP
+		wl_buttons("WLB_27",		24,		276,	-1,		-1,		27),	// WL_BUTTON_SCROLL_PRIMARY_UP
+		wl_buttons("WLB_26",		24,		125,	-1,		-1,		26),	// WL_BUTTON_SCROLL_PRIMARY_DOWN
 		wl_buttons("WLB_09",		24,		454,	-1,		-1,		9),		// WL_BUTTON_SCROLL_SECONDARY_UP
+		wl_buttons("WLB_08",		24,		303,	-1,		-1,		8),		// WL_BUTTON_SCROLL_SECONDARY_DOWN
 		wl_buttons("ssb_39",		571,	347,	-1,		-1,		39),	// WL_BUTTON_RESET
 		wl_buttons("ssb_39",		0,		0,		-1,		-1,		99),	// WL_BUTTON_DUMMY
 		wl_buttons("TSB_34",		603,	374,	-1,		-1,		34),	// WL_BUTTON_MULTI_LOCK
 		wl_buttons("WLB_40",		0,		90,		-1,		-1,		40)		// WL_BUTTON_APPLY_ALL
 	},
 	{
-		wl_buttons("2_WLB_26",		39,		200,	-1,		-1,		26),
 		wl_buttons("2_WLB_27",		39,		442,	-1,		-1,		27),
-		wl_buttons("2_WLB_08",		39,		485,	-1,		-1,		8),
+		wl_buttons("2_WLB_26",		39,		200,	-1,		-1,		26),
 		wl_buttons("2_WLB_09",		39,		727,	-1,		-1,		9),
+		wl_buttons("2_WLB_08",		39,		485,	-1,		-1,		8),
 		wl_buttons("2_ssb_39",		913,	556,	-1,		-1,		39),
 		wl_buttons("2_ssb_39",		0,		0,		-1,		-1,		99),
 		wl_buttons("2_TSB_34",		966,	599,	-1,		-1,		34),
