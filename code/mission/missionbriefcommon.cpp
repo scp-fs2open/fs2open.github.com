@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-04-05 11:09:21 $
+ * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -261,7 +264,7 @@ int Brief_stage_text_coords_multi[GR_NUM_RESOLUTIONS][2] = {
 };
 
 int Brief_text_max_lines[GR_NUM_RESOLUTIONS] = {
-	6, 6
+	6, 11
 };
 
 #define LOOKAT_DIST	500.0f

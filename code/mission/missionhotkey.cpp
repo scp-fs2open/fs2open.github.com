@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2003-04-05 11:09:21 $
+ * $Author: Goober5000 $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2  2002/12/02 23:24:35  Goober5000
  * fixed misspelling of "category" as "catagory"
  *
@@ -268,7 +271,7 @@ static char *Hotkey_mask_fname[GR_NUM_RESOLUTIONS] = {
 
 #define MAX_LINES					200
 #define NUM_BUTTONS				10
-#define LIST_BUTTONS_MAX		40
+#define LIST_BUTTONS_MAX		42
 
 #define SCROLL_UP_BUTTON		0
 #define SCROLL_DOWN_BUTTON		1
