@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.87 $
- * $Date: 2004-12-11 09:37:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.88 $
+ * $Date: 2004-12-24 19:36:12 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2004/12/11 09:37:17  wmcoolmon
+ * Apparently I never commited -mpnoreturn...
+ *
  * Revision 2.86  2004/12/02 11:20:33  taylor
  * text of -no_set_gamma cmdline option shouldn't specify D3D since it works in OGL too
  *
@@ -674,60 +677,62 @@ typedef struct
 // Please group them by type, ie Graphics, gameplay etc, maximum 20 different types
 Flag exe_params[] = 
 {
-	"-spec",		  "Enable specular",				true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.spec", 
-	"-glow",		  "Enable glowmaps",				true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.glow", 
-	"-pcx32",		  "Enable 32bit textures",			true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pcx32", 
-	"-jpgtga",		  "Enable jpg,tga textures",		true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.jpgtga", 
-	"-d3dmipmap",	  "Enable mipmapping",				true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3dmipmap", 
-	"-cell",		  "Enable cell shading",			true,	0,				 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.cell", 
-	"-dualscanlines", "Another pair of lines when scanning", true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.dualscanlines", 
-	"-ship_choice_3d","Enable models instead of ani",	true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.ship_choice_3d", 
-	"-targetinfo",	  "Enable info next to target",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.targetinfo",
-	"-nomotiondebris","Disable motion debris",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nomotiondebris",
-	"-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.2d_poof", 
-	"-orbradar",	  "Enables 3d radar",				true,   EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"",
-    "-tbpwarpeffects","Enable TBP Warp Effects",        true,   0,               EASY_DEFAULT,      "Graphics",     "", // TBP warp effects -Et1
-	"-3dwarp",        "Enable 3d warp",                 true,   0,               EASY_DEFAULT,      "Graphics",     "",
+	"-spec",		  "Enable specular",				true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.spec", 
+	"-glow",		  "Enable glowmaps",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.glow", 
+	"-pcx32",		  "Enable 32bit textures",			true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pcx32", 
+	"-jpgtga",		  "Enable jpg,tga textures",		true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.jpgtga", 
+	"-d3dmipmap",	  "Enable mipmapping",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3dmipmap", 
+	"-nomotiondebris","Disable motion debris",			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nomotiondebris",
+	"-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.2d_poof", 
+	"-cell",		  "Enable cell shading",			true,	0,					EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.cell", 
 
-	"-pcx2dds",	      "Compress pcx",			        true,   0,				 EASY_DEFAULT,		"Game Speed",	"", 
-	"-d3d_no_vsync",  "Disable vertical sync",			true,	0,				 EASY_DEFAULT,		"Game Speed",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_no_vsync", 
+	"-pcx2dds",	      "Compress pcx",			        true,   0,					EASY_DEFAULT,		"Game Speed",	"", 
+	"-d3d_no_vsync",  "Disable vertical sync",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_no_vsync", 
 
-	"-nobeampierce",  "",								true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Gameplay",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nobeampierce", 
-	"-mpnoreturn",	  "Disables flight deck option",	true,	0,				 EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-mpnoreturn",
-	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.snd_preload",
-	"-noaudio",		  "Disable sound and music",		false,	0,				 EASY_DEFAULT,		"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nosound",
-	"-nomusic",		  "Disable music",					false,	0,				 EASY_DEFAULT,		"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nomusic",
+	"-nobeampierce",  "",								true,	0,					EASY_DEFAULT,		"Gameplay",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nobeampierce", 
+	"-dualscanlines", "Another pair of scanning lines", true,	0,					EASY_DEFAULT,		"Gameplay",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.dualscanlines", 
+	"-ship_choice_3d","Use models for ship selection",	true,	0,					EASY_DEFAULT,		"Gameplay",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.ship_choice_3d", 
+	"-targetinfo",	  "Enable info next to target",		true,	0,					EASY_DEFAULT,		"Gameplay",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.targetinfo",
+	"-orbradar",	  "Enables 3d radar",				true,   0,					EASY_DEFAULT,		"Gameplay",		"",
+	"-3dwarp",        "Enable 3d warp",                 true,   0,					EASY_DEFAULT,      "Gameplay",     "",
+    "-tbpwarpeffects","Enable TBP Warp Effects",        true,   0,					EASY_DEFAULT,      "Gameplay",     "", // TBP warp effects -Et1
+	"-ballistic_gauge",	"Enable ballistic ammo gauge",	true,	0,					EASY_DEFAULT,		"Gameplay",		"",
 
-	"-standalone",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.standalone", 
-	"-startgame",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.startgame", 
-	"-closed",		  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.closed", 
-	"-restricted",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.restricted", 
-	"-multilog",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.multilog", 
-	"-clientdamage",  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.clientdamage",	
+	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.snd_preload",
+	"-noaudio",		  "Disable sound and music",		false,	0,					EASY_DEFAULT,		"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nosound",
+	"-nomusic",		  "Disable music",					false,	0,					EASY_DEFAULT,		"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nomusic",
 
-	"-oldfire",		  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.oldfire", 
-	"-nohtl",		  "Software mode (very slow)",		true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nohtl", 
-	"-no_set_gamma",  "Disable setting of gamma",		true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
-	"-dnoshowvid", 	  "Disable video playback",			true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.dnoshowvid", 
-	"-safeloading",	  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.safeloading", 
-	"-query_speech",  "Does this build have speech?",   true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.query_speech",
-	"-d3d_bad_tsys",  "Enable inefficient textures",	false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_bad_tsys",	
-	"-novbo",		  "Disable OpenGL VBO",				true,	0,				 EASY_DEFAULT,		"Troubleshoot", "",	
+	"-standalone",	  "",								false,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.standalone", 
+	"-startgame",	  "",								false,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.startgame", 
+	"-closed",		  "",								false,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.closed", 
+	"-restricted",	  "",								false,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.restricted", 
+	"-multilog",	  "",								false,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.multilog", 
+	"-clientdamage",  "",								false,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.clientdamage",	
+	"-mpnoreturn",	  "Disables flight deck option",	true,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-mpnoreturn",
 
-	"-env",			  "environment mapping maping",		true,	0,				 EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.env", 
-	"-alpha_env",	  "uses uses alpha for env maping",	true,	0,				 EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.alpha_env", 
-	"-decals",		  "impact decals",					true,	0,				 EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.decals",
-	"-loadonlyused",  "Loads only used weapons",		true,	0,				 EASY_DEFAULT,		"Experimental",	"",
+	"-oldfire",		  "",								true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.oldfire", 
+	"-nohtl",		  "Software mode (very slow)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nohtl", 
+	"-no_set_gamma",  "Disable setting of gamma",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-dnoshowvid", 	  "Disable video playback",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.dnoshowvid", 
+	"-safeloading",	  "",								true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.safeloading", 
+	"-query_speech",  "Does this build have speech?",   true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.query_speech",
+	"-d3d_bad_tsys",  "Enable inefficient textures",	false,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_bad_tsys",	
+	"-novbo",		  "Disable OpenGL VBO",				true,	0,					EASY_DEFAULT,		"Troubleshoot", "",	
 
-	"-fps",			  "Show frames per seconds",		false,	0,				 EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.fps", 
-	"-window",		  "Run in window",					true,	0,				 EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.window", 
-	"-timerbar",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.timerbar", 
-	"-stats",		  "Show statistics",				true,	0,				 EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.stats", 
-	"-coords",		  "Show coordinates",				false,	0,				 EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.coords", 
-	"-show_mem_usage","Show memory usage",				true,	0,				 EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.show_mem_usage", 
-	"-pofspew",		  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pofspew", 
-	"-tablecrcs",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.tablecrcs", 
-	"-missioncrcs",   "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.missioncrcs", 
+	"-env",			  "environment mapping maping",		true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.env", 
+	"-alpha_env",	  "uses uses alpha for env maping",	true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.alpha_env", 
+	"-decals",		  "impact decals",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.decals",
+	"-loadonlyused",  "Loads only used weapons",		true,	0,					EASY_DEFAULT,		"Experimental",	"",
+
+	"-fps",			  "Show frames per seconds",		false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.fps", 
+	"-window",		  "Run in window",					true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.window", 
+	"-timerbar",	  "",								true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.timerbar", 
+	"-stats",		  "Show statistics",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.stats", 
+	"-coords",		  "Show coordinates",				false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.coords", 
+	"-show_mem_usage","Show memory usage",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.show_mem_usage", 
+	"-pofspew",		  "",								false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pofspew", 
+	"-tablecrcs",	  "",								true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.tablecrcs", 
+	"-missioncrcs",   "",								true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.missioncrcs", 
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -801,6 +806,7 @@ cmdline_parm decals("-decals", NULL);
 cmdline_parm orb_radar("-orbradar",NULL);
 cmdline_parm TBPWarpEffects( "-tbpwarpeffects", NULL ); // TBP warp effects -Et1
 cmdline_parm use_3dwarp("-3dwarp", NULL);
+cmdline_parm ballistic_gauge("-ballistic_gauge", NULL );
 
 //Experimental
 cmdline_parm load_only_used("-loadonlyused", NULL);
@@ -882,6 +888,8 @@ int Cmdline_d3d_lesstmem = 0;
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
 int CmdLine_NoWarn = 0; // turn warnings off in FRED
+
+int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
 
 //Experimental
 int Cmdline_load_only_used;
@@ -1576,6 +1584,12 @@ bool SetCmdlineParams()
 		Cmdline_decals = 1;
 	}else{
 		Cmdline_decals = 0;
+	}
+
+	if ( ballistic_gauge.found() ) {
+		Cmdline_ballistic_gauge = 1;
+	} else {
+		Cmdline_ballistic_gauge = 0;
 	}
 
 	return true; 
