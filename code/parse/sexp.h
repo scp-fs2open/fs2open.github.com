@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.2 $
- * $Author: penguin $
- * $Date: 2002-08-01 01:41:09 $
+ * $Revision: 2.3 $
+ * $Author: sesquipedalian $
+ * $Date: 2002-10-29 22:41:48 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/13 09:16:18  wmcoolmon
  * Added initial code for "ship-lights-on" and "ship-lights-off" SEXPs
  *
@@ -531,6 +534,9 @@
 #define OP_SHIP_VANISH							(0X0055 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SHIP_LIGHTS_ON						(0x0056 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-WMCoolmon
 #define OP_SHIP_LIGHTS_OFF						(0x0057 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-WMCoolmon
+#define OP_SHIELDS_ON					(0x0058 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
+#define OP_SHIELDS_OFF					(0x0059 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
+#define OP_CHANGE_AI_LEVEL					(0x0060 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 
 
 // debugging sexpressions
