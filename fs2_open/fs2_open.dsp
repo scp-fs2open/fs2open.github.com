@@ -39,7 +39,7 @@ CFG=fs2_open - Win32 Debug
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir "Release"
 # PROP Intermediate_Dir "Release"
-# PROP Cmd_Line "NMAKE /f fs2_open.w32.mak"
+# PROP Cmd_Line "NMAKE /f fs2_open.w32.mak CFG=Release"
 # PROP Rebuild_Opt "/a"
 # PROP Target_File "fs2_open.exe"
 # PROP Bsc_Name "fs2_open.bsc"
@@ -58,7 +58,7 @@ CFG=fs2_open - Win32 Debug
 # PROP Use_Debug_Libraries 1
 # PROP Output_Dir "Debug"
 # PROP Intermediate_Dir "Debug"
-# PROP Cmd_Line "NMAKE /f "fs2_open.w32.mak" CFG=Release"
+# PROP Cmd_Line "NMAKE /f fs2_open.w32.mak CFG=Debug"
 # PROP Rebuild_Opt "/a"
 # PROP Target_File "fs2_open.exe"
 # PROP Bsc_Name "fs2_open.bsc"
