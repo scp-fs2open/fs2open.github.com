@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-01-31 23:27:54 $
+ * $Revision: 2.20 $
+ * $Date: 2005-02-14 23:56:51 $
  * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.18  2005/01/29 08:09:47  wmcoolmon
  * Various updates; shader, clipping
  *
@@ -1775,7 +1778,7 @@ void brief_update_closeup_icon(int mode)
 //
 void brief_check_for_anim()
 {
-	int				mx, my, i, iw, ih;
+	int				mx, my, i, iw, ih, x, y;
 	brief_stage		*bs;
 	brief_icon		*bi = NULL;
 
@@ -1784,9 +1787,19 @@ void brief_check_for_anim()
 
 	// if mouse click is over the VCR controls, don't launch an icon
 	// FIXME - should prolly push these into defines instead of hardcoding this
-	if ( mx >= 0 && mx <= 115 && my >= 136 && my <= 148 ) {
-		return;
-	}
+//	if ( mx >= 0 && mx <= 115 && my >= 136 && my <= 148 ) {
+//		return;
+//	}
+
+	// same as above but without the hardcoded values, which were wrong anyway.  don't know
+	// how this will work longterm but will hopefully keep things working well - taylor
+	for (i = 0; i <= BRIEF_BUTTON_FIRST_STAGE; i++) {
+		Brief_buttons[gr_screen.res][i].button.get_dimensions(&x, &y, &iw, &ih);
+
+		if (mx >= x && mx <= (x+iw) && my >= y && my <= (y+ih)) {
+			return;
+		}
+ 	}
 
 	// if mouse coords are outside the briefing screen, then go away
 	my -= bscreen.map_y1;

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-02-13 08:42:41 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2005-02-14 23:56:51 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/02/13 08:42:41  wmcoolmon
+ * More explicit calculation handling
+ *
  * Revision 2.11  2005/01/31 23:27:54  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -836,23 +839,6 @@ int common_select_do(float frametime)
 {
 	int	k, new_k;
 
-	// If the mouse went up, set flags.  We can't use mouse_up_count() more than once a frame,
-	// since the count gets zeroed after the call.
-	//
-	Drop_icon_mflag = 0;
-	Drop_on_wing_mflag = 0;
-	Brief_mouse_up_flag = 0;
-
-	if ( mouse_up_count(MOUSE_LEFT_BUTTON) ) {
-		Drop_icon_mflag = 1;
-		Drop_on_wing_mflag = 1;
-		Brief_mouse_up_flag = 1;		
-	}
-
-	Mouse_down_last_frame = 0;
-	if ( mouse_down_count(MOUSE_LEFT_BUTTON) ) {
-		Mouse_down_last_frame = 1;
-	}
 
 	if ( help_overlay_active(BR_OVERLAY) || help_overlay_active(SS_OVERLAY) || help_overlay_active(WL_OVERLAY) ) {
 		Common_buttons[0][gr_screen.res][COMMON_HELP_BUTTON].button.reset_status();
@@ -883,6 +869,30 @@ int common_select_do(float frametime)
 			k = 0;
 			new_k = 0;
 		}
+	}
+
+	// test for mouse buttons,  must be done after Active_ui_window->process()
+	// has been called to work properly
+	//
+	Drop_icon_mflag = 0;
+	Drop_on_wing_mflag = 0;
+	Brief_mouse_up_flag = 0;
+	Mouse_down_last_frame = 0;
+
+	// if the left mouse button was released...
+	if ( B1_RELEASED ) {
+		Drop_icon_mflag = 1;
+		Drop_on_wing_mflag = 1;
+	}
+
+	// if the left mouse button was pressed...
+	if ( B1_PRESSED ) {
+		Mouse_down_last_frame = 1;
+	}
+
+	// basically a "click", only check for the click here to avoid action-on-over on briefing map
+	if ( B1_JUST_PRESSED ) {
+		Brief_mouse_up_flag = 1;
 	}
 
 	// reset timers for flashing buttons if key pressed
@@ -1732,9 +1742,9 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		//Find the center of teh submodel
 		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
 		weap_closeup.xyz.y = bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f;
-		weap_closeup.xyz.z = (weap_closeup.xyz.x/tan(zoom / 2.0f));
+		weap_closeup.xyz.z = (weap_closeup.xyz.x/tanf(zoom / 2.0f));
 
-		y_closeup = -(weap_closeup.xyz.y/tan(zoom / 2.0f));
+		y_closeup = -(weap_closeup.xyz.y/tanf(zoom / 2.0f));
 		if(y_closeup < weap_closeup.xyz.z)
 		{
 			weap_closeup.xyz.z = y_closeup;
