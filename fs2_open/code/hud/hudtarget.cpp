@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.40 $
- * $Date: 2004-12-15 15:22:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2004-12-24 00:41:23 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2004/12/15 15:22:23  Goober5000
+ * commented dumbfire lead indicator back in, because you need to know where your missiles are going
+ * --Goober5000
+ *
  * Revision 2.39  2004/12/05 22:01:11  bobboau
  * sevral feature additions that WCS wanted,
  * and the foundations of a submodel animation system,
@@ -5016,66 +5020,141 @@ void hud_show_afterburner_gauge()
 //	Render the player weapon energy on the HUD
 void hud_show_weapon_energy_gauge()
 {
-	float percent_left;
-	int	clip_h, i, w, h;
-
-	if ( Wenergy_bar_gauge.first_frame == -1 )
+	int x;
+	bool use_new_gauge = false;
+	for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
 	{
-		return;
-	}
-
-	if ( Player_ship->weapons.num_primary_banks <= 0 )
-	{
-		return;
-	}
-
-	// also leave if no energy can be stored for weapons - Goober5000
-	if (!ship_has_energy_weapons(Player_ship))
-		return;
-
-	percent_left = Player_ship->weapon_energy/Ship_info[Player_ship->ship_info_index].max_weapon_reserve;
-	if ( percent_left > 1 )
-	{
-		percent_left = 1.0f;
-	}
-	
-	if ( percent_left <= 0.3 ) {
-		char buf[32];
-		if ( percent_left < 0.1 ) {
-			gr_set_color_fast(&Color_bright_red);
-		}
-		sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
-		hud_num_make_mono(buf);
-		gr_string(Weapon_energy_text_coords[gr_screen.res][0], Weapon_energy_text_coords[gr_screen.res][1], buf);
-	}
-
-	hud_set_gauge_color(HUD_WEAPONS_ENERGY);
-	for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ )
-	{
-		if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[i]) )
+		if(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags2 & WIF2_BALLISTIC)
 		{
-			if ( Weapon_flash_info.is_bright & (1<<i) )
+			use_new_gauge = true;
+			break;
+		}
+	}
+
+	if(use_new_gauge)
+	{
+		int currentx, currenty;
+		int y;
+		int max_w = 100;
+		float remaining;
+		currentx = current_hud->Wenergy_coords[0] + 10;
+		currenty = current_hud->Wenergy_coords[1];
+		if(gr_screen.max_w == 640)
+		{
+			max_w = 60;
+		}
+
+		for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
+		{
+			//Draw the weapon bright or normal depending if it's active or not.
+			if(x == Player_ship->weapons.current_primary_bank || (Player_ship->flags & SF_PRIMARY_LINKED))
 			{
-				// hud_set_bright_color();
 				hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_BRIGHT);
-				break;
+			}
+			else
+			{
+				hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_NORMAL);
+			}
+			gr_string(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);
+
+			//Next 'line'
+			currenty += 10;
+
+			//Draw the background for the gauge
+			hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_DIM);
+			gr_rect(currentx, currenty, max_w, 10);
+
+			//Reset to normal brightness
+			hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_NORMAL);
+			
+			//Draw the bar graph
+			if(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags2 & WIF2_BALLISTIC)
+			{
+				remaining = (max_w - 4) * ((float) Player_ship->weapons.primary_bank_ammo[x] / (float) Player_ship->weapons.primary_bank_start_ammo[x]);
+				if(remaining > 0)
+				{
+					gr_rect(currentx + 2, currenty + 2, fl2i(remaining), 6);
+				}
+			}
+			else
+			{
+				remaining = max_w * ((float)Player_ship->weapon_energy/(float)Ship_info[Player_ship->ship_info_index].max_weapon_reserve);
+				if(remaining > 0)
+				{
+					for(y = 0; y < 10; y++)
+					{
+						gr_gradient(currentx, currenty + y, currentx + fl2i(remaining), currenty + y);
+						hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_BRIGHT);	//It's hard to read accurately unless bright
+					}
+				}
+			}
+			//Increment for next 'line'
+			currenty += 12;
+		}
+	}
+	else
+	{
+		float percent_left;
+		int	clip_h, w, h;
+
+		if ( Wenergy_bar_gauge.first_frame == -1 )
+		{
+			return;
+		}
+
+		if ( Player_ship->weapons.num_primary_banks <= 0 )
+		{
+			return;
+		}
+
+		// also leave if no energy can be stored for weapons - Goober5000
+		if (!ship_has_energy_weapons(Player_ship))
+			return;
+
+		percent_left = Player_ship->weapon_energy/Ship_info[Player_ship->ship_info_index].max_weapon_reserve;
+		if ( percent_left > 1 )
+		{
+			percent_left = 1.0f;
+		}
+		
+		if ( percent_left <= 0.3 ) {
+			char buf[32];
+			if ( percent_left < 0.1 ) {
+				gr_set_color_fast(&Color_bright_red);
+			}
+			sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
+			hud_num_make_mono(buf);
+			gr_string(Weapon_energy_text_coords[gr_screen.res][0], Weapon_energy_text_coords[gr_screen.res][1], buf);
+		}
+
+		hud_set_gauge_color(HUD_WEAPONS_ENERGY);
+		for ( x = 0;x < Player_ship->weapons.num_primary_banks; x++ )
+		{
+			if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[x]) )
+			{
+				if ( Weapon_flash_info.is_bright & (1<<x) )
+				{
+					// hud_set_bright_color();
+					hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_BRIGHT);
+					break;
+				}
 			}
 		}
+
+		clip_h = fl2i( (1.0f - percent_left) * current_hud->Wenergy_size[0] + 0.5f );
+
+		bm_get_info(Wenergy_bar_gauge.first_frame+2,&w,&h);
+		
+		if ( clip_h > 0 ) {
+			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+2, current_hud->Wenergy_coords[0], current_hud->Wenergy_coords[1], w,clip_h,0,0);		
+		}
+
+		if ( clip_h <= current_hud->Wenergy_size[0] ) {
+			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+3, current_hud->Wenergy_coords[0], current_hud->Wenergy_coords[1] + clip_h, w,h-clip_h,0,clip_h);		
+		}
+
+		// hud_set_default_color();
 	}
-
-	clip_h = fl2i( (1.0f - percent_left) * current_hud->Wenergy_size[0] + 0.5f );
-
-	bm_get_info(Wenergy_bar_gauge.first_frame+2,&w,&h);
-	
-	if ( clip_h > 0 ) {
-		GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+2, current_hud->Wenergy_coords[0], current_hud->Wenergy_coords[1], w,clip_h,0,0);		
-	}
-
-	if ( clip_h <= current_hud->Wenergy_size[0] ) {
-		GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+3, current_hud->Wenergy_coords[0], current_hud->Wenergy_coords[1] + clip_h, w,h-clip_h,0,clip_h);		
-	}
-
-	// hud_set_default_color();
 }
 
 // --------------------------------------------------------------------------------------
@@ -5154,7 +5233,14 @@ void hud_show_secondary_weapon(int count, ship_weapon *sw, int dual_fire)
 				emp_hud_printf(Weapon_slinked_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12, EG_NULL, "%c", Lcl_special_chars + 2);				
 			}
 
-			emp_hud_string(Weapon_secondary_name_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
+			if(wip->hud_image_index != -1)
+			{
+				GR_AABITMAP(wip->hud_image_index, Weapon_secondary_name_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12);
+			}
+			else
+			{
+				emp_hud_string(Weapon_secondary_name_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
+			}
 
 			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
@@ -5341,7 +5427,14 @@ void hud_show_weapons()
 		}
 		
 		emp_hud_printf(Weapon_plink_coords[gr_screen.res][0][0], Weapon_plink_coords[gr_screen.res][0][1], EG_NULL, "%c", Lcl_special_chars + 2);
-		emp_hud_printf(Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1], EG_WEAPON_P2, "%s", name);					
+		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -2)
+		{
+			GR_AABITMAP(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index, Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1]);
+		}
+		else
+		{
+			emp_hud_printf(Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1], EG_WEAPON_P2, "%s", name);					
+		}
 
 		// check ballistic - Goober5000
 		if (ship_is_ballistic)
@@ -5372,7 +5465,15 @@ void hud_show_weapons()
 		if ( (sw->current_primary_bank == 0) || (Player_ship->flags & SF_PRIMARY_LINKED) ) {
 			emp_hud_printf(Weapon_plink_coords[gr_screen.res][0][0], Weapon_plink_coords[gr_screen.res][0][1], EG_NULL, "%c", Lcl_special_chars + 2);			
 		}
-		emp_hud_printf(Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1], EG_WEAPON_P1, "%s", name);			
+
+		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -1)
+		{
+			GR_AABITMAP(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index, Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1]);
+		}
+		else
+		{
+			emp_hud_printf(Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1], EG_WEAPON_P1, "%s", name);					
+		}				
 
 		strcpy(name, Weapon_info[sw->primary_bank_weapons[1]].name);
 		if (Lcl_gr) {
@@ -5388,7 +5489,15 @@ void hud_show_weapons()
 		if ( sw->current_primary_bank == 1 || (Player_ship->flags & SF_PRIMARY_LINKED) ) {
 			emp_hud_printf(Weapon_plink_coords[gr_screen.res][1][0], Weapon_plink_coords[gr_screen.res][1][1], EG_NULL, "%c", Lcl_special_chars + 2);
 		}
-		emp_hud_printf(Weapon_pname_coords[gr_screen.res][1][0], Weapon_pname_coords[gr_screen.res][1][1], EG_WEAPON_P2, "%s", name);		
+
+		if(Weapon_info[sw->primary_bank_weapons[1]].hud_image_index != -1)
+		{
+			GR_AABITMAP(Weapon_info[sw->primary_bank_weapons[1]].hud_image_index, Weapon_pname_coords[gr_screen.res][1][0], Weapon_pname_coords[gr_screen.res][1][1]);
+		}
+		else
+		{
+			emp_hud_printf(Weapon_pname_coords[gr_screen.res][1][0], Weapon_pname_coords[gr_screen.res][1][1], EG_WEAPON_P2, "%s", name);					
+		}	
 		np = 0;
 		
 		// check ballistic - Goober5000
@@ -6132,4 +6241,14 @@ void hudtarget_page_in()
 	bm_page_in_aabitmap( Aburn_bar_gauge.first_frame, Aburn_bar_gauge.num_frames);
 	bm_page_in_aabitmap( Toggle_gauge.first_frame, Toggle_gauge.num_frames);
 	bm_page_in_aabitmap( Cmeasure_gauge.first_frame, Cmeasure_gauge.num_frames);
+
+	weapon_info* wip;
+	for(i = 0; i < Num_weapon_types; i++)
+	{
+		wip = &Weapon_info[i];
+		if(strlen(wip->hud_filename))
+		{
+			wip->hud_image_index = bm_load(wip->hud_filename);
+		}
+	}
 }
