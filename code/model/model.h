@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.45 $
- * $Date: 2004-10-09 17:45:08 $
- * $Author: taylor $
+ * $Revision: 2.46 $
+ * $Date: 2004-12-05 22:01:11 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2004/10/09 17:45:08  taylor
+ * da simple IBX code
+ *
  * Revision 2.44  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -486,6 +489,8 @@ struct object;
 #define MOVEMENT_TYPE_POS				0
 #define MOVEMENT_TYPE_ROT				1
 #define MOVEMENT_TYPE_ROT_SPECIAL	2		// for turrets only
+#define MOVEMENT_TYPE_TRIGGERED			3	//triggered rotation
+
 
 // DA 11/13/98 Reordered to account for difference between max and game
 #define MOVEMENT_AXIS_NONE	-1
@@ -543,6 +548,7 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_TURRET_MATRIX	(1<<4)		// If set, this has it's turret matrix created correctly.
 #define MSS_FLAG_AWACS				(1<<5)		// If set, this subsystem has AWACS capability
 #define MSS_FLAG_ARTILLERY		(1<<6)		// if this rotates when weapons are fired - Goober5000
+#define MSS_FLAG_TRIGGERED		(1<<7)		// rotates when triggered by something
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -561,6 +567,59 @@ typedef struct stepped_rotation {
 	float min;
 	int time;
 } ai_rotation_t;*/
+
+#define MAX_TRIGGERED_ANIMATIONS 15
+
+#define TRIGGER_TYPE_DOCKING	1
+#define TRIGGER_TYPE_DOCKED		2
+
+struct queued_animation{
+	queued_animation(float an,float v,float a,int s, int e, int axis);
+	queued_animation(vector an,vector v,vector a,int s, int e):angle(an),vel(v),accel(a),start(s),end(e),absolute(false){};
+	queued_animation():start(0),end(0),absolute(false){angle.xyz.x=0;angle.xyz.y=0;angle.xyz.z=0;vel.xyz.x=0;vel.xyz.y=0;vel.xyz.z=0;accel.xyz.x=0;accel.xyz.y=0;accel.xyz.z=0;};
+
+	vector angle;
+	vector vel;
+	vector accel;
+	int start;
+	int end;
+	bool absolute;
+
+//	void rotate_radian_relitive(float theda, float accel, float vel, int axis);			//rotate theda radians, useing accell accelleration
+//	void rotate_radian_time_relitive(float theda, float vel, float time, int axis);	//rotate theda radians, at the specifyed velocity in the specifyed time
+//	void rotate_radian_absolute(float theda, float accel, float vel, int axis);			//rotate theda radians, useing accell accelleration
+//	void rotate_radian_time_absolute(float theda, float vel, float time, int axis);	//rotate theda radians, at the specifyed velocity in the specifyed time
+};
+
+struct trigger_instance{
+	int type;
+	queued_animation properties;
+	void corect();
+};
+
+//rot_accel is the accelleration for starting to move and stopping, so figure it in twice
+class triggered_rotation{
+public:
+	triggered_rotation();//{current_ang = ZERO_VECTOR;	current_vel = ZERO_VECTOR;	rot_accel = ZERO_VECTOR;	rot_vel = ZERO_VECTOR;	slow_angle = ZERO_VECTOR;	end_time = ZERO_VECTOR;	end_angle = ZERO_VECTOR;}
+	~triggered_rotation();
+
+	vector current_ang;
+	vector current_vel;
+	vector rot_accel;	//rotational accelleration, 0 means instant
+	vector rot_vel;		//radians per second, hold this speed when rot_accel has pushed it to this
+	vector slow_angle;	//angle that we should start to slow down
+	vector end_angle;	//lock it in
+	vector direction;
+	int end_time;	//time that we should stop
+
+	int n_queue;
+	queued_animation queue[MAX_TRIGGERED_ANIMATIONS];
+
+	void start(queued_animation* q);
+
+	void add_queue(queued_animation* new_queue);
+	void proces_queue();
+};
 
 // definition for model subsystems.
 typedef struct model_subsystem {					/* contains rotation rate info */
@@ -607,6 +666,12 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 #ifdef DECALS_ENABLED
 	decal_system model_decal_system;
 #endif
+	triggered_rotation trigger;		//the actual currently running animation and assosiated states
+
+	int n_triggers;
+	trigger_instance *triggers;		//all the triggered animations assosiated with this object
+
+	ubyte	targetable;	//can you target this thing
 } model_subsystem;
 
 typedef struct model_special {
@@ -700,9 +765,14 @@ typedef struct bsp_info {
 	int flat_line_buffer;
 	buffer_data buffer[MAX_BUFFERS_PER_SUBMODEL];
 	//I figured that, 64 textures per model, half of that would probly be in LOD0, and half of that might be in the main model, I don't think we'd need more than 12 textures (and thus vertex buffers) per submodel
+
+	vector	render_box_min;
+	vector	render_box_max;
+	int		use_render_box;	//0==do nothing, 1==only render this object if you are inside the box, -1==only if your out
+
 } bsp_info;
 
-
+void parse_triggersint( int &n_trig, trigger_instance **triggers, char *props);
 
 #define MP_TYPE_UNUSED 0
 #define MP_TYPE_SUBSYS 1

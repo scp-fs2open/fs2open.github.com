@@ -5,12 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.4 $
- * $Date: 2004-10-31 21:23:08 $
- * $Author: taylor $
+ * $Revision: 1.5 $
+ * $Date: 2004-12-05 22:01:11 $
+ * $Author: bobboau $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/10/31 21:23:08  taylor
+ * #define if !#defined, add USE_DEVIL and FS2_SPEECH commented out
+ *
  * Revision 1.3  2004/10/06 22:02:53  Kazan
  * interface corruption fix - thanks taylor (MAX_BITMAPS upped to 7000)
  *
@@ -45,6 +48,11 @@
 #ifndef ENABLE_AUTO_PILOT
 #define ENABLE_AUTO_PILOT	1
 #endif
+
+#ifndef _REPORT_MEM_LEAKS
+#define _REPORT_MEM_LEAKS	1
+#endif
+
 
 /*
 #ifndef USE_DEVIL

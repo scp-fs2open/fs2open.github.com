@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.46 $
- * $Date: 2004-10-09 17:45:45 $
- * $Author: taylor $
+ * $Revision: 2.47 $
+ * $Date: 2004-12-05 22:01:12 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2004/10/09 17:45:45  taylor
+ * da simple IBX code
+ *
  * Revision 2.45  2004/07/26 20:47:41  Kazan
  * remove MCD complete
  *
@@ -1227,6 +1230,11 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		mprintf(("Warning: Ignoring unrecognized subsystem %s, believed to be in ship %s\n", dname, Global_filename));
 	}
 
+	if ( (p = strstr(props, "$triggered:")) != NULL)	{
+				subsystemp->flags |= MSS_FLAG_ROTATES;
+				subsystemp->flags |= MSS_FLAG_TRIGGERED;
+	}
+
 	// Rotating subsystem
 	if ( (p = strstr(props, "$rotate")) != NULL)	{
 		subsystemp->flags |= MSS_FLAG_ROTATES;
@@ -1245,6 +1253,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 			subsystemp->weapon_rotation_pbank = (int)atoi(buf);
 		} // end of weapon rotation stuff
 
+		
 /* Bobboau's code commented by Goober5000 - this will need to be substantially reworked;
 // in any case, weapon rotation was implemented by me above - it might be a good pattern
 // to follow for future stuff
@@ -1501,6 +1510,8 @@ void model_calc_bound_box( vector *box, vector *big_mn, vector *big_mx)
 #ifndef NDEBUG
 int Bogus_warning_flag_1903 = 0;
 #endif
+void parse_triggers(int &n_trig, trigger_instance **triggers, char *props);
+
 
 IBX ibuffer_info;
 
@@ -1831,6 +1842,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						// Int3();
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
 						pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
+					}else if(strstr(props, "$triggered:")){
+						pm->submodel[n].movement_type = MOVEMENT_TYPE_TRIGGERED;
 					}
 				}
 
@@ -1853,6 +1866,42 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					} else {
 						// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
 						Assert( pm->submodel[n].movement_type != MOVEMENT_TYPE_ROT );
+					}
+				}
+
+/*				if ( strstr(props, "$nontargetable")!= NULL ) {
+					pm->submodel[n].targetable = 0;
+				}else{
+					pm->submodel[n].targetable = 1;
+				}
+*/
+//				pm->submodel[n].n_triggers = 0;
+//				pm->submodel[n].triggers = NULL;
+
+				//parse_triggers(pm->submodel[n].n_triggers, &pm->submodel[n].triggers, &props[0]);
+
+				if ( ( p = strstr(props, "$detail_box:"))!= NULL ) {
+					p+=13;
+					pm->submodel[n].use_render_box = atoi(p);
+					if ( ( p = strstr(props, "$box_min:"))!= NULL ){
+						p+=10;
+						pm->submodel[n].render_box_min.xyz.x = (float)atof(p);
+						while(*p!=',')p++;
+						pm->submodel[n].render_box_min.xyz.y = (float)atof(p);
+						while(*p!=',')p++;
+						pm->submodel[n].render_box_min.xyz.z = (float)atof(p);
+					}else{
+						pm->submodel[n].render_box_min = pm->submodel[n].min;
+					}
+					if ( ( p = strstr(props, "$box_max:"))!= NULL ){
+						p+=10;
+						pm->submodel[n].render_box_max.xyz.x = (float)atof(p);
+						while(*p!=',')p++;
+						pm->submodel[n].render_box_max.xyz.y = (float)atof(p);
+						while(*p!=',')p++;
+						pm->submodel[n].render_box_max.xyz.z = (float)atof(p);
+					}else{
+						pm->submodel[n].render_box_max = pm->submodel[n].max;
 					}
 				}
 
@@ -3450,6 +3499,95 @@ void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	}
 }
 */
+
+void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii){
+	triggered_rotation *trigger = &psub->trigger;
+
+	bsp_info * sm;
+
+	if ( psub->subobj_num < 0 ) return;
+
+	polymodel *pm = model_get(psub->model_num);
+	sm = &pm->submodel[psub->subobj_num];
+
+//	if ( sm->movement_type != MOVEMENT_TYPE_TRIGGERED ) return;
+
+	// save last angles
+	sii->prev_angs = sii->angs;
+
+	float *current_ang;
+	float *current_vel;
+	float *rot_accel;
+	float *rot_vel;
+	float *slow_angle;
+//	float *end_time;
+	float *end_angle;
+	float *direction;
+
+	//process velocity and position
+	//first you accelerate, then you maintain a speed, then you slowdown, then you stay put
+	for(int i = 0; i<3; i++){
+		current_ang = &trigger->current_ang.a1d[i];
+		current_vel = &trigger->current_vel.a1d[i];
+		rot_accel = &trigger->rot_accel.a1d[i];
+		rot_vel = &trigger->rot_vel.a1d[i];
+		slow_angle = &trigger->slow_angle.a1d[i];
+	//	end_time = &trigger->end_time;
+		end_angle = &trigger->end_angle.a1d[i];
+		direction = &trigger->direction.a1d[i];
+
+			if(*current_vel != 0.0f || *current_ang*(*direction) < *slow_angle*(*direction)){
+				//our velocity is something other than 0 or we are in the acceleration phase (were velocity starts out at 0)
+				//we are moveing
+				if(*current_ang*(*direction) < *slow_angle*(*direction)){
+					//while  you are not slowing down
+					if(*current_vel*(*direction) < *rot_vel*(*direction) && *rot_accel!=0.0f){
+						//while you are speeding up
+						*current_vel += *rot_accel*flFrametime;
+					}else {
+						//when you have reached the target speed
+						*current_vel = *rot_vel;
+					}
+				}else{
+					//we are slowing down
+					if(*current_vel*(*direction) > 0 && *rot_accel!=0.0f){
+						//while our velocity is still in the direction we are suposed to be moveing
+						*current_vel -= *rot_accel*flFrametime;
+					}else {
+						//our velocity has gone in the opposite direction
+						*current_vel=0.0f;
+					}
+				}
+				//we are moveing
+				if(*current_ang*(*direction) > *end_angle*(*direction)){
+					//if we've over shot the angle, this shouldn't happen but it might if odd values are given
+					*current_ang = *end_angle;
+					*current_vel=0.0f;
+				}else{
+					*current_ang += (*current_vel)*flFrametime;
+				}
+			}else{
+				//not moveing
+				*current_ang=*end_angle;
+			}
+
+	}
+
+	//objects can be animated along sevral axes at the same time
+	//I'm prety sure useing the magnatude of the vectors is at least prety close for any code that might be useing it
+	sii->cur_turn_rate = vm_vec_mag(&trigger->current_vel);
+	sii->desired_turn_rate = vm_vec_mag(&trigger->rot_vel);
+	sii->turn_accel = vm_vec_mag(&trigger->rot_accel);
+
+//	case MOVEMENT_AXIS_X:	
+			sii->angs.p = trigger->current_ang.xyz.x - (2*PI2*(float)int(trigger->current_ang.xyz.x/(2*PI2)));
+
+//	case MOVEMENT_AXIS_Y:	
+			sii->angs.h = trigger->current_ang.xyz.y - (2*PI2*(float)int(trigger->current_ang.xyz.y/(2*PI2)));
+
+//	case MOVEMENT_AXIS_Z:	
+			sii->angs.b = trigger->current_ang.xyz.z - (2*PI2*(float)int(trigger->current_ang.xyz.z/(2*PI2)));
+}
 
 //=========================================================================
 // Make a turret's correct orientation matrix.   This should be done when 

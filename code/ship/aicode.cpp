@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.73 $
- * $Date: 2004-10-31 22:06:42 $
- * $Author: taylor $
+ * $Revision: 2.74 $
+ * $Date: 2004-12-05 22:01:12 $
+ * $Author: bobboau $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2004/10/31 22:06:42  taylor
+ * compiler warning fixes, maybe fix issue that would cause cap ships to not fire beam weapons
+ *
  * Revision 2.72  2004/10/11 22:29:24  Goober5000
  * added the no-bank ship flag (which works) and the affected-by-gravity flag
  * (which won't work until I implement gravity points)
@@ -11056,6 +11059,7 @@ void ai_dock()
 				if (Pl_objp->phys_info.speed > goal_objp->phys_info.speed + 1.5f) {
 					set_accel_for_target_speed(Pl_objp, goal_objp->phys_info.speed);
 				} else {
+				//	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKING, 1);
 					aip->submode = AIS_DOCK_2;
 					aip->submode_start_time = Missiontime;
 				}
@@ -11136,6 +11140,7 @@ void ai_dock()
 				ai_do_objects_docked_stuff( Pl_objp, goal_objp );
 
 				if (aip->submode == AIS_DOCK_3) {
+				//	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKED, 1);
 					snd_play_3d( &Snds[SND_DOCK_ATTACH], &Pl_objp->pos, &View_position );
 					hud_maybe_flash_docking_text(Pl_objp);
 					// ai_dock_shake(Pl_objp, goal_objp);
@@ -11241,8 +11246,10 @@ void ai_dock()
 		}
 		else {	// AL - added 05/16/97.  Hack to play depart sound.  Will probably take out.
 					// Assumes that the submode_start_time is not used for AIS_UNDOCK_1 anymore
-			if ( aip->submode_start_time != 0 )
+			if ( aip->submode_start_time != 0 ){
 				snd_play_3d( &Snds[SND_DOCK_DEPART], &Pl_objp->pos, &View_position );
+			//	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKED, -1);
+			}
 			aip->submode_start_time = 0;
 		}
 
@@ -11303,6 +11310,7 @@ void ai_dock()
 		Assert(dist != UNINITIALIZED_VALUE);
 
 		if (dist < Pl_objp->radius/2 + 5.0f) {
+//			ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKING, -1);
 			aip->submode = AIS_UNDOCK_4;
 		}
 
@@ -12301,13 +12309,13 @@ int	Msg_count_4996 = 0;
 //	Deal with engines disabled.
 void process_subobjects(int objnum)
 {
-	model_subsystem	*psub;
 	ship_subsys	*pss;
 	object	*objp = &Objects[objnum];
 	ship		*shipp = &Ships[objp->instance];
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
+	model_subsystem	*psub;
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 

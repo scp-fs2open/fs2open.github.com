@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-09-05 19:23:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2004-12-05 22:01:11 $
+ * $Author: bobboau $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/09/05 19:23:24  Goober5000
+ * fixed a few warnings
+ * --Goober5000
+ *
  * Revision 2.17  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -427,6 +431,7 @@ int hud_shield_maybe_flash(int gauge, int target_index, int shield_offset)
 //
 // Show the players shield strength and integrity
 //
+bool damnit_you_told_me_already = false;
 void hud_shield_show(object *objp)
 {
 	float			max_shield;
@@ -463,7 +468,10 @@ void hud_shield_show(object *objp)
 	if ( sgp->first_frame == -1 ) {
 		sgp->first_frame = bm_load_animation(Hud_shield_filenames[sip->shield_icon_index], &sgp->num_frames);
 		if ( sgp->first_frame == -1 ) {
-			Warning(LOCATION, "Could not load in the HUD shield ani: %s\n", Hud_shield_filenames[sip->shield_icon_index]);
+			if(!damnit_you_told_me_already){
+				damnit_you_told_me_already = true;
+				Warning(LOCATION, "Could not load in the HUD shield ani: %s\n", Hud_shield_filenames[sip->shield_icon_index]);
+			}
 			return;
 		}
 	}
