@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.18 $
- * $Date: 2004-07-07 21:00:06 $
+ * $Revision: 1.19 $
+ * $Date: 2004-07-09 22:05:32 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2004/07/07 21:00:06  Kazan
+ * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
+ *
  * Revision 1.17  2004/07/06 23:45:34  Kazan
  * minor multi fix
  *
@@ -174,10 +177,11 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 //	char *cur = PacketBuffer;
 
 	fs2open_pilot_update *p_update = (fs2open_pilot_update *) PacketBuffer;
-	fs2open_ship_typekill *type_kills = (fs2open_ship_typekill *) (PacketBuffer + (sizeof(fs2open_pilot_update) - sizeof(fs2open_ship_typekill *)));
+	fs2open_ship_typekill *type_kills = (fs2open_ship_typekill *) (PacketBuffer + 204);
+	int *medals = (int*)(PacketBuffer + 204 + (sizeof(fs2open_ship_typekill) * MAX_SHIP_TYPES));
 	
 
-	p_update->pid = PCKT_PILOT_UPDATE;
+	p_update->pid = PCKT_PILOT_UPDATE2;
 	p_update->sid = SID;
 
 	strncpy(p_update->name, player_name, 65);
@@ -197,17 +201,27 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 	p_update->SecHits =			pl->stats.s_shots_hit; 
 	p_update->SecFHits =		pl->stats.s_bonehead_hits;
 	p_update->ship_types =		MAX_SHIP_TYPES;
+	p_update->num_medals =		NUM_MEDALS;
+	p_update->rank	=			pl->stats.rank;
 
-	for (int i = 0; i < MAX_SHIP_TYPES; i++)
+	int i;
+	for (i = 0; i < MAX_SHIP_TYPES; i++)
 	{
 
 		strncpy(type_kills[i].name, Ship_info[i].name, 32);
 		type_kills[i].kills = pl->stats.kills[i];
 	}
 			
+	
+	for (i = 0; i < NUM_MEDALS; i++)
+	{
 
-	int packet_size = 194; // size of all the ints only
+		medals[i] = pl->stats.medals[i];
+	}
+
+	int packet_size = 204; // size of all the ints only
 	packet_size += sizeof(fs2open_ship_typekill) * MAX_SHIP_TYPES; // add the size of the ship_kills array
+	packet_size += sizeof(int) * NUM_MEDALS; // add the size of the ship_kills array
 
 	// send Packet
 	if (Socket.SendData(PacketBuffer, packet_size) == -1)
@@ -252,7 +266,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 	timeout = timeout * CLK_TCK;
 
 	memset((char *) &prq_packet, 0, sizeof(fs2open_get_pilot));
-	prq_packet.pid = PCKT_PILOT_GET;
+	prq_packet.pid = PCKT_PILOT_GET2;
 	prq_packet.sid = SID;
 	strncpy(prq_packet.pilotname, player_name, 64);
 	prq_packet.create = CanCreate;
@@ -266,9 +280,10 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 	char PacketBuffer[16384]; // 16K should be enough i think..... I HOPE!
 	fs2open_pilot_reply *p_reply = (fs2open_pilot_reply *) PacketBuffer;
 	memset(PacketBuffer, 0, 16384);
-	fs2open_ship_typekill *type_kills = (fs2open_ship_typekill *) (PacketBuffer + sizeof(fs2open_pilot_reply) - sizeof(fs2open_ship_typekill *));
+	fs2open_ship_typekill *type_kills = (fs2open_ship_typekill *) (PacketBuffer + 72);
+	int *medals = NULL; //(int*)(PacketBuffer+72+(sizeof(fs2open_ship_typekill) * pilotrep.ship_types));
 
-	int CheckSize =  sizeof(fs2open_pilot_reply) - sizeof(fs2open_ship_typekill *) - 2; //2 for the weird stinking msvc stuff
+	int CheckSize =  72, i;
 	int recvsize = 0, rs2;
 	Sleep(2); // give them a second
 	int starttime = clock();
@@ -286,7 +301,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 			}
 
 			if (p_reply->replytype == 0)
-				CheckSize += sizeof(fs2open_ship_typekill) * p_reply->ship_types;
+				CheckSize += (sizeof(fs2open_ship_typekill) * p_reply->ship_types) + (sizeof(int) * p_reply->num_medals);
 			else
 				CheckSize = 8;
 
@@ -309,7 +324,8 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 				break;
 			}
 
-
+			
+			medals = (int*)(PacketBuffer+72+(sizeof(fs2open_ship_typekill) * p_reply->ship_types));
 
 
 			if (p_reply->replytype > 1)
@@ -329,6 +345,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 			pl->stats.s_shots_fired =	p_reply->SecShots; 
 			pl->stats.s_shots_hit =		p_reply->SecHits; 
 			pl->stats.s_bonehead_hits = p_reply->SecFHits;
+			pl->stats.rank			  = p_reply->rank;
 
          
 			if (p_reply->ship_types == 0)
@@ -336,12 +353,22 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 			else
 			{
 				// i should really assert p_reply->ship_types == MAX_SHIP_TYPES
-				for (int i = 0; i < MAX_SHIP_TYPES && p_reply->ship_types; i++)
+				for (i = 0; i < MAX_SHIP_TYPES && p_reply->ship_types; i++)
 				{
 					pl->stats.kills[i] = type_kills[i].kills;
 				}
 			}
-
+         
+			if (p_reply->num_medals == 0)
+				memset(pl->stats.medals, 0, sizeof(int) * NUM_MEDALS);
+			else
+			{
+				// i should really assert p_reply->ship_types == MAX_SHIP_TYPES
+				for (i = 0; i < NUM_MEDALS && p_reply->num_medals; i++)
+				{
+					pl->stats.medals[i] = medals[i];
+				}
+			}
 
 			// ignored on load... fs2 doesn't need this 
 			// type_kills[index].name[65] = Ship_info[index].name[32]

@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/protocol.h $
- * $Revision: 1.12 $
- * $Date: 2004-07-07 21:00:06 $
+ * $Revision: 1.13 $
+ * $Date: 2004-07-09 22:05:32 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2004/07/07 21:00:06  Kazan
+ * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
+ *
  * Revision 1.11  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -76,6 +79,10 @@
 // this only goes from the server out
 #define PCKT_NETOWRK_WALL	0x13
 
+// more advanced version of this packet
+// different ID's for backward compat
+#define PCKT_PILOT_UPDATE2	0x14
+#define PCKT_PILOT_GET2		0x15
 
 #define FS2OPEN_PXO_PORT	12000
 #define FS2OPEN_CLIENT_PORT	FS2OPEN_PXO_PORT + 1
@@ -196,6 +203,7 @@ struct fs2open_pxo_missreply
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
+
 // ----- Pilot Management -----
 
 
@@ -203,6 +211,7 @@ struct fs2open_pxo_missreply
 struct fs2open_get_pilot
 {
           int pid; // 0x9 ( PCKT_PILOT_GET )
+				   // 0x15 (PCKT_PILOT_GET2)		
           int sid; // session id returned upon login
           char pilotname[65];
           bool create; // create pilot
@@ -238,7 +247,18 @@ struct fs2open_pilot_reply
          unsigned int SecFHits;
          
          unsigned int ship_types;
+
+
+         // if request was a PCKT_PILOT_GET2
+		 int rank;
+		 int num_medals;	
+		 // ----------------------	
+
          fs2open_ship_typekill *type_kills; 
+
+         // if request was a PCKT_PILOT_GET2
+		 int *medals;		
+		 // ----------------------	
 };
 
 
@@ -246,7 +266,8 @@ struct fs2open_pilot_reply
 struct fs2open_pilot_update
 {
          int pid; // 0x0B (PCKT_PILOT_UPDATE)
-         int sid; // session id
+				  // 0x14 (PCKT_PILOT_UPDATE2)	
+         int sid; //session id
 
 		 char name[65];
 		 char user[65];
@@ -265,10 +286,22 @@ struct fs2open_pilot_update
          unsigned int SecShots; 
          unsigned int SecHits; 
          unsigned int SecFHits;
-         
-         unsigned int ship_types;
-         fs2open_ship_typekill *type_kills;          
 
+         unsigned int ship_types;      
+
+		 // if PCKT_PILOT_UPDATE2
+		 int rank;
+		 int num_medals;
+		 // ----------------------	
+
+		 // added with update2.. but always been there TYVM MSVC
+		 short reserved; // realign to 4-byte boundry --- MSVC does this automagically.. let's force it
+
+         fs2open_ship_typekill *type_kills;  
+		 
+		 // if PCKT_PILOT_UPDATE2
+		 int *medals;		
+		 // ----------------------		
          
 };
 
@@ -278,6 +311,7 @@ struct fs2open_pilot_updatereply
          int replytype; // 0 = pilot updated, 1  = invalid pilot, 2 = invalid (expired?) sid
          
 };
+
 
 
 // ---------------- Generic Ping -----------------

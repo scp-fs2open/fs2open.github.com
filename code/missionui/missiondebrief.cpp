@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-03-08 15:06:24 $
+ * $Revision: 2.20 $
+ * $Date: 2004-07-09 22:05:32 $
  * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/03/08 15:06:24  Kazan
+ * Did, undo
+ *
  * Revision 2.18  2004/03/05 09:01:55  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1270,69 +1273,6 @@ void debrief_ui_init()
 		List_region.create(&Debrief_ui_window, "", Debrief_list_coords[gr_screen.res][0], Debrief_list_coords[gr_screen.res][1], Debrief_list_coords[gr_screen.res][2], Debrief_list_coords[gr_screen.res][3], 0, 1);
 		List_region.hide();
 
-		// ***** FS2NetD Debrief ****
-		unsigned int CurrentMissionChsum;
-
-		
-		cf_chksum_long(Netgame.mission_name, &CurrentMissionChsum);
-
-		int mValidStatus = 0;
-		if (Om_tracker_flag)
-			mValidStatus = CheckSingleMission(Netgame.mission_name, CurrentMissionChsum, FS2OpenPXO_Socket, PXO_Server, PXO_port);
-
-		//
-		// Netgame.mission_name
-		
-			
-		if (Om_tracker_flag && multi_num_players() > 1 && !game_hacked_data() && mValidStatus)
-		{
-			// --------------------- STICK STATS STORAGE CODE IN HERE ---------------------
-			int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);
-			
-			switch (spd_ret) // 0 = pilot updated, 1  = invalid pilot, 2 = invalid (expired?) sid
-			{
-				case -1:
-					multi_display_chat_msg("<Did not receive response from server within timeout period>",0,0);
-					multi_display_chat_msg("<Your stats may not have been stored>",0,0);
-					multi_display_chat_msg("<This is not a critical error>",0,0);
-
-					break;
-
-				case 0:
-					multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
-					break;
-			
-				case 1:
-					multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
-					multi_display_chat_msg("WARNING: Your pilot was invalid, this is a serious error, possible data corruption",0,0);
-					break;
-
-				case 2:
-					PXO_SID  = Fs2OpenPXO_Login(Multi_tracker_login, Multi_tracker_passwd, FS2OpenPXO_Socket, PXO_Server, PXO_port);
-					if (PXO_SID != -1)
-					{
-						 if (!SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port))
-						 {	 // succeed!
-							multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
-							break;
-						 }
-					}
-
-					multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
-					
-
-					break;
-
-				default:
-					multi_display_chat_msg("Unknown Stats Store Request Reply",0,0);
-					break;
-			}
-
-		}
-		else
-		{
-			multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
-		}
 	}
 	else
 #endif
@@ -2470,6 +2410,83 @@ void debrief_init()
 	show_stats_init();
 	debrief_voice_init();
 #ifndef NO_NETWORK
+	if (Game_mode & GM_MULTIPLAYER) {
+
+
+
+		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+		// ***** FS2NetD Debrief ****
+		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+		unsigned int CurrentMissionChsum;
+
+		
+		cf_chksum_long(Netgame.mission_name, &CurrentMissionChsum);
+
+		int mValidStatus = 0;
+		if (Om_tracker_flag)
+			mValidStatus = CheckSingleMission(Netgame.mission_name, CurrentMissionChsum, FS2OpenPXO_Socket, PXO_Server, PXO_port);
+
+		//
+		// Netgame.mission_name
+		
+			
+		if (Om_tracker_flag /*&& multi_num_players() > 1 */&& !game_hacked_data() && mValidStatus)
+		{
+			// --------------------- STICK STATS STORAGE CODE IN HERE ---------------------
+			int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);
+			
+			switch (spd_ret) // 0 = pilot updated, 1  = invalid pilot, 2 = invalid (expired?) sid
+			{
+				case -1:
+					multi_display_chat_msg("<Did not receive response from server within timeout period>",0,0);
+					multi_display_chat_msg("<Your stats may not have been stored>",0,0);
+					multi_display_chat_msg("<This is not a critical error>",0,0);
+
+					break;
+
+				case 0:
+					multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
+					break;
+			
+				case 1:
+					multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
+					multi_display_chat_msg("WARNING: Your pilot was invalid, this is a serious error, possible data corruption",0,0);
+					break;
+
+				case 2:
+					PXO_SID  = Fs2OpenPXO_Login(Multi_tracker_login, Multi_tracker_passwd, FS2OpenPXO_Socket, PXO_Server, PXO_port);
+					if (PXO_SID != -1)
+					{
+						 if (!SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port))
+						 {	 // succeed!
+							multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
+							break;
+						 }
+					}
+
+					multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
+					
+
+					break;
+
+				default:
+					multi_display_chat_msg("Unknown Stats Store Request Reply",0,0);
+					break;
+			}
+
+		}
+		else
+		{
+			multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
+		}
+
+
+		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+		// ***** End FS2NetD Debrief ****
+		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+	}
 	debrief_multi_list_init();
 #endif
 //	rank_bitmaps_clear();
@@ -2576,6 +2593,8 @@ void debrief_init()
 		if (!(Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
 			Buttons[gr_screen.res][MULTI_KICK].button.disable();
 		}
+
+
 	}
 	else
 #endif
