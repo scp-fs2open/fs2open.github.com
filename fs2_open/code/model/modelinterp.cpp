@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.94 $
- * $Date: 2005-01-28 11:39:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.95 $
+ * $Date: 2005-01-28 23:45:23 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2005/01/28 11:39:17  Goober5000
+ * cleaned up some build warnings
+ * --Goober5000
+ *
  * Revision 2.93  2005/01/28 09:56:44  taylor
  * add model_page_out_textures() for use in techroom
  * make model_page_in_textures() load more textures
@@ -5248,7 +5252,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 //	recode_bsp(0, model->bsp_data);
 
 	for(i=0; i<MAX_MODEL_TEXTURES; i++){
-		if(model->n_buffers>=MAX_MODEL_TEXTURES)Error(LOCATION, "BSP buffer generation overflow, there are %d buffers",model->n_buffers);
+		if(model->n_buffers>=MAX_MODEL_TEXTURES)if(model->n_buffers>=MAX_BUFFERS_PER_SUBMODEL)Error(LOCATION, "Submodel %s on model %s has more than %d textures.\nFind a high-limit build or remap the model.", model->name, pm->filename, MAX_BUFFERS_PER_SUBMODEL);;
 		if(!list[i].n_verts)continue;
 		model->buffer[model->n_buffers].index_buffer.allocate_index_buffer(list[i].n_verts);
 		for(int j = 0; j < list[i].n_verts; j++){
