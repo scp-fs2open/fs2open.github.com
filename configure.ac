@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.5 2005-03-10 16:15:17 taylor Exp $
+dnl $Id: configure.ac,v 1.6 2005-03-27 06:08:42 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -293,8 +293,10 @@ fi
 
 dnl OpenAL
 if test "$fs2_os_unix" = "yes" ; then
+	AC_DEFINE([USE_OPENAL])
 	FS2_LDFLAGS="$FS2_LDFLAGS -lopenal"
 elif test "$fs2_os_osx" = "yes" ; then
+	AC_DEFINE([USE_OPENAL])
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenAL"
 	AC_CHECK_HEADER(/Library/Frameworks/OpenAL.framework/Headers/al.h,
 		FS2_CXXFLAGS="$FS2_CXXFLAGS -I/Library/Frameworks/OpenAL.framework/Headers",
