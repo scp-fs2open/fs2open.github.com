@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.51 $
- * $Date: 2003-03-22 06:11:51 $
+ * $Revision: 2.52 $
+ * $Date: 2003-03-22 06:35:37 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2003/03/22 06:11:51  Goober5000
+ * added play-sound-from-table, play-sound-from-file, and close-sound-from-file
+ * --Goober5000
+ *
  * Revision 2.50  2003/03/21 08:33:33  Goober5000
  * yuck - fixed a nasty error when FRED provides a default value for warp-effect
  * and explosion-effect
@@ -12873,41 +12877,48 @@ int num_eval(int node)
 // Goober5000
 void sexp_stop_music(int fade)
 {
+#ifndef NO_SOUND
 	if ( Sexp_music_handle != -1 ) {
 		audiostream_close_file(Sexp_music_handle, fade);
 		Sexp_music_handle = -1;
 	}
+#endif
 }
 
 // Goober5000
 void sexp_music_close()
+{
+	if ( Cmdline_freespace_no_music ) {
+		return;
+	}
+
+	sexp_stop_music();
+}
+
+// Goober5000
+void sexp_load_music(char* fname)
 {
 #ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
 
-	sexp_stop_music();
-#endif
-}
-
-// Goober5000
-void sexp_load_music(char* fname)
-{
-	if ( Cmdline_freespace_no_music ) {
-		return;
+	if ( Sexp_music_handle != -1 )
+	{
+		sexp_stop_music();
 	}
 
-	if ( Sexp_music_handle != -1 )
-		return;
-
 	if ( fname )
+	{
 		Sexp_music_handle = audiostream_open( fname, ASF_EVENTMUSIC );
+	}
+#endif
 }
 
 // Goober5000
 void sexp_start_music()
 {
+#ifndef NO_SOUND
 	if ( Sexp_music_handle != -1 ) {
 		if ( !audiostream_is_playing(Sexp_music_handle) )
 			audiostream_play(Sexp_music_handle, Master_event_music_volume);
@@ -12915,6 +12926,7 @@ void sexp_start_music()
 	else {
 		nprintf(("Warning", "No file exists to play sound via sexp-play-sound-from-file!\n"));
 	}
+#endif
 }
 
 // Goober5000 - for FRED2 menu subcategories
