@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-09-13 06:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-10-08 06:32:06 $
+ * $Author: argv $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/09/13 06:02:06  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.2  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -1249,7 +1253,8 @@ void mission_process_event( int event )
 	if ((sindex >= 0) && (Sexp_nodes[sindex].value == SEXP_KNOWN_FALSE)) {
 		Mission_events[event].timestamp = (int) Missiontime;
 		Mission_events[event].satisfied_time = Missiontime;
-		Mission_events[event].repeat_count = -1;
+		// _argv[-1] - repeat_count of -1 would mean repeat indefinitely, so set to 0 instead.
+		Mission_events[event].repeat_count = 0;
 		Mission_events[event].formula = -1;
 		return;
 	}
@@ -1263,8 +1268,10 @@ void mission_process_event( int event )
 
 	// decrement the repeat count.  When at 0, don't eval this function anymore
 	if ( result || timestamp_valid(Mission_events[event].timestamp) ) {
-		Mission_events[event].repeat_count--;
-		if ( Mission_events[event].repeat_count <= 0 ) {
+		// _argv[-1] - negative repeat count means repeat indefinitely.
+		if ( Mission_events[event].repeat_count > 0 )
+			Mission_events[event].repeat_count--;
+		if ( Mission_events[event].repeat_count == 0 ) {
 			Mission_events[event].timestamp = (int)Missiontime;
 			Mission_events[event].formula = -1;
 
