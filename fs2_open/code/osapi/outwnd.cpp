@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 19:29:28 $
+ * $Author: bobboau $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -199,7 +202,7 @@ int Outwnd_no_filter_file = 0;		// 0 = .cfg file found, 1 = not found and warnin
 
 // used for file logging
 #ifndef NDEBUG
-	int Log_debug_output_to_file = 0;
+	int Log_debug_output_to_file = 1;
 	FILE *Log_fp;
 	char *Freespace_logfilename = "fs.log";
 #endif
@@ -451,7 +454,7 @@ void outwnd_print(char *id, char *tmp)
 	outwnd_filter_struct *temp;
 
 	if(gr_screen.mode == GR_DIRECT3D){
-		return;
+	//	return;	//it doesn't print while playing if this is in-Bobboau
 	}
 
 	if (!outwnd_inited)
@@ -472,7 +475,6 @@ void outwnd_print(char *id, char *tmp)
 	for (i=0; i<outwnd_filter_count; i++)
 		if (!stricmp(id, outwnd_filter[i]->name))
 			break;
-
 
 	if (i == outwnd_filter_count)  // new id found that's not yet in filter list
 	{
@@ -562,10 +564,10 @@ void outwnd_print(char *id, char *tmp)
 		sptr++;
 	} 
 
-	if(gr_screen.mode == GR_DIRECT3D){
+/*	if(gr_screen.mode == GR_DIRECT3D){
 		return;
 	}
-
+*///	it doesn't print while playing if this is in-Bobboau
 	if ( outwnd_disabled ){
 		return;
 	}

@@ -65,6 +65,7 @@
 #define ID_INSG 0x47534e49				// GSNI (INSG): insignia information
 #define ID_ACEN 0x4e454341				// NECA (ACEN): autocentering information
 #define ID_GLOW 0x574f4c47				// WOLG (GLOW): glow points -Bobboau
+#define ID_GLOX 0x584f4c47				// experimental glow points will be gone as soon as we get a proper pof editor -Bobboau
 
 #elif BYTE_ORDER == BIG_ENDIAN
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.8 $
+ * $Date: 2002-10-19 19:29:28 $
+ * $Author: bobboau $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.6  2002/07/18 14:36:53  unknownplayer
  * no message
  *
@@ -5686,7 +5689,9 @@ void set_primary_weapon_linkage(object *objp)
 //	--------------------------------------------------------------------------
 //	Fire the current primary weapon.
 //	*objp is the object to fire from.
-void ai_fire_primary_weapon(object *objp)
+//I changed this to return a true false flag on weather 
+//it did or did not fire the weapon sorry if this screws you up-Bobboau
+int ai_fire_primary_weapon(object *objp)
 {
 	ship		*shipp = &Ships[objp->instance];
 	ship_weapon	*swp = &shipp->weapons;
@@ -5703,12 +5708,12 @@ void ai_fire_primary_weapon(object *objp)
 	if (Num_weapons > (int) (0.9f * MAX_WEAPONS)) {
 		if (frand() > 0.5f) {
 			nprintf(("AI", "Frame %i, %s not fire.\n", Framecount, shipp->ship_name));
-			return;
+			return 0;
 		}
 	}
 
 	if (!Ai_firing_enabled){
-		return;
+		return 0;
 	}
 
 	if (aip->target_objnum != -1){
@@ -5759,11 +5764,11 @@ void ai_fire_primary_weapon(object *objp)
 				type = aip->targeted_subsys->system_info->type;
 				if (ship_get_subsystem_strength(&Ships[tobjp->instance], type) == 0.0f) {
 					aip->target_objnum = -1;
-					return;
+					return 0;
 				}
 			} else {
 				aip->target_objnum = -1;
-				return;
+				return 0;
 			}
 		}
 	}
@@ -5777,7 +5782,7 @@ void ai_fire_primary_weapon(object *objp)
 			if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags & WIF_PUNCTURE)) {
 				//nprintf(("AI", "Ship %s not firing at protected ship %s because not using disruptor.\n", Ships[objp->instance].ship_name, Ships[enemy_objp->instance].ship_name));
 				swp->next_primary_fire_stamp[swp->current_primary_bank] = timestamp(1000);
-				return;
+				return 0;
 			}
 
 			/*
@@ -5804,6 +5809,7 @@ void ai_fire_primary_weapon(object *objp)
 	shipp->flags |= SF_TRIGGER_DOWN;
 	ship_fire_primary(objp, 1);
 	shipp->flags &= ~SF_TRIGGER_DOWN;
+	return 1;//if it got down to here then it tryed to fire
 }
 
 //	--------------------------------------------------------------------------
@@ -8054,6 +8060,7 @@ void ai_chase()
 	ship_weapon	*swp = &shipp->weapons;
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 	int			enemy_sip_flags;
+	int has_fired = -1;
 
 	if (aip->mode != AIM_CHASE) {
 		Int3();
@@ -8525,7 +8532,11 @@ void ai_chase()
 					else
 						scale = 0.0f;
 					if (dist_to_enemy < pwip->max_speed * (1.0f + scale)) {
-						ai_fire_primary_weapon(Pl_objp);
+						has_fired = 1;
+						if(! ai_fire_primary_weapon(Pl_objp)){
+							has_fired = -1;
+						//	ship_stop_fire_primary(Pl_objp);
+						}
 					}
 
 					//	Don't fire secondaries at a protected ship.
@@ -8605,6 +8616,10 @@ void ai_chase()
 		}
 	} else
 		aip->time_enemy_in_range *= (1.0f - flFrametime);
+
+	if(has_fired == -1){
+		ship_stop_fire_primary(Pl_objp);
+	}
 
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-10-19 19:29:29 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/25 04:50:48  wmcoolmon
  * Added Bobboau's fighter-beam code.
  *
@@ -155,6 +158,23 @@ typedef struct beam_fire_info {
 	int				num_shots;						// (optional), only used for type D weapons
 } beam_fire_info;
 
+typedef struct fighter_beam_fire_info {
+	int				beam_info_index;				// weapon info index 
+	object			*shooter;						// whos shooting
+	vector			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
+	ship_subsys		*turret;							// where he's shooting from
+	float				accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
+	object			*target;							// whos getting shot
+	ship_subsys		*target_subsys;				// (optional), specific subsystem to be targeted on the target 
+	beam_info		*beam_info_override;			// (optional), pass this in to override all beam movement info (for multiplayer)
+	int				num_shots;						// (optional), only used for type D weapons
+	int fighter_beam_loop_sound;			//loop sound used by fighter beams -Bobboau
+	int warmup_stamp;
+	int warmdown_stamp;
+	float life_left;	
+	float life_total;
+} fighter_beam_fire_info;
+
 // collision info
 typedef struct beam_collision {
 	mc_info			cinfo;							// collision info
@@ -182,7 +202,7 @@ int beam_fire(beam_fire_info *fire_info);
 // this allows it to work smoothly in multiplayer (detect "trigger down". every frame just create a targeting laser firing straight out of the
 // object. this way you get all the advantages of nice rendering and collisions).
 // NOTE : only references beam_info_index and shooter
-int beam_fire_targeting(beam_fire_info *fire_info);
+int beam_fire_targeting(fighter_beam_fire_info *fire_info);
 
 // return an object index of the guy who's firing this beam
 int beam_get_parent(object *bm);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 19:29:28 $
+ * $Author: bobboau $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -426,6 +429,8 @@ void physics_init( physics_info * pi )
 
 	pi->afterburner_decay = 1;	
 	pi->forward_thrust = 0.0f;
+	pi->vert_thrust = 0.0f;	//added these two in order to get side and forward thrusters 
+	pi->side_thrust = 0.0f;	//to glow broighter when the ship is moveing in the right direction -Bobboau
 
 	pi->flags = 0;
 
@@ -904,6 +909,8 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 	pi->desired_rotvel.xyz.z = ci->bank * pi->max_rotvel.xyz.z + delta_bank;
 	pi->forward_thrust = ci->forward;
+	pi->vert_thrust = ci->vertical;	//added these two in order to get side and forward thrusters 
+	pi->side_thrust = ci->sideways;	//to glow broighter when the ship is moveing in the right direction -Bobboau
 
 	if ( pi->flags & PF_AFTERBURNER_ON ) {
 		goal_vel.xyz.x = ci->sideways*pi->afterburner_max_vel.xyz.x;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-10-19 19:29:29 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -59,5 +62,14 @@ void ct_ship_delete(ship *shipp);
 
 // call each frame for processing a ship's contrails
 void ct_ship_process(ship *shipp);
+
+// determine if the ship has AB trails
+int ct_has_ABtrails(ship *shipp);
+
+// update active ABtrails - moving existing ones, adding new ones where necessary
+void ct_update_ABtrails(ship *shipp);
+
+// create new ABtrails
+void ct_create_ABtrails(ship *shipp);
 
 #endif

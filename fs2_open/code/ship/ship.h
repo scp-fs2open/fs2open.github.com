@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-10-19 19:29:29 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/29 08:24:42  DTP
  * Bumped all MAX_SHIPS, and SHIP_LIMIT to 400.(let the mission designers decide what is good, and what is bad
  *
@@ -666,6 +669,22 @@ typedef struct ship {
 
 	// Special warpout objnum (warpout at knossos)
 	int special_warp_objnum;
+
+		int fighter_beam_loop_sound[MAX_PRIMARY_BANKS];			//loop sound used by fighter beams -Bobboau
+	int warmup_stamp[MAX_PRIMARY_BANKS];
+	int warmdown_stamp[MAX_PRIMARY_BANKS];
+	float life_left[MAX_PRIMARY_BANKS];	
+	float life_total[MAX_PRIMARY_BANKS];
+	int was_firing_last_frame[MAX_PRIMARY_BANKS];
+
+
+	
+	int nameplate;											//nameplate texture for this ship
+
+	short ABtrail_num[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
+	trail_info ab_info[MAX_SHIP_CONTRAILS];
+	int ab_count;
+
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -872,6 +891,13 @@ typedef struct ship_info {
 
 	// rgb shield color
 	ubyte shield_color[3];
+
+	//optional ABtrail values
+	int			ABbitmap;		//the bitmap used
+	float		ABwidth_factor;	//a number that the width (set by the thruster glow width) will be multiplyed by
+	float		ABAlpha_factor;	//allows you to set how starting trasparency value
+	float		ABlife;			//how long the trails live for
+
 } ship_info;
 
 extern int num_wings;
@@ -1022,6 +1048,7 @@ extern int ship_check_collision_fast( object * obj, object * other_obj, vector *
 extern int ship_get_num_ships();
 
 extern int ship_fire_primary_debug(object *objp);	//	Fire the debug laser.
+extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0 );
 extern int ship_launch_countermeasure(object *objp, int rand_val = -1);

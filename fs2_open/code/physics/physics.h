@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 19:29:28 $
+ * $Author: bobboau $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -192,6 +195,8 @@ typedef struct physics_info {
 	vector	desired_vel;				// in world coord
 	vector	desired_rotvel;			// in local coord
 	float		forward_thrust;			// How much the forward thruster is applied.  0-1.
+	float		side_thrust;			// How much the forward thruster is +x.  0-1.
+	float		vert_thrust;			// How much the forward thruster is +y.  0-1.
 		
 	// Data that changes each frame.  Physics fills these in each frame.
 	vector	vel;						// The current velocity vector of this object

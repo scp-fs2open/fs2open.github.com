@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 19:29:27 $
+ * $Author: bobboau $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -1089,6 +1092,7 @@ float Avg_delay_total;
 void obj_player_fire_stuff( object *objp, control_info ci )
 {
 	ship *shipp;
+	int has_fired = -1;	//stop fireing stuff-Bobboau
 
 	Assert( objp->flags & OF_PLAYER_SHIP);
 
@@ -1110,11 +1114,13 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			}
 
 			// fire non-streaming primaries here
-			ship_fire_primary( objp, 0 );			
+			ship_fire_primary( objp, 0 );
+			has_fired = -1;
 		} else {
 			// unflag the ship as having the trigger down
 			if(shipp != NULL){
 				shipp->flags &= ~(SF_TRIGGER_DOWN);
+				has_fired = -1;
 			}
 		}
 
@@ -1146,10 +1152,17 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	if ( ci.afterburner_stop ){
 		afterburners_stop( objp, 1 );
 	}
+	
+	if(has_fired == -1){
+		ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
+	}
+
 }
 
 void obj_move_call_physics(object *objp, float frametime)
 {
+	int has_fired = -1;	//stop fireing stuff-Bobboau
+
 	//	Do physics for objects with OF_PHYSICS flag set and with some engine strength remaining.
 	if ( objp->flags & OF_PHYSICS ) {
 		// only set phys info if ship is not dead
@@ -1248,10 +1261,16 @@ obj_maybe_fire:
 			// fire streaming weapons for ships in here - ALL PLAYERS, regardless of client, single player, server, whatever.
 			// do stream weapon firing for all ships themselves. 
 			if(objp->type == OBJ_SHIP){
-				ship_fire_primary(objp, 1, 0);
+			has_fired =	ship_fire_primary(objp, 1, 0);
 			}
 		}
 	}
+	
+	if(has_fired == -1){
+	//	mprintf(("stoped 1\n"));
+		ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
+	}
+
 }
 
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-10-19 19:29:27 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/10 18:42:14  wmcoolmon
  * Added  Bobboau's glow code; all comments include "-Bobboau"
  *
@@ -256,7 +259,8 @@
 #include "object/object.h"			// For MAX_OBJECTS
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
-
+#include "math/staticrand.h"
+#include "globalincs/alphacolors.h"
 
 // Some debug variables used externally for displaying stats
 #ifndef NDEBUG
@@ -326,6 +330,8 @@ static float Interp_thrust_scale = 0.1f;
 static int Interp_thrust_bitmap = -1;
 static int Interp_thrust_glow_bitmap = -1;
 static float Interp_thrust_glow_noise = 1.0f;
+static float Interp_thrust_scale_x = 0.0f;//added -bobboau
+static float Interp_thrust_scale_y = 0.0f;//added -bobboau
 
 static int Interp_objnum = -1;
 
@@ -454,6 +460,8 @@ void model_notify_dead_ship(int objnum)
 void interp_clear_instance()
 {
 	Interp_thrust_scale = 0.1f;
+	Interp_thrust_scale_x = 0.0f;//added-Bobboau
+	Interp_thrust_scale_y = 0.0f;//added-Bobboau
 	Interp_thrust_bitmap = -1;
 	Interp_thrust_glow_bitmap = -1;
 	Interp_thrust_glow_noise = 1.0f;
@@ -461,9 +469,11 @@ void interp_clear_instance()
 }
 
 // Scales the engines thrusters by this much
-void model_set_thrust( int model_num, float length, int bitmap, int glow_bitmap, float glow_noise )
+void model_set_thrust( int model_num, vector length /*<-I did that-Bobboau*/, int bitmap, int glow_bitmap, float glow_noise )
 {
-	Interp_thrust_scale = length;
+	Interp_thrust_scale = length.xyz.z;
+	Interp_thrust_scale_x = length.xyz.x;
+	Interp_thrust_scale_y = length.xyz.y;
 	Interp_thrust_bitmap = bitmap;
 	Interp_thrust_glow_bitmap = glow_bitmap;
 	Interp_thrust_glow_noise = glow_noise;
@@ -818,7 +828,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	//		Assert( verts[i].normnum == verts[i].vertnum );
 
-			if ( Interp_flags & MR_NO_LIGHTING )	{
+			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->ambient[w(p+40)]))	{	//gets the ambient glow to work
 				if ( D3D_enabled )	{
 					Interp_list[i]->r = 191;
 					Interp_list[i]->g = 191;
@@ -925,14 +935,22 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					if((Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0)){
 						texture = Interp_forced_bitmap;
 					} else {
-						texture = pm->textures[w(p+40)];
+						if (pm->is_ani[w(p+40)]){
+							texture = pm->textures[w(p+40)] + ((timestamp() / (int)(pm->fps[w(p+40)])) % pm->numframes[w(p+40)]);//here is were it picks the texture to render for ani-Bobboau
+						}else{
+							texture = pm->textures[w(p+40)];//here is were it picks the texture to render for normal-Bobboau
+						}
 					}
 
 					// muzzle flashes draw xparent
 					if(Interp_flags & MR_ALL_XPARENT){
 						gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_xparent_alpha );
 					} else {
-						gr_set_bitmap( texture );
+						if(pm->transparent[w(p+40)]){	//trying to get transperent textures-Bobboau
+							gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
+						}else{
+							gr_set_bitmap( texture );
+						}
 					}
 				}
 			} else {
@@ -1928,6 +1946,26 @@ void model_render(int model_num, matrix *orient, vector * pos, uint flags, int o
 {
 	polymodel *pm = model_get(model_num);
 
+	for (int i = 0; i < pm->n_glows; i++ ) { //glow point blink code -Bobboau
+		glow_bank *bank = &pm->glows[i];
+		if (bank->glow_timestamp == 0)
+			bank->glow_timestamp=timestamp();
+		if(bank->off_time){
+			if(bank->is_on){
+				if( timestamp_elapsed(bank->glow_timestamp + bank->on_time + bank->disp_time) ){
+					bank->glow_timestamp=timestamp();
+					bank->is_on=0;
+				}
+			}else{
+				if( timestamp_elapsed(bank->glow_timestamp + bank->off_time + bank->disp_time) ){
+					bank->glow_timestamp=timestamp();
+					bank->is_on=1;
+				}
+			}
+		}
+	}
+
+
 	// maybe turn off (hardware) culling
 	if(flags & MR_NO_CULL){
 		gr_set_cull(0);
@@ -2536,6 +2574,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	polymodel * pm;
 	uint save_gr_zbuffering_mode;
 	int zbuf_mode;
+	int objnum = light_ignore_id;
+	ship *shipp = &Ships[Objects[objnum].instance];
+
 
 	MONITOR_INC( NumModelsRend, 1 );	
 
@@ -2779,54 +2820,77 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		d3d_zbias(0);	
 	}	
 #endif
-	//start rendering glow points -Bobboau
-	if ( (pm->n_glows) /*&& (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
+//start rendering glow points -Bobboau
+
+		if ( (pm->n_glows) /*&& (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
 
 		for (i = 0; i < pm->n_glows; i++ ) {
 			glow_bank *bank = &pm->glows[i];
 			int j;
+			if(bank->is_on){
 
-			for ( j=0; j<bank->num_slots; j++ )	{
-				float d;
-				vector tempv;
-				vm_vec_sub(&tempv,&View_position,&bank->pnt[j]);
-				vm_vec_normalize(&tempv);
+				for ( j=0; j<bank->num_slots; j++ )	{
+					
+					int flick;
+						if(pm->submodel[pm->detail[0]].num_arcs){
+						flick = static_rand(timestamp()%20)%(pm->submodel[pm->detail[0]].num_arcs + j); //the more damage, the more arcs, the more likely the lights will fail
+						}else{
+						flick = 1;
+						}
 
-				d = vm_vec_dot(&tempv,&bank->norm[j]);
+					if(flick == 1){
+						float d;
+						vector tempv;
+						vm_vec_sub(&tempv,&View_position,&bank->pnt[j]);
+						vm_vec_normalize(&tempv);
 
-				if ( d > 0.0f)	{
-					vertex p;					
+						d = vm_vec_dot(&tempv,&bank->norm[j]);
+	
+						if ( d > 0.0f)	{
+							vertex p;					
+	
+							// Make glow bitmap fade in/out quicker from sides.
+							d *= 3.0f;
+							if ( d > 1.0f ) d = 1.0f;
+	
+							// fade them in the nebula as well
+							if(The_mission.flags & MISSION_FLAG_FULLNEB){
+								d *= (1.0f - Interp_fog_level);
+							}
+		
+							float w = bank->radius[j];
+		
+							// disable fogging
+							gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+	
+							g3_rotate_vertex( &p, &bank->pnt[j] );
+							
+							//need to rotate the vertex if it's parent is rotated
+							/*if(shipp->subsys_list.submodel_info_1.movement_axis){
+								
+								matrix m;
 
-					// Make glow bitmap fade in/out quicker from sides.
-					d *= 3.0f;
-					if ( d > 1.0f ) d = 1.0f;
+								vm_angles_2_matrix(&m, &pm->submodel[submodel_num].angs)
+								
+							}*/
 
-					// fade them in the nebula as well
-					if(The_mission.flags & MISSION_FLAG_FULLNEB){
-						d *= (1.0f - Interp_fog_level);
-					}
+							if(bank->submodel_parent)
+							gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
+							{
+								extern int Gr_scaler_zbuffering;
+								Gr_scaler_zbuffering = 1;
+								g3_draw_bitmap(&p,0,w*0.5f, TMAP_FLAG_TEXTURED );
+								//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
+								Gr_scaler_zbuffering = 0;
+							}//setbitmap
+						}//d>0
+					}//flick
+				}//for slot
+			}//bank is on
+		}//for bank
+	}//any glow banks
 
-					float w = bank->radius[j];
-
-					// disable fogging
-					gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-
-					g3_rotate_vertex( &p, &bank->pnt[j] );
-					gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
-					{
-						extern int Gr_scaler_zbuffering;
-						Gr_scaler_zbuffering = 1;
-						g3_draw_bitmap(&p,0,w*0.5f, TMAP_FLAG_TEXTURED );
-						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
-						Gr_scaler_zbuffering = 0;
-					}
-				}
-
-			}
-		}
-	}
-
-	//end rendering glow points
+//end rendering glow points
 
 	// Draw the thruster glow
 	if ( (Interp_thrust_glow_bitmap != -1) && (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
@@ -2859,9 +2923,39 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					#define NOISE_SCALE 0.5f
 					#define MIN_SCALE 3.4f
 					#define MAX_SCALE 4.7f
-					float scale = MIN_SCALE;
+					float scale = MIN_SCALE, x=0.0f, y=0.0f, z=0.0f;
 
-					scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
+				//	if(abs(bank->norm->y + Interp_thrust_scale_y) > 0){
+				//	if(abs(bank->norm->x + Interp_thrust_scale_x) > 0)
+				//	if(abs(bank->norm->z + Interp_thrust_scale) > 0)
+
+					x = ((-bank->norm[j].xyz.x + Interp_thrust_scale_x) * Interp_thrust_scale_x);
+//					x = (x * Interp_thrust_scale_x)/2;
+					if((bank->norm[j].xyz.x < 0.0f) /*&& (Interp_thrust_scale_x < 0.0f)*/){
+						x = -x;
+					}
+					y = ((-bank->norm[j].xyz.y + Interp_thrust_scale_y) * Interp_thrust_scale_y);
+//					y = (y * Interp_thrust_scale_y)/2;
+					if((bank->norm[j].xyz.y < 0.0f) /*&& (Interp_thrust_scale_y < 0.0f)*/){
+						y = -y;
+					}
+
+					z = ((-bank->norm[j].xyz.z + Interp_thrust_scale) * Interp_thrust_scale);
+//					z = (z * Interp_thrust_scale)/2;
+					if((bank->norm[j].xyz.z < 0.0f) /*&& (Interp_thrust_scale < 0.0f)*/){
+						z = -z;
+					}
+
+#ifndef NDEBUG
+	if ( &Objects[objnum] == Player_obj ){
+		gr_set_color_fast(&Color_bright_blue);
+		gr_printf((i * 200), (20 +(j * 10)), "x %0.2f, y %0.2f, z %0.2f", x, y, z);
+	}
+#endif
+
+
+					scale = ((bank->norm[j].xyz.x * x)+(bank->norm[j].xyz.y * y)+(bank->norm[j].xyz.z * z))*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
+					//getting thruster glows to grow baised on witch direction they are pointing -Bobboau
 
 					float w = bank->radius[j]*(scale+Interp_thrust_glow_noise*NOISE_SCALE );
 

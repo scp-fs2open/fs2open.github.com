@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 19:29:28 $
+ * $Author: bobboau $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -997,6 +1000,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vector *
 {
 	ai_info		*aip;
 	ship_weapon	*swp;
+	int has_fired = -1;
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 	swp = &Ships[Pl_objp->instance].weapons;
@@ -1016,8 +1020,13 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vector *
 				Assert(tswp->current_primary_bank < tswp->num_primary_banks);
 				weapon_info	*wip = &Weapon_info[tswp->primary_bank_weapons[tswp->current_primary_bank]];
 
-				if (dist_to_enemy < wip->max_speed * wip->lifetime)
-					ai_fire_primary_weapon(Pl_objp);
+				if (dist_to_enemy < wip->max_speed * wip->lifetime){
+					has_fired = 1;
+					if(! ai_fire_primary_weapon(Pl_objp)){
+						has_fired = -1;
+					//	ship_stop_fire_primary(Pl_objp);
+					}
+				}
 
 				int	priority1, priority2;
 
@@ -1081,6 +1090,11 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vector *
 	} else {
 		aip->time_enemy_in_range *= (1.0f - flFrametime);
 	}
+
+	if(has_fired == -1){	//stuff that hapens when the ship stops fireing
+		ship_stop_fire_primary(Pl_objp);
+	}
+
 }
 
 // switch ai ship into chase mode

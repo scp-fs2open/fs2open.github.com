@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 19:29:28 $
+ * $Author: bobboau $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -676,6 +679,8 @@ void do_view_external(float frame_time)
 void do_thrust_keys(control_info *ci)
 {
 	ci->forward = check_control_timef(FORWARD_THRUST) - check_control_timef(REVERSE_THRUST);
+	ci->sideways = (check_control_timef(RIGHT_SLIDE_THRUST) - check_control_timef(LEFT_SLIDE_THRUST));//for slideing-Bobboau
+	ci->vertical = (check_control_timef(UP_SLIDE_THRUST) - check_control_timef(DOWN_SLIDE_THRUST));//for slideing-Bobboau
 }
 
 // called by single and multiplayer modes to reset information inside of control info structure
@@ -823,9 +828,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		}
 
 		ci->pitch += kh;
-
-		ci->sideways = (key_down_timef(KEY_PAD3) - key_down_timef(KEY_PAD1));
-		ci->vertical = (key_down_timef(KEY_PADPLUS) - key_down_timef(KEY_PADENTER));
 
 		do_thrust_keys(ci);
 	}

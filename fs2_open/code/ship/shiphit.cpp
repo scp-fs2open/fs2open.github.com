@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.6 $
+ * $Date: 2002-10-19 19:29:29 $
+ * $Author: bobboau $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.4  2002/07/29 20:48:51  penguin
  * Moved extern declaration of ssm_create outside of block (it wouldn't compile w/ gcc)
  *
@@ -1644,6 +1647,8 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 
 	ai_announce_ship_dying(objp);
 
+	ship_stop_fire_primary(objp);	//mostly for stopping fighter beam looping sounds -Bobboau
+
 	sp->flags |= SF_DYING;
 	objp->phys_info.flags |= (PF_DEAD_DAMP | PF_REDUCED_DAMP);
 	delta_time = (int) (DEATHROLL_TIME);
@@ -2458,12 +2463,16 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 			}
 			mprintf(("Level 2 TAGGED %s for %f seconds\n", Ships[ship_obj->instance].ship_name, Ships[ship_obj->instance].level2_tag_left));
 		} else if (Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_level == 3) {
+		// tag C creates an SSM strike, yay -Bobboau
+			struct ssm_firing_info;
+			extern void ssm_create(vector *target, vector *start, int ssm_index, ssm_firing_info *override);
+
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Firing artillery", 1570));
 
 			vector temp;
 			vm_vec_unrotate(&temp, &ship_obj->pos, &Objects[other_obj->instance].orient);
 			//vm_vec_add2(&temp, &Objects[aip->artillery_objnum].pos);			
-			ssm_create(&temp, &Objects[ship_obj->instance].pos, 0, NULL);				
+			ssm_create(&temp, &Objects[ship_obj->instance].pos, Weapon_info[Weapons[other_obj->instance].weapon_info_index].SSM_index, NULL);				
 		}
 	}
 

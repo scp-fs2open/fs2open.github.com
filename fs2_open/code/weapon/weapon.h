@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapon.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:11 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 19:29:29 $
+ * $Author: bobboau $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:11  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -418,6 +421,9 @@ typedef struct beam_weapon_section_info {
 	ubyte rgba_outer[4];					// for non-textured beams
 	float flicker;							// how much it flickers (0.0 to 1.0)
 	float z_add;							// is this necessary?
+	float tile_factor;						// texture tile factor -Bobboau
+	int tile_type;							// is this beam tiled by it's length, or not
+	float translation;						// makes the beam texture move -Bobboau
 } beam_weapon_section_info;
 
 typedef struct beam_weapon_info {
@@ -528,6 +534,7 @@ typedef struct weapon_info {
 
 	// muzzle flash
 	int muzzle_flash;						// muzzle flash stuff
+	int SSM_index;							// wich entry in the SSM,tbl it uses -Bobboau
 } weapon_info;
 
 // Data structure to track the active missiles

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.1 $
- * $Date: 2002-10-17 20:40:50 $
- * $Author: randomtiger $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 19:29:27 $
+ * $Author: bobboau $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/10/17 20:40:50  randomtiger
+ * Added ability to remove HUD ingame on keypress shift O
+ * So I've added a new key to the bind list and made use of already existing hud removal code.
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -449,9 +453,14 @@ typedef struct config_item {
 #define MULTI_SELF_DESTRUCT							106
 
 #define TOGGLE_HUD							107
+#define RIGHT_SLIDE_THRUST									108
+#define LEFT_SLIDE_THRUST									109
+#define UP_SLIDE_THRUST									110
+#define DOWN_SLIDE_THRUST									111
+
 
 // this should be the total number of control action defines above (or last define + 1)
-#define CCFG_MAX 108
+#define CCFG_MAX 112
 
 extern int Failed_key_index;
 extern int Invert_heading;
