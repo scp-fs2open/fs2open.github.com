@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-09-23 02:42:54 $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-24 19:35:58 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/09/23 02:42:54  Kazan
+ * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
+ *
  * Revision 2.5  2003/09/05 04:25:28  Goober5000
  * well, let's see here...
  *
@@ -263,6 +266,12 @@
 #include "hud/hudescort.h"
 #include "globalincs/alphacolors.h"
 
+
+#include "fs2open_pxo/Client.h"
+extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+extern unsigned int PXO_SID; // FS2 Open PXO Session ID
+extern char PXO_Server[];
+extern int PXO_port;
 // ----------------------------------------------------------------------------------------
 // Basic module scope defines
 //
@@ -1322,6 +1331,64 @@ DCF(eye_tog, "")
 
 void multi_do_frame()
 {	
+	/* FS2NetD Heartbeat Continue */
+
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
+	{
+
+		static int LastSend = -1;
+		if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
+		{
+			// full initialization of datadata
+			if (PXO_port == -1)
+			{
+				CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
+				if(file == NULL){
+					ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
+					return;
+				}
+					
+
+				char Port[32];
+				if (cfgets(PXO_Server, 32, file) == NULL)
+				{
+					ml_printf("Network", "No Masterserver definition!\n");
+					return;
+				}
+
+				if (strstr(PXO_Server, "\n"))
+					*strstr(PXO_Server, "\n") = '\0';
+
+				if (cfgets(Port, 32, file) != NULL)
+					PXO_port = atoi(Port);
+				else
+					PXO_port = 12000;
+			}
+
+			//FS2OpenPXO code
+			if (!FS2OpenPXO_Socket.isInitialized())
+			{
+					if (!FS2OpenPXO_Socket.InitSocket())
+					{
+						ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+					}
+			}
+
+			// -------------------- send
+
+
+			if ((clock() - LastSend) >= 60000 || LastSend == -1)
+			{
+				LastSend = clock();
+
+				// finish implementation!
+				//void SendHeartBeat(const char* masterserver, int targetport, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
+
+				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, multi_get_connection_speed(), Netgame.game_state, Netgame.type_flags, Netgame.max_players);
+			}
+		}
+	}
+
 	PSNET_TOP_LAYER_PROCESS();
 
 	// always set the local player eye position/orientation here so we know its valid throughout all multiplayer
@@ -1792,6 +1859,7 @@ void standalone_main_init()
 
 void standalone_main_do()
 {
+ 
    Sleep(10);  // since nothing will really be going on here, we can afford to give some time
                // back to the operating system.
 

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-09-07 18:14:54 $
- * $Author: randomtiger $
+ * $Revision: 2.12 $
+ * $Date: 2003-09-24 19:35:58 $
+ * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/09/07 18:14:54  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.10  2003/09/05 04:25:28  Goober5000
  * well, let's see here...
  *
@@ -419,6 +427,12 @@
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
 #endif
+
+#include "fs2open_pxo/Client.h"
+extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+extern unsigned int PXO_SID; // FS2 Open PXO Session ID
+extern char PXO_Server[32];
+extern int PXO_port;
 
 #define MAX_TOTAL_DEBRIEF_LINES	200
 
@@ -1230,6 +1244,55 @@ void debrief_ui_init()
 		Background_bitmap = bm_load(Debrief_multi_name[gr_screen.res]);
 		List_region.create(&Debrief_ui_window, "", Debrief_list_coords[gr_screen.res][0], Debrief_list_coords[gr_screen.res][1], Debrief_list_coords[gr_screen.res][2], Debrief_list_coords[gr_screen.res][3], 0, 1);
 		List_region.hide();
+
+		if (Om_tracker_flag && multi_num_players() > 1)
+		{
+			// --------------------- STICK STATS STORAGE CODE IN HERE ---------------------
+            int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);
+			
+			switch (spd_ret) // 0 = pilot updated, 1  = invalid pilot, 2 = invalid (expired?) sid
+			{
+				case -1:
+					multi_display_chat_msg("<Did not receive response from server within timeout period>",0,0);
+					multi_display_chat_msg("<Your stats may not have been stored>",0,0);
+					multi_display_chat_msg("<This is not a critical error>",0,0);
+
+					break;
+
+				case 0:
+					multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
+					break;
+			
+				case 1:
+					multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
+					multi_display_chat_msg("WARNING: Your pilot was invalid, this is a serious error, possible data corruption",0,0);
+					break;
+
+				case 2:
+					PXO_SID  = Fs2OpenPXO_Login(Multi_tracker_login, Multi_tracker_passwd, FS2OpenPXO_Socket, PXO_Server, PXO_port);
+					if (PXO_SID != -1)
+					{
+						 if (!SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port))
+						 {	 // succeed!
+							multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
+							break;
+						 }
+					}
+
+					multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
+					
+
+					break;
+
+				default:
+					multi_display_chat_msg("Unknown Stats Store Request Reply",0,0);
+					break;
+			}
+		}
+		else
+		{
+			multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
+		}
 	}
 	else
 #endif
