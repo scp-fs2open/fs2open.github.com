@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.69 $
- * $Date: 2004-03-20 14:47:13 $
- * $Author: randomtiger $
+ * $Revision: 2.70 $
+ * $Date: 2004-03-29 02:24:20 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2004/03/20 14:47:13  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.68  2004/03/17 04:07:29  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -616,7 +620,7 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #pragma comment (lib, "glu32")
 
 
-#define REQUIRED_GL_VERSION 1.2f
+#define REQUIRED_GL_VERSION '2'
 
 extern int OGL_inited;
 extern int Cmdline_nohtl;
@@ -5009,7 +5013,6 @@ void gr_opengl_init(int reinit)
 	char *extlist;
 	char *curext;
 	char *ver;
-	char curver[3];
 	int bpp = gr_screen.bits_per_pixel;
 
 	if(!Cmdline_nohtl) {
@@ -5200,12 +5203,10 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 		extlist=(char*)malloc(strlen(OGL_extensions));
 		memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
-		memcpy(curver, ver,3);
 
-		float version_float=(float)atof(curver);
-		if (version_float < REQUIRED_GL_VERSION)
+		if (*(ver+2) < REQUIRED_GL_VERSION)
 		{
-			Error(LOCATION,"Current GL Version of %f is less than required version of %f\nSwitch video modes or update drivers", version_float, REQUIRED_GL_VERSION);
+			Error(LOCATION,"Current GL Version of 1.%c is less than required version of 1.%c\nSwitch video modes or update drivers", *(ver+2), REQUIRED_GL_VERSION);
 		}
 	
 		curext=strtok(extlist, " ");
