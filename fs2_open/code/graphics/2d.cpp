@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-30 14:29:15 $
+ * $Author: unknownplayer $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -885,8 +888,12 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 			Int3();
 			gr_directdraw_cleanup();
 			break;
-		case GR_DIRECT3D:			
+		case GR_DIRECT3D:
+#ifdef USE_DX81
+			// TODO: Add Dx8.1 clean up call here - unknownplayer
+#else
 			gr_d3d_cleanup();
+#endif	// USE_DX81 //
 			break;
 		case GR_GLIDE:
 			gr_glide_cleanup();
@@ -975,9 +982,15 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 			gr_directdraw_init();
 			break;
 		case GR_DIRECT3D:
+// Check if we want to use the DX8.1 routines - unknownplayer
+// This is here so we can revert to the old ones if necessary
+#ifdef USE_DX81
+			// TODO: Insert new initialization for DX8.1 here - unknownplayer
+#else
 			// we only care about possible 32 bit stuff here
 			Cmdline_force_32bit = 0;
-			if(depth == 32){
+			if(depth == 32)
+			{
 				Cmdline_force_32bit = 1;
 			} 
 
@@ -985,11 +998,12 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 
 			// bad startup - stupid D3D
 			extern int D3D_inited;
-			if(!D3D_inited){
+			if(!D3D_inited)
+			{
 				Gr_inited = 0;
 				return 1;
 			}
-
+#endif	// USE_DX81 //
 			break;
 		case GR_GLIDE:
 			// if we're in high-res. force polygon interface
