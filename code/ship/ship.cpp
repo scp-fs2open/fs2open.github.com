@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-07-29 08:22:42 $
- * $Author: DTP $
+ * $Revision: 2.4 $
+ * $Date: 2002-07-30 17:57:40 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/07/29 08:22:42  DTP
+ * Bumped MAX_SHIP_SUBOBJECTS to 2100(2100 /(average fighter has 7 subsystems) = 400 fighters
+ *
  * Revision 2.2  2002/07/25 04:50:07  wmcoolmon
  * Added Bobboau's fighter-beam code.
  *
@@ -6887,15 +6890,18 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	// incremented by repair_allocated
 	repair_allocated = sip->initial_hull_strength * frametime * HULL_REPAIR_RATE;
 
-/*
-	AL 11-24-97: remove increase to hull integrity
 
-	objp->hull_strength += repair_allocated;
-	if ( objp->hull_strength > sip->initial_hull_strength ) {
-		repair_allocated -= ( sip->initial_hull_strength - objp->hull_strength);
-		objp->hull_strength = sip->initial_hull_strength;
+//	AL 11-24-97: remove increase to hull integrity
+//	Comments removed by PhReAk; Note that this is toggled on/off with a mission flag
+	
+	if(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
+	{
+		objp->hull_strength += repair_allocated;
+		if ( objp->hull_strength > sip->initial_hull_strength ) {
+			repair_allocated -= ( sip->initial_hull_strength - objp->hull_strength);
+			objp->hull_strength = sip->initial_hull_strength;
+		}
 	}
-*/
 
 	// check the subsystems of the ship.
 	subsys_all_ok = 1;
@@ -7003,7 +7009,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
 //	if ( ((ssp = END_OF_LIST(&shipp->subsys_list)) != NULL )&&(objp->hull_strength == sip->initial_hull_strength)&&(shields_full) ) {
-	if ( subsys_all_ok && shields_full ) {
+	if ( (subsys_all_ok && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength == sip->initial_hull_strength) && shields_full) || (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) ) {
 
 		if ( objp == Player_obj ) {
 			player_stop_repair_sound();
