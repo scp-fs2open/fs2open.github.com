@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-01-06 17:14:52 $
+ * $Revision: 2.14 $
+ * $Date: 2003-01-06 17:19:14 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/01/06 17:14:52  Goober5000
+ * added wing configurable squad logos - put +Squad Logo: filename.pcx as
+ * the last entry in each wing that you want (but the player's squad logo will
+ * still be the squad logo for the player's wing)
+ * --Goober5000
+ *
  * Revision 2.12  2003/01/03 21:58:08  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -2804,6 +2810,46 @@ void parse_wing(mission *pm)
 	wingp->total_destroyed = 0;
 	wingp->flags = 0;
 
+	// needed because stuff_string uses the NAME_LENGTH limit to load something into an array of
+	// MAX_FILENAME_LEN+1 size!!! (c.f. the regular player squad logo loading routine)
+	// I put this outside the if because the if is optional, and I want to make the Assert
+	// a catch-all to flag the potential error on every mission load: this way you avoid nasty
+	// surprises later :) - Goober5000
+	Assert(NAME_LENGTH <= MAX_FILENAME_LEN+1);
+	
+	// squad logo - Goober5000
+	if (optional_string("+Squad Logo:"))
+	{
+		int flag = -1;
+
+		stuff_string(wingp->wing_squad_filename, F_NAME, NULL);
+
+		// check all previous wings to see if we already loaded it (we want to save memory)
+		for (i = 0; i < num_wings; i++)
+		{
+			// do we have a previous texture?
+			if (Wings[i].wing_insignia_texture != -1)
+			{
+				// if we have a match
+				if (!stricmp(Wings[i].wing_squad_filename, wingp->wing_squad_filename))
+				{
+					flag = i;
+					break;
+				}
+			}
+		}
+
+		// if we have loaded it already, just use the old bitmap index
+		if (flag != -1)
+		{
+			wingp->wing_insignia_texture = Wings[flag].wing_insignia_texture;
+		}
+		else
+		{
+			wing_load_squad_bitmap(wingp);
+		}
+	}
+
 	required_string("$Waves:");
 	stuff_int(&wingp->num_waves);
 	Assert ( wingp->num_waves >= 1 );		// there must be at least 1 wave
@@ -2909,46 +2955,6 @@ void parse_wing(mission *pm)
 				wingp->flags |= WF_NO_DYNAMIC;
 			else
 				Warning(LOCATION, "unknown wing flag\n%s\n\nSkipping.", wing_flag_strings[i]);
-		}
-	}
-
-	// needed because stuff_string uses the NAME_LENGTH limit to load something into an array of
-	// MAX_FILENAME_LEN+1 size!!! (c.f. the regular player squad logo loading routine)
-	// I put this outside the if because the if is optional, and I want to make the Assert
-	// a catch-all to flag the potential error on every mission load: this way you avoid nasty
-	// surprises later :) - Goober5000
-	Assert(NAME_LENGTH <= MAX_FILENAME_LEN+1);
-	
-	// squad logo - Goober5000
-	if (optional_string("+Squad Logo:"))
-	{
-		int flag = -1;
-
-		stuff_string(wingp->wing_squad_filename, F_NAME, NULL);
-
-		// check all previous wings to see if we already loaded it (we want to save memory)
-		for (i = 0; i < num_wings; i++)
-		{
-			// do we have a previous texture?
-			if (Wings[i].wing_insignia_texture != -1)
-			{
-				// if we have a match
-				if (!stricmp(Wings[i].wing_squad_filename, wingp->wing_squad_filename))
-				{
-					flag = i;
-					break;
-				}
-			}
-		}
-
-		// if we have loaded it already, just use the old bitmap index
-		if (flag != -1)
-		{
-			wingp->wing_insignia_texture = Wings[flag].wing_insignia_texture;
-		}
-		else
-		{
-			wing_load_squad_bitmap(wingp);
 		}
 	}
 
