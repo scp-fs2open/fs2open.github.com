@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-12-22 21:49:05 $
+ * $Revision: 2.13 $
+ * $Date: 2004-12-28 16:20:33 $
  * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/12/22 21:49:05  taylor
+ * add a popup to make sure people know about pilot upgrade
+ *
  * Revision 2.11  2004/10/31 22:07:27  taylor
  * new pilot code
  *
@@ -532,6 +535,8 @@ int pilot_file_upgrade_check(char *callsign, int single)
 
 	// check if we've actually got an old file and make sure the user knows what's going to happen
 	if (file) {
+		cfclose(file);
+
 		// give a popup warning about the conversion process before proceeding - taylor
 		char confirm_string[300];
 #ifndef _WIN32
