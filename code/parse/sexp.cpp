@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.76 $
- * $Date: 2003-10-20 11:49:18 $
+ * $Revision: 2.77 $
+ * $Date: 2003-10-28 23:59:02 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2003/10/20 11:49:18  Goober5000
+ * added min, max, and avg sexps
+ * --Goober5000
+ *
  * Revision 2.75  2003/09/13 06:02:07  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -6925,14 +6929,18 @@ void sexp_end_of_campaign( int n )
 }
 
 // sexpression to end everything.  One parameter is the movie to play when this is over.
+// Goober5000 - edited to only to the FS2-specific code when actually ending the FS2 main
+// campaign, and otherwise to do the conventional code
 void sexp_end_campaign( int n )
 {
-	// post and event to move us to the end-of-campaign state.  There we will play a movie, then
-	// go to debriefing.
-	// gameseq_post_event( GS_EVENT_END_CAMPAIGN );
-
 	// in FS2 our ending is a bit wacky. we'll just flag the mission as having ended the campaign	
-	Campaign_ended_in_mission = 1;
+	if ((Game_mode & GM_CAMPAIGN_MODE) && !stricmp(Campaign.filename, "freespace2")) {
+		Campaign_ended_in_mission = 1;
+	} else {
+		// post and event to move us to the end-of-campaign state.  There we will play a movie, then
+		// go to debriefing.
+		gameseq_post_event( GS_EVENT_END_CAMPAIGN );
+	}
 }
 
 // sabotage subsystem reduces the strength of a subsystem by the given percentage.  If it is reduced to
