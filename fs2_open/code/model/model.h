@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.29 $
- * $Date: 2003-09-11 19:14:14 $
- * $Author: argv $
+ * $Revision: 2.30 $
+ * $Date: 2003-09-11 23:39:01 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/09/11 19:14:14  argv
+ * New energy system, table subsystem flags including beam free by default, subsystem display name.
+ *
  * Revision 2.28  2003/08/28 20:42:18  Goober5000
  * implemented rotating barrels for firing primary weapons
  * --Goober5000
@@ -544,10 +547,10 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	// _argv[-1] - power output of this subsystem, added to total effective power output for the ship.
 	float	power_output;
 	// _argv[-1] - optional subsys flags. bitfield this time, because bitfields are cool. :D
-	unsigned int		beam_free_by_default:2; // three states; 0 = never free by default, 1 = free by default if ship is, 2 = always free by default
+	unsigned int		beam_free_by_default; // three states; 0 = never free by default, 1 = free by default if ship is, 2 = always free by default
 
 	// _argv[-1] - subsystem display name is displayed in the target view.
-	int		use_display_name:1;
+	int		use_display_name;
 	char	display_name[MAX_NAME_LEN];
 } model_subsystem;
 
