@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.77 $
- * $Date: 2003-09-12 03:17:33 $
+ * $Revision: 2.78 $
+ * $Date: 2003-09-12 03:57:00 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2003/09/12 03:17:33  Goober5000
+ * grr...fixed more stuff
+ * --Goober5000
+ *
  * Revision 2.76  2003/09/11 19:33:07  argv
  * New energy system, singular shield support, some new ship table flags, no draw of thrusters when they are off, fixes.
  *
@@ -8634,7 +8638,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 //	Comments removed by PhReAk; Note that this is toggled on/off with a mission flag
 
 	//Figure out how much of the ship's hull we can repair
-	max_hull_repair = shipp->ship_initial_hull_strength * (The_mission.support_ships.max_hull_repair_val * .01);
+	max_hull_repair = shipp->ship_initial_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	
 	if(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
 	{
@@ -8655,7 +8659,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	ssp = GET_FIRST(&shipp->subsys_list);
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 		//Figure out how much we *can* repair the current subsystem -C
-		max_subsys_repair = ssp->max_hits * (The_mission.support_ships.max_subsys_repair_val * .01);
+		max_subsys_repair = ssp->max_hits * (The_mission.support_ships.max_subsys_repair_val * 0.01f);
 
 		if ( ssp->current_hits < max_subsys_repair && repair_allocated > 0 ) {
 			subsys_all_ok = 0;
@@ -9892,7 +9896,7 @@ float ship_quadrant_shield_strength(object *hit_objp, vector *hitpos)
 	if ( quadrant_num < 0 )
 		quadrant_num = 0;
 
-	max_quadrant = Ships[hit_objp->instance].ship_initial_shield_strength / (1.0f*(Ship_info[Ships[hit_objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)?1:MAX_SHIELD_SECTIONS));
+	max_quadrant = Ships[hit_objp->instance].ship_initial_shield_strength / (1.0f * (Ship_info[Ships[hit_objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS) ? 1 : MAX_SHIELD_SECTIONS);
 	if ( max_quadrant <= 0 ) {
 		return 0.0f;
 	}

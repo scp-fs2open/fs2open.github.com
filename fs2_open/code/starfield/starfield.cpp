@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-09-11 19:39:55 $
- * $Author: argv $
+ * $Revision: 2.16 $
+ * $Date: 2003-09-12 03:57:00 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/09/11 19:39:55  argv
+ * Fix really nasty crash bug when not all stars table entries have a flare.
+ *
  * Revision 2.14  2003/09/10 11:38:31  fryday
  * Added Lens Flares, enabled by optional table entry in stars.tbl on a per-sun basis
  *
@@ -532,7 +535,10 @@ void stars_init()
 				spec_g = g;
 				spec_b = b;
 			}
+
 			//lens flare stuff
+			flarecount=0;
+			flaretexcount=0;
 			if(optional_string("$Flare:")) {
 				isflare = 1;
 				required_string("+FlareCount:");
@@ -965,8 +971,8 @@ void stars_draw_lens_flare(int sun_n, vertex sun_vex) //use the info from starts
 	for (int i=0; i < bm->flare_n_flares; i++)
 	{
 		flare_pos = sun_vex;
-		flare_pos.sx += (i2fl(gr_screen.clip_left + gr_screen.clip_right)*0.5 - flare_pos.sx)*2*bm->flare_infos[i].pos;
-		flare_pos.sy += (i2fl(gr_screen.clip_top + gr_screen.clip_bottom)*0.5 - flare_pos.sy)*2*bm->flare_infos[i].pos;
+		flare_pos.sx += (i2fl(gr_screen.clip_left + gr_screen.clip_right)*0.5f - flare_pos.sx)*2*bm->flare_infos[i].pos;
+		flare_pos.sy += (i2fl(gr_screen.clip_top + gr_screen.clip_bottom)*0.5f - flare_pos.sy)*2*bm->flare_infos[i].pos;
 		gr_set_bitmap(bm->flare_bitmaps[bm->flare_infos[i].tex_num], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL);
 		g3_draw_bitmap(&flare_pos, 0, 0.05f * bm->flare_infos[i].scale, TMAP_FLAG_TEXTURED);
 	}

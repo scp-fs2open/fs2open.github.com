@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-09-12 03:17:33 $
+ * $Revision: 2.19 $
+ * $Date: 2003-09-12 03:57:00 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/09/12 03:17:33  Goober5000
+ * grr...fixed more stuff
+ * --Goober5000
+ *
  * Revision 2.17  2003/09/11 19:39:03  argv
  * New energy system, fixes, apply skill damage scaling to all ships, new energy system.
  *
@@ -2222,7 +2226,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 		weapon_info_index = -1;
 
 	// if this is a weapon
-	if((other_obj != NULL) && ((other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_BEAM) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS)) {
+	if((other_obj != NULL) && ((other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_BEAM) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS))) {
 		damage *= weapon_get_damage_scale(&Weapon_info[weapon_info_index], other_obj, ship_obj);
 	}
 
