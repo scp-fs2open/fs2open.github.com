@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-28 15:07:43 $
+ * $Revision: 2.3 $
+ * $Date: 2002-07-29 08:05:20 $
  * $Author: DTP $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/28 15:07:43  DTP
+ * FIX -stargame commandline arguement will now let you quit, a thing not possible before when using the startgame arguement
+ *
  * Revision 2.1  2002/07/22 01:22:25  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -4003,6 +4006,54 @@ void multi_create_game_init()
 
 void multi_create_game_do()
 {
+	//DTP CHECK ALMISSION FLAG HERE AND SKIP THE BITMAP LOADING PROGRESS 
+	//SINCE WE ALREADY HAVE A MISSION SELECTED IF THIS MISSION IS A VALID MULTIPLAYER MISSION
+	//IF NOT A VALID MULTIPLAYER MISSION CONTINUE LOADING, MAYBE CALL POPUP.
+	if ((Cmdline_almission) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {	//
+		multi_create_list_do(); //uhm here because off, hehe, my mind is failing right now
+
+		// DTP Var section for the is mission multi player Check.
+
+		char mission_name[NAME_LENGTH+1];
+		int flags;
+		char *filename; 
+		filename = cf_add_ext( Cmdline_almission, FS_MISSION_FILE_EXT ); //DTP ADD EXTENSION needed next line
+		flags = mission_parse_is_multi(filename, mission_name); //DTP flags will set if mission is multi
+
+		if (flags) { //only continue if mission is multiplayer mission
+
+			
+			
+			netgame_info *ng; 
+			ng = &Netgame;
+						
+			
+			char almissionname[256]; // needed, for the strncpy below
+			strncpy(almissionname, Cmdline_almission,MAX_FILENAME_LEN); //DTP; copying name from cmd_almission line
+
+			
+			Netgame.options.respawn = 99; //override anything //for debugging, i often forget this.
+			ng->respawn = Netgame.options.respawn;
+
+			Netgame.campaign_mode = MP_SINGLE; //multiplayer single mission. meaning Single mission, not single player
+
+			strncpy(Game_current_mission_filename,almissionname,MAX_FILENAME_LEN ); // copying almissionname to Game_current_mission_filename
+			strncpy(Netgame.mission_name,almissionname,MAX_FILENAME_LEN);// copying almission name to netgame.mission_name
+
+			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING; //DTP must be set before a call to gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC) is done as it is below.
+			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);//DTP STart game
+
+			Cmdline_almission = NULL; // we dont want to autoload anymore do we, we will be able to quit. halleluja. Startgame has already been disabled, so no need to turn of "Cmdline_start_netgame"
+			return;	// we dont need to check or set regarding ships/weapons anything as we are already progressing into mission so return
+		}
+		else {
+			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(" Not a multi player-mission",9999)); //DTP startgame popup pilot error
+			gamesnd_play_iface(SND_GENERAL_FAIL);
+			Cmdline_almission = NULL; //DTP make sure this gets nullified.
+		
+		}
+	}
+	
 	int player_index;
 	char *loading_str = XSTR("Loading", 1336);
 	int str_w, str_h;
