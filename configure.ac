@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.9 2005-03-31 21:12:23 mrduckman Exp $
+dnl $Id: configure.ac,v 1.10 2005-04-05 11:41:33 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -190,22 +190,22 @@ if test "$fs2_debug" = "yes" ; then
 	FS2_LDFLAGS="$FS2_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-	AM_OPTIONS_WXCONFIG
-	AM_PATH_WXCONFIG(2.4.2, wxWin=1)
-	     if test "$wxWin" != 1; then
-	        AC_MSG_ERROR([
-	        wxWindows must be installed on your system
-	        but wx-config script couldn't be found.
-	     
-	        Please check that wx-config is in path, the directory
-	        where wxWindows libraries are installed (returned by
-	        'wx-config --libs' command) is in LD_LIBRARY_PATH or
-	        equivalent variable and wxWindows version is 2.3.4 or above.
-	        ])
-	     fi
+		AM_OPTIONS_WXCONFIG
+		AM_PATH_WXCONFIG(2.4.2, wxWin=1)
+		if test "$wxWin" != 1; then
+			AC_MSG_ERROR([
+				wxWindows must be installed on your system
+				but wx-config script couldn't be found.
+
+				Please check that wx-config is in path, the directory
+				where wxWindows libraries are installed (returned by
+				'wx-config --libs' command) is in LD_LIBRARY_PATH or
+				equivalent variable and wxWindows version is 2.3.4 or above.
+			])
+		fi
 		FS2_CXXFLAGS="$FS2_CXXFLAGS $WX_CXXFLAGS_ONLY"
 		FS2_LDFLAGS="$FS2_LDFLAGS $WX_LIBS"
-	AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
+		AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
 	else
 		AC_SUBST(FS2_BINARY, ["fs2_open_d"])
 	fi
@@ -215,19 +215,19 @@ else
 	FS2_LDFLAGS="$FS2_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-	AM_OPTIONS_WXCONFIG
-	AM_PATH_WXCONFIG(2.4.2, wxWin=1)
-	     if test "$wxWin" != 1; then
-	        AC_MSG_ERROR([
-	        wxWindows must be installed on your system
-	        but wx-config script couldn't be found.
-	     
-	        Please check that wx-config is in path, the directory
-	        where wxWindows libraries are installed (returned by
-	        'wx-config --libs' command) is in LD_LIBRARY_PATH or
-	        equivalent variable and wxWindows version is 2.3.4 or above.
-	        ])
-	     fi
+		AM_OPTIONS_WXCONFIG
+		AM_PATH_WXCONFIG(2.4.2, wxWin=1)
+		if test "$wxWin" != 1; then
+			AC_MSG_ERROR([
+				wxWindows must be installed on your system
+				but wx-config script couldn't be found.
+
+				Please check that wx-config is in path, the directory
+				where wxWindows libraries are installed (returned by
+				'wx-config --libs' command) is in LD_LIBRARY_PATH or
+				equivalent variable and wxWindows version is 2.3.4 or above.
+			])
+		fi
 		FS2_CXXFLAGS="$FS2_CXXFLAGS $WX_CXXFLAGS_ONLY"
 		FS2_LDFLAGS="$FS2_LDFLAGS $WX_LIBS"
 		AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
@@ -291,6 +291,30 @@ fi
 ])
 
 AC_C_SOCKLEN_T
+
+dnl Check if std::ios_base is available. Old compilers (e.g. gcc 2.9x)
+dnl may have to use std::ios instead
+AC_DEFUN([AC_CXX_IOS_BASE],
+[AC_CACHE_CHECK(for std::ios_base, ac_cv_cxx_class_ios_base,
+[
+	AC_LANG_PUSH([C++])
+	AC_TRY_COMPILE([
+		#include <iostream>
+	],[
+		std::ios_base::out;
+	],[
+		ac_cv_cxx_class_ios_base=yes
+	],[
+		ac_cv_cxx_class_ios_base=no
+	])
+	AC_LANG_POP([C++])
+])
+if test "x$ac_cv_cxx_class_ios_base" = "xno"; then
+	AC_DEFINE(ios_base, ios, [define std::ios_base as std::ios if not available])
+fi
+])
+
+AC_CXX_IOS_BASE
 
 
 dnl Setup paths for lib and include dirs
