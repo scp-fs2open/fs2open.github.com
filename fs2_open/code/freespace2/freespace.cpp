@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-01-20 05:40:49 $
- * $Author: bobboau $
+ * $Revision: 2.21 $
+ * $Date: 2003-01-26 02:58:33 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/01/20 05:40:49  bobboau
+ * added several sExps for turning glow points and glow maps on and off
+ *
  * Revision 2.19  2003/01/19 01:07:41  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -1092,17 +1095,25 @@ static char *Game_loading_ani_fname[GR_NUM_RESOLUTIONS] = {
 };
 
 #if defined(FS2_DEMO)
-static char *Game_demo_title_screen_fname[GR_NUM_RESOLUTIONS] = {
+static char *Game_title_screen_fname[GR_NUM_RESOLUTIONS] = {
 	"PreLoad",
 	"2_PreLoad"
 };
 #elif defined(OEM_BUILD)
-static char *Game_demo_title_screen_fname[GR_NUM_RESOLUTIONS] = {
+static char *Game_title_screen_fname[GR_NUM_RESOLUTIONS] = {
 	"OEMPreLoad",
 	"2_OEMPreLoad"
 };
+#else
+static char *Game_title_screen_fname[GR_NUM_RESOLUTIONS] = {
+	"PreLoad",
+	"2_PreLoad"
+};
 #endif
-
+static char *Game_logo_screen_fname[GR_NUM_RESOLUTIONS] = {
+	"PreLoadLogo",
+	"PreLoadLogo"
+};
 
 #ifdef _WIN32
 // cdrom stuff
@@ -2475,12 +2486,12 @@ void game_init()
 
 	gr_set_gamma(Freespace_gamma);
 
-#if defined(FS2_DEMO) || defined(OEM_BUILD)
+//#if defined(FS2_DEMO) || defined(OEM_BUILD)
 	// add title screen
 	if(!Is_standalone){
 		display_title_screen();
 	}
-#endif
+//#endif
 	
 #ifndef NO_NETWORK
 	// attempt to load up master tracker registry info (login and password)
@@ -2529,7 +2540,9 @@ void game_init()
 
 	control_config_common_init();				// sets up localization stuff in the control config
 	parse_rank_tbl();
+#ifndef FS2_DEMO
 	parse_medal_tbl();
+#endif
 	cutscene_init();
 	key_init();
 	mouse_init();
@@ -8988,15 +9001,62 @@ int game_hacked_data()
 	return 0;
 }
 
+
+#define MAX_SPLASHSCREENS 64
+char Splash_screens[MAX_SPLASHSCREENS][MAX_FILENAME_LEN];
+
+
 void display_title_screen()
 {
-#if defined(FS2_DEMO) || defined(OEM_BUILD)
-	///int title_bitmap;
+	int title_bitmap, title_logo;
+	_finddata_t find;
+	long		find_handle;
+	char current_dir[256];
 
-	// load bitmap
-	int title_bitmap = bm_load(Game_demo_title_screen_fname[gr_screen.res]);
-	if (title_bitmap == -1) {
-		return;
+	//Get the find string
+	_getcwd(current_dir, 256);
+	strcat(current_dir, DIR_SEPARATOR_STR);
+	strcat(current_dir, "*.pcx");
+
+	//Let the search begin!
+	find_handle = _findfirst(current_dir, &find);
+	int i = 0;
+	if(find_handle != -1)
+	{
+		char *p;
+
+		do {
+			if(!(find.attrib & _A_SUBDIR) && (strlen(find.name) < MAX_FILENAME_LEN)) {
+				p = strchr( find.name, '.' );
+				if(p) {
+					*p = '\0';
+				}
+
+				if(stricmp(find.name, Game_logo_screen_fname[gr_screen.res]))
+				{
+					strcpy(Splash_screens[i], find.name);
+					i++;
+				}
+
+				if(i == MAX_SPLASHSCREENS) {
+					break;
+				}
+			}
+		} while(!_findnext(find_handle, &find));
+	}
+
+	if(i) {
+		srand(time(NULL));
+		title_bitmap = bm_load(Splash_screens[rand() % i]);
+
+	} else {
+		title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+	}
+
+	title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+	
+	if (title_bitmap == -1 && title_logo == -1) {
+//		return;
 	}
 
 #ifndef NO_DIRECT3D
@@ -9006,12 +9066,35 @@ void display_title_screen()
 		d3d_start_frame();
 	}
 #endif
+	int width, height;
 
-	// set
-	gr_set_bitmap(title_bitmap);
+	if(title_bitmap != -1)
+	{
+		// set
+		gr_set_bitmap(title_bitmap);
 
-	// draw
-	gr_bitmap(0, 0);
+		//Get bitmap's width and height
+		bm_get_info(title_bitmap, &width, &height);
+
+		//Draw it in the center of the screen
+		gr_bitmap((gr_screen.max_w - width)/2, (gr_screen.max_h - height)/2);
+		bm_unload(title_bitmap);
+	}
+
+	if(title_logo != -1)
+	{
+		// set
+		gr_set_bitmap(title_logo);
+
+		//Get bitmap's width and height
+		int width, height;
+		bm_get_info(title_logo, &width, &height);
+
+		//Draw it in the center of the screen
+		gr_bitmap(0,0);
+		//gr_bitmap((gr_screen.max_w - width)/2, (gr_screen.max_h - height)/2);
+		bm_unload(title_logo);
+	}
 
 #ifndef NO_DIRECT3D
 	// d3d	
@@ -9023,9 +9106,6 @@ void display_title_screen()
 
 	// flip
 	gr_flip();
-
-	bm_unload(title_bitmap);
-#endif  // FS2_DEMO || OEM_BUILD
 }
 
 // return true if the game is running with "low memory", which is less than 48MB
