@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.7 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2004-10-31 21:46:38 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  */
@@ -130,32 +130,12 @@ void stub_set_font(int fontnum) {}
 void gr_stub_set_shader( shader * shade ) {}
 
 // Bitmaps
-void bm_stub_init(){}
-void bm_stub_close(){}
-int bm_stub_get_cache_slot( int bitmap_id, int separate_ani_frames ){return 0;}
-int bm_stub_get_next_handle(){return 0;}
-int bm_stub_load(char * filename){return 0;}
-int bm_stub_load_duplicate(char *filename){return 0;}
-int bm_stub_create( int bpp, int w, int h, void * data, int flags = 0){return 0;}
-int bm_stub_unload( int n ){return 0;}
-void bm_stub_release(int n){}
-int bm_stub_load_animation( char * filename, int * nframes, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY ){return 0;}
-bitmap * bm_stub_lock( int bitmapnum, ubyte bpp, ubyte flags ){return 0;}
-void bm_stub_unlock( int bitmapnum ){}
-void bm_stub_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL, bitmap_section_info **sections = NULL ){}
-void bm_stub_load_all(){}
-void bm_stub_unload_all(){}
-void bm_stub_get_palette(int n, ubyte *pal, char *name){}
-void bm_stub_get_pixel( int bitmap, float u, float v, ubyte *r, ubyte *g, ubyte *b ){}
-void bm_stub_get_frame_usage(int *ntotal, int *nnew){}
-void bm_stub_page_in_start(){}
-void bm_stub_page_in_stop(){}
-void bm_stub_page_in_texture( int bitmapnum, int num_frames=1 ){}
-void bm_stub_page_in_nondarkening_texture( int bitmap, int num_frames=1 ){}
-void bm_stub_page_in_xparent_texture( int bitmapnum, int num_frames=1 ){}
-void bm_stub_page_in_aabitmap( int bitmapnum, int num_frames=1 ){}
-void bm_stub_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a){}
-void bm_stub_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h){}
+void gr_stub_bm_free_data(int n) { return; }
+void gr_stub_bm_create(int n) { return; }
+void gr_stub_bm_init(int n) { return; }
+int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size) { return 0; }
+void gr_stub_bm_page_in_start() { return; }
+int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) { return -1; }
 
 void gr_stub_init() 
 {
@@ -221,31 +201,12 @@ void gr_stub_init()
 	gr_screen.gf_get_region = gr_stub_get_region;
 
 	// now for the bitmap functions
-	gr_screen.gf_bm_get_next_handle         = bm_stub_get_next_handle;         
-	gr_screen.gf_bm_close                   = bm_stub_close;                   
-	gr_screen.gf_bm_init                    = bm_stub_init;                    
-	gr_screen.gf_bm_get_frame_usage         = bm_stub_get_frame_usage;         
-	gr_screen.gf_bm_create                  = bm_stub_create;                  
-	gr_screen.gf_bm_load                    = bm_stub_load;                   
-	gr_screen.gf_bm_load_duplicate          = bm_stub_load_duplicate;          
-	gr_screen.gf_bm_load_animation          = bm_stub_load_animation;          
-	gr_screen.gf_bm_get_info                = bm_stub_get_info;                
-	gr_screen.gf_bm_lock                    = bm_stub_lock;                    
-	gr_screen.gf_bm_unlock                  = bm_stub_unlock;                  
-	gr_screen.gf_bm_get_palette             = bm_stub_get_palette;             
-	gr_screen.gf_bm_release                 = bm_stub_release;                 
-	gr_screen.gf_bm_unload                  = bm_stub_unload;                  
-	gr_screen.gf_bm_unload_all              = bm_stub_unload_all;              
-	gr_screen.gf_bm_page_in_texture         = bm_stub_page_in_texture;         
-	gr_screen.gf_bm_page_in_start           = bm_stub_page_in_start;           
-	gr_screen.gf_bm_page_in_stop            = bm_stub_page_in_stop;            
-	gr_screen.gf_bm_get_cache_slot          = bm_stub_get_cache_slot;          
-	gr_screen.gf_bm_get_components          = bm_stub_get_components;          
-	gr_screen.gf_bm_get_section_size        = bm_stub_get_section_size;
-
-	gr_screen.gf_bm_page_in_nondarkening_texture = bm_stub_page_in_nondarkening_texture; 
-	gr_screen.gf_bm_page_in_xparent_texture		 = bm_stub_page_in_xparent_texture;		 
-	gr_screen.gf_bm_page_in_aabitmap			 = bm_stub_page_in_aabitmap;
+	gr_screen.gf_bm_free_data				= gr_stub_bm_free_data;
+	gr_screen.gf_bm_create					= gr_stub_bm_create;
+	gr_screen.gf_bm_init					= gr_stub_bm_init;
+	gr_screen.gf_bm_load					= gr_stub_bm_load;
+	gr_screen.gf_bm_page_in_start			= gr_stub_bm_page_in_start;
+	gr_screen.gf_bm_lock					= gr_stub_bm_lock;
 
 	gr_screen.gf_get_pixel = gr_stub_get_pixel;
 
