@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2004/04/06 05:28:07  phreak
+ * oops, hanging ')'
+ *
  * Revision 2.60  2004/04/06 05:26:59  phreak
  * properly commented Local SSM code.
  * put in some estimation code so the Local SSMs warp in closer to moving ships
@@ -1005,7 +1008,7 @@ void parse_wi_flags(weapon_info *weaponp)
 // return 0 if successful, otherwise return -1
 #define WEAPONS_MULTITEXT_LENGTH 2048
 
-int parse_weapon()
+int parse_weapon(int subtype, bool replace)
 {
 	char buf[WEAPONS_MULTITEXT_LENGTH];
 	weapon_info *wip;
@@ -1043,6 +1046,25 @@ int parse_weapon()
 		strcpy(old_name, wip->name);
 		strcpy(wip->name, old_name+1);
 	}
+
+	int w_id = weapon_name_lookup(wip->name);
+	if(w_id != -1)
+	{
+		if(replace)
+		{
+			wip = &Weapon_info[w_id];
+		}
+		else
+		{
+			nprintf(("Warning", "Error: Weapon %s already exists. Weapon names should be unique.", wip->name));
+		}
+	}
+	else
+	{
+		Num_weapon_types++;
+	}
+	//Set subtype
+	wip->subtype = subtype;
 
 	wip->title[0] = 0;
 	if (optional_string("+Title:")) {
@@ -1183,7 +1205,7 @@ int parse_weapon()
 	wip->inner_radius = 0;
 	wip->outer_radius = 0;
 	wip->shockwave_speed = 0;
-	if (First_secondary_index != -1) {
+	if (subtype == WP_MISSILE) {
 		required_string("$Blast Force:");
 		stuff_float( &(wip->blast_force) );
 		diag_printf ("Weapon blast force -- %7.3f\n", wip->blast_force);
@@ -1337,7 +1359,7 @@ int parse_weapon()
 	required_string("$ImpactSnd:");
 	stuff_int(&wip->impact_snd);
 
-	if (First_secondary_index != -1)
+	if (subtype == WP_MISSILE)
 	{
 		required_string("$FlyBySnd:");
 		stuff_int(&wip->flyby_snd);
@@ -1352,7 +1374,7 @@ int parse_weapon()
 
 	// handle rearm rate - modified by Goober5000
 	primary_rearm_rate_specified = 0;
-	if (First_secondary_index != -1)		// secondary weapons are required to have a rearm rate
+	if (subtype == WP_MISSILE)		// secondary weapons are required to have a rearm rate
 	{
 		required_string( "$Rearm Rate:");
 
@@ -1395,7 +1417,7 @@ int parse_weapon()
 
 	// be friendly; make sure ballistic flags are synchronized - Goober5000
 	// primary
-	if (First_secondary_index == -1)
+	if (subtype == WP_LASER)
 	{
 		// ballistic
 		if (wip->wi_flags2 & WIF2_BALLISTIC)
@@ -1439,7 +1461,7 @@ int parse_weapon()
 	}
 
 	// also make sure secondaries and ballistic primaries do not have 0 cargo size
-	if (First_secondary_index != -1 || wip->wi_flags2 & WIF2_BALLISTIC)
+	if (subtype == WP_MISSILE || wip->wi_flags2 & WIF2_BALLISTIC)
 	{
 		if (wip->cargo_size == 0.0f)
 		{
@@ -2057,70 +2079,122 @@ void parse_tertiary()
 
 }
 
-
-void parse_weaponstbl()
+char current_weapon_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
+void parse_weaponstbl(char* longname, bool is_chunk)
 {
+	strcpy(current_weapon_table, longname);
 	// open localization
 	lcl_ext_open();
 
-	read_file_text("weapons.tbl");
+	read_file_text(longname);
 	reset_parse();
-
-	Num_weapon_types = 0;
-	First_secondary_index = -1;
-	Num_spawn_types = 0;
 	
-	required_string("#Primary Weapons");
+	if(!is_chunk)
+	{
+		required_string("#Primary Weapons");
 
-	while (required_string_either("#End", "$Name:")) {
-		Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
-		// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-		if ( parse_weapon() ) {
-			continue;
+		while (required_string_either("#End", "$Name:")) {
+			Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
+			// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
+			if ( parse_weapon(WP_LASER, false) ) {
+				continue;
+			}
 		}
-		Weapon_info[Num_weapon_types].subtype = WP_LASER;
-		Num_weapon_types++;
-	}
-	required_string("#End");
+		required_string("#End");
 
 
-	required_string("#Secondary Weapons");
-	First_secondary_index = Num_weapon_types;
-	while (required_string_either("#End", "$Name:")) {
-		Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
-		// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-		if ( parse_weapon() ) {
-			continue;
+		required_string("#Secondary Weapons");
+		First_secondary_index = Num_weapon_types;
+		while (required_string_either("#End", "$Name:")) {
+			Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
+			// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
+			if ( parse_weapon(WP_MISSILE, false) ) {
+				continue;
+			}
 		}
-		Weapon_info[Num_weapon_types].subtype = WP_MISSILE;
-		Num_weapon_types++;
-	}
-	required_string("#End");
+		required_string("#End");
 
-	required_string("#Beam Weapons");
-	while (required_string_either("#End", "$Name:")) {
-		Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
-		// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-		if ( parse_weapon() ) {
-			continue;
+		required_string("#Beam Weapons");
+		while (required_string_either("#End", "$Name:")) {
+			Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
+			// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
+			if ( parse_weapon(WP_BEAM, false) ) {
+				continue;
+			}
 		}
-		Weapon_info[Num_weapon_types].subtype = WP_BEAM;
-		Num_weapon_types++;
+		required_string("#End");
+
+		strcpy(parse_error_text, "in the counter measure table entry");
+
+		required_string("#Countermeasures");
+		while (required_string_either("#End", "$Name:")) {
+			Assert( Num_cmeasure_types < MAX_CMEASURE_TYPES );
+			parse_cmeasure();
+			Num_cmeasure_types++;
+		}
+
+		strcpy(parse_error_text, "");
+
+		required_string("#End");
 	}
-	required_string("#End");
+	else
+	{
+		if(optional_string("#Primary Weapons"))
+		{
+			while (required_string_either("#End", "$Name:")) {
+				Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
+				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
+				if ( parse_weapon(WP_LASER, true) ) {
+					continue;
+				}
+			}
+			required_string("#End");
+		}
 
-	strcpy(parse_error_text, "in the counter measure table entry");
 
-	required_string("#Countermeasures");
-	while (required_string_either("#End", "$Name:")) {
-		Assert( Num_cmeasure_types < MAX_CMEASURE_TYPES );
-		parse_cmeasure();
-		Num_cmeasure_types++;
+		if(optional_string("#Secondary Weapons"))
+		{
+			if(First_secondary_index == -1)
+			{
+				First_secondary_index = Num_weapon_types;
+			}
+			while (required_string_either("#End", "$Name:")) {
+				Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
+				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
+				if ( parse_weapon(WP_MISSILE, true) ) {
+					continue;
+				}
+			}
+			required_string("#End");
+		}
+
+		if(optional_string("#Beam Weapons"))
+		{
+			while (required_string_either("#End", "$Name:")) {
+				Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
+				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
+				if ( parse_weapon(WP_BEAM, true) ) {
+					continue;
+				}
+			}
+			required_string("#End");
+		}
+
+		strcpy(parse_error_text, "in the counter measure table entry");
+
+		if(optional_string("#Countermeasures"))
+		{
+			while (required_string_either("#End", "$Name:")) {
+				Assert( Num_cmeasure_types < MAX_CMEASURE_TYPES );
+				parse_cmeasure();
+				Num_cmeasure_types++;
+			}
+
+			required_string("#End");
+		}
+
+		strcpy(parse_error_text, "");
 	}
-
-	strcpy(parse_error_text, "");
-
-	required_string("#End");
 
 	//maybe do some tertiary parsing
 	if (optional_string("#Tertiary Weapons"))
@@ -2138,11 +2212,16 @@ void parse_weaponstbl()
 	// Read in a list of weapon_info indicies that are an ordering of the player weapon precedence.
 	// This list is used to select an alternate weapon when a particular weapon is not available
 	// during weapon selection.
-	required_string("$Player Weapon Precedence:");
-
-	strcpy(parse_error_text, "in the player weapon precedence list");
-	Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-	strcpy(parse_error_text, "");
+	if(!is_chunk)
+	{
+		required_string("$Player Weapon Precedence:");
+	}
+	if(!is_chunk || optional_string("$Player Weapon Precedence:"))
+	{
+		strcpy(parse_error_text, "in the player weapon precedence list");
+		Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+		strcpy(parse_error_text, "");
+	}
 
 	translate_spawn_types();
 
@@ -2173,9 +2252,23 @@ void weapon_init()
 
 		// parse weapons.tbl
 		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing 'weapons.tbl'\r\nError code = %i.\r\n", rval);
-		} else {			
-			parse_weaponstbl();
+			Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", rval, current_weapon_table);
+		}
+		else
+		{	
+			Num_weapon_types = 0;
+			First_secondary_index = -1;
+			Num_spawn_types = 0;
+			parse_weaponstbl("weapons.tbl", false);
+
+			char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-wep.tbm");
+			for(int i = 0; i < num_files; i++)
+			{
+				//HACK HACK HACK
+				strcat(tbl_files[i], ".tbm");
+				parse_weaponstbl(tbl_files[i], true);
+			}
 			create_weapon_names();
 			Weapons_inited = 1;
 		}
