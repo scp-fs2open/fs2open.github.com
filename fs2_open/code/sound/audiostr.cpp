@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-02-04 20:06:09 $
+ * $Revision: 2.10 $
+ * $Date: 2005-02-05 04:15:36 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/02/04 20:06:09  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.8  2005/02/01 06:54:20  taylor
  * OGG fix for streams
  *
@@ -214,6 +217,7 @@
 #include "sound/acm.h"
 #include "sound/ds.h"
 #include "sound/ogg/ogg.h"
+#include "osapi/osapi.h"
 
 // Constants
 #ifndef SUCCESS
