@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.131 $
- * $Date: 2005-03-10 08:00:02 $
+ * $Revision: 2.132 $
+ * $Date: 2005-03-13 08:04:43 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.131  2005/03/10 08:00:02  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.130  2005/03/07 13:10:20  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -5802,7 +5811,11 @@ void lock_time_compression(bool is_locked)
 
 void change_time_compression(float multiplier)
 {
-	Game_time_compression = Desired_time_compression = Game_time_compression * multiplier;
+	fix modified = F1_0;
+
+	modified = fl2f( f2fl(Game_time_compression) * multiplier );
+
+	Desired_time_compression = Game_time_compression = modified;
 	Time_compression_change_rate = 0;
 }
 
@@ -5810,13 +5823,13 @@ void set_time_compression(float multiplier, float change_time)
 {
 	if(change_time <= 0.0f)
 	{
-		Game_time_compression = Desired_time_compression = F1_0 * multiplier;
+		Game_time_compression = Desired_time_compression = fl2f(multiplier);
 		Time_compression_change_rate = 0;
 		return;
 	}
 
-	Desired_time_compression = F1_0 * multiplier;
-	Time_compression_change_rate = (Desired_time_compression - Game_time_compression)/change_time;
+	Desired_time_compression = fl2f(multiplier);
+	Time_compression_change_rate = fl2f( f2fl(Desired_time_compression - Game_time_compression) / change_time );
 }
 
 void game_set_frametime(int state)
@@ -6234,12 +6247,19 @@ int game_poll()
 		case KEY_PRINT_SCRN: 
 			{
 				static int counter = os_config_read_uint(NULL, "ScreenshotNum", 0);
-				char tmp_name[127];
+				char tmp_name[MAX_FILENAME_LEN];
 
 				game_stop_time();
 
-				sprintf( tmp_name, NOX("screen%0002d"), counter );
+				// we could probably go with .3 here for 1,000 shots but people really need to clean out
+				// their directories better than that so it's 100 for now.
+				sprintf( tmp_name, NOX("screen%.2i"), counter );
 				counter++;
+
+				// we've got two character precision so we can only have 100 shots at a time, reset if needed
+				if (counter > 99)
+					counter = 0;
+
 				mprintf(( "Dumping screen to '%s'\n", tmp_name ));
 				gr_print_screen(tmp_name);
 
@@ -7235,15 +7255,17 @@ void game_enter_state( int old_state, int new_state )
 						break;
 				}
 			}
-			// maybe play a movie before the briefing.  don't play if entering briefing screen from ship or weapon select.
-			if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU))
-				mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
 
-			set_time_compression(1.0f);
-
+			// red alert gamestate has own movie playing so check for it and skip all of this if needed.
 			if ( red_alert_mission() ) {
 				gameseq_post_event(GS_EVENT_RED_ALERT);
 			} else {
+				// maybe play a movie before the briefing.  don't play if entering briefing screen from ship or weapon select.
+				if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU))
+					mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
+
+				set_time_compression(1.0f);
+
 				brief_init();
 			}
 
@@ -7276,6 +7298,7 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_RED_ALERT:
+			set_time_compression(1.0f);
 			mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
 			red_alert_init();
 			break;
@@ -7301,11 +7324,17 @@ void game_enter_state( int old_state, int new_state )
 					}
 				}
 
-				// maybe play a movie before the briefing.  don't play if entering briefing screen from ship or weapon select.
-				if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU))
-					mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
+				if ( red_alert_mission() ) {
+					gameseq_post_event(GS_EVENT_RED_ALERT);
+				} else {
+					// maybe play a movie before the briefing.  don't play if entering briefing screen from ship or weapon select.
+					if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU))
+						mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
 
-				cmd_brief_init(team_num);
+					set_time_compression(1.0f);
+
+					cmd_brief_init(team_num);
+				}
 			}
 
 			break;
