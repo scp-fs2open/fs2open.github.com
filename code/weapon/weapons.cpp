@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2005/01/28 04:05:05  phreak
+ * shockwave weapons now work properly with the electronics (d-missible) tag
+ * added in a "randomness factor" for electronics parameters.  This adds or subtracts
+ * a random value between 0 and this factor to the disruption time.  This was hard coded
+ * to be 4 seconds in retail.
+ *
  * Revision 2.82  2005/01/11 04:05:23  taylor
  * fully working (??) -loadonlyused, allocate used_weapons[] and ship_class_used[] only when needed
  *
@@ -1736,36 +1742,53 @@ int parse_weapon(int subtype, bool replace)
 
 	//electronics tag optional stuff
 	wip->elec_intensity=1.0f;
-	wip->elec_time=10000;
+	wip->elec_time=6000;
 	wip->elec_eng_mult=1.0f;
 	wip->elec_weap_mult=1.0f;
 	wip->elec_beam_mult=1.0f;
 	wip->elec_sensors_mult=1.0f;
 	wip->elec_randomness=4000;
-
+	wip->elec_use_new_style=0;
 
 	if (optional_string("$Electronics:"))
 	{
-		required_string("+Intensity:");
-		stuff_float(&wip->elec_intensity);
+		if (!required_string_either("+New Style:", "+Old Style:"))
+		{
+			required_string("+New Style:");
+			wip->elec_use_new_style=1;
 
-		required_string("+Lifetime:");
-		stuff_int(&wip->elec_time);
+			required_string("+Intensity:");
+			stuff_float(&wip->elec_intensity);
 
-		required_string("+Engine Multiplier:");
-		stuff_float(&wip->elec_eng_mult);
+			required_string("+Lifetime:");
+			stuff_int(&wip->elec_time);
 
-		required_string("+Weapon Multiplier:");
-		stuff_float(&wip->elec_weap_mult);
+			required_string("+Engine Multiplier:");
+			stuff_float(&wip->elec_eng_mult);
 
-		required_string("+Beam Turret Multiplier:");
-		stuff_float(&wip->elec_beam_mult);
+			required_string("+Weapon Multiplier:");
+			stuff_float(&wip->elec_weap_mult);
 
-		required_string("+Sensors Multiplier:");
-		stuff_float(&wip->elec_sensors_mult);
+			required_string("+Beam Turret Multiplier:");
+			stuff_float(&wip->elec_beam_mult);
 
-		required_string("+Randomness Time:");
-		stuff_int(&wip->elec_randomness);
+			required_string("+Sensors Multiplier:");
+			stuff_float(&wip->elec_sensors_mult);
+	
+			required_string("+Randomness Time:");
+			stuff_int(&wip->elec_randomness);
+		}
+		else
+		{
+			required_string("+Old Style:");
+			wip->elec_use_new_style=0;
+			
+			required_string("+Lifetime:");
+			stuff_int(&wip->elec_time);
+
+			required_string("+Randomness Time:");
+			stuff_int(&wip->elec_randomness);
+		}
 	}
 
 
@@ -4169,24 +4192,24 @@ const float weapon_electronics_scale[MAX_SHIP_TYPES]=
 {
 	0.0f,	//SHIP_TYPE_NONE
 	10.0f,	//SHIP_TYPE_CARGO
-	7.5f,	//SHIP_TYPE_FIGHTER_BOMBER
-	1.0f,	//SHIP_TYPE_CRUISER
+	4.0f,	//SHIP_TYPE_FIGHTER_BOMBER
+	0.9f,	//SHIP_TYPE_CRUISER
 	1.75f,	//SHIP_TYPE_FREIGHTER
 	0.2f,	//SHIP_TYPE_CAPITAL
 	2.0f,	//SHIP_TYPE_TRANSPORT
-	3.0f,	//SHIP_TYPE_REPAIR_REARM
+	3.5f,	//SHIP_TYPE_REPAIR_REARM
 	10.0f,	//SHIP_TYPE_NAVBUOY
 	10.0f,	//SHIP_TYPE_SENTRYGUN
 	10.0f,	//SHIP_TYPE_ESCAPEPOD
 	0.075f,	//SHIP_TYPE_SUPERCAP
-	5.0f,	//SHIP_TYPE_STEALTH
-	10.0f,	//SHIP_TYPE_FIGHTER
-	5.0f,	//SHIP_TYPE_BOMBER
+	4.0f,	//SHIP_TYPE_STEALTH
+	4.0f,	//SHIP_TYPE_FIGHTER
+	4.0f,	//SHIP_TYPE_BOMBER
 	0.5f,	//SHIP_TYPE_DRYDOCK
-	0.9f,	//SHIP_TYPE_AWACS
-	1.2f,	//SHIP_TYPE_GAS_MINER
-	0.4f,	//SHIP_TYPE_CORVETTE
-	0.1f,	//SHIP_TYPE_KNOSSOS_DEVICE
+	0.8f,	//SHIP_TYPE_AWACS
+	1.0f,	//SHIP_TYPE_GAS_MINER
+	0.3333f,	//SHIP_TYPE_CORVETTE
+	0.10f,	//SHIP_TYPE_KNOSSOS_DEVICE
 };
 
 
@@ -4225,37 +4248,62 @@ void weapon_do_electronics_affect(object *ship_objp, vector *blast_pos, int wi_i
 		dist = vm_vec_dist_quick(blast_pos, &subsys_world_pos);
 		if ( dist < wip->outer_radius )
 		{
-			//if its an engine subsytem, take the multiplier into account
-			if (psub->type==SUBSYSTEM_ENGINE)
+			//use new style electronics disruption
+			if (wip->elec_use_new_style)
 			{
-				sub_time*=wip->elec_eng_mult;
-			}
-
-			//if its a turret or weapon subsytem, take the multiplier into account
-			if ((psub->type==SUBSYSTEM_TURRET) || (psub->type==SUBSYSTEM_WEAPONS))
-			{
-				if ((psub->type==SUBSYSTEM_TURRET)&&(Weapon_info[psub->turret_weapon_type].wi_flags & WIF_BEAM))
+				//if its an engine subsytem, take the multiplier into account
+				if (psub->type==SUBSYSTEM_ENGINE)
 				{
-					sub_time*=wip->elec_beam_mult;
+					sub_time*=wip->elec_eng_mult;
 				}
-				else
-				{
-					sub_time*=wip->elec_weap_mult;
-				}
-			}
-
-			if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags & MSS_FLAG_AWACS))
-			{
-				sub_time*=wip->elec_sensors_mult;
-			}
 	
-			//disrupt this subsystem for the predicted time, plus or minus some time
-			//if it turns out to be less than 0 seconds, don't bother
-			sub_time+=frand_range(-1.0f, 1.0f) * wip->elec_randomness;
+				//if its a turret or weapon subsytem, take the multiplier into account
+				if ((psub->type==SUBSYSTEM_TURRET) || (psub->type==SUBSYSTEM_WEAPONS))
+				{
+					//disrupt beams
+					if ((psub->type==SUBSYSTEM_TURRET)&&(Weapon_info[psub->turret_weapon_type].wi_flags & WIF_BEAM))
+					{
+						sub_time*=wip->elec_beam_mult;
+					}
+					//disrupt other weapons
+					else
+					{
+						sub_time*=wip->elec_weap_mult;
+					}
+				}
+				
+				//disrupt sensor and awacs systems.
+				if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags & MSS_FLAG_AWACS))
+				{
+					sub_time*=wip->elec_sensors_mult;
+				}
+	
+				//add a little randomness to the disruption time, unless the disuruption time is zero for some reason
+				//perhaps a multiplier was zero or the scale was too small.
+				if (sub_time > 0) 
+				{
+					sub_time+=frand_range(-1.0f, 1.0f) * wip->elec_randomness;
+				}
 		
-			if (sub_time > 0)
+				//disrupt this subsystem for the calculated time, plus or minus some time
+				//if it turns out to be less than 0 seconds, don't bother
+				if (sub_time > 0)
+				{
+					ship_subsys_set_disrupted(ss, fl2i(sub_time));
+				}
+			}
+
+			//use the old style disruption effect
+			else 
 			{
-				ship_subsys_set_disrupted(ss, fl2i(sub_time));
+				sub_time=wip->elec_time + frand_range(-1.0f, 1.0f)*wip->elec_randomness;
+				
+				//disrupt this subsystem for the calculated time, plus or minus some time
+				//if it turns out to be less than 0 seconds, don't bother
+				if (sub_time > 0)
+				{
+					ship_subsys_set_disrupted(ss, fl2i(sub_time));
+				}
 			}
 		}
 	}

@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/01/28 04:05:05  phreak
+ * shockwave weapons now work properly with the electronics (d-missible) tag
+ * added in a "randomness factor" for electronics parameters.  This adds or subtracts
+ * a random value between 0 and this factor to the disruption time.  This was hard coded
+ * to be 4 seconds in retail.
+ *
  * Revision 2.36  2004/12/23 23:35:02  wmcoolmon
  * Added +Hud Image: for weapons, which replaces the weapon name in the list with an image.
  *
@@ -739,6 +745,7 @@ typedef struct weapon_info {
 	float elec_beam_mult;		//used instead of elec_weap_mult if turret is a beam turret
 	float elec_sensors_mult;	//multiplier on sensors and awacs
 	int elec_randomness;		//disruption time lasts + or - this value from whats calculated.  time in milliseconds
+	int elec_use_new_style;		//use new style electronics parameters
 
 	//local ssm info
 	int lssm_warpout_delay;			//delay between launch and warpout (ms)
