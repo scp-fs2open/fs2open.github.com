@@ -24,6 +24,7 @@
 #include "graphics/grd3dbatch.h"
 
 #include "debugconsole/timerbar.h"
+#include "debugconsole/dbugfile.h"
 #include "cmdline/cmdline.h"   
 
 // Lets define our global D3D variables
@@ -44,8 +45,8 @@ int GlobalD3DVars::D3D_zbias         = 1;
 
 ID3DXMatrixStack *world_matrix_stack, *view_matrix_stack, *proj_matrix_stack;
 
-const int multisample_max = 16;
-const D3DMULTISAMPLE_TYPE multisample_types[multisample_max] =
+const int MULTISAMPLE_MAX = 16;
+const D3DMULTISAMPLE_TYPE multisample_types[MULTISAMPLE_MAX] =
 {
 	D3DMULTISAMPLE_NONE,
 	D3DMULTISAMPLE_2_SAMPLES,
@@ -918,6 +919,67 @@ int d3d_match_mode(int adapter)
 	return -1;
 }
 
+int d3d_check_multisample_types(int adapter, int chosen_ms, D3DFORMAT back_buffer_format, D3DFORMAT depth_buffer_format)
+{
+	HRESULT hr;
+
+	// If fails try a lesser mode
+	for(int i = chosen_ms; i >= 0; i--)
+	{
+		hr = GlobalD3DVars::lpD3D->CheckDeviceMultiSampleType( 
+			adapter, D3DDEVTYPE_HAL, back_buffer_format, GlobalD3DVars::D3D_window, multisample_types[i]);
+
+		if(FAILED(hr)) 
+		{
+			DBUGFILE_OUTPUT_1("Failed aa %d",i);
+			continue;
+		}
+
+		hr = GlobalD3DVars::lpD3D->CheckDeviceMultiSampleType( 
+			adapter, D3DDEVTYPE_HAL, depth_buffer_format, GlobalD3DVars::D3D_window, multisample_types[i]);
+
+		if(FAILED(hr)) 
+		{
+			DBUGFILE_OUTPUT_1("Failed aa %d",i);
+			continue;
+		}
+
+		// Success!
+		DBUGFILE_OUTPUT_1("Success aa %d",i);
+		return i;
+	}
+
+	// Now try higher modes
+	for(i = (chosen_ms + 1); i < MULTISAMPLE_MAX; i++)
+	{
+		hr = GlobalD3DVars::lpD3D->CheckDeviceMultiSampleType( 
+			adapter, D3DDEVTYPE_HAL, back_buffer_format, GlobalD3DVars::D3D_window, multisample_types[i]);
+
+		if(FAILED(hr)) 
+		{
+			DBUGFILE_OUTPUT_1("Failed aa %d",i);
+			continue;
+		}
+
+		hr = GlobalD3DVars::lpD3D->CheckDeviceMultiSampleType( 
+			adapter, D3DDEVTYPE_HAL, depth_buffer_format, GlobalD3DVars::D3D_window, multisample_types[i]);
+
+		if(FAILED(hr)) 
+		{
+			DBUGFILE_OUTPUT_1("Failed aa %d",i);
+			continue;
+		}
+
+		// Success!
+		DBUGFILE_OUTPUT_1("Success aa %d",i);
+		return i;
+	}
+	
+	// Nothing found
+	DBUGFILE_OUTPUT_0("Terrible news, we didnt find a match");
+    return -1;
+}
+
 /**
  * This deals totally with mode stuff
  *
@@ -945,6 +1007,7 @@ bool d3d_init_device()
     
 	extern int Cmdline_window;
 	extern int D3D_window;
+	int aatype_choice = 0;
 	GlobalD3DVars::D3D_window = Cmdline_window ? true : false;
 
 	// Get caps
@@ -973,7 +1036,7 @@ bool d3d_init_device()
 
 		// Attempt to get options from the registry
 		adapter_choice     = os_config_read_uint( NULL, "D3D8_Adapter", 0xffff);
-		int aatype_choice  = os_config_read_uint( NULL, "D3D8_AAType",  0x0);
+		aatype_choice	   = os_config_read_uint( NULL, "D3D8_AAType",  0x0);
 		int mode_choice	   = d3d_match_mode(adapter_choice);
 		
 		if(mode_choice == -1)
@@ -983,7 +1046,7 @@ bool d3d_init_device()
 		}
 
 		// Sanity cap
-		if(aatype_choice < 0 || aatype_choice >= multisample_max)
+		if(aatype_choice < 0 || aatype_choice >= MULTISAMPLE_MAX)
 		{
 			aatype_choice = 0;
 		}
@@ -1059,6 +1122,17 @@ bool d3d_init_device()
 		for(int t = 0; t < NUM_FORMATS; t++){
 		
 			GlobalD3DVars::d3dpp.AutoDepthStencilFormat = format_type[t];
+
+			int aaresult = d3d_check_multisample_types(
+				adapter_choice, aatype_choice, 
+				GlobalD3DVars::d3dpp.BackBufferFormat, 
+				GlobalD3DVars::d3dpp.AutoDepthStencilFormat);
+
+			if(aaresult == -1)
+				continue;
+
+			GlobalD3DVars::d3dpp.MultiSampleType = multisample_types[aaresult];
+
 		
 			if( SUCCEEDED( GlobalD3DVars::lpD3D->CreateDevice(
 									adapter_choice, 

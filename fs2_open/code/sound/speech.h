@@ -20,6 +20,6 @@ bool speech_resume();
 bool speech_stop();
 
 bool speech_set_volume(int volume);
-bool speech_set_voice(void *new_voice);
+bool speech_set_voice(int voice);
 
 #endif

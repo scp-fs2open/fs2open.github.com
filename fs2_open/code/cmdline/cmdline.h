@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.37 $
- * $Date: 2003-11-09 06:31:38 $
- * $Author: Kazan $
+ * $Revision: 2.38 $
+ * $Date: 2003-11-15 18:09:33 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/11/09 06:31:38  Kazan
+ * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
+ * conflicts in cmdline and timerbar.h log entries
+ * cvs stopped acting like it was on crack obviously
+ *
  * Revision 2.36  2003/11/09 04:09:18  Goober5000
  * edited for language
  * --Goober5000
@@ -382,6 +387,7 @@ extern int Cmdline_nohtl;
 extern int Cmdline_32bit_textures;
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_d3d_no_vsync;
+extern int Cmdline_pcx32;
 
 extern int Cmdline_timerbar;
 

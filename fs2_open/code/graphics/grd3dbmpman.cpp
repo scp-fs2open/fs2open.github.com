@@ -324,7 +324,10 @@ int bm_d3d_load( char * real_filename )
 		const int type_list[NUM_TYPES] = {BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_PCX};
 		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".pcx"};
 		
-		for(int i = 0; i < NUM_TYPES; i++) {
+		// Only load TGA and JPG if given flag
+		int i = Cmdline_32bit_textures ? 0 : BM_TYPE_PCX;
+
+		for(; i < NUM_TYPES; i++) {
 		
 			int handle = 0;
 			int result = bm_d3d_load_sub(filename, ext_list[i], &handle);
@@ -841,12 +844,7 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 
 
 	// Turn off 32bit PCX for now, its still buggy
-	int valid_pcx	= 
-#ifdef PCX_32
-		(bm_bitmaps[bitmapnum].type == BM_TYPE_PCX || bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32) && Cmdline_32bit_textures;
-#else
-	0;
-#endif
+	int valid_pcx   = (bm_bitmaps[bitmapnum].type == BM_TYPE_PCX || bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32) && Cmdline_pcx32;
 	int valid_other = bm_bitmaps[bitmapnum].type == BM_TYPE_TGA || bm_bitmaps[bitmapnum].type == BM_TYPE_JPG;
 
 	if(valid_pcx || valid_other)	
@@ -909,11 +907,9 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 
 	// Give pcx control to D3D if we are expected to load it into 32 bit
 	// 8 bit images are likely to be masks, data needs to be passed back
-	if(be->type == BM_TYPE_PCX && bpp != 8 && Cmdline_32bit_textures)
+	if(be->type == BM_TYPE_PCX && bpp != 8 && Cmdline_pcx32)
 	{
-#ifdef PCX_32
    	 	be->type = BM_TYPE_PCX_32; 
-#endif
 	}
 
 	// If you hit this assert, chances are that someone freed the
