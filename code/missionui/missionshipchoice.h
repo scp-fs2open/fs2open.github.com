@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-09-16 11:56:46 $
+ * $Author: unknownplayer $
  *
  * Header file to support functions that allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -255,6 +258,8 @@ extern int Commit_pressed;	// flag to indicate that the commit button was presse
 
 extern char default_player_ship[255];
 extern int Select_default_ship;
+
+extern float ShipSelectScreenShipRot;
 
 void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select);
 void ship_select_init();

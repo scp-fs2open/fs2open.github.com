@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-09-16 11:56:46 $
+ * $Author: unknownplayer $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -115,6 +118,8 @@ int collide_weapon_weapon( obj_pair * pair )
 
 	A_radius = A->radius;
 	B_radius = B->radius;
+
+	// UnknownPlayer : Should we even be bothering with collision detection is neither one of these is a bomb?
 
 	if (wipA->wi_flags & WIF_BOMB) {
 		A_radius *= 2;		// Makes bombs easier to hit
