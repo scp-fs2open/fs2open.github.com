@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.52 $
- * $Date: 2003-12-17 23:25:10 $
- * $Author: phreak $
+ * $Revision: 2.53 $
+ * $Date: 2004-01-17 21:59:53 $
+ * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2003/12/17 23:25:10  phreak
+ * added a MAX_BUFFERS_PER_SUBMODEL define so it can be easily changed if we ever want to change the 16 texture limit
+ *
  * Revision 2.51  2003/11/29 16:11:46  fryday
  * Fixed normal loading in OpenGL HT&L.
  * Fixed lighting in OpenGL HT&L, hopefully for the last time.
@@ -1590,7 +1593,9 @@ void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, in
 	saved_zbuf = gr_zbuffer_get();
 	
 	// start the frame, no zbuffering, no culling
+#ifndef FRED
 	g3_start_frame(1);	
+#endif
 	gr_zbuffer_set(GR_ZBUFF_NONE);		
 	gr_set_cull(0);		
 
@@ -1646,7 +1651,9 @@ void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, in
 	// draw the polys
 	g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_ALPHA, 0.1f);		
 
-	g3_end_frame();
+#ifndef FRED
+ 	g3_end_frame();
+#endif
 
 	// restore zbuffer and culling
 	gr_zbuffer_set(saved_zbuf);
@@ -2135,6 +2142,7 @@ static int ogl_maybe_pop_arb1=0;
 
 void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, float v_scale, int r, int g, int b, int alpha, int override_primary=0)
 {
+
 	if (flags & TMAP_FLAG_TRISTRIP) 
 		glBegin(GL_TRIANGLE_STRIP);
 	else 
@@ -4977,6 +4985,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	HWND wnd=(HWND)os_get_window();
 
+#ifndef FRED
+	Assert(wnd);
 	
 	dev_context=GetDC(wnd);
 	if (!dev_context)
@@ -5044,14 +5054,18 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		free(extlist);
 	}
 
+#endif
 
 	glGetIntegerv(GL_MAX_LIGHTS, &max_gl_lights); //Get the max number of lights supported
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
+#ifndef FRED
 
 	if (!Cmdline_window)
 	{
 		opengl_go_fullscreen(wnd);
 	}
+#endif
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -5085,13 +5099,17 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	glEnable(GL_COLOR_SUM_EXT);
 	
 	
+#ifndef FRED
+
 	if (!reinit)
-	{
 		//start extension
 		opengl_get_extensions();
 
+#endif
+
+	if (!reinit)
 		opengl_tcache_init (1);
-	}
+
 
 	gr_opengl_clear();
 

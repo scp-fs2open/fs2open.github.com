@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-11-11 02:15:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2004-01-17 21:59:56 $
+ * $Author: randomtiger $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/11/11 02:15:47  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.19  2003/10/23 23:49:12  phreak
  * added code to render the user-defined skybox
  *
@@ -474,12 +479,13 @@ void stars_init()
 						Warning(LOCATION, "cannot find bitmap %s", filename);
 					}
 				}
-
+#if 0
 				// if fred is running we should lock the bitmap now
 				if(Fred_running && (bm->bitmap >= 0)){
 					bm_lock(bm->bitmap, 8, BMP_TEX_OTHER);
 					bm_unlock(bm->bitmap);
 				} 
+#endif
 			}
 		}
 		// green xparency bitmap
@@ -497,11 +503,14 @@ void stars_init()
 					}
 				}
 
+#if 0
 				// if fred is running we should lock as a 0, 255, 0 bitmap now
 				if(Fred_running && (bm->bitmap >= 0)){
 					bm_lock(bm->bitmap, 8, BMP_TEX_XPARENT);
 					bm_unlock(bm->bitmap);
 				} 
+#endif
+
 			}
 		}
 	}
@@ -626,6 +635,7 @@ void stars_init()
 				bm->spec_g = spec_g;
 				bm->spec_b = spec_b;
 
+#if 0
 				// if fred is running we should lock the bitmap now
 				if(Fred_running){
 					if(bm->bitmap >= 0){
@@ -637,6 +647,7 @@ void stars_init()
 						bm_unlock(bm->glow_bitmap);
 					}
 				} 
+#endif
 			}
 		}
 	}	

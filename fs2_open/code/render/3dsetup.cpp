@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-11-16 04:09:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2004-01-17 21:59:54 $
+ * $Author: randomtiger $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/11/16 04:09:27  Goober5000
+ * language
+ *
  * Revision 2.12  2003/11/11 18:04:06  phreak
  * made g3_done_instance take a parameter that decides wether to pop the matrix stack.
  * without it, underflows would have been caused
@@ -213,6 +216,7 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 	float aspect;
 
 //Uncomment this to figure out who called g3_start_frame without calling g3_end_frame.
+
 //	mprintf(( "g3_start_frame called from %s, line %d\n", filename, lineno ));
 
 	Assert( G3_count == 0 );
