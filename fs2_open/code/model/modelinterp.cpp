@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.37 $
- * $Date: 2003-10-18 01:59:02 $
+ * $Revision: 2.38 $
+ * $Date: 2003-10-18 02:43:59 $
  * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/10/18 01:59:02  phreak
+ * switched around positions of gr_start_instance_matrix and gr_end_instance_matrix
+ *
  * Revision 2.36  2003/10/14 17:39:15  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -3944,7 +3947,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		g3_done_instance();
 	}
 
-	gr_end_instance_matrix();
+	if (!Cmdline_nohtl) gr_end_instance_matrix();
 	g3_done_instance();
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
