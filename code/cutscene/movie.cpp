@@ -57,11 +57,35 @@ bool movie_play(char *name)
  	if(gr_screen.mode == GR_DIRECT3D)
 	{
    		GlobalD3DVars::D3D_activate = 0;
-		GlobalD3DVars::lpD3DDevice->BeginScene();
-		GlobalD3DVars::lpD3DDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 0,0);
 		GlobalD3DVars::lpD3DDevice->EndScene();
 	  	GlobalD3DVars::lpD3DDevice->Present(NULL,NULL,NULL,NULL);
 		d3d_lost_device();
+	}
+
+	// This clears the screen
+ 	InvalidateRect((HWND) os_get_window(), NULL, TRUE);
+	PAINTSTRUCT paint_info;
+	HDC clear_hdc = BeginPaint((HWND) os_get_window(),&paint_info);
+
+	if(clear_hdc)
+	{
+
+		POINT points[4] = {
+			{0,0}, 
+			{gr_screen.max_w,0}, 
+			{gr_screen.max_w, gr_screen.max_h}, 
+			{0, gr_screen.max_h}};
+		
+		HBRUSH hBrush    = CreateSolidBrush(0x00000000);
+		HBRUSH hOldBrush = (HBRUSH)SelectObject(clear_hdc, hBrush);
+		SelectObject(clear_hdc, hBrush);
+		
+		Polygon(clear_hdc, points, 4);
+		
+		SelectObject(clear_hdc, hOldBrush);
+		DeleteObject(hBrush);
+		
+		EndPaint((HWND) os_get_window(),&paint_info);
 	}
 
   	process_messages();
@@ -108,7 +132,6 @@ bool movie_play(char *name)
 					// Terminate movie playback early
 					CloseClip((HWND) os_get_window());
 			   		GlobalD3DVars::D3D_activate = 1;
-					process_messages();
 					return true;
 				}
 			}
@@ -122,9 +145,6 @@ bool movie_play(char *name)
 	// We finished playing the movie
 	CloseClip((HWND) os_get_window());
  	GlobalD3DVars::D3D_activate = 1;
-
-	gr_flip();
-
 	return true;
 }
 
