@@ -9,13 +9,18 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-01-05 23:41:50 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-18 01:44:30 $
+ * $Author: Goober5000 $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/05 23:41:50  bobboau
+ * disabled decals (for now), removed the warp ray thingys,
+ * made some better error mesages while parseing weapons and ships tbls,
+ * and... oh ya, added glow mapping
+ *
  * Revision 2.2  2002/11/14 04:18:16  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -204,7 +209,7 @@ void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float ra
 		float model_Interp_scale_y = radius /20;
 		float model_Interp_scale_z = max_radius /20;
 
-		set_warp_gloabals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, texture_bitmap_num, (radius/max_radius) );
+		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, texture_bitmap_num, (radius/max_radius) );
 		
 		float dist = vm_vec_dist_quick( pos, &Eye_position );
 
@@ -219,7 +224,7 @@ void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float ra
 		model_Interp_scale_y = 1.0f;
 		model_Interp_scale_z = 1.0f;
 
-		set_warp_gloabals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, 0.0f);
+		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, 0.0f);
 
 		gr_set_cull(0);
 /*

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.21 $
- * $Date: 2003-03-02 05:54:23 $
- * $Author: penguin $
+ * $Revision: 2.22 $
+ * $Date: 2003-03-18 01:44:31 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/03/02 05:54:23  penguin
+ * ANSI C++ - namespace clash on ai_rotation; renamed type to ai_rotation_t
+ *  - penguin
+ *
  * Revision 2.20  2003/01/20 05:40:49  bobboau
  * added several sExps for turning glow points and glow maps on and off
  *
@@ -923,7 +927,7 @@ void submodel_render(int model_num,int submodel_num, matrix *orient, vector * po
 
 // forward references - moved out here by Goober5000
 int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check);
-void set_warp_gloabals(float, float, float, int, float);
+void set_warp_globals(float, float, float, int, float);
 void model_try_cache_render(int model_num, matrix *orient, vector * pos, uint flags, int objnum, int num_lights);
 void model_really_render(int model_num, matrix *orient, vector * pos, uint flags, int light_ignore_id);
 
@@ -1265,7 +1269,7 @@ int model_is_pirate_ship(int modelnum);
 
 #endif
 
-void set_warp_gloabals(float, float, float, int, float);
+void set_warp_globals(float, float, float, int, float);
 
 void model_set_replacement_bitmap(int bmap);
 

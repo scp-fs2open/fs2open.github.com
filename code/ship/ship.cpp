@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.55 $
- * $Date: 2003-03-06 09:13:43 $
+ * $Revision: 2.56 $
+ * $Date: 2003-03-18 01:44:30 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2003/03/06 09:13:43  Goober5000
+ * fixed what should be the last bug with bank-specific loadouts
+ * --Goober5000
+ *
  * Revision 2.54  2003/03/05 12:38:01  Goober5000
  * rewrote the restricted bank loadout code; it should work now
  * --Goober5000
@@ -9826,7 +9830,7 @@ void ship_check_cargo_all()
 	// Check all friendly fighter/bombers against all non-friendly cargo containers that don't have
 	// cargo revealed
 
-	// for now just locate a captial ship on the same team:
+	// for now just locate a capital ship on the same team:
 	cargo_so = GET_FIRST(&Ship_obj_list);
 	while(cargo_so != END_OF_LIST(&Ship_obj_list)){
 		cargo_sp = &Ships[Objects[cargo_so->objnum].instance];

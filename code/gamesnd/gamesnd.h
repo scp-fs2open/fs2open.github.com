@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.2 $
- * $Date: 2002-12-10 05:43:35 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-18 01:44:31 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/10 05:43:35  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -96,7 +99,7 @@
  * Added sound hooks for Shivan flyby sound, subspace ambient effect
  * 
  * 71    3/23/98 4:13p Lawrance
- * Add hooks for captial ship specific warp sounds
+ * Add hooks for capital ship specific warp sounds
  * 
  * 70    3/21/98 3:34p Lawrance
  * Added highlight icon sound, added static sound for briefing cut
