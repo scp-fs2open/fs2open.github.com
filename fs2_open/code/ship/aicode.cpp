@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.77 $
- * $Date: 2004-12-31 03:13:08 $
- * $Author: argv $
+ * $Revision: 2.78 $
+ * $Date: 2005-01-01 10:38:23 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2004/12/31 03:13:08  argv
+ * I've just been informed that turrets do not shoot asteroids in the retail
+ * game, and that this implementation causes them to shoot at the parent ship,
+ * too. I'll deal with this later; in the mean time, use
+ * "#define TURRETS_SHOOT_ASTEROIDS" to cause turrets to shoot asteroids.
+ *
+ * -- _argv[-1]
+ *
  * Revision 2.76  2004/12/30 08:07:52  argv
  * * For some reason, turret AI wasn't shooting at asteroids. It never has,
  *   but it did in the retail game, and it should. The code to target asteroids
@@ -3128,6 +3136,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 	// _argv[-1], 29 Dec 2004: Turret AI should shoot at asteroids, as it did in the retail game. This makes it shoot at them again.
 	// _argv[-1], 30 Dec 2004: I've been informed that turret AI in the retail game does NOT shoot at asteroids, so this is now disabled by default. I'll add this as a command-line option / ship flag / whatnot later.
+/*
 #ifdef TURRETS_SHOOT_ASTEROIDS
 	if (objp->type == OBJ_ASTEROID) {
 		dist *= 1.2f; // rocks are relatively unimportant.
@@ -3141,6 +3150,23 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			eeo->nearest_objnum = OBJ_INDEX(objp);
 		}
 	}
+#endif
+*/
+#ifndef FS2_DEMO
+	// check if object is an asteroid attacking the turret parent - taylor
+	if (objp->type == OBJ_ASTEROID) {
+		if ( eeo->turret_parent_objnum == asteroid_collide_objnum(objp) ) {
+			// give priority to the closest asteroid *impact* (ms intervals)
+			dist *= 0.9f + (0.01f * asteroid_time_to_impact(objp));
+
+			if (dist < eeo->nearest_dist ) {
+				if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, tp, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
+					eeo->nearest_dist = dist;
+					eeo->nearest_objnum = OBJ_INDEX(objp);
+				}
+			}
+		}
+	} // end asteroid selection
 #endif
 }
 
@@ -3254,13 +3280,25 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 		return eeo.nearest_attacker_objnum;
 	 }
 
-
 #ifndef FS2_DEMO
-		asteroid_obj *ao;
-	// Asteroid_obj_list
-	for( ao = GET_FIRST(&Asteroid_obj_list); ao != END_OF_LIST(&Asteroid_obj_list); ao = GET_NEXT(ao) ) {
-		objp = &Objects[ao->objnum];
-		evaluate_obj_as_target(objp, &eeo);
+	// asteroid check - taylor
+	asteroid_obj *ao;
+
+	// don't use turrets that are better for other things:
+	// - no cap ship beams
+	// - no flak
+	// - no heat or aspect missiles
+	// - no spawn type missiles/bombs
+	// do use for sure:
+	// - lasers
+	// - dumbfire type missiles
+	// - AAA beams
+	if ( !(wip->wi_flags & WIF_HUGE) && !(wip->wi_flags & WIF_FLAK) && !(wip->wi_flags & WIF_HOMING) && !(wip->wi_flags & WIF_SPAWN) ) {
+		// Asteroid_obj_list
+		for ( ao = GET_FIRST(&Asteroid_obj_list); ao != END_OF_LIST(&Asteroid_obj_list); ao = GET_NEXT(ao) ) {
+			objp = &Objects[ao->objnum];
+			evaluate_obj_as_target(objp, &eeo);
+		}
 	}
 #endif
 
