@@ -759,11 +759,12 @@ void decal_render_all(object * obj){
 		decal *dec = &shipp->decals[h];
 		if(dec->is_valid){
 			mprintf(("decal %d is valid, and has %d polys\n",h,dec->n_poly));
-			vector g_pos;
-			vm_vec_add(&g_pos, &dec->position, &obj->pos);
-			float dist = vm_vec_dist_quick(&g_pos, &View_position);
+//			vector g_pos;
+//			vm_vec_add(&g_pos, &dec->position, &obj->pos);
+			float dist = vm_vec_dist(&dec->position, &View_position);
 				if(dist < (dec->radius*10)){
 					mprintf(("decal %d too far away to be drawn %0.2f\n", h, dist));
+//					HUD_printf("decal %d too far away to be drawn %0.2f\n", h, dist);
 					continue;
 				}
 			for(int i = 0; i<dec->n_poly; i++){
@@ -775,6 +776,7 @@ void decal_render_all(object * obj){
 //						vector pos;
 //						vm_vert2vec(&vecs[j], &pos);
 					//	vm_vec_add2(&pos, &obj->pos);
+						if(dec->poly[i].point[j]<0 || dec->poly[i].point[j]>1000)break;
 						vector pnt = dec->vert[dec->poly[i].point[j]];
 					if(dec->submodel_parent != pm->detail[0]){
 							matrix m;
@@ -806,6 +808,8 @@ mprintf(("vert %d at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", j, vecs[j].x, v
 						}
 */
 					}
+
+					if(dec->poly[i].point[j]<0 || dec->poly[i].point[j]>1000)break;
 
 					gr_set_bitmap(dec->texture, 0, GR_BITBLT_MODE_NORMAL, 1.0f );
 					if((dec->poly[i].backfaced == 1) && (dec->backfaced_texture > -1)){

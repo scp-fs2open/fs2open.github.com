@@ -9,13 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-03-03 10:29:39 $
+ * $Revision: 2.10 $
+ * $Date: 2003-03-03 16:50:14 $
  * $Author: bobboau $
  *
  * C module for the weapon loadout screen
  *
- * $Log: not supported by cvs2svn $
+ *
  * Revision 2.8  2003/03/03 10:21:08  bobboau
  * fixed a bug in the bank specific loadout relaiting to secondaries
  *
@@ -1919,12 +1919,22 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 			continue;
 		}
 
-		for ( int k = 0; k < MAX_SECONDARY_BANKS; k++ ){//bank specific loadouts-Bobboau
-		if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep[i]][k]) ) {
-//			wep[i] = -1;
+//		for ( int k = 0; k < MAX_SECONDARY_BANKS; k++ ){//bank specific loadouts-Bobboau
+
+		int tobank = i;
+		if(IS_BANK_SECONDARY(tobank))tobank -=3;
+		//ensure that the two banks are both compatable types-Bobboau
+		if(!weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep[i]][tobank])){
+//			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[slot->wep[from_bank]].name, tobank+1);
 			wep_count[i] = 0;
+			return;
 		}
-		}
+	
+//		if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep[i]][k]) ) {
+//			wep[i] = -1;
+//			wep_count[i] = 0;
+//		}
+//		}
 	}
 }
 
