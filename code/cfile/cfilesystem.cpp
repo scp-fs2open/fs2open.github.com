@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-05-01 19:49:31 $
+ * $Revision: 2.15 $
+ * $Date: 2004-05-01 21:45:31 $
  * $Author: Kazan $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,10 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/05/01 19:49:31  Kazan
+ * delete[] str_temp
+ * A null check on str_temp is not needed - take a close look at the for loop
+ *
  * Revision 2.13  2004/05/01 19:33:20  taylor
  * add CF_TYPE_MISSIONS to physical check to avoid network transfer problems
  *
@@ -485,23 +489,30 @@ void cf_build_root_list(char *cdrom_dir)
 		for (cur_pos=Cmdline_mod; strlen(cur_pos) != 0; cur_pos+= (strlen(cur_pos)+1))
 		{
 			str_temp = strdup(cur_pos);
-		
-			strcat(str_temp, DIR_SEPARATOR_STR);
-			root = cf_create_root();
 
-			if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
-				Error(LOCATION, "Can't get current working directory -- %d", errno );
+			if (str_temp != null)
+			{
+				strcat(str_temp, DIR_SEPARATOR_STR);
+				root = cf_create_root();
+	
+				if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
+					Error(LOCATION, "Can't get current working directory -- %d", errno );
+				}
+
+				// do we already have a slash? as in the case of a root directory install
+				if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+					strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+				}
+	
+				strcat(root->path, str_temp);
+				root->roottype = CF_ROOTTYPE_PATH;
+				cf_build_pack_list(root);
+				free(str_temp);
 			}
-
-			// do we already have a slash? as in the case of a root directory install
-			if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
-				strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+			else
+			{
+				Error(LOCATION, "strdup() failure!", errno );
 			}
-
-			strcat(root->path, str_temp);
-			root->roottype = CF_ROOTTYPE_PATH;
-			cf_build_pack_list(root);
-			delete[] str_temp;
 		}
 	}
 
