@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-02-12 10:44:10 $
+ * $Revision: 1.15 $
+ * $Date: 2005-02-15 00:06:27 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/02/12 10:44:10  taylor
+ * fix possible crash in bm_get_section_size()
+ * get jpeg_read_header() working properly
+ * VBO fixes and minor optimizations
+ *
  * Revision 1.13  2005/01/13 04:55:57  taylor
  * plug leak from VBO crash fix
  *
@@ -84,8 +89,6 @@
 
 #include "globalincs/pstypes.h"
 
-#include "model/model.h"
-
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 #include "graphics/gropengl.h"
@@ -126,15 +129,6 @@ struct opengl_vertex_buffer
 	uint flags;			// FVF
 };
 
-#define MAX_SUBOBJECTS 64
-
-#ifdef INF_BUILD
-#define MAX_BUFFERS_PER_SUBMODEL 24
-#else
-#define MAX_BUFFERS_PER_SUBMODEL 16
-#endif
-
-#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*MAX_BUFFERS_PER_SUBMODEL
 
 static opengl_vertex_buffer vertex_buffers[MAX_BUFFERS];
 static opengl_vertex_buffer *g_vbp;
@@ -508,9 +502,9 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 		opengl_switch_arb(1,0);
 		opengl_switch_arb(2,0);
 
-		for(i=1; i< (n_active_gl_lights-1)/GL_max_lights; i++)
+		for(i=0; i< (n_active_gl_lights-1)/GL_max_lights; i++)
 		{
-			opengl_change_active_lights(i);
+			opengl_change_active_lights(i+1);
 
 			if (index_list != NULL) {
 				glDrawRangeElements(GL_TRIANGLES, start, (n_prim * 3), (n_prim * 3), GL_UNSIGNED_SHORT, (ushort*)index_list);

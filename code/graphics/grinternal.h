@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.6 $
- * $Date: 2005-01-31 10:34:38 $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-15 00:06:27 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/31 10:34:38  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.5  2004/11/21 11:27:31  taylor
  * some 64-bit OS comaptibility fixes
  *
@@ -153,14 +156,16 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _GRINTERNAL_H
 #define _GRINTERNAL_H
+
+#include "PreProcDefines.h"
 
 #include "graphics/font.h"
 #include "graphics/2d.h"
 #include "graphics/grzbuffer.h"
 #include "globalincs/pstypes.h" // IAM_64BIT
+#include "globalincs/globals.h" // just in case pstypes.h messed up
 
 extern int Gr_cursor;
 
@@ -243,6 +248,11 @@ extern int Gr_gamma_lookup[256];
 extern int Ambient_r_default;
 extern int Ambient_g_default;
 extern int Ambient_b_default;
+
+#define MAX_SUBOBJECTS 64
+
+#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*MAX_BUFFERS_PER_SUBMODEL
+
 
 #endif
 
