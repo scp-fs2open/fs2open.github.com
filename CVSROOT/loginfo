@@ -27,3 +27,4 @@
 
 DEFAULT $CVSROOT/CVSROOT/new_log_accum -m fs2source-dev@warpcore.org %{sVv}
 CVSROOT $CVSROOT/CVSROOT/new_log_accum -m drevil@warpcore.org %{sVv}
+
