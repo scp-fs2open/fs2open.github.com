@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-04-29 01:03:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-11 19:28:52 $
+ * $Author: argv $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/04/29 01:03:21  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.5  2003/03/20 09:48:25  unknownplayer
  * Fixed the bug with shields where it would consistently display the low detail
  * shield regardless of what the setting was. Turns out some OGL person was
@@ -858,11 +862,15 @@ float apply_damage_to_shield(object *objp, int quadrant, float damage)
 	}
 #endif
 
-	if ( (quadrant < 0)  || (quadrant > 3) ) return damage;	
+	if ( (quadrant < 0)  || (quadrant > 3) || !ship_is_shield_up(objp, quadrant)) return damage;	
 	
 	Assert(objp->type == OBJ_SHIP);
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 	aip->last_hit_quadrant = quadrant;
+
+	// _argv[-1] - singular shield.
+	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
+		quadrant = 0;
 
 	objp->shield_quadrant[quadrant] -= damage;
 
@@ -1200,20 +1208,25 @@ void ship_draw_shield( object *objp)
 // just one quadrant
 int ship_is_shield_up( object *obj, int quadrant )
 {
-	if ( (quadrant>=0) && (quadrant<=3))	{
-		// Just check one quadrant
-		if (obj->shield_quadrant[quadrant] > max(2.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength/4.0f))	{
-			return 1;
-		}
-	} else {
-		// Check all quadrants
-		float strength = get_shield_strength(obj);
+	// _argv[-1] - singular shield.
+	if (Ship_info[Ships[obj->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
+		return obj->shield_quadrant[0] > max(2.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength);
+	else {
+		if ( (quadrant>=0) && (quadrant<=3))	{
+			// Just check one quadrant
+			if (obj->shield_quadrant[quadrant] > max(2.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength/4.0f))	{
+				return 1;
+			}
+		} else {
+			// Check all quadrants
+			float strength = get_shield_strength(obj);
 
-		if ( strength > max(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength ))	{
-			return 1;
+			if ( strength > max(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength ))	{
+				return 1;
+			}
 		}
+		return 0;	// no shield strength
 	}
-	return 0;	// no shield strength
 }
 
 
