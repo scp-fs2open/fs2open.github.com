@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:11 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-05-04 20:50:06 $
+ * $Author: phreak $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:11  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -99,7 +102,7 @@
 #include "weapon/trails.h"
 #include "io/timer.h"
 
-#define MAX_TRAILS MAX_WEAPONS
+#define MAX_TRAILS 500
 
 // Stuff for missile trails doesn't need to be saved or restored... or does it?
 typedef struct trail {
