@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.33 $
- * $Date: 2003-01-27 07:46:33 $
+ * $Revision: 2.34 $
+ * $Date: 2003-03-25 07:03:30 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/01/27 07:46:33  Goober5000
+ * finished up my fighterbay code - ships will not be able to arrive from or depart into
+ * fighterbays that have been destroyed (but you have to explicitly say in the tables
+ * that the fighterbay takes damage in order to enable this)
+ * --Goober5000
+ *
  * Revision 2.32  2003/01/26 00:20:01  Goober5000
  * oops - fixed the nebula bug that wasn't completely fixed :)
  * --Goober5000
@@ -564,6 +570,7 @@ int Num_parse_goals;
 int Player_starts = 1;
 int Num_teams;
 fix Entry_delay_time = 0;
+int Fred_num_texture_replacements = 0;
 
 ushort Current_file_checksum = 0;
 ushort Last_file_checksum = 0;
@@ -607,6 +614,8 @@ p_object Player_start_pobject;
 // something before that ship has even been loaded yet)
 char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
 int Num_parse_names;
+
+texture_replace Fred_texture_replacements[MAX_SHIPS * MAX_MODEL_TEXTURES];
 
 //XSTR:OFF
 
@@ -2449,15 +2458,25 @@ int parse_object(mission *pm, int flag, p_object *objp)
 				Warning(LOCATION, "Could not load replacement texture %s for ship %s\n", objp->replacement_textures[objp->num_texture_replacements].new_texture, objp->name);
 			}
 
+			// *** account for FRED
+			if (Fred_running)
+			{
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, objp->name);
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, objp->replacement_textures[objp->num_texture_replacements].old_texture);
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, objp->replacement_textures[objp->num_texture_replacements].new_texture);
+				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = FRED_TEXTURE_REPLACE;
+				Fred_num_texture_replacements++;
+			}
+
 			// increment
 			objp->num_texture_replacements++;
 		}
 	}
 
 	// duplicate model texture replacement - Goober5000
-	if ( optional_string("$Duplicate Model Texture Replace:") )
+	else if ( optional_string("$Duplicate Model Texture Replace:") )
 	{
-		if (objp->num_texture_replacements > 0)
+		if (objp->num_texture_replacements > 0)	// because of the else, not allowed to happen any more
 		{
 			Warning(LOCATION, "Warning: Both $Texture Replace and $Duplicate Model Texture Replace used on the same ship.\n");
 		}
@@ -2483,6 +2502,16 @@ int parse_object(mission *pm, int flag, p_object *objp)
 			{
 				mprintf(( "Extraneous extension found on duplicate model replacement texture %s!\n", Texture_replace[Num_texture_replacements].new_texture));
 				*p = 0;
+			}
+
+			// *** account for FRED
+			if (Fred_running)
+			{
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, objp->name);
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, Texture_replace[Num_texture_replacements].old_texture);
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, Texture_replace[Num_texture_replacements].new_texture);
+				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = FRED_DUPLICATE_MODEL_TEXTURE_REPLACE;
+				Fred_num_texture_replacements++;
 			}
 
 			// increment
@@ -2655,7 +2684,7 @@ void parse_objects(mission *pm, int flag)
 {	
 	p_object temp;
 
-	Assert(pm != NULL);	
+	Assert(pm != NULL);
 
 	required_string("#Objects");	
 
@@ -3940,6 +3969,7 @@ void parse_mission(mission *pm, int flag)
 	Subsys_index = 0;
 
 	Num_texture_replacements = 0;
+	Fred_num_texture_replacements = 0;
 
 	parse_mission_info(pm);	
 	Current_file_checksum = netmisc_calc_checksum(pm,MISSION_CHECKSUM_SIZE);
