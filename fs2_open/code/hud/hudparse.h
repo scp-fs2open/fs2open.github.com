@@ -1,4 +1,8 @@
+#include "globalincs/globals.h"
+
 //Teh hud_info struct...maybe class
+#define MAX_CUSTOM_HUD_GAUGES 32
+
 typedef struct hud_info
 {
 	bool loaded;
@@ -25,8 +29,16 @@ typedef struct hud_info
 	int Hud_mini_2digit[2];
 	int Hud_mini_1digit[2];
 
+	int custom_gauge_coords[MAX_CUSTOM_HUD_GAUGES][2];
+	int custom_gauge_sizes[MAX_CUSTOM_HUD_GAUGES][2];
+	char custom_gauge_images[MAX_CUSTOM_HUD_GAUGES][MAX_FILENAME_LEN];
+	char custom_gauge_text[MAX_CUSTOM_HUD_GAUGES][NAME_LENGTH];
+
 	hud_info();
 } hud_info;
+
+//Variables
+extern int Num_custom_gauges;
 
 //Functions
 void hud_positions_init();

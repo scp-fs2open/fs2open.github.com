@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.19 $
+ * $Revision: 2.20 $
  * $Author: wmcoolmon $
- * $Date: 2004-05-29 03:01:00 $
+ * $Date: 2004-05-31 08:32:25 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/05/29 03:01:00  wmcoolmon
+ * Spotted something that might be a problem.
+ *
  * Revision 2.18  2004/05/29 02:52:17  wmcoolmon
  * Added stuff_float_list
  *
@@ -453,7 +456,7 @@ int skip_to_string(char *pstr, char *end)
 		if (end && *Mp == '#')
 			return 0;
 
-		if (end && !strnicmp(pstr, Mp, len2))
+		if (end && !strnicmp(end, Mp, len2))
 			return -1;
 
 		advance_to_eoln(NULL);
@@ -467,16 +470,25 @@ int skip_to_string(char *pstr, char *end)
 	return 1;
 }
 
+
 // Advance to start of either pstr1 or pstr2.  Return 0 is successful, otherwise return !0
-int skip_to_start_of_strings(char *pstr1, char *pstr2)
+int skip_to_start_of_strings(char *pstr1, char *pstr2, char* end)
 {
-	int len1, len2;
+	int len1, len2, endlen;
 
 	ignore_white_space();
 	len1 = strlen(pstr1);
 	len2 = strlen(pstr2);
+	if(end)
+		endlen = strlen(end);
 
 	while ( (*Mp != EOF_CHAR) && strnicmp(pstr1, Mp, len1) && strnicmp(pstr2, Mp, len2) ) {
+		if (end && *Mp == '#')
+			return 0;
+
+		if (end && !strnicmp(end, Mp, endlen))
+			return 0;
+
 		advance_to_eoln(NULL);
 		ignore_white_space();
 	}
