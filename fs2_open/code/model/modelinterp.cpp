@@ -9,19 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.48 $
- * $Date: 2003-11-07 18:31:02 $
- * $Author: randomtiger $
+ * $Revision: 2.49 $
+ * $Date: 2003-11-11 02:15:45 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2003/11/07 18:31:02  randomtiger
+ * Fixed a nohtl call to htl funcs (crash with NULL pointer)
+ * Fixed a bug with 32bit PCX code.
+ * Fixed a bug in the d3d_string batch system that was messing up screen shaking.
+ * Added a couple of checks to try and stop timerbar push and pop overloads, check returns missing pops if you use the system.
+ * Put in a higher res icon until we get something better sorted out.
+ *
  * Revision 2.47  2003/11/06 20:22:11  Kazan
- * slight change to .dsp - leave the damn release target as fs2_open_r.exe already
+ * slight change to .dsp - leave the release target as fs2_open_r.exe already
  * added myself to credit
- * killed some of the stupid fscking warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
  * Release builds should have warning level set no higher than 2 (default is 1)
- * Why the hell are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
  * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
  *
  * Revision 2.46  2003/11/02 05:50:08  bobboau
@@ -224,7 +231,7 @@
  * Fixed bug that changes HUD colour when targetting debris in a full nebula. - RT
  *
  * Revision 2.4  2002/10/19 19:29:27  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.3.2.1  2002/10/30 22:57:21  randomtiger
  *

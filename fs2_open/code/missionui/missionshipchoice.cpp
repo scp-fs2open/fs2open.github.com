@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-11-09 06:31:40 $
- * $Author: Kazan $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-11 02:15:44 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/11/09 06:31:40  Kazan
+ * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
+ * conflicts in cmdline and timerbar.h log entries
+ * cvs stopped acting like it was on crack obviously
+ *
  * Revision 2.9  2003/11/06 22:45:55  phreak
  * added gr_start_**_matrix() and gr_end_**_matrix() around where ships are rendered
  *
@@ -244,7 +249,7 @@
  * restricted game host query system.
  * 
  * 79    3/25/98 8:43p Hoffoss
- * Changed anim_play() to not be so damn complex when you try and call it.
+ * Changed anim_play() to not be so complex when you try and call it.
  * 
  * 78    3/12/98 4:03p Lawrance
  * don't press buttons when icon dropped on them

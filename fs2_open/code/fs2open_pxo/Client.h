@@ -5,12 +5,20 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.8 $
- * $Date: 2003-11-06 20:22:05 $
- * $Author: Kazan $
+ * $Revision: 1.9 $
+ * $Date: 2003-11-11 02:15:42 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2003/11/06 20:22:05  Kazan
+ * slight change to .dsp - leave the release target as fs2_open_r.exe already
+ * added myself to credit
+ * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * Release builds should have warning level set no higher than 2 (default is 1)
+ * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
+ *
  * Revision 1.7  2003/10/13 06:02:50  Kazan
  * Added Log Comment Thingy to these files
  *

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-04-29 01:03:22 $
+ * $Revision: 2.3 $
+ * $Date: 2003-11-11 02:15:42 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/04/29 01:03:22  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -382,7 +386,7 @@ int collide_asteroid_ship( obj_pair * pair )
 				nprintf(("AI", "Pinning damage to %s from asteroid at %7.3f (%7.3f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_initial_hull_strength));
 			}
 
-			//	Decrease damage during warp out because it's damn annoying when your escoree dies during warp out.
+			//	Decrease damage during warp out because it's annoying when your escoree dies during warp out.
 			if (Ai_info[Ships[pship->instance].ai_index].mode == AIM_WARP_OUT)
 				ship_damage /= 3.0f;
 

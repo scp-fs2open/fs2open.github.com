@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-04-05 11:09:21 $
+ * $Revision: 2.4 $
+ * $Date: 2003-11-11 02:15:43 $
  * $Author: Goober5000 $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/04/05 11:09:21  Goober5000
+ * fixed some fiddly bits with scrolling and ui stuff
+ * --Goober5000
+ *
  * Revision 2.2  2003/03/18 10:07:00  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -120,7 +124,7 @@
  * 
  * 51    5/19/98 12:56p Hoffoss
  * Added some code to help prevent triple-clicking for binding the mouse
- * button to an action (why the hell people triple click is beyond me,
+ * button to an action (why people triple click is beyond me,
  * though).
  * 
  * 50    5/19/98 11:11a Lawrance

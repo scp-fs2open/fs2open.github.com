@@ -9,15 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.4 $
- * $Date: 2002-11-14 04:18:17 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2003-11-11 02:15:41 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/11/14 04:18:17  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.3  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.2  2002/08/01 01:41:10  penguin
  * The big include file move
@@ -184,7 +189,7 @@ typedef struct beam_collision {
 	int				c_objnum;						// objnum of the guy we recently collided with
 	int				c_sig;							// object sig
 	int				c_stamp;							// when we should next apply damage	
-	int				quadrant;						// sheild quadrant this beam hits if any -Bobboau
+	int				quadrant;						// shield quadrant this beam hits if any -Bobboau
 } beam_collision;
 
 // beam lighting effects

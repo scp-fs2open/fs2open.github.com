@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-06-25 03:16:32 $
- * $Author: phreak $
+ * $Revision: 2.7 $
+ * $Date: 2003-11-11 02:15:40 $
+ * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/06/25 03:16:32  phreak
+ * changed around ai code to take into account a limited lock range for local ssms
+ *
  * Revision 2.5  2003/06/11 03:03:16  phreak
  * the ai can now use local ssms. they are able to use them at *very* long range
  *
@@ -30,7 +33,7 @@
  * --Goober5000
  *
  * Revision 2.2  2002/10/19 19:29:28  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move

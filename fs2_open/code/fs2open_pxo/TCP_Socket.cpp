@@ -5,12 +5,20 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.4 $
- * $Date: 2003-11-06 20:22:05 $
- * $Author: Kazan $
+ * $Revision: 1.5 $
+ * $Date: 2003-11-11 02:15:42 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2003/11/06 20:22:05  Kazan
+ * slight change to .dsp - leave the release target as fs2_open_r.exe already
+ * added myself to credit
+ * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * Release builds should have warning level set no higher than 2 (default is 1)
+ * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
+ *
  * Revision 1.3  2003/10/13 06:02:50  Kazan
  * Added Log Comment Thingy to these files
  *
@@ -172,7 +180,8 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 
 }
 
-
+#pragma warning(push)
+#pragma warning(disable:4127)
 bool TCP_Socket::DataReady()
 {
 	timeval wait;
@@ -187,13 +196,10 @@ bool TCP_Socket::DataReady()
 	int status = select(1, &recvs, NULL, NULL, &wait);
 
 	return (status != 0 && status != SOCKET_ERROR);
-
-
 }
 
 bool TCP_Socket::OOBDataReady()
 {
-
 	timeval wait;
 	wait.tv_sec = 0;
 	wait.tv_usec = 1;
@@ -206,8 +212,8 @@ bool TCP_Socket::OOBDataReady()
 	int status = select(1, NULL, NULL, &recvs, &wait);
 
 	return (status != 0 && status != SOCKET_ERROR);
-
 }
+#pragma warning(pop)
 
 #if defined(FS2_TCP_RMultithread)
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:00 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2003-11-11 02:15:41 $
+ * $Author: Goober5000 $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:00  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.3  2002/11/04 21:24:59  randomtiger
  *
  * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
@@ -84,7 +87,7 @@
  * 34    4/27/98 3:36p Dave
  * 
  * 33    3/25/98 8:43p Hoffoss
- * Changed anim_play() to not be so damn complex when you try and call it.
+ * Changed anim_play() to not be so complex when you try and call it.
  * 
  * 32    2/05/98 9:21p John
  * Some new Direct3D code.   Added code to monitor a ton of stuff in the

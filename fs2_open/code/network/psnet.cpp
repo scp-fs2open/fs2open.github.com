@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/PsNet.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-11-09 04:09:18 $
+ * $Revision: 2.4 $
+ * $Date: 2003-11-11 02:15:46 $
  * $Author: Goober5000 $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/11/09 04:09:18  Goober5000
+ * edited for language
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -972,7 +976,7 @@ void psnet_rel_close_socket( PSNET_SOCKET *p_sockp )
 		reinit_type = NET_TCP;
 
 	/*
-	rval = shutdown( *sockp, 2);		// shut the whole damn thing down.
+	rval = shutdown( *sockp, 2);		// shut the whole thing down.
 	if ( rval == SOCKET_ERROR ) {
 		error = WSAGetLastError();
 		nprintf(("Network", "Error %d on socket shutdown\n", error));

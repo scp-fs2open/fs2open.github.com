@@ -5,11 +5,19 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.4 $
- * $Date: 2003-11-06 20:22:18 $
- * $Author: Kazan $
+ * $Revision: 1.5 $
+ * $Date: 2003-11-11 02:15:46 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2003/11/06 20:22:18  Kazan
+ * slight change to .dsp - leave the release target as fs2_open_r.exe already
+ * added myself to credit
+ * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * Release builds should have warning level set no higher than 2 (default is 1)
+ * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
+ *
  * Revision 1.3  2003/10/16 16:38:17  Kazan
  * couple more types in species_defs.cpp, also finished up "Da Species Upgrade"
  *
@@ -41,7 +49,7 @@ int True_NumSpecies = 3;
 void Init_Species_LoadDefault();
 
 // manually extern everything here - because it's not all needed throughout the entire system
-extern shield_ani Sheild_ani[MAX_SHIELD_ANIMS];
+extern shield_ani Shield_ani[MAX_SHIELD_ANIMS];
 extern char Species_names[MAX_SPECIES_NAMES][SPECIES_NAME_MAXLEN+1];
 extern char Debris_texture_files[MAX_SPECIES_NAMES][MAX_DEBRIS_TNAME_LEN+1];
 extern char	Thrust_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
@@ -57,7 +65,7 @@ extern char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN];
 
 void Init_Species_Definitions()
 {
-	memset(Sheild_ani,					0, MAX_SHIELD_ANIMS * sizeof(shield_ani));
+	memset(Shield_ani,					0, MAX_SHIELD_ANIMS * sizeof(shield_ani));
 	memset(Species_names,				0, MAX_SHIELD_ANIMS * (SPECIES_NAME_MAXLEN+1));
 	memset(Debris_texture_files,		0, MAX_SHIELD_ANIMS * (MAX_DEBRIS_TNAME_LEN+1));
 	memset(Thrust_anim_names,			0, NUM_THRUST_ANIMS * MAX_FILENAME_LEN);
@@ -99,7 +107,7 @@ void Init_Species_Definitions()
 		memset(cstrtemp, 0, MAX_SHIELD_ANIMNAME_LEN+1);
 		required_string("+Shield_Hit_ani:");
 		stuff_string(cstrtemp,										F_NAME, NULL, MAX_SHIELD_ANIMNAME_LEN);
-		Sheild_ani[i].filename = strdup(cstrtemp);
+		Shield_ani[i].filename = strdup(cstrtemp);
 
 		// Thruster Anims
 		thrust_index = i*2;
@@ -155,7 +163,7 @@ void Init_Species_LoadDefault()
 
 	strncpy(Species_names[0],					"Terran",			SPECIES_NAME_MAXLEN);
 	strncpy(Debris_texture_files[0],			"debris01a",		MAX_DEBRIS_TNAME_LEN);
-	Sheild_ani[0].filename =		strdup("shieldhit01a");
+	Shield_ani[0].filename =		strdup("shieldhit01a");
 
 	// species*2 ? afterburning?1:0
 	strncpy(Thrust_anim_names[0],				"thruster01",		MAX_FILENAME_LEN);
@@ -172,7 +180,7 @@ void Init_Species_LoadDefault()
 
 	strncpy(Species_names[1],					"Vasudan",			SPECIES_NAME_MAXLEN);
 	strncpy(Debris_texture_files[1],			"debris01b",		MAX_DEBRIS_TNAME_LEN);
-	Sheild_ani[1].filename =		strdup("shieldhit01a");
+	Shield_ani[1].filename =		strdup("shieldhit01a");
 
 	// species*2 ? afterburning?1:0
 	strncpy(Thrust_anim_names[2],				"thruster02",		MAX_FILENAME_LEN);
@@ -190,7 +198,7 @@ void Init_Species_LoadDefault()
 
 	strncpy(Species_names[2],					"Shivan",			SPECIES_NAME_MAXLEN);
 	strncpy(Debris_texture_files[2],			"debris01c",		MAX_DEBRIS_TNAME_LEN);
-	Sheild_ani[2].filename =		strdup("shieldhit01a");
+	Shield_ani[2].filename =		strdup("shieldhit01a");
 
 	// species*2 ? afterburning?1:0
 	strncpy(Thrust_anim_names[4],				"thruster03",		MAX_FILENAME_LEN);

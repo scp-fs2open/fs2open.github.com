@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-09-24 19:35:59 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2003-11-11 02:15:45 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/09/24 19:35:59  Kazan
+ * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
+ *
  * Revision 2.7  2003/04/29 01:03:24  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -1094,7 +1097,7 @@ void multi_ingame_join_button_pressed(int n)
 
 		break;
 	default:
-		// how the hell did this happen?
+		// how did this happen?
 		Int3();
 	}
 }

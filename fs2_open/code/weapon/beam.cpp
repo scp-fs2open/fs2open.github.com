@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.29 $
- * $Date: 2003-11-09 07:36:52 $
+ * $Revision: 2.30 $
+ * $Date: 2003-11-11 02:15:41 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/11/09 07:36:52  Goober5000
+ * fixed spelling
+ * --Goober5000
+ *
  * Revision 2.28  2003/10/23 18:03:25  randomtiger
  * Bobs changes (take 2)
  *
@@ -109,7 +113,7 @@
  * some general improvement to fighter beams,
  *
  * Revision 2.4  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.3  2002/08/01 01:41:10  penguin
  * The big include file move
@@ -2550,7 +2554,7 @@ int beam_collide_ship(obj_pair *pair)
 	if(widest > pair->b->radius * BEAM_AREA_PERCENT){
 		test_collide.radius = beam_get_widest(b) * 0.5f;
 		//if the shields have any juice check them otherwise check the model
-		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for beams wich have a positive sheild factor -Bobboau
+		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for beams wich have a positive shield factor -Bobboau
 //			mprintf(("I think this ship has shields\n"));
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_SPHERELINE;	
 		}else{	
@@ -2953,7 +2957,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 		decal_create(hit_object, &dec, bc->cinfo.hit_submodel, bwi->decal_texture, bwi->decal_backface_texture);
 */
 		
-		if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam sheild hit code -Bobboau
+		if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam shield hit code -Bobboau
 			bc->quadrant= quadrant_num = get_quadrant(&cinfo->hit_point);
 			if (!(hit_object->flags & SF_DYING) ) {
 				add_shield_point(hit_object-Objects, cinfo->shield_hit_tri, &cinfo->hit_point);
@@ -3136,7 +3140,7 @@ void beam_handle_collisions(beam *b)
 				// GAH!! Bobboau, the shields are almost always up!  Anyway, some people complained.
 				//fine :\... -Bobboau
 				// if this is the first hit on the player ship. whack him
-				if(do_damage)	// && !(b->f_collisions[idx].quadrant)) //I didn't want the beam wacking things if it's hitting just sheilds -Bobboau
+				if(do_damage)	// && !(b->f_collisions[idx].quadrant)) //I didn't want the beam wacking things if it's hitting just shields -Bobboau
 				{
 					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
 				}

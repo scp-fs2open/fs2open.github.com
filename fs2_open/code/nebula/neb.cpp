@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-10-14 17:39:16 $
- * $Author: randomtiger $
+ * $Revision: 2.9 $
+ * $Date: 2003-11-11 02:15:46 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/10/14 17:39:16  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.7  2003/09/26 14:37:15  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -1339,7 +1349,7 @@ extern float Viewer_zoom;
 float ex_scale, ey_scale;
 int tbmap = -1;
 // UnknownPlayer : Contained herein, the origins of the nebula rendering bug!
-// I am really not entirely sure what the hell this code achieves, but the old
+// I am really not entirely sure what this code achieves, but the old
 // D3D calls were the cause of the nebula bug - they have been commented out.
 // If you want to save some rendering time, I would suggest maybe kill this off.
 // It doesn't use much, but it APPEARS to be fairly useless unless someone wants

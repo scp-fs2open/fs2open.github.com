@@ -9,19 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-11-09 04:09:18 $
+ * $Revision: 2.13 $
+ * $Date: 2003-11-11 02:15:45 $
  * $Author: Goober5000 $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/11/09 04:09:18  Goober5000
+ * edited for language
+ * --Goober5000
+ *
  * Revision 2.11  2003/11/06 20:22:13  Kazan
- * slight change to .dsp - leave the damn release target as fs2_open_r.exe already
+ * slight change to .dsp - leave the release target as fs2_open_r.exe already
  * added myself to credit
- * killed some of the stupid fscking warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
  * Release builds should have warning level set no higher than 2 (default is 1)
- * Why the hell are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
  * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
  *
  * Revision 2.10  2003/10/30 15:30:23  Kazan
@@ -1623,7 +1627,7 @@ void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
 				pl->s_info.ingame_join_flags |= INGAME_JOIN_FLAG_FILE_XFER;
 				pl->s_info.xfer_handle = multi_xfer_send_file(pl->reliable_socket, Netgame.mission_name, CF_TYPE_MISSIONS);
 			}
-			// otherwise send him a nak and tell him to get the hell away 
+			// otherwise send him a nak and tell him to get away 
 			else {
 				send_ingame_nak(ACK_FILE_ACCEPTED,pl);
 			}
@@ -3352,7 +3356,7 @@ void multi_update_valid_missions()
 	int count, idx, i;
 	bool Found;
 	uint checksum;
-	FILE *out;
+//	FILE *out;
 
 	// allocate filename space	
 	file_names = (char**)malloc(sizeof(char*) * 1024); // 1024 files should be safe!
@@ -3541,8 +3545,8 @@ void multi_update_valid_tables()
 	char wild_card[256];
 	int count, idx, i;
 	bool Found;
-	uint checksum;
-	FILE *out;
+	uint checksum = 0;
+//	FILE *out;
 
 	// allocate filename space	
 	file_names = (char**)malloc(sizeof(char*) * 1024); // 1024 files should be safe!

@@ -15,11 +15,14 @@
  * Revision 2.3  2002/11/06 23:22:05  phreak
  * Parser error handling for fighter flak, it didn't want flak on player weapons, now it doesn't care
  *
- 2.4
  * Revision 2.2  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/11/09 07:36:51  Goober5000
+ * fixed spelling
+ * --Goober5000
+ *
  * Revision 2.42  2003/10/25 06:56:07  bobboau
  * adding FOF stuff,
  * and fixed a small error in the matrix code,

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-09-13 06:02:06 $
+ * $Revision: 2.18 $
+ * $Date: 2003-11-11 02:15:44 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/09/13 06:02:06  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.15  2003/08/16 03:52:24  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -110,7 +114,7 @@
  * changing ship in weapon loadout screen.
  * 
  * 32    7/27/99 7:34p Jefff
- * Lotsa clean up, moving stuff around, generally making the whole damn
+ * Lotsa clean up, moving stuff around, generally making the whole
  * thing work right.
  * 
  * 31    7/27/99 3:01p Jefff
@@ -300,7 +304,7 @@
  * pool
  * 
  * 94    3/25/98 8:43p Hoffoss
- * Changed anim_play() to not be so damn complex when you try and call it.
+ * Changed anim_play() to not be so complex when you try and call it.
  * 
  * 93    3/25/98 11:23a Mike
  * Fix stack overwrite due to async between MAX_SECONDARY_WEAPONS and

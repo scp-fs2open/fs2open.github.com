@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/11/09 07:36:52  Goober5000
+ * fixed spelling
+ * --Goober5000
+ *
  * Revision 2.23  2003/10/25 06:56:07  bobboau
  * adding FOF stuff,
  * and fixed a small error in the matrix code,
@@ -101,7 +105,7 @@
  * changed around the 'weapon_info' struct to allow for custom corkscrew missiles
  *
  * Revision 2.2  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move
@@ -710,7 +714,7 @@ typedef struct weapon_info {
 //tertiary weapon types. cannot combine these (can't have a cloaking device and super jammer in one)
 #define TWT_CLOAK_DEVICE	1			//cloaking device
 #define TWT_AMMO_POD		2			//additional stuff for primary or secondary ammo
-#define TWT_BOOST_POD		3			//one-shot (or multi-shot) hella fast afterburner
+#define TWT_BOOST_POD		3			//one-shot (or multi-shot) fast afterburner
 #define TWT_RADAR_JAMMER	4			//makes your ship untargetable on radar. unless there is an awacs. effectiveness increased at range
 #define TWT_SUPER_JAMMER	5			//scrambles all hostile's radars within a certain range. awacs effectiveness limited
 #define TWT_CAPACITOR		6			//stores extra energy to quickly replenish afterburner, shield, and laser energy. unused energy will replenish the pod

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-06 20:22:13 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2003-11-11 02:15:45 $
+ * $Author: Goober5000 $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/06 20:22:13  Kazan
+ * slight change to .dsp - leave the release target as fs2_open_r.exe already
+ * added myself to credit
+ * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * Release builds should have warning level set no higher than 2 (default is 1)
+ * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
+ *
  * Revision 2.10  2003/10/13 05:57:49  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
  * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
@@ -2086,7 +2094,7 @@ void multi_join_load_tcp_addrs()
 	char line[MAX_IP_STRING];
 	net_addr addr;	
 	server_item *item;
-	active_game *aitem;
+//	active_game *aitem;
 	CFILE *file = NULL;
 	
 	//if (On_FS2Open_PXO)
@@ -2157,7 +2165,7 @@ void multi_join_load_tcp_addrs()
 				
 				ml_printf("Network (FS2OpenPXO): Server %d ip is %s\n", i, servers[i].ip);
 				psnet_string_to_addr(&addr,servers[i].ip);
-				addr.port = servers[i].port;
+				addr.port = (short) servers[i].port;
 
 				if ( addr.port == 0 ){
 					addr.port = DEFAULT_GAME_PORT;

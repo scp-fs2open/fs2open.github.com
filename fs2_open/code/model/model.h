@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.33 $
- * $Date: 2003-10-10 03:59:41 $
- * $Author: matt $
+ * $Revision: 2.34 $
+ * $Date: 2003-11-11 02:15:45 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/10/10 03:59:41  matt
+ * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
+ * out now. -Sticks
+ *
  * Revision 2.32  2003/09/26 14:37:15  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -141,7 +145,7 @@
  * some general improvement to fighter beams,
  *
  * Revision 2.5  2002/10/19 19:29:27  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.4  2002/08/01 01:41:07  penguin
  * The big include file move
@@ -961,7 +965,7 @@ void model_set_detail_level(int n);
 #define MR_SHOW_PATHS				(1<<2)		// Show the paths associated with a model
 #define MR_SHOW_RADIUS				(1<<3)		// Show the radius around the object
 #define MR_SHOW_DAMAGE				(1<<4)		// Show the "destroyed" subobjects
-#define MR_SHOW_SHIELDS				(1<<5)		// Show the sheild mesh
+#define MR_SHOW_SHIELDS				(1<<5)		// Show the shield mesh
 #define MR_SHOW_THRUSTERS			(1<<6)		// Show the engine thrusters. See model_set_thrust for how long it draws.
 #define MR_LOCK_DETAIL				(1<<7)		// Only draw the detail level defined in model_set_detail_level
 #define MR_NO_POLYS					(1<<8)		// Don't draw the polygons.
@@ -1234,19 +1238,19 @@ void model_show_damaged(int model_num, int show_damaged );
 
 //=========================== MODEL OCTANT STUFF ================================
 
-//  Models are now divided into 8 octants.    Sheilds too.
+//  Models are now divided into 8 octants.    Shields too.
 //  This made the collision code faster.   Shield is 4x and ship faces
 //  are about 2x faster.
 
 //  Before, calling model_collide with flags=0 didn't check the shield
-//  but did check the model itself.   Setting the sheild flags caused
+//  but did check the model itself.   Setting the shield flags caused
 //  the shield to get check along with the ship.
 //  Now, you need to explicitly tell the model_collide code to check
 //  the model, so you can check the model or shield or both.
 
 //  If you need to check them both, do it in one call; this saves some
 //  time.    If checking the shield is sufficient for determining 
-//  something   (like if it is under the hud) then use just sheild 
+//  something   (like if it is under the hud) then use just shield 
 //  check, it is at least 5x faster than checking the model itself.
 
 

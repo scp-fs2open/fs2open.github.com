@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-10-23 23:49:12 $
- * $Author: phreak $
+ * $Revision: 2.20 $
+ * $Date: 2003-11-11 02:15:47 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/10/23 23:49:12  phreak
+ * added code to render the user-defined skybox
+ *
  * Revision 2.18  2003/09/15 12:34:09  fryday
  * Rollback killed my lens-flare. D'oh.
  *
@@ -66,7 +69,7 @@
  * --Goober5000
  *
  * Revision 2.3  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.2  2002/09/20 20:05:29  phreak
  * glare parser stuff in stars_init()

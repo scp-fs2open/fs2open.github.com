@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-09-13 06:02:06 $
+ * $Revision: 2.4 $
+ * $Date: 2003-11-11 02:15:44 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/13 06:02:06  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -148,7 +152,7 @@
  * Get demo build working with limited set of data.
  * 
  * 66    3/25/98 8:43p Hoffoss
- * Changed anim_play() to not be so damn complex when you try and call it.
+ * Changed anim_play() to not be so complex when you try and call it.
  * 
  * 65    3/24/98 4:59p Dave
  * Fixed several ui bugs. Put in pre and post voice stream playback sound

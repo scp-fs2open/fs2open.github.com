@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-10-30 15:30:23 $
- * $Author: Kazan $
+ * $Revision: 2.16 $
+ * $Date: 2003-11-11 02:15:44 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/10/30 15:30:23  Kazan
+ * lil update
+ *
  * Revision 2.14  2003/10/04 22:42:22  Kazan
  * fs2netd now TCP
  *
@@ -2961,7 +2964,7 @@ void debrief_do_frame(float frametime)
 		gr_bitmap(0, 0);
 	} 
 
-	// draw the damn awarded stuff, G
+	// draw the awarded stuff, G
 	if ( Award_active && (Award_bg_bitmap >= 0) ) {
 		gr_set_bitmap(Award_bg_bitmap);
 		gr_bitmap(Debrief_award_wnd_coords[gr_screen.res][0], Debrief_award_wnd_coords[gr_screen.res][1]);

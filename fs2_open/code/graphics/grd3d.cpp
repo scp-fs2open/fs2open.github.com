@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.39 $
- * $Date: 2003-11-06 21:10:26 $
- * $Author: randomtiger $
+ * $Revision: 2.40 $
+ * $Date: 2003-11-11 02:15:44 $
+ * $Author: Goober5000 $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/11/06 21:10:26  randomtiger
+ * Added my batching solution for more efficient d3d_string.
+ * Its part of the new grd3dbatch module, most of this isnt in use but it might help out later so I've left it in.
+ *
  * Revision 2.38  2003/11/02 05:50:08  bobboau
  * modified trails to render with tristrips now rather than with stinky old trifans,
  * MUCH faster now, at least one order of magnatude.
@@ -1357,7 +1361,7 @@ int gr_d3d_save_screen()
 		goto Failed;
 	}
 
-	// Make a copy of the damn thing
+	// Make a copy of the thing
 	D3DLOCKED_RECT src_rect;
 	D3DLOCKED_RECT dst_rect;
 	

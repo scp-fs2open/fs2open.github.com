@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_endgame.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-11-11 02:15:45 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/22 01:22:25  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -321,7 +324,7 @@ void multi_endgame_process()
 			}
 		}
 
-		// mark myself as not waiting and get the hell out		
+		// mark myself as not waiting and get out
 		multi_endgame_cleanup();	
 	} else {
 		// if we're not waiting to leave the game, do nothing

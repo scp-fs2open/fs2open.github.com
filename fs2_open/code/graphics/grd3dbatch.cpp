@@ -232,7 +232,8 @@ void d3d_batch_unlock_vbuffer(int batch_id)
 	Assert(batch_id < batch_array_max);
 	Assert(batch_array[batch_id].vbuffer != NULL);
 
-	HRESULT hr = batch_array[batch_id].vbuffer->Unlock();
+	// Goober5000 - commented to bypass warning
+	/*HRESULT hr =*/ batch_array[batch_id].vbuffer->Unlock();
 
 	batch_array[batch_id].lock--;
 	Assert(hr);

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-06 20:22:13 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2003-11-11 02:15:45 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/06 20:22:13  Kazan
+ * slight change to .dsp - leave the release target as fs2_open_r.exe already
+ * added myself to credit
+ * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * Release builds should have warning level set no higher than 2 (default is 1)
+ * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
+ *
  * Revision 2.10  2003/10/04 22:42:22  Kazan
  * fs2netd now TCP
  *
@@ -6946,7 +6954,7 @@ void send_client_update_packet(net_player *pl)
 		shipp = &Ships[objp->instance];
 		sip = &Ship_info[shipp->ship_info_index];
 
-		// hull strength and sheild mesh information are floats (as a percentage).  Pass the integer
+		// hull strength and shield mesh information are floats (as a percentage).  Pass the integer
 		// percentage value since that should be close enough
 		float temp = (objp->hull_strength  / shipp->ship_initial_hull_strength * 100.0f);		
 		if(temp < 0.0f){
@@ -7037,7 +7045,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		object *objp;
 		int i;
 
-		// hull strength and sheild mesh information are floats (as a percentage).  Pass the integer
+		// hull strength and shield mesh information are floats (as a percentage).  Pass the integer
 		// percentage value since that should be close enough
 		GET_DATA( hull_percent );
 
