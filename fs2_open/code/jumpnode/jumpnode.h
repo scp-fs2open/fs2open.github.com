@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.10 $
- * $Date: 2005-03-29 03:42:07 $
- * $Author: phreak $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-29 06:28:52 $
+ * $Author: wmcoolmon $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/29 03:42:07  phreak
+ * global variable "Jump_nodes" needs external linkage for FRED
+ *
  * Revision 2.9  2005/03/25 06:57:34  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -119,7 +122,7 @@ public:
 //-----Globals------
 //extern int Num_jump_nodes;
 //extern linked_list Jump_nodes;
-extern jump_node Jump_nodes;
+extern linked_list<jump_node> Jump_nodes;
 
 //-----Functions-----
 //Given a name, returns pointer to the jump node object
