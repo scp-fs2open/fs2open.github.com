@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-01-01 23:33:34 $
+ * $Revision: 2.11 $
+ * $Date: 2003-01-02 00:35:21 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/01/01 23:33:34  Goober5000
+ * added ship-vaporize and ship-no-vaporize sexps
+ * --Goober5000
+ *
  * Revision 2.9  2002/12/27 02:57:51  Goober5000
  * removed the existing stealth sexps and replaced them with the following...
  * ship-stealthy
@@ -1643,6 +1647,9 @@ int parse_create_object(p_object *objp)
 
 	if ( objp->flags & P_SIF_STEALTH )
 		Ship_info[Ships[shipnum].ship_info_index].flags |= SIF_STEALTH;
+
+	if ( objp->flags & P_SIF_DONT_COLLIDE_INVIS )
+		Ship_info[Ships[shipnum].ship_info_index].flags |= SIF_DONT_COLLIDE_INVIS;
 
 	if ( objp->flags & P_SIF2_FRIENDLY_STEALTH_INVISIBLE )
 		Ship_info[Ships[shipnum].ship_info_index].flags2 |= SIF2_FRIENDLY_STEALTH_INVISIBLE;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.22 $
- * $Date: 2003-01-01 23:33:33 $
+ * $Revision: 2.23 $
+ * $Date: 2003-01-02 00:35:20 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/01/01 23:33:33  Goober5000
+ * added ship-vaporize and ship-no-vaporize sexps
+ * --Goober5000
+ *
  * Revision 2.21  2002/12/31 18:59:43  Goober5000
  * if it ain't broke, don't fix it
  * --Goober5000
@@ -616,8 +620,6 @@ sexp_oper Operators[] = {
 	{ "ship-unstealthy",			OP_SHIP_UNSTEALTHY,		1, INT_MAX },
 	{ "friendly-stealth-invisible",	OP_FRIENDLY_STEALTH_INVISIBLE,	1, INT_MAX },
 	{ "friendly-stealth-visible",	OP_FRIENDLY_STEALTH_VISIBLE,	1, INT_MAX },
-	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },
-	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },
 	{ "break-warp",					OP_WARP_BROKEN,					1, INT_MAX,	},
 	{ "fix-warp",						OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
 	{ "never-warp",					OP_WARP_NEVER,						1, INT_MAX, },
@@ -653,13 +655,17 @@ sexp_oper Operators[] = {
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
-	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
 	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
 	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
+	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
+	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },	// Goober5000
+	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },	// Goober5000
 	{ "ship-lights-on",					OP_SHIP_LIGHTS_ON,					1, 1			}, //-WMCoolmon
 	{ "ship-lights-off",					OP_SHIP_LIGHTS_OFF,					1, 1			}, //-WMCoolmon
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
+	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
+	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -6584,6 +6590,60 @@ void sexp_beam_protect_ships( int n, int flag )
 	}
 }
 
+
+
+// sets the "dont collide invisible" flag on a list of ships - Goober5000
+void sexp_dont_collide_invisible( int n, int dont_collide )
+{
+	char *ship_name;
+	int num;
+
+	for ( ; n != -1; n = CDR(n) )
+	{
+		ship_name = CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+			continue;
+
+		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
+		// in a list until created
+		num = ship_name_lookup(ship_name);
+		if ( num != -1 )
+		{
+			if ( dont_collide )
+			{
+				Ship_info[Ships[num].ship_info_index].flags |= SIF_DONT_COLLIDE_INVIS;
+			}
+			else
+			{
+				Ship_info[Ships[num].ship_info_index].flags &= ~SIF_DONT_COLLIDE_INVIS;
+			}
+
+		}
+		else
+		{
+			p_object *parse_obj;
+
+			parse_obj = mission_parse_get_arrival_ship( ship_name );
+			if ( parse_obj )
+			{
+				if ( dont_collide )
+					parse_obj->flags |= P_SIF_DONT_COLLIDE_INVIS;
+				else
+					parse_obj->flags &= ~P_SIF_DONT_COLLIDE_INVIS;
+
+	#ifndef NDEBUG
+			}
+			else
+			{
+				Int3();	// could be a potential problem here
+	#endif
+			}
+		}
+	}
+}
+
 // sets the vaporize flag on a list of ships - Goober5000
 void sexp_ships_vaporize( int n, int vaporize )
 {
@@ -9154,6 +9214,12 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_DONT_COLLIDE_INVISIBLE:
+			case OP_COLLIDE_INVISIBLE:
+				sexp_dont_collide_invisible( node, (op_num == OP_DONT_COLLIDE_INVISIBLE) );
+				sexp_val = 1;
+				break;
+
 			case OP_WARP_BROKEN:
 			case OP_WARP_NOT_BROKEN:
 				sexp_deal_with_warp( node, 0, op_num==OP_WARP_BROKEN?1:0 );
@@ -9738,6 +9804,8 @@ int query_operator_return_type(int op)
 		case OP_SET_SPECIAL_WARPOUT_NAME:
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
+		case OP_DONT_COLLIDE_INVISIBLE:
+		case OP_COLLIDE_INVISIBLE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -10269,6 +10337,10 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
+			return OPF_SHIP;
+
+		case OP_DONT_COLLIDE_INVISIBLE:
+		case OP_COLLIDE_INVISIBLE:
 			return OPF_SHIP;
 
 		case OP_WARP_BROKEN:
@@ -11268,8 +11340,6 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_UNSTEALTHY:
 		case OP_FRIENDLY_STEALTH_INVISIBLE:
 		case OP_FRIENDLY_STEALTH_VISIBLE:
-		case OP_SHIP_VAPORIZE:
-		case OP_SHIP_NO_VAPORIZE:
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
@@ -11304,15 +11374,19 @@ int get_subcategory(int sexp_id)
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_AWACS_SET_RADIUS:
 		case OP_CAP_WAYPOINT_SPEED:
-		case OP_SUPERNOVA_START:
 		case OP_SET_SPECIAL_WARPOUT_NAME:
 		case OP_SHIP_VANISH:
+		case OP_SUPERNOVA_START:
+		case OP_SHIP_VAPORIZE:
+		case OP_SHIP_NO_VAPORIZE:
 		case OP_SHIP_LIGHTS_ON:
 		case OP_SHIP_LIGHTS_OFF:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
+		case OP_DONT_COLLIDE_INVISIBLE:
+		case OP_COLLIDE_INVISIBLE:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 		
 		default:
