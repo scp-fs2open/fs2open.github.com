@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-03-20 14:47:13 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-21 09:41:54 $
  * $Author: randomtiger $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/20 14:47:13  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.4  2004/03/05 09:02:09  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -615,11 +619,11 @@ void particle_render_all()
 
 					// if this is a tracer style particle
 					if(p->tracer_length > 0.0f){					
-						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f);
+						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT|TMAP_HTL_3DU_BATCH, 25.0f);
 					}
 					// draw as a regular bitmap
 					else {
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE);
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE | TMAP_HTL_3DU_BATCH);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
@@ -645,11 +649,11 @@ void particle_render_all()
 
 					// if this is a tracer style particle
 					if(p->tracer_length > 0.0f){					
-						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f);
+						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT|TMAP_HTL_3DU_BATCH, 25.0f);
 					}
 					// draw as a regular bitmap
 					else {
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE);
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE|TMAP_HTL_3DU_BATCH);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
@@ -675,11 +679,11 @@ void particle_render_all()
 
 					// if this is a tracer style particle
 					if(p->tracer_length > 0.0f){			
-						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f);
+						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT|TMAP_HTL_3DU_BATCH, 25.0f);
 					}
 					// draw as a regular bitmap
 					else {
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE);
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE|TMAP_HTL_3DU_BATCH);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
@@ -705,11 +709,11 @@ void particle_render_all()
 					
 					// if this is a tracer style particle
 					if(p->tracer_length > 0.0f){					
-						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f);
+						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT|TMAP_HTL_3DU_BATCH, 25.0f);
 					}
 					// draw as a regular bitmap
 					else {						
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE);
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE|TMAP_HTL_3DU_BATCH);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;

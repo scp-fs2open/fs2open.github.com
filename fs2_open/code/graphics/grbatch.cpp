@@ -75,7 +75,7 @@ void batch_render()
 	}
 
 	Batch_current = 0;
-	Batch_vertex_current = 0;
+	Batch_vertex_current = 0;		  
 }
 
 vertex *batch_get_block(int num_verts, int flags)
