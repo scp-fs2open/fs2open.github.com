@@ -39,7 +39,7 @@ size_t ogg_mmio_read(void *buf, size_t elsize, size_t elnem, void* mmfp)
 
 int ogg_mmio_seek(void* mmfp, ogg_int64_t offset, int where)
 {
-	return -1;
+	return (int) mmioSeek((HMMIO) mmfp, (LONG) offset, where);
 }
 
 int ogg_mmio_close(void* mmfp)
@@ -49,7 +49,7 @@ int ogg_mmio_close(void* mmfp)
 
 long ogg_mmio_tell(void* mmfp)
 {
-	return -1;
+	return mmioSeek((HMMIO) mmfp, 0, SEEK_CUR);
 }
 #endif
 int OGG_init()

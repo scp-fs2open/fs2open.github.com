@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-01-18 01:14:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-02-01 06:54:20 $
+ * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/01/18 01:14:17  wmcoolmon
+ * OGG fixes, ship selection fixes
+ *
  * Revision 2.6  2005/01/08 09:59:10  wmcoolmon
  * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
  *
@@ -1398,7 +1401,7 @@ BOOL WaveFile::Cue (void)
 	//Ogg is special...
 	if(m_wave_format == OGG_FORMAT_VORBIS)
 	{
-		mmioSeek( (HMMIO) m_ogg_info.datasource, m_data_offset, SEEK_SET );
+		ov_raw_seek( &m_ogg_info, m_data_offset );
 		m_data_bytes_left = m_nDataSize;
 		m_abort_next_read = FALSE;
 
@@ -1515,7 +1518,7 @@ int WaveFile::Read(BYTE *pbDest, UINT cbSize, int service)
 			}
 
 			//OGG is trying to read the next file!
-			m_data_bytes_left = (m_data_offset + m_nDataSize) - mmioSeek((HMMIO) m_ogg_info.datasource, 0, SEEK_CUR);
+			m_data_bytes_left = (m_data_offset + m_nDataSize) - ov_raw_tell( &m_ogg_info );
 			if(m_data_bytes_left <= 0)
 			{
 				m_abort_next_read = TRUE;
