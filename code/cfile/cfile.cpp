@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-01-30 18:32:41 $
+ * $Revision: 2.28 $
+ * $Date: 2005-03-02 03:13:00 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/01/30 18:32:41  taylor
+ * merge with Linux/OSX tree - p0130
+ * remove extra brace in cfile.cpp
+ *
  * Revision 2.26  2005/01/30 12:50:08  taylor
  * merge with Linux/OSX tree - p0130
  *
@@ -1036,8 +1040,10 @@ int cfclose( CFILE * cfile )
 		Assert(result);	// Ensure file handle is closed properly
 		result = 0;
 #elif defined SCP_UNIX
-		result = munmap(cb->data, cb->data_length);
-		Assert(result);
+		// FIXME: result is wrong after munmap() but it is successful
+		//result = munmap(cb->data, cb->data_length);
+		//Assert(result);
+		munmap(cb->data, cb->data_length);
 		if ( cb->fp != NULL)
 			result = fclose(cb->fp);
 #endif
@@ -1169,6 +1175,7 @@ CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 		Assert( cfbp->data != NULL );		
 #elif defined SCP_UNIX
 		cfbp->fp = fp;
+		cfbp->data_length = filelength( fileno(fp) );
 		cfbp->data = mmap(NULL,						// start
 								cfbp->data_length,	// length
 								PROT_READ,				// prot
