@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.10 $
+ * $Revision: 2.11 $
  * $Author: Goober5000 $
- * $Date: 2002-12-24 07:38:59 $
+ * $Date: 2002-12-27 02:57:51 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2002/12/24 07:38:59  Goober5000
+ * added a wee cautionary note
+ * --Goober5000
+ *
  * Revision 2.9  2002/12/23 05:18:52  Goober5000
  * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
  * one ship would return after only dealing with the first ship.
@@ -493,8 +497,8 @@ typedef struct p_object {
 #define P_KNOSSOS_WARP_IN			(1<<19)
 #define P_OF_NO_LASERS				(1<<20)
 #define P_OF_NO_ENGINES				(1<<21)
-#define P_SSF_STEALTH				(1<<22)
-
+#define P_SIF_STEALTH				(1<<22)
+#define P_SIF2_FRIENDLY_STEALTH_INVISIBLE	(1<<23)
 
 // the following parse object flags are used internally by Freespace
 #define P_SF_USE_UNIQUE_ORDERS		(1<<26)	// tells a newly created ship to use the default orders for that ship

@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.15 $
+ * $Revision: 2.16 $
  * $Author: Goober5000 $
- * $Date: 2002-12-25 01:22:23 $
+ * $Date: 2002-12-27 02:57:51 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2002/12/25 01:22:23  Goober5000
+ * meh - changed is-cargo-x to is-cargo
+ * --Goober5000
+ *
  * Revision 2.14  2002/12/24 07:42:29  Goober5000
  * added change-ai-class and is-ai-class, and I think I may also have nailed the
  * is-iff bug; did some other bug hunting as well
@@ -553,8 +557,9 @@
 #define	OP_IS_SHIP_VISIBLE					(0x0019 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_TEAM_SCORE						(0x001a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define OP_PRIMARY_AMMO_PCT					(0x001b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_IS_SHIP_STEALTHED				(0x001c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_IS_CARGO						(0x001d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_SHIP_STEALTHY					(0x001c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_CARGO							(0x001d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_FRIENDLY_STEALTH_VISIBLE		(0x001e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -629,11 +634,13 @@
 #define OP_END_MISSION					(0x0061 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //-Sesquipedalian. replaces end-mission-delay, which did nothing
 #define OP_SET_SCANNED					(0x0062 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_UNSCANNED				(0x0063	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SHIP_FORCE_STEALTH			(0x0064	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SHIP_FORCE_NOSTEALTH			(0x0065	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SHIP_REMOVE_STEALTH_FORCING	(0x0066	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SET_CARGO					(0x0067	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_CHANGE_AI_CLASS				(0x0068 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SHIP_STEALTHY				(0x0064	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SHIP_UNSTEALTHY				(0x0065	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_CARGO					(0x0066	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_CHANGE_AI_CLASS				(0x0067 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_FRIENDLY_STEALTH_INVISIBLE	(0x0068	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_FRIENDLY_STEALTH_VISIBLE		(0x0069	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)

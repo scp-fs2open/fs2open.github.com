@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.19 $
- * $Date: 2002-12-24 07:42:28 $
+ * $Revision: 2.20 $
+ * $Date: 2002-12-27 02:57:50 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2002/12/24 07:42:28  Goober5000
+ * added change-ai-class and is-ai-class, and I think I may also have nailed the
+ * is-iff bug; did some other bug hunting as well
+ * --Goober5000
+ *
  * Revision 2.18  2002/12/23 05:18:52  Goober5000
  * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
  * one ship would return after only dealing with the first ship.
@@ -1520,7 +1525,7 @@ int parse_ship()
 		else
 			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 	}
-	sip->stealth_flags = SSF_DEFAULT_VALUE;
+	sip->flags2 = SIF2_DEFAULT_VALUE;
 
 	// be friendly; ensure ballistic flags check out
 	if (pbank_capacity_specified)

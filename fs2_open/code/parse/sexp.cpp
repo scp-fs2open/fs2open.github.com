@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.17 $
- * $Date: 2002-12-25 01:22:23 $
+ * $Revision: 2.18 $
+ * $Date: 2002-12-27 02:57:51 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2002/12/25 01:22:23  Goober5000
+ * meh - changed is-cargo-x to is-cargo
+ * --Goober5000
+ *
  * Revision 2.16  2002/12/24 07:42:29  Goober5000
  * added change-ai-class and is-ai-class, and I think I may also have nailed the
  * is-iff bug; did some other bug hunting as well
@@ -505,7 +509,8 @@ sexp_oper Operators[] = {
 	{ "cap-subsys-cargo-known-delay",	OP_CAP_SUBSYS_CARGO_KNOWN_DELAY,	3, INT_MAX,	},
 	{ "is-cargo",						OP_IS_CARGO,						2, 3 },
 	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,			1, 1, },
-	{ "is-ship-stealthed",				OP_IS_SHIP_STEALTHED,	1, 1, },
+	{ "is-ship-stealthy",				OP_IS_SHIP_STEALTHY,	1, 1, },
+	{ "is-friendly-stealth-visible",		OP_IS_FRIENDLY_STEALTH_VISIBLE,	1, 1, },
 	{ "is_tagged",								OP_IS_TAGGED,							1, 1			},
 	{ "has-been-tagged-delay",				OP_HAS_BEEN_TAGGED_DELAY,			2, INT_MAX,	},
 	{ "shield-recharge-pct",				OP_SHIELD_RECHARGE_PCT,				1, 1			},
@@ -585,10 +590,11 @@ sexp_oper Operators[] = {
 	{ "ship-guardian",				OP_SHIP_GUARDIAN,					1, INT_MAX	},
 	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,				1, INT_MAX	},
 	{ "ship-invisible",				OP_SHIP_INVISIBLE,				1, INT_MAX	},
-	{ "ship-visible",					OP_SHIP_VISIBLE,					1, INT_MAX	},
-	{ "ship-force-stealth",			OP_SHIP_FORCE_STEALTH,			1, INT_MAX },
-	{ "ship-force-nostealth",		OP_SHIP_FORCE_NOSTEALTH,		1, INT_MAX },
-	{ "ship-remove-stealth-forcing",OP_SHIP_REMOVE_STEALTH_FORCING,	1, INT_MAX },
+	{ "ship-visible",				OP_SHIP_VISIBLE,					1, INT_MAX	},
+	{ "ship-stealthy",				OP_SHIP_STEALTHY,			1, INT_MAX },
+	{ "ship-unstealthy",			OP_SHIP_UNSTEALTHY,		1, INT_MAX },
+	{ "friendly-stealth-invisible",	OP_FRIENDLY_STEALTH_INVISIBLE,	1, INT_MAX },
+	{ "friendly-stealth-visible",	OP_FRIENDLY_STEALTH_VISIBLE,	1, INT_MAX },
 	{ "break-warp",					OP_WARP_BROKEN,					1, INT_MAX,	},
 	{ "fix-warp",						OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
 	{ "never-warp",					OP_WARP_NEVER,						1, INT_MAX, },
@@ -3602,7 +3608,7 @@ int sexp_is_ship_visible(int n)
 }
 
 // is the stealth flag set on this ship
-int sexp_is_ship_stealthed(int n)
+int sexp_is_ship_stealthy(int n)
 {
 	char *shipname;
 	int shipnum;
@@ -3623,6 +3629,30 @@ int sexp_is_ship_stealthed(int n)
 		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
+}
+
+// is the friendly stealth ship visible
+int sexp_is_friendly_stealth_visible(int n)
+{
+	char *shipname;
+	int shipnum;
+
+	shipname = CTEXT(n);
+	
+	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, shipname, NULL, NULL) ){
+		return SEXP_NAN_FOREVER;
+	}
+
+	shipnum = ship_name_lookup( shipname );
+	if ( shipnum == -1 ) {					// hmm.. if true, must not have arrived yet
+		return SEXP_NAN;
+	}
+
+	if (Ship_info[Ships[shipnum].ship_info_index].flags2 & SIF2_FRIENDLY_STEALTH_INVISIBLE)
+		return SEXP_FALSE;
+	else
+		return SEXP_TRUE;
 }
 
 // get multi team v team score
@@ -6541,7 +6571,7 @@ void sexp_ships_visible( int n, int visible )
 
 		// check to see if ship destroyed or departed.  In either case, do nothing.
 		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;;
+			continue;
 
 		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
 		// in a list until created
@@ -6577,11 +6607,10 @@ void sexp_ships_visible( int n, int visible )
 }
 
 // Goober5000
-void sexp_ships_deal_with_stealth(int n, int forcing, int make_stealthy)
+void sexp_ships_stealthy(int n, int stealthy)
 {
 	char *ship_name;
 	int num;
-	ship_info *sip;
 
 	for ( ; n != -1; n = CDR(n) )
 	{
@@ -6596,84 +6625,96 @@ void sexp_ships_deal_with_stealth(int n, int forcing, int make_stealthy)
 		num = ship_name_lookup(ship_name);
 		if ( num != -1 )
 		{
-			sip = &Ship_info[Ships[num].ship_info_index];
-
-			// check how to stealth/unstealth the ship
-			if (forcing)
+			if ( stealthy )
 			{
-				// save original status if applicable
-				if (!(sip->stealth_flags & SSF_ORIGINAL_STEALTH_STATUS_RECORDED))
-				{
-					if (sip->flags & SIF_STEALTH)
-					{
-						sip->stealth_flags |= SSF_ORIGINALLY_STEALTHED;
-					}
-					sip->stealth_flags |= SSF_ORIGINAL_STEALTH_STATUS_RECORDED;
-				}
-
-				// we're forcing
-				sip->stealth_flags |= SSF_FORCING_STEALTH_STATUS;
+				Ship_info[Ships[num].ship_info_index].flags |= SIF_STEALTH;
 			}
 			else
 			{
-				// if original stealth status wasn't saved, we have nothing to restore from
-				// also, if we're not forcing right now, save time by not restoring
-				if (!(sip->stealth_flags & SSF_ORIGINAL_STEALTH_STATUS_RECORDED) || !(sip->stealth_flags & SSF_FORCING_STEALTH_STATUS))
-				{
-					continue;
-				}
+				Ship_info[Ships[num].ship_info_index].flags &= ~SIF_STEALTH;
 
-				// modify parameter according to what the original stealth status was
-				make_stealthy = sip->stealth_flags & SSF_ORIGINALLY_STEALTHED;
-
-				// we're not forcing any more
-				sip->stealth_flags &= ~SSF_FORCING_STEALTH_STATUS;
-			}
-
-			// actually do the stealthing
-			if ( make_stealthy )
-			{
-				sip->flags |= SIF_STEALTH;
-			}
-			else
-			{
-				sip->flags &= ~SIF_STEALTH;
+				// (what is this all about? -- Goober5000)
 				if (Ships[num].flags & SF_ESCORT)
 				{
 					// SEND add escort request
-					// (what is this all about? -- Goober5000)
 					hud_add_ship_to_escort(Ships[num].objnum, 1);
 				}
 			}
 		}
 		else
 		{
-			// do nothing if restoring, because we have nothing to restore to
-			if (!forcing)
-				continue;
-
 			p_object *parse_obj;
 
 			parse_obj = mission_parse_get_arrival_ship( ship_name );
 			if ( parse_obj )
 			{
-				if ( make_stealthy )
+				if ( stealthy )
 				{
-					parse_obj->flags |= P_SSF_STEALTH;
+					parse_obj->flags |= P_SIF_STEALTH;
 				}
 				else
 				{
-					parse_obj->flags &= ~P_SSF_STEALTH;
+					parse_obj->flags &= ~P_SIF_STEALTH;
 				}
 
 	#ifndef NDEBUG
 			} else {
-				Int3();	// ship name not found
+				Int3();	// could be a potential problem here
 	#endif
 			}
+		}
+	}
+}
 
-			// don't save original status because this *is* the original status, subject
-			// to change before the ship enters the mission
+// Goober5000
+void sexp_friendly_stealth_invisible(int n, int invisible)
+{
+	char *ship_name;
+	int num;
+
+	for ( ; n != -1; n = CDR(n) )
+	{
+		ship_name = CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+			continue;
+
+		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
+		// in a list until created
+		num = ship_name_lookup(ship_name);
+		if ( num != -1 )
+		{
+			if ( invisible )
+			{
+				Ship_info[Ships[num].ship_info_index].flags2 |= SIF2_FRIENDLY_STEALTH_INVISIBLE;
+			}
+			else
+			{
+				Ship_info[Ships[num].ship_info_index].flags2 &= ~SIF2_FRIENDLY_STEALTH_INVISIBLE;
+			}
+		}
+		else
+		{
+			p_object *parse_obj;
+
+			parse_obj = mission_parse_get_arrival_ship( ship_name );
+			if ( parse_obj )
+			{
+				if ( invisible )
+				{
+					parse_obj->flags |= P_SIF2_FRIENDLY_STEALTH_INVISIBLE;
+				}
+				else
+				{
+					parse_obj->flags &= ~P_SIF2_FRIENDLY_STEALTH_INVISIBLE;
+				}
+
+	#ifndef NDEBUG
+			} else {
+				Int3();	// could be a potential problem here
+	#endif
+			}
 		}
 	}
 }
@@ -8591,8 +8632,12 @@ int eval_sexp(int cur_node)
 				sexp_val = sexp_is_ship_visible( node );
 				break;
 
-			case OP_IS_SHIP_STEALTHED:
-				sexp_val = sexp_is_ship_stealthed( node );
+			case OP_IS_SHIP_STEALTHY:
+				sexp_val = sexp_is_ship_stealthy( node );
+				break;
+
+			case OP_IS_FRIENDLY_STEALTH_VISIBLE:
+				sexp_val = sexp_is_friendly_stealth_visible( node );
 				break;
 
 			case OP_TEAM_SCORE:
@@ -8702,10 +8747,15 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
-			case OP_SHIP_FORCE_STEALTH:
-			case OP_SHIP_FORCE_NOSTEALTH:
-			case OP_SHIP_REMOVE_STEALTH_FORCING:
-				sexp_ships_deal_with_stealth(node, (op_num == OP_SHIP_FORCE_STEALTH) || (op_num == OP_SHIP_FORCE_NOSTEALTH), op_num == OP_SHIP_FORCE_STEALTH);
+			case OP_SHIP_STEALTHY:
+			case OP_SHIP_UNSTEALTHY:
+				sexp_ships_stealthy( node, (op_num == OP_SHIP_STEALTHY) );
+				sexp_val = 1;
+				break;
+
+			case OP_FRIENDLY_STEALTH_INVISIBLE:
+			case OP_FRIENDLY_STEALTH_VISIBLE:
+				sexp_friendly_stealth_invisible( node, (op_num == OP_FRIENDLY_STEALTH_INVISIBLE) );
 				sexp_val = 1;
 				break;
 
@@ -9320,7 +9370,8 @@ int query_operator_return_type(int op)
 		case OP_SHIELD_QUAD_LOW:
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_IS_PRIMARY_SELECTED:
-		case OP_IS_SHIP_STEALTHED:
+		case OP_IS_SHIP_STEALTHY:
+		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_IS_CARGO:
 			return OPR_BOOL;
 
@@ -9422,9 +9473,10 @@ int query_operator_return_type(int op)
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
-		case OP_SHIP_FORCE_STEALTH:
-		case OP_SHIP_FORCE_NOSTEALTH:
-		case OP_SHIP_REMOVE_STEALTH_FORCING:
+		case OP_SHIP_STEALTHY:
+		case OP_SHIP_UNSTEALTHY:
+		case OP_FRIENDLY_STEALTH_INVISIBLE:
+		case OP_FRIENDLY_STEALTH_VISIBLE:
 		case OP_RED_ALERT:
 		case OP_MODIFY_VARIABLE:
 		case OP_BEAM_FIRE:
@@ -9568,21 +9620,23 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_VULNERABLE:
 		case OP_SHIP_GUARDIAN:
+		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_VANISH:
 		case OP_SHIP_LIGHTS_ON:
 		case OP_SHIP_LIGHTS_OFF:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
-		case OP_SHIP_FORCE_STEALTH:
-		case OP_SHIP_FORCE_NOSTEALTH:
-		case OP_SHIP_REMOVE_STEALTH_FORCING:
-		case OP_SHIP_NO_GUARDIAN:
+		case OP_SHIP_STEALTHY:
+		case OP_SHIP_UNSTEALTHY:
+		case OP_FRIENDLY_STEALTH_INVISIBLE:
+		case OP_FRIENDLY_STEALTH_VISIBLE:
 		case OP_PRIMARIES_DEPLETED:
 		case OP_SECONDARIES_DEPLETED:
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_SET_SPECIAL_WARPOUT_NAME:
 		case OP_IS_SHIP_VISIBLE:
-		case OP_IS_SHIP_STEALTHED:
+		case OP_IS_SHIP_STEALTHY:
+		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 			return OPF_SHIP;
 
 		case OP_IS_DESTROYED:
@@ -10951,9 +11005,10 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_INVISIBLE:
 		case OP_SHIP_VISIBLE:
-		case OP_SHIP_FORCE_STEALTH:
-		case OP_SHIP_FORCE_NOSTEALTH:
-		case OP_SHIP_REMOVE_STEALTH_FORCING:
+		case OP_SHIP_STEALTHY:
+		case OP_SHIP_UNSTEALTHY:
+		case OP_FRIENDLY_STEALTH_INVISIBLE:
+		case OP_FRIENDLY_STEALTH_VISIBLE:
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:

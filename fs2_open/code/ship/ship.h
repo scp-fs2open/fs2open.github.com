@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.14 $
- * $Date: 2002-12-24 07:42:28 $
+ * $Revision: 2.15 $
+ * $Date: 2002-12-27 02:57:50 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2002/12/24 07:42:28  Goober5000
+ * added change-ai-class and is-ai-class, and I think I may also have nailed the
+ * is-iff bug; did some other bug hunting as well
+ * --Goober5000
+ *
  * Revision 2.13  2002/12/23 05:18:52  Goober5000
  * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
  * one ship would return after only dealing with the first ship.
@@ -824,9 +829,12 @@ extern int ship_find_exited_ship_by_signature( int signature);
 
 #define	SIF_NO_FRED					(1 << 31)	// not available in fred
 
+// flags2 -- added by Goober5000
+#define SIF2_FRIENDLY_STEALTH_INVISIBLE		(1 << 0)
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)
+#define SIF2_DEFAULT_VALUE		0
 #define	SIF_ALL_SHIP_TYPES		(SIF_CARGO | SIF_FIGHTER | SIF_BOMBER | SIF_CRUISER | SIF_FREIGHTER | SIF_CAPITAL | SIF_TRANSPORT | SIF_SUPPORT | SIF_NO_SHIP_TYPE | SIF_NAVBUOY | SIF_SENTRYGUN | SIF_ESCAPEPOD | SIF_SUPERCAP | SIF_CORVETTE | SIF_GAS_MINER | SIF_AWACS | SIF_KNOSSOS_DEVICE)
 #define	SIF_SMALL_SHIP				(SIF_FIGHTER | SIF_BOMBER | SIF_SUPPORT | SIF_ESCAPEPOD )
 #define	SIF_BIG_SHIP				(SIF_CRUISER | SIF_FREIGHTER | SIF_TRANSPORT | SIF_CORVETTE | SIF_GAS_MINER | SIF_AWACS)
@@ -860,12 +868,6 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SHIP_TYPE_GAS_MINER				17
 #define SHIP_TYPE_CORVETTE					18
 #define SHIP_TYPE_KNOSSOS_DEVICE			19
-
-// Goober5000: stealth sexp flags
-#define SSF_FORCING_STEALTH_STATUS				(1 << 0)
-#define SSF_ORIGINALLY_STEALTHED				(1 << 1)
-#define SSF_ORIGINAL_STEALTH_STATUS_RECORDED	(1 << 2)
-#define SSF_DEFAULT_VALUE						0
 
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
@@ -904,7 +906,7 @@ typedef struct ship_info {
 	float		slide_accel;
 	float		slide_decel;
 	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
-	int		stealth_flags;						// See SSF_xxxx - added by Goober5000
+	uint		flags2;							//	See SIF2_xxxx - added by Goober5000
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
 	float		shields;
 	float		max_speed, min_speed, max_accel;
