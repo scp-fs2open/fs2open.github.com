@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/07/14 01:27:01  wmcoolmon
+ * Better -load_only_used handling; added mark_weapon_used(weapon ID), which does check for IDs of -1.
+ *
  * Revision 2.30  2004/07/11 03:22:54  bobboau
  * added the working decal code
  *
@@ -724,6 +727,11 @@ typedef struct weapon_info {
 	int				shots;			//the number of shots that will be fired at a time, 
 									//only realy usefull when used with FOF to make a shot gun effect
 									//now also used for weapon point cycleing
+
+    // *
+               
+    int SwarmWait; // *Swarm firewait, default is 150  -Et1
+
 
 } weapon_info;
 
