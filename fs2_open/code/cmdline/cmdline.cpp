@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.81 $
- * $Date: 2004-08-02 22:40:59 $
+ * $Revision: 2.82 $
+ * $Date: 2004-08-08 02:56:54 $
  * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2004/08/02 22:40:59  phreak
+ * added -orbradar to enable orb rendering for the radar
+ *
  * Revision 2.80  2004/08/01 02:31:18  phreak
  * -phreak command line changed to -dualscanlines
  *
@@ -665,7 +668,7 @@ Flag exe_params[] =
 	"-targetinfo",	  "Enable info next to target",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-targetinfo",
 	"-nomotiondebris","Disable motion debris",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-nomotiondebris",
 	"-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
-	"-orb_radar",	  "Enables 3d radar",				true,   EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"",
+	"-orbradar",	  "Enables 3d radar",				true,   EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"",
 
 	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Audio",		"", 
 
