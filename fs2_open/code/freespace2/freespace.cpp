@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.65 $
- * $Date: 2004-01-21 17:32:05 $
- * $Author: phreak $
+ * $Revision: 2.66 $
+ * $Date: 2004-01-23 00:14:27 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2004/01/21 17:32:05  phreak
+ * added version string message if build is an inferno build
+ *
  * Revision 2.64  2003/12/03 19:27:00  randomtiger
  * Changed -t32 flag to -jpgtga
  * Added -query_flag to identify builds with speech not compiled and other problems
@@ -3069,6 +3072,14 @@ void game_get_framerate()
 		gr_string( 20, 170, mem_buffer);
 		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
 		gr_string( 20, 180, mem_buffer);
+
+		extern int Wasted_space;
+
+		sprintf(mem_buffer,"Wasted memory %d Meg", Wasted_space/1024/1024);
+		gr_string( 20, 200, mem_buffer);
+
+
+
 	}
 }
 

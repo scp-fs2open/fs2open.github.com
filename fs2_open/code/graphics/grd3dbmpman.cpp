@@ -633,6 +633,8 @@ static void bm_d3d_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte 
 	} 
 }
 
+int Wasted_space = 0;
+
 void bm_d3d_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
 {	
 	ubyte *data, *palette;
@@ -647,6 +649,8 @@ void bm_d3d_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, 
 		bpp = 32;
 	}
 
+	Wasted_space += (bmp->w * bmp->h * (bpp / 8));
+   //	mprintf(("%s %d\n",be->filename,(bmp->w * bmp->h * (bpp / 8))));
 	data = (ubyte *)bm_d3d_malloc(bitmapnum, bmp->w * bmp->h * (bpp / 8));
 	bmp->data = (uint)data;
 	memset( data, 0, bmp->w * bmp->h * (bpp / 8));
@@ -937,7 +941,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 			} 
 		}
 	}
-	else if ( (bmp->data == 0) || (bpp != bmp->bpp)) {
+	else if ( (bmp->data == 0) || (bpp != bmp->bpp && bmp->bpp != 32)) {
 		Assert(be->ref_count == 1);
 
 		if ( be->type != BM_TYPE_USER ) {
@@ -1156,6 +1160,8 @@ void bm_d3d_unload_all()
 			bm_unload(bm_bitmaps[i].handle);
 		}
 	}
+
+	Wasted_space = 0;
 }
 
 // Marks a texture as being used for this level
@@ -1236,6 +1242,8 @@ void bm_d3d_page_in_start()
 		bm_bitmaps[i].preloaded = 0;
 		bm_bitmaps[i].used_flags = 0;
 	}
+
+	Wasted_space = 0;
 }
 
 void bm_d3d_page_in_stop()
