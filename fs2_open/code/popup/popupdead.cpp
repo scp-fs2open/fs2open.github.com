@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/PopupDead.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:49 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2004-12-11 09:37:50 $
+ * $Author: wmcoolmon $
  *
  * C module for the death popup
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:49  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:33:03  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -236,6 +239,7 @@ int Popupdead_multi_type;			// what kind of popup is active for muliplayer
 int Popupdead_skip_active = 0;	// The skip-misison popup is active
 int Popupdead_skip_already_shown = 0;
 
+extern int Cmdline_mpnoreturn;
 // Initialize the dead popup data
 void popupdead_start()
 {
@@ -308,8 +312,15 @@ void popupdead_start()
 				Popupdead_multi_type = POPUPDEAD_RESPAWN_ONLY;
 			} else {
 				Popupdead_button_text[0] = XSTR( "Respawn", 109);
-				Popupdead_button_text[1] = XSTR( "Return To Flight Deck", 106);
-				Popupdead_num_choices = 2;
+				if(!Cmdline_mpnoreturn)
+				{
+					Popupdead_button_text[1] = XSTR( "Return To Flight Deck", 106);
+					Popupdead_num_choices = 2;
+				}
+				else
+				{
+					Popupdead_num_choices = 1;
+				}
 				Popupdead_multi_type = POPUPDEAD_RESPAWN_QUIT;
 			}
 		}
