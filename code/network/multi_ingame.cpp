@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-12 03:19:16 $
- * $Author: Kazan $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-12 03:26:03 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/12 03:19:16  Kazan
+ * removed a couple pointless useless messages from the debug console
+ *
  * Revision 2.11  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -2137,7 +2140,8 @@ void multi_ingame_send_ship_update(net_player *p)
 	
 	// go through the list and send all ships which are mark as OF_COULD_BE_PLAYER
 	while(moveup!=END_OF_LIST(&Ship_obj_list)){
-		if(Objects[moveup->objnum].flags & OF_COULD_BE_PLAYER){
+		//Make sure the object can be a player and is on the same team as this guy
+		if(Objects[moveup->objnum].flags & OF_COULD_BE_PLAYER && obj_team(&Objects[moveup->objnum]) == p->p_info.team){
 			// send the update
 			send_ingame_ship_update_packet(p,&Ships[Objects[moveup->objnum].instance]);
 		}
