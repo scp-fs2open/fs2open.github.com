@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-02-04 08:41:02 $
+ * $Revision: 2.17 $
+ * $Date: 2004-02-05 14:31:44 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/02/04 08:41:02  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.15  2003/11/11 02:15:42  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -718,7 +723,10 @@ float get_hull_pct(object *objp)
 float get_shield_pct(object *objp)
 {
 	Assert(objp);
-	Assert(objp->type == OBJ_SHIP);
+
+	// bah - we might have asteroids
+	if (objp->type != OBJ_SHIP)
+		return 0.0f;
 
 	float total_strength = Ships[objp->instance].ship_initial_shield_strength;
 

@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2004/02/04 04:28:14  Goober5000
+ * fixed Asserts in two places and commented out an unneeded variable
+ * --Goober5000
+ *
  * Revision 2.50  2004/01/30 07:39:09  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -2038,7 +2042,7 @@ void parse_weaponstbl()
 	required_string("#Primary Weapons");
 
 	while (required_string_either("#End", "$Name:")) {
-		Assert( Num_weapon_types < MAX_WEAPON_TYPES );
+		Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
 		// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
 		if ( parse_weapon() ) {
 			continue;
@@ -2052,7 +2056,7 @@ void parse_weaponstbl()
 	required_string("#Secondary Weapons");
 	First_secondary_index = Num_weapon_types;
 	while (required_string_either("#End", "$Name:")) {
-		Assert( Num_weapon_types < MAX_WEAPON_TYPES );
+		Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
 		// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
 		if ( parse_weapon() ) {
 			continue;
@@ -2064,7 +2068,7 @@ void parse_weaponstbl()
 
 	required_string("#Beam Weapons");
 	while (required_string_either("#End", "$Name:")) {
-		Assert( Num_weapon_types < MAX_WEAPON_TYPES );
+		Assert( Num_weapon_types <= MAX_WEAPON_TYPES );	// Goober5000 - should be <=
 		// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
 		if ( parse_weapon() ) {
 			continue;
