@@ -9,13 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.21 $
+ * $Revision: 2.22 $
  * $Author: Goober5000 $
- * $Date: 2003-01-19 07:02:16 $
+ * $Date: 2003-03-02 02:10:11 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/01/19 07:02:16  Goober5000
+ * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
+ * all ships, and all ships who have their departure anchor set to a capital ship
+ * should exit to that ship when told to depart
+ * --Goober5000
+ *
  * Revision 2.20  2003/01/18 23:25:39  Goober5000
  * made "no-subspace-drive" applicable to all ships and fixed a really *STUPID*
  * bug that made FRED keep crashing (missing comma, bleagh!)
@@ -398,7 +404,7 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 #define	MAX_GOAL_TYPE_NAMES	3
 
 // alternate ship type names
-#define MAX_ALT_TYPE_NAMES				10
+#define MAX_ALT_TYPE_NAMES				25
 extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
 
