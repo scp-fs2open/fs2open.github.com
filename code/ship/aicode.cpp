@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.60 $
- * $Date: 2004-07-12 16:33:04 $
+ * $Revision: 2.61 $
+ * $Date: 2004-07-25 00:31:30 $
  * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2004/07/12 16:33:04  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.59  2004/05/25 00:26:25  wmcoolmon
  * cleared up an ambiguous call for VC7
  *
@@ -4123,6 +4126,33 @@ void ai_dock_with_object(object *docker, object *dockee, int priority, int dock_
 
 }
 
+
+//	Cause a ship to fly tword a ship.
+void ai_start_fly_to_ship(object *objp, char *target_obj)
+{
+	ai_info	*aip;
+
+	//nprintf(("AI", "Frame %i: Ship %s instructed to fly waypoint list #%i\n", AI_FrameCount, Ships[objp->instance].ship_name, waypoint_list_index));
+	aip = &Ai_info[Ships[objp->instance].ai_index];
+
+	aip->ai_flags |= AIF_FORMATION_WING;
+	aip->ai_flags &= ~AIF_FORMATION_OBJECT;
+
+	// we're going to assume that this search succeededs
+
+	for (int i = 0; i < MAX_SHIPS; i++)
+	{
+		if (Ships[i].objnum != -1 && !stricmp(target_obj, Ships[i].ship_name))
+		{
+			aip->target_objnum = Ships[i].objnum;		
+		}
+	}
+	aip->mode = AIM_FLY_TO_SHIP;
+
+	Assert(aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC);
+}
+
+
 //	Cause a ship to fly its waypoints.
 //	flags tells:
 //		WPF_REPEAT	Set -> repeat waypoints.
@@ -4965,6 +4995,188 @@ void ai_safety()
 	default:
 		Int3();		//	Illegal submode for ai_safety();
 		break;
+	}
+}
+
+
+//	--------------------------------------------------------------------------
+//	make Pl_objp fly tword a ship
+//  Goal created by Kazan
+//  code adapted from waypoints
+void ai_fly_to_ship()
+{
+
+	vector		*target_pos;
+	float		dot, dist_to_goal, speed;
+	ship		*shipp = &Ships[Pl_objp->instance];
+	ship_info	*sip = &Ship_info[shipp->ship_info_index];
+	ai_info	*aip;
+	vector	nvel_vec;
+	float		mag;
+	float		prev_dot_to_goal;
+	vector	temp_vec;
+	vector	*slop_vec;
+
+	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+
+
+	target_pos = &Objects[aip->target_objnum].pos;
+	speed = Pl_objp->phys_info.speed;
+
+	dist_to_goal = vm_vec_dist_quick(&Pl_objp->pos, target_pos);
+
+	//	Can't use fvec, need to use velocity vector because we aren't necessarily
+	//	moving in the direction we're facing.
+	// AL 23-3-98: Account for very small velocities by checking result of vm_vec_mag().
+	//					If we don't vm_vec_copy_normalize() will think it is normalizing a null vector.
+//	if (IS_VEC_NULL(&Pl_objp->phys_info.vel)) {
+	if ( vm_vec_mag_quick(&Pl_objp->phys_info.vel) < AICODE_SMALL_MAGNITUDE ) {
+		mag = 0.0f;
+		vm_vec_zero(&nvel_vec);
+	} else {
+		mag = vm_vec_copy_normalize(&nvel_vec, &Pl_objp->phys_info.vel);
+	}
+
+	//	If moving not-very-slowly and sliding, then try to slide at goal, rather than
+	//	point at goal.
+	slop_vec = NULL;
+	if (mag < 1.0f) {
+		nvel_vec = Pl_objp->orient.vec.fvec;
+	} else if (mag > 5.0f) {
+		float	nv_dot;
+		nv_dot = vm_vec_dot(&Pl_objp->orient.vec.fvec, &nvel_vec);
+		if ((nv_dot > 0.5f) && (nv_dot < 0.97f)) {
+			slop_vec = &temp_vec;
+			vm_vec_sub(slop_vec, &nvel_vec, &Pl_objp->orient.vec.fvec);
+		}
+	}
+
+	//	If a wing leader, take turns more slowly, based on size of wing.
+	int	scale;
+
+	if (Ai_info[Ships[Pl_objp->instance].ai_index].wing >= 0) {
+		scale = Wings[Ai_info[Ships[Pl_objp->instance].ai_index].wing].current_count;
+		scale = (int) ((scale+1)/2);
+	} else {
+		scale = 1;
+	}
+
+	if (dist_to_goal > 0.1f) {
+		ai_turn_towards_vector(target_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+	}
+
+	prev_dot_to_goal = aip->prev_dot_to_goal;
+	dot = vm_vec_dot_to_point(&nvel_vec, &Pl_objp->pos, target_pos);
+	aip->prev_dot_to_goal = dot;
+
+	// nprintf(("AI", "Wp #%i, dot = %6.3f, next dot = %6.3f, dist = %7.2f\n", wp_index, dot, dot_to_next, dist_to_goal));
+
+	if (Pl_objp->phys_info.speed < 0.0f) {
+		accelerate_ship(aip, 1.0f/32);
+	} else if (prev_dot_to_goal > dot+0.01f) {
+		//	We are further from pointing at our goal this frame than last frame, so slow down.
+		set_accel_for_target_speed(Pl_objp, Pl_objp->phys_info.speed * 0.95f);
+	} else if (dist_to_goal < 100.0f) {
+		float slew_dot = vm_vec_dot(&Pl_objp->orient.vec.fvec, &nvel_vec);
+		if (fl_abs(slew_dot) < 0.9f) {
+			accelerate_ship(aip, 0.0f);
+		} else if (dot < 0.88f + 0.1f*(100.0f - dist_to_goal)/100.0f) {
+			accelerate_ship(aip, 0.0f);
+		} else {
+			accelerate_ship(aip, 0.5f * dot * dot);
+		}
+	} else {
+		float	dot1;
+		if (dist_to_goal < 250.0f) {
+			dot1 = dot*dot*dot;				//	Very important to be pointing towards goal when nearby.  Note, cubing preserves sign.
+		} else {
+			if (dot > 0.0f) {
+				dot1 = dot*dot;
+			} else {
+				dot1 = dot;
+			}
+		}
+
+		if (dist_to_goal > 100.0f + Pl_objp->radius * 2) {
+			if (dot < 0.2f) {
+				dot1 = 0.2f;
+			}
+		}
+
+		if (sip->flags & SIF_SMALL_SHIP) {
+			set_accel_for_target_speed(Pl_objp, dot1 * dist_to_goal/5.0f);
+		} else {
+			set_accel_for_target_speed(Pl_objp, dot1 * dist_to_goal/10.0f);
+		}
+	}
+
+	//	Make sure not travelling too fast for someone to keep up.
+	float	max_allowed_speed = 9999.9f;
+
+	if (shipp->wingnum != -1) {
+		max_allowed_speed = 0.9f * get_wing_lowest_max_speed(Pl_objp);
+	}
+
+	// check if waypoint speed cap is set and adjust max speed
+	if (aip->waypoint_speed_cap > 0) {
+		max_allowed_speed = (float) aip->waypoint_speed_cap;
+	}
+
+	if (aip->prev_accel * shipp->current_max_speed > max_allowed_speed) {
+		accelerate_ship(aip, max_allowed_speed / shipp->current_max_speed);
+	}
+
+	if (vm_vec_dist_quick(&Pl_objp->last_pos, &Pl_objp->pos) > 0.1f) {
+		vector	nearest_point;
+		float		r;
+
+		r = find_nearest_point_on_line(&nearest_point, &Pl_objp->last_pos, &Pl_objp->pos, target_pos);
+
+		if ( (vm_vec_dist_quick(&Pl_objp->pos, target_pos) < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius) + vm_vec_dist_quick(&Pl_objp->pos, &Pl_objp->last_pos))) ||
+			((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, target_pos) < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius)))) {
+
+
+				int treat_as_ship;
+
+				// when not repeating waypoints -- mark the goal as done and put and entry into the mission log
+				// we must be careful when dealing with wings.  A ship in a wing might be completing
+				// a waypoint for for the entire wing, or it might be completing a goal for itself.  If
+				// for itself and in a wing, treat the completion as we would a ship
+				treat_as_ship = 1;
+				if ( Ships[Pl_objp->instance].wingnum != -1 ) {
+					int type;
+
+					// I don't think that you can fly waypoints as dynamic goals!!!
+					// -- This is legal, just stupid. -- Assert( (aip->active_goal != AI_GOAL_NONE) && (aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) );
+					
+					//	Clean up from above Assert, just in case we ship without fixing it.  (Encountered by JimB on 2/9/98)
+					if ( (aip->active_goal == AI_GOAL_NONE) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC) ) {
+						aip->mode = AIM_NONE;
+						Int3();	//	Look at the ship, find out of it's supposed to be flying waypoints. -- MK.
+					}
+
+					type = aip->goals[aip->active_goal].type;
+					if ( (type == AIG_TYPE_EVENT_WING) || (type == AIG_TYPE_PLAYER_WING) ) {
+						treat_as_ship = 0;
+					} else {
+						treat_as_ship = 1;
+					}
+				}
+
+				// if the ship is not in a wing, remove the goal and continue on
+				if ( treat_as_ship ) {
+					ai_mission_goal_complete( aip );					// this call should reset the AI mode
+					//mission_log_add_entry(LOG_WAYPOINTS_DONE, Ships[Pl_objp->instance].ship_name, wpl->name, -1 );
+				} else {
+					// this ship is in a wing.  We must mark the goal as being completed for all ships
+					// in the wing.  We will also mark an entry in the log that the wing completed the goal
+					// not the individual ship.
+					ai_mission_wing_goal_complete( Ships[Pl_objp->instance].wingnum, &(aip->goals[aip->active_goal]) );
+					//mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, wpl->name, -1 );
+				}
+				//wp_index = wpl->count-1;
+				
+		}
 	}
 }
 
@@ -12961,6 +13173,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 				case AIM_BE_REARMED:
 				case AIM_SAFETY:
 				case AIM_BAY_EMERGE:
+				case AIM_FLY_TO_SHIP:
 					aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
 					aip->previous_mode = aip->mode;
 					aip->previous_submode = aip->submode;
@@ -13029,6 +13242,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 	case AIM_BAY_DEPART:
 	case AIM_SENTRYGUN:
 	case AIM_WARP_OUT:
+	case AIM_FLY_TO_SHIP:
 		return;
 	default:
 		Int3();	//	Bogus mode!
@@ -13076,7 +13290,8 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		case AIM_AVOID:
 		case AIM_PATH:
 		case AIM_NONE:
-		case AIM_WAYPOINTS:
+		case AIM_WAYPOINTS:	
+		case AIM_FLY_TO_SHIP:
 		case AIM_SAFETY:
 			if (!(aip->ai_flags & (AIF_NO_DYNAMIC | AIF_KAMIKAZE)) && (Ship_info[Ships[aip->shipnum].ship_info_index].flags & SIF_SMALL_SHIP)) {
 				aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
@@ -13506,6 +13721,12 @@ void ai_execute_behavior(ai_info *aip)
 	case AIM_WAYPOINTS:
 		ai_waypoints();
 		break;
+
+	// AI Mode Added by Kazan
+	case AIM_FLY_TO_SHIP:
+		ai_fly_to_ship();
+		break;
+
 	case AIM_DOCK:
 		ai_dock();
 		break;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.7 $
- * $Date: 2004-05-03 21:22:19 $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-25 00:31:28 $
  * $Author: Kazan $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/05/03 21:22:19  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.6  2004/04/06 03:09:01  phreak
  * added a control config option for the wireframe hud targetbox i enabled ages ago
  *
@@ -317,6 +322,7 @@ typedef struct config_item {
 	short key_default;  // default key bound to action
 	short joy_default;  // default joystick button bound to action
 	char tab;				// what tab (category) it belongs in
+	bool hasXSTR;			// whether we should translate this with an XSTR
 	char *text;				// describes the action in the config screen
 	char type;				// manner control should be checked in
 	short key_id;  // actual key bound to action

@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-12 16:33:00 $
+ * $Revision: 2.21 $
+ * $Date: 2004-07-25 00:31:29 $
  * $Author: Kazan $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/12 16:33:00  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.19  2004/04/07 03:32:45  righteous1
  * Updated to call alt_tab_pause() function to draw pause screen and discontinue sounds when the game is minimized. -R1
  *
@@ -835,6 +838,7 @@ void os_poll()
 
 void debug_int3()
 {
+/*
 	gr_activate(0);
 #ifdef _WIN32
 #if defined _MSC_VER
@@ -850,4 +854,5 @@ void debug_int3()
 #endif
 
 	gr_activate(1);
+*/
 }

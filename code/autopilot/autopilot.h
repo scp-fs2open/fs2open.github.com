@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.h $
- * $Revision: 1.2 $
- * $Date: 2004-07-01 16:38:18 $
+ * $Revision: 1.3 $
+ * $Date: 2004-07-25 00:31:27 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/07/01 16:38:18  Kazan
+ * working on autonav
+ *
  * Revision 1.1  2004/05/07 23:50:14  Kazan
  * Sorry Guys!
  *
@@ -60,7 +63,7 @@ bool Sel_NextNav();
 // This needs:
 //        * Nav point selected
 //        * No enemies within X distance
-//        * Destination > 10,000 meters away
+//        * Destination > 1,000 meters away
 bool CanAutopilot();
 
 // Engages autopilot
@@ -73,7 +76,7 @@ void StartAutopilot();
 
 // Checks if autopilot should automatically die
 // Returns true if:
-//         * Targetted waypoint < 10,000 meters away
+//         * Targetted waypoint < 1,000 meters away
 //         * Enemy < 10,000 meters
 bool Autopilot_AutoDiable();
 

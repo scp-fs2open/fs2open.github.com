@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-12 16:33:05 $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-25 00:31:31 $
  * $Author: Kazan $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/12 16:33:05  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.11  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1651,7 +1654,8 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	case AI_GOAL_EVADE_SHIP:
 	case AI_GOAL_CHASE:
 	case AI_GOAL_STAY_NEAR_SHIP:
-	case AI_GOAL_REARM_REPAIR: {
+	case AI_GOAL_REARM_REPAIR:
+	case AI_GOAL_FLY_TO_SHIP: {
 		int shipnum;
 
 		// MWA -- 4/22/98.  Check for the ship actually being in the mission before
@@ -1854,6 +1858,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	case AI_GOAL_IGNORE:
 	case AI_GOAL_EVADE_SHIP:
 	case AI_GOAL_STAY_NEAR_SHIP:
+	case AI_GOAL_FLY_TO_SHIP:
 		if ( status == SHIP_STATUS_ARRIVED )
 			return AI_GOAL_ACHIEVABLE;
 		else if ( status == SHIP_STATUS_NOT_ARRIVED )
@@ -2179,6 +2184,10 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		ai_start_waypoints(objp, current_goal->wp_index, flags);
 		break;
 	}
+
+	case AI_GOAL_FLY_TO_SHIP:
+		ai_start_fly_to_ship(objp, current_goal->ship_name);
+		break;
 
 	case AI_GOAL_DOCK: {
 		shipnum = ship_name_lookup( current_goal->ship_name );

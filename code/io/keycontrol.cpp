@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.33 $
- * $Date: 2004-07-12 16:32:51 $
+ * $Revision: 2.34 $
+ * $Date: 2004-07-25 00:31:29 $
  * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2004/07/12 16:32:51  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.32  2004/07/12 03:19:16  Kazan
  * removed a couple pointless useless messages from the debug console
  *
@@ -2034,8 +2037,9 @@ void game_process_keys()
 	int k;
 
 	button_info_clear(&Player->bi);	// clear out the button info struct for the player
-   do {
-		k = game_poll();		
+	k = game_poll();
+    while (k)
+	{		
 
 		//if (k)
 		//	mprintf(("got key %d at %s:%d\n", k, __FILE__, __LINE__));
@@ -2124,7 +2128,10 @@ void game_process_keys()
 				break;
 
 		} // end switch
-	} while (k);
+
+		
+		k = game_poll();
+	}
 
 	button_info_do(&Player->bi);	// call functions based on status of button_info bit vectors
 }
@@ -3157,6 +3164,7 @@ int button_function(int n)
 			gamesnd_play_iface(SND_USER_SELECT);
 			hud_targetbox_switch_wireframe_mode();
 			break;	
+
 
 #if defined(ENABLE_AUTO_PILOT)
 		// Autopilot key control
