@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.9 $
- * $Date: 2004-11-18 00:05:37 $
- * $Author: Goober5000 $
+ * $Revision: 1.10 $
+ * $Date: 2004-11-21 11:31:02 $
+ * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2004/11/18 00:05:37  Goober5000
+ * #pragma'd a bunch of warnings
+ * --Goober5000
+ *
  * Revision 1.8  2004/07/26 20:47:35  Kazan
  * remove MCD complete
  *
@@ -51,7 +55,9 @@
 // 4711 = function inlined
 // 4097 = something used as synonym for class
 // 4127 = conditional expression is constant
-#pragma warning(disable: 4786 4710 4711 4097 4127)
+// 4701 = variable may be used without having been initialized
+// 4702 = unreachable code
+#pragma warning(disable: 4786 4710 4711 4097 4127 4701 4702)
 
 #include "irc.h"
 #include "direct.h"
