@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.27 $
- * $Author: phreak $
- * $Date: 2003-05-09 23:51:04 $
+ * $Revision: 2.28 $
+ * $Author: wmcoolmon $
+ * $Date: 2003-09-06 19:09:24 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/05/09 23:51:04  phreak
+ * added fields to the "mission" struct to allow for user-specified loading screens
+ *
  * Revision 2.26  2003/04/29 01:03:23  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -369,6 +372,7 @@ typedef struct support_ship_info {
 	int		max_support_ships;				// max number of support ships
 	int		ship_class;						// ship class of support ship
 	int		tally;							// number of support ships so far
+	float	max_hull_repair_val;			// % of a ship's hull that can be repaired -C
 } support_ship_info;
 
 typedef struct mission {
