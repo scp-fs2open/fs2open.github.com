@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-26 20:47:30 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-24 23:31:46 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/26 20:47:30  Kazan
+ * remove MCD complete
+ *
  * Revision 2.6  2004/07/12 16:32:47  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -195,13 +198,25 @@
 #include "parse/parselo.h"
 
 
-
+/* -- dynamic now - taylor
 // Global array that holds data about the gameplay sound effects.
 game_snd Snds[MAX_GAME_SOUNDS];
 
 // Global array that holds data about the interface sound effects.
 game_snd Snds_iface[MAX_INTERFACE_SOUNDS];
-int Snds_iface_handle[MAX_INTERFACE_SOUNDS];
+int Snds_iface_handle[MAX_INTERFACE_SOUNDS]; */
+
+int Num_game_sounds = 0;
+game_snd *Snds = NULL;
+
+int Num_iface_sounds = 0;
+game_snd *Snds_iface = NULL;
+int *Snds_iface_handle = NULL;
+
+#define GAME_SND	0
+#define IFACE_SND	1
+
+void gamesnd_add_sound_slot(int type, int num);
 
 // flyby sounds - 2 for each species (fighter and bomber flybys)
 game_snd Snds_flyby[MAX_SPECIES_NAMES][2];
@@ -225,7 +240,7 @@ void gamesnd_preload_common_sounds()
 	int		i;
 	game_snd	*gs;
 
-	for ( i = 0; i < MAX_GAME_SOUNDS; i++ ) {
+	for ( i = 0; i < Num_game_sounds; i++ ) {
 		gs = &Snds[i];
 		if ( gs->filename[0] != 0 && stricmp(gs->filename, NOX("none.wav")) ) {
 			if ( gs->preload ) {
@@ -246,7 +261,7 @@ void gamesnd_load_gameplay_sounds()
 	int		i;
 	game_snd	*gs;
 
-	for ( i = 0; i < MAX_GAME_SOUNDS; i++ ) {
+	for ( i = 0; i < Num_game_sounds; i++ ) {
 		gs = &Snds[i];
 		if ( gs->filename[0] != 0 && stricmp(gs->filename, NOX("none.wav")) ) {
 			if ( !gs->preload ) { // don't try to load anything that's already preloaded
@@ -266,7 +281,7 @@ void gamesnd_unload_gameplay_sounds()
 	int		i;
 	game_snd	*gs;
 
-	for ( i = 0; i < MAX_GAME_SOUNDS; i++ ) {
+	for ( i = 0; i < Num_game_sounds; i++ ) {
 		gs = &Snds[i];
 		if ( gs->id != -1 ) {
 			snd_unload( gs->id );
@@ -285,7 +300,7 @@ void gamesnd_load_interface_sounds()
 	int		i;
 	game_snd	*gs;
 
-	for ( i = 0; i < MAX_INTERFACE_SOUNDS; i++ ) {
+	for ( i = 0; i < Num_iface_sounds; i++ ) {
 		gs = &Snds_iface[i];
 		if ( gs->filename[0] != 0 && stricmp(gs->filename, NOX("none.wav")) ) {
 			gs->id = snd_load(gs);
@@ -303,7 +318,7 @@ void gamesnd_unload_interface_sounds()
 	int		i;
 	game_snd	*gs;
 
-	for ( i = 0; i < MAX_INTERFACE_SOUNDS; i++ ) {
+	for ( i = 0; i < Num_iface_sounds; i++ ) {
 		gs = &Snds_iface[i];
 		if ( gs->id != -1 ) {
 			snd_unload( gs->id );
@@ -368,18 +383,20 @@ void gamesnd_parse_soundstbl()
 	// Parse the gameplay sounds section
 	required_string("#Game Sounds Start");
 	while (required_string_either("#Game Sounds End","$Name:")) {
-		Assert( num_game_sounds < MAX_GAME_SOUNDS);
+		Assert( num_game_sounds < Num_game_sounds);
 		gamesnd_parse_line( &Snds[num_game_sounds], "$Name:" );
 		num_game_sounds++;
+		gamesnd_add_sound_slot( GAME_SND, num_game_sounds );
 	}
 	required_string("#Game Sounds End");
 
 	// Parse the interface sounds section
 	required_string("#Interface Sounds Start");
 	while (required_string_either("#Interface Sounds End","$Name:")) {
-		Assert( num_iface_sounds < MAX_INTERFACE_SOUNDS);
+		Assert( num_iface_sounds < Num_iface_sounds);
 		gamesnd_parse_line(&Snds_iface[num_iface_sounds], "$Name:");
 		num_iface_sounds++;
+		gamesnd_add_sound_slot( IFACE_SND, num_iface_sounds );
 	}
 	required_string("#Interface Sounds End");
 
@@ -435,13 +452,29 @@ void gamesnd_init_sounds()
 {
 	int		i;
 
+	if (Snds == NULL) {
+		Snds = (game_snd *) malloc (sizeof(game_snd) * MIN_GAME_SOUNDS);
+		Verify( Snds != NULL );
+		Num_game_sounds += MIN_GAME_SOUNDS;
+	}
+
 	// init the gameplay sounds
-	for ( i = 0; i < MAX_GAME_SOUNDS; i++ ) {
+	for ( i = 0; i < Num_game_sounds; i++ ) {
 		gamesnd_init_struct(&Snds[i]);
 	}
 
+	if (Snds_iface == NULL) {
+		Snds_iface = (game_snd *) malloc (sizeof(game_snd) * MIN_INTERFACE_SOUNDS);
+		Verify( Snds_iface != NULL );
+		Num_iface_sounds += MIN_INTERFACE_SOUNDS;
+
+		Assert( Snds_iface_handle == NULL );
+		Snds_iface_handle = (int *) malloc (sizeof(int) * Num_iface_sounds);
+		Verify( Snds_iface_handle != NULL );
+	}
+
 	// init the interface sounds
-	for ( i = 0; i < MAX_INTERFACE_SOUNDS; i++ ) {
+	for ( i = 0; i < Num_iface_sounds; i++ ) {
 		gamesnd_init_struct(&Snds_iface[i]);
 		Snds_iface_handle[i] = -1;
 	}
@@ -456,4 +489,48 @@ void common_play_highlight_sound()
 void gamesnd_play_error_beep()
 {
 	gamesnd_play_iface(SND_GENERAL_FAIL);
+}
+
+void gamesnd_add_sound_slot(int type, int num)
+{
+	const int increase_by = 5;
+
+	switch (type) {
+		case GAME_SND:
+		{
+			Assert( Snds != NULL );
+			Assert( num < (Num_game_sounds + increase_by) );
+
+			if (num >= Num_game_sounds) {
+				Snds = (game_snd *) realloc (Snds, sizeof(game_snd) * (Num_game_sounds + increase_by));
+				Verify( Snds != NULL );
+				Num_game_sounds += increase_by;
+			}
+		}
+		break;
+
+		case IFACE_SND:
+		{
+			Assert( Snds_iface != NULL );
+			Assert( num < (Num_game_sounds + increase_by) );
+
+			if (num >= Num_iface_sounds) {
+				Snds_iface = (game_snd *) realloc (Snds_iface, sizeof(game_snd) * (Num_iface_sounds + increase_by));
+				Verify( Snds_iface != NULL );
+				Num_iface_sounds += increase_by;
+
+				Assert( Snds_iface_handle != NULL );
+				Snds_iface_handle = (int *) realloc (Snds_iface_handle, sizeof(int) * Num_iface_sounds);
+				Verify( Snds_iface_handle != NULL );
+
+				// make sure new handle slots are set to -1
+				for (int i = (Num_iface_sounds - increase_by - 1); i < Num_iface_sounds; i++)
+					Snds_iface_handle[i] = -1;
+			}
+		}
+		break;
+
+		default:
+			Int3();
+	}
 }
