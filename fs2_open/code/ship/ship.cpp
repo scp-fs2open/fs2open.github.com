@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.178 $
- * $Date: 2005-03-30 05:37:22 $
- * $Author: wmcoolmon $
+ * $Revision: 2.179 $
+ * $Date: 2005-03-31 12:38:24 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178  2005/03/30 05:37:22  wmcoolmon
+ * Whoops.
+ *
  * Revision 2.177  2005/03/30 02:32:41  wmcoolmon
  * Made it so *Snd fields in ships.tbl and weapons.tbl take the sound name
  * as well as its index (ie "L_sidearm.wav" instead of "76")
@@ -3926,7 +3929,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->shield_integrity = NULL;
 //	shipp->sw.blast_duration = -1;	// init shockwave struct
 
-	shipp->ship_guardian_threshold = 0.0f;
+	shipp->ship_guardian_threshold = 0;
 
 	subsys_set(objnum);
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
@@ -4177,7 +4180,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->system_info = sp;						// set the system_info pointer to point to the data read in from the model
 
-		ship_system->subsys_guardian_threshold = 0.0f;
+		ship_system->subsys_guardian_threshold = 0;
 
 		// Goober5000 - this has to be moved outside back to parse_create_object, because
 		// a lot of the ship creation code is duplicated in several points and overwrites
