@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-01-06 19:33:22 $
+ * $Revision: 2.11 $
+ * $Date: 2003-01-09 05:55:55 $
  * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/01/06 19:33:22  Goober5000
+ * cleaned up some stuff with model_set_thrust and a commented Assert that
+ * shouldn't have been
+ * --Goober5000
+ *
  * Revision 2.9  2002/12/07 01:37:42  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -3072,6 +3077,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 								
 	
 							//	if(bank->submodel_parent)
+//								{
+//								}
+
 								gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
 							//	mprintf(( "rendering glow with texture %d\n", bank->glow_bitmap ));
 								extern int Gr_scaler_zbuffering;
@@ -3170,39 +3178,65 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					#define NOISE_SCALE 0.5f
 					#define MIN_SCALE 3.4f
 					#define MAX_SCALE 4.7f
-					float scale = MIN_SCALE, x=0.0f, y=0.0f, z=0.0f;
+					float scale = MIN_SCALE;
+						
+// the following replaces Bobboau's code, commented out below - Goober5000
+					float magnitude;
+					vector scale_vec;
 
+					// normalize banks, in case of incredibly big normals
+					vm_vec_copy_normalize(&scale_vec, &bank->norm[j]);
+
+					// adjust for thrust
+					(scale_vec.xyz.x *= Interp_thrust_scale_x) -= 0.1f;
+					(scale_vec.xyz.y *= Interp_thrust_scale_y) -= 0.1f;
+					(scale_vec.xyz.z *= Interp_thrust_scale) -= 0.1f;
+
+					// get magnitude, which we will use as the scaling reference
+					magnitude = vm_vec_normalize(&scale_vec);
+
+					// get absolute value
+					if (magnitude < 0.0f)
+						magnitude *= -1.0f;
+
+					scale = magnitude*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
+
+/* this is Bobboau's code
 				//	if(abs(bank->norm->y + Interp_thrust_scale_y) > 0){
 				//	if(abs(bank->norm->x + Interp_thrust_scale_x) > 0)
 				//	if(abs(bank->norm->z + Interp_thrust_scale) > 0)
 
 					x = ((-bank->norm[j].xyz.x + Interp_thrust_scale_x) * Interp_thrust_scale_x);
 //					x = (x * Interp_thrust_scale_x)/2;
-					if((bank->norm[j].xyz.x < 0.0f) /*&& (Interp_thrust_scale_x < 0.0f)*/){
+					if((bank->norm[j].xyz.x < 0.0f) && (Interp_thrust_scale_x < 0.0f)){
 						x = -x;
 					}
 					y = ((-bank->norm[j].xyz.y + Interp_thrust_scale_y) * Interp_thrust_scale_y);
 //					y = (y * Interp_thrust_scale_y)/2;
-					if((bank->norm[j].xyz.y < 0.0f) /*&& (Interp_thrust_scale_y < 0.0f)*/){
+					if((bank->norm[j].xyz.y < 0.0f) && (Interp_thrust_scale_y < 0.0f)){
 						y = -y;
 					}
 
 					z = ((-bank->norm[j].xyz.z + Interp_thrust_scale) * Interp_thrust_scale);
 //					z = (z * Interp_thrust_scale)/2;
-					if((bank->norm[j].xyz.z < 0.0f) /*&& (Interp_thrust_scale < 0.0f)*/){
+					if((bank->norm[j].xyz.z < 0.0f) && (Interp_thrust_scale < 0.0f)){
 						z = -z;
 					}
 
+
 #ifndef NDEBUG
-	if ( &Objects[objnum] == Player_obj ){
+//	if ( &Objects[objnum] == Player_obj ){
 		gr_set_color_fast(&Color_bright_blue);
 		gr_printf((i * 200), (20 +(j * 10)), "x %0.2f, y %0.2f, z %0.2f", x, y, z);
-	}
+//	}
 #endif
-
 
 					scale = ((bank->norm[j].xyz.x * x)+(bank->norm[j].xyz.y * y)+(bank->norm[j].xyz.z * z))*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 					//getting thruster glows to grow baised on witch direction they are pointing -Bobboau
+*/
+
+// this is the original scaling code - Goober5000
+//					scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
 					float w = bank->radius[j]*(scale+Interp_thrust_glow_noise*NOISE_SCALE );
 
