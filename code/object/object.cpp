@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-19 01:07:41 $
+ * $Revision: 2.5 $
+ * $Date: 2003-02-16 05:14:29 $
  * $Author: bobboau $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/19 01:07:41  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.3  2002/11/14 04:18:17  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -1271,7 +1274,7 @@ obj_maybe_fire:
 			if(objp->type == OBJ_SHIP){
 			has_fired = 1;
 				if(ship_fire_primary(objp, 1, 0) == 0){
-					has_fired = -1;
+					has_fired = 1;
 				}
 			}
 		}

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-01-19 22:20:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2003-02-16 05:14:29 $
+ * $Author: bobboau $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/01/19 22:20:22  Goober5000
+ * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
+ * and departure into hangars should now all work properly
+ * --Goober5000
+ *
  * Revision 2.8  2003/01/19 01:07:42  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -2379,7 +2384,7 @@ mprintf(("doing vaporizeing stuff\n"));
 						if (sip->flags & (SIF_SMALL_SHIP)) {
 							if (other_obj->type == OBJ_BEAM) {
 								int beam_weapon_info_index = beam_get_weapon_info_index(other_obj);
-								if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_BEAM|WIF_HUGE)) ) {								
+								if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_HUGE)) ) {								
 									// Flag as vaporized
 									shipp->flags |= SF_VAPORIZE;								
 								}

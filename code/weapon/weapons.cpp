@@ -1319,6 +1319,9 @@ int parse_weapon()
 	wip->b_info.beam_shots = 0;
 	wip->b_info.beam_shrink_factor = 0.0f;
 	wip->b_info.beam_shrink_pct = 0.0f;
+	wip->b_info.range = BEAM_FAR_LENGTH;
+	wip->b_info.damage_threshold = 1.0f;
+	
 	if( optional_string("$BeamInfo:")){
 		// beam type
 		required_string("+Type:");
@@ -1396,6 +1399,14 @@ int parse_weapon()
 		required_string("+ShrinkPct:");
 		stuff_float(&wip->b_info.beam_shrink_pct);
 
+		if (optional_string("+Range:"))
+		{
+			stuff_float(&wip->b_info.range);
+		}
+		if (optional_string("+Atenuation:"))
+		{
+			stuff_float(&wip->b_info.damage_threshold);
+		}
 		// beam sections
 		while( optional_string("$Section:") ){
 			beam_weapon_section_info i;

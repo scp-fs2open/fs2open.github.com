@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-01-27 07:46:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2003-02-16 05:14:29 $
+ * $Author: bobboau $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/01/27 07:46:32  Goober5000
+ * finished up my fighterbay code - ships will not be able to arrive from or depart into
+ * fighterbays that have been destroyed (but you have to explicitly say in the tables
+ * that the fighterbay takes damage in order to enable this)
+ * --Goober5000
+ *
  * Revision 2.23  2003/01/19 22:25:10  Goober5000
  * removed unreferenced variable
  * --Goober5000
@@ -5483,6 +5489,7 @@ evade_ship_l1: ;
 
 	// nprintf(("Mike", "Goal point = %7.1f %7.1f %7.1f\n", goal_point.x, goal_point.y, goal_point.z));
 	turn_towards_point(Pl_objp, &goal_point, NULL, bank_override);
+	slide_face_ship();
 
 	aip->prev_goal_point = goal_point;
 }

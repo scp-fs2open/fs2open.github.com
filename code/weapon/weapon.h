@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/12/10 05:43:33  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
  * Revision 2.5  2002/12/07 01:37:43  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -299,6 +302,9 @@
 #ifndef _WEAPON_H
 #define _WEAPON_H
 
+// use this to extend a beam to "infinity"
+#define BEAM_FAR_LENGTH				30000.0f
+
 // define moved to before includes so that we can have it available when ship.h is included below
 #define MAX_WEAPON_TYPES				200
 
@@ -463,6 +469,8 @@ typedef struct beam_weapon_info {
 	float	beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
 	beam_weapon_section_info sections[MAX_BEAM_SECTIONS];			// info on the visible sections of the beam 	
+	float			range;				//how far it will shoot-Bobboau
+	float			damage_threshold;	//point at wich damage will start being atenuated from 0.0 to 1.0
 } beam_weapon_info;
 
 extern weapon Weapons[MAX_WEAPONS];
