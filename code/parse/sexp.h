@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.74 $
+ * $Revision: 2.75 $
  * $Author: Goober5000 $
- * $Date: 2004-09-23 05:53:00 $
+ * $Date: 2004-09-24 02:13:00 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2004/09/23 05:53:00  Goober5000
+ * a bunch of work on the actual implementation of when-argument
+ * --Goober5000
+ *
  * Revision 2.73  2004/09/22 06:56:45  Goober5000
  * checking in framework for when-argument special ubersexp
  * --Goober5000
@@ -1298,11 +1302,10 @@ class arg_item
 		char *text;
 		arg_item *next;
 
-		arg_item() : next(NULL) {}
-		void set_data(char *str);
+		arg_item() : text(NULL), next(NULL) {}
 		void add_data(char *str);
-		void add_list(arg_item *list);
-		void destroy();
+		void expunge();
+		int empty();
 };
 
 
