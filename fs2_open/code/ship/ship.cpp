@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.93 $
- * $Date: 2003-11-19 20:37:25 $
- * $Author: randomtiger $
+ * $Revision: 2.94 $
+ * $Date: 2003-11-21 22:30:45 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2003/11/19 20:37:25  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.92  2003/11/17 06:52:52  bobboau
  * got assert to work again
  *
@@ -4921,11 +4933,11 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 // this function checks to see how far the player has strayed from his starting location (should be
 // single player only).  Issues a warning at some distance.  Makes mission end if he keeps flying away
 // 3 strikes and you're out or too far away
-#define PLAYER_MAX_DIST_WARNING			70000			// distance in KM at which player gets warning to return to battle
+#define PLAYER_MAX_DIST_WARNING			700000			// distance in KM at which player gets warning to return to battle
 #define PLAYER_DISTANCE_MAX_WARNINGS	3				// maximum number of warnings player can receive before mission ends
-#define PLAYER_MAX_DIST_END				75000			// distance from starting loc at which we end mission
-#define PLAYER_WARN_DELTA_TIME			10000
-#define PLAYER_DEATH_DELTA_TIME			5000
+#define PLAYER_MAX_DIST_END				750000			// distance from starting loc at which we end mission
+#define PLAYER_WARN_DELTA_TIME			10000			//ms
+#define PLAYER_DEATH_DELTA_TIME			5000			//ms
 
 void ship_check_player_distance_sub(player *p, int multi_target=-1)
 {
