@@ -26,6 +26,7 @@
 #include "tgautils/tgautils.h"
 #include "graphics/grd3dbmpman.h"
 #include "globalincs/systemvars.h"
+#include "jpgutils/jpgutils.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
@@ -267,7 +268,7 @@ int gr_d3d_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, in
 	}
 	// send anything else through D3DX
 	else {
-		if(d3d_read_header_d3dx( filename, img_cfp, type, w, h, bm_size) == false) {
+		if(d3d_read_header_d3dx( filename, img_cfp, type, w, h, bpp, bm_size) == false) {
 			DBUGFILE_OUTPUT_1("not bm_pcx: Cant load %s",filename);
 			mprintf(( "not bm_pcx: Couldn't open '%s'\n", filename ));
 			return -1;

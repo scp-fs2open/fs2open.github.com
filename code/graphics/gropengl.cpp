@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.95 $
- * $Date: 2005-02-04 23:29:31 $
+ * $Revision: 2.96 $
+ * $Date: 2005-02-05 00:30:49 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2005/02/04 23:29:31  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
  * Revision 2.94  2005/01/29 08:04:15  wmcoolmon
  * Ahh, the sweet smell of optimized code
  *
@@ -1054,7 +1057,6 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h);
 void opengl_tcache_frame ();
 void gr_opengl_flip()
 {
-	int swap_error=0;
 	if (!OGL_enabled) return;
 
 	gr_reset_clip();

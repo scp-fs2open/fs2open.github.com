@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-02-04 10:12:29 $
+ * $Revision: 2.34 $
+ * $Date: 2005-02-05 00:30:49 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/02/04 10:12:29  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.32  2005/01/31 23:27:53  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -633,9 +636,11 @@
 // 3dnow stuff
 // #include "amd3d.h"
 
+#ifdef SCP_UNIX
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
 #endif
+#endif // SCP_UNIX
 
 // Includes for different rendering systems
 #include "graphics/grd3dsetup.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.10 $
- * $Date: 2005-02-04 23:29:31 $
+ * $Revision: 1.11 $
+ * $Date: 2005-02-05 00:30:49 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/02/04 23:29:31  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
  * Revision 1.9  2005/01/21 21:12:52  taylor
  * crap
  *
@@ -94,6 +97,7 @@ int *currently_enabled_lights = NULL;
 bool lighting_is_enabled = true;
 int active_gl_lights = 0;
 int n_active_gl_lights = 0;
+int GL_center_alpha = 0;
 
 extern float static_point_factor;
 extern float static_light_factor;
