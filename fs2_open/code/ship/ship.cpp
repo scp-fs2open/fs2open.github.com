@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.97 $
- * $Date: 2003-12-18 15:35:52 $
- * $Author: phreak $
+ * $Revision: 2.98 $
+ * $Date: 2004-01-14 06:34:07 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2003/12/18 15:35:52  phreak
+ * oops switched the signs in a comparison.  thats what was causing debug builds to go haywire
+ *
  * Revision 2.96  2003/12/16 20:55:13  phreak
  * disabled tertiary weapons support pending a rewrite of critical code
  *
@@ -11506,7 +11509,7 @@ int is_support_allowed(object *objp)
 	// check updated mission conditions to allow support
 
 	// none allowed
-	if (The_mission.support_ships.max_support_ships < 0)
+	if (The_mission.support_ships.max_support_ships == 0)
 		return 0;
 
 	// restricted number allowed
