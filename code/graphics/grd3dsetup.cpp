@@ -985,6 +985,28 @@ int d3d_check_multisample_types(int adapter, int chosen_ms, D3DFORMAT back_buffe
     return -1;
 }
 
+void d3d_compare_adapter(int adapter_choice)
+{
+	HRESULT hrd, hrc;
+	D3DADAPTER_IDENTIFIER8 info_default, info_chosen;
+	hrd = GlobalD3DVars::lpD3D->GetAdapterIdentifier(D3DADAPTER_DEFAULT, D3DENUM_NO_WHQL_LEVEL, &info_default);
+	hrc = GlobalD3DVars::lpD3D->GetAdapterIdentifier(D3DADAPTER_DEFAULT, D3DENUM_NO_WHQL_LEVEL, &info_chosen);
+
+	if(FAILED(hrd) || FAILED(hrc))
+	{
+		DBUGFILE_OUTPUT_2("Failed to identify default %d, chosen %d",FAILED(hrd), FAILED(hrc));
+		return;
+	}
+
+	D3DADAPTER_IDENTIFIER8 *info = &info_default;
+	DBUGFILE_OUTPUT_0("Default:");
+	DBUGFILE_OUTPUT_2("%s %s",info->Driver, info->Description);
+
+	info = &info_chosen;
+	DBUGFILE_OUTPUT_0("Chosen:");
+	DBUGFILE_OUTPUT_2("%s %s",info->Driver, info->Description);
+}
+
 /**
  * This deals totally with mode stuff
  *
@@ -1064,6 +1086,8 @@ bool d3d_init_device()
 			return false;
 		}
 
+		d3d_compare_adapter(adapter_choice);
+
 		if(FAILED(GlobalD3DVars::lpD3D->EnumAdapterModes(adapter_choice, mode_choice, &mode)))
 		{
 			sprintf(Device_init_error, "Could not use selected mode: %d", mode_choice);
@@ -1111,8 +1135,12 @@ bool d3d_init_device()
 	GlobalD3DVars::d3dpp.BackBufferFormat = mode.Format;
 
 	//trying to use a higher bit depth in the back buffer, the deepest one posale -Bobboau
-	const int NUM_FORMATS = 3;
-	enum _D3DFORMAT format_type[NUM_FORMATS] = {D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D16};
+  	const int NUM_FORMATS = 3;
+  //	const int NUM_FORMATS = 6;
+
+	enum _D3DFORMAT format_type[NUM_FORMATS] = 
+		{D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D16};
+	 //	{D3DFMT_D32, D3DFMT_D24X4S4, D3DFMT_D24S8, D3DFMT_D24X8, D3DFMT_D16, D3DFMT_D15S1};
 
 	const int NUM_VPTYPES = 3;
 	DWORD vptypes[NUM_VPTYPES] = {
@@ -1154,6 +1182,7 @@ bool d3d_init_device()
 		                            &GlobalD3DVars::d3dpp, 
 									&GlobalD3DVars::lpD3DDevice) ) ) {
 				have_device = true;
+				DBUGFILE_OUTPUT_2("Depth buffer format %d, aaresult %d",t,aaresult);
 				break;
 			}
 		}
