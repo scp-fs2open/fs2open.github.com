@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/LevelPaging.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-06-18 04:59:53 $
+ * $Author: wmcoolmon $
  *
  * Code to page in all the bitmaps at the beginning of a level.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:01  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -91,6 +95,7 @@ void level_page_in()
 
 	// Most important ones first
 	ship_page_in();
+	//Must be called after paging in ships
 	weapons_page_in();
 	fireballs_page_in();
 	particle_page_in();

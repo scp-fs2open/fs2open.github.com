@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.2 $
- * $Date: 2003-03-02 06:37:24 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-06-18 04:59:55 $
+ * $Author: wmcoolmon $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/02 06:37:24  penguin
+ * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
+ *  - penguin
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -151,9 +155,9 @@ extern LPDIRECTSOUND				pDirectSound;
 
 extern HRESULT (__stdcall *pfn_DirectSoundCaptureCreate)(LPGUID lpGUID, LPDIRECTSOUNDCAPTURE *lplpDSC, LPUNKNOWN pUnkOuter);
 
-int	ds_init(int use_a3d, int use_eax);
+int	ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits);
 void	ds_close();
-void	ds_get_primary_format(WAVEFORMATEX *wfx);
+void	ds_get_primary_format(WAVEFORMATEX *wfx, DWORD sample_rate, WORD sample_bits);
 int	ds_parse_wave(char *filename, ubyte **dest, uint *dest_size, WAVEFORMATEX **header);
 int	ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info *si, int flags);
 void	ds_unload_buffer(int sid, int hid);

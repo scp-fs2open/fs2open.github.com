@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-11-16 09:42:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-06-18 04:59:55 $
+ * $Author: wmcoolmon $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/11/16 09:42:37  Goober5000
+ * clarified and pruned debug spew messages
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/02 06:37:24  penguin
  * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
  *  - penguin
@@ -968,13 +972,13 @@ void ds_show_caps(DSCAPS *dscaps)
 }
 
 // Fill in the waveformat struct with the primary buffer characteristics.
-void ds_get_primary_format(WAVEFORMATEX *wfx)
+void ds_get_primary_format(WAVEFORMATEX *wfx, DWORD sample_rate, WORD sample_bits)
 {
 	// Set 16 bit / 22KHz / mono
 	wfx->wFormatTag = WAVE_FORMAT_PCM;
 	wfx->nChannels = 2;
-	wfx->nSamplesPerSec = 22050;
-	wfx->wBitsPerSample = 16;
+	wfx->nSamplesPerSec = sample_rate;
+	wfx->wBitsPerSample = sample_bits;
 	wfx->cbSize = 0;
 	wfx->nBlockAlign = (unsigned short)(wfx->nChannels * (wfx->wBitsPerSample / 8));
 	wfx->nAvgBytesPerSec = wfx->nBlockAlign * wfx->nSamplesPerSec;
@@ -1009,7 +1013,7 @@ int ds_dll_load()
 // returns: 0 if successful, otherwise -1.  If successful, the global pPropertySet will
 //          set to a non-NULL value.
 //
-int ds_init_property_set()
+int ds_init_property_set(DWORD sample_rate, WORD sample_bits)
 {
 	HRESULT hr;
 
@@ -1017,8 +1021,8 @@ int ds_init_property_set()
 	WAVEFORMATEX wf;
 	wf.wFormatTag = WAVE_FORMAT_PCM;
 	wf.nChannels = 1;
-	wf.nSamplesPerSec = 22050;
-	wf.wBitsPerSample = 16;
+	wf.nSamplesPerSec = sample_rate;
+	wf.wBitsPerSample = sample_bits;
 	wf.cbSize = 0;
 	wf.nBlockAlign = (unsigned short)(wf.nChannels * (wf.wBitsPerSample / 8));
 	wf.nAvgBytesPerSec = wf.nBlockAlign * wf.nSamplesPerSec;
@@ -1058,7 +1062,7 @@ int ds_init_property_set()
 //
 // returns:     -1           => init failed
 //               0           => init success
-int ds_init(int use_a3d, int use_eax)
+int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits)
 {
 	HRESULT			hr;
 	HWND				hwnd;
@@ -1143,7 +1147,7 @@ int ds_init(int use_a3d, int use_eax)
 	}
 
 	// Get the primary buffer format
-	ds_get_primary_format(&wave_format);
+	ds_get_primary_format(&wave_format, sample_rate, sample_bits);
 
 	hr = pPrimaryBuffer->SetFormat(&wave_format);
 	if (hr != DS_OK) {
@@ -1174,7 +1178,7 @@ int ds_init(int use_a3d, int use_eax)
 	}
 
 	if (Ds_use_eax == 1) {
-		ds_init_property_set();
+		ds_init_property_set(sample_rate, sample_bits);
 		if (ds_eax_init() != 0) {
 			Ds_use_eax = 0;
 		}

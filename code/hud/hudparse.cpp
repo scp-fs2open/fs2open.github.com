@@ -31,8 +31,8 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 {NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size) ,HUD_VAR(Wenergy_fname), NULL, NULL, NULL},
 //Mini-gauges
 {&gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				5, 7, 5, 7,			NULL, NULL, NULL, NULL},
-{&gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			11, 0, 11, 0,		NULL, NULL, NULL, NULL},
-{&gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			7, 0, 7, 0,			NULL, NULL, NULL, NULL}
+{&gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			11, 7, 11, 7,		NULL, NULL, NULL, NULL},
+{&gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			7, 7, 7, 7,			NULL, NULL, NULL, NULL}
 };
 
 //Number of gauges

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-05-28 23:37:30 $
+ * $Revision: 2.11 $
+ * $Date: 2004-06-18 04:59:54 $
  * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/05/28 23:37:30  wmcoolmon
+ * Modular music tables
+ *
  * Revision 2.9  2004/03/05 09:02:00  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -385,17 +388,20 @@ int maybe_get_next_nrml_no_cycle(int pattern)
 //
 void event_music_init()
 {
-	if ( snd_is_inited() == FALSE ) {
-		Event_music_enabled = FALSE;
-		return;
-	}
+	if(!Fred_running)
+	{
+		if ( snd_is_inited() == FALSE ) {
+			Event_music_enabled = FALSE;
+			return;
+		}
 
-	if ( Cmdline_freespace_no_music ) {
-		return;
-	}
+		if ( Cmdline_freespace_no_music ) {
+			return;
+		}
 
-	if ( Event_music_inited == TRUE )
-		return;
+		if ( Event_music_inited == TRUE )
+			return;
+	}
 
 	//MUST be called before parsing stuffzors.
 	Num_music_files = 0;
