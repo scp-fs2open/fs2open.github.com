@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.30 $
- * $Date: 2004-07-26 20:47:52 $
- * $Author: Kazan $
+ * $Revision: 2.31 $
+ * $Date: 2004-09-10 13:55:49 $
+ * $Author: et1 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/07/26 20:47:52  Kazan
+ * remove MCD complete
+ *
  * Revision 2.29  2004/07/25 18:46:30  Kazan
  * -fred_no_warn has become -no_warn and applies to both fred and fs2
  * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
@@ -368,6 +371,9 @@
 #include "playerman/player.h"
 #include "weapon/shockwave.h"
 #include "parse/parselo.h"
+
+// Needed for TBP warp effect override  -Et1
+#include "cmdline/cmdline.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1236,7 +1242,22 @@ void shipfx_warpout_start( object *objp )
 		effect_radius = min(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
 		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
 	} else {
-		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+
+        // * For now, all the effects flag does is to use our orange effect when warping out    -Et1
+        if( Cmdline_TBPWarpEffects )
+        {
+
+            warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+
+        }
+        else
+        {
+        
+            warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+
+        }
+                
+
 	}
 	if (warp_objnum < 0 )	{	// JAS: This must always be created, if not, just warp the ship in
 		shipfx_actually_warpout(shipp,objp);
