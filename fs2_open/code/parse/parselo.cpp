@@ -9,13 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.8 $
+ * $Revision: 2.9 $
  * $Author: Goober5000 $
- * $Date: 2003-08-25 04:45:57 $
+ * $Date: 2003-09-28 21:22:58 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/08/25 04:45:57  Goober5000
+ * added replacement of $rank with the player's rank in any string that appears
+ * in-game (same as with $callsign); also bumped the limit on the length of text
+ * allowed per entry in species.tbl
+ * --Goober5000
+ *
  * Revision 2.7  2003/08/22 07:01:57  Goober5000
  * implemented $callsign to add the player callsign in a briefing, message, or whatever
  * --Goober5000
@@ -1174,7 +1180,7 @@ void read_file_text(char *filename, int mode)
 
 	// read first 10 bytes to determine if file is encrypted
 	cfread(Mission_text_raw, min(file_len, 10), 1, mf);
-	file_is_encrypted = is_encrpyted(Mission_text_raw);
+	file_is_encrypted = is_encrypted(Mission_text_raw);
 	cfseek(mf, 0, CF_SEEK_SET);
 
 	if ( file_is_encrypted ) {
@@ -1198,7 +1204,6 @@ void read_file_text(char *filename, int mode)
 	Assert(file_len < MISSION_TEXT_SIZE);
 
 	// strip comments from raw text, reading into Mission_text
-
 	int num_chars_read = 0;
 
 	mp2 = Mission_text_raw;
@@ -1224,7 +1229,7 @@ void read_file_text(char *filename, int mode)
 //		strcpy(mp, outbuf);
 //		mp += strlen(outbuf);
 	}
-	
+
 	*mp = *mp2 = (char)EOF_CHAR;
 /*
 	while (cfgets(outbuf, PARSE_BUF_SIZE, mf) != NULL) {
@@ -1937,7 +1942,94 @@ void end_string_at_first_hash_symbol(char *src)
 }
 
 // Goober5000
+char *stristr(const char *str, const char *substr)
+{
+	int pos;
+
+	// copy each string
+	char *l_str = strdup(str);
+	char *l_substr = strdup(substr);
+
+	// convert to lowercase
+	strlwr(l_str);
+	strlwr(l_substr);
+
+	// test
+	char *result = strstr(l_str, l_substr);
+
+	// fix result to point to the original string
+	if (result)
+	{
+		pos = result - l_str;
+		result = ((char *) str) + pos;	// must use casting to remove const attribute
+	}
+
+	// free the duplicated strings
+	free(l_str);
+	free(l_substr);
+
+	// return
+	return result;
+}
+
+// Goober5000
 char *get_pointer_to_first_hash_symbol(char *src)
 {
 	return strchr(src, '#');
+}
+
+// Goober5000
+int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int start)
+{
+	Assert(maxlen <= MISSION_TEXT_SIZE);
+	Assert(str && oldstr && newstr);
+
+	// search
+	char *ch = stristr(str + start, oldstr);
+
+	// found?
+	if (ch)
+	{
+		// determine if replacement will exceed max len
+		if (strlen(str) + strlen(newstr) - strlen(oldstr) > max_len)
+		{
+			return -1;
+		}
+
+		// allocate temp string to hold extra stuff
+		char *temp = (char *) malloc(sizeof(char) * max_len);
+
+		// save remainder of string
+		strcpy(temp, ch + strlen(oldstr));
+
+		// replace
+		strcpy(ch, newstr);
+
+		// append rest of string
+		strcpy(ch + strlen(newstr), temp);
+
+		// free temp string
+		free(temp);
+	}
+	// not found
+	else
+	{
+		return 0;
+	}
+
+	// return pos of replacement
+	return (ch - str);
+}
+
+// Goober5000
+int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int start)
+{
+	int val, tally(0);
+
+	while ((val = replace_one(str, oldstr, newstr, max_len)) > 0)
+	{
+		tally++;
+	}
+
+	return (val < 0) ? val : tally;
 }

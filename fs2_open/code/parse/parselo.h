@@ -9,15 +9,21 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.6 $
+ * $Revision: 2.7 $
  * $Author: Goober5000 $
- * $Date: 2003-08-25 04:45:57 $
+ * $Date: 2003-09-28 21:22:58 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/08/25 04:45:57  Goober5000
+ * added replacement of $rank with the player's rank in any string that appears
+ * in-game (same as with $callsign); also bumped the limit on the length of text
+ * allowed per entry in species.tbl
+ * --Goober5000
+ *
  * Revision 2.5  2003/08/22 07:01:57  Goober5000
  * implemented $callsign to add the player callsign in a briefing, message, or whatever
  * --Goober5000
@@ -395,4 +401,14 @@ extern int required_string_either_fred(char *str1, char *str2);
 extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL);
 
 extern char	parse_error_text[64];
+
+// Goober5000 - returns position of replacement or -1 for exceeded length
+extern int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int start = 0);
+
+// Goober5000 - returns number of replacements or -1 for exceeded length
+extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int start = 0);
+
+// Goober5000 (why is this not in the C library?)
+extern char *stristr(const char *str, const char *substr);
+
 #endif

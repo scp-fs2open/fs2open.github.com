@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.h $
- * $Revision: 2.1 $
- * $Date: 2003-08-22 07:01:57 $
+ * $Revision: 2.2 $
+ * $Date: 2003-09-28 21:22:59 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/08/22 07:01:57  Goober5000
+ * implemented $callsign to add the player callsign in a briefing, message, or whatever
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -125,7 +129,7 @@ void lcl_ext_open();
 void lcl_ext_close();
 
 // Goober5000
-void lcl_replace_stuff(char *text, uint max_len);
+void lcl_replace_stuff(char *text, unsigned int max_len);
 
 // get the localized version of the string. if none exists, return the original string
 // valid input to this function includes :

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.43 $
- * $Date: 2003-09-13 06:02:06 $
+ * $Revision: 2.44 $
+ * $Date: 2003-09-28 21:22:59 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/09/13 06:02:06  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.40  2003/09/06 20:41:52  wmcoolmon
  * Added "+Subsystem Repair Ceiling:" after "+Hull Repair Ceiling:" (formerly "+Support Repair Ceiling:"
  *
@@ -4444,7 +4448,8 @@ int get_mission_info(char *filename, mission *mission_p)
 // mai parse routine for parsing a mission.  The default parameter flags tells us which information
 // to get when parsing the mission.  0 means get everything (default).  Other flags just gets us basic
 // info such as game type, number of players etc.
-int parse_main(char *mission_name, int flags)
+// Goober5000 - allow for import
+int parse_main(char *mission_name, int flags, int importFSM)
 {
 	int rval, i;
 
@@ -4464,25 +4469,40 @@ int parse_main(char *mission_name, int flags)
 		// open localization
 		lcl_ext_open();
 
-		CFILE *ftemp = cfopen(mission_name, "rt", CFILE_NORMAL, CF_TYPE_MISSIONS);
-		// fail situation.
-		if (!ftemp) {
-			if (!Fred_running)
-				Error( LOCATION, "Couldn't open mission '%s'\n", mission_name );
+		// don't do this for imports
+		if (!importFSM)
+		{
+			CFILE *ftemp = cfopen(mission_name, "rt", CFILE_NORMAL, CF_TYPE_MISSIONS);
 
-			Current_file_length = -1;
-			Current_file_checksum = 0;
+			// fail situation.
+			if (!ftemp) {
+				if (!Fred_running)
+					Error( LOCATION, "Couldn't open mission '%s'\n", mission_name );
 
-			// close localization
-			lcl_ext_close();
+				Current_file_length = -1;
+				Current_file_checksum = 0;
+	
+				// close localization
+				lcl_ext_close();
 
-			return -1;
+				return -1;
+			}
+
+			Current_file_length = cfilelength(ftemp);
+			cfclose(ftemp);
 		}
 
-		Current_file_length = cfilelength(ftemp);
-		cfclose(ftemp);
+		// import?
+		if (importFSM)
+		{
+			read_file_text(mission_name, CF_TYPE_ANY);
+			convertFSMtoFS2();
+		}
+		else
+		{
+			read_file_text(mission_name, CF_TYPE_MISSIONS);
+		}
 
-		read_file_text(mission_name, CF_TYPE_MISSIONS);
 		memset(&The_mission, 0, sizeof(The_mission));
 		parse_mission(&The_mission, flags);
 		display_parse_diagnostics();
@@ -5941,4 +5961,123 @@ void mission_parse_reset_alt()
 int is_training_mission()
 {
 	return (The_mission.game_type & MISSION_TYPE_TRAINING);
+}
+
+// Goober5000
+void convertFSMtoFS2()
+{
+	// replace class names
+	conv_replace_ship_classes();
+
+	// add alt names
+	conv_add_alt_names();
+
+	// fix icons
+	conv_fix_briefing_stuff();
+}
+
+// Goober5000
+void conv_replace_ship_classes()
+{
+	replace_all(Mission_text, "lass: Terran NavBuoy", "lass: GTNB Pharos", MISSION_TEXT_SIZE);
+	replace_all(Mission_text, "lass: PV", "lass: GV", MISSION_TEXT_SIZE);
+	replace_all(Mission_text, "GVF Anubis", "PVF Anubis", MISSION_TEXT_SIZE);
+	replace_all(Mission_text, "GVB Amun", "PVB Amun", MISSION_TEXT_SIZE);
+	replace_all(Mission_text, "GVFr Ma'at", "PVFr Ma'at", MISSION_TEXT_SIZE);
+	replace_all(Mission_text, "GVFr Bast", "PVFr Bast", MISSION_TEXT_SIZE);
+	replace_all(Mission_text, "\"Prometheus\"", "\"Prometheus S\"", MISSION_TEXT_SIZE);
+}
+
+// Goober5000
+void conv_add_alt_names()
+{
+	int flag[MAX_SHIP_TYPES];
+	int i, idx, alt_tally;
+	char *ch;
+	char ship_class[NAME_LENGTH * 2];
+	char alt_text[NAME_LENGTH * 2 + 10];
+	char alt_section[MAX_ALT_TYPE_NAMES * (NAME_LENGTH + 7) + 35];
+
+	// initialize stuff
+	ch = Mission_text;
+	memset(flag, 0, sizeof(int) * MAX_SHIP_TYPES);
+	alt_tally = 0;
+
+	// get all ship classes (case sensitive, because lowercase
+	// $class is for briefing icons)
+	while ((ch = strstr(ch + 1, "$Class:")) != NULL)
+	{
+		// extract ship class
+		copy_to_eoln(ship_class, NULL, ch + 7, NAME_LENGTH * 2);
+		drop_white_space(ship_class);
+
+		// handle $alt
+		*alt_text = 0;
+
+		// see if it's Vasudan
+		if (!strnicmp(ship_class, "GV", 2))
+		{
+			if ((idx = ship_info_lookup(ship_class)) >= 0)
+			{
+				// flag for inclusion at the top
+				flag[idx] = 1;
+
+				// add $alt text below ship class
+				sprintf(alt_text, "%s\n$Alt: P%s", ship_class, ship_class + 1);
+			}
+		}
+		// see if it's the navbuoy
+		else if (!stricmp(ship_class, "GTNB Pharos"))
+		{
+			// flag for inclusion
+			flag[ship_info_lookup(ship_class)] = 1;
+
+			// add $alt text below ship class
+			sprintf(alt_text, "GTNB Pharos\n$Alt: Terran NavBuoy");
+		}
+
+		// now actually replace the class with the class plus $alt text
+		if (*alt_text)
+		{
+			replace_one(ch, ship_class, alt_text, MISSION_TEXT_SIZE);
+			alt_tally++;
+		}	
+	}
+
+	// do we get to add the section?
+	if (alt_tally)
+	{
+		// set up the $alt section
+		strcpy(alt_section, "#Alternate Types:\n");
+
+		// find which classes need to be added
+		for (i = 0; i < MAX_SHIP_TYPES; i++)
+		{
+			if (flag[i])
+			{
+				// Vasudan?
+				if (!strnicmp(Ship_info[i].name, "GV", 2))
+				{
+					strcat(alt_section, "$Alt: P");
+					strcat(alt_section, Ship_info[i].name + 1);
+					strcat(alt_section, "\n");
+				}
+				// navbuoy?
+				else if (!stricmp(Ship_info[i].name, "GTNB Pharos"))
+				{
+					strcat(alt_section, "$Alt: Terran NavBuoy\n");
+				}
+			}
+		}
+		strcat(alt_section, "#end\n\n\n#Players");
+
+		// add it (it goes right before the #Players section)
+		replace_one(Mission_text, "#Players", alt_section, MISSION_TEXT_SIZE);
+	}
+}
+
+// Goober5000
+void conv_fix_briefing_stuff()
+{
+	// replace " with ' and fix the mismatched briefing icons
 }

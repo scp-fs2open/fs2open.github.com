@@ -9,13 +9,23 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.32 $
+ * $Revision: 2.33 $
  * $Author: Goober5000 $
- * $Date: 2003-09-13 08:27:28 $
+ * $Date: 2003-09-28 21:22:59 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/09/13 08:27:28  Goober5000
+ * added some minor things, such as code cleanup and the following:
+ * --turrets will not fire at cargo
+ * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
+ * --supercaps have their own default message bitfields (distinguished from capships)
+ * --turrets are allowed on fighters
+ * --jump speed capped at 65m/s, to avoid ship travelling too far
+ * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
+ * ----Goober5000
+ *
  * Revision 2.31  2003/09/13 06:02:06  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -707,7 +717,7 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 #define FRED_DUPLICATE_MODEL_TEXTURE_REPLACE	2
 extern texture_replace Fred_texture_replacements[MAX_SHIPS * MAX_MODEL_TEXTURES];
 
-int parse_main(char *mission_name, int flags = 0);
+int parse_main(char *mission_name, int flags = 0, int importFSM = 0);
 int mission_parse_ship_arrived(char *shipname);
 p_object *mission_parse_get_arrival_ship( char *name );
 p_object *mission_parse_get_arrival_ship( ushort net_signature );
@@ -752,6 +762,12 @@ void mission_parse_reset_alt();
 
 // code to save/restore mission parse stuff
 int get_mission_info(char *filename, mission *missionp = NULL);
+
+// Goober5000 - FRED import
+void convertFSMtoFS2();
+void conv_replace_ship_classes();
+void conv_add_alt_names();
+void conv_fix_briefing_stuff();
 
 #endif
 
