@@ -3,6 +3,18 @@
 // Derek Meek
 // 2-14-2003
 
+/*
+ * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.h $
+ * $Revision: 1.2 $
+ * $Date: 2003-10-13 06:02:50 $
+ * $Author: Kazan $
+ *
+ *
+ * $Log: not supported by cvs2svn $
+ *
+ *
+ */
+
 #if !defined(__protocol_h_)
 #define __protocol_h_
 

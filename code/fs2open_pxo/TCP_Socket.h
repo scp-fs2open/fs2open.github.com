@@ -4,6 +4,17 @@
 // 2-14-2003
 
 
+/*
+ * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.h $
+ * $Revision: 1.3 $
+ * $Date: 2003-10-13 06:02:50 $
+ * $Author: Kazan $
+ *
+ *
+ * $Log: not supported by cvs2svn $
+ *
+ *
+ */
 
 // Enable Multithread
 //#define MT_TCP_Socket
