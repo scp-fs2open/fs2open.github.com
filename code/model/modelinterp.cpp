@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.56 $
- * $Date: 2003-11-29 16:11:46 $
- * $Author: fryday $
+ * $Revision: 2.57 $
+ * $Date: 2003-11-29 17:13:54 $
+ * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2003/11/29 16:11:46  fryday
+ * Fixed normal loading in OpenGL HT&L.
+ * Fixed lighting in OpenGL HT&L, hopefully for the last time.
+ * Added a test if a normal is valid during model load, if not, replaced with face normal
+ *
  * Revision 2.55  2003/11/29 14:54:35  randomtiger
  * Rendering jumpnodes in htl via the old system to make them display again, appears to be so cheap it wouldnt be worth the effort to convert it to true htl.
  *
@@ -3492,7 +3497,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			}
 			gr_zbuffer_set(zbuf_mode);
 			// When in htl mode render with htl method unless its a jump node
-			if(!Cmdline_nohtl && !(flags & MR_NO_POLYS)) {
+			if(!Cmdline_nohtl){
 				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
 			}
 			else {
@@ -3536,7 +3541,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// draw the hull of the ship
 	
 	// When in htl mode render with htl method unless its a jump node
-	if(!Cmdline_nohtl && !(flags & MR_NO_POLYS)) {
+	if(!Cmdline_nohtl){
 		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
 //		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
 	}
