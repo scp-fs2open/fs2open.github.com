@@ -1400,8 +1400,12 @@ bool gr_d3d_init()
 		return false;
 	}
 
-	GlobalD3DVars::unlit_3D_batch = d3d_create_batch(1000, D3DVT_LVERTEX, D3DPT_TRIANGLELIST);
-	Assert(GlobalD3DVars::unlit_3D_batch != -1);
+	if(Cmdline_batch_3dunlit)
+	{
+		GlobalD3DVars::unlit_3D_batch = d3d_create_batch(1000, D3DVT_LVERTEX, D3DPT_TRIANGLELIST);
+		Assert(GlobalD3DVars::unlit_3D_batch != -1);
+
+	}
 
 	gr_d3d_activate(1);
 	d3d_start_frame();
@@ -1424,7 +1428,10 @@ void gr_d3d_cleanup()
 {
 	if (!GlobalD3DVars::D3D_inited) return;
 
-	d3d_destory_batch(GlobalD3DVars::unlit_3D_batch);
+	if(Cmdline_batch_3dunlit)
+	{
+		d3d_destory_batch(GlobalD3DVars::unlit_3D_batch);
+	}
 
 	d3d_batch_deinit();
 
