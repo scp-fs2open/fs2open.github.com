@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2004/04/06 05:26:59  phreak
+ * properly commented Local SSM code.
+ * put in some estimation code so the Local SSMs warp in closer to moving ships
+ *
  * Revision 2.59  2004/04/06 04:53:21  phreak
  * Local SSMs now working again after the code for setting the jumpout/jumpin
  * times for the missile were removed.
@@ -3275,7 +3279,7 @@ void weapon_process_post(object * obj, float frame_time)
 		
 			//get the position of the target, and estimate its position when it warps out
 			//so we have an idea of where it will be.
-			vm_vec_scale_add(&wp->lssm_target_pos,&Objects[wp->target_num].pos,&Objects[wp->target_num].phys_info.vel,(float)wip->lssm_warpin_delay/1000.0f));
+			vm_vec_scale_add(&wp->lssm_target_pos,&Objects[wp->target_num].pos,&Objects[wp->target_num].phys_info.vel,(float)wip->lssm_warpin_delay/1000.0f);
 
 			wp->lssm_stage=3;
 
