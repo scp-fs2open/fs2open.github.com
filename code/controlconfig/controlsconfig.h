@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.10 $
- * $Date: 2005-01-16 22:39:08 $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-03 06:05:27 $
  * $Author: wmcoolmon $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/01/16 22:39:08  wmcoolmon
+ * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
+ *
  * Revision 2.9  2004/08/11 05:06:19  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -489,16 +492,17 @@ typedef struct config_item {
 #define DOWN_SLIDE_THRUST								111
 #define HUD_TARGETBOX_TOGGLE_WIREFRAME					112
 #define VIEW_TOPDOWN									113
+#define VIEW_TRACK_TARGET								114
 
 #if defined(ENABLE_AUTO_PILOT)
 //AutoPilot - Kazan
-#define AUTO_PILOT_TOGGLE								114
-#define NAV_CYCLE										115
+#define AUTO_PILOT_TOGGLE								115
+#define NAV_CYCLE										116
 
 // this should be the total number of control action defines above (or last define + 1)
-#define CCFG_MAX 116
+#define CCFG_MAX 117
 #else
-#define CCFG_MAX 114
+#define CCFG_MAX 115
 #endif
 
 extern int Failed_key_index;

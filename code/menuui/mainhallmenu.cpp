@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-03-02 21:24:44 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2005-03-03 06:05:29 $
+ * $Author: wmcoolmon $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.24  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -1190,6 +1193,11 @@ void main_hall_do(float frametime)
 	switch(key){
 	case KEY_ENTER:
 		snazzy_action = SNAZZY_CLICKED;	
+		break;
+
+	case KEY_F3:
+		gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+		gameseq_post_event(GS_EVENT_LAB);
 		break;
 	
 #ifndef NDEBUG	

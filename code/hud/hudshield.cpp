@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-03-02 21:24:44 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2005-03-03 06:05:28 $
+ * $Author: wmcoolmon $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.21  2005/01/30 03:26:11  wmcoolmon
  * HUD updates
  *
@@ -454,6 +457,7 @@ bool damnit_you_told_me_already = false;
 void hud_shield_show(object *objp)
 {
 #ifndef NEW_HUD
+//	static int fod_model = -1;
 	float			max_shield;
 	int			hud_color_index, range;
 	int			sx, sy, i;
@@ -471,7 +475,8 @@ void hud_shield_show(object *objp)
 	sp = &Ships[objp->instance];
 	sip = &Ship_info[sp->ship_info_index];
 
-	if ( sip->shield_icon_index == 255 && !sip->initial_shield_strength) {
+//	bool middle_finger = (fod_model != -2 && strstr(sp->ship_name, "Sathanas") != NULL);
+	if ( sip->shield_icon_index == 255 && !sip->initial_shield_strength /*&& !middle_finger*/) {
 		return;
 	}
 
@@ -538,14 +543,36 @@ void hud_shield_show(object *objp)
 		HUD_set_clip(sx, sy, 112, 93);
 		model_set_detail_level(1);
 
-		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
+		//if(!middle_finger)
+			g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
+		/*else
+		{
+			vector finger_vec = {0.0f, 0.0f, 176.0f};
+			g3_set_view_matrix( &finger_vec, &vmd_identity_matrix, 1.0f);
+		}*/
 
 		if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		//We're ready to show stuff
 		ship_model_start(objp);
-		model_render( sp->modelnum, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->replacement_textures);
+		//if(!middle_finger)
+		{
+			model_render( sp->modelnum, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->replacement_textures);
+		}
+		/*else
+		{
+			if(fod_model == -1)
+			{
+				fod_model = model_load(NOX("FoD.pof"), 0, NULL);
+				if(fod_model == -1)
+				{
+					fod_model = -2;
+					return;
+				}
+			}
+			model_render(fod_model, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1);
+		}*/
 		ship_model_stop( objp );
 
 		//We're done
@@ -561,10 +588,15 @@ void hud_shield_show(object *objp)
 		HUD_reset_clip();
 	}
 
+	if(!sip->initial_shield_strength)
+		return;
+
 	// draw the four quadrants
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
 	max_shield = get_max_shield_quad(objp);
+	
+	int j, x_val, y_val, mid_val;
 
 	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 
@@ -609,12 +641,12 @@ void hud_shield_show(object *objp)
 			else
 			{
 				//Ugh, draw four shield quadrants
-				int j;
-				int x_val, y_val, mid_val;
 				switch(i)
 				{
 					//Top
 					case 0:
+						//Resize the screen coordinates, if needed, when we start out
+						gr_resize_screen_pos(&sx, &sy);
 						sy += 3;
 						for(j = 0; j < 6; j++)
 						{

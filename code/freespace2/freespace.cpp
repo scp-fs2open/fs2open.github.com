@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.127 $
- * $Date: 2005-03-03 05:32:11 $
- * $Author: taylor $
+ * $Revision: 2.128 $
+ * $Date: 2005-03-03 06:05:27 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.127  2005/03/03 05:32:11  taylor
+ * well that was good and wrong
+ *
  * Revision 2.126  2005/03/02 21:24:43  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1182,6 +1185,8 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 #include "radar/radarsetup.h"
+#include "camera/camera.h"
+#include "lab/lab.h"
 
 #if defined(ENABLE_AUTO_PILOT)
 #include "autopilot/autopilot.h"
@@ -1255,6 +1260,8 @@ extern bool frame_rate_display;
 bool cube_map_drawen = false;
 
 void game_level_init(int seed = -1);
+void game_reset_view_clip();
+void game_reset_shade_frame();
 void game_post_level_init();
 void game_do_frame();
 void game_update_missiontime();	// called from game_do_frame() and navmap_do_frame()
@@ -1309,6 +1316,7 @@ int dogfight_blown = 0;
 int	frame_int = -1;
 float frametimes[FRAME_FILTER];
 float frametotal = 0.0f;
+float flRealframetime;
 float flFrametime;
 
 #ifndef NDEBUG
@@ -1335,6 +1343,9 @@ static int Show_player_pos = 0;		// debug console command to show player world p
 int Debug_octant = -1;
 
 fix Game_time_compression = F1_0;
+fix Desired_time_compression = Game_time_compression;
+fix Time_compression_change_rate = 0;
+bool Time_compression_locked = false; //Can the user change time with shift- controls?
 
 // auto-lang stuff
 int detect_lang();
@@ -1840,6 +1851,7 @@ void game_sunspot_process(float frametime)
 			}
 
 			// draw the sun glow
+			Assert(Viewer_obj);
 			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, 0 ) )	{
 				// draw the glow for this sun
 				stars_draw_sun_glow(0);	
@@ -2047,6 +2059,9 @@ void game_level_close()
 	beam_level_close();
 	mflash_level_close();
 	mission_brief_common_reset();		// close out parsed briefing/mission stuff
+	cameras_close();
+	subtitles_close();
+	trail_level_close();
 
 	audiostream_unpause_all();
 	Game_paused = 0;
@@ -2084,6 +2099,8 @@ void game_level_init(int seed)
 	}
 
 	Framecount = 0;
+	game_reset_view_clip();
+	game_reset_shade_frame();
 
 	Key_normal_game = (Game_mode & GM_NORMAL);
 	Cheats_enabled = 0;
@@ -2149,6 +2166,8 @@ void game_level_init(int seed)
 	mflash_level_init();
 	ssm_level_init();	
 	supernova_level_init();
+	cameras_init();
+	subtitles_init();
 
 
 
@@ -3298,6 +3317,8 @@ void game_get_framerate()
 
 	char text[128] = "";
 
+	//Show the viewin pos
+
 	if ( frame_int == -1 )	{
 		int i;
 		for (i=0; i<FRAME_FILTER; i++ )	{
@@ -3544,6 +3565,30 @@ void game_show_framerate()
 #endif
 }
 
+extern int Cmdline_show_pos;
+void game_show_eye_pos(vector *eye_pos, matrix* eye_orient)
+{
+	if(!Cmdline_show_pos)
+		return;
+
+	//Do stuff
+	int font_height = 2*gr_get_font_height();
+	angles rot_angles;
+
+	gr_set_color_fast(&HUD_color_debug);
+
+	//Position
+	gr_printf(20, 100 - font_height, "X:%f Y:%f Z:%f", eye_pos->xyz.x, eye_pos->xyz.y, eye_pos->xyz.z);
+	font_height -= font_height/2;
+
+	//Orientation
+	vm_extract_angles_matrix(&rot_angles, eye_orient);
+	rot_angles.p *= (180/PI);
+	rot_angles.b *= (180/PI);
+	rot_angles.h *= (180/PI);
+	gr_printf(20, 100 - font_height, "Xr:%f Yr:%f Zr:%f", rot_angles.p, rot_angles.b, rot_angles.h);
+}
+
 #if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 void game_show_standalone_framerate()
 {
@@ -3698,16 +3743,53 @@ DCF(view, "Sets the percent of the 3d view to render.")
 
 
 // Set the clip region for the 3d rendering window
-void game_set_view_clip()
+void game_reset_view_clip()
 {
-	if ((Game_mode & GM_DEAD) || (supernova_active() >= 2))	{
+	Cutscene_bar_flags = CUB_NONE;
+	Cutscene_delta_time = 1.0f;
+	Cutscene_bars_progress = 1.0f;
+}
+void game_set_view_clip(float frametime)
+{
+	if ((Game_mode & GM_DEAD) || (supernova_active() >= 2))
+	{
 		// Set the clip region for the letterbox "dead view"
 		int yborder = gr_screen.max_h/4;
 
 		//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
 		// J.S. I've changed my ways!! See the new "no constants" code!!!
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2 );	
-	} else {
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+	}
+	else if((Cutscene_bar_flags & CUB_GRADUAL) && Cutscene_bars_progress < 1.0f)
+	{
+		//Determine how far along we are
+		Assert(Cutscene_delta_time > 0.0f);
+
+		Cutscene_bars_progress += frametime / Cutscene_delta_time;
+		if(Cutscene_bars_progress >= 1.0f)
+		{
+			//Reset this stuff
+			Cutscene_delta_time = 1.0f;
+			Cutscene_bars_progress = 1.0f;
+		}
+
+		//Figure out where the bars should be
+		int yborder;
+		if(Cutscene_bar_flags & CUB_CUTSCENE)
+			yborder = fl2i(Cutscene_bars_progress*(gr_screen.max_h/8));
+		else
+			yborder = gr_screen.max_h/6 - fl2i(Cutscene_bars_progress*(gr_screen.max_h/8));
+
+		//Set teh clipping
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+	}
+	else if(Cutscene_bar_flags & CUB_CUTSCENE)
+	{
+		int yborder = gr_screen.max_h/6;
+
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+	}
+	else {
 		// Set the clip region for normal view
 		if ( View_percent >= 100 )	{
 			gr_reset_clip();
@@ -3725,7 +3807,7 @@ void game_set_view_clip()
 			xborder = ( gr_screen.max_w*(100-fi) )/200;
 			yborder = ( gr_screen.max_h*(100-fi) )/200;
 
-			gr_set_clip(xborder, yborder, gr_screen.max_w-xborder*2,gr_screen.max_h-yborder*2 );
+			gr_set_clip(xborder, yborder, gr_screen.max_w-xborder*2,gr_screen.max_h-yborder*2, false );
 		}
 	}
 }
@@ -4294,18 +4376,13 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 	static int last_Viewer_mode = 0;
 	static int last_Game_mode = 0;
 	static int last_Viewer_objnum = -1;
+	static float last_Viewer_zoom = Viewer_zoom;
 
 	//First, make sure we take into account 2D Missions.
 	//These replace the normal player in-cockpit view with a topdown view.
 	if(The_mission.flags & MISSION_FLAG_2D_MISSION)
 	{
-		if(!(Viewer_mode & VM_EXTERNAL)
-			&& !(Viewer_mode & VM_DEAD_VIEW)
-			&& !(Viewer_mode & VM_CHASE)
-			&& !(Viewer_mode & VM_OTHER_SHIP)
-			&& !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED)
-			&& !(Viewer_mode & VM_WARP_CHASE)
-			&& !(Viewer_mode & VM_WARPIN_ANCHOR))
+		if(!Viewer_mode)
 		{
 			Viewer_mode = VM_TOPDOWN;
 		}
@@ -4323,6 +4400,11 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 			((last_Viewer_mode & VM_WARP_CHASE) && !(Viewer_mode & VM_WARP_CHASE)) ||						// warp-chase to non warp-chase
 			(!(last_Viewer_mode & VM_OTHER_SHIP) && (Viewer_mode & VM_OTHER_SHIP)) ||						// non other-ship to other-ship
 			((last_Viewer_mode & VM_OTHER_SHIP) && !(Viewer_mode & VM_OTHER_SHIP)) ||						// other-ship to non-other ship
+			(!(last_Viewer_mode & VM_FREECAMERA) && (Viewer_mode & VM_FREECAMERA)) ||
+			((last_Viewer_mode & VM_FREECAMERA) && !(Viewer_mode & VM_FREECAMERA)) ||
+			(!(last_Viewer_mode & VM_TOPDOWN) && (Viewer_mode & VM_TOPDOWN)) ||
+			((last_Viewer_mode & VM_TOPDOWN) && !(Viewer_mode & VM_TOPDOWN)) ||
+			(last_Viewer_zoom != Viewer_zoom) ||
 			((Viewer_mode & VM_OTHER_SHIP) && (last_Viewer_objnum != Player_ai->target_objnum)) 		// other ship mode, but targets changes
 			) {
 
@@ -4330,10 +4412,11 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 		neb2_eye_changed();
 	}		
 
-	if ( (last_Viewer_mode != Viewer_mode) || (last_Game_mode != Game_mode) )	{
+	if ( (last_Viewer_mode != Viewer_mode) || (last_Game_mode != Game_mode) || (last_Viewer_zoom != Viewer_zoom))	{
 		//mprintf(( "************** Camera cut! ************\n" ));
 		last_Viewer_mode = Viewer_mode;
 		last_Game_mode = Game_mode;
+		last_Viewer_zoom = Viewer_zoom;
 
 		// Camera moved.  Tell stars & debris to not do blurring.
 		stars_camera_cut();		
@@ -4345,7 +4428,10 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 		player_display_packlock_view();
 	}
 	
-	game_set_view_clip();
+	if(!Time_compression_locked)
+		game_set_view_clip(flFrametime);
+	else
+		game_set_view_clip(flRealframetime);
 
 	if (Game_mode & GM_DEAD) {
 		vector	vec_to_deader, view_pos;
@@ -4427,7 +4513,8 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 		if (!(Game_mode & (GM_DEAD | GM_DEAD_BLEW_UP))) {
 			Viewer_mode &= ~VM_DEAD_VIEW;
 
-			Viewer_obj = Player_obj;
+			if(!(Viewer_mode & VM_FREECAMERA))
+				Viewer_obj = Player_obj;
  
 			if (Viewer_mode & VM_OTHER_SHIP) {
 				if (Player_ai->target_objnum != -1){
@@ -4441,7 +4528,11 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 				last_Viewer_objnum = -1;
 			}
 
-			if (Viewer_mode & VM_EXTERNAL) {
+			if(Viewer_mode & VM_FREECAMERA) {
+				Viewer_obj = NULL;
+				*eye_pos = *Free_camera->get_position();
+				*eye_orient = *Free_camera->get_orientation();
+			} else if (Viewer_mode & VM_EXTERNAL) {
 				matrix	tm, tm2;
 
 				vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);
@@ -4541,10 +4632,15 @@ void game_render_frame_setup(vector *eye_pos, matrix *eye_orient)
 		}
 	}
 
-	apply_hud_shake(eye_orient);
+	if(!(Viewer_mode & VM_FREECAMERA))
+		apply_hud_shake(eye_orient);
 
 	// setup neb2 rendering
 	neb2_render_setup(eye_pos, eye_orient);
+	if(!Time_compression_locked)
+		game_set_view_clip(flFrametime);
+	else
+		game_set_view_clip(flRealframetime);
 }
 
 #ifndef NDEBUG
@@ -4651,7 +4747,10 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	}
 	//================ END OF 3D RENDERING STUFF ====================
 
-	hud_show_radar();
+	if(!(Viewer_mode & VM_FREECAMERA))
+	{
+		hud_show_radar();
+	}
 
 #ifndef NO_NETWORK
 	if( (Game_detail_flags & DETAIL_FLAG_HUD) && !(Game_mode & GM_MULTIPLAYER) || ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER) ) ) {
@@ -5204,6 +5303,49 @@ void game_render_hud_3d(vector *eye_pos, matrix *eye_orient)
 	g3_end_frame();
 }
 
+//100% blackness
+void game_reset_shade_frame()
+{
+	Fade_type = FI_NONE;
+	Fade_delta_time = 1.0f;
+	gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
+}
+void game_shade_frame(float frametime)
+{
+	if(Viewer_shader.c == 0.0f && Fade_type != FI_FADEOUT)
+		return;
+
+	//Fade in or out if necessary
+	if(Fade_type == FI_FADEOUT)
+	{
+		Viewer_shader.c += frametime * (255.0f / Fade_delta_time);
+	}
+	else if(Fade_type == FI_FADEIN)
+	{
+		Viewer_shader.c -= frametime * (255.0f / Fade_delta_time);
+	}
+
+	//Limit and set fade type if done
+	if(Viewer_shader.c < 0.0f)
+	{
+		Viewer_shader.c = 0.0f;
+
+		if(Fade_type == FI_FADEIN)
+			Fade_type = FI_NONE;
+	}
+	if(Viewer_shader.c > 255.0f)
+	{
+		Viewer_shader.c = 255.0f;
+
+		if(Fade_type == FI_FADEOUT)
+			Fade_type = FI_NONE;
+	}
+
+
+	//Set the shader
+	gr_set_shader(&Viewer_shader);
+	gr_shade(gr_screen.clip_left, gr_screen.clip_top, gr_screen.clip_width, gr_screen.clip_height);
+}
 
 void game_frame(int paused)
 {
@@ -5213,7 +5355,6 @@ void game_frame(int paused)
 	fix render3_time1=0, render3_time2=0;
 	fix flip_time1=0, flip_time2=0;
 	fix clear_time1=0, clear_time2=0;
-	
 	vector eye_pos;
 	matrix eye_orient;
 
@@ -5266,14 +5407,26 @@ void game_frame(int paused)
 		}
 	
 		//	Note: These are done even before the player enters, else buffers can overflow.
-		if (! (Game_mode & GM_STANDALONE_SERVER)){
+		if (! (Game_mode & GM_STANDALONE_SERVER) && !(Viewer_mode & VM_FREECAMERA)){
 			radar_frame_init();
 		}
 	
 		shield_frame_init();
 	
+		//Do camera stuff
+		//This is for the warpout cam
 		if ( Player->control_mode != PCM_NORMAL )
 			camera_move();
+
+		//Do ingame cutscenes stuff
+		if(!Time_compression_locked)
+		{
+			cameras_do_frame(flFrametime);
+		}
+		else
+		{
+			cameras_do_frame(flRealframetime);
+		}
 	
 		if ( !Pre_player_entry && actually_playing ) {		   		
 			if (! (Game_mode & GM_STANDALONE_SERVER) ) {
@@ -5377,7 +5530,10 @@ void game_frame(int paused)
 			}
 			*/
 
-			hud_show_target_model();
+			if(!(Viewer_mode & VM_FREECAMERA))
+			{
+				hud_show_target_model();
+			}
 			
 
 			// check to see if we should display the death died popup
@@ -5420,7 +5576,8 @@ void game_frame(int paused)
 
 			gr_reset_clip();
 			game_get_framerate();
-			game_show_framerate();		
+			game_show_framerate();
+			game_show_eye_pos(&eye_pos, &eye_orient);
 
 			game_show_time_left();
 
@@ -5436,15 +5593,36 @@ void game_frame(int paused)
 #endif
 
 			// Draw the 2D HUD gauges
-			if(supernova_active() <	3){
-				game_render_hud_2d();
+			if(!(Viewer_mode & VM_FREECAMERA))
+			{
+				if(supernova_active() <	3){
+					game_render_hud_2d();
+				}
+
+				// Draw 3D HUD gauges			
+				game_render_hud_3d(&eye_pos, &eye_orient);
 			}
 
+			gr_reset_clip();
+			if(!Time_compression_locked)
+			{
+				subtitles_do_frame(flFrametime);
+			}
+			else
+			{
+				subtitles_do_frame(flRealframetime);
+			}
 			
-			game_set_view_clip();
-
-			// Draw 3D HUD gauges			
-			game_render_hud_3d(&eye_pos, &eye_orient);									
+			if(!Time_compression_locked)
+			{
+				game_set_view_clip(flFrametime);
+				game_shade_frame(flFrametime);
+			}
+			else
+			{
+				game_set_view_clip(flRealframetime);
+				game_shade_frame(flRealframetime);
+			}
 
 			game_tst_frame();
 
@@ -5590,6 +5768,29 @@ void game_start_time()
 	#endif
 }
 
+void lock_time_compression(bool is_locked)
+{
+	Time_compression_locked = is_locked;
+}
+
+void change_time_compression(float multiplier)
+{
+	Game_time_compression = Desired_time_compression = Game_time_compression * multiplier;
+	Time_compression_change_rate = 0;
+}
+
+void set_time_compression(float multiplier, float change_time)
+{
+	if(change_time <= 0.0f)
+	{
+		Game_time_compression = Desired_time_compression = F1_0 * multiplier;
+		Time_compression_change_rate = 0;
+		return;
+	}
+
+	Desired_time_compression = F1_0 * multiplier;
+	Time_compression_change_rate = (Desired_time_compression - Game_time_compression)/change_time;
+}
 
 void game_set_frametime(int state)
 {
@@ -5666,6 +5867,19 @@ void game_set_frametime(int state)
 		debug_frametime = fl2f(flFrametime);
 #endif
 		Frametime = MAX_FRAMETIME;
+	}
+
+	flRealframetime = f2fl(Frametime);
+
+	//Handle changes in time compression
+	if(Game_time_compression != Desired_time_compression)
+	{
+		bool ascending = Desired_time_compression > Game_time_compression;
+		if(Time_compression_change_rate)
+			Game_time_compression += fixmul(Time_compression_change_rate, Frametime);
+		if((ascending && Game_time_compression > Desired_time_compression)
+			|| (!ascending && Game_time_compression < Desired_time_compression))
+			Game_time_compression = Desired_time_compression;
 	}
 
 	Frametime = fixmul(Frametime, Game_time_compression);
@@ -5907,7 +6121,11 @@ int game_poll()
 
 	switch (k) {
 		case KEY_DEBUGGED + KEY_BACKSP:
-			Int3();
+			if(!(Game_mode & GM_MULTIPLAYER))
+			{
+				gameseq_post_event(GS_EVENT_LAB);
+				k = 0;
+			}
 			break;
 
 		case KEY_F1:
@@ -5988,17 +6206,18 @@ int game_poll()
 
 		case KEY_PRINT_SCRN: 
 			{
-				static int counter = 0;
+				static int counter = os_config_read_uint(NULL, "ScreenshotNum", 0);
 				char tmp_name[127];
 
 				game_stop_time();
 
-				sprintf( tmp_name, NOX("screen%02d"), counter );
+				sprintf( tmp_name, NOX("screen%0002d"), counter );
 				counter++;
 				mprintf(( "Dumping screen to '%s'\n", tmp_name ));
 				gr_print_screen(tmp_name);
 
 				game_start_time();
+				os_config_write_uint(NULL, "ScreenshotNum", counter);
 			}
 
 			k = 0;
@@ -6152,7 +6371,9 @@ void game_process_event( int current_state, int event )
 		case GS_EVENT_TECH_MENU:
 			gameseq_set_state(GS_STATE_TECH_MENU);		
 			break;
-
+		case GS_EVENT_LAB:
+			gameseq_push_state(GS_STATE_LAB);
+			break;
 		case GS_EVENT_TRAINING_MENU:
 			gameseq_set_state(GS_STATE_TRAINING_MENU);		
 			break;
@@ -6507,14 +6728,14 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state(GS_STATE_INITIAL_PLAYER_SELECT);
 	#else			
 			// see if the command line option has been set to use the last pilot, and act acoordingly
-			if( player_select_get_last_pilot() ) {								
+			if( player_select_get_last_pilot() ) {	
 				// always enter the main menu -- do the automatic network startup stuff elsewhere
 				// so that we still have valid checks for networking modes, etc.
 				gameseq_set_state(GS_STATE_MAIN_MENU);
 			} else {
 				gameseq_set_state(GS_STATE_INITIAL_PLAYER_SELECT);
 			}
-	#endif
+#endif
 			break;
 
 		case GS_EVENT_MULTI_MISSION_SYNC:
@@ -6578,6 +6799,7 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_TRAINING_PAUSED:
 		case GS_STATE_EVENT_DEBUG:				
 		case GS_STATE_GAMEPLAY_HELP:
+		case GS_STATE_LAB:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
 	}
@@ -6741,7 +6963,7 @@ void game_leave_state( int old_state, int new_state )
 #endif  // ifndef NO_NETWORK
 
 				freespace_stop_mission();			
-				Game_time_compression = F1_0;
+				set_time_compression(1.0f);
 			}
 			break;
 
@@ -6935,6 +7157,10 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_LOOP_BRIEF:
 			loop_brief_close();
 			break;
+
+		case GS_STATE_LAB:
+			lab_close();
+			break;
 	}
 }
 
@@ -6957,7 +7183,7 @@ void game_enter_state( int old_state, int new_state )
 			}
 #endif  // ifndef NO_NETWORK
 
-			Game_time_compression = F1_0;
+			set_time_compression(1.0f);
 	
 			// determine which ship this guy is currently based on
 #if defined(PRESS_TOUR_BUILD) || defined(PD_BUILD)
@@ -6986,7 +7212,7 @@ void game_enter_state( int old_state, int new_state )
 			if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU))
 				mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
 
-			Game_time_compression = F1_0;
+			set_time_compression(1.0f);
 
 			if ( red_alert_mission() ) {
 				gameseq_post_event(GS_EVENT_RED_ALERT);
@@ -7096,7 +7322,10 @@ void game_enter_state( int old_state, int new_state )
  
 		case GS_STATE_GAME_PLAY:
 			// reset time compression to default level so it's right at the beginning of a mission - taylor
-			Game_time_compression = F1_0;
+			if(old_state != GS_STATE_GAME_PAUSED)
+			{
+				//Game_time_compression = F1_0;
+			}
 
 			// coming from the gameplay state or the main menu, we might need to load the mission
 			if ( (Game_mode & GM_NORMAL) && ((old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_GAME_PLAY) || (old_state == GS_STATE_DEATH_BLEW_UP)) ) {
@@ -7347,7 +7576,7 @@ void mouse_force_pos(int x, int y);
 				Net_player->state = NETPLAYER_STATE_WAITING;			
 				send_netplayer_update_packet();				
 				Missiontime = 0;
-				Game_time_compression = F1_0;
+				set_time_compression(1.0f);
 				break;
 			case MULTI_SYNC_INGAME:
 				multi_sync_init();
@@ -7410,6 +7639,9 @@ void mouse_force_pos(int x, int y);
 			loop_brief_init();
 			break;
 
+		case GS_STATE_LAB:
+			lab_init();
+			break;
 	} // end switch
 }
 
@@ -7727,6 +7959,11 @@ void game_do_state(int state)
 		case GS_STATE_LOOP_BRIEF:
 			game_set_frametime(GS_STATE_LOOP_BRIEF);
 			loop_brief_do();
+			break;
+
+		case GS_STATE_LAB:
+			game_set_frametime(GS_STATE_LAB);
+			lab_do_frame(flFrametime);
 			break;
 
    } // end switch(gs_current_state)

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-01-28 11:06:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2005-03-03 06:05:29 $
+ * $Author: wmcoolmon $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/01/28 11:06:23  Goober5000
+ * changed a bunch of transpose-rotate sequences to use unrotate instead
+ * --Goober5000
+ *
  * Revision 2.16  2005/01/27 05:26:07  Goober5000
  * added a useful bit of information to vm_vec_rotate and vm_vec_unrotate
  * --Goober5000
@@ -830,8 +834,6 @@ float vm_vec_normalize_quick(vector *src)
 	float im;
 
 	im = vm_vec_imag(src);
-
-	Assert(im > 0.0f);
 
 	src->xyz.x = src->xyz.x*im;
 	src->xyz.y = src->xyz.y*im;

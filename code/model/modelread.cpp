@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-03-01 23:08:24 $
- * $Author: taylor $
+ * $Revision: 2.59 $
+ * $Date: 2005-03-03 06:05:30 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/03/01 23:08:24  taylor
+ * make sure starfield bitmaps render when not in HTL mode
+ * slight header fix for osapi.h
+ * add some string overflow protection to modelread and bmpman
+ * s/NO_NETWORKING/NO_NETWORK/g  (Inferno builds)
+ *
  * Revision 2.57  2005/03/01 06:55:41  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -4133,10 +4139,10 @@ void model_clear_instance(int model_num)
 void model_clear_instance_info( submodel_instance_info * sii )
 {
 	sii->blown_off = 0;
-	sii->angs.p = 0.0f;
+	sii->angs.p = PI/2.0f;
 	sii->angs.b = 0.0f;
 	sii->angs.h = 0.0f;
-	sii->prev_angs.p = 0.0f;
+	sii->prev_angs.p = PI/2.0f;
 	sii->prev_angs.b = 0.0f;
 	sii->prev_angs.h = 0.0f;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.4 $
- * $Date: 2004-10-31 21:31:34 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2005-03-03 06:05:27 $
+ * $Author: wmcoolmon $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/10/31 21:31:34  taylor
+ * bump COUNT_ESTIMATE, reset time compression at the start of a mission, new pilot file support, add feature_disabled popup
+ *
  * Revision 2.3  2004/08/11 05:06:22  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -196,6 +199,7 @@
 
 // frametime/missiontime variables
 extern fix Frametime;
+extern float flRealframetime;
 extern float flFrametime;
 extern fix Missiontime;
 
@@ -210,6 +214,7 @@ extern int Game_mode;
 extern int Game_do_state_should_skip;
 
 // time compression
+extern bool Time_compression_locked;
 extern fix Game_time_compression;
 
 // Set if subspace is active this level
@@ -272,6 +277,15 @@ int game_poll();
 
 // function to read keyboard stuff
 void game_process_keys();
+
+// call this when you don't want the user changing time compression
+void lock_time_compression(bool is_locked);
+
+// call this to set time compression properly
+void set_time_compression(float multiplier, float change_time = 0);
+
+//call this to change the relative time compression (ie double it)
+void change_time_compression(float multiplier);
 
 // call this to set frametime properly (once per frame)
 void game_set_frametime(int state);

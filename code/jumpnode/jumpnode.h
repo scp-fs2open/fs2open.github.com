@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.5 $
- * $Date: 2004-08-11 05:06:26 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-03 06:05:28 $
+ * $Author: wmcoolmon $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/08/11 05:06:26  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.4  2004/07/01 01:12:32  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -57,23 +60,55 @@
 #include <stdlib.h>
 
 #include "globalincs/globals.h"
+#include "globalincs/linklist.h"
+#include "graphics/2d.h"
 
 struct vector;
 struct object;
 
 #define MAX_JUMP_NODES	50
 
-typedef struct {
-	int	modelnum;
-	int	objnum;						// objnum of this jump node
-	char	name[NAME_LENGTH];
-} jump_node_struct;
+//Jump node flags
+#define JN_USE_DISPLAY_COLOR		(1<<0)		//Use display_color instead of HUD color
+#define JN_SHOW_POLYS				(1<<1)		//Display model normally, rather than as wireframe
+#define JN_HIDE						(1<<2)		//Hides a jump node
 
-extern int Num_jump_nodes;
-extern jump_node_struct Jump_nodes[MAX_JUMP_NODES];
+class jump_node : public linked_list
+{
+	char m_name[NAME_LENGTH];
 
-int	jumpnode_create(vector *pos, char* file_name);
-void	jumpnode_render(object *jumpnode_objp, vector *pos, vector *view_pos = NULL);
-void	jumpnode_render_all();	// called by FRED
+	int	m_modelnum;
+	int	m_objnum;						// objnum of this jump node
+
+	int m_flags;
+	color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
+public:
+	//Construction
+	jump_node(vector *pos);
+	~jump_node();
+	
+	//Getting
+	int get_modelnum(){return m_modelnum;}
+	object *get_obj(){return &Objects[m_objnum];}
+	char *get_name_ptr(){return m_name;}
+	bool is_hidden(){if(m_flags & JN_HIDE){return true;}else{return false;}}
+
+	//Setting
+	void set_alphacolor(int r, int g, int b, int alpha);
+	void set_model(char *model_name, bool show_polys=false);
+	void show(bool show){if(show){m_flags&=~JN_HIDE;}else{m_flags|=JN_HIDE;}}
+
+	//Rendering
+	void render(vector *pos, vector *view_pos = NULL);
+};
+
+jump_node *jumpnode_get_by_name(char *name);
+
+//Given an object, returns which jump node it's in
+jump_node *jumpnode_get_which_in(object *objp);
+
+void jumpnode_level_init();
+void jumpnode_render_all();	// called by FRED
+void jumpnode_level_close();
 
 #endif

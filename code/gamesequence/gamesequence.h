@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.h $
- * $Revision: 2.5 $
- * $Date: 2004-08-11 05:06:23 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-03 06:05:27 $
+ * $Author: wmcoolmon $
  *
  * Header file for Game Sequencing items
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/08/11 05:06:23  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.4  2004/05/03 21:22:20  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -417,6 +420,7 @@
 #define GS_EVENT_LOOP_BRIEF						61		// campaign loop brief
 #define GS_EVENT_CAMPAIGN_CHEAT					62		// skip to a mission in a campaign
 #define GS_EVENT_NET_CHAT						63		// #Kazan# - Go to net chat for Fs2NetD
+#define GS_EVENT_LAB							64		// WMC - I-FRED concept
 
 // IMPORTANT:  When you add a new event, update the initialization for GS_event_text[]
 //             which is done in GameSequence.cpp
@@ -477,6 +481,7 @@ extern char *GS_event_text[];		// text description for the GS_EVENT_* #defines a
 #define GS_STATE_END_DEMO							48		// end of demo campaign (upsell then main menu)
 #define GS_STATE_LOOP_BRIEF						49
 #define GS_STATE_NET_CHAT						50			// #Kazan# - state for the pxo chat readded by penguin
+#define GS_STATE_LAB							51
 
 // IMPORTANT:  When you add a new state, update the initialization for GS_state_text[]
 //             which is done in GameSequence.cpp

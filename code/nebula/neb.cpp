@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-02-23 04:55:08 $
- * $Author: taylor $
+ * $Revision: 2.34 $
+ * $Date: 2005-03-03 06:05:30 $
+ * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/02/23 04:55:08  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.32  2005/02/04 20:06:04  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -1564,10 +1567,6 @@ void neb2_pre_render(vector *eye_pos, matrix *eye_orient)
 		ex_scale = (float)this_esize / (float)gr_screen.max_w;
 		ey_scale = (float)this_esize / (float)gr_screen.max_h;
 	}	
-		
-	// restore the game clip stuff
-	extern void game_set_view_clip();
-	game_set_view_clip();	
 }
 
 // wacky scheme for smoothing colors

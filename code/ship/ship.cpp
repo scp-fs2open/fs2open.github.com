@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.166 $
- * $Date: 2005-03-02 21:24:47 $
- * $Author: taylor $
+ * $Revision: 2.167 $
+ * $Date: 2005-03-03 06:05:31 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.166  2005/03/02 21:24:47  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.165  2005/03/01 23:05:38  taylor
  * unbreak Linux build (not valid C/C++ anyway, block scope)
  *
@@ -2555,9 +2558,9 @@ strcpy(parse_error_text, temp_error);
 		sip->flags2 |= SIF2_DEFAULT_IN_TECH_DATABASE_M;
 
 	// Goober5000 - ensure number of banks checks out
-	if ((sip->flags & SIF_PLAYER_SHIP) && (sip->num_primary_banks > MAX_PLAYER_PRIMARY_BANKS))
+	if (sip->num_primary_banks > MAX_SHIP_PRIMARY_BANKS)
 	{
-		Warning(LOCATION, "Player-allowed ship %s has too many primary banks (%d).  Maximum for player-allowed ships is currently %d; maximum for all other ships is %d.\n", sip->name, sip->num_primary_banks, MAX_PLAYER_PRIMARY_BANKS, MAX_SHIP_PRIMARY_BANKS);
+		Error(LOCATION, "Sship %s has too many primary banks (%d).  Maximum for ships is currently %d.\n", sip->name, sip->num_primary_banks, MAX_SHIP_PRIMARY_BANKS);
 	}
 
 	if ((sip->flags & SIF_PLAYER_SHIP) && (sip->num_secondary_banks > MAX_PLAYER_SECONDARY_BANKS))
@@ -4987,7 +4990,6 @@ void ship_vanished(object *objp)
 void ship_departed( int num )
 {
 	ship *sp;
-	int i;
 
 	sp = &Ships[num];
 
@@ -5006,24 +5008,11 @@ void ship_departed( int num )
 
 	// see if this ship departed within the radius of a jump node -- if so, put the node name into
 	// the secondary mission log field
-	for ( i = 0; i < Num_jump_nodes; i++ ) {
-		float radius, dist;
-		vector ship_pos, node_pos;
-
-		ship_pos = Objects[sp->objnum].pos;
-		node_pos = Objects[Jump_nodes[i].objnum].pos;
-		radius = model_get_radius( Jump_nodes[i].modelnum );
-		dist = vm_vec_dist( &ship_pos, &node_pos );
-		if ( dist <= radius ) {
-			mission_log_add_entry(LOG_SHIP_DEPART, sp->ship_name, Jump_nodes[i].name, sp->wingnum);
-			break;
-		}
-		dist = 1.0f;
-	}
-
-	if ( i == Num_jump_nodes ){
+	jump_node *jnp = jumpnode_get_which_in(&Objects[sp->objnum]);
+	if(jnp)
+		mission_log_add_entry(LOG_SHIP_DEPART, sp->ship_name, jnp->get_name_ptr(), sp->wingnum);
+	else
 		mission_log_add_entry(LOG_SHIP_DEPART, sp->ship_name, NULL, sp->wingnum);
-	}
 		
 	ai_ship_destroy(num, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
 
@@ -8964,7 +8953,7 @@ int ship_select_next_primary(object *objp, int direction)
 		}
 		return 0;
 	}
-	else if ( swp->num_primary_banks > ((objp == Player_obj) ? MAX_PLAYER_PRIMARY_BANKS : MAX_SHIP_PRIMARY_BANKS) )
+	else if ( swp->num_primary_banks > MAX_SHIP_PRIMARY_BANKS )
 	{
 		Int3();
 		return 0;
@@ -8983,7 +8972,7 @@ int ship_select_next_primary(object *objp, int direction)
 			}
 			else
 			{
-				swp->current_primary_bank = MAX_PLAYER_PRIMARY_BANKS-1;
+				swp->current_primary_bank = swp->num_primary_banks - 1;
 			}
 		}
 		// now handle when not linked: cycle and constrain
@@ -8991,7 +8980,7 @@ int ship_select_next_primary(object *objp, int direction)
 		{
 			if ( direction == CYCLE_PRIMARY_NEXT )
 			{
-				if ( swp->current_primary_bank < MAX_PLAYER_PRIMARY_BANKS-1 )
+				if ( swp->current_primary_bank < swp->num_primary_banks - 1 )
 				{
 					swp->current_primary_bank++;
 				}
@@ -9032,7 +9021,7 @@ int ship_select_next_primary(object *objp, int direction)
 					}
 					else
 					{
-						swp->current_primary_bank = MAX_PLAYER_PRIMARY_BANKS-1;
+						swp->current_primary_bank = shipp->weapons.num_primary_banks-1;
 					}
 					break;
 				}

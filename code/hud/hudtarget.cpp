@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-03-02 21:24:44 $
- * $Author: taylor $
+ * $Revision: 2.52 $
+ * $Date: 2005-03-03 06:05:28 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.50  2005/01/30 03:26:11  wmcoolmon
  * HUD updates
  *
@@ -663,6 +666,7 @@ static int Toggle_text_alpha = 255;
 #define NUM_WEAPON_GAUGES	5
 #define NUM_HUD_SETTINGS	2
 hud_frames Weapon_gauges[NUM_HUD_SETTINGS][NUM_WEAPON_GAUGES];
+hud_frames New_weapon;
 int Weapon_gauges_loaded = 0;
 // for primaries
 int Weapon_gauge_primary_coords[NUM_HUD_SETTINGS][GR_NUM_RESOLUTIONS][3][2] =
@@ -1044,6 +1048,11 @@ void hud_stuff_reticle_list(reticle_list *rl, object *objp, float measure, int d
 //
 void hud_reticle_list_update(object *objp, float measure, int dot_flag)
 {
+	if(objp->type == OBJ_JUMP_NODE)
+	{
+		if(objp->jnp->is_hidden())
+			return;
+	}
 	reticle_list	*rl, *new_rl;
 	int				i;
 
@@ -1462,6 +1471,7 @@ void hud_weapons_init()
 	if ( !Weapon_gauges_loaded )
 	{
 		hud_warned = 0;
+		New_weapon.first_frame = bm_load("weapon6");
 
 		for (hud_index = 0; hud_index < NUM_HUD_SETTINGS; hud_index++)
 		{
@@ -2921,7 +2931,9 @@ void hud_target_in_reticle_new()
 			}
 			break;
 		case OBJ_JUMP_NODE:
-			mc.model_num = Jump_nodes[A->instance].modelnum;
+			if(A->jnp->is_hidden())
+				continue;
+			mc.model_num = A->jnp->get_modelnum();
 			break;
 		default:
 			Int3();	//	Illegal object type.
@@ -3879,7 +3891,7 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 #endif
 
 		case OBJ_JUMP_NODE:
-			modelnum = Jump_nodes[targetp->instance].modelnum;
+			modelnum = targetp->jnp->get_modelnum();
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
 
@@ -4558,6 +4570,7 @@ void hud_show_lead_indicator(vector *target_world_pos)
 			}
 
 			if ( indicator_frame >= 0 ) {
+				gr_unsize_screen_posf(&lead_target_vertex.sx, &lead_target_vertex.sy);
 				GR_AABITMAP(indicator_frame, fl2i(lead_target_vertex.sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(lead_target_vertex.sy - Lead_indicator_half[gr_screen.res][1]));				
 			}
 		}
@@ -5437,6 +5450,158 @@ void hud_show_weapons()
 	
 	emp_hud_string(Weapon_title_coords[ballistic_hud_index][gr_screen.res][0], Weapon_title_coords[ballistic_hud_index][gr_screen.res][1], EG_WEAPON_TITLE, XSTR( "weapons", 328));		
 
+	char	ammo_str[32];
+	int		i, w, h;
+	int res_diff = 12;
+	int name_res_diff = 10;
+	int y = gr_screen.res == 0 ? 293 : 545;
+	int name_y = gr_screen.res == 0 ? 285 : 537;
+
+	//Move gauge up a bit so we don't overlap onto the countermeasures
+	//On second thought, don't.
+	//y -= res_diff * np;
+	//name_y -= res_diff * np;
+	
+	for(i = 0; i < np; i++)
+	{
+		hud_set_gauge_color(HUD_WEAPONS_GAUGE);
+		if(i==1)
+		{
+			GR_AABITMAP(Weapon_gauges[ballistic_hud_index][1].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
+			
+		}
+		else if(i!=0)
+		{
+			if(New_weapon.first_frame != -1)
+				GR_AABITMAP(New_weapon.first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
+		}
+
+		if(i!=0)
+			y+=res_diff;
+
+		strcpy(name, Weapon_info[sw->primary_bank_weapons[i]].name);
+		if (Lcl_gr) {
+			lcl_translate_wep_name(name);
+		}
+		
+		// maybe modify name here to fit
+		if ( hud_gauge_maybe_flash(HUD_WEAPONS_GAUGE) == i ) {
+			hud_set_gauge_color(HUD_WEAPONS_GAUGE, HUD_C_BRIGHT);
+		} else {
+			hud_maybe_flash_weapon(i);
+		}
+		if ( (sw->current_primary_bank == i) || (Player_ship->flags & SF_PRIMARY_LINKED) ) {
+			emp_hud_printf(Weapon_plink_coords[gr_screen.res][0][0], name_y, EG_NULL, "%c", Lcl_special_chars + 2);
+		}
+		
+		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -1)
+		{
+			GR_AABITMAP(Weapon_info[sw->primary_bank_weapons[i]].hud_image_index, Weapon_pname_coords[gr_screen.res][0][0], name_y);
+		}
+		else
+		{
+			emp_hud_printf(Weapon_pname_coords[gr_screen.res][0][0], name_y, EG_WEAPON_P2, "%s", name);					
+		}
+		name_y += res_diff;
+
+		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC)
+		{
+			// print out the ammo right justified
+			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
+
+			// get rid of #
+			end_string_at_first_hash_symbol(ammo_str);
+
+			hud_num_make_mono(ammo_str);
+			gr_get_string_size(&w, &h, ammo_str);
+
+			emp_hud_string(Weapon_primary_ammo_x[gr_screen.res] - w, y, EG_NULL, ammo_str);
+		}
+	}
+
+	//name_y = gr_screen.res==0 ? 309 : 561;
+	//y = gr_screen.res==0 ? 318 : 570;
+
+	weapon_info	*wip;
+	char	weapon_name[NAME_LENGTH + 10];
+
+	GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
+	y+=res_diff;
+
+	res_diff=9;
+	name_res_diff=9;
+
+	for(i = 0; i < ns; i++)
+	{
+		hud_set_gauge_color(HUD_WEAPONS_GAUGE);
+
+		hud_maybe_flash_weapon(np+i);
+		wip = &Weapon_info[sw->secondary_bank_weapons[i]];
+
+		if(i!=0)
+			GR_AABITMAP(Weapon_gauges[ballistic_hud_index][3].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][2][0], y);
+		
+		// HACK - make Cluster Bomb fit on the HUD.
+		if(!stricmp(wip->name,"cluster bomb")){
+			strcpy(weapon_name, NOX("Cluster"));
+		} else {
+			strcpy(weapon_name, wip->name);
+		}
+
+		// get rid of #
+		end_string_at_first_hash_symbol(weapon_name);
+		
+		if ( sw->current_secondary_bank == i ) {
+			emp_hud_printf(Weapon_sunlinked_x[gr_screen.res], name_y, EG_NULL, "%c", Lcl_special_chars + 2);			
+
+			if ( Player_ship->flags & SF_SECONDARY_DUAL_FIRE ) {
+				emp_hud_printf(Weapon_slinked_x[gr_screen.res], name_y, EG_NULL, "%c", Lcl_special_chars + 2);				
+			}
+
+			if(wip->hud_image_index != -1)
+			{
+				GR_AABITMAP(wip->hud_image_index, Weapon_secondary_name_x[gr_screen.res], name_y);
+			}
+			else
+			{
+				emp_hud_string(Weapon_secondary_name_x[gr_screen.res], name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
+			}
+
+			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
+				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
+				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
+					emp_hud_printf(Weapon_secondary_reload_x[gr_screen.res], name_y, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));					
+				}
+			}
+		} else {
+			emp_hud_string(Weapon_secondary_name_x[gr_screen.res], name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);			
+		}
+
+		int ammo=sw->secondary_bank_ammo[i];
+		/*if ((Tertiary_weapon_info[Player_ship->tertiary_weapon_info_idx].type == TWT_AMMO_POD) && (i == Player_ship->ammopod_current_secondary))
+		{
+			ammo+=Player_ship->ammopod_current_ammo;
+		}*/
+
+		// print out the ammo right justified
+		sprintf(ammo_str, "%d", ammo);
+		hud_num_make_mono(ammo_str);
+		gr_get_string_size(&w, &h, ammo_str);
+
+		emp_hud_string(Weapon_secondary_ammo_x[gr_screen.res] - w, name_y, EG_NULL, ammo_str);		
+
+		y += res_diff;
+		name_y += name_res_diff;
+	}
+
+	if(ns==0)
+		emp_hud_string(Weapon_pname_coords[gr_screen.res][0][0], name_y, EG_WEAPON_S1, XSTR( "<none>", 329));	
+
+	y -= res_diff;
+	GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][0][0], y);
+
+	//GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
+/*
 	if (np == 0)
 	{
 		// draw bottom of border		
@@ -5594,6 +5759,7 @@ void hud_show_weapons()
 		Int3();	// can't happen - get Alan
 		return;
 	}
+	*/
 }
 
 // check if targeting is possible based on sensors strength
@@ -6274,6 +6440,7 @@ void hudtarget_page_in()
 	for ( i = 0; i < NUM_WEAPON_GAUGES; i++ ) {
 		bm_page_in_aabitmap( Weapon_gauges[ballistic_hud_index][i].first_frame, Weapon_gauges[ballistic_hud_index][i].num_frames);
 	}
+	bm_page_in_aabitmap( New_weapon.first_frame, New_weapon.num_frames );
 	bm_page_in_aabitmap( Lead_indicator_gauge.first_frame, Lead_indicator_gauge.num_frames);
 	bm_page_in_aabitmap( Wenergy_bar_gauge.first_frame, Wenergy_bar_gauge.num_frames);
 	bm_page_in_aabitmap( Aburn_bar_gauge.first_frame, Aburn_bar_gauge.num_frames);

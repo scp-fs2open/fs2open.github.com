@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-03-02 21:24:46 $
- * $Author: taylor $
+ * $Revision: 2.34 $
+ * $Date: 2005-03-03 06:05:30 $
+ * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/03/02 21:24:46  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.32  2005/03/01 06:55:42  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -2091,7 +2094,8 @@ void obj_render(object *obj)
 		cmeasure_render(obj);
 		break;
 	case OBJ_JUMP_NODE:
-		jumpnode_render(obj, &obj->pos, &Eye_position);
+		obj->jnp->render(&obj->pos, &Eye_position);
+//		jumpnode_render(obj, &obj->pos, &Eye_position);
 		break;
 	case OBJ_WAYPOINT:
 		if (Show_waypoints)	{

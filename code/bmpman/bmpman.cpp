@@ -10,13 +10,19 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.45 $
- * $Date: 2005-03-01 23:08:24 $
- * $Author: taylor $
+ * $Revision: 2.46 $
+ * $Date: 2005-03-03 06:05:26 $
+ * $Author: wmcoolmon $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/03/01 23:08:24  taylor
+ * make sure starfield bitmaps render when not in HTL mode
+ * slight header fix for osapi.h
+ * add some string overflow protection to modelread and bmpman
+ * s/NO_NETWORKING/NO_NETWORK/g  (Inferno builds)
+ *
  * Revision 2.44  2005/02/23 04:51:55  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots
  *
@@ -1624,6 +1630,8 @@ void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int 
 	int bitmapnum = handle % MAX_BITMAPS;
 
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!	
+	if(bm_bitmaps[bitmapnum].handle != handle)
+		Assert(true);
 	
 	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_NONE) || (bm_bitmaps[bitmapnum].handle != handle) ) {
 		if (w) *w = 0;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-01-16 22:39:08 $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-03 06:05:27 $
  * $Author: wmcoolmon $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/01/16 22:39:08  wmcoolmon
+ * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
+ *
  * Revision 2.9  2004/07/26 20:47:26  Kazan
  * remove MCD complete
  *
@@ -577,6 +580,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{				  KEY_SHIFTED | KEY_PADENTER,	-1, SHIP_TAB, true, "Down Thrust", CC_TYPE_CONTINUOUS},
 	{ KEY_ALTED |     KEY_SHIFTED | KEY_Q,			-1, COMPUTER_TAB, true, "Toggle HUD Wireframe Targetbox"},
 	{							-1,					-1,	COMPUTER_TAB, false, "Top-down View"},
+	{							-1,					-1, COMPUTER_TAB, false, "Track targeted object", CC_TYPE_CONTINUOUS},
 
 #if defined(ENABLE_AUTO_PILOT)
 	// Auto Navigation Systen

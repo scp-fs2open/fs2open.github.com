@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.82 $
- * $Date: 2005-03-02 21:24:45 $
- * $Author: taylor $
+ * $Revision: 2.83 $
+ * $Date: 2005-03-03 06:05:29 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.81  2005/03/01 06:55:41  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -3887,32 +3890,40 @@ void parse_waypoint_list(mission *pm)
 
 void parse_waypoints(mission *pm)
 {
-	int z;
 	vector pos;
 
 	required_string("#Waypoints");
 
-	Num_jump_nodes = 0;
-	char file_name[64] = "subspacenod.pof";
+	jump_node *jnp;
+	char file_name[64];
 
 	while (optional_string("$Jump Node:")) {
-		Assert(Num_jump_nodes < MAX_JUMP_NODES);
 		stuff_vector(&pos);
-		if(optional_string("$Model File:")){
+		jnp = new jump_node(&pos);
+		Assert(jnp != NULL);
+
+		if (optional_string("$Jump Node Name:") || optional_string("+Jump Node Name:")) {
+			stuff_string(jnp->get_name_ptr(), F_NAME, NULL);
+		}
+
+		if(optional_string("+Model File:")){
 			stuff_string(file_name, F_NAME, NULL);
-		}else{
-			strcpy(file_name, "subspacenod.pof");
-		}
-		z = jumpnode_create(&pos, file_name);
-		Assert(z >= 0);
-
-		if (optional_string("$Jump Node Name:")) {
-			stuff_string(Jump_nodes[Num_jump_nodes - 1].name, F_NAME, NULL);
+			jnp->set_model(file_name);
 		}
 
-		// If no name exists, then use a standard name
-		if ( Jump_nodes[Num_jump_nodes - 1].name[0] == 0 ) {
-			sprintf(Jump_nodes[Num_jump_nodes - 1].name, "Jump Node %d", Num_jump_nodes);
+		if(optional_string("+Alphacolor:")) {
+			ubyte r,g,b,a;
+			stuff_byte(&r);
+			stuff_byte(&g);
+			stuff_byte(&b);
+			stuff_byte(&a);
+			jnp->set_alphacolor(r, g, b, a);
+		}
+
+		if(optional_string("+Hidden:")) {
+			int hide;
+			stuff_boolean(&hide);
+			jnp->show(!hide);
 		}
 	}
 

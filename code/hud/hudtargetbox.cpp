@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-03-02 21:24:44 $
- * $Author: taylor $
+ * $Revision: 2.45 $
+ * $Date: 2005-03-03 06:05:28 $
+ * $Author: wmcoolmon $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.43  2005/01/30 03:26:11  wmcoolmon
  * HUD updates
  *
@@ -907,6 +910,12 @@ void hud_targetbox_show_extra_ship_info(ship *target_shipp, object *target_objp)
 // Render a jump node on the target monitor
 void hud_render_target_jump_node(object *target_objp)
 {
+	if(target_objp->jnp->is_hidden())
+	{
+		hud_cease_targeting();
+		return;
+	}
+
 	char			outstr[256];
 	vector		obj_pos = {0.0f,0.0f,0.0f};
 	vector		camera_eye = {0.0f,0.0f,0.0f};
@@ -931,7 +940,7 @@ void hud_render_target_jump_node(object *target_objp)
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
 		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f);
-		jumpnode_render( target_objp, &obj_pos );
+		target_objp->jnp->render( &obj_pos );
 		hud_render_target_close();
 	}
 	
@@ -941,7 +950,7 @@ void hud_render_target_jump_node(object *target_objp)
 	// hud_set_default_color();
 	hud_set_gauge_color(HUD_TARGET_MONITOR);
 
-	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, Jump_nodes[target_objp->instance].name);	
+	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, target_objp->jnp->get_name_ptr());	
 
 	dist = vm_vec_dist_quick(&target_objp->pos, &Player_obj->pos);
 
@@ -1393,12 +1402,15 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 	y1 = fl2i(0.5f + Cargo_scan_coords[gr_screen.res][1] + ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][3] ));
 	x2 = x1 + Cargo_scan_coords[gr_screen.res][2];
 
+	gr_resize_screen_pos(NULL, &y1);
+
 	gr_line(x1, y1, x2, y1);
 
 	// RT Changed this to be optional
 	if(Cmdline_dualscanlines) {
 		// added 2nd horizontal scan line - phreak
 		y1 = fl2i(Cargo_scan_coords[gr_screen.res][1] + Cargo_scan_coords[gr_screen.res][3] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][3] ));
+		gr_resize_screen_pos(NULL, &y1);
 		gr_line(x1, y1, x2, y1);
 	}
 
@@ -1407,12 +1419,16 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 	y1 = Cargo_scan_coords[gr_screen.res][1];
 	y2 = y1 + Cargo_scan_coords[gr_screen.res][3];
 
+	gr_resize_screen_pos(NULL, &y1);
+	gr_resize_screen_pos(NULL, &y2);
 	gr_line(x1, y1-3, x1, y2-1);
 
 	// RT Changed this to be optional
 	if(Cmdline_dualscanlines) {
 		// added 2nd vertical scan line - phreak
 		x1 = fl2i(0.5f + Cargo_scan_coords[gr_screen.res][2] + Cargo_scan_coords[gr_screen.res][0] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][2] ));
+		gr_resize_screen_pos(NULL, &y1);
+		gr_resize_screen_pos(NULL, &y2);
 		gr_line(x1, y1-3, x1, y2-1);
 	}
 }

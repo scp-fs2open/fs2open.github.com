@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-03-02 21:24:41 $
- * $Author: taylor $
+ * $Revision: 2.44 $
+ * $Date: 2005-03-03 06:05:28 $
+ * $Author: wmcoolmon $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/03/02 21:24:41  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.42  2005/02/21 05:40:16  Goober5000
  * restored release version of some cheat codes; removed a cheat for cloaking
  * --Goober5000
@@ -495,6 +498,7 @@
 #include "menuui/mainhallmenu.h"
 #include "missionui/missionpause.h"
 #include "hud/hudgauges.h"
+#include "freespace2/freespace.h"	//For time compression stuff
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -545,8 +549,9 @@ char CheatBuffer[CHEAT_BUFFER_LEN+1];
 	char *Cheat_code_pirate = NOX("MAP4YP[4=-2uC(yJ^");		// arrrrwalktheplank	
 	char *Cheat_code_skip = NOX("7!ICkSI\"(8n3JesBP");			// skipmemymissionyo
 #endif
-										  // 666)6=N79+Z45=BE0e
+									  // 666)6=N79+Z45=BE0e
 int Tool_enabled = 0;
+bool Perspective_locked=false;
 
 	/*
 #else 
@@ -571,8 +576,6 @@ int Tool_enabled = 0;
 
 extern int AI_watch_object;
 extern int Countermeasures_enabled;
-
-extern fix Game_time_compression;
 
 extern float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, float damage);
 
@@ -1069,7 +1072,7 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_COMMA:
 			if ( Game_mode & GM_NORMAL ) {
 				if ( Game_time_compression > (F1_0/MAX_TIME_DIVIDER) ) {
-					Game_time_compression /= 2;
+					change_time_compression(0.5);
 				} else {
 					gamesnd_play_error_beep();
 				}
@@ -1083,7 +1086,7 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_PERIOD:
 			if ( Game_mode & GM_NORMAL ) {
 				if ( Game_time_compression < (F1_0*MAX_TIME_MULTIPLIER) ) {
-					Game_time_compression *= 2;
+					change_time_compression(2);
 				} else {
 					gamesnd_play_error_beep();
 				}
@@ -2457,6 +2460,7 @@ int button_function_critical(int n, net_player *p = NULL)
 		case VIEW_SLEW:
 		case VIEW_EXTERNAL:
 		case VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK:
+		case VIEW_TRACK_TARGET:
 		case ONE_THIRD_THROTTLE:
 		case TWO_THIRDS_THROTTLE:
 		case MINUS_5_PERCENT_THROTTLE:
@@ -2518,28 +2522,49 @@ int button_function_demo_valid(int n)
 	switch(n){
 	case VIEW_CHASE:
 		control_used(VIEW_CHASE);
-		Viewer_mode ^= VM_CHASE;
-		if ( Viewer_mode & VM_CHASE ) {
-			Viewer_mode &= ~VM_EXTERNAL;
+		if(!Perspective_locked)
+		{
+			Viewer_mode ^= VM_CHASE;
+			if ( Viewer_mode & VM_CHASE ) {
+				Viewer_mode &= ~VM_EXTERNAL;
+			}
+		}
+		else
+		{
+			snd_play( &Snds[SND_TARGET_FAIL] );
 		}
 		ret = 1;
 		break;
 
 	case VIEW_EXTERNAL:
 		control_used(VIEW_EXTERNAL);
-		Viewer_mode ^= VM_EXTERNAL;
-		Viewer_mode &= ~VM_EXTERNAL_CAMERA_LOCKED;	// reset camera lock when leave/entering external view
-		if ( Viewer_mode & VM_EXTERNAL ) {
-			Viewer_mode &= ~VM_CHASE;
+		if(!Perspective_locked)
+		{
+			Viewer_mode ^= VM_EXTERNAL;
+			Viewer_mode &= ~VM_EXTERNAL_CAMERA_LOCKED;	// reset camera lock when leave/entering external view
+			if ( Viewer_mode & VM_EXTERNAL ) {
+				Viewer_mode &= ~VM_CHASE;
+			}
+		}
+		else
+		{
+			snd_play( &Snds[SND_TARGET_FAIL] );
 		}
 		ret = 1;
 		break;
 
 	case VIEW_TOPDOWN:
 		control_used(VIEW_TOPDOWN);
-		Viewer_mode ^= VM_TOPDOWN;
-		if(Viewer_mode & VM_TOPDOWN) {
-			Viewer_mode &= ~VM_TOPDOWN;
+		if(!Perspective_locked)
+		{
+			Viewer_mode ^= VM_TOPDOWN;
+			if(Viewer_mode & VM_TOPDOWN) {
+				Viewer_mode &= ~VM_TOPDOWN;
+			}
+		}
+		else
+		{
+			snd_play( &Snds[SND_TARGET_FAIL] );
 		}
 		ret = 1;
 		break;
@@ -2559,7 +2584,7 @@ int button_function_demo_valid(int n)
 
 	case VIEW_OTHER_SHIP:
 		control_used(VIEW_OTHER_SHIP);
-		if ( Player_ai->target_objnum < 0 ) {
+		if ( Player_ai->target_objnum < 0 || Perspective_locked) {
 			snd_play( &Snds[SND_TARGET_FAIL] );
 		} else {
 			if ( Objects[Player_ai->target_objnum].type != OBJ_SHIP )  {
@@ -2575,10 +2600,8 @@ int button_function_demo_valid(int n)
 		if ( Game_mode & GM_NORMAL ) {
 			// Goober5000 - time dilation only available in cheat mode (see above);
 			// now you can do it with or without pressing the tilde, per Kazan's request
-			// Goober5000 02/20/2005: restored original behavior: time dilation is handled
-			// in cheat mode only when you explicitly press the tilde
-			if ( (Game_time_compression > F1_0) ) {//|| (Cheats_enabled && (Game_time_compression > (F1_0/MAX_TIME_DIVIDER))) ) {
-				Game_time_compression /= 2;
+			if ( ((Game_time_compression > F1_0) || (Cheats_enabled && (Game_time_compression > (F1_0/MAX_TIME_DIVIDER)))) && !Time_compression_locked) {
+				change_time_compression(0.5f);
 			} else {
 				gamesnd_play_error_beep();
 			}
@@ -2590,8 +2613,8 @@ int button_function_demo_valid(int n)
 
 	case TIME_SPEED_UP:
 		if ( Game_mode & GM_NORMAL ) {
-			if ( Game_time_compression < (F1_0*MAX_TIME_MULTIPLIER) ) {
-				Game_time_compression *= 2;
+			if ( (Game_time_compression < (F1_0*MAX_TIME_MULTIPLIER)) && !Time_compression_locked ) {
+				change_time_compression(2.0f);
 			} else {
 				gamesnd_play_error_beep();
 			}
@@ -3262,6 +3285,7 @@ int button_function(int n)
 		// following are not handled here, but we need to bypass the Int3()
 		case LAUNCH_COUNTERMEASURE:
 		case VIEW_SLEW:
+		case VIEW_TRACK_TARGET:
 		case ONE_THIRD_THROTTLE:
 		case TWO_THIRDS_THROTTLE:
 		case MINUS_5_PERCENT_THROTTLE:

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-03-02 21:24:46 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2005-03-03 06:05:31 $
+ * $Author: wmcoolmon $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/03/02 21:24:46  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.21  2005/02/04 20:06:06  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -535,6 +538,7 @@
 #include "observer/observer.h"
 #include "weapon/weapon.h"
 #include "object/objectdock.h"
+#include "camera/camera.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
@@ -683,9 +687,20 @@ void view_modify(angles *ma, angles *da, float minv, float maxv, int slew, float
 	else if (da->p < -1.0f)
 		da->p = -1.0f;
 
-	ma->p += da->p * flFrametime;
-	ma->b += da->b * flFrametime;
-	ma->h += da->h * flFrametime;
+	if(Game_time_compression >= F1_0)
+	{
+		ma->p += da->p * flFrametime;
+		ma->b += da->b * flFrametime;
+		ma->h += da->h * flFrametime;
+	}
+	else
+	{
+		//If time compression is less than normal, still move camera at same speed
+		//This gives a cool matrix effect
+		ma->p += da->p * flRealframetime;
+		ma->b += da->b * flRealframetime;
+		ma->h += da->h * flRealframetime;
+	}
 
 	if (ma->p > maxv)
 		ma->p = maxv;
@@ -696,6 +711,13 @@ void view_modify(angles *ma, angles *da, float minv, float maxv, int slew, float
 		ma->h = maxv;
 	else if (ma->h < minv)
 		ma->h = minv;
+}
+
+void do_view_track_target(float frame_time)
+{
+	//vm_vec_delta_ang(
+
+	Viewer_mode &= ~VM_SLEWED;
 }
 
 //	When PAD0 is pressed, keypad controls viewer direction slewing.
@@ -856,6 +878,11 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	oldspeed = ci->forward_cruise_percent;
 	player_control_reset_ci( ci );
+	
+	if ( check_control(VIEW_TRACK_TARGET) ) {
+		do_view_track_target(frame_time);
+		slew_active = 1;
+	}
 
 	if ( check_control(VIEW_SLEW) ) {
 		do_view_slew(frame_time);
@@ -2282,7 +2309,7 @@ extern void compute_slew_matrix(matrix *orient, angles *a);
 #define	MIN_DIST_TO_DEAD_CAMERA			50.0f
 void player_get_eye(vector *eye_pos, matrix *eye_orient)
 {
-	object *viewer_obj;
+	object *viewer_obj = NULL;
 	vector eye_dir;
 
 	// if the player object is NULL, return
@@ -2357,15 +2384,20 @@ void player_get_eye(vector *eye_pos, matrix *eye_orient)
 	
 	//	If already blown up, these other modes can override.
 	if (!(Game_mode & (GM_DEAD | GM_DEAD_BLEW_UP))) {
-		viewer_obj = Player_obj;
+		if(!(Viewer_mode & VM_FREECAMERA))
+				viewer_obj = Player_obj;
  
 		if (Viewer_mode & VM_OTHER_SHIP) {
 			if (Player_ai->target_objnum != -1){
 				viewer_obj = &Objects[Player_ai->target_objnum];
 			} 
 		}
-
-		if (Viewer_mode & VM_EXTERNAL) {
+		if(Viewer_mode & VM_FREECAMERA) {
+				Viewer_obj = NULL;
+				*eye_pos = *Free_camera->get_position();
+				*eye_orient = *Free_camera->get_orientation();
+		} else if (Viewer_mode & VM_EXTERNAL) {
+			Assert(viewer_obj != NULL);
 			matrix	tm, tm2;
 
 			vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);

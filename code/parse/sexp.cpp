@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.135 $
- * $Date: 2005-03-02 21:24:42 $
- * $Author: taylor $
+ * $Revision: 2.136 $
+ * $Date: 2005-03-03 06:05:31 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2005/03/02 21:24:42  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.134  2005/02/04 23:29:32  taylor
  * merge with Linux/OSX tree - p0204-3
  *
@@ -928,6 +931,8 @@
 #include "hud/hudparse.h"
 #include "hud/hudartillery.h"
 #include "object/objectdock.h"
+#include "globalincs/systemvars.h"
+#include "camera/camera.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1049,6 +1054,7 @@ sexp_oper Operators[] = {
 	{ "get-object-relative-x",		OP_GET_OBJECT_RELATIVE_X,			4,	5	},	// Goober5000
 	{ "get-object-relative-y",		OP_GET_OBJECT_RELATIVE_Y,			4,	5	},	// Goober5000
 	{ "get-object-relative-z",		OP_GET_OBJECT_RELATIVE_Z,			4,	5	},	// Goober5000
+	{ "set-object-position",		OP_SET_OBJECT_POSITION,				4,	4	},	//WMC
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
 	{ "num-players",					OP_NUM_PLAYERS,				0, 0, },
@@ -1288,6 +1294,29 @@ sexp_oper Operators[] = {
 
 	{ "set-training-context-fly-path",	OP_SET_TRAINING_CONTEXT_FLY_PATH,	2, 2, },
 	{ "set-training-context-speed",		OP_SET_TRAINING_CONTEXT_SPEED,		2, 2, },
+
+	//Cutscene stuff
+	{ "set-cutscene-bars",			OP_CUTSCENES_SET_CUTSCENE_BARS,			0, 1, },
+	{ "unset-cutscene-bars",		OP_CUTSCENES_UNSET_CUTSCENE_BARS,		0, 1, },
+	{ "fade-in",					OP_CUTSCENES_FADE_IN,					0, 1, },
+	{ "fade-out",					OP_CUTSCENES_FADE_OUT,					0, 2, },
+	{ "set-camera-position",		OP_CUTSCENES_SET_CAMERA_POSITION,		3, 5, },
+	{ "set-camera-facing",			OP_CUTSCENES_SET_CAMERA_FACING,			3, 5, },
+	{ "set-camera-facing-object",	OP_CUTSCENES_SET_CAMERA_FACING_OBJECT,	1, 3, },
+	{ "set-camera-rotation",		OP_CUTSCENES_SET_CAMERA_ROTATION,		3, 5, },
+	{ "set-fov",					OP_CUTSCENES_SET_FOV,					1, 1, },
+	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
+	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 0, },
+	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 12, },
+	{ "set-time-compression",		OP_CUTSCENES_SET_TIME_COMPRESSION,		1, 3, },
+	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
+	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
+
+	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		4, 4, },
+	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
+	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, 1, },
+	{ "hide-jumpnode",				OP_JUMP_NODE_HIDE_JUMPNODE,				1, 1, },
+
 
 	{ "do-nothing",	OP_NOP,	0, 0,			},
 };
@@ -2910,12 +2939,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				for ( i = 0; i < Num_jump_nodes; i++ ) {
-					if ( !stricmp(Jump_nodes[i].name, CTEXT(node)) )
-						break;
-				}
-
-				if ( i == Num_jump_nodes )
+				if(jumpnode_get_by_name != NULL)
+					break;
+				else
 					return SEXP_CHECK_INVALID_JUMP_NODE;
 
 				break;
@@ -5426,6 +5452,98 @@ int sexp_get_object_coordinates(int n, int index)
 
 	// point to wing leader
 	return sexp_vec_coordinate(&Objects[Ships[Wings[obj].ship_index[0]].objnum].pos, index);
+}
+
+void sexp_set_object_position(int n) 
+{
+	ship_obj *so;
+	object* objp;
+	int team, obj,i;
+	char *object_name = CTEXT(n);
+	n = CDR(n);
+
+	vector targetvec,orig_leader_vector;
+
+	targetvec.xyz.x = i2fl(eval_num(n));
+	n = CDR(n);
+	targetvec.xyz.y = i2fl(eval_num(n));
+	n = CDR(n);
+	targetvec.xyz.z = i2fl(eval_num(n));
+
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
+		return;
+
+	// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL) ) 
+		return;
+
+	i = 0;
+	team = sexp_determine_team(object_name);
+	if (team)	// we have a team type, so pick the first ship of that type
+	{
+		so = GET_FIRST(&Ship_obj_list);
+		while (so != END_OF_LIST(&Ship_obj_list))
+		{
+			objp = &Objects[so->objnum];
+			if (Ships[objp->instance].team == team)
+			{
+				if(i == 0)
+				{
+					orig_leader_vector = objp->pos;
+					objp->pos = targetvec;
+				}
+				else
+				{
+					vm_vec_sub2(&objp->pos, &orig_leader_vector);
+					vm_vec_add2(&objp->pos, &targetvec);
+				}
+			}
+
+			so = GET_NEXT(so);
+		}
+
+		return;	// if no match
+	}
+
+	// at this point, we must have a wing, ship or point for a target
+	obj = ship_name_lookup(object_name);
+	if (obj >= 0)
+	{
+		Objects[Ships[obj].objnum].pos = targetvec;
+		return;
+	}
+
+	// at this point, we must have a wing or point for a target
+	obj = waypoint_lookup(object_name);
+	if (obj >= 0)
+	{
+		Objects[obj].pos = targetvec;
+		return;
+	}
+		
+	// at this point, we must have a wing for a target
+	obj = wing_name_lookup(object_name);
+	if (obj < 0)
+		return;  // we apparently don't have anything legal
+
+	// make sure at least one ship exists
+	if (!Wings[obj].current_count)
+		return;
+
+	// point to wing leader
+	//This is fun - move the entire wing.
+	objp = &Objects[Ships[Wings[obj].ship_index[0]].objnum];
+	orig_leader_vector = objp->pos;
+	objp->pos = targetvec;
+
+	for(i = 1; i < Wings[obj].current_count; i++)
+	{
+		objp = &Objects[Ships[Wings[obj].ship_index[i]].objnum];
+		vm_vec_sub2(&objp->pos, &orig_leader_vector);
+		vm_vec_add2(&objp->pos, &targetvec);
+	}
+	return;
 }
 
 // Goober5000
@@ -12137,6 +12255,467 @@ void sexp_scramble_messages(bool scramble)
 	Sexp_Messages_Scrambled = scramble;
 }
 
+void sexp_set_cutscene_bars(int node)
+{
+	//We know we want the bars
+	Cutscene_bar_flags |= CUB_CUTSCENE;
+
+	float delta_speed = 0.0f;
+
+	if(node != -1)
+		delta_speed = eval_num(node)/1000.0f;
+
+	if(delta_speed > 0.0f)
+	{
+		Cutscene_bars_progress = 0.0f;
+		Cutscene_bar_flags |= CUB_GRADUAL;
+		Cutscene_delta_time = delta_speed;
+	}
+	else
+	{
+		Cutscene_bar_flags &= ~CUB_GRADUAL;
+	}
+}
+
+void sexp_unset_cutscene_bars(int node)
+{
+	//We know we DON'T want the bars
+	Cutscene_bar_flags &= ~CUB_CUTSCENE;
+	float delta_speed = 0.0f;
+
+	if(node != -1)
+		delta_speed = eval_num(node)/1000.0f;
+
+	if(delta_speed > 0.0f)
+	{
+		Cutscene_bars_progress = 0.0f;
+		Cutscene_bar_flags |= CUB_GRADUAL;
+		Cutscene_delta_time = delta_speed;
+	}
+	else
+	{
+		Cutscene_bar_flags &= ~CUB_GRADUAL;
+	}
+}
+void sexp_fade_in(int n)
+{
+	float delta_time = 0.0f;
+
+	if(n != -1)
+		delta_time = eval_num(n)/1000.0f;
+
+	if(delta_time > 0.0f)
+	{
+		Fade_delta_time = delta_time;
+		Fade_type = FI_FADEIN;
+	}
+	else
+	{
+		Fade_type = FI_NONE;
+		gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
+	}
+}
+void sexp_fade_out(int n)
+{
+	float delta_time = 0.0f;
+
+	if(n != -1)
+	{
+		delta_time = eval_num(n)/1000.0f;
+
+		n = CDR(n);
+		if(n != 1)
+		{
+			switch(eval_num(n))
+			{
+				//White out
+				case 1:
+					gr_create_shader(&Viewer_shader, 255, 255, 255, Viewer_shader.c);
+					break;
+				//Red out
+				case 2:
+					gr_create_shader(&Viewer_shader, 255, 0, 0, Viewer_shader.c);
+					break;
+				//Black out
+				default:
+					gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
+			}
+		}
+		else
+		{
+			gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
+		}
+
+		if(delta_time > 0.0f)
+		{
+			Fade_type = FI_FADEOUT;
+			Fade_delta_time = delta_time;
+		}
+		else
+		{
+			Fade_type = FI_NONE;
+			gr_create_shader(&Viewer_shader, Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, 255);
+		}
+	}
+	else
+	{
+		gr_create_shader(&Viewer_shader, 0, 0, 0, 255);
+		Fade_type = FI_NONE;
+	}
+}
+
+
+void sexp_set_camera_position(int n)
+{
+	Viewer_mode |= VM_FREECAMERA;
+	vector camera_vec;
+	//float camera_time = 0.0f;
+
+	camera_vec.xyz.x = i2fl(eval_num(n));
+	n = CDR(n);
+	camera_vec.xyz.y = i2fl(eval_num(n));
+	n = CDR(n);
+	camera_vec.xyz.z = i2fl(eval_num(n));
+
+	Free_camera->set_position(&camera_vec);
+}
+
+void sexp_set_camera_rotation(int n)
+{
+	Viewer_mode |= VM_FREECAMERA;
+	angles rot_angles;
+	float rot_time = 0.0f;
+	float rot_acc_time = 0.0f;
+
+	//Angles are in degrees
+	rot_angles.p = eval_num(n) * (PI/180.0f);
+	n = CDR(n);
+	rot_angles.b = eval_num(n) * (PI/180.0f);
+	n = CDR(n);
+	rot_angles.h = eval_num(n) * (PI/180.0f);
+	n = CDR(n);
+	if(n != -1)
+	{
+		rot_time = eval_num(n) / 1000.0f;
+		n = CDR(n);
+		if(n != -1)
+			rot_acc_time = eval_num(n) / 1000.0f;
+	}
+
+	Free_camera->set_rotation(&rot_angles, rot_time, rot_acc_time);
+}
+
+void sexp_set_camera_facing(int n)
+{
+	Viewer_mode |= VM_FREECAMERA;
+	vector location;
+	matrix cam_orient;
+	float rot_time = 0.0f;
+	float rot_acc_time = 0.0f;
+
+	location.xyz.x = i2fl(eval_num(n));
+	n = CDR(n);
+	location.xyz.y = i2fl(eval_num(n));
+	n = CDR(n);
+	location.xyz.z = i2fl(eval_num(n));
+	n = CDR(n);
+	if(n != -1)
+	{
+		rot_time = eval_num(n) / 1000.0f;
+		n = CDR(n);
+		if(n != -1)
+			rot_acc_time = eval_num(n) / 1000.0f;
+	}
+
+	//Calc to matrix
+	vector destvec;
+	vm_vec_sub(&destvec, &location, Free_camera->get_position());
+
+	if (IS_VEC_NULL(&destvec))
+	{
+		Warning(LOCATION, "Camera tried to point to self");
+		return;
+	}
+
+	vm_vector_2_matrix(&cam_orient, &destvec, NULL, NULL);
+	Free_camera->set_rotation(&cam_orient, rot_time, rot_acc_time);
+}
+
+void sexp_set_camera_facing_object(int n)
+{
+	char *object_name = CTEXT(n);
+	float rot_time = 0.0f;
+	float rot_acc_time = 0.0f;
+
+	//Now get the rotation time values
+	n = CDR(n);
+	if(n != -1)
+	{
+		rot_time = eval_num(n) / 1000.0f;
+		n = CDR(n);
+		if(n != -1)
+			rot_acc_time = eval_num(n) / 1000.0f;
+	}
+
+	//Check if it's destroyed
+	if(mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL)
+		|| mission_log_get_time( LOG_SHIP_DEPART, object_name, NULL, NULL)
+		|| mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL)
+		|| mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL))
+	{
+		Warning(LOCATION, "Camera tried to face destroyed/departed object %s", object_name);
+		return;
+	}
+
+	//Team for target
+//	vector destvec;
+	ship_obj *so;
+	int index;
+
+	index = sexp_determine_team(object_name);
+	if(index)
+	{
+		so = GET_FIRST(&Ship_obj_list);
+		while (so != END_OF_LIST(&Ship_obj_list))
+		{
+			if (Ships[Objects[so->objnum].instance].team == index)
+			{
+				Viewer_mode |= VM_FREECAMERA;
+				Free_camera->set_rotation_facing(&Objects[so->objnum].pos, rot_time, rot_acc_time);
+				return;
+			}
+
+			so = GET_NEXT(so);
+		}
+
+		return;
+	}
+
+	//Ship for target
+	index = ship_name_lookup(object_name);
+	if(index >= 0)
+	{
+		Viewer_mode |= VM_FREECAMERA;
+		Free_camera->set_rotation_facing(&Objects[Ships[index].objnum].pos, rot_time, rot_acc_time);
+		return;
+	}
+
+	//Point for target
+	index = waypoint_lookup(object_name);
+	if(index >= 0)
+	{
+		Viewer_mode |= VM_FREECAMERA;
+		Free_camera->set_rotation_facing(&Objects[index].pos, rot_time, rot_acc_time);
+	}
+
+	//Wing for target
+	index = wing_name_lookup(object_name);
+
+	//Um...oops
+	if(index < 0)
+	{
+		return;
+	}
+	
+	//Oops again
+	if(!Wings[index].current_count)
+		return;
+
+	//Point to wing leader
+	Viewer_mode |= VM_FREECAMERA;
+	Free_camera->set_rotation_facing(&Objects[Ships[Wings[index].ship_index[0]].objnum].pos, rot_time, rot_acc_time);
+}
+
+extern float Viewer_zoom, VIEWER_ZOOM_DEFAULT;
+void sexp_set_fov(int n)
+{
+	Viewer_zoom = eval_num(n) * (PI/180.0f);
+}
+
+void sexp_reset_fov()
+{
+	Viewer_zoom = VIEWER_ZOOM_DEFAULT;
+
+	if(Viewer_zoom > (2.0f*PI))
+		Viewer_zoom = 2.0f * PI;
+	if(Viewer_zoom < 0)
+		Viewer_zoom = 0;
+}
+
+void sexp_reset_camera()
+{
+	Viewer_mode &= ~VM_FREECAMERA;
+}
+
+void sexp_show_subtitle(int n)
+{
+	//These should be set to the default if not required to be explicitly defined
+	int x_pos, y_pos, width=200;
+	char *text, *imageanim=NULL;
+	float display_time, fade_time=0.0f;
+	int r=255, g=255, b=255;
+	bool center_x=false, center_y=false;
+
+	x_pos = eval_num(n);
+
+	n = CDR(n);
+	y_pos = eval_num(n);
+
+	n = CDR(n);
+	text = CTEXT(n);
+
+	n = CDR(n);
+	display_time = eval_num(n)/1000.0f;	//is in ms
+
+	n = CDR(n);
+	if(n != -1)
+	{
+		imageanim = CTEXT(n);
+
+	n = CDR(n);
+	if(n != -1)
+	{
+		fade_time = eval_num(n)/1000.0f; //also in ms
+
+	n = CDR(n);
+	if(n != -1 && n==SEXP_KNOWN_TRUE)
+	{
+		center_x = true;
+
+	n = CDR(n);
+	if(n != -1 && n==SEXP_KNOWN_TRUE)
+	{
+		center_y = true;
+		
+	n = CDR(n);
+	if(n != -1)
+	{
+		width = eval_num(n);
+
+	n = CDR(n);
+	if(n != -1)
+	{
+		r = eval_num(n);
+
+	n = CDR(n);
+	if(n != -1)
+	{
+		g = eval_num(n);
+
+	n = CDR(n);
+	if(n != -1)
+	{
+		b = eval_num(n);
+	}}}}}}}}
+
+	if(r > 255)
+		r = 255;
+	if(g > 255)
+		g = 255;
+	if(b > 255)
+		b = 255;
+
+	//FINALLY !!
+	color new_color;
+	gr_init_alphacolor(&new_color, r, g, b, 255);
+
+	subtitle new_subtitle(x_pos, y_pos, text, display_time, imageanim, fade_time, &new_color, center_x, center_y, width);
+	Subtitles.push_back(new_subtitle);
+}
+
+void sexp_set_time_compression(int n)
+{
+	float new_change_time = 0.0f;
+	float new_multiplier = eval_num(n)/100.0f;			//percent->decimal
+
+	//Time to change
+	n = CDR(n);
+	if(n != -1)
+		new_change_time = eval_num(n)/1000.0f;			//ms->seconds
+
+	//Override current time compression with this value
+	n = CDR(n);
+	if(n != -1)
+		set_time_compression(eval_num(n)/100.0f);
+
+	set_time_compression(new_multiplier, new_change_time);
+	lock_time_compression(true);
+}
+
+void sexp_reset_time_compression()
+{
+	set_time_compression(1);
+	lock_time_compression(false);
+}
+
+extern bool Perspective_locked;
+
+void sexp_force_perspective(int n)
+{
+	 Perspective_locked = (n == SEXP_KNOWN_TRUE);
+
+	n=CDR(n);
+
+	if(n != -1)
+	{
+		n = eval_num(n);
+		switch(n)
+		{
+			case 0:
+				Viewer_mode = 0;
+				break;
+			case 1:
+				Viewer_mode = VM_CHASE;
+				break;
+			case 2:
+				Viewer_mode = VM_EXTERNAL;
+				break;
+			case 3:
+				Viewer_mode = VM_TOPDOWN;
+				break;
+		}
+	}
+}
+
+void sexp_set_jumpnode_color(int n)
+{
+	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+
+	if(jnp==NULL)
+		return;
+
+	n=CDR(n);
+
+	jnp->set_alphacolor(eval_num(n),eval_num(CDR(n)),eval_num(CDR(CDR(n))),eval_num(CDR(CDR(CDR(n)))));
+}
+
+void sexp_set_jumpnode_model(int n)
+{
+	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+
+	if(jnp==NULL)
+		return;
+
+	n=CDR(n);
+
+	jnp->set_model(CTEXT(n),(CDR(n)==SEXP_KNOWN_TRUE));
+}
+
+void sexp_show_jumpnode(int n)
+{
+	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+
+	if(jnp!=NULL)
+		jnp->show(true);
+}
+
+void sexp_hide_jumpnode(int n)
+{
+	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+
+	if(jnp!=NULL)
+		jnp->show(false);
+}
 
 // high-level sexpression evaluator
 int eval_sexp(int cur_node, int referenced_node)
@@ -12975,6 +13554,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_get_object_relative_coordinates(node, (op_num==OP_GET_OBJECT_RELATIVE_X)?0:((op_num==OP_GET_OBJECT_RELATIVE_Y)?1:2));
 				break;
 
+			case OP_SET_OBJECT_POSITION:
+				sexp_set_object_position(node);
+				sexp_val = 1;
+				break;
+
 			case OP_SET_SHIP_POSITION:
 				sexp_set_ship_position(node);
 				sexp_val = 1;
@@ -13368,6 +13952,84 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_scramble_messages(op_num == OP_SCRAMBLE_MESSAGES );
 				break;
 
+			case OP_CUTSCENES_SET_CUTSCENE_BARS:
+				sexp_val = 1;
+				sexp_set_cutscene_bars(node);
+				break;
+			case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
+				sexp_val = 1;
+				sexp_unset_cutscene_bars(node);
+				break;
+			case OP_CUTSCENES_FADE_IN:
+				sexp_val = 1;
+				sexp_fade_in(node);
+				break;
+			case OP_CUTSCENES_FADE_OUT:
+				sexp_val = 1;
+				sexp_fade_out(node);
+				break;
+			case OP_CUTSCENES_SET_CAMERA_POSITION:
+				sexp_val = 1;
+				sexp_set_camera_position(node);
+				break;
+			case OP_CUTSCENES_SET_CAMERA_FACING:
+				sexp_val = 1;
+				sexp_set_camera_facing(node);
+				break;
+			case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
+				sexp_val = 1;
+				sexp_set_camera_facing_object(node);
+				break;
+			case OP_CUTSCENES_SET_CAMERA_ROTATION:
+				sexp_val = 1;
+				sexp_set_camera_rotation(node);
+				break;
+			case OP_CUTSCENES_SET_FOV:
+				sexp_val = 1;
+				sexp_set_fov(node);
+				break;
+			case OP_CUTSCENES_RESET_FOV:
+				sexp_val = 1;
+				sexp_reset_fov();
+				break;
+			case OP_CUTSCENES_RESET_CAMERA:
+				sexp_val = 1;
+				sexp_reset_camera();
+				break;
+			case OP_CUTSCENES_SHOW_SUBTITLE:
+				sexp_val = 1;
+				sexp_show_subtitle(node);
+				break;
+			case OP_CUTSCENES_SET_TIME_COMPRESSION:
+				sexp_val = 1;
+				sexp_set_time_compression(node);
+				break;
+			case OP_CUTSCENES_RESET_TIME_COMPRESSION:
+				sexp_val = 1;
+				sexp_reset_time_compression();
+				break;
+			case OP_CUTSCENES_FORCE_PERSPECTIVE:
+				sexp_val = 1;
+				sexp_force_perspective(node);
+				break;
+
+			case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
+				sexp_val = 1;
+				sexp_set_jumpnode_color(node);
+				break;
+			case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
+				sexp_val = 1;
+				sexp_set_jumpnode_model(node);
+				break;
+			case OP_JUMP_NODE_SHOW_JUMPNODE:
+				sexp_val = 1;
+				sexp_show_jumpnode(node);
+				break;
+			case OP_JUMP_NODE_HIDE_JUMPNODE:
+				sexp_val = 1;
+				sexp_hide_jumpnode(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -13755,6 +14417,7 @@ int query_operator_return_type(int op)
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_SHIP_POSITION:
+		case OP_SET_OBJECT_POSITION:
 		case OP_SET_SHIP_FACING:
 		case OP_SET_SHIP_FACING_OBJECT:
 		case OP_HUD_DISABLE:
@@ -13791,6 +14454,25 @@ int query_operator_return_type(int op)
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
+		case OP_CUTSCENES_SET_CUTSCENE_BARS:
+		case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
+		case OP_CUTSCENES_FADE_IN:
+		case OP_CUTSCENES_FADE_OUT:
+		case OP_CUTSCENES_SET_CAMERA_POSITION:
+		case OP_CUTSCENES_SET_CAMERA_FACING:
+		case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
+		case OP_CUTSCENES_SET_CAMERA_ROTATION:
+		case OP_CUTSCENES_SET_FOV:
+		case OP_CUTSCENES_RESET_FOV:
+		case OP_CUTSCENES_RESET_CAMERA:
+		case OP_CUTSCENES_SHOW_SUBTITLE:
+		case OP_CUTSCENES_SET_TIME_COMPRESSION:
+		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
+		case OP_CUTSCENES_FORCE_PERSPECTIVE:
+		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
+		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
+		case OP_JUMP_NODE_SHOW_JUMPNODE:
+		case OP_JUMP_NODE_HIDE_JUMPNODE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -14023,6 +14705,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_WING_POINT;
 			else if (argnum==4)
 				return OPF_SUBSYSTEM;
+			else
+				return OPF_NUMBER;
+
+		case OP_SET_OBJECT_POSITION:
+			if(argnum==0)
+				return OPF_SHIP_WING_POINT;
 			else
 				return OPF_NUMBER;
 
@@ -14804,9 +15492,80 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 #endif
 
+		//<Cutscenes>
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
 			return OPF_NONE;
+
+		case OP_CUTSCENES_SET_CUTSCENE_BARS:
+		case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
+		case OP_CUTSCENES_FADE_IN:
+		case OP_CUTSCENES_FADE_OUT:
+		case OP_CUTSCENES_SET_TIME_COMPRESSION:
+			return OPF_POSITIVE;
+
+		case OP_CUTSCENES_SET_FOV:
+			return OPF_NUMBER;
+		
+		case OP_CUTSCENES_SET_CAMERA_POSITION:
+		case OP_CUTSCENES_SET_CAMERA_FACING:
+		case OP_CUTSCENES_SET_CAMERA_ROTATION:
+			if(argnum < 3)
+				return OPF_NUMBER;
+			else
+				return OPF_POSITIVE;
+
+		case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
+			if(argnum < 1)
+				return OPF_SHIP_WING_POINT;
+			else
+				return OPF_POSITIVE;
+
+		case OP_CUTSCENES_RESET_FOV:
+		case OP_CUTSCENES_RESET_CAMERA:
+		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
+			return OPF_NONE;
+
+		case OP_CUTSCENES_FORCE_PERSPECTIVE:
+			if(argnum==0)
+				return OPF_BOOL;
+			else
+				return OPF_POSITIVE;
+			
+
+		case OP_CUTSCENES_SHOW_SUBTITLE:
+			if(argnum < 2)
+				return OPF_NUMBER;
+			else if(argnum == 2)
+				return OPF_STRING;
+			else if(argnum == 3)
+				return OPF_POSITIVE;
+			else if(argnum == 4)
+				return OPF_STRING;
+			else if(argnum == 5)
+				return OPF_POSITIVE;
+			else if(argnum < 8)
+				return OPF_BOOL;
+			else if(argnum < 12)
+				return OPF_POSITIVE;
+
+		//</Cutscenes>
+
+		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
+			if(argnum==0)
+				return OPF_JUMP_NODE_NAME;
+			else
+				return OPF_POSITIVE;
+
+		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
+			if(argnum==0)
+				return OPF_JUMP_NODE_NAME;
+			else
+				return OPF_STRING;
+
+		case OP_JUMP_NODE_SHOW_JUMPNODE:
+		case OP_JUMP_NODE_HIDE_JUMPNODE:
+				return OPF_JUMP_NODE_NAME;
 
 		default:
 			Int3();
@@ -15852,6 +16611,29 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_COLOR:
 		case OP_RADAR_SET_MAXRANGE: //Kazan
 			return CHANGE_SUBCATEGORY_HUD;
+
+		case OP_CUTSCENES_SET_CUTSCENE_BARS:
+		case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
+		case OP_CUTSCENES_FADE_IN:
+		case OP_CUTSCENES_FADE_OUT:
+		case OP_CUTSCENES_SET_CAMERA_POSITION:
+		case OP_CUTSCENES_SET_CAMERA_FACING:
+		case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
+		case OP_CUTSCENES_SET_CAMERA_ROTATION:
+		case OP_CUTSCENES_SET_FOV:
+		case OP_CUTSCENES_RESET_FOV:
+		case OP_CUTSCENES_RESET_CAMERA:
+		case OP_CUTSCENES_SHOW_SUBTITLE:
+		case OP_CUTSCENES_SET_TIME_COMPRESSION:
+		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
+		case OP_CUTSCENES_FORCE_PERSPECTIVE:
+			return CHANGE_SUBCATEGORY_CUTSCENES;
+
+		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
+		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
+		case OP_JUMP_NODE_SHOW_JUMPNODE:
+		case OP_JUMP_NODE_HIDE_JUMPNODE:
+			return CHANGE_SUBCATEGORY_JUMP_NODES;
 		
 		default:
 			return -1;		// sexp doesn't have a subcategory

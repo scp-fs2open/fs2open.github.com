@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-03-02 21:24:45 $
- * $Author: taylor $
+ * $Revision: 2.36 $
+ * $Date: 2005-03-03 06:05:29 $
+ * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.34  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -2968,7 +2971,7 @@ int create_wings()
 				case WING_SLOT_EMPTY|WING_SLOT_IS_PLAYER:
 					if ( ws->status & WING_SLOT_IS_PLAYER ) {						
 						popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player %s must select a place in player wing", 462), Player->callsign);
-						return -1;
+						//return -1;
 					}
 					break;
 

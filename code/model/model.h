@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.56 $
- * $Date: 2005-03-01 06:55:41 $
- * $Author: bobboau $
+ * $Revision: 2.57 $
+ * $Date: 2005-03-03 06:05:30 $
+ * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/03/01 06:55:41  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.55  2005/02/23 05:05:38  taylor
  * compiler warning fixes (for MSVC++ 6)
  * have the warp effect only load as many LODs as will get used
@@ -543,7 +547,7 @@ struct object;
 #define MOVEMENT_AXIS_Y		2
 #define MOVEMENT_AXIS_Z		1
 
-#define MAX_ROTATING_SUBMODELS 10
+#define MAX_ROTATING_SUBMODELS 50
 
 // defines for special objects like gun and missile points, docking point, etc
 // Hoffoss: Please make sure that subsystem NONE is always index 0, and UNKNOWN is
