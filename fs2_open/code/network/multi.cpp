@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-03-09 00:02:16 $
+ * $Revision: 2.17 $
+ * $Date: 2004-03-09 17:59:01 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/03/09 00:02:16  Kazan
+ * more fs2netd stuff
+ *
  * Revision 2.15  2004/03/08 22:02:39  Kazan
  * Lobby GUI screen restored
  *
@@ -1363,12 +1366,14 @@ void multi_do_frame()
 
 
 	static int LastSend = -1;
-	if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
+	if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized())
 	{
-		fs2netd_maybe_init();
+		
+		// should never have to init here
+		//fs2netd_maybe_init();
 
 		// -------------------- send
-		if ((clock() - LastSend) >= 60000 || LastSend == -1)
+		if ((clock() - LastSend) >= 30000 || LastSend == -1)
 		{
 			LastSend = clock();
 
@@ -1379,17 +1384,17 @@ void multi_do_frame()
 	
 				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, Netgame.mission_name, Netgame.title, Netgame.flags, Netgame.server_addr.port, Netgame.max_players);
 			}
-
-			/*
-			if (FS2OpenPXO_Socket.DataReady())
-			{
-
-				ml_printf("Network", "FS2netD received PONG: Time diff %d\n", GetPingReply(FS2OpenPXO_Socket));
-			}
-
 			Ping(PXO_Server, FS2OpenPXO_Socket);
-			*/
+			ml_printf("Network FS2netD sent PING\n");
+			
 
+		}
+
+		
+		// stuff that should be checked every frame!
+		if (FS2OpenPXO_Socket.DataReady())
+		{
+			ml_printf("Network FS2netD received PONG: Time diff %d ms\n", GetPingReply(FS2OpenPXO_Socket));
 		}
 	}
 

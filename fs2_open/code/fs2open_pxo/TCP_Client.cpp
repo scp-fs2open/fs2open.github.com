@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.13 $
- * $Date: 2004-03-08 15:06:23 $
+ * $Revision: 1.14 $
+ * $Date: 2004-03-09 17:59:01 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2004/03/08 15:06:23  Kazan
+ * Did, undo
+ *
  * Revision 1.12  2004/03/07 23:07:20  Kazan
  * [Incomplete] Readd of Software renderer so Standalone server works
  *
@@ -111,7 +114,7 @@ int CheckSingleMission(const char* mission, unsigned int crc32, TCP_Socket &Sock
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.MT_DataReady() && Socket.GetData((char *) &c_reply, sizeof(fs2open_fcheck_reply)) != -1)
+		if (Socket.DataReady() && Socket.GetData((char *) &c_reply, sizeof(fs2open_fcheck_reply)) != -1)
 		{
 
 			if (c_reply.pid != PCKT_MCHECK_REPLY) // ignore packet
@@ -198,7 +201,7 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.MT_DataReady() && Socket.GetData((char *) &u_reply, sizeof(fs2open_pilot_updatereply)) != -1)
+		if (Socket.DataReady() && Socket.GetData((char *) &u_reply, sizeof(fs2open_pilot_updatereply)) != -1)
 		{
 
 			if (u_reply.pid != PCKT_PILOT_UREPLY) // ignore packet
@@ -256,7 +259,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 	{
 
 
-		if (Socket.MT_DataReady() && (recvsize = Socket.GetData((char *) &PacketBuffer, 16384)) != -1)
+		if (Socket.DataReady() && (recvsize = Socket.GetData((char *) &PacketBuffer, 16384)) != -1)
 		{
 
 			if (p_reply->pid != PCKT_PILOT_REPLY) // ignore packet
@@ -269,7 +272,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 			ml_printf("Precompletion Pilot Update: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
 			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
 			{
-				if (Socket.MT_DataReady())
+				if (Socket.DataReady())
 				{
 					rs2 = Socket.GetData((char *) &PacketBuffer+recvsize, 16384-recvsize);
 					ml_printf("Tables Completetion: Got Additional %u bytes", rs2);
@@ -368,7 +371,7 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.MT_DataReady() && (recvsize = Socket.GetData(PacketBuffer, 16384)) != -1)
+		if (Socket.DataReady() && (recvsize = Socket.GetData(PacketBuffer, 16384)) != -1)
 		{
 			if (misreply_ptr->pid != PCKT_TABLES_REPLY)
 			{
@@ -381,7 +384,7 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 			ml_printf("Precompletion Table Get: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
 			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
 			{
-				if (Socket.MT_DataReady())
+				if (Socket.DataReady())
 				{
 					rs2 = Socket.GetData(PacketBuffer+recvsize, 16384-recvsize);
 					ml_printf("Tables Completetion: Got Additional %u bytes", rs2);
@@ -459,7 +462,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.MT_DataReady() && (recvsize = Socket.GetData(PacketBuffer, 16384)) != -1)
+		if (Socket.DataReady() && (recvsize = Socket.GetData(PacketBuffer, 16384)) != -1)
 		{
 
 			if (misreply_ptr->pid != PCKT_MISSIONS_REPLY)
@@ -472,7 +475,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 			ml_printf("Precompletion Missions Get: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
 			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
 			{
-				if (Socket.MT_DataReady())
+				if (Socket.DataReady())
 				{
 					rs2 = Socket.GetData(PacketBuffer+recvsize, 16384-recvsize);
 					ml_printf("Missions Completetion: Got Additional %u bytes", rs2);
@@ -545,7 +548,7 @@ int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Soc
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.MT_DataReady() && Socket.GetData((char *)&loginreply, sizeof(fs2open_pxo_lreply)) != -1)
+		if (Socket.DataReady() && Socket.GetData((char *)&loginreply, sizeof(fs2open_pxo_lreply)) != -1)
 		{
 			if (loginreply.pid != PCKT_LOGIN_REPLY)
 			{
@@ -624,7 +627,7 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_So
 
 	while ((clock() - starttime) <= timeout)
 	{
-		if (Socket.MT_DataReady() && Socket.GetData((char *)&NewServer, sizeof(serverlist_reply_packet)) != -1)
+		if (Socket.DataReady() && Socket.GetData((char *)&NewServer, sizeof(serverlist_reply_packet)) != -1)
 		{
 
 			if (!strcmp(NewServer.name, "TERM") && NewServer.flags == 0 && NewServer.players == 0)
@@ -661,8 +664,8 @@ int Ping(const char* target, TCP_Socket &Socket)
 	fs2open_ping ping;
 	//fs2open_pingreply rping;
 	ping.pid = PCKT_PING;
-	ping.time = time(0);
-	std::string rctp = target;
+	ping.time = clock();
+	//std::string rctp = target;
 
 	Socket.SendData((char *)&ping, sizeof(fs2open_ping));
 
@@ -685,9 +688,8 @@ struct fs2open_pingreply
 int GetPingReply(TCP_Socket &Socket)
 {
 	fs2open_pingreply rping;
-
 	
 	Socket.GetData((char *)&rping, sizeof(fs2open_pingreply));
 
-	return int( float(time(0) - rping.time)/2.0 );
+	return int( float(clock() - rping.time)/2.0 );
 }

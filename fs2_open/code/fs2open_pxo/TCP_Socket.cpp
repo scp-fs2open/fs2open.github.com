@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.7 $
- * $Date: 2004-03-05 09:01:56 $
- * $Author: Goober5000 $
+ * $Revision: 1.8 $
+ * $Date: 2004-03-09 17:59:01 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/03/05 09:01:56  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 1.6  2004/02/21 00:59:43  Kazan
  * FS2NETD License Comments
  *
@@ -198,8 +202,8 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 bool TCP_Socket::DataReady()
 {
 	timeval wait;
-	wait.tv_sec = 1;
-	wait.tv_usec = 0;
+	wait.tv_sec = 0;
+	wait.tv_usec = 1;
 
 	fd_set recvs;
 
@@ -208,8 +212,29 @@ bool TCP_Socket::DataReady()
 
 	int status = select(1, &recvs, NULL, NULL, &wait);
 
+#if defined(FS2_TCP_RMultithread)
+	return (status != 0 && status != SOCKET_ERROR) || this->MT_DataReady();
+#else
 	return (status != 0 && status != SOCKET_ERROR);
+#endif
 }
+
+#if !defined(FS2_TCP_RMultithread)
+void TCP_Socket::IgnorePackets()
+{
+	if (DataReady())
+	{
+			// let's say most that is going to be backed up is 32K
+		char *bitbox = new char[1024*32];
+
+		GetData(bitbox, 1024*32);
+
+		delete[] bitbox;
+	}
+
+}
+#endif
+
 
 bool TCP_Socket::OOBDataReady()
 {

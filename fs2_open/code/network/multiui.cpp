@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-03-09 00:02:16 $
+ * $Revision: 2.23 $
+ * $Date: 2004-03-09 17:59:01 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/03/09 00:02:16  Kazan
+ * more fs2netd stuff
+ *
  * Revision 2.21  2004/03/08 22:02:39  Kazan
  * Lobby GUI screen restored
  *
@@ -1340,7 +1343,7 @@ void fs2netd_maybe_init()
 				if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
 #endif
 				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+					ml_printf("Network (FS2OpenPXO): Could not initialize Socket!!\n");
 				}
 		}
 }
@@ -1436,87 +1439,101 @@ void multi_join_game_init()
 
 		}
 
+		
+		Kaz_NoBackGround_DrawString("Connecting to Fs2NetD");
 		fs2netd_maybe_init();
 
-		// ---------------------- validate tables ----------------------------------
+		if (!FS2OpenPXO_Socket.isInitialized())
+		{	
+			gamesnd_play_iface(SND_GENERAL_FAIL);
+			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Connection Failed");
+			
+			//gameseq_post_event(GS_EVENT_NET_CHAT);
 
-		
-		Kaz_NoBackGround_DrawString("Validating Tables");
-
-
-		multi_update_valid_tables();
-
-		if (game_hacked_data())
-				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"You are playing with hacked table files - this will prevent stats from storing.");
-		// ---------------------- login ---------------------- 
-		
-		
-		Kaz_NoBackGround_DrawString("Logging In");
-		PXO_SID  = Fs2OpenPXO_Login(Multi_tracker_login, Multi_tracker_passwd, FS2OpenPXO_Socket, PXO_Server, PXO_port);
-
-		if (PXO_SID == -1)
-		{
-			ml_printf("FS2OpenPXO Critical: Login %s/%s is invalid!\n", Multi_tracker_login, Multi_tracker_passwd);
-			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Login Failed");
+			//return;
 		}
 		else
-			ml_printf("FS2OpenPXO: Login %s/%s is valid, Session ID is %u!\n", Multi_tracker_login, Multi_tracker_passwd, PXO_SID);
-
-	
-		// ---------------------- load stats ---------------------- 
-		
-		if (PXO_SID  != -1)
 		{
+			// ---------------------- validate tables ----------------------------------
+
 			
-			Kaz_NoBackGround_DrawString("Getting Pilot Stats\n(30 sec timeout)");
-			// Load the Current Pilots data
-			// Players[Player_num] == ME!
+			Kaz_NoBackGround_DrawString("Validating Tables");
+
+
+			multi_update_valid_tables();
+
+			if (game_hacked_data())
+					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"You are playing with hacked table files - this will prevent stats from storing.");
+			// ---------------------- login ---------------------- 
 			
-			// hack first time to put my pilot into the DB! -- Kazan
-			//SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port);
+			
+			Kaz_NoBackGround_DrawString("Logging In");
+			PXO_SID  = Fs2OpenPXO_Login(Multi_tracker_login, Multi_tracker_passwd, FS2OpenPXO_Socket, PXO_Server, PXO_port);
 
-			// load our players data -- allow creation of the player
-			int rescode = GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
-
-			switch (rescode)
-			{ // 0 = pilot retrieved, 1 = pilot created, 2 = invalid pilot, 3 = invalid (expired?) sid, 4 = pilot already exists
-				case -1:
-					ml_printf("Network (FS2OpenPXO): UNKNOWN ERROR when fetching pilot data\n");
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"An Unknown Error (probably a timeout) occured when trying to get your pilot data.");
-					break;
-
-				case 0:
-					ml_printf("Network (FS2OpenPXO): Got Pilot data\n");
-					break;
-					
-				case 1:
-					ml_printf("Network (FS2OpenPXO): Created New Pilot\n");
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"New Pilot has been created.");
-					break;
-
-				case 2:
-					ml_printf("Network (FS2OpenPXO): Invalid Pilot\n");
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Invalid Pilot name - A serious error has occured, Contact Kazan!");
-					break;
-
-				case 3:
-					ml_printf("Network (FS2OpenPXO): Invalid SID\n");
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Invalid SID - A serious error has occured, Contact Kazan!");
-					break;
-
-
-				default:
-					ml_printf("Network (FS2OpenPXO): Unknown return case for GetPlayerData(int, char *, player *, TCP_Socket &, int, bool, int)\n");
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Unkown return case from GetPlayerData() - Contact Kazan!");
-					break;
+			if (PXO_SID == -1)
+			{
+				ml_printf("FS2OpenPXO Critical: Login %s/%s is invalid!\n", Multi_tracker_login, Multi_tracker_passwd);
+				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Login Failed");
 			}
+			else
+				ml_printf("FS2OpenPXO: Login %s/%s is valid, Session ID is %u!\n", Multi_tracker_login, Multi_tracker_passwd, PXO_SID);
 
-		}
-	
 		
-		Kaz_NoBackGround_DrawString("Requesting Server List");
+			// ---------------------- load stats ---------------------- 
+			
+			if (PXO_SID  != -1)
+			{
+				
+				Kaz_NoBackGround_DrawString("Getting Pilot Stats\n(30 sec timeout)");
+				// Load the Current Pilots data
+				// Players[Player_num] == ME!
+				
+				// hack first time to put my pilot into the DB! -- Kazan
+				//SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port);
 
-	}
+				// load our players data -- allow creation of the player
+				int rescode = GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
+
+				switch (rescode)
+				{ // 0 = pilot retrieved, 1 = pilot created, 2 = invalid pilot, 3 = invalid (expired?) sid, 4 = pilot already exists
+					case -1:
+						ml_printf("Network (FS2OpenPXO): UNKNOWN ERROR when fetching pilot data\n");
+						popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"An Unknown Error (probably a timeout) occured when trying to get your pilot data.");
+						break;
+
+					case 0:
+						ml_printf("Network (FS2OpenPXO): Got Pilot data\n");
+						break;
+						
+					case 1:
+						ml_printf("Network (FS2OpenPXO): Created New Pilot\n");
+						popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"New Pilot has been created.");
+						break;
+
+					case 2:
+						ml_printf("Network (FS2OpenPXO): Invalid Pilot\n");
+						popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Invalid Pilot name - A serious error has occured, Contact Kazan!");
+						break;
+
+					case 3:
+						ml_printf("Network (FS2OpenPXO): Invalid SID\n");
+						popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Invalid SID - A serious error has occured, Contact Kazan!");
+						break;
+
+
+					default:
+						ml_printf("Network (FS2OpenPXO): Unknown return case for GetPlayerData(int, char *, player *, TCP_Socket &, int, bool, int)\n");
+						popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Unkown return case from GetPlayerData() - Contact Kazan!");
+						break;
+				}
+
+			}
+		
+			
+			Kaz_NoBackGround_DrawString("Requesting Server List");
+		} // isInitialized()
+
+	} // Om_Tracker_Flag
 
 	// do TCP and VMT specific initialization
 	if(Multi_options_g.protocol == NET_TCP){		
@@ -1525,10 +1542,6 @@ void multi_join_game_init()
 	}	
 
 	// this isn't fs2open PXO explicitly -- i've just cleaned it up a bit and it's _compatable_ with fs2openPXO
-	char textbuffer[17];
-	memset(textbuffer, 0, 17);
-	ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
-
 	multi_servers_query();
 	
 	// initialize any and all timestamps	
@@ -2111,6 +2124,7 @@ void multi_servers_query()
 	
 	char textbuffer[17];
 	memset(textbuffer, 0, 17);
+
 	ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
 
 	if (cur != NULL)
@@ -2134,8 +2148,11 @@ void multi_join_load_tcp_addrs()
 	//if (On_FS2Open_PXO)
 	if (Om_tracker_flag) // official straight from the config! ooh.. coolness :D
 	{
+		if (!FS2OpenPXO_Socket.isInitialized())
+			return;
 
-		fs2netd_maybe_init();
+		// should never have to init here
+		//fs2netd_maybe_init();
 
 		// free up any existing server list
 		multi_free_server_list();
@@ -2143,7 +2160,7 @@ void multi_join_load_tcp_addrs()
 		net_server *servers;
 		int numServersFound;
 		
-		ml_printf("Network (FS2OpenPXO): Requesting server list\n");
+		//ml_printf("Network (FS2OpenPXO): Requesting server list\n");
 		servers = GetServerList(PXO_Server, numServersFound, FS2OpenPXO_Socket, PXO_port);
 
 		
@@ -2226,7 +2243,7 @@ void multi_join_load_tcp_addrs()
 
 		//Multi_join_list_start_item = Active_game_head;
 		
-		ml_printf("Network (FS2OpenPXO): Finished adding servers - exiting multi_join_load_tcp_addrs()\n", i);
+		//ml_printf("Network (FS2OpenPXO): Finished adding servers - exiting multi_join_load_tcp_addrs()\n", i);
 	}
 	else
 	{
