@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.12 $
- * $Date: 2004-03-05 09:01:56 $
- * $Author: Goober5000 $
+ * $Revision: 1.13 $
+ * $Date: 2004-03-07 23:07:20 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2004/03/05 09:01:56  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 1.11  2004/02/21 00:59:43  Kazan
  * FS2NETD License Comments
  *
@@ -436,24 +440,27 @@ int Fs2OpenPXO_Login(const char* username, const char* password, UDP_Socket &Soc
 
 //**************************************************************************************************************************************************
 
-
-void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers, int myPort)
+void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket, const char* myName, const char* MisName, const char* title, int flags, int port, int players)
 {
+	// Clear any old dead crap data
+	//Socket.IgnorePackets();
+
 	// ---------- Prepair and send packet ------------	
 	serverlist_hb_packet hbpack;
 	memset(&hbpack, 0, sizeof(serverlist_hb_packet));
 
 	hbpack.pid = PCKT_SLIST_HB;
-	strncpy(hbpack.servername, myName, 64);
-	hbpack.netspeed = myNetspeed;
-	hbpack.status = myStatus; // forming
-	hbpack.type = myType; // cooperative
-	hbpack.players = (short) numPlayers;
-	hbpack.port = myPort;
+	strncpy(hbpack.name, myName, 64);
+	strncpy(hbpack.mission_name, MisName, 64);
+	strncpy(hbpack.title, title, 64);
+	hbpack.flags = flags; // cooperative
+	hbpack.players = (short) players;
+	hbpack.port = port;
 
 
 	Socket.SendPacket((char *) &hbpack, sizeof(serverlist_hb_packet), std::string(masterserver), targetport);
 }
+
 
 //**************************************************************************************************************************************************
 
@@ -486,19 +493,13 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, UDP_So
 		if (Socket.GetPacket((char *)&NewServer, sizeof(serverlist_reply_packet), sender) != -1)
 		{
 
-			if (!strcmp(NewServer.servername, "TERM") && NewServer.status == 0 && NewServer.players == 0 && NewServer.netspeed == 0 && NewServer.type == 0)
+			if (!strcmp(NewServer.name, "TERM") && NewServer.flags == 0 && NewServer.players == 0)
 			{
 				starttime = 0;
 				break;
 			}
 		
-			strncpy(templist[numServersFound].servername, NewServer.servername, 65);
-			templist[numServersFound].netspeed = NewServer.netspeed;
-			templist[numServersFound].status = NewServer.status;
-			templist[numServersFound].players = NewServer.players;
-			templist[numServersFound].type = NewServer.type;
-			templist[numServersFound].port = NewServer.port;
-			strncpy(templist[numServersFound].ip, NewServer.ip, 16);
+			memcpy((char *)&templist[numServersFound], (char *)&NewServer, sizeof(serverlist_reply_packet));
 
 			numServersFound++;
 		}

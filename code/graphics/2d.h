@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.23 $
- * $Date: 2004-02-20 21:45:41 $
- * $Author: randomtiger $
+ * $Revision: 2.24 $
+ * $Date: 2004-03-07 23:07:20 $
+ * $Author: Kazan $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/02/20 21:45:41  randomtiger
+ * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
+ * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
+ * Fixed setup of center_alpha in OGL which was causing crash.
+ *
  * Revision 2.22  2004/02/15 06:02:31  bobboau
  * fixed sevral asorted matrix errors,
  * OGL people make sure I didn't break anything,
@@ -431,6 +436,8 @@
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
+
+
 /* ========================= pixel plotters =========================
 In the 2d/texture mapper, bitmaps to be drawn will be passed by number.
 The 2d function will call a bmpman function to get the bitmap into whatever
@@ -829,6 +836,9 @@ extern int Gr_mmx;
 //Window's interface to set up graphics:
 //--------------------------------------
 // Call this at application startup
+
+// # Software Re-added by Kazan --- THIS HAS TO STAY -- It is used by standalone!
+#define GR_SOFTWARE					(100)		// Software renderer using standard Win32 functions in a window.
 
 #define GR_DIRECT3D					(102)		// Use Direct3d hardware renderer
 #define GR_OPENGL						(104)		// Use OpenGl hardware renderer

@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.11 $
- * $Date: 2004-03-05 09:01:56 $
- * $Author: Goober5000 $
+ * $Revision: 1.12 $
+ * $Date: 2004-03-07 23:07:20 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2004/03/05 09:01:56  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 1.10  2004/02/21 00:59:43  Kazan
  * FS2NETD License Comments
  *
@@ -62,13 +66,14 @@ struct player;
 
 struct net_server
 {
-      char servername[65];
-      int netspeed;
-      int status;
+      int pid; // 0x2 : serverlist reply (PCKT_SLIST_REPLY)
+      char name[65];
+	  char mission_name[65];
+	  char title[65];
       short players;
-      int type; // binary bitmask for type and dedicated server
-      char  ip[16];
-      int ping; // will be determined by client
+      int flags;
+
+	  char  ip[16]; // "255.255.255.255"
 	  int port;
 };
 
@@ -85,7 +90,7 @@ int CheckSingleMission(const char* mission, unsigned int crc32, UDP_Socket &Sock
 
 net_server* GetServerList(const char* masterserver, int &numServersFound, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
 int Ping(const char* target, UDP_Socket &Socket);
-void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers, int myPort);
+void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket, const char* myName, const char* MisName, const char* title, int flags, int port, int players)
 int Fs2OpenPXO_Login(const char* username, const char* password, UDP_Socket &Socket, const char* masterserver, int port=FS2OPEN_PXO_PORT, int timeout=15);
 
 
@@ -102,9 +107,9 @@ int CheckSingleMission(const char* mission, unsigned int crc32, TCP_Socket &Sock
 
 net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
 int Ping(const char* target, TCP_Socket &Socket);
-void SendHeartBeat(const char* masterserver, int targetport, TCP_Socket &Socket, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers, int myPort);
+void SendHeartBeat(const char* masterserver, int targetport, TCP_Socket &Socket, const char* myName, const char* MisName, const char* title, int flags, int port, int players);
 int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Socket, const char* masterserver, int port=FS2OPEN_PXO_PORT, int timeout=15);
-
+int GetPingReply(TCP_Socket &Socket);
 
 // longer timeouts - mySQL operations
 file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=30);
