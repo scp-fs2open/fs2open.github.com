@@ -979,6 +979,12 @@ bool d3d_init_device()
 			return false;
 		}
 
+		// Sanity cap
+		if(aatype_choice < 0 || aatype_choice >= multisample_max)
+		{
+			aatype_choice = 0;
+		}
+
 		// Should only activate if a value in the registry is not set or its going to run in a window or
 		// a optional parameter forces it to run. Otherwise the mode values are taken from reg value
 		if( adapter_choice == 0xffff)
@@ -1017,7 +1023,7 @@ bool d3d_init_device()
 		GlobalD3DVars::d3dpp.FullScreen_RefreshRateInHz      = D3DPRESENT_RATE_DEFAULT;
 		GlobalD3DVars::d3dpp.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
 
-		if(got_caps && GlobalD3DVars::d3d_caps.PresentationIntervals & D3DPRESENT_INTERVAL_IMMEDIATE) {
+		if(Cmdline_d3d_no_vsync && got_caps && GlobalD3DVars::d3d_caps.PresentationIntervals & D3DPRESENT_INTERVAL_IMMEDIATE) {
 			GlobalD3DVars::d3dpp.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 		}
 

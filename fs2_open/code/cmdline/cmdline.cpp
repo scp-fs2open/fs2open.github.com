@@ -9,14 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.38 $
- * $Date: 2003-10-27 23:04:20 $
+ * $Revision: 2.39 $
+ * $Date: 2003-11-03 18:07:26 $
  * $Author: randomtiger $
- * $Revision: 2.38 $
- * $Date: 2003-10-27 23:04:20 $
+ * $Revision: 2.39 $
+ * $Date: 2003-11-03 18:07:26 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/10/27 23:04:20  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.37  2003/10/26 00:31:58  randomtiger
  * Fixed hulls not drawing (with Phreaks advise).
  * Put my 32bit PCX loading under PCX_32 compile flag until its working.
@@ -415,7 +423,6 @@ cmdline_parm multilog_arg("-multilog", NULL);
 cmdline_parm server_firing_arg("-oldfire", NULL);
 cmdline_parm client_dodamage("-clientdamage", NULL);
 cmdline_parm pof_spew("-pofspew", NULL);
-cmdline_parm d3d_32bit("-32bit", NULL);
 cmdline_parm mouse_coords("-coords", NULL);
 cmdline_parm timeout("-timeout", NULL);
 cmdline_parm d3d_window("-window", NULL);
@@ -442,6 +449,7 @@ cmdline_parm nohtl_arg("-htl", NULL); //Use software HT&L
 cmdline_parm cell_arg("-cell", NULL);
 cmdline_parm textures_32bit("-t32",NULL);
 cmdline_parm no_set_gamma("-no_set_gamma",NULL);
+cmdline_parm d3d_no_vsync("-d3d_no_vsync", NULL);
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -486,6 +494,7 @@ int Cmdline_d3dmipmap = 0;
 int Cmdline_nohtl = 0;
 int Cmdline_32bit_textures = 0;
 int Cmdline_no_set_gamma = 0;
+int Cmdline_d3d_no_vsync = 0;
 
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
@@ -923,6 +932,11 @@ void SetCmdlineParams()
 	if( no_set_gamma.found() )
 	{
 		Cmdline_no_set_gamma = 1;
+	}
+
+	if(d3d_no_vsync.found() )
+	{
+		Cmdline_d3d_no_vsync = 1;
 	}
 }
 
