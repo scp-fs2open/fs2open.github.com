@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.1 $
- * $Date: 2004-03-08 18:36:21 $
- * $Author: randomtiger $
+ * $Revision: 2.2 $
+ * $Date: 2004-04-01 15:31:21 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  */
@@ -135,7 +135,7 @@ int bm_stub_load_duplicate(char *filename){return 0;}
 int bm_stub_create( int bpp, int w, int h, void * data, int flags = 0){return 0;}
 int bm_stub_unload( int n ){return 0;}
 void bm_stub_release(int n){}
-int bm_stub_load_animation( char * filename, int * nframes, int *fps = NULL, int can_drop_frames = 0 ){return 0;}
+int bm_stub_load_animation( char * filename, int * nframes, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY ){return 0;}
 bitmap * bm_stub_lock( int bitmapnum, ubyte bpp, ubyte flags ){return 0;}
 void bm_stub_unlock( int bitmapnum ){}
 void bm_stub_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL, bitmap_section_info **sections = NULL ){}

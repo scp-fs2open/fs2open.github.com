@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.37 $
- * $Date: 2004-03-31 05:42:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.38 $
+ * $Date: 2004-04-01 15:31:22 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2004/03/31 05:42:28  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.36  2004/03/21 10:34:05  bobboau
  * fixed a texture loading bug
  *
@@ -2381,7 +2386,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		}
 
 
-		pm->textures[i] = bm_load_animation(tmp_name,  &pm->num_frames[i], &pm->fps[i], 1);
+		pm->textures[i] = bm_load_animation(tmp_name,  &pm->num_frames[i], &pm->fps[i], 1, CF_TYPE_MAPS);
 							
 		if (pm->textures[i]<0)pm->textures[i] = bm_load( tmp_name );
 		else pm->is_ani[i] = 1;	//this is an animated texture

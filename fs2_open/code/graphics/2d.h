@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.26 $
- * $Date: 2004-03-17 04:07:29 $
- * $Author: bobboau $
+ * $Revision: 2.27 $
+ * $Date: 2004-04-01 15:31:21 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/03/17 04:07:29  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.25  2004/03/08 18:36:21  randomtiger
  * Added complete stub system to replace software.
  *
@@ -478,6 +485,7 @@ gr_line(x1,y1,x2,y2)
 
 #include "globalincs/pstypes.h"
 #include "graphics/tmapper.h"
+#include "cfile/cfile.h"
 
 
 #define MATRIX_TRANSFORM_TYPE_WORLD 0
@@ -763,7 +771,7 @@ typedef struct screen {
 	int (*gf_bm_create)( int bpp, int w, int h, void * data, int flags = 0);
 	int (*gf_bm_load)( char * real_filename );
 	int (*gf_bm_load_duplicate)(char *filename);
-	int (*gf_bm_load_animation)( char *real_filename, int *nframes, int *fps = NULL, int can_drop_frames = 0);
+	int (*gf_bm_load_animation)( char *real_filename, int *nframes, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
 	void (*gf_bm_get_info)( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL, bitmap_section_info **sections = NULL);
 	bitmap * (*gf_bm_lock)( int handle, ubyte bpp, ubyte flags );
 	void (*gf_bm_unlock)( int handle );

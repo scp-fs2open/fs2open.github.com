@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.23 $
- * $Date: 2004-03-05 09:01:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.24 $
+ * $Date: 2004-04-01 15:31:20 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/03/05 09:01:54  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.22  2004/02/28 14:14:56  randomtiger
  * Removed a few uneeded if DIRECT3D's.
  * Set laser function to only render the effect one sided.
@@ -1277,7 +1281,7 @@ static int find_block_of(int n)
 //
 // returns:		bitmap number of first frame in the animation
 //
-int bm_gfx_load_animation( char *real_filename, int *nframes, int *fps, int can_drop_frames)
+int bm_gfx_load_animation( char *real_filename, int *nframes, int *fps, int can_drop_frames, int dir_type)
 {
 	int	i, n;
 	anim	the_anim;
@@ -1295,7 +1299,7 @@ int bm_gfx_load_animation( char *real_filename, int *nframes, int *fps, int can_
 	}
 	strcat( filename, ".ani" );
 
-	if ( (fp = cfopen(filename, "rb")) == NULL ) {
+	if ( (fp = cfopen(filename, "rb", CFILE_NORMAL, dir_type)) == NULL ) {
 //		Error(LOCATION,"Could not open filename %s in bm_load_ani()\n", filename);
 		return -1;
 	}
