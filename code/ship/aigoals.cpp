@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-02-04 09:21:36 $
+ * $Revision: 2.11 $
+ * $Date: 2004-03-05 09:01:52 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/02/04 09:21:36  Goober5000
+ * more player ai stuff
+ * --Goober5000
+ *
  * Revision 2.9  2004/01/30 07:39:06  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -507,17 +511,16 @@
  */
 
 #include "ship/aigoals.h"
-#include "freespace2/freespace.h"
-#include "ship/ai.h"
 #include "parse/sexp.h"
 #include "mission/missionlog.h"
 #include "mission/missionparse.h"
-#include "model/model.h"				// for subsystem types
+#include "object/object.h"
 #include "globalincs/linklist.h"
-#include "io/timer.h"
 #include "playerman/player.h"
 #include "network/multimsgs.h"
 #include "network/multi.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 
 // all ai goals dealt with in this code are goals that are specified through
 // sexpressions in the mission file.  They are either specified as part of a

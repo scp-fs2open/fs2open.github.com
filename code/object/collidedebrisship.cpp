@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-11-11 02:15:42 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:57 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/11/11 02:15:42  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.2  2003/04/29 01:03:22  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -176,6 +181,7 @@
 #include "io/timer.h"
 #include "asteroid/asteroid.h"
 #include "hud/hud.h"
+#include "object/object.h"
 
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 

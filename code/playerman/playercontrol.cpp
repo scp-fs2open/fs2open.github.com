@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-12-16 21:01:14 $
- * $Author: phreak $
+ * $Revision: 2.13 $
+ * $Date: 2004-03-05 09:02:05 $
+ * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/12/16 21:01:14  phreak
+ * disabled tertiary weapons support pending a rewrite of critical code
+ *
  * Revision 2.11  2003/11/11 02:15:46  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -475,37 +478,33 @@
  * $NoKeywords: $
 */
 
-#include "globalincs/pstypes.h"
-#include "physics/physics.h"
-#include "io/key.h"
+#include "playerman/player.h"
 #include "io/joy.h"
 #include "io/joy_ff.h"
 #include "io/mouse.h"
-#include "math/fix.h"
-#include "math/floating.h"
+#include "io/timer.h"
 #include "object/object.h"
-#include "playerman/player.h"
 #include "hud/hud.h"
-#include "hud/hudtarget.h"
 #include "hud/hudtargetbox.h"
 #include "ship/ship.h"
 #include "freespace2/freespace.h"
-#include "controlconfig/controlsconfig.h"
-#include "sound/sound.h"
 #include "gamesnd/gamesnd.h"
-#include "missionui/missionshipchoice.h"
-#include "ship/afterburner.h"
-#include "io/timer.h"
 #include "gamesequence/gamesequence.h"
 #include "mission/missionmessage.h"
 #include "globalincs/linklist.h"
 #include "mission/missiongoals.h"
 #include "hud/hudsquadmsg.h"
+#include "hud/hudmessage.h"
 #include "observer/observer.h"
+#include "weapon/weapon.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
-#include "network/multi_obj.h"
+#include "network/multi_oo.h"
+#endif
+
+#ifndef NDEBUG
+#include "io/key.h"
 #endif
 
 ////////////////////////////////////////////////////////////

@@ -10,13 +10,19 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.22 $
- * $Date: 2004-02-28 14:14:56 $
- * $Author: randomtiger $
+ * $Revision: 2.23 $
+ * $Date: 2004-03-05 09:01:54 $
+ * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/02/28 14:14:56  randomtiger
+ * Removed a few uneeded if DIRECT3D's.
+ * Set laser function to only render the effect one sided.
+ * Added some stuff to the credits.
+ * Set D3D fogging to fall back to vertex fog if table fog not supported.
+ *
  * Revision 2.21  2004/02/20 21:45:40  randomtiger
  * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
  * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
@@ -595,10 +601,8 @@
  * $NoKeywords: $
  */
 
-#include <ctype.h>
-#include "globalincs/pstypes.h"
-#include "pcxutils/pcxutils.h"
 #include "bmpman/bmpman.h"
+#include "pcxutils/pcxutils.h"
 #include "palman/palman.h"
 #include "graphics/2d.h"
 #include "anim/animplay.h"
@@ -606,11 +610,11 @@
 #include "globalincs/systemvars.h"
 #include "io/key.h"
 #include "anim/packunpack.h"
-#include "cfile/cfile.h"
 #include "graphics/grinternal.h"
 #include "tgautils/tgautils.h"
 #include "ship/ship.h"
 #include "ddsutils/ddsutils.h"
+#include "cfile/cfile.h"
 
 #ifndef NDEBUG
 #define BMPMAN_NDEBUG

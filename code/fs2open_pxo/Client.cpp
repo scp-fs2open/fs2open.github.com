@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.11 $
- * $Date: 2004-02-21 00:59:43 $
- * $Author: Kazan $
+ * $Revision: 1.12 $
+ * $Date: 2004-03-05 09:01:56 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2004/02/21 00:59:43  Kazan
+ * FS2NETD License Comments
+ *
  * Revision 1.10  2004/02/04 09:02:42  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -45,11 +48,13 @@
  */
 
 #include "Client.h"
-#include "protocol.h"
+//#include "protocol.h"
 #include "udpsocket.h"
 #include <iostream.h>
 #include <time.h>
 #include "network/multi_log.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
 
 
 #define PXO_ADDINT(n)	*((int *)cur) = (n); cur += sizeof(int);

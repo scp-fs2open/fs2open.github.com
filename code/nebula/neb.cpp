@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-02-28 14:14:57 $
- * $Author: randomtiger $
+ * $Revision: 2.20 $
+ * $Date: 2004-03-05 09:02:07 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/02/28 14:14:57  randomtiger
+ * Removed a few uneeded if DIRECT3D's.
+ * Set laser function to only render the effect one sided.
+ * Added some stuff to the credits.
+ * Set D3D fogging to fall back to vertex fog if table fog not supported.
+ *
  * Revision 2.18  2004/02/14 00:18:34  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -203,27 +209,16 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
 #include "nebula/neb.h"
-#include "math/vecmat.h"
 #include "render/3d.h"
 #include "bmpman/bmpman.h"
-#include "graphics/2d.h"
 #include "object/object.h"
-#include "io/timer.h"
-#include "network/multi.h"
 #include "freespace2/freespace.h"
-#include "io/key.h"
-#include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "parse/parselo.h"
-#include "weapon/beam.h"
-#include "sound/sound.h"
-#include "gamesnd/gamesnd.h"
-#include "graphics/grinternal.h"
 #include "pcxutils/pcxutils.h"
-
-#include "globalincs/alphacolors.h"
+#include "mission/missionparse.h"
+#include "ship/ship.h"
 
 extern int Cmdline_nohtl;
 

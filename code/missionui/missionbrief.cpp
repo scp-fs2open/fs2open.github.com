@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-12-16 20:48:41 $
- * $Author: phreak $
+ * $Revision: 2.14 $
+ * $Date: 2004-03-05 09:01:55 $
+ * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/12/16 20:48:41  phreak
+ * made gr_set_proj_matrix use the MIN/MAX_DRAW_DISTANCE constants
+ *
  * Revision 2.12  2003/11/17 04:25:57  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -337,36 +340,25 @@
 */
 
 #include "freespace2/freespace.h"
-#include "mission/missionload.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
-#include "mission/missionparse.h"
 #include "mission/missiongoals.h"
 #include "gamesequence/gamesequence.h"
 #include "ship/ship.h"
 #include "io/key.h"
-#include "graphics/2d.h"
-#include "graphics/line.h"
 #include "render/3d.h"
 #include "model/model.h"
 #include "io/timer.h"
-#include "math.h"
 #include "globalincs/linklist.h"
 #include "io/mouse.h"
 #include "hud/hud.h"
-#include "ui/ui.h"
-#include "osapi/osapi.h"
 #include "sound/audiostr.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesnd/eventmusic.h"
 #include "mission/missioncampaign.h"
-#include "object/object.h"
 #include "menuui/snazzyui.h"
-#include "bmpman/bmpman.h"
 #include "missionui/missionbrief.h"
 #include "mission/missionbriefcommon.h"
-#include "mission/missiongrid.h"
-#include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
 #include "gamehelp/contexthelp.h"
 #include "asteroid/asteroid.h"
@@ -377,7 +369,7 @@
 #include "mission/missionmessage.h"
 #include "playerman/player.h"
 #include "sound/fsspeech.h"
-#include "debugconsole/dbugfile.h"
+#include "parse/parselo.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

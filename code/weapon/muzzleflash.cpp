@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:06 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:54 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:06  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/11/04 03:02:29  randomtiger
  *
  * I have made some fairly drastic changes to the bumpman system. Now functionality can be engine dependant.
@@ -66,15 +69,12 @@
  * $NoKeywords: $
  */
 
-#include "object/object.h"
-#include "io/timer.h"
 #include "globalincs/systemvars.h"
-#include "globalincs/linklist.h"
 #include "parse/parselo.h"
 #include "weapon/muzzleflash.h"
-#include "bmpman/bmpman.h"
 #include "particle/particle.h"
 #include "graphics/2d.h"
+#include "math/vecmat.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH DEFINES/VARS

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:11 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:01:54 $
+ * $Author: Goober5000 $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:11  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -36,15 +39,10 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
 #include "weapon/flak.h"
-#include "math/vecmat.h"
-#include "bmpman/bmpman.h"
-#include "particle/particle.h"
 #include "weapon/weapon.h"
-#include "globalincs/systemvars.h"
-#include "network/multi.h"
 #include "weapon/muzzleflash.h"
+#include "object/object.h"
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 // FLAK DEFINES/VARS

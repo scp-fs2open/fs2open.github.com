@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-19 09:05:25 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:54 $
  * $Author: Goober5000 $
  *
  * Low-level code for reading data out of large archive files or normal files.  All
  * reads/seeks come through here.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/19 09:05:25  Goober5000
+ * more housecleaning, this time for debug warnings
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -96,7 +100,6 @@
 #include <winbase.h>		/* needed for memory mapping of file functions */
 #endif
 
-#include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 #include "cfile/cfilearchive.h"
 

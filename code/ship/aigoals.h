@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.h $
- * $Revision: 2.3 $
- * $Date: 2003-01-07 20:06:44 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:52 $
  * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/07 20:06:44  Goober5000
+ * added ai-chase-any-except sexp
+ * --Goober5000
+ *
  * Revision 2.2  2003/01/06 21:52:58  Goober5000
  * allowed fighters and bombers to accept the stay-near-ship and
  * keep-safe-distance orders
@@ -150,8 +154,11 @@
 #ifndef _AIGOALS_H
 #define _AIGOALS_H
 
-#include "ship/ai.h"
-#include "cfile/cfile.h"
+#include "globalincs/globals.h"
+
+struct wing;
+struct ai_info;
+struct ai_goal;
 
 // macros for goals which get set via sexpressions in the mission code
 

@@ -9,12 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-02-20 04:29:55 $
- * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-05 09:02:05 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/02/20 04:29:55  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.7  2004/01/30 07:39:07  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -323,13 +328,12 @@
 
 
 #include <ctype.h>
-#include "cfile/cfile.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
 #include "osapi/osregistry.h"
 #include "parse/encrypt.h"
-#include "graphics/2d.h"
 #include "playerman/player.h"
+#include "cfile/cfile.h"
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS

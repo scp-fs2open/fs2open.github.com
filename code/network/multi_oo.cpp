@@ -7,18 +7,18 @@
  *
 */
 
-// #include "vd3drm.h"
+#include "network/multi_oo.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
 #include "globalincs/linklist.h"
-#include "weapon/weapon.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "network/multi_oo.h"
 #include "network/multi.h"
+#include "network/multi_options.h"
+#include "ship/ship.h"
 #include "object/object.h"
+#include "playerman/player.h"
 #include "io/key.h"
-#include "gamesnd/gamesnd.h"
 
 #ifndef OO_NEW
 

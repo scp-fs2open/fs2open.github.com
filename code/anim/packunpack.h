@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
  * Anim files.  Also handles Anim loading, creating Anim instances (for
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -201,7 +204,7 @@ typedef struct anim {
 	int			file_offset;	// file offset to start of frame data
 	int			cache_file_offset;
 	ubyte			*cache;
-} anim_t;
+} anim;
 
 // the direction to play the anim (forwards or backwards)
 #define ANIM_DIRECT_FORWARD 0
@@ -233,7 +236,7 @@ typedef struct anim_instance {
 	int      paused;        // pause the anim
 	int		file_offset;	// current offset into frame (like data, put offset into file)
 	int		loop_count;		// starts at 0, and is incremented each time it loops
-} anim_instance_t;
+} anim_instance;
 
 extern int packer_code;
 

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_options.h $
- * $Revision: 2.1 $
- * $Date: 2003-09-23 02:42:54 $
- * $Author: Kazan $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/09/23 02:42:54  Kazan
+ * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -100,6 +103,7 @@
 // ----------------------------------------------------------------------------------
 // MULTI OPTIONS DEFINES/VARS
 //
+#include "globalincs/pstypes.h"
 
 struct header;
 struct netgame_info;

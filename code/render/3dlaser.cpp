@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-02-28 14:14:57 $
- * $Author: randomtiger $
+ * $Revision: 2.8 $
+ * $Date: 2004-03-05 09:01:51 $
+ * $Author: Goober5000 $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/02/28 14:14:57  randomtiger
+ * Removed a few uneeded if DIRECT3D's.
+ * Set laser function to only render the effect one sided.
+ * Added some stuff to the credits.
+ * Set D3D fogging to fall back to vertex fog if table fog not supported.
+ *
  * Revision 2.6  2004/02/20 04:29:56  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -163,7 +169,6 @@
  */
 
 #include "graphics/2d.h"
-#include "render/3d.h"
 #include "render/3dinternal.h"
 #include "globalincs/systemvars.h"
 #include "io/key.h"

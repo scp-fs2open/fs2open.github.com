@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_xfer.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -177,18 +180,18 @@
  * $NoKeywords: $
  */
 
-#include <winsock.h>
-#include <io.h>
-#include "network/multi.h"
 #include "network/multi_xfer.h"
-#include "cfile/cfile.h"
+#include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/psnet.h"
-#include "popup/popup.h"
-#include "network/multi_endgame.h"
 #include "io/timer.h"
+#include "cfile/cfile.h"
+
+#ifndef NDEBUG
+#include "playerman/player.h"
 #include "network/multiutil.h"
 #include "network/multi_log.h"
+#endif
 
 // ------------------------------------------------------------------------------------------
 // MULTI XFER DEFINES/VARS

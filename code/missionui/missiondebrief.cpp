@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-11-13 03:59:54 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-03-05 09:01:55 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/11/13 03:59:54  Kazan
+ * PXO_SID changed from unsigned to signed
+ *
  * Revision 2.16  2003/11/11 02:15:44  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -401,42 +404,37 @@
  */
 
 #include "missionui/missiondebrief.h"
-#include "mission/missionbriefcommon.h"
 #include "missionui/missionscreencommon.h"
-#include "mission/missiongoals.h"
 #include "missionui/missionpause.h"
-#include "freespace2/freespace.h"
+#include "mission/missionbriefcommon.h"
+#include "mission/missiongoals.h"
+#include "mission/missioncampaign.h"
 #include "gamesequence/gamesequence.h"
 #include "io/key.h"
-#include "graphics/2d.h"
-#include "ui/ui.h"
 #include "ui/uidefs.h"
 #include "gamesnd/gamesnd.h"
-#include "parse/sexp.h"
 #include "parse/parselo.h"
 #include "sound/audiostr.h"
 #include "io/timer.h"
-#include "bmpman/bmpman.h"
 #include "gamehelp/contexthelp.h"
 #include "stats/stats.h"
 #include "playerman/player.h"
-#include "io/mouse.h"
 #include "gamesnd/eventmusic.h"
 #include "graphics/font.h"
 #include "popup/popup.h"
 #include "stats/medals.h"
-#include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "osapi/osapi.h"
 #include "sound/fsspeech.h"
-#include "debugconsole/dbugfile.h"
+#include "globalincs/globals.h"
+#include "ship/ship.h"
+#include "cfile/cfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "network/multiteamselect.h"
 #include "network/multiui.h"
 #include "network/multi_pinfo.h"
 #include "network/multi_kick.h"

@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-02-15 06:02:32 $
- * $Author: bobboau $
+ * $Revision: 2.26 $
+ * $Date: 2004-03-05 09:02:07 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/02/15 06:02:32  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.24  2004/02/14 00:18:36  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -298,25 +303,18 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
-#include "math/floating.h"
 #include "math/vecmat.h"
 #include "render/3d.h"
-#include "graphics/2d.h"
 #include "starfield/starfield.h"
-#include "bmpman/bmpman.h"
-#include "io/key.h"
 #include "freespace2/freespace.h"	
 #include "io/timer.h"
 #include "starfield/nebula.h"
-#include "globalincs/linklist.h"
 #include "lighting/lighting.h"
-#include "asteroid/asteroid.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
-#include "globalincs/alphacolors.h"
 #include "starfield/supernova.h"
 #include "cmdline\cmdline.h"
+#include "parse/parselo.h"
 
 #define MAX_DEBRIS_VCLIPS	4
 #define DEBRIS_ROT_MIN				10000
@@ -747,7 +745,6 @@ void stars_level_init()
 }
 
 
-#include "object/object.h"
 extern object * Player_obj;
 
 #define STAR_AMOUNT_DEFAULT 0.75f

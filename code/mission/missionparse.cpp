@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.54 $
- * $Date: 2004-02-07 00:48:53 $
+ * $Revision: 2.55 $
+ * $Date: 2004-03-05 09:02:06 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2004/02/07 00:48:53  Goober5000
+ * made FS2 able to account for subsystem mismatches between ships.tbl and the
+ * model file - e.g. communication vs. communications
+ * --Goober5000
+ *
  * Revision 2.53  2004/02/05 14:31:44  Goober5000
  * fixed a few random bugs
  * --Goober5000
@@ -566,17 +571,14 @@
 #include <stdarg.h>
 #include <setjmp.h>
 
-#include "freespace2/freespace.h"
-#include "parse/parselo.h"
 #include "mission/missionparse.h"
+#include "parse/parselo.h"
 #include "mission/missiongoals.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
-#include "parse/sexp.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "ship/ship.h"
-#include "ship/ai.h"
 #include "ship/aigoals.h"
 #include "playerman/player.h"
 #include "starfield/starfield.h"
@@ -584,15 +586,10 @@
 #include "lighting/lighting.h"
 #include "gamesnd/eventmusic.h"
 #include "mission/missionbriefcommon.h"
+#include "mission/missioncampaign.h"
 #include "ship/shipfx.h"
 #include "debris/debris.h"
-#include "cfile/cfile.h"
-#include "fireball/fireballs.h"
-#include "gamesnd/gamesnd.h"
-#include "gamesequence/gamesequence.h"
-#include "stats/medals.h"
 #include "starfield/nebula.h"
-#include "palman/palman.h"
 #include "hud/hudets.h"
 #include "mission/missionhotkey.h"
 #include "hud/hudescort.h"
@@ -608,6 +605,8 @@
 #include "demo/demo.h"
 #include "nebula/neblightning.h"
 #include "math/fvi.h"
+#include "weapon/weapon.h"
+#include "cfile/cfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -2026,7 +2025,7 @@ int parse_create_object(p_object *objp)
 		int sexp;
 
 		for ( sexp = CDR(objp->ai_goals); sexp != -1; sexp = CDR(sexp) )
-			// make a call to the routine in MissionGoals.cpp to set up the ai goals for this object.
+			// set up the ai goals for this object.
 			ai_add_ship_goal_sexp( sexp, AIG_TYPE_EVENT_SHIP, aip );
 
 		if ( objp->wingnum == -1 )			// free the sexpression nodes only for non-wing ships.  wing code will handle it's own case

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.h $
- * $Revision: 2.3 $
- * $Date: 2003-09-16 13:30:16 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:55 $
+ * $Author: Goober5000 $
  *
  * Header file to support functions that allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/16 13:30:16  unknownplayer
+ * Minor bugfix to the 3D ship code. There still may be some cases where it will
+ * fail to load the model file it needs, but I'm at present mystified as to why.
+ *
  * Revision 2.2  2003/09/16 11:56:46  unknownplayer
  * Changed the ship selection window to load the 3D FS2 ship models instead
  * of the custom *.ani files. It just does a techroom rotation for now, but I'll add
@@ -223,8 +227,7 @@
 #ifndef __MISSIONSHIPCHOICE_H__
 #define __MISSIONSHIPCHOICE_H__
 
-#include "missionui/missionscreencommon.h"
-#include "mission/missionparse.h"
+struct p_object;
 
 ///////////////////////////////////////////////////////
 // Ships selection hot spots

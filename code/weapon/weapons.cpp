@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2004/02/20 04:29:57  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.53  2004/02/14 00:18:37  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -522,41 +527,24 @@
  * $NoKeywords: $
  */
 
-#include <stdlib.h>
+//#include <stdlib.h>
 
-#include "globalincs/pstypes.h"
-#include "globalincs/systemvars.h"
-#include "math/vecmat.h"
-#include "graphics/tmapper.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
-#include "bmpman/bmpman.h"
-#include "model/model.h"
-#include "io/key.h"
-#include "physics/physics.h"
-#include "math/floating.h"
-#include "model/model.h"
-#include "lighting/lighting.h"
-#include "object/object.h"
 #include "weapon/weapon.h"
+#include "render/3d.h"
+#include "object/object.h"
 #include "ship/ship.h"
 #include "fireball/fireballs.h"
 #include "playerman/player.h"
-#include "hud/hudtarget.h"
 #include "freespace2/freespace.h"
 #include "radar/radar.h"
-#include "ship/ai.h"
-#include "sound/sound.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "gamesnd/gamesnd.h"
 #include "cmeasure/cmeasure.h"
 #include "weapon/shockwave.h"
-#include "model/model.h"
 #include "math/staticrand.h"
 #include "weapon/swarm.h"
 #include "ship/shiphit.h"
-#include "weapon/trails.h"
 #include "hud/hud.h"
 #include "object/objcollide.h"
 #include "ship/aibig.h"
@@ -568,14 +556,13 @@
 #include "localization/localize.h"
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
-#include "debugconsole/dbugfile.h"
 #include "cmdline/cmdline.h"
+#include "parse/parselo.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "network/multi_obj.h"
 #endif
 
 #ifndef NDEBUG

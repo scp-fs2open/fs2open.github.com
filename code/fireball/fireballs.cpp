@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-02-14 00:18:30 $
- * $Author: randomtiger $
+ * $Revision: 2.10 $
+ * $Date: 2004-03-05 09:02:00 $
+ * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/02/14 00:18:30  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.8  2003/11/16 04:09:19  Goober5000
  * language
  *
@@ -355,25 +366,16 @@
 
 #include <stdlib.h>
 
-#include "math/vecmat.h"
+#include "fireball/fireballs.h"
 #include "graphics/tmapper.h"
-#include "graphics/2d.h"
 #include "render/3d.h"
-#include "bmpman/bmpman.h"
 #include "model/model.h"
-#include "io/key.h"
-#include "physics/physics.h"
-#include "math/floating.h"
-#include "model/model.h"
-#include "lighting/lighting.h"
 #include "object/object.h"
 #include "ship/ship.h"
-#include "globalincs/systemvars.h"
-#include "fireball/fireballs.h"
-#include "globalincs/linklist.h"
 #include "gamesnd/gamesnd.h"
 #include "localization/localize.h"
 #include "cmdline/cmdline.h"
+#include "parse/parselo.h"
 
 int wm;
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.32 $
- * $Date: 2004-02-15 06:02:32 $
- * $Author: bobboau $
+ * $Revision: 2.33 $
+ * $Date: 2004-03-05 09:02:04 $
+ * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2004/02/15 06:02:32  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.31  2004/02/10 05:07:38  matt
  * Fixed issue with ships being rendered off center
  * in the HUD target box. Much easier than I
@@ -340,25 +345,19 @@
  * $NoKeywords: $
  */
 
-#include "graphics/2d.h"
-#include "render/3d.h"
+#include "hud/hudtargetbox.h"
 #include "render/3dinternal.h"
 #include "object/object.h"
 #include "hud/hud.h"
-#include "hud/hudtarget.h"
 #include "hud/hudbrackets.h"
-#include "hud/hudets.h"
 #include "model/model.h"
 #include "mission/missionparse.h"
 #include "debris/debris.h"
-#include "weapon/weapon.h"
 #include "playerman/player.h"
 #include "gamesnd/gamesnd.h"
 #include "freespace2/freespace.h"
-#include "bmpman/bmpman.h"
 #include "io/timer.h"
 #include "ship/subsysdamage.h"
-#include "hud/hudtargetbox.h"
 #include "graphics/font.h"
 #include "asteroid/asteroid.h"
 #include "jumpnode/jumpnode.h"
@@ -366,6 +365,13 @@
 #include "weapon/emp.h"
 #include "localization/localize.h"
 #include "cmdline/cmdline.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
+#include "parse/parselo.h"
+
+#ifndef NDEBUG
+#include "hud/hudets.h"
+#endif
 
 int Target_window_coords[GR_NUM_RESOLUTIONS][4] =
 {

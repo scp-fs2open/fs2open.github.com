@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-03-04 05:57:45 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/03/04 05:57:45  Kazan
+ * LAN works A1 Supar!
+ *
  * Revision 2.7  2003/11/11 02:15:46  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -347,49 +350,30 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include <windowsx.h>
+//#include <windowsx.h>
 #include <commctrl.h>
-#include <io.h>
+//#include <io.h>
 #endif
-#include <stdio.h>
-#include <fcntl.h>
-#include <stdarg.h>
-
-#include "math/vecmat.h"
-#include "graphics/tmapper.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
-#include "model/model.h"
-#include "bmpman/bmpman.h"
-#include "lighting/lighting.h"
-#include "globalincs/linklist.h"
-#include "freespace2/freespace.h"
 
 #include "network/stand_gui.h"
-#include "globalincs/pstypes.h"
-#include "osapi/osapi.h"
-#include "io/key.h"
-#include "palman/palman.h"
-#include "io/mouse.h"
-#include "osapi/outwnd.h"
-#include "graphics/2d.h"
-#include "cfile/cfile.h"
-#include "sound/sound.h"
+#include "freespace2/freespace.h"
 #include "freespace2/freespaceresource.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "mission/missiongoals.h"
-#include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
 #include "network/multi_kick.h"
 #include "network/multi_pmsg.h"
 #include "missionui/chatbox.h"
 #include "network/multi_endgame.h"
 #include "gamesequence/gamesequence.h"
+#include "playerman/player.h"
 #include "osapi/osregistry.h"
 #include "io/timer.h"
 #include "globalincs/version.h"
+#include "ship/ship.h"
+#include "cfile/cfile.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4663 4018 4663 4245)

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-10-16 00:17:17 $
- * $Author: randomtiger $
+ * $Revision: 2.13 $
+ * $Date: 2004-03-05 09:02:04 $
+ * $Author: Goober5000 $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/10/16 00:17:17  randomtiger
+ * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
+ * As well as initialised in a different mode, bitmaps are stretched and for these modes
+ * previously point filtered textures now use linear to keep them smooth.
+ * I also had to shuffle some of the GR_1024 a bit.
+ * Put my HT&L flags in ready for my work to sort out some of the render order issues.
+ * Tided some other stuff up.
+ *
  * Revision 2.11  2003/10/14 17:39:14  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -240,13 +248,9 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
 #include "math/vecmat.h"
 #include "render/3d.h"
-#include "math/fvi.h"
-#include "io/key.h"
 #include "lighting/lighting.h"
-#include "io/timer.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "cmdline/cmdline.h"

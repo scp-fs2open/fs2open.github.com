@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/GADGET.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-02-14 00:18:36 $
- * $Author: randomtiger $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:02:03 $
+ * $Author: Goober5000 $
  *
  * Functions for the base gadget class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/02/14 00:18:36  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.3  2003/10/27 23:04:23  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -176,7 +187,6 @@
 #include "ui/ui.h"
 #include "bmpman/bmpman.h"
 #include "anim/animplay.h"
-#include "graphics/2d.h"
 
 // constructor
 UI_GADGET::UI_GADGET()

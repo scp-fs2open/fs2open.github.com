@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-04-05 11:09:21 $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:02:06 $
  * $Author: Goober5000 $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/04/05 11:09:21  Goober5000
+ * fixed some fiddly bits with scrolling and ui stuff
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -175,26 +179,20 @@
 #include "gamesequence/gamesequence.h"
 #include "freespace2/freespace.h"
 #include "io/key.h"
-#include "bmpman/bmpman.h"
-#include "graphics/2d.h"
 #include "io/timer.h"
 #include "gamesnd/gamesnd.h"
 #include "sound/audiostr.h"
 #include "ship/ship.h"
 #include "object/object.h"
 #include "globalincs/linklist.h"
-#include "hud/hudtarget.h"
 #include "playerman/player.h"
 #include "ui/ui.h"
 #include "ui/uidefs.h"
 #include "missionui/missionscreencommon.h"
 #include "graphics/font.h"
-#include "gamesnd/gamesnd.h"
-#include "controlconfig/controlsconfig.h"
 #include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
 #include "weapon/beam.h"
-#include "debugconsole/dbugfile.h"
 
 static int Key_sets[MAX_KEYED_TARGETS] = {
 	KEY_F5,

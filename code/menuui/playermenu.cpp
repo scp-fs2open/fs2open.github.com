@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-02-20 04:29:55 $
- * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/02/20 04:29:55  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.7  2003/11/11 02:15:43  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -208,31 +213,23 @@
  *
  */
 
-#include <ctype.h>
-
 #include "menuui/playermenu.h"
-#include "graphics/2d.h"
 #include "ui/ui.h"
 #include "gamesnd/gamesnd.h"
 #include "playerman/player.h"
-#include "cfile/cfile.h"
 #include "io/key.h"
 #include "playerman/managepilot.h"
-#include "missionui/missionscreencommon.h"
-#include "bmpman/bmpman.h"
 #include "freespace2/freespace.h"
-#include "parse/parselo.h"
 #include "gamesequence/gamesequence.h"
-#include "io/timer.h"
 #include "cmdline/cmdline.h"
 #include "osapi/osregistry.h"
-#include "palman/palman.h"
 #include "menuui/mainhallmenu.h"
 #include "popup/popup.h"
-#include "io/mouse.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
-#include "debugconsole/dbugfile.h"
+#include "mission/missioncampaign.h"
+#include "parse/parselo.h"
+#include "cfile/cfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

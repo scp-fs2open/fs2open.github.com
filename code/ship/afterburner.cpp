@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-01-31 03:56:46 $
- * $Author: phreak $
+ * $Revision: 2.8 $
+ * $Date: 2004-03-05 09:01:51 $
+ * $Author: Goober5000 $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/01/31 03:56:46  phreak
+ * changed "now" to unsigned int
+ *
  * Revision 2.6  2003/11/23 00:59:01  Goober5000
  * fixed a bug introduced by Penguin for running with NO_NETWORK defined
  * --Goober5000
@@ -160,16 +163,11 @@
  */
 
 #include "ship/afterburner.h"
-#include "io/key.h"
-#include "io/joy.h"
 #include "io/joy_ff.h"
 #include "gamesnd/gamesnd.h"
 #include "ship/ship.h"
-#include "controlconfig/controlsconfig.h"
+#include "object/object.h"
 #include "io/timer.h"
-#include "globalincs/systemvars.h"
-#include "globalincs/linklist.h"
-#include "network/multimsgs.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
 #include "hud/hudets.h"
 #include "freespace2/freespace.h"

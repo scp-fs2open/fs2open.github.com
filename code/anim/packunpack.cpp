@@ -9,15 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-02-14 00:18:29 $
- * $Author: randomtiger $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
  * Anim files.  Also handles Anim loading, creating Anim instances (for
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/02/14 00:18:29  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.3  2003/10/24 17:35:04  randomtiger
  * Implemented support for 32bit TGA and JPG for D3D
  * Also 32 bit PCX, but it still has some bugs to be worked out
@@ -178,13 +189,10 @@
  * $NoKeywords: $
  */
 
-#include "graphics/grinternal.h"
+#include "anim/packunpack.h"
 #include "bmpman/bmpman.h"
-#include "palman/palman.h"
 #include "graphics/2d.h"
 #include "anim/animplay.h"
-#include "anim/packunpack.h"
-#include "graphics/2d.h"
 
 int packer_code = PACKER_CODE;
 int transparent_code = 254;

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-09-07 18:14:54 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:55 $
+ * $Author: Goober5000 $
  *
  * Campaign Loop briefing screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/07 18:14:54  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.2  2003/03/18 10:07:04  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -54,18 +62,16 @@
 
 #include "missionui/missionloopbrief.h"
 #include "missionui/missionscreencommon.h"
-#include "graphics/2d.h"
-#include "bmpman/bmpman.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesnd/eventmusic.h"
 #include "sound/audiostr.h"
 #include "io/key.h"
 #include "gamesequence/gamesequence.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionbriefcommon.h"
 #include "anim/animplay.h"
 #include "freespace2/freespace.h"
 #include "sound/fsspeech.h"
-#include "debugconsole/dbugfile.h"
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // MISSION LOOP BRIEF DEFINES/VARS

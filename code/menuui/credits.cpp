@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-02-28 14:14:57 $
- * $Author: randomtiger $
+ * $Revision: 2.17 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/02/28 14:14:57  randomtiger
+ * Removed a few uneeded if DIRECT3D's.
+ * Set laser function to only render the effect one sided.
+ * Added some stuff to the credits.
+ * Set D3D fogging to fall back to vertex fog if table fog not supported.
+ *
  * Revision 2.15  2004/02/14 00:18:33  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -224,23 +230,22 @@
 
 #include <stdlib.h>
 
+#include "menuui/credits.h"
 #include "gamesequence/gamesequence.h"
 #include "graphics/font.h"
 #include "io/key.h"
-#include "bmpman/bmpman.h"
-#include "graphics/2d.h"
 #include "io/timer.h"
 #include "gamesnd/gamesnd.h"
 #include "sound/audiostr.h"
 #include "gamesnd/eventmusic.h"	/* for Master_event_music_volume */
-#include "cfile/cfile.h"
 #include "ui/ui.h"
 #include "missionui/missionscreencommon.h"
 #include "playerman/player.h"
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
-#include "debugconsole/dbugfile.h"
+#include "cfile/cfile.h"
+#include "parse/parselo.h"
 
 // This is the fs2_open credit list, please only add yourself if you have actually contributed code// Rules!
 char *fs2_open_credit_text = 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-02-20 04:29:55 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2004-03-05 09:02:06 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/02/20 04:29:55  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.9  2004/02/13 04:17:13  randomtiger
  * Turned off fog in OGL for Fred.
  * Simulated speech doesnt say tags marked by $ now.
@@ -417,23 +422,18 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/linklist.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "hud/hudmessage.h"
+#include "hud/hudgauges.h"
 #include "hud/hudtarget.h"
-#include "parse/sexp.h"
 #include "io/timer.h"
 #include "parse/parselo.h"
 #include "gamesnd/gamesnd.h"
-#include "sound/sound.h"
-#include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "anim/animplay.h"
-#include "controlconfig/controlsconfig.h"
-#include "sound/audiostr.h"
-#include "hud/hudsquadmsg.h"
 #include "hud/hud.h"
+#include "ship/ship.h"
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "localization/localize.h"

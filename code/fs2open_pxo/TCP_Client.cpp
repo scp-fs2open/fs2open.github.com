@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.9 $
- * $Date: 2004-02-21 00:59:43 $
- * $Author: Kazan $
+ * $Revision: 1.10 $
+ * $Date: 2004-03-05 09:01:56 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2004/02/21 00:59:43  Kazan
+ * FS2NETD License Comments
+ *
  * Revision 1.8  2004/02/04 09:02:42  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -56,6 +59,8 @@
 #include "protocol.h"
 #include "TCP_Socket.h"
 #include <iostream.h>
+#include "playerman/player.h"
+#include "ship/ship.h"
 #include <time.h>
 #include "network/multi_log.h"
 

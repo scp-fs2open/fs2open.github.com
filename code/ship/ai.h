@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.13 $
- * $Date: 2004-01-26 23:07:43 $
- * $Author: phreak $
+ * $Revision: 2.14 $
+ * $Date: 2004-03-05 09:01:51 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/01/26 23:07:43  phreak
+ * bumped MAX_AI_CLASSES to 30 if INF_BUILD is defined
+ *
  * Revision 2.12  2003/11/11 02:15:40  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -208,10 +211,12 @@
 #define _AI_H
 
 #include "globalincs/pstypes.h"
-#include "object/object.h"
-#include "parse/parselo.h"
-#include "cfile/cfile.h"
+#include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
+
+struct ship_weapon;
+struct ship_subsys;
+struct object;
 
 #define	AI_DEFAULT_CLASS 3  // default AI class for new ships (Fred)
 
@@ -260,13 +265,13 @@
 #define	AIDO_DOCK_NOW	2		//	Immediately move into dock position.  For ships that start mission docked.
 #define	AIDO_UNDOCK		3		//	Set goal of undocking with object.
 
-#define MAX_AI_GOALS	5
-
 //	Submodes for seeking safety.
 #define	AISS_1	41				//	Pick a spot to fly to.
 #define	AISS_2	42				//	Flying to spot.
 #define	AISS_3	43				// Gotten near spot, fly about there.
 #define	AISS_1a	44				//	Pick a new nearby spot because we are endangered, then go to AISS_2
+
+#define MAX_AI_GOALS	5
 
 // types of ai goals -- tyese types will help us to determination on which goals should
 // have priority over others (i.e. when a player issues a goal to a wing, then a seperate
@@ -300,7 +305,7 @@
 #define MAX_SPECIAL_OBJECTS	32
 
 // structure for AI goals
-typedef struct ai_goals {
+typedef struct ai_goal {
 	int	signature;			//	Unique identifier.  All goals ever created (per mission) have a unique signature.
 	int	ai_mode;				// one of the AIM_* modes for this goal
 	int	ai_submode;			// maybe need a submode
@@ -332,8 +337,6 @@ typedef struct ai_goals {
 	} dockee;
 
 } ai_goal;
-
-#include "ship/ship.h"  // ai_goal must be declared before including this.
 
 #ifdef INF_BUILD
 #define	MAX_AI_CLASSES		30

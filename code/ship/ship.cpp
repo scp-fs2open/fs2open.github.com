@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.108 $
- * $Date: 2004-02-20 04:29:56 $
- * $Author: bobboau $
+ * $Revision: 2.109 $
+ * $Date: 2004-03-05 09:01:52 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2004/02/20 04:29:56  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.107  2004/02/16 11:47:34  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -1151,57 +1156,36 @@
  * $NoKeywords: $
  */
 
-#include <string.h>
 #include <setjmp.h>
 
-#include "globalincs/pstypes.h"
-#include "object/object.h"
-#include "physics/physics.h"
-#include "math/vecmat.h"
 #include "ship/ship.h"
-#include "model/model.h"
-#include "io/key.h"
+#include "object/object.h"
 #include "weapon/weapon.h"
 #include "radar/radar.h"
-#include "graphics/2d.h"
 #include "render/3d.h"
-#include "math/floating.h"
-#include "ship/ai.h"
-#include "ship/ailocal.h"
 #include "fireball/fireballs.h"
-#include "debris/debris.h"
 #include "hud/hud.h"
 #include "io/timer.h"
-#include "cfile/cfile.h"
 #include "mission/missionlog.h"
-#include "mission/missionparse.h"
-#include "bmpman/bmpman.h"
-#include "io/joy.h"
 #include "io/joy_ff.h"
 #include "playerman/player.h"
 #include "parse/parselo.h"
 #include "freespace2/freespace.h"
-#include "sound/sound.h"
-#include "model/model.h"
 #include "globalincs/linklist.h"
 #include "hud/hudets.h"
-#include "hud/hudtarget.h"
 #include "hud/hudshield.h"
+#include "hud/hudmessage.h"
 #include "ship/aigoals.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesnd/eventmusic.h"
 #include "ship/shipfx.h"
-#include "parse/sexp.h"
 #include "gamesequence/gamesequence.h"
 #include "object/objectsnd.h"
 #include "cmeasure/cmeasure.h"
-#include "anim/animplay.h"
-#include "controlconfig/controlsconfig.h"
 #include "ship/afterburner.h"
 #include "weapon/shockwave.h"
 #include "hud/hudsquadmsg.h"
 #include "weapon/swarm.h"
-#include "math/fvi.h"
 #include "ship/subsysdamage.h"
 #include "mission/missionmessage.h"
 #include "lighting/lighting.h"
@@ -1217,22 +1201,17 @@
 #include "localization/localize.h"
 #include "nebula/neb.h"
 #include "ship/shipcontrails.h"
-#include "globalincs/alphacolors.h"
 #include "demo/demo.h"
 #include "weapon/beam.h"
 #include "math/staticrand.h"
 #include "missionui/missionshipchoice.h"
 #include "hud/hudartillery.h"
 #include "species_defs/species_defs.h"
-#include "debugconsole/timerbar.h"
-
 #include "weapon/flak.h"								//phreak addded 11/05/02 for flak primaries
 
 #ifndef NO_NETWORK
-#include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
-#include "network/multi_respawn.h"
 #endif
 
 #ifdef FS2_DEMO

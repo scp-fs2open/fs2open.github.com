@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-09-13 20:59:54 $
+ * $Revision: 2.11 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/09/13 20:59:54  Goober5000
+ * fixed case-sensitivity bugs and possibly that Zeta wing bug
+ * --Goober5000
+ *
  * Revision 2.9  2003/08/21 08:31:24  Goober5000
  * fixed turret text display for non-laser weapons
  * --Goober5000
@@ -356,49 +360,45 @@
  *
 */
 
-#include "globalincs/pstypes.h"
-#include "freespace2/freespace.h"
-#include "globalincs/systemvars.h"
 #include "hud/hud.h"
-#include "hud/hudtarget.h"
-#include "hud/hudreticle.h"
-#include "hud/hudmessage.h"
-#include "sound/sound.h"
-#include "playerman/player.h"
-#include "gamesnd/gamesnd.h"
-#include "hud/hudsquadmsg.h"
-#include "io/timer.h"
-#include "gamesnd/eventmusic.h"
-#include "hud/hudlock.h"
-#include "hud/hudets.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
-#include "ship/ai.h"
-#include "ship/aigoals.h"
-#include "hud/hudescort.h"
-#include "hud/hudshield.h"
-#include "globalincs/linklist.h"
-#include "hud/hudtargetbox.h"
-#include "mission/missionmessage.h"
-#include "mission/missiontraining.h"
-#include "bmpman/bmpman.h"
-#include "radar/radar.h"
-#include "hud/hudobserver.h"
-#include "hud/hudtargetbox.h"
-#include "hud/hudconfig.h"
-#include "mission/missiongoals.h"
 #include "asteroid/asteroid.h"
-#include "starfield/starfield.h"
-#include "hud/hudwingmanstatus.h"
-#include "missionui/redalert.h"
-#include "weapon/emp.h"
+#include "freespace2/freespace.h"
+#include "gamesnd/eventmusic.h"
+#include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
-#include "localization/localize.h"
-#include "starfield/supernova.h"
+#include "globalincs/linklist.h"
 #include "graphics/font.h"
+#include "hud/hudconfig.h"
+#include "hud/hudescort.h"
+#include "hud/hudets.h"
+#include "hud/hudlock.h"
+#include "hud/hudmessage.h"
+#include "hud/hudobserver.h"
+#include "hud/hudreticle.h"
+#include "hud/hudshield.h"
+#include "hud/hudsquadmsg.h"
+#include "hud/hudtarget.h"
+#include "hud/hudtargetbox.h"
+#include "hud/hudwingmanstatus.h"
+#include "io/timer.h"
+#include "localization/localize.h"
+#include "mission/missiongoals.h"
+#include "mission/missionmessage.h"
+#include "mission/missionparse.h"
+#include "mission/missiontraining.h"
+#include "missionui/redalert.h"
+#include "model/model.h"
+#include "object/object.h"
+#include "playerman/player.h"
+#include "radar/radar.h"
+#include "render/3d.h"
+#include "ship/aigoals.h"
+#include "ship/ship.h"
+#include "starfield/supernova.h"
+#include "weapon/emp.h"
+#include "weapon/weapon.h"
 
 #ifndef NO_NETWORK
-#include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multi_voice.h"
 #include "network/multi_pmsg.h"

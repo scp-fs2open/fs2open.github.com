@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Palman/PalMan.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:05 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:08 $
+ * $Author: Goober5000 $
  *
  * Palette manager routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:05  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/10/20 22:21:48  randomtiger
  * Some incomplete code to handle background drawing when message boxes are drawn.
  * It doesnt work but its a good base for someone to start from. - RT
@@ -205,14 +208,12 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
-#include "cfile/cfile.h"
 #include "palman/palman.h"
 #include "bmpman/bmpman.h"
-#include "graphics/2d.h"
 #include "pcxutils/pcxutils.h"
 #include "parse/parselo.h"
 #include "graphics/grinternal.h"
+#include "cfile/cfile.h"
 
 #define	SQUARE(x) ((x)*(x))
 

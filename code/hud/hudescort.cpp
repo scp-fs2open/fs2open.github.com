@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-04-29 01:03:23 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.4  2003/01/18 09:25:41  Goober5000
  * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
  * than SF_ flags
@@ -110,21 +114,20 @@
 #include "object/object.h"
 #include "ship/ship.h"
 #include "globalincs/linklist.h"
-#include "graphics/2d.h"
 #include "hud/hud.h"
-#include "hud/hudtarget.h"
+#include "hud/hudmessage.h"
 #include "hud/hudtargetbox.h"
-#include "gamesnd/gamesnd.h"
-#include "freespace2/freespace.h"
-#include "bmpman/bmpman.h"
-#include "graphics/font.h"
-#include "hud/hudshield.h"
-#include "io/timer.h"
 #include "hud/hudescort.h"
+#include "hud/hudshield.h"
+#include "gamesnd/gamesnd.h"
+#include "graphics/font.h"
+#include "io/timer.h"
 #include "weapon/emp.h"
 #include "globalincs/alphacolors.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
+#include "globalincs/systemvars.h"
+#include "playerman/player.h"
 
 int Show_escort_view;
 

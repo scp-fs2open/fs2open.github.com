@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-11-13 03:59:54 $
- * $Author: Kazan $
+ * $Revision: 2.13 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/11/13 03:59:54  Kazan
+ * PXO_SID changed from unsigned to signed
+ *
  * Revision 2.11  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -237,39 +240,22 @@
  * $NoKeywords: $
  */
 
-#include <winsock.h>
-
-#include "fs2open_pxo/Client.h"
-#include "globalincs/pstypes.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
-#include "network/psnet.h"
-#include "globalincs/linklist.h"
-#include "object/object.h"
 #include "ship/ship.h"
-#include "hud/hud.h"
 #include "io/timer.h"
 #include "playerman/player.h"
-#include "mission/missionload.h"
 #include "mission/missionparse.h"
-#include "missionui/missionshipchoice.h"
+#include "mission/missioncampaign.h"
 #include "gamesequence/gamesequence.h"
 #include "freespace2/freespace.h"
 #include "osapi/osapi.h"
-#include "math.h"
-#include "io/mouse.h"
-#include "stats/stats.h"
 #include "network/stand_gui.h"
 #include "network/multi_xfer.h"
 #include "network/multiui.h"
-#include "io/key.h"
-#include "network/multilag.h"
-#include "network/multiutil.h"
 #include "network/multi_ingame.h"
-#include "bmpman/bmpman.h"
 #include "popup/popup.h"
-#include "cmdline/cmdline.h"
 #include "missionui/chatbox.h"
 #include "network/multiteamselect.h"
 #include "network/multi_data.h"
@@ -282,12 +268,12 @@
 #include "network/multi_endgame.h"
 #include "missionui/missiondebrief.h"
 #include "network/multi_pause.h"
-#include "network/multi_obj.h"
 #include "mission/missiongoals.h"
 #include "network/multi_log.h"
 #include "network/multi_rate.h"
 #include "hud/hudescort.h"
 #include "globalincs/alphacolors.h"
+#include "cfile/cfile.h"
 
 
 #pragma warning(push)

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.3 $
- * $Date: 2003-01-17 07:59:09 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/17 07:59:09  Goober5000
+ * fixed some really strange behavior with strings not being truncated at the
+ * # symbol
+ * --Goober5000
+ *
  * Revision 2.2  2002/10/17 20:40:50  randomtiger
  * Added ability to remove HUD ingame on keypress shift O
  * So I've added a new key to the bind list and made use of already existing hud removal code.
@@ -259,8 +264,6 @@
 #ifndef __HUD_H__
 #define __HUD_H__
 
-#include "globalincs/pstypes.h"
-#include "hud/hudmessage.h"
 #include "hud/hudgauges.h"
 #include "graphics/2d.h"
 

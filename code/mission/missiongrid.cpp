@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGrid.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-01-19 00:56:10 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:06 $
+ * $Author: Goober5000 $
  *
  * C module for grid specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/01/19 00:56:10  randomtiger
+ * Some more small changes for Fred OGL
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -59,11 +62,9 @@
  * $NoKeywords: $
  */
 
-#include "physics/physics.h"
 #include "io/key.h"
 #include "mission/missiongrid.h"
 #include "math/fvi.h"
-#include "float.h"
 #include "render/3d.h"
 #include "graphics/2d.h"
 

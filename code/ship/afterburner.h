@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:01:51 $
+ * $Author: Goober5000 $
  *
  * Header file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -59,8 +62,7 @@
 #define	AFTERBURNER_MIN_DELAY	1000
 #define	ABURN_DECAY_TIME			1500		// time in ms ship shakes after afterburner pressed
 
-#include "cfile/cfile.h"
-#include "object/object.h"
+struct object;
 
 void afterburners_start(object *objp);
 void afterburners_stop(object *objp, int key_released = 0);

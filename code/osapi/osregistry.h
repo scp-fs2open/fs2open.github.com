@@ -47,10 +47,10 @@ void os_config_write_uint( char *section, char *name, unsigned int value );
 // returns NULL;    Copy the return value somewhere before
 // calling os_read_string again, because it might reuse the
 // same buffer.
-char * os_config_read_string( char *section, char *name, char *default_value=NULL );
+char * os_config_read_string( char *section, char *name, char *default_value=0 /*NULL*/ );
 
 // same as previous function except we don't use the application name to build up the keyname
-char * os_config_read_string2( char *section, char *name, char *default_value=NULL );
+char * os_config_read_string2( char *section, char *name, char *default_value=0 /*NULL*/ );
 
 // Reads a string from the INI file.  Default_value must 
 // be passed, and if 'name' isn't found, then returns default_value

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-11-11 02:15:43 $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:01:58 $
  * $Author: Goober5000 $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/11/11 02:15:43  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.3  2003/04/05 11:09:21  Goober5000
  * fixed some fiddly bits with scrolling and ui stuff
  * --Goober5000
@@ -322,31 +327,27 @@
 #include "freespace2/freespace.h"
 #include "controlconfig/controlsconfig.h"
 #include "gamesequence/gamesequence.h"
-#include "playerman/player.h"
-#include "graphics/2d.h"
 #include "hud/hudsquadmsg.h"
 #include "io/key.h"
 #include "io/timer.h"
-#include "math.h"
-#include "io/mouse.h"
 #include "ui/ui.h"
 #include "io/joy.h"
-#include "bmpman/bmpman.h"
-#include "sound/sound.h"
 #include "gamesnd/gamesnd.h"
 #include "missionui/missionscreencommon.h"
 #include "graphics/font.h"
-#include "hud/hud.h"
 #include "playerman/managepilot.h"
 #include "gamehelp/contexthelp.h"
 #include "popup/popup.h"
 #include "ui/uidefs.h"
 #include "globalincs/alphacolors.h"
-#include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
+#endif
+
+#ifndef NDEBUG
+#include "hud/hud.h"
 #endif
 
 #define NUM_SYSTEM_KEYS			14

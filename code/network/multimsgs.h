@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.2 $
- * $Date: 2002-12-24 07:42:29 $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:02 $
  * $Author: Goober5000 $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/24 07:42:29  Goober5000
+ * added change-ai-class and is-ai-class, and I think I may also have nailed the
+ * is-iff bug; did some other bug hunting as well
+ * --Goober5000
+ *
  * Revision 2.1  2002/12/17 02:18:40  Goober5000
  * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
  * --Goober5000
@@ -221,6 +226,8 @@
 
 #ifndef MULTI_MSGS_H
 #define MULTI_MSGS_H
+
+#include "globalincs/pstypes.h"
 
 struct net_player;
 struct net_addr;

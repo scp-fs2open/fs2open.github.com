@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.h $
- * $Revision: 2.1 $
- * $Date: 2003-01-03 21:58:07 $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:01:52 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/01/03 21:58:07  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -44,6 +51,10 @@
 // ----------------------------------------------------------------------------------------------------
 // AWACS DEFINES/VARS
 //
+#include "globalincs/globals.h"
+
+struct object;
+struct ship;
 
 // DAVE'S OFFICIAL DEFINITION OF AWACS
 

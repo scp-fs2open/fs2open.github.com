@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Demo/Demo.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:59 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:58  penguin
  * Back-port to MSVC
  *
@@ -47,21 +50,19 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
 #include "demo/demo.h"
-#include "mission/missionload.h"
 #include "ship/ship.h"
+#include "Weapon/weapon.h"
 #include "globalincs/linklist.h"
 #include "freespace2/freespace.h"
 #include "object/object.h"
 #include "io/timer.h"
 #include "gamesequence/gamesequence.h"
-#include "globalincs/systemvars.h"
-#include "cfile/cfile.h"
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
+#include "cfile/cfile.h"
 
 // -----------------------------------------------------------------------------------------------------------------------------
 // DEMO DEFINES/VARS

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-02 06:37:24 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:59 $
+ * $Author: Goober5000 $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/02 06:37:24  penguin
+ * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
+ *  - penguin
+ *
  * Revision 2.2  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -306,20 +310,18 @@
  * 
  * $NoKeywords: $
  */
-#include "globalincs/pstypes.h"
 
 #include <windows.h>
-#include "directx/vdsound.h"
 
-#include "render/3dinternal.h"
+#include "render/3d.h"
 #include "sound/sound.h"
 #include "sound/audiostr.h"
-#include "object/object.h"
 #include "cmdline/cmdline.h"
 #include "osapi/osapi.h"
 
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "cfile/cfile.h"
 
 #include "sound/ds.h"
 #include "sound/ds3d.h"

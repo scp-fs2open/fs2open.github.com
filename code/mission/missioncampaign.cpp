@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-09-05 04:25:29 $
+ * $Revision: 2.11 $
+ * $Date: 2004-03-05 09:02:06 $
  * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/09/05 04:25:29  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.9  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -237,26 +249,21 @@
 #include <glob.h>
 #endif
 
-#include "io/key.h"
-#include "ui/ui.h"
 #include "mission/missioncampaign.h"
+#include "ui/ui.h"
 #include "gamesequence/gamesequence.h"
-#include "graphics/2d.h"
-#include "parse/parselo.h"
-#include "mission/missionload.h"
 #include "freespace2/freespace.h"
 #include "parse/sexp.h"
-#include "cfile/cfile.h"
 #include "playerman/player.h"
 #include "mission/missiongoals.h"
 #include "cutscene/movie.h"
-#include "network/multi.h"
-#include "menuui/techmenu.h"
 #include "gamesnd/eventmusic.h"
-#include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "parse/parselo.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
+#include "cfile/cfile.h"
 #include "starfield/supernova.h"
-#include "graphics/2d.h"
 
 // mission disk stuff
 #define CAMPAIGN_SAVEFILE_MAX_SHIPS_OLD						75

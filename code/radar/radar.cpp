@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-08-31 06:00:41 $
- * $Author: bobboau $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-05 09:02:12 $
+ * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/08/31 06:00:41  bobboau
+ * an asortment of bugfixes, mostly with the specular code,
+ * HUD flickering should be completly gone now
+ *
  * Revision 2.4  2003/06/11 03:15:17  phreak
  * i hate to update again so soon, but i forgot to mark hostile local ssms that
  * were in stages 2 or 4 as warping so their blip color would then be blue
@@ -170,27 +174,18 @@
  */
 
 
-#include "globalincs/pstypes.h"
+#include "radar/radar.h"
 #include "graphics/font.h"
-#include "math/floating.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
-#include "math/vecmat.h"
-#include "palman/palman.h"
 #include "bmpman/bmpman.h"
 #include "object/object.h"
 #include "ship/ship.h"
 #include "playerman/player.h"
 #include "weapon/weapon.h"
 #include "io/timer.h"
-#include "ship/ai.h"
-#include "io/key.h"
 #include "hud/hud.h"
-#include "hud/hudtarget.h"
 #include "hud/hudconfig.h"
 #include "ship/subsysdamage.h"
 #include "gamesnd/gamesnd.h"
-#include "radar/radar.h"
 #include "globalincs/linklist.h"
 #include "network/multi.h"
 #include "weapon/emp.h"

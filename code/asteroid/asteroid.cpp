@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-02-14 00:18:29 $
- * $Author: randomtiger $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/02/14 00:18:29  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.4  2003/11/17 06:52:51  bobboau
  * got assert to work again
  *
@@ -287,16 +298,22 @@
 #include "render/3d.h"
 #include "fireball/fireballs.h"
 #include "gamesnd/gamesnd.h"
-#include "bmpman/bmpman.h"
 #include "particle/particle.h"
 #include "globalincs/linklist.h"
+#include "hud/hud.h"
 #include "hud/hudescort.h"
+#include "hud/hudgauges.h"
 #include "ship/shiphit.h"
 #include "math/staticrand.h"
 #include "globalincs/systemvars.h"
 #include "localization/localize.h"
 #include "stats/scoring.h"
 #include "hud/hudtarget.h"
+#include "weapon/weapon.h"
+#include "ship/ship.h"
+#include "parse/parselo.h"
+#include "math/vecmat.h"
+#include "model/model.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
@@ -2109,7 +2126,7 @@ void asteroid_parse_section()
 	asip->num_detail_levels = 0;
 
 	required_string("$Detail distance:");
-	asip->num_detail_levels = stuff_int_list(asip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+	asip->num_detail_levels = stuff_int_list(asip->detail_distance, MAX_ASTEROID_DETAIL_LEVELS, RAW_INTEGER_TYPE);
 
 	required_string("$Max Speed:");
 	stuff_float(&asip->max_speed);

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-02-20 04:29:54 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:58 $
+ * $Author: Goober5000 $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/02/20 04:29:54  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -115,19 +120,12 @@
 
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
-#include "freespace2/freespace.h"
 #include "menuui/mainhallmenu.h"
-#include "io/key.h"
-#include "bmpman/bmpman.h"
 #include "graphics/2d.h"
-#include "io/timer.h"
-#include "math.h"
-#include "io/mouse.h"
-#include "controlconfig/controlsconfig.h"
-#include "menuui/techmenu.h"
 #include "parse/parselo.h"
 #include "localization/localize.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/systemvars.h"
 
 
 ////////////////////////////////////////////////////////////////////

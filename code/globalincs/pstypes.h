@@ -9,16 +9,28 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.15 $
- * $Date: 2003-11-19 20:37:23 $
- * $Author: randomtiger $
- * $Revision: 2.15 $
- * $Date: 2003-11-19 20:37:23 $
- * $Author: randomtiger $
+ * $Revision: 2.16 $
+ * $Date: 2004-03-05 09:01:52 $
+ * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2004-03-05 09:01:52 $
+ * $Author: Goober5000 $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/11/19 20:37:23  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.14  2003/11/17 06:52:51  bobboau
  * got assert to work again
  *
@@ -322,8 +334,6 @@
 #else
 	#define MAX_PLAYERS	12
 #endif
-
-#define MAX_TEAMS		3
 
 #define USE_INLINE_ASM 1		// Define this to use inline assembly
 #define STRUCT_CMP(a, b) memcmp((void *) &a, (void *) &b, sizeof(a))

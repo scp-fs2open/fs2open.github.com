@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2.2.1  2002/09/24 18:56:44  randomtiger
  * DX8 branch commit
  *
@@ -180,23 +183,19 @@
  *   
  */
 
-#include "network/multi.h"
 #include "network/multiteamselect.h"
-#include "ui/ui.h"
+#include "network/multi.h"
 #include "missionui/chatbox.h"
-#include "bmpman/bmpman.h"
 #include "gamesnd/gamesnd.h"
 #include "io/key.h"
 #include "globalincs/linklist.h"
 #include "gamesequence/gamesequence.h"
 #include "graphics/font.h"
 #include "network/multiutil.h"
-#include "freespace2/freespace.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/missionbrief.h"
-#include "mission/missionparse.h"
 #include "network/multimsgs.h"
 #include "menuui/snazzyui.h"
 #include "io/mouse.h"
@@ -204,7 +203,10 @@
 #include "network/multiui.h"
 #include "network/multi_endgame.h"
 #include "globalincs/alphacolors.h"
-#include "debugconsole/dbugfile.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
+#include "object/object.h"
 
 // ------------------------------------------------------------------------------------------------------
 // TEAM SELECT DEFINES/VARS

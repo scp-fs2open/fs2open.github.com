@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.43 $
- * $Date: 2004-02-20 21:45:41 $
- * $Author: randomtiger $
+ * $Revision: 2.44 $
+ * $Date: 2004-03-05 09:02:00 $
+ * $Author: Goober5000 $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2004/02/20 21:45:41  randomtiger
+ * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
+ * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
+ * Fixed setup of center_alpha in OGL which was causing crash.
+ *
  * Revision 2.42  2004/02/16 11:47:33  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -674,7 +679,6 @@
 #include "bmpman/bmpman.h"
 #include "palman/palman.h"
 #include "graphics/line.h"
-#include "cfile/cfile.h"
 #include "nebula/neb.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"	

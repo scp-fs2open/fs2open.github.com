@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/GameplayHelp.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:58 $
+ * $Author: Goober5000 $
  *
  * Module for displaying in-game help
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/09/24 18:56:42  randomtiger
  * DX8 branch commit
  *
@@ -127,15 +130,9 @@
  * $NoKeywords: $
  */
 
-#include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "freespace2/freespace.h"
 #include "io/key.h"
-#include "bmpman/bmpman.h"
-#include "graphics/2d.h"
-#include "io/timer.h"
-#include "math.h"
-#include "io/mouse.h"
 #include "controlconfig/controlsconfig.h"
 #include "ui/ui.h"
 #include "gamesnd/gamesnd.h"
@@ -143,7 +140,6 @@
 #include "globalincs/alphacolors.h"
 #include "weapon/beam.h"
 #include "sound/audiostr.h"
-#include "debugconsole/dbugfile.h"
 
 // text positioning constats
 #define TITLE_Y			35

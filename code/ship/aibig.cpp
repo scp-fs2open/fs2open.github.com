@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-11-11 02:15:40 $
+ * $Revision: 2.8 $
+ * $Date: 2004-03-05 09:01:51 $
  * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/11/11 02:15:40  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.6  2003/06/25 03:16:32  phreak
  * changed around ai code to take into account a limited lock range for local ssms
  *
@@ -359,37 +364,14 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
-#include "math/fix.h"
+#include "ship/aibig.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
-#include "physics/physics.h"
-#include "math/vecmat.h"
 #include "ship/ship.h"
-#include "model/model.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
-#include "ship/ai.h"
-#include "ship/aibig.h"
-#include "math/floating.h"
-#include "playerman/player.h"
+#include "ship/afterburner.h"
 #include "freespace2/freespace.h"
 #include "weapon/weapon.h"
-#include "mission/missiongoals.h"
-#include "mission/missionlog.h"
 #include "io/timer.h"
-#include "sound/sound.h"
-#include "ship/aigoals.h"
-#include "gamesnd/gamesnd.h"
-#include "hud/hudmessage.h"
-#include "mission/missionmessage.h"
-#include "cmeasure/cmeasure.h"
-#include "math/staticrand.h"
-#include "network/multimsgs.h"
-#include "ship/afterburner.h"
-#include "hud/hudets.h"
-#include "ship/shipfx.h"
-#include "ship/shiphit.h"
 #include "mission/missionparse.h"
 
 #pragma optimize("", off)

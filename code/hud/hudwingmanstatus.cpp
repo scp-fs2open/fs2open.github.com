@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-04-29 01:03:23 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:04 $
  * $Author: Goober5000 $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/06 04:39:26  penguin
  * Use text strings for wingmen names instead of ANI
  *
@@ -115,13 +119,13 @@
 #include "hud/hudwingmanstatus.h"
 #include "ship/ship.h"
 #include "graphics/2d.h"
-#include "bmpman/bmpman.h"
 #include "io/timer.h"
 #include "hud/hudtargetbox.h"
 #include "globalincs/linklist.h"
-#include "globalincs/systemvars.h"
 #include "network/multi.h"
 #include "weapon/emp.h"
+#include "mission/missionparse.h"
+#include "object/object.h"
 
 #define HUD_WINGMAN_STATUS_NUM_FRAMES	5
 #define BACKGROUND_LEFT						0

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-02-04 08:41:04 $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/02/04 08:41:04  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.7  2003/12/16 21:01:54  phreak
  * disabled tertiary weapons support pending a rewrite of critical code
  *
@@ -161,15 +166,13 @@
 #include "hud/hud.h"
 #include "ship/ship.h"
 #include "freespace2/freespace.h"
-#include "playerman/player.h"
-#include "graphics/2d.h"
 #include "io/timer.h"
-#include "sound/sound.h"
 #include "gamesnd/gamesnd.h"
-#include "bmpman/bmpman.h"
 #include "weapon/emp.h"
 #include "localization/localize.h"
 #include "weapon/weapon.h"
+#include "globalincs/systemvars.h"
+#include "object/object.h"
 	
 #define ENERGY_DIVERT_DELTA				0.2f	// percentage of energy transferred in a shield->weapon or weapon->shield energy transfer
 #define INTIAL_SHIELD_RECHARGE_INDEX	4		// default shield charge rate (index in Energy_levels[])

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:03 $
+ * $Author: Goober5000 $
  *
  * Header file for functions to draw and manage the reticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -53,7 +56,9 @@
 #ifndef _HUDRETICLE_H
 #define _HUDRETICLE_H
 
-#include "playerman/player.h"
+#include "graphics/2d.h"
+
+struct player;
 
 extern int Outer_circle_radius[GR_NUM_RESOLUTIONS];
 extern int Hud_reticle_center[GR_NUM_RESOLUTIONS][2];

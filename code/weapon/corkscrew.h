@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Corkscrew.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:11 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:01:54 $
+ * $Author: Goober5000 $
  *
  * Header file for managing corkscrew missiles
  *
@@ -22,8 +22,7 @@
 #ifndef __FREESPACE_CORKSCREW_H__
 #define __FREESPACE_CORKSCREW_H__
 
-#include "object/object.h"
-#include "weapon/weapon.h"
+struct object;
 
 extern int Corkscrew_num_missiles_fired;
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-02-04 09:02:43 $
+ * $Revision: 2.7 $
+ * $Date: 2004-03-05 09:01:55 $
  * $Author: Goober5000 $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/02/04 09:02:43  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.5  2003/09/07 18:14:54  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -181,15 +185,13 @@
  * $NoKeywords: $
  */
 
-#include "ui/ui.h"
+#include "missionui/redalert.h"
+#include "model/model.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesequence/gamesequence.h"
 #include "missionui/missionscreencommon.h"
 #include "io/key.h"
-#include "bmpman/bmpman.h"
 #include "graphics/font.h"
-#include "missionui/redalert.h"
-#include "hud/hud.h"
 #include "mission/missionbriefcommon.h"
 #include "io/timer.h"
 #include "mission/missioncampaign.h"
@@ -200,7 +202,9 @@
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
 #include "sound/fsspeech.h"
-#include "debugconsole/dbugfile.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
+#include "cfile/cfile.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Red Alert Mission-Level

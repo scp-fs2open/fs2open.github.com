@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-02-14 00:18:35 $
- * $Author: randomtiger $
+ * $Revision: 2.20 $
+ * $Date: 2004-03-05 09:01:57 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/02/14 00:18:35  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.18  2004/02/06 22:58:18  Goober5000
  * fixed a small HUD bug I introduced
  * --Goober5000
@@ -484,31 +495,20 @@
  * $NoKeywords: $
  */
 
-#include <string.h>	// for memset
-#include <stdio.h>
-
-#include "globalincs/pstypes.h"
 #include "object/object.h"
 #include "weapon/weapon.h"
 #include "ship/ship.h"
 #include "fireball/fireballs.h"
 #include "debris/debris.h"
-#include "math/fvi.h"
-#include "physics/physics.h"
-#include "model/model.h"
 #include "globalincs/linklist.h"
 #include "freespace2/freespace.h"
-#include	"ship/ai.h"
 #include "object/objectsnd.h"
-#include "gamesnd/gamesnd.h"
 #include "playerman/player.h"
 #include "cmeasure/cmeasure.h"
 #include "io/timer.h"
-#include "globalincs/systemvars.h"
 #include "render/3d.h"
 #include "weapon/shockwave.h"
 #include "ship/afterburner.h"
-#include "io/timer.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "object/objcollide.h"
@@ -517,11 +517,9 @@
 #include "asteroid/asteroid.h"
 #include "radar/radar.h"
 #include "jumpnode/jumpnode.h"
-#include "nebula/neb.h"
 #include "weapon/beam.h"
 #include "weapon/swarm.h"
 #include "demo/demo.h"
-#include "fireball/fireballs.h"
 
 /*
  *  Global variables

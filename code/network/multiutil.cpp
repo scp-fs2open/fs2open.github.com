@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-11-11 02:15:45 $
+ * $Revision: 2.14 $
+ * $Date: 2004-03-05 09:02:02 $
  * $Author: Goober5000 $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/11/11 02:15:45  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.12  2003/11/09 04:09:18  Goober5000
  * edited for language
  * --Goober5000
@@ -258,28 +263,24 @@
 #endif
 #include <ctype.h>
 
-#include "globalincs/pstypes.h"
 #include "network/multiutil.h"
 #include "globalincs/linklist.h"
 #include "gamesequence/gamesequence.h"
 #include "hud/hudmessage.h"
 #include "freespace2/freespace.h"
 #include "io/key.h"
-#include "graphics/2d.h"
-#include "weapon/weapon.h"
 #include "io/timer.h"
 #include "ship/ship.h"
-#include "network/psnet.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
+#include "gamesnd/gamesnd.h"
 #include "playerman/player.h"
 #include "mission/missionparse.h"
 #include "missionui/missionshipchoice.h"
-#include "missionui/missionscreencommon.h"
-#include "missionui/missionweaponchoice.h"
 #include "network/stand_gui.h"
 #include "ship/shipfx.h"
 #include "object/object.h"
 #include "playerman/managepilot.h"
-#include "ship/shiphit.h"
 #include "missionui/missiondebrief.h"
 #include "observer/observer.h"
 #include "mission/missionmessage.h"
@@ -293,26 +294,23 @@
 #include "missionui/chatbox.h"
 #include "osapi/osregistry.h"
 #include "hud/hudescort.h"
-
 #include "network/multi.h"
+#include "cmdline/cmdline.h"
+#include "cfile/cfile.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
 #pragma warning(pop)
 
-#include "cmdline/cmdline.h"
-
 #ifndef NO_NETWORK
 #include "network/multimsgs.h"
 #include "network/multi_xfer.h"
 #include "network/multiteamselect.h"
-#include "network/multilag.h"
 #include "network/multiui.h"
 #include "network/multi_kick.h"
 #include "network/multi_data.h"
 #include "network/multi_voice.h"
-#include "network/multi_ping.h"
 #include "network/multi_team.h"
 #include "network/multi_respawn.h"
 #include "network/multi_ingame.h"
@@ -321,14 +319,9 @@
 #include "network/multi_endgame.h"
 #include "network/multi_pmsg.h"
 #include "network/multi_pause.h"
-#include "network/multi_obj.h"
 #include "network/multi_log.h"
 #include "network/multi_rate.h"
 #endif
-
-#include "globalincs/alphacolors.h"
-#include "graphics/font.h"
-#include "gamesnd/gamesnd.h"
 
 extern int MSG_WINDOW_X_START;	// used to position multiplayer text messages
 extern int MSG_WINDOW_Y_START;

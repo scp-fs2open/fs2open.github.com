@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-09-13 06:02:04 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-05 09:01:54 $
  * $Author: Goober5000 $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/13 06:02:04  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.3  2003/01/17 07:59:09  Goober5000
  * fixed some really strange behavior with strings not being truncated at the
  * # symbol
@@ -83,22 +87,20 @@
  * $NoKeywords: $
  */
 
-#include <stdarg.h>
-#include "globalincs/pstypes.h"
 #include "weapon/emp.h"
 #include "io/timer.h"
-#include "globalincs/systemvars.h"
 #include "freespace2/freespace.h"
 #include "globalincs/linklist.h"
 #include "hud/hudlock.h"
 #include "hud/hudtarget.h"
-#include "hud/hudgauges.h"
-#include "mission/missiongoals.h"
 #include "hud/hud.h"
+#include "object/object.h"
+#include "weapon/weapon.h"
+#include "ship/ship.h"
+#include "parse/parselo.h"
 
 #ifndef NO_NETWORK
 #include "network/multimsgs.h"
-#include "network/multiutil.h"
 #include "network/multi.h"
 #endif
 

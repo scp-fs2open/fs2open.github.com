@@ -22,13 +22,13 @@
 #include "globalincs/systemvars.h"
 #include "io/key.h"
 #include "anim/packunpack.h"
-#include "cfile/cfile.h"
 #include "graphics/grinternal.h"
 #include "graphics/grd3dinternal.h"
 #include "ship/ship.h"
 #include "debugconsole/dbugfile.h"
 #include "bmpman/bmpman.h"
 #include "Cmdline/cmdline.h"
+#include "cfile/cfile.h"
 
 #include "graphics/grd3dbmpman.h"
 

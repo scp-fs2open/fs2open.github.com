@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-02-04 08:41:02 $
+ * $Revision: 2.14 $
+ * $Date: 2004-03-05 09:01:52 $
  * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/02/04 08:41:02  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.12  2004/01/30 07:39:06  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -206,29 +211,15 @@
 //		3		Shrink-wrapped texture.  Lasts half-time.
 //		4		Shrink-wrapped texture.  Lasts full-time.
 
-#include <math.h>
+//#include <math.h>
 
-#include "graphics/2d.h"
 #include "render/3d.h"
 #include "model/model.h"
-#include "graphics/tmapper.h"
-#include "math/floating.h"
-#include "math/fvi.h"
-#include "lighting/lighting.h"
-#include "fireball/fireballs.h"
-#include "math/fix.h"
-#include "bmpman/bmpman.h"
-#include "object/object.h"
-#include "playerman/player.h"		//	#include of "player.h" is only for debugging!
-#include "io/timer.h"
 #include "freespace2/freespace.h"
-#include "anim/packunpack.h"
-#include "anim/animplay.h"
-#include "ship/shiphit.h"
 #include "mission/missionparse.h"
-#include "network/multimsgs.h"
 #include "network/multi.h"
 #include "species_defs/species_defs.h"
+#include "ship/ship.h"
 
 int	New_shield_system = 1;
 int	Show_shield_mesh = 0;
@@ -1142,7 +1133,9 @@ void create_shield_explosion_all(object *objp)
 	if ( !MULTIPLAYER_CLIENT )
 #endif
 	{
-		//Assert(count == 0);	//	Couldn't find all the alleged shield hits.  Bogus! //cometed out becase fighterbeams were tripping this -Bobboau
+		Assert(count == 0);	//	Couldn't find all the alleged shield hits.  Bogus!
+		//cometed out becase fighterbeams were tripping this -Bobboau
+		// urg - Bobboau, please fix bugs; don't hide them :-/
 	}
 }
 

@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/Player.h $
- * $Revision: 2.3 $
- * $Date: 2003-09-05 04:25:28 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:05 $
  * $Author: Goober5000 $
  *
  *  Header file for player information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/05 04:25:28  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.2  2003/01/14 04:00:15  Goober5000
  * allowed for up to 256 main halls
  * --Goober5000
@@ -166,19 +178,16 @@
 #ifndef _PLAYER_H
 #define _PLAYER_H
 
-#include "object/object.h"
 #include "physics/physics.h"
-#include "mission/missionload.h"
 #include "hud/hudtarget.h"				// for targeting hotkey lists
-#include "ship/ship.h"						// for targeting subobjects
-#include "mission/missioncampaign.h"		// for mission/campaign stuff
 #include "stats/scoring.h"             // for scoring/stats
 #include "io/keycontrol.h"				// for button_info
 #include "network/multi_options.h"
+#include "parse/sexp.h"
+#include "globalincs/globals.h"
 
+struct campaign_info;
 
-#define CALLSIGN_LEN					28		//	shortened from 32 to allow .plr to be attached without exceeding MAX_FILENAME_LEN
-#define SHORT_CALLSIGN_PIXEL_W	80		// max width of short_callsign[] in pixels
 #define MAX_KEYED_TARGETS			8		// number of hot keys available to assign targets to
 
 // player image defines
@@ -267,7 +276,7 @@ typedef struct player {
 	int				objnum;										// object number for this player
 	button_info		bi;												// structure that holds bit vectors for button presses
 	control_info	ci;											// control info structure for this player
-	scoring_struct stats;										// scoring and stats info for the player (points to multi_stats or single_stats)	
+	scoring_struct	stats;										// scoring and stats info for the player (points to multi_stats or single_stats)	
 	
 	int				friendly_hits;								//	Number of times hit a friendly ship this mission.
 	float				friendly_damage;							//	Total friendly damage done in mission.  Diminishes over time.
@@ -343,7 +352,7 @@ typedef struct player {
 	// player-persistent variables - Goober5000
 	int				num_variables;
 	sexp_variable	player_variables[MAX_SEXP_VARIABLES];
-} player_t;
+} player;
 
 extern player Players[MAX_PLAYERS];
 

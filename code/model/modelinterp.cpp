@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.73 $
- * $Date: 2004-03-05 04:16:20 $
- * $Author: phreak $
+ * $Revision: 2.74 $
+ * $Date: 2004-03-05 09:02:07 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2004/03/05 04:16:20  phreak
+ * made OpenGl use the matrix api if called by g3_start_**** or g3_done_instance
+ *
  * Revision 2.72  2004/02/27 04:09:55  bobboau
  * fixed a Z buffer error in HTL submodel rendering,
  * and glow points,
@@ -571,36 +574,23 @@
  * $NoKeywords: $
  */
 
-#include <math.h>
-
 #define MODEL_LIB
 
-#include "globalincs/pstypes.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
 #include "model/model.h"
-#include "graphics/tmapper.h"
-#include "math/floating.h"
+#include "model/modelsinc.h"
+#include "graphics/2d.h"
+#include "render/3dinternal.h"
 #include "math/fvi.h"
 #include "lighting/lighting.h"
-#include "model/modelsinc.h"
-#include "fireball/fireballs.h"
-#include "math/fix.h"
 #include "bmpman/bmpman.h"
-#include "globalincs/systemvars.h"
 #include "io/key.h"
-#include "render/3dinternal.h"
 #include "io/timer.h"
 #include "graphics/grinternal.h"
-#include "palman/palman.h"
-#include "object/object.h"			// For MAX_OBJECTS
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "math/staticrand.h"
-#include "globalincs/alphacolors.h"
 #include "particle/particle.h"
-//#include "weapon/beam.h" //I don't need this after all:\ -Bobboau
-#include "debugconsole/dbugfile.h"
+#include "ship/ship.h"
 #include "cmdline/cmdline.h"
 
 

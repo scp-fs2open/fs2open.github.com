@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:08 $
+ * $Author: Goober5000 $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -110,8 +113,6 @@
 #include "palman/palman.h"
 #include "io/mouse.h"
 #include "osapi/outwnd.h"
-#include "graphics/2d.h"
-#include "cfile/cfile.h"
 #include "sound/sound.h"
 #include "freespace2/freespaceresource.h"
 #include "playerman/managepilot.h"

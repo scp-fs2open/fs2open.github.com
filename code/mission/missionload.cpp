@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:06 $
+ * $Author: Goober5000 $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2  2002/12/02 23:53:49  Goober5000
  * fixed misspelling
  *
@@ -191,37 +194,16 @@
 */
 
 #include "mission/missionload.h"
-#include "mission/missiongoals.h"
 #include "mission/missionparse.h"    
 #include "missionui/missionshipchoice.h"
-#include "mission/missionlog.h"
-#include "mission/missionmessage.h"
-#include "cfile/cfile.h"
-#include "osapi/osapi.h"
-#include "math/vecmat.h"
-#include "playerman/player.h"
-#include "object/object.h"
-#include "ship/ship.h"
-#include "ship/ailocal.h"
+#include "mission/missioncampaign.h"
 #include "playerman/managepilot.h"
-#include "hud/hud.h"
 #include "freespace2/freespace.h"
 #include "io/key.h"
-#include "graphics/2d.h"
-#include "graphics/line.h"
-#include "io/timer.h"
-#include "math.h"
-#include "globalincs/linklist.h"
-#include "io/mouse.h"
-#include "weapon/weapon.h"
 #include "gamesequence/gamesequence.h"
 #include "ui/ui.h"
-#include "parse/sexp.h"
-#include "mission/missionhotkey.h"
-#include "mission/missioncampaign.h"
-#include "cfile/cfilesystem.h"
 #include "globalincs/alphacolors.h"
-#include "debugconsole/dbugfile.h"
+#include "cfile/cfilesystem.h"
 
 
 extern mission The_mission;  // need to send this info to the briefing

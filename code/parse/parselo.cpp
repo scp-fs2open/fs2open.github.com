@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.15 $
+ * $Revision: 2.16 $
  * $Author: Goober5000 $
- * $Date: 2004-02-07 01:25:14 $
+ * $Date: 2004-03-05 09:02:08 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/02/07 01:25:14  Goober5000
+ * hehe, fixed the subsystem compare so it's not destructive :-p
+ * and also fixed the model checking routine
+ * --Goober5000
+ *
  * Revision 2.14  2004/02/07 00:48:52  Goober5000
  * made FS2 able to account for subsystem mismatches between ships.tbl and the
  * model file - e.g. communication vs. communications
@@ -160,22 +165,23 @@
  * $NoKeywords: $
 */
 
-#include	<stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
 #include <setjmp.h>
 
-#include "globalincs/pstypes.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
-#include "cfile/cfile.h"
 #include "mission/missionparse.h"
 #include "ctype.h"
 #include "parse/encrypt.h"
 #include "localization/localize.h"
 #include "localization/fhash.h"
+#include "cfile/cfile.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5

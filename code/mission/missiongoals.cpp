@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-02-14 00:18:34 $
- * $Author: randomtiger $
+ * $Revision: 2.7 $
+ * $Date: 2004-03-05 09:02:06 $
+ * $Author: Goober5000 $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/02/14 00:18:34  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.5  2003/10/08 06:32:06  argv
  * Negative repeat count means repeat indefinitely. A trivial change, it should not break anything.
  *
@@ -351,32 +362,23 @@
  *
 */
 
-#include "freespace2/freespace.h"
-#include "object/object.h"
 #include "mission/missiongoals.h"
-#include "mission/missionparse.h"
 #include "mission/missionlog.h"
-#include "mission/missiontraining.h"
 #include "missionui/missionscreencommon.h"
+#include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "hud/hud.h"
+#include "hud/hudmessage.h"
 #include "io/key.h"
-#include "graphics/2d.h"
 #include "io/timer.h"
-#include "globalincs/linklist.h"
-#include "ship/ship.h"
-#include "ship/ai.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "gamesnd/eventmusic.h"
 #include "network/stand_gui.h"
 #include "ui/ui.h"
-#include "bmpman/bmpman.h"
-#include "sound/sound.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "playerman/player.h"
-#include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

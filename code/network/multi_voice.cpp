@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_voice.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/22 01:22:25  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -212,20 +215,18 @@
  * $NoKeywords: $
  */
 
+#include "network/multi_voice.h"
 #include "io/timer.h"
 #include "io/key.h"
-#include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "network/multi_voice.h"
 #include "network/multi_pmsg.h"
 #include "gamesnd/gamesnd.h"
 #include "sound/rtvoice.h"
-#include "network/psnet.h"
 #include "menuui/optionsmenumulti.h"
-#include "network/stand_gui.h"
 #include "network/multi.h"
+#include "playerman/player.h"
 
 
 // --------------------------------------------------------------------------------------------------

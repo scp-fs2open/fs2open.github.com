@@ -405,6 +405,10 @@ SOURCE=.\GlobalIncs\crypt.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\globalincs\globals.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\GlobalIncs\LinkList.h
 # End Source File
 # Begin Source File

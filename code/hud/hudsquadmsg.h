@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.4 $
- * $Date: 2003-09-13 08:27:29 $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/09/13 08:27:29  Goober5000
+ * added some minor things, such as code cleanup and the following:
+ * --turrets will not fire at cargo
+ * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
+ * --supercaps have their own default message bitfields (distinguished from capships)
+ * --turrets are allowed on fighters
+ * --jump speed capped at 65m/s, to avoid ship travelling too far
+ * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
+ * ----Goober5000
+ *
  * Revision 2.3  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -139,6 +149,8 @@
 #define _HUD_SQUADMSG
 
 #include "network/multi.h"
+
+struct object;
 
 // defines for messages that can be sent from the player.  Defined at bitfields so that we can enable
 // and disable messages on a message by message basis

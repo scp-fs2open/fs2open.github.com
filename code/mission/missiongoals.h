@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:06 $
+ * $Author: Goober5000 $
  *
  *  Header file for Mission support.  Included detection of primary
  *  and secondary goals.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -118,9 +121,10 @@
 #ifndef _MISSIONGOAL_H
 #define _MISSIONGOAL_H
 
-#include "object/object.h"
-#include "ship/ai.h"
-#include "cfile/cfile.h"
+#include "globalincs/globals.h"
+
+struct ai_goal;
+struct ai_info;
 
 // defines for types of primary and secondary missions
 
@@ -216,7 +220,7 @@ void	mission_show_goals_init();
 void	mission_show_goals_close();
 void	mission_show_goals_do_frame(float frametime);	// displays goals on screen
 void	mission_eval_goals();									// evaluate player goals
-int	mission_ai_goal_achievable( ai_goals *aigp );	// determines if an AI goal is achievable
+int	mission_ai_goal_achievable( ai_goal *aigp );	// determines if an AI goal is achievable
 void	mission_add_ai_goal( int sexp, ai_info *aip );	// adds a goal onto the given ai_info structure
 int	mission_evaluate_primary_goals(void);	// determine if the primary goals for the mission are complete -- returns one of the above defines
 int	mission_goals_met();

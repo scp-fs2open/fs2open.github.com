@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:04 $
+ * $Author: Goober5000 $
  *
  * Header file for HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -294,11 +297,11 @@
 #ifndef _HUDTARGET_H
 #define _HUDTARGET_H
 
-#include "object/object.h"
-#include "ship/ailocal.h"
-#include "ship/ship.h"
 #include "graphics/2d.h"
-#include "weapon/weapon.h"
+
+struct ship;
+struct ship_subsys;
+struct object;
 
 #define INCREASING	0
 #define DECREASING	1

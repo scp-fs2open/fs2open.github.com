@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:05 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -62,8 +65,11 @@
 #ifndef FREESPACE_MEDAL_HEADER_FILE
 #define FREESPACE_MEDAL_HEADER_FILE
 
-#include "playerman/player.h"
-#include "stats/scoring.h"
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
+
+struct scoring_struct;
+struct player;
 
 #define MAX_BADGES	3
 #define MAX_ASSIGNABLE_MEDALS		12				// index into Medals array of the first medal which cannot be assigned

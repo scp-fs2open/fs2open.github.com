@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-09-14 18:32:41 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-05 09:01:54 $
+ * $Author: Goober5000 $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/09/14 18:32:41  wmcoolmon
+ * Added "-safeloading" command line parameter, which uses old fs2_retail-style loading code -C
+ *
  * Revision 2.7  2003/08/20 08:14:50  wmcoolmon
  * Modified find_file_location to speed up file loading.
  *
@@ -139,7 +142,6 @@
 #endif
 
 #include "cmdline/cmdline.h"
-#include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"
 #include "localization/localize.h"

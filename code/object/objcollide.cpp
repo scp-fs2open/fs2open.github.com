@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-06-11 03:00:50 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:57 $
+ * $Author: Goober5000 $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/06/11 03:00:50  phreak
+ * changed around collision code to handle the possible variance in speeds when using local ssms
+ *
  * Revision 2.1  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -238,11 +241,12 @@
  */
 
 #include "object/objcollide.h"
+#include "object/object.h"
 #include "globalincs/linklist.h"
-#include "globalincs/systemvars.h"
 #include "io/timer.h"
-#include "network/multi.h"
+#include "ship/ship.h"
 #include "weapon/beam.h"
+#include "weapon/weapon.h"
 
 #ifdef FS2_DEMO
 	#define MAX_PAIRS 3000

@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-02-20 04:29:56 $
- * $Author: bobboau $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-05 09:02:05 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/02/20 04:29:56  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.4  2003/03/18 10:07:06  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -160,23 +165,20 @@
 
 
 #include "stats/medals.h"
-#include "graphics/2d.h"
 #include "menuui/snazzyui.h"
-#include "bmpman/bmpman.h"
 #include "gamesequence/gamesequence.h"
-#include "anim/animplay.h"
-#include "io/mouse.h"
-#include "freespace2/freespace.h"
-#include "stats/scoring.h"
 #include "playerman/player.h"
 #include "palman/palman.h"
 #include "ui/ui.h"
 #include "io/key.h"
-#include "cmdline/cmdline.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
-#include "debugconsole/dbugfile.h"
+#include "parse/parselo.h"
+
+#ifndef NDEBUG
+#include "cmdline/cmdline.h"
+#endif
 
 //#define MAX_MEDAL_TYPES 63 // the # of medals which exist so far
 
@@ -419,14 +421,14 @@ void medal_main_init(player *pl, int mode)
 
    Player_score = &Medals_player->stats;
 
-	#ifndef NDEBUG
+#ifndef NDEBUG
 	if(Cmdline_gimme_all_medals){
 		//int idx;
 		for(idx=0; idx < NUM_MEDALS; idx++){
 			Medals_player->stats.medals[idx] = 1;		
 		}
 	}
-	#endif
+#endif
 
 	Medals_mode = mode;
 

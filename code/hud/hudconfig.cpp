@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:02:03 $
+ * $Author: Goober5000 $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.3  2003/01/15 21:29:04  anonymous
  * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
  *
@@ -263,27 +266,18 @@
  *
 */
 
-#include "hud/hud.h"
 #include "hud/hudconfig.h"
-#include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "playerman/player.h"
-#include "graphics/2d.h"
-
 #include "io/key.h"
-#include "io/timer.h"
-#include "math.h"
-#include "io/mouse.h"
 #include "ui/ui.h"
-#include "bmpman/bmpman.h"
-#include "palman/palman.h"
 #include "hud/hudobserver.h"
-#include "ui/ui.h"
-#include "missionui/missionshipchoice.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "popup/popup.h"
-#include "debugconsole/dbugfile.h"
+#include "ship/ship.h"
+#include "parse/parselo.h"
+#include "cfile/cfile.h"
 
 
 //////////////////////////////////////////////////////////////////////////////

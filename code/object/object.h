@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.4 $
- * $Date: 2004-02-04 08:41:02 $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:01:57 $
  * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/02/04 08:41:02  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.3  2003/04/29 01:03:22  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -327,34 +332,19 @@
 #define _OBJECT_H
 
 #include "globalincs/pstypes.h"
+#include "globalincs/globals.h"
 #include "math/vecmat.h"
 #include "physics/physics.h"
-#include "cfile/cfile.h"
 
 /*
  *		CONSTANTS
  */
-
-#ifdef FS2_DEMO
-	#define MAX_OBJECTS			300		
-#else
-	#define MAX_OBJECTS			1000		
-#endif
 
 #define MAX_SHIELD_SECTIONS	4					//	Number of sections in shield.
 
 #ifndef NDEBUG
 #define OBJECT_CHECK 
 #endif
-
-//	Team bitmasks.
-#define TEAM_HOSTILE		(1 << 0)
-#define TEAM_FRIENDLY	(1 << 1)
-#define TEAM_NEUTRAL		(1 << 2)
-#define TEAM_UNKNOWN		(1 << 3)
-#define TEAM_TRAITOR		(1	<< 4)
-#define TEAM_ANY			(TEAM_HOSTILE|TEAM_FRIENDLY|TEAM_NEUTRAL|TEAM_UNKNOWN|TEAM_TRAITOR)
-#define MAX_TEAM_NAMES_INDEX	TEAM_TRAITOR
 
 //Object types
 #define OBJ_NONE				0		//unused object

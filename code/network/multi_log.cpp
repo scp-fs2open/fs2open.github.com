@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_log.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  *
  * Header file to support multiplayer logging functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -64,12 +67,8 @@
  * $NoKeywords: $
  */
 
-#include <stdio.h>
 #include <stdarg.h>
-#include "globalincs/pstypes.h"
 #include "network/multi_log.h"
-#include "network/multi_options.h"
-#include "cmdline/cmdline.h"
 #include "cfile/cfile.h"
 
 // ----------------------------------------------------------------------------------------------------

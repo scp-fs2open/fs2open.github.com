@@ -9,13 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.37 $
+ * $Revision: 2.38 $
  * $Author: Goober5000 $
- * $Date: 2004-01-30 07:39:08 $
+ * $Date: 2004-03-05 09:02:06 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2004/01/30 07:39:08  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.36  2003/10/23 23:48:03  phreak
  * added code for the mission parser to recognize user defined skyboxes
  *
@@ -329,11 +335,12 @@
 #define _PARSE_H
 
 #include <setjmp.h>
-#include "parse/parselo.h"
-#include "ship/ship.h"
 #include "ship/ai.h"
-#include "mission/missionbriefcommon.h"
-#include "weapon/weapon.h"
+#include "model/model.h"
+#include "object/object.h"
+#include "graphics/2d.h"
+
+struct wing;
 
 #define NUM_NEBULAS			3				// how many background nebulas we have altogether
 #define NUM_NEBULA_COLORS	9
@@ -396,7 +403,6 @@ extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 #define IS_MISSION_MULTI_TEAMS		(The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
 #define IS_MISSION_MULTI_DOGFIGHT	(The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)
 
-#define MISSION_DESC_LENGTH	512
 
 // Goober5000
 typedef struct support_ship_info {
@@ -578,6 +584,8 @@ typedef struct subsys_status {
 	int	ai_class;
 	int	subsys_cargo_name;
 } subsys_status;
+
+#define MAX_OBJECT_STATUS	10
 
 //	a parse object
 //	information from a $OBJECT: definition is read into this struct to

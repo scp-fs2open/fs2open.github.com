@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:00 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:57 $
+ * $Author: Goober5000 $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:00  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/09/24 18:56:41  randomtiger
  * DX8 branch commit
  *
@@ -217,26 +220,13 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "cmeasure/cmeasure.h"
 #include "freespace2/freespace.h"
-#include "math/vecmat.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
-#include "model/model.h"
-#include "physics/physics.h"
-#include "math/floating.h"
 #include "model/model.h"
 #include "ship/ship.h"
-#include "io/timer.h"
-#include "fireball/fireballs.h"
-#include "radar/radar.h"
-#include "mission/missionparse.h"		// For MAX_SPECIES_NAMES
-#include "gamesnd/gamesnd.h"
-#include "object/objectsnd.h"
-#include "sound/sound.h"
 #include "math/staticrand.h"
+#include "object/object.h"
 
 cmeasure_info Cmeasure_info[MAX_CMEASURE_TYPES];
 cmeasure Cmeasures[MAX_CMEASURES];

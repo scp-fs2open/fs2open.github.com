@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-02-15 06:02:32 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:07 $
+ * $Author: Goober5000 $
  *
  * Code to load & display nebulas
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/02/15 06:02:32  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.2  2003/11/11 17:59:27  phreak
  * made some g3_start_instance_matrix calls not affect any of the HT&L graphics
  * calls since they were called for internal calculations for 2D stuff
@@ -133,23 +138,12 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
-#include "math/floating.h"
+#include "starfield/nebula.h"
 #include "math/vecmat.h"
 #include "render/3d.h"
-#include "graphics/2d.h"
-#include "starfield/starfield.h"
-#include "bmpman/bmpman.h"
-#include "io/key.h"
-#include "freespace2/freespace.h"	
-#include "io/timer.h"
-#include "starfield/nebula.h"
-#include "palman/palman.h"
-#include "cfile/cfile.h"
-#include "globalincs/linklist.h"
-#include "graphics/2d.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
+#include "cfile/cfile.h"
 
 #define MAX_TRIS 200
 #define MAX_POINTS 300

@@ -7,21 +7,22 @@
  *
 */
 
+#include "network/multi_oo.h"
+#include "globalincs/globals.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
 #include "globalincs/linklist.h"
-#include "weapon/weapon.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "network/multi_obj.h"
 #include "network/multi_rate.h"
 #include "network/multi.h"
 #include "object/object.h"
-#include "io/key.h"
-#include "gamesnd/gamesnd.h"
+#include "ship/ship.h"
+#include "playerman/player.h"
 #include "math/spline.h"
-#include "globalincs/alphacolors.h"
+#include "physics/physics.h"
 #include "ship/afterburner.h"
+#include "cfile/cfile.h"
 
 // ---------------------------------------------------------------------------------------------------
 // OBJECT UPDATE DEFINES/VARS
@@ -1954,8 +1955,6 @@ void multi_oo_calc_interp_splines(int ship_index, vector *cur_pos, matrix *cur_o
 	// now we've got a spline representing our "new" path and where we would've gone had we been perfect before
 	// we'll modify our velocity to move along a blend of these splines.
 }
-
-#include "globalincs/alphacolors.h"
 
 void oo_update_time()
 {	

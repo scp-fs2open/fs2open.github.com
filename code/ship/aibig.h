@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-03-05 09:01:51 $
+ * $Author: Goober5000 $
  *
  * Header file for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -70,6 +73,11 @@
 
 #ifndef __AIBIG_H__
 #define __AIBIG_H__
+
+struct object;
+struct ai_info;
+struct vector;
+struct ship_subsys;
 
 void	ai_big_ship(object *objp);
 void	ai_big_chase();

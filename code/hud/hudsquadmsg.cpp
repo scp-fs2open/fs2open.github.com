@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-02-06 21:25:43 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/02/06 21:25:43  Goober5000
+ * ugh... okay, *really* fixed the head thing this time
+ * --Goober5000
+ *
  * Revision 2.4  2004/01/30 07:39:07  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -253,31 +257,23 @@
 */
  
 
-#include "freespace2/freespace.h"
 #include "graphics/2d.h"
 #include "hud/hud.h"
 #include "ship/ship.h"
 #include "playerman/player.h"
 #include "io/key.h"
-#include "hud/hudtarget.h"
 #include "io/timer.h"
 #include "hud/hudsquadmsg.h"
-#include "controlconfig/controlsconfig.h"
-#include "parse/parselo.h"
 #include "ship/aigoals.h"
-#include "mission/missionparse.h"
 #include "parse/sexp.h"
 #include "globalincs/linklist.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
-#include "hud/hudtarget.h"
 #include "gamesnd/gamesnd.h"
-#include "sound/sound.h"
-#include "mission/missionparse.h"
-#include "bmpman/bmpman.h"
 #include "hud/hudtargetbox.h"
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
+#include "weapon/weapon.h"
 
 #ifndef NO_NETWORK
 #include "network/multimsgs.h"

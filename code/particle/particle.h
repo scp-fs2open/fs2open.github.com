@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.h $
- * $Revision: 2.1 $
- * $Date: 2004-01-24 14:31:27 $
- * $Author: randomtiger $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:09 $
+ * $Author: Goober5000 $
  *
  * Includes for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/01/24 14:31:27  randomtiger
+ * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
+ * Its optional and off by default, use -d3d_particle to activiate.
+ * Also bumped up D3D ambient light setting, it was way too dark.
+ * Its now set to something similar to the original game.
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -74,6 +80,8 @@
 
 #ifndef _PARTICLE_H
 #define _PARTICLE_H
+
+#include "globalincs/pstypes.h"
 
 #define MAX_PARTICLES	2000	//	Reduced from 2000 to 800 by MK on 4/1/98.  Most I ever saw was 400 and the system recovers
 											//	gracefully from running out of slots.

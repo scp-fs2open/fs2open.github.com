@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:02 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -41,18 +44,18 @@
  * $NoKeywords: $
  */
 
-#include "io/timer.h"
-#include "graphics/2d.h"
-#include "globalincs/alphacolors.h"
-#include "network/multi_rate.h"
-
 // -----------------------------------------------------------------------------------------------------------------------
 // MULTI RATE DEFINES/VARS
 //
 
+#include "network/multi_rate.h"
+
 // keep this defined to compile in rate checking
 #if !defined(NDEBUG) || defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
 	#define MULTI_RATE
+
+	#include "io/timer.h"
+	#include "globalincs/alphacolors.h"
 #endif
 
 // how many records in the past we'll keep track of

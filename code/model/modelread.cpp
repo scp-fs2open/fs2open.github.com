@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.33 $
- * $Date: 2004-02-27 04:09:56 $
- * $Author: bobboau $
+ * $Revision: 2.34 $
+ * $Date: 2004-03-05 09:02:07 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2004/02/27 04:09:56  bobboau
+ * fixed a Z buffer error in HTL submodel rendering,
+ * and glow points,
+ * and other stuff
+ *
  * Revision 2.32  2004/02/20 04:29:55  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -853,20 +858,20 @@
 
 #define MODEL_LIB
 
-#include "cfile/cfile.h"
 #include "model/model.h"
-#include "bmpman/bmpman.h"
-#include "math/floating.h"
-#include "render/3d.h"
-#include "ship/ship.h"
 #include "model/modelsinc.h"
+#include "math/vecmat.h"
+#include "object/object.h"
+#include "bmpman/bmpman.h"
 #include "io/key.h"
-#include "graphics/2d.h"
 #include "render/3dinternal.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "freespace2/freespace.h"		// For flFrameTime
 #include "math/fvi.h"
+#include "ship/ship.h"
+#include "cfile/cfile.h"
+#include "parse/parselo.h"
 
 #include <direct.h>
 #include <windows.h>
@@ -1510,8 +1515,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	}
 
 	pm->version = version;
-	Assert( strlen(filename) < FILENAME_LEN );
-	strncpy(pm->filename, filename, FILENAME_LEN);
+	Assert( strlen(filename) < FILESPEC_LENGTH );
+	strncpy(pm->filename, filename, FILESPEC_LENGTH);
 
 	memset( &pm->view_positions, 0, sizeof(pm->view_positions) );
 

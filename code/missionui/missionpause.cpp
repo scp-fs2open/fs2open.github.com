@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:01:55 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.3  2002/10/22 17:42:09  randomtiger
  * Fixed lighting bug that caused special pause to crash on debug build.
  * Also added TAB functionality for special pause that toggles HUD. - RT
@@ -57,19 +60,17 @@
 #include "missionui/missionpause.h"
 #include "ui/ui.h"
 #include "popup/popup.h"
-#include "graphics/2d.h"
-#include "bmpman/bmpman.h"
 #include "io/key.h"
 #include "sound/audiostr.h"
 #include "gamesequence/gamesequence.h"
 #include "freespace2/freespace.h"
 #include "hud/hud.h"
+#include "hud/hudmessage.h"
 #include "object/object.h"
 #include "graphics/font.h"
 #include "globalincs/alphacolors.h"
 #include "weapon/beam.h"	
 #include "controlconfig/controlsconfig.h"
-#include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi_pause.h"

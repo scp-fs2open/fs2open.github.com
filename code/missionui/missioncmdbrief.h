@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-03-05 09:01:55 $
+ * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:09  mharris
  * got some stuff to compile
  *
@@ -58,11 +61,17 @@
 #define CMD_BRIEF_TEXT_MAX		16384
 #define CMD_BRIEF_STAGES_MAX	10
 
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
+
+struct anim;
+struct anim_instance;
+
 typedef struct {
 	char *text;  // text to display
 	char ani_filename[MAX_FILENAME_LEN];  // associated ani file to play
-	anim_t *anim;
-	anim_instance_t *anim_instance;
+	anim *anim;
+	anim_instance *anim_instance;
 	int anim_ref;  // potential reference to another index (use it's anim instead of this's)
 	char wave_filename[MAX_FILENAME_LEN];
 	int wave;  // instance number of above

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:01:55 $
+ * $Author: Goober5000 $
  *
  * $NoKeywords: $
  *
@@ -21,7 +21,7 @@
 #define _MISSION_SCREEN_COMMON_HEADER_FILE
 
 #include "ui/ui.h"
-#include "weapon/weapon.h"
+#include "globalincs/globals.h"
 
 #define BACKGROUND_FRAME_TO_START_SHIP_ANIM	87
 #define BUTTON_SLIDE_IN_FRAME						1

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:01:57 $
+ * $Author: Goober5000 $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -115,8 +118,10 @@
 #ifndef _CMEASURE_H
 #define _CMEASURE_H
 
-#include "parse/parselo.h"
-#include "object/object.h"
+#include "globalincs/globals.h"
+
+struct object;
+struct vector;
 
 #define MAX_CMEASURES 64
 

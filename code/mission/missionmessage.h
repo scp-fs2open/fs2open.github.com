@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.4 $
- * $Date: 2004-02-12 22:29:55 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-05 09:02:06 $
+ * $Author: Goober5000 $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/02/12 22:29:55  phreak
+ * fixed a bug where the inferno build would get lower limits for MAX_PERSONAS if INF_BUILD was defined
+ *
  * Revision 2.3  2004/01/21 17:34:31  phreak
  * bumped MAX_PERSONAS to 25 if INF_BUILD is defined.
  *
@@ -220,10 +223,10 @@
 #ifndef _MISSIONMESSAGE_H
 #define _MISSIONMESSAGE_H
 
-#include "ship/ship.h"
-#include "parse/parselo.h"			// include so that we can gets defs for lengths of tokens
-#include "anim/animplay.h"
+#include "globalincs/globals.h"		// include so that we can gets defs for lengths of tokens
+#include "anim/packunpack.h"
 
+struct ship;
 
 #define MAX_MISSION_MESSAGES	300
 

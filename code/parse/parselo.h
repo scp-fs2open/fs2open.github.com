@@ -9,15 +9,20 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.10 $
+ * $Revision: 2.11 $
  * $Author: Goober5000 $
- * $Date: 2004-02-07 00:48:52 $
+ * $Date: 2004-03-05 09:02:08 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/02/07 00:48:52  Goober5000
+ * made FS2 able to account for subsystem mismatches between ships.tbl and the
+ * model file - e.g. communication vs. communications
+ * --Goober5000
+ *
  * Revision 2.9  2003/10/12 03:46:23  Kazan
  * #Kazan# FS2NetD client code gone multithreaded, some Fred2 Open -mod stuff [obvious code.lib] including a change in cmdline.cpp, changed Stick's "-nohtl" to "-htl" - HTL is _OFF_ by default here (Bobboau and I decided this was a better idea for now)
  *
@@ -275,7 +280,9 @@
 #define _PARSELO_H
 
 #include <setjmp.h>
-#include "cfile/cfile.h"
+#include <stdio.h>
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 #define	MISSION_TEXT_SIZE	1000000
 
@@ -302,18 +309,6 @@ extern jmp_buf parse_abort;
 #define	F_SHIPCHOICE			8
 #define	F_MESSAGE				9	// this is now obsolete for mission messages - all messages in missions should now use $MessageNew and stuff strings as F_MULTITEXT
 #define	F_MULTITEXT				10
-
-#define	PATHNAME_LENGTH		192
-#define	NAME_LENGTH				32
-#define	SEXP_LENGTH				128
-#define	DATE_LENGTH				32
-#define	TIME_LENGTH				16
-#define	DATE_TIME_LENGTH		48
-#define	NOTES_LENGTH			1024
-// Kazan - this used to be 1024, now 4096
-#define	MULTITEXT_LENGTH		4096
-#define	FILESPEC_LENGTH		64
-#define	MESSAGE_LENGTH			512
 
 #define PARSE_BUF_SIZE			4096
 
@@ -405,7 +400,7 @@ extern void parse_main();
 // utility
 extern void mark_int_list(int *ilp, int max_ints, int lookup_type);
 extern void compact_multitext_string(char *str);
-extern void read_file_text(char *filename, int mode = CF_TYPE_ANY, char *specified_text = NULL, char *specified_text_raw = NULL);
+extern void read_file_text(char *filename, int mode = -1 /*CF_TYPE_ANY*/, char *specified_text = NULL, char *specified_text_raw = NULL);
 extern void debug_show_mission_text();
 extern void convert_sexp_to_string(int cur_node, char *outstr, int mode);
 char *split_str_once(char *src, int max_pixel_w);

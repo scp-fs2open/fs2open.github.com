@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-02-04 09:02:43 $
+ * $Revision: 2.27 $
+ * $Date: 2004-03-05 09:01:52 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/02/04 09:02:43  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.25  2004/01/30 07:39:06  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -524,54 +528,27 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
+#include "ship/shiphit.h"
 #include "object/object.h"
-#include "math/fvi.h"
-#include "physics/physics.h"
-#include "math/vecmat.h"
 #include "ship/ship.h"
-#include "model/model.h"
-#include "io/key.h"
 #include "weapon/weapon.h"
-#include "radar/radar.h"
-#include "graphics/2d.h"
 #include "render/3d.h"
-#include "math/floating.h"
-#include "ship/ai.h"
-#include "ship/ailocal.h"
 #include "fireball/fireballs.h"
 #include "debris/debris.h"
 #include "hud/hud.h"
 #include "io/timer.h"
-#include "cfile/cfile.h"
 #include "mission/missionlog.h"
-#include "mission/missionparse.h"
-#include "bmpman/bmpman.h"
-#include "io/joy.h"
 #include "io/joy_ff.h"
 #include "playerman/player.h"
-#include "parse/parselo.h"
 #include "freespace2/freespace.h"
-#include "sound/sound.h"
 #include "globalincs/linklist.h"
-#include "hud/hudets.h"
 #include "hud/hudtarget.h"
-#include "ship/aigoals.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesnd/eventmusic.h"
 #include "ship/shipfx.h"
-#include "parse/sexp.h"
 #include "gamesequence/gamesequence.h"
-#include "object/objectsnd.h"
-#include "cmeasure/cmeasure.h"
-#include "anim/animplay.h"
-#include "controlconfig/controlsconfig.h"
-#include "ship/afterburner.h"
 #include "weapon/shockwave.h"
-#include "hud/hudsquadmsg.h"
-#include "weapon/swarm.h"
-#include "ship/shiphit.h"
-#include "particle/particle.h"
+#include "hud/hudmessage.h"
 #include "popup/popup.h"
 #include "weapon/emp.h"
 #include "weapon/beam.h"

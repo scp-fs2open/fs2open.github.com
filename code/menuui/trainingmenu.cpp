@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TrainingMenu.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:53 $
+ * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Training user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
  * DX8 branch commit
  *
@@ -134,12 +137,6 @@
 #include "menuui/trainingmenu.h"
 #include "graphics/2d.h"
 #include "menuui/snazzyui.h"
-#include "playerman/managepilot.h"
-#include "mission/missionload.h"
-#include "io/key.h"
-#include "bmpman/bmpman.h"
-#include "menuui/mainhallmenu.h"
-#include "debugconsole/dbugfile.h"
 
 // global to this file
 static int trainingMenuBitmap;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.h $
- * $Revision: 2.3 $
- * $Date: 2003-09-13 06:02:05 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * Header file that supports code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -56,7 +60,7 @@
 #ifndef _HUD_ETS_H
 #define _HUD_ETS_H
 
-#include "object/object.h"
+struct object;
 
 #define	ETS_RECHARGE_RATE	4.0f			//	Recharge this percent of total shields/second
 

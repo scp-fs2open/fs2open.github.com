@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.h $
- * $Revision: 2.3 $
- * $Date: 2003-09-13 06:02:05 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:03 $
  * $Author: Goober5000 $
  *
  * Header file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.1  2003/01/06 17:14:52  Goober5000
  * added wing configurable squad logos - put +Squad Logo: filename.pcx as
  * the last entry in each wing that you want (but the player's squad logo will
@@ -67,6 +71,8 @@
 #ifndef __FREESPACE_HUDSHIELD_H__
 #define __FREESPACE_HUDSHIELD_H__
 
+#include "globalincs/pstypes.h"
+
 #define SHIELD_HIT_DURATION	1400	// time a shield quadrant flashes after being hit
 #define SHIELD_FLASH_INTERVAL	200	// time between shield quadrant flashes
 
@@ -83,6 +89,8 @@ typedef struct shield_hit_info
 extern ubyte Quadrant_xlate[4];
 
 struct player;
+struct object;
+struct ship_info;
 
 void hud_shield_game_init();
 void hud_shield_level_init();

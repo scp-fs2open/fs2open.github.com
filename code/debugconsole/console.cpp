@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/DebugConsole/Console.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:01 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-05 09:01:58 $
+ * $Author: Goober5000 $
  *
  * Routines for managing the debug console window.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:01  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/09/24 18:56:41  randomtiger
  * DX8 branch commit
  *
@@ -114,10 +117,8 @@
 #include <string.h>
 
 #include "globalincs/pstypes.h"
-#include "freespace2/freespace.h"
 #include "graphics/font.h"
 #include "io/timer.h"
-#include "graphics/2d.h"
 #include "io/key.h"
 #include "globalincs/alphacolors.h"
 #include "osapi/osapi.h"

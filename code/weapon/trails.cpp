@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-02-20 04:29:57 $
- * $Author: bobboau $
+ * $Revision: 2.16 $
+ * $Date: 2004-03-05 09:01:54 $
+ * $Author: Goober5000 $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/02/20 04:29:57  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.14  2004/02/16 11:47:34  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -159,16 +164,12 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/pstypes.h"
-#include "freespace2/freespace.h"
-#include "weapon/weapon.h"
+#include "weapon/trails.h"
+#include "globalincs/systemvars.h"
 #include "globalincs/linklist.h"
 #include "render/3d.h" 
-#include "render/3dinternal.h" 
-#include "bmpman/bmpman.h"
-#include "weapon/trails.h"
-#include "debugconsole/timerbar.h"
 #include "io/timer.h"
+#include "ship/ship.h"
 
 #define MAX_TRAILS 500
 

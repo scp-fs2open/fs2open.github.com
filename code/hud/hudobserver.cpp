@@ -9,28 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDObserver.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-03-05 09:02:03 $
+ * $Author: Goober5000 $
  *
  * $NoKeywords: $
  *
  */
 
-#include "hud/hud.h"
 #include "hud/hudobserver.h"
-#include "freespace2/freespace.h"
-#include "graphics/font.h"
-#include "mission/missiongoals.h"
-#include "render/3d.h"
-#include "globalincs/linklist.h"
-#include "debris/debris.h"
 #include "hud/hudtargetbox.h"
-#include "sound/sound.h"
-#include "gamesnd/gamesnd.h"
-#include "radar/radar.h"
 #include "hud/hudconfig.h"
-#include "globalincs/alphacolors.h"
+#include "ship/ship.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

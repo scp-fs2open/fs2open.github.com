@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_endgame.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-11-11 02:15:45 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:02:02 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/11/11 02:15:45  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -206,15 +211,14 @@
  * $NoKeywords: $
  */
 
-// #include <windows.h>
 #include "network/multi.h"
-#include "popup/popup.h"
 #include "object/object.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
-#include "missionui/chatbox.h"
+#include "popup/popup.h"
 #include "popup/popupdead.h"
 #include "network/multi_endgame.h"
+#include "playerman/player.h"
 #include "network/multimsgs.h"
 #include "network/multiui.h"
 #include "network/multiutil.h"

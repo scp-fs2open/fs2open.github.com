@@ -9,16 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-02-20 04:29:53 $
- * $Author: bobboau $
- * $Revision: 2.9 $
- * $Date: 2004-02-20 04:29:53 $
- * $Author: bobboau $
+ * $Revision: 2.10 $
+ * $Date: 2004-03-05 09:01:58 $
+ * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2004-03-05 09:01:58 $
+ * $Author: Goober5000 $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/02/20 04:29:53  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.8  2004/01/24 15:52:25  randomtiger
  * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
  * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
@@ -199,18 +204,16 @@
 
 #include "cutscene/cutscenes.h"
 #include "ui/ui.h"
-#include "cfile/cfile.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesequence/gamesequence.h"
 #include "freespace2/freespace.h"
 #include "io/key.h"
-#include "bmpman/bmpman.h"
 #include "movie.h"
 #include "popup/popup.h"
 #include "menuui/mainhallmenu.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
-#include "debugconsole/dbugfile.h"
+#include "parse/parselo.h"
 
 char *Cutscene_bitmap_name[GR_NUM_RESOLUTIONS] = {
 	"ViewFootage",

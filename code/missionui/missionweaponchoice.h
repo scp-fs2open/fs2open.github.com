@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.h $
- * $Revision: 2.3 $
- * $Date: 2003-03-05 09:17:14 $
+ * $Revision: 2.4 $
+ * $Date: 2004-03-05 09:01:55 $
  * $Author: Goober5000 $
  *
  * Header file for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/05 09:17:14  Goober5000
+ * cleaned out Bobboau's buggy code - about to rewrite with new, bug-free code :)
+ * --Goober5000
+ *
  * Revision 2.2  2003/02/25 06:22:49  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -134,8 +138,9 @@
 #ifndef __MISSION_WEAPON_CHOICE_H__
 #define __MISSION_WEAPON_CHOICE_H__
 
-#include "mission/missionparse.h"
-#include "missionui/missionscreencommon.h"
+struct p_object;
+struct wss_unit;
+struct ship_weapon;
 
 // mask regions for icons in the scrollable lists
 #define ICON_PRIMARY_0				28
