@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-18 03:26:35 $
+ * $Author: unknownplayer $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/13 21:09:29  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -850,7 +853,10 @@ float apply_damage_to_shield(object *objp, int shield_quadrant, float damage)
 	}
 		
 }
-
+/**
+ * This function needs to be called by big ships which have shields. It should be able to be modified to deal with
+ * the large polygons we use for their shield meshes - unknownplayer
+ */
 //	At lower detail levels, shield hit effects are a single texture, applied to one enlarged triangle.
 void create_shield_low_detail(int objnum, int model_num, matrix *orient, vector *centerp, vector *tcp, int tr0, shield_info *shieldp)
 {
