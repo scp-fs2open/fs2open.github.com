@@ -20,6 +20,9 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/05/04 19:51:28  phreak
+ * fixed mispelling
+ *
  * Revision 2.23  2003/05/03 23:47:04  phreak
  * added multipliers for beam turrets and sensors for disruptor missiles
  *
@@ -3382,43 +3385,52 @@ void weapon_do_electronics_affect(object *ship_objp, vector *blast_pos, int wi_i
 	float base_time=((float)wip->elec_time*(weapon_electronics_scale[ship_type]*wip->elec_intensity));
 	float sub_time;
 
-	for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss) ) {
+	for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss) )
+	{
 		psub = ss->system_info;
 		sub_time=base_time;
-		
-		//if its an engine subsytem, take the multiplier into account
-		if (psub->type==SUBSYSTEM_ENGINE)
-		{
-			sub_time*=wip->elec_eng_mult;
-		}
 
-		//if its a turret or weapon subsytem, take the multiplier into account
-		if ((psub->type==SUBSYSTEM_TURRET) || (psub->type==SUBSYSTEM_WEAPONS))
-		{
-			if ((psub->type==SUBSYSTEM_TURRET)&&(Weapon_info[psub->turret_weapon_type].wi_flags & WIF_BEAM))
-			{
-				sub_time*=wip->elec_beam_mult;
-			}
-			else
-			{
-				sub_time*=wip->elec_weap_mult;
-			}
-		}
+		// convert subsys point to world coords
+		vm_vec_unrotate(&subsys_world_pos, &psub->pnt, &ship_objp->orient);
+		vm_vec_add2(&subsys_world_pos, &ship_objp->pos);
 
-		if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags & MSS_FLAG_AWACS))
+		// see if subsys point is within damage sphere
+		dist = vm_vec_dist_quick(blast_pos, &subsys_world_pos);
+		if ( dist < wip->outer_radius )
 		{
-			sub_time*=wip->elec_sensors_mult;
-		}
+			//if its an engine subsytem, take the multiplier into account
+			if (psub->type==SUBSYSTEM_ENGINE)
+			{
+				sub_time*=wip->elec_eng_mult;
+			}
+
+			//if its a turret or weapon subsytem, take the multiplier into account
+			if ((psub->type==SUBSYSTEM_TURRET) || (psub->type==SUBSYSTEM_WEAPONS))
+			{
+				if ((psub->type==SUBSYSTEM_TURRET)&&(Weapon_info[psub->turret_weapon_type].wi_flags & WIF_BEAM))
+				{
+					sub_time*=wip->elec_beam_mult;
+				}
+				else
+				{
+					sub_time*=wip->elec_weap_mult;
+				}
+			}
+
+			if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags & MSS_FLAG_AWACS))
+			{
+				sub_time*=wip->elec_sensors_mult;
+			}
 	
-		//disrupt this subsystem for the predicted time, plus or minus 4 seconds
-		//if it turns out to be less than 0 seconds, don't bother
-		sub_time+=frand_range(-1.0f, 1.0f) *4000.0f;
+			//disrupt this subsystem for the predicted time, plus or minus 4 seconds
+			//if it turns out to be less than 0 seconds, don't bother
+			sub_time+=frand_range(-1.0f, 1.0f) *4000.0f;
 		
-		if (sub_time > 0)
-		{
-			ship_subsys_set_disrupted(ss, fl2i(sub_time));
+			if (sub_time > 0)
+			{
+				ship_subsys_set_disrupted(ss, fl2i(sub_time));
+			}
 		}
-		
 	}
 }
 
@@ -4104,7 +4116,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		sip = &Ship_info[Ships[target->instance].ship_info_index];
 
 		// get hull pct of the ship currently
-		hull_pct = target->hull_strength / sip->initial_hull_strength;
+		hull_pct = target->hull_strength / shipp->ship_initial_hull_strength;
 
 		// if it has hit a supercap ship and is not a supercap class weapon
 		if((sip->flags & SIF_SUPERCAP) && !(wip->wi_flags & WIF_SUPERCAP)){
