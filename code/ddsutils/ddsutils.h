@@ -6,7 +6,11 @@
 
 #include "PreProcDefines.h"
 #include "globalincs/pstypes.h"
+#ifdef _WIN32
 #include "directx/vddraw.h"
+#endif
+
+struct CFILE;
 
 #define DDS_ERROR_NONE					0		//everything went fine
 #define DDS_ERROR_INVALID_FILENAME		1		//bad filename
@@ -44,18 +48,12 @@
 #endif
 #endif
 
-
 //these structures are the headers for a dds file
 typedef struct _DDSCAPS2
 {
-    DWORD       dwCaps;         // capabilities of surface wanted
-    DWORD       dwCaps2;
-    DWORD       dwCaps3;
-    union
-    {
-        DWORD       dwCaps4;
-        DWORD       dwVolumeDepth;
-    } DUMMYUNIONNAMEN(1);
+	DWORD		dwCaps1;
+	DWORD		dwCaps2;
+	DWORD		Reserved[2];
 } DDSCAPS2;
 
 typedef struct _DDSURFACEDESC2
@@ -64,41 +62,13 @@ typedef struct _DDSURFACEDESC2
     DWORD               dwFlags;                // determines what fields are valid
     DWORD               dwHeight;               // height of surface to be created
     DWORD               dwWidth;                // width of input surface
-    union
-    {
-        LONG            lPitch;                 // distance to start of next line (return value only)
-        DWORD           dwLinearSize;           // Formless late-allocated optimized surface size
-    } DUMMYUNIONNAMEN(1);
-    union
-    {
-        DWORD           dwBackBufferCount;      // number of back buffers requested
-        DWORD           dwDepth;                // the depth if this is a volume texture 
-    } DUMMYUNIONNAMEN(5);
-    union
-    {
-        DWORD           dwMipMapCount;          // number of mip-map levels requestde
-                                                // dwZBufferBitDepth removed, use ddpfPixelFormat one instead
-        DWORD           dwRefreshRate;          // refresh rate (used when display mode is described)
-        DWORD           dwSrcVBHandle;          // The source used in VB::Optimize
-    } DUMMYUNIONNAMEN(2);
-    DWORD               dwAlphaBitDepth;        // depth of alpha buffer requested
-    DWORD               dwReserved;             // reserved
-    LPVOID              lpSurface;              // pointer to the associated surface memory
-    union
-    {
-        DDCOLORKEY      ddckCKDestOverlay;      // color key for destination overlay use
-        DWORD           dwEmptyFaceColor;       // Physical color for empty cubemap faces
-    } DUMMYUNIONNAMEN(3);
-    DDCOLORKEY          ddckCKDestBlt;          // color key for destination blt use
-    DDCOLORKEY          ddckCKSrcOverlay;       // color key for source overlay use
-    DDCOLORKEY          ddckCKSrcBlt;           // color key for source blt use
-    union
-    {
-        DDPIXELFORMAT   ddpfPixelFormat;        // pixel format description of the surface
-        DWORD           dwFVF;                  // vertex format description of vertex buffers
-    } DUMMYUNIONNAMEN(4);
+	DWORD				dwPitchOrLinearSize;
+	DWORD				dwDepth;
+	DWORD				dwMipMapCount;
+	DWORD				dwReserved1[11];
+	DDPIXELFORMAT		ddpfPixelFormat;
     DDSCAPS2            ddsCaps;                // direct draw surface capabilities
-    DWORD               dwTextureStage;         // stage in multitexture cascade
+	DWORD				dwReserved2;
 } DDSURFACEDESC2, FAR* LPDDSURFACEDESC2;
 
 #define DDS_OFFSET						4+sizeof(DDSURFACEDESC2)		//place where the data starts -- should be 128
@@ -106,11 +76,11 @@ typedef struct _DDSURFACEDESC2
 //reads a dds header
 //returns one of the error values
 //'compression_type' comes back as one of the DDS_DXTC* defines
-int dds_read_header(char *filename, int *width, int *height, int *bpp, int *compression_type, int *levels);
+int dds_read_header(char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, int *size = 0);
 
 //reads bitmap
 //size of the data it stored in size
-int dds_read_bitmap(char *filename, int *size, uint* data);
+int dds_read_bitmap(char *filename, ubyte **data, ubyte *bpp);
 
 //returns a string from a DDS error code
 const char* dds_error_string(int code);
