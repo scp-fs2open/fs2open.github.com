@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:27 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-02-21 09:00:17 $
+ * $Author: wmcoolmon $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:27  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2004/07/17 18:46:08  taylor
  * various OGL and memory leak fixes
  *
@@ -368,9 +371,9 @@ extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 typedef struct brief_screen
 {
 	int map_x1, map_x2, map_y1, map_y2;
-	int btext_x1, btext_x2, btext_y1, btext_y2;
+/*	int btext_x1, btext_x2, btext_y1, btext_y2;
 	int cup_x1, cup_x2, cup_y1, cup_y2;
-	int cupinfo_x1, cupinfo_x2, cupinfo_y1, cupinfo_y2;
+	int cupinfo_x1, cupinfo_x2, cupinfo_y1, cupinfo_y2;*/
 } brief_sceen;
 
 extern brief_screen bscreen;

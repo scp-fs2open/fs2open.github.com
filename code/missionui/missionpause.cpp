@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-26 20:47:40 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2005-02-21 09:00:58 $
+ * $Author: wmcoolmon $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/26 20:47:40  Kazan
+ * remove MCD complete
+ *
  * Revision 2.6  2004/07/12 16:32:55  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -250,7 +253,7 @@ void pause_do(int multi)
 					gr_set_color_fast(&Color_normal);
 					gr_set_font(FONT2);
 					gr_get_string_size(&str_w, &str_h, pause_str);
-					gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, pause_str);
+					gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, pause_str, false);
 					gr_set_font(FONT1);
 				}
 			}
