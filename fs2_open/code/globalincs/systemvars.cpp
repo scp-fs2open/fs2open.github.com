@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-11-22 20:56:15 $
+ * $Author: phreak $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -233,7 +236,9 @@ int Fred_found_unknown_ship_during_parsing = 0;
 
 // If true, then we are using Direct3D hardware.  This is used for game type stuff
 // that changes when you're using hardware.
-int D3D_enabled = 0;			
+int D3D_enabled = 0;
+
+int OGL_inited=0;			
 
 // Values used for noise for thruster animations
 float Noise[NOISE_NUM_FRAMES] = { 
