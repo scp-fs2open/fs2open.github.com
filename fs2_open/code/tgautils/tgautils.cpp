@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:53 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2004-09-22 03:50:13 $
+ * $Author: tbird $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:53  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -460,8 +463,8 @@ int targa_read_header(char *real_filename, int *w, int *h, int *bpp, ubyte *pale
 	*h = header.height;
 	*bpp = header.pixel_depth;
 
-	Assert(*bpp == 16);
-	if(*bpp != 16)
+	Assert(*bpp == 16 | *bpp == 32 | *bpp == 24);
+	if(*bpp != 16 && *bpp != 32 && *bpp != 24)
 		return TARGA_ERROR_READING;
 
 #else
