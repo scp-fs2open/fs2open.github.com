@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-12-13 08:13:29 $
+ * $Revision: 2.7 $
+ * $Date: 2002-12-22 22:59:04 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/12/13 08:13:29  Goober5000
+ * small tweaks and bug fixes for the ballistic primary conversion
+ * ~Goober5000~
+ *
  * Revision 2.5  2002/12/10 05:43:34  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -757,6 +761,12 @@ void parse_mission_info(mission *pm)
 	if(optional_string("+Storm:")){
 		stuff_string(Mission_parse_storm_name, F_NAME, NULL);
 		nebl_set_storm(Mission_parse_storm_name);
+	}
+
+	// hack: turn on ship trails if in nebula
+	if (pm->flags & MISSION_FLAG_FULLNEB)
+	{
+		pm->flags |= MISSION_FLAG_SHIP_TRAILS;
 	}
 
 	// get the number of players if in a multiplayer mission
