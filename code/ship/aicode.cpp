@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.33 $
- * $Date: 2003-06-12 16:53:16 $
+ * $Revision: 2.34 $
+ * $Date: 2003-06-14 21:22:42 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/06/12 16:53:16  phreak
+ * turrets now properly use local ssms
+ *
  * Revision 2.32  2003/06/11 03:03:16  phreak
  * the ai can now use local ssms. they are able to use them at *very* long range
  *
@@ -3014,17 +3017,20 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	eeo.nearest_dist = 99999.0f;
 	eeo.nearest_objnum = -1;
 
-
-	// Missile_obj_list
-	for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
-		objp = &Objects[mo->objnum];
-		evaluate_obj_as_target(objp, &eeo);
-	}
-	// highest priority
-	if ( eeo.nearest_homing_bomb_objnum != -1 ) {					// highest priority is an incoming homing bomb
-		return eeo.nearest_homing_bomb_objnum;
-	} else if ( eeo.nearest_bomb_objnum != -1 ) {					// next highest priority is an incoming dumbfire bomb
-		return eeo.nearest_bomb_objnum;
+	//don't fire anti capital ship turrets at bombs.
+	if (!(Weapon_info[tp->turret_weapon_type].wi_flags & WIF_HUGE))
+	{
+		// Missile_obj_list
+		for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
+			objp = &Objects[mo->objnum];
+			evaluate_obj_as_target(objp, &eeo);
+		}
+		// highest priority
+		if ( eeo.nearest_homing_bomb_objnum != -1 ) {					// highest priority is an incoming homing bomb
+			return eeo.nearest_homing_bomb_objnum;
+		} else if ( eeo.nearest_bomb_objnum != -1 ) {					// next highest priority is an incoming dumbfire bomb
+			return eeo.nearest_bomb_objnum;
+		}
 	}
 
 
@@ -11129,6 +11135,7 @@ void turret_fire_weapon(ship_subsys *turret, int parent_objnum, vector *turret_p
 				Int3();	// should never get this far
 				return;
 			}
+			
 
 			// stuff beam firing info
 			memset(&fire_info, 0, sizeof(beam_fire_info));
@@ -11443,6 +11450,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			ss->turret_enemy_objnum = -1;
 			return;
 		}
+
 		lep = &Objects[ss->turret_enemy_objnum];
 	} else {
 		if (timestamp_until(ss->turret_next_fire_stamp) < 500) {
