@@ -1,6 +1,600 @@
 ChangeLog for fs2_open.  All times are UTC.  
-Updated 2002-08-13 04:31
+Updated 2002-10-31 03:46
+
+
+2002-10-30 22:57  randomtiger
+
+	* code/: code.dsp (1.6.2.8), graphics/grd3d.cpp (2.2.2.18),
+	graphics/grd3dinternal.h (2.1.2.7), graphics/grd3dtexture.cpp
+	(2.1.2.16), model/modelinterp.cpp (2.3.2.1):
 	
+	Changed DX8 code to not use set render and texture states if they
+	are already set to that value.	Disabled buffer saving and
+	restoring code when windowed to stop DX8 debug runs from crashing.
+	- RT
+
+2002-10-30 20:22  inquisitor
+
+	* code/cmdline/cmdline.h (2.10):
+	
+	Bad Committ, Rolling back
+
+2002-10-30 06:29  DTP
+
+	* code/cfile/: cfilesystem.cpp (2.5), cfile.cpp (2.5):
+	
+	doh!, used upper case in include, dont know how much it matters for
+	*nix systems, but here it is
+
+2002-10-30 06:26  DTP
+
+	* code/cfile/cfilesystem.cpp (2.4):
+	
+	DTP Implemented basic VP files handling. mission and campaign files
+	inside VP files found in mod dir still not supported, cheking /
+	creating directories not implented either
+
+2002-10-29 22:41  sesquipedalian
+
+	* code/parse/: sexp.cpp (2.3), sexp.h (2.3):
+	
+	no message
+
+2002-10-28 02:28  DTP
+
+	* code/cmdline/cmdline.h (2.9):
+	
+	Crap, somebody may restore cmdline.h to 2 version before this.
+
+2002-10-28 00:40  randomtiger
+
+	* code/graphics/grd3d.cpp (2.2.2.17):
+	
+	Implemented screen saving code for restoring when drawing popups, a
+	bit slow but works. - RT
+
+2002-10-27 23:59  DTP
+
+	* code/cfile/: cfile.cpp (2.4), cfile.h (2.3):
+	
+	DTP; started basic implementation of mod-support plain files only
+	for now. fs2_open.exe -mod X will look for files in fs2/ X
+	/all-legal-subdirectories. no checking/creating dirs yet.
+	directories must be there.
+
+2002-10-27 23:55  DTP
+
+	* code/cmdline/: cmdline.cpp (2.9), cmdline.h (2.8):
+	
+	DTP; started basic implementation of mod-support plain files only
+	for now. fs2_open.exe -mod X will look for files in fs2/ X
+	/all-legal-subdirectories. no checking/creating dirs yet.
+	directories must be there.
+
+2002-10-26 09:55  unknownplayer
+
+	* code/: freespace2/freespace.cpp (2.6.2.5), nebula/neb.cpp
+	(2.1.2.1):
+	
+	Fixed the nebula flicker bug. Check the NO_DIRECT3D conditional
+	compile sections in the future for bits of code which may cause
+	problems due to hacks correcting for DirectX5 that no longer apply.
+
+2002-10-26 01:24  randomtiger
+
+	* code/: bmpman/bmpman.cpp (2.2.2.10), bmpman/bmpman.h (2.0.2.7),
+	graphics/grd3d.cpp (2.2.2.16), graphics/grd3drender.cpp (2.3.2.15),
+	graphics/grd3dtexture.cpp (2.1.2.15):
+	
+	Fixed debug bitmap compiling bug.  Fixed tga bug. - RT
+
+2002-10-22 23:02  randomtiger
+
+	* code/: cmdline/cmdline.cpp (2.8), cmdline/cmdline.h (2.7),
+	debugconsole/timerbar.h (1.2), hud/hudtargetbox.cpp (2.4),
+	model/modelinterp.cpp (2.5):
+	
+	Made Phreaks alternative scanning style optional under the command
+	line tag "-phreak" Fixed bug that changes HUD colour when
+	targetting debris in a full nebula. - RT
+
+2002-10-22 17:46  randomtiger
+
+	* Freespace2.dsp (1.7.2.4), code/bmpman/bmpman.cpp (2.2.2.9),
+	code/bmpman/bmpman.h (2.0.2.6), code/graphics/grd3dtexture.cpp
+	(2.1.2.14):
+	
+	Fixed new TGA code texturing bug. - RT
+
+2002-10-22 17:42  randomtiger
+
+	* code/: freespace2/freespace.cpp (2.13),
+	missionui/missionpause.cpp (2.3):
+	
+	Fixed lighting bug that caused special pause to crash on debug
+	build.	Also added TAB functionality for special pause that toggles
+	HUD. - RT
+
+2002-10-21 16:33  randomtiger
+
+	* code/: bmpman/bmpman.cpp (2.2.2.8), bmpman/bmpman.h (2.0.2.5),
+	graphics/grd3d.cpp (2.2.2.15), graphics/grd3dinternal.h (2.1.2.6),
+	graphics/grd3drender.cpp (2.3.2.14), graphics/grd3dtexture.cpp
+	(2.1.2.13):
+	
+	Added D3D only 32 bit TGA functionality. Will load a texture as big
+	as your graphics card allows. Code not finished yet and will forge
+	the beginnings of the new texture system. - RT
+
+2002-10-20 22:21  randomtiger
+
+	* code/: bmpman/bmpman.cpp (2.2.2.7), graphics/grd3d.cpp
+	(2.2.2.14), graphics/grd3drender.cpp (2.3.2.13), palman/palman.cpp
+	(2.1.2.1):
+	
+	Some incomplete code to handle background drawing when message
+	boxes are drawn.  It doesnt work but its a good base for someone to
+	start from. - RT
+
+2002-10-19 23:56  randomtiger
+
+	* code/: bmpman/bmpman.cpp (2.2.2.6), bmpman/bmpman.h (2.0.2.4),
+	globalincs/pstypes.h (2.4.2.3), graphics/grd3d.cpp (2.2.2.13),
+	graphics/grd3dtexture.cpp (2.1.2.12):
+	
+	Changed generic bitmap code to allow maximum dimensions to be
+	determined by 3D's engines maximum texture size query.	Defaults to
+	256 as it was before. Also added base code for reworking the
+	texture code to be more efficient. - RT
+
+2002-10-19 19:29  bobboau
+
+	* code/: controlconfig/controlsconfig.h (2.2),
+	controlconfig/controlsconfigcommon.cpp (2.3), model/model.h (2.5),
+	model/modelinterp.cpp (2.4), model/modelread.cpp (2.4),
+	model/modelsinc.h (2.4), object/object.cpp (2.2), osapi/outwnd.cpp
+	(2.2), physics/physics.cpp (2.2), physics/physics.h (2.2),
+	playerman/playercontrol.cpp (2.2), ship/ai.h (2.2), ship/aibig.cpp
+	(2.2), ship/aicode.cpp (2.8), ship/ship.cpp (2.7), ship/ship.h
+	(2.4), ship/shipcontrails.cpp (2.3), ship/shipcontrails.h (2.1),
+	ship/shiphit.cpp (2.6), starfield/starfield.cpp (2.3),
+	weapon/beam.cpp (2.4), weapon/beam.h (2.3), weapon/weapon.h (2.2),
+	weapon/weapons.cpp (2.2):
+	
+	inital commit, trying to get most of my stuff into FSO, there
+	should be most of my fighter beam, beam rendering, beam sheild hit,
+	ABtrails, and ssm stuff. one thing you should be happy to know is
+	the beam texture tileing is now set in the beam section section of
+	the weapon table entry
+
+2002-10-19 03:50  randomtiger
+
+	* code/: cmdline/cmdline.cpp (2.7), cmdline/cmdline.h (2.6),
+	freespace2/freespace.cpp (2.12), io/keycontrol.cpp (2.4),
+	menuui/readyroom.cpp (2.2), missionui/missionpause.cpp (2.2),
+	missionui/missionpause.h (2.2):
+	
+	Added special pause mode for easier action screenshots.  Added new
+	command line parameter for accessing all single missions in tech
+	room. - RT
+
+2002-10-17 20:40  randomtiger
+
+	* code/: controlconfig/controlsconfig.h (2.1),
+	controlconfig/controlsconfigcommon.cpp (2.2), hud/hud.cpp (2.2),
+	hud/hud.h (2.2), io/keycontrol.cpp (2.3),
+	mission/missionmessage.cpp (2.2):
+	
+	Added ability to remove HUD ingame on keypress shift O So I've
+	added a new key to the bind list and made use of already existing
+	hud removal code.
+
+2002-10-16 00:41  randomtiger
+
+	* code/graphics/: 2d.cpp (2.3.2.8), 2d.h (2.1.2.2), grd3d.cpp
+	(2.2.2.12), grd3d.h (2.0.2.4), grd3drender.cpp (2.3.2.12):
+	
+	Fixed small bug that was stopping unactive text from displaying
+	greyed out Also added ability to run FS2 DX8 in 640x480, however I
+	needed to make a small change to 2d.cpp which invloved calling the
+	resolution processing code after initialising the device for D3D
+	only.  This is because D3D8 for the moment has its own internal
+	launcher.  Also I added a fair bit of documentation and tidied some
+	stuff up. - RT
+
+2002-10-14 21:52  randomtiger
+
+	* code/: bmpman/bmpman.cpp (2.2.2.5), graphics/grd3d.cpp
+	(2.2.2.11), graphics/grd3drender.cpp (2.3.2.11),
+	graphics/grd3dtexture.cpp (2.1.2.11):
+	
+	Finally tracked down and killed off that 8 bit alpha bug.  So the
+	font, HUD and 8 bit ani's now work fine. - RT
+
+2002-10-14 19:49  phreak
+
+	* code/graphics/gropenglw32x.cpp (1.4):
+	
+	screenshots, yay!
+
+2002-10-13 21:43  phreak
+
+	* code/graphics/gropenglw32x.cpp (1.3):
+	
+	further optimizations
+
+2002-10-12 17:48  phreak
+
+	* code/graphics/gropenglw32x.cpp (1.2):
+	
+	fixed text
+
+2002-10-11 21:35  phreak
+
+	* code/graphics/gropenglw32.cpp (1.2):
+	
+	dont use this one
+
+2002-10-11 21:30  phreak
+
+	* code/graphics/: gropenglw32.cpp (1.1), gropenglw32x.cpp (1.1):
+	
+	first run at opengl for w32, only useful in main hall, barracks and
+	campaign room
+
+2002-10-11 18:50  randomtiger
+
+	* code/graphics/: 2d.cpp (2.3.2.7), 2d.h (2.1.2.1), grd3d.cpp
+	(2.2.2.10), grd3d.h (2.0.2.3), grd3dinternal.h (2.1.2.5),
+	grd3drender.cpp (2.3.2.10), grd3dtexture.cpp (2.1.2.10):
+	
+	Checked in fix for 16 bit problem, thanks to Righteous1 Removed a
+	fair bit of code that was used by the 16 bit code path which no
+	longer exists.	32 bit and 16 bit should now work in exactly the
+	same way. - RT
+
+2002-10-08 14:33  randomtiger
+
+	* code/: graphics/grd3d.cpp (2.2.2.9), graphics/grd3drender.cpp
+	(2.3.2.9), graphics/grd3dtexture.cpp (2.1.2.9), osapi/outwnd.cpp
+	(2.1.2.1):
+	
+	OK, I've fixed the z-buffer problem.  However I have abandoned
+	using w-buffer for now because of problems.  I think I know how to
+	solve it but Im not sure it would make much difference given the
+	way FS2 engine works.  I have left code in there of use if anyone
+	wants to turn their hand to it. However for now we just need to
+	crack of the alpha problem then we will have FS2 fully wokring in
+	DX8 on GF4 in 32 bit.
+
+2002-10-05 16:46  randomtiger
+
+	* code/: code.dsp (1.10), debugconsole/timerbar.cpp (1.1),
+	debugconsole/timerbar.h (1.1), freespace2/freespace.cpp (2.11),
+	globalincs/systemvars.h (2.2), graphics/grd3d.cpp (2.3),
+	graphics/grd3dinternal.h (2.2), graphics/grd3drender.cpp (2.4),
+	menuui/credits.cpp (2.3):
+	
+	Added us fs2_open people to the credits. Worth looking at just for
+	that.  Added timer bar code, by default its not compiled in.  Use
+	TIMEBAR_ACTIVE in project and dependancy code settings to activate.
+	 Added the new timebar files with the new code.
+
+2002-10-04 00:48  randomtiger
+
+	* code/graphics/: grd3d.cpp (2.2.2.8), grd3dinternal.h (2.1.2.4),
+	grd3drender.cpp (2.3.2.8), grd3dtexture.cpp (2.1.2.8):
+	
+	Fixed video memory leaks Added code to cope with lost device, not
+	tested Got rid of some DX5 stuff we definately dont need Moved some
+	enum's into internal,h because gr_d3d_set_state should be able to
+	be called from any dx file Cleaned up some stuff - RT
+
+2002-10-03 08:32  unknownplayer
+
+	* code/: graphics/grd3d.cpp (2.2.2.7), graphics/grd3dtexture.cpp
+	(2.1.2.7), osapi/osapi.cpp (2.2.2.2):
+	
+	Hacked in a windowed mode so we can properly debug this without
+	using monitors (although I drool at the concept of having that!)
+
+2002-10-02 17:52  randomtiger
+
+	* code/: debugconsole/dbugfile.cpp (2.1.2.3),
+	debugconsole/dbugfile.h (2.1.2.3), graphics/grd3d.cpp (2.2.2.6),
+	graphics/grd3drender.cpp (2.3.2.7), graphics/grd3dtexture.cpp
+	(2.1.2.6):
+	
+	Fixed blue lighting bug.  Put filtering flag set back in that I
+	accidentally removed Added some new functionality to my debuging
+	system - RT
+
+2002-10-02 11:40  randomtiger
+
+	* code/: code.dsp (1.6.2.7), bmpman/bmpman.cpp (2.2.2.4),
+	bmpman/bmpman.h (2.0.2.3), graphics/2d.cpp (2.3.2.6),
+	graphics/grd3d.cpp (2.2.2.5), graphics/grd3d.h (2.0.2.2),
+	graphics/grd3dinternal.h (2.1.2.3), graphics/grd3drender.cpp
+	(2.3.2.6), graphics/grd3dtexture.cpp (2.1.2.5),
+	pcxutils/pcxutils.cpp (2.1.2.2):
+	
+	Bmpmap has been reverted to an old non d3d8 version.  All d3d8 code
+	is now in the proper place.  PCX code is now working to an extent.
+	Problems with alpha though.  Ani's work slowly with alpha problems.
+	 Also I have done a bit of tidying - RT
+
+2002-09-28 22:13  randomtiger
+
+	* code/: anim/animplay.cpp (2.1.2.2), bmpman/bmpman.cpp (2.2.2.3),
+	graphics/grd3d.cpp (2.2.2.4), graphics/grd3dinternal.h (2.1.2.2),
+	graphics/grd3drender.cpp (2.3.2.5), graphics/grd3dtexture.cpp
+	(2.1.2.4), weapon/weapons.cpp (2.1.2.2):
+	
+	Sorted out some bits and pieces. The background nebula blends now
+	which is nice. – RT
+
+2002-09-28 12:20  randomtiger
+
+	* code/graphics/: grd3d.cpp (2.2.2.3), grd3drender.cpp (2.3.2.4),
+	grd3dtexture.cpp (2.1.2.3):
+	
+	Just a tiny code change that lets stuff work in 16 bit.  For some
+	reason 16 bit code was taking a different code path for displaying
+	textures.  So until I unstand why, Im cutting off that codepath
+	because it isnt easy to convert into DX8.
+
+2002-09-28 00:18  randomtiger
+
+	* code/: bmpman/bmpman.cpp (2.2.2.2), bmpman/bmpman.h (2.0.2.2),
+	graphics/grd3drender.cpp (2.3.2.3), graphics/grd3dtexture.cpp
+	(2.1.2.2):
+	
+	Did some work on trying to get textures to load from pcx, define
+	TX_ATTEMPT for access to it.  Converted some DX7 blending calls to
+	DX8 which a fair difference to ingame visuals.
+	
+	- RT
+
+2002-09-24 18:56  randomtiger
+
+	* Freespace2.dsp (1.7.2.3), code/code.dsp (1.6.2.6),
+	code/anim/animplay.cpp (2.1.2.1), code/bmpman/bmpman.cpp (2.2.2.1),
+	code/bmpman/bmpman.h (2.0.2.1), code/cfile/cfile.cpp (2.3.2.1),
+	code/cmeasure/cmeasure.cpp (2.1.2.1),
+	code/controlconfig/controlsconfig.cpp (2.1.2.1),
+	code/cutscene/cutscenes.cpp (2.2.2.4), code/cutscene/movie.cpp
+	(2.1.2.4), code/cutscene/movie.h (2.1.2.2),
+	code/debugconsole/console.cpp (2.1.2.1),
+	code/debugconsole/dbugfile.cpp (2.1.2.2),
+	code/debugconsole/dbugfile.h (2.1.2.2),
+	code/freespace2/freespace.cpp (2.6.2.4),
+	code/freespace2/freespace.rc (2.0.2.1),
+	code/freespace2/freespaceresource.h (2.0.2.1),
+	code/gamehelp/gameplayhelp.cpp (2.1.2.1), code/globalincs/pstypes.h
+	(2.4.2.2), code/graphics/2d.cpp (2.3.2.5), code/graphics/bitblt.cpp
+	(2.1.2.1), code/graphics/grd3d.cpp (2.2.2.2), code/graphics/grd3d.h
+	(2.0.2.1), code/graphics/grd3dinternal.h (2.1.2.1),
+	code/graphics/grd3drender.cpp (2.3.2.2),
+	code/graphics/grd3dtexture.cpp (2.1.2.1),
+	code/graphics/grdirectdraw.cpp (2.1.2.2), code/hud/hudconfig.cpp
+	(2.2.2.1), code/hud/hudmessage.cpp (2.1.2.1),
+	code/menuui/barracks.cpp (2.2.2.1), code/menuui/credits.cpp
+	(2.2.2.1), code/menuui/mainhallmenu.cpp (2.3.2.4),
+	code/menuui/mainhalltemp.cpp (2.1.2.1), code/menuui/optionsmenu.cpp
+	(2.1.2.1), code/menuui/playermenu.cpp (2.2.2.1),
+	code/menuui/readyroom.cpp (2.1.2.1), code/menuui/techmenu.cpp
+	(2.1.2.1), code/menuui/trainingmenu.cpp (2.1.2.1),
+	code/mission/missioncampaign.cpp (2.3.2.3),
+	code/mission/missiongoals.cpp (2.1.2.1),
+	code/mission/missionhotkey.cpp (2.1.2.1),
+	code/mission/missionload.cpp (2.1.2.1),
+	code/missionui/missionbrief.cpp (2.1.2.1),
+	code/missionui/missioncmdbrief.cpp (2.1.2.1),
+	code/missionui/missiondebrief.cpp (2.2.2.1),
+	code/missionui/missionloopbrief.cpp (2.1.2.1),
+	code/missionui/missionpause.cpp (2.1.2.1),
+	code/missionui/missionshipchoice.cpp (2.1.2.1),
+	code/missionui/missionweaponchoice.cpp (2.1.2.1),
+	code/missionui/redalert.cpp (2.1.2.1),
+	code/network/multi_dogfight.cpp (2.1.2.1),
+	code/network/multi_ingame.cpp (2.1.2.1),
+	code/network/multi_pinfo.cpp (2.1.2.1),
+	code/network/multiteamselect.cpp (2.2.2.1),
+	code/network/multiui.cpp (2.4.2.1), code/pcxutils/pcxutils.cpp
+	(2.1.2.1), code/popup/popup.cpp (2.1.2.1), code/render/3ddraw.cpp
+	(2.2.2.1), code/ship/ship.cpp (2.6.2.1), code/stats/medals.cpp
+	(2.2.2.1), code/ui/gadget.cpp (2.1.2.1), code/weapon/weapons.cpp
+	(2.1.2.1):
+	
+	DX8 branch commit
+	
+	This is the scub of UP's previous code with the more up to date RT
+	code.  For full details check previous dev e-mails
+
+2002-09-20 20:09  phreak
+
+	* code/freespace2/freespace.cpp (2.10):
+	
+	did glare stuff in game_sunspot_process()
+
+2002-09-20 20:05  phreak
+
+	* code/starfield/starfield.cpp (2.2):
+	
+	glare parser stuff in stars_init()
+
+2002-09-20 20:04  phreak
+
+	* code/starfield/starfield.h (2.2):
+	
+	added glare variable for ambient suns if glare is 0 then the sun
+	glare whiteout is not shown when looking at the sun
+
+2002-09-20 20:02  phreak
+
+	* code/hud/hudtarget.cpp (2.2):
+	
+	lead indicator for dumbfire missiles
+
+2002-09-20 20:01  phreak
+
+	* code/hud/hudtargetbox.cpp (2.3):
+	
+	extra effects during cargo scan
+
+2002-09-10 21:58  unknownplayer
+
+	* code/graphics/directx8/GrD3d81Stubs.cpp (1.1):
+	
+	file GrD3d81Stubs.cpp was initially added on branch directx8.
+
+2002-09-10 21:58  unknownplayer
+
+	* code/: freespace2/freespace.cpp (2.6.2.3), graphics/2d.cpp
+	(2.3.2.4), graphics/grdirectdraw.cpp (2.1.2.1),
+	graphics/directx8/GrD3D81.cpp (1.2.2.4),
+	graphics/directx8/GrD3D81.h (1.1.2.4),
+	graphics/directx8/GrD3d81Stubs.cpp (1.1.2.1):
+	
+	Added the DX8 stub file, plus new CODE!
+
+2002-09-08 02:36  unknownplayer
+
+	* code/: code.dsp (1.6.2.5), graphics/2d.cpp (2.3.2.3),
+	graphics/grd3d.cpp (2.2.2.1), graphics/grd3drender.cpp (2.3.2.1),
+	graphics/directx8/GrD3D81.cpp (1.2.2.3),
+	graphics/directx8/GrD3D81.h (1.1.2.3):
+	
+	Framework for the new D3DRENDER class is in place, and gr_screen
+	function structures are now there too. The way it's done is
+	probably kind of inefficient, but until we're further along
+	actually drawing polygons we should keep it that way for
+	consistency's sake.
+
+2002-09-01 08:18  unknownplayer
+
+	* Freespace2.dsp (1.7.2.2), code/code.dsp (1.6.2.4),
+	code/globalincs/pstypes.h (2.4.2.1), code/graphics/2d.cpp
+	(2.3.2.2), code/graphics/directx8/GrD3D81.cpp (1.2.2.2),
+	code/graphics/directx8/GrD3D81.h (1.1.2.2),
+	code/menuui/mainhallmenu.cpp (2.3.2.3):
+	
+	Started writing some code for the new DX8.1 class and hit a serious
+	snag to do with window handling and DirectDraw (and possibly my
+	unfamiliarity with DX). It seems we may need to make some changes
+	further up the code because we no longer use DX through DD in 8.1
+	and the V code did that a lot (to go fullscreen and such check out
+	the device creation code)
+
+2002-08-31 04:50  unknownplayer
+
+	* code/: code.dsp (1.6.2.3), graphics/2d.cpp (2.3.2.1),
+	graphics/directx8/GrD3D81.cpp (1.2.2.1),
+	graphics/directx8/GrD3D81.h (1.1.2.1):
+	
+	Removed some older DX81 stuff I added before and changed some other
+	things.  I'm currently thinking that I'm going to run with putting
+	everything into a specialized class with the d3d_init and
+	d3d_cleanup functions as gods.	(Creation / Destruction functions -
+	i.e. gods :)
+
+2002-08-31 04:48  unknownplayer
+
+	* code/graphics/directx8/grd3d81internal.h (1.2.2.1):
+	
+	These are all officially now out of FS2 unless you have a specific
+	reason to need them. I'm running with the idea that we make a C++
+	class and use that as an effective way to control the code.
+	Rewriting V's stuff is just insanely difficult.
+
+2002-08-28 21:47  randomtiger
+
+	* Freespace2.dsp (1.10), code/cutscene/cutscenes.cpp (2.2.2.3),
+	code/cutscene/movie.cpp (2.1.2.3):
+	
+	Tiny change to DX branch to keep movie code optional (default off)
+
+2002-08-28 12:39  randomtiger
+
+	* code/: code.dsp (1.6.2.2), cutscene/cutscenes.cpp (2.2.2.2),
+	cutscene/movie.cpp (2.1.2.2), debugconsole/dbugfile.cpp (2.1.2.1),
+	debugconsole/dbugfile.h (2.1.2.1), directx/dx8show.cpp (1.1.2.2),
+	directx/dx8show.h (1.1.2.2), freespace2/freespace.cpp (2.6.2.2),
+	menuui/mainhallmenu.cpp (2.3.2.2), mission/missioncampaign.cpp
+	(2.3.2.2), osapi/osapi.cpp (2.2.2.1), osapi/osapi.h (2.2.2.1):
+	
+	OK, this should be a commit to the DX branch or Im going to be in a
+	lot of trouble.  The movie and dx8show files have been cleaned up
+	big time.  My debug system is in but has NO EFFECT at all unless a
+	compiler flag is turned on, check h file for details.  Aside from
+	that a few changes to help the movie code work properly.  Works on
+	most things including GF4 and Voodoo 3. However may not work
+	properly on a voodoo 2.  Im going to leave this as a bug for now,
+	serves you right for buying voodoo!
+
+2002-08-28 10:51  randomtiger
+
+	* code/: code.dsp (1.9), debugconsole/dbugfile.cpp (2.1),
+	debugconsole/dbugfile.h (2.1), freespace2/freespace.cpp (2.9):
+	
+	Woh! I sure as hell didnt modify all these files it says I did.  I
+	will put this down to the branch! Note: I did start from a fresh
+	checkout!
+
+2002-08-27 13:38  penguin
+
+	* Freespace2.dsp (1.9), code/code.dsp (1.8),
+	code/cmdline/cmdline.cpp (2.6), code/cmdline/cmdline.h (2.5),
+	code/cutscene/cutscenes.cpp (2.4), code/cutscene/movie.cpp (2.2),
+	code/cutscene/movie.h (2.2), code/directx/DShow.h (1.2),
+	code/directx/ddraw.lib (1.2), code/directx/dx8show.cpp (1.2),
+	code/directx/dx8show.h (1.2), code/directx/dxguid.lib (1.2),
+	code/directx/strmiids.lib (1.2), code/freespace2/freespace.cpp
+	(2.8), code/menuui/mainhallmenu.cpp (2.5),
+	code/mission/missioncampaign.cpp (2.5):
+	
+	Moved DirectX8 stuff to directx8 branch; reverted to previous
+
+2002-08-27 13:25  penguin
+
+	* code/directx/: DShow.h (1.1.2.1), ddraw.lib (1.1.2.1),
+	dx8show.cpp (1.1.2.1), dx8show.h (1.1.2.1), dxguid.lib (1.1.2.1),
+	strmiids.lib (1.1.2.1):
+	
+	Moved to directx8 branch
+
+2002-08-27 13:21  penguin
+
+	* code/: freespace2/freespace.cpp (2.6.2.1),
+	menuui/mainhallmenu.cpp (2.3.2.1), mission/missioncampaign.cpp
+	(2.3.2.1), code.dsp (1.6.2.1), cmdline/cmdline.cpp (2.4.2.1),
+	cmdline/cmdline.h (2.3.2.1), cutscene/cutscenes.cpp (2.2.2.1),
+	cutscene/movie.cpp (2.1.2.1), cutscene/movie.h (2.1.2.1),
+	Freespace2.dsp (1.7.2.1):
+	
+	Moved to directx8 branch
+
+2002-08-18 19:48  randomtiger
+
+	* Freespace2.dsp (1.8), code/code.dsp (1.7),
+	code/cmdline/cmdline.cpp (2.5), code/cmdline/cmdline.h (2.4),
+	code/cutscene/cutscenes.cpp (2.3), code/cutscene/movie.cpp (2.1),
+	code/cutscene/movie.h (2.1), code/directx/DShow.h (1.1),
+	code/directx/ddraw.lib (1.1), code/directx/dx8show.cpp (1.1),
+	code/directx/dx8show.h (1.1), code/directx/dxguid.lib (1.1),
+	code/directx/strmiids.lib (1.1), code/freespace2/freespace.cpp
+	(2.7), code/menuui/mainhallmenu.cpp (2.4),
+	code/mission/missioncampaign.cpp (2.4):
+	
+	Added new lib files: strmiids and ddraw to get dshow working Added
+	new command line parameter to active direct show movie play:
+	-dshowvid Uncommented movie_play calls and includes
+
+2002-08-15 04:41  penguin
+
+	* code/globalincs/systemvars.h (2.1):
+	
+	Added #include, needed for FRED
 
 2002-08-13 03:40  penguin
 
