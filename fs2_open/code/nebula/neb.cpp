@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-01-10 06:58:12 $
+ * $Revision: 2.31 $
+ * $Date: 2005-01-22 22:53:07 $
  * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/01/10 06:58:12  wmcoolmon
+ * Bug-guard
+ *
  * Revision 2.29  2004/10/31 21:56:09  taylor
  * new bmpman support, new OGL fixes don't need the freaky neb lighting fix anymore
  *
@@ -254,6 +257,9 @@
 #include "starfield/starfield.h"
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
+#include "tgautils/tgautils.h"
+#include "jpgutils/jpgutils.h"
+#include "ddsutils/ddsutils.h"
 #include "mission/missionparse.h"
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
@@ -574,28 +580,62 @@ void neb2_level_init()
 		if(strlen(Neb2_texture_name))
 		{
 			int width, height;
-			pcx_read_header(Neb2_texture_name, NULL, &width, &height, NULL);
+			int format = -1;
+			if(targa_read_header(Neb2_texture_name, NULL, &width, &height) == TARGA_ERROR_NONE)
+				format = 0;
+			else if(jpeg_read_header(Neb2_texture_name, NULL, &width, &height) == JPEG_ERROR_NONE)
+				format = 1;
+			/*else if(dds_read_header(Neb2_texture_name, NULL, &width, &height) == DDS_ERROR_NONE)
+				format = 2;*/
+			else if(pcx_read_header(Neb2_texture_name, NULL, &width, &height) == PCX_ERROR_NONE)
+				format = 3;
 
-			Neb2_max_fog_value = width * height;
-			Neb2_htl_fog_data = (ubyte *) malloc(Neb2_max_fog_value * 4);
-
-			if(Neb2_htl_fog_data)
+			if(format != -1)
 			{
-				// Always read in 32 bit, bypass normal bitmap code to avoid D3D locking issues
-				int result = pcx_read_bitmap_32(Neb2_texture_name, Neb2_htl_fog_data);
-				if(result == PCX_ERROR_NONE)
+				bool loaded = false;
+				Neb2_max_fog_value = width * height;
+				Neb2_htl_fog_data = (ubyte *) malloc(Neb2_max_fog_value * 4);
+
+				if(Neb2_htl_fog_data)
 				{
-					Neb2_fog_colour_r = Neb2_htl_fog_data[2];
-					Neb2_fog_colour_g = Neb2_htl_fog_data[1];
-					Neb2_fog_colour_b = Neb2_htl_fog_data[0];
-				} else 
-				{
-					free(Neb2_htl_fog_data);
-					Neb2_htl_fog_data = NULL;
+					// Always read in 32 bit, bypass normal bitmap code to avoid D3D locking issues
+					switch(format)
+					{
+						case 0:
+							if(targa_read_bitmap_32(Neb2_texture_name, Neb2_htl_fog_data, NULL, Neb2_max_fog_value * 4) == TARGA_ERROR_NONE)
+								loaded = true;
+							break;
+						case 1:
+							if(jpeg_read_bitmap_32(Neb2_texture_name, Neb2_htl_fog_data, NULL, Neb2_max_fog_value * 4) == JPEG_ERROR_NONE)
+								loaded = true;
+							break;
+					/*	case 2:
+							if(dds_read_bitmap(Neb2_texture_name, Neb2_htl_fog_data) == DDS_ERROR_NONE)
+								loaded = true;
+							break;*/
+						case 3:
+							if(pcx_read_bitmap_32(Neb2_texture_name, Neb2_htl_fog_data) == PCX_ERROR_NONE)
+								loaded = true;
+							break;
+					}
+					if(loaded)
+					{
+						Neb2_fog_colour_r = Neb2_htl_fog_data[2];
+						Neb2_fog_colour_g = Neb2_htl_fog_data[1];
+						Neb2_fog_colour_b = Neb2_htl_fog_data[0];
+					}
+					else 
+					{
+						free(Neb2_htl_fog_data);
+						Neb2_htl_fog_data = NULL;
+					}
 				}
 			}
+			else
+			{
+				Warning(LOCATION, "Could not open specified nebula texture '%s'", Neb2_texture_name);
+			}
 		}
-
 		Neb2_render_mode = NEB2_RENDER_HTL;
 	}
 
