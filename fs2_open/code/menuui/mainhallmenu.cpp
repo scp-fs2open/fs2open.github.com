@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-03-25 06:57:35 $
+ * $Revision: 2.28 $
+ * $Date: 2005-03-25 07:35:22 $
  * $Author: wmcoolmon $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/03/25 06:57:35  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.26  2005/03/03 06:05:29  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -1202,12 +1205,12 @@ void main_hall_do(float frametime)
 		gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 		gameseq_post_event(GS_EVENT_LAB);
 		break;
-
+#ifndef NDEBUG
 	case KEY_F4:
 		gameseq_post_event(GS_EVENT_STORYBOOK);
 		break;
 	
-#ifndef NDEBUG	
+
 	case KEY_1:		
 		// no soup for you!
 		movie_play("endprt2b.mve");
