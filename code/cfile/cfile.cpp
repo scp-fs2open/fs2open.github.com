@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-05-26 02:29:44 $
+ * $Revision: 2.18 $
+ * $Date: 2004-06-22 23:14:09 $
  * $Author: wmcoolmon $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/05/26 02:29:44  wmcoolmon
+ * Scratch that - .tbm is a better extension
+ *
  * Revision 2.16  2004/05/26 02:26:14  wmcoolmon
  * Added table chunk extension
  *
@@ -285,7 +288,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_MISSIONS,				"data" DIR_SEPARATOR_STR "missions",														".fs2 .fc2 .ntl .ssv",	CF_TYPE_DATA	},
 	{ CF_TYPE_MODELS,					"data" DIR_SEPARATOR_STR "models",															".pof",						CF_TYPE_DATA	},
 	{ CF_TYPE_TABLES,					"data" DIR_SEPARATOR_STR "tables",															".tbl .tbm",						CF_TYPE_DATA	},
-	{ CF_TYPE_SOUNDS,					"data" DIR_SEPARATOR_STR "sounds",															".wav",						CF_TYPE_DATA	},
+	{ CF_TYPE_SOUNDS,					"data" DIR_SEPARATOR_STR "sounds",															".wav .ogg",						CF_TYPE_DATA	},
 	{ CF_TYPE_SOUNDS_8B22K,			"data" DIR_SEPARATOR_STR "sounds" DIR_SEPARATOR_STR "8b22k",						".wav",						CF_TYPE_SOUNDS	},
 	{ CF_TYPE_SOUNDS_16B11K,		"data" DIR_SEPARATOR_STR "sounds" DIR_SEPARATOR_STR "16b11k",						".wav",						CF_TYPE_SOUNDS	},
 	{ CF_TYPE_VOICE,					"data" DIR_SEPARATOR_STR "voice",															"",							CF_TYPE_DATA	},
