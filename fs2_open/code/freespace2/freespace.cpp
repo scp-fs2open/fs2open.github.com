@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-01-14 04:00:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2003-01-15 21:26:35 $
+ * $Author: anonymous $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/01/14 04:00:16  Goober5000
+ * allowed for up to 256 main halls
+ * --Goober5000
+ *
  * Revision 2.16  2002/12/21 13:39:03  DTP
  * did bit more house keeping. modfied Phreaks fps cmdline a bit, so that we dont have to specific build code.libs for fred, but can use the same code.lib for both fs2_open.exe and fred2_open.exe
  *
@@ -7918,6 +7922,10 @@ if ( FS_VERSION_BUILD == 0 ) {
 	sprintf(str,"V%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
 }
 
+#ifdef FS2_DEMO
+	strcat(str, " Demo");
+#endif
+
 #ifdef _DEBUG
 	strcat(str, " Dbg");
 #endif
@@ -8813,16 +8821,18 @@ int game_do_cd_mission_check(char *filename)
 
 // checksums, just keep a list of all valid ones, if it matches any of them, keep it
 #define NUM_SHIPS_TBL_CHECKSUMS		1
-/*
+
+#ifdef FS2_DEMO
 int Game_ships_tbl_checksums[NUM_SHIPS_TBL_CHECKSUMS] = {
-	-463907578,						// US - beta 1
+	//-463907578,						// US - beta 1
 	1696074201,						// FS2 demo
 };
-*/
+#else
 int Game_ships_tbl_checksums[NUM_SHIPS_TBL_CHECKSUMS] = {
 //	-1022810006,					// 1.0 FULL
 	-1254285366						// 1.2 FULL (German)
 };
+#endif
 
 void verify_ships_tbl()
 {	
@@ -8880,16 +8890,18 @@ DCF(shipspew, "display the checksum for the current ships.tbl")
 
 // checksums, just keep a list of all valid ones, if it matches any of them, keep it
 #define NUM_WEAPONS_TBL_CHECKSUMS		1
-/*
+
+#ifdef FS2_DEMO
 int Game_weapons_tbl_checksums[NUM_WEAPONS_TBL_CHECKSUMS] = {
-	141718090,				// US - beta 1
+	//141718090,				// US - beta 1
 	-266420030,				// demo 1
 };
-*/
+#else
 int Game_weapons_tbl_checksums[NUM_WEAPONS_TBL_CHECKSUMS] = {
 //	399297860,				// 1.0 FULL	
 	-553984927				// 1.2 FULL (german)
 };
+#endif
 
 void verify_weapons_tbl()
 {	

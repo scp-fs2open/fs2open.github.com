@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-08-27 13:38:58 $
- * $Author: penguin $
+ * $Revision: 2.6 $
+ * $Date: 2003-01-15 21:29:04 $
+ * $Author: anonymous $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/08/27 13:38:58  penguin
+ * Moved DirectX8 stuff to directx8 branch; reverted to previous
+ *
  * Revision 2.3  2002/08/04 05:12:10  penguin
  * Change version display location
  *
@@ -2036,8 +2039,10 @@ void main_hall_read_table()
 			stuff_string(m->bitmap, F_NAME, NULL, MAX_FILENAME_LEN);
 			required_string("+Mask:");
 			stuff_string(m->mask, F_NAME, NULL, MAX_FILENAME_LEN);
+#ifndef FS2_DEMO
 			required_string("+Music:");
 			stuff_string(m->music, F_NAME, NULL, MAX_FILENAME_LEN);
+#endif
 
 			// intercom sounds
 			required_string("+Num Intercom Sounds:");

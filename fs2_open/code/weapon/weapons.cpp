@@ -1687,9 +1687,10 @@ void weapon_init()
 	int rval;
 
 	if ( !Weapons_inited ) {
-
+#ifndef FS2_DEMO
 		// parse weapon_exp.tbl
 		parse_weapon_expl_tbl();
+#endif
 
 		// parse weapons.tbl
 		if ((rval = setjmp(parse_abort)) != 0) {

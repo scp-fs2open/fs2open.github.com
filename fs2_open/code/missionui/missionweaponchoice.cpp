@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-12-31 18:59:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2003-01-15 21:29:05 $
+ * $Author: anonymous $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/31 18:59:43  Goober5000
+ * if it ain't broke, don't fix it
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/13 08:13:28  Goober5000
  * small tweaks and bug fixes for the ballistic primary conversion
  * ~Goober5000~
@@ -1236,7 +1240,7 @@ int weapon_allowed_for_game_type(int weapon_flags)
 {
 	int	rval = 0;
 
-#ifndef NO_NETWORK
+#if !defined NO_NETWORK && !defined FS2_DEMO
 	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)) {
 		if (weapon_flags & (1 << 1))
 			rval = 1;
