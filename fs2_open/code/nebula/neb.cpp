@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-03-17 04:07:30 $
+ * $Revision: 2.22 $
+ * $Date: 2004-04-03 02:55:49 $
  * $Author: bobboau $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/03/17 04:07:30  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.20  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -635,7 +642,7 @@ void neb2_render_setup(vector *eye_pos, matrix *eye_orient)
 	if(Neb2_render_mode == NEB2_RENDER_HTL) {
 
 
-		if(Neb2_htl_fog_data)
+/*		if(Neb2_htl_fog_data)
 		{
 		  	Neb2_cur_fog_value++;
 				
@@ -650,7 +657,7 @@ void neb2_render_setup(vector *eye_pos, matrix *eye_orient)
 			Neb2_fog_colour_g = (ubyte) (g & 0xff);
 			Neb2_fog_colour_b = (ubyte) (b & 0xff);
 		}
-
+*/
 		// RT The background needs to be the same colour as the fog and this seems
 		// to be the ideal place to do it
 		unsigned char tr = gr_screen.current_clear_color.red;  
@@ -1284,6 +1291,7 @@ void neb2_render_player()
 		 	  	if(Cmdline_nohtl)
 	 				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 		 	  	else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+			//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
 //#endif
 			}
 		}

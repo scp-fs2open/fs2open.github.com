@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.36 $
- * $Date: 2004-03-17 04:07:32 $
+ * $Revision: 2.37 $
+ * $Date: 2004-04-03 02:55:50 $
  * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2004/03/17 04:07:32  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.35  2004/03/05 09:01:53  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -504,6 +511,9 @@ typedef struct beam {
 	beam_info binfo;
 	bool fighter_beam;
 	int bank;
+
+	int Beam_muzzle_stamp;
+	vector local_pnt;
 } beam;
 
 beam Beams[MAX_BEAMS];				// all beams
@@ -555,7 +565,7 @@ int Beam_test_framecount = 0;
 #define BEAM_WARMDOWN_PCT(b)		( ((float)Weapon_info[b->weapon_info_index].b_info.beam_warmdown - (float)timestamp_until(b->warmdown_stamp)) / (float)Weapon_info[b->weapon_info_index].b_info.beam_warmdown ) 
 
 // timestamp for spewing muzzle particles
-int Beam_muzzle_stamp = -1;
+//int Beam_muzzle_stamp = -1;
 
 // link into the physics paused system
 extern int physics_paused;
@@ -725,7 +735,6 @@ void beam_level_init()
 	}
 
 	// reset muzzle particle spew timestamp
-	Beam_muzzle_stamp = -1;
 }
 
 // shutdown beam weapons for this level
@@ -798,6 +807,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->objp = fire_info->shooter;
 	new_item->sig = fire_info->shooter->signature;
 	new_item->subsys = fire_info->turret;	
+	new_item->local_pnt = fire_info->turret->system_info->pnt;
 	new_item->life_left = wip->b_info.beam_life;	
 	new_item->life_total = wip->b_info.beam_life;
 	new_item->r_collision_count = 0;
@@ -817,6 +827,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->damage_threshold = wip->b_info.damage_threshold;
 	new_item->fighter_beam = fire_info->fighter_beam;
 	new_item->bank = fire_info->bank;
+	new_item->Beam_muzzle_stamp = -1;
 	
 	if(fire_info->fighter_beam){
 		new_item->type = BEAM_TYPE_C;
@@ -1665,7 +1676,7 @@ void beam_generate_muzzle_particles(beam *b)
 	particle_info pinfo;
 
 	// if our hack stamp has expired
-	if(!((Beam_muzzle_stamp == -1) || timestamp_elapsed(Beam_muzzle_stamp))){
+	if(!((b->Beam_muzzle_stamp == -1) || timestamp_elapsed(b->Beam_muzzle_stamp))){
 		return;
 	}
 
@@ -1683,13 +1694,19 @@ void beam_generate_muzzle_particles(beam *b)
 	}
 	
 	// reset the hack stamp
-	Beam_muzzle_stamp = timestamp(hack_time);
+	b->Beam_muzzle_stamp = timestamp(hack_time);
 
 	// randomly generate 10 to 20 particles
 	particle_count = (int)frand_range(0.0f, (float)wip->b_info.beam_particle_count);
 
 	// get turret info - position and normal	
-	turret_pos = b->subsys->system_info->pnt;
+//	turret_pos = b->last_start;
+//	vm_vec_sub(&turret_norm, &b->last_start,&b->last_shot);
+//	vm_vec_normalize(&turret_norm);
+
+	//turret_pos  = b->subsys->system_info->turret_firing_point[b->subsys->turret_next_fire_pos % b->subsys->system_info->turret_num_firing_points];
+//	turret_pos = b->subsys->system_info->pnt;
+	turret_pos = b->local_pnt;
 	turret_norm = b->subsys->system_info->turret_norm;	
 
 	// randomly perturb a vector within a cone around the normal
@@ -2375,6 +2392,7 @@ void beam_aim(beam *b)
 		// if we're targeting a subsystem - shoot directly at it
 		if(b->target_subsys != NULL){			
 			// unrotate the center of the subsystem
+//			vm_vec_unrotate(&b->last_shot, &b->local_pnt, &b->target->orient);
 			vm_vec_unrotate(&b->last_shot, &b->target_subsys->system_info->pnt, &b->target->orient);
 			vm_vec_add2(&b->last_shot, &b->target->pos);		 
 			vm_vec_sub(&temp, &b->last_shot, &b->last_start);
@@ -3006,8 +3024,6 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 		else
 		{
 			bc->quadrant=-1;
-			quadrant_num = get_quadrant(&cinfo->hit_point);
-			hit_object->shield_quadrant[quadrant_num]=0.0f;
 		}
 
 		// done
@@ -3389,10 +3405,14 @@ void beam_apply_whack(beam *b, object *objp, vector *hit_point)
 	float whack;
 	float dist;
 
-	if(wip->damage < b_whack_damage){
-		whack = b_whack_small;
-	} else {
-		whack = b_whack_big;
+	if(wip->mass == 100.0f){
+		if(wip->damage < b_whack_damage){
+			whack = b_whack_small;
+		} else {
+			whack = b_whack_big;
+		}
+	}else{
+		whack = wip->mass;
 	}
 
 	// whack direction

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.38 $
- * $Date: 2004-04-01 15:31:22 $
- * $Author: taylor $
+ * $Revision: 2.39 $
+ * $Date: 2004-04-03 02:55:49 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2004/04/01 15:31:22  taylor
+ * don't use interface anis as ship textures
+ *
  * Revision 2.37  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -2356,7 +2359,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	return 1;
 }
 
-// Goober5000
+//Goober
 void model_load_texture(polymodel *pm, int i, char *file)
 {
 	char tmp_name[256];
@@ -2385,27 +2388,28 @@ void model_load_texture(polymodel *pm, int i, char *file)
 			pm->ambient[i]=1;
 		}
 
+		pm->textures[i] = bm_load( tmp_name );
+		if (pm->textures[i]<0)	//if I couldn't find the PCX see if there is an ani-Bobboau
+		{					
+			nprintf(("couldn't find %s.pcx",tmp_name));
 
-		pm->textures[i] = bm_load_animation(tmp_name,  &pm->num_frames[i], &pm->fps[i], 1, CF_TYPE_MAPS);
+			pm->is_ani[i] = 1;	//this is an animated texture
+			pm->textures[i] = bm_load_animation(tmp_name,  &pm->num_frames[i], &pm->fps[i], 1, CF_TYPE_MAPS);
 							
-		if (pm->textures[i]<0)pm->textures[i] = bm_load( tmp_name );
-		else pm->is_ani[i] = 1;	//this is an animated texture
-
-			//if I couldn't find the PCX see if there is an ani-Bobboau
-		if(pm->textures[i]<0)
-		{
-			Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
-			pm->textures[i] = -1;
-			pm->is_ani[i] = 0;	//this isn't an animated texture after all
-			nprintf((" or %s.ani\n",tmp_name));
+			if(pm->textures[i]<0)
+			{
+				Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
+				pm->textures[i] = -1;
+				pm->is_ani[i] = 0;	//this isn't an animated texture after all
+				nprintf((" or %s.ani\n",tmp_name));
+			}
+			else
+			{
+				mprintf(("but I did find %s.ani, ", tmp_name));
+				mprintf(("with %d frames, ", pm->num_frames[i]));
+				mprintf(("and a rate of %d\n", pm->fps[i]));
+			}
 		}
-		else
-		{
-			mprintf(("but I did find %s.ani, ", tmp_name));
-			mprintf(("with %d frames, ", pm->num_frames[i]));
-			mprintf(("and a rate of %d\n", pm->fps[i]));
-		}
-
 	}
 
 	pm->original_textures[i] = pm->textures[i];
@@ -2413,13 +2417,14 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	//redid the way glowmaps are handeled
 
 	strcat( tmp_name, "-glow");
-	pm->glow_textures[i] = bm_load_animation(tmp_name,  &pm->glow_numframes[i], &pm->glow_fps[i], 1);
+	pm->glow_textures[i] = bm_load( tmp_name );
+	pm->glow_numframes[i] = 1;
 	if (pm->glow_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
 							
 		nprintf(("couldn't find %s.pcx",tmp_name));
 
-		pm->glow_textures[i] = bm_load( tmp_name );
-		pm->glow_is_ani[i] = 0;	//this is an animated texture
+		pm->glow_is_ani[i] = 1;	//this is an animated texture
+		pm->glow_textures[i] = bm_load_animation(tmp_name,  &pm->glow_numframes[i], &pm->glow_fps[i], 1);
 						
 		if(pm->glow_textures[i]<0){
 		//	Warning( LOCATION, "Couldn't open glow_texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
@@ -2431,8 +2436,6 @@ void model_load_texture(polymodel *pm, int i, char *file)
 			mprintf(("with %d frames, ", pm->glow_numframes[i]));
 			mprintf(("and a rate of %d\n", pm->glow_fps[i]));
 		}
-	}else{
-		pm->glow_is_ani[i] = 1;	//this is an animated texture
 	}
 	pm->glow_original_textures[i] = pm->glow_textures[i];
 
@@ -2454,6 +2457,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 
 }
+
 
 //returns the number of this model
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
