@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/slider.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-01-31 23:27:55 $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-23 04:57:29 $
  * $Author: taylor $
  *
  * C++ file for controlling and displaying a horizontal slider
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/01/31 23:27:55  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.4  2004/07/26 20:47:55  Kazan
  * remove MCD complete
  *
@@ -325,9 +328,7 @@ void UI_DOT_SLIDER::destroy()
 	int i;
 
 	// release ani frames for the dots.
-	for (i=0; i<total_frames; i++){
-		bm_release(first_frame + i);
-	}
+	bm_release(first_frame);
 
 	UI_GADGET::destroy();
 }

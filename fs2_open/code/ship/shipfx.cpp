@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.35 $
+ * $Date: 2005-02-23 04:57:28 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.33  2004/12/05 22:01:12  bobboau
  * sevral feature additions that WCS wanted,
  * and the foundations of a submodel animation system,
@@ -2230,7 +2235,7 @@ void shipfx_large_blowup_level_init()
 	split_ship_init_system();
 
 	if(Ship_cannon_bitmap != -1){
-		bm_unload(Ship_cannon_bitmap);
+		bm_release(Ship_cannon_bitmap);
 		Ship_cannon_bitmap = bm_load(SHIP_CANNON_BITMAP);
 	}
 }

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-12-30 16:25:22 $
+ * $Revision: 2.15 $
+ * $Date: 2005-02-23 04:57:28 $
  * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/12/30 16:25:22  taylor
+ * don't use cfopen() for upgrade check, it was giving strange results
+ *
  * Revision 2.13  2004/12/28 16:20:33  taylor
  * make sure the file gets closed in pilot_file_upgrade_check()
  *
@@ -1755,7 +1758,7 @@ void player_set_squad_bitmap(player *p, char *fname)
 
 	// if he has another bitmap already - unload it
 	if(p->insignia_texture >= 0){
-		bm_unload(p->insignia_texture);
+		bm_release(p->insignia_texture);
 	}
 
 	p->insignia_texture = -1;

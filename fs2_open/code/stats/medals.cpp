@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-01-31 10:34:40 $
+ * $Revision: 2.10 $
+ * $Date: 2005-02-23 04:57:29 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/01/31 10:34:40  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.8  2004/07/26 20:47:53  Kazan
  * remove MCD complete
  *
@@ -674,16 +677,16 @@ void medal_main_close()
 {
 	int idx;
 	if (Init_flags & MEDAL_BITMAP_INIT)
-		bm_unload(Medals_bitmap);
+		bm_release(Medals_bitmap);
 
 	if (Init_flags & MASK_BITMAP_INIT) {
 		bm_unlock(Medals_bitmap_mask);
-		bm_unload(Medals_bitmap_mask);
+		bm_release(Medals_bitmap_mask);
 	}
 
    for (idx=0; idx < NUM_MEDALS; idx++) {
 		if (Medal_bitmaps[idx] > -1){
-			bm_unload(Medal_bitmaps[idx]);
+			bm_release(Medal_bitmaps[idx]);
 		}
 	}
 
