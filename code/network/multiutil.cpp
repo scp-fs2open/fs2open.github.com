@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/13 21:09:28  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -1268,37 +1271,37 @@ void multi_pack_orient_matrix(ubyte *data,matrix *m)
 {	
    data[16]=0;
 
-	if(m->rvec.z < 0) data[16] |= (1<<0);	// X
-	if(m->uvec.z < 0) data[16] |= (1<<1);	// Y
-	if(m->fvec.z < 0) data[16] |= (1<<2);	// V
-	if(m->fvec.x < 0) data[16] |= (1<<3);	// Z
-	if(m->fvec.y < 0) data[16] |= (1<<4);	// W
-	memcpy(&data[0],&m->rvec.x,4);			// a
-	memcpy(&data[4],&m->rvec.y,4);			// b
-	memcpy(&data[8],&m->uvec.x,4);			// c
-	memcpy(&data[12],&m->uvec.y,4);			// d
+	if(m->vec.rvec.xyz.z < 0) data[16] |= (1<<0);	// X
+	if(m->vec.uvec.xyz.z < 0) data[16] |= (1<<1);	// Y
+	if(m->vec.fvec.xyz.z < 0) data[16] |= (1<<2);	// V
+	if(m->vec.fvec.xyz.x < 0) data[16] |= (1<<3);	// Z
+	if(m->vec.fvec.xyz.y < 0) data[16] |= (1<<4);	// W
+	memcpy(&data[0],&m->vec.rvec.xyz.x,4);			// a
+	memcpy(&data[4],&m->vec.rvec.xyz.y,4);			// b
+	memcpy(&data[8],&m->vec.uvec.xyz.x,4);			// c
+	memcpy(&data[12],&m->vec.uvec.xyz.y,4);			// d
 }
 
 // return bytes processed
 // non-16 byte version of unpack matrix code
 void multi_unpack_orient_matrix(ubyte *data,matrix *m)
 {	
-	memcpy(&m->rvec.x,&data[0],4); 
-	memcpy(&m->rvec.y,&data[4],4); 
-	memcpy(&m->uvec.x,&data[8],4);  
-   memcpy(&m->uvec.y,&data[12],4);     
+	memcpy(&m->vec.rvec.xyz.x, &data[0], 4); 
+	memcpy(&m->vec.rvec.xyz.y, &data[4], 4); 
+	memcpy(&m->vec.uvec.xyz.x, &data[8], 4);  
+ 	memcpy(&m->vec.uvec.xyz.y, &data[12],4);     
 	
-	m->rvec.z = fl_sqrt(fl_abs(1 - (m->rvec.x * m->rvec.x) - (m->rvec.y * m->rvec.y))); // X
-   m->uvec.z = fl_sqrt(fl_abs(1 - (m->uvec.x * m->uvec.x) - (m->uvec.y * m->uvec.y))); // Y
-	m->fvec.z = fl_sqrt(fl_abs(1 - (m->rvec.z * m->rvec.z) - (m->uvec.z * m->uvec.z))); // V
-	m->fvec.x = fl_sqrt(fl_abs(1 - (m->rvec.x * m->rvec.x) - (m->uvec.x * m->uvec.x))); // Z
-	m->fvec.y = fl_sqrt(fl_abs(1 - (m->rvec.y * m->rvec.y) - (m->uvec.y * m->uvec.y))); // W
+	m->vec.rvec.xyz.z = fl_sqrt(fl_abs(1 - (m->vec.rvec.xyz.x * m->vec.rvec.xyz.x) - (m->vec.rvec.xyz.y * m->vec.rvec.xyz.y))); // X
+	m->vec.uvec.xyz.z = fl_sqrt(fl_abs(1 - (m->vec.uvec.xyz.x * m->vec.uvec.xyz.x) - (m->vec.uvec.xyz.y * m->vec.uvec.xyz.y))); // Y
+	m->vec.fvec.xyz.z = fl_sqrt(fl_abs(1 - (m->vec.rvec.xyz.z * m->vec.rvec.xyz.z) - (m->vec.uvec.xyz.z * m->vec.uvec.xyz.z))); // V
+	m->vec.fvec.xyz.x = fl_sqrt(fl_abs(1 - (m->vec.rvec.xyz.x * m->vec.rvec.xyz.x) - (m->vec.uvec.xyz.x * m->vec.uvec.xyz.x))); // Z
+	m->vec.fvec.xyz.y = fl_sqrt(fl_abs(1 - (m->vec.rvec.xyz.y * m->vec.rvec.xyz.y) - (m->vec.uvec.xyz.y * m->vec.uvec.xyz.y))); // W
 
-	m->rvec.z *= (data[16] & (1<<0)) ? -1.0f : 1.0f;
-	m->uvec.z *= (data[16] & (1<<1)) ? -1.0f : 1.0f;
-	m->fvec.z *= (data[16] & (1<<2)) ? -1.0f : 1.0f;
-	m->fvec.x *= (data[16] & (1<<3)) ? -1.0f : 1.0f;
-	m->fvec.y *= (data[16] & (1<<4)) ? -1.0f : 1.0f;
+	m->vec.rvec.xyz.z *= (data[16] & (1<<0)) ? -1.0f : 1.0f;
+	m->vec.uvec.xyz.z *= (data[16] & (1<<1)) ? -1.0f : 1.0f;
+	m->vec.fvec.xyz.z *= (data[16] & (1<<2)) ? -1.0f : 1.0f;
+	m->vec.fvec.xyz.x *= (data[16] & (1<<3)) ? -1.0f : 1.0f;
+	m->vec.fvec.xyz.y *= (data[16] & (1<<4)) ? -1.0f : 1.0f;
 }
 	                      
 void multi_do_client_warp(float flFrametime)
@@ -3506,9 +3509,9 @@ int multi_pack_unpack_position( int write, ubyte *data, vector *pos)
 	if ( write )	{
 		// Output pos
 
-		a = fl2i(pos->x*105.0f+0.5f); 
-		b = fl2i(pos->y*105.0f+0.5f);
-		c = fl2i(pos->z*105.0f+0.5f);
+		a = fl2i(pos->xyz.x*105.0f+0.5f); 
+		b = fl2i(pos->xyz.y*105.0f+0.5f);
+		c = fl2i(pos->xyz.z*105.0f+0.5f);
 		CAP(a,-8388608,8388607);
 		CAP(b,-8388608,8388607);
 		CAP(c,-8388608,8388607);
@@ -3527,9 +3530,9 @@ int multi_pack_unpack_position( int write, ubyte *data, vector *pos)
 		b = bitbuffer_get_signed(&buf,24);
 		c = bitbuffer_get_signed(&buf,24);
 
-		pos->x = i2fl(a)/105.0f;
-		pos->y = i2fl(b)/105.0f;
-		pos->z = i2fl(c)/105.0f;
+		pos->xyz.x = i2fl(a)/105.0f;
+		pos->xyz.y = i2fl(b)/105.0f;
+		pos->xyz.z = i2fl(c)/105.0f;
 
 		return bitbuffer_read_flush(&buf);
 	}
@@ -3539,49 +3542,49 @@ int degenerate_count = 0;
 int non_degenerate_count = 0;
 
 /*
-hack = ((ushort)orient->fvec.x * 32767);
-			memcpy(&hack, &orient->fvec.x, 4);
+hack = ((ushort)orient->vec.fvec.x * 32767);
+			memcpy(&hack, &orient->vec.fvec.x, 4);
 			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->fvec.y, 4);
+			memcpy(&hack, &orient->vec.fvec.y, 4);
 			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->fvec.z, 4);
-			bitbuffer_put( &buf, hack, 32  );
-
-			memcpy(&hack, &orient->uvec.x, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->uvec.y, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->uvec.z, 4);
+			memcpy(&hack, &orient->vec.fvec.z, 4);
 			bitbuffer_put( &buf, hack, 32  );
 
-			memcpy(&hack, &orient->rvec.x, 4);
+			memcpy(&hack, &orient->vec.uvec.x, 4);
 			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->rvec.y, 4);
+			memcpy(&hack, &orient->vec.uvec.y, 4);
 			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->rvec.z, 4);
+			memcpy(&hack, &orient->vec.uvec.z, 4);
+			bitbuffer_put( &buf, hack, 32  );
+
+			memcpy(&hack, &orient->vec.rvec.x, 4);
+			bitbuffer_put( &buf, hack, 32  );
+			memcpy(&hack, &orient->vec.rvec.y, 4);
+			bitbuffer_put( &buf, hack, 32  );
+			memcpy(&hack, &orient->vec.rvec.z, 4);
 			bitbuffer_put( &buf, hack, 32  );*/
 
 /*
 hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->fvec.x, &hack, 4);
+			memcpy(&orient->vec.fvec.x, &hack, 4);
 			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->fvec.y, &hack, 4);
+			memcpy(&orient->vec.fvec.y, &hack, 4);
 			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->fvec.z, &hack, 4);
+			memcpy(&orient->vec.fvec.z, &hack, 4);
 
 			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->uvec.x, &hack, 4);
+			memcpy(&orient->vec.uvec.x, &hack, 4);
 			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->uvec.y, &hack, 4);
+			memcpy(&orient->vec.uvec.y, &hack, 4);
 			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->uvec.z, &hack, 4);
+			memcpy(&orient->vec.uvec.z, &hack, 4);
 
 			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->rvec.x, &hack, 4);
+			memcpy(&orient->vec.rvec.x, &hack, 4);
 			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->rvec.y, &hack, 4);
+			memcpy(&orient->vec.rvec.y, &hack, 4);
 			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->rvec.z, &hack, 4);*/
+			memcpy(&orient->vec.rvec.z, &hack, 4);*/
 
 // Packs/unpacks an orientation matrix.
 // Returns number of bytes read or written.
@@ -3615,33 +3618,33 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 			flag = 0xff;
 			
 			// stuff it	
-			a = fl2i(orient->fvec.x * D_SCALE);
+			a = fl2i(orient->vec.fvec.xyz.x * D_SCALE);
 			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
 			bitbuffer_put( &buf, a, 16  );
-			a = fl2i(orient->fvec.y * D_SCALE);
+			a = fl2i(orient->vec.fvec.xyz.y * D_SCALE);
 			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
 			bitbuffer_put( &buf, a, 16  );
-			a = fl2i(orient->fvec.z * D_SCALE);
-			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
-			bitbuffer_put( &buf, a, 16  );
-
-			a = fl2i(orient->uvec.x * D_SCALE);
-			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
-			bitbuffer_put( &buf, a, 16  );
-			a = fl2i(orient->uvec.y * D_SCALE);
-			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
-			bitbuffer_put( &buf, a, 16  );
-			a = fl2i(orient->uvec.z * D_SCALE);
+			a = fl2i(orient->vec.fvec.xyz.z * D_SCALE);
 			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
 			bitbuffer_put( &buf, a, 16  );
 
-			a = fl2i(orient->rvec.x * D_SCALE);
+			a = fl2i(orient->vec.uvec.xyz.x * D_SCALE);
 			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
 			bitbuffer_put( &buf, a, 16  );
-			a = fl2i(orient->rvec.y * D_SCALE);
+			a = fl2i(orient->vec.uvec.xyz.y * D_SCALE);
 			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
 			bitbuffer_put( &buf, a, 16  );
-			a = fl2i(orient->rvec.z * D_SCALE);
+			a = fl2i(orient->vec.uvec.xyz.z * D_SCALE);
+			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
+			bitbuffer_put( &buf, a, 16  );
+
+			a = fl2i(orient->vec.rvec.xyz.x * D_SCALE);
+			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
+			bitbuffer_put( &buf, a, 16  );
+			a = fl2i(orient->vec.rvec.xyz.y * D_SCALE);
+			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
+			bitbuffer_put( &buf, a, 16  );
+			a = fl2i(orient->vec.rvec.xyz.z * D_SCALE);
 			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
 			bitbuffer_put( &buf, a, 16  );
 		} else {
@@ -3653,9 +3656,9 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 			theta = theta*2.0f/PI-1.0f;			
 
 			// -1 to 1
-			a = fl2i(rot_axis.x*N_SCALE); 
-			b = fl2i(rot_axis.y*N_SCALE);
-			c = fl2i(rot_axis.z*N_SCALE);
+			a = fl2i(rot_axis.xyz.x*N_SCALE); 
+			b = fl2i(rot_axis.xyz.y*N_SCALE);
+			c = fl2i(rot_axis.xyz.z*N_SCALE);
 			d = fl2i(theta*N_SCALE);
 
 			CAP(a, N_MIN_RANGE, N_MAX_RANGE);
@@ -3679,25 +3682,25 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 		// degenerate
 		if(flag){
 			a = bitbuffer_get_signed(&buf, 16);
-			orient->fvec.x = i2fl(a) / D_SCALE;			
+			orient->vec.fvec.xyz.x = i2fl(a) / D_SCALE;			
 			a = bitbuffer_get_signed(&buf, 16);
-			orient->fvec.y = i2fl(a) / D_SCALE;			
+			orient->vec.fvec.xyz.y = i2fl(a) / D_SCALE;			
 			a = bitbuffer_get_signed(&buf, 16);
-			orient->fvec.z = i2fl(a) / D_SCALE;			
+			orient->vec.fvec.xyz.z = i2fl(a) / D_SCALE;			
 
 			a = bitbuffer_get_signed(&buf, 16);
-			orient->uvec.x = i2fl(a) / D_SCALE;			
+			orient->vec.uvec.xyz.x = i2fl(a) / D_SCALE;			
 			a = bitbuffer_get_signed(&buf, 16);
-			orient->uvec.y = i2fl(a) / D_SCALE;			
+			orient->vec.uvec.xyz.y = i2fl(a) / D_SCALE;			
 			a = bitbuffer_get_signed(&buf, 16);
-			orient->uvec.z = i2fl(a) / D_SCALE;			
+			orient->vec.uvec.xyz.z = i2fl(a) / D_SCALE;			
 
 			a = bitbuffer_get_signed(&buf, 16);
-			orient->rvec.x = i2fl(a) / D_SCALE;			
+			orient->vec.rvec.xyz.x = i2fl(a) / D_SCALE;			
 			a = bitbuffer_get_signed(&buf, 16);
-			orient->rvec.y = i2fl(a) / D_SCALE;			
+			orient->vec.rvec.xyz.y = i2fl(a) / D_SCALE;			
 			a = bitbuffer_get_signed(&buf, 16);
-			orient->rvec.z = i2fl(a) / D_SCALE;			
+			orient->vec.rvec.xyz.z = i2fl(a) / D_SCALE;			
 		} else {
 			a = bitbuffer_get_signed(&buf,12);
 			b = bitbuffer_get_signed(&buf,12);
@@ -3705,9 +3708,9 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 			d = bitbuffer_get_signed(&buf,12);
 
 			// special case		
-			rot_axis.x = i2fl(a)/N_SCALE;
-			rot_axis.y = i2fl(b)/N_SCALE;
-			rot_axis.z = i2fl(c)/N_SCALE;
+			rot_axis.xyz.x = i2fl(a)/N_SCALE;
+			rot_axis.xyz.y = i2fl(b)/N_SCALE;
+			rot_axis.xyz.z = i2fl(c)/N_SCALE;
 			theta = i2fl(d)/N_SCALE;
 				
 			// Convert theta back to range 0-PI
@@ -3813,9 +3816,9 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vector *pos, 
 
 	if ( write )	{
 		// output velocity
-		r = vm_vec_dot( &orient->rvec, &pi->vel );
-		u = vm_vec_dot( &orient->uvec, &pi->vel );
-		f = vm_vec_dot( &orient->fvec, &pi->vel );
+		r = vm_vec_dot( &orient->vec.rvec, &pi->vel );
+		u = vm_vec_dot( &orient->vec.uvec, &pi->vel );
+		f = vm_vec_dot( &orient->vec.fvec, &pi->vel );
 
 		a = fl2i(r * 0.5f); 
 		b = fl2i(u * 0.5f);
@@ -3840,9 +3843,9 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vector *pos, 
 
 		// Convert into world coordinates
 		vm_vec_zero(&pi->vel);
-		vm_vec_scale_add2( &pi->vel, &orient->rvec, r );
-		vm_vec_scale_add2( &pi->vel, &orient->uvec, u );
-		vm_vec_scale_add2( &pi->vel, &orient->fvec, f );
+		vm_vec_scale_add2( &pi->vel, &orient->vec.rvec, r );
+		vm_vec_scale_add2( &pi->vel, &orient->vec.uvec, u );
+		vm_vec_scale_add2( &pi->vel, &orient->vec.fvec, f );
 
 		return bitbuffer_read_flush(&buf);
 	}
@@ -3862,47 +3865,47 @@ int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vecto
 	float r,u,f;
 	int fields = 0;
 
-	max_vel.x = max( sip->max_vel.x, sip->afterburner_max_vel.x );
-	max_vel.y = max( sip->max_vel.y, sip->afterburner_max_vel.y );
-	max_vel.z = max( sip->max_vel.z, sip->afterburner_max_vel.z );	
+	max_vel.xyz.x = max( sip->max_vel.xyz.x, sip->afterburner_max_vel.xyz.x );
+	max_vel.xyz.y = max( sip->max_vel.xyz.y, sip->afterburner_max_vel.xyz.y );
+	max_vel.xyz.z = max( sip->max_vel.xyz.z, sip->afterburner_max_vel.xyz.z );	
 
 	if ( write )	{
 		// Find desired vel in local coordinates
 		// Velocity can be from -1024 to 1024
 
 		// bitfields for each value		
-		if(max_vel.x > 0.0f){
+		if(max_vel.xyz.x > 0.0f){
 			fields |= (1<<0);
 		}
-		if(max_vel.y > 0.0f){
+		if(max_vel.xyz.y > 0.0f){
 			fields |= (1<<1);
 		}
-		if(max_vel.z > 0.0f){
+		if(max_vel.xyz.z > 0.0f){
 			fields |= (1<<2);
 		}		
 		// fields = sip - Ship_info;
 		bitbuffer_put(&buf, (uint)fields, 8);
 
-		r = vm_vec_dot( &orient->rvec, &pi->desired_vel );
-		u = vm_vec_dot( &orient->uvec, &pi->desired_vel );
-		f = vm_vec_dot( &orient->fvec, &pi->desired_vel );
+		r = vm_vec_dot( &orient->vec.rvec, &pi->desired_vel );
+		u = vm_vec_dot( &orient->vec.uvec, &pi->desired_vel );
+		f = vm_vec_dot( &orient->vec.fvec, &pi->desired_vel );
 
-		if ( max_vel.x > 0.0f )	{
-			r = r / max_vel.x;
+		if ( max_vel.xyz.x > 0.0f )	{
+			r = r / max_vel.xyz.x;
 			a = fl2i( r * 128.0f );
 			CAP(a,-128, 127 );			
 			bitbuffer_put( &buf, (uint)a, 8 );			
 		} 
 
-		if ( max_vel.y > 0.0f )	{
-			u = u / max_vel.y;
+		if ( max_vel.xyz.y > 0.0f )	{
+			u = u / max_vel.xyz.y;
 			a = fl2i( u * 128.0f );
 			CAP(a,-128, 127 );
 			bitbuffer_put( &buf, (uint)a, 8 );
 		} 
 
-		if ( max_vel.z > 0.0f )	{
-			f = f / max_vel.z;
+		if ( max_vel.xyz.z > 0.0f )	{
+			f = f / max_vel.xyz.z;
 			a = fl2i( f * 128.0f );
 			CAP(a,-128, 127 );
 			bitbuffer_put( &buf, (uint)a, 8 );
@@ -3940,9 +3943,9 @@ int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vecto
 		
 		// Convert into world coordinates
 		vm_vec_zero(&pi->vel);
-		vm_vec_scale_add2( &pi->desired_vel, &orient->rvec, r*max_vel.x );
-		vm_vec_scale_add2( &pi->desired_vel, &orient->uvec, u*max_vel.y );
-		vm_vec_scale_add2( &pi->desired_vel, &orient->fvec, f*max_vel.z );
+		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, r*max_vel.xyz.x );
+		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, u*max_vel.xyz.y );
+		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, f*max_vel.xyz.z );
 
 		return bitbuffer_read_flush(&buf);
 	}
@@ -3961,9 +3964,9 @@ int multi_pack_unpack_rotvel( int write, ubyte *data, matrix *orient, vector *po
 
 	if ( write )	{
 		// output rotational velocity
-		a = fl2i(pi->rotvel.x*32.0f); 
-		b = fl2i(pi->rotvel.y*32.0f);
-		c = fl2i(pi->rotvel.z*32.0f);
+		a = fl2i(pi->rotvel.xyz.x*32.0f); 
+		b = fl2i(pi->rotvel.xyz.y*32.0f);
+		c = fl2i(pi->rotvel.xyz.z*32.0f);
 		CAP(a,-512,511);
 		CAP(b,-512,511);
 		CAP(c,-512,511);
@@ -3980,9 +3983,9 @@ int multi_pack_unpack_rotvel( int write, ubyte *data, matrix *orient, vector *po
 		a = bitbuffer_get_signed(&buf,10);
 		b = bitbuffer_get_signed(&buf,10);
 		c = bitbuffer_get_signed(&buf,10);
-		pi->rotvel.x = i2fl(a)/32.0f;
-		pi->rotvel.y = i2fl(b)/32.0f;
-		pi->rotvel.z = i2fl(c)/32.0f;
+		pi->rotvel.xyz.x = i2fl(a)/32.0f;
+		pi->rotvel.xyz.y = i2fl(b)/32.0f;
+		pi->rotvel.xyz.z = i2fl(c)/32.0f;
 
 		return bitbuffer_read_flush(&buf);
 	}
@@ -4005,33 +4008,33 @@ int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, ve
 		// use ship_info values for max_rotvel instead of taking it from physics info
 
 		// bitfields for each value
-		if(sip->max_rotvel.x > 0.0f){
+		if(sip->max_rotvel.xyz.x > 0.0f){
 			fields |= (1<<0);
 		}
-		if(sip->max_rotvel.y > 0.0f){
+		if(sip->max_rotvel.xyz.y > 0.0f){
 			fields |= (1<<1);
 		}
-		if(sip->max_rotvel.z > 0.0f){
+		if(sip->max_rotvel.xyz.z > 0.0f){
 			fields |= (1<<2);
 
 		}
 		bitbuffer_put(&buf, (uint)fields, 8);
 
 		// output desired rotational velocity as a percent of max		
-		if ( sip->max_rotvel.x > 0.0f )	{		
-			a = fl2i( pi->desired_rotvel.x*128.0f / sip->max_rotvel.x );
+		if ( sip->max_rotvel.xyz.x > 0.0f )	{		
+			a = fl2i( pi->desired_rotvel.xyz.x*128.0f / sip->max_rotvel.xyz.x );
 			CAP(a,-128, 127 );
 			bitbuffer_put( &buf, (uint)a, 8 );
 		} 
 
-		if ( sip->max_rotvel.y > 0.0f )	{		
-			a = fl2i( pi->desired_rotvel.y*128.0f / sip->max_rotvel.y );
+		if ( sip->max_rotvel.xyz.y > 0.0f )	{		
+			a = fl2i( pi->desired_rotvel.xyz.y*128.0f / sip->max_rotvel.xyz.y );
 			CAP(a,-128, 127 );
 			bitbuffer_put( &buf, (uint)a, 8 );
 		} 
 
-		if ( sip->max_rotvel.z > 0.0f )	{		
-			a = fl2i( pi->desired_rotvel.z*128.0f / sip->max_rotvel.z );
+		if ( sip->max_rotvel.xyz.z > 0.0f )	{		
+			a = fl2i( pi->desired_rotvel.xyz.z*128.0f / sip->max_rotvel.xyz.z );
 			CAP(a,-128, 127 );
 			bitbuffer_put( &buf, (uint)a, 8 );
 		} 
@@ -4059,9 +4062,9 @@ int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, ve
 		} else {
 			f = 0.0f;
 		}
-		pi->desired_rotvel.x = r*sip->max_rotvel.x;
-		pi->desired_rotvel.y = u*sip->max_rotvel.y;
-		pi->desired_rotvel.z = f*sip->max_rotvel.z;
+		pi->desired_rotvel.xyz.x = r*sip->max_rotvel.xyz.x;
+		pi->desired_rotvel.xyz.y = u*sip->max_rotvel.xyz.y;
+		pi->desired_rotvel.xyz.z = f*sip->max_rotvel.xyz.z;
 
 		return bitbuffer_read_flush(&buf);
 	}

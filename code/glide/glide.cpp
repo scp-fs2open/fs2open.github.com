@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/glide/Glide.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Code for dynamically loading glide libraries
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -33,7 +36,6 @@
  * $NoKeywords: $
  */
 
-#define __MSC__
 #include <windows.h>
 #include <windowsx.h>
 

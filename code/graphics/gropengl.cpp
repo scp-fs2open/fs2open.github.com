@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 03:55:40 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 03:55:40  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.12  2002/06/03 03:40:34  mharris
  * Only set projection matrix once (at init);  aabitmap now uses
  * the current_alpha setting
@@ -151,7 +154,7 @@
  * $NoKeywords: $
  */
 
-#if defined WIN32
+#if defined _WIN32
 #include <windows.h>
 #include <windowsx.h>
 #else

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Scaler.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Routines to scale a bitmap.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/08 02:36:01  mharris
  * porting
  *
@@ -870,7 +873,7 @@ void gr8_scaler(vertex *va, vertex *vb )
 			} 
 */
 
-#ifdef WIN32
+#ifdef _WIN32
 			_asm push esi
 			_asm push edi
 			_asm push edx
@@ -1107,7 +1110,7 @@ void gr8_aascaler(vertex *va, vertex *vb )
 				tmp_u += du;
 			}
 		} else {
-#ifdef WIN32
+#ifdef _WIN32
 			_asm push esi
 			_asm push edi
 			_asm push ecx

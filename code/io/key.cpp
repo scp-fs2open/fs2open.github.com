@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Key.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/17 03:01:29  mharris
  * ifdef WIN#@ around numlock stuff
  *
@@ -201,7 +204,7 @@ int shifted_ascii_table[128] =
 int Num_filter_keys;
 int Key_filter[MAX_FILTER_KEYS];
 
-#ifdef WIN32
+#ifdef _WIN32
 static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at start
 static int Key_running_NT = 0;		// NT is the OS
 #endif
@@ -209,7 +212,7 @@ static int Key_running_NT = 0;		// NT is the OS
 int Cheats_enabled = 0;
 int Key_normal_game = 0;
 
-#ifdef WIN32
+#ifdef _WIN32
 int key_numlock_is_on()
 {
 	unsigned char keys[256];
@@ -649,7 +652,7 @@ void key_mark( uint code, int state, uint latency )
 		
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	if ( (code == 0xc5) && !Key_running_NT ) {
 		key_turn_off_numlock();
 	}
@@ -778,7 +781,7 @@ void key_close()
 		di_cleanup();
 	#endif
 
-#ifdef WIN32
+#ifdef _WIN32
 	if ( Key_numlock_was_on ) {
 		key_turn_on_numlock();
 		Key_numlock_was_on = 0;
@@ -815,7 +818,7 @@ void key_init()
 		di_init();
 	#endif
 
-#ifdef WIN32
+#ifdef _WIN32
 	OSVERSIONINFO ver;
 	ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 	GetVersionEx(&ver);

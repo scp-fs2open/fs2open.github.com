@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:58 $
  * $Author: penguin $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.6  2002/05/24 16:44:10  mharris
  * Fix unix "find files" operations so they return relative path
  *
@@ -245,7 +248,7 @@ int cf_get_packfile_count(cf_root *root)
 			strcat( filespec, DIR_SEPARATOR_STR );
 		}
 
-#if defined WIN32
+#if defined _WIN32
 		strcat( filespec, "*.vp" );
 
 		int find_handle;
@@ -334,7 +337,7 @@ void cf_build_pack_list( cf_root *root )
 			strcat( filespec, DIR_SEPARATOR_STR );
 		}
 
-#if defined WIN32
+#if defined _WIN32
 		strcat( filespec, "*.vp" );
 
 		int find_handle;
@@ -496,7 +499,7 @@ void cf_search_root_path(int root_index)
 			strcat( search_path, DIR_SEPARATOR_STR );
 		} 
 
-#if defined WIN32
+#if defined _WIN32
 		strcat( search_path, "*.*" );
 
 		int find_handle;
@@ -773,7 +776,7 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 		FILE *fp = fopen(filespec, "rb" );
 		if (fp)	{
 			if ( size ) {
-#if defined WIN32
+#if defined _WIN32
 				*size = filelength(fileno(fp));
 #elif defined unix
 				struct stat statbuf;
@@ -814,7 +817,7 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 		FILE *fp = fopen(longname, "rb" );
 		if (fp)	{
 			if ( size ) {
-#if defined WIN32
+#if defined _WIN32
 				*size = filelength(fileno(fp));
 #elif defined unix
 				struct stat statbuf;
@@ -958,7 +961,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 
 	cf_create_default_path_string( filespec, pathtype, filter );
 
-#if defined WIN32
+#if defined _WIN32
 	_finddata_t find;
 	find_handle = _findfirst( filespec, &find );
 	if (find_handle != -1) {
@@ -1138,7 +1141,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 				pathtype, filter));
 
 	// Search the default directories
-#if defined WIN32
+#if defined _WIN32
 	int find_handle;
 	_finddata_t find;
 	

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * header file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:08  mharris
  * got some stuff to compile
  *
@@ -89,7 +92,7 @@
 #ifndef _FONT_H
 #define _FONT_H
 
-#include "config.h"
+#include "pstypes.h"
 
 #define MAX_FONTS 3
 

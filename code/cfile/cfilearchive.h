@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:58 $
  * $Author: penguin $
  *
  * External def's for CfileArchive.cpp.  This should only be used 
  * internally by cfile stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/17 02:56:19  mharris
  * first crack at unix compatibity
  *
@@ -63,7 +66,7 @@ typedef struct Cfile_block {
 	int		dir_type;		// directory location
 	FILE		*fp;				// File pointer if opening an individual file
 	void		*data;			// Pointer for memory-mapped file access.  NULL if not mem-mapped.
-#ifdef WIN32
+#ifdef _WIN32
 	HANDLE	hInFile;			// Handle from CreateFile()
 	HANDLE	hMapFile;		// Handle from CreateFileMapping()
 #else

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.5  2002/05/26 14:10:29  mharris
  * More testing
  *
@@ -437,8 +440,10 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <windows.h>
 #include <windowsx.h>
+#endif
 
 #include "pstypes.h"
 #include "osapi.h"
@@ -498,7 +503,7 @@ void gr_close()
 	palette_flush();
 
 	switch( gr_screen.mode )	{
-#ifdef WIN32
+#ifdef _WIN32
 	case GR_SOFTWARE:		
 		gr_soft_cleanup();
 		break;
@@ -513,9 +518,13 @@ void gr_close()
 		gr_glide_cleanup();
 		break;
 #endif
+
+#ifdef USE_OPENGL
 	case GR_OPENGL:
 		gr_opengl_cleanup();
 		break;
+#endif  // ifdef USE_OPENGL
+
 	default:
 		Int3();		// Invalid graphics mode
 	}
@@ -569,7 +578,7 @@ DCF(gr,"Changes graphics mode")
 		dc_printf( "         B=software directdraw fullscreen (obsolete)\n" );
 		dc_printf( "         D=Direct3d\n" );
 		dc_printf( "         G=Glide\n" );
-		dc_printf( "         O=OpenGl (obsolete)\n" );
+		dc_printf( "         O=OpenGL\n" );
 		Dc_status = 0;	// don't print status if help is printed.  Too messy.
 	}
 
@@ -675,7 +684,7 @@ void gr_set_palette( char *name, ubyte * palette, int restrict_font_to_128 )
 
 //void gr_test();
 
-#if defined( WINDOWS ) && defined( MSVC )		
+#if defined( _WIN32 ) && defined( _MSC_VER )
 
 #define CPUID _asm _emit 0fh _asm _emit 0a2h
 
@@ -845,7 +854,7 @@ void gr_detect_cpu(int *cpu, int *mmx, int *amd3d, int *katmai )
 	if (katmai)
 		*katmai = 0;
 }
-#endif // if defined( WINDOWS ) && defined( MSVC )		
+#endif // if defined( _WIN32 ) && defined( _MSC_VER )
 
 
 
@@ -868,7 +877,7 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 	// If already inited, shutdown the previous graphics
 	if ( Gr_inited )	{
 		switch( gr_screen.mode )	{
-#ifdef WIN32
+#ifdef _WIN32
 		case GR_SOFTWARE:			
 			gr_soft_cleanup();
 			break;
@@ -883,9 +892,13 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 			gr_glide_cleanup();
 			break;
 #endif
+
+#ifdef USE_OPENGL
 		case GR_OPENGL:
 			gr_opengl_cleanup();
 			break;
+#endif  // USE_OPENGL
+
 		default:
 			Int3();		// Invalid graphics mode
 		}
@@ -893,7 +906,7 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 		first_time = 1;
 	}
 
-#if defined(HARDWARE_ONLY) && defined(WIN32)
+#if defined(HARDWARE_ONLY) && defined(_WIN32)
 	if(!Fred_running && !Pofview_running && !Nebedit_running && !Is_standalone){
 		if((mode != GR_GLIDE) && (mode != GR_DIRECT3D)){
 			mprintf(("Forcing glide startup!\n"));
@@ -951,7 +964,7 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 	gr_screen.clip_height = gr_screen.max_h;
 
 	switch( gr_screen.mode )	{
-#ifdef WIN32
+#ifdef _WIN32
 		case GR_SOFTWARE:
 			Assert(Fred_running || Pofview_running || Is_standalone || Nebedit_running);
 			gr_soft_init();
@@ -986,9 +999,13 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 			gr_glide_init();
 			break;
 #endif  // ifdef WIN32
+
+#ifdef USE_OPENGL
 		case GR_OPENGL:
 			gr_opengl_init();
 			break;
+#endif  // ifdef USE_OPENGL
+
 		default:
 			Int3();		// Invalid graphics mode
 	}
@@ -1025,7 +1042,7 @@ void gr_force_windowed()
 	if ( !Gr_inited )	return;
 
 	switch( gr_screen.mode )	{
-#ifdef WIN32
+#ifdef _WIN32
 		case GR_SOFTWARE:
 			{				
 				extern void gr_soft_force_windowed();
@@ -1048,8 +1065,12 @@ void gr_force_windowed()
 			}
 			break;
 #endif  // ifdef WIN32
+
+#ifdef USE_OPENGL
 		case GR_OPENGL:
 			break;
+
+#endif  // ifdef USE_OPENGL
 
 		default:
 			Int3();		// Invalid graphics mode
@@ -1065,7 +1086,7 @@ void gr_activate(int active)
 	if ( !Gr_inited ) return;
 
 	switch( gr_screen.mode )	{
-#ifdef WIN32
+#ifdef _WIN32
 		case GR_SOFTWARE:
 			{				
 				extern void gr_soft_activate(int active);
@@ -1096,8 +1117,12 @@ void gr_activate(int active)
 			}
 			break;
 #endif  // ifdef WIN32
+
+#ifdef USE_OPENGL
 		case GR_OPENGL:
 			break;
+#endif  // ifdef USE_OPENGL
+
 		default:
 			Int3();		// Invalid graphics mode
 	}
@@ -1190,7 +1215,7 @@ void gr_bitmap(int x, int y)
 
 	// old school bitmaps
 	switch(gr_screen.mode){
-#ifdef WIN32
+#ifdef _WIN32
 	case GR_SOFTWARE:
 		grx_bitmap(x, y);
 		break;
@@ -1209,16 +1234,19 @@ void gr_bitmap(int x, int y)
 
 #endif  // ifdef WIN32
 
+#ifdef USE_OPENGL
 	case GR_OPENGL:
 		gr_opengl_bitmap(x, y);
 		break;
+#endif  // ifdef USE_OPENGL
+
 	}
 }
 
 void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy)
 {
 	switch(gr_screen.mode){
-#ifdef WIN32
+#ifdef _WIN32
 	case GR_SOFTWARE:
 		grx_bitmap_ex(x, y, w, h, sx, sy);
 		break;
@@ -1236,8 +1264,10 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy)
 		break;
 #endif  // ifdef WIN32
 
+#ifdef USE_OPENGL
 	case GR_OPENGL:
 		gr_opengl_bitmap_ex(x, y, w, h, sx, sy);
+#endif // ifdef USE_OPENGL
 	}
 }
 

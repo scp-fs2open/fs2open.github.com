@@ -1537,7 +1537,7 @@ static int ComputeNomData(t_Sample*& in, const int deltas[], int& level)
 // esi in
 // ebp data
 
-#if defined(WINDOWS)
+#if defined(_WINDOWS)
 #if defined(CODEC_DEMO)
 static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level,
                           t_Sample*& levels)
@@ -1601,14 +1601,14 @@ static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level)
     }
     return data;
 }
-#else // if defined(WINDOWS)
+#else // if defined(_WINDOWS)
 #if defined(CODEC_DEMO)
 int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level,
 									t_Sample*& levels);
 #else
 int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level);
 #endif
-#endif // if defined(WINDOWS)
+#endif // if defined(_WINDOWS)
 
 #define VERIFY_ASM
 

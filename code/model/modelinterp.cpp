@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/09 13:49:30  mharris
  * Added ifndef NO_DIRECT3D
  *
@@ -226,6 +229,7 @@
 
 #define MODEL_LIB
 
+#include "pstypes.h"
 #include "2d.h"
 #include "3d.h"
 #include "model.h"

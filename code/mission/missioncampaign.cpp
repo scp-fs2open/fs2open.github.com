@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/17 06:45:53  mharris
  * More porting tweaks.  It links!  but segfaults...
  *
@@ -398,7 +401,7 @@ void mission_campaign_build_list( int multiplayer )
 	strcpy(wild_card, NOX("data" DIR_SEPARATOR_STR "missions" DIR_SEPARATOR_STR "*"));
 	strcat(wild_card, FS_CAMPAIGN_FILE_EXT);
 
-#if defined WIN32
+#if defined _WIN32
 	int find_handle;
 	_finddata_t find;
 	find_handle = _findfirst( wild_card, &find );
@@ -744,7 +747,7 @@ void mission_campaign_savefile_generate_root(char *filename)
 
 	Assert ( strlen(Campaign.filename) != 0 );
 
-#ifdef WIN32
+#ifdef _WIN32
 	// build up the filename for the save file.  There could be a problem with filename length,
 	// but this problem can get fixed in several ways -- ignore the problem for now though.
 	_splitpath( Campaign.filename, NULL, NULL, base, NULL );
@@ -898,7 +901,7 @@ void mission_campaign_savefile_delete( char *cfilename, int is_multi )
 {
 	char filename[_MAX_FNAME], base[_MAX_FNAME];
 
-#ifdef WIN32
+#ifdef _WIN32
 	_splitpath( cfilename, NULL, NULL, base, NULL );
 #else
 	// mharris FIXME: this may not work...
@@ -971,7 +974,7 @@ void mission_campaign_savefile_load( char *cfilename )
 
 	// build up the filename for the save file.  There could be a problem with filename length,
 	// but this problem can get fixed in several ways -- ignore the problem for now though.
-#ifdef WIN32
+#ifdef _WIN32
 	_splitpath( cfilename, NULL, NULL, base, NULL );
 #else
 	// mharris FIXME: this may not work...

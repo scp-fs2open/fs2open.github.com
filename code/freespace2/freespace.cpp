@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:58 $
  * $Author: penguin $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.16  2002/06/03 03:39:28  mharris
  * Added pause code back in (now that fAppActive is working, and we're
  * getting the correct keycode for the pause key)
@@ -474,7 +477,7 @@
 #include <time.h>
 #include <direct.h>
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <unistd.h>
 #include <sys/stat.h>
 #endif
@@ -648,6 +651,21 @@
 //	OEM version:
 //		1.00		5/28/98	AL.	First release to Interplay QA.
 
+
+#ifdef NO_SOUND
+// defined here to avoid link errors
+game_snd Snds[MAX_GAME_SOUNDS];
+game_snd Snds_iface[MAX_INTERFACE_SOUNDS];
+int Snds_iface_handle[MAX_INTERFACE_SOUNDS];
+game_snd Snds_flyby[MAX_SPECIES_NAMES][2];
+
+// dummy callback -- real one is in gamesnd.cpp
+void common_play_highlight_sound()
+{
+}
+#endif
+
+
 void game_level_init(int seed = -1);
 void game_post_level_init();
 void game_do_frame();
@@ -675,7 +693,11 @@ int	Game_skill_level = DEFAULT_SKILL_LEVEL;
 float Viewer_zoom = VIEWER_ZOOM_DEFAULT;
 
 #define EXE_FNAME			("fs2.exe")
+
+#if 0  // no launcher for fs2_open
 #define LAUNCHER_FNAME	("freespace2.exe")
+#endif
+
 
 // JAS: Code for warphole camera.
 // Needs to be cleaned up.
@@ -1002,7 +1024,7 @@ static char *Game_demo_title_screen_fname[GR_NUM_RESOLUTIONS] = {
 #endif
 
 
-#ifdef WIN32
+#ifdef _WIN32
 // cdrom stuff
 char Game_CDROM_dir[MAX_PATH_LEN];
 int init_cdrom();
@@ -1078,7 +1100,7 @@ void game_framerate_check_init()
 		
 	// nebula missions
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
-#if defined WIN32
+#if defined _WIN32
 		// if this is a glide card
 		if(gr_screen.mode == GR_GLIDE){
 			extern GrHwConfiguration hwconfig;
@@ -1102,7 +1124,7 @@ void game_framerate_check_init()
 
 	} else {
 
-#ifdef WIN32
+#ifdef _WIN32
 		// if this is a glide card
 		if(gr_screen.mode == GR_GLIDE){
 			extern GrHwConfiguration hwconfig;
@@ -2114,7 +2136,7 @@ void game_init()
 
 	//Initialize the libraries
 	s1 = timer_get_milliseconds();
-#ifdef WIN32
+#ifdef _WIN32
 	if(cfile_init(whee, Game_CDROM_dir)){			// initialize before calling any cfopen stuff!!!
 #else
 	if(cfile_init(whee, NULL)){			// initialize before calling any cfopen stuff!!!
@@ -2192,8 +2214,10 @@ void game_init()
 	
 	ptr = os_config_read_string(NULL, NOX("Videocard"), NULL);	
 	if (ptr == NULL) {
-#ifdef WIN32
-		MessageBox((HWND)os_get_window(), XSTR("Please configure your system in the Launcher before running FS2.\n\n The Launcher will now be started!", 1446), XSTR("Attention!", 1447), MB_OK);
+#ifdef _WIN32
+		MessageBox((HWND)os_get_window(), XSTR("Please configure your system in the Launcher before running FS2.", 1446), XSTR("Attention!", 1447), MB_OK);
+
+#if 0 // no launcher in fs2_open
 
 		// fire up the UpdateLauncher executable
 		STARTUPINFO si;
@@ -2218,9 +2242,12 @@ void game_init()
 		if (!ret) {
 			MessageBox((HWND)os_get_window(), XSTR("The Launcher could not be restarted.", 1450), XSTR("Error", 1451), MB_OK);
 		}
+#endif
+
 		exit(1);
-#else
-		mprintf(("No video card defined... exiting\n"));
+
+#else // !Win32
+		mprintf(("No video card defined...\n"));
 		// TEMP mharris FIXME
 		ptr = "dummy";
 //		exit(1);
@@ -2228,7 +2255,7 @@ void game_init()
 	}
 
 
-#ifdef WIN32
+#ifdef _WIN32
 	// Only check for 3d-accel in Win32
 	if(!Is_standalone){
 		if(!stricmp(ptr, "Aucune accélération 3D") || !stricmp(ptr, "Keine 3D-Beschleunigerkarte") || !stricmp(ptr, "No 3D acceleration")){
@@ -2242,7 +2269,7 @@ void game_init()
 	int has_sparky_hi = 0;
 
 	// check if sparky_hi exists -- access mode 0 means does file exist
-#ifdef WIN32
+#ifdef _WIN32
 	{
 		char dir[128];
 		_getcwd(dir, 128);
@@ -2268,7 +2295,7 @@ void game_init()
 		depth = 32;
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	// initialize the graphics system (win32)
 	int trying_d3d = 0;
 	
@@ -2477,7 +2504,7 @@ void game_init()
 //	Game_music_paused = 0;
 	Game_paused = 0;
 
-#ifdef WIN32
+#ifdef _WIN32
 	timeBeginPeriod(1);	
 #endif
 
@@ -6649,7 +6676,7 @@ void game_do_state(int state)
 }
 
 
-#ifdef WIN32
+#ifdef _WIN32
 // return 0 if there is enough RAM to run FreeSpace, otherwise return -1
 int game_do_ram_check(int ram_in_bytes)
 {
@@ -6684,6 +6711,7 @@ int game_do_ram_check(int ram_in_bytes)
 }
 
 
+#if 0 // no updater for fs2
 // Check if there is a freespace.exe in the /update directory (relative to where fs.exe is installed).
 // If so, copy it over and remove the update directory.
 void game_maybe_update_launcher(char *exe_dir)
@@ -6722,6 +6750,8 @@ void game_maybe_update_launcher(char *exe_dir)
 	strcat(update_dir, NOX("\\update"));
 	RemoveDirectory(update_dir);
 }
+#endif // no launcher
+
 #endif // ifdef WIN32
 
 void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, int *out_total, int *out_destroyed_total)
@@ -6845,7 +6875,7 @@ DCF(pofspew, "")
 	game_spew_pof_info();
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdShow)
 #else
 int WinMainSub(int argc, char *argv[])
@@ -6853,7 +6883,7 @@ int WinMainSub(int argc, char *argv[])
 {
 	int state;		
 
-#ifdef WIN32
+#ifdef _WIN32
 	// Don't let more than one instance of Freespace run.
 	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
 	if ( hwnd )	{
@@ -6908,8 +6938,11 @@ int WinMainSub(int argc, char *argv[])
 			SetCurrentDirectory(exe_dir);
 		}
 
+#if 0 // no launcher for fs2_open
 		// check for updated freespace.exe
 		game_maybe_update_launcher(exe_dir);
+#endif
+
 	}
 #else
    // mharris TODO: how should we determine what the "right" directory is?
@@ -6924,7 +6957,7 @@ int WinMainSub(int argc, char *argv[])
 	#endif
 
 
-#ifdef WIN32
+#ifdef _WIN32
 	parse_cmdline(szCmdLine);	
 #else
    parse_cmdline(argc, argv);
@@ -6943,7 +6976,7 @@ int WinMainSub(int argc, char *argv[])
 #endif  // ifndef NO_NETWORK
 
 
-#ifdef WIN32
+#ifdef _WIN32
 	init_cdrom();
 #endif
 
@@ -6964,7 +6997,7 @@ int WinMainSub(int argc, char *argv[])
 		char *plist[5];
 		if( (cf_get_file_list(2, plist, CF_TYPE_MULTI_PLAYERS, NOX("*.plr"))	<= 0) && (cf_get_file_list(2, plist, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"))	<= 0) ){
 			// prompt for cd 2
-#ifdef WIN32
+#ifdef _WIN32
 #if defined(OEM_BUILD)
 			game_do_cd_check_specific(FS_CDROM_VOLUME_1, 1);
 #else
@@ -7026,14 +7059,14 @@ int WinMainSub(int argc, char *argv[])
 #endif
 
 	game_shutdown();
-#ifdef WIN32
+#ifdef _WIN32
 	return 1;
 #else
 	return 0;
 #endif
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdShow)
 #else
 int main(int argc, char *argv[])
@@ -7041,7 +7074,7 @@ int main(int argc, char *argv[])
 {
 	int result = -1;
 
-#ifdef WIN32
+#ifdef _WIN32
 	__try	{
 		result = WinMainSub(hInst, hPrev, szCmdLine, nCmdShow);
 	}	__except(RecordExceptionInfo(GetExceptionInformation(), "Freespace 2 Main Thread"))	{
@@ -7063,8 +7096,8 @@ int main(int argc, char *argv[])
 	return result;
 }
 
-#ifdef WIN32
-// launcher the fslauncher program on exit
+#if 0  // don't have an updater for fs2_open
+// launch the fslauncher program on exit
 void game_launch_launcher_on_exit()
 {
 	STARTUPINFO si;
@@ -7107,7 +7140,7 @@ void game_launch_launcher_on_exit()
 //
 void game_shutdown(void)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	timeEndPeriod(1);
 #endif
 
@@ -7161,15 +7194,13 @@ void game_shutdown(void)
 #endif
 	os_cleanup();
 
-#ifdef WIN32
-#ifndef NO_NETWORK
+#if 0  // don't have an updater for fs2_open
 	// HACKITY HACK HACK
 	// if this flag is set, we should be firing up the launcher when exiting freespace
 	extern int Multi_update_fireup_launcher_on_exit;
 	if(Multi_update_fireup_launcher_on_exit){
 		game_launch_launcher_on_exit();
 	}
-#endif
 #endif
 }
 
@@ -8197,7 +8228,7 @@ void game_stop_subspace_ambient_sound()
 // ----------------------------------------------------------------
 
 
-#ifdef WIN32
+#ifdef _WIN32
 // ----------------------------------------------------------------
 //
 // CDROM detection code START

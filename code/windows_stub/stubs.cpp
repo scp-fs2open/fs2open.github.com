@@ -286,7 +286,7 @@ void vm_free( void *ptr )
 	}
 
 	#ifndef NDEBUG
-		#ifdef WIN32
+		#ifdef _WIN32
 		  _CrtMemBlockHeader *phd = pHdr(ptr);
 		  int nSize = phd->nDataSize;
 		  TotalRam -= nSize;

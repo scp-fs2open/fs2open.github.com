@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:58 $
  * $Author: penguin $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/21 15:36:25  mharris
  * Added ifdef WIN32
  *
@@ -2337,7 +2340,7 @@ void BM_SELECT_SCREEN_FORMAT()
 	Gr_current_alpha = &Gr_alpha;
 
 	// setup pointers
-#ifdef WIN32
+#ifdef _WIN32
 	if(gr_screen.mode == GR_GLIDE){
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
@@ -2368,7 +2371,7 @@ void BM_SELECT_TEX_FORMAT()
 	Gr_current_alpha = &Gr_t_alpha;
 
 	// setup pointers
-#ifdef WIN32
+#ifdef _WIN32
 	if(gr_screen.mode == GR_GLIDE){
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
@@ -2399,7 +2402,7 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 	Gr_current_alpha = &Gr_ta_alpha;
 
 	// setup pointers
-#ifdef WIN32
+#ifdef _WIN32
 	if(gr_screen.mode == GR_GLIDE){
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){

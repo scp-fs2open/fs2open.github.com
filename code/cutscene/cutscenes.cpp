@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:58 $
  * $Author: penguin $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/16 00:39:47  mharris
  * Added ifdef WIN32 around cd stuff
  *
@@ -223,7 +226,7 @@ void cutscene_init()
 // returns -1 on failure.
 int cutscenes_get_cd_num( char *filename )
 {
-#ifdef WIN32
+#ifdef _WIN32
 #if defined(OEM_BUILD)
 	return 0;				// only 1 cd for OEM
 #else
@@ -357,7 +360,7 @@ static char *Text_lines[MAX_TEXT_LINES];
 
 int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	int cd_present = 0;
 	int cd_drive_num;
 	int cd_mve_is_on;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/21 15:43:05  mharris
  * Cosmetics - removed commented-out code
  *
@@ -752,7 +755,7 @@ void di_cleanup()
 #endif  // ifdef USE_DIRECTINPUT
 
 
-#ifdef WIN32
+#ifdef _WIN32
 // portable routine to get the mouse position, relative
 // to current window
 void getWindowMousePos(POINT * pt)

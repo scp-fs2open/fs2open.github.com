@@ -6,7 +6,7 @@
  *  Content:	Direct3D internal include file
  *@@BEGIN_MSINTERNAL
  * 
- *  $Id: vd3di.h,v 2.0 2002-06-03 04:02:21 penguin Exp $
+ *  $Id: vd3di.h,v 2.1 2002-07-07 19:55:58 penguin Exp $
  *
  *  History:
  *   Date	By	Reason
@@ -383,7 +383,7 @@ typedef struct _DIRECT3DDEVICEI
     D3DVALUE			perspective_tolerance;
 
     /* Library information */
-#ifdef WIN32
+#ifdef _WIN32
     HINSTANCE		hDrvDll;
     char		dllname[MAXPATH];
     char		base[256];

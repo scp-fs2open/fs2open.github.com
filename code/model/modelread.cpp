@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/16 00:42:54  mharris
  * Use hex values instead of multi-chars for section IDs -- fewer
  * compiler complaints and more portable to big-endian architectures.
@@ -1109,7 +1112,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 	}
 #ifndef NDEBUG
 	if ( !ss_warning_shown) {
-#ifdef WIN32
+#ifdef _WIN32
 		char bname[_MAX_FNAME];
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, bname);

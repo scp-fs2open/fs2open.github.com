@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/13 21:09:28  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -410,7 +413,7 @@
 // to objects.   The code in Ai.cpp is just for bookeeping, allocating
 // ai slots and linking them to ships.
 
-#include "config.h"
+//#include "config.h"
 #include "pstypes.h"
 #include "fix.h"
 #include "linklist.h"
@@ -459,10 +462,11 @@
 #include "multimsgs.h"
 #include "multiutil.h"
 #include "multi_team.h"
-#else
+#endif
+
   // still need this...
   #include "multi.h"
-#endif
+
 
 #pragma optimize("", off)
 #pragma auto_inline(off)
