@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.119 $
- * $Date: 2004-10-15 09:21:55 $
+ * $Revision: 2.120 $
+ * $Date: 2004-10-15 10:03:08 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.119  2004/10/15 09:21:55  Goober5000
+ * cleaned up some sexp stuff and added wing capability to kamikaze sexp
+ * --Goober5000
+ *
  * Revision 2.118  2004/10/15 08:14:07  Goober5000
  * extra coding insurance
  * --Goober5000
@@ -1153,6 +1157,7 @@ sexp_oper Operators[] = {
 	{ "ship-untag",				OP_SHIP_UNTAG,				1, 1			},	// Goober5000
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
+	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
 
 	//HUD funcs -C
 	{ "hud-disable",				OP_HUD_DISABLE,					1, 1 },	// Goober5000
@@ -9617,6 +9622,98 @@ void sexp_kamikaze(int n, int kamikaze)
 	}
 }
 
+// Goober5000
+void sexp_ingame_ship_alt_name(int ship_num, char *alt_name)
+{
+	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
+
+	// see if this is actually the ship class
+	if (!stricmp(Ship_info[Ships[ship_num].ship_info_index].name, alt_name))
+	{
+		Ships[ship_num].alt_type_index = -1;
+		return;
+	}
+
+	// see if we can add the new name (it will automatically reset if there's no space on the alt-type list)
+	Ships[ship_num].alt_type_index = (char)mission_parse_add_alt(alt_name);
+}
+
+// Goober5000
+void sexp_parse_ship_alt_name(p_object *parse_obj, char *alt_name)
+{
+	Assert(parse_obj);
+
+	// see if this is actually the ship class
+	if (!stricmp(Ship_class_names[parse_obj->ship_class], alt_name))
+	{
+		parse_obj->alt_type_index = -1;
+		return;
+	}
+
+	// see if we can add the new name (it will automatically reset if there's no space on the alt-type list)
+	parse_obj->alt_type_index = (char)mission_parse_add_alt(alt_name);
+}
+
+// Goober5000
+void sexp_ship_change_alt_name(int n)
+{
+	int i, ship_num, wing_num;
+	char *ship_or_wing_name, *new_alt_name;
+	p_object *parse_obj;
+	wing *wingp;
+
+	// get the alt-name
+	new_alt_name = CTEXT(n);
+	n = CDR(n);
+
+	for ( ; n != -1; n = CDR(n) )
+	{
+		ship_or_wing_name = CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_or_wing_name, NULL, NULL) )
+			continue;
+
+		// might be a wing - check to see if wing destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) )
+			continue;
+
+		// search for it
+		ship_num = ship_name_lookup(ship_or_wing_name);
+		wing_num = wing_name_lookup(ship_or_wing_name);
+
+		// change ingame ship
+		if (ship_num != -1)
+		{
+			sexp_ingame_ship_alt_name(ship_num, new_alt_name);
+		}
+		// change ship yet to arrive
+		else if (parse_obj = mission_parse_get_arrival_ship(ship_or_wing_name), parse_obj)
+		{
+			sexp_parse_ship_alt_name(parse_obj, new_alt_name);
+		}
+		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
+		else if (wing_num != -1)
+		{
+			wingp = &Wings[wing_num];
+			
+			// current ships
+			for (i = 0; i < wingp->current_count; i++)
+			{
+				sexp_ingame_ship_alt_name(wingp->ship_index[i], new_alt_name);
+			}
+
+			// ships yet to arrive
+			for (parse_obj = GET_FIRST(&ship_arrival_list); parse_obj != END_OF_LIST(&ship_arrival_list); parse_obj = GET_NEXT(parse_obj))
+			{
+				if (parse_obj->wingnum == wing_num)
+				{
+					sexp_parse_ship_alt_name(parse_obj, new_alt_name);
+				}
+			}
+		}
+	}
+}
 
 int sexp_key_pressed(int node)
 {
@@ -12276,6 +12373,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = 1;
 				break;
 
+			case OP_SHIP_CHANGE_ALT_NAME:
+				sexp_ship_change_alt_name(node);
+				sexp_val = 1;
+				break;
+
 			case OP_SHIP_VULNERABLE:
 			case OP_SHIP_INVULNERABLE:
 				sexp_ships_invulnerable( node, (op_num==OP_SHIP_INVULNERABLE?1:0) );
@@ -13399,6 +13501,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_FRAME:		//WMC
 		case OP_HUD_SET_COLOR:		//WMC
 		case OP_RADAR_SET_MAXRANGE: //Kazan
+		case OP_SHIP_CHANGE_ALT_NAME:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -13601,6 +13704,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_LAST_ORDER_TIME:
 			if ( argnum == 0 )
 				return OPF_POSITIVE;
+			else
+				return OPF_SHIP_WING;
+
+		case OP_SHIP_CHANGE_ALT_NAME:
+			if (argnum == 0)
+				return OPF_STRING;
 			else
 				return OPF_SHIP_WING;
 
@@ -15352,6 +15461,7 @@ int get_subcategory(int sexp_id)
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
+		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 			return CHANGE_SUBCATEGORY_SPECIAL;

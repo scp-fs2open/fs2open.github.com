@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.76 $
+ * $Revision: 2.77 $
  * $Author: Goober5000 $
- * $Date: 2004-10-14 01:19:17 $
+ * $Date: 2004-10-15 10:03:09 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2004/10/14 01:19:17  Goober5000
+ * more ubersexp bugfixing
+ * --Goober5000
+ *
  * Revision 2.75  2004/09/24 02:13:00  Goober5000
  * some ubersexp fixes
  * --Goober5000
@@ -1009,6 +1013,7 @@ struct ship_subsys;
 //
 #define OP_SHIP_TAG							(0x0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SHIP_UNTAG						(0x0097 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_SHIP_CHANGE_ALT_NAME				(0x0098 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
