@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-01-31 23:27:53 $
+ * $Revision: 2.22 $
+ * $Date: 2005-02-14 23:54:11 $
  * $Author: taylor $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/01/31 23:27:53  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.20  2004/07/26 20:47:36  Kazan
  * remove MCD complete
  *
@@ -311,11 +314,26 @@ char *fs2_open_credit_text =
 	"\"Lightspeed\"\n"
 	"for helping out whenever and whereever he can\n"
 	"\n"
+	"Linux and OSX version with the support of\n"
+	"the icculus.org Freespace2 project:\n"
+	"Dan Olson\n"
+	"Steven Fuller\n"
+	"Charles Mason\n"
+	"Ryan Gordon\n"
+	"Taylor Richards\n"
+	"\"tigital\"\n"
+	"\n"
 	"Very special thanks to:\n"
 	"\n"
 	"Volition for making FS2 such a great game\n"
 	"Dave Baranec for giving us the code and keeping us sanity checked\n"
-	"\n\n\n\n";
+	"\n\n"
+	"FS2_Open makes use of the following technologies...\n"
+	"\n"
+	"Ogg Vorbis - (C) 2005, Xiph.Org Foundation\n"
+	"JPEG - Independent JPEG Group, (C) 1991-1998, Thomas G. Lane\n"
+	"\n\n"
+	"\n\n";
 
 char *unmodified_credits = "ORIGINAL VOLITION STAFF:\n\n\n";
 char *mod_check = "Design:";

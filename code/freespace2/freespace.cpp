@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.122 $
- * $Date: 2005-02-04 10:12:29 $
+ * $Revision: 2.123 $
+ * $Date: 2005-02-14 23:54:10 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122  2005/02/04 10:12:29  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.121  2005/01/30 09:27:39  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -2323,7 +2326,7 @@ void game_loading_callback(int count)
 
 	if (Processing_filename[0] != '\0') {
 		gr_set_shader(&busy_shader);
-		gr_shade(0, 0, gr_screen.clip_width, 12); // make sure it goes across the entire width
+		gr_shade(0, 0, gr_screen.clip_width, 17); // make sure it goes across the entire width
 
 		gr_set_color_fast(&Color_white);
 		gr_string(5, 5, Processing_filename);
