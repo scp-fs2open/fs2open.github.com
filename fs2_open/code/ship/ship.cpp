@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.46 $
- * $Date: 2003-01-27 07:46:32 $
+ * $Revision: 2.47 $
+ * $Date: 2003-02-05 06:57:56 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/01/27 07:46:32  Goober5000
+ * finished up my fighterbay code - ships will not be able to arrive from or depart into
+ * fighterbays that have been destroyed (but you have to explicitly say in the tables
+ * that the fighterbay takes damage in order to enable this)
+ * --Goober5000
+ *
  * Revision 2.45  2003/01/20 05:40:50  bobboau
  * added several sExps for turning glow points and glow maps on and off
  *
@@ -11291,6 +11297,7 @@ int ship_fighterbays_all_destroyed(ship *shipp)
 {
 	Assert(shipp);
 	ship_subsys *subsys;
+	int num_fighterbay_subsystems = 0;
 
 	// check all fighterbay systems
 	subsys = GET_FIRST(&shipp->subsys_list);
@@ -11299,6 +11306,8 @@ int ship_fighterbays_all_destroyed(ship *shipp)
 		// look for fighterbays
 		if (ship_subsys_is_fighterbay(subsys))
 		{
+			num_fighterbay_subsystems++;
+
 			// if fighterbay doesn't take damage, we're good
 			if (!ship_subsys_takes_damage(subsys))
 				return 0;
@@ -11312,7 +11321,13 @@ int ship_fighterbays_all_destroyed(ship *shipp)
 		subsys = GET_NEXT(subsys);
 	}
 
-	// must be all destroyed, if we got this far
+	// if the ship has no fighterbay subsystems at all, it must be an unusual case,
+	// like the Faustus, so pretend it's okay...
+	if (num_fighterbay_subsystems == 0)
+		return 0;
+
+	// if we got this far, the ship has at least one fighterbay subsystem,
+	// and all the ones it has are destroyed
 	return 1;
 }
 
