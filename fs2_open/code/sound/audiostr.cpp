@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:33:06 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:52 $
  * $Author: Kazan $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:33:06  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2003/03/02 06:37:24  penguin
  * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
  *  - penguin
@@ -196,8 +199,7 @@
 #include "sound/acm.h"
 #include "sound/ds.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // Constants
 #ifndef SUCCESS

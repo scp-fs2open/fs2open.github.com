@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/PsNet.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:32:58 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:44 $
  * $Author: Kazan $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:32:58  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2003/11/11 02:15:46  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -149,8 +152,7 @@
 #include "network/multi_log.h"
 #include "cmdline/cmdline.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #ifndef PSNET2
 

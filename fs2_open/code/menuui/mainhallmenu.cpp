@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-07-12 16:32:53 $
+ * $Revision: 2.20 $
+ * $Date: 2004-07-26 20:47:36 $
  * $Author: Kazan $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/07/12 16:32:53  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.18  2004/07/01 01:12:32  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -443,8 +446,7 @@
 #include "mission/missionload.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // ----------------------------------------------------------------------------
 // MAIN HALL DATA DEFINES

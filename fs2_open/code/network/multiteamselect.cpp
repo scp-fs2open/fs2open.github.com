@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:32:58 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:43 $
  * $Author: Kazan $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:32:58  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -212,8 +215,7 @@
 #include "weapon/weapon.h"
 #include "object/object.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // ------------------------------------------------------------------------------------------------------
 // TEAM SELECT DEFINES/VARS

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-12 16:33:05 $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-26 20:47:52 $
  * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/12 16:33:05  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.10  2004/03/17 04:07:32  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -76,8 +79,7 @@
 #include "Ship/Ship.h"
 #include "mission/MissionParse.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // ----------------------------------------------------------------------------------------------
 // CONTRAIL DEFINES/VARS

@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.32 $
- * $Date: 2004-07-12 16:32:42 $
+ * $Revision: 2.33 $
+ * $Date: 2004-07-26 20:47:24 $
  * $Author: Kazan $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2004/07/12 16:32:42  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.31  2004/06/26 19:23:54  wmcoolmon
  * Minor optimizations
  *
@@ -647,8 +650,7 @@
 #include "jpgutils/jpgutils.h"
 #include "openil/il_func.h" // needed for the #define's
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #ifndef NDEBUG
 #define BMPMAN_NDEBUG

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dMath.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:33:04 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:50 $
  * $Author: Kazan $
  *
  * 3d Math routines used by the Renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:33:04  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2004/02/14 00:18:35  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -116,8 +119,6 @@
 #include "graphics/2d.h"
 #include "render/3dinternal.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 
 #define MIN_Z 0.0f

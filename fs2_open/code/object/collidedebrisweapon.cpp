@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisWeapon.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:59 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:45 $
  * $Author: Kazan $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:32:59  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2004/03/05 09:01:57  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -73,8 +76,7 @@
 #include "weapon/weapon.h"
 #include "math/fvi.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // placeholder struct for ship_debris collisions
 typedef struct ship_weapon_debris_struct {

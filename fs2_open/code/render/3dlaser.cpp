@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-12 16:33:04 $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-26 20:47:50 $
  * $Author: Kazan $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/12 16:33:04  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.11  2004/03/21 09:41:54  randomtiger
  * Fixed a bug that was causing windowed movie playback and a crash.
  * Added some batching redirection.
@@ -195,8 +198,7 @@
 #include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 int Lasers = 1;
 DCF_BOOL( lasers, Lasers );

@@ -15,8 +15,7 @@
 #include <assert.h>
 #include "vcodec/codec1.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 //////////////////////////////////////////////////////////////////////////////

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-17 09:03:29 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2004-07-26 20:47:25 $
+ * $Author: Kazan $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/17 09:03:29  taylor
+ * make sure avi and mpg movies get added to file cache
+ *
  * Revision 2.19  2004/07/12 16:32:42  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -276,8 +279,7 @@
 #include "cfile/cfilesystem.h"
 #include "cfile/cfilearchive.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.21 $
+ * $Revision: 2.22 $
  * $Author: Kazan $
- * $Date: 2004-07-12 16:33:01 $
+ * $Date: 2004-07-26 20:47:47 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/07/12 16:33:01  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.20  2004/05/31 08:32:25  wmcoolmon
  * Custom HUD support, better loading, etc etc.
  *
@@ -200,8 +203,7 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5

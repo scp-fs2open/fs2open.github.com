@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.7 $
- * $Date: 2004-07-12 16:32:51 $
+ * $Revision: 1.8 $
+ * $Date: 2004-07-26 20:47:35 $
  * $Author: Kazan $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/07/12 16:32:51  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 1.6  2004/05/25 00:24:00  wmcoolmon
  * Updated to use <fstream> instead of <fstream.h> and fixed an un/signed disagreement
  *
@@ -47,8 +50,6 @@
 #include "irc.h"
 #include "direct.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 //************************************************************************************
 // irc_channel implementation

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/fishtank.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:53 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:36 $
  * $Author: Kazan $
  *
  * bloop
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:32:53  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2004/03/05 09:01:53  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -46,8 +49,7 @@
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // fish
 typedef struct fish {

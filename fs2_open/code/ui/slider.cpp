@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/slider.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:33:08 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:55 $
  * $Author: Kazan $
  *
  * C++ file for controlling and displaying a horizontal slider
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:33:08  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2004/02/14 00:18:36  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -109,8 +112,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 /// DOT_SLIDER class down here
 void UI_DOT_SLIDER_NEW::create(UI_WINDOW *wnd, int _x, int _y, int _num_pos, char *bm_slider, int slider_mask,

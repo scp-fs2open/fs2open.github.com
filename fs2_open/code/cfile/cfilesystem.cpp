@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-07-17 09:26:00 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2004-07-26 20:47:25 $
+ * $Author: Kazan $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/07/17 09:26:00  taylor
+ * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
+ *
  * Revision 2.20  2004/07/12 16:32:42  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -192,8 +195,7 @@
 #include "cfile/cfilesystem.h"
 #include "localization/localize.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define CF_ROOTTYPE_PATH 0
 #define CF_ROOTTYPE_PACK 1

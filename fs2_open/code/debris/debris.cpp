@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-12 16:32:44 $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-26 20:47:26 $
  * $Author: Kazan $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/12 16:32:44  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.7  2004/07/01 01:52:20  phreak
  * function pointer radar update.
  * will enable us to make different radar styles that we can switch between
@@ -269,8 +272,7 @@
 #include "network/multiutil.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 #define MAX_LIFE									10.0f

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-07-18 04:07:26 $
+ * $Revision: 2.24 $
+ * $Date: 2004-07-26 20:47:42 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/07/18 04:07:26  Kazan
+ * nothing major
+ *
  * Revision 2.22  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -329,8 +332,7 @@ extern int PXO_port;
 
 #pragma warning(pop)
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // ----------------------------------------------------------------------------------------
 // Basic module scope defines

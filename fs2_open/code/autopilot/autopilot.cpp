@@ -4,11 +4,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.7 $
- * $Date: 2004-07-26 17:54:04 $
+ * $Revision: 1.8 $
+ * $Date: 2004-07-26 20:47:24 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/07/26 17:54:04  Kazan
+ * Autopilot system completed -- i am dropping plans for GUI nav map
+ * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
+ * Fixed FPS counter during time compression
+ *
  * Revision 1.6  2004/07/25 19:27:51  Kazan
  * only disable afterburning during AIM_WAYPOINTS and AIM_FLY_TO_SHIP while AutoPilotEngaged
  *
@@ -43,8 +48,7 @@
 #include "object/object.h"
 #include "parse/sexp.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // Extern functions/variables
 extern void sexp_player_use_ai(int use_ai);

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.2 $
- * $Date: 2004-07-12 16:32:48 $
+ * $Revision: 1.3 $
+ * $Date: 2004-07-26 20:47:32 $
  * $Author: Kazan $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/07/12 16:32:48  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 1.1  2004/05/24 07:25:32  taylor
  * filename case change
  *
@@ -37,8 +40,7 @@
 
 #include "osapi/outwnd.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 char *OGL_extension_string;
 /*

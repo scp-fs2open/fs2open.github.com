@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-07-12 16:32:58 $
+ * $Revision: 2.23 $
+ * $Date: 2004-07-26 20:47:43 $
  * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/07/12 16:32:58  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.21  2004/07/12 14:38:13  Kazan
  * fix a small multibug in tables validation (I had added this once before.. where did it go)
  *
@@ -353,8 +356,7 @@
 #include "network/multi_rate.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 extern int MSG_WINDOW_X_START;	// used to position multiplayer text messages

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-07-25 18:46:30 $
+ * $Revision: 2.15 $
+ * $Date: 2004-07-26 20:47:51 $
  * $Author: Kazan $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/25 18:46:30  Kazan
+ * -fred_no_warn has become -no_warn and applies to both fred and fs2
+ * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
+ * fixed player ship speed bug w/ player-use-ai, now stays in formation correctly and manages speed
+ * made -radar_reduce ignore itself if no parameter is given (ignoring launcher bug)
+ *
  * Revision 2.13  2004/07/25 00:31:31  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -533,7 +539,7 @@
 #include "weapon/weapon.h"
 
 // memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // all ai goals dealt with in this code are goals that are specified through
 // sexpressions in the mission file.  They are either specified as part of a

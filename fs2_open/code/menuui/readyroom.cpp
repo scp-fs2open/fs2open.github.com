@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-12 16:32:53 $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-26 20:47:37 $
  * $Author: Kazan $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/12 16:32:53  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.9  2004/04/10 16:55:45  Goober5000
  * quashed the slider bug!
  * --Goober5000
@@ -155,8 +158,7 @@
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define MAX_MISSIONS	1024
 

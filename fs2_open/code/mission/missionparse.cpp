@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.62 $
- * $Date: 2004-07-12 16:32:54 $
+ * $Revision: 2.63 $
+ * $Date: 2004-07-26 20:47:37 $
  * $Author: Kazan $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2004/07/12 16:32:54  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.61  2004/07/01 01:12:32  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -652,8 +655,7 @@
   #include "network/multiutil.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 LOCAL struct {
 	p_object *docker;
@@ -1799,6 +1801,8 @@ int parse_create_object(p_object *objp)
 	shipnum = Objects[objnum].instance;
 
 	shipp = &Ships[shipnum];
+	//shipp = (ship*)((char*)(Ships + shipnum)-(32*shipnum)); // ASSERT PROPER ALIGNMENT! -- Kazan
+	//Assert(shipp == &Ships[shipnum]);
 	sip = &Ship_info[shipp->ship_info_index];
 
 	// if arriving through knossos, adjust objpj->pos to plane of knossos and set flag
@@ -1827,7 +1831,7 @@ int parse_create_object(p_object *objp)
 		float hull_factor = shipp->ship_initial_hull_strength / sip->initial_hull_strength;
 		ship_subsys *ss;
 
-		for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss) )
+		for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list) && ss != NULL; ss = GET_NEXT(ss) )
 		{
 			ss->max_hits *= hull_factor;
 

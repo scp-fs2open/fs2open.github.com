@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:32:56 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:41 $
  * $Author: Kazan $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:32:56  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -302,8 +305,7 @@
 #include "math/fvi.h"
 #include "model/modelsinc.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 #define TOL		1E-4

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-12 16:32:53 $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-26 20:47:37 $
  * $Author: Kazan $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/12 16:32:53  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.6  2004/05/25 00:38:11  wmcoolmon
  * Updated function calls for VC7 use
  *
@@ -287,8 +290,7 @@
 #include "menuui/optionsmenumulti.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // will display a notification warning message
 #define OPTIONS_NOTIFY_TIME			3500

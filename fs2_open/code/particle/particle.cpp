@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-12 16:33:02 $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-26 20:47:47 $
  * $Author: Kazan $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/12 16:33:02  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.6  2004/03/21 09:41:54  randomtiger
  * Fixed a bug that was causing windowed movie playback and a crash.
  * Added some batching redirection.
@@ -208,8 +211,7 @@
 #include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 typedef struct particle {

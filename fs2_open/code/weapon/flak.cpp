@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:33:09 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:56 $
  * $Author: Kazan $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:33:09  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -48,8 +51,7 @@
 #include "weapon/muzzleflash.h"
 #include "object/object.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 // FLAK DEFINES/VARS

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-12 16:33:06 $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-26 20:47:52 $
  * $Author: Kazan $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/12 16:33:06  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.7  2004/06/28 02:13:08  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -346,8 +349,7 @@
 //#include "sound/ogg/ogg.h"
 		
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 #define SND_F_USED			(1<<0)		// Sounds[] element is used

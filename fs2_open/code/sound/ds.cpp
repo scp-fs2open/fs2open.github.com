@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-12 16:33:06 $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-26 20:47:52 $
  * $Author: Kazan $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/12 16:33:06  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.6  2004/06/22 23:14:10  wmcoolmon
  * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
  * OGG code has been commented out, so you don't need the SDK yet.
@@ -349,8 +352,6 @@
 #include <objbase.h>
 #include <initguid.h>
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // Pointers to functions contained in DSOUND.dll
 HRESULT (__stdcall *pfn_DirectSoundCreate)(LPGUID lpGuid, LPDIRECTSOUND *ppDS, IUnknown FAR *pUnkOuter) = NULL;

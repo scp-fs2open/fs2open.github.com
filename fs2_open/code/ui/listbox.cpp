@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/LISTBOX.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:33:08 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:55 $
  * $Author: Kazan $
  *
  * Code to implement a listbox gadget.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:33:08  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2004/03/10 18:45:09  Kazan
  * partially complete IRC - so i can work on it on my laptop
  *
@@ -113,8 +116,6 @@
 #include "io/key.h"
 #include "globalincs/alphacolors.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #define KEY_BUFFER_TIMEOUT		1000		// time to clear buffer in milliseconds
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileList.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-17 09:26:00 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:25 $
+ * $Author: Kazan $
  *
  * Code for doing directory lists and sorts
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/17 09:26:00  taylor
+ * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
+ *
  * Revision 2.3  2004/07/12 16:32:42  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -80,8 +83,7 @@
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 // Sorts a list of filenames using the specified sorting method (CF_SORT_*).

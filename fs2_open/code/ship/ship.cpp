@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.134 $
- * $Date: 2004-07-25 00:31:31 $
+ * $Revision: 2.135 $
+ * $Date: 2004-07-26 20:47:51 $
  * $Author: Kazan $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.134  2004/07/25 00:31:31  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.133  2004/07/17 18:46:09  taylor
  * various OGL and memory leak fixes
  *
@@ -1308,8 +1311,6 @@
 #include "network/multimsgs.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #ifdef FS2_DEMO
 	#define MAX_SHIP_SUBOBJECTS		360
@@ -12729,6 +12730,7 @@ int ship_fire_tertiary(object *objp)
 
 	return 1;
 }
+
 
 // Goober5000
 void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss)

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:33:07 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:53 $
  * $Author: Kazan $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:33:07  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2004/03/05 09:02:05  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -231,8 +234,7 @@
 #include "network/multi_pmsg.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // what percent of points of total damage to a ship a player has to have done to get an assist (or a kill) when it is killed
 #define ASSIST_PERCENTAGE				(0.15f)

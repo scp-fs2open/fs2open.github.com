@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-12 16:32:41 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-26 20:47:23 $
  * $Author: Kazan $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
@@ -18,6 +18,9 @@
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/12 16:32:41  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.5  2004/03/05 09:01:53  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -198,8 +201,7 @@
 #include "graphics/2d.h"
 #include "anim/animplay.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 int packer_code = PACKER_CODE;

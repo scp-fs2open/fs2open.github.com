@@ -29,8 +29,7 @@
 #include "debugconsole/dbugfile.h"
 #include "cmdline/cmdline.h"   
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // Lets define our global D3D variables
 IDirect3D8           *GlobalD3DVars::lpD3D = NULL;

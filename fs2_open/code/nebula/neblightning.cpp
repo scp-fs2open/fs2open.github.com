@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-12 16:32:57 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:41 $
  * $Author: Kazan $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/12 16:32:57  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.3  2004/04/14 10:27:24  taylor
  * render lightning unlit so that it works in OGL
  *
@@ -87,8 +90,6 @@
 #include "network/multimsgs.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 extern int Cmdline_nohtl;
 

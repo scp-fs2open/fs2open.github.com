@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-07-12 16:32:49 $
+ * $Revision: 2.17 $
+ * $Date: 2004-07-26 20:47:32 $
  * $Author: Kazan $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/07/12 16:32:49  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.15  2004/05/30 08:04:49  wmcoolmon
  * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
  *
@@ -247,8 +250,7 @@
 #include "network/multi.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 #define NUM_SHIELD_LEVELS		8

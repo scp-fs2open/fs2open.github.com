@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-17 18:46:06 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-26 20:47:23 $
+ * $Author: Kazan $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/17 18:46:06  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.9  2004/07/12 16:32:41  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -256,8 +259,7 @@
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 static color Color_xparent;
 

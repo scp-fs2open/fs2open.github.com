@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-12 16:32:43 $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-26 20:47:26 $
  * $Author: Kazan $
- * $Revision: 2.12 $
- * $Date: 2004-07-12 16:32:43 $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-26 20:47:26 $
  * $Author: Kazan $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/12 16:32:43  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.11  2004/04/26 13:11:11  taylor
  * mark view cutscenes ignoring extension and file case
  *
@@ -222,8 +225,6 @@
 #include "localization/localize.h"
 #include "parse/parselo.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 char *Cutscene_bitmap_name[GR_NUM_RESOLUTIONS] = {
 	"ViewFootage",

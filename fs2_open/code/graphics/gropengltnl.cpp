@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.7 $
- * $Date: 2004-07-17 18:49:57 $
- * $Author: taylor $
+ * $Revision: 1.8 $
+ * $Date: 2004-07-26 20:47:32 $
+ * $Author: Kazan $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/07/17 18:49:57  taylor
+ * oops, I can't spell
+ *
  * Revision 1.6  2004/07/17 18:40:40  taylor
  * Bob say we fix OGL, so me fix OGL <grunt>
  *
@@ -74,8 +77,7 @@
 
 #include "debugconsole/timerbar.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 extern int VBO_ENABLED;
 extern int GLOWMAP;

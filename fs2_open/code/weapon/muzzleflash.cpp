@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-12 16:33:09 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:56 $
  * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/12 16:33:09  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.3  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -80,8 +83,6 @@
 #include "graphics/2d.h"
 #include "math/vecmat.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH DEFINES/VARS

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-12 16:32:49 $
+ * $Revision: 2.10 $
+ * $Date: 2004-07-26 20:47:32 $
  * $Author: Kazan $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/12 16:32:49  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.8  2004/06/28 10:00:33  wmcoolmon
  * Fixed weapon miniinfo display
  *
@@ -263,8 +266,7 @@
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 #define FADE_FACTOR	2			// how much the bounding brackets get faded

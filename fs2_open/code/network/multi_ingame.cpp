@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-07-12 16:32:57 $
+ * $Revision: 2.16 $
+ * $Date: 2004-07-26 20:47:42 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/07/12 16:32:57  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.14  2004/07/12 14:38:12  Kazan
  * fix a small multibug in tables validation (I had added this once before.. where did it go)
  *
@@ -390,8 +393,6 @@
 #include <limits.h>
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // --------------------------------------------------------------------------------------------------
 // DAVE's BIGASS INGAME JOIN WARNING/DISCLAIMER

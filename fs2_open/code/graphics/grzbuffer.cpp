@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrZbuffer.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:48 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:32 $
  * $Author: Kazan $
  *
  * Code for the software renderer's zbuffer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:32:48  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2004/02/14 00:18:32  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -57,8 +60,7 @@
 #include "math/floating.h"
 #include "graphics/grinternal.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 int gr_zcount=GR_Z_COUNT;
 int gr_zoffset=0;

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-07-25 18:46:29 $
+ * $Revision: 2.17 $
+ * $Date: 2004-07-26 20:47:49 $
  * $Author: Kazan $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/07/25 18:46:29  Kazan
+ * -fred_no_warn has become -no_warn and applies to both fred and fs2
+ * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
+ * fixed player ship speed bug w/ player-use-ai, now stays in formation correctly and manages speed
+ * made -radar_reduce ignore itself if no parameter is given (ignoring launcher bug)
+ *
  * Revision 2.15  2004/07/25 00:31:30  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -521,8 +527,6 @@
 #include "autopilot/autopilot.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 ////////////////////////////////////////////////////////////
 // Global object and other interesting player type things

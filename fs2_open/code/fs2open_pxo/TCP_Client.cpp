@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.20 $
- * $Date: 2004-07-12 16:32:46 $
+ * $Revision: 1.21 $
+ * $Date: 2004-07-26 20:47:29 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2004/07/12 16:32:46  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 1.19  2004/07/09 22:05:32  Kazan
  * fs2netd 1.0 RC5 full support - Rank and Medal updates
  *
@@ -101,8 +104,6 @@
 #include <time.h>
 #include "network/multi_log.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 
 #define PXO_ADDINT(n)	*((int *)cur) = (n); cur += sizeof(int);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-07-12 16:32:53 $
+ * $Revision: 2.20 $
+ * $Date: 2004-07-26 20:47:36 $
  * $Author: Kazan $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/07/12 16:32:53  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.18  2004/04/10 16:55:23  Goober5000
  * some formatting
  *
@@ -254,8 +257,7 @@
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // This is the fs2_open credit list, please only add yourself if you have actually contributed code
 // Rules!

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-07-12 16:33:05 $
+ * $Revision: 2.19 $
+ * $Date: 2004-07-26 20:47:51 $
  * $Author: Kazan $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/07/12 16:33:05  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.17  2004/03/16 17:41:12  phreak
  * really fixed opengl shields this time
  *
@@ -235,8 +238,6 @@
 #include "species_defs/species_defs.h"
 #include "ship/ship.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 int	New_shield_system = 1;
 int	Show_shield_mesh = 0;

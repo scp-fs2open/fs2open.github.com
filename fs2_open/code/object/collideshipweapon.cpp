@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-12 16:32:59 $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-26 20:47:45 $
  * $Author: Kazan $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/12 16:32:59  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.11  2004/07/11 03:22:51  bobboau
  * added the working decal code
  *
@@ -209,8 +212,7 @@
 #include "network/multimsgs.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-12 16:32:52 $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-26 20:47:36 $
  * $Author: Kazan $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/12 16:32:52  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.9  2004/05/03 09:27:16  randomtiger
  * fl_abs(theta_goal.xyz.z) < 0.001f is reporting using mprintf now instead of assert
  *
@@ -291,8 +294,7 @@
 #include "math/vecmat.h"
 #include "math/floating.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define	SMALL_NUM	1e-7
 #define	SMALLER_NUM	1e-20

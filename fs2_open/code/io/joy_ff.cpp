@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy_ff.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:51 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:33 $
  * $Author: Kazan $
  *
  * Code for joystick Force Feedback.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:32:51  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -91,8 +94,7 @@
 #include "io/joy_ff.h"
 #include "osapi/osapi.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 typedef struct {
 	DIEFFECT effect;

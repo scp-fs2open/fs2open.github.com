@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:32:58 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:44 $
  * $Author: Kazan $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:32:58  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2002/12/02 23:18:53  Goober5000
  * commented out an unneeded variable (int ret) in psnet_socket_options
  *
@@ -156,8 +159,6 @@
 
 #include "network/psnet2.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 DEFINES/VARS

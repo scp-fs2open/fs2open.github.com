@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-12 16:32:54 $
+ * $Revision: 2.10 $
+ * $Date: 2004-07-26 20:47:37 $
  * $Author: Kazan $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/12 16:32:54  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.8  2004/03/28 17:49:55  taylor
  * runtime language selection, mantis:0000133
  *
@@ -394,8 +397,7 @@
 #include "network/multi_team.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // timestamp stuff for evaluating mission goals
 #define GOAL_TIMESTAMP				0				// make immediately eval

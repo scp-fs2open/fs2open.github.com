@@ -138,8 +138,7 @@ texture for the list is set, then a call is made to render the vertex buffer.
 #include "debugconsole/timerbar.h"
 #include "ship/ship.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 int decal_total_decals_made = 0;
 int total_polys_used = 0;

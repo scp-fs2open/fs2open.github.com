@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-07-17 18:46:08 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2004-07-26 20:47:38 $
+ * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/07/17 18:46:08  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.22  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -461,8 +464,7 @@
 
 #include "fs2open_pxo/Client.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 #if !defined(PXO_TCP)

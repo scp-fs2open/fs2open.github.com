@@ -7,8 +7,7 @@
 #include "graphics/grd3dinternal.h"
 #include "cmdline/cmdline.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // Constants
 const int MAX_LIGHTS     = 256;

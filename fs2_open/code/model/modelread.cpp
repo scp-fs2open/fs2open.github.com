@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.44 $
- * $Date: 2004-07-12 16:32:56 $
+ * $Revision: 2.45 $
+ * $Date: 2004-07-26 20:47:41 $
  * $Author: Kazan $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2004/07/12 16:32:56  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.43  2004/06/28 02:13:08  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -913,8 +916,7 @@
 #include <direct.h>
 #include <windows.h>
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define MAX_SUBMODEL_COLLISION_ROT_ANGLE (PI / 6.0f)	// max 30 degrees per frame
 

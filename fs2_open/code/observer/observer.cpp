@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Observer/Observer.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:59 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:46 $
  * $Author: Kazan $
  *
  * $NoKeywords: $
@@ -21,8 +21,7 @@
 #include "globalincs/systemvars.h"
 #include "playerman/player.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 observer Observers[MAX_OBSERVER_OBS];

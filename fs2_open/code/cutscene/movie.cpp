@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-07-12 16:32:43 $
+ * $Revision: 2.22 $
+ * $Date: 2004-07-26 20:47:26 $
  * $Author: Kazan $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/07/12 16:32:43  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.20  2004/04/26 13:09:20  taylor
  * cvs log header, mark cutscenes viewable for later, gr_flip() to fix OGL white flash
  *
@@ -35,8 +38,7 @@
 #include "cutscene/cutscenes.h" // cutscene_mark_viewable()
 #include "freespace2/freespace.h" // for Game_mode, etc.
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // This module links freespace movie calls to the actual API calls the play the movie.
 // This module handles all the different requires of OS and gfx API and finding the file to play

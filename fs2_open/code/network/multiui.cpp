@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.31 $
- * $Date: 2004-07-12 16:32:58 $
+ * $Revision: 2.32 $
+ * $Date: 2004-07-26 20:47:43 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/07/12 16:32:58  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.30  2004/07/10 03:18:23  Kazan
  * minor bugfixes - oh yeah reenabling a rule for multistats :P
  *
@@ -595,8 +598,7 @@
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 extern int Om_tracker_flag; // needed to know whether or not to use FS2OpenPXO
 

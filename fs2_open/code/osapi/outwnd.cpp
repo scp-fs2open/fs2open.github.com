@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-12 16:33:01 $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-26 20:47:46 $
  * $Author: Kazan $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/12 16:33:01  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.10  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -191,8 +194,6 @@
 #include "freespace2/freespaceresource.h"
 #include "globalincs/systemvars.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #define MAX_FILTERS 48
 #define SCROLL_BUFFER_SIZE	512

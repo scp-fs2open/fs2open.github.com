@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/openil/il_func.cpp $
- * $Revision: 1.3 $
- * $Date: 2004-07-17 18:38:04 $
- * $Author: taylor $
+ * $Revision: 1.4 $
+ * $Date: 2004-07-26 20:47:46 $
+ * $Author: Kazan $
  *
  * Callback functions for OpenIL (DevIL) to use CFILE
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/07/17 18:38:04  taylor
+ * force image orientation in DevIL
+ *
  * Revision 1.2  2004/07/12 16:32:59  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -31,8 +34,6 @@
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 int il_inited = 0;
 

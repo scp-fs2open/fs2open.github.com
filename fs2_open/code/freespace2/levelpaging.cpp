@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/LevelPaging.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:32:46 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:29 $
  * $Author: Kazan $
  *
  * Code to page in all the bitmaps at the beginning of a level.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:32:46  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2004/07/01 01:53:00  phreak
  * function pointer radar update.
  * will enable us to make different radar styles that we can switch between
@@ -73,8 +76,6 @@
 #include "freespace2/freespace.h"
 #include "freespace2/levelpaging.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // All the page in functions
 extern void ship_page_in();

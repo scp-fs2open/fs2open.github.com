@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Corkscrew.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-12 16:33:09 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:56 $
  * $Author: Kazan $
  *
  * C module for managing corkscrew missiles
@@ -25,8 +25,7 @@
 #include "freespace2/freespace.h"	// for Missiontime
 #include "object/object.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // corkscrew structure flags
 #define CS_FLAG_USED						(1<<0)		// this structure is in use

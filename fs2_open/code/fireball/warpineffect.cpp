@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-07-17 09:29:13 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2004-07-26 20:47:28 $
+ * $Author: Kazan $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/07/17 09:29:13  taylor
+ * make old warpmap and new glow bitmap 3D unlit to render right in OGL
+ *
  * Revision 2.17  2004/07/12 16:32:46  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -201,8 +204,6 @@
 #include "Nebula/Neb.h"
 #include "globalincs/pstypes.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 extern int Warp_model;
 extern int Cmdline_nohtl;

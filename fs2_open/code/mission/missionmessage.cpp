@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-07-17 18:46:08 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2004-07-26 20:47:37 $
+ * $Author: Kazan $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/07/17 18:46:08  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.17  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -474,8 +477,6 @@
 #include "network/multiutil.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // here is a text list of the builtin message names.  These names are used to match against
 // names read in for builtin message radio bits to see what message to play.  These are

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:32:47 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:30 $
  * $Author: Kazan $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:32:47  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2004/03/08 22:02:38  Kazan
  * Lobby GUI screen restored
  *
@@ -134,8 +137,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 ////////////////////////////////////////////////////////////////////
 // private function prototypes / structs
