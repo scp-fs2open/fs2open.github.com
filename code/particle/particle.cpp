@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-16 01:35:59 $
- * $Author: bobboau $
+ * $Revision: 2.12 $
+ * $Date: 2005-03-24 23:37:25 $
+ * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/16 01:35:59  bobboau
+ * added a geometry batcher and implemented it in sevral places
+ * namely: lasers, thrusters, and particles,
+ * these have been the primary botle necks for some time,
+ * and this seems to have smoothed them out quite a bit.
+ *
  * Revision 2.10  2005/02/04 20:06:06  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -541,6 +547,7 @@ void particle_render_all()
 	vertex pos;
 	vector ts, te, temp;
 	int rotate = 1;
+	int i;
 
 	if ( !Particles_enabled ) return;
 
@@ -553,7 +560,7 @@ void particle_render_all()
 
 	batch_start();
 
-	for (int i=0; i<MAX_PARTICLES; i++, p++ )	{
+	for (i=0; i<MAX_PARTICLES; i++, p++ )	{
 		
 		if ( p->type == -1 )	{
 			continue;
