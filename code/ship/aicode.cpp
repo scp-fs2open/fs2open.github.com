@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.66 $
- * $Date: 2004-07-29 23:41:22 $
- * $Author: Kazan $
+ * $Revision: 2.67 $
+ * $Date: 2004-07-31 08:54:38 $
+ * $Author: et1 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2004/07/29 23:41:22  Kazan
+ * bugfixes
+ *
  * Revision 2.65  2004/07/27 18:04:09  Kazan
  * i love it when bugs go crunch (autopilot ai fixup)
  *
@@ -11638,6 +11641,16 @@ void turret_swarm_fire_from_turret(ship_subsys *turret, int parent_objnum, int t
 	// get class [index into Weapon_info array
 	turret_weapon_class = turret->system_info->turret_weapon_type;
 	Assert(Weapon_info[turret_weapon_class].wi_flags & WIF_SWARM);
+
+
+    // *If it's a non-homer, then use the last fire direction instead of turret orientation to fix inaccuracy
+    //  problems with non-homing swarm weapons -Et1
+    if( !( Weapon_info[turret_weapon_class].wi_flags & WIF_HOMING ) )
+    {
+
+        turret_fvec = turret->turret_last_fire_direction;
+
+    }
 
 	// make turret_orient from turret_fvec -- turret->turret_last_fire_direction
 	vm_vector_2_matrix(&turret_orient, &turret_fvec, NULL, NULL);
