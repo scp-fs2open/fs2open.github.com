@@ -42,8 +42,15 @@ void batch_deinit()
 {
 	if(!Cmdline_batch_3dunlit) return;
 
-	if(Batch_array)
+	if (Batch_array != NULL) {
 		free(Batch_array);
+		Batch_array = NULL;
+	}
+
+	if (Batch_vertex_array != NULL) {
+		free(Batch_vertex_array);
+		Batch_vertex_array = NULL;
+	}
 }
 
 void batch_start()

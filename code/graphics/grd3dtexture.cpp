@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.41 $
- * $Date: 2004-07-26 20:47:31 $
- * $Author: Kazan $
+ * $Revision: 2.42 $
+ * $Date: 2004-07-29 03:41:46 $
+ * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2004/07/26 20:47:31  Kazan
+ * remove MCD complete
+ *
  * Revision 2.40  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -620,7 +623,12 @@ bool d3d_free_texture( tcache_slot_d3d *t )
 		if(t->d3d8_thandle)
 		{
 			DBUGFILE_DEC_COUNTER(0);
-			t->d3d8_thandle->Release();
+			int m = 1;
+
+			while ( m > 0 ) {
+				m = t->d3d8_thandle->Release();
+			}
+
 			t->d3d8_thandle = NULL;
 		}
 
