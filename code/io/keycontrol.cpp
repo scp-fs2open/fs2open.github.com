@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-07-04 02:26:15 $
+ * $Revision: 2.12 $
+ * $Date: 2003-07-15 02:35:59 $
  * $Author: phreak $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/07/04 02:26:15  phreak
+ * tilde + x cloaks a ship
+ *
  * Revision 2.10  2003/04/29 01:03:23  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -882,7 +885,7 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED1 + KEY_X:
 			if (Player_ship->cloak_stage==0)
 			{
-				shipfx_start_cloak(Player_ship);
+				shipfx_start_cloak(Player_ship,5000,1);
 				HUD_printf("Cloaking started");
 			}
 			else
@@ -892,6 +895,30 @@ void process_debug_keys(int k)
 			}
 
 			break;
+
+		case KEY_DEBUGGED + KEY_SHIFTED + KEY_X:
+		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_X:
+		{
+			if (Player_ai->target_objnum == -1) break;
+			object *target = &Objects[Player_ai->target_objnum];
+			ship *target_ship;
+			if (target->type != OBJ_SHIP)		break;
+			
+			target_ship = &Ships[target->instance];
+			if (target_ship->cloak_stage==0)
+			{
+				shipfx_start_cloak(target_ship,5000,1);
+				HUD_printf("%s has started to cloak",target_ship->ship_name);
+			}
+			else
+			{
+				shipfx_stop_cloak(target_ship);
+				HUD_printf("%s has stopped cloaking",target_ship->ship_name);
+			}
+		}
+		break;
+
+
 
 
 		case KEY_DEBUGGED + KEY_C:
