@@ -20,6 +20,10 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/04/29 01:03:22  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.20  2003/03/29 09:42:05  Goober5000
  * made beams default shield piercing again
  * also added a beam no pierce command line flag
@@ -1362,6 +1366,28 @@ int parse_weapon()
 		required_string("+Twist:");
 		stuff_float(&wip->cs_twist);
 
+	}
+
+	//electronics tag optional stuff
+	wip->elec_intensity=1.0f;
+	wip->elec_time=10000;
+	wip->elec_eng_mult=1.0f;
+	wip->elec_weap_mult=1.0f;
+
+
+	if (optional_string("$Electronics:"))
+	{
+		required_string("+Intensity:");
+		stuff_float(&wip->elec_intensity);
+
+		required_string("+Lifetime:");
+		stuff_int(&wip->elec_time);
+
+		required_string("+Engine Multiplier:");
+		stuff_float(&wip->elec_eng_mult);
+
+		required_string("+Weapon Multiplier:");
+		stuff_float(&wip->elec_weap_mult);
 	}
 
 	// beam weapon optional stuff
@@ -3295,6 +3321,32 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vector *hitpos)
 	}
 }
 
+const float weapon_electronics_scale[MAX_SHIP_TYPES]=
+{
+	0.0f,	//SHIP_TYPE_NONE
+	10.0f,	//SHIP_TYPE_CARGO
+	7.5f,	//SHIP_TYPE_FIGHTER_BOMBER
+	1.0f,	//SHIP_TYPE_CRUISER
+	1.75f,	//SHIP_TYPE_FREIGHTER
+	0.2f,	//SHIP_TYPE_CAPITAL
+	2.0f,	//SHIP_TYPE_TRANSPORT
+	3.0f,	//SHIP_TYPE_REPAIR_REARM
+	10.0f,	//SHIP_TYPE_NAVBUOY
+	10.0f,	//SHIP_TYPE_SENTRYGUN
+	10.0f,	//SHIP_TYPE_ESCAPEPOD
+	0.075f,	//SHIP_TYPE_SUPERCAP
+	5.0f,	//SHIP_TYPE_STEALTH
+	10.0f,	//SHIP_TYPE_FIGHTER
+	5.0f,	//SHIP_TYPE_BOMBER
+	0.5f,	//SHIP_TYPE_DRYDOCK
+	0.9f,	//SHIP_TYPE_AWACS
+	1.2f,	//SHIP_TYPE_GAS_MINER
+	0.4f,	//SHIP_TYPE_CORVETTE
+	0.1f,	//SHIP_TYPE_KNOSSOS_DEVICE
+};
+
+
+
 // distrupt any subsystems that fall into damage sphere of this Electronics missile
 //
 // input:	ship_obj		=>		pointer to ship that holds subsystem
@@ -3312,18 +3364,35 @@ void weapon_do_electronics_affect(object *ship_objp, vector *blast_pos, int wi_i
 	shipp = &Ships[ship_objp->instance];
 	wip = &Weapon_info[wi_index];
 
+	int ship_type=ship_query_general_type(shipp);
+	float base_time=((float)wip->elec_time*(weapon_electronics_scale[ship_type]*wip->elec_intensity));
+	float sub_time;
+
 	for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss) ) {
 		psub = ss->system_info;
-
-		// convert subsys point to world coords
-		vm_vec_unrotate(&subsys_world_pos, &psub->pnt, &ship_objp->orient);
-		vm_vec_add2(&subsys_world_pos, &ship_objp->pos);
-
-		// see if subsys point is within damage sphere
-		dist = vm_vec_dist_quick(blast_pos, &subsys_world_pos);	
-		if ( dist < wip->outer_radius ) {
-			ship_subsys_set_disrupted(ss, fl2i(6000.0f + frand()*4000.0f));
+		sub_time=base_time;
+		
+		//if its an engine subsytem, take the multiplier into account
+		if (psub->type==SUBSYSTEM_ENGINE)
+		{
+			sub_time*=wip->elec_eng_mult;
 		}
+
+		//if its a turret or weapon subsytem, take the multiplier into account
+		if ((psub->type==SUBSYSTEM_TURRET) || (psub->type==SUBSYSTEM_WEAPONS))
+		{
+			sub_time*=wip->elec_weap_mult;
+		}
+	
+		//disrupt this subsystem for the predicted time, plus or minus 4 seconds
+		//if it turns out to be less than 0 seconds, don't bother
+		sub_time+=frand_range(-1.0f, 1.0f) *4000.0f;
+		
+		if (sub_time > 0)
+		{
+			ship_subsys_set_disrupted(ss, fl2i(sub_time));
+		}
+		
 	}
 }
 
