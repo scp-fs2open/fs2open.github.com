@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 2.4 $
- * $Date: 2004-04-26 12:43:58 $
+ * $Revision: 1.1 $
+ * $Date: 2004-05-24 07:25:32 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/04/26 12:43:58  taylor
+ * minor fixes, HTL lines, 32-bit texture support
+ *
  * Revision 2.3  2004/04/13 01:55:41  phreak
  * put in the correct fields for the CVS comments to register
  * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
