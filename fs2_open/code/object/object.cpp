@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-03-20 23:30:03 $
+ * $Revision: 2.8 $
+ * $Date: 2003-04-29 01:03:22 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/03/20 23:30:03  Goober5000
+ * comments
+ * --Goober500
+ *
  * Revision 2.6  2003/02/25 06:22:49  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -665,7 +669,7 @@ float get_shield_strength(object *objp)
 	}
 
 	for (i=0; i<MAX_SHIELD_SECTIONS; i++){
-		strength += objp->shields[i];
+		strength += objp->shield_quadrant[i];
 	}
 
 	return strength;
@@ -675,12 +679,12 @@ void set_shield_strength(object *objp, float strength)
 {
 	int	i;
 
-	if ( (strength - Ship_info[Ships[objp->instance].ship_info_index].shields) > 0.1 ){
+	if ( (strength - Ships[objp->instance].ship_initial_shield_strength) > 0.1 ){
 		Int3();
 	}
 
 	for (i=0; i<MAX_SHIELD_SECTIONS; i++){
-		objp->shields[i] = strength/MAX_SHIELD_SECTIONS;
+		objp->shield_quadrant[i] = strength/MAX_SHIELD_SECTIONS;
 	}
 }
 
@@ -691,14 +695,14 @@ void add_shield_strength(object *objp, float delta)
 	int	i;
 	float	section_max;
 
-	section_max = Ship_info[Ships[objp->instance].ship_info_index].shields/MAX_SHIELD_SECTIONS;
+	section_max = Ships[objp->instance].ship_initial_shield_strength/MAX_SHIELD_SECTIONS;
 
 	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
-		objp->shields[i] += delta/MAX_SHIELD_SECTIONS;
-		if (objp->shields[i] > section_max)
-			objp->shields[i] = section_max;
-		else if (objp->shields[i] < 0.0f)
-			objp->shields[i] = 0.0f;
+		objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
+		if (objp->shield_quadrant[i] > section_max)
+			objp->shield_quadrant[i] = section_max;
+		else if (objp->shield_quadrant[i] < 0.0f)
+			objp->shield_quadrant[i] = 0.0f;
 	}
 
 }

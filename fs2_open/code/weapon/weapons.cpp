@@ -20,6 +20,12 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/03/29 09:42:05  Goober5000
+ * made beams default shield piercing again
+ * also added a beam no pierce command line flag
+ * and fixed something else which I forgot :P
+ * --Goober5000
+ *
  * Revision 2.19  2003/03/19 09:05:26  Goober5000
  * more housecleaning, this time for debug warnings
  * --Goober5000
@@ -3013,7 +3019,7 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 	vm_vec_zero(&objp->phys_info.max_vel);
 	objp->phys_info.max_vel.xyz.z = wip->max_speed;
 	vm_vec_zero(&objp->phys_info.max_rotvel);
-	objp->shields[0] = wip->damage;
+	objp->shield_quadrant[0] = wip->damage;
 	if (wip->wi_flags & WIF_BOMB){
 		objp->hull_strength = 50.0f;
 	} else {
@@ -4003,7 +4009,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		sip = &Ship_info[Ships[target->instance].ship_info_index];
 
 		// get hull pct of the ship currently
-		hull_pct = target->hull_strength / sip->initial_hull_strength;
+		hull_pct = target->hull_strength / shipp->ship_initial_hull_strength;
 
 		// if it has hit a supercap ship and is not a supercap class weapon
 		if((sip->flags & SIF_SUPERCAP) && !(wip->wi_flags & WIF_SUPERCAP)){

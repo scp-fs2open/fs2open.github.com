@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-01-18 09:25:40 $
+ * $Revision: 2.6 $
+ * $Date: 2003-04-29 01:03:21 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/01/18 09:25:40  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.4  2003/01/03 21:58:07  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -231,7 +236,7 @@ void awacs_update_all_levels()
 			// if this is an AWACS subsystem
 			if((ship_system->system_info != NULL) && (ship_system->system_info->flags & MSS_FLAG_AWACS)){
 				// add the intensity to the team total
-				Awacs_team[shipp->team] += ship_system->awacs_intensity * (ship_system->current_hits / ship_system->system_info->max_hits);
+				Awacs_team[shipp->team] += ship_system->awacs_intensity * (ship_system->current_hits / ship_system->max_hits);
 
 				// add an Awacs source
 				if(Awacs_count < MAX_AWACS){

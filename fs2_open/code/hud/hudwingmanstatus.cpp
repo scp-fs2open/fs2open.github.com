@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-06 04:39:26 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-04-29 01:03:23 $
+ * $Author: Goober5000 $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/06 04:39:26  penguin
+ * Use text strings for wingmen names instead of ANI
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -438,13 +441,11 @@ void hud_set_wingman_status_alive( int wing_index, int wing_pos)
 // get the hull percent for a specific ship, return value 0.0 -> 1.0
 float hud_get_ship_hull_percent(int ship_index)
 {
-	ship_info	*sip;
 	object		*ship_objp;
 
 	ship_objp = &Objects[Ships[ship_index].objnum];
-	sip		 = &Ship_info[Ships[ship_index].ship_info_index];
 
-	return (ship_objp->hull_strength / sip->initial_hull_strength);
+	return (ship_objp->hull_strength / Ships[ship_index].ship_initial_hull_strength);
 }
 
 void hud_wingman_status_init_late_wings()

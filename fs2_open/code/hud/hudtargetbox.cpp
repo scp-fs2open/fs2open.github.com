@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-01-27 07:46:33 $
+ * $Revision: 2.14 $
+ * $Date: 2003-04-29 01:03:23 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/01/27 07:46:33  Goober5000
+ * finished up my fighterbay code - ships will not be able to arrive from or depart into
+ * fighterbays that have been destroyed (but you have to explicitly say in the tables
+ * that the fighterbay takes damage in order to enable this)
+ * --Goober5000
+ *
  * Revision 2.12  2003/01/17 07:59:09  Goober5000
  * fixed some really strange behavior with strings not being truncated at the
  * # symbol
@@ -699,17 +705,17 @@ void hud_blit_target_foreground()
 //
 void hud_get_target_strength(object *objp, float *shields, float *integrity)
 {
-	ship_info	*sip;
+	ship	*shipp;
 	
 	if ( objp->type != OBJ_SHIP ) {
 		Int3();
 		return;
 	}
 
-	sip = &Ship_info[Ships[objp->instance].ship_info_index];
+	shipp = &Ships[objp->instance];
 
-	if (!( sip->shields == 0.0f )){
-		*shields = get_shield_strength(objp) / sip->shields;
+	if (!( shipp->ship_initial_shield_strength == 0.0f )){
+		*shields = get_shield_strength(objp) / shipp->ship_initial_shield_strength;
 	} else {
 		*shields = 0.0f;
 	}
@@ -718,13 +724,13 @@ void hud_get_target_strength(object *objp, float *shields, float *integrity)
 		*shields = 0.0f;
 	}
 
-	if ( sip->initial_hull_strength == 0 ) {
+	if ( shipp->ship_initial_hull_strength == 0 ) {
 		Int3(); // illegal initial hull strength
 		*integrity = 0.0f;
 		return;
 	}
 
-	*integrity = objp->hull_strength / sip->initial_hull_strength;
+	*integrity = objp->hull_strength / shipp->ship_initial_hull_strength;
 	if (*integrity < 0)
 		*integrity = 0.0f;
 }
@@ -1066,7 +1072,7 @@ void hud_render_target_ship_info(object *target_objp)
 
 	// print out the targeted sub-system and % integrity
 	if (Player_ai->targeted_subsys != NULL) {
-		shield_strength = Player_ai->targeted_subsys->current_hits/Player_ai->targeted_subsys->system_info->max_hits *100.0f;
+		shield_strength = Player_ai->targeted_subsys->current_hits/Player_ai->targeted_subsys->max_hits * 100.0f;
 		screen_integrity = fl2i(shield_strength+0.5f);
 
 		if ( screen_integrity < 0 ) {
@@ -1852,7 +1858,7 @@ void hud_show_target_data(float frametime)
 			sy += dy;
 			
 			// data can be found in target montior
-			// gr_printf(TARGET_WINDOW_X1+TARGET_WINDOW_WIDTH+3, TARGET_WINDOW_Y1+5*h, "Shields: %d", (int) Players[Player_num].current_target->shields);
+			// gr_printf(TARGET_WINDOW_X1+TARGET_WINDOW_WIDTH+3, TARGET_WINDOW_Y1+5*h, "Shields: %d", (int) Players[Player_num].current_target->ship_initial_shield_strength);
 			if (aip->target_objnum != -1) {
 				char	target_str[32];
 				float	dot, dist;

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-03-29 09:42:05 $
+ * $Revision: 2.19 $
+ * $Date: 2003-04-29 01:03:22 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/03/29 09:42:05  Goober5000
+ * made beams default shield piercing again
+ * also added a beam no pierce command line flag
+ * and fixed something else which I forgot :P
+ * --Goober5000
+ *
  * Revision 2.17  2003/03/20 23:20:46  Goober5000
  * comments
  * --Goober500
@@ -2518,7 +2524,7 @@ int beam_collide_ship(obj_pair *pair)
 		quad = get_quadrant(&test_collide.hit_point);//find which quadrant we hit
 //mprintf(("the thing I hit was hit in quadrant %d\n", quad));
 		//then if the beam does more damage than that quadrant can take
-		if(Objects[shipp->objnum].shields[quad] < (bwi->damage * bwi->shield_factor * 2.0f))
+		if(Objects[shipp->objnum].shield_quadrant[quad] < (bwi->damage * bwi->shield_factor * 2.0f))
 		//if(!(ship_is_shield_up(&Objects[shipp->objnum], get_quadrant(&test_collide.hit_point))))
 		{
 			//go through the shield and hit the hull -Bobboau
@@ -2549,7 +2555,7 @@ int beam_collide_ship(obj_pair *pair)
 		// if we went through the shield
 		if (quad != -1)
 		{
-			Objects[shipp->objnum].shields[quad] = 0.0f;	// Bobboau's addition: now works correctly
+			Objects[shipp->objnum].shield_quadrant[quad] = 0.0f;	// Bobboau's addition: now works correctly
 		}
 	}	
 

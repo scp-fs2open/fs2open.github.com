@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-02-16 18:55:35 $
- * $Author: phreak $
+ * $Revision: 2.8 $
+ * $Date: 2003-04-29 01:03:24 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/02/16 18:55:35  phreak
+ * fixed typecasting warnings
+ *
  * Revision 2.6  2003/01/19 07:02:16  Goober5000
  * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
  * all ships, and all ships who have their departure anchor set to a capital ship
@@ -6920,7 +6923,7 @@ void send_client_update_packet(net_player *pl)
 
 		// hull strength and sheild mesh information are floats (as a percentage).  Pass the integer
 		// percentage value since that should be close enough
-		float temp = (objp->hull_strength  / sip->initial_hull_strength * 100.0f);		
+		float temp = (objp->hull_strength  / shipp->ship_initial_hull_strength * 100.0f);		
 		if(temp < 0.0f){
 			percent = 0;
 		} else {
@@ -6929,7 +6932,7 @@ void send_client_update_packet(net_player *pl)
 		ADD_DATA( percent );
 
 		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-			percent = (ubyte)(objp->shields[i] / (sip->shields / MAX_SHIELD_SECTIONS) * 100.0f);
+			percent = (ubyte)(objp->shield_quadrant[i] / (shipp->ship_initial_shield_strength / MAX_SHIELD_SECTIONS) * 100.0f);
 			ADD_DATA( percent );
 		}
 
@@ -6943,7 +6946,7 @@ void send_client_update_packet(net_player *pl)
 
 		// now the subsystems.
 		for ( subsysp = GET_FIRST(&shipp->subsys_list); subsysp != END_OF_LIST(&shipp->subsys_list); subsysp = GET_NEXT(subsysp) ) {
-			percent = (ubyte)(subsysp->current_hits / subsysp->system_info->max_hits * 100.0f);
+			percent = (ubyte)(subsysp->current_hits / subsysp->max_hits * 100.0f);
 			ADD_DATA( percent );
 		}
 
@@ -7044,12 +7047,12 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			objp = Player_obj;
 			sip = &Ship_info[shipp->ship_info_index];
 
-			val = hull_percent * sip->initial_hull_strength / 100.0f;
+			val = hull_percent * shipp->ship_initial_hull_strength / 100.0f;
 			objp->hull_strength = val;
 
 			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-				val = (shield_percent[i] * sip->shields / 100.0f) / MAX_SHIELD_SECTIONS;
-				objp->shields[i] = val;
+				val = (shield_percent[i] * shipp->ship_initial_shield_strength / 100.0f) / MAX_SHIELD_SECTIONS;
+				objp->shield_quadrant[i] = val;
 			}
 
 			// for sanity, be sure that the number of susbystems that I read in matches the player.  If not,
@@ -7060,7 +7063,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 				for ( subsysp = GET_FIRST(&shipp->subsys_list); subsysp != END_OF_LIST(&shipp->subsys_list); subsysp = GET_NEXT(subsysp) ) {
 					int subsys_type;
 
-					val = subsystem_percent[n_subsystems] * subsysp->system_info->max_hits / 100.0f;
+					val = subsystem_percent[n_subsystems] * subsysp->max_hits / 100.0f;
 					subsysp->current_hits = val;
 
 					// add the value just generated (it was zero'ed above) into the array of generic system types

@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.42 $
+ * $Revision: 2.43 $
  * $Author: Goober5000 $
- * $Date: 2003-04-05 20:47:58 $
+ * $Date: 2003-04-29 01:03:24 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/04/05 20:47:58  Goober5000
+ * gotta love those compiler errors ;)
+ * fixed those and cleaned up conflicts with the missile-locked sexp
+ * --Goober5000
+ *
  * Revision 2.41  2003/04/05 20:17:23  sesquipedalian
  * Recommit of is-missile-locked.
  * I changed the sexp's category from non-campaign to training, so you may get a conflict with that.
@@ -919,6 +924,7 @@ char *CTEXT(int n);
 
 #define SEXP_VARIABLE_BLOCK			(0X0001)
 #define SEXP_VARIABLE_BLOCK_EXP		(0X0002)
+#define SEXP_VARIABLE_BLOCK_HIT		(0X0004)
 
 #define BLOCK_EXP_SIZE					6
 #define INNER_RAD							0
@@ -927,6 +933,10 @@ char *CTEXT(int n);
 #define BLAST								3
 #define PROPAGATE							4
 #define SHOCK_SPEED						5
+
+#define BLOCK_HIT_SIZE					2
+#define SHIELD_STRENGTH					0
+#define HULL_STRENGTH					1
 
 
 #define SEXP_VARIABLE_SET				(0x0100)

@@ -436,26 +436,26 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	// hull info
 	if ( oo_flags & OO_HULL_NEW ){
 		// add the hull value for this guy		
-		temp = (objp->hull_strength  / Ship_info[shipp->ship_info_index].initial_hull_strength);		
+		temp = (objp->hull_strength  / shipp->ship_initial_hull_strength);		
 		PACK_PERCENT(temp);				
 		multi_rate_add(NET_PLAYER_NUM(pl), "hul", 1);	
 
 		// pack 2 shield values into each byte
 
 		// pack quadrant 1
-		temp = (objp->shields[0] / (Ship_info[shipp->ship_info_index].shields / MAX_SHIELD_SECTIONS));		
+		temp = (objp->shield_quadrant[0] / (shipp->ship_initial_shield_strength / MAX_SHIELD_SECTIONS));		
 		PACK_PERCENT(temp);
 				
 		// pack quadrant 2
-		temp = (objp->shields[1] / (Ship_info[shipp->ship_info_index].shields / MAX_SHIELD_SECTIONS));		
+		temp = (objp->shield_quadrant[1] / (shipp->ship_initial_shield_strength / MAX_SHIELD_SECTIONS));		
 		PACK_PERCENT(temp);				
 
 		// pack quadrant 3
-		temp = (objp->shields[2] / (Ship_info[shipp->ship_info_index].shields / MAX_SHIELD_SECTIONS));		
+		temp = (objp->shield_quadrant[2] / (shipp->ship_initial_shield_strength / MAX_SHIELD_SECTIONS));		
 		PACK_PERCENT(temp);
 				
 		// pack quadrant 2
-		temp = (objp->shields[3] / (Ship_info[shipp->ship_info_index].shields / MAX_SHIELD_SECTIONS));				
+		temp = (objp->shield_quadrant[3] / (shipp->ship_initial_shield_strength / MAX_SHIELD_SECTIONS));				
 		PACK_PERCENT(temp);				
 				
 		multi_rate_add(NET_PLAYER_NUM(pl), "shl", 4);	
@@ -483,7 +483,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 			// now the subsystems.
 			for ( subsysp = GET_FIRST(&shipp->subsys_list); subsysp != END_OF_LIST(&shipp->subsys_list); subsysp = GET_NEXT(subsysp) ) {
-				temp = (float)subsysp->current_hits / (float)subsysp->system_info->max_hits;
+				temp = (float)subsysp->current_hits / (float)subsysp->max_hits;
 				PACK_PERCENT(temp);
 				
 				multi_rate_add(NET_PLAYER_NUM(pl), "sub", 1);
@@ -852,7 +852,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	// hull info
 	if ( oo_flags & OO_HULL_NEW ){
 		UNPACK_PERCENT(fpct);
-		pobjp->hull_strength = fpct * Ship_info[Ships[pobjp->instance].ship_info_index].initial_hull_strength;		
+		pobjp->hull_strength = fpct * Ships[pobjp->instance].ship_initial_hull_strength;		
 
 		float shield_0, shield_1, shield_2, shield_3;
 		
@@ -862,10 +862,10 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		UNPACK_PERCENT(shield_2);
 		UNPACK_PERCENT(shield_3);
 
-		pobjp->shields[0] = (shield_0 * Ship_info[Ships[pobjp->instance].ship_info_index].shields) / MAX_SHIELD_SECTIONS;
-		pobjp->shields[1] = (shield_1 * Ship_info[Ships[pobjp->instance].ship_info_index].shields) / MAX_SHIELD_SECTIONS;
-		pobjp->shields[2] = (shield_2 * Ship_info[Ships[pobjp->instance].ship_info_index].shields) / MAX_SHIELD_SECTIONS;
-		pobjp->shields[3] = (shield_3 * Ship_info[Ships[pobjp->instance].ship_info_index].shields) / MAX_SHIELD_SECTIONS;		
+		pobjp->shield_quadrant[0] = (shield_0 * Ships[pobjp->instance].ship_initial_shield_strength) / MAX_SHIELD_SECTIONS;
+		pobjp->shield_quadrant[1] = (shield_1 * Ships[pobjp->instance].ship_initial_shield_strength) / MAX_SHIELD_SECTIONS;
+		pobjp->shield_quadrant[2] = (shield_2 * Ships[pobjp->instance].ship_initial_shield_strength) / MAX_SHIELD_SECTIONS;
+		pobjp->shield_quadrant[3] = (shield_3 * Ships[pobjp->instance].ship_initial_shield_strength) / MAX_SHIELD_SECTIONS;		
 	}	
 
 	if ( oo_flags & OO_SUBSYSTEMS_AND_AI_NEW ) {
@@ -886,7 +886,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		for ( subsysp = GET_FIRST(&shipp->subsys_list); subsysp != END_OF_LIST(&shipp->subsys_list); subsysp = GET_NEXT(subsysp) ) {
 			int subsys_type;
 
-			val = subsystem_percent[subsys_count] * subsysp->system_info->max_hits;
+			val = subsystem_percent[subsys_count] * subsysp->max_hits;
 			subsysp->current_hits = val;
 
 			// add the value just generated (it was zero'ed above) into the array of generic system types

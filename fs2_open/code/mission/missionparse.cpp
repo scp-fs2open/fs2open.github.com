@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.34 $
- * $Date: 2003-03-25 07:03:30 $
+ * $Revision: 2.35 $
+ * $Date: 2003-04-29 01:03:23 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/03/25 07:03:30  Goober5000
+ * added beginning functionality for $Texture Replace implementation in FRED
+ * --Goober5000
+ *
  * Revision 2.33  2003/01/27 07:46:33  Goober5000
  * finished up my fighterbay code - ships will not be able to arrive from or depart into
  * fighterbays that have been destroyed (but you have to explicitly say in the tables
@@ -1624,6 +1628,11 @@ int parse_create_object(p_object *objp)
 	strcpy(Ships[shipnum].ship_name, objp->name);
 	Ships[shipnum].escort_priority = objp->escort_priority;
 	Ships[shipnum].special_exp_index = objp->special_exp_index;
+	Ships[shipnum].special_hitpoint_index = objp->special_hitpoint_index;
+
+	Ships[shipnum].ship_initial_shield_strength = objp->ship_initial_shield_strength;
+	Ships[shipnum].ship_initial_hull_strength = objp->ship_initial_hull_strength;
+
 	Ships[shipnum].respawn_priority = objp->respawn_priority;
 #ifndef NO_NETWORK
 	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
@@ -1749,7 +1758,7 @@ int parse_create_object(p_object *objp)
 	if ( objp->flags & P_SF_REINFORCEMENT )
 		Ships[shipnum].flags |= SF_REINFORCEMENT;
 
-	if (objp->flags & P_OF_NO_SHIELDS || sip->shields == 0 )
+	if (objp->flags & P_OF_NO_SHIELDS || objp->ship_initial_shield_strength == 0.0f )
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 
 	// Goober5000
@@ -1954,12 +1963,15 @@ int parse_create_object(p_object *objp)
 			}
 
 			if (!stricmp(ptr->system_info->subobj_name, sssp->name)) {
-				if (Fred_running)
+				if (Fred_running) {
 					ptr->current_hits = sssp->percent;
-				else {
+					ptr->max_hits = 100.0f;
+				} else {
+					ptr->max_hits = ptr->system_info->max_subsys_strength * Ships[shipnum].ship_initial_hull_strength / sip->initial_hull_strength;
+
 					float new_hits;
-					new_hits = ptr->system_info->max_hits * (100.0f - sssp->percent) / 100.f;
-					Ships[shipnum].subsys_info[ptr->system_info->type].current_hits -= (ptr->system_info->max_hits - new_hits);
+					new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
+					Ships[shipnum].subsys_info[ptr->system_info->type].current_hits -= (ptr->max_hits - new_hits);
 					if ( (100.0f - sssp->percent) < 0.5) {
 						ptr->current_hits = 0.0f;
 						ptr->submodel_info_1.blown_off = 1;
@@ -2007,16 +2019,16 @@ int parse_create_object(p_object *objp)
 		Objects[objnum].phys_info.speed = (float) objp->initial_velocity;
 		// Ships[shipnum].hull_hit_points_taken = (float) objp->initial_hull;
 		Objects[objnum].hull_strength = (float) objp->initial_hull;
-		Objects[objnum].shields[0] = (float) objp->initial_shields;
+		Objects[objnum].shield_quadrant[0] = (float) objp->initial_shields;
 
 	} else {
 		int max_allowed_sparks, num_sparks, i;
 		polymodel *pm;
 
 		// Ships[shipnum].hull_hit_points_taken = (float)objp->initial_hull * sip->max_hull_hit_points / 100.0f;
-		Objects[objnum].hull_strength = objp->initial_hull * sip->initial_hull_strength / 100.0f;
+		Objects[objnum].hull_strength = objp->initial_hull * Ships[shipnum].ship_initial_hull_strength / 100.0f;
 		for (i = 0; i<MAX_SHIELD_SECTIONS; i++)
-			Objects[objnum].shields[i] = (float)(objp->initial_shields * sip->shields / 100.0f) / MAX_SHIELD_SECTIONS;
+			Objects[objnum].shield_quadrant[i] = (float)(objp->initial_shields * Ships[shipnum].ship_initial_shield_strength / 100.0f) / MAX_SHIELD_SECTIONS;
 
 		// initial velocities now do not apply to ships which warp in after mission starts
 		if ( !(Game_mode & GM_IN_MISSION) ) {
@@ -2348,6 +2360,23 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	objp->special_exp_index = -1;
 	if ( optional_string("+Special Exp index:" ) ) {
 		stuff_int(&objp->special_exp_index);
+	}
+
+	objp->special_hitpoint_index = -1;
+	if ( optional_string("+Special Hitpoint index:" ) ) {
+		stuff_int(&objp->special_hitpoint_index);
+	}
+
+	// get hitpoint values
+	if (objp->special_hitpoint_index != -1)
+	{
+		objp->ship_initial_shield_strength = (float) atoi(Sexp_variables[objp->special_hitpoint_index+SHIELD_STRENGTH].text);
+		objp->ship_initial_hull_strength = (float) atoi(Sexp_variables[objp->special_hitpoint_index+HULL_STRENGTH].text);
+	}
+	else
+	{
+		objp->ship_initial_shield_strength = Ship_info[objp->ship_class].initial_shield_strength;
+		objp->ship_initial_hull_strength = Ship_info[objp->ship_class].initial_hull_strength;
 	}
 
 	// if the kamikaze flag is set, we should have the next flag
@@ -5575,6 +5604,10 @@ void mission_bring_in_support_ship( object *requester_objp )
 		else
 			Int3();				// BOGUS!!!!  gotta figure something out here
 	}
+
+	// set support ship hitpoints
+	pobj->ship_initial_hull_strength = Ship_info[i].initial_hull_strength;
+	pobj->ship_initial_shield_strength = Ship_info[i].initial_shield_strength;
 
 	pobj->team = requester_shipp->team;
 

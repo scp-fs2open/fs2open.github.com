@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-18 09:25:41 $
+ * $Revision: 2.5 $
+ * $Date: 2003-04-29 01:03:23 $
  * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/18 09:25:41  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/31 07:26:40  Goober5000
  * added damaged-escort-priority-all sexp
  * --Goober5000
@@ -732,7 +737,7 @@ void hud_escort_show_icon_dogfight(int index)
 			return;
 		}
 
-		hull_integrity = (int)(((float)objp->hull_strength / (float)sip->initial_hull_strength) * 100.0f);
+		hull_integrity = (int)(((float)objp->hull_strength / (float)Ships[objp->instance].ship_initial_hull_strength) * 100.0f);
 		if(hull_integrity < 0){
 			hull_integrity = 0;
 		}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-03-20 23:30:03 $
+ * $Revision: 2.16 $
+ * $Date: 2003-04-29 01:03:21 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/03/20 23:30:03  Goober5000
+ * comments
+ * --Goober500
+ *
  * Revision 2.14  2003/03/18 08:44:05  Goober5000
  * added explosion-effect sexp and did some other minor housekeeping
  * --Goober5000
@@ -1344,7 +1348,7 @@ int get_max_sparks(object* ship_obj)
 	ship *ship_p = &Ships[ship_obj->instance];
 	ship_info* si = &Ship_info[ship_p->ship_info_index];
 	if (si->flags & SIF_FIGHTER) {
-		float hull_percent = ship_obj->hull_strength / Ship_info[ship_p->ship_info_index].initial_hull_strength;
+		float hull_percent = ship_obj->hull_strength / ship_p->ship_initial_hull_strength;
 
 		if (hull_percent > 0.8f) {
 			return 1;
@@ -2052,7 +2056,6 @@ void shiphit_hit_after_death(object *ship_obj, float damage)
 	float	percent_killed;
 	int	delta_time, time_remaining;
 	ship	*shipp = &Ships[ship_obj->instance];
-	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
 	// Since the explosion has two phases (final_death_time and really_final_death_time)
 	// we should only shorten the deathroll time if that is the phase we're in.
@@ -2071,7 +2074,7 @@ void shiphit_hit_after_death(object *ship_obj, float damage)
 	if (ship_obj->radius > BIG_SHIP_MIN_RADIUS)
 		return;
 
-	percent_killed = damage/sip->initial_hull_strength;
+	percent_killed = damage/shipp->ship_initial_hull_strength;
 	if (percent_killed > 1.0f)
 		percent_killed = 1.0f;
 
@@ -2167,12 +2170,12 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 //				hitpos		=>		impact world pos on the ship 
 //				TODO:	get a better value for hitpos
 //				damage		=>		damage to apply to the ship
-//				shield_quadrant => which part of shield takes damage, -1 if not shield hit
+//				quadrant	=> which part of shield takes damage, -1 if not shield hit
 //				wash_damage	=>		1 if damage is done by engine wash
 // Goober5000 - sanity checked this whole function in the case that other_obj is null, which
 // will happen with the explosion-effect sexp
 void ai_update_lethality(object *ship_obj, object *weapon_obj, float damage);
-static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int shield_quadrant, int wash_damage=0)
+static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int quadrant, int wash_damage=0)
 {
 //	mprintf(("doing damage\n"));
 
@@ -2285,7 +2288,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 	
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.
-	if ( shield_quadrant > -1 && !(ship_obj->flags & OF_NO_SHIELDS) )	{
+	if ( quadrant > -1 && !(ship_obj->flags & OF_NO_SHIELDS) )	{
 //		mprintf(("applying damage ge to shield\n"));
 		float shield_factor = -1.0f;
 		int	weapon_info_index;		
@@ -2303,7 +2306,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 		if ( damage > 0 ) {
 			float pre_shield = damage;
 
-			damage = apply_damage_to_shield(ship_obj, shield_quadrant, damage);
+			damage = apply_damage_to_shield(ship_obj, quadrant, damage);
 
 			if(damage > 0.0f){
 				subsystem_damage *= (damage / pre_shield);
@@ -2345,7 +2348,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 
 			// if ship is flagged as can not die, don't let it die
 			if (ship_obj->flags & OF_GUARDIAN) {
-				float min_hull_strength = 0.01f * Ship_info[Ships[ship_obj->instance].ship_info_index].initial_hull_strength;
+				float min_hull_strength = 0.01f * Ships[ship_obj->instance].ship_initial_hull_strength;
 				if ( (ship_obj->hull_strength - damage) < min_hull_strength ) {
 					// find damage needed to take object to min hull strength
 					damage = ship_obj->hull_strength - min_hull_strength;
@@ -2440,7 +2443,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 					shipp->wash_killed = 1;
 				}
 
-				float percent_killed = -ship_obj->hull_strength/sip->initial_hull_strength;
+				float percent_killed = -ship_obj->hull_strength/shipp->ship_initial_hull_strength;
 				if (percent_killed > 1.0f){
 					percent_killed = 1.0f;
 				}
@@ -2486,8 +2489,8 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 // This gets called to apply damage when something hits a particular point on a ship.
 // This assumes that whoever called this knows if the shield got hit or not.
 // hitpos is in world coordinates.
-// if shield_quadrant is not -1, then that part of the shield takes damage properly.
-void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int shield_quadrant, bool create_spark, int submodel_num, vector *hit_normal)
+// if quadrant is not -1, then that part of the shield takes damage properly.
+void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int quadrant, bool create_spark, int submodel_num, vector *hit_normal)
 {
 	ship *ship_p	= &Ships[ship_obj->instance];	
 
@@ -2525,7 +2528,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 #else
 	if ( !(Game_mode & GM_DEMO_PLAYBACK) && ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_WEAPON))) {
 #endif
-		ai_ship_hit(ship_obj, other_obj, hitpos, shield_quadrant, hit_normal);
+		ai_ship_hit(ship_obj, other_obj, hitpos, quadrant, hit_normal);
 	}
 //mprintf(("ai hit stuff\n"));
 
@@ -2543,7 +2546,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 		// if this is a player ship which is not mine, send him a ship hit packet
 		// int np_index = multi_find_player_by_object(ship_obj);
 		// if((np_index > 0) && (np_index < MAX_PLAYERS) && (np_index != MY_NET_PLAYER_NUM) && MULTI_CONNECTED(Net_players[np_index])){
-			// send_ship_hit_packet( ship_obj, other_obj, hitpos, damage, shield_quadrant, submodel_num, &Net_players[np_index]);
+			// send_ship_hit_packet( ship_obj, other_obj, hitpos, damage, quadrant, submodel_num, &Net_players[np_index]);
 		// }
 	// }
 
@@ -2607,12 +2610,12 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 	scoring_eval_hit(ship_obj,other_obj);
 //mprintf(("stats evaluated\n"));
 
-	ship_do_damage(ship_obj, other_obj, hitpos, damage, shield_quadrant );
+	ship_do_damage(ship_obj, other_obj, hitpos, damage, quadrant );
 //mprintf(("damage done\n"));
 
 	// DA 5/5/98: move ship_hit_create_sparks() after do_damage() since number of sparks depends on hull strength
 	// doesn't hit shield and we want sparks
-	if ((shield_quadrant == MISS_SHIELDS) && create_spark)	{
+	if ((quadrant == MISS_SHIELDS) && create_spark)	{
 		// check if subsys destroyed
 		if ( !is_subsys_destroyed(ship_p, submodel_num) ) {
 			ship_hit_create_sparks(ship_obj, hitpos, submodel_num);

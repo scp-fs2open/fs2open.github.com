@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-04-29 01:03:22 $
+ * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -644,7 +647,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	objp->phys_info.I_body_inv.vec.rvec.xyz.x = 1.0f / (objp->phys_info.mass*asip->modelp[asteroid_subtype]->rad);
 	objp->phys_info.I_body_inv.vec.uvec.xyz.y = objp->phys_info.I_body_inv.vec.rvec.xyz.x;
 	objp->phys_info.I_body_inv.vec.fvec.xyz.z = objp->phys_info.I_body_inv.vec.rvec.xyz.x;
-	objp->hull_strength = asip->initial_hull_strength * (0.8f + (float)Game_skill_level/NUM_SKILL_LEVELS)/2.0f;
+	objp->hull_strength = asip->initial_asteroid_strength * (0.8f + (float)Game_skill_level/NUM_SKILL_LEVELS)/2.0f;
 
 	// ensure vel is valid
 	Assert( !vm_is_vec_nan(&objp->phys_info.vel) );	
@@ -2022,7 +2025,7 @@ void asteroid_parse_section()
 	stuff_float(&asip->blast);
 
 	required_string("$Hitpoints:");
-	stuff_float(&asip->initial_hull_strength);
+	stuff_float(&asip->initial_asteroid_strength);
 }
 
 // read in data from asteroid.tbl into Asteroid_info[] array

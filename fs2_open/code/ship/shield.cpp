@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-20 09:48:25 $
- * $Author: unknownplayer $
+ * $Revision: 2.6 $
+ * $Date: 2003-04-29 01:03:21 $
+ * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/20 09:48:25  unknownplayer
+ * Fixed the bug with shields where it would consistently display the low detail
+ * shield regardless of what the setting was. Turns out some OGL person was
+ * quite thoughtless in their use of || instead of the correct && for the situation
+ * so the game would always go for low detail shields because OGL and D3D
+ * can't both be active at the same time!
+ *
  * Revision 2.4  2002/11/22 20:52:29  phreak
  * added some opengl defines for shield detail -phreak
  *
@@ -839,7 +846,7 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp )
 
 //	***** This is the version that works on a quadrant basis.
 //	Return absolute amount of damage not applied.
-float apply_damage_to_shield(object *objp, int shield_quadrant, float damage)
+float apply_damage_to_shield(object *objp, int quadrant, float damage)
 {
 	ai_info	*aip;
 
@@ -851,19 +858,19 @@ float apply_damage_to_shield(object *objp, int shield_quadrant, float damage)
 	}
 #endif
 
-	if ( (shield_quadrant < 0)  || (shield_quadrant > 3) ) return damage;	
+	if ( (quadrant < 0)  || (quadrant > 3) ) return damage;	
 	
 	Assert(objp->type == OBJ_SHIP);
 	aip = &Ai_info[Ships[objp->instance].ai_index];
-	aip->last_hit_quadrant = shield_quadrant;
+	aip->last_hit_quadrant = quadrant;
 
-	objp->shields[shield_quadrant] -= damage;
+	objp->shield_quadrant[quadrant] -= damage;
 
-	if (objp->shields[shield_quadrant] < 0.0f) {
+	if (objp->shield_quadrant[quadrant] < 0.0f) {
 		float	remaining_damage;
 
-		remaining_damage = -objp->shields[shield_quadrant];
-		objp->shields[shield_quadrant] = 0.0f;
+		remaining_damage = -objp->shield_quadrant[quadrant];
+		objp->shield_quadrant[quadrant] = 0.0f;
 		//nprintf(("AI", "Applied %7.3f damage to quadrant #%i, %7.3f passes through\n", damage - remaining_damage, quadrant_num, remaining_damage));
 		return remaining_damage;
 	} else {
@@ -1195,14 +1202,14 @@ int ship_is_shield_up( object *obj, int quadrant )
 {
 	if ( (quadrant>=0) && (quadrant<=3))	{
 		// Just check one quadrant
-		if (obj->shields[quadrant] > max(2.0f, 0.1f * Ship_info[Ships[obj->instance].ship_info_index].shields/4.0f))	{
+		if (obj->shield_quadrant[quadrant] > max(2.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength/4.0f))	{
 			return 1;
 		}
 	} else {
 		// Check all quadrants
 		float strength = get_shield_strength(obj);
 
-		if ( strength > max(2.0f*4.0f, 0.1f * Ship_info[Ships[obj->instance].ship_info_index].shields ))	{
+		if ( strength > max(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength ))	{
 			return 1;
 		}
 	}
@@ -1267,7 +1274,7 @@ void shield_hit_close() {}
 void ship_draw_shield( object *objp) {}
 void shield_hit_page_in() {}
 void render_shields() {}
-float apply_damage_to_shield(object *objp, int shield_quadrant, float damage) {return damage;} 
+float apply_damage_to_shield(object *objp, int quadrant, float damage) {return damage;} 
 int ship_is_shield_up( object *obj, int quadrant ) {return 0;}
 
 #endif // DEMO

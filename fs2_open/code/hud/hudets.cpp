@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-10 05:43:34 $
+ * $Revision: 2.3 $
+ * $Date: 2003-04-29 01:03:23 $
  * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/10 05:43:34  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -331,7 +334,7 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	float shield_delta;
-	max_new_shield_energy = fl_frametime * MAX_SHIELD_REGEN_PER_SECOND * sinfo_p->shields;
+	max_new_shield_energy = fl_frametime * MAX_SHIELD_REGEN_PER_SECOND * ship_p->ship_initial_shield_strength;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * Skill_level_shield_energy_scale[Game_skill_level];
 	} else {
@@ -340,9 +343,9 @@ void update_ets(object* objp, float fl_frametime)
 
 	add_shield_strength(objp, shield_delta);
 
-	if ( (_ss = get_shield_strength(objp)) > sinfo_p->shields ){
+	if ( (_ss = get_shield_strength(objp)) > ship_p->ship_initial_shield_strength ){
 		for (int i=0; i<MAX_SHIELD_SECTIONS; i++){
-			objp->shields[i] *= sinfo_p->shields/ _ss;
+			objp->shield_quadrant[i] *= ship_p->ship_initial_shield_strength / _ss;
 		}
 	}
 
@@ -431,10 +434,10 @@ void ai_manage_ets(object* obj)
 		return;
 
 	// check if any of the three systems are not being used.  If so, don't allow energy management.
-	if ( !ship_info_p->shields || !ship_info_p->max_speed || !ship_info_p->max_weapon_reserve)
+	if ( !ship_p->ship_initial_shield_strength || !ship_info_p->max_speed || !ship_info_p->max_weapon_reserve)
 		return;
 
-	float shield_left_percent = get_shield_strength(obj)/ship_info_p->shields;
+	float shield_left_percent = get_shield_strength(obj)/ship_p->ship_initial_shield_strength;
 	float weapon_left_percent = ship_p->weapon_energy/ship_info_p->max_weapon_reserve;
 
 	// maximum level check
@@ -963,7 +966,6 @@ void transfer_energy_weapon_common(object *objp, float from_field, float to_fiel
 void transfer_energy_to_shields(object* obj)
 {
 	ship*			ship_p = &Ships[obj->instance];
-	ship_info*	sinfo_p = &Ship_info[ship_p->ship_info_index];
 
 	if (ship_p->flags & SF_DYING)
 		return;
@@ -973,7 +975,7 @@ void transfer_energy_to_shields(object* obj)
 		return;
 	}
 
-	transfer_energy_weapon_common(obj, ship_p->weapon_energy, get_shield_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, sinfo_p->shields, 0.5f);
+	transfer_energy_weapon_common(obj, ship_p->weapon_energy, get_shield_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, ship_p->ship_initial_shield_strength, 0.5f);
 }
 
 // -------------------------------------------------------------------------------------------------

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.39 $
- * $Date: 2003-03-30 07:27:34 $
+ * $Revision: 2.40 $
+ * $Date: 2003-04-29 01:03:21 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/03/30 07:27:34  Goober5000
+ * resolved a nasty bug that caused some missions to crash
+ * --Goober5000
+ *
  * Revision 2.38  2003/03/18 08:44:05  Goober5000
  * added explosion-effect sexp and did some other minor housekeeping
  * --Goober5000
@@ -549,6 +553,7 @@ typedef	struct ship_subsys {
 	struct ship_subsys *next, *prev;				//	Index of next and previous objects in list.
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 	float		current_hits;							// current number of hits this subsystem has left.
+	float		max_hits;
 
 	// turret info
 	vector	turret_last_fire_direction;		//	direction pointing last time this turret fired
@@ -746,7 +751,11 @@ typedef struct ship {
 	int	num_hits;			//	Note, this is the number of spark emitter positions!
 	ship_spark	sparks[MAX_SHIP_HITS];
 
-	int	special_exp_index;	
+	int	special_exp_index;
+	int special_hitpoint_index;
+
+	float ship_initial_shield_strength;
+	float ship_initial_hull_strength;
 
 	char	ship_name[NAME_LENGTH];
 
@@ -1063,7 +1072,7 @@ typedef struct ship_info {
 	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
 	uint		flags2;							//	See SIF2_xxxx - added by Goober5000
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
-	float		shields;
+	float		initial_shield_strength;
 	float		max_speed, min_speed, max_accel;
 
 	// ship explosion info
@@ -1364,7 +1373,7 @@ extern void shield_hit_close();
 
 void ship_draw_shield( object *objp);
 
-float apply_damage_to_shield(object *objp, int shield_quadrant, float damage);
+float apply_damage_to_shield(object *objp, int quadrant, float damage);
 float compute_shield_strength(object *objp);
 
 // Returns true if the shield presents any opposition to something 

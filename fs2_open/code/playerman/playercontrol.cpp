@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-17 02:18:40 $
+ * $Revision: 2.4 $
+ * $Date: 2003-04-29 01:03:24 $
  * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/17 02:18:40  Goober5000
+ * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
+ * --Goober5000
+ *
  * Revision 2.2  2002/10/19 19:29:28  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -1589,7 +1593,7 @@ int player_process_pending_praise()
 		ship_index = ship_get_random_player_wing_ship( SHIP_GET_NO_PLAYERS, 1000.0f );
 		if ( ship_index >= 0 ) {
 			// Only praise if above 50% integrity
-			if ( Objects[Ships[ship_index].objnum].hull_strength/Ship_info[Ships[ship_index].ship_info_index].initial_hull_strength > 0.5f ) {
+			if ( Objects[Ships[ship_index].objnum].hull_strength/Ships[ship_index].ship_initial_hull_strength > 0.5f ) {
 				message_send_builtin_to_player(MESSAGE_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 				Player->allow_praise_timestamp = timestamp(PLAYER_ALLOW_PRAISE_INTERVAL*(Game_skill_level+1) );
 				Player->allow_scream_timestamp = timestamp(20000);		// prevent death scream following praise

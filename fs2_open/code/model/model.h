@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.22 $
- * $Date: 2003-03-18 01:44:31 $
+ * $Revision: 2.23 $
+ * $Date: 2003-04-29 01:03:23 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/03/18 01:44:31  Goober5000
+ * fixed some misspellings
+ * --Goober5000
+ *
  * Revision 2.21  2003/03/02 05:54:23  penguin
  * ANSI C++ - namespace clash on ai_rotation; renamed type to ai_rotation_t
  *  - penguin
@@ -471,7 +475,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int		type;										// type. see SUBSYSTEM_* types above.  A generic type thing
 	vector	pnt;										// center point of this subsystem
 	float		radius;									// the extent of the subsystem
-	float		max_hits;								// maximum hits of this subsystem
+	float		max_subsys_strength;					// maximum hits of this subsystem
 
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.

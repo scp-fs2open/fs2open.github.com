@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.6 $
+ * $Date: 2003-04-29 01:03:23 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.4  2003/01/19 07:02:15  Goober5000
  * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
  * all ships, and all ships who have their departure anchor set to a capital ship
@@ -1190,7 +1193,7 @@ void hud_update_frame()
 	// frame, only calculate once here
 	if ( target_shipp ) {
 		float initial_hull;
-		initial_hull = Ship_info[target_shipp->ship_info_index].initial_hull_strength;
+		initial_hull = target_shipp->ship_initial_hull_strength;
 		if (  initial_hull <= 0 ) {
 			Int3(); // illegal initial hull strength
 			Pl_target_integrity = 0.0f;
@@ -1334,7 +1337,7 @@ void hud_maybe_show_damage()
 	if ( hud_gauge_active(HUD_DAMAGE_GAUGE) ) {
 		int show_gauge_flag;
 
-		if ( (Ship_info[Player_ship->ship_info_index].initial_hull_strength - Player_obj->hull_strength) > 1.0f ) {
+		if ( (Player_ship->ship_initial_hull_strength - Player_obj->hull_strength) > 1.0f ) {
 			show_gauge_flag = 1;
 		} else {
 			show_gauge_flag = 0;
@@ -1366,7 +1369,7 @@ void hud_damage_popup_toggle()
 
 	// if gauge is popup, turn it off if it is current up, otherwise force it to be up
 	if ( hud_gauge_is_popup(HUD_DAMAGE_GAUGE) ) {
-		if ( Player_obj->hull_strength == Ship_info[Player_ship->ship_info_index].initial_hull_strength ) {
+		if ( Player_obj->hull_strength == Player_ship->ship_initial_hull_strength ) {
 			hud_config_set_gauge_flags(HUD_DAMAGE_GAUGE,1,0);		
 		} else {
 			hud_config_set_gauge_flags(HUD_DAMAGE_GAUGE,0,0);		
@@ -2478,7 +2481,7 @@ void hud_support_view_blit()
 
 	show_time = 0;
 	if ( Player_ai->ai_flags & AIF_BEING_REPAIRED ) {
-		Assert(Ship_info[Player_ship->ship_info_index].initial_hull_strength > 0);
+		Assert(Player_ship->ship_initial_hull_strength > 0);
 		if (  (ship_get_subsystem_strength(Player_ship, SUBSYSTEM_ENGINE) < 1.0 ) ||
 				(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_SENSORS) < 1.0 ) ||
 				(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_WEAPONS) < 1.0 ) ||
