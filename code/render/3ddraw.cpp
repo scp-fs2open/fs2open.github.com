@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-08-21 15:03:43 $
+ * $Revision: 2.5 $
+ * $Date: 2003-08-30 14:49:01 $
  * $Author: phreak $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/08/21 15:03:43  phreak
+ * zeroed out the specular fields since they caused some flickering
+ *
  * Revision 2.3  2003/03/18 10:07:05  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -364,7 +367,7 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 
 			for (i=0;i<nv;i++) {
 				vertex *p = bufptr[i];
-
+				
 				if (!(p->flags&PF_PROJECTED))
 					g3_project_vertex(p);
 		
@@ -390,7 +393,7 @@ free_points:
 
 		for (i=0;i<nv;i++) {
 			vertex *p = bufptr[i];
-
+			
 			if (!(p->flags&PF_PROJECTED))
 				g3_project_vertex(p);
 
@@ -961,7 +964,6 @@ float g3_draw_rotated_bitmap_area(vertex *pnt,float angle, float rad,uint tmap_f
 	} else {
 		width = height = rad;
 	}
-
 
 	v[0].x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
 	v[0].y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
@@ -1666,8 +1668,6 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	float ui, vi;	
 	angles bank_first;		
 
-	memset(v,0,sizeof(vertex)*4);
-
 	// cap division values
 	// div_x = div_x > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_x;
 	div_x = 1;
@@ -1722,22 +1722,26 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	if(Fred_running){
 		tmap_flags &= ~(TMAP_FLAG_CORRECT);
 	}
-
 	// render all polys
 	for(idx=0; idx<div_x; idx++){
 		for(s_idx=0; s_idx<div_y; s_idx++){						
 			// stuff texture coords
 			v[0].u = ui * float(idx);
 			v[0].v = vi * float(s_idx);
+			v[0].spec_r=v[2].spec_g=v[3].spec_b=0;
 			
 			v[1].u = ui * float(idx+1);
 			v[1].v = vi * float(s_idx);
+			v[1].spec_r=v[2].spec_g=v[3].spec_b=0;
 
 			v[2].u = ui * float(idx+1);
 			v[2].v = vi * float(s_idx+1);
+			v[2].spec_r=v[2].spec_g=v[3].spec_b=0;
+
 
 			v[3].u = ui * float(idx);
 			v[3].v = vi * float(s_idx+1);
+			v[3].spec_r=v[2].spec_g=v[3].spec_b=0;
 
 			// poly 1
 			v[0].flags = 0;
