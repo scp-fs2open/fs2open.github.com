@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-03-05 09:01:55 $
+ * $Revision: 2.21 $
+ * $Date: 2004-03-06 00:19:23 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.19  2004/02/04 09:02:43  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -3169,7 +3173,7 @@ void wl_render_icon_count(int num, int x, int y)
 {
 	char buf[32];
 	int num_w, num_h;
-	int number_to_draw = (num > 1000) ? 999 : num;		// cap count @ 999
+	int number_to_draw = (num >= 10000) ? 9999 : num;	// cap count @ 9999 - Goober5000 bumped from 999
 	Assert(number_to_draw >= 0);
 
 	sprintf(buf, "%d", number_to_draw);
