@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.113 $
- * $Date: 2004-12-02 11:18:14 $
+ * $Revision: 2.114 $
+ * $Date: 2004-12-10 17:21:00 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2004/12/02 11:18:14  taylor
+ * make OGL use same gamma reg setting as D3D since it's the same ramp
+ * have OGL respect the -no_set_gamma cmdline option
+ * reset gamma to default on OGL exit to make sure the desktop doesn't stay wrong
+ *
  * Revision 2.112  2004/11/26 08:41:11  taylor
  * couple of LAN game vs. FS2NetD fixes
  *
@@ -8035,6 +8040,7 @@ void game_shutdown(void)
 	unload_animating_pointer();// frees the frames used for the animating mouse pointer
 	bm_unload_all();				// free bitmaps
 	mission_campaign_close();	// close out the campaign stuff
+	message_mission_close();	// clear loaded table data from message.tbl
 #ifndef NO_NETWORK
 	multi_voice_close();			// close down multiplayer voice (including freeing buffers, etc)
 	multi_log_close();
