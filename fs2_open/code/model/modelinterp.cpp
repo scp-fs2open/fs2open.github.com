@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.21 $
+ * $Date: 2003-06-04 15:28:24 $
+ * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.19  2003/03/18 01:44:31  Goober5000
  * fixed some misspellings
  * --Goober5000
@@ -752,6 +755,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 
 matrix *Interp_orient;
 vector *Interp_pos;
+vector Interp_offset;
 
 /*
 void interp_compute_environment_mapping( vector *nrm, vertex * pnt, vector *vert)
@@ -1558,6 +1562,11 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 //	mprintf(( "Name = '%s'\n", pm->submodel[mn].name ));
 //	char * p = pm->submodel[mn].name;
 
+
+
+//	mprintf(("model =%s, submodel=%s, interp offset=%f %f %f\n",pm->filename, pm->submodel[mn].name,Interp_offset.xyz.x,
+//															Interp_offset.xyz.y,Interp_offset.xyz.z));
+	
 	if (pm->submodel[mn].blown_off){
 		return;
 	}
@@ -1570,6 +1579,8 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 	} else {
 		Interp_thrust_scale_subobj=0;
 	}
+
+	vm_vec_add2(&Interp_offset,&pm->submodel[mn].offset);
 
 	g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
@@ -1601,6 +1612,7 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 		i = pm->submodel[i].next_sibling;
 	}
 
+	vm_vec_sub2(&Interp_offset,&pm->submodel[mn].offset);
 
 
 	g3_done_instance();
@@ -1673,6 +1685,7 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 
 	chunk_type = w(p);
 	chunk_size = w(p+4);
+
 
 	
 	while ( chunk_type != OP_EOF )	{
@@ -2782,6 +2795,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	Interp_orient = orient;
 	Interp_pos = pos;
+	memset(&Interp_offset,0,sizeof(vector));
 
 	int tmp_detail_level = Game_detail_level;
 	
