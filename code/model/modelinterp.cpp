@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.95 $
- * $Date: 2005-01-28 23:45:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.96 $
+ * $Date: 2005-01-29 15:40:22 $
+ * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2005/01/28 23:45:23  wmcoolmon
+ * Added better too-many-textures error message
+ *
  * Revision 2.94  2005/01/28 11:39:17  Goober5000
  * cleaned up some build warnings
  * --Goober5000
@@ -5251,8 +5254,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 	recode_check = 0;
 //	recode_bsp(0, model->bsp_data);
 
-	for(i=0; i<MAX_MODEL_TEXTURES; i++){
-		if(model->n_buffers>=MAX_MODEL_TEXTURES)if(model->n_buffers>=MAX_BUFFERS_PER_SUBMODEL)Error(LOCATION, "Submodel %s on model %s has more than %d textures.\nFind a high-limit build or remap the model.", model->name, pm->filename, MAX_BUFFERS_PER_SUBMODEL);;
+	for(i=0; i<MAX_MODEL_TEXTURES; i++){	
 		if(!list[i].n_verts)continue;
 		model->buffer[model->n_buffers].index_buffer.allocate_index_buffer(list[i].n_verts);
 		for(int j = 0; j < list[i].n_verts; j++){
@@ -5273,6 +5275,8 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		model->buffer[model->n_buffers].n_prim = tri_count[i];
 		model->buffer[model->n_buffers].texture = i;
 		model->n_buffers++;
+		if(model->n_buffers>=MAX_BUFFERS_PER_SUBMODEL)
+			Error(LOCATION, "Submodel %s on model %s has more than %d textures.\nFind a high-limit build or remap the model.", model->name, pm->filename, MAX_BUFFERS_PER_SUBMODEL);
 	}
 
 }
