@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-08-07 00:44:13 $
- * $Author: DTP $
+ * $Revision: 2.5 $
+ * $Date: 2002-08-18 19:48:28 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/08/07 00:44:13  DTP
+ * Implented -GF4FIX commandline switch
+ *
  * Revision 2.3  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -255,6 +258,7 @@ cmdline_parm timeout("-timeout", NULL);
 cmdline_parm d3d_window("-window", NULL);
 cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
 cmdline_parm gf4fix_arg("-GF4FIX", NULL); //DTP for random tigers GF4fix
+cmdline_parm dshowvid_arg("-dshowvid", NULL); //DTP for random tigers GF4fix
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -283,6 +287,7 @@ int Cmdline_timeout = -1;
 
 int Cmdline_window = 0;
 int Cmdline_gf4fix = 0; // DTP for randomstigers GF4 fix.
+int Cmdline_dshowvid = 0;
 
 static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
@@ -648,6 +653,9 @@ int parse_cmdline(int argc, char *argv[])
 	}
 	if (gf4fix_arg.found() ) {
 	Cmdline_gf4fix = 1;
+	}
+	if(dshowvid_arg.found() ) {
+	Cmdline_dshowvid = 1;
 	}
 	return 1;
 }

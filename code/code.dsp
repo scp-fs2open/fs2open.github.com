@@ -207,6 +207,14 @@ SOURCE=.\Cutscene\Cutscenes.cpp
 
 SOURCE=.\Cutscene\Cutscenes.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\cutscene\movie.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\cutscene\movie.h
+# End Source File
 # End Group
 # Begin Group "Debris"
 
@@ -231,6 +239,14 @@ SOURCE=.\DebugConsole\Console.cpp
 # Begin Group "DirectX"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\directx\dx8show.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\directx\dx8show.h
+# End Source File
 # Begin Source File
 
 SOURCE=.\DirectX\vasync.h
@@ -301,10 +317,6 @@ SOURCE=.\DirectX\vdvp.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\DirectX\vDdraw.lib
-# End Source File
-# Begin Source File
-
 SOURCE=.\DirectX\vDinput.lib
 # End Source File
 # Begin Source File
@@ -313,7 +325,15 @@ SOURCE=.\DirectX\vDsound.lib
 # End Source File
 # Begin Source File
 
-SOURCE=.\DirectX\vDxguid.lib
+SOURCE=.\directx\strmiids.lib
+# End Source File
+# Begin Source File
+
+SOURCE=.\directx\ddraw.lib
+# End Source File
+# Begin Source File
+
+SOURCE=.\directx\dxguid.lib
 # End Source File
 # End Group
 # Begin Group "Fireball"

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.3 $
- * $Date: 2002-08-07 00:44:13 $
- * $Author: DTP $
+ * $Revision: 2.4 $
+ * $Date: 2002-08-18 19:48:28 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/07 00:44:13  DTP
+ * Implented -GF4FIX commandline switch
+ *
  * Revision 2.2  2002/07/29 06:35:15  DTP
  * added -almission commandline arguement, will autoload mission i.e fs2_open.exe -almission kickass will autoload kickass.fs2 which should be a multiplayer mission.
  *
@@ -202,6 +205,6 @@ extern int Cmdline_timeout;
 extern int Cmdline_window;
 extern char *Cmdline_almission;	//DTP for autoload mission
 extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
-
+extern int Cmdline_dshowvid;
 
 #endif

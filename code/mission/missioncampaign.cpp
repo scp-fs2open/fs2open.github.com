@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-08-18 19:48:29 $
+ * $Author: randomtiger $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/29 20:12:31  penguin
  * added #ifdef _WIN32 around windows-specific system headers
  *
@@ -207,7 +210,7 @@
 #include "cfile/cfile.h"
 #include "playerman/player.h"
 #include "mission/missiongoals.h"
-// #include "movie.h"
+#include "cutscene/movie.h"
 #include "network/multi.h"
 #include "menuui/techmenu.h"
 #include "gamesnd/eventmusic.h"
@@ -1756,7 +1759,7 @@ void mission_campaign_maybe_play_movie(int type)
 		return;
 
 	// no soup for you!
-	// movie_play( filename );
+	movie_play( filename );
 }
 
 // return nonzero if the passed filename is a multiplayer campaign, 0 otherwise
@@ -1833,10 +1836,10 @@ void mission_campaign_end_do()
 	// did the supernova blow?
 	if(Supernova_status == SUPERNOVA_HIT){
 		// no soup for you!
-		// movie_play_two("endpart1.mve", "endprt2b.mve");			// good ending
+		movie_play_two("endpart1.mve", "endprt2b.mve");			// good ending
 	} else {
 		// no soup for you!
-		// movie_play_two("endpart1.mve", "endprt2a.mve");			// good ending
+		movie_play_two("endpart1.mve", "endprt2a.mve");			// good ending
 	}	
 
 #ifdef FS2_DEMO
