@@ -2,7 +2,7 @@
 #SystemAuth=no
 
 # Put CVS lock files in this directory rather than directly in the repository.
-#LockDir=/var/lock/cvs
+LockDir=/var/lock/cvs
 
 # Set `TopLevelAdmin' to `yes' to create a CVS directory at the top
 # level of the new working directory when using the `cvs checkout'

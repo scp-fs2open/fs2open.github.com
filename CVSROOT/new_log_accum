@@ -20,13 +20,13 @@
 # Script to accumulate log messages for an entire tree and send them along
 # with the diffs; deals correctly with all manner of branching (I hope)
 #
-# $Id: new_log_accum,v 1.1 2002-08-11 23:05:15 drevil Exp $
+# $Id: new_log_accum,v 1.2 2003-05-22 15:14:39 drevil Exp $
 #
 
 use strict;
 
 use vars qw($MAILER $CVS $debug $boundary);
-use MD5;
+use Digest::MD5;
 
 # Set this to the full path of a mailer that takes a list
 # of email addresses as arguments...
@@ -328,7 +328,7 @@ sub build_header ($@) {
 
 	# generate a unique boundary by calculating the md5sum of the
 	# current time
-	$digest = new MD5;
+	$digest = new Digest::MD5;
 	$digest->reset();
 	$digest->add(time() . rand());
 	$boundary = "----=MIME." . unpack("H*", $digest->digest());
