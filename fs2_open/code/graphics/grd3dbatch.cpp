@@ -235,8 +235,11 @@ void d3d_batch_unlock_vbuffer(int batch_id)
 	// Goober5000 - commented to bypass warning
 	/*HRESULT hr =*/ batch_array[batch_id].vbuffer->Unlock();
 
+
 	batch_array[batch_id].lock--;
-	Assert(hr);
+
+	// Kazan - Commented out to bypass compiler saying symbol undefined :D
+	//Assert(hr);
 }
 
 void d3d_set_render_states(BatchInfo &batch_info)

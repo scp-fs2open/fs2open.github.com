@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.5 $
- * $Date: 2003-09-23 02:42:54 $
+ * $Revision: 2.6 $
+ * $Date: 2003-11-12 00:31:45 $
  * $Author: Kazan $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/23 02:42:54  Kazan
+ * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
+ *
  * Revision 2.4  2002/12/24 07:42:29  Goober5000
  * added change-ai-class and is-ai-class, and I think I may also have nailed the
  * is-iff bug; did some other bug hunting as well
@@ -342,8 +345,9 @@ struct CFILE;
 // version 43 - 7/30/99
 // version 44 - 8/24/99
 // version 46 - 8/30/99
+// version 47 - 11/11/2003 (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
 // STANDALONE_ONLY
-#define MULTI_FS_SERVER_VERSION							46
+#define MULTI_FS_SERVER_VERSION							47
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
 // version defines (i.e. demo, full version, special OEM version
