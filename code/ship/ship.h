@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.16 $
- * $Date: 2002-12-31 08:20:30 $
+ * $Revision: 2.17 $
+ * $Date: 2002-12-31 18:59:42 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
@@ -352,7 +352,7 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 // Goober5000 - moved from hudescort.cpp
 // size of complete escort list, including all those wanting to get onto list but without space
 #define MAX_COMPLETE_ESCORT_LIST	20
-
+             
 // Goober5000 - currently only used in ship_select_next_primary and ship_select_next_secondary
 // Goober5000 - now used in hudtarget.cpp->hud_get_best_primary_bank
 #define MAX_SUPPORTED_PRIMARY_BANKS	2
@@ -807,6 +807,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_PATH_FIXUP				(1 << 3)		// when set, path verts have been set for this ship's model
 #define	SIF_SUPPORT					(1 << 4)		// this ship can perform repair/rearm functions
 #define	SIF_AFTERBURNER			(1 << 5)		// this ship has afterburners
+#define SIF_BALLISTIC_PRIMARIES (1 << 6)		// this ship can equip ballistic primaries - Goober5000
 
 // If you add a new ship type, then please add the appriopriate type in the ship_count
 // structure later in this file!!! and let MWA know!!

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-12-31 08:20:31 $
+ * $Revision: 2.7 $
+ * $Date: 2002-12-31 18:59:43 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
@@ -782,12 +782,15 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 	ship_weapon *swp = &shipp->weapons;
 	weapon_info *wip;
 
-	for ( index = 0; index < MAX_PRIMARY_BANKS; index++ )
+	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
 	{
-		wip = &Weapon_info[swp->primary_bank_weapons[index]];
-		if (wip->wi_flags2 & WIF2_BALLISTIC)
+		for ( index = 0; index < MAX_PRIMARY_BANKS; index++ )
 		{
-			swp->primary_bank_ammo[index] = sip->primary_bank_ammo_capacity[index];
+			wip = &Weapon_info[swp->primary_bank_weapons[index]];
+			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			{
+				swp->primary_bank_ammo[index] = sip->primary_bank_ammo_capacity[index];
+			}
 		}
 	}
 }

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.22 $
- * $Date: 2002-12-31 08:20:30 $
+ * $Revision: 2.23 $
+ * $Date: 2002-12-31 18:59:42 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
@@ -1149,7 +1149,7 @@ int parse_ship()
 	}
 	int i, num_allowed, rtn = 0;
 	int allowed_weapons[MAX_WEAPON_TYPES];
-	int pbank_capacity_count, sbank_capacity_count;
+	int pbank_capacity_specified, pbank_capacity_count, sbank_capacity_count;
 
 	sip = &Ship_info[Num_ship_types];
 
@@ -1393,10 +1393,12 @@ int parse_ship()
 	}
 
 	// optional ballistic primary imformation (Goober5000)......
-	// set to zero first - in case of bugs :)
-	for (i = 0; i < sip->num_primary_banks; i++) sip->primary_bank_ammo_capacity[i] = 0;
+	pbank_capacity_specified = 0;
+	// set to zero first - in case of bugs :) 
+	for (i = 0; i < sip->num_primary_banks; i++) sip->primary_bank_ammo_capacity[i] = 0; 
 	if(optional_string("+Pbank Capacity:"))
 	{
+		pbank_capacity_specified = 1;
 		// get the capacity of each primary bank
 		pbank_capacity_count = stuff_int_list(sip->primary_bank_ammo_capacity, MAX_PRIMARY_BANKS, RAW_INTEGER_TYPE);
 		if ( pbank_capacity_count != sip->num_primary_banks )
@@ -1534,10 +1536,37 @@ int parse_ship()
 			sip->flags |= SIF_KNOSSOS_DEVICE;
 		else if ( !stricmp( NOX("no_fred"), ship_strings[i]))
 			sip->flags |= SIF_NO_FRED;
+		else if ( !stricmp( NOX("ballistic primaries"), ship_strings[i]))
+			sip->flags |= SIF_BALLISTIC_PRIMARIES;
 		else
 			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 	}
 	sip->flags2 = SIF2_DEFAULT_VALUE;
+
+	// be friendly; ensure ballistic flags check out
+	if (pbank_capacity_specified)
+	{
+		if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
+		{
+			Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\n", sip->name);
+
+			for (i = 0; i < MAX_PRIMARY_BANKS; i++)
+			{
+				sip->primary_bank_ammo_capacity[i] = 0;
+			}
+		}
+	}
+	else
+	{
+		if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+		{
+			Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
+			for (i = 0; i < MAX_PRIMARY_BANKS; i++)
+			{
+				sip->primary_bank_ammo_capacity[i] = 1;
+			}
+		}
+	}
 
 	find_and_stuff("$AI Class:", &sip->ai_class, F_NAME, Ai_class_names, Num_ai_classes, "AI class names");
 
@@ -4316,7 +4345,7 @@ MONITOR( NumShips );
 // probably doesn't need to be called.  If you don't know -- find Allender!!!
 void ship_process_post(object * obj, float frametime)
 {
-	int	num, i;
+	int	num;
 	ship	*shipp;
 	ship_info *sip;
 
@@ -4353,8 +4382,7 @@ void ship_process_post(object * obj, float frametime)
 	if ( !(shipp->flags & SF_AMMO_COUNT_RECORDED) )
 	{
 		int max_missiles;
-		for ( i=0; i<MAX_SECONDARY_BANKS; i++ )
-		{
+		for ( int i=0; i<MAX_SECONDARY_BANKS; i++ ) {
 			if ( red_alert_mission() )
 			{
 				max_missiles = get_max_ammo_count_for_bank(shipp->ship_info_index, i, shipp->weapons.secondary_bank_weapons[i]);
@@ -4366,16 +4394,19 @@ void ship_process_post(object * obj, float frametime)
 			}
 		}
 
-		for ( i=0; i<MAX_PRIMARY_BANKS; i++ )
+		if ( sip->flags & SIF_BALLISTIC_PRIMARIES )
 		{
-			if ( red_alert_mission() )
+			for ( int i=0; i<MAX_PRIMARY_BANKS; i++ )
 			{
-				max_missiles = get_max_ammo_count_for_primary_bank(shipp->ship_info_index, i, shipp->weapons.primary_bank_weapons[i]);
-				shipp->weapons.primary_bank_start_ammo[i] = max_missiles;
-			}
-			else
-			{
-				shipp->weapons.primary_bank_start_ammo[i] = shipp->weapons.primary_bank_ammo[i];
+				if ( red_alert_mission() )
+				{
+					max_missiles = get_max_ammo_count_for_primary_bank(shipp->ship_info_index, i, shipp->weapons.primary_bank_weapons[i]);
+					shipp->weapons.primary_bank_start_ammo[i] = max_missiles;
+				}
+				else
+				{
+					shipp->weapons.primary_bank_start_ammo[i] = shipp->weapons.primary_bank_ammo[i];
+				}
 			}
 		}
 		
@@ -5868,6 +5899,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				// ballistics support for primaries - Goober5000
 				if ( winfo_p->wi_flags2 & WIF2_BALLISTIC )
 				{
+					// Make sure this ship is set up for ballistics.
+					// If you get this error, add the ballistic primaries tags to ships.tbl.
+					Assert ( sip->flags & SIF_BALLISTIC_PRIMARIES );
+
 					// If ship is being repaired/rearmed, it cannot fire ballistics
 					if ( aip->ai_flags & AIF_BEING_REPAIRED )
 					{
@@ -6778,81 +6813,91 @@ int ship_select_next_primary(object *objp, int direction)
 		}
 	}
 
-	// now test for ballistics - Goober5000
-
-	// if we can't link, disengage primary linking and change to next available bank
-	if (shipp->flags & SF_PRIMARY_LINKED)
+	// test for ballistics - Goober5000
+	if ( sip->flags & SIF_BALLISTIC_PRIMARIES )
 	{
-		for (i = 0; i < swp->num_primary_banks; i++)
+		// if we can't link, disengage primary linking and change to next available bank
+		if (shipp->flags & SF_PRIMARY_LINKED)
 		{
-			if (primary_out_of_ammo(swp, i))
+			for (i = 0; i < swp->num_primary_banks; i++)
 			{
-				shipp->flags &= ~SF_PRIMARY_LINKED;
-					
-				if (direction == CYCLE_PRIMARY_NEXT)
+				if (primary_out_of_ammo(swp, i))
 				{
-					swp->current_primary_bank = 0;
+					shipp->flags &= ~SF_PRIMARY_LINKED;
+					
+					if (direction == CYCLE_PRIMARY_NEXT)
+					{
+						swp->current_primary_bank = 0;
+					}
+					else
+					{
+						swp->current_primary_bank = UPPER_BOUND_PRIMARY_BANK;
+					}
+					break;
+				}
+			}
+		}
+
+		// check to see if we keep cycling...we have to if we're out of ammo in the current bank
+		if ( primary_out_of_ammo(swp, swp->current_primary_bank) )
+		{
+			// cycle around until we find ammunition...
+			// we land on the original bank if all banks fail
+			Assert(swp->current_primary_bank < swp->num_primary_banks);
+			new_bank = swp->current_primary_bank;
+
+			for (i = 1; i < swp->num_primary_banks; i++)
+			{
+				// cycle in the proper direction
+				if ( direction == CYCLE_PRIMARY_NEXT )
+				{
+					new_bank = (swp->current_primary_bank + i) % swp->num_primary_banks;
 				}
 				else
 				{
-					swp->current_primary_bank = UPPER_BOUND_PRIMARY_BANK;
+					new_bank = (swp->current_primary_bank + swp->num_primary_banks - i) % swp->num_primary_banks;
 				}
-				break;
+
+				// check to see if this is a valid bank
+				if (!primary_out_of_ammo(swp, new_bank))
+				{
+					break;
+				}
 			}
+			// set the new bank; defaults to resetting to the old bank if we completed a full iteration
+			swp->current_primary_bank = new_bank;
 		}
-	}
-
-	// check to see if we keep cycling...we have to if we're out of ammo in the current bank
-	if ( primary_out_of_ammo(swp, swp->current_primary_bank) )
-	{
-		// cycle around until we find ammunition...
-		// we land on the original bank if all banks fail
-		Assert(swp->current_primary_bank < swp->num_primary_banks);
-		new_bank = swp->current_primary_bank;
-
-		for (i = 1; i < swp->num_primary_banks; i++)
-		{
-			// cycle in the proper direction
-			if ( direction == CYCLE_PRIMARY_NEXT )
-			{
-				new_bank = (swp->current_primary_bank + i) % swp->num_primary_banks;
-			}
-			else
-			{
-				new_bank = (swp->current_primary_bank + swp->num_primary_banks - i) % swp->num_primary_banks;
-			}
-
-			// check to see if this is a valid bank
-			if (!primary_out_of_ammo(swp, new_bank))
-			{
-				break;
-			}
-		}
-		// set the new bank; defaults to resetting to the old bank if we completed a full iteration
-		swp->current_primary_bank = new_bank;
-	}
 		
-	// make sure we're okay
-	Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank <= UPPER_BOUND_PRIMARY_BANK));
+		// make sure we're okay
+		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank <= UPPER_BOUND_PRIMARY_BANK));
 
-	// if this ship is ballistics-equipped, and we cycled, then we had to verify some stuff,
-	// so we should check if we actually changed banks
-	if ( (swp->current_primary_bank != original_bank) || ((shipp->flags & SF_PRIMARY_LINKED) != original_link_flag) )
-	{
+		// if this ship is ballistics-equipped, and we cycled, then we had to verify some stuff,
+		// so we should check if we actually changed banks
+		if ( (swp->current_primary_bank != original_bank) || ((shipp->flags & SF_PRIMARY_LINKED) != original_link_flag) )
+		{
+			if ( objp == Player_obj )
+			{
+				snd_play( &Snds[SND_PRIMARY_CYCLE], 0.0f );
+			}
+			ship_primary_changed(shipp);
+			return 1;
+		}
+
+		// could not select new weapon:
 		if ( objp == Player_obj )
 		{
-			snd_play( &Snds[SND_PRIMARY_CYCLE], 0.0f );
+			gamesnd_play_error_beep();
 		}
-		ship_primary_changed(shipp);
-		return 1;
-	}
+		return 0;
+	}	// end of ballistics implementation
 
-	// could not select new weapon:
 	if ( objp == Player_obj )
 	{
-		gamesnd_play_error_beep();
+		snd_play( &Snds[SND_PRIMARY_CYCLE], 0.0f );
 	}
-	return 0;
+
+	ship_primary_changed(shipp);
+	return 1;
 }
 
 // ------------------------------------------------------------------------------
@@ -7792,70 +7837,73 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		}	// end for
 
 		// rearm ballistic primaries - Goober5000
-		for (i = 0; i < swp->num_primary_banks; i++ )
+		if (sip->flags & SIF_BALLISTIC_PRIMARIES)
 		{
-			wip = &Weapon_info[swp->primary_bank_weapons[i]];
-
-			if ( wip->wi_flags2 & WIF2_BALLISTIC )
+			for (i = 0; i < swp->num_primary_banks; i++ )
 			{
-				if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
+				wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+				if ( wip->wi_flags2 & WIF2_BALLISTIC )
 				{
-					float rearm_time;
-	
-					if ( objp == Player_obj )
+					if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
 					{
-						hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-					}
-
-					if ( timestamp_elapsed(swp->primary_bank_rearm_time[i]) )
-					{
-						// Have to do some gymnastics to play the sound effects properly.  There is a
-						// one time sound effect which is the ballistic loading start, then for each ballistic
-						// loaded there is a sound effect.  These are only played for the player.
-						//
-						rearm_time = Weapon_info[swp->primary_bank_weapons[i]].rearm_rate;
-						if ( aip->rearm_first_ballistic_primary == TRUE )
-						{
-							rearm_time *= 3;
-						}
-						
-						swp->primary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
+						float rearm_time;
 	
-						// Acutal loading of ballistics is preceded by a sound effect which is the ballistic
-						// loading equipment moving into place
-						if ( aip->rearm_first_ballistic_primary == TRUE )
+						if ( objp == Player_obj )
 						{
-							snd_play_3d( &Snds[SND_BALLISTIC_START_LOAD], &objp->pos, &View_position );
-							aip->rearm_first_ballistic_primary = FALSE;
+							hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 						}
-						else
-						{
-							snd_play_3d( &Snds[SND_BALLISTIC_LOAD], &objp->pos, &View_position );
 
-							/* don't provide force feedback for primary ballistics loading
-							if (objp == Player_obj)
-								joy_ff_play_reload_effect();
-							*/
-	
-							swp->primary_bank_ammo[i] += REARM_NUM_PRIMARY_BALLISTICS_PER_BATCH;
-							if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
+						if ( timestamp_elapsed(swp->primary_bank_rearm_time[i]) )
+						{
+							// Have to do some gymnastics to play the sound effects properly.  There is a
+							// one time sound effect which is the ballistic loading start, then for each ballistic
+							// loaded there is a sound effect.  These are only played for the player.
+							//
+							rearm_time = Weapon_info[swp->primary_bank_weapons[i]].rearm_rate;
+							if ( aip->rearm_first_ballistic_primary == TRUE )
 							{
-								swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i]; 
+								rearm_time *= 3;
+							}
+
+							swp->primary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
+	
+							// Acutal loading of ballistics is preceded by a sound effect which is the ballistic
+							// loading equipment moving into place
+							if ( aip->rearm_first_ballistic_primary == TRUE )
+							{
+								snd_play_3d( &Snds[SND_BALLISTIC_START_LOAD], &objp->pos, &View_position );
+								aip->rearm_first_ballistic_primary = FALSE;
+							}
+							else
+							{
+								snd_play_3d( &Snds[SND_BALLISTIC_LOAD], &objp->pos, &View_position );
+
+								/* don't provide force feedback for primary ballistics loading
+								if (objp == Player_obj)
+									joy_ff_play_reload_effect();
+								*/
+	
+								swp->primary_bank_ammo[i] += REARM_NUM_PRIMARY_BALLISTICS_PER_BATCH;
+								if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
+								{
+									swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i]; 
+								}
 							}
 						}
 					}
+					else
+					{
+						primary_banks_full++;
+					}
 				}
+				// if the bank is not a ballistic
 				else
 				{
 					primary_banks_full++;
 				}
-			}
-			// if the bank is not a ballistic
-			else
-			{
-				primary_banks_full++;
-			}
-		}	// end for
+			}	// end for
+		}	// end if - rearm ballistic primaries
 	} // end if (subsys_all_ok)
 
 	if ( banks_full == swp->num_secondary_banks )
@@ -7889,7 +7937,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 		// check both primary and secondary banks are full
 		if ( (banks_full == swp->num_secondary_banks) &&
-			(primary_banks_full == swp->num_primary_banks) )
+			( !(sip->flags & SIF_BALLISTIC_PRIMARIES) || ((sip->flags & SIF_BALLISTIC_PRIMARIES) && (primary_banks_full == swp->num_primary_banks)) )	)
 		{
 			if ( timestamp_elapsed(aip->rearm_release_delay) )
 				return 1;
@@ -9663,18 +9711,21 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		}
 
 		// also check ballistic primaries - Goober5000
-		for ( i = 0; i < swp->num_primary_banks; i++ )
+		if (sp->flags & SIF_BALLISTIC_PRIMARIES)
 		{
-			wip = &Weapon_info[swp->primary_bank_weapons[i]];
-
-			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			for ( i = 0; i < swp->num_primary_banks; i++ )
 			{
-				if (swp->primary_bank_start_ammo[i] > 0)
+				wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+				if (wip->wi_flags2 & WIF2_BALLISTIC)
 				{
-					if ( swp->primary_bank_ammo[i]/swp->primary_bank_start_ammo[i] < 0.3f )
+					if (swp->primary_bank_start_ammo[i] > 0)
 					{
-						message_type = MESSAGE_REARM_REQUEST;
-						break;
+						if ( swp->primary_bank_ammo[i]/swp->primary_bank_start_ammo[i] < 0.3f )
+						{
+							message_type = MESSAGE_REARM_REQUEST;
+							break;
+						}
 					}
 				}
 			}
@@ -9898,6 +9949,11 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
 	
+	if (!(Ship_info[ship_class].flags & SIF_BALLISTIC_PRIMARIES))
+	{
+		return 0;
+	}
+
 	capacity = (float) Ship_info[ship_class].primary_bank_ammo_capacity[bank];
 	size = (float) Weapon_info[ammo_type].cargo_size;
 	return (int) (capacity / size);
