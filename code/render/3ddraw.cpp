@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-03-01 06:55:43 $
+ * $Revision: 2.28 $
+ * $Date: 2005-03-03 02:39:14 $
  * $Author: bobboau $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/03/01 06:55:43  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.26  2005/02/18 09:58:40  wmcoolmon
  * More nonstandard res fixing
  *
@@ -560,7 +564,7 @@ int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float co
 		gr_tmapper( nv, pointlist, tmap_flags );
 		return 0;
 	}
-	if(tmap_flags & TMAP_FLAG_TRISTRIP){
+	if(tmap_flags & TMAP_FLAG_TRISTRIP || tmap_flags & TMAP_FLAG_TRILIST){
 		for (i=0;i<nv;i++){
 			if (!(pointlist[i]->flags&PF_PROJECTED))g3_project_vertex(pointlist[i]);
 		}
@@ -2404,6 +2408,99 @@ int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flag
 
 	// put filtering back on
 	gr_filter_set(1);
+
+	return ret;
+}
+
+int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additional_tmap_flags)
+{
+	int ret;
+	int saved_zbuffer_mode;
+	vertex *v = new vertex[6* n_bm];
+	vertex **vertlist = new vertex*[6*n_bm];
+	for(int i = 0; i<6*n_bm; i++)vertlist[i] = &v[i];
+	memset(v,0,sizeof(vertex)*6*n_bm);
+
+	int bw, bh;
+
+	g3_start_frame(1);
+
+	// turn off zbuffering	
+	saved_zbuffer_mode = gr_zbuffer_get();
+	gr_zbuffer_set(GR_ZBUFF_NONE);	
+
+	bm_get_section_size(gr_screen.current_bitmap, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &bw, &bh);
+
+	for(i = 0; i<n_bm;i++){
+		// stuff coords	
+
+		//tri one
+		v[i].sx = (float)b_list[i].x;
+		v[i].sy = (float)b_list[i].y;	
+		v[i].sw = 0.0f;
+		v[i].u = 0.0f;
+		v[i].v = 0.0f;
+		v[i].flags = PF_PROJECTED;
+		v[i].codes = 0;
+
+		v[i+1].sx = (float)(b_list[i].x + b_list[i].w);
+		v[i+1].sy = (float)b_list[i].y;	
+		v[i+1].sw = 0.0f;
+		v[i+1].u = 1.0f;
+		v[i+1].v = 0.0f;
+		v[i+1].flags = PF_PROJECTED;
+		v[i+1].codes = 0;
+
+		v[i+2].sx = (float)(b_list[i].x + b_list[i].w);
+		v[i+2].sy = (float)(b_list[i].y + b_list[i].h);	
+		v[i+2].sw = 0.0f;
+		v[i+2].u = 1.0f;
+		v[i+2].v = 1.0f;
+		v[i+2].flags = PF_PROJECTED;
+		v[i+2].codes = 0;
+	
+
+		//tri two
+		v[i+3].sx = (float)b_list[i].x;
+		v[i+3].sy = (float)b_list[i].y;	
+		v[i+3].sw = 0.0f;
+		v[i+3].u = 0.0f;
+		v[i+3].v = 0.0f;
+		v[i+3].flags = PF_PROJECTED;
+		v[i+3].codes = 0;
+
+		v[i+4].sx = (float)(b_list[i].x + b_list[i].w);
+		v[i+4].sy = (float)(b_list[i].y + b_list[i].h);	
+		v[i+4].sw = 0.0f;
+		v[i+4].u = 1.0f;
+		v[i+4].v = 1.0f;
+		v[i+4].flags = PF_PROJECTED;
+		v[i+4].codes = 0;
+	
+		v[i+5].sx = (float)b_list[i].x;
+		v[i+5].sy = (float)(b_list[i].y + b_list[i].h);	
+		v[i+5].sw = 0.0f;
+		v[i+5].u = 0.0f;
+		v[i+5].v = 1.0f;
+		v[i+5].flags = PF_PROJECTED;
+		v[i+5].codes = 0;	
+	}
+	
+	// no filtering
+	gr_filter_set(0);
+
+	// set debrief	
+	ret = g3_draw_poly_constant_sw(6*n_bm, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TRILIST | additional_tmap_flags, 0.1f);
+
+	g3_end_frame();
+	
+	gr_zbuffer_set(saved_zbuffer_mode);	
+
+	// put filtering back on
+	gr_filter_set(1);
+
+	delete[] v;
+	delete[]vertlist;
 
 	return ret;
 }

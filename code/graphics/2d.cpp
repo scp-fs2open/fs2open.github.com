@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-03-01 06:55:40 $
+ * $Revision: 2.36 $
+ * $Date: 2005-03-03 02:39:14 $
  * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/03/01 06:55:40  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.34  2005/02/05 00:30:49  taylor
  * fix a few things post merge
  *
@@ -1477,6 +1481,30 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 		}
 #endif
 	}
+}
+
+// NEW new bitmap functions -Bobboau
+void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
+{
+		// get the section as a texture in vram					
+	gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
+
+	for(int i = 0; i<n_bm; i++){
+
+		bitmap_2d_list* l = &list[i];
+
+		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL, NULL);
+		// I will tidy this up later - RT
+		//I doubt it, seeing as you've been gone for nearly half a year :)
+		if(allow_scaling)
+		{
+			gr_resize_screen_pos(&l->x, &l->y);
+			gr_resize_screen_pos(&l->w, &l->h);
+		}
+	}
+	g3_draw_2d_poly_bitmap_list(list, n_bm, TMAP_FLAG_BITMAP_SECTION);
+
+	//screw bm sections, screw them all to hell, I realy doubt anyone will have any problems with this
 }
 
 // given endpoints, and thickness, calculate coords of the endpoint

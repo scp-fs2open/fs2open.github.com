@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.61 $
- * $Date: 2005-03-01 06:55:40 $
+ * $Revision: 2.62 $
+ * $Date: 2005-03-03 02:39:14 $
  * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/03/01 06:55:40  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.60  2005/02/27 10:38:06  wmcoolmon
  * Nonstandard res stuff
  *
@@ -1373,6 +1377,17 @@ void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint fla
 // 	d3d_DrawPrimitive(D3DVT_LVERTEX, D3DPT_TRIANGLELIST, (LPVOID)d3d_verts, nverts);
 }
 
+inline _D3DPRIMITIVETYPE d3d_prim_type(int flags){
+	if(flags & TMAP_FLAG_TRILIST){
+		return D3DPT_TRIANGLELIST;
+	}else if(flags & TMAP_FLAG_TRISTRIP){
+		return D3DPT_TRIANGLESTRIP;
+	}else{
+		return D3DPT_TRIANGLEFAN;		
+	}
+}
+
+
 /**
  * This will be used to render the 3D parts the of FS2 engine
  *
@@ -1575,9 +1590,10 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 	}
 
 	TIMERBAR_PUSH(2);
- 	d3d_DrawPrimitive(D3DVT_LVERTEX, (flags & TMAP_FLAG_TRISTRIP)?D3DPT_TRIANGLESTRIP :D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+ 	d3d_DrawPrimitive(D3DVT_LVERTEX, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
 	TIMERBAR_POP();
 }
+
 
 void gr_d3d_tmapper_internal_2d( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
@@ -1791,7 +1807,7 @@ void gr_d3d_tmapper_internal_2d( int nverts, vertex **verts, uint flags, int is_
 
 	set_stage_for_defuse();
 	TIMERBAR_PUSH(2);
-	d3d_DrawPrimitive(D3DVT_VERTEX2D, (flags & TMAP_FLAG_TRISTRIP)?D3DPT_TRIANGLESTRIP :D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+	d3d_DrawPrimitive(D3DVT_VERTEX2D, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
 	TIMERBAR_POP();
 }
 
@@ -2185,7 +2201,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	// Draws just about everything except stars and lines
 
 	TIMERBAR_PUSH(3);
-	d3d_DrawPrimitive(D3DVT_TLVERTEX, (flags & TMAP_FLAG_TRISTRIP)?D3DPT_TRIANGLESTRIP :D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+	d3d_DrawPrimitive(D3DVT_TLVERTEX, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
 	TIMERBAR_POP();
 
 	//spec mapping
@@ -2215,7 +2231,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			//spec mapping is always done on a second pass
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 			if(flags & TMAP_FLAG_PIXEL_FOG) gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-			d3d_DrawPrimitive(D3DVT_TLVERTEX, (flags & TMAP_FLAG_TRISTRIP)?D3DPT_TRIANGLESTRIP :D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+			d3d_DrawPrimitive(D3DVT_TLVERTEX, d3d_prim_type(flags), (LPVOID)d3d_verts, nverts);
 			if(flags & TMAP_FLAG_PIXEL_FOG) gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 			gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 		}

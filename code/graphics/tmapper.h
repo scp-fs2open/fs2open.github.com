@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.9 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-03 02:39:14 $
+ * $Author: bobboau $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.8  2004/03/21 09:41:54  randomtiger
  * Fixed a bug that was causing windowed movie playback and a crash.
  * Added some batching redirection.
@@ -190,6 +193,7 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 //tristrips, for trails mostly, might find other uses eventualy
 #define TMAP_FLAG_TRISTRIP	(1<<20)
 #define TMAP_HTL_3DU_BATCH	(1<<21)	  
+#define TMAP_FLAG_TRILIST	(1<<22)
 
 #define TMAP_ADDRESS_WRAP		1
 #define TMAP_ADDRESS_MIRROR		2
