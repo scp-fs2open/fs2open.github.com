@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.120 $
- * $Date: 2004-05-10 10:51:51 $
+ * $Revision: 2.121 $
+ * $Date: 2004-05-10 13:07:22 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.120  2004/05/10 10:51:51  Goober5000
+ * made primary and secondary banks quite a bit more friendly... added error-checking
+ * and reorganized a bunch of code
+ * --Goober5000
+ *
  * Revision 2.119  2004/05/10 08:03:31  Goober5000
  * fixored the handling of no lasers and no engines... the tests should check the ship,
  * not the object
@@ -10815,7 +10820,7 @@ void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 {
 	// Goober5000 - bail if not in main fs2 campaign
 	// (stupid coders... it's the FREDder's responsibility to add this message)
-	if (stricmp(Campaign.filename, "freespace2"))
+	if (stricmp(Campaign.filename, "freespace2") || !(Game_mode & GM_CAMPAIGN_MODE))
 		return;
 
 	object *objp;
