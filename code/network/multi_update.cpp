@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_update.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-03-02 21:18:20 $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-01 07:27:32 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/03/02 21:18:20  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.4  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -165,7 +170,7 @@ int multi_update_http_init()
 
 	// local file
 	strcpy(local_file, Cfile_root_dir);
-	strcat(local_file, "\\");
+	strcat(local_file, DIR_SEPARATOR_STR);
 	strcat(local_file, VERSION_LOC_FNAME);
 
 	// new file	
