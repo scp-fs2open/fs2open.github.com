@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-09-24 19:35:59 $
+ * $Revision: 2.6 $
+ * $Date: 2003-09-25 21:12:24 $
  * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/24 19:35:59  Kazan
+ * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
+ *
  * Revision 2.4  2003/09/23 02:42:54  Kazan
  * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
  *
@@ -262,6 +265,7 @@
 
 #include "network/multi.h"
 #include "fs2open_pxo/Client.h"
+#include "cmdline/cmdline.h"
 
 #ifndef NO_NETWORK
 #include "network/multimsgs.h"
@@ -3224,6 +3228,9 @@ void multi_update_validate_missions_DrawString(char *str)
 
 	gr_flip();
 
+	
+	bm_release(loading_bitmap);
+
 }
 
 void multi_update_valid_missions()
@@ -3317,9 +3324,9 @@ void multi_update_valid_missions()
 			memset(full_name, 0, MAX_FILENAME_LEN+1);			
 			strcpy(full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT));
 
-#ifndef NO_STANDALONE
 			std::string temp = "Validating ";
 			temp = temp + full_name;
+#ifndef NO_STANDALONE
 			// if we're a standalone, show a dialog saying "validating missions"
 			if(Game_mode & GM_STANDALONE_SERVER)
 			{
@@ -3371,6 +3378,193 @@ void multi_update_valid_missions()
 	}
 #endif 
 }
+
+
+void Kaz_NoBackGround_DrawString(char *str)
+{
+	gamesnd_play_iface(SND_SCROLL);
+
+	  // --------- ripped from [V]'s "LOADING" screen code
+	int loading_bitmap;
+
+	loading_bitmap = bm_load(Multi_create_loading_fname[gr_screen.res]);
+
+	// draw the background, etc
+	gr_reset_clip();
+
+	//GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
+	gr_clear();
+
+
+	if ( loading_bitmap > -1 ){
+		gr_set_bitmap(loading_bitmap);
+	}
+	gr_bitmap( Please_wait_coords[gr_screen.res][MC_X_COORD], Please_wait_coords[gr_screen.res][MC_Y_COORD] );
+
+	// draw str on it
+
+	int str_w, str_h;
+
+	gr_set_color_fast(&Color_normal);
+	gr_set_font(FONT2);
+	gr_get_string_size(&str_w, &str_h, str);
+	gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, str);
+	gr_set_font(FONT1);
+
+	gr_flip();
+
+	bm_release(loading_bitmap);
+
+}
+
+void multi_update_valid_tables()
+{
+
+	static char Server[32];
+	static int port = -1;
+
+	if (port == -1)
+	{
+		if (!FS2OpenPXO_Socket.isInitialized())
+		{
+				if (!FS2OpenPXO_Socket.InitSocket())
+				{
+					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+				}
+		}
+
+
+		CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
+		if(file == NULL){
+			ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
+			return;
+		}
+			
+
+		char Port[32];
+		if (cfgets(Server, 32, file) == NULL)
+		{
+			ml_printf("Network", "No Masterserver definition!\n");
+			return;
+		}
+
+		if (strstr(Server, "\n"))
+			*strstr(Server, "\n") = '\0';
+
+		if (cfgets(Port, 32, file) != NULL)
+			port = atoi(Port);
+		else
+			port = 12000;
+	}
+
+#ifndef NO_STANDALONE
+	// if we're a standalone, show a dialog saying "validating missions"
+	if(Game_mode & GM_STANDALONE_SERVER){
+		std_create_gen_dialog("Validating tables");
+		std_gen_set_text("Querying FS2NetD:",1);
+	}
+#endif
+
+	//Kaz_NoBackGround_DrawString("Validating Tables");
+
+	// ----------- Get the CRCs from the server -------------
+	//FS2OpenPXO_Socket
+	int numFrecs; 
+	file_record *frecs = GetTablesList(numFrecs, Server, FS2OpenPXO_Socket, port);
+
+
+
+#ifndef NO_STANDALONE
+	// if we're a standalone, show a dialog saying "validating missions"
+	if(Game_mode & GM_STANDALONE_SERVER){
+		std_gen_set_text("Got FS2NetD Reply:",1);
+	}
+#endif
+
+
+	// this is a shameless splicing of [V]'s code from the pxo spew below and my code.
+	char **file_names;
+	char full_name[MAX_FILENAME_LEN+1];
+	char wild_card[256];
+	int count, idx, i;
+	bool Found;
+	uint checksum;
+	FILE *out;
+
+	// allocate filename space	
+	file_names = (char**)malloc(sizeof(char*) * 1024); // 1024 files should be safe!
+	if(file_names != NULL){
+		memset(wild_card, 0, 256);
+		strcpy(wild_card, NOX("*"));
+		strcat(wild_card, ".tbl");
+		count = cf_get_file_list(1024, file_names, CF_TYPE_TABLES, wild_card);	
+	
+		// open the outfile
+		CFILE *tvalid_cfg = cfopen("tvalid.cfg", "wt", CFILE_NORMAL, CF_TYPE_DATA);
+
+		
+		// do all the checksums
+		for(idx=0; idx<count; idx++){
+			memset(full_name, 0, MAX_FILENAME_LEN+1);			
+			strcpy(full_name, cf_add_ext(file_names[idx], ".tbl"));
+
+
+			std::string temp = "Validating ";
+			temp = temp + full_name;
+#ifndef NO_STANDALONE
+
+			// if we're a standalone, show a dialog saying "validating missions"
+			if(Game_mode & GM_STANDALONE_SERVER)
+			{
+				
+				std_gen_set_text((char *) temp.c_str(),1);
+			}
+			else
+#endif
+			//multi_update_validate_tables_DrawString((char *) temp.c_str());
+			cf_chksum_long(full_name, &checksum);
+			
+			Found = false;
+
+			cfputs(full_name, tvalid_cfg);
+
+			for (i = 0; i < numFrecs; i++)
+			{
+				if (!strcmp(full_name, frecs[i].name))
+				{
+					// Found now becomes a valid/invalid specifier
+					if (checksum == frecs[i].crc32)
+					{
+						cfputs("   valid\n", tvalid_cfg);
+						Found = true;
+					}
+
+					break;
+				}
+			}
+
+			if (!Found)
+			{
+				cfputs("   invalid\n", tvalid_cfg);
+			}
+			
+		}
+
+		cfclose(tvalid_cfg);
+		free(file_names);
+	
+	}
+
+	delete[] frecs;
+
+#ifndef NO_STANDALONE
+	// if we're a standalone, kill the validate dialog
+	if(Game_mode & GM_STANDALONE_SERVER){
+		std_destroy_gen_dialog();
+	}
+#endif 
+}
+
 
 // get a new id# for a player
 short multi_get_new_id()
@@ -3483,7 +3677,47 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 
 			if(cf_chksum_long(full_name, &checksum)){
 				fprintf(out, "# %s	:	%u\n", full_name, (unsigned int)checksum);
-				fprintf(out, "INSERT INTO Missions SET FileName=\"%s\", CRC32=\"%u\";\n\n", full_name, (unsigned int)checksum);
+				fprintf(out, "INSERT INTO Missions SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%\";\n\n", full_name, (unsigned int)checksum, Cmdline_mod);
+			}
+		}
+
+		fclose(out);
+		free(file_names);
+	}
+}
+
+
+void multi_spew_table_checksums(int max_files, char *outfile)
+{
+	char **file_names;
+	char full_name[MAX_FILENAME_LEN+1];
+	char wild_card[256];
+	int count, idx;
+	uint checksum;
+	FILE *out;
+
+	// allocate filename space	
+	file_names = (char**)malloc(sizeof(char*) * max_files);
+	if(file_names != NULL){
+		memset(wild_card, 0, 256);
+		strcpy(wild_card, NOX("*"));
+		strcat(wild_card, ".tbl");
+		count = cf_get_file_list(max_files, file_names, CF_TYPE_TABLES, wild_card);	
+	
+		// open the outfile
+		out = fopen(outfile, "wt");
+		if(out == NULL){
+			return;
+		}
+		
+		// do all the checksums
+		for(idx=0; idx<count; idx++){
+			memset(full_name, 0, MAX_FILENAME_LEN+1);			
+			strcpy(full_name, cf_add_ext(file_names[idx], ".tbl"));
+
+			if(cf_chksum_long(full_name, &checksum)){
+				fprintf(out, "# %s	:	%u\n", full_name, (unsigned int)checksum);
+				fprintf(out, "INSERT INTO fstables SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%\";\n\n", full_name, (unsigned int)checksum, Cmdline_mod);
 			}
 		}
 

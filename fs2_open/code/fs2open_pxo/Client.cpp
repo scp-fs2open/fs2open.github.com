@@ -180,6 +180,61 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 	return -1;
 }
 
+//**************************************************************************************************************************************************
+
+
+
+file_record* GetTablesList(int &numTables, const char *masterserver, UDP_Socket &Socket, int port, int timeout)
+{
+	fs2open_file_check fc_packet;
+	fc_packet.pid = PCKT_TABLES_RQST;
+
+	timeout = timeout * CLK_TCK;
+	int starttime = clock();
+
+	std::string sender = masterserver;
+
+	// send Packet
+	if (Socket.SendPacket((char *)&fc_packet, sizeof(fs2open_file_check), sender, port) == -1)
+		return NULL;
+
+	char PacketBuffer[16384]; // 16K should be enough i think..... I HOPE!
+	fs2open_pxo_missreply *misreply_ptr = (fs2open_pxo_missreply *) PacketBuffer;
+	
+	file_record *frecs = NULL;
+	numTables = 0;
+
+	while ((clock() - starttime) <= timeout)
+	{
+
+		if (Socket.GetPacket(PacketBuffer, 16384, sender) != -1)
+		{
+			if (misreply_ptr->pid != PCKT_TABLES_REPLY)
+			{
+				continue; // skip and ignore this packet
+			}
+			
+
+			if ((misreply_ptr->num_files * sizeof(file_record)) + (sizeof(int) * 2) > 16384)
+			{
+				// WE"RE IN DEAP SHIT!
+
+				ml_printf("Network (FS2OpenPXO): PCKT_TABLES_REPLY was larger than 16k!!!\n");
+				return NULL;
+			}
+			frecs = new file_record[misreply_ptr->num_files];
+			memcpy(frecs, PacketBuffer + 8, sizeof(file_record) * misreply_ptr->num_files); // packet buffer will be two ints then the array;
+			numTables = misreply_ptr->num_files;
+			return frecs;
+
+		}
+
+
+	}
+
+	return NULL;
+
+}
 
 //**************************************************************************************************************************************************
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.44 $
- * $Date: 2003-09-24 19:35:57 $
+ * $Revision: 2.45 $
+ * $Date: 2003-09-25 21:12:23 $
  * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/09/24 19:35:57  Kazan
+ * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
+ *
  * Revision 2.43  2003/09/23 02:42:52  Kazan
  * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
  *
@@ -920,6 +923,7 @@ void common_play_highlight_sound()
 //  This function is defined in code\network\multiutil.cpp so will be linked from multiutil.obj
 //  it's required fro the -missioncrcs command line option - Kazan
 void multi_spew_pxo_checksums(int max_files, char *outfile);
+void multi_spew_table_checksums(int max_files, char *outfile);
 
 extern bool frame_rate_display;
 
@@ -7368,6 +7372,13 @@ int WinMainSub(int argc, char *argv[])
 	   return 0;
    }
 
+
+   if (Cmdline_SpewTable_CRCs)
+   {
+	   multi_spew_table_checksums(50, "FS2TablesCRCs.txt");
+	   game_shutdown();
+	   return 0;
+   }
 	// maybe spew pof stuff
 	if(Cmdline_spew_pof_info){
 		game_spew_pof_info();
@@ -9136,7 +9147,8 @@ void verify_ships_tbl()
 	Game_ships_tbl_valid = 1;
 #else
 	*/
-	uint file_checksum;		
+	Game_ships_tbl_valid = 1; // ##Kazan## - This will be dealt with later by Fs2NetD
+	/*uint file_checksum;		
 	int idx;
 
 	// detect if the packfile exists
@@ -9162,7 +9174,7 @@ void verify_ships_tbl()
 			Game_ships_tbl_valid = 1;
 			return;
 		}
-	}
+	} */
 // #endif
 }
 
@@ -9205,7 +9217,10 @@ void verify_weapons_tbl()
 	Game_weapons_tbl_valid = 1;
 #else
 	*/
-	uint file_checksum;		
+
+	Game_weapons_tbl_valid = 1; // ##Kazan## -- Fs2NetD will take care of this later!
+
+	/*uint file_checksum;		
 	int idx;
 
 	// detect if the packfile exists
@@ -9231,7 +9246,7 @@ void verify_weapons_tbl()
 			Game_weapons_tbl_valid = 1;
 			return;
 		}
-	}
+	}*/
 // #endif
 }
 
@@ -9249,15 +9264,37 @@ DCF(wepspew, "display the checksum for the current weapons.tbl")
 }
 
 // if the game is running using hacked data
+void multi_update_valid_tables(); // in multiutil.obj
+
 int game_hacked_data()
 {
 	// hacked!
-	if(!Game_weapons_tbl_valid || !Game_ships_tbl_valid){
+	/*if(!Game_weapons_tbl_valid || !Game_ships_tbl_valid){
 		return 1;
+	}*/
+
+	if (!cf_exist( "tvalid.cfg", CF_TYPE_DATA ))
+	{
+		// create the mvalid.cfg
+		multi_update_valid_tables();
 	}
 
+	CFILE *tvalid_cfg = cfopen("tvalid.cfg", "rt", CFILE_NORMAL, CF_TYPE_DATA);
+	char *buffer = new char[cfilelength(tvalid_cfg)];
+	cfread(buffer, 1, cfilelength(tvalid_cfg), tvalid_cfg);	
+	
+	int retval = 0;
+
+	if (strstr(buffer, "invalid")) // got hacked data
+		retval = 1;
+
+	if (buffer != NULL)
+		delete[] buffer;
+
+	if (tvalid_cfg != NULL)
+		cfclose(tvalid_cfg);
 	// not hacked
-	return 0;
+	return retval;
 }
 
 
