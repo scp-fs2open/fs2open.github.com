@@ -134,7 +134,7 @@ int parse_hud_gauges_tbl(char* longname)
 	lcl_ext_open();
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		Error(LOCATION, "Unable to parse %s!  Code = %i.\n", rval, longname);
+		nprintf(("Warning", "Unable to parse %s!  Code = %i.\n", longname, rval));
 		lcl_ext_close();
 		return 0;
 	}
