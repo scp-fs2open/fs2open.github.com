@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.62 $
+ * $Revision: 2.63 $
  * $Author: wmcoolmon $
- * $Date: 2004-06-09 00:18:50 $
+ * $Date: 2004-06-15 20:49:22 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2004/06/09 00:18:50  wmcoolmon
+ * hud-set-color SEXP
+ *
  * Revision 2.61  2004/06/01 07:31:57  wmcoolmon
  * Lotsa stuff. Custom gauges w/ ANIs support added, SEXPs to set gauge text, gauge image frames, and gauge coords. These SEXPs and toggle-hud reside in the Hud/change category.
  *
@@ -809,6 +812,7 @@ struct ship_subsys;
 #define OP_IS_SHIP_TYPE						(0x0026 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_SHIP_CLASS					(0x0027	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_NUM_SHIPS_IN_BATTLE				(0x0028 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
+#define OP_CURRENT_SPEED					(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
 
 #if defined(ENABLE_AUTO_PILOT)
 //text: is-nav-visited

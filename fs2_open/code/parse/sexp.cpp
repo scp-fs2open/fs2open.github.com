@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.90 $
- * $Date: 2004-06-09 00:18:50 $
+ * $Revision: 2.91 $
+ * $Date: 2004-06-15 20:49:22 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2004/06/09 00:18:50  wmcoolmon
+ * hud-set-color SEXP
+ *
  * Revision 2.89  2004/06/01 07:31:56  wmcoolmon
  * Lotsa stuff. Custom gauges w/ ANIs support added, SEXPs to set gauge text, gauge image frames, and gauge coords. These SEXPs and toggle-hud reside in the Hud/change category.
  *
@@ -927,6 +930,7 @@ sexp_oper Operators[] = {
 	{ "lock-rotating-subsystem",	OP_LOCK_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
 	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
 	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
+	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
 
 #if defined(ENABLE_AUTO_PILOT)
 	{ "is-nav-visited",				OP_NAV_ISVISITED,				1, 1 }, // Kazan
@@ -3571,6 +3575,86 @@ int sexp_num_ships_in_battle(int n)
 	}
 
 	return count;
+}
+
+//Gets the 'real' speed of an object, taking into account docking
+int sexp_get_real_speed(object *obj)
+{
+	float speed = obj->phys_info.speed;
+	if(speed < 0.1f)
+		speed = 0.0f;
+
+	if(speed == 0.0f && obj->type == OBJ_SHIP)
+	{
+		ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
+		if ( aip->ai_flags & AIF_DOCKED ) {
+			Assert( aip->dock_objnum != -1 );
+			speed = Objects[aip->dock_objnum].phys_info.fspeed;
+			if ( speed < 0.1 )
+				speed = 0.0f;
+		}
+	}
+
+	return fl2i(speed);
+}
+
+//Gets the current speed of the specified object
+//Uses a lot of code shamelessly ripped from get_object_coordinates
+int sexp_current_speed(int n)
+{
+	char* object_name = CTEXT(n);
+
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
+		return SEXP_NAN;
+
+	// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL) ) 
+		return SEXP_NAN;
+
+/*	int team = sexp_determine_team(object_name);
+	if (team)	// we have a team type, so pick the first ship of that type
+	{
+		ship_obj *so = GET_FIRST(&Ship_obj_list);
+		while (so != END_OF_LIST(&Ship_obj_list))
+		{
+			if (Ships[Objects[so->objnum].instance].team == team)
+			{
+				return sexp_get_real_speed(&Objects[so->objnum]);
+			}
+
+			so = GET_NEXT(so);
+		}
+
+		return SEXP_NAN;	// if no match
+	}*/
+
+	// at this point, we must have a wing, ship or point for a target
+	int obj = ship_name_lookup(object_name);
+	if (obj >= 0)
+	{
+		return sexp_get_real_speed(&Objects[Ships[obj].objnum]);
+	}
+
+	// at this point, we must have a wing or point for a target
+/*	obj = waypoint_lookup(object_name);
+	if (obj >= 0)
+	{
+		//Waypoints don't move.
+		return 0;
+	}*/
+		
+	// at this point, we must have a wing for a target
+	obj = wing_name_lookup(object_name);
+	if (obj < 0)
+		return SEXP_NAN;  // we apparently don't have anything legal
+
+	// make sure at least one ship exists
+	if (!Wings[obj].current_count)
+		return SEXP_NAN;
+
+	// point to wing leader
+	return sexp_get_real_speed(&Objects[Ships[Wings[obj].ship_index[0]].objnum]);
 }
 
 // Evaluate if given ship is destroyed.
@@ -12142,6 +12226,10 @@ int eval_sexp(int cur_node)
 				sexp_val=sexp_num_ships_in_battle(node);
 				break;
 
+			case OP_CURRENT_SPEED:
+				sexp_val = sexp_current_speed(node);
+				break;
+
 #if defined(ENABLE_AUTO_PILOT)
 			case OP_NAV_ISVISITED: //kazan
 				sexp_val = is_nav_visited(node);
@@ -12464,6 +12552,7 @@ int query_operator_return_type(int op)
 		case OP_IS_SHIP_VISIBLE:
 		case OP_TEAM_SCORE:
 		case OP_NUM_SHIPS_IN_BATTLE:
+		case OP_CURRENT_SPEED:
 #if defined(ENABLE_AUTO_PILOT)
 		case OP_NAV_DISTANCE:	//kazan
 #endif
@@ -13519,6 +13608,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_NUM_SHIPS_IN_BATTLE:
 			return OPF_IFF;
+
+		case OP_CURRENT_SPEED:
+			return OPF_SHIP_WING;
 
 #if defined(ENABLE_AUTO_PILOT)
 		case OP_NAV_ISVISITED:		//Kazan
