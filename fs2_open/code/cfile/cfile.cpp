@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-07-26 20:47:25 $
- * $Author: Kazan $
+ * $Revision: 2.22 $
+ * $Date: 2004-10-09 18:08:33 $
+ * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/07/26 20:47:25  Kazan
+ * remove MCD complete
+ *
  * Revision 2.20  2004/07/17 09:03:29  taylor
  * make sure avi and mpg movies get added to file cache
  *
@@ -318,7 +321,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_HUD,						"data" DIR_SEPARATOR_STR "hud",																".ani .pcx .tga",			CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYER_MAIN,			"data" DIR_SEPARATOR_STR "players",															"",							CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYER_IMAGES_MAIN,	"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",						".pcx",						CF_TYPE_PLAYER_MAIN	},
-	{ CF_TYPE_CACHE,					"data" DIR_SEPARATOR_STR "cache",															".clr .tmp",				CF_TYPE_DATA	}, 	//clr=cached color
+	{ CF_TYPE_CACHE,					"data" DIR_SEPARATOR_STR "cache",															".clr .tmp .ibx",				CF_TYPE_DATA	}, 	//clr=cached color
 	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",															".hcf",						CF_TYPE_DATA	},	
 	{ CF_TYPE_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",						".plr .csg .css",			CF_TYPE_PLAYERS	},
  	{ CF_TYPE_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",						".plr",						CF_TYPE_DATA	},
