@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.61 $
- * $Date: 2005-03-10 08:00:10 $
+ * $Revision: 2.62 $
+ * $Date: 2005-03-24 23:36:14 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/03/10 08:00:10  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.60  2005/03/06 17:16:08  taylor
  * can't believe I missed something that obvious. *hides in shame*
  *
@@ -2182,16 +2191,16 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						if (bank->glow_bitmap < 0)	{
 							Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
 						}else{
-							mprintf(( "glowbank texture num is %d\n", bank->glow_bitmap ));
+							nprintf(( "Model", "Glowbank %i texture num is %d for '%s'\n", q, bank->glow_bitmap, pm->filename ));
 						}
 						strcat(glow_texture_name, "-neb");
 						bank->glow_neb_bitmap = bm_load( glow_texture_name );
 						if (bank->glow_neb_bitmap < 0)	{
 							bank->glow_neb_bitmap = bank->glow_bitmap;
-							mprintf(( "glowbank texture not found, setting as the normal one num\n"));
+							nprintf(( "Model", "Glowbank texture not found for '%s', setting as the normal one num\n", pm->filename));
 						//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
 						}else{
-							mprintf(( "glowbank nebula texture num is %d\n", bank->glow_neb_bitmap ));
+							nprintf(( "Model", "Glowbank %i nebula texture num is %d for '%s'\n", q, bank->glow_neb_bitmap, pm->filename ));
 						}
 
 					}
@@ -2622,7 +2631,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	}
 	else
 	{
-		if(strstr(tmp_name, "-trans") || strstr(tmp_name, "shockwave") || strstr(tmp_name, "thruster"))
+		if(strstr(tmp_name, "-trans") || strstr(tmp_name, "shockwave"))
 		{
 			pm->transparent[i]=1;
 		}

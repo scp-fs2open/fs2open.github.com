@@ -424,10 +424,10 @@ void geometry_batcher::draw_beam(vector*start,vector*end, float width, float int
 	P[5].u = 0.0f;	P[5].v = 1.0f;
 
 	for(int i = 0; i<6 ; i++){
-		P[i].r = 255 * intinsity;
-		P[i].g = 255 * intinsity;
-		P[i].b = 255 * intinsity;
-		P[i].a = 255 * intinsity;
+		P[i].r = (ubyte)(255.0f * intinsity);
+		P[i].g = (ubyte)(255.0f * intinsity);
+		P[i].b = (ubyte)(255.0f * intinsity);
+		P[i].a = (ubyte)(255.0f * intinsity);
 	}
 
 	n_to_render += 2;

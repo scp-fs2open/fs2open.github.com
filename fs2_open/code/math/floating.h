@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.h $
- * $Revision: 2.1 $
- * $Date: 2004-08-11 05:06:27 $
- * $Author: Kazan $
+ * $Revision: 2.2 $
+ * $Date: 2005-03-24 23:36:13 $
+ * $Author: taylor $
  *
  * Low-level floating point math macros and routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/08/11 05:06:27  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -68,19 +71,18 @@
 #include <math.h>
 #include <float.h>
 
-extern float fl_isqrt( float a );
 extern float frand();
 extern int rand_chance(float frametime, float chance = 1.0f);
 float frand_range(float min, float max);
 
 // determine if a floating point number is NaN (Not a Number)
-#define fl_is_nan(fl) _isnan(fl)
+#define fl_is_nan(fl) _isnan((double)(fl))
 
 // Handy macros to prevent type casting all over the place
 
-#define fl_sqrt(fl) (float)sqrt((float)(fl))
-#define fl_isqrt(fl) (1.0f/(float)sqrt((float)(fl)))
-#define fl_abs(fl) (float)fabs((double)(fl))
+#define fl_sqrt(fl) sqrtf(fl)
+#define fl_isqrt(fl) (1.0f/sqrtf(fl))
+#define fl_abs(fl) fabsf(fl)
 #define i2fl(i) ((float)(i))
 #define fl2i(fl) ((int)(fl))
 #define flceil(fl) (int)ceil(fl)
