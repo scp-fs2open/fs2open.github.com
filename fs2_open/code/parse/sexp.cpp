@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.63 $
- * $Date: 2003-05-24 16:47:58 $
+ * $Revision: 2.64 $
+ * $Date: 2003-06-19 18:12:12 $
  * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2003/05/24 16:47:58  phreak
+ * added Sesquipedalian's kamikaze and not-kamikaze sexps
+ *
  * Revision 2.62  2003/04/29 01:03:24  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -882,7 +885,9 @@ sexp_oper Operators[] = {
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "toggle-hud",					OP_TOGGLE_HUD,					0, 0 },		// Goober5000
 	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
-	{ "not-kamikaze",					OP_NOT_KAMIKAZE,					1, INT_MAX }, //-Sesquipedalian
+	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
+	{ "turret-tagged-specific",		OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
+	{ "turret-tagged-clear-specific", OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -9353,6 +9358,66 @@ void sexp_turret_tagged_clear_all(int node)
 	}
 }
 
+void sexp_turret_tagged_specific(int node)
+{
+	ship_subsys *subsys;
+	int sindex;
+
+	// get the firing ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	node = CDR(node);
+	while(node != -1){
+		// get the subsystem
+		subsys = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		if(subsys == NULL){
+			return;
+		}
+
+		// flag turret as slaved to tag
+		subsys->weapons.flags |= SW_FLAG_TAGGED_ONLY;
+
+		// next
+		node = CDR(node);
+	}
+}
+
+void sexp_turret_tagged_clear_specific(int node)
+{
+	ship_subsys *subsys;
+	int sindex;
+
+	// get the firing ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	node = CDR(node);
+	while(node != -1){
+		// get the subsystem
+		subsys = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		if(subsys == NULL){
+			return;
+		}
+
+		// flag turret as slaved to tag
+		subsys->weapons.flags &= (~SW_FLAG_TAGGED_ONLY);
+
+		// next
+		node = CDR(node);
+	}
+}
+
 void sexp_add_remove_escort(int node)
 {
 	int sindex;
@@ -11212,6 +11277,16 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_TURRET_TAGGED_SPECIFIC:
+				sexp_turret_tagged_specific(node);
+				sexp_val = 1;
+				break;
+
+			case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
+				sexp_turret_tagged_clear_specific(node);
+				sexp_val = 1;
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -11551,6 +11626,9 @@ int query_operator_return_type(int op)
 		case OP_TOGGLE_HUD:
 		case OP_KAMIKAZE:
 		case OP_NOT_KAMIKAZE:
+		case OP_TURRET_TAGGED_SPECIFIC:
+		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
+
 			return OPR_NULL;
 
 		case OP_GET_OBJECT_X:
@@ -12276,6 +12354,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_BEAM_LOCK:
 		case OP_TURRET_FREE:
 		case OP_TURRET_LOCK:
+		case OP_TURRET_TAGGED_SPECIFIC:
+		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 			if(argnum == 0){
 				return OPF_SHIP;
 			} else {
@@ -13263,6 +13343,8 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_LOCK_ALL:
 		case OP_TURRET_TAGGED_ONLY_ALL:
 		case OP_TURRET_TAGGED_CLEAR_ALL:
+		case OP_TURRET_TAGGED_SPECIFIC:
+		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 			return CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS;
 
 		case OP_RED_ALERT:

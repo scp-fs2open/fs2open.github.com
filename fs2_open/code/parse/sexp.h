@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.44 $
+ * $Revision: 2.45 $
  * $Author: phreak $
- * $Date: 2003-05-24 16:47:58 $
+ * $Date: 2003-06-19 18:12:12 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/05/24 16:47:58  phreak
+ * added Sesquipedalian's kamikaze and not-kamikaze sexps
+ *
  * Revision 2.43  2003/04/29 01:03:24  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -804,8 +807,10 @@
 #define OP_PLAY_SOUND_FROM_FILE				(0x0083	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CLOSE_SOUND_FROM_FILE			(0x0084 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_TOGGLE_HUD						(0x0085	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_KAMIKAZE						(0x0086 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
+#define OP_KAMIKAZE							(0x0086 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_NOT_KAMIKAZE						(0x0087 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
+#define OP_TURRET_TAGGED_SPECIFIC			(0x0088 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
+#define OP_TURRET_TAGGED_CLEAR_SPECIFIC		(0x0089 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
