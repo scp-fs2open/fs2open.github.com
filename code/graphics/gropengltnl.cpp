@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.6 $
- * $Date: 2004-07-17 18:40:40 $
+ * $Revision: 1.7 $
+ * $Date: 2004-07-17 18:49:57 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/07/17 18:40:40  taylor
+ * Bob say we fix OGL, so me fix OGL <grunt>
+ *
  * Revision 1.5  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -114,7 +117,7 @@ struct opengl_vertex_buffer
 #define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*MAX_BUFFERS_PER_SUBMODEL
 
 static opengl_vertex_buffer vertex_buffers[MAX_BUFFERS];
-static opengl_vertec_buffer *g_vbp;
+static opengl_vertex_buffer *g_vbp;
 
 //zeros everything out
 void opengl_init_vertex_buffers()

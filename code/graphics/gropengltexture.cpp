@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.4 $
- * $Date: 2004-07-17 18:43:46 $
+ * $Revision: 1.5 $
+ * $Date: 2004-07-17 18:49:57 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/07/17 18:43:46  taylor
+ * don't use bitmap sections by default, openil_close()
+ *
  * Revision 1.3  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -164,8 +167,9 @@ void opengl_switch_arb(int unit, int state)
 void opengl_tcache_init (int use_sections)
 {
 #ifdef GL_SECTIONS
-	int i, idx, s_idx;
+	int idx, s_idx;
 #endif
+	int i;
 
 	// DDOI - FIXME skipped a lot of stuff here
 	GL_should_preload = 0;
