@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.55 $
+ * $Revision: 2.56 $
  * $Author: Goober5000 $
- * $Date: 2003-10-20 11:49:18 $
+ * $Date: 2003-10-28 23:59:02 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2003/10/20 11:49:18  Goober5000
+ * added min, max, and avg sexps
+ * --Goober5000
+ *
  * Revision 2.54  2003/09/13 06:02:07  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -964,6 +968,14 @@
 #define CADR(n)	(Sexp_nodes[Sexp_nodes[n].rest].first)
 // #define CTEXT(n)	(Sexp_nodes[n].text)
 char *CTEXT(int n);
+
+// added by Goober5000
+#define CDDR(n)		CDR(CDR(n))
+#define CDDDR(n)	CDR(CDDR(n))
+#define CDDDDR(n)	CDR(CDDDR(n))
+#define CADDR(n)	CAR(CDDR(n))
+#define CADDDR(n)	CAR(CDDDR(n))
+#define CADDDDR(n)	CAR(CDDDDR(n))
 
 #define REF_TYPE_SHIP		1
 #define REF_TYPE_WING		2
