@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-11-11 17:59:27 $
+ * $Author: phreak $
  *
  * Code to load & display nebulas
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -309,7 +312,7 @@ void nebula_render()
 	}	
 
 	// Rotate the nebula.
-	g3_start_instance_matrix( NULL, &Nebula_orient );
+	g3_start_instance_matrix( NULL, &Nebula_orient, false);
 
 	for (i=0; i<num_pts; i++ )	{
 		g3_rotate_faraway_vertex( &nebula_verts[i], &nebula_vecs[i] );
