@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.97 $
- * $Date: 2005-03-12 03:09:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.98 $
+ * $Date: 2005-03-13 23:07:35 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2005/03/12 03:09:55  wmcoolmon
+ * New commandline option "-noparseerrors"
+ *
  * Revision 2.96  2005/03/08 03:50:19  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -766,6 +769,7 @@ Flag exe_params[] =
 	"-decals",		  "impact decals",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.decals",
 	"-loadonlyused",  "Loads only used weapons",		true,	0,					EASY_DEFAULT,		"Experimental",	"",
 	"-ingame",        "Allows ingame joining",			true,	0,					EASY_DEFAULT,		"Experimental", "",
+	"-tga16",         "Convert 32-bit TGAs to 16-bit",  true,   0,                  EASY_DEFAULT,       "Experimental", "",
 
 	"-fps",			  "Show frames per seconds",		false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.fps", 
 	"-pos",			  "Show position of camera",		false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pos",
@@ -867,6 +871,7 @@ cmdline_parm disable_crashing("-nocrash", NULL);
 
 //Experimental
 cmdline_parm load_only_used("-loadonlyused", NULL);
+cmdline_parm tga16_arg("-tga16", NULL); // 32-bit TGA to 16-bit conversion
 
 cmdline_parm poof_2d_arg("-2d_poof", NULL);
 cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
@@ -960,6 +965,7 @@ int Cmdline_rlm = 0;	// more realistic lighting model - taylor
 
 //Experimental
 int Cmdline_load_only_used;
+int Cmdline_tga16 = 0;
 
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_snd_preload = 0; // preload game sounds during mission load
@@ -1742,6 +1748,11 @@ bool SetCmdlineParams()
 	{
 		Cmdline_smart_shields = 0;
 	}
+
+	if ( tga16_arg.found() ) {
+		Cmdline_tga16 = 1;
+	}
+
 #ifdef WIN32
 	extern uint os_get_window();
 	if( fix_bugs.found() )

@@ -9,12 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-02-23 05:05:38 $
+ * $Revision: 2.13 $
+ * $Date: 2005-03-13 23:07:36 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/02/23 05:05:38  taylor
+ * compiler warning fixes (for MSVC++ 6)
+ * have the warp effect only load as many LODs as will get used
+ * head off strange bug in release when corrupt soundtrack number gets used
+ *    (will still Assert in debug)
+ * don't ever try and save a campaign savefile in multi or standalone modes
+ * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
+ *
  * Revision 2.11  2005/02/04 10:12:33  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -112,6 +120,7 @@
 #include "cmdline/cmdline.h"
 
 extern int Cmdline_jpgtga;
+extern int Cmdline_tga16;
 
 // -----------------
 //
@@ -522,10 +531,10 @@ int targa_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *
 
 	// If we aren't using the -jpgtga option then don't even try to use anything other
 	// than 16-bit TARGAs.  Otherwise DevIL should be available to deal with heigher bits.
-	if ( !Cmdline_jpgtga && (*bpp != 16) )
+	if ( !Cmdline_jpgtga && !Cmdline_tga16 && (*bpp != 16) )
 		return TARGA_ERROR_READING;
 
-	if ( Cmdline_jpgtga && (*bpp != 16) && (*bpp != 24) && (*bpp != 32) )
+	if ( (Cmdline_jpgtga || Cmdline_tga16) && (*bpp != 16) && (*bpp != 24) && (*bpp != 32) )
 		return TARGA_ERROR_READING;
 
 	return TARGA_ERROR_NONE;
@@ -654,7 +663,7 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 
 	// we're only allowing 2 bytes per pixel (16 bit compressed), unless Cmdline_jpgtga is used
 	Assert( (bytes_per_pixel == 2) || (bytes_per_pixel == 3) || (bytes_per_pixel == 4) );
-	if(!Cmdline_jpgtga && (bytes_per_pixel != 2)){
+	if(!Cmdline_jpgtga && !Cmdline_tga16 && (bytes_per_pixel != 2)){
 		cfclose(targa_file);
 		return TARGA_ERROR_READING;
 	}
@@ -673,7 +682,7 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 	}		
 
 	// only accept 16 bit, compressed, only if Cmdline_jpgtga is not used
-	if(!Cmdline_jpgtga && (header.pixel_depth != 16)) {
+	if(!Cmdline_jpgtga && !Cmdline_tga16 && (header.pixel_depth != 16)) {
 		cfclose(targa_file);
 		return TARGA_ERROR_READING;
 	}

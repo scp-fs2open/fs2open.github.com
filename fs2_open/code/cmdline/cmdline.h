@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.68 $
- * $Date: 2005-02-16 10:00:13 $
- * $Author: wmcoolmon $
+ * $Revision: 2.69 $
+ * $Date: 2005-03-13 23:07:35 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2005/02/16 10:00:13  wmcoolmon
+ * "-ingame" command line option
+ *
  * Revision 2.67  2005/01/30 12:50:08  taylor
  * merge with Linux/OSX tree - p0130
  *
@@ -575,6 +578,8 @@ extern int Cmdline_decals;
 
 extern int Cmdline_ballistic_gauge;
 extern int Cmdline_smart_shields;
+
+extern int Cmdline_tga16;
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif

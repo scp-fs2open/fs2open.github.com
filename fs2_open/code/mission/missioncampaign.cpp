@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-03-10 08:00:08 $
+ * $Revision: 2.19 $
+ * $Date: 2005-03-13 23:07:35 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/03/10 08:00:08  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.17  2005/02/23 05:05:38  taylor
  * compiler warning fixes (for MSVC++ 6)
  * have the warp effect only load as many LODs as will get used
@@ -1652,13 +1661,13 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 
 		fp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS );
 		if ( !fp )
-			return 0;
+			goto Done;
 
 		id = cfread_int( fp );
 		if ( id != (int)CAMPAIGN_STATS_FILE_ID ) {
 			Warning(LOCATION, "Campaign stats save file has invalid signature");
 			cfclose( fp );
-			return 0;
+			goto Done;
 		}
 
 		version = cfread_int( fp );
@@ -1666,9 +1675,10 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			Warning(LOCATION, "Campaign save file too old -- not compatible.  Deleting file.\nYou can continue from here without trouble\n\n");
 			cfclose( fp );
 			cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
-			return 0;
+			goto Done;
 		}
 
+		
 		if (version >= 2) {
 			// read in number of ships that were written to the file
 			n_ships = cfread_int( fp );
@@ -1681,10 +1691,39 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			}
 		}
 
+		const int ORIG_MAX_SHIP_TYPES = 130;
+		int read_size = 0;
+
+		// figure out the size of data we need to read each pass
+		if (version >= 2) {
+			// basic size, start with current and subtract what we don't want
+			read_size = sizeof(scoring_struct);
+
+			// if MAX_SHIP_TYPES has changed from what we expect then come up with a modified size:
+			// new_max_ship_types - old_max_ship_types * sizeof(int) * 3-times-MAX_SHIP_TYPES-is-used
+			if (MAX_SHIP_TYPES > ORIG_MAX_SHIP_TYPES)
+				read_size -= (MAX_SHIP_TYPES - ORIG_MAX_SHIP_TYPES) * sizeof(int) * 3;
+		} else {
+			// basic size, start with current and subtract what we don't want
+			read_size = sizeof(scoring_struct);
+			// we moved to int from ushort for kills[MAX_SHIP_TYPES], m_kills[MAX_SHIP_TYPES] & m_okKills[MAX_SHIP_TYPES]
+			read_size -= (sizeof(int) - sizeof(ushort)) * 3 * ORIG_MAX_SHIP_TYPES;
+			// we moved to int from ushort for m_dogfight_kills[MAX_PLAYERS]
+			read_size -= (sizeof(int) - sizeof(ushort)) * MAX_PLAYERS;
+
+			// if MAX_SHIP_TYPES has changed from what we expect then come up with a modified size:
+			// new_max_ship_types - old_max_ship_types * sizeof(ushort) * 3-times-MAX_SHIP_TYPES-is-used
+			// we moved from ushort to int for these 3 so take that into account
+			if (MAX_SHIP_TYPES > ORIG_MAX_SHIP_TYPES)
+				read_size -= (MAX_SHIP_TYPES - ORIG_MAX_SHIP_TYPES) * (sizeof(int) - sizeof(ushort)) * 3;
+		}
+
+		Assert( read_size );
+
 		num_stats_blocks = cfread_int( fp );
 		for (i = 0; i < num_stats_blocks; i++ ) {
 			num = cfread_int( fp );
-			cfread( &Campaign.missions[num].stats, sizeof(scoring_struct), 1, fp );
+			cfread( &Campaign.missions[num].stats, read_size, 1, fp );
 
 			if (version >= 2) {
 				// copy current values to temp and swap if needed
@@ -1724,6 +1763,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		cfclose(fp);
 	} // version < 15
 
+Done:
 	// -- taylor --
 	// force a save to update a campaign file to newest version since this
 	// normally isn't done until a campaign mission is successfully completed
