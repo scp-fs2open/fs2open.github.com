@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-01-12 23:38:42 $
+ * $Revision: 2.19 $
+ * $Date: 2005-01-13 01:10:33 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/01/12 23:38:42  Goober5000
+ * fixed another nasty bug
+ * --Goober5000
+ *
  * Revision 2.17  2005/01/11 21:38:48  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -1788,7 +1792,6 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// determine the status of the shipname that this object is acting on.  There are a couple of
 	// special cases to deal with.  Both the chase wing and undock commands will return from within
 	// the if statement.
-	// Goober5000 - don't return achievable for undocking anymore!
 	if ( (aigp->ai_mode == AI_GOAL_CHASE_WING) || (aigp->ai_mode == AI_GOAL_GUARD_WING) )
 	{
 		int num = wing_name_lookup( aigp->ship_name );
