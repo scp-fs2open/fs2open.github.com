@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-08-25 04:39:17 $
+ * $Revision: 2.12 $
+ * $Date: 2003-08-27 01:36:22 $
  * $Author: Goober5000 $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/08/25 04:39:17  Goober5000
+ * fixed unreachable code
+ * --Goober5000
+ *
  * Revision 2.10  2003/08/22 07:35:07  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -809,8 +813,10 @@ extern int game_cd_changed();
 
 CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize)
 {
+	/* Bobboau, what is this doing here? 31 is way too short... - Goober5000
 	if( strlen(file_path) > 31 )
-		Error(LOCATION, "file name %s too long, \nmust be less than 31 charicters", file_path);
+		Error(LOCATION, "file name %s too long, \nmust be less than 31 charicters", file_path);*/
+
 	char longname[_MAX_PATH];
 
 	//================================================
