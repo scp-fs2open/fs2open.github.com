@@ -8,6 +8,8 @@
 #include "math/fvi.h"
 #include "lighting/lighting.h"
 
+//#define DECALS_ENABLED
+
 int decal_intersect_seg_with_cube(vector * poly_point, vector start, vector end, vector cube_point[8], matrix orient, int ints=1);
 
 int decal_intersect_poly_with_cube(vector * poly_point, vector point[3], vector cube_point[8], int ints);
@@ -68,7 +70,7 @@ int decal_find_next(object *obj){
 }
 
 int decal_create_simple(object *obj, decal_point *point, int texture){//makes a simple non-clipped decal
-
+#ifdef DECALS_ENABLED
 	mprintf(("a decal is about to be made at %0.2f, %0.2f, %0.2f\n", point->pnt.xyz.x, point->pnt.xyz.y, point->pnt.xyz.z));
 	mprintf(("orient fvec at %0.2f, %0.2f, %0.2f\n", point->orient.vec.fvec.xyz.x, point->orient.vec.fvec.xyz.y, point->orient.vec.fvec.xyz.z));
 
@@ -128,6 +130,7 @@ int decal_create_simple(object *obj, decal_point *point, int texture){//makes a 
 
 	mprintf(("a decal should have been made at %0.2f %0.2f %0.2f\n", point->pnt.xyz.x, point->pnt.xyz.y, point->pnt.xyz.z));
 //Int3();
+#endif
 	return 1;
 }
 
@@ -141,6 +144,7 @@ int decal_create_simple(object *obj, decal_point *point, int texture){//makes a 
 //creates a decal, returns decal index on succes, -1 on failure
 
 int decal_create(object * obj, decal_point *point, int subobject, int texture, int backfaced_texture){
+#ifdef DECALS_ENABLED
 	mprintf(("a decal is about to be made at %0.2f, %0.2f, %0.2f\n", point->pnt.xyz.x, point->pnt.xyz.y, point->pnt.xyz.z));
 
 	if(obj->type != OBJ_SHIP){
@@ -305,6 +309,10 @@ mprintf(("deacal defined\n"));
 
 
 return dinx;
+
+#else
+return -1;
+#endif
 }
 //decal_model d_model;
 
@@ -699,7 +707,7 @@ mprintf(("vert %d at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", j, vecs[j].x, v
 
 
 void decal_render_all(object * obj){
-
+#ifdef DECALS_ENABLED
 	if(obj->type != OBJ_SHIP){
 		return;
 	}
@@ -772,5 +780,5 @@ mprintf(("vert %d at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", j, vecs[j].x, v
 		}
 	}
 //	mprintf(("decals rendered\n"));
-
+#endif
 }

@@ -782,6 +782,9 @@ int parse_weapon()
 	stuff_string(wip->name, F_NAME, NULL);
 	diag_printf ("Weapon name -- %s\n", wip->name);
 
+	strcpy(parse_error_text, "");
+	strcpy(parse_error_text, "\nin weapon: ");
+	strcat(parse_error_text, wip->name);
 	// AL 28-3-98: If this is a demo build, we only want to parse weapons that are preceded with
 	//             the '@' symbol
 	#ifdef DEMO // not needed FS2_DEMO (separate table file)
@@ -1529,7 +1532,6 @@ int parse_weapon()
 		stuff_float(&wip->decal_rad);
 	}
 
-
 	return 0;
 }
 
@@ -1605,6 +1607,7 @@ void parse_weaponstbl()
 	Num_spawn_types = 0;
 	
 	required_string("#Primary Weapons");
+
 	while (required_string_either("#End", "$Name:")) {
 		Assert( Num_weapon_types < MAX_WEAPON_TYPES );
 		// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
@@ -1615,6 +1618,7 @@ void parse_weaponstbl()
 		Num_weapon_types++;
 	}
 	required_string("#End");
+
 
 	required_string("#Secondary Weapons");
 	First_secondary_index = Num_weapon_types;
@@ -1641,6 +1645,8 @@ void parse_weaponstbl()
 	}
 	required_string("#End");
 
+	strcpy(parse_error_text, "in the counter measure table entry");
+
 	required_string("#Countermeasures");
 	while (required_string_either("#End", "$Name:")) {
 		Assert( Num_cmeasure_types < MAX_CMEASURE_TYPES );
@@ -1648,13 +1654,18 @@ void parse_weaponstbl()
 		Num_cmeasure_types++;
 	}
 
+	strcpy(parse_error_text, "");
+
 	required_string("#End");
 
 	// Read in a list of weapon_info indicies that are an ordering of the player weapon precedence.
 	// This list is used to select an alternate weapon when a particular weapon is not available
 	// during weapon selection.
 	required_string("$Player Weapon Precedence:");
+
+	strcpy(parse_error_text, "in the player weapon precedence list");
 	Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+	strcpy(parse_error_text, "");
 
 	translate_spawn_types();
 

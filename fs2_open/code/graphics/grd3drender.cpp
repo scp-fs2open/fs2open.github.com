@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-10-05 16:46:09 $
- * $Author: randomtiger $
+ * $Revision: 2.5 $
+ * $Date: 2003-01-05 23:41:50 $
+ * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/10/05 16:46:09  randomtiger
+ * Added us fs2_open people to the credits. Worth looking at just for that.
+ * Added timer bar code, by default its not compiled in.
+ * Use TIMEBAR_ACTIVE in project and dependancy code settings to activate.
+ * Added the new timebar files with the new code.
+ *
  * Revision 2.3  2002/08/07 00:45:25  DTP
  * Implented -GF4FIX commandline switch & #include "cmdline/cmdline.h"
  *
@@ -998,6 +1004,23 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 	d3d_DrawPrimitive(D3DPT_TRIANGLEFAN, D3DVT_TLVERTEX, (LPVOID)d3d_verts, nverts, NULL);
 
+
+	//this is my hack to get some sort of luminence mapping-Bobboau
+	if(GLOWMAP[gr_screen.current_bitmap] > 0){
+
+		gr_screen.gf_set_bitmap(GLOWMAP[gr_screen.current_bitmap], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0f);
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
+			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
+		}
+
+		gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, zbuffer_type );
+
+		for (i=0; i<nverts; i++ )	{
+			d3d_verts[i].color = RGBA_MAKE(255, 255, 255, 0);
+		}
+		d3d_DrawPrimitive(D3DPT_TRIANGLEFAN, D3DVT_TLVERTEX, (LPVOID)d3d_verts, nverts, NULL);
+	}
 	// turn off fog
 	// if(flags & TMAP_FLAG_PIXEL_FOG){
 		// gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);

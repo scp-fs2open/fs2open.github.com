@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-01-05 23:41:50 $
+ * $Author: bobboau $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -350,5 +353,7 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
 // given a bitmap and a section, return the size (w, h)
 void bm_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h);
+
+extern int GLOWMAP[MAX_BITMAPS];	//this holds a reference to a map that is a fully lit version of it's index -Bobboau
 
 #endif

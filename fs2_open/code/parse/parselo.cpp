@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.1 $
- * $Author: penguin $
- * $Date: 2002-08-01 01:41:09 $
+ * $Revision: 2.2 $
+ * $Author: bobboau $
+ * $Date: 2003-01-05 23:41:51 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -120,6 +123,7 @@
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5
 
+char	parse_error_text[64];//for my better error mesages-Bobboau
 char		Current_filename[128];
 char		Error_str[ERROR_LENGTH];
 int		my_errno;
@@ -422,15 +426,15 @@ int required_string(char *pstr)
 	ignore_white_space();
 
 	while (strnicmp(pstr, Mp, strlen(pstr)) && (count < RS_MAX_TRIES)) {
-		error_display(1, "Required token = [%s], found [%.32s].\n", pstr, next_tokens());
+		error_display(1, "Required token = [%s], found [%.32s] %s.\n", pstr, next_tokens(), parse_error_text);
 		advance_to_eoln(NULL);
 		ignore_white_space();
 		count++;
 	}
 
 	if (count == RS_MAX_TRIES) {
-		nprintf(("Error", "Error: Unable to find required token [%s]\n", pstr));
-		Warning(LOCATION, "Error: Unable to find required token [%s]\n", pstr);
+		nprintf(("Error", "Error: Unable to find required token [%s] %s\n", pstr, parse_error_text));
+		Warning(LOCATION, "Error: Unable to find required token [%s] %s\n", pstr, parse_error_text);
 		longjmp(parse_abort, 1);
 	}
 
@@ -559,15 +563,15 @@ int required_string_either(char *str1, char *str2)
 	while (count < RS_MAX_TRIES) {
 		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
 			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n", token_found = str1);
+			diag_printf("Found required string [%s]\n%s", token_found = str1, parse_error_text);
 			return 0;
 		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
 			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n", token_found = str2);
+			diag_printf("Found required string [%s]\n%s", token_found = str2, parse_error_text);
 			return 1;
 		}
 
-		error_display(1, "Required token = [%s] or [%s], found [%.32s].\n", str1, str2, next_tokens());
+		error_display(1, "Required token = [%s] or [%s], found [%.32s] %s.\n", str1, str2, next_tokens(), parse_error_text);
 
 		advance_to_eoln(NULL);
 		ignore_white_space();
@@ -1447,7 +1451,11 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 					Error(LOCATION, "Unable to find string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
 				} else if (num == -2) {
 					if (strlen(str) > 0) {
-						Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
+						if(strlen(parse_error_text) > 0){
+							Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" %s.\n", str, parse_error_text);
+						}else{
+							Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
+						}
 					}
 				}
 
@@ -1682,6 +1690,8 @@ void init_parse()
 
 	Total_goal_ship_names = 0;
 	init_sexp();
+
+	strcpy(parse_error_text, "");//better error mesages-Bobboau
 }
 
 void reset_parse()
