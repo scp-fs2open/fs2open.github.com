@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-02-28 01:24:02 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2005-03-03 07:30:15 $
+ * $Author: wmcoolmon $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/02/28 01:24:02  taylor
+ * uugh, missed the initial tree move (WMC: probable locking problem)
+ *
  * Revision 2.11  2005/02/23 13:17:05  taylor
  * few more compiler warning fixes (didn't mean to commit iostream.h change)
  * lower warning level to 3 to stop MSVC6 from complaining about C++ headers
@@ -1239,11 +1242,6 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 
 	if ( cfp == NULL ) {
 		goto OPEN_ERROR;
-	}
-
-	if(!strnicmp(pszFilename + strlen(pszFilename) - 3, "ogg", 3))
-	{
-		Assert(true);
 	}
 
 	//Try to open the OGG

@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.46 $
- * $Date: 2005-03-03 06:05:26 $
+ * $Revision: 2.47 $
+ * $Date: 2005-03-03 07:30:14 $
  * $Author: wmcoolmon $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/03/03 06:05:26  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.45  2005/03/01 23:08:24  taylor
  * make sure starfield bitmaps render when not in HTL mode
  * slight header fix for osapi.h
@@ -1630,8 +1633,6 @@ void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int 
 	int bitmapnum = handle % MAX_BITMAPS;
 
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!	
-	if(bm_bitmaps[bitmapnum].handle != handle)
-		Assert(true);
 	
 	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_NONE) || (bm_bitmaps[bitmapnum].handle != handle) ) {
 		if (w) *w = 0;
