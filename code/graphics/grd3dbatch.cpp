@@ -9,6 +9,11 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/12/08 22:30:02  randomtiger
+ * Put render state and other direct D3D calls repetition check back in, provides speed boost.
+ * Fixed bug that caused fullscreen only crash with DXT textures
+ * Put dithering back in for tgas and jpgs
+ *
  * Revision 2.8  2003/12/04 20:39:09  randomtiger
  * Added DDS image support for D3D
  * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
@@ -676,7 +681,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 			hr = GlobalD3DVars::lpD3DDevice->DrawPrimitive(
 				D3DPT_TRIANGLELIST, 0, array[index].char_count * 2);
 
-			Assert(SUCCEEDED(hr));
+   //			Assert(SUCCEEDED(hr));
 
 			array[index].used_this_frame = true;
 			return;
@@ -799,8 +804,8 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 		hr = GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vbuffer, vertex_types[FONT_VTYPE].size); 
 		Assert(SUCCEEDED(hr));
 
-		hr = GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, char_count * 2);
-		Assert(SUCCEEDED(hr));
+  		hr = GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, char_count * 2);
+//  		Assert(SUCCEEDED(hr));
 
 		// Fill in details
 		array[new_id].char_count   = char_count;

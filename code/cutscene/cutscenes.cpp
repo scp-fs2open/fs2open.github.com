@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-08-21 20:54:38 $
+ * $Revision: 2.8 $
+ * $Date: 2004-01-24 15:52:25 $
  * $Author: randomtiger $
- * $Revision: 2.7 $
- * $Date: 2003-08-21 20:54:38 $
+ * $Revision: 2.8 $
+ * $Date: 2004-01-24 15:52:25 $
  * $Author: randomtiger $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/08/21 20:54:38  randomtiger
+ * Fixed switching - RT
+ *
  * Revision 2.6  2003/07/15 02:58:08  phreak
  * the cutscene section in the techroom does not append *.mve onto a filename
  *
@@ -488,18 +491,9 @@ void cutscenes_screen_play()
 	strcpy(name, Cutscenes[which_cutscene].filename );
 //	full_name = cf_add_ext(name, NOX(".mve"));
 
-	// no soup for you!
-	if(gr_screen.mode != GR_DIRECT3D )
-	{
-		gr_activate(0);
-	}
-
+	main_hall_stop_music();
 	int rval = movie_play(name);
-
-	if(gr_screen.mode != GR_DIRECT3D )
-	{
-		gr_activate(1);
-	}
+	main_hall_start_music();
 
 	if ( !rval ) {
 		char str[256];

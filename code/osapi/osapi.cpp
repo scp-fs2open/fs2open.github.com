@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-01-17 21:59:54 $
+ * $Revision: 2.13 $
+ * $Date: 2004-01-24 15:52:26 $
  * $Author: randomtiger $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/01/17 21:59:54  randomtiger
+ * Some small changes to the main codebase that allow Fred_open OGL to compile.
+ *
  * Revision 2.11  2003/10/26 00:31:59  randomtiger
  * Fixed hulls not drawing (with Phreaks advise).
  * Put my 32bit PCX loading under PCX_32 compile flag until its working.
@@ -608,12 +611,6 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 	case WM_KILLFOCUS:
 		{
 			key_lost_focus();
-
-			if(os_app_activate_hook_on == false)
-			{
-				break;
-			}
-
 			gr_activate(0);
 			break;
 		}
@@ -621,12 +618,6 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 	case WM_SETFOCUS:
 		{
 			key_got_focus();
-					
-			if(os_app_activate_hook_on == false)
-			{
-				break;
-			}
-
 			gr_activate(1);
 			break;
 		}
@@ -699,8 +690,9 @@ BOOL win32_create_window()
 	if(windowed){
 		wclass.style			= CS_VREDRAW | CS_HREDRAW | CS_OWNDC;
 	} else {
-		wclass.style			= CS_BYTEALIGNCLIENT|CS_VREDRAW | CS_HREDRAW;	// | CS_OWNDC;	//CS_DBLCLKS | CS_PARENTDC| CS_VREDRAW | CS_HREDRAW |;	
-	}		
+		wclass.style			= CS_BYTEALIGNCLIENT|CS_VREDRAW | CS_HREDRAW;
+	}	
+	
 	wclass.cbSize			= sizeof(WNDCLASSEX);
 	wclass.hIcon			= LoadIcon(hInst, MAKEINTRESOURCE(IDI_APP_ICON) );
 	wclass.hIconSm			= NULL;	//LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1) );
@@ -716,7 +708,7 @@ BOOL win32_create_window()
 	if(windowed){
 		style = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	} else {
-		style = WS_POPUP;
+		style = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	}	
 
 	// make sure we adjust for the actual window border	
