@@ -32,9 +32,10 @@ typedef struct hud_info
 
 	int custom_gauge_coords[MAX_CUSTOM_HUD_GAUGES][2];
 	int custom_gauge_sizes[MAX_CUSTOM_HUD_GAUGES][2];
-	int custom_gauge_frames[MAX_CUSTOM_HUD_GAUGES];
 	char custom_gauge_images[MAX_CUSTOM_HUD_GAUGES][MAX_FILENAME_LEN];
+	int custom_gauge_frames[MAX_CUSTOM_HUD_GAUGES];
 	char custom_gauge_text[MAX_CUSTOM_HUD_GAUGES][NAME_LENGTH];
+	color custom_gauge_colors[MAX_CUSTOM_HUD_GAUGES];
 
 //	int gauge_text_sexp_vars[MAX_HUD_GAUGE_TYPES];
 //	int gauge_frame_sexp_vars[MAX_HUD_GAUGE_TYPES];
@@ -55,12 +56,15 @@ typedef struct gauge_info
 	size_t image_dest;	//offset of image string in hud_info; init in load_hud_defaults() (Can be NULL)
 	size_t frame_dest;	//Storage spot for frame info
 	size_t text_dest;	//Text value
+	size_t color_dest;
 	int show_outside;	//Show outside ship?
+	//int (*update_gauge)(gauge_info* cg);	//Function to update the gauge
 } gauge_info;
 
 //Macros to get HUD gauge values
 #define HUD_INT(a, b) ((int*)((char*)a + b))
 #define HUD_CHAR(a, b) ((char *)((char*)a + b))
+#define HUD_COLOR(a, b) ((color *)((char*)a + b))
 
 //Variables
 extern int Num_custom_gauges;
