@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.4 $
- * $Date: 2004-07-26 20:47:35 $
- * $Author: Kazan $
+ * $Revision: 1.5 $
+ * $Date: 2004-10-10 16:59:37 $
+ * $Author: taylor $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/07/26 20:47:35  Kazan
+ * remove MCD complete
+ *
  * Revision 1.3  2004/07/12 16:32:51  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -108,7 +111,7 @@ int jpeg_read_bitmap_32(char *real_filename, ubyte *image_data, ubyte *palette, 
 	strcpy( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
-	strcat( filename, ".tga" );
+	strcat( filename, ".jpg" );
 
 	ilGenImages(1,&jpgimage);
 	ilBindImage(jpgimage);
