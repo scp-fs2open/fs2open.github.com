@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2004/07/31 08:58:07  et1
+ * Implemented "+SwarmWait:"-token and fixed weapon glow tails
+ *
  * Revision 2.73  2004/07/26 20:47:56  Kazan
  * remove MCD complete
  *
@@ -1477,6 +1480,25 @@ int parse_weapon(int subtype, bool replace)
 	if (optional_string("+Weapon Range:")) {
 		stuff_float(&wip->weapon_range);
 	}
+
+    // *Mínimum weapon range, default is 0 -Et1
+    wip->WeaponMinRange = 0.0f;
+
+    if( optional_string( "+Weapon Min Range:" ) )
+    {
+
+        float MinRange;
+
+        stuff_float( &MinRange );
+
+        if( MinRange > 0.0f && MinRange < min ( wip->max_speed * wip->lifetime, wip->weapon_range ) )
+        {
+
+            wip->WeaponMinRange = MinRange;
+
+        }
+
+    }
 
 	wip->spawn_type = -1;
 	parse_wi_flags(wip);
