@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.38 $
- * $Date: 2004-11-27 22:08:21 $
+ * $Revision: 2.39 $
+ * $Date: 2005-01-21 08:20:44 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2004/11/27 22:08:21  taylor
+ * more EFF fixes - can't believe I forgot all this crap
+ *
  * Revision 2.37  2004/11/23 00:10:06  taylor
  * try and protect the bitmap_entry stuff a bit better
  * fix the transparent support ship, again, but correctly this time
@@ -1131,12 +1134,15 @@ int bm_load( char * real_filename )
 
 	// Lets find out what type it is
 	{
-		const int NUM_TYPES	= 4;
-		const ubyte type_list[NUM_TYPES] = {BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_DDS, BM_TYPE_PCX};
-		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".dds", ".pcx"};
+		// TGA gets listed first and last.  The first is for when -jpgtga is used and the last TGA is a final
+		// check for 16-bit TGAs which may be used for interface graphics.  PCX will have preference though
+		// in order to speed up loading and match retail order - taylor
+		const int NUM_TYPES	= 5;
+		const ubyte type_list[NUM_TYPES] = {BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_DDS, BM_TYPE_PCX, BM_TYPE_TGA};
+		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".dds", ".pcx", ".tga"};
 		
 		// Only load TGA and JPG if given flag, support DDS and PCX by default
-		i = n = Cmdline_jpgtga ? 0 : 2; // 2 Means start with DDS and fall back to PCX
+		i = n = Cmdline_jpgtga ? 0 : 2; // 2 Means start with DDS and fall back to PCX then TGA
 
 		for(; n<NUM_TYPES; n++) {
 			// see if it's already loaded
