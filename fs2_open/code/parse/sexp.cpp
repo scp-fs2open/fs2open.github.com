@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-10-29 22:41:48 $
+ * $Author: sesquipedalian $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/13 09:16:18  wmcoolmon
  * Added initial code for "ship-lights-on" and "ship-lights-off" SEXPs
  *
@@ -520,6 +523,8 @@ sexp_oper Operators[] = {
 	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
 	{ "ship-lights-on",					OP_SHIP_LIGHTS_ON,					1, 1			}, //-WMCoolmon
 	{ "ship-lights-off",					OP_SHIP_LIGHTS_OFF,					1, 1			}, //-WMCoolmon
+	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
+	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
 	{ "turret-tagged-only",			OP_TURRET_TAGGED_ONLY_ALL,		1,	1			},
 	{ "turret-tagged-clear",		OP_TURRET_TAGGED_CLEAR_ALL,	1,	1			},
 	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
@@ -5915,6 +5920,49 @@ void sexp_ship_lights_off(int node) //-WMCoolmon
 	//Insert sexp here
 }
 
+void sexp_shields_off(int n, int shields_off ) //-Sesquipedalian
+{
+	char *ship_name;
+	object *objp;
+	int num;
+
+	for ( ; n != -1; n = CDR(n) ) {
+		ship_name = CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+			continue;
+
+		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
+		// in a list until created
+		num = ship_name_lookup(ship_name);
+		if ( num != -1 ) {
+			objp = &Objects[Ships[num].objnum];
+			if ( shields_off )
+				objp->flags |= OF_NO_SHIELDS; 
+			else
+				objp->flags &= ~OF_NO_SHIELDS; 
+		} else {
+			p_object *parse_obj;
+
+			parse_obj = mission_parse_get_arrival_ship( ship_name );
+			if ( parse_obj ) {
+				if ( shields_off )
+					parse_obj->flags |= P_OF_NO_SHIELDS;
+				else
+					parse_obj->flags &= ~P_OF_NO_SHIELDS;
+				break;
+	#ifndef NDEBUG
+			} else {
+				Int3();	// get allender -- could be a potential problem here
+	#endif
+			}
+		}
+	}
+}
+
+
+
 
 int sexp_key_pressed(int node)
 {
@@ -7660,6 +7708,13 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				sexp_ship_lights_off(node);
 
+			//-Sesquipedalian
+			case OP_SHIELDS_ON: 
+			case OP_SHIELDS_OFF:
+				sexp_shields_off( node, (op_num==OP_SHIELDS_OFF?1:0) );
+				sexp_val = 1;
+				break;
+
 			case OP_SEND_MESSAGE:
 				sexp_send_message( node );
 				sexp_val = 1;
@@ -8288,6 +8343,8 @@ int query_operator_return_type(int op)
 		case OP_SHIP_LIGHTS_ON:
 		case OP_SHIP_LIGHTS_OFF:
 		case OP_SHIP_NO_GUARDIAN:
+            case OP_SHIELDS_ON:
+            case OP_SHIELDS_OFF:
 		case OP_RED_ALERT:
 		case OP_MODIFY_VARIABLE:
 		case OP_BEAM_FIRE:
@@ -8434,6 +8491,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_VANISH:
 		case OP_SHIP_LIGHTS_ON:
 		case OP_SHIP_LIGHTS_OFF:
+		case OP_SHIELDS_ON:
+		case OP_SHIELDS_OFF:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SECONDARIES_DEPLETED:
 		case OP_SPECIAL_WARP_DISTANCE:
