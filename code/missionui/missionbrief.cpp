@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-07 18:14:54 $
- * $Author: randomtiger $
+ * $Revision: 2.8 $
+ * $Date: 2003-11-06 22:45:55 $
+ * $Author: phreak $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/07 18:14:54  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.6  2003/09/05 04:25:28  Goober5000
  * well, let's see here...
  *
@@ -629,6 +637,11 @@ static int Title_coords_multi[GR_NUM_RESOLUTIONS][3] = {
 int Brief_max_line_width[GR_NUM_RESOLUTIONS] = {
 	MAX_BRIEF_LINE_W_640, MAX_BRIEF_LINE_W_1024
 };
+
+//stuff for ht&l. vars and such
+extern float View_zoom, Canv_h2, Canv_w2;
+extern int Cmdline_nohtl;
+
 
 // --------------------------------------------------------------------------------------
 // Forward declarations
@@ -1420,8 +1433,12 @@ void brief_render_closeup(int ship_class, float frametime)
 	gr_set_clip(Closeup_region[gr_screen.res][0], Closeup_region[gr_screen.res][1], w, h);
 
 	g3_start_frame(1);
-
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
+
+
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, Canv_w2/Canv_h2, 0.1f,30000);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	
 	model_clear_instance( Closeup_icon->modelnum );
 	model_set_detail_level(0);
 
@@ -1445,6 +1462,9 @@ void brief_render_closeup(int ship_class, float frametime)
 	if (is_neb) {
 		The_mission.flags |= MISSION_FLAG_FULLNEB;
 	}
+
+	if (!Cmdline_nohtl) gr_end_view_matrix();
+	if (!Cmdline_nohtl) gr_end_proj_matrix();
 
 	g3_end_frame();
 
