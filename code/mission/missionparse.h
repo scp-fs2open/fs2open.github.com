@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.26 $
- * $Author: Goober5000 $
- * $Date: 2003-04-29 01:03:23 $
+ * $Revision: 2.27 $
+ * $Author: phreak $
+ * $Date: 2003-05-09 23:51:04 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.25  2003/03/25 07:03:30  Goober5000
  * added beginning functionality for $Texture Replace implementation in FRED
  * --Goober5000
@@ -390,6 +394,7 @@ typedef struct mission {
 	char	next_mission_failure[NAME_LENGTH];
 	char	squad_filename[MAX_FILENAME_LEN+1];		// if the player has been reassigned to a squadron, this is the filename of the logo, otherwise empty string
 	char	squad_name[NAME_LENGTH+1];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
+	char	loading_screen[GR_NUM_RESOLUTIONS][NAME_LENGTH];
 } mission;
 
 // cargo defines
@@ -480,6 +485,7 @@ extern int	Num_reinforcement_type_names;
 extern int	Player_starts;
 extern fix	Entry_delay_time;
 extern int	Fred_num_texture_replacements;	// Goober5000
+extern int	Loading_screen_bm_index;
 
 extern ushort Current_file_checksum;
 extern int    Current_file_length;
