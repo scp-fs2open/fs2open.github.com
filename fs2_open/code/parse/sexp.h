@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.49 $
- * $Author: phreak $
- * $Date: 2003-08-30 21:59:48 $
+ * $Revision: 2.50 $
+ * $Author: Goober5000 $
+ * $Date: 2003-09-05 04:39:55 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2003/08/30 21:59:48  phreak
+ * added num-ships-in-battle and num-ships-in-battle-team sexp
+ *
  * Revision 2.48  2003/08/28 05:46:52  Goober5000
  * trying to commit
  * --Goober5000
@@ -862,6 +865,9 @@
 #define OP_TURRET_TAGGED_CLEAR_SPECIFIC		(0x0089 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
 #define OP_LOCK_ROTATING_SUBSYSTEM			(0x008a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FREE_ROTATING_SUBSYSTEM			(0x008b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PLAYER_USE_AI					(0x008c | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PLAYER_NOT_USE_AI				(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_FORCE_JUMP						(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -975,20 +981,24 @@ char *CTEXT(int n);
 #define SEXP_ATOM				2
 
 // flags for sexpressions -- masked onto the end of the type field
-#define SEXP_FLAG_PERSISTENT		(1<<31)		// should this sexp node be persistant across missions
-#define SEXP_FLAG_VARIABLE			(1<<30)
+#define SEXP_FLAG_PERSISTENT				(1<<31)		// should this sexp node be persistant across missions
+#define SEXP_FLAG_VARIABLE					(1<<30)
 
 // sexp variable definitions
-#define SEXP_VARIABLE_CHAR				('@')
+#define SEXP_VARIABLE_CHAR					('@')
 // defines for type field of sexp_variable.  Be sure not to conflict with type field of sexp_node
-#define SEXP_VARIABLE_NUMBER			(0x0010)
-#define SEXP_VARIABLE_STRING			(0x0020)
-#define SEXP_VARIABLE_UNKNOWN			(0x0040)
-#define SEXP_VARIABLE_NOT_USED		(0x0080)
+#define SEXP_VARIABLE_NUMBER				(1<<4)	//	(0x0010)
+#define SEXP_VARIABLE_STRING				(1<<5)	//	(0x0020)
+#define SEXP_VARIABLE_UNKNOWN				(1<<6)	//	(0x0040)
+#define SEXP_VARIABLE_NOT_USED				(1<<7)	//	(0x0080)
 
-#define SEXP_VARIABLE_BLOCK			(0X0001)
-#define SEXP_VARIABLE_BLOCK_EXP		(0X0002)
-#define SEXP_VARIABLE_BLOCK_HIT		(0X0004)
+#define SEXP_VARIABLE_BLOCK					(1<<0)	//	(0x0001)
+#define SEXP_VARIABLE_BLOCK_EXP				(1<<1)	//	(0x0002)
+#define SEXP_VARIABLE_BLOCK_HIT				(1<<2)	//	(0x0004)
+#define SEXP_VARIABLE_PLAYER_PERSISTENT		(1<<3)	//	(0x0008)
+
+// Goober5000 - hopefully this should work and not conflict with anything
+#define SEXP_VARIABLE_CAMPAIGN_PERSISTENT	(1<<29)	//	(0x0100)
 
 #define BLOCK_EXP_SIZE					6
 #define INNER_RAD							0
@@ -1018,15 +1028,16 @@ char *CTEXT(int n);
 // defines to short circuit evaluation when possible. Also used when goals can't
 // be satisfied yet because ship (or wing) hasn't been created yet.
 
-#define SEXP_TRUE				1
+#define SEXP_TRUE			1
 #define SEXP_FALSE			0
-#define SEXP_KNOWN_FALSE	-1
-#define SEXP_KNOWN_TRUE		-2
-#define SEXP_UNKNOWN			-3
-#define SEXP_NAN				-4  // not a number -- used when ships/wing part of boolean and haven't arrived yet
-#define SEXP_NAN_FOREVER	-5  // not a number and will never change -- used to falsify boolean sexpressions
-#define SEXP_CANT_EVAL		-6  // can't evaluate yet for whatever reason (acts like false)
-#define SEXP_NUM_EVAL		-7	 // already completed an arithmetic operation and result is stored
+// Goober5000: changed these to unlikely values, because now we have sexps using negative numbers
+#define SEXP_KNOWN_FALSE	-32767	//-1
+#define SEXP_KNOWN_TRUE		-32766	//-2
+#define SEXP_UNKNOWN		-32765	//-3
+#define SEXP_NAN			-32764	//-4	// not a number -- used when ships/wing part of boolean and haven't arrived yet
+#define SEXP_NAN_FOREVER	-32763	//-5	// not a number and will never change -- used to falsify boolean sexpressions
+#define SEXP_CANT_EVAL		-32762	//-6	// can't evaluate yet for whatever reason (acts like false)
+#define SEXP_NUM_EVAL		-32761	//-7	// already completed an arithmetic operation and result is stored
 
 // defines for check_sexp_syntax
 #define SEXP_CHECK_NONOP_ARGS			-1			// non-operator has arguments
@@ -1101,7 +1112,7 @@ typedef struct sexp_node {
 } sexp_node;
 
 typedef struct sexp_variable {
-	int	type;
+	int		type;
 	char	text[TOKEN_LENGTH];
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
@@ -1179,6 +1190,7 @@ void sexp_modify_variable(int);
 void sexp_modify_variable(char *text, int index);
 int get_index_sexp_variable_name(const char* temp_name);
 int sexp_variable_count();
+int sexp_campaign_persistent_variable_count();	// Goober5000
 void sexp_variable_delete(int index);
 void sexp_variable_sort();
 void sexp_fred_modify_variable(const char *text, const char *var_name, int index, int type);
