@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-01-29 08:06:54 $
+ * $Revision: 2.50 $
+ * $Date: 2005-01-30 03:26:11 $
  * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/01/29 08:06:54  wmcoolmon
+ * Update to work with optimized shader func
+ *
  * Revision 2.48  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -1404,7 +1407,7 @@ void hud_make_shader(shader *sh, int r, int g, int b, float dimmer = 1000.0f)
 
 	// The m matrix converts all colors to shades of green
 	//float tmp = 16.0f*(0.0015625f * i2fl(HUD_color_alpha+1.0f));
-	float tmp = 0.025 * i2fl(HUD_color_alpha+1.0f);
+	float tmp = 0.025f * i2fl(HUD_color_alpha+1.0f);
 
 	rf = tmp*r;
 	gf = tmp*r;

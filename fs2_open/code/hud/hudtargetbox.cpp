@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-01-29 09:19:45 $
- * $Author: argv $
+ * $Revision: 2.43 $
+ * $Date: 2005-01-30 03:26:11 $
+ * $Author: wmcoolmon $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/01/29 09:19:45  argv
+ * Fixed compile errors due to several source files not having been updated to
+ * reference "Min/Max_draw_distance" instead of "MIN/MAX_DRAW_DISTANCE".
+ *
+ * -- _argv[-1]
+ *
  * Revision 2.41  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -736,37 +742,6 @@ void hud_targetbox_init()
 	}
 
 	hud_targetbox_init_all_timers();
-}
-
-// -------------------------------------------------------------------------------------
-// hud_save_restore_camera_data()
-//
-//	Called to save and restore the 3D camera settings.
-//
-void hud_save_restore_camera_data(int save)
-{
-	static vector	save_view_position;
-	static float	save_view_zoom;
-	static matrix	save_view_matrix;
-	static matrix	save_eye_matrix;
-	static vector	save_eye_position;
-
-	// save global view variables, so we can restore them
-	if ( save ) {
-		save_view_position	= View_position;
-		save_view_zoom			= View_zoom;
-		save_view_matrix		= View_matrix;
-		save_eye_matrix		= Eye_matrix;
-		save_eye_position		= Eye_position;
-	}
-	else {
-		// restore global view variables
-		View_position	= save_view_position;
-		View_zoom		= save_view_zoom;
-		View_matrix		= save_view_matrix;
-		Eye_matrix		= save_eye_matrix;
-		Eye_position	= save_eye_position;
-	}
 }
 
 // -------------------------------------------------------------------------------------

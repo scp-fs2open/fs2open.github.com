@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-12-24 01:07:19 $
+ * $Revision: 2.21 $
+ * $Date: 2005-01-30 03:26:11 $
  * $Author: wmcoolmon $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/12/24 01:07:19  wmcoolmon
+ * Proposed HUD system stuffs - within NEW_HUD defines.
+ *
  * Revision 2.19  2004/12/05 22:01:11  bobboau
  * sevral feature additions that WCS wanted,
  * and the foundations of a submodel animation system,
@@ -259,6 +262,8 @@
 #include "weapon/emp.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
+#include "render/3d.h"	//For g3_start_frame
+#include "render/3dinternal.h" //For View_zoom
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -439,6 +444,7 @@ int hud_shield_maybe_flash(int gauge, int target_index, int shield_offset)
 //
 // Show the players shield strength and integrity
 //
+extern int Cmdline_nohtl;
 bool damnit_you_told_me_already = false;
 void hud_shield_show(object *objp)
 {
@@ -460,7 +466,7 @@ void hud_shield_show(object *objp)
 	sp = &Ships[objp->instance];
 	sip = &Ship_info[sp->ship_info_index];
 
-	if ( sip->shield_icon_index == 255 ) {
+	if ( sip->shield_icon_index == 255 && !sip->initial_shield_strength) {
 		return;
 	}
 
@@ -471,17 +477,19 @@ void hud_shield_show(object *objp)
 	}
 
 	// load in shield frames if not already loaded
-	Assert(sip->shield_icon_index >= 0 && sip->shield_icon_index < Hud_shield_filename_count);
-	sgp = &Shield_gauges[sip->shield_icon_index];
+	if(sip->shield_icon_index != 255)
+	{
+		sgp = &Shield_gauges[sip->shield_icon_index];
 
-	if ( sgp->first_frame == -1 ) {
-		sgp->first_frame = bm_load_animation(Hud_shield_filenames[sip->shield_icon_index], &sgp->num_frames);
-		if ( sgp->first_frame == -1 ) {
-			if(!damnit_you_told_me_already){
-				damnit_you_told_me_already = true;
-				Warning(LOCATION, "Could not load in the HUD shield ani: %s\n", Hud_shield_filenames[sip->shield_icon_index]);
+		if ( sgp->first_frame == -1 && sip->shield_icon_index >= 0 && sip->shield_icon_index < Hud_shield_filename_count) {
+			sgp->first_frame = bm_load_animation(Hud_shield_filenames[sip->shield_icon_index], &sgp->num_frames);
+			if ( sgp->first_frame == -1 ) {
+				if(!damnit_you_told_me_already){
+					damnit_you_told_me_already = true;
+					Warning(LOCATION, "Could not load in the HUD shield ani: %s\n", Hud_shield_filenames[sip->shield_icon_index]);
+				}
+				return;
 			}
-			return;
 		}
 	}
 
@@ -503,7 +511,50 @@ void hud_shield_show(object *objp)
 		hud_shield_maybe_flash(HUD_TARGET_SHIELD_ICON, SHIELD_HIT_TARGET, HULL_HIT_OFFSET);
 	}
 
-	GR_AABITMAP(sgp->first_frame, sx, sy);	
+	if(sip->shield_icon_index != 255)
+	{
+		GR_AABITMAP(sgp->first_frame, sx, sy);
+	}
+	else
+	{
+		bool G3_already = G3_count > 0 ? true : false;
+		angles rot_angles = {-1.570796327f,0.0f,0.0f};
+		matrix	object_orient;
+
+		vm_angles_2_matrix(&object_orient, &rot_angles);
+
+		gr_screen.clip_width = 112;
+		gr_screen.clip_height = 93;
+
+		//Fire it up
+		if(!G3_already)
+			g3_start_frame(1);
+		hud_save_restore_camera_data(1);
+		HUD_set_clip(sx, sy, 112, 93);
+		model_set_detail_level(1);
+
+		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
+
+		if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+		//We're ready to show stuff
+		ship_model_start(objp);
+		model_render( sp->modelnum, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->replacement_textures);
+		ship_model_stop( objp );
+
+		//We're done
+		if(!Cmdline_nohtl)
+		{
+			gr_end_view_matrix();
+			gr_end_proj_matrix();
+		}
+		if(!G3_already)
+			g3_end_frame();
+		hud_save_restore_camera_data(0);
+
+		HUD_reset_clip();
+	}
 
 	// draw the four quadrants
 	//
@@ -546,7 +597,137 @@ void hud_shield_show(object *objp)
 				hud_set_gauge_color(HUD_TARGET_SHIELD_ICON, hud_color_index);
 			}
 
-			GR_AABITMAP(sgp->first_frame+i+1, sx, sy);			
+			if(sip->shield_icon_index != 255)
+			{
+				GR_AABITMAP(sgp->first_frame+i+1, sx, sy);
+			}
+			else
+			{
+				//Ugh, draw four shield quadrants
+				int j;
+				int x_val, y_val, mid_val;
+				switch(i)
+				{
+					//Top
+					case 0:
+						sy += 3;
+						for(j = 0; j < 6; j++)
+						{
+							y_val = sy + 10;
+							gr_gradient(sx + j,
+										sy,
+										sx + j,
+										y_val - j);
+						}
+						mid_val = sy + 5;
+						for(; j < 106; j++)
+						{
+							gr_gradient(sx + j,
+										sy,
+										sx + j,
+										mid_val);
+						}
+						for(; j < 112; j++)
+						{
+							gr_gradient(sx + j,
+										sy,
+										sx + j,
+										sy + (j - 101));
+						}
+						y_val = sy - 1;
+						sy -= 3;
+						for(j = 0; j < 112; j++)
+							gr_gradient(sx + j, y_val, sx + j, sy);
+						break;
+					//Left
+					case 1:
+						sx += 1;
+						x_val = sx + 10;
+						y_val = sy + 15;
+						for(j = 0; j < 6; j++)
+						{
+							gr_gradient(sx,
+										y_val + j,
+										x_val - j,
+										y_val + j);
+						}
+						mid_val = sx + 5;
+						for(; j < 48; j++)
+						{
+							gr_gradient(sx,
+										y_val + j,
+										mid_val,
+										y_val + j);
+						}
+						for(; j < 54; j++)
+						{
+							gr_gradient(sx,
+										y_val + j,
+										sx + (j - 43),
+										y_val + j);
+						}
+						x_val = sx;
+						sx -= 3;
+						for(j = 0; j < 54; j++)
+							gr_gradient(x_val, y_val + j, sx, y_val + j);
+						sx += 2;
+						break;
+					//Right
+					case 2:
+						x_val = sx + 109;	//-3 for border
+						y_val = sy + 15;
+						for(j = 0; j < 6; j++)
+						{
+							gr_gradient(x_val,
+										y_val + j,
+										x_val - (10 - j),
+										y_val + j);
+						}
+						mid_val = x_val - 5;
+						for(; j < 48; j++)
+						{
+							gr_gradient(x_val,
+										y_val + j,
+										mid_val,
+										y_val + j);
+						}
+						for(; j < 54; j++)
+						{
+							gr_gradient(x_val,
+										y_val + j,
+										x_val - (j - 43),
+										y_val + j);
+						}
+						mid_val = x_val;
+						x_val += 3;
+						for(j = 0; j < 54; j++)
+							gr_gradient(mid_val, y_val + j, x_val, y_val + j);
+						break;
+					//Bottom
+					case 3:
+						y_val = sy + 80; //-3 for border
+						for(j = 0; j < 6; j++)
+							gr_gradient(sx + j,
+										y_val,
+										sx + j,
+										y_val - (10 - j));
+						mid_val = y_val - 5;
+						for(; j < 106; j++)
+							gr_gradient(sx + j,
+										y_val,
+										sx + j,
+										mid_val);
+						for(; j < 112; j++)
+							gr_gradient(sx + j,
+										y_val,
+										sx + j,
+										y_val - (j - 101));
+						mid_val = y_val + 1;
+						y_val += 3;
+						for(j = 0; j < 112; j++)
+							gr_gradient(sx + j, mid_val, sx + j, y_val);
+				}
+			}
 		}
 	}
 
