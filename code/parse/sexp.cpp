@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.114 $
- * $Date: 2004-10-13 10:46:49 $
+ * $Revision: 2.115 $
+ * $Date: 2004-10-14 01:19:17 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.114  2004/10/13 10:46:49  Goober5000
+ * fixed a few when-argument bugs
+ * --Goober5000
+ *
  * Revision 2.113  2004/09/24 02:12:59  Goober5000
  * some ubersexp fixes
  * --Goober5000
@@ -986,6 +990,7 @@ sexp_oper Operators[] = {
 	{ "every-of",				OP_EVERY_OF,			1, INT_MAX, },	// Goober5000
 	{ "random-of",				OP_RANDOM_OF,			1, INT_MAX, },	// Goober5000
 	{ "number-of",				OP_NUMBER_OF,			2, INT_MAX, },	// Goober5000
+	{ "invalidate-argument",	OP_INVALIDATE_ARGUMENT,	1, INT_MAX, },	// Goober5000
 
 	{ "send-message-list",			OP_SEND_MESSAGE_LIST,			4, INT_MAX	},
 	{ "send-message",					OP_SEND_MESSAGE,					3, 3,			},
@@ -1009,7 +1014,8 @@ sexp_oper Operators[] = {
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
 	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
 	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
-	{ "player-use-ai",				OP_PLAYER_USE_AI,				1, 1 },			// Goober5000
+	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
+	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
 
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
 	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 3,			},
@@ -1414,6 +1420,7 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[i].first = first;
 	Sexp_nodes[i].rest = rest;
 	Sexp_nodes[i].value = SEXP_UNKNOWN;
+	Sexp_nodes[i].flags = SNF_DEFAULT_VALUE;	// Goober5000
 	return i;
 }
 
@@ -6366,18 +6373,22 @@ int test_argument_list_for_condition(int n, int condition_node)
 	num_true = 0;
 	while (n != -1)
 	{
-		// flush conditional to avoid short-circuiting
-		flush_sexp_tree(condition_node);
-
-		// evaluate conditional for current argument
-		Sexp_current_replacement_argument = Sexp_nodes[n].text;
-		val = eval_sexp(condition_node);
-
-		// true?
-		if (val)
+		// only eval this argument if it's valid
+		if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 		{
-			num_true++;
-			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+			// flush conditional to avoid short-circuiting
+			flush_sexp_tree(condition_node);
+
+			// evaluate conditional for current argument
+			Sexp_current_replacement_argument = Sexp_nodes[n].text;
+			val = eval_sexp(condition_node);
+
+			// true?
+			if (val)
+			{
+				num_true++;
+				Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+			}
 		}
 
 		// continue along argument list
@@ -6455,7 +6466,7 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // Goober5000
 // this works a little differently... we randomly pick one argument to use
 // for our condition, but this argument must be saved among sexp calls...
-// so we select an argument and mark it as SEXP_KNOWN_TRUE
+// so we select an argument and set its flag
 int eval_random_of(int arg_handler_node, int condition_node)
 {
 	int n, i, val;
@@ -6465,7 +6476,7 @@ int eval_random_of(int arg_handler_node, int condition_node)
 	n = CDR(arg_handler_node);
 	while (n != -1)
 	{
-		if (Sexp_nodes[n].value == SEXP_KNOWN_TRUE)
+		if (Sexp_nodes[n].flags & SNF_ARGUMENT_SELECT)
 			break;
 		n = CDR(n);
 	}
@@ -6479,21 +6490,25 @@ int eval_random_of(int arg_handler_node, int condition_node)
 			n = CDR(n);
 		}
 
-		Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
+		Sexp_nodes[n].value |= SNF_ARGUMENT_SELECT;
 	}
 
-	// flush stuff
-	Sexp_applicable_argument_list.expunge();
-	flush_sexp_tree(condition_node);
-
-	// evaluate conditional for current argument
-	Sexp_current_replacement_argument = Sexp_nodes[n].text;
-	val = eval_sexp(condition_node);
-
-	// true?
-	if (val)
+	// only eval this argument if it's valid
+	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
-		Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+		// flush stuff
+		Sexp_applicable_argument_list.expunge();
+		flush_sexp_tree(condition_node);
+
+		// evaluate conditional for current argument
+		Sexp_current_replacement_argument = Sexp_nodes[n].text;
+		val = eval_sexp(condition_node);
+
+		// true?
+		if (val)
+		{
+			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+		}
 	}
 
 	// clear argument, but not list, as we'll need it later
@@ -6501,6 +6516,56 @@ int eval_random_of(int arg_handler_node, int condition_node)
 
 	// true if our selected argument is true
 	return val;
+}
+
+// Goober5000
+void sexp_invalidate_argument(int n)
+{
+	int parent, grandparent, arg_handler, op, arg_n;
+
+	// find the conditional sexp
+	parent = find_parent_operator(n);
+	if (parent == -1)
+		return;
+	grandparent = find_parent_operator(parent);
+	if (grandparent == -1)
+		return;
+
+	// make sure it's a supported operator
+	op = identify_operator(CTEXT(grandparent));
+	if (op != OP_WHEN_ARGUMENT && op != OP_EVERY_TIME_ARGUMENT)
+		return;
+
+	// get the first op of the grandparent, which should be a _of operator
+	arg_handler = CADR(grandparent);
+	op = identify_operator(CTEXT(arg_handler));
+	if (op != OP_ANY_OF && op != OP_EVERY_OF && op != OP_NUMBER_OF && op != OP_RANDOM_OF)
+		return;
+
+	// loop through arguments
+	while (n != -1)
+	{
+		// search for argument in arg_handler list
+		arg_n = CDR(arg_handler);
+		while (arg_n != -1)
+		{
+			// match?
+			if (!strcmp(CTEXT(n), CTEXT(arg_n)))
+			{
+				// set it as invalid
+				Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+
+				// exit inner loop
+				break;
+			}
+
+			// iterate
+			arg_n = CDR(arg_n);
+		}
+
+		// iterate
+		n = CDR(n);
+	}
 }
 
 // Goober5000 - added wing capability
@@ -7078,9 +7143,9 @@ void sexp_radar_set_maxrange(int n)
 
 // Goober5000
 // trigger whether player uses the game AI for stuff
-void sexp_player_use_ai(int n)
+void sexp_player_use_ai(int flag)
 {
-	Player_use_ai = sexp_get_val(n);
+	Player_use_ai = flag ? 1 : 0;
 }
 
 // Goober5000
@@ -11993,6 +12058,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_number_of( cur_node, referenced_node );
 				break;
 
+			// Goober5000
+			case OP_INVALIDATE_ARGUMENT:
+				sexp_invalidate_argument( node );
+				sexp_val = 1;
+				break;
+
 			// sexpressions with side effects
 			case OP_CHANGE_IFF:
 				sexp_change_iff( node );
@@ -12184,7 +12255,8 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// Goober5000
 			case OP_PLAYER_USE_AI:
-				sexp_player_use_ai(node);
+			case OP_PLAYER_NOT_USE_AI:
+				sexp_player_use_ai(op_num == OP_PLAYER_USE_AI);
 				sexp_val = 1;
 				break;
 
@@ -13044,6 +13116,7 @@ int query_operator_return_type(int op)
 		case OP_WHEN_ARGUMENT:
 		case OP_EVERY_TIME:
 		case OP_EVERY_TIME_ARGUMENT:
+		case OP_INVALIDATE_ARGUMENT:
 		case OP_CHANGE_IFF:
 		case OP_CHANGE_AI_CLASS:
 		case OP_CLEAR_SHIP_GOALS:
@@ -13167,6 +13240,7 @@ int query_operator_return_type(int op)
 		case OP_LOCK_ROTATING_SUBSYSTEM:
 		case OP_FREE_ROTATING_SUBSYSTEM:
 		case OP_PLAYER_USE_AI:
+		case OP_PLAYER_NOT_USE_AI:
 #if defined(ENABLE_AUTO_PILOT)
 		case OP_NAV_ADD_WAYPOINT:	//kazan
 		case OP_NAV_ADD_SHIP:		//kazan
@@ -13554,6 +13628,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_ANYTHING;
 
+		case OP_INVALIDATE_ARGUMENT:
+			return OPF_ANYTHING;
+
 		case OP_AI_DISABLE_SHIP:
 		case OP_AI_DISARM_SHIP:
 		case OP_AI_EVADE_SHIP:
@@ -13667,7 +13744,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_PLAYER_USE_AI:
-			return OPF_POSITIVE;
+		case OP_PLAYER_NOT_USE_AI:
+			return OPF_NONE;
 
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
@@ -15011,6 +15089,7 @@ int get_subcategory(int sexp_id)
 		case OP_KAMIKAZE:
 		case OP_NOT_KAMIKAZE:
 		case OP_PLAYER_USE_AI:
+		case OP_PLAYER_NOT_USE_AI:
 			return CHANGE_SUBCATEGORY_AI_AND_IFF;
 			
 		case OP_SABOTAGE_SUBSYSTEM:
