@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.35 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.36 $
+ * $Date: 2004-10-18 17:13:36 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.34  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -3103,9 +3106,9 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3)
 	verts[1].sx = x2;	verts[1].sy = y2;
 	verts[2].sx = x3;	verts[2].sy = y3;
 
-	verts[0].spec_r = 0;
-	verts[1].spec_b = 0;
-	verts[2].spec_g = 0;
+	verts[0].spec_r = 0;	verts[0].spec_g = 0;	verts[0].spec_b = 0;
+	verts[1].spec_r = 0;	verts[1].spec_g = 0;	verts[1].spec_b = 0;
+	verts[2].spec_r = 0;	verts[2].spec_g = 0;	verts[2].spec_b = 0;
 
 	uint saved_mode = gr_zbuffer_get();
 	
