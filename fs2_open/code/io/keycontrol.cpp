@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-09-26 14:37:14 $
- * $Author: bobboau $
+ * $Revision: 2.18 $
+ * $Date: 2003-10-15 22:03:25 $
+ * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/09/26 14:37:14  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.16  2003/09/13 06:02:06  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -1392,7 +1402,11 @@ void process_debug_keys(int k)
 
 			sip = &Ship_info[Ships[objp->instance].ship_info_index];
 			sip->species++;
+#if defined(MORE_SPECIES)
+			if (sip->species > SPECIES_USER4)
+#else
 			if ( sip->species > SPECIES_SHIVAN )
+#endif
 				sip->species = 0;
 
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Species of target changed to: %s", 24), Species_names[sip->species]);

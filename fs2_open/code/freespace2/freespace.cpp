@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.47 $
- * $Date: 2003-10-14 17:39:12 $
- * $Author: randomtiger $
+ * $Revision: 2.48 $
+ * $Date: 2003-10-15 22:03:24 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/10/14 17:39:12  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.46  2003/09/26 14:37:13  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -895,7 +905,7 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #include "sound/fsspeech.h"
 #include "debugconsole/dbugfile.h"
 #include "debugconsole/timerbar.h"
-
+#include "species_defs/species_defs.h"
 
 #ifdef NDEBUG
 #ifdef FRED
@@ -1814,6 +1824,7 @@ void game_level_init(int seed)
 	if(!Is_standalone){
 		game_reset_time();			// resets time, and resets saved time too
 	}
+
 	obj_init();						// Must be inited before the other systems
 	model_free_all();				// Free all existing models
 	mission_brief_common_init();		// Free all existing briefing/debriefing text
@@ -2761,10 +2772,13 @@ void game_init()
 	// load non-darkening pixel defs
 	palman_load_pixels();
 
+	Init_Species_Definitions();					// Load up the Species defs - this needs to be done FIRST -- Kazan
+
 	// hud shield icon stuff
 	hud_shield_game_init();
 
 	control_config_common_init();				// sets up localization stuff in the control config
+
 	parse_rank_tbl();
 #ifndef FS2_DEMO
 	parse_medal_tbl();

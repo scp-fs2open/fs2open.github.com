@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.50 $
- * $Date: 2003-09-26 14:37:16 $
- * $Author: bobboau $
+ * $Revision: 2.51 $
+ * $Date: 2003-10-15 22:03:26 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2003/09/26 14:37:16  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.49  2003/09/13 06:02:03  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -627,6 +637,16 @@ typedef struct ship_subsys_info {
 	float		total_hits;		// total number of hits between all subsystems of this type.
 	float		current_hits;	// current count of hits for all subsystems of this type.	
 } ship_subsys_info;
+
+
+// moved here from Shield.cpp by Kazan
+// For Species_Defs.cpp stuff
+typedef struct shield_ani {
+	char		*filename;
+	int		first_frame;
+	int		nframes;
+} shield_ani;
+
 
 #define	MAX_IFF_COLORS	7
 
@@ -1451,6 +1471,18 @@ extern int Player_ship_class;
 extern int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
 extern int Player_ship_precedence[MAX_PLAYER_SHIP_CHOICES];	// Array of ship types, precedence list for player ship/wing selection
 
+// ----------------------------------------------------------------------------
+// Moved from ship.cpp because this is needed over in species_defs
+// 10/15/2003, Kazan
+// ----------------------------------------------------------------------------
+#if defined(MORE_SPECIES)
+#define NUM_THRUST_ANIMS			(MAX_SPECIES_NAMES * 2)
+#define NUM_THRUST_GLOW_ANIMS		(MAX_SPECIES_NAMES * 2)
+
+#else
+#define NUM_THRUST_ANIMS			6
+#define NUM_THRUST_GLOW_ANIMS		6
+#endif
 
 //	Do the special effect for energy dissipating into the shield for a hit.
 //	model_num	= index in Polygon_models[]

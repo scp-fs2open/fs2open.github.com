@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-04-29 01:03:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2003-10-15 22:03:23 $
+ * $Author: Kazan $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/04/29 01:03:22  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -304,22 +308,47 @@ asteroid_obj	Asteroid_obj_list;						// head of linked list of asteroid_obj stru
 // Asteroid editor requires first set of entries to be "None" and then "Asteroid XXX"
 // Any changes to this will require changes to the asteroid editor
 debris_struct Field_debris_info[] = {
-	-1,							"None",
-	ASTEROID_TYPE_SMALL,		"Asteroid Small",
+	-1,						"None",
+	ASTEROID_TYPE_SMALL,	"Asteroid Small",
 	ASTEROID_TYPE_MEDIUM,	"Asteroid Medium",
 	ASTEROID_TYPE_BIG,		"Asteroid Large",
 
-	DEBRIS_TERRAN_SMALL,		"Terran Small",
+	DEBRIS_TERRAN_SMALL,	"Terran Small",
 	DEBRIS_TERRAN_MEDIUM,	"Terran Medium",
-	DEBRIS_TERRAN_LARGE,		"Terran Large",
+	DEBRIS_TERRAN_LARGE,	"Terran Large",
 
 	DEBRIS_VASUDAN_SMALL,	"Vasudan Small",
 	DEBRIS_VASUDAN_MEDIUM,	"Vasudan Medium",
 	DEBRIS_VASUDAN_LARGE,	"Vasudan Large",
 
-	DEBRIS_SHIVAN_SMALL,		"Shivan Small",
+	DEBRIS_SHIVAN_SMALL,	"Shivan Small",
 	DEBRIS_SHIVAN_MEDIUM,	"Shivan Medium",
-	DEBRIS_SHIVAN_LARGE,		"Shivan Large"
+
+#if !defined(MORE_SPECIES)
+	DEBRIS_SHIVAN_LARGE,	"Shivan Large"
+#else
+	DEBRIS_SHIVAN_LARGE,	"Shivan Large",
+
+	DEBRIS_ANCIENT_SMALL,	"Ancient Small",
+	DEBRIS_ANCIENT_MEDIUM,	"Ancient Medium",
+	DEBRIS_ANCIENT_LARGE,	"Ancient Large",
+
+	DEBRIS_USER1_SMALL,		"User1 Small",
+	DEBRIS_USER1_MEDIUM,	"User1 Medium",
+	DEBRIS_USER1_LARGE,		"User1 Large",
+
+	DEBRIS_USER2_SMALL,		"User2 Small",
+	DEBRIS_USER2_MEDIUM,	"User2 Medium",
+	DEBRIS_USER2_LARGE,		"User2 Large",
+
+	DEBRIS_USER3_SMALL,		"User3 Small",
+	DEBRIS_USER3_MEDIUM,	"User3 Medium",
+	DEBRIS_USER3_LARGE,		"User3 Large",
+
+	DEBRIS_USER4_SMALL,		"User4 Small",
+	DEBRIS_USER4_MEDIUM,	"User4 Medium",
+	DEBRIS_USER4_LARGE,		"User4 Large",
+#endif
 };
 
 // used for randomly generating debris type when there are multiple sizes.
@@ -748,6 +777,19 @@ int get_debris_from_same_group(int index) {
 // the weight is then used to determine the frequencty of different sizes of ship debris
 int get_debris_weight(int ship_debris_index)
 {
+
+#if defined(MORE_SPECIES)
+	if (ship_debris_index % 3 == 0)
+		return SMALL_DEBRIS_WEIGHT;
+
+	if (ship_debris_index % 3 == 1)
+		return MEDIUM_DEBRIS_WEIGHT;
+
+	if (ship_debris_index % 3 == 2)
+		return LARGE_DEBRIS_WEIGHT;
+	//Int3();
+	return 1;
+#else
 	switch (ship_debris_index) {
 	case DEBRIS_TERRAN_SMALL:
 	case DEBRIS_VASUDAN_SMALL:
@@ -772,6 +814,7 @@ int get_debris_weight(int ship_debris_index)
 		return 1;
 		break;
 	}
+#endif
 }
 
 // Create all the asteroids for the mission, called from 
@@ -1501,6 +1544,18 @@ void asteriod_explode_sound(object *objp, int type, int play_loud)
 	int	sound_index = -1;
 	float range_factor = 1.0f;		// how many times sound should traver farther than normal
 
+#if defined(MORE_SPECIES)
+	if (type % 3 <= 1)
+	{
+		sound_index = SND_ASTEROID_EXPLODE_SMALL;
+		range_factor = 5.0;
+	}
+	else
+	{
+		sound_index = SND_ASTEROID_EXPLODE_BIG;
+		range_factor = 10.0f;
+	}
+#else
 	switch (type) {
 	case ASTEROID_TYPE_SMALL:
 	case ASTEROID_TYPE_MEDIUM:
@@ -1526,7 +1581,7 @@ void asteriod_explode_sound(object *objp, int type, int play_loud)
 		Int3();
 		return;
 	}
-
+#endif
 	Assert(sound_index != -1);
 
 	if ( !play_loud ) {
@@ -1731,6 +1786,46 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 #ifndef NO_NETWORK
 		if ( !MULTIPLAYER_CLIENT ) {
 #endif
+
+#if defined(MORE_SPECIES)
+			if (asp->type <= ASTEROID_TYPE_BIG) // 3
+				// if this isn't true it's just debris, and debris doesn't break up
+			{
+				switch (asp->type) {
+					case ASTEROID_TYPE_SMALL:
+						break;
+					case ASTEROID_TYPE_MEDIUM:
+						asc_get_relvec(&relvec, asteroid_obj, &asp->death_hit_pos);
+						asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &relvec);
+					
+						vm_vec_normalized_dir(&vfh, &asteroid_obj->pos, &asp->death_hit_pos);
+						vm_vec_copy_scale(&tvec, &vfh, 2.0f);
+						vm_vec_sub2(&tvec, &relvec);
+						asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &tvec);
+						
+						break;
+					case ASTEROID_TYPE_BIG:
+						asc_get_relvec(&relvec, asteroid_obj, &asp->death_hit_pos);
+						asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_MEDIUM, &relvec);
+					
+						vm_vec_normalized_dir(&vfh, &asteroid_obj->pos, &asp->death_hit_pos);
+						vm_vec_copy_scale(&tvec, &vfh, 2.0f);
+						vm_vec_sub2(&tvec, &relvec);
+						asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_MEDIUM, &tvec);
+
+						while (frand() > 0.6f) {
+							vector	rvec, tvec2;
+							vm_vec_rand_vec_quick(&rvec);
+							vm_vec_scale_add(&tvec2, &vfh, &rvec, 0.75f);
+							asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &tvec2);
+						}
+						break;
+
+					default: // this isn't going to happen.. really
+						break;
+				}
+			}
+#else
 			switch (asp->type) {
 			case ASTEROID_TYPE_SMALL:
 				break;
@@ -1777,6 +1872,7 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 			default:
 				Int3();
 			}
+#endif
 #ifndef NO_NETWORK
 		}
 #endif
@@ -2052,7 +2148,11 @@ void asteroid_parse_tbl()
 	required_string("#End");
 
 	// check all read in
+#if defined(MORE_SPECIES)
+	Assert(Num_asteroid_types == True_NumSpecies * 3);
+#else
 	Assert(Num_asteroid_types == MAX_DEBRIS_TYPES);
+#endif
 
 	Asteroid_impact_explosion_ani = -1;
 	required_string("$Impact Explosion:");

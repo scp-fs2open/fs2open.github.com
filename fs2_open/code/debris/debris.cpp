@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-04-29 01:03:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2003-10-15 22:03:24 $
+ * $Author: Kazan $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/04/29 01:03:22  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.2  2003/03/19 12:29:01  unknownplayer
  * Woohoo! Killed two birds with one stone!
  * Fixed the 'black screen around dialog boxes' problem and also the much more serious freezing problem experienced by Goober5000. It wasn't a crash, just an infinite loop. DX8 merge is GO! once again :)
@@ -243,6 +247,8 @@
 #include "object/objcollide.h"
 #include "io/timer.h"
 #include "fireball/fireballs.h"
+#include "cmdline/cmdline.h"
+#include "species_defs/species_defs.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -267,11 +273,30 @@ int Debris_inited = 0;
 int Debris_model = -1;
 int Debris_vaporize_model = -1;
 int Debris_num_submodels = 0;
+
+#if defined(MORE_SPECIES)
+
+char Debris_texture_files[MAX_SPECIES_NAMES][MAX_DEBRIS_TNAME_LEN+1];
+
+/*char * Debris_texture_files[MAX_SPECIES_NAMES] = { 
+	NOX("debris01a"),	// Terran
+	NOX("debris01b"),	// Species B
+	NOX("debris01c"),	// Shivan
+	NOX("debris01a"),	// Ancient
+	NOX("debris01a"),	// User1
+	NOX("debris01a"),	// User2
+	NOX("debris01a"),	// User3
+	NOX("debris01a"),	// User4
+
+	};*/
+
+#else
 char * Debris_texture_files[MAX_SPECIES_NAMES] = { 
 	NOX("debris01a"),	// Terran
 	NOX("debris01b"),	// Species B
 	NOX("debris01c"),	// Shivan
 	};
+#endif
 
 int Debris_textures[MAX_SPECIES_NAMES];
 
@@ -354,7 +379,11 @@ void debris_page_in()
 
 	Debris_vaporize_model = model_load( NOX("debris02.pof"), 0, NULL );
 
+#if defined(MORE_SPECIES)
+	for (i=0; i<MAX_SPECIES_NAMES && i<True_NumSpecies; i++ )	{
+#else
 	for (i=0; i<MAX_SPECIES_NAMES; i++ )	{
+#endif
 		nprintf(( "Paging", "Paging in debris texture '%s'\n", Debris_texture_files[i] ));
 		Debris_textures[i] = bm_load( Debris_texture_files[i] );
 		if ( Debris_textures[i] < 0 ) { 

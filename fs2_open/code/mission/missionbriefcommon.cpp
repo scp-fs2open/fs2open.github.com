@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-09-07 18:14:53 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2003-10-15 22:03:25 $
+ * $Author: Kazan $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/07 18:14:53  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.2  2003/04/05 11:09:21  Goober5000
  * fixed some fiddly bits with scrolling and ui stuff
  * --Goober5000
@@ -184,6 +192,7 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "sound/fsspeech.h"
+#include "species_defs/species_defs.h"
 
 // --------------------------------------------------------------------------------------
 // briefing icons
@@ -672,8 +681,12 @@ void brief_init_anims()
 {
 	int i, idx;
 
-	for (i=0; i<MAX_BRIEF_ICONS; i++) {
+	for (i=0; i<MAX_BRIEF_ICONS ; i++) {
+#if defined(MORE_SPECIES)
+		for(idx=0; idx<MAX_SPECIES_NAMES && idx<True_NumSpecies; idx++){
+#else
 		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
+#endif
 			Icon_highlight_anims[i][idx].num_frames=0;
 			Icon_fade_anims[i][idx].num_frames=0;
 		}
@@ -690,7 +703,11 @@ void brief_unload_icons()
 	int				i, j, idx;
 
 	for ( i = 0; i < MAX_BRIEF_ICONS; i++ ) {
+#if defined(MORE_SPECIES)
+		for(idx=0; idx<MAX_SPECIES_NAMES && idx<True_NumSpecies; idx++){
+#else
 		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
+#endif
 			ib = &Icon_bitmaps[i][idx];
 
 			for ( j=0; j<ib->num_frames; j++ ) {
@@ -749,14 +766,19 @@ void brief_parse_icon_tbl()
 	int load_this_icon = 0;
 
 	while (required_string_either("#End","$Name:")) {
+#if defined(MORE_SPECIES)
+		for(idx=0; idx<MAX_SPECIES_NAMES && idx<True_NumSpecies; idx++){
+#else
 		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
+#endif
 			Assert( num_icons < MAX_BRIEF_ICONS);
 			hf = &Icon_bitmaps[num_icons][idx];
 
 			// load in regular frames
 			required_string("$Name:");
-			stuff_string(name, F_NAME, NULL);
 
+			stuff_string(name, F_NAME, NULL);
+	
 			if ( Fred_running ) {
 				load_this_icon = 1;
 			} else {
@@ -781,6 +803,7 @@ void brief_parse_icon_tbl()
 			stuff_string(name, F_NAME, NULL);
 			ha = &Icon_highlight_anims[num_icons][idx];
 			hud_anim_init(ha, 0, 0, name);
+
 		}
 
 		// next icon _type_
@@ -2387,7 +2410,11 @@ void brief_unload_anims()
 	int i, idx;
 	
 	for (i=0; i<MAX_BRIEF_ICONS; i++) {
-		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
+#if defined(MORE_SPECIES)
+		for(idx=0; idx<MAX_SPECIES_NAMES && i<True_NumSpecies; idx++){
+#else
+		for(idex=0; idx<MAX_SPECIES_NAMES; idx++){
+#endif
 			hud_anim_release(&Icon_highlight_anims[i][idx]);
 			hud_anim_release(&Icon_fade_anims[i][idx]);
 		}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.84 $
- * $Date: 2003-10-12 03:46:23 $
+ * $Revision: 2.85 $
+ * $Date: 2003-10-15 22:03:26 $
  * $Author: Kazan $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2003/10/12 03:46:23  Kazan
+ * #Kazan# FS2NetD client code gone multithreaded, some Fred2 Open -mod stuff [obvious code.lib] including a change in cmdline.cpp, changed Stick's "-nohtl" to "-htl" - HTL is _OFF_ by default here (Bobboau and I decided this was a better idea for now)
+ *
  * Revision 2.83  2003/10/07 03:43:21  Goober5000
  * fixed some warnings
  * --Goober5000
@@ -1106,6 +1109,7 @@
 #include "math/staticrand.h"
 #include "missionui/missionshipchoice.h"
 #include "hud/hudartillery.h"
+#include "species_defs/species_defs.h"
 
 #include "weapon/flak.h"								//phreak addded 11/05/02 for flak primaries
 
@@ -1249,8 +1253,28 @@ typedef struct thrust_anim {
 	float time;				// in seconds
 } thrust_anim;
 
-#define NUM_THRUST_ANIMS			6
-#define NUM_THRUST_GLOW_ANIMS		6
+
+
+#if defined(MORE_SPECIES)
+// ----------------------------------------------------------------------------
+// New species_defs.tbl based code
+// 10/15/2003, Kazan
+// ----------------------------------------------------------------------------
+
+char	Thrust_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
+char	Thrust_secondary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
+char	Thrust_tertiary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
+char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN];
+
+static thrust_anim	Thrust_anims[NUM_THRUST_ANIMS];
+static thrust_anim	Thrust_glow_anims[NUM_THRUST_GLOW_ANIMS];
+
+#else
+
+// ----------------------------------------------------------------------------
+// Old volition hardcode
+// 10/15/2003, Kazan
+// ----------------------------------------------------------------------------
 
 // These are indexed by:  Species*2 + (After_burner_on?1:0)
 static thrust_anim	Thrust_anims[NUM_THRUST_ANIMS];
@@ -1258,7 +1282,8 @@ char	Thrust_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {
 //XSTR:OFF
 	"thruster01", "thruster01a", 
 	"thruster02", "thruster02a", 
-	"thruster03", "thruster03a" 
+	"thruster03", "thruster03a"
+
 //XSTR:ON
 };
 char	Thrust_secondary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {	
@@ -1266,6 +1291,7 @@ char	Thrust_secondary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {
 	"thruster02-01", "thruster02-01a", 
 	"thruster02-02", "thruster02-02a", 
 	"thruster02-03", "thruster02-03a" 
+
 //XSTR:ON
 };
 char	Thrust_tertiary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {	
@@ -1273,6 +1299,7 @@ char	Thrust_tertiary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {
 	"thruster03-01", "thruster03-01a", 
 	"thruster03-02", "thruster03-02a", 
 	"thruster03-03", "thruster03-03a" 
+
 //XSTR:ON
 };
 
@@ -1285,6 +1312,7 @@ char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN] = {
 	"thrusterglow03", "thrusterglow03a" 
 //XSTR:ON
 };
+#endif
 
 static int Thrust_anim_inited = 0;
 
@@ -1543,7 +1571,16 @@ int parse_ship()
 	stuff_string(sip->short_name, F_NAME, NULL);
 	diag_printf ("Ship short name -- %s\n", sip->short_name);
 
+#if defined(MORE_SPECIES)
+
+	// had to do this dirty static alias shit thanks to MSVC being STUPID!
+	static char *tspecies_names[MAX_SPECIES_NAMES] = { Species_names[0], Species_names[1], Species_names[2], Species_names[3],
+													   Species_names[4], Species_names[5], Species_names[6], Species_names[7] };
+
+	find_and_stuff("$Species:", &sip->species, F_NAME, tspecies_names, MAX_SPECIES_NAMES, "species names");
+#else
 	find_and_stuff("$Species:", &sip->species, F_NAME, Species_names, MAX_SPECIES_NAMES, "species names");
+#endif
 	diag_printf ("Ship species -- %s\n", Species_names[sip->species]);
 
 	sip->type_str = sip->maneuverability_str = sip->armor_str = sip->manufacturer_str = NULL;
@@ -4564,7 +4601,11 @@ void ship_init_thrusters()
 		num_thrust_anims = NUM_THRUST_ANIMS - 2;
 	#endif
 
+#if (MORE_SPECIES)
+	for ( i = 0; i < num_thrust_anims && i < (True_NumSpecies * 2); i++ ) {
+#else
 	for ( i = 0; i < num_thrust_anims; i++ ) {
+#endif
 		ta = &Thrust_anims[i];
 		ta->first_frame = bm_load_animation(Thrust_anim_names[i],  &ta->num_frames, &fps, 1);
 		ta->secondary = bm_load(Thrust_secondary_anim_names[i]);
@@ -4584,7 +4625,11 @@ void ship_init_thrusters()
 		num_thrust_glow_anims = NUM_THRUST_GLOW_ANIMS - 2;
 	#endif
 
+#if (MORE_SPECIES)
+	for ( i = 0; i < num_thrust_glow_anims && i < (True_NumSpecies * 2); i++ ) {
+#else
 	for ( i = 0; i < num_thrust_glow_anims; i++ ) {
+#endif
 		ta = &Thrust_glow_anims[i];
 		ta->num_frames = NOISE_NUM_FRAMES;
 		fps = 15;

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-10-13 05:57:50 $
+ * $Revision: 2.9 $
+ * $Date: 2003-10-15 22:03:26 $
  * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/10/13 05:57:50  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  * Revision 2.7  2003/10/04 22:42:23  Kazan
  * fs2netd now TCP
  *
@@ -3552,7 +3558,7 @@ void multi_update_valid_tables()
 
 			cfputs(full_name, tvalid_cfg);
 
-			for (i = 0; i < numFrecs; i++)
+			for (i = 0; i < numFrecs && !Found; i++)
 			{
 				if (!strcmp(full_name, frecs[i].name))
 				{
@@ -3562,14 +3568,17 @@ void multi_update_valid_tables()
 						cfputs("   valid\n", tvalid_cfg);
 						Found = true;
 					}
-
-					break;
+					else
+					{
+						cfputs("   invalid\n", tvalid_cfg);
+						Found = true;
+					}
 				}
 			}
 
 			if (!Found)
 			{
-				cfputs("   invalid\n", tvalid_cfg);
+				cfputs("   valid\n", tvalid_cfg);
 			}
 			
 		}

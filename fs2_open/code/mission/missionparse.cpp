@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.46 $
- * $Date: 2003-10-08 06:32:06 $
- * $Author: argv $
+ * $Revision: 2.47 $
+ * $Date: 2003-10-15 22:03:25 $
+ * $Author: Kazan $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/10/08 06:32:06  argv
+ * Negative repeat count means repeat indefinitely. A trivial change, it should not break anything.
+ *
  * Revision 2.45  2003/09/30 04:05:09  Goober5000
  * updated FRED to import FS1 default weapons loadouts as well as missions
  * --Goober5000
@@ -775,9 +778,22 @@ char *Goal_type_names[MAX_GOAL_TYPE_NAMES] = {
 	{"Primary"}, {"Secondary"}, {"Bonus"},
 };
 
+// Species Count upgrade - by kazan
+
+#if defined(MORE_SPECIES)
+
+char Species_names[MAX_SPECIES_NAMES][SPECIES_NAME_MAXLEN+1];
+
+/*char *Species_names[MAX_SPECIES_NAMES] = {
+	{"Terran"}, {"Vasudan"}, {"Shivan"}, {"Ancients"}, {"User1"}, {"User2"}, {"User3"}, {"User4"}
+
+};*/
+#else
 char *Species_names[MAX_SPECIES_NAMES] = {
-	{"Terran"}, {"Vasudan"}, {"Shivan"},
+	{"Terran"}, {"Vasudan"}, {"Shivan"}
+
 };
+#endif
 
 char *Reinforcement_type_names[] = {
 	"Attack/Protect",
