@@ -5,11 +5,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.1 $
- * $Date: 2003-10-15 22:03:27 $
+ * $Revision: 1.2 $
+ * $Date: 2003-10-16 01:55:26 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2003/10/15 22:03:27  Kazan
+ * Da Species Update :D
+ *
  *
  *
  *
@@ -158,7 +161,7 @@ void Init_Species_LoadDefault()
 
 	// -------------- Vasudan -------------- 
 
-	strncpy(Species_names[0],					"Vasudan",			SPECIES_NAME_MAXLEN);
+	strncpy(Species_names[1],					"Vasudan",			SPECIES_NAME_MAXLEN);
 	strncpy(Debris_texture_files[0],			"debris02a",		MAX_DEBRIS_TNAME_LEN);
 	Sheild_ani[0].filename =		strdup("shieldhit01a");
 
