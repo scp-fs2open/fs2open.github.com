@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-01-15 07:09:09 $
+ * $Revision: 2.21 $
+ * $Date: 2003-01-15 08:57:23 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/01/15 07:09:09  Goober5000
+ * changed most references to modelnum to use ship instead of ship_info --
+ * this will help with the change-model sexp and any other instances of model
+ * changing
+ * --Goober5000
+ *
  * Revision 2.19  2003/01/15 05:24:23  Goober5000
  * added texture replacement parse - will be implemented later
  * --Goober5000
@@ -1518,8 +1524,8 @@ int parse_create_object(p_object *objp)
 	subsys_status *sssp;
 	ship_weapon *wp;
 
-	// base level creation
-	objnum = ship_create(&objp->orient, &objp->pos, objp->ship_class);
+	// base level creation - need ship name in case of duplicate textures
+	objnum = ship_create(&objp->orient, &objp->pos, objp->ship_class, objp->name);
 	Assert(objnum != -1);
 	shipnum = Objects[objnum].instance;
 
