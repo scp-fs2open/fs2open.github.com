@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-10-31 21:53:23 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2005-01-29 08:08:24 $
+ * $Author: wmcoolmon $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/10/31 21:53:23  taylor
+ * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
+ *
  * Revision 2.20  2004/07/26 20:47:36  Kazan
  * remove MCD complete
  *
@@ -966,7 +969,7 @@ void main_hall_init(int main_hall_num)
 	
 	// init tooltip shader
 	float gray_intensity = 0.02f;													// nearly black
-	gr_create_shader(&Main_hall_tooltip_shader, gray_intensity, gray_intensity, gray_intensity, 0.11f);
+	gr_create_shader(&Main_hall_tooltip_shader, 5, 5, 5, 168);
 
 	// load the background bitmap
 	Main_hall_bitmap = bm_load(Main_hall->bitmap);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-01-10 04:44:03 $
+ * $Revision: 2.14 $
+ * $Date: 2005-01-29 08:08:24 $
  * $Author: wmcoolmon $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/01/10 04:44:03  wmcoolmon
+ * Small fix, so we don't try to delete the same thing twice
+ *
  * Revision 2.12  2005/01/09 22:27:38  wmcoolmon
  * Techroom and Barracks now allocate memory only when open, and only for the number of ships currently loaded
  *
@@ -576,7 +579,7 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	// Goober5000 - make sure we have room for all ships
-	Assert(Num_stat_lines + Num_ship_types < Max_stat_lines);
+	Assert((Num_stat_lines + Num_ship_types) < Max_stat_lines);
 
 	for (i=0; i<Num_ship_types; i++) {
 		if (stats->kills[i]) {
