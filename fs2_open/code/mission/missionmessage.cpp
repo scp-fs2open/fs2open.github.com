@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-02-05 14:29:33 $
+ * $Revision: 2.8 $
+ * $Date: 2004-02-06 21:26:07 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/02/05 14:29:33  Goober5000
+ * fixed the talking head error
+ * --Goober5000
+ *
  * Revision 2.6  2004/01/14 21:12:24  Goober5000
  * I think this will fix the problem of the death head ani sometimes incorrectly playing
  * --Goober5000
@@ -1271,7 +1275,13 @@ void message_play_anim( message_q *q )
 				subhead_selected = TRUE;
 			} else if ( Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE) ) {
 				// get a random head
-				rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
+				// Goober5000 - *sigh*... if mission designers assign a command persona
+				// to a wingman head, they risk having the death ani play
+				Assert(strlen(ani_name) >= 7);
+				if (!strnicmp(ani_name+5,"CM",2) || !strnicmp(ani_name+5,"BS",2))	// Head-CM* or Head-BSH
+					rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
+				else
+					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
 				sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
 				subhead_selected = TRUE;
 			}
