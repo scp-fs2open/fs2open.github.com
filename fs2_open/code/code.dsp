@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "..\Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENGL" /D "HTL" /U "_DEBUG" /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENGL" /U "_DEBUG" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -2581,6 +2581,18 @@ SOURCE=.\fs2open_pxo\Client.h
 # Begin Source File
 
 SOURCE=.\fs2open_pxo\protocol.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\fs2open_pxo\TCP_Client.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\fs2open_pxo\TCP_Socket.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\fs2open_pxo\TCP_Socket.h
 # End Source File
 # Begin Source File
 

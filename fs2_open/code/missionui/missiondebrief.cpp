@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-09-26 15:34:26 $
+ * $Revision: 2.14 $
+ * $Date: 2003-10-04 22:42:22 $
  * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/09/26 15:34:26  Kazan
+ * ##Kazan## Quick little update of fs2netd stuff to resolve a few issues
+ *
  * Revision 2.12  2003/09/24 19:35:58  Kazan
  * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
  *
@@ -432,7 +435,13 @@
 #endif
 
 #include "fs2open_pxo/Client.h"
+
+#if !defined(PXO_TCP)
 extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+#else
+extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+#endif
+
 extern unsigned int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[32];
 extern int PXO_port;
@@ -1259,7 +1268,7 @@ void debrief_ui_init()
 		// Netgame.mission_name
 		
 			
-		if (Om_tracker_flag /*&& multi_num_players() > 1*/ && !game_hacked_data() && mValidStatus)
+		if (Om_tracker_flag && multi_num_players() > 1 && !game_hacked_data() && mValidStatus)
 		{
 			// --------------------- STICK STATS STORAGE CODE IN HERE ---------------------
 			int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);

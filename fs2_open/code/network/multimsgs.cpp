@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-09-24 19:35:59 $
+ * $Revision: 2.10 $
+ * $Date: 2003-10-04 22:42:22 $
  * $Author: Kazan $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/09/24 19:35:59  Kazan
+ * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
+ *
  * Revision 2.8  2003/04/29 01:03:24  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -445,7 +448,11 @@
 
 
 #include "fs2open_pxo/Client.h"
+#if !defined(PXO_TCP)
 extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+#else
+extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+#endif
 extern unsigned int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[];
 extern int PXO_port;
