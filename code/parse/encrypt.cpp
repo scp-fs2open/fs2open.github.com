@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/Encrypt.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-09-28 21:22:59 $
+ * $Author: Goober5000 $
  *
  * Module for encryption code common to FreeSpace and related tools
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -64,13 +67,13 @@
 #include "globalincs/pstypes.h"
 #include "parse/encrypt.h"
 
-const uint Encrypt_new_signature			= 0x5c331a55;		// new encrpytion
+const uint Encrypt_new_signature			= 0x5c331a55;		// new encryption
 const uint Encrypt_signature				= 0xdeadbeef;		// full encryption
 const uint Encrypt_signature_8bit		= 0xcacacaca;		// light encryption - doesn't use 7bit chars
 
 int Encrypt_inited = 0;
 
-// new encrpytion
+// new encryption
 void encrypt_new(char *text, int text_len, char *scrambled_text, int *scrambled_len);
 void unencrypt_new(char *scrambled_text, int scrambled_len, char *text, int *text_len);
 
@@ -219,7 +222,7 @@ void unencrypt(char *scrambled_text, int scrambled_len, char *text, int *text_le
 
 	uint encrypt_id;
 
-	// Only decrpyt files that start with unique signature
+	// Only decrypt files that start with unique signature
 	memcpy(&encrypt_id, scrambled_text, 4);
 
 	if ( (encrypt_id != Encrypt_signature) && (encrypt_id !=  Encrypt_signature_8bit) ) {
@@ -342,7 +345,7 @@ void encrypt_new(char *text, int text_len, char *scrambled_text, int *scrambled_
 	ushort block_checksum;
 	int block_size, idx;
 
-	// add the encrpytion signature
+	// add the encryption signature
 	memcpy(scrambled_text, &Encrypt_new_signature, 4);	
 		
 	// go through and read in chunks of NUM_LVL1_KEYS * 2 bytes	
@@ -433,7 +436,7 @@ void unencrypt_new(char *scrambled_text, int scrambled_len, char *text, int *tex
 }
 
 // Return 1 if the data is encrypted, otherwise return 0
-int is_encrpyted(char *scrambled_text)
+int is_encrypted(char *scrambled_text)
 {
 	uint	encrypt_id;
 

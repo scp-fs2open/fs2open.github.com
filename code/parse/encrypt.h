@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/Encrypt.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-09-28 21:22:58 $
+ * $Author: Goober5000 $
  *
  * Header for encryption code common to FreeSpace and related tools
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -50,9 +53,9 @@
 void encrypt_init();
 
 // Return 1 if the file is encrypted, otherwise return 0
-int is_encrpyted(char *scrambled_text);
+int is_encrypted(char *scrambled_text);
 
-// Encrpyt text data
+// Encrypt text data
 void encrypt(char *text, int text_len, char *scrambled_text, int *scrambled_len, int use_8bit);
 
 // Decrypt scrambled_text

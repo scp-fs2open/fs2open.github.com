@@ -9,12 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-09-05 04:25:29 $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-28 21:22:59 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/09/05 04:25:29  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.3  2003/08/25 04:45:57  Goober5000
  * added replacement of $rank with the player's rank in any string that appears
  * in-game (same as with $callsign); also bumped the limit on the length of text
@@ -779,8 +791,7 @@ void lcl_ext_close()
 // now will also replace $rank with rank, e.g. "Lieutenant"
 // now will also replace $quote with double quotation marks
 #define LCL_NUM_REPLACEMENTS 4
-#define LCL_TEMP_TEXT_SIZE 2048
-void lcl_replace_stuff(char *text, uint max_len)
+void lcl_replace_stuff(char *text, unsigned int max_len)
 {
 	if (Fred_running)
 		return;
@@ -790,7 +801,6 @@ void lcl_replace_stuff(char *text, uint max_len)
 
 	int i;
 	char *replace_pos;
-	char temp[LCL_TEMP_TEXT_SIZE];
 	char replace[LCL_NUM_REPLACEMENTS][2][NAME_LENGTH];
 
 	// fill replacements array (this is if we want to add more in the future)
@@ -806,27 +816,8 @@ void lcl_replace_stuff(char *text, uint max_len)
 	// do all replacements
 	for (i = 0; i < LCL_NUM_REPLACEMENTS; i++)
 	{
-		// search for offending word
-		while ( (replace_pos = strstr(text, replace[i][0])) != NULL )
-		{
-			// handle if we don't have enough room to do the replacement
-			if (strlen(text) - strlen(replace[i][0]) + strlen(replace[i][1]) >= max_len - 1)
-			{
-				strnset(replace_pos, '-', strlen(replace[i][0]));
-			}
-			// replace
-			else
-			{
-				// save remainder of string
-				strcpy(temp, replace_pos);
-
-				// replace token
-				strcpy(replace_pos, replace[i][1]);
-
-				// append remainder of string
-				strncat(text, temp + strlen(replace[i][0]), strlen(temp) - 1);
-			}
-		}
+		// replace all instances of that string
+		replace_all(text, replace[i][0], replace[i][1], max_len);
 	}
 }
 
