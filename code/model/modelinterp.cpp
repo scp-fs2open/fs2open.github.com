@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-07-15 16:09:46 $
+ * $Revision: 2.26 $
+ * $Date: 2003-08-06 17:24:57 $
  * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/07/15 16:09:46  phreak
+ * lighting in the render functions now work for opengl as they do in d3d
+ *
  * Revision 2.24  2003/07/15 02:37:59  phreak
  * models that are fully cloaked draw front-to-back
  *
@@ -461,6 +464,12 @@ void set_warp_globals(float a, float b, float c, int d, float e){
 
 static int FULLCLOAK=-1;
 
+void model_interp_sortnorm_b2f(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
+void model_interp_sortnorm_f2b(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
+
+
+void (*model_interp_sortnorm)(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check) = model_interp_sortnorm_b2f;
+
 void model_setup_cloak(vector *shift, int full_cloak, int alpha)
 {
 	FULLCLOAK=full_cloak;
@@ -472,6 +481,7 @@ void model_setup_cloak(vector *shift, int full_cloak, int alpha)
 		model_set_insignia_bitmap(-1);
 		model_set_forced_texture(CLOAKMAP);
 		gr_set_cull(1);
+		model_interp_sortnorm=model_interp_sortnorm_f2b;
 	}
 	else
 	{
@@ -1167,6 +1177,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					g3_draw_poly( nv, Interp_list, Interp_tmap_flags|TMAP_FLAG_NONDARKENING );		
 				}
 			}
+
 			GLOWMAP = -1;
 		}
 	}
@@ -1235,7 +1246,7 @@ void interp_draw_box( vector *min, vector *max )
 // 44     int     prelist offset
 // 48     int     postlist offset
 // 52     int     online offset
-void model_interp_sortnorm(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check)
+void model_interp_sortnorm_b2f(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check)
 {
 	#ifndef NDEBUG
 	modelstats_num_sortnorms++;
@@ -1248,13 +1259,6 @@ void model_interp_sortnorm(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_ch
 	int prelist = w(p+44);
 	int postlist = w(p+48);
 	int onlist = w(p+52);
-
-	// min = 
-	// max = 
-//	light_filter_push_box( vp(p+56), vp(p+68) );
-
-if (FULLCLOAK!=1){	
-//#if 1 //def BACK_TO_FRONT
 
 	if (prelist) model_interp_sub(p+prelist,pm,sm,do_box_check);		// prelist
 
@@ -1279,8 +1283,34 @@ if (FULLCLOAK!=1){
 
 	if (postlist) model_interp_sub(p+postlist,pm,sm,do_box_check);		// postlist
 
-}else{
-//#else
+}
+
+
+// Sortnorms
+// +0      int         id
+// +4      int         size 
+// +8      vector      normal
+// +20     vector      normal_point
+// +32     int         tmp=0
+// 36     int     front offset
+// 40     int     back offset
+// 44     int     prelist offset
+// 48     int     postlist offset
+// 52     int     online offset
+void model_interp_sortnorm_f2b(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check)
+{
+	#ifndef NDEBUG
+	modelstats_num_sortnorms++;
+	#endif
+
+//	Assert( w(p+4) == 56 );
+
+	int frontlist = w(p+36);
+	int backlist = w(p+40);
+	int prelist = w(p+44);
+	int postlist = w(p+48);
+	int onlist = w(p+52);
+
 	if (postlist) model_interp_sub(p+postlist,pm,sm,do_box_check);		// postlist
 
 	if (g3_check_normal_facing(vp(p+20),vp(p+8))) {		//facing
@@ -1307,9 +1337,8 @@ if (FULLCLOAK!=1){
 
 	if (prelist) model_interp_sub(p+prelist,pm,sm,do_box_check);		// prelist
 }
-//#endif
-//	light_filter_pop();
-}
+
+
 
 
 void model_draw_debug_points( polymodel *pm, bsp_info * submodel )
@@ -2214,6 +2243,28 @@ void model_render(int model_num, matrix *orient, vector * pos, uint flags, int o
 
 	Interp_objnum = objnum;
 
+
+/*
+	vector thruster_pnt=vmd_zero_vector;
+	vector rotated_thruster;
+	//maybe add lights by engine glows
+	if (Interp_flags & MR_SHOW_THRUSTERS) 
+	{
+		for (int thruster_num=0; thruster_num < pm->n_thrusters; thruster_num++)
+		{
+			for (int slot_num=0; slot_num < pm->thrusters[thruster_num].num_slots; slot_num++)
+			{
+				thruster_pnt=pm->thrusters[thruster_num].pnt[slot_num];
+				//vm_vec_rotate(&rotated_thruster,&thruster_pnt,orient);
+				
+				light_add_point(&rotated_thruster,pm->thrusters[thruster_num].radius[slot_num]*5,pm->thrusters[thruster_num].radius[slot_num]*10,1.0f,0.0f,0.0f,1.0f,-1);
+
+		//		gr_set_color(255,255,255);
+			//	g3_draw_sphere_ez(&rotated_thruster,pm->thrusters[thruster_num].radius[slot_num]*15);
+			}
+		}
+	}*/
+
 	if ( flags & MR_NO_LIGHTING )	{
 		Interp_light = 1.0f;
 
@@ -2851,6 +2902,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		glow_maps_active = shipp->glowmaps_active;
 	}
 	
+	if (FULLCLOAK != 1)
+		model_interp_sortnorm = model_interp_sortnorm_b2f;
 
 
 	MONITOR_INC( NumModelsRend, 1 );	
@@ -3060,6 +3113,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		d3d_zbias(0);	
 	}
 #endif
+
 		
 	// draw the hull of the ship
 	model_interp_sub( (ubyte *)pm->submodel[pm->detail[detail_level]].bsp_data, pm, &pm->submodel[pm->detail[detail_level]], 0 );
