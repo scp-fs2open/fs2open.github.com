@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.6 $
- * $Date: 2002-10-19 03:50:28 $
+ * $Revision: 2.7 $
+ * $Date: 2002-10-22 23:02:39 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/10/19 03:50:28  randomtiger
+ * Added special pause mode for easier action screenshots.
+ * Added new command line parameter for accessing all single missions in tech room. - RT
+ *
  * Revision 2.5  2002/08/27 13:38:57  penguin
  * Moved DirectX8 stuff to directx8 branch; reverted to previous
  *
@@ -209,5 +213,6 @@ extern int Cmdline_window;
 extern char *Cmdline_almission;	//DTP for autoload mission
 extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
 extern int Cmdline_allslev;
+extern int Cmdline_phreak;
 
 #endif
