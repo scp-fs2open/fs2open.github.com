@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.27 $
+ * $Revision: 2.28 $
  * $Author: Goober5000 $
- * $Date: 2005-01-25 21:28:58 $
+ * $Date: 2005-01-25 22:21:45 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/01/25 21:28:58  Goober5000
+ * streamlined some redundant stuff
+ * --Goober5000
+ *
  * Revision 2.26  2004/12/25 09:25:18  wmcoolmon
  * Fix to modular tables workaround with Fs2NetD
  *
@@ -1336,7 +1340,7 @@ int strip_comments(char *readp, int in_comment)
 	return in_comment;	
 }
 
-#if 0
+/*#if 0
 void strip_all_comments( char *readp, char *writep )
 {
 	int	ch;
@@ -1375,7 +1379,7 @@ void strip_all_comments( char *readp, char *writep )
 
 	*writep = (char)EOF_CHAR;
 }
-#endif
+#endif*/
 
 int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, char *cur)
 {
@@ -1410,32 +1414,20 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 //	When a comment is found, it is removed.  If an entire line
 //	consisted of a comment, a blank line is left in the input file.
 // Goober5000 - added ability to read somewhere other than Mission_text
-void read_file_text(char *filename, int mode, char *specified_file_text, char *specified_file_text_raw)
+void read_file_text(char *filename, int mode, char *processed_text, char *raw_text)
+{
+	// read the raw text
+	int raw_text_len = read_raw_file_text(filename, mode, raw_text);
+
+	// process it (strip comments)
+	process_raw_file_text(raw_text_len, processed_text, raw_text);
+}
+
+// Goober5000
+int read_raw_file_text(char *filename, int mode, char *raw_text)
 {
 	CFILE	*mf;
-	char	outbuf[PARSE_BUF_SIZE], *str;
-	char	*mp;
-	char	*mp2;
-	int	file_is_encrypted = 0, in_comment = 0;
-
-	char *file_text;
-	char *file_text_raw;
-
-	// possibly read file into something other than Mission_text
-	if (specified_file_text && specified_file_text_raw)
-	{
-		file_text = specified_file_text;
-		file_text_raw = specified_file_text_raw;
-	}
-	// otherwise, normal behavior
-	else
-	{
-		file_text = Mission_text;
-		file_text_raw = Mission_text_raw;
-	}
-
-	mp = file_text;
-	mp2 = file_text_raw;
+	int	file_is_encrypted = 0;
 
 	if (!filename)
 		longjmp(parse_abort, 10);
@@ -1450,9 +1442,13 @@ void read_file_text(char *filename, int mode, char *specified_file_text, char *s
 	// read the entire file in
 	int file_len = cfilelength(mf);
 
+	//	If you hit this assert, it is probably telling you the obvious.  The file
+	//	you are trying to read is truly too large.  Look at *filename to see the file name.
+	Assert(file_len < MISSION_TEXT_SIZE);
+
 	// read first 10 bytes to determine if file is encrypted
-	cfread(file_text_raw, min(file_len, 10), 1, mf);
-	file_is_encrypted = is_encrypted(file_text_raw);
+	cfread(raw_text, min(file_len, 10), 1, mf);
+	file_is_encrypted = is_encrypted(raw_text);
 	cfseek(mf, 0, CF_SEEK_SET);
 	if ( file_is_encrypted ) {
 		int	unscrambled_len;
@@ -1461,23 +1457,32 @@ void read_file_text(char *filename, int mode, char *specified_file_text, char *s
 		Assert(scrambled_text);
 		cfread(scrambled_text, file_len, 1, mf);
 		// unscramble text
-		unencrypt(scrambled_text, file_len, file_text_raw, &unscrambled_len);
+		unencrypt(scrambled_text, file_len, raw_text, &unscrambled_len);
 		file_len = unscrambled_len;
 		free(scrambled_text);
 	} else {
-		cfread(file_text_raw, file_len, 1, mf);
+		cfread(raw_text, file_len, 1, mf);
 	}
 	cfclose(mf);
 
-	//	If you hit this assert, it is probably telling you the obvious.  The file
-	//	you are trying to read is truly too large.  Look at *filename to see the file name.
-	Assert(file_len < MISSION_TEXT_SIZE);
+	return file_len;
+}
+
+// Goober5000
+void process_raw_file_text(int raw_text_len, char *processed_text, char *raw_text)
+{
+	char	*mp;
+	char	*mp_raw;
+	char outbuf[PARSE_BUF_SIZE], *str;
+	int in_comment = 0;
+
+	mp = processed_text;
+	mp_raw = raw_text;
 
 	// strip comments from raw text, reading into file_text
 	int num_chars_read = 0;
-	mp2 = file_text_raw;
-	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, file_text_raw, file_len, mp2)) != 0 ) {
-		mp2 += num_chars_read;
+	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0 ) {
+		mp_raw += num_chars_read;
 
 		in_comment = strip_comments(outbuf, in_comment);
 
@@ -1496,7 +1501,7 @@ void read_file_text(char *filename, int mode, char *specified_file_text, char *s
 //		mp += strlen(outbuf);
 	}
 
-	*mp = *mp2 = (char)EOF_CHAR;
+	*mp = *mp_raw = (char)EOF_CHAR;
 /*
 	while (cfgets(outbuf, PARSE_BUF_SIZE, mf) != NULL) {
 		if (strlen(outbuf) >= PARSE_BUF_SIZE-1)
@@ -1504,16 +1509,16 @@ void read_file_text(char *filename, int mode, char *specified_file_text, char *s
 
 		//	If you hit this assert, it is probably telling you the obvious.  The file
 		//	you are trying to read is truly too large.  Look at *filename to see the file name.
-		Assert(mp2 - file_text_raw + strlen(outbuf) < MISSION_TEXT_SIZE);
-		strcpy(mp2, outbuf);
-		mp2 += strlen(outbuf);
+		Assert(mp_raw - file_text_raw + strlen(outbuf) < MISSION_TEXT_SIZE);
+		strcpy(mp_raw, outbuf);
+		mp_raw += strlen(outbuf);
 
 		in_comment = strip_comments(outbuf, in_comment);
 		strcpy(mp, outbuf);
 		mp += strlen(outbuf);
 	}
 	
-	*mp = *mp2 = (char)EOF_CHAR;
+	*mp = *mp_raw = (char)EOF_CHAR;
 */
 
 }

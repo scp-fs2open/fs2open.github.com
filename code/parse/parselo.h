@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.17 $
- * $Author: wmcoolmon $
- * $Date: 2004-12-25 09:25:18 $
+ * $Revision: 2.18 $
+ * $Author: Goober5000 $
+ * $Date: 2005-01-25 22:21:45 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/12/25 09:25:18  wmcoolmon
+ * Fix to modular tables workaround with Fs2NetD
+ *
  * Revision 2.16  2004/08/11 05:06:31  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -302,6 +305,7 @@
 
 #include <setjmp.h>
 #include <stdio.h>
+#include "cfile/cfile.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
@@ -426,7 +430,9 @@ extern void parse_main();
 // utility
 extern void mark_int_list(int *ilp, int max_ints, int lookup_type);
 extern void compact_multitext_string(char *str);
-extern void read_file_text(char *filename, int mode = -1 /*CF_TYPE_ANY*/, char *specified_text = NULL, char *specified_text_raw = NULL);
+extern void read_file_text(char *filename, int mode = CF_TYPE_ANY, char *processed_text = Mission_text, char *raw_text = Mission_text_raw);
+extern int read_raw_file_text(char *filename, int mode = CF_TYPE_ANY, char *raw_text = Mission_text_raw);
+extern void process_raw_file_text(int raw_text_len, char *processed_text = Mission_text, char *raw_text = Mission_text_raw);
 extern void debug_show_mission_text();
 extern void convert_sexp_to_string(int cur_node, char *outstr, int mode);
 char *split_str_once(char *src, int max_pixel_w);
