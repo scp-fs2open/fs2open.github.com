@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLw32x.cpp $
- * $Revision: 1.6 $
- * $Date: 2002-11-22 20:54:16 $
+ * $Revision: 1.7 $
+ * $Date: 2002-12-05 00:49:25 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2002/11/22 20:54:16  phreak
+ * finished off all remaining problems with 32 bit mode, fullscreen mode
+ * and colors.  Still needs some tweaking, but works near perfect
+ *
  * Revision 1.5  2002/11/18 21:31:36  phreak
  * complete overhaul, works in 16 bit mode -phreak
  *
@@ -275,37 +279,15 @@
  */
 
 /*
-This file combines penguin's and the Icculus OpenGL code
+This file combines penguin's, phreak's and the Icculus OpenGL code
 
 		--STUFF WE STILL NEED TO DO--
 		-----------------------------
+1. Switch to true 3d graphics (not ortho)
+2. Start extenstion implentation (last)
 
-
-1. Find out why animations are playing "blue" (maybe something dealing with paletting?) -done
-2, Fix the texutre array from magically deleting itself (access violation occurs in 
-		opengl_tcache_frame() (about line 2050)).  This way we can use that instead of using 
-		glDrawPixels()
-
-3. Fix 32 bit mode colors (puke)
-4. Try and find suitable bm_set_components function pointers (bmpman) -done
-5. Fix rendering of ships after this is all done (access violation in nvopengl.dll 
-	(opengl32.dll for nvidia cards) -done (sorta)
-
-6. Switch to true 3d graphics (not ortho)
-7. Start extenstion implentation (last)
-
-other small projects
----------------------
-
-screen shot feature
-
-
-if you compile now, make sure to define USE_OPENGL,
-i will also get a hacked version of BMPMAN up so it
-won't crash due to an integer divide by 0 error in bm_set_components (another TODO?)
-
-  phreak - 10/11/02 -  5:25 pm EST
 */
+
 #ifdef WIN32
 
 #define STUB_FUNCTION 0
@@ -334,13 +316,77 @@ won't crash due to an integer divide by 0 error in bm_set_components (another TO
 #include "cfile/cfile.h"
 #include "io/timer.h"
 
+#pragma comment (lib, "opengl32")
+#pragma comment (lib, "glu32")
+
 extern int OGL_inited;
+
+//0==no fog
+//1==linear
+//2==fog coord EXT
+//3==secondary color EXT
+static int OGL_fogmode=0;
+
 static HDC dev_context = NULL;
 static HGLRC rend_context = NULL;
 static PIXELFORMATDESCRIPTOR pfd;
 
-#pragma comment (lib, "opengl32")
-#pragma comment (lib, "glu32")
+//EXTENSIONS!!!!
+//be sure to check for this at startup and handle not finding it gracefully
+
+//to add extensions:
+//define an index after the last one
+//increment GL_NUM_EXTENSIONS
+//add function macro
+//add function info to GL_Extensions struct
+//I included three as examples
+
+typedef struct ogl_extension
+{
+	int enabled;					//is this extension enabled
+	uint func_pointer;				//address of function
+	const char* function_name;		//name passed to wglGetProcAddress()
+	const char* extension_name;		//name found in extension string
+	int required_to_run;			//is this extension required for use	
+} ogl_extension;
+
+#define GL_FOG_COORDF 0
+#define GL_FOG_COORD_POINTER 1
+#define GL_MULTITEXTURE_COORD2F 2
+#define GL_ACTIVE_TEX 3
+#define GL_SECONDARY_COLOR3F 4
+#define GL_SECONDARY_COLOR3UB 5
+#define GL_SECONDARY_COLOR_POINTER 6
+#define GL_NUM_EXTENSIONS 7
+
+static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
+{
+	{0, NULL, "glFogCoordfEXT", "GL_EXT_fog_coord",0},
+	{0, NULL, "glFogCoordPointerEXT", "GL_EXT_fog_coord",0},
+	{0, NULL, "glMultiTexCoord2fARB", "GL_ARB_multitexture",0},
+	{0, NULL, "glActiveTextureARB", "GL_ARB_multitexture",0},
+	{0, NULL, "glSecondaryColor3fEXT", "GL_EXT_secondary_color",0},
+	{0, NULL, "glSecondaryColor3ubEXT", "GL_EXT_secondary_color",0},
+	{0, NULL, "glSecondaryColorPointerEXT", "GL_EXT_secondary_color",0}
+};
+
+#define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
+							((x)GL_Extensions[i].func_pointer)
+
+#define glFogCoordfEXT GLEXT_CALL(PFNGLFOGCOORDFEXTPROC, GL_FOG_COORDF)
+
+#define glFogCoordPointerEXT GLEXT_CALL(PFNGLFOGCOORDPOINTEREXTPROC, GL_FOG_COORD_POINTER);
+
+#define glMultiTexCoord2fARB GLEXT_CALL(PFNGLMULTITEXCOORD2FARBPROC, GL_MULTITEXTURE_COORD2F)
+
+#define glActiveTextureARB GLEXT_CALL(PFNGLACTIVETEXTUREARBPROC, GL_ACTIVE_TEX)
+
+#define glSecondaryColor3fEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3FEXTPROC, GL_SECONDARY_COLOR3F)
+
+#define glSecondaryColor3ubEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3UBEXTPROC, GL_SECONDARY_COLOR3UB)
+
+#define glSecondaryColorPointerEXT GLEXT_CALL(PFNGLSECONDARYCOLORPOINTEREXTPROC, GL_SECONDARY_COLOR_POINTER)
+
 
 typedef enum gr_texture_source {
 	TEXTURE_SOURCE_NONE,
@@ -379,33 +425,53 @@ static int Gr_opengl_mouse_saved_y2 = 0;
 static int Gr_opengl_mouse_saved_w = 0;
 static int Gr_opengl_mouse_saved_h = 0;
 
-// Throw in some dummy functions - DDOI
-/*
-int D3D_32bit = 0;		// grd3d.cpp
-int D3D_fog_mode = -1;		// grd3d.cpp
-int D3D_inited = 0;		// grd3d.cpp
-int D3D_zbias = 1;		// grd3d.cpp
-int D3d_rendition_uvs = 0;	// grd3d.cpp
-
-void d3d_flush ()
-{
-	STUB_FUNCTION;
-}
-
-void d3d_zbias (int a)
-{
-	STUB_FUNCTION;
-}
-*/
-
-
-
-extern int D3D_32bit;		// grd3d.cpp
-extern int D3D_fog_mode;		// grd3d.cpp
-extern int D3D_inited;		// grd3d.cpp
-extern int D3D_zbias;		// grd3d.cpp
-extern int D3d_rendition_uvs ;	// grd3d.cpp
 extern int Cmdline_window;
+
+static const char* OGL_extensions;
+
+//tries to find a certain extension
+int opengl_find_extension(const char* ext_to_find)
+{
+
+	return (strstr(OGL_extensions,ext_to_find)!=NULL);
+}
+
+//finds OGL extension functions
+//returns number found
+
+int opengl_get_extensions()
+{
+	int num_found=0;
+	ogl_extension *cur=NULL;
+
+	for (int i=0; i < GL_NUM_EXTENSIONS; i++)
+	{
+		cur=&GL_Extensions[i];
+		if (opengl_find_extension(cur->extension_name))
+		{
+			cur->func_pointer=(uint)wglGetProcAddress(cur->function_name);
+			if (cur->func_pointer)
+			{
+				cur->enabled=1;
+				mprintf(("found extension function: %s -- extension: %s\n", cur->function_name, cur->extension_name));
+				num_found++;
+			}
+			else
+			{
+				mprintf(("found extension, but not function: %s -- extension:%s\n", cur->function_name, cur->extension_name));
+			}
+		}
+		else
+		{
+			mprintf(("did not find extension: %s\n", cur->extension_name));
+			if (cur->required_to_run)
+			{
+				Error(__FILE__,__LINE__,"The extension %s is not supported by your graphics card, please use the Glide or Direct3D rendering engines.\n\n",cur->extension_name);
+			}
+		}
+	}
+	return num_found;
+}
 
 void opengl_go_fullscreen(HWND wnd)
 {
@@ -1399,8 +1465,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		}
 		glColor4ub ((ubyte)r,(ubyte)g,(ubyte)b,(ubyte)a);
 	
-		extern int D3D_fog_mode;
-		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (D3D_fog_mode == 1)){
+		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 3)){
 			int sr, sg, sb, sa;
 			
 			/* this is for GL_EXT_SECONDARY_COLOR */
@@ -1693,6 +1758,8 @@ void gr_opengl_cleanup()
 
 void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
 {
+//	mprintf(("gr_opengl_fog_set(%d,%d,%d,%d,%f,%f)\n",fog_mode,r,g,b,fog_near,fog_far));
+
 	Assert((r >= 0) && (r < 256));
 	Assert((g >= 0) && (g < 256));
 	Assert((b >= 0) && (b < 256));
@@ -1709,8 +1776,8 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	if (gr_screen.current_fog_mode != fog_mode) {
 		glEnable(GL_FOG);
 		
-		if (D3D_fog_mode == 2) {
-			glFogi(GL_FOG_MODE, GL_LINEAR);
+		if (OGL_fogmode == 1) {
+			glFogi(GL_FOG_MODE, GL_EXP2);
 		}
 		
 		gr_screen.current_fog_mode = fog_mode;
@@ -1737,9 +1804,8 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 		gr_screen.fog_near = fog_near;
 		gr_screen.fog_far = fog_far;
 		
-		if (D3D_fog_mode == 2) {
-			glFogf(GL_FOG_START, fog_near);
-			glFogf(GL_FOG_END, fog_far);
+		if (OGL_fogmode == 1) {
+			glFogf(GL_FOG_DENSITY, .6f);
 		}
 	}
 }
@@ -2965,7 +3031,7 @@ void gr_opengl_bitmap(int x, int y)
 extern char *Osreg_title;
 void gr_opengl_init()
 {
-	char *ext;
+	char *extlist;
 	char *curext;
 	int bpp = gr_screen.bits_per_pixel;
 
@@ -3026,25 +3092,25 @@ void gr_opengl_init()
 		Int3();	// Illegal bpp
 	}
 
-		Gr_t_red.bits=5;
-		Gr_t_red.mask = 0x7c00;
-		Gr_t_red.shift = 10;
-		Gr_t_red.scale = 8;
+	Gr_t_red.bits=5;
+	Gr_t_red.mask = 0x7c00;
+	Gr_t_red.shift = 10;
+	Gr_t_red.scale = 8;
 
-		Gr_t_green.bits=5;
-		Gr_t_green.mask = 0x03e0;
-		Gr_t_green.shift = 5;
-		Gr_t_green.scale = 8;
+	Gr_t_green.bits=5;
+	Gr_t_green.mask = 0x03e0;
+	Gr_t_green.shift = 5;
+	Gr_t_green.scale = 8;
 	
-		Gr_t_blue.bits=5;
-		Gr_t_blue.mask = 0x001f;
-		Gr_t_blue.shift = 0;
-		Gr_t_blue.scale = 8;
+	Gr_t_blue.bits=5;
+	Gr_t_blue.mask = 0x001f;
+	Gr_t_blue.shift = 0;
+	Gr_t_blue.scale = 8;
 
-		Gr_t_alpha.bits=1;
-		Gr_t_alpha.mask=0x8000;
-		Gr_t_alpha.scale=255;
-		Gr_t_alpha.shift=15;
+	Gr_t_alpha.bits=1;
+	Gr_t_alpha.mask=0x8000;
+	Gr_t_alpha.scale=255;
+	Gr_t_alpha.shift=15;
 
 	/*
 Gr_ta_red: bits=0, mask=f00, scale=17, shift=8
@@ -3141,14 +3207,19 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	mprintf(( "Extensions : \n" ));
 
 	//print out extensions
-	ext=(char*)glGetString(GL_EXTENSIONS);
+	OGL_extensions=(const char*)glGetString(GL_EXTENSIONS);
 
-	curext=strtok(ext, " ");
+	extlist=(char*)malloc(strlen(OGL_extensions));
+	memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
+	
+	curext=strtok(extlist, " ");
 	while (curext)
 	{
 		mprintf(( "%s\n", curext ));
 		curext=strtok(NULL, " ");
 	}
+
+	free(extlist);
 
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
@@ -3156,7 +3227,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	{
 		opengl_go_fullscreen(wnd);
 	}
-
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -3179,27 +3249,20 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	
-//	D3D_32bit = (bpp == 32) ? 1:0;              // grd3d.cpp
-//	extern int D3D_enabled;
-//	D3D_enabled = 1;
-	/* 
-	  TODO: set fog_mode to 1 if EXT_secondary_color found and wanted 
-	  1 = use secondary color ext
-	  2 = use opengl linear fog
-	 */
-//	D3D_fog_mode = 2;          // grd3d.cpp
-
 	glFlush();
 	
 	Bm_pixel_format = BM_PIXEL_FORMAT_ARGB;
 	Gr_bitmap_poly = 1;
+	OGL_fogmode=1;
 	
+	//start extension
+	opengl_get_extensions();
 	
 	opengl_tcache_init (1);
 	gr_opengl_clear();
 
 	Gr_current_red = &Gr_red;
-    Gr_current_blue = &Gr_blue;
+	Gr_current_blue = &Gr_blue;
 	Gr_current_green = &Gr_green;
 	Gr_current_alpha = &Gr_alpha;
                                 
