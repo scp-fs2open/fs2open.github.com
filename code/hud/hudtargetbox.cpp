@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.35 $
- * $Date: 2004-04-06 03:09:53 $
+ * $Revision: 2.36 $
+ * $Date: 2004-04-07 17:20:24 $
  * $Author: phreak $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2004/04/06 03:09:53  phreak
+ * added a control config option for the wireframe hud targetbox i enabled ages ago
+ *
  * Revision 2.34  2004/03/17 04:07:30  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -778,10 +781,10 @@ void hud_render_target_setup(vector *camera_eye, matrix *camera_orient, float zo
 	g3_set_view_matrix( camera_eye, camera_orient, zoom);	
 	model_set_detail_level(1);		// use medium detail level
 
+	HUD_set_clip(Target_window_coords[gr_screen.res][0],Target_window_coords[gr_screen.res][1],Target_window_coords[gr_screen.res][2],Target_window_coords[gr_screen.res][3]);
+
 	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-	HUD_set_clip(Target_window_coords[gr_screen.res][0],Target_window_coords[gr_screen.res][1],Target_window_coords[gr_screen.res][2],Target_window_coords[gr_screen.res][3]);
 
 }
 
@@ -799,9 +802,6 @@ void hud_render_target_close()
 	}
 	g3_end_frame();
 	hud_save_restore_camera_data(0);
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
 }
 
 // -------------------------------------------------------------------------------------
