@@ -1944,7 +1944,9 @@ int find_decal_tricounts(decal_system* system, int i){
 	decal_list_controle* list = &system->decals[i];
 	decal_list* decal = list->d_list;
 	decal_list* d;
-	//int n = list->n_decals;
+#ifndef NDEBUG
+	int n = list->n_decals;
+#endif
 	while(decal != NULL){
 		Assert(n--);
 		Assert((decal->dec.n_poly < MAX_DECAL_POLY) && (decal->dec.n_poly > -1));
