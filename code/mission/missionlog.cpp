@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-01-11 21:28:24 $
+ * $Author: Goober5000 $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -871,7 +874,7 @@ void message_log_init_scrollback(int pw)
 				break;
 
 			case LOG_SHIP_DOCK:
-				message_log_add_segs(XSTR( "docked with ", 409), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR( "Docked with ", 409), LOG_COLOR_NORMAL);
 				message_log_add_segs(entry->sname, c);
 				break;
 
