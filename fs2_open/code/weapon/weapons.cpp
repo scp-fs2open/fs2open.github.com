@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2005/01/03 18:46:03  taylor
+ * stupid mistake
+ *
  * Revision 2.79  2004/12/25 09:25:41  wmcoolmon
  * Fix to modular tables workaround with Fs2NetD
  *
@@ -4570,7 +4573,7 @@ void weapons_page_in()
 
 		// shouldn't have to do this but some weapons here can be different than the ship
 		// weapons for some reason so this is here mainly as a double check
-		for (i = 0; i < MAX_SUBSYS_STATUS; i++) {
+		for (i = 0; i < Subsys_index; i++) {
 			for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
 				if (Subsys_status[i].primary_banks[j] > -1)
 					weapon_mark_as_used(Subsys_status[i].primary_banks[j]);
