@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.14 $
+ * $Date: 2004-07-31 08:53:46 $
+ * $Author: et1 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.12  2004/07/17 18:46:08  taylor
  * various OGL and memory leak fixes
  *
@@ -838,8 +841,15 @@ void brief_parse_icon_tbl()
 				if ( hf->first_frame == -1 ) {
 					static bool error_already_shown = false;
 
-					if(error_already_shown == false) {
-						MessageBox(NULL,"Missing briefing icon","brief_parse_icon_tbl error", MB_OK);
+					if(error_already_shown == false)
+                    {
+
+                        // *This doesn't tell which the missing icon is, so...  -Et1
+
+						//MessageBox(NULL,"Missing briefing icon","brief_parse_icon_tbl error", MB_OK);
+
+                        Warning( LOCATION, "Missing briefing icon: '%s'", name );
+
 						error_already_shown = true;
 					}
 				}
