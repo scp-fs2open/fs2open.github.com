@@ -9,11 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.48 $
- * $Date: 2003-12-03 19:27:00 $
+ * $Revision: 2.49 $
+ * $Date: 2003-12-04 20:39:09 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2003/12/03 19:27:00  randomtiger
+ * Changed -t32 flag to -jpgtga
+ * Added -query_flag to identify builds with speech not compiled and other problems
+ * Now loads up launcher if videocard reg entry not found
+ * Now offers to go online to download launcher if its not present
+ * Changed target view not to use lower res texture, hi res one is already chached so might as well use it
+ *
  * Revision 2.47  2003/11/29 10:52:09  randomtiger
  * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
@@ -501,6 +508,7 @@ cmdline_parm pcx32_arg("-pcx32",NULL);
 cmdline_parm timerbar_arg("-timerbar", NULL);
 cmdline_parm stats_arg("-stats", NULL);
 cmdline_parm query_speech_arg("-query_speech", NULL);
+cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -530,6 +538,7 @@ int Cmdline_mouse_coords = 0;
 int Cmdline_timeout = -1;
 int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
 int Cmdline_SpewTable_CRCs = 0;
+int Cmdline_ship_choice_3d = 0;
 
 int Cmdline_window = 0;
 int Cmdline_allslev = 0;
@@ -1014,6 +1023,11 @@ void SetCmdlineParams()
 	if(query_speech_arg.found() )
 	{
 		Cmdline_query_speech = 1;
+	}
+
+	if(ship_choice_3d_arg.found() )
+	{
+		Cmdline_ship_choice_3d = 1;
 	}
 }
 

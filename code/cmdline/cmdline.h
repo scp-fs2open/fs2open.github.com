@@ -11,11 +11,18 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.41 $
- * $Date: 2003-12-03 19:27:00 $
+ * $Revision: 2.42 $
+ * $Date: 2003-12-04 20:39:09 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/12/03 19:27:00  randomtiger
+ * Changed -t32 flag to -jpgtga
+ * Added -query_flag to identify builds with speech not compiled and other problems
+ * Now loads up launcher if videocard reg entry not found
+ * Now offers to go online to download launcher if its not present
+ * Changed target view not to use lower res texture, hi res one is already chached so might as well use it
+ *
  * Revision 2.40  2003/11/29 10:52:09  randomtiger
  * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
@@ -420,5 +427,6 @@ extern int Cmdline_pcx32;
 extern int Cmdline_noglow;
 extern int Cmdline_timerbar;
 extern int Cmdline_query_speech;
+extern int Cmdline_ship_choice_3d;
 
 #endif

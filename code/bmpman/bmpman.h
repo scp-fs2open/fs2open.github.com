@@ -10,13 +10,25 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.9 $
- * $Date: 2003-11-19 20:37:22 $
+ * $Revision: 2.10 $
+ * $Date: 2003-12-04 20:39:08 $
  * $Author: randomtiger $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/11/19 20:37:22  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.8  2003/11/07 18:31:01  randomtiger
  * Fixed a nohtl call to htl funcs (crash with NULL pointer)
  * Fixed a bug with 32bit PCX code.
@@ -274,10 +286,11 @@ enum
 	BM_TYPE_PCX,	// 16 bit PCX		
 	BM_TYPE_USER,	// Data created at run time	
 	BM_TYPE_ANI,	// In-house ANI format
-	// Only list 32 bit formats after this flag plese
+	// Only list 32 bit formats after this flag please
 	BM_TYPE_32_BIT_FORMATS,
 	BM_TYPE_TGA,				
 	BM_TYPE_JPG,					
+	BM_TYPE_DDS,					
 };
 
 /// Moved from cpp file ///////////////////

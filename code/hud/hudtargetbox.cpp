@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-11-16 04:09:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.24 $
+ * $Date: 2003-12-04 20:39:09 $
+ * $Author: randomtiger $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/11/16 04:09:23  Goober5000
+ * language
+ *
  * Revision 2.22  2003/11/11 03:56:11  bobboau
  * lots of bug fixing, much of it in nebula and bitmap drawing
  *
@@ -605,9 +608,15 @@ void hud_targetbox_init_all_timers()
 	Last_ts = -1;
 }
 
+float Hud_target_object_factor = 1;
+
 // Initialize the data needed for the target view.  This is called from HUD_init() once per mission
 void hud_targetbox_init()
 {
+	// This scales zoomout views in HTL mode to be similar to the original
+  	if(!Cmdline_nohtl)
+		Hud_target_object_factor = 2.2f;
+
 	if (!Target_view_gauge_loaded) {
 		Target_view_gauge.first_frame = bm_load_animation(Target_view_fname[gr_screen.res], &Target_view_gauge.num_frames);
 		if ( Target_view_gauge.first_frame < 0 ) {
@@ -924,7 +933,7 @@ void hud_render_target_asteroid(object *target_objp)
 		// the objects position
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
-		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f);
+		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f * Hud_target_object_factor);
 		model_clear_instance(Asteroid_info[asteroidp->type].model_num[subtype]);
 		
 		if (Targetbox_wire!=0)
@@ -1400,7 +1409,8 @@ void hud_render_target_ship(object *target_objp)
 		// set camera eye to eye of ship relative to origin
 	//	hud_targetbox_get_eye(&camera_eye, &camera_orient, Player_obj->instance);
 
-		hud_render_target_setup(&camera_eye, &camera_orient, target_sip->closeup_zoom);
+		// RT, changed scaling here
+		hud_render_target_setup(&camera_eye, &camera_orient, target_sip->closeup_zoom * Hud_target_object_factor);
 		// model_clear_instance(target_shipp->modelnum);
 		ship_model_start( target_objp );
 
@@ -1523,7 +1533,7 @@ void hud_render_target_debris(object *target_objp)
 			if (Targetbox_wire==1)
 				flags |=MR_NO_POLYS;
 		}
-		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f);
+		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f * Hud_target_object_factor);
 		model_clear_instance(debrisp->model_num);
 
 		// This calls the colour that doesnt get reset
@@ -1639,7 +1649,7 @@ void hud_render_target_weapon(object *target_objp)
 		// the objects position
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
-		hud_render_target_setup(&camera_eye, &camera_orient, View_zoom/3);
+		hud_render_target_setup(&camera_eye, &camera_orient, View_zoom/3 * Hud_target_object_factor);
 		model_clear_instance(viewed_model_num);
 
 		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER, -1, -1, replacement_textures);
