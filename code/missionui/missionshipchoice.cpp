@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-04-14 00:37:36 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2004-05-30 08:04:49 $
+ * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/04/14 00:37:36  taylor
+ * fix extra large model with -ship_choice_3d in OGL
+ *
  * Revision 2.20  2004/04/01 15:29:39  taylor
  * close out briefing menu bitmaps before entering mission
  *
@@ -480,6 +483,7 @@
 #include "mission/missionhotkey.h"
 #include "popup/popup.h"
 #include "hud/hudwingmanstatus.h"
+#include "hud/hudparse.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "lighting/lighting.h"
@@ -2242,6 +2246,9 @@ void commit_pressed()
 		strcpy(Player_loadout.last_modified, The_mission.modified);
 		wss_save_loadout();
 	}
+
+	//Set the HUD table -C
+	set_current_hud(Player->last_ship_flown_si_index);
 
 	// move to the next stage
 	// in multiplayer this is the final mission sync

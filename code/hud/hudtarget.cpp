@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.31 $
- * $Date: 2004-05-29 03:02:53 $
+ * $Revision: 2.32 $
+ * $Date: 2004-05-30 08:04:49 $
  * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/05/29 03:02:53  wmcoolmon
+ * Added HUD gauges placement table, "hud_gauges.tbl" or "*-hdg.tbm" table module
+ *
  * Revision 2.30  2004/05/10 10:51:53  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -328,6 +331,7 @@
  */
 
 #include "hud/hud.h"
+#include "hud/hudparse.h"
 #include "hud/hudartillery.h"
 #include "hud/hudlock.h"
 #include "hud/hudmessage.h"
@@ -408,13 +412,9 @@ float Target_triangle_height[GR_NUM_RESOLUTIONS] = {
 htarget_list htarget_items[MAX_HOTKEY_TARGET_ITEMS];
 htarget_list htarget_free_list;
 
-extern int Aburn_coords[2];
-extern int Wenergy_coords[2];
-extern int Aburn_width;
-extern int Wenergy_width;
 /*
 // coordinates and widths used to render the HUD afterburner energy gauge
-int Aburn_coords[GR_NUM_RESOLUTIONS][4] = {
+int current_hud->Aburn_coords[GR_NUM_RESOLUTIONS][4] = {
 	{ // GR_640
 		171, 265, 60, 60
 	},
@@ -424,7 +424,7 @@ int Aburn_coords[GR_NUM_RESOLUTIONS][4] = {
 };
 
 // coordinates and widths used to render the HUD weapons energy gauge
-int Wenergy_coords[GR_NUM_RESOLUTIONS][4] = {
+int current_hud->Wenergy_coords[GR_NUM_RESOLUTIONS][4] = {
 	{ // GR_640
 		416, 265, 60, 60
 	},
@@ -495,8 +495,6 @@ hud_frames Aburn_bar_gauge;
 hud_frames Wenergy_bar_gauge;
 int Aburn_bar_gauge_loaded = 0;
 int Wenergy_bar_gauge_loaded = 0;
-extern char Wenergy_fname[MAX_FILENAME_LEN];
-extern char Aburn_fname[MAX_FILENAME_LEN];
 int Weapon_energy_text_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
 		439, 318
@@ -1510,17 +1508,17 @@ void hud_init_targeting()
 	}
 
 	if (!Aburn_bar_gauge_loaded) {
-		Aburn_bar_gauge.first_frame = bm_load_animation(Aburn_fname, &Aburn_bar_gauge.num_frames);
+		Aburn_bar_gauge.first_frame = bm_load_animation(current_hud->Aburn_fname, &Aburn_bar_gauge.num_frames);
 		if ( Aburn_bar_gauge.first_frame < 0 ) {
-			Warning(LOCATION,"Cannot load hud ani: %s\n", Aburn_fname);
+			Warning(LOCATION,"Cannot load hud ani: %s\n", current_hud->Aburn_fname);
 		}
 		Aburn_bar_gauge_loaded = 1;
 	}
 
 	if (!Wenergy_bar_gauge_loaded) {
-		Wenergy_bar_gauge.first_frame = bm_load_animation(Wenergy_fname, &Wenergy_bar_gauge.num_frames);
+		Wenergy_bar_gauge.first_frame = bm_load_animation(current_hud->Wenergy_fname, &Wenergy_bar_gauge.num_frames);
 		if ( Wenergy_bar_gauge.first_frame < 0 ) {
-			Warning(LOCATION,"Cannot load hud ani: %s\n", Wenergy_fname);
+			Warning(LOCATION,"Cannot load hud ani: %s\n", current_hud->Wenergy_fname);
 		}
 		Wenergy_bar_gauge_loaded = 1;
 	}
@@ -4945,16 +4943,16 @@ void hud_show_afterburner_gauge()
 		percent_left = 1.0f;
 	}
 	
-	clip_h = fl2i( (1.0f - percent_left) * Aburn_width + 0.5f );
+	clip_h = fl2i( (1.0f - percent_left) * current_hud->Aburn_size[0] + 0.5f );
 
 	bm_get_info(Aburn_bar_gauge.first_frame,&w,&h);
 	
 	if ( clip_h > 0) {
-		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame, Aburn_coords[0], Aburn_coords[1],w,clip_h,0,0);		
+		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame, current_hud->Aburn_coords[0], current_hud->Aburn_coords[1],w,clip_h,0,0);		
 	}
 
-	if ( clip_h <= Aburn_width ) {		
-		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame+1, Aburn_coords[0], Aburn_coords[1]+clip_h,w,h-clip_h,0,clip_h);
+	if ( clip_h <= current_hud->Aburn_size[0] ) {		
+		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame+1, current_hud->Aburn_coords[0], current_hud->Aburn_coords[1]+clip_h,w,h-clip_h,0,clip_h);
 	} 	
 }
 
@@ -5008,16 +5006,16 @@ void hud_show_weapon_energy_gauge()
 		}
 	}
 
-	clip_h = fl2i( (1.0f - percent_left) * Wenergy_width + 0.5f );
+	clip_h = fl2i( (1.0f - percent_left) * current_hud->Wenergy_size[0] + 0.5f );
 
 	bm_get_info(Wenergy_bar_gauge.first_frame+2,&w,&h);
 	
 	if ( clip_h > 0 ) {
-		GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+2, Wenergy_coords[0], Wenergy_coords[1], w,clip_h,0,0);		
+		GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+2, current_hud->Wenergy_coords[0], current_hud->Wenergy_coords[1], w,clip_h,0,0);		
 	}
 
-	if ( clip_h <= Wenergy_width ) {
-		GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+3, Wenergy_coords[0], Wenergy_coords[1] + clip_h, w,h-clip_h,0,clip_h);		
+	if ( clip_h <= current_hud->Wenergy_size[0] ) {
+		GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+3, current_hud->Wenergy_coords[0], current_hud->Wenergy_coords[1] + clip_h, w,h-clip_h,0,clip_h);		
 	}
 
 	// hud_set_default_color();
