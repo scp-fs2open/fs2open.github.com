@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-02-08 23:49:59 $
- * $Author: taylor $
+ * $Revision: 2.35 $
+ * $Date: 2005-02-13 08:41:25 $
+ * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/02/08 23:49:59  taylor
+ * update/add .cvsignore files for project file changes
+ * silence warning about depreciated strings.h stuff for MSVC 2005
+ * final model_unload() stuff for WMCoolmon, put in missionweaponchoice.cpp
+ * remove really old project files
+ *
  * Revision 2.33  2005/02/02 15:09:06  taylor
  * only model_load() if we using a ship other than the current one
  *
@@ -586,6 +592,7 @@
 #include "render/3d.h"
 #include "lighting/lighting.h"
 #include "hud/hudbrackets.h"
+#include "model/model.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -857,6 +864,7 @@ wl_ship_class_info	Wl_ships[MAX_SHIP_TYPES];
 typedef struct wl_icon_info
 {
 	int				icon_bmaps[NUM_ICON_FRAMES];
+	int				laser_bmap;
 	int				model_index;
 	int				can_use;
 	anim			*wl_anim;
@@ -1405,6 +1413,7 @@ void wl_render_overhead_view(float frametime)
 						vm_vec_unrotate(&subobj_pos,&pm->gun_banks[x].pnt[y],&object_orient);
 						g3_rotate_vertex(&draw_point, &subobj_pos);
 						g3_project_vertex(&draw_point);
+						gr_unsize_screen_posf(&draw_point.sx, &draw_point.sy);
 
 						xc = fl2i(draw_point.sx + Wl_overhead_coords[gr_screen.res][0]);
 						yc = fl2i(draw_point.sy +Wl_overhead_coords[gr_screen.res][1]);
@@ -1464,6 +1473,7 @@ void wl_render_overhead_view(float frametime)
 						vm_vec_unrotate(&subobj_pos,&pm->missile_banks[x].pnt[y],&object_orient);
 						g3_rotate_vertex(&draw_point, &subobj_pos);
 						g3_project_vertex(&draw_point);
+						gr_unsize_screen_posf(&draw_point.sx, &draw_point.sy);
 
 						xc = fl2i(draw_point.sx + Wl_overhead_coords[gr_screen.res][0]);
 						yc = fl2i(draw_point.sy +Wl_overhead_coords[gr_screen.res][1]);
@@ -1691,18 +1701,39 @@ void wl_init_pool(team_data *td)
 void wl_load_icons(int weapon_class)
 {
 	wl_icon_info	*icon;
-	int				first_frame, num_frames, i;
+	int				first_frame = -1;
+	int num_frames, i;
+	weapon_info *wip = &Weapon_info[weapon_class];
 
 	icon = &Wl_icons[weapon_class];
 
-	first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames);
-/*	if ( first_frame == -1 ) {
-		Int3();	// Could not load in icon frames.. get Alan
-		return;
+	if(!Cmdline_ship_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
+	{
+		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames);
+
+		for ( i = 0; i < num_frames ; i++ ) {
+			icon->icon_bmaps[i] = first_frame+i;
+		}
 	}
-*/
-	for ( i = 0; i < num_frames ; i++ ) {
-		icon->icon_bmaps[i] = first_frame+i;
+
+	if ( first_frame == -1 && icon->model_index == -1)
+	{
+	//	Int3();	// Could not load in icon frames.. get Alan
+		if(strlen(wip->tech_model))
+		{
+			icon->model_index = model_load(wip->tech_model, 0, NULL);
+		}
+		if(wip->render_type != WRT_LASER && icon->model_index == -1)
+		{
+			icon->model_index = model_load(wip->pofbitmap_name, 0, NULL);
+		}
+		//This looks really crappy, so don't do it for now.
+		/*
+		if(icon->model_index == -1)
+		{
+			icon->laser_bmap = bm_load(wip->pofbitmap_name);
+		}
+		*/
 	}
 }
 
@@ -1712,51 +1743,61 @@ void wl_load_anim(int weapon_class)
 {
 	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
 	wl_icon_info	*icon;
+	weapon_info *wip = &Weapon_info[weapon_class];
 
 	icon = &Wl_icons[weapon_class];
 	Assert( icon->wl_anim == NULL );
 	
-	// 1024x768 SUPPORT
-	// If we are in 1024x768, we first want to append "2_" in front of the filename
-	if (gr_screen.res == GR_1024) {
-		Assert(strlen(Weapon_info[weapon_class].anim_filename) <= 30);
-		strcpy(animation_filename, "2_");
-		strcat(animation_filename, Weapon_info[weapon_class].anim_filename);
+	if(!Cmdline_ship_choice_3d || wip->render_type == WRT_LASER)
+	{
+		// 1024x768 SUPPORT
+		// If we are in 1024x768, we first want to append "2_" in front of the filename
+		if (gr_screen.res == GR_1024) {
+			Assert(strlen(Weapon_info[weapon_class].anim_filename) <= 30);
+			strcpy(animation_filename, "2_");
+			strcat(animation_filename, Weapon_info[weapon_class].anim_filename);
 
-		// now check if file exists
-		// GRR must add a .ANI at the end for detection
-		strcat(animation_filename,".ani");
-		icon->wl_anim = anim_load(animation_filename, 1);
+			// now check if file exists
+			// GRR must add a .ANI at the end for detection
+			strcat(animation_filename,".ani");
+			icon->wl_anim = anim_load(animation_filename, 1);
 
-		if (icon->wl_anim == NULL) {
-			mprintf(("Weapon ANI: Can not find %s, using lowres version instead.\n",animation_filename)); 
+			if (icon->wl_anim == NULL) {
+				mprintf(("Weapon ANI: Can not find %s, using lowres version instead.\n",animation_filename)); 
+				strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
+				icon->wl_anim = anim_load(animation_filename, 1);
+			}
+
+			/*
+			if (!cf_exist(animation_filename, CF_TYPE_INTERFACE)) {
+				// file does not exist, use original low res version
+				mprintf(("Weapon ANI: Can not find %s, using lowres version instead.\n",animation_filename)); 
+				strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
+			} else {
+				animation_filename[strlen(animation_filename) - 4] = '\0';
+				mprintf(("Weapon ANI: Found hires version of %s\n",animation_filename));
+			}
+			*/
+		} else {
 			strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
+			// load the compressed ship animation into memory 
+			// NOTE: if last parm of load_anim is 1, the anim file is mapped to memory 
 			icon->wl_anim = anim_load(animation_filename, 1);
 		}
 
-		/*
-		if (!cf_exist(animation_filename, CF_TYPE_INTERFACE)) {
-			// file does not exist, use original low res version
-			mprintf(("Weapon ANI: Can not find %s, using lowres version instead.\n",animation_filename)); 
-			strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
-		} else {
-			animation_filename[strlen(animation_filename) - 4] = '\0';
-			mprintf(("Weapon ANI: Found hires version of %s\n",animation_filename));
+		if ( icon->wl_anim == NULL )
+		{
+			// *If no weapon loadout ani is found, output error instead of just crashing in debug build -Et1
+			// Int3();		// couldn't load anim filename.. get Alan
+
+			//Error( LOCATION, "Couldn't find weapon loadout screen animation '%s'\n", animation_filename );
+
+			//Make sure the model is loaded
+			if(icon->model_index == -1 && wip->render_type != WRT_LASER)
+			{
+				model_load(wip->pofbitmap_name, 0, NULL);
+			}
 		}
-		*/
-	} else {
-		strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
-		// load the compressed ship animation into memory 
-		// NOTE: if last parm of load_anim is 1, the anim file is mapped to memory 
-		icon->wl_anim = anim_load(animation_filename, 1);
-	}
-
-	if ( icon->wl_anim == NULL )
-    {
-        // *If no weapon loadout ani is found, output error instead of just crashing in debug build -Et1
-        // Int3();		// couldn't load anim filename.. get Alan
-
-        Error( LOCATION, "Couldn't find weapon loadout screen animation '%s'\n", animation_filename );
 	}
 }
 
@@ -1781,7 +1822,7 @@ void wl_load_all_anims()
 
 	// load up the animations used for weapons (they are memory-mapped)
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		if ( Wl_pool[i] > 0 ) {
+		if ( Wl_pool[i] > 0 && Weapon_info[i].anim_filename[0] != '\0') {
 			wl_load_anim(i);
 		}
 	}
@@ -1845,8 +1886,9 @@ void wl_load_all_icons()
 		Wl_icons[i].wl_anim_instance = NULL;
 		for ( j = 0; j < NUM_ICON_FRAMES; j++ ) {
 			Wl_icons[i].icon_bmaps[j] = -1;
-			Wl_icons[i].model_index = -1;
 		}
+		Wl_icons[i].model_index = -1;
+		Wl_icons[i].laser_bmap = -1;
 
 		if ( Wl_pool[i] > 0 ) {
 			wl_load_icons(i);
@@ -1870,6 +1912,14 @@ void wl_unload_icons()
 				bm_release(icon->icon_bmaps[j]);
 				icon->icon_bmaps[j] = -1;
 			}
+		}
+
+		if(icon->model_index >= 0) {
+			icon->model_index = -1;
+		}
+		if(icon->laser_bmap >= 0) {
+			bm_unload(icon->laser_bmap);
+			icon->laser_bmap = -1;
 		}
 	}
 }
@@ -3250,7 +3300,15 @@ void weapon_select_do(float frametime)
 
 	gr_reset_clip();
 
-	if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class ) ) {
+	weapon_select_render(frametime);
+	int *weapon_ani_coords;
+	if (Game_mode & GM_MULTIPLAYER) {
+		weapon_ani_coords = Wl_weapon_ani_coords_multi[gr_screen.res];
+	} else {
+		weapon_ani_coords = Wl_weapon_ani_coords[gr_screen.res];
+	}
+
+	if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class ) && Wl_icons[Selected_wl_class].wl_anim != NULL) {
 		wl_icon_info *icon;
 		Assert(Selected_wl_class >= 0 && Selected_wl_class < MAX_WEAPON_TYPES );
 		if ( Weapon_anim_class != Selected_wl_class ) 
@@ -3261,14 +3319,6 @@ void weapon_select_do(float frametime)
 		if ( icon->wl_anim_instance ) {
 			if ( icon->wl_anim_instance->frame_num == icon->wl_anim_instance->stop_at ) {
 				anim_play_struct aps;
-				int *weapon_ani_coords;
-
-				// get the correct weapon animations coords
-				if (Game_mode & GM_MULTIPLAYER) {
-					weapon_ani_coords = Wl_weapon_ani_coords_multi[gr_screen.res];
-				} else {
-					weapon_ani_coords = Wl_weapon_ani_coords[gr_screen.res];
-				}
 
 				anim_release_render_instance(icon->wl_anim_instance);
 				anim_play_init(&aps, icon->wl_anim, weapon_ani_coords[0], weapon_ani_coords[1]);
@@ -3280,8 +3330,119 @@ void weapon_select_do(float frametime)
 			}
 		}
 	}
+	else if(Wl_icons[Selected_wl_class].model_index != -1)
+	{
+		static float WeapSelectScreenWeapRot	= 0.0f;
+		wl_icon_info *sel_icon					= &Wl_icons[Selected_wl_class];
+		matrix	object_orient					= IDENTITY_MATRIX;
+//		matrix	view_orient						= IDENTITY_MATRIX;
+		float zoom								= 1.0f;
+		angles rot_angles						= {0.0f,0.0f,0.0f};
+		polymodel *pm;
+		bsp_info *bs;
+		vector weap_closeup;
+		float y_closeup;
 
-	weapon_select_render(frametime);
+		WeapSelectScreenWeapRot += PI2 * frametime / REVOLUTION_RATE;
+		while (WeapSelectScreenWeapRot > PI2){
+			WeapSelectScreenWeapRot -= PI2;	
+		}
+
+		rot_angles.p = 0.0;
+		rot_angles.b = 0.0f;
+		rot_angles.h = -(PI/2.0f);
+		vm_angles_2_matrix(&object_orient, &rot_angles);
+
+		/*rot_angles.p = 0.0f;
+		rot_angles.b = 0.0f;
+		rot_angles.h = WeapSelectScreenWeapRot;
+		vm_angles_2_matrix(&object_orient, &rot_angles);*/
+		//vm_rotate_matrix_by_angles(&object_orient, &rot_angles);
+	//	rot_angles.h = -(PI/2);
+		vm_angles_2_matrix(&object_orient, &rot_angles);
+
+		gr_set_clip(weapon_ani_coords[0], weapon_ani_coords[1], gr_screen.res == 0 ? 202 : 332, gr_screen.res == 0 ? 185 : 304);
+		g3_start_frame(1);
+
+		//Get the missile dimension stuffs
+		pm = model_get(sel_icon->model_index);
+		bs = NULL;	//tehe
+		for(int i = 0; i < pm->n_models; i++)
+		{
+			if(!pm->submodel[i].is_thruster)
+			{
+				bs = &pm->submodel[i];
+				break;
+			}
+		}
+
+		if(bs == NULL)
+		{
+			bs = &pm->submodel[0];
+		}
+
+		//Find the center of teh submodel
+		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
+		weap_closeup.xyz.y = bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f;
+		weap_closeup.xyz.z = (weap_closeup.xyz.x/tan(zoom / 2.0f));
+
+		y_closeup = -(weap_closeup.xyz.y/tan(zoom / 2.0f));
+		if(y_closeup < weap_closeup.xyz.z)
+		{
+			weap_closeup.xyz.z = y_closeup;
+		}
+
+		/*weap_closeup.xyz.x = weap_closeup.xyz.z * sin(WeapSelectScreenWeapRot);
+		weap_closeup.xyz.z = weap_closeup.xyz.z * cos(WeapSelectScreenWeapRot);
+		rot_angles.h = 0.0f;
+		rot_angles.b = 90.0f - WeapSelectScreenWeapRot;
+		vm_angles_2_matrix(&view_orient, &rot_angles);*/
+
+		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, zoom);
+		model_set_detail_level(0);
+		if (!Cmdline_nohtl) gr_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+		light_reset();
+		vector light_dir = vmd_zero_vector;
+		light_dir.xyz.x = -0.5;
+		light_dir.xyz.y = 2.0f;
+		light_dir.xyz.z = -2.0f;	
+		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+		light_rotate_all();
+		// lighting for techroom
+
+		model_clear_instance(sel_icon->model_index);
+		/*if ( (wip->wi_flags & WIF_THRUSTER) && (wp->thruster_bitmap > -1) ) {
+			float	ft;
+
+			//	Add noise to thruster geometry.
+			//ft = obj->phys_info.forward_thrust;					
+			ft = 1.0f;		// Always use 1.0f for missiles					
+			ft *= (1.0f + frand()/5.0f - 1.0f/10.0f);
+			if (ft > 1.0f)
+				ft = 1.0f;
+
+			vector temp;
+			temp.xyz.x = ft;
+			temp.xyz.y = ft;
+			temp.xyz.z = ft;
+
+			model_set_thrust( wip->model_num, &temp, wp->thruster_bitmap, wp->thruster_glow_bitmap, wp->thruster_glow_noise);
+			render_flags |= MR_SHOW_THRUSTERS;
+		}*/
+		model_render(sel_icon->model_index, &object_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING | MR_SHOW_THRUSTERS, -1, -1);
+
+		if (!Cmdline_nohtl) 
+		{
+			gr_end_view_matrix();
+			gr_end_proj_matrix();
+		}
+
+		g3_end_frame();
+		gr_reset_clip();
+	}
+
 	if ( !Background_playing ) {		
 		Weapon_ui_window.draw();
 		wl_redraw_pressed_buttons();
@@ -3311,10 +3472,42 @@ void weapon_select_do(float frametime)
 		sy = my + Wl_delta_y;
 
 
-		if ( Wl_icons[Carried_wl_icon.weapon_class].can_use > 0) {
-			gr_set_color_fast(&Color_blue);
-			gr_set_bitmap(Wl_icons[Carried_wl_icon.weapon_class].icon_bmaps[WEAPON_ICON_FRAME_SELECTED]);
-			gr_bitmap(sx, sy);
+		if ( Wl_icons[Carried_wl_icon.weapon_class].can_use > 0)
+		{
+			wl_icon_info *icon = &Wl_icons[Carried_wl_icon.weapon_class];
+			if(icon->icon_bmaps[WEAPON_ICON_FRAME_SELECTED] != -1)
+			{
+				gr_set_color_fast(&Color_blue);
+				gr_set_bitmap(icon->icon_bmaps[WEAPON_ICON_FRAME_SELECTED]);
+				gr_bitmap(sx, sy);
+			}
+			else
+			{
+				gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
+				draw_brackets_square(sx, sy, sx+56, sy+24, true);
+				if(icon->model_index != -1)
+				{
+					//Draw the model
+					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, 0.4f, sx, sy, 56, 24, NULL);
+				}
+				else if(icon->laser_bmap != -1)
+				{
+					//Draw laser bitmap
+					gr_set_clip(sx, sy, 56, 24);
+					gr_set_bitmap(icon->laser_bmap);
+					gr_bitmap(0, 0, true);
+					gr_reset_clip();
+				}
+				else
+				{
+					//Draw the weapon name, crappy last-ditch effort to not crash.
+					int half_x, half_y;
+					gr_get_string_size(&half_x, &half_y, Weapon_info[Carried_wl_icon.weapon_class].name);
+					half_x = sx +((56 - half_x) / 2);
+					half_y = sy +((24 - half_y) / 2);
+					gr_string(half_x, half_y, Weapon_info[Carried_wl_icon.weapon_class].name);
+				}
+			}
 		}
 
 		// draw number to prevent it from disappearing on clicks
@@ -3359,7 +3552,7 @@ void weapon_select_do(float frametime)
 		}
 	}
 
-	if ( Weapon_anim_class != Selected_wl_class ) {
+	if ( Weapon_anim_class != Selected_wl_class) {
 		start_weapon_animation(Selected_wl_class);
 	}
 
@@ -3490,7 +3683,8 @@ void wl_render_icon_count(int num, int x, int y)
 //
 void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot_mask, int hot_bank_mask, int select_mask)
 {
-	int				bitmap_id;
+	int				bitmap_id = -1;
+	color			*color_to_draw = NULL;
 	wl_icon_info	*icon;
 
 	if ( Selected_wl_slot == -1 )
@@ -3498,41 +3692,78 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 
 	icon = &Wl_icons[index];
 
-	if ( icon->icon_bmaps[0] == -1 ) {
+	if ( icon->icon_bmaps[0] == -1 && icon->model_index == -1 && icon->laser_bmap == -1) {
 		wl_load_icons(index);
 	}
 		
 	// assume default bitmap is to be used
-	bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_NORMAL];	// normal frame
-
-	if ( bitmap_id < 0 ) {
-		Int3();
-		return;
-	}
+	if(icon->icon_bmaps[0] != -1)
+		bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_NORMAL];	// normal frame
+	else
+		color_to_draw = &Icon_colors[ICON_FRAME_NORMAL];
 
 	// next check if ship has mouse over it
 	if ( !wl_icon_being_carried() ) {
-		if ( Hot_weapon_icon > -1 && Hot_weapon_icon == hot_mask )
-			bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_HOT];
-
-		if ( Hot_weapon_bank_icon > -1 && Hot_weapon_bank_icon == hot_bank_mask )
-			bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_HOT];
+		if ( (Hot_weapon_icon > -1 && Hot_weapon_icon == hot_mask) 
+			|| (Hot_weapon_bank_icon > -1 && Hot_weapon_bank_icon == hot_bank_mask))
+		{
+			if(icon->icon_bmaps[0] != -1)
+				bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_HOT];	// normal frame
+			else
+				color_to_draw = &Icon_colors[ICON_FRAME_HOT];
+		}
 	}
 
 	// if icon is selected
 	if ( Selected_wl_class > -1 ) {
 		if ( Selected_wl_class == select_mask)
-			bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_SELECTED];	// selected icon
+			if(icon->icon_bmaps[0] != -1)
+				bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_SELECTED];	// selected icon
+			else
+				color_to_draw = &Icon_colors[ICON_FRAME_SELECTED];
 	}
 
 	// if icon is disabled
 	if ( !icon->can_use ) {
-		bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_DISABLED];	// disabled icon
+		if(icon->icon_bmaps[0] != -1)
+			bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_DISABLED];	// disabled icon
+		else
+			color_to_draw = &Icon_colors[ICON_FRAME_DISABLED];
 	}
 
-	gr_set_color_fast(&Color_blue);
-	gr_set_bitmap(bitmap_id);
-	gr_bitmap(x, y);
+	if(bitmap_id != -1)
+	{
+		gr_set_color_fast(&Color_blue);
+		gr_set_bitmap(bitmap_id);
+		gr_bitmap(x, y);
+	}
+	else
+	{
+		gr_set_color_fast(color_to_draw);
+		draw_brackets_square(x, y, x + 56, y + 24, true);
+
+		if(icon->model_index != -1)
+		{
+			//Draw the model
+			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, .5f / 1.25f, x, y, 56, 24, NULL);
+		}
+		else if(icon->laser_bmap != -1)
+		{
+			gr_set_clip(x, y, 56, 24);
+			gr_set_bitmap(icon->laser_bmap);
+			gr_bitmap(0, 0, true);
+			gr_reset_clip();
+		}
+		else
+		{
+			//Draw the weapon name, crappy last-ditch effort to not crash.
+			int half_x, half_y;
+			gr_get_string_size(&half_x, &half_y, Weapon_info[index].name);
+			half_x = x +((56 - half_x) / 2);
+			half_y = y +((24 - half_y) / 2);
+			gr_string(half_x, half_y, Weapon_info[index].name);
+		}
+	}
 
 	// draw the number of the item
 	// now, right justified
@@ -3573,7 +3804,7 @@ void wl_draw_ship_weapons(int index)
 			else
 			{
 				gr_set_color_fast(&Icon_colors[WEAPON_ICON_FRAME_NORMAL]);
-				draw_brackets_square( Wl_bank_coords[gr_screen.res][i][0],  Wl_bank_coords[gr_screen.res][i][1],  Wl_bank_coords[gr_screen.res][i][0] + 56,  Wl_bank_coords[gr_screen.res][i][1] + 24);
+				draw_brackets_square( Wl_bank_coords[gr_screen.res][i][0],  Wl_bank_coords[gr_screen.res][i][1],  Wl_bank_coords[gr_screen.res][i][0] + 56,  Wl_bank_coords[gr_screen.res][i][1] + 24, true);
 			}
 		}
 
@@ -3859,7 +4090,7 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 //
 void stop_weapon_animation()
 {
-	if ( Weapon_anim_class < 0 )
+	if (Wl_icons[Weapon_anim_class].wl_anim_instance == NULL)
 		return;
 
 	if ( anim_playing(Wl_icons[Weapon_anim_class].wl_anim_instance) )
@@ -3895,7 +4126,8 @@ void start_weapon_animation(int weapon_class)
 	icon = &Wl_icons[weapon_class];
 
 	// stop current animation playing
-	stop_weapon_animation();
+	if(Weapon_anim_class >= 0)
+		stop_weapon_animation();
 
 	// see if we need to load in the animation from disk
 	if ( icon->wl_anim == NULL ) {
@@ -3910,7 +4142,7 @@ void start_weapon_animation(int weapon_class)
 	}
 
 	// see if we need to get an instance
-	if ( icon->wl_anim_instance == NULL ) {
+	if ( icon->wl_anim_instance == NULL && icon->wl_anim != NULL) {
 		anim_play_struct aps;
 
 		anim_play_init(&aps, icon->wl_anim, weapon_ani_coords[0], weapon_ani_coords[1]);
