@@ -741,6 +741,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags |= WIF_SUPERCAP;
 		else if (!stricmp(NOX("ballistic"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_BALLISTIC;
+		else if (!stricmp(NOX("pierce"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_PIERCE;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	

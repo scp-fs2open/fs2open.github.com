@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-24 03:48:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-02-25 06:22:49 $
+ * $Author: bobboau $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/24 03:48:11  Goober5000
+ * aw, nuts - fixed a dumb bug with my new don't-collide-invisible code :p
+ * --Goober5000
+ *
  * Revision 2.3  2003/01/18 09:25:42  Goober5000
  * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
  * than SF_ flags
@@ -351,21 +355,21 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 			//			vector through to the hull if there is leftover damage.
 			if (!(shipp->flags & SF_DYING) && ship_is_shield_up(ship_obj,quadrant_num) ) {
 
+				// WIF2_PIERCE pierces shields
 				// AL 1-14-97: "Puncture" doesn't mean penetrate shield anymore, it means that it punctures
 				//					hull do inflict maximum subsystem damage
-/*
-				if ( Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags & WIF_PUNCTURE )	{
+
+				if ( Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].wi_flags2 & WIF2_PIERCE )	{
 					// If this weapon punctures the shield, then do
 					// the hit effect, but act like a shield collision never occurred.
 					quadrant_num = -1;	// ignore shield hit
-					add_shield_point(obj-Objects, mc.shield_hit_tri, &mc.hit_point);
+					add_shield_point(ship_obj-Objects, mc.shield_hit_tri, &mc.hit_point);
 				} else {
-*/
-				valid_hit_occured = 1;
-				// shield effect
-				add_shield_point(ship_obj-Objects, mc.shield_hit_tri, &mc.hit_point);
-				do_model_check = 0;	// since we hit the shield, no need to check the model
-
+					valid_hit_occured = 1;
+					// shield effect
+					add_shield_point(ship_obj-Objects, mc.shield_hit_tri, &mc.hit_point);
+					do_model_check = 0;	// since we hit the shield, no need to check the model
+				}
 			} else {
 				quadrant_num = -1;	// ignore shield hit
 			}

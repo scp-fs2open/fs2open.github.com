@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.31 $
- * $Date: 2003-01-27 07:46:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.32 $
+ * $Date: 2003-02-25 06:22:49 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/01/27 07:46:32  Goober5000
+ * finished up my fighterbay code - ships will not be able to arrive from or depart into
+ * fighterbays that have been destroyed (but you have to explicitly say in the tables
+ * that the fighterbay takes damage in order to enable this)
+ * --Goober5000
+ *
  * Revision 2.30  2003/01/21 17:24:16  Goober5000
  * fixed a few bugs in Bobboau's implementation of the glow sexps; also added
  * help for the sexps in sexp_tree
@@ -1064,8 +1070,11 @@ typedef struct ship_info {
 	vector	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)
 	float		closeup_zoom;					// zoom when using ship in closeup view (eg briefing and hud target monitor)
 
-	int		allowed_weapons[MAX_WEAPON_TYPES];			// array which specifies which weapons can be loaded out by the
-																		// player during weapons loadout.
+	int		allowed_weapons[MAX_WEAPON_TYPES][MAX_SECONDARY_BANKS];
+	// array which specifies which weapons can be loaded out by the
+	// player during weapons loadout.
+	// at this time secondary banks are larger than primary
+	// now has bank specific loadout-Bobboau
 
 	ubyte	shield_icon_index;				// index to locate ship-specific animation frames for the shield on HUD
 	char	icon_filename[NAME_LENGTH];	// filename for icon that is displayed in ship selection
