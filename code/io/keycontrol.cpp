@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.35 $
- * $Date: 2004-07-26 20:47:33 $
+ * $Revision: 2.36 $
+ * $Date: 2004-07-29 19:37:50 $
  * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2004/07/26 20:47:33  Kazan
+ * remove MCD complete
+ *
  * Revision 2.34  2004/07/25 00:31:29  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -2037,9 +2040,9 @@ void game_process_keys()
 	int k;
 
 	button_info_clear(&Player->bi);	// clear out the button info struct for the player
-	k = game_poll();
-    while (k)
+    do
 	{		
+		k = game_poll();
 
 		//if (k)
 		//	mprintf(("got key %d at %s:%d\n", k, __FILE__, __LINE__));
@@ -2130,8 +2133,8 @@ void game_process_keys()
 		} // end switch
 
 		
-		k = game_poll();
 	}
+	while (k);
 
 	button_info_do(&Player->bi);	// call functions based on status of button_info bit vectors
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:26 $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-29 19:37:50 $
  * $Author: Kazan $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:26  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/25 00:31:28  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -2488,7 +2491,7 @@ int check_control(int id, int key)
 	}
 
 	if ((Control_config[id].key_id == key) || joy_down_count(Control_config[id].joy_id, 1) || mouse_down_count(1 << Control_config[id].joy_id)) {
-		mprintf(("Key used %d", key));
+		//mprintf(("Key used %d", key));
 		control_used(id);
 		return 1;
 	}
