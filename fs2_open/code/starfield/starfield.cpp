@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-09-10 11:38:31 $
- * $Author: fryday $
+ * $Revision: 2.15 $
+ * $Date: 2003-09-11 19:39:55 $
+ * $Author: argv $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/09/10 11:38:31  fryday
+ * Added Lens Flares, enabled by optional table entry in stars.tbl on a per-sun basis
+ *
  * Revision 2.13  2003/09/09 17:18:25  matt
  * Broke stars last commit, fixed -Sticks
  *
@@ -600,7 +603,7 @@ void stars_init()
 						Warning(LOCATION, "cannot find bitmap %s", filename);
 					}
 				}
-				if(isflare) {
+				if(isflare != -1) {
 					bm->flare = 1;
 					bm->flare_n_flares = flarecount;
 					bm->flare_n_tex = flaretexcount;
