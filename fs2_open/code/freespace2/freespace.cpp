@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-02-16 18:53:59 $
+ * $Revision: 2.25 $
+ * $Date: 2003-02-16 19:00:56 $
  * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/02/16 18:53:59  phreak
+ * fixed around splash screen
+ * 2_splash.pcx is loaded in 1024x768
+ * splash.pcx is loaded in 640x480 or 2_splash.pcx isn't found
+ *
  * Revision 2.23  2003/01/30 23:18:21  phreak
  * cleaned up debug output
  *
@@ -9081,7 +9086,7 @@ void display_title_screen()
 
 	title_logo=-1;
 
-	if (gr_screen.mode==GR_1024)
+	if (gr_screen.res==GR_1024)
 	{
 		//check for a hires splash screen
 		title_bitmap=bm_load("2_splash");
