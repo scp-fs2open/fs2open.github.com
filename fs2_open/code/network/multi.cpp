@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-07-12 16:32:57 $
+ * $Revision: 2.23 $
+ * $Date: 2004-07-18 04:07:26 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/07/12 16:32:57  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.21  2004/07/07 23:34:08  Kazan
  * fixed a typo in one of the fs2netd strings
  * played with WMCoolmon's hacked up escort list
@@ -1338,7 +1341,7 @@ void multi_process_incoming()
 	while( (size = psnet_get(data, &from_addr))>0 )	{
 		// ingame joiners will ignore UDP packets until they are have picked a ship and are in the mission
 		if( (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) && (Net_player->state != NETPLAYER_STATE_INGAME_SHIP_SELECT) ){
-			//nprintf(("Network","Tossing UDP like a good little ingame joiner...\n"));
+			nprintf(("Network","Tossing UDP like a good little ingame joiner...\n"));
 		} 
 		// otherwise process incoming data normally
 		else {

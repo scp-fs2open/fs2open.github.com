@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.104 $
- * $Date: 2004-07-17 18:46:06 $
- * $Author: taylor $
+ * $Revision: 2.105 $
+ * $Date: 2004-07-18 04:07:26 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2004/07/17 18:46:06  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.103  2004/07/12 16:32:46  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -7878,6 +7881,10 @@ int WinMainSub(int argc, char *argv[])
 #endif
 
 	game_shutdown();
+#if defined(_MCD_CHECK)
+	fputs("Post Shutdown Stats: ", mem_log);
+	showMemStats();
+#endif
 #if defined(_MCD_CHECK)
 	fclose(mem_log);
 #endif
