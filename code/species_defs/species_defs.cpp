@@ -5,11 +5,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.2 $
- * $Date: 2003-10-16 01:55:26 $
+ * $Revision: 1.3 $
+ * $Date: 2003-10-16 16:38:17 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2003/10/16 01:55:26  Kazan
+ * fixed typo in fallback code array index
+ *
  * Revision 1.1  2003/10/15 22:03:27  Kazan
  * Da Species Update :D
  *
@@ -162,8 +165,8 @@ void Init_Species_LoadDefault()
 	// -------------- Vasudan -------------- 
 
 	strncpy(Species_names[1],					"Vasudan",			SPECIES_NAME_MAXLEN);
-	strncpy(Debris_texture_files[0],			"debris02a",		MAX_DEBRIS_TNAME_LEN);
-	Sheild_ani[0].filename =		strdup("shieldhit01a");
+	strncpy(Debris_texture_files[1],			"debris01b",		MAX_DEBRIS_TNAME_LEN);
+	Sheild_ani[1].filename =		strdup("shieldhit01a");
 
 	// species*2 ? afterburning?1:0
 	strncpy(Thrust_anim_names[2],				"thruster02",		MAX_FILENAME_LEN);
@@ -180,7 +183,7 @@ void Init_Species_LoadDefault()
 	// -------------- Shivan -------------- 
 
 	strncpy(Species_names[2],					"Shivan",			SPECIES_NAME_MAXLEN);
-	strncpy(Debris_texture_files[2],			"debris03a",		MAX_DEBRIS_TNAME_LEN);
+	strncpy(Debris_texture_files[2],			"debris01c",		MAX_DEBRIS_TNAME_LEN);
 	Sheild_ani[2].filename =		strdup("shieldhit01a");
 
 	// species*2 ? afterburning?1:0
