@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-01-19 22:20:22 $
+ * $Revision: 2.23 $
+ * $Date: 2003-01-19 22:25:10 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/01/19 22:20:22  Goober5000
+ * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
+ * and departure into hangars should now all work properly
+ * --Goober5000
+ *
  * Revision 2.21  2003/01/19 09:10:40  Goober5000
  * more tweaky bug fixes
  * --Goober5000
@@ -13008,7 +13013,6 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
 	int			objnum, path_index;
 	polymodel	*pm;
 	ai_info		*aip;
-	ship			*sp;
 	ship_bay		*sb;
 
 	aip = &Ai_info[Ships[pl_objp->instance].ai_index];
