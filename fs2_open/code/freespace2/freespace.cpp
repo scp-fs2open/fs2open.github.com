@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.13 $
- * $Date: 2002-10-22 17:42:09 $
- * $Author: randomtiger $
+ * $Revision: 2.14 $
+ * $Date: 2002-11-18 21:34:16 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2002/10/22 17:42:09  randomtiger
+ * Fixed lighting bug that caused special pause to crash on debug build.
+ * Also added TAB functionality for special pause that toggles HUD. - RT
+ *
  * Revision 2.12  2002/10/19 03:50:28  randomtiger
  * Added special pause mode for easier action screenshots.
  * Added new command line parameter for accessing all single missions in tech room. - RT
@@ -2397,11 +2401,19 @@ void game_init()
 #endif
 			// Direct 3D
 			trying_d3d = 1;
+#if (!defined(NDEBUG) && defined(USE_OPENGL))
+			gr_init(GR_1024, GR_OPENGL);
+#else
 			gr_init(GR_1024, GR_DIRECT3D, depth);
+#endif
 		} else {
 			// Direct 3D
 			trying_d3d = 1;
+#if (!defined(NDEBUG) && defined(USE_OPENGL))
+			gr_init(GR_640, GR_OPENGL);
+#else
 			gr_init(GR_640, GR_DIRECT3D, depth);
+#endif
 		}
 #endif
 	} else {
@@ -4737,6 +4749,9 @@ void game_do_frame()
 {	
 	game_set_frametime(GS_STATE_GAME_PLAY);
 	game_update_missiontime();
+
+//	if (Player_ship->flags & SF_DYING)
+//		flFrametime /= 15.0;
 
 #if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 	if (Game_mode & GM_STANDALONE_SERVER) {
