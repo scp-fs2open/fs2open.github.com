@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-03-10 20:51:16 $
- * $Author: Kazan $
+ * $Revision: 2.25 $
+ * $Date: 2004-04-03 06:22:32 $
+ * $Author: Goober5000 $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/03/10 20:51:16  Kazan
+ * irc
+ *
  * Revision 2.23  2004/03/09 17:59:01  Kazan
  * Disabled multithreaded TCP_Socket in favor of safer single threaded
  * FS2NetD doesn't kill the game on connection failure now - just gives warning message and effectively dsiables itself until they try to connect again
@@ -2304,8 +2307,8 @@ void multi_join_load_tcp_addrs()
 // do stuff like pinging servers, sending out requests, etc
 void multi_join_do_netstuff()
 {
-	char textbuffer[17];
-	active_game *Cur;
+	//char textbuffer[17];
+	//active_game *Cur;
 
 	static int last_pxo_refresh = -1;
 

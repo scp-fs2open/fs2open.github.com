@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:02 $
+ * $Revision: 2.3 $
+ * $Date: 2004-04-03 06:22:32 $
  * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -50,13 +54,10 @@
 
 #include "network/multi_rate.h"
 
-// keep this defined to compile in rate checking
-#if !defined(NDEBUG) || defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
-	#define MULTI_RATE
+#ifdef MULTI_RATE
 
-	#include "io/timer.h"
-	#include "globalincs/alphacolors.h"
-#endif
+#include "io/timer.h"
+#include "globalincs/alphacolors.h"
 
 // how many records in the past we'll keep track of
 #define NUM_UPDATE_RECORDS							5
@@ -83,10 +84,9 @@ typedef struct mr_info {
 	float avg_frame;												// avg bytes/frame				
 } mr_info;
 
-#ifdef MULTI_RATE
+
 // all records
 mr_info Multi_rate[MAX_RATE_PLAYERS][MAX_RATE_TYPES];
-#endif
 
 
 // -----------------------------------------------------------------------------------------------------------------------
@@ -96,10 +96,6 @@ mr_info Multi_rate[MAX_RATE_PLAYERS][MAX_RATE_TYPES];
 // notify of a player join
 void multi_rate_reset(int np_index)
 {
-	// release builds
-#ifndef MULTI_RATE
-	return;
-#else
 	int idx;
 
 	// sanity checks
@@ -112,16 +108,11 @@ void multi_rate_reset(int np_index)
 		memset(&Multi_rate[np_index][idx], 0, sizeof(mr_info));
 		Multi_rate[np_index][idx].stamp_second = -1;
 	}
-#endif
 }
 
 // add data of the specified type to datarate processing, returns 0 on fail (if we ran out of types, etc, etc)
 int multi_rate_add(int np_index, char *type, int size)
 {	
-	// release builds
-#ifndef MULTI_RATE
-	return 0;
-#else
 	int idx;
 	mr_info *m;
 	// sanity checks
@@ -166,18 +157,12 @@ int multi_rate_add(int np_index, char *type, int size)
 
 	// success
 	return 1;
-#endif
 }
 
 // process
 #define R_AVG(ct, ar, avg)		do {int av_idx; float av_sum = 0.0f; if(ct == 0){ avg = 0;} else { for(av_idx=0; av_idx<ct; av_idx++){ av_sum += (float)ar[av_idx]; } avg = av_sum / (float)ct; } }while(0)
 void multi_rate_process()
 {
-	// release builds
-#ifndef MULTI_RATE
-	return;
-#else
-
 	int idx, s_idx;
 	mr_info *m;
 
@@ -231,17 +216,11 @@ void multi_rate_process()
 			m->bytes_frame = 0;			
 		}
 	}	
-#endif
 }
 
 // display
 void multi_rate_display(int np_index, int x, int y)
 {	
-	// release builds
-#ifndef MULTI_RATE
-	return;
-#else
-
 	int idx;
 	mr_info *m;
 
@@ -264,5 +243,6 @@ void multi_rate_display(int np_index, int x, int y)
 		gr_printf(x, y, "%s %d (%d/s) (%f/f)", m->type, m->total_bytes, (int)m->avg_second, m->avg_frame);
 		y += 10;
 	}
-#endif
 }
+
+#endif

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.61 $
- * $Date: 2004-03-20 14:47:13 $
- * $Author: randomtiger $
+ * $Revision: 2.62 $
+ * $Date: 2004-04-03 06:22:32 $
+ * $Author: Goober5000 $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2004/03/20 14:47:13  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.60  2004/03/17 04:07:29  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -1619,9 +1623,12 @@ void gr_d3d_flush_frame_dump()
 
 		// Go through and write our pixels
 		for (j=0;j<h;j++)	{
+			/*
 			ubyte *src_ptr = D3d_dump_buffer+(i*D3d_dump_frame_size)+(j*w*2);
 
-			int len = 0;//tga_compress( (char *)outrow, (char *)src_ptr, w*sizeof(short) );
+			int len = tga_compress( (char *)outrow, (char *)src_ptr, w*sizeof(short) );
+			*/
+			int len = 0;
 
 			cfwrite(outrow,len,1,f);
 		}

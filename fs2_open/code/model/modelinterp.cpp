@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.77 $
- * $Date: 2004-03-20 21:17:13 $
- * $Author: bobboau $
+ * $Revision: 2.78 $
+ * $Date: 2004-04-03 06:22:33 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2004/03/20 21:17:13  bobboau
+ * fixed -spec comand line option,
+ * probly some other stuf
+ *
  * Revision 2.76  2004/03/17 04:07:30  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -5036,11 +5040,11 @@ int htl_nnorms = 0;
 */
 void find_defpoint(int off, ubyte *bsp_data){
 
-	int i, n;
+	int n;
 //	off+=4;
 	int nverts = w(off+bsp_data+8);	
 	int offset = w(off+bsp_data+16);
-	int next_norm = 0;
+	//int next_norm = 0;
 
 	ubyte * normcount = off+bsp_data+20;
 	vector *src = vp(off+bsp_data+offset);

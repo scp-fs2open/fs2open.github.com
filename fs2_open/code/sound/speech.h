@@ -22,7 +22,7 @@ bool speech_pause();
 bool speech_resume();
 bool speech_stop();
 
-bool speech_set_volume(int volume);
+bool speech_set_volume(unsigned short volume);
 bool speech_set_voice(int voice);
 
 #else
@@ -31,13 +31,13 @@ bool speech_set_voice(int voice);
 // is to just use #defines (c.f. NO_SOUND)
 #define speech_init() (false)
 #define speech_deinit()
-#define speech_play(text) ((void) text)
-#define speech_play(text) ((void) text)
+#define speech_play(text) ((text), false)
+#define speech_play(text) ((text), false)
 #define speech_pause() (false)
 #define speech_resume() (false)
 #define speech_stop() (false)
-#define speech_set_volume(volume) ((void) volume)
-#define speech_set_voice(voice) ((void) voice)
+#define speech_set_volume(volume) ((volume), false)
+#define speech_set_voice(voice) ((voice), false)
 
 #endif
 

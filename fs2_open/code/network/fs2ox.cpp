@@ -9,13 +9,18 @@
 
 /*
  * $Logfile$
- * $Revision: 1.7 $
- * $Date: 2004-03-31 05:42:27 $
+ * $Revision: 1.8 $
+ * $Date: 2004-04-03 06:22:32 $
  * $Author: Goober5000 $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/03/31 05:42:27  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 1.6  2004/03/10 20:51:16  Kazan
  * irc
  *
@@ -341,7 +346,7 @@ std::string strip_pattern(std::string needle, std::string haystack)
 {
 	int index = haystack.find(needle);
 
-	while (index != std::string::npos)
+	while (index != (int)std::string::npos)
 	{
 		haystack.erase(index, needle.length());
 
@@ -455,7 +460,7 @@ void fs2ox_do_frame()
 
 	if (lines.size() != 0)
 	{
-		for (int i = 0; i < lines.size(); i++)
+		for (int i = 0; i < (int)lines.size(); i++)
 		{
 			if (ListBoxen[LIST_MESGS].CurSize() == ListBoxen[LIST_MESGS].MaxSize()-1)
 			{

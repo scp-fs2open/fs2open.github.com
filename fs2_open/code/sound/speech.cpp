@@ -13,6 +13,8 @@
 #include <windows.h>
 #include <atlbase.h>
 
+#pragma warning(disable:4711)	// function selected for inlining
+
 #if FS2_SPEECH
 #include <sapi.h>
 #include <sphelper.h>
@@ -104,7 +106,7 @@ bool speech_stop()
     return SUCCEEDED(Voice_device->Speak( NULL, SPF_PURGEBEFORESPEAK, NULL ));
 }
 
-bool speech_set_volume(int volume)
+bool speech_set_volume(unsigned short volume)
 {
     return SUCCEEDED(Voice_device->SetVolume(volume));
 }

@@ -907,8 +907,8 @@ int d3d_match_mode(int adapter)
 
 		// ignore invalid modes
 		if(gr_screen.bits_per_pixel != d3d_get_mode_bit(mode.Format)) continue; 
-		if(gr_screen.max_w          != mode.Width)  continue; 
-		if(gr_screen.max_h          != mode.Height) continue; 
+		if(gr_screen.max_w          != (int)mode.Width)  continue; 
+		if(gr_screen.max_h          != (int)mode.Height) continue; 
 
 		// This is the mode we want
 		return i;
