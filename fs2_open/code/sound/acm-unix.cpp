@@ -2,6 +2,8 @@
  * Portions of this file are Copyright (c) Ryan C. Gordon
  ***********************************************************/
 
+#ifndef WIN32	// Goober5000
+
 #include "globalincs/pstypes.h"
 #include "sound/acm.h"
 
@@ -450,3 +452,5 @@ int ACM_is_inited()
 {
 	return ACM_inited;
 }
+
+#endif		// Goober5000 - #ifndef WIN32
