@@ -1,3 +1,219 @@
+2002-08-01 01:41  penguin
+
+	* Makefile (2.3), anim/animplay.cpp (2.1), anim/animplay.h (2.1),
+	anim/packunpack.cpp (2.1), anim/packunpack.h (2.1),
+	asteroid/asteroid.cpp (2.1), asteroid/asteroid.h (2.1),
+	bmpman/bmpman.cpp (2.2), cfile/cfile.cpp (2.3), cfile/cfile.h
+	(2.2), cfile/cfilearchive.cpp (2.2), cfile/cfilelist.cpp (2.2),
+	cfile/cfilesystem.cpp (2.3), cmdline/cmdline.cpp (2.3),
+	cmeasure/cmeasure.cpp (2.1), cmeasure/cmeasure.h (2.1),
+	controlconfig/controlsconfig.cpp (2.1),
+	controlconfig/controlsconfigcommon.cpp (2.1),
+	cryptstring/cryptstring.cpp (2.1), cutscene/cutscenes.cpp (2.2),
+	cutscene/cutscenes.h (2.1), debris/debris.cpp (2.1),
+	debugconsole/console.cpp (2.1), demo/demo.cpp (2.2), directx/vd3d.h
+	(2.1), directx/vd3dcaps.h (2.1), directx/vd3di.h (2.2),
+	directx/vd3drm.h (2.1), directx/vd3drmdef.h (2.2),
+	directx/vd3drmobj.h (2.1), directx/vd3drmwin.h (2.2),
+	directx/vd3dtypes.h (2.2), directx/vdplobby.h (2.1),
+	directx/vdsound.h (2.1), fireball/fireballs.cpp (2.1),
+	fireball/fireballs.h (2.1), fireball/warpineffect.cpp (2.1),
+	freespace2/freespace.cpp (2.4), freespace2/freespace.h (2.1),
+	freespace2/levelpaging.cpp (2.1), gamehelp/contexthelp.cpp (2.1),
+	gamehelp/gameplayhelp.cpp (2.1), gamesequence/gamesequence.cpp
+	(2.1), gamesequence/gamesequence.h (2.1), gamesnd/eventmusic.cpp
+	(2.1), gamesnd/eventmusic.h (2.1), gamesnd/gamesnd.cpp (2.1),
+	gamesnd/gamesnd.h (2.1), glide/glide.cpp (2.2), glide/glide.h
+	(2.2), globalincs/alphacolors.cpp (2.1), globalincs/crypt.cpp
+	(2.1), globalincs/pstypes.h (2.3), globalincs/systemvars.cpp (2.1),
+	globalincs/version.cpp (2.1), globalincs/windebug.cpp (2.1),
+	graphics/2d.cpp (2.3), graphics/2d.h (2.1), graphics/aaline.cpp
+	(2.2), graphics/bitblt.cpp (2.1), graphics/circle.cpp (2.1),
+	graphics/colors.cpp (2.1), graphics/font.cpp (2.3), graphics/font.h
+	(2.2), graphics/gradient.cpp (2.2), graphics/grd3d.cpp (2.2),
+	graphics/grd3dinternal.h (2.1), graphics/grd3drender.cpp (2.1),
+	graphics/grd3dtexture.cpp (2.1), graphics/grdirectdraw.cpp (2.1),
+	graphics/grglide.cpp (2.1), graphics/grglideinternal.h (2.1),
+	graphics/grglidetexture.cpp (2.1), graphics/grinternal.h (2.1),
+	graphics/gropengl.cpp (2.3), graphics/grsoft.cpp (2.2),
+	graphics/grzbuffer.cpp (2.1), graphics/line.cpp (2.2),
+	graphics/pixel.cpp (2.1), graphics/rect.cpp (2.1),
+	graphics/scaler.cpp (2.2), graphics/scaler.h (2.1),
+	graphics/shade.cpp (2.2), graphics/tmapgenericscans.cpp (2.1),
+	graphics/tmapper.cpp (2.2), graphics/tmapscanline.cpp (2.1),
+	graphics/tmapscantiled128x128.cpp (2.1),
+	graphics/tmapscantiled16x16.cpp (2.1),
+	graphics/tmapscantiled256x256.cpp (2.1),
+	graphics/tmapscantiled32x32.cpp (2.1),
+	graphics/tmapscantiled64x64.cpp (2.1),
+	graphics/directx8/GrD3D81.cpp (1.2),
+	graphics/directx8/grd3d81internal.h (1.2), hud/hud.cpp (2.1),
+	hud/hud.h (2.1), hud/hudartillery.cpp (2.1), hud/hudartillery.h
+	(2.1), hud/hudbrackets.cpp (2.1), hud/hudbrackets.h (2.1),
+	hud/hudconfig.cpp (2.2), hud/hudconfig.h (2.1), hud/hudescort.cpp
+	(2.1), hud/hudets.cpp (2.1), hud/hudets.h (2.1), hud/hudlock.cpp
+	(2.1), hud/hudmessage.cpp (2.1), hud/hudobserver.cpp (2.1),
+	hud/hudobserver.h (2.1), hud/hudreticle.cpp (2.1), hud/hudreticle.h
+	(2.1), hud/hudshield.cpp (2.2), hud/hudsquadmsg.cpp (2.1),
+	hud/hudsquadmsg.h (2.1), hud/hudtarget.cpp (2.1), hud/hudtarget.h
+	(2.1), hud/hudtargetbox.cpp (2.1), hud/hudwingmanstatus.cpp (2.1),
+	inetfile/cftp.cpp (2.1), inetfile/chttpget.cpp (2.2),
+	inetfile/inetgetfile.cpp (2.1), inetfile/inetgetfile.h (2.1),
+	io/joy.cpp (2.1), io/joy_ff.cpp (2.2), io/key.cpp (2.3), io/key.h
+	(2.1), io/keycontrol.cpp (2.1), io/keycontrol.h (2.1), io/mouse.cpp
+	(2.3), io/mouse.h (2.2), io/sw_force.h (2.1), io/swff_lib.cpp
+	(2.1), io/timer.cpp (2.2), io/timer.h (2.2), io/xmouse.cpp (2.1),
+	jumpnode/jumpnode.cpp (2.1), jumpnode/jumpnode.h (2.1),
+	lighting/lighting.cpp (2.1), localization/fhash.cpp (2.1),
+	localization/localize.cpp (2.1), math/fix.cpp (2.2),
+	math/floating.cpp (2.1), math/fvi.cpp (2.1), math/fvi.h (2.1),
+	math/spline.cpp (2.1), math/spline.h (2.1), math/staticrand.cpp
+	(2.1), math/vecmat.cpp (2.1), math/vecmat.h (2.1),
+	menuui/barracks.cpp (2.2), menuui/credits.cpp (2.2),
+	menuui/fishtank.cpp (2.1), menuui/mainhallmenu.cpp (2.2),
+	menuui/mainhalltemp.cpp (2.1), menuui/optionsmenu.cpp (2.1),
+	menuui/optionsmenu.h (2.1), menuui/optionsmenumulti.cpp (2.1),
+	menuui/playermenu.cpp (2.1), menuui/readyroom.cpp (2.1),
+	menuui/snazzyui.cpp (2.1), menuui/snazzyui.h (2.1),
+	menuui/techmenu.cpp (2.1), menuui/trainingmenu.cpp (2.1),
+	mission/missionbriefcommon.cpp (2.1), mission/missionbriefcommon.h
+	(2.1), mission/missioncampaign.cpp (2.3), mission/missioncampaign.h
+	(2.1), mission/missiongoals.cpp (2.1), mission/missiongoals.h
+	(2.1), mission/missiongrid.cpp (2.1), mission/missionhotkey.cpp
+	(2.1), mission/missionload.cpp (2.1), mission/missionload.h (2.2),
+	mission/missionlog.cpp (2.1), mission/missionmessage.cpp (2.1),
+	mission/missionmessage.h (2.1), mission/missionparse.cpp (2.1),
+	mission/missionparse.h (2.3), mission/missiontraining.cpp (2.1),
+	missionui/chatbox.cpp (2.1), missionui/missionbrief.cpp (2.1),
+	missionui/missionbrief.h (2.1), missionui/missioncmdbrief.cpp
+	(2.1), missionui/missiondebrief.cpp (2.2),
+	missionui/missionloopbrief.cpp (2.1), missionui/missionpause.cpp
+	(2.1), missionui/missionpause.h (2.1),
+	missionui/missionscreencommon.cpp (2.1),
+	missionui/missionscreencommon.h (2.1),
+	missionui/missionshipchoice.cpp (2.1),
+	missionui/missionshipchoice.h (2.1),
+	missionui/missionweaponchoice.cpp (2.1),
+	missionui/missionweaponchoice.h (2.1), missionui/redalert.cpp
+	(2.1), missionui/redalert.h (2.1), model/model.h (2.4),
+	model/modelcollide.cpp (2.1), model/modelinterp.cpp (2.3),
+	model/modeloctant.cpp (2.1), model/modelread.cpp (2.3),
+	model/modelsinc.h (2.3), nebula/neb.cpp (2.1),
+	nebula/neblightning.cpp (2.1), network/fs2ox.cpp (1.2),
+	network/multi.cpp (2.2), network/multi.h (2.2),
+	network/multi_campaign.cpp (2.2), network/multi_data.cpp (2.3),
+	network/multi_dogfight.cpp (2.1), network/multi_endgame.cpp (2.2),
+	network/multi_ingame.cpp (2.1), network/multi_kick.cpp (2.1),
+	network/multi_log.cpp (2.2), network/multi_obj.cpp (2.2),
+	network/multi_observer.cpp (2.2), network/multi_oo.cpp (2.1),
+	network/multi_oo.h (2.1), network/multi_options.cpp (2.2),
+	network/multi_pause.cpp (2.2), network/multi_pinfo.cpp (2.1),
+	network/multi_ping.cpp (2.1), network/multi_pmsg.cpp (2.3),
+	network/multi_rate.cpp (2.1), network/multi_respawn.cpp (2.2),
+	network/multi_team.cpp (2.1), network/multi_update.cpp (2.1),
+	network/multi_voice.cpp (2.2), network/multi_xfer.cpp (2.2),
+	network/multilag.cpp (2.1), network/multimsgs.cpp (2.2),
+	network/multiteamselect.cpp (2.2), network/multiui.cpp (2.4),
+	network/multiui.h (2.1), network/multiutil.cpp (2.3),
+	network/multiutil.h (2.1), network/psnet.cpp (2.2), network/psnet.h
+	(2.1), network/psnet2.cpp (2.3), network/psnet2.h (2.4),
+	network/stand_gui.cpp (2.2), object/collidedebrisship.cpp (2.1),
+	object/collidedebrisweapon.cpp (2.1), object/collideshipship.cpp
+	(2.2), object/collideshipweapon.cpp (2.1),
+	object/collideweaponweapon.cpp (2.1), object/objcollide.cpp (2.1),
+	object/objcollide.h (2.1), object/object.cpp (2.1), object/object.h
+	(2.1), object/objectsnd.cpp (2.2), object/objectsort.cpp (2.1),
+	observer/observer.cpp (2.1), observer/observer.h (2.1),
+	osapi/osapi.cpp (2.2), osapi/osapi.h (2.2), osapi/osapi_unix.cpp
+	(2.2), osapi/osregistry.cpp (2.1), osapi/osregistry_unix.cpp (2.2),
+	osapi/outwnd.cpp (2.1), osapi/outwnd_unix.cpp (2.2),
+	palman/palman.cpp (2.1), parse/encrypt.cpp (2.1), parse/parselo.cpp
+	(2.1), parse/parselo.h (2.2), parse/sexp.cpp (2.2), parse/sexp.h
+	(2.2), particle/particle.cpp (2.1), pcxutils/pcxutils.cpp (2.1),
+	pcxutils/pcxutils.h (2.1), physics/physics.cpp (2.1),
+	physics/physics.h (2.1), playerman/managepilot.cpp (2.2),
+	playerman/managepilot.h (2.1), playerman/player.h (2.1),
+	playerman/playercontrol.cpp (2.1), popup/popup.cpp (2.1),
+	popup/popupdead.cpp (2.1), radar/radar.cpp (2.1), render/3d.h
+	(2.1), render/3dclipper.cpp (2.1), render/3ddraw.cpp (2.1),
+	render/3dinternal.h (2.1), render/3dlaser.cpp (2.1),
+	render/3dmath.cpp (2.1), render/3dsetup.cpp (2.1),
+	scramble/scramble.cpp (2.1), ship/afterburner.cpp (2.1),
+	ship/afterburner.h (2.1), ship/ai.cpp (2.1), ship/ai.h (2.1),
+	ship/aibig.cpp (2.1), ship/aicode.cpp (2.7), ship/aigoals.cpp
+	(2.1), ship/aigoals.h (2.1), ship/awacs.cpp (2.1), ship/shield.cpp
+	(2.3), ship/ship.cpp (2.6), ship/ship.h (2.3),
+	ship/shipcontrails.cpp (2.2), ship/shipfx.cpp (2.1),
+	ship/shiphit.cpp (2.5), sound/acm.cpp (2.1), sound/acm.h (2.1),
+	sound/audiostr.cpp (2.1), sound/channel.h (2.1), sound/ds.cpp
+	(2.1), sound/ds.h (2.1), sound/ds3d.cpp (2.2), sound/dscap.cpp
+	(2.1), sound/rbaudio.cpp (2.1), sound/rtvoice.cpp (2.1),
+	sound/sound.cpp (2.2), starfield/nebula.cpp (2.1),
+	starfield/starfield.cpp (2.1), starfield/starfield.h (2.1),
+	starfield/supernova.cpp (2.1), stats/medals.cpp (2.2),
+	stats/medals.h (2.1), stats/scoring.cpp (2.1), stats/scoring.h
+	(2.1), stats/stats.cpp (2.2), stats/stats.h (2.1),
+	tgautils/tgautils.cpp (2.1), ui/button.cpp (2.1), ui/checkbox.cpp
+	(2.1), ui/gadget.cpp (2.1), ui/icon.cpp (2.1), ui/inputbox.cpp
+	(2.1), ui/keytrap.cpp (2.1), ui/listbox.cpp (2.1), ui/radio.cpp
+	(2.1), ui/scroll.cpp (2.1), ui/slider.cpp (2.1), ui/slider2.cpp
+	(2.1), ui/ui.h (2.1), ui/uidefs.h (2.1), ui/uidraw.cpp (2.1),
+	ui/uimouse.cpp (2.1), ui/window.cpp (2.1), vcodec/codec1.cpp (2.3),
+	weapon/beam.cpp (2.3), weapon/beam.h (2.2), weapon/corkscrew.cpp
+	(2.1), weapon/corkscrew.h (2.1), weapon/emp.cpp (2.1),
+	weapon/flak.cpp (2.1), weapon/muzzleflash.cpp (2.1),
+	weapon/shockwave.cpp (2.1), weapon/shockwave.h (2.1),
+	weapon/swarm.cpp (2.1), weapon/swarm.h (2.1), weapon/trails.cpp
+	(2.1), weapon/trails.h (2.1), weapon/weapon.h (2.1),
+	weapon/weapons.cpp (2.1), windows_stub/stubs.cpp (2.4):
+	
+	The big include file move
+
+2002-07-30 18:11  wmcoolmon
+
+	* ship/ship.cpp (2.5):
+	
+	Fixed a bug I added in ship_do_rearm_frame
+
+2002-07-30 17:57  wmcoolmon
+
+	* ship/ship.cpp (2.4):
+	
+	Modified to add hull repair capabilities and toggling of them via a
+	mission flag, MISSION_FLAG_SUPPORT_REPAIRS_HULL
+
+2002-07-30 17:35  wmcoolmon
+
+	* mission/missionparse.h (2.2):
+	
+	Added mission flag "MISSION_FLAG_SUPPORT_REPAIRS_HULL" for toggling
+	Support Ship hull repair on and off
+
+2002-07-30 14:29  unknownplayer
+
+	* code.dsp (1.3), graphics/2d.cpp (2.2), graphics/grd3d.cpp (2.1),
+	graphics/directx8/GrD3D81.cpp (1.1), graphics/directx8/GrD3D81.h
+	(1.1), graphics/directx8/GrD3D81Render.cpp (1.1),
+	graphics/directx8/GrD3D81Texture.cpp (1.1),
+	graphics/directx8/grd3d81internal.h (1.1), network/psnet2.cpp
+	(2.2):
+		
+	Started work on DX8.1 implementation. Updated the project files to
+	encompass the new files. Disable the compiler tag to use old DX
+	code (THERE IS NO NEW CODE YET!)
+
+2002-07-29 22:24  penguin
+
+	* network/: fs2ox.cpp (1.1), fs2ox.h (1.1):
+	
+	First attempt at "fs2_open exchange" (PXO substitute) screen
+
+2002-07-29 22:14  penguin
+
+	* ChangeLog (1.1):
+	
+	We finally have a ChangeLog
+
 2002-07-29 20:48  penguin
 
 	* Ship/shiphit.cpp (2.4):
