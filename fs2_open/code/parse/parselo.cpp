@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.25 $
- * $Author: Goober5000 $
- * $Date: 2004-12-14 17:23:52 $
+ * $Revision: 2.26 $
+ * $Author: wmcoolmon $
+ * $Date: 2004-12-25 09:25:18 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/12/14 17:23:52  Goober5000
+ * new version of stristr that doesn't need to allocate memory
+ * --Goober5000
+ *
  * Revision 2.24  2004/10/31 21:57:30  taylor
  * support external parsing sources without hurting currently parsing file (for EFF code)
  *
@@ -217,6 +221,9 @@
 
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5
+
+//To keep people from bypassing table checksums with modular tables -C
+bool	modular_tables_loaded = false;
 
 char	parse_error_text[64];//for my better error mesages-Bobboau
 char		Current_filename[128];

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.143 $
- * $Date: 2004-12-15 17:32:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.144 $
+ * $Date: 2004-12-25 09:23:10 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.143  2004/12/15 17:32:19  Goober5000
+ * move wing name initialization to ship_level_init
+ * --Goober5000
+ *
  * Revision 2.142  2004/12/14 14:46:12  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -3038,6 +3042,7 @@ void ship_init()
 			for(int i = 0; i < num_files; i++)
 			{
 				//HACK HACK HACK
+				modular_tables_loaded = true;
 				strcat(tbl_file_names[i], ".tbm");
 				parse_shiptbl(tbl_file_names[i], true);
 			}
