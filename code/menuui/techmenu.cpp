@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-01-28 02:57:59 $
- * $Author: wmcoolmon $
+ * $Revision: 2.23 $
+ * $Date: 2005-01-28 10:00:59 $
+ * $Author: taylor $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/01/28 02:57:59  wmcoolmon
+ * Fixed crash bug in techroom
+ *
  * Revision 2.21  2005/01/10 04:44:03  wmcoolmon
  * Small fix, so we don't try to delete the same thing twice
  *
@@ -526,12 +529,12 @@ static UI_WINDOW Ui_window;
 static UI_BUTTON View_window;
 //static int Background_bitmap;
 static int Tech_background_bitmap;
-static int Intel_bg_bitmap;
+//static int Intel_bg_bitmap;  // not used now - taylor
 static int Tab = 0;
 // static int List_size;
 static int List_offset;
 static int Select_tease_line;
-static int Limit;
+//static int Limit;  // not used now - taylor
 static int Trackball_mode = 1;
 static int Trackball_active = 0;
 static matrix Techroom_ship_orient = IDENTITY_MATRIX;
@@ -555,7 +558,7 @@ static int Palette_bmp;
 //static int ShipWin03;
 //static int ShipWin04;
 static ubyte Palette[768];
-static char Palette_name[128];
+//static char Palette_name[128];  // not used now - taylor
 
 static int Ships_loaded = 0;
 static int Weapons_loaded = 0;
@@ -569,17 +572,20 @@ typedef struct {
 	anim* animation;	// ptr to the animation
 	int	bitmap;		// bitmap handle
 	int	has_anim;	// flag to indicate the presence of an animation for this item
+	int model_num;	// model reference handle
+	int textures_loaded;	// if the model has textures loaded for it or not (hacky mem management)
 } tech_list_entry;
 
 static tech_list_entry *Ship_list = NULL;
 static int Ship_list_size = 0;
-static tech_list_entry Weapon_list[MAX_WEAPON_TYPES];
+static tech_list_entry *Weapon_list = NULL;
 static int Weapon_list_size = 0;
 static tech_list_entry Intel_list[MAX_INTEL_ENTRIES];
 static int Intel_list_size = 0;
 static tech_list_entry *Current_list;								// points to currently valid display list
 static int Current_list_size = 0;
 
+static int loaded_tech_models;	// number of currently loaded ship models
 
 // slider stuff
 static UI_SLIDER2 Tech_slider;
@@ -635,6 +641,35 @@ void techroom_select_new_entry()
 	if (Tab == SHIPS_DATA_TAB) {
 		ship_info *sip = &Ship_info[Cur_entry_index];
 
+		// little memory management, kinda hacky but it should keep the techroom under 100meg
+		// rather than the 700+ it can get to with all ships loaded - taylor
+		if ( loaded_tech_models > 10 ) {
+			for (int i=0; i<Current_list_size; i++) {
+				if ((Current_list[i].model_num > -1) && (Current_list[i].textures_loaded)) {
+					// skip unloading of current entry, duh
+					if (i == Cur_entry_index)
+						continue;
+
+					// skip previous two entries, in case be go back
+					if (i == (Cur_entry_index-1) || i == (Cur_entry_index-2))
+						continue;
+
+					// skip next two entries, in case we went back
+					if (i == (Cur_entry_index+1) || i == (Cur_entry_index+2))
+						continue;
+
+					mprintf(("TECH ROOM: Dumping excess ship textures...\n"));
+
+					model_page_out_textures(Current_list[i].model_num);
+
+					Current_list[i].textures_loaded = 0;
+					loaded_tech_models--;
+
+					break;
+				}
+			}
+		}
+
 #ifdef MULTIPLAYER_BETA_BUILD
 		// don't load supercaps in the beta
 		if((sip->flags & SIF_SUPERCAP) || (sip->flags & SIF_DRYDOCK)){
@@ -643,14 +678,23 @@ void techroom_select_new_entry()
 			Techroom_ship_modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 		}
 
-		// page in ship textures properly (takes care of nondimming pixels)
-		model_page_in_textures(Techroom_ship_modelnum, Cur_entry_index);
-#else
-		Techroom_ship_modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		Current_list[Cur_entry].model_num = Techroom_ship_modelnum;
 
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(Techroom_ship_modelnum, Cur_entry_index);
+
+		Current_list[Cur_entry].textures_loaded = 1;
+#else
+		Techroom_ship_modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+
+		Current_list[Cur_entry].model_num = Techroom_ship_modelnum;
+
+		// page in ship textures properly (takes care of nondimming pixels)
+		model_page_in_textures(Techroom_ship_modelnum, Cur_entry_index);
+
+		Current_list[Cur_entry].textures_loaded = 1;
 #endif
+		loaded_tech_models++;
 	} else {
 		Techroom_ship_modelnum = -1;
 		Trackball_mode = 0;
@@ -664,7 +708,7 @@ void techroom_select_new_entry()
 }
 
 // write out the current description in the bottom window
-void techroom_render_desc(int xo, int yo, int h)
+void techroom_render_desc(int xo, int yo, int ho)
 {
 	int y, z, len, font_height;
 	char line[MAX_TEXT_LINE_LEN + 1];
@@ -673,7 +717,7 @@ void techroom_render_desc(int xo, int yo, int h)
 
 	y = 0;
 	z = Text_offset;
-	while (y + font_height <= h) {
+	while (y + font_height <= ho) {
 		if (z >= Text_size){
 			break;
 		}
@@ -1115,6 +1159,7 @@ void techroom_change_tab(int num)
 			// load ship info if necessary
 			if (Ships_loaded == 0) {
 				Ship_list = new tech_list_entry[Num_ship_types];
+				Assert( Ship_list != NULL );
 				Ship_list_size = 0;
 				for (i=0; i<Num_ship_types; i++) {
 					if (Ship_info[i].flags & mask) {
@@ -1125,6 +1170,8 @@ void techroom_change_tab(int num)
 						Ship_list[Ship_list_size].has_anim = 0;				// no anim for ships
 						Ship_list[Ship_list_size].name = Ship_info[i].name;
 						Ship_list[Ship_list_size].desc = Ship_info[i].tech_desc;
+						Ship_list[Ship_list_size].model_num = -1;
+						Ship_list[Ship_list_size].textures_loaded = 0;
 						Ship_list_size++;
 					}				
 				}
@@ -1145,6 +1192,8 @@ void techroom_change_tab(int num)
 				
 			// load weapon info & anims if necessary
 			if (Weapons_loaded == 0) {
+				Weapon_list = new tech_list_entry[Num_weapon_types];
+				Assert( Weapon_list != NULL);
 				Weapon_list_size = 0;
 				mask = multi ? WIF_PLAYER_ALLOWED : WIF_IN_TECH_DATABASE;
 
@@ -1162,6 +1211,9 @@ void techroom_change_tab(int num)
 						Weapon_list[Weapon_list_size].has_anim = 1;
 						Weapon_list[Weapon_list_size].name = Weapon_info[i].tech_title;
 						Weapon_list[Weapon_list_size].bitmap = -1;
+						Weapon_list[Weapon_list_size].animation = NULL;
+						Weapon_list[Weapon_list_size].model_num = -1;
+						Weapon_list[Weapon_list_size].textures_loaded = 0;
 						if (Weapon_list[Weapon_list_size].name[0] == 0) {
 							Weapon_list[Weapon_list_size].name = Weapon_info[i].name;
 						}
@@ -1219,6 +1271,8 @@ void techroom_change_tab(int num)
 						Intel_list[Intel_list_size].desc = Intel_info[i].desc;
 						Intel_list[Intel_list_size].index = i;
 						Intel_list[Intel_list_size].name = Intel_info[i].name;
+						Intel_list[Intel_list_size].model_num = -1;
+						Intel_list[Intel_list_size].textures_loaded = 0;
 						Intel_list_size++;
 					}
 				}	
@@ -1242,6 +1296,45 @@ void techroom_change_tab(int num)
 	Cur_entry = 0;
 	techroom_select_new_entry();
 
+}
+
+// special techroom function to show all ships in Ship_info[] rather
+// than just the ones marked as viewable, isn't permanent - taylor
+void techroom_update_ship_list_special(int tab)
+{
+	// for ships only
+	if (tab != SHIPS_DATA_TAB)
+		return;
+
+	// we need space for Ship_list to already be allocated
+	if ( Ships_loaded == 0 )
+		return;
+
+	Assert( Ship_list != NULL );
+
+	int i, font_height, max_num_entries_viewable;
+
+	// show every available ship
+	Ship_list_size = 0;
+	for (i=0; i<Num_ship_types; i++) {
+		// this ship should be displayed, fill out the entry struct
+		Ship_list[Ship_list_size].bitmap = -1;
+		Ship_list[Ship_list_size].index = i;
+		Ship_list[Ship_list_size].animation = NULL;                     // no anim for ships
+		Ship_list[Ship_list_size].has_anim = 0;                         // no anim for ships
+		Ship_list[Ship_list_size].name = Ship_info[i].name;
+		Ship_list[Ship_list_size].desc = Ship_info[i].tech_desc;
+		Ship_list[Ship_list_size].model_num = -1;
+		Ship_list[Ship_list_size].textures_loaded = 0;
+		Ship_list_size++;
+	}
+
+	Current_list = Ship_list;
+	Current_list_size = Ship_list_size;
+
+	font_height = gr_get_font_height();
+	max_num_entries_viewable = Tech_list_coords[gr_screen.res][SHIP_H_COORD] / font_height;
+	Tech_slider.set_numberItems(Current_list_size > max_num_entries_viewable ? Current_list_size-max_num_entries_viewable : 0);
 }
 
 int techroom_button_pressed(int num)
@@ -1440,6 +1533,8 @@ void techroom_init()
 	Weapons_loaded = 0;
 	Intel_loaded = 0;
 
+	loaded_tech_models = 0;
+
 	// Tech_room_ask_for_cd = 1;
 
 	// backup and bash detail level stuff
@@ -1545,11 +1640,7 @@ void techroom_init()
 
 	Cur_anim_instance = NULL;
 
-	// zero weapon and intel anim/bitmap stuff
-	for(idx=0; idx<MAX_WEAPON_TYPES; idx++){
-		Weapon_list[idx].animation = NULL;
-		Weapon_list[idx].bitmap = -1;
-	}
+	// zero intel anim/bitmap stuff
 	for(idx=0; idx<MAX_INTEL_ENTRIES; idx++){
 		Intel_list[idx].animation = NULL;
 		Intel_list[idx].bitmap = -1;
@@ -1565,7 +1656,7 @@ void techroom_close()
 
 	fsspeech_stop();
 	techroom_stop_anim(-1);
-	for (i=0; i<MAX_WEAPON_TYPES; i++) {
+	for (i=0; i<Weapon_list_size; i++) {
 		if ( Weapon_list[i].animation ) {
 			anim_free(Weapon_list[i].animation);
 			Weapon_list[i].animation = NULL;
@@ -1586,6 +1677,17 @@ void techroom_close()
 			Intel_list[i].bitmap = -1;
 		}
 	}
+
+	// since we may be loading so much data that level loads don't work
+	// be sure sure to free all models and textures when we leave - taylor
+	for (i=0; i<Ship_list_size; i++) {
+		if (Ship_list[i].model_num > -1) {
+			model_page_out_textures( Ship_list[i].model_num );
+			Ship_list[i].model_num = -1;
+		}
+	}
+
+	model_free_all();
 
 	Ships_loaded = 0;
 	Weapons_loaded = 0;
@@ -1624,6 +1726,11 @@ void techroom_close()
 	{
 		delete[] Ship_list;
 		Ship_list = NULL;
+	}
+
+	if (Weapon_list != NULL) {
+		delete[] Weapon_list;
+		Weapon_list = NULL;
 	}
 }
 
@@ -1701,6 +1808,11 @@ void techroom_do_frame(float frametime)
 		case KEY_ESC:
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 			break;
+
+		case KEY_CTRLED | KEY_SHIFTED | KEY_S:
+			techroom_update_ship_list_special(Tab);
+			break;
+
 	}	
 
 	// check ship model window for activity
