@@ -1,6 +1,6 @@
 //sorce file for decals-Bobboau
 //and no, I don't have any idea what I'm doing
-
+/*
 #include "decals/decals.h"
 #include "ship/ship.h"
 #include "render/3d.h"
@@ -52,9 +52,10 @@ static int back_faceing;
 
 	vm_vec_scale_add( top, &temp, &uvec, w/2.0f );
 	vm_vec_scale_add( bot, &temp, &uvec, -w/2.0f );	
-*/
+
 
 int decal_find_next(object *obj){
+#ifdef DECALS_ENABLED
 	ship *shipp = &Ships[obj->instance];
 	int oldest = shipp->decals[0].timestamp;
 	int i;
@@ -69,6 +70,8 @@ int decal_find_next(object *obj){
 		}
 	}
 	return oldest%MAX_SHIP_DECALS;
+#else
+	return 0;
 }
 
 int decal_create_simple(object *obj, decal_point *point, int texture){//makes a simple non-clipped decal
@@ -391,7 +394,7 @@ void decal_create_sortnorm(ubyte * p)
 /*	if (!fvi_ray_boundingbox( &min, &max, &decal_hit_point, &decal_hit_vect, NULL ))	{
 		return;
 	}
-*/
+
 	if (prelist) decal_create_sub(p+prelist);
 	if (backlist) decal_create_sub(p+backlist);
 	if (onlist) decal_create_sub(p+onlist);
@@ -405,7 +408,7 @@ typedef struct model_tmap_vert {
 	short normnum;
 	float u,v;
 } model_tmap_vert;
-*/
+
 //int poly_num = 0;
 // Textured Poly
 // +0      int         id
@@ -441,7 +444,7 @@ void decal_create_tmappoly(ubyte * p)
 		// Don't check invisible polygons.
 		return;
 	}
-*/
+
 	verts = (model_tmap_vert *)(p+44);
 	vector temppoly[820];
 
@@ -601,7 +604,7 @@ void decal_create_tmappoly(ubyte * p)
 			}
 //			mprintf(("decal poly %d, vert 0 being set to %d, vert 1 %d, and vert 2 %d\n", poly_num, new_decal->poly[poly_num].point[0], new_decal->poly[poly_num].point[1], new_decal->poly[poly_num].point[2]));
 			poly_num++;
-		}*/
+		}
 		for (i=1;i<nv;i++){
 			if(poly_num >= MAX_DECAL_POLY){
 				mprintf(("bugging out becase there are too many polys in the decal\n"));		
@@ -667,7 +670,7 @@ int decal_create_sub(void *model_ptr )
 		case DP_BOUNDBOX:	
 /*			if (!mc_ray_boundingbox( vp(p+8), vp(p+20), &Mc_p0, &Mc_direction, NULL ))	{
 				return 1;
-			}*/
+			}
 			break;
 		default:
 			mprintf(( "Bad chunk type %d, len=%d in decal_create_sub\n", chunk_type, chunk_size ));
@@ -738,7 +741,7 @@ mprintf(("vert %d at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", j, vecs[j].x, v
 //	mprintf(("decals rendered\n"));
 
 }
-*/
+
 
 
 void decal_render_all(object * obj){
@@ -800,13 +803,13 @@ void decal_render_all(object * obj){
 						vecs[j].u = dec->poly[i].uv[j].u;
 						vecs[j].v = dec->poly[i].uv[j].v;
 mprintf(("vert %d at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", j, vecs[j].x, vecs[j].y, vecs[j].z, vecs[j].u, vecs[j].v));
-/*
+
 						if ( D3D_enabled )	{
 							light_apply_rgb( &vlist[j]->r, &vlist[j]->g, &vlist[j]->b, &pnt, &dec->poly[i].norm, 0 );
 						} else {
 							vlist[j]->b = light_apply( &pnt, &dec->poly[i].norm, 0 );
 						}
-*/
+
 					}
 
 					if(dec->poly[i].point[j]<0 || dec->poly[i].point[j]>1000)break;
@@ -828,3 +831,4 @@ mprintf(("vert %d at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", j, vecs[j].x, v
 //	mprintf(("decals rendered\n"));
 #endif
 }
+*/
