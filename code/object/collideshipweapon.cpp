@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-01-17 23:35:44 $
+ * $Revision: 2.15 $
+ * $Date: 2005-01-26 03:40:43 $
  * $Author: argv $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/01/17 23:35:44  argv
+ * Surface shields.
+ *
+ * See forum thread:
+ * http://dynamic4.gamespy.com/~freespace/forums/showthread.php?s=&threadid=29643
+ *
+ * -- _argv[-1]
+ *
  * Revision 2.13  2004/07/26 20:47:45  Kazan
  * remove MCD complete
  *
@@ -426,7 +434,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 		}
 	}
 
-	if (valid_hit_occured && do_model_check && !(ship_obj->flags & OF_NO_SHIELDS) && quadrant_num == -1 && !(Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS) && (pm->shield.ntris > 0 || Ship_info[shipp->ship_info_index].flags2 & SIF2_SURFACE_SHIELDS)) {
+	if (valid_hit_occured && do_model_check && !(ship_obj->flags & OF_NO_SHIELDS) && quadrant_num == -1 && !(Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS) && (Ship_info[shipp->ship_info_index].flags2 & SIF2_SURFACE_SHIELDS)) {
 		// _argv[-1], 16 Jan 2005: Surface shields.
 		// Surface shields allow for shields on a ship without a shield mesh. Good for putting real shields on the Lucifer.
 		// This also fixes the strange bug where shots will occasionally go through the shield mesh when they shouldn't. I don't know what causes this, but this fixes that -- shields will absorb it when it hits the hull instead. All ships with a shield mesh have an implicit surface shield.
