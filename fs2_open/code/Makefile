@@ -1,5 +1,90 @@
 TARGET  = fs2
 
+ifeq ($(USE_SOUND), 1)
+SOUND_DEF=
+SOUND_OBJS= \
+ Gamesnd/eventmusic.o \
+ Gamesnd/gamesnd.o \
+ Object/objectsnd.o \
+ Sound/acm.o \
+ Sound/audiostr.o \
+ Sound/ds.o \
+ Sound/ds3d.o \
+ Sound/dscap.o \
+ Sound/midifile.o \
+ Sound/rbaudio.o \
+ Sound/rtvoice.o \
+ Sound/sound.o \
+ Sound/winmidi.o \
+ Sound/winmidi_base.o \
+ VCodec/codec1.o
+else
+SOUND_DEF=-DNO_SOUND
+SOUND_OBJS=
+endif # USE_SOUND
+
+
+ifeq ($(USE_JOYSTICK), 1)
+JOYSTICK_DEF=
+JOYSTICK_OBJS= \
+ Io/joy.o \
+ Io/joy_ff.o \
+ Io/swff_lib.o
+else
+JOYSTICK_DEF=-DNO_JOYSTICK
+JOYSTICK_OBJS=
+endif # USE_JOYSTICK
+
+
+ifeq ($(USE_NETWORK), 1)
+# no support for standalone server yet... (UI is Win32 specific)
+NETWORK_DEF=-DNO_STANDALONE
+NETWORK_OBJS= \
+ Hud/hudobserver.o \
+ Network/multi.o \
+ Network/multimsgs.o \
+ Network/multiteamselect.o \
+ Network/multiui.o \
+ Network/multiutil.o \
+ Network/multi_campaign.o \
+ Network/multi_data.o \
+ Network/multi_dogfight.o \
+ Network/multi_endgame.o \
+ Network/multi_ingame.o \
+ Network/multi_kick.o \
+ Network/multi_log.o \
+ Network/multi_obj.o \
+ Network/multi_observer.o \
+ Network/multi_options.o \
+ Network/multi_pause.o \
+ Network/multi_pinfo.o \
+ Network/multi_ping.o \
+ Network/multi_pmsg.o \
+ Network/multi_rate.o \
+ Network/multi_respawn.o \
+ Network/multi_team.o \
+ Network/multi_voice.o \
+ Network/multi_xfer.o \
+ Network/psnet.o \
+ Network/psnet2.o \
+ MenuUI/optionsmenumulti.o \
+ MissionUI/chatbox.o
+#
+# Network/stand_gui.o
+#
+else
+NETWORK_DEF=-DNO_NETWORK -DNO_STANDALONE
+NETWORK_OBJS=
+endif # USE_NETWORK
+
+
+ifeq ($(USE_OPENGL), 0)
+OPENGL_DEF=
+else
+OPENGL_DEF=-DUSE_OPENGL
+endif # USE_OPENGL
+
+
 LDFLAGS = -g
 LDLIBS = -L/usr/X11R6/lib -lSDL -lGL -lGLU -lpthread
 
@@ -16,8 +101,7 @@ CXXFLAGS = \
  -fno-exceptions \
  -IWeapon -ILocalization -INebula -IDemo -IInetfile -IExceptionHandler \
  -D_DEBUG -DNO_CD_CHECK -UNDEBUG \
- -DNO_DIRECT3D -DNO_SOUND -DNO_JOYSTICK -DNO_NETWORK
-
+ -DNO_DIRECT3D $(SOUND_DEF) $(JOYSTICK_DEF) $(NETWORK_DEF) $(OPENGL_DEF)
 
 ANIM_OBJFILES = \
  Anim/animplay.o \
@@ -478,7 +562,10 @@ LIB_OBJFILES = \
  $(NEBULA_OBJFILES)  \
  $(LOCALIZATION_OBJFILES)  \
  $(TGAUTILS_OBJFILES)  \
- $(DEMO_OBJFILES)
+ $(DEMO_OBJFILES) \
+ $(SOUND_OBJS) \
+ $(JOYSTICK_OBJS) \
+ $(NETWORK_OBJS)
 
 FREESPACE2_OBJFILES = \
  FREESPACE2/freespace.o \
