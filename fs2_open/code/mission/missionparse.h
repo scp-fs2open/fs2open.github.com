@@ -9,13 +9,23 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.32 $
- * $Author: Goober5000 $
- * $Date: 2003-09-13 08:27:28 $
+ * $Revision: 2.32.2.1 $
+ * $Author: argv $
+ * $Date: 2003-09-19 00:57:06 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/09/13 08:27:28  Goober5000
+ * added some minor things, such as code cleanup and the following:
+ * --turrets will not fire at cargo
+ * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
+ * --supercaps have their own default message bitfields (distinguished from capships)
+ * --turrets are allowed on fighters
+ * --jump speed capped at 65m/s, to avoid ship travelling too far
+ * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
+ * ----Goober5000
+ *
  * Revision 2.31  2003/09/13 06:02:06  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -636,10 +646,11 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	2
+#define MAX_PARSE_OBJECT_FLAGS_2	3
 
 #define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE		(1<<1)
+#define P2_SF2_BEAM_FREE_ALL			(1<<2) // _argv[-1] - implicit beam-free-all for this ship.
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
