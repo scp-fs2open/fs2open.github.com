@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-11-18 21:32:11 $
+ * $Author: phreak $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/30 14:29:15  unknownplayer
  *
  * Started work on DX8.1 implementation. Updated the project files to encompass
@@ -921,7 +924,7 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 
 #if defined(HARDWARE_ONLY) && defined(_WIN32)
 	if(!Fred_running && !Pofview_running && !Nebedit_running && !Is_standalone){
-		if((mode != GR_GLIDE) && (mode != GR_DIRECT3D)){
+		if((mode != GR_GLIDE) && (mode != GR_DIRECT3D)  && (mode != GR_OPENGL)){
 			mprintf(("Forcing glide startup!\n"));
 			mode = GR_GLIDE;
 		}	
@@ -1022,6 +1025,9 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 
 #ifdef USE_OPENGL
 		case GR_OPENGL:
+			Gr_bitmap_poly=1;
+			gr_screen.bits_per_pixel=depth;
+			gr_screen.bytes_per_pixel=depth/8;
 			gr_opengl_init();
 			break;
 #endif  // ifdef USE_OPENGL
@@ -1088,6 +1094,8 @@ void gr_force_windowed()
 
 #ifdef USE_OPENGL
 		case GR_OPENGL:
+			extern void opengl_minimize();
+			opengl_minimize();
 			break;
 
 #endif  // ifdef USE_OPENGL
@@ -1140,6 +1148,8 @@ void gr_activate(int active)
 
 #ifdef USE_OPENGL
 		case GR_OPENGL:
+			extern void gr_opengl_activate(int active);
+			gr_opengl_activate(active);
 			break;
 #endif  // ifdef USE_OPENGL
 
@@ -1203,8 +1213,8 @@ void gr_bitmap(int x, int y)
 	int x_line, y_line;
 	int w, h;
 
-	// d3d and glide support texture poly shiz
-	if(((gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_GLIDE)) && Gr_bitmap_poly){		
+	// d3d and glide support texture poly shiz, ogl does too
+	if(((gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_GLIDE) || (gr_screen.mode== GR_OPENGL)) && Gr_bitmap_poly){		
 		int idx, s_idx;
 		// float u_scale, v_scale;
 		bitmap_section_info *sections;			
