@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.29 $
- * $Author: Goober5000 $
- * $Date: 2005-01-25 22:47:37 $
+ * $Revision: 2.30 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-01-30 01:38:26 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/01/25 22:47:37  Goober5000
+ * more cool parsing stuff
+ * --Goober5000
+ *
  * Revision 2.28  2005/01/25 22:21:45  Goober5000
  * separated one parsing function into two
  * --Goober5000
@@ -465,7 +469,10 @@ void error_display(int error_level, char *format, ...)
 	Assert(strlen(buffer) < 1024);
 
 	nprintf((error_text, "%s", buffer));
-	Warning(LOCATION, "%s(%i):\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
+	if(error_level == 0)
+		Warning(LOCATION, "%s(%i):\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
+	else
+		Error(LOCATION, "%s(%i):\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
 }
 
 //	Advance Mp to the next eoln character.
