@@ -5,11 +5,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.10 $
- * $Date: 2004-07-26 20:47:53 $
- * $Author: Kazan $
+ * $Revision: 1.11 $
+ * $Date: 2004-11-22 06:17:57 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2004/07/26 20:47:53  Kazan
+ * remove MCD complete
+ *
  * Revision 1.9  2004/07/12 16:33:07  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -98,11 +101,18 @@ void Init_Species_Definitions()
 	memset(Thrust_glow_anim_names,		0, NUM_THRUST_ANIMS * MAX_FILENAME_LEN);
 
 	char cstrtemp[MAX_SHIELD_ANIMNAME_LEN+1];
-	
-	if (!cf_exist( "species_defs.tbl", CF_TYPE_TABLES ))
+
+	CFILE *sdt = cfopen("species_defs.tbl", "rb");
+
+	if (sdt == NULL)
 	{
 		Init_Species_LoadDefault();
 		return;
+	}
+	else
+	{
+		cfclose(sdt);
+		sdt = NULL;
 	}
 
 
