@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.72 $
- * $Date: 2004-10-11 22:29:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.73 $
+ * $Date: 2004-10-31 22:06:42 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2004/10/11 22:29:24  Goober5000
+ * added the no-bank ship flag (which works) and the affected-by-gravity flag
+ * (which won't work until I implement gravity points)
+ * --Goober5000
+ *
  * Revision 2.71  2004/10/03 21:41:11  Kazan
  * Autopilot convergence collision fix for ai_fly_to_ship() and ai_waypoints() -- mathematically expensive, only usable by autopilot
  *
@@ -5132,7 +5137,7 @@ void ai_fly_to_ship()
 	{
 		
 		int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, target_pos, // current point, destination point
-											model_get_core_radius( sip->modelnum ) * 1.5, // radius w/ buffer
+											model_get_core_radius( sip->modelnum ) * 1.5f, // radius w/ buffer
 											Pl_objp, NULL, 0);
 		// fly parrel to collider - so figure out vector between collider and radius
 		if (collide_objnum != -1)
@@ -5370,7 +5375,7 @@ void ai_waypoints()
 	{
 		
 		int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, wp_cur, // current point, destination point
-											model_get_core_radius( sip->modelnum ) * 1.5, // radius w/ buffer
+											model_get_core_radius( sip->modelnum ) * 1.5f, // radius w/ buffer
 											Pl_objp, NULL, 0);
 		// fly parrel to collider - so figure out vector between collider and radius
 		if (collide_objnum != -1)
@@ -12044,7 +12049,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
         // *Check both min and max range -Et1
 
-		if( dist_to_enemy > weapon_firing_range || dist_to_enemy < WeaponMinRange )
+		if( dist_to_enemy > weapon_firing_range || dist_to_enemy < (WeaponMinRange - lep->radius) )
         {
 
 			ss->turret_enemy_objnum = -1;		//	Force picking of new enemy.
