@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-03-10 08:00:11 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-11 14:16:02 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/03/10 08:00:11  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.5  2005/01/31 10:34:38  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -228,7 +237,7 @@ int os_foreground()
 // Sleeps for n milliseconds or until app becomes active.
 void os_sleep(int ms)
 {
-	usleep(ms*1000);
+	Sleep(ms);
 }
 
 // Used to stop message processing
