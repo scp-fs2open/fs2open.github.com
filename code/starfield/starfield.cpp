@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-05-05 20:13:07 $
+ * $Revision: 2.8 $
+ * $Date: 2003-05-05 21:27:46 $
  * $Author: phreak $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/05/05 20:13:07  phreak
+ * minor fred bug fixed
+ *
  * Revision 2.6  2003/05/03 16:58:40  phreak
  * background stars are now somewhat colored, just here as a sort of useless feature test
  *
@@ -1356,9 +1359,11 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 		reload_old_debris = 0;
 	}
 
-
-	stars_draw_sun( show_suns );	
-	stars_draw_bitmaps( show_suns );
+	//if we're not drawing them, quit here
+	if (show_suns){
+		stars_draw_sun( show_suns );	
+		stars_draw_bitmaps( show_suns );
+	}
 
 	gr_zbuffer_set( gr_zbuffering_save );
 }
