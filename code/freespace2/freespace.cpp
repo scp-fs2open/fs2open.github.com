@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.26 $
- * $Date: 2003-02-23 20:55:57 $
- * $Author: wmcoolmon $
+ * $Revision: 2.27 $
+ * $Date: 2003-03-02 05:23:34 $
+ * $Author: penguin $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/02/23 20:55:57  wmcoolmon
+ * Refixed the splash screen loading code so that it still works with the demo VPs (Loading "2_PreLoad" and "PreLoad") and put logo support back in. Logo support does nothing unless "PreLoadLogo" and/or"2_PreLoadLogo" exist within the search path.
+ *
  * Revision 2.25  2003/02/16 19:00:56  phreak
  * stupid typo -- my bad
  *
@@ -1529,7 +1532,7 @@ void game_flash_diminish(float frametime)
 	
 	if ( Use_palette_flash )	{
 		int r,g,b;
-		static int or=0, og=0, ob=0;
+		static int o_r=0, o_g=0, o_b=0;
 
 		// Change the 200 to change the color range of colors.
 		r = fl2i( Game_flash_red*128.0f );  
@@ -1557,9 +1560,9 @@ void game_flash_diminish(float frametime)
 
 			//mprintf(( "Flash! %d,%d,%d\n", r, g, b ));
 
-			or = r;
-			og = g;
-			ob = b;
+			o_r = r;
+			o_g = g;
+			o_b = b;
 		}
 	}
 	
@@ -2034,7 +2037,7 @@ int game_start_mission()
 	game_post_level_init();
 	load_post_level_init = time(NULL) - load_post_level_init;
 
-#ifndef NDEBUG
+#if (!defined(NDEBUG)) && (!defined(NO_SOFTWARE_RENDERING))
 	{
 		void Do_model_timings_test();
 		Do_model_timings_test();	
@@ -7182,7 +7185,7 @@ int WinMainSub(int argc, char *argv[])
 		// movie_play( NOX("intro.mve"), 0 );
 
 		// debug version, movie will only play with -showmovies
-		#else if !defined(NDEBUG)
+		#elif !defined(NDEBUG)
 		
 		// no soup for you!
 		// movie_play( NOX("intro.mve"), 0);
@@ -7240,14 +7243,18 @@ int main(int argc, char *argv[])
 	int result = -1;
 
 #ifdef _WIN32
+#if defined(_MSC_VER)
 	__try	{
+#endif
 		result = WinMainSub(hInst, hPrev, szCmdLine, nCmdShow);
+#if defined(_MSC_VER)
 	}	__except(RecordExceptionInfo(GetExceptionInformation(), "Freespace 2 Main Thread"))	{
 		// Do nothing here - RecordExceptionInfo() has already done
 		// everything that is needed. Actually this code won't even
 		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
 		// the __except clause.
 	}
+#endif
 #else
 	try {
 		result = WinMainSub(argc, argv);
@@ -7735,7 +7742,7 @@ void game_show_event_debug(float frametime)
 
 #endif // NDEBUG
 
-#ifndef NDEBUG
+#if (!defined(NDEBUG)) && (!defined(NO_SOFTWARE_RENDERING))
 FILE * Time_fp;
 FILE * Texture_fp;
 
