@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-10-31 22:07:27 $
+ * $Revision: 2.12 $
+ * $Date: 2004-12-22 21:49:05 $
  * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/10/31 22:07:27  taylor
+ * new pilot code
+ *
  * Revision 2.10  2004/07/26 20:47:49  Kazan
  * remove MCD complete
  *
@@ -447,7 +450,7 @@ int verify_pilot_file(char *filename, int single, int *rank)
 			strcpy(pname, filename);
 			strcat(pname, ".plr");
 
-			file = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
+			file = cfopen(pname, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
 		}
 
 		if (!file)
@@ -456,9 +459,9 @@ int verify_pilot_file(char *filename, int single, int *rank)
 
 	id = cfread_uint(file);
 	if (id != PLR_FILE_ID) {
-		nprintf(("Warning", "Player file ('%s') has invalid signature\n", filename));
+		nprintf(("Warning", "Player file ('%s') has invalid signature\n", pname));
 		cfclose(file);
-		delete_pilot_file( filename, single );
+		delete_pilot_file( pname, single );
 		return -1;
 	}
 
@@ -468,23 +471,23 @@ int verify_pilot_file(char *filename, int single, int *rank)
 /*	if (file_version < INITIAL_RELEASE_FILE_VERSION) { */
 //	if (file_version != CURRENT_PLAYER_FILE_VERSION) {
 	if (file_version < LOWEST_COMPATIBLE_PLAYER_FILE_VERSION) {
-		nprintf(("Warning", "WARNING => Player file ('%s') is outdated and not compatible...\n", filename));
+		nprintf(("Warning", "WARNING => Player file ('%s') is outdated and not compatible...\n", pname));
 
 		// Goober5000 - warn them
 		char warning_text[256];
-		sprintf(warning_text, "ATTENTION: Detected out-of-date player file \"%s\".  If you press OK, this file will be deleted!  Back this file up now if you do not want to lose it.  Contact a coder to resolve this error.", filename);
+		sprintf(warning_text, "ATTENTION: Detected out-of-date player file \"%s\".  If you press OK, this file will be deleted!  Back this file up now if you do not want to lose it.  Contact a coder to resolve this error.", pname);
 		Error(LOCATION, warning_text);
 
 		cfclose(file);
-		delete_pilot_file( filename, single );
+		delete_pilot_file( pname, single );
 		return -1;
 	} else if ( single && (file_version > CURRENT_PLAYER_FILE_VERSION) ) {
-		nprintf(("Warning", "WARNING => Player file ('%s') is too new and not compatible...\n", filename));
+		nprintf(("Warning", "WARNING => Player file ('%s') is too new and not compatible...\n", pname));
 
 		cfclose(file);
 		return -1;
 	} else if ( !single && (file_version > CURRENT_MULTI_PLAYER_FILE_VERSION) ) {
-		nprintf(("Warning", "WARNING => Player file ('%s') is too new and not compatible...\n", filename));
+		nprintf(("Warning", "WARNING => Player file ('%s') is too new and not compatible...\n", pname));
 
 		cfclose(file);
 		return -1;
@@ -504,6 +507,45 @@ int verify_pilot_file(char *filename, int single, int *rank)
 	cfclose(file);
 	if (type != single){
 		return -1;
+	}
+
+	return 0;
+}
+
+// check to see if a pilot file is going to be updated to the new pl2 format
+int pilot_file_upgrade_check(char *callsign, int single)
+{
+	CFILE	*file;
+	int rc;
+	char pname[MAX_FILENAME_LEN];
+
+	// not for multi
+	if (!single)
+		return 0;
+
+	// we only look for old pilot files here so if it's not found then it's assumed to be upgraded already
+	Assert(strlen(callsign) < MAX_FILENAME_LEN - 4);  // ensure we won't overrun the buffer
+	strcpy( pname, callsign );
+	strcat( pname, NOX(".plr") );
+
+	file = cfopen(pname, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
+
+	// check if we've actually got an old file and make sure the user knows what's going to happen
+	if (file) {
+		// give a popup warning about the conversion process before proceeding - taylor
+		char confirm_string[300];
+#ifndef _WIN32
+		snprintf(confirm_string, 300, "This will cause the pilot '%s' to be converted to FSO format. The conversion process is not reversible and you will no longer be able to use this pilot in earlier versions of Freespace (including FS2 retail). Do you want to continue?", callsign);
+#else
+		// FIXME: really need to fix this crap system-wide (snprintf)
+		// The Windows implementation if snprintf is not safe
+		sprintf(confirm_string, "This will cause the pilot '%s' to be converted to FSO format. The conversion process is not reversible and you will no longer be able to use this pilot in earlier versions of Freespace (including FS2 retail). Do you want to continue?", callsign);
+#endif
+
+		rc = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, POPUP_NO, POPUP_YES, confirm_string, -1);
+
+		if (rc != 1)
+			return 1;
 	}
 
 	return 0;

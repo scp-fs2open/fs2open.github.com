@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-10-31 21:53:23 $
+ * $Revision: 2.11 $
+ * $Date: 2004-12-22 21:49:05 $
  * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/10/31 21:53:23  taylor
+ * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
+ *
  * Revision 2.9  2004/07/26 20:47:36  Kazan
  * remove MCD complete
  *
@@ -619,6 +622,10 @@ int barracks_new_pilot_selected()
 		Cur_pilot->callsign[0] = 0;  // this indicates no pilot active
 		return -1;
 	}
+
+	// check to see if we are going to try and upgrade or not
+	if ( pilot_file_upgrade_check(Pilots[Selected_line], !Player_sel_mode) )
+		return -1;
 
 	if (read_pilot_file(Pilots[Selected_line], !Player_sel_mode, Cur_pilot)) {
 		Cur_pilot->callsign[0] = 0;  // this indicates no pilot active

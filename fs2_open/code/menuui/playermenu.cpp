@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-12-05 23:47:18 $
+ * $Revision: 2.16 $
+ * $Date: 2004-12-22 21:49:05 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/12/05 23:47:18  taylor
+ * fix old V bug when cancelling the pilot select screen
+ *
  * Revision 2.14  2004/10/31 21:53:23  taylor
  * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
  *
@@ -1551,7 +1554,11 @@ void player_select_commit()
 {
 	// if we've gotten to this point, we should have ensured this was the case
 	Assert(Player_select_num_pilots > 0);
-	
+
+	// check to see if we are going to try and upgrade or not
+	if ( pilot_file_upgrade_check(Pilots[Player_select_pilot], !Player_select_mode) )
+		return;
+
 	gameseq_post_event(GS_EVENT_MAIN_MENU);
 	gamesnd_play_iface(SND_COMMIT_PRESSED);
 

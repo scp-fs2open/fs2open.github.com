@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:32 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2004-12-22 21:49:05 $
+ * $Author: taylor $
  *
  * ManagePilot.h is a header file for code to load and save pilot files, and
  * to select and manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:32  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/03/05 09:02:05  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -155,6 +158,7 @@ int is_pilot_multi(CFILE *fp);	// pass a newly opened (at the beginning) file po
 int is_pilot_multi(player *p);	// pass a pointer to a player struct
 
 int verify_pilot_file(char *filename, int single = 1, int *rank = NULL);
+int pilot_file_upgrade_check(char *callsign, int single = 1);
 int read_pilot_file(char* callsign, int single = 1, player *p = NULL);
 int write_pilot_file(player *p = NULL);
 
