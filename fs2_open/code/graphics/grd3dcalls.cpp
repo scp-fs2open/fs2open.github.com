@@ -433,25 +433,46 @@ HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr)
  */
 extern IDirect3DIndexBuffer8 *global_index_buffer;
 
-void d3d_lost_device()
+// Returns:
+//   TRUE  = the device is lost and cannot be recovered yet
+//   FALSE = the device is fine or has been successfully reset
+BOOL d3d_lost_device()
 {
-	// Set states to what they will be after reset
-	gr_d3d_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
-	
+	// if we can't reset the device yet then back out but only after Sleep()ing a little
+	if ( GlobalD3DVars::lpD3DDevice->TestCooperativeLevel() == D3DERR_DEVICELOST ) {
+		Sleep(5);
+		return TRUE;
+	}
+
 	// Calling Reset causes all texture memory surfaces to be lost, managed textures to be flushed 
 	// from video memory, and all state information to be lost. Before calling the Reset method for a 
 	// device, an application should release any explicit render targets, depth stencil surfaces, 
 	// additional swap chains and D3DPOOL_DEFAULT resources associated with the device.
-	global_index_buffer->Release();
-	global_index_buffer = NULL;
+	if ( GlobalD3DVars::lpD3DDevice->TestCooperativeLevel() == D3DERR_DEVICENOTRESET ) {
+		// Set states to what they will be after reset
+		gr_d3d_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
 
-	GlobalD3DVars::lpD3DDevice->Reset(&GlobalD3DVars::d3dpp); 
+		if (global_index_buffer != NULL) {
+			int m = 1;
 
-	d3d_reset_render_states();
-	d3d_reset_texture_stage_states();	 
+			while ( m > 0 ) {
+				global_index_buffer->Release();
+			}
 
-	memset(tinterfaces, 0, sizeof(IDirect3DBaseTexture8 *) * MAX_TSTAGES);
-	d3d_set_initial_render_state();
+			global_index_buffer = NULL;
+		}
 
-	D3D_vertex_type = 0;
+		GlobalD3DVars::lpD3DDevice->Reset(&GlobalD3DVars::d3dpp);
+
+		d3d_reset_render_states();
+		d3d_reset_texture_stage_states();	 
+
+		memset(tinterfaces, 0, sizeof(IDirect3DBaseTexture8 *) * MAX_TSTAGES);
+
+		d3d_set_initial_render_state();
+
+		D3D_vertex_type = 0;
+	}
+
+	return FALSE;
 }
