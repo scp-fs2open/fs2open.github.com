@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.49 $
- * $Date: 2003-10-16 00:17:12 $
+ * $Revision: 2.50 $
+ * $Date: 2003-10-16 17:36:29 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2003/10/16 00:17:12  randomtiger
+ * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
+ * As well as initialised in a different mode, bitmaps are stretched and for these modes
+ * previously point filtered textures now use linear to keep them smooth.
+ * I also had to shuffle some of the GR_1024 a bit.
+ * Put my HT&L flags in ready for my work to sort out some of the render order issues.
+ * Tided some other stuff up.
+ *
  * Revision 2.48  2003/10/15 22:03:24  Kazan
  * Da Species Update :D
  *
@@ -2704,16 +2712,27 @@ void game_init()
 //	ENVMAP = bm_load("environment");
 
 	// Set the gamma
-	ptr = os_config_read_string(NULL,NOX("Gamma"),NOX("1.80"));
-	Freespace_gamma = (float)atof(ptr);
-	if ( Freespace_gamma < 0.1f )	{
-		Freespace_gamma = 0.1f;
-	} else if ( Freespace_gamma > 5.0f )	{
-		Freespace_gamma = 5.0f;
+	if(gr_screen.mode == GR_DIRECT3D)
+	{
+		// D3D's gamma system now works differently. 1.0 is the default value
+		ptr = os_config_read_string(NULL, NOX("GammaD3D"), NOX("1.0"));
+		Freespace_gamma = (float)atof(ptr);
 	}
-	char tmp_gamma_string[32];
-	sprintf( tmp_gamma_string, NOX("%.2f"), Freespace_gamma );
-	os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
+	else
+	{
+		ptr = os_config_read_string(NULL, NOX("Gamma"), NOX("1.80"));
+		Freespace_gamma = (float)atof(ptr);
+		
+		// Keep the old system for the benifit of OGL and glide
+		if ( Freespace_gamma < 0.1f )	{
+			Freespace_gamma = 0.1f;
+		} else if ( Freespace_gamma > 5.0f )	{
+			Freespace_gamma = 5.0f;
+		}
+		char tmp_gamma_string[32];
+		sprintf( tmp_gamma_string, NOX("%.2f"), Freespace_gamma );
+		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
+	}
 
 	gr_set_gamma(Freespace_gamma);
 

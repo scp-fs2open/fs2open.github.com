@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-10-16 00:17:14 $
+ * $Revision: 2.28 $
+ * $Date: 2003-10-16 17:36:29 $
  * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/10/16 00:17:14  randomtiger
+ * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
+ * As well as initialised in a different mode, bitmaps are stretched and for these modes
+ * previously point filtered textures now use linear to keep them smooth.
+ * I also had to shuffle some of the GR_1024 a bit.
+ * Put my HT&L flags in ready for my work to sort out some of the render order issues.
+ * Tided some other stuff up.
+ *
  * Revision 2.26  2003/10/14 17:39:13  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -1877,11 +1885,36 @@ void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog
 }
 
 /**
+ * Support function for gr_d3d_set_gamma 
+ *
+ */
+inline ushort d3d_ramp_val(UINT i, float recip_gamma, int scale = 65535)
+{
+    return static_cast<ushort>(scale*pow(i/255.f, recip_gamma));
+}
+
+/**
  * Set the gamma, or brightness
  *
  * @param float gamma
  * @return void
  */
+void gr_d3d_set_gamma(float gamma)
+{
+	Gr_gamma = gamma;
+	D3DGAMMARAMP gramp;
+
+	// Create the Gamma lookup table
+	for (int i = 0; i < 256; i++ ) {
+	  	gramp.red[i] = gramp.green[i] = gramp.blue[i] = d3d_ramp_val(i, gamma);
+	}
+
+   	lpD3DDevice->SetGammaRamp(D3DSGR_CALIBRATE, &gramp);
+}
+
+#if 0
+
+// Old gamma function
 void gr_d3d_set_gamma(float gamma)
 {
 	Gr_gamma = gamma;
@@ -1899,10 +1932,8 @@ void gr_d3d_set_gamma(float gamma)
 
 		Gr_gamma_lookup[i] = v;
 	}
-
-	// Flush any existing textures
-	d3d_tcache_flush();
 }
+#endif
 
 /**
  * Empty function
@@ -2741,7 +2772,7 @@ void gr_d3d_render_buffer(int idx)
 		set_stage_for_defuse();
 	}
 
-	int passes = 1;//(n_active_lights/d3d_caps.MaxActiveLights);
+	int passes = (n_active_lights/d3d_caps.MaxActiveLights);
 	d3d_SetVertexShader(D3DVT_VERTEX);
 
 	lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DVERTEX));
@@ -2755,10 +2786,12 @@ void gr_d3d_render_buffer(int idx)
 		lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
 	}
 
+	// Specular needs to be fogged differently
+	color old_fog_color = gr_screen.current_fog_color;
+	gr_d3d_fog_set(gr_screen.current_fog_mode, 0,0,0, gr_screen.fog_near, gr_screen.fog_far);
+
 	pre_render_lights_init();
 	shift_active_lights(0);
-
-	// Bob, put a return here and look how well the fog works
 
 	//spec mapping
 	if(SPECMAP > 0){
@@ -2781,6 +2814,9 @@ void gr_d3d_render_buffer(int idx)
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
 		}
 	}
+
+	// Revert back to old fog state
+	gr_d3d_fog_set(gr_screen.current_fog_mode, old_fog_color.red,old_fog_color.green,old_fog_color.blue, gr_screen.fog_near, gr_screen.fog_far);
 
 //	gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
 
