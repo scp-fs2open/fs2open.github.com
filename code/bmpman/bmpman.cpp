@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.24 $
- * $Date: 2004-04-01 15:31:20 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2004-04-09 20:07:56 $
+ * $Author: phreak $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/04/01 15:31:20  taylor
+ * don't use interface anis as ship textures
+ *
  * Revision 2.23  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1837,10 +1840,6 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 	Assert(Texture_compression_enabled);
 	Assert(&be->bm == bmp);
-	#ifdef BMPMAN_NDEBUG
-	Assert( be->data_size > 0 );
-	#endif
-
 	//data is malloc'ed in the function
 	error=dds_read_bitmap( be->filename, &size, &data );
 	if (error != DDS_ERROR_NONE)
@@ -1852,6 +1851,11 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	bmp->data=data;
 	bmp->flags =0;
 	be->mem_taken=size;
+	be->data_size=size;
+		
+	#ifdef BMPMAN_NDEBUG
+	Assert( be->data_size > 0 );
+	#endif
 
 }
 
