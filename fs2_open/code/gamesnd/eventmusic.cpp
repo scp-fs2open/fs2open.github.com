@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-04-29 01:03:23 $
+ * $Revision: 2.5 $
+ * $Date: 2003-08-25 04:46:53 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/22 06:06:22  Goober5000
  * changed event_sexp_change_music to event_change_sexp_soundtrack
  * --Goober5000
@@ -183,6 +187,7 @@ int Current_soundtrack_num;	// Active soundtrack for the current mission.. index
 int Current_pattern = -1;		// currently playing part of track
 int Pending_pattern = -1;
 int Pattern_timer_id = 0;
+int Current_nrml = SONG_NRML_1;
 
 // File Globals
 static int Num_enemy_arrivals;
@@ -215,8 +220,10 @@ char* Pattern_names[MAX_PATTERNS] =
 	"EARV_2",	// Enemy Arrival 2
 	"VICT_1",	// Victory Song 1
 	"VICT_2",	// Victory Song 2
-	"FAIL_1"		// Goal Failed 1
-	"DEAD_1"		// Death Song 1
+	"FAIL_1",	// Goal Failed 1
+	"DEAD_1",	// Death Song 1
+	"NRML_2",	// Normal Song 2
+	"NRML_3"	// Normal Song 3
 //XSTR:ON
 };
 
@@ -233,8 +240,10 @@ char* Pattern_description[MAX_PATTERNS] =
 	"enemey arrival 2",
 	"victory 1",
 	"victory 2",
-	"goal failed 1"
-	"death "
+	"goal failed 1",
+	"death",
+	"normal 2",
+	"normal 3"
 //XSTR:ON
 };
 
@@ -250,8 +259,10 @@ int Pattern_loop_for[MAX_PATTERNS] =
 	1,	// Enemy Arrival 2
 	1,	// Victory Song 1
 	1,	// Victory Song 2
-	1, // Goal Failed 1
-	1 	// Death Song 1
+	1,	// Goal Failed 1
+	1, 	// Death Song 1
+	1,	// Normal Song 2
+	1	// Normal Song 3
 };
 
 int Pattern_default_next[MAX_PATTERNS] =
@@ -267,7 +278,9 @@ int Pattern_default_next[MAX_PATTERNS] =
 	SONG_NRML_1,	// VICT_1 progresses to NRML_1 by default
 	SONG_NRML_1,	// VICT_2 progresses to NRML_1 by default
 	SONG_NRML_1,	//	FAIL_1 progresses to NRML_1 by default
-	-1					// no music plays after dead
+	-1,					// no music plays after dead
+	SONG_NRML_1,	// NRML_2 progresses to NRML_1 by default (but we intercept this)
+	SONG_NRML_1		// NRML_3 progresses to NRML_1 by default (but we intercept this)
 };
 
 
@@ -286,7 +299,9 @@ int Pattern_can_force[MAX_PATTERNS] =
 	FALSE,	// VICT_1 
 	TRUE,		// VICT_2 
 	FALSE,	// FAIL_1
-	TRUE		// DEAD_1
+	TRUE,		// DEAD_1
+	TRUE,		// NRML_2
+	TRUE		// NRML_3
 };
 
 
@@ -307,6 +322,42 @@ int Num_music_files;				// Number of spooled music files
 
 // Array that holds indicies into Spooled_music[], these specify which music is played in breifing/debriefing
 int Mission_music[NUM_SCORES];	
+
+// Goober5000
+int maybe_cycle_nrml(int pattern)
+{
+	if ((pattern == SONG_NRML_1) || (pattern == SONG_NRML_2) || (pattern == SONG_NRML_3))
+	{
+		Current_nrml = maybe_get_next_nrml_no_cycle(Current_nrml);
+		pattern = Current_nrml;
+	}
+
+	return pattern;
+}
+// Goober5000
+int maybe_get_next_nrml_no_cycle(int pattern)
+{
+	switch (pattern)
+	{
+		case SONG_NRML_1:
+			if (Patterns[SONG_NRML_2].handle == -1)
+				return SONG_NRML_1;
+			else
+				return SONG_NRML_2;
+
+		case SONG_NRML_2:
+			if (Patterns[SONG_NRML_3].handle == -1)
+				return SONG_NRML_1;
+			else
+				return SONG_NRML_3;
+
+		case SONG_NRML_3:
+			return SONG_NRML_1;
+
+		default:
+			return pattern;
+	}
+}
 
 // -------------------------------------------------------------------------------------------------
 // event_music_init() 
@@ -364,8 +415,11 @@ void event_music_force_switch()
 
 	new_pattern = Patterns[Current_pattern].next_pattern;
 
-	if ( (new_pattern == SONG_BTTL_3) && (Patterns[SONG_BTTL_3].handle == -1) ) {
-		if ( Current_pattern == SONG_BTTL_2 ) {
+	// make sure we have a valid track to switch to
+	if ( (new_pattern == SONG_BTTL_2) && (Patterns[SONG_BTTL_2].handle == -1) ) {
+		new_pattern = SONG_BTTL_1;
+	} else if ( (new_pattern == SONG_BTTL_3) && (Patterns[SONG_BTTL_3].handle == -1) ) {
+		if ( (Current_pattern == SONG_BTTL_2) || (Patterns[SONG_BTTL_2].handle == -1) ) {
 			new_pattern = SONG_BTTL_1;
 		} else {
 			new_pattern = SONG_BTTL_2;
@@ -384,6 +438,9 @@ void event_music_force_switch()
 		}
 	}
 
+	// set up switching
+	new_pattern = maybe_cycle_nrml(new_pattern);
+
 	if ( new_pattern == -1 ) {
 		return;
 	}
@@ -397,6 +454,8 @@ void event_music_force_switch()
 	Patterns[Current_pattern].next_pattern = Patterns[Current_pattern].default_next_pattern;
 	Patterns[Current_pattern].force_pattern = FALSE;
 	nprintf(("EVENTMUSIC", "EVENTMUSIC => switching to %s from %s\n", Pattern_names[new_pattern], Pattern_names[Current_pattern]));
+
+	// actually switch the pattern
 	Current_pattern = new_pattern;
 }
 
@@ -478,7 +537,7 @@ void event_music_do_frame()
 		}
 
 		if (Event_Music_battle_started == 0) {
-			if (Current_pattern == SONG_NRML_1) {
+			if (Current_pattern == SONG_NRML_1 || Current_pattern == SONG_NRML_2 || Current_pattern == SONG_NRML_3 ) {
 				if (timestamp_elapsed(Check_for_battle_music)) {
 					Check_for_battle_music = timestamp(1000);
 					if (hostile_ships_present() == TRUE) {
@@ -527,6 +586,7 @@ void event_music_level_init(int force_soundtrack)
 		return;
 
 	Current_pattern = -1;
+	Current_nrml = SONG_NRML_1;
 
 	if ( Event_music_inited == FALSE )
 		return;
@@ -742,7 +802,7 @@ int event_music_enemy_arrival()
 		next_pattern = SONG_EARV_1;
 	}
 
-	if ( Current_pattern == next_pattern )
+	if ( Current_pattern == maybe_get_next_nrml_no_cycle(next_pattern) )
 		return 0;	// already playing
 
 	if ( Current_pattern == SONG_DEAD_1 )
@@ -832,7 +892,7 @@ int event_music_friendly_arrival()
 		next_pattern = SONG_AARV_1;
 	}
 
-	if ( Current_pattern == next_pattern )
+	if ( Current_pattern == maybe_get_next_nrml_no_cycle(next_pattern) )
 		return 0;	// already playing
 
 	if ( Current_pattern == SONG_DEAD_1 )
@@ -849,16 +909,21 @@ int event_music_friendly_arrival()
 
 	if ( Current_pattern != -1 ) {
 		// AL 06-24-99: always overlay allied arrivals
-		/*
-		if (next_pattern == SONG_AARV_1) {
+		// Goober5000 - bah, this screws up the FS1 music... so this is a hack to *not* overlay
+		// *if* the soundtrack is greater than 6 (all the FS2 tracks are 0-6)
+
+		// don't overlay
+		if (Current_soundtrack_num > 6) {
 			Patterns[Current_pattern].next_pattern = next_pattern;
 			Patterns[Current_pattern].force_pattern = TRUE;
+		// overlay
 		} else {
-		*/
+			// Goober5000 - I didn't touch this part... for some reason, FS2 only has one
+			// arrival music pattern, and this is it
 			Assert(Patterns[SONG_AARV_1].handle >= 0 );
 			audiostream_play(Patterns[SONG_AARV_1].handle, Master_event_music_volume, 0);	// no looping
 			audiostream_set_byte_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].bytes_per_measure) );
-		//}
+		}
 	}
 
 	Next_arrival_timestamp = timestamp(ARRIVAL_INTERVAL_TIMESTAMP);
@@ -1049,9 +1114,19 @@ void event_music_parse_musictbl()
 {
 	char fname[MAX_FILENAME_LEN];
 	char line_buf[128];
-	int rval;
+	int rval, i, j;
 
 	int num_patterns = 0;
+
+	// clear all the filenames, so we're compatible with the extra NRMLs in FS1 music
+	for (i = 0; i < MAX_SOUNDTRACKS; i++)
+	{
+		for (j = 0; j < MAX_PATTERNS; j++)
+		{
+			strcpy(Soundtracks[i].pattern_fnames[j], "none.wav");
+		}
+	}
+
 
 	Num_music_files = 0;
 	Num_soundtracks = 0;		// Global
@@ -1157,7 +1232,7 @@ void event_music_change_pattern(int new_pattern)
 		return;
 	}
 
-	if ( Current_pattern == new_pattern )
+	if ( Current_pattern == maybe_get_next_nrml_no_cycle(new_pattern) );
 		return;	// already playing
 
 	if ( Current_pattern != -1 ) {
@@ -1251,11 +1326,15 @@ void event_music_start_default()
 		}
 	}
 	else
+	{
 		next_pattern = SONG_NRML_1;	
-
-	if ( Current_pattern == -1 ) {
-		Current_pattern = next_pattern;
 	}
+
+	// switch now
+	if ( Current_pattern == -1 ) {
+		Current_pattern = maybe_cycle_nrml(next_pattern);
+	}
+	// switch later
 	else {
 		Patterns[Current_pattern].next_pattern = next_pattern;
 		Patterns[Current_pattern].force_pattern = TRUE;

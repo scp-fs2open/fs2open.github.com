@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.4 $
- * $Date: 2003-03-29 05:18:17 $
+ * $Revision: 2.5 $
+ * $Date: 2003-08-25 04:46:53 $
  * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/29 05:18:17  Goober5000
+ * yay for limit bumping!
+ * bumped number of battle tracks and briefing/mainhall/credits tracks, both to 30
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/22 06:06:22  Goober5000
  * changed event_sexp_change_music to event_change_sexp_soundtrack
  * --Goober5000
@@ -154,8 +159,10 @@
 #define SONG_VICT_2				9		// Victory Song 2
 #define SONG_FAIL_1				10		// Goal Failed
 #define SONG_DEAD_1				11		// Death Song 1
+#define SONG_NRML_2				12		// Normal Song 2 - for FS1
+#define SONG_NRML_3				13		// Normal Song 3 - for FS1
 
-#define MAX_PATTERNS	12
+#define MAX_PATTERNS	14
 
 // if player targets a hostile ship at less than this range, switch to battle track 
 #define BATTLE_START_MIN_TARGET_DIST	500	
@@ -203,6 +210,10 @@ extern int Num_soundtracks;
 
 #ifndef NO_SOUND
 
+// Goober5000 - for handling NRML tracks from FS1
+int maybe_get_next_nrml_no_cycle(int pattern);
+int maybe_cycle_nrml(int pattern);
+
 void	event_music_init();
 void	event_music_close();
 void	event_music_level_init(int force_soundtrack = -1);
@@ -238,6 +249,10 @@ int	event_music_player_respawn_as_observer();
 void event_music_hostile_ship_destroyed();
 
 #else
+
+// Goober5000 - for NO_SOUND
+#define maybe_get_next_nrml_no_cycle(int pattern)	(0)
+#define maybe_cycle_nrml(int pattern)				(0)
 
 #define	event_music_init()
 #define	event_music_close()
