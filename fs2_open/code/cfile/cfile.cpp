@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-12-25 00:22:54 $
+ * $Revision: 2.25 $
+ * $Date: 2005-01-09 21:40:07 $
  * $Author: wmcoolmon $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/12/25 00:22:54  wmcoolmon
+ * Added .ogg in proper directories
+ *
  * Revision 2.23  2004/10/31 21:29:00  taylor
  * EFF animation support
  *
@@ -319,7 +322,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_VOICE_PERSONAS,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "personas",						".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_VOICE_SPECIAL,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "special",						".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_VOICE_TRAINING,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "training",						".wav .ogg",						CF_TYPE_VOICE	},
-	{ CF_TYPE_MUSIC,					"data" DIR_SEPARATOR_STR "music",															".wav .ogg",						CF_TYPE_VOICE	},
+	{ CF_TYPE_MUSIC,					"data" DIR_SEPARATOR_STR "music",															".wav .ogg",						CF_TYPE_DATA	},
 	{ CF_TYPE_MOVIES,					"data" DIR_SEPARATOR_STR "movies",															".mve .msb .avi .mpg",				CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE,				"data" DIR_SEPARATOR_STR "interface",														".pcx .ani .tga",			CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",															".vf",						CF_TYPE_DATA	},
