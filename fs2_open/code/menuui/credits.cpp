@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-06 20:22:09 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2003-11-07 07:12:21 $
+ * $Author: Goober5000 $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/06 20:22:09  Kazan
+ * slight change to .dsp - leave the damn release target as fs2_open_r.exe already
+ * added myself to credit
+ * killed some of the stupid fscking warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * Release builds should have warning level set no higher than 2 (default is 1)
+ * Why the hell are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
+ *
  * Revision 2.10  2003/11/06 19:35:51  matt
  * Added myself to the credits. -Sticks
  *
@@ -225,20 +233,25 @@ char *fs2_open_credit_text =
 	"Dennis \"DTP\" Pedersen\n"
 	"Ian \"Goober5000\" Warfield\n"
 	"Joe \"Righteous1\" Dowd\n"
+	"Jon \"Sesquipedalian\" Stovell\n"
+	"Matt \"Sticks\" Nischan\n"
 	"Mike \"penguin\" Harris\n"
 	"\"Mysterial\"\n"
 	"Nick \"PhReAk\" Iannetta\n"
-	"Thomas \"Random Tiger\" Whittaker\n"
-	"Will \"Unknown PLayer\" Rousnel\n"
+	"Thomas \"RandomTiger\" Whittaker\n"
+	"Will \"##Unknown Player##\" Rousnel\n"
 	"\"WMCoolmon\"\n"
-	"Matt \"Sticks\" Nischan\n"
-
+	"\n"
+	"\"Readme staff:\n"
+	"\"bottomfan\"\n"
+	"\"Flipside\"\n"
+	"\"redmenace\"\n"
+	"\n"
 	"Web support:\n"
-	"Icefire and the staff at Volitionwatch.com\n"
+	"IceFire and the staff at Volitionwatch.com\n"
 	"Alex \"Thunder\" Avery and the staff at Hard Light Productions\n"
-
-
-	"\nSpecial thanks to:\n"
+	"\n"
+	"Special thanks to:\n"
 	"\n"
 	"Volition for making FS2 such a great game\n"
 	"Dave Baranec for giving us the code and keeping us sanity checked\n"
