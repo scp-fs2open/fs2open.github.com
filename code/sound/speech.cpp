@@ -8,13 +8,16 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/speech.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-02-02 10:36:23 $
- * $Author: taylor $
+ * $Revision: 1.17 $
+ * $Date: 2005-03-27 08:12:53 $
+ * $Author: wmcoolmon $
  *
  * Platform specific text-to-speech functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/02/02 10:36:23  taylor
+ * merge with Linux/OSX tree - p0202
+ *
  *
  * $NoKeywords: $
  */
@@ -43,7 +46,7 @@
 
 	ISpVoice *Voice_device;
 #elif defined(SCP_UNIX)
-	#include <fcntl.h>
+	#include <stdio.h>
 
 //	int speech_dev = -1;
 	FILE *speech_dev = NULL;
@@ -72,7 +75,7 @@ bool speech_init()
 //	speech_dev = open("/dev/speech", O_WRONLY | O_NONBLOCK);
 	speech_dev = fopen("/dev/speech", "w");
 
-	if (speech_dev == -1) {
+	if (speech_dev == NULL) {
 		printf("Couldn't open '/dev/speech', turning text-to-speech off...\n");
 		return false;
 	}
@@ -90,7 +93,7 @@ void speech_deinit()
 #ifdef _WIN32
 	Voice_device->Release();
 #else
-	close(speech_dev);
+	fclose(speech_dev);
 #endif
 }
 
