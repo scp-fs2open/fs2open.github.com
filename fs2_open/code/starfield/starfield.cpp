@@ -9,14 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.32 $
- * $Date: 2004-07-05 05:09:21 $
- * $Author: bobboau $
+ * $Revision: 2.33 $
+ * $Date: 2004-07-09 05:52:19 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2004/07/05 05:09:21  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.31  2004/07/01 01:12:33  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -442,6 +448,11 @@ starfield_bitmap *stars_lookup_sun(starfield_bitmap_instance *s)
 
 void stars_load_debris()
 {
+	if(Cmdline_nomotiondebris)
+	{
+		return;
+	}
+
 	int i;
 
 	// if we're in nebula mode
@@ -873,6 +884,12 @@ void stars_init()
 			}
 		}
 	}	
+
+	//Don't parse motion debris if we don't have to.
+	if(Cmdline_nomotiondebris)
+	{
+		return;
+	}
 
 	// normal debris pieces
 	count = 0;
@@ -1852,7 +1869,7 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 	
 
 	if(!env)
-	if ( (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) )	{
+	if ( (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && (!Cmdline_nomotiondebris) )	{
 		stars_draw_debris();
 	}
 
@@ -1943,6 +1960,11 @@ void stars_page_in()
 
 		// next 
 		idx++;
+	}
+
+	if(Cmdline_nomotiondebris)
+	{
+		return;
 	}
 
 	for (i=0; i<MAX_DEBRIS_VCLIPS; i++ )	{
