@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-03-20 20:02:29 $
+ * $Revision: 2.50 $
+ * $Date: 2005-03-23 20:09:23 $
  * $Author: phreak $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/03/20 20:02:29  phreak
+ * export the functions that deal with the creation and destruction of the starfield buffer.
+ * FRED needs them
+ *
  * Revision 2.48  2005/03/12 19:28:47  taylor
  * helps to get the stupid check right
  *
@@ -569,7 +573,10 @@ void stars_create_perspective_bitmap_buffer(angles *a, float scale_x, float scal
 	matrix m, m_bank;
 	int idx, s_idx;	
 	float ui, vi;	
-	angles bank_first;		
+	angles bank_first;
+	
+	//don't bother with the buffers in HTL
+	if (Cmdline_nohtl) return;
 
 	// cap division values
 	div_x = div_x > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_x;
@@ -712,7 +719,10 @@ void stars_create_perspective_bitmap_buffer(angles *a, float scale_x, float scal
 }
 
 //take the Starfield_bitmap_instance[] and make all the vertex buffers that you'll need to draw it 
-void stars_generate_bitmap_instance_vertex_buffers(){
+void stars_generate_bitmap_instance_vertex_buffers()
+{
+	//don't bother with the buffers in HTL
+	if (Cmdline_nohtl) return;
 
 	SAFEPOINT("entering stars_generate_bitmap_instance_vertex_buffers");
 
@@ -754,6 +764,9 @@ void stars_generate_bitmap_instance_vertex_buffers(){
 
 void starfield_kill_bitmap_buffer()
 {
+	//don't bother with the buffers in HTL
+	if (Cmdline_nohtl) return;
+
 	if(perspective_bitmap_buffer != -1)
 	{
 		gr_destroy_buffer(perspective_bitmap_buffer);
@@ -1384,7 +1397,7 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 	if(!Cmdline_nohtl)
 		gr_set_lighting(false,false);
 
-	if(perspective_bitmap_buffer == -1)
+	if ((perspective_bitmap_buffer == -1) && (!Cmdline_nohtl))
 		return;	//we don't have anything to draw
 
 	int idx;
