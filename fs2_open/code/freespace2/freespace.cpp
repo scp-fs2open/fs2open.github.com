@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.83 $
- * $Date: 2004-03-28 17:49:54 $
+ * $Revision: 2.84 $
+ * $Date: 2004-03-30 08:30:38 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2004/03/28 17:49:54  taylor
+ * runtime language selection, mantis:0000133
+ *
  * Revision 2.82  2004/03/20 14:47:13  randomtiger
  * Added base for a general dynamic batching solution.
  * Fixed NO_DSHOW_CODE code path bug.
@@ -7602,7 +7605,6 @@ int WinMainSub(int argc, char *argv[])
 
 // Windows code now plays the intro movie in game_init
 
-	movie_play( NOX("intro.avi"));
 	movie_play( NOX("intro.mve"));
 
 #ifndef _WIN32
