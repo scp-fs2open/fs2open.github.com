@@ -857,6 +857,10 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_bm_load					= gr_d3d_bm_load;
 	gr_screen.gf_bm_page_in_start			= gr_d3d_bm_page_in_start;
 	gr_screen.gf_bm_lock					= gr_d3d_bm_lock;
+	gr_screen.gf_make_render_target			= gr_d3d_make_render_target;
+	gr_screen.gf_set_render_target			= gr_d3d_set_render_target;
+	
+	
 	
 	gr_screen.gf_push_texture_matrix = gr_d3d_push_texture_matrix;
 	gr_screen.gf_pop_texture_matrix = gr_d3d_pop_texture_matrix;
@@ -897,7 +901,8 @@ void d3d_setup_function_pointers()
 		gr_screen.gf_start_clip_plane = gr_d3d_start_clip;
 		gr_screen.gf_end_clip_plane   = gr_d3d_end_clip;
 		gr_screen.gf_setup_background_fog	= gr_d3d_setup_background_fog;
-		gr_screen.gf_set_environment_mapping = d3d_render_to_env;
+		gr_screen.gf_draw_line_list			= gr_d3d_draw_line_list;
+//		gr_screen.gf_set_environment_mapping = d3d_render_to_env;
 	}
 
 }
@@ -1491,7 +1496,7 @@ void d3d_kill_state_blocks(){
 	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( cloak_state_block);
 }
 
-void d3d_init_environment();
+//void d3d_init_environment();
 
 bool gr_d3d_init()
 {
@@ -1573,7 +1578,8 @@ bool gr_d3d_init()
 	TIMERBAR_SET_DRAW_FUNC(d3d_render_timer_bar);
 	mprintf(( "Direct3D Initialized OK!\n" ));
 
-	d3d_init_environment();
+//	d3d_init_environment();
+
 
 	return true;
 

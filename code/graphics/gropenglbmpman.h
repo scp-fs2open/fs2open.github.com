@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.h $
- * $Revision: 1.2 $
- * $Date: 2004-11-23 00:10:06 $
- * $Author: taylor $
+ * $Revision: 1.3 $
+ * $Date: 2005-03-07 13:10:21 $
+ * $Author: bobboau $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/11/23 00:10:06  taylor
+ * try and protect the bitmap_entry stuff a bit better
+ * fix the transparent support ship, again, but correctly this time
+ *
  * Revision 1.1  2004/10/31 21:21:11  taylor
  * initial import from bmpman merge
  *
@@ -59,5 +63,7 @@ void gr_opengl_bm_page_in_start();
 // Lock an image files data into memory
 int gr_opengl_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
+bool gr_ogl_make_render_target(int n, int &x, int &y, int flags);
+bool gr_ogl_set_render_target(int handle, int face);
 
 #endif // _OGL_BMPMAN_H

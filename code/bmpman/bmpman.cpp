@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.48 $
- * $Date: 2005-03-03 14:29:37 $
+ * $Revision: 2.49 $
+ * $Date: 2005-03-07 13:10:19 $
  * $Author: bobboau $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/03/03 14:29:37  bobboau
+ * fixed a small error from my earlier commit.
+ *
  * Revision 2.47  2005/03/03 07:30:14  wmcoolmon
  * Removed my Assert(true)s :p
  *
@@ -793,6 +796,7 @@ static void bm_free_data(int n)
 	be = &bm_bitmaps[n];
 	bmp = &be->bm;
 
+//	Assert( be->type != BM_TYPE_RENDER_TARGET);
 	gr_bm_free_data(n);
 
 	// If there isn't a bitmap in this structure, don't
@@ -2173,10 +2177,6 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	if ( !bm_inited ) bm_init();
 
 	int bitmapnum = handle % MAX_BITMAPS;
-/*	if(bm_bitmaps[bitmapnum].type == BM_TYPE_RENDER_TARGET){
-		gr_bm_lock
-		return NULL;
-	}*/
 
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
 
@@ -2454,16 +2454,19 @@ void bm_release(int handle)
 // returns:			0		=>		unload failed
 //						1		=>		unload successful
 //
-int bm_unload( int handle )
+int bm_unload( int handle, bool clear_render_targets )
 {
 	bitmap_entry	*be;
 	bitmap			*bmp;
 
 	int n = handle % MAX_BITMAPS;
 
+
 	Assert(n >= 0 && n < MAX_BITMAPS);
 	be = &bm_bitmaps[n];
 	bmp = &be->bm;
+
+//	if(clear_render_targets && be->type == BM_TYPE_RENDER_TARGET)return -1;//these don't want to be unloaded here
 
 	if ( be->type == BM_TYPE_NONE ) {
 		return -1;		// Already been released
@@ -2506,7 +2509,7 @@ void bm_unload_all()
 
 	for (i = 0; i < MAX_BITMAPS; i++)	{
 		if ( bm_bitmaps[i].type != BM_TYPE_NONE )	{
-			bm_unload(bm_bitmaps[i].handle);
+			bm_unload(bm_bitmaps[i].handle, true);
 		}
 	}
 }
@@ -2710,7 +2713,7 @@ void bm_page_in_stop()
 	int bm_preloading = 1;
 
 	for (i = 0; i < MAX_BITMAPS; i++)	{
-		if ( bm_bitmaps[i].type != BM_TYPE_NONE )	{
+		if ( bm_bitmaps[i].type != BM_TYPE_NONE  &&  bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET)	{
 			if ( bm_bitmaps[i].preloaded )	{
 #ifdef BMPMAN_SPECIAL_NONDARK
 				// if this is a texture, check to see if a ship uses it
@@ -3197,15 +3200,18 @@ void bm_print_bitmaps()
 #endif
 }
 
-/*
-int bm_get_render_target( int x_res, int y_res, int flags )
+
+//BMP_TEX_STATIC_RENDER_TARGET
+//BMP_TEX_DYNAMIC_RENDER_TARGET
+//this will create a render target as close to the desiered resolution as posable
+//static render targets are ones that you intend to draw to once or not very oftine in game
+//dynamic render targets are ones that you will be drawing to all the time (like once per frame)
+
+int bm_make_render_target( int &x_res, int &y_res, int flags )
 {
+
 	int i, n, first_slot = MAX_BITMAPS;
-	int bm_size = 0, mm_lvl = 0;
-	int handle = -1;
-	ubyte type = BM_TYPE_NONE;
-	ubyte c_type = BM_TYPE_NONE;
-	bool found = false;
+	int mm_lvl = 0;
 
 	if ( !bm_inited ) bm_init();
 
@@ -3225,6 +3231,7 @@ int bm_get_render_target( int x_res, int y_res, int flags )
 
 
 //	gr_bm_load( type, n, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size );
+	gr_make_render_target( n, x_res, y_res, flags );
 	//API render target function gets called here
 
 
@@ -3237,8 +3244,8 @@ int bm_get_render_target( int x_res, int y_res, int flags )
 	bm_bitmaps[n].signature = Bm_next_signature++;
 	strncpy(bm_bitmaps[n].filename, "**RENDER_TARGET**", MAX_FILENAME_LEN-1 );
 	bm_bitmaps[n].bm.w = short(x_res);
-	bm_bitmaps[n].bm.rowsize = short(y_res);
 	bm_bitmaps[n].bm.h = short(y_res);
+	bm_bitmaps[n].bm.rowsize = short(x_res);
 	bm_bitmaps[n].bm.bpp = 0;
 	bm_bitmaps[n].bm.true_bpp = 32;
 	bm_bitmaps[n].bm.flags = 0;
@@ -3257,4 +3264,21 @@ int bm_get_render_target( int x_res, int y_res, int flags )
 
 	return bm_bitmaps[n].handle;
 }
-*/
+
+bool is_render_target(int bitmap_id){
+	int n = bitmap_id % MAX_BITMAPS;
+	return bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET;
+}
+
+bool bm_set_render_target(int handle, int face){
+	if(gr_set_render_target(handle, face)){
+
+		int n = handle % MAX_BITMAPS;
+		gr_screen.rendering_to_face = face;
+		gr_screen.rendering_to_texture = n;
+
+		gr_reset_clip();
+		return true;
+	}else 
+		return false;
+}

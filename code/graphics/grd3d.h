@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.16 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.17 $
+ * $Date: 2005-03-07 13:10:21 $
+ * $Author: bobboau $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.15  2004/07/11 03:22:49  bobboau
  * added the working decal code
  *
@@ -154,6 +157,7 @@
 
 struct poly_list;
 struct line_list;
+struct colored_vector;
 
 #include "globalincs/systemvars.h"
 #include <d3dx8math.h>
@@ -242,6 +246,8 @@ extern ID3DXMatrixStack *proj_matrix_stack;
 void gr_d3d_set_texture_addressing(int);
 
 void gr_d3d_setup_background_fog(bool);
-void d3d_render_to_env(int FACE);
+
+void gr_d3d_draw_line_list(colored_vector*lines, int num);
+//void d3d_render_to_env(int FACE);
 #endif
 

@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.104 $
- * $Date: 2005-03-05 19:11:07 $
- * $Author: taylor $
+ * $Revision: 2.105 $
+ * $Date: 2005-03-07 13:10:21 $
+ * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2005/03/05 19:11:07  taylor
+ * make sure we don't scale the restore_screen bitmap, it's already the correct size
+ *
  * Revision 2.103  2005/03/03 16:16:55  taylor
  * support for TMAP_FLAG_TRILIST
  * extra check to make sure OGL closes down right under Windows
@@ -1171,7 +1174,7 @@ void gr_opengl_flip_window(uint _hdc, int x, int y, int w, int h )
 
 void gr_opengl_set_clip(int x,int y,int w,int h, bool resize)
 {
-	if(resize)
+	if(resize || gr_screen.rendering_to_texture != -1)
 	{
 		gr_resize_screen_pos(&x, &y);
 		gr_resize_screen_pos(&w, &h);
@@ -1412,7 +1415,7 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 		int nw = x+w+gr_screen.offset_x;
 		int nh = y+h+gr_screen.offset_y;
 
-		if(resize)
+		if(resize || gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&nx, &ny);
 			gr_resize_screen_pos(&nw, &nh);
@@ -1636,7 +1639,7 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 
 void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 {
-	if(resize)
+	if(resize || gr_screen.rendering_to_texture != -1)
 	{
 		gr_resize_screen_pos(&x1, &y1);
 		gr_resize_screen_pos(&x2, &y2);
@@ -1784,7 +1787,7 @@ void gr_opengl_circle( int xc, int yc, int d, bool resize )
 {
 	int p,x, y, r;
 
-	if(resize)
+	if(resize || gr_screen.rendering_to_texture != -1)
 		gr_resize_screen_pos(&xc, &yc);
 
 	r = d/2;
@@ -3595,7 +3598,11 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_center_alpha = gr_opengl_center_alpha;
 
 	gr_screen.gf_setup_background_fog = gr_opengl_setup_background_fog;
-	gr_screen.gf_set_environment_mapping = gr_opengl_render_to_env;;
+//	gr_screen.gf_set_environment_mapping = gr_opengl_render_to_env;;
+
+	gr_screen.gf_make_render_target = gr_ogl_make_render_target;
+	gr_screen.gf_set_render_target = gr_ogl_set_render_target;
+
 
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.

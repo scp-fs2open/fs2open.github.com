@@ -288,6 +288,7 @@ void gr_d3d_bm_init(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
+	d3d_bitmap_entry[n].flags = 0;
 	d3d_bitmap_entry[n].tinterface = NULL;
 }
 
@@ -468,6 +469,8 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 
 	ubyte c_type = BM_TYPE_NONE;
 
+	if(bm_bitmaps[bitmapnum].type == BMP_TEX_DYNAMIC_RENDER_TARGET || bm_bitmaps[bitmapnum].type == BMP_TEX_STATIC_RENDER_TARGET)return true;
+
 	if (bm_bitmaps[bitmapnum].type == BM_TYPE_EFF) {
 		c_type = bm_bitmaps[bitmapnum].info.eff.type;
 	} else {
@@ -519,6 +522,198 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 	return false;
 }
 
+	static IDirect3DSurface8 *surface = NULL;
+	IDirect3DSurface8 *depth = NULL;
+	static IDirect3DSurface8 *back_depth = NULL;	//the back_buffer's zbuffer
+	static IDirect3DSurface8 *texture_depth = NULL;	//a zbuffer assosiated with rendeing to a texture
 
-void gr_d3d_bm_make_render_target(int x, int y, int flags){
+void bm_pre_lost(){
+	int I;
+	if(back_depth)I = back_depth->Release();
+	back_depth = NULL;
+	if(surface)I = surface->Release();
+	surface = NULL;
+	if(texture_depth)texture_depth->Release();
+		texture_depth=NULL;
+	for( int i = 0; i<MAX_BITMAPS; i++){
+		if(d3d_bitmap_entry[i].flags & DXT_DEFAULT_MEM_POOL && d3d_bitmap_entry[i].tinterface){
+			I = d3d_bitmap_entry[i].tinterface->Release();
+			d3d_bitmap_entry[i].tinterface = NULL;
+		}
+	}
+}
+
+void bm_post_lost(){
+	int I = 0;
+	for(int i = 0; i<MAX_BITMAPS; i++){
+		if(d3d_bitmap_entry[i].flags&DXT_DEFAULT_MEM_POOL){
+			Assert(!d3d_bitmap_entry[i].tinterface);
+
+			bool cube = (d3d_bitmap_entry[i].flags & DXT_CUBEMAP);
+
+			if(cube)GlobalD3DVars::lpD3DDevice->CreateCubeTexture(max(d3d_bitmap_entry[i].x,d3d_bitmap_entry[i].y),1,D3DUSAGE_RENDERTARGET,D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT, (IDirect3DCubeTexture8**)&d3d_bitmap_entry[i].tinterface);
+			else GlobalD3DVars::lpD3DDevice->CreateTexture(d3d_bitmap_entry[i].x,d3d_bitmap_entry[i].y,1,D3DUSAGE_RENDERTARGET,D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT, (IDirect3DTexture8**)&d3d_bitmap_entry[i].tinterface);
+
+			if(d3d_bitmap_entry[i].backup_tinterface){
+				//if it has a backup copy that backup back into it
+				//if it doesn't have a backup then it is a dynamic render target and doesn't need it (and can't get it)
+				IDirect3DSurface8* texture;
+				IDirect3DSurface8* backup;
+				int nf = (cube)?6:1;
+				for(int f = 0; f<nf; f++){
+					if(cube){
+						(*((IDirect3DCubeTexture8**)(&d3d_bitmap_entry[i].tinterface)))->GetCubeMapSurface(_D3DCUBEMAP_FACES(f),0,&texture);
+						(*((IDirect3DCubeTexture8**)(&d3d_bitmap_entry[i].backup_tinterface)))->GetCubeMapSurface(_D3DCUBEMAP_FACES(f),0,&backup);
+					}else{
+						(*((IDirect3DTexture8**)(&d3d_bitmap_entry[i].tinterface)))->GetSurfaceLevel(0,&texture);
+						(*((IDirect3DTexture8**)(&d3d_bitmap_entry[i].backup_tinterface)))->GetSurfaceLevel(0,&backup);
+					}
+	
+					D3DXLoadSurfaceFromSurface(texture,NULL,NULL,backup,NULL,NULL, D3DX_FILTER_POINT,0);
+					I= backup->Release();
+					I= texture->Release();
+				}
+			}
+		}
+	}
+}
+
+
+bool gr_d3d_make_render_target(int n, int &x, int &y, int flags){
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
+
+	Assert(d3d_bitmap_entry[n].tinterface == NULL);
+
+	//mark this surface as haveing a resource we are going to have to clean up dureing a lost device
+		d3d_bitmap_entry[n].flags |= DXT_DEFAULT_MEM_POOL;
+
+		//make the drimary drawing surface
+		if(flags & BMP_TEX_CUBEMAP){
+			d3d_bitmap_entry[n].flags |= DXT_CUBEMAP;
+			GlobalD3DVars::lpD3DDevice->CreateCubeTexture(max(x,y),1,D3DUSAGE_RENDERTARGET,D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT, (IDirect3DCubeTexture8**)&d3d_bitmap_entry[n].tinterface);
+		}else{
+			GlobalD3DVars::lpD3DDevice->CreateTexture(x,y,1,D3DUSAGE_RENDERTARGET,D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT, (IDirect3DTexture8**)&d3d_bitmap_entry[n].tinterface);
+		}
+
+		if(flags & BMP_TEX_STATIC_RENDER_TARGET){
+			//if we are going to want to keep this
+			//if this is a static render target 
+			//then we are going to want to keep a copy of it in system memory
+			d3d_bitmap_entry[n].flags	|= DXT_STATIC;
+			if(flags & BMP_TEX_CUBEMAP){
+				GlobalD3DVars::lpD3DDevice->CreateCubeTexture	(max(x,y),	1,D3DUSAGE_DYNAMIC,D3DFMT_X8R8G8B8,D3DPOOL_SYSTEMMEM, (IDirect3DCubeTexture8**)	&d3d_bitmap_entry[n].backup_tinterface);
+			}else{
+				GlobalD3DVars::lpD3DDevice->CreateTexture		(x,y,		1,D3DUSAGE_DYNAMIC,D3DFMT_X8R8G8B8,D3DPOOL_SYSTEMMEM, (IDirect3DTexture8**)		&d3d_bitmap_entry[n].backup_tinterface);
+			}
+		}else{
+			//if this is a dynamic render target then it will not live long enough for us to care
+			d3d_bitmap_entry[n].flags	|= DXT_DYNAMIC;
+			d3d_bitmap_entry[n].backup_tinterface = NULL;
+		}
+
+		//now see what we actualy got
+	D3DSURFACE_DESC desc;
+	if(flags & BMP_TEX_CUBEMAP){
+		((IDirect3DCubeTexture8*)(d3d_bitmap_entry[n].tinterface))->GetLevelDesc(0, &desc);
+	}else{
+		((IDirect3DTexture8*)(d3d_bitmap_entry[n].tinterface))->GetLevelDesc(0, &desc);
+	}
+	x = desc.Width;
+	y = desc.Height;
+
+		//we need to know how big it was so we can rebuild it if the deviece gets lost
+	d3d_bitmap_entry[n].x = x;
+	d3d_bitmap_entry[n].y = y;
+	return true;
+}
+
+
+bool gr_d3d_set_render_target(int handle, int face){
+	int i = 0;
+	static bool once = false;
+	if(!once){atexit(bm_pre_lost);once = true;}
+	//some cleanup code, these have to be frees before the program terminates
+
+	int n = handle % MAX_BITMAPS;
+	if(handle != -1){
+		//data validation
+		if(d3d_bitmap_entry[n].flags & DXT_CUBEMAP)Assert(face!=-1);
+		//if this is a cube map then the face parameter gets used and is important
+	
+		Assert( bm_bitmaps[n].handle == handle );		// INVALID BITMAP HANDLE
+
+		Assert( (n > -1) && (n < MAX_BITMAPS) );
+
+		Assert(d3d_bitmap_entry[n].tinterface != NULL);	//make sure this texture has a surface
+
+		if(bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET){
+			//odds are somone passed a normal texture created with bm_load
+			Error( LOCATION, "trying to set invalid bitmap as render target" );
+			return false;
+		}
+
+	}else n = -1;
+
+	if(!(back_depth)){
+		//get the backbuffer's surface so we can return it later
+		GlobalD3DVars::lpD3DDevice->GetDepthStencilSurface(&back_depth);
+	}
+
+	if(!texture_depth && n!= -1){
+		//make the texture zbuffer if it is missing for some reason
+		GlobalD3DVars::lpD3DDevice->CreateDepthStencilSurface(d3d_bitmap_entry[n].x,d3d_bitmap_entry[n].y, D3DFMT_D24X8, D3DMULTISAMPLE_NONE, &texture_depth);
+	}
+
+	if(gr_screen.rendering_to_texture != -1 && surface && d3d_bitmap_entry[gr_screen.rendering_to_texture].backup_tinterface){
+		//if the current surface is alright and if this is a static texture 
+		//(dynamic render targets' backup texture is always NULL) 
+		//always copy the current surface to it's backup before we change it
+		IDirect3DSurface8* backup;
+		if(d3d_bitmap_entry[gr_screen.rendering_to_texture].flags&DXT_CUBEMAP){
+			if(gr_screen.rendering_to_face != -1){
+				(*((IDirect3DCubeTexture8**)(&d3d_bitmap_entry[gr_screen.rendering_to_texture].backup_tinterface)))->GetCubeMapSurface(_D3DCUBEMAP_FACES(gr_screen.rendering_to_face),0,&backup);
+				D3DXLoadSurfaceFromSurface(backup,NULL,NULL,surface,NULL,NULL, D3DX_FILTER_POINT,0);
+				i = backup->Release();
+			}
+		}else{
+			(*((IDirect3DTexture8**)(&d3d_bitmap_entry[gr_screen.rendering_to_texture].backup_tinterface)))->GetSurfaceLevel(0,&backup);
+			D3DXLoadSurfaceFromSurface(backup,NULL,NULL,surface,NULL,NULL, D3DX_FILTER_POINT,0);
+			i = backup->Release();
+		}
+	}
+
+	//ok get rid of the last rendering surface we were useing, it isn't needed anymore
+	if(surface)i = surface->Release();
+
+	if(n == -1){
+		//we are not rendering to a texture
+		GlobalD3DVars::lpD3DDevice->GetBackBuffer(0,D3DBACKBUFFER_TYPE_MONO, &surface);
+		depth = back_depth;
+		gr_screen.max_w = gr_screen.save_max_w;
+		gr_screen.max_h = gr_screen.save_max_h;
+	}else{
+		i = 0;
+		//make sure we clear out what ever was in it before we get a new one
+
+		if(d3d_bitmap_entry[n].flags&DXT_CUBEMAP){
+			Assert(face > -1 &&face <6);
+			(*((IDirect3DCubeTexture8**)(&d3d_bitmap_entry[n].tinterface)))->GetCubeMapSurface(_D3DCUBEMAP_FACES(face),0,&surface);
+		}else{
+			(*((IDirect3DTexture8**)(&d3d_bitmap_entry[n].tinterface)))->GetSurfaceLevel(0,&surface);
+		}
+		depth = texture_depth;
+
+		gr_screen.max_w = d3d_bitmap_entry[n].x;
+		gr_screen.max_h = d3d_bitmap_entry[n].y;
+	}
+
+	if(D3D_OK != GlobalD3DVars::lpD3DDevice->SetRenderTarget(surface, depth))return false;
+
+	return true;
+
+}
+
+IDirect3DBaseTexture8* get_render_target_texture(int handle){
+	int n = handle % MAX_BITMAPS;
+	return d3d_bitmap_entry[n].tinterface;
 }

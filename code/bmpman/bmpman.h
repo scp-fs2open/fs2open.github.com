@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.19 $
- * $Date: 2005-02-10 14:38:50 $
- * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2005-03-07 13:10:19 $
+ * $Author: bobboau $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/02/10 14:38:50  taylor
+ * fix an issue with bm_set_components()
+ * abs is for ints fabsf is for floats (camera.cpp)
+ * make the in-cockpit stuff OGL friendly
+ *
  * Revision 2.18  2004/11/23 00:10:06  taylor
  * try and protect the bitmap_entry stuff a bit better
  * fix the transparent support ship, again, but correctly this time
@@ -371,7 +376,7 @@ int bm_create( int bpp, int w, int h, void * data, int flags = 0);
 // Frees up a bitmap's data, but bitmap number 'n' can
 // still be used, it will just have to be paged in next
 // time it is locked.
-int bm_unload( int n );
+int bm_unload( int n, bool = false );
 
 // Frees up a bitmap's data, and it's slot, so bitmap 
 // number 'n' cannot be used anymore, and bm_load or
@@ -537,4 +542,7 @@ int bm_get_num_mipmaps(int num);
 
 void bm_print_bitmaps();
 
+int bm_make_render_target( int &x_res, int &y_res, int flags );
+bool is_render_target(int bitmap_id);
+bool bm_set_render_target(int handle, int face);
 #endif

@@ -9,16 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.25 $
- * $Date: 2005-03-02 21:18:18 $
- * $Author: taylor $
- * $Revision: 2.25 $
- * $Date: 2005-03-02 21:18:18 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2005-03-07 13:10:20 $
+ * $Author: bobboau $
+ * $Revision: 2.26 $
+ * $Date: 2005-03-07 13:10:20 $
+ * $Author: bobboau $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/03/02 21:18:18  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.24  2005/03/01 23:08:24  taylor
  * make sure starfield bitmaps render when not in HTL mode
  * slight header fix for osapi.h
@@ -415,6 +420,8 @@ typedef struct ccodes {
 	ubyte cc_or, cc_and;		//or is low byte, and is high byte
 } ccodes;
 
+struct vertex;
+
 typedef struct vector {
 	union {
 		struct {
@@ -422,6 +429,8 @@ typedef struct vector {
 		} xyz;
 		float a1d[3];
 	};
+	inline void operator= (vertex&vert);
+	inline void set_screen_vert(vertex&vert);
 } vector;
 
 // A vector referenced as an array
@@ -468,17 +477,31 @@ typedef struct vertex {
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
 	ubyte		flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.
 	ubyte		pad[2];				// pad structure to be 4 byte aligned.
+	void operator=(vector&vec){
+		memcpy(&x,&vec, sizeof(vector));
+	}
 } vertex;
+
+inline void vector::operator= (vertex&vert){
+	memcpy(this,&vert.x,sizeof(vector));
+}
+//set the vector to the vertex screen position
+inline void vector::set_screen_vert(vertex&vert){
+	memcpy(this,&vert.sx,sizeof(vector));
+}
 
 extern int spec;
 
-#define	BMP_AABITMAP		(1<<0)				// antialiased bitmap
-#define	BMP_TEX_XPARENT		(1<<1)				// transparent texture
-#define	BMP_TEX_NONDARK		(1<<2)				// nondarkening texture
-#define	BMP_TEX_OTHER		(1<<3)				// so we can identify all "normal" textures
-#define BMP_TEX_DXT1		(1<<4)				// dxt1 compressed 8r8g8b1a (24bit)
-#define BMP_TEX_DXT3		(1<<5)				// dxt3 compressed 8r8g8b4a (32bit)
-#define BMP_TEX_DXT5		(1<<6)				// dxt5 compressed 8r8g8b8a (32bit)
+#define	BMP_AABITMAP						(1<<0)				// antialiased bitmap
+#define	BMP_TEX_XPARENT						(1<<1)				// transparent texture
+#define	BMP_TEX_NONDARK						(1<<2)				// nondarkening texture
+#define	BMP_TEX_OTHER						(1<<3)				// so we can identify all "normal" textures
+#define BMP_TEX_DXT1						(1<<4)				// dxt1 compressed 8r8g8b1a (24bit)
+#define BMP_TEX_DXT3						(1<<5)				// dxt3 compressed 8r8g8b4a (32bit)
+#define BMP_TEX_DXT5						(1<<6)				// dxt5 compressed 8r8g8b8a (32bit)
+#define BMP_TEX_STATIC_RENDER_TARGET		(1<<7)				// a texture made for being rendered to infreqently
+#define BMP_TEX_DYNAMIC_RENDER_TARGET		(1<<8)				// a texture made for being rendered to freqently
+#define BMP_TEX_CUBEMAP						(1<<8)				// a texture made for cubic environment map
 
 //compressed texture types
 #define BMP_TEX_COMP			( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )

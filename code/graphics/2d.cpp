@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-03-03 02:39:14 $
+ * $Revision: 2.37 $
+ * $Date: 2005-03-07 13:10:20 $
  * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/03/03 02:39:14  bobboau
+ * added trilist suport to the poly rendering functions
+ * and a gr_bitmap_list function that uses it
+ *
  * Revision 2.35  2005/03/01 06:55:40  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -699,7 +703,7 @@ float Max_draw_distance = Default_Max_draw_distance;
  */
 bool gr_resize_screen_pos(int *x, int *y)
 {
-	if(gr_screen.custom_size < 0)	return false;
+	if(gr_screen.custom_size < 0 && gr_screen.rendering_to_texture == -1)	return false;
 
 	int div_by_x = (gr_screen.custom_size == GR_1024) ? 1024 : 640;
 	int div_by_y = (gr_screen.custom_size == GR_1024) ?  768 : 480;
@@ -725,7 +729,7 @@ bool gr_resize_screen_pos(int *x, int *y)
  */
 bool gr_unsize_screen_pos(int *x, int *y)
 {
-	if(gr_screen.custom_size < 0)	return false;
+	if(gr_screen.custom_size < 0 && gr_screen.rendering_to_texture == -1)	return false;
 
 	int mult_by_x = (gr_screen.custom_size == GR_1024) ? 1024 : 640;
 	int mult_by_y = (gr_screen.custom_size == GR_1024) ?  768 : 480;
@@ -753,7 +757,7 @@ bool gr_unsize_screen_pos(int *x, int *y)
  */
 bool gr_resize_screen_posf(float *x, float *y)
 {
-	if(gr_screen.custom_size < 0)	return false;
+	if(gr_screen.custom_size < 0 && gr_screen.rendering_to_texture == -1)	return false;
 
 	float div_by_x = (float)((gr_screen.custom_size == GR_1024) ? 1024 : 640);
 	float div_by_y = (float)((gr_screen.custom_size == GR_1024) ?  768 : 480);
@@ -779,7 +783,7 @@ bool gr_resize_screen_posf(float *x, float *y)
  */
 bool gr_unsize_screen_posf(float *x, float *y)
 {
-	if(gr_screen.custom_size < 0)	return false;
+	if(gr_screen.custom_size < 0 && gr_screen.rendering_to_texture == -1)	return false;
 
 	float mult_by_x = (float) ((gr_screen.custom_size == GR_1024) ? 1024 : 640);
 	float mult_by_y = (float) ((gr_screen.custom_size == GR_1024) ?  768 : 480);
@@ -1179,8 +1183,8 @@ void gr_init_res(int res, int mode, int max_w, int max_h)
 	gr_screen.signature = Gr_signature++;
 	gr_screen.mode = mode;
 	gr_screen.res = res;	
-	gr_screen.max_w = max_w;
-	gr_screen.max_h = max_h;
+	gr_screen.save_max_w = gr_screen.max_w = max_w;
+	gr_screen.save_max_h = gr_screen.max_h = max_h;
 	gr_screen.aspect = 1.0f;			// Normal PC screen
 	gr_screen.offset_x = 0;
 	gr_screen.offset_y = 0;
@@ -1191,9 +1195,10 @@ void gr_init_res(int res, int mode, int max_w, int max_h)
 	gr_screen.clip_width  = gr_screen.max_w;
 	gr_screen.clip_height = gr_screen.max_h;
 }
-
+//int big_ole_honkin_hack_test = -1;
 bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 {
+
 	int first_time = 0;
 
 	gr_detect_cpu(&Gr_cpu, &Gr_mmx, &Gr_amd3d, &Gr_katmai );
@@ -1235,6 +1240,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	gr_init_res(res, mode, custom_x, custom_y);
 	gr_screen.bits_per_pixel = depth;
 	gr_screen.bytes_per_pixel= depth / 8;
+	gr_screen.rendering_to_texture = -1;
 
 	switch( mode )	{
 #ifdef _WIN32
@@ -1288,6 +1294,11 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 		return false;
 	}
 
+	int X=512,Y=512;
+//	big_ole_honkin_hack_test = bm_make_render_target(X,Y,BMP_TEX_STATIC_RENDER_TARGET);
+//	gr_set_render_target(big_ole_honkin_hack_test);
+	gr_screen.static_environment_map = bm_make_render_target(X,Y, BMP_TEX_STATIC_RENDER_TARGET|BMP_TEX_CUBEMAP);
+	gr_screen.dynamic_environment_map = bm_make_render_target(X,Y, BMP_TEX_DYNAMIC_RENDER_TARGET|BMP_TEX_CUBEMAP);
 	return true;
 }
 
@@ -1415,7 +1426,7 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 		gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
 
 		// I will tidy this up later - RT
-		if(allow_scaling)
+		if(allow_scaling || gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&x, &y);
 			gr_resize_screen_pos(&w, &h);
@@ -1432,7 +1443,7 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 		gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
 
 		// I will tidy this up later - RT
-		if(allow_scaling)
+		if(allow_scaling || gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&x, &y);
 			gr_resize_screen_pos(&w, &h);
@@ -1467,7 +1478,7 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 				int py2 = section_y;
 
 				// I will tidy this up later - RT
-				if(allow_scaling)
+				if(allow_scaling || gr_screen.rendering_to_texture != -1)
 				{
 					gr_resize_screen_pos(&px1, &py1);
 					gr_resize_screen_pos(&px2, &py2);
@@ -1496,7 +1507,7 @@ void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL, NULL);
 		// I will tidy this up later - RT
 		//I doubt it, seeing as you've been gone for nearly half a year :)
-		if(allow_scaling)
+		if(allow_scaling  || gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&l->x, &l->y);
 			gr_resize_screen_pos(&l->w, &l->h);

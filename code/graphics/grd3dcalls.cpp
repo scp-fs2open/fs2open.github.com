@@ -430,18 +430,36 @@ HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr)
 
 void dynamic_buffer::allocate(int n_verts, int vert_type){
 	int n_size = n_verts*vertex_types[vert_type].size;
+	fvf = vertex_types[vert_type].fvf;
+	vsize = vertex_types[vert_type].size;
 	if(n_size > size){
 		if(buffer)buffer->Release();
 
 		GlobalD3DVars::lpD3DDevice->CreateVertexBuffer(	
 			n_size, 
 			D3DUSAGE_WRITEONLY | D3DUSAGE_DYNAMIC, 
-			vertex_types[vert_type].fvf,
+			fvf,
 			D3DPOOL_DEFAULT,
 			&buffer);
 		size=n_size;
 	}
-	vtype=vert_type;
+}
+
+void dynamic_buffer::allocate(int n_verts, uint FVF, int SIZE){
+	int n_size = n_verts*SIZE;
+	fvf = FVF;
+	vsize = SIZE;
+	if(n_size > size){
+		if(buffer)buffer->Release();
+
+		GlobalD3DVars::lpD3DDevice->CreateVertexBuffer(	
+			n_size, 
+			D3DUSAGE_WRITEONLY | D3DUSAGE_DYNAMIC, 
+			fvf,
+			D3DPOOL_DEFAULT,
+			&buffer);
+		size=n_size;
+	}
 }
 
 struct Vertex_buffer;
@@ -451,8 +469,8 @@ void dynamic_buffer::unlock(){
 	buffer->Unlock();
 
 	set_buffer = NULL;
-	d3d_SetVertexShader(vertex_types[vtype].fvf);
-	GlobalD3DVars::lpD3DDevice->SetStreamSource(0,buffer, vertex_types[vtype].size);
+	d3d_SetVertexShader(fvf);
+	GlobalD3DVars::lpD3DDevice->SetStreamSource(0,buffer, vsize);
 }
 
 void dynamic_buffer::draw(_D3DPRIMITIVETYPE TYPE, int num){
@@ -504,22 +522,22 @@ BOOL d3d_lost_device(bool force)
 
 		extern IDirect3DIndexBuffer8 *global_index_buffer;
 //		extern IDirect3DTexture8 *background_render_target;
-		extern LPDIRECT3DCUBETEXTURE8 cube_map;
+//		extern LPDIRECT3DCUBETEXTURE8 cube_map;
 		extern IDirect3DSurface8 *old_render_sten;
 		extern IDirect3DSurface8 *old_render_target;
 
 //		if(background_render_target){background_render_target->Release();background_render_target=NULL;}
 		int r = 0;
-		if(cube_map){
+//		if(cube_map){
 /*			LPDIRECT3DSURFACE8 face;
 			for(int i = 0; i<6; i++){
 				cube_map->GetCubeMapSurface(_D3DCUBEMAP_FACES(i), 0, &face);
 				r = face->Release();
 			}
 */
-			r = cube_map->Release();
-			cube_map=NULL;
-		}
+//			r = cube_map->Release();
+//			cube_map=NULL;
+//		}
 		if(old_render_sten){old_render_sten->Release();old_render_sten=NULL;}
 		if(old_render_target){old_render_target->Release();old_render_target=NULL;}
 		if(global_index_buffer){global_index_buffer->Release();global_index_buffer=NULL;}
@@ -528,6 +546,8 @@ BOOL d3d_lost_device(bool force)
 		cube_map_drawen = false;
 		
 
+void bm_pre_lost();
+		bm_pre_lost();
 
 		gr_d3d_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
 
@@ -537,8 +557,12 @@ BOOL d3d_lost_device(bool force)
 		render_buffer.lost();
 
 		HRESULT hr = GlobalD3DVars::lpD3DDevice->Reset(&GlobalD3DVars::d3dpp);
-		if(hr != D3D_OK)return true;
+		if(hr != D3D_OK){
+			return true;
+		}
 
+void bm_post_lost();
+		bm_post_lost();
 //		In_frame = 0;
 
 		if ( GlobalD3DVars::lpD3DDevice->TestCooperativeLevel() == D3DERR_DEVICELOST ) {
@@ -548,8 +572,8 @@ BOOL d3d_lost_device(bool force)
 
 
 
-		extern void d3d_init_environment();
-		d3d_init_environment();
+//		extern void d3d_init_environment();
+//		d3d_init_environment();
 
 		void d3d_generate_state_blocks();
 		d3d_generate_state_blocks();

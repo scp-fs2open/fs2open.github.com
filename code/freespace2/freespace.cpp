@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.129 $
- * $Date: 2005-03-03 12:58:25 $
- * $Author: Kazan $
+ * $Revision: 2.130 $
+ * $Date: 2005-03-07 13:10:20 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.129  2005/03/03 12:58:25  Kazan
+ * !Om_tracker_flag = non-pxo
+ *
  * Revision 2.128  2005/03/03 06:05:27  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -4311,7 +4314,28 @@ extern void compute_slew_matrix(matrix *orient, angles *a);	// TODO: move code t
 vector	Dead_player_last_vel = {1.0f, 1.0f, 1.0f};
 
 
-#define render_environment 	{ gr_set_environment_mapping(i); g3_set_view_matrix( &nv, &new_orient, new_zoom ); gr_set_proj_matrix( (PI/2.0f), 1.0f, Min_draw_distance, 30000.0f); gr_set_view_matrix(&Eye_position, &Eye_matrix); if ( Game_subspace_effect ) { stars_draw(0,0,0,1,1); } else { stars_draw(1,1,1,0,1); } gr_end_view_matrix(); gr_end_proj_matrix(); i++; }
+inline void render_environment(int&i, matrix*new_orient, float new_zoom){
+vector nv = ZERO_VECTOR;
+	gr_set_render_target(
+		(Game_subspace_effect)?
+			gr_screen.dynamic_environment_map 
+		: 
+			gr_screen.static_environment_map
+		, i); 
+	gr_clear();
+
+	g3_set_view_matrix( &nv, new_orient, new_zoom ); 
+	gr_set_proj_matrix( (PI/2.0f), 1.0f, Min_draw_distance, 30000.0f); 
+	gr_set_view_matrix(&Eye_position, &Eye_matrix); 
+	if ( Game_subspace_effect ) { 
+		stars_draw(0,0,0,1,1); 
+	} else { 
+		stars_draw(1,1,1,0,1); 
+	} 
+	gr_end_view_matrix(); 
+	gr_end_proj_matrix(); 
+	i++; 
+}
 
 extern float View_zoom, Canv_w2, Canv_h2;
 void setup_environment_mapping(vector *eye_pos, matrix *eye_orient){
@@ -4328,32 +4352,32 @@ void setup_environment_mapping(vector *eye_pos, matrix *eye_orient){
 			new_orient.vec.fvec.xyz.x = 1.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = 0.0f;
 			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
 			vm_fix_matrix(&new_orient);
-			render_environment	
+			render_environment(i,&new_orient, new_zoom);	
 
 			new_orient.vec.fvec.xyz.x = -1.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = 0.0f;
 			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
 			vm_fix_matrix(&new_orient);
-			render_environment	
+			render_environment(i,&new_orient, new_zoom);	
 
 			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = 1.0f;new_orient.vec.fvec.xyz.z = 0.0f;
 			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 0.0f;new_orient.vec.uvec.xyz.z = -1.0f;
 			vm_fix_matrix(&new_orient);
-			render_environment	
+			render_environment(i,&new_orient, new_zoom);	
 
 			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = -1.0f;new_orient.vec.fvec.xyz.z = 0.0f;
 			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 0.0f;new_orient.vec.uvec.xyz.z = 1.0f;
 			vm_fix_matrix(&new_orient);
-			render_environment	
+			render_environment(i,&new_orient, new_zoom);	
 
 			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = 1.0f;
 			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
 			vm_fix_matrix(&new_orient);
-			render_environment	
+			render_environment(i,&new_orient, new_zoom);	
 
 			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = -1.0f;
 			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
 			vm_fix_matrix(&new_orient);
-			render_environment	
+			render_environment(i,&new_orient, new_zoom);	
 				
 		}
 
@@ -4362,7 +4386,7 @@ void setup_environment_mapping(vector *eye_pos, matrix *eye_orient){
 		gr_set_proj_matrix( ((4.0f/9.0f)*(PI)*View_zoom), Canv_w2/Canv_h2, 1.0f, 30000.0f);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-		gr_set_environment_mapping(-1);
+		gr_set_render_target(-1);
 
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
@@ -4691,21 +4715,17 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	}
 	gr_setup_background_fog(false);
 */
+	if ( Game_subspace_effect )	{
+		stars_draw(0,0,0,1,0);
+	} else {
+		stars_draw(1,1,1,0,0);
+	}
+
 	if((!cube_map_drawen || Game_subspace_effect) && Cmdline_env){
 		setup_environment_mapping(eye_pos, eye_orient);
 		cube_map_drawen = true;
-	} else {
-		gr_setup_background_fog(true);
-
-		if ( Game_subspace_effect )	{
-			stars_draw(0,0,0,1,0);
-		} else {
-			stars_draw(1,1,1,0,0);
-		}
-
-		gr_setup_background_fog(false);
-	}
-
+	} 
+	
 	if (!Cmdline_nohtl) {
 		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
@@ -10474,6 +10494,7 @@ void display_title_screen()
 	// flip
 	gr_flip();
 
+//	gr_set_render_target(-1);//big_ole_honkin_hack_test
 	if(title_bitmap != -1)
 	{
 		bm_release(title_bitmap);

@@ -9,14 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-03-01 23:08:23 $
- * $Author: taylor $
+ * $Revision: 2.45 $
+ * $Date: 2005-03-07 13:10:22 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/03/01 23:08:23  taylor
+ * make sure starfield bitmaps render when not in HTL mode
+ * slight header fix for osapi.h
+ * add some string overflow protection to modelread and bmpman
+ * s/NO_NETWORKING/NO_NETWORK/g  (Inferno builds)
+ *
  * Revision 2.43  2005/03/01 06:55:45  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -385,6 +391,7 @@
 #include "starfield/supernova.h"
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
+#include	"limits.h"
 
 
 #define MAX_DEBRIS_VCLIPS	4
@@ -1684,8 +1691,88 @@ void subspace_render(int env)
 
 extern void stars_draw_background(int);
 
-void stars_draw_stars()
+//each star is actualy a line
+//so each star point is actualy two points
+struct star_point{
+	star_point(){
+		memset(p1.color,INT_MAX,4);
+//		memset(p2.color,0,4);
+		p2.color[0]=64;
+		p2.color[1]=64;
+		p2.color[2]=64;
+		p2.color[3]=64;
+	}
+	colored_vector p1,p2;
+	void set(vertex* P1,vertex* P2, color*Col){
+		
+//		if(resize || gr_screen.rendering_to_texture != -1)
+/*		{
+			extern bool gr_resize_screen_posf(float *x, float *y);
+
+			gr_resize_screen_posf(&P1->x, &P1->y);
+			gr_resize_screen_posf(&P2->x, &P2->y);
+		}
+*/ 
+		if(gr_screen.mode != GR_OPENGL){
+			extern float D3D_line_offset;
+			P1->sw = 0.99f;
+			P2->sw = 0.99f;
+
+			P1->sx = i2fl(P1->sx + gr_screen.offset_x)+D3D_line_offset;
+			P1->sy = i2fl(P1->sy + gr_screen.offset_y)+D3D_line_offset;
+
+			P2->sx = i2fl(P2->sx + gr_screen.offset_x)+D3D_line_offset;
+			P2->sy = i2fl(P2->sy + gr_screen.offset_y)+D3D_line_offset;
+	}
+
+		p1.vec.set_screen_vert(*P1);
+
+		p2.vec.set_screen_vert(*P2);
+		if(gr_screen.mode == GR_OPENGL)
+			memcpy(p1.color, &Col->red,3);
+		else {
+			memcpy(&p1.color[1], &Col->red,3);
+		}
+	};
+};
+
+class star_point_list{
+	int n_points;
+	star_point *point_list;
+public:
+	star_point_list():point_list(NULL),n_points(0){};
+	~star_point_list(){if(point_list)delete[]point_list;};
+
+	void allocate(int size){
+		if(size<=n_points)return;
+		if(point_list)delete[]point_list;
+		point_list = new star_point[size];
+		n_points = size;
+	}
+	star_point* operator[] (int idx){
+		return &point_list[idx];
+	}
+	colored_vector* get_buffer(){return &point_list->p1;};
+};
+
+star_point_list star_list;
+
+void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interface figured out-Bobboau
 {
+	star_list.allocate(Num_stars);
+	//make sure our star buffer is big enough
+
+/*	
+	if(!last_stars_filled){
+		star* star = Stars;
+		for(int i = 0; i< Num_stars; i++){
+			vertex p2;
+			star++;
+			g3_rotate_faraway_vertex(&p2, &star->pos);
+			star->last_star_pos = p2;
+		}
+	}
+*/
 	//Num_stars = 1;
 	int i;
 	star *sp;
@@ -1693,7 +1780,6 @@ void stars_draw_stars()
 	float ratio;
 	int color;
 	float colorf;
-	vDist vDst;
 	vertex p1, p2;			
 	int can_draw = 1;
 
@@ -1715,7 +1801,7 @@ void stars_draw_stars()
 	} else if ( tmp_num_stars > Num_stars )	{
 		tmp_num_stars = Num_stars;
 	}
-		
+		int stars_to_draw = 0;
 	for (sp=Stars,i=0; i<tmp_num_stars; i++, sp++ ) {			
 
 		can_draw=1;
@@ -1776,21 +1862,135 @@ void stars_draw_stars()
 
 		if ( Star_flags & STAR_FLAG_DIM )	{
 			colorf = 255.0f - dist*Star_dim;
-				if ( colorf < Star_cap )
-					colorf = Star_cap;
-				color = (fl2i(colorf)*(i&7))/256;
-			} else {
-				color = i & 7;
+			if ( colorf < Star_cap )
+				colorf = Star_cap;
+			color = (fl2i(colorf)*(i&7))/256;
+		} else {
+			color = i & 7;
+		}
+
+		p1.sx-=1.5f;
+		p1.sy-=1.5f;
+		p2.sx+=1.5f;
+		p2.sy+=1.5f;
+				star_list[stars_to_draw++]->set(&p2,&p1,&sp->col);
+
+	}
+	gr_set_color_fast( &Stars->col );
+	gr_zbuffer_set(GR_ZBUFF_NONE);
+	gr_draw_line_list(star_list.get_buffer(), stars_to_draw);
+	
+}
+
+
+void stars_draw_stars()
+{
+
+	//Num_stars = 1;
+	int i;
+	star *sp;
+	float dist = 0.0f;
+	float ratio;
+	int color;
+	vDist vDst;
+	float colorf;
+	vertex p1, p2;			
+	int can_draw = 1;
+
+	if ( !last_stars_filled )	{
+		for (sp=Stars,i=0; i<Num_stars; i++, sp++ ) {
+			vertex p2;
+			g3_rotate_faraway_vertex(&p2, &sp->pos);
+			sp->last_star_pos.xyz.x = p2.x;
+			sp->last_star_pos.xyz.y = p2.y;
+			sp->last_star_pos.xyz.z = p2.z;
+		}
+	}
+
+	int tmp_num_stars;
+
+	tmp_num_stars = (Detail.num_stars*Num_stars)/MAX_DETAIL_LEVEL;
+	if (tmp_num_stars < 0 )	{
+		tmp_num_stars = 0;
+	} else if ( tmp_num_stars > Num_stars )	{
+		tmp_num_stars = Num_stars;
+	}
+
+	for (sp=Stars,i=0; i<tmp_num_stars; i++, sp++ ) {			
+
+		can_draw=1;
+		memset(&p1, 0, sizeof(vertex));
+		memset(&p2, 0, sizeof(vertex));
+
+		// This makes a star look "proper" by not translating the
+		// point around the viewer's eye before rotation.  In other
+		// words, when the ship translates, the stars do not change.
+
+		g3_rotate_faraway_vertex(&p2, &sp->pos);
+		if ( p2.codes )	{
+			can_draw = 0;
+		} else {
+			g3_project_vertex(&p2);
+			if ( p2.flags & PF_OVERFLOW )	{
+				can_draw = 0;
 			}
+		}
+
+		
+
+		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) )	{
+
+			dist = vm_vec_dist_quick( &sp->last_star_pos, (vector *)&p2.x );
+
+			if ( dist > Star_max_length )	{
+ 				ratio = Star_max_length / dist;
+				dist = Star_max_length;
+			} else {
+				ratio = 1.0f;
+			}
+			
+			ratio *= Star_amount;
+
+			p1.x = p2.x + (sp->last_star_pos.xyz.x-p2.x)*ratio;
+			p1.y = p2.y + (sp->last_star_pos.xyz.y-p2.y)*ratio;
+			p1.z = p2.z + (sp->last_star_pos.xyz.z-p2.z)*ratio;
+
+			p1.flags = 0;	// not projected
+			g3_code_vertex( &p1 );
+
+			if ( p1.codes )	{
+				can_draw = 0;
+			} else {
+				g3_project_vertex(&p1);
+				if ( p1.flags & PF_OVERFLOW )	{
+					can_draw = 0;
+				}
+			}
+		}
+
+		sp->last_star_pos.xyz.x = p2.x;
+		sp->last_star_pos.xyz.y = p2.y;
+		sp->last_star_pos.xyz.z = p2.z;
+
+		if ( !can_draw )	continue;
+
+		if ( Star_flags & STAR_FLAG_DIM )	{
+			colorf = 255.0f - dist*Star_dim;
+			if ( colorf < Star_cap )
+				colorf = Star_cap;
+			color = (fl2i(colorf)*(i&7))/256;
+		} else {
+			color = i & 7;
+		}
 
 		if ( (Star_flags & STAR_FLAG_ANTIALIAS) || (D3D_enabled) )	{
 			gr_set_color_fast( &sp->col );
 
-			/* if the two points are the same, fudge it, since some D3D cards (G200 and G400) are lame.				
+//			if the two points are the same, fudge it, since some D3D cards (G200 and G400) are lame.				
 			if( (fl2i(p1.sx) == fl2i(p2.sx)) && (fl2i(p1.sy) == fl2i(p2.sy)) ){					
 				p1.sx += 1.0f;
 			}
-			*/
+			
 			vDst.x = fl2i(p1.sx) - fl2i(p2.sx);
 			vDst.y = fl2i(p1.sy) - fl2i(p2.sy);
 				
@@ -1804,10 +2004,9 @@ void stars_draw_stars()
 			}
 				gr_aaline(&p1,&p2);
 			
-			} else {
-				gr_set_color_fast( &sp->col );
+		} else {
 
-				if ( Star_flags & STAR_FLAG_TAIL )	{
+			if ( Star_flags & STAR_FLAG_TAIL )	{
 				gr_line(fl2i(p1.sx),fl2i(p1.sy),fl2i(p2.sx),fl2i(p2.sy));
 			} else {
 				gr_pixel( fl2i(p2.sx),fl2i(p2.sy) );
@@ -1815,7 +2014,6 @@ void stars_draw_stars()
 		}
 	}
 }
-
 
 void stars_draw_debris()
 {

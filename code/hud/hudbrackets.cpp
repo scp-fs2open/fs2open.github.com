@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-03-03 06:05:28 $
- * $Author: wmcoolmon $
+ * $Revision: 2.17 $
+ * $Date: 2005-03-07 13:10:21 $
+ * $Author: bobboau $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/03/03 06:05:28  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.15  2005/02/18 09:54:41  wmcoolmon
  * Since the screen can be wider than 1200 px now, don't auto-cull brackets if they're that big.
  *
@@ -361,7 +364,7 @@ void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize)
 {
 	int	width, height;
 
-	if(resize)
+	if(resize || gr_screen.rendering_to_texture != -1)
 	{
 		gr_resize_screen_pos(&x1, &y1);
 		gr_resize_screen_pos(&x2, &y2);

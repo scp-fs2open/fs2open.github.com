@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-02-15 00:03:36 $
- * $Author: taylor $
+ * $Revision: 2.46 $
+ * $Date: 2005-03-07 13:10:21 $
+ * $Author: bobboau $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/02/15 00:03:36  taylor
+ * don't try and draw starfield bitmaps if they aren't valid
+ * make AB thruster stuff in ship_create() a little less weird
+ * replace an Int3() with debug warning and fix crash in docking code
+ * make D3D Textures[] allocate on use like OGL does, can only use one anyway
+ *
  * Revision 2.44  2005/01/01 11:24:22  taylor
  * good OpenGL spec mapping
  * fix VBO crash with multitexture using same uv coord data
@@ -1107,31 +1113,35 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 		d3d_tcache_flush();
 	}
 	
-	tcache_slot_d3d * t = &Textures[n];		
+	tcache_slot_d3d * t = &Textures[n];	
 	
-	// If rendering exactly the same texture section as before
-	if ( (D3D_last_bitmap_id == bitmap_id) && (D3D_last_bitmap_type==bitmap_type) && (t->bitmap_id == bitmap_id))	{
-		t->used_this_frame++;
+	if(!is_render_target(bitmap_id)){
+		// If rendering exactly the same texture section as before
+		if ( (D3D_last_bitmap_id == bitmap_id) && (D3D_last_bitmap_type==bitmap_type) && (t->bitmap_id == bitmap_id))	{
+			t->used_this_frame++;
+		
+			*u_scale = t->u_scale;
+			*v_scale = t->v_scale;
+			return 1;
+		}	
+
+		// if the texture sections haven't been created yet
+		if((t->bitmap_id < 0) || (t->bitmap_id != bitmap_id))
+		{	
+			if(d3d_create_texture( bitmap_id, bitmap_type, t, fail_on_full ) == 0) 
+			{
+	 			d3d_free_texture(t);
+	 			return 0;
+			}
+		}
 		
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
-		return 1;
-	}	
 
-	// if the texture sections haven't been created yet
-	if((t->bitmap_id < 0) || (t->bitmap_id != bitmap_id))
-	{	
-		if(d3d_create_texture( bitmap_id, bitmap_type, t, fail_on_full ) == 0) 
-		{
- 			d3d_free_texture(t);
-	 		return 0;
-		}
+		d3d_SetTexture(stage, t->d3d8_thandle);
+	}else{
+		d3d_SetTexture(stage, get_render_target_texture(bitmap_id));
 	}
-	
-	*u_scale = t->u_scale;
-	*v_scale = t->v_scale;
-
-	d3d_SetTexture(stage, t->d3d8_thandle);
 	
 	D3D_last_bitmap_id = t->bitmap_id;
 	D3D_last_bitmap_type = bitmap_type;
