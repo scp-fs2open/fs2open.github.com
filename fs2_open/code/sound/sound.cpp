@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-03-14 23:31:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.17 $
+ * $Date: 2005-03-24 23:27:25 $
+ * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/03/14 23:31:54  wmcoolmon
+ * Hopefully this will fixx0r Num_sounds
+ *
  * Revision 2.15  2005/03/14 06:38:31  wmcoolmon
  * Whoops, this isn't needed.
  *
@@ -572,7 +575,7 @@ void snd_spew_debug_info()
 		done = 0;
 
 		// what kind of sound is this
-		for(s_idx=0; s_idx<MAX_GAME_SOUNDS; s_idx++){
+		for(s_idx=0; s_idx<Num_game_sounds; s_idx++){
 			if(!stricmp(Snds[s_idx].filename, Sounds[idx].filename)){
 				game_sounds++;
 				done = 1;
@@ -580,7 +583,7 @@ void snd_spew_debug_info()
 		}
 
 		if(!done){
-			for(s_idx=0; s_idx<MAX_GAME_SOUNDS; s_idx++){
+			for(s_idx=0; s_idx<Num_game_sounds; s_idx++){
 				if(!stricmp(Snds_iface[s_idx].filename, Sounds[idx].filename)){
 					interface_sounds++;
 					done = 1;
@@ -1549,7 +1552,7 @@ void snd_get_format(int handle, int *bits_per_sample, int *frequency)
 }
 
 // return the time for the sound to play in milliseconds
-int snd_time_remaining(int handle, int bits_per_sample, int frequency)
+int snd_time_remaining(int handle)
 {
 	int channel, is_playing, time_remaining = 0;
 
@@ -1569,14 +1572,20 @@ int snd_time_remaining(int handle, int bits_per_sample, int frequency)
 	}
 
 	int current_offset, max_offset;
+	int bits_per_sample = 0, frequency = 0;
+
+	snd_get_format(handle, &bits_per_sample, &frequency);
+
+	if ( (bits_per_sample <= 0) || (frequency <= 0) )
+		return 0;
 
 	current_offset = ds_get_play_position(channel);
 	max_offset = ds_get_channel_size(channel);
 
 	if ( current_offset < max_offset ) {
 		int bytes_remaining = max_offset - current_offset;
-		int samples_remaining = bytes_remaining / fl2i(bits_per_sample/8.0f);
-		time_remaining = fl2i(1000 * samples_remaining/frequency + 0.5f);
+		int samples_remaining = bytes_remaining / (bits_per_sample/8);
+		time_remaining = fl2i(1000.0f * samples_remaining/frequency + 0.5f);
 	}	
 
 //	mprintf(("time_remaining: %d\n", time_remaining));	

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.172 $
- * $Date: 2005-03-19 18:02:34 $
- * $Author: bobboau $
+ * $Revision: 2.173 $
+ * $Date: 2005-03-24 23:27:26 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.172  2005/03/19 18:02:34  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.171  2005/03/16 00:18:31  wmcoolmon
  * Commited placeholder turret funcs.
  *
@@ -2692,9 +2696,9 @@ strcpy(parse_error_text, temp_error);
 	stuff_int(&sip->engine_snd);
 	
 	// bah: ensure the sounds are in range
-	if (sip->engine_snd < -1 || sip->engine_snd >= MAX_GAME_SOUNDS)
+	if (sip->engine_snd < -1 || sip->engine_snd >= Num_game_sounds)
 	{
-		Warning(LOCATION, "$EngineSnd sound index out of range on ship %s.  Must be between 0 and %d.  Forcing to -1.\n", sip->name, MAX_GAME_SOUNDS);
+		Warning(LOCATION, "$EngineSnd sound index out of range on ship %s.  Must be between 0 and %d.  Forcing to -1.\n", sip->name, Num_game_sounds);
 		sip->engine_snd = -1;
 	}
 
@@ -7045,7 +7049,7 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 				ci->stamp = 60;	//spew time???	
 
 				ci->bitmap = sip->ABbitmap; //table loaded bitmap used on this ships burner trails
-				mprintf(("ab trail point %d made\n", shipp->ab_count));
+				nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", shipp->ab_count, shipp->ship_name));
 				shipp->ab_count++;
 				Assert(MAX_SHIP_CONTRAILS > shipp->ab_count);
 			}
@@ -7300,7 +7304,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 				ci->stamp = 60;	//spew time???	
 
 			ci->bitmap = sip->ABbitmap; //table loaded bitmap used on this ships burner trails
-			mprintf(("ab trail point %d made\n", sp->ab_count));
+			nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", sp->ab_count, sp->ship_name));
 			sp->ab_count++;
 			Assert(MAX_SHIP_CONTRAILS > sp->ab_count);
 			}

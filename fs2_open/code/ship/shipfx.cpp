@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-03-15 01:40:07 $
- * $Author: phreak $
+ * $Revision: 2.39 $
+ * $Date: 2005-03-24 23:27:26 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/03/15 01:40:07  phreak
+ * Awesome 2-for-1 deal!!!
+ * Firstly, the Colossus should now warp out correctly.  No more warphole forming inside of it
+ * Secondly, muzzleflashes now are generated at the gunmounts of the firing ship.
+ *
  * Revision 2.37  2005/03/10 08:00:16  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -2331,9 +2336,7 @@ int get_sound_time_played(int snd_id, int handle)
 		return 100000;
 	}
 
-	int bits_per_sample, frequency;
-	snd_get_format(snd_id, &bits_per_sample, &frequency);
-	int time_left = snd_time_remaining(handle, bits_per_sample, frequency);
+	int time_left = snd_time_remaining(handle);
 	int duration = snd_get_duration(snd_id);
 	
 	return (duration - time_left);

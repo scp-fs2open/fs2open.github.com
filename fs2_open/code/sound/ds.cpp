@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-02-02 10:36:23 $
+ * $Revision: 2.16 $
+ * $Date: 2005-03-24 23:27:25 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/02/02 10:36:23  taylor
+ * merge with Linux/OSX tree - p0202
+ *
  * Revision 2.14  2005/01/18 01:14:17  wmcoolmon
  * OGG fixes, ship selection fixes
  *
@@ -561,8 +564,8 @@ static int AL_play_position = 0;
 #define AL_BYTE_LOKI	0x100C
 #endif
 
-ALCdevice *ds_sound_device;
-void *ds_sound_context = (void *)0;
+ALCdevice *ds_sound_device = NULL;
+void *ds_sound_context = NULL;
 
 #ifndef NDEBUG
 #define OpenAL_ErrorCheck()	do {		\
@@ -1503,9 +1506,20 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 
 	// load OpenAL
 	ds_sound_device = alcOpenDevice (initStr);
-		
+
+	if (ds_sound_device == NULL) {
+		nprintf(("Sound", "SOUND ==> Couldn't open OpenAL device\n"));
+		return -1;
+	}
+
 	// Create Sound Device
 	ds_sound_context = alcCreateContext (ds_sound_device, attr);
+
+	if (ds_sound_context == NULL) {
+		nprintf(("Sound", "SOUND ==> Couldn't create OpenAL context\n"));
+		return -1;
+	}
+
 	alcMakeContextCurrent (ds_sound_context);
 
 	if (alcGetError(ds_sound_device) != ALC_NO_ERROR) {
@@ -1991,10 +2005,13 @@ void ds_close()
 	Channels = NULL;
 
 #ifdef SCP_UNIX
-	ds_sound_context = alcGetCurrentContext();
-	ds_sound_device = alcGetContextsDevice(ds_sound_context);
-	alcDestroyContext(ds_sound_context);
-	alcCloseDevice(ds_sound_device);
+	alcMakeContextCurrent(NULL);
+
+	if (ds_sound_context != NULL)
+		alcDestroyContext(ds_sound_context);
+
+	if (ds_sound_device != NULL)
+		alcCloseDevice(ds_sound_device);
 #endif
 }
 
