@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:06 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-02 05:46:28 $
  * $Author: penguin $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -190,11 +193,12 @@ fix timer_get_fixed_seconds()
 		return 0;
 	}
 
-#if defined(_WIN32) && defined(_MSC_VER)
+#if defined(_WIN32)
 	int tmp;
 	LARGE_INTEGER temp_large;
 	timer_get(&temp_large);
 
+#if defined(_MSC_VER)
 	// Timing in fixed point (16.16) seconds.
 	// Can be used for up to 1000 hours
 	_asm	mov edx, temp_large.HighPart
@@ -212,8 +216,36 @@ sub_again:
 	_asm	add     edx, ebx	; ...then add in to get correct value.
 	_asm	div     ebx
 	//eax = fixed point seconds elapsed...
-
 	_asm mov tmp, eax
+
+#elif defined(__GNUC__)
+
+ 	// Timing in fixed point (16.16) seconds.
+ 	// Can be used for up to 1000 hours
+	asm(
+		 "mov   %1, %%edx;"		  // temp_large.HighPart
+		 "mov   %2, %%eax;"		  // temp_large.LowPart
+
+		 "shld  $16,%%edx,%%eax;"			 // Keep 32+11 bits
+		 "shl   $16,%%eax;"
+		 // edx:eax = number of 1.19Mhz pulses elapsed.
+		 "mov   %3,%%ebx;"		  // Timer_freq
+
+		 // Make sure we won't divide overflow.  Make time wrap at about 9 hours
+		 "sub_again:"
+		 "sub   %%ebx,%%edx;"	  // subtract until negative...
+		 "jns   sub_again;"		  // ...to prevent divide overflow..."
+		 "add   %%ebx,%%edx;"	  // ...then add in to get correct value."
+		 "div   %%ebx;"
+		 //eax = fixed point seconds elapsed...
+		 "mov   %%eax,%0;"		  // tmp
+		 : "=g" (tmp)
+		 : "g" (temp_large.HighPart), "g" (temp_large.LowPart), "g" (Timer_freq)
+		 : "edx", "eax", "ebx" );
+
+#else
+#error unknown Win32 compiler
+#endif
 
 	return tmp;
 
@@ -247,14 +279,13 @@ int timer_get_milliseconds()
 		return 0;
 	}
 
-#if defined(_WIN32) && defined(_MSC_VER)
+#if defined(_WIN32)
 	int tmp;
 	LARGE_INTEGER temp_large;
-
 	timer_get(&temp_large);
-
 	temp_large.QuadPart *= (longlong)1000;
 
+#if defined(_MSC_VER)
 	// Timing in milliseconds.
 	_asm	mov edx, temp_large.HighPart
 	_asm	mov eax, temp_large.LowPart
@@ -263,7 +294,6 @@ int timer_get_milliseconds()
 	//_asm	shl     eax, 16			
 	// edx:eax = number of 1.19Mhz pulses elapsed.
 	_asm	mov     ebx, Timer_freq
-
 	// Make sure we won't divide overflow.  Make time wrap at about 9 hours
 sub_again:
 	_asm	sub     edx, ebx	; subtract until negative...
@@ -271,17 +301,41 @@ sub_again:
 	_asm	add     edx, ebx	; ...then add in to get correct value.
 	_asm	div     ebx
 	//eax = milliseconds elapsed...
-
 	_asm mov tmp, eax
+
+#elif defined(__GNUC__)
+	// Timing in milliseconds.
+	asm(
+		 "mov   %1,%%edx;\n"			// temp_large.HighPart
+		 "mov   %2,%%eax;\n"			// temp_large.LowPart  
+		 // edx:eax = number of 1.19Mhz pulses elapsed.
+		 "mov   %3,%%ebx;\n"			// Timer_freq
+		 // Make sure we won't divide overflow.  Make time wrap at about 9 hours
+		 "sub_again2:"
+		 "sub   %%ebx,%%edx;\n"		// subtract until negative...
+		 "jns   sub_again2;\n"		// ...to prevent divide overflow...
+		 "add   %%ebx,%%edx;\n"		// ...then add in to get correct value.
+		 "div   %%ebx;\n"
+		 //eax = milliseconds elapsed...
+		 "mov   %%eax,%0;\n"		// tmp
+		 : "=g" (tmp)
+		 : "g" (temp_large.HighPart), "g" (temp_large.LowPart), "g" (Timer_freq)
+		 : "edx", "eax", "ebx");
+#else
+#error unknown Win32 compiler
+#endif
 
 	return tmp;
 
-#else
+
+#elif defined unix
 
 	timeval tmp_tv;
 	timer_get(&tmp_tv);
 	return (tmp_tv.tv_sec * 1000) + (tmp_tv.tv_usec / 1000);
 
+#else
+#error unknown architecture/compiler
 #endif
 
 }
@@ -293,13 +347,13 @@ int timer_get_microseconds()
 		return 0;
 	}
 
-#if defined(_WIN32) && defined(_MSC_VER)
+#if defined(_WIN32)
 	int tmp;
 	LARGE_INTEGER temp_large;
-
 	timer_get(&temp_large);
-
 	temp_large.QuadPart *= (longlong)1000000;
+
+#if defined(_MSC_VER)
 
 	// Timing in milliseconds.
 	_asm	mov edx, temp_large.HighPart
@@ -317,8 +371,29 @@ sub_again:
 	_asm	add     edx, ebx	; ...then add in to get correct value.
 	_asm	div     ebx
 	//eax = milliseconds elapsed...
-
 	_asm mov tmp, eax
+
+#elif defined(__GNUC__)
+	// Timing in milliseconds.
+	asm(
+		 "mov   %1,%%edx;\n"			// temp_large.HighPart
+		 "mov   %2,%%eax;\n"			// temp_large.LowPart  
+		 // edx:eax = number of 1.19Mhz pulses elapsed.
+		 "mov   %3,%%ebx;\n"			// Timer_freq
+		 // Make sure we won't divide overflow.  Make time wrap at about 9 hours
+		 "sub_again3:"
+		 "sub   %%ebx,%%edx;\n"		// subtract until negative...
+		 "jns   sub_again3;\n"		// ...to prevent divide overflow...
+		 "add   %%ebx,%%edx;\n"		// ...then add in to get correct value.
+		 "div   %%ebx;\n"
+		 //eax = milliseconds elapsed...
+		 "mov   %%eax,%0;\n"		// tmp
+		 : "=g" (tmp)
+		 : "g" (temp_large.HighPart), "g" (temp_large.LowPart), "g" (Timer_freq)
+		 : "edx", "eax", "ebx");
+#else
+#error unknown Win32 compiler
+#endif
 
 	return tmp;
 
@@ -328,6 +403,8 @@ sub_again:
 	timer_get(&tmp_tv);
 	return (tmp_tv.tv_sec * 1000000) + tmp_tv.tv_usec;
 
+#else
+#error unknown architecture/compiler
 #endif
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/aaline.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:05 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-02 05:42:25 $
  * $Author: penguin $
  *
  * Code to draw antialiased lines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -246,11 +249,12 @@ void aaline_init_tables()
 // less than 1.0 and less total bits are sufficient.
 // Some of the steps here are not needed.  This was originally
 // written to simulate exact hardware behavior.
-#if defined( _WIN32 ) && defined( _MSC_VER )		
+#if defined _WIN32
 long int fix_xy_mult(long int oa, fix_xy ob)
 {
 	int retval;
 
+#if defined _MSC_VER 
 	_asm {
 		mov	edx, oa
 		mov	eax, ob
@@ -258,11 +262,26 @@ long int fix_xy_mult(long int oa, fix_xy ob)
 		shrd	eax,edx,20
 		mov	retval, eax
 	}
+#elif defined __GNUC__
+	asm(
+	    "mov   %1,%%edx;"
+	    "mov   %2,%%eax;"
+	    "imul  %%edx;"
+	    "shrd  $20,%%eax,%%edx;"
+	    "mov   %%eax,%0"
+	    : "=g" (retval)	   // outputs
+	    : "g" (oa), "g" (ob)   // inputs
+	    : "eax", "edx"         // clobbered registers
+	    );
+#else
+#error unknown compiler
+#endif
 	return retval;
 }
 #else
+#error unknown OS
 long int fix_xy_mult(long int oa, fix_xy ob);
-#endif // if defined( _WIN32 ) && defined( _MSC_VER )		
+#endif
 
 
 
