@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.h $
- * $Revision: 2.1 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.2 $
+ * $Date: 2004-06-26 03:19:53 $
+ * $Author: wmcoolmon $
  *
  * Header file for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -73,9 +77,12 @@
 #ifndef __FREESPACE_HUDESCORT_VIEW_H__
 #define __FREESPACE_HUDESCORT_VIEW_H__
 
-struct object;
+//Odd def for escort frames
+#define NUM_ESCORT_FRAMES 4
 
-#define MAX_ESCORT_SHIPS	3
+extern int Max_escort_ships;
+
+struct object;
 
 void	hud_escort_init();
 void	hud_setup_escort_list(int level = 1);
