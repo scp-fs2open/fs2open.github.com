@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-03-08 22:02:39 $
+ * $Revision: 2.17 $
+ * $Date: 2004-04-30 18:33:22 $
  * $Author: Kazan $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/03/08 22:02:39  Kazan
+ * Lobby GUI screen restored
+ *
  * Revision 2.15  2004/03/05 09:01:53  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -848,6 +851,8 @@ void main_hall_do_multi_ready()
 	gameseq_post_event( GS_EVENT_PXO );
 #else
 	
+
+#if defined(PXO_LOBBY)
 	if (Om_tracker_flag)
 	{
 		Multi_options_g.protocol = NET_TCP;
@@ -859,8 +864,16 @@ void main_hall_do_multi_ready()
 		// go to the regular join game screen 	
 		gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );	
 	}
+#else
+	if (Om_tracker_flag)
+	{
+		Multi_options_g.protocol = NET_TCP;
+	}
+	gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );	
+#endif //PXO_LOBBY
 
-#endif	
+
+#endif	//MULTIPLAYER_BETA_BUILD
 
 	// select protocol
 	psnet_use_protocol(Multi_options_g.protocol);
