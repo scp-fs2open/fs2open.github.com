@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.38 $
- * $Date: 2004-03-05 09:02:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.39 $
+ * $Date: 2004-03-20 21:17:13 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2004/03/05 09:02:07  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.37  2004/01/21 17:37:48  phreak
  * bumped MAX_POLYGON_MODELS to 300 if INF_BUILD is defined.
  *
@@ -703,11 +707,15 @@ typedef struct w_bank {
 	float		radius[MAX_SLOTS];
 } w_bank;
 
+struct glow_point{
+	vector	pnt;
+	vector	norm;
+	float	radius;
+};
+
 typedef struct thruster_bank {
 	int		num_slots;
-	vector	pnt[MAX_THRUSTER_SLOTS];
-	vector	norm[MAX_THRUSTER_SLOTS];
-	float		radius[MAX_THRUSTER_SLOTS];
+	glow_point point[MAX_THRUSTER_SLOTS];
 
 	// Engine wash info
 	char		wash_info_index;			// index into Engine_wash_info
@@ -724,9 +732,7 @@ typedef struct glow_bank {  // glow bank struckture -Bobboau
 	int		submodel_parent; 
 	int		LOD; 
 	int		num_slots; 
-	vector	pnt[MAX_THRUSTER_SLOTS]; 
-	vector	norm[MAX_THRUSTER_SLOTS]; 
-	float		radius[MAX_THRUSTER_SLOTS]; 
+	glow_point point[MAX_THRUSTER_SLOTS];
 	int		glow_bitmap; 
 	int		glow_neb_bitmap; 
 } glow_bank;
