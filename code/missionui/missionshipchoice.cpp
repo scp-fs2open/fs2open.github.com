@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-03-03 06:05:29 $
+ * $Revision: 2.37 $
+ * $Date: 2005-03-12 04:44:24 $
  * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/03/03 06:05:29  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.35  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1969,23 +1972,27 @@ void ship_select_do(float frametime)
 	}
 	
 	if ( ss_icon_being_carried() ) {
-		int mouse_x, mouse_y;
+		int mouse_x, mouse_y, sx, sy;
 		mouse_get_pos( &mouse_x, &mouse_y );
+		sx = mouse_x + Ss_delta_x;
+		sy = mouse_y + Ss_delta_y;
 		if(Ss_icons[Carried_ss_icon.ship_class].model_index == -1)
 		{
 			gr_set_bitmap(Ss_icons[Carried_ss_icon.ship_class].icon_bmaps[ICON_FRAME_SELECTED]);
-			gr_bitmap(mouse_x + Ss_delta_x , mouse_y + Ss_delta_y);
+			gr_unsize_screen_pos(&sx, &sy);
+			gr_bitmap(sx, sy);
 		}
 		else
 		{
 			ship_info *sip = &Ship_info[Carried_ss_icon.ship_class];
 			gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
 			//gr_set_shader(&Icon_shaders[ICON_FRAME_SELECTED]);
-			int x = mouse_x + Ss_delta_x;
-			int y = mouse_y + Ss_delta_y;
 
-			draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip);
-			draw_brackets_square(x, y, x + 32, y + 28, true);
+			int w = 32;
+			int h = 28;
+			gr_resize_screen_pos(&w, &h);
+			draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, sx, sy, w, h, sip, false);
+			draw_brackets_square(sx, sy, sx + w, sy + h, false);
 			//gr_shade(mouse_x + Ss_delta_x, mouse_y + Ss_delta_y, 32, 28);
 		}
 	}
@@ -2274,7 +2281,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 		ship_info *sip = &Ship_info[ship_class];
 		gr_set_color_fast(color_to_draw);
 		//gr_set_shader(shader_to_use);
-		draw_model_icon(ss_icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip);
+		draw_model_icon(ss_icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip, true);
 		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28, true);
 		//gr_shade(Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28);
 	}
@@ -2557,8 +2564,11 @@ int pick_from_ship_list(int screen_offset, int ship_class)
 
 		ss_set_carried_icon(-1, ship_class);
 		mouse_get_pos( &mouse_x, &mouse_y );
-		Ss_delta_x = Ship_list_coords[gr_screen.res][screen_offset][0] - mouse_x;
-		Ss_delta_y = Ship_list_coords[gr_screen.res][screen_offset][1] - mouse_y;
+		Ss_delta_x = Ship_list_coords[gr_screen.res][screen_offset][0];
+		Ss_delta_y = Ship_list_coords[gr_screen.res][screen_offset][1];
+		gr_resize_screen_pos(&Ss_delta_x, &Ss_delta_y);
+		Ss_delta_x -= mouse_x;
+		Ss_delta_y -= mouse_y;
 		Assert( Ss_pool[ship_class] >= 0 );
 		rval = 0;
 	}
@@ -2624,8 +2634,11 @@ void pick_from_wing(int wb_num, int ws_num)
 			ss_set_carried_icon(slot_index, Wss_slots[slot_index].ship_class);
 
 			mouse_get_pos( &mouse_x, &mouse_y );
-			Ss_delta_x = Wing_icon_coords[gr_screen.res][slot_index][0] - mouse_x;
-			Ss_delta_y = Wing_icon_coords[gr_screen.res][slot_index][1] - mouse_y;
+			Ss_delta_x = Wing_icon_coords[gr_screen.res][slot_index][0];
+			Ss_delta_y = Wing_icon_coords[gr_screen.res][slot_index][1];
+			gr_resize_screen_pos(&Ss_delta_x, &Ss_delta_y);
+			Ss_delta_x -= mouse_x;
+			Ss_delta_y -= mouse_y;
 			Carried_ss_icon.from_x = mouse_x;
 			Carried_ss_icon.from_y = mouse_y;
 			}

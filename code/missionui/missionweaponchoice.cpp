@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-03-10 08:00:09 $
- * $Author: taylor $
+ * $Revision: 2.42 $
+ * $Date: 2005-03-12 04:44:24 $
+ * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/03/10 08:00:09  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.40  2005/03/03 08:41:53  Goober5000
  * AUGH!  Stupid hidden bugs... this one is V's fault
  * --Goober5000
@@ -3542,7 +3551,6 @@ void weapon_select_do(float frametime)
 		sx = mx + Wl_delta_x;
 		sy = my + Wl_delta_y;
 
-
 		if ( Wl_icons[Carried_wl_icon.weapon_class].can_use > 0)
 		{
 			wl_icon_info *icon = &Wl_icons[Carried_wl_icon.weapon_class];
@@ -3550,16 +3558,20 @@ void weapon_select_do(float frametime)
 			{
 				gr_set_color_fast(&Color_blue);
 				gr_set_bitmap(icon->icon_bmaps[WEAPON_ICON_FRAME_SELECTED]);
+				gr_unsize_screen_pos(&sx, &sy);
 				gr_bitmap(sx, sy);
 			}
 			else
 			{
 				gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
-				draw_brackets_square(sx, sy, sx+56, sy+24, true);
+				int w = 56;
+				int h = 24;
+				gr_resize_screen_pos(&w, &h);
+				draw_brackets_square(sx, sy, sx+w, sy+h, false);
 				if(icon->model_index != -1)
 				{
 					//Draw the model
-					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, 0.4f, sx, sy, 56, 24, NULL);
+					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, 0.4f, sx, sy, w, h, NULL, false);
 				}
 				else if(icon->laser_bmap != -1)
 				{
@@ -3994,8 +4006,11 @@ void wl_pick_icon_from_list(int index)
 	common_flash_button_init();
 
 	mouse_get_pos( &mx, &my );
-	Wl_delta_x = Wl_weapon_icon_coords[gr_screen.res][index][0] - mx;
-	Wl_delta_y = Wl_weapon_icon_coords[gr_screen.res][index][1] - my;
+	Wl_delta_x = Wl_weapon_icon_coords[gr_screen.res][index][0];
+	Wl_delta_y = Wl_weapon_icon_coords[gr_screen.res][index][1];
+	gr_resize_screen_pos(&Wl_delta_x, &Wl_delta_y);
+	Wl_delta_x -= mx;
+	Wl_delta_y -= my;
 }
 
 // ------------------------------------------------------------------------
@@ -4033,8 +4048,11 @@ void pick_from_ship_slot(int num)
 	mouse_get_pos( &mx, &my );
 
 	int x_offset = wl_fury_missile_offset_hack(wep[num], wep_count[num]);
-	Wl_delta_x = Wl_bank_coords[gr_screen.res][num][0] - mx + x_offset;
-	Wl_delta_y = Wl_bank_coords[gr_screen.res][num][1] - my;
+	Wl_delta_x = Wl_bank_coords[gr_screen.res][num][0];
+	Wl_delta_y = Wl_bank_coords[gr_screen.res][num][1];
+	gr_resize_screen_pos(&Wl_delta_x, &Wl_delta_y);
+	Wl_delta_x -= mx + x_offset;
+	Wl_delta_y -= my;
 
 	Carried_wl_icon.from_x = mx;
 	Carried_wl_icon.from_y = my;
