@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.86 $
- * $Date: 2004-12-02 11:20:33 $
- * $Author: taylor $
+ * $Revision: 2.87 $
+ * $Date: 2004-12-11 09:37:17 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2004/12/02 11:20:33  taylor
+ * text of -no_set_gamma cmdline option shouldn't specify D3D since it works in OGL too
+ *
  * Revision 2.85  2004/11/29 18:04:53  taylor
  * little reorg to flags so Experimental won't show up twice
  * add/update the wiki links since none of them worked before
@@ -690,7 +693,7 @@ Flag exe_params[] =
 	"-d3d_no_vsync",  "Disable vertical sync",			true,	0,				 EASY_DEFAULT,		"Game Speed",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_no_vsync", 
 
 	"-nobeampierce",  "",								true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Gameplay",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nobeampierce", 
-
+	"-mpnoreturn",	  "Disables flight deck option",	true,	0,				 EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-mpnoreturn",
 	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.snd_preload",
 	"-noaudio",		  "Disable sound and music",		false,	0,				 EASY_DEFAULT,		"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nosound",
 	"-nomusic",		  "Disable music",					false,	0,				 EASY_DEFAULT,		"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nomusic",
@@ -729,6 +732,7 @@ Flag exe_params[] =
 
 // here are the command line parameters that we will be using for FreeSpace
 cmdline_parm standalone_arg("-standalone", NULL);
+cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL);	//Removes 'Return to Flight Deck' in respawn dialog -C
 cmdline_parm nosound_arg("-nosound", NULL);
 cmdline_parm nomusic_arg("-nomusic", NULL);
 cmdline_parm startgame_arg("-startgame", NULL);
@@ -809,6 +813,7 @@ cmdline_parm snd_preload_arg("-snd_preload", NULL);
 
 cmdline_parm no_fpscap("-no_fps_capping", NULL);
 
+int Cmdline_mpnoreturn = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
@@ -1165,6 +1170,10 @@ bool SetCmdlineParams()
 	// is this a standalone server??
 	if (standalone_arg.found()) {
 		Is_standalone = 1;
+	}
+
+	if(mpnoreturn_arg.found()) {
+		Cmdline_mpnoreturn = 1;
 	}
 
 	// run with no sound
