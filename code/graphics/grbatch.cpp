@@ -459,8 +459,6 @@ float geometry_batcher::draw_laser(vector *p0,float width1,vector *p1,float widt
 	// Now have uvec, which is up vector and rvec which is the normal
 	// of the face.
 
-	int i;
-
 	vector start, end;
 
 	vm_vec_scale_add(&start, p0, &fvec, -width1);
