@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-01-28 11:39:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.30 $
+ * $Date: 2005-01-29 08:09:47 $
+ * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/01/28 11:39:17  Goober5000
+ * cleaned up some build warnings
+ * --Goober5000
+ *
  * Revision 2.28  2005/01/15 05:53:18  wmcoolmon
  * Current version of the new techroom code -C
  *
@@ -2053,7 +2057,7 @@ void ship_select_do(float frametime)
 		// render the ship
 		g3_start_frame(1);
 		g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
-		if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	
 		// lighting for techroom
@@ -3362,6 +3366,7 @@ void ss_load_icons(int ship_class)
 	else
 	{
 		icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		model_page_in_textures(icon->model_index, ship_class);
 	}
 }
 

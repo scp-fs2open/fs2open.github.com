@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-11-24 20:12:25 $
- * $Author: taylor $
+ * $Revision: 2.18 $
+ * $Date: 2005-01-29 08:09:47 $
+ * $Author: wmcoolmon $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/11/24 20:12:25  taylor
+ * fix briefing related crash(es) (forgot I had this)
+ *
  * Revision 2.16  2004/07/26 20:47:38  Kazan
  * remove MCD complete
  *
@@ -1470,7 +1473,7 @@ void brief_render_closeup(int ship_class, float frametime)
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
 
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	
 	model_clear_instance( Closeup_icon->modelnum );
