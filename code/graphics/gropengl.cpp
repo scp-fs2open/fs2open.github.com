@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.89 $
- * $Date: 2004-12-22 23:05:48 $
- * $Author: phreak $
+ * $Revision: 2.90 $
+ * $Date: 2005-01-01 11:24:22 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2004/12/22 23:05:48  phreak
+ * added a pragma message if DevIL isn't compiled into the build
+ *
  * Revision 2.88  2004/12/02 11:18:15  taylor
  * make OGL use same gamma reg setting as D3D since it's the same ramp
  * have OGL respect the -no_set_gamma cmdline option
@@ -1923,30 +1926,33 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 	glEnd();
 }
 
-void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale )
-{
-	gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
-	GLOWMAP=-1;
+extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
-	if ( !gr_tcache_set(SPECMAP, tmap_type, u_scale, v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-	{
+void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0 )
+{
+	if ( !gr_tcache_set(SPECMAP, tmap_type, u_scale, v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
 		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 		return;
 	}
 
+	// render with spec lighting only
+	opengl_default_light_settings(0, 0, 1);
+
+	gr_opengl_set_modulate_tex_env();
+
 	glBlendFunc(GL_ONE,GL_ONE);
 	glDepthMask(GL_FALSE);
 	glDepthFunc(GL_EQUAL);
-	gr_opengl_set_tex_env_scale(4.0f);
-	
 }
 
 void opengl_reset_spec_mapping()
 {
+	// reset lights to default values
+	opengl_default_light_settings();
+
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 }
 
 void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type, int flags, int is_scaler)
@@ -2037,8 +2043,9 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 
 void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, int is_scaler )
 {
-	int i;
+	int i, stage = 0;
 	float u_scale = 1.0f, v_scale = 1.0f;
+	bool use_spec = false;
 
 	// Make nebula use the texture mapper... this blends the colors better.
 	if ( flags & TMAP_FLAG_NEBULA ){
@@ -2051,10 +2058,41 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 
 
 	if ( flags & TMAP_FLAG_TEXTURED ) {
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-		{
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
 			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
+		}
+		stage++; // bump!
+
+		// cloakmap
+		if ( Interp_multitex_cloakmap > 0 ) {
+			SPECMAP = -1;	// don't add a spec map if we are cloaked
+			GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
+
+			if ( !gr_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
+				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
+			gr_opengl_set_additive_tex_env();
+			stage++; // bump
+		}
+
+		// glowmap
+		if ( (GLOWMAP > -1) && !Cmdline_noglow ) {
+			if ( !gr_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
+				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
+			gr_opengl_set_additive_tex_env();
+			stage++; // bump
+		}
+
+		if ( (lighting_is_enabled) && (SPECMAP > -1) && !Cmdline_nospec ) {
+			use_spec = true;
+			opengl_default_light_settings(1, 1, 0); // don't render with spec lighting here
+		} else {
+			// reset to defaults
+			opengl_default_light_settings();
 		}
 	}
 	
@@ -2106,32 +2144,18 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 	}
 
 	//maybe do a spec map
-	if ( (SPECMAP > -1) && !Cmdline_nospec && (flags & TMAP_FLAG_TEXTURED) )
-	{
-		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
-		GLOWMAP=-1;
-
-		if ( !gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-		{
-			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			return;
-		}
-
-		glBlendFunc(GL_ONE,GL_ONE);
-		glDepthMask(GL_FALSE);
-		glDepthFunc(GL_EQUAL);
-		gr_opengl_set_tex_env_scale(4.0f);
-		opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,1);
-			
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+	if ( use_spec ) {
+		opengl_set_spec_mapping(tmap_type, &u_scale, &v_scale);
+		opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, 1);
+		opengl_reset_spec_mapping();
 	}
 }
 
 void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, int is_scaler )
 {
-	int i;
+	int i, stage = 0;
 	float u_scale = 1.0f, v_scale = 1.0f;
+	bool use_spec = false;
 
 	// Make nebula use the texture mapper... this blends the colors better.
 	if ( flags & TMAP_FLAG_NEBULA ){
@@ -2144,10 +2168,41 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
 
 	if ( flags & TMAP_FLAG_TEXTURED ) {
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-		{
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
 			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
+		}
+		stage++; // bump!
+
+		// cloakmap
+		if ( Interp_multitex_cloakmap > 0 ) {
+			SPECMAP = -1;	// don't add a spec map if we are cloaked
+			GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
+
+			if ( !gr_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
+				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
+			gr_opengl_set_additive_tex_env();
+			stage++; // bump
+		}
+
+		// glowmap
+		if ( (GLOWMAP > -1) && !Cmdline_noglow ) {
+			if ( !gr_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
+				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
+			gr_opengl_set_additive_tex_env();
+			stage++; // bump
+		}
+
+		if ( (lighting_is_enabled) && (SPECMAP > -1) && !Cmdline_nospec ) {
+			use_spec = true;
+			opengl_default_light_settings(1, 1, 0); // don't render with spec lighting here
+		} else {
+			// reset to defaults
+			opengl_default_light_settings();
 		}
 	}
 	
@@ -2189,7 +2244,7 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 	if (CLOAKMAP==gr_screen.current_bitmap)
 		glBlendFunc(GL_ONE, GL_ONE);
 
-	opengl_draw_primitive(nv,verts,flags, u_scale, v_scale, r,g,b,alpha);
+	opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha);
 
 	if (ogl_maybe_pop_arb1)
 	{
@@ -2197,10 +2252,9 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 		ogl_maybe_pop_arb1=0;
 	}
 
-	if ((SPECMAP > -1) && !Cmdline_nospec && (flags & TMAP_FLAG_TEXTURED))
-	{
-		opengl_set_spec_mapping(tmap_type,&u_scale,&v_scale);
-		opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha,1);
+	if ( use_spec ) {
+		opengl_set_spec_mapping(tmap_type, &u_scale, &v_scale);
+		opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha, 1);
 		opengl_reset_spec_mapping();
 	}
 }
@@ -2446,16 +2500,16 @@ void gr_opengl_set_color_fast(color *dst)
 
 void gr_opengl_print_screen(char *filename)
 {
-	ubyte buf[1024*3];
+	char tmp[MAX_FILENAME_LEN];
+	ubyte *buf = NULL;
 
-	memset(buf,0,1024*3);
-	char tmp[1024];
-
-	strcpy( tmp, NOX(".\\gl"));	// specify a path mean files goes in root
-	strcat( tmp, filename );
+	strcpy( tmp, filename );
 	strcat( tmp, NOX(".tga"));
 
-	CFILE *f = cfopen(tmp, "wb");
+	CFILE *f = cfopen(tmp, "wb", CFILE_NORMAL, CF_TYPE_ROOT);
+
+	if (f == NULL)
+		return;
 
 	// Write the TGA header
 	cfwrite_ubyte( 0, f );	//	IDLength;
@@ -2470,18 +2524,21 @@ void gr_opengl_print_screen(char *filename)
 	cfwrite_ushort( (ushort)gr_screen.max_h, f );	//	Height;
 	cfwrite_ubyte( 24, f );	//PixelDepth;
 	cfwrite_ubyte( 0, f );	//ImageDesc;
-	
-	int h=gr_screen.max_h;
-	int w=gr_screen.max_w;
 
-	for (int i=0; i < h; i++)
-	{
-		glReadPixels(0,i,w,1,GL_BGR_EXT, GL_UNSIGNED_BYTE, buf);	
-		cfwrite(buf,w*3,1,f);
-	}
-	
+	buf = (ubyte*)malloc(gr_screen.max_w * gr_screen.max_h * 3);
+
+	if (buf == NULL)
+		return;
+
+	memset(buf, 0, gr_screen.max_w * gr_screen.max_h * 3);
+
+	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGR_EXT, GL_UNSIGNED_BYTE, buf);
+
+	cfwrite(buf, gr_screen.max_w * gr_screen.max_h * 3, 1, f);
+
 	cfclose(f);
 
+	free(buf);
 }
 
 int gr_opengl_supports_res_ingame(int res)
@@ -2501,12 +2558,10 @@ int gr_opengl_supports_res_interface(int res)
 void opengl_tcache_cleanup ();
 void gr_opengl_cleanup(int minimize)
 {	
-	HWND wnd=(HWND)os_get_window();
-
 	if ( !OGL_enabled )
 		return;
 
-	if ( !Fred_running ) {
+	if (!Fred_running) {
 		gr_reset_clip();
 		gr_clear();
 		gr_flip();
@@ -2514,8 +2569,8 @@ void gr_opengl_cleanup(int minimize)
 
 	OGL_enabled = 0;
 
-	// reset gamma to default
-	gr_set_gamma(1.0f);
+#ifdef _WIN32
+	HWND wnd=(HWND)os_get_window();
 
 	DBUGFILE_OUTPUT_0("");
 	if (rend_context)
@@ -2532,15 +2587,17 @@ void gr_opengl_cleanup(int minimize)
 		}
 		rend_context=NULL;
 	}
+#endif
 
 	DBUGFILE_OUTPUT_0("opengl_minimize");
 	opengl_minimize();
 	if (minimize)
 	{
+#ifdef _WIN32
 		if (!Cmdline_window)
 			ChangeDisplaySettings(NULL, 0);
+#endif
 	}
-
 }
 
 void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
@@ -3417,6 +3474,7 @@ void gr_opengl_init(int reinit)
 
 	//shut these command line parameters down if they are in use
 	Cmdline_batch_3dunlit = 0;
+	Cmdline_2d_poof = 0;
 
 	// why bother
 	if (bpp != 32) {
@@ -3633,6 +3691,11 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 #endif
 
 	ver=(char*)glGetString(GL_VERSION);
+
+	if (*(ver+2) < REQUIRED_GL_VERSION) {
+		Error(LOCATION,"Current GL Version of 1.%c is less than required version of 1.%c\nSwitch video modes or update drivers", *(ver+2), REQUIRED_GL_VERSION);
+	}
+
 	OGL_enabled = 1;
 	if (!reinit)
 	{
@@ -3651,11 +3714,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		if (extlist != NULL) {
 			memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
 
-			if (*(ver+2) < REQUIRED_GL_VERSION)
-			{
-				Error(LOCATION,"Current GL Version of 1.%c is less than required version of 1.%c\nSwitch video modes or update drivers", *(ver+2), REQUIRED_GL_VERSION);
-			}
-	
 			curext=strtok(extlist, " ");
 
 			while (curext)

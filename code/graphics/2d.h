@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.38 $
- * $Date: 2004-11-27 10:48:03 $
+ * $Revision: 2.39 $
+ * $Date: 2005-01-01 11:24:22 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2004/11/27 10:48:03  taylor
+ * some fixes for position problems on the HUD in non-standard resolutions
+ * few compiler warning fixes
+ *
  * Revision 2.37  2004/11/23 00:10:06  taylor
  * try and protect the bitmap_entry stuff a bit better
  * fix the transparent support ship, again, but correctly this time
@@ -820,7 +824,7 @@ typedef struct screen {
 	void (*gf_filter_set)(int filter);
 
 	// set a texture into cache. for sectioned bitmaps, pass in sx and sy to set that particular section of the bitmap
-	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force);	
+	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage);	
 
 	// preload a bitmap into texture memory
 	int (*gf_preload)(int bitmap_num, int is_aabitmap);
@@ -1065,9 +1069,9 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 #define gr_filter_set		GR_CALL(gr_screen.gf_filter_set)
 
 //#define gr_tcache_set		GR_CALL(gr_screen.gf_tcache_set)
-__inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0)
+__inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int stage = 0)
 {
-	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force);
+	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, stage);
 }
 
 #define gr_preload			GR_CALL(gr_screen.gf_preload)

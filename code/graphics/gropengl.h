@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.4 $
- * $Date: 2004-10-31 21:42:31 $
+ * $Revision: 2.5 $
+ * $Date: 2005-01-01 11:24:23 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/10/31 21:42:31  taylor
+ * Linux tree merge, use linear mag filter, small FRED fix, AA lines (disabled), use rgba colors for 3dunlit, proper gamma adjustment, bmpman merge
+ *
  * Revision 2.3  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -101,6 +104,8 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt);
 void gr_opengl_bitmap(int x, int y);
 void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy);
+void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0 );
+void opengl_reset_spec_mapping();
 
 extern int VBO_ENABLED;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.43 $
- * $Date: 2004-10-31 21:40:11 $
+ * $Revision: 2.44 $
+ * $Date: 2005-01-01 11:24:22 $
  * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2004/10/31 21:40:11  taylor
+ * move some otherwise bmpman stuff into grd3dbmpman.cpp
+ *
  * Revision 2.42  2004/07/29 03:41:46  taylor
  * plug memory leaks
  *
@@ -1129,9 +1132,9 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 	return 1;
 }
 
-int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force)
+int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage)
 {
-	return d3d_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, 0, 0, force, 0 );
+	return d3d_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, 0, 0, force, stage );
 }
 
 void d3d_tcache_init()
