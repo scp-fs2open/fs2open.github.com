@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-10-04 22:42:23 $
+ * $Revision: 2.10 $
+ * $Date: 2003-10-13 05:57:49 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/04 22:42:23  Kazan
+ * fs2netd now TCP
+ *
  * Revision 2.8  2003/09/25 21:12:24  Kazan
  * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
  * Also D3D8 Screenshots work now.
@@ -1420,7 +1423,7 @@ void multi_join_game_init()
 		// ---------------------- login ---------------------- 
 		
 		
-		Kaz_NoBackGround_DrawString("Loging In");
+		Kaz_NoBackGround_DrawString("Logging In");
 		PXO_SID  = Fs2OpenPXO_Login(Multi_tracker_login, Multi_tracker_passwd, FS2OpenPXO_Socket, PXO_Server, PXO_port);
 
 		if (PXO_SID == -1)

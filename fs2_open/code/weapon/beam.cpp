@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-09-13 06:02:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2003-10-13 05:57:50 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/09/13 06:02:04  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.23  2003/08/21 15:04:17  phreak
  * zeroed out the specular fields since they caused some flickering
  *
@@ -2437,7 +2441,8 @@ void beam_jitter_aim(beam *b, float aim)
 // collide a beam with a ship, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_ship(obj_pair *pair)
 {
-	mprintf(("about to do beam colision\n"));
+	// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+	//mprintf(("about to do beam colision\n"));
 	beam *b;		
 	ship *shipp;
 	ship_info *sip;
@@ -3298,8 +3303,8 @@ void beam_apply_whack(beam *b, object *objp, vector *hit_point)
 		return;
 	}
 
-	// don't whack docking ships
-	if(Ai_info[shipp->ai_index].ai_flags & AIF_DOCKED){
+	// don't whack docking ships - and don't whack if the beam isn't supposed to
+	if(Ai_info[shipp->ai_index].ai_flags & AIF_DOCKED || wip->wi_flags2 & WIG2_BEAM_NO_WHACK){
 		return;
 	}
 

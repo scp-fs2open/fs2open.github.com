@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.32 $
- * $Date: 2003-10-10 03:59:41 $
- * $Author: matt $
+ * $Revision: 2.33 $
+ * $Date: 2003-10-13 05:57:48 $
+ * $Author: Kazan $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/10/10 03:59:41  matt
+ * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
+ * out now. -Sticks
+ *
  * Revision 2.31  2003/10/05 23:40:54  phreak
  * bug squashing.
  * preliminary tnl work done
@@ -1975,7 +1979,8 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 		{
-			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
 	}
@@ -2041,7 +2046,8 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 		//maybe draw a cloakmap, using a multipass technique
 		if ( !gr_tcache_set(CLOAKMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 		{
-			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
 
@@ -2074,7 +2080,8 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 
 			if ( !gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 			{
-				mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+				// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 				return;
 			}
 
@@ -2189,7 +2196,8 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 		{
-			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
 	}
@@ -2250,7 +2258,8 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 
 			if ( !gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 			{
-				mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+				// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 				return;
 			}
 

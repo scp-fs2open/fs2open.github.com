@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-09-25 21:12:24 $
+ * $Revision: 2.22 $
+ * $Date: 2003-10-13 05:57:48 $
  * $Author: Kazan $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/09/25 21:12:24  Kazan
+ * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
+ * Also D3D8 Screenshots work now.
+ *
  * Revision 2.20  2003/09/23 02:42:53  Kazan
  * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
  *
@@ -1062,7 +1066,8 @@ void gr_d3d_tmapper_internal_3d( int nverts, vertex **verts, uint flags, int is_
  
 	if ( flags & TMAP_FLAG_TEXTURED )	{
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
-			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
 
@@ -1333,7 +1338,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
  
 	if ( flags & TMAP_FLAG_TEXTURED )	{
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
-			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
 
