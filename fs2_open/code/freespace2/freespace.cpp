@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:58 $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-22 01:39:24 $
  * $Author: penguin $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:58  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -2145,7 +2148,7 @@ void game_init()
 	}		
 	e1 = timer_get_milliseconds();
 
-#ifndef NO_NETWORK
+#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 	if (Is_standalone) {
 		std_init_standalone();
 	}
@@ -2725,7 +2728,7 @@ void game_show_framerate()
 #endif
 }
 
-#ifndef NO_NETWORK
+#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 void game_show_standalone_framerate()
 {
 	float frame_rate=30.0f;
@@ -4430,7 +4433,7 @@ void game_frame()
 #endif		
 		} else {
 
-#ifndef NO_NETWORK
+#ifndef NO_STANDALONE
 			game_show_standalone_framerate();
 #endif
 		}
@@ -4602,7 +4605,7 @@ void game_set_frametime(int state)
 		}
 	}
 
-#ifndef NO_NETWORK
+#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 	if((Game_mode & GM_STANDALONE_SERVER) && 
 		(f2fl(Frametime) < ((float)1.0/(float)Multi_options_g.std_framecap))){
 
@@ -4655,7 +4658,7 @@ void game_do_frame()
 	game_set_frametime(GS_STATE_GAME_PLAY);
 	game_update_missiontime();
 
-#ifndef NO_NETWORK
+#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_multi_set_standalone_missiontime(f2fl(Missiontime));
 	}
@@ -5858,7 +5861,7 @@ void game_leave_state( int old_state, int new_state )
 			cutscenes_screen_close();
 			break;
 
-#ifndef NO_NETWORK
+#ifndef NO_STANDALONE
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_close();
 	  		break;
@@ -5870,6 +5873,12 @@ void game_leave_state( int old_state, int new_state )
 			}			
 			break;
 
+		case GS_STATE_STANDALONE_POSTGAME:
+			multi_standalone_postgame_close();
+			break;
+#endif
+
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_PAUSED:
 			// if ( end_mission ){
 				pause_close(1);
@@ -5878,10 +5887,6 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_INGAME_PRE_JOIN:
 			multi_ingame_select_close();
-			break;
-
-		case GS_STATE_STANDALONE_POSTGAME:
-			multi_standalone_postgame_close();
 			break;
 #endif  // ifndef NO_NETWORK
 
@@ -6321,7 +6326,7 @@ void mouse_force_pos(int x, int y);
 			cutscenes_screen_init();
 			break;
 
-#ifndef NO_NETWORK
+#ifndef NO_STANDALONE
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_init();
 			break;
@@ -6334,16 +6339,18 @@ void mouse_force_pos(int x, int y);
 			}
 			break;	
 
+		case GS_STATE_STANDALONE_POSTGAME:
+			multi_standalone_postgame_init();
+			break;
+#endif  // ifndef NO_STANDALONE
+
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_PAUSED:
 			pause_init(1);
 			break;
 		
 		case GS_STATE_INGAME_PRE_JOIN:
 			multi_ingame_select_init();
-			break;
-
-		case GS_STATE_STANDALONE_POSTGAME:
-			multi_standalone_postgame_init();
 			break;
 #endif  // ifndef NO_NETWORK
 
@@ -6595,7 +6602,7 @@ void game_do_state(int state)
 			cutscenes_screen_do_frame();
 			break;
 
-#ifndef NO_NETWORK
+#ifndef NO_STANDALONE
 		case GS_STATE_MULTI_STD_WAIT:
 			game_set_frametime(GS_STATE_STANDALONE_MAIN);
 			multi_standalone_wait_do();
@@ -6605,7 +6612,9 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_STANDALONE_MAIN);
 			standalone_main_do();
 			break;	
+#endif  // ifndef NO_STANDALONE
 
+#ifndef NO_NETWORK
 		case GS_STATE_MULTI_PAUSED:
 			game_set_frametime(GS_STATE_MULTI_PAUSED);
 			pause_do(1);
@@ -6629,12 +6638,12 @@ void game_do_state(int state)
 	#endif
 			break;
 
-#ifndef NO_NETWORK
+#ifndef NO_STANDALONE
 		case GS_STATE_STANDALONE_POSTGAME:
 			game_set_frametime(GS_STATE_STANDALONE_POSTGAME);
 			multi_standalone_postgame_do();
 			break;
-#endif  // ifndef NO_NETWORK
+#endif  // ifndef NO_STANDALONE
 
 		case GS_STATE_INITIAL_PLAYER_SELECT:
 			game_set_frametime(GS_STATE_INITIAL_PLAYER_SELECT);
