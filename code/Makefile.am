@@ -1,24 +1,25 @@
-# code/Makefile.am for fs2_open
-#
-# $Id: Makefile.am,v 1.3 2004-05-24 04:10:03 taylor Exp $
-
-if FS2_DEBUG
-noinst_PROGRAMS = fs2_open_d
-fs2_open_d_SOURCES = $(CODE_SOURCES)
-else
-noinst_PROGRAMS = fs2_open_r
-fs2_open_r_SOURCES = $(CODE_SOURCES)
-endif # FS2_DEBUG
-
-LDADD =
+## code/Makefile.am for fs2_open
+##
+## $Id: Makefile.am,v 1.4 2005-01-30 12:50:07 taylor Exp $
 
 
-CODE_SOURCES =	\
+noinst_LIBRARIES = libcode.a
+noinst_PROGRAMS = @FS2_BINARY@
+
+EXTRA_PROGRAMS = fs2_open_r fs2_open_d
+
+###############################################################################
+##
+## Begin CORE library
+##
+
+FS2_SOURCES =	\
 	anim/animplay.cpp	\
 	anim/packunpack.cpp	\
 	asteroid/asteroid.cpp	\
 	autopilot/autopilot.cpp	\
 	bmpman/bmpman.cpp	\
+	camera/camera.cpp	\
 	cfile/cfile.cpp	\
 	cfile/cfilearchive.cpp	\
 	cfile/cfilelist.cpp	\
@@ -28,6 +29,7 @@ CODE_SOURCES =	\
 	controlconfig/controlsconfig.cpp	\
 	controlconfig/controlsconfigcommon.cpp	\
 	cutscene/cutscenes.cpp	\
+	cutscene/movie.cpp	\
 	ddsutils/ddsutils.cpp	\
 	debris/debris.cpp	\
 	debugconsole/console.cpp	\
@@ -37,8 +39,6 @@ CODE_SOURCES =	\
 	exceptionhandler/exceptionhandler.cpp	\
 	fireball/fireballs.cpp	\
 	fireball/warpineffect.cpp	\
-	freespace2/freespace.cpp	\
-	freespace2/levelpaging.cpp	\
 	gamehelp/contexthelp.cpp	\
 	gamehelp/gameplayhelp.cpp	\
 	gamesequence/gamesequence.cpp	\
@@ -50,6 +50,7 @@ CODE_SOURCES =	\
 	graphics/font.cpp	\
 	graphics/grbatch.cpp	\
 	graphics/gropengl.cpp	\
+	graphics/gropenglbmpman.cpp	\
 	graphics/gropenglextension.cpp	\
 	graphics/gropengllight.cpp	\
 	graphics/gropengltexture.cpp	\
@@ -64,6 +65,7 @@ CODE_SOURCES =	\
 	hud/hudlock.cpp	\
 	hud/hudmessage.cpp	\
 	hud/hudnavigation.cpp	\
+	hud/hudparse.cpp	\
 	hud/hudreticle.cpp	\
 	hud/hudshield.cpp	\
 	hud/hudsquadmsg.cpp	\
@@ -129,6 +131,7 @@ CODE_SOURCES =	\
 	object/collideshipweapon.cpp	\
 	object/collideweaponweapon.cpp	\
 	object/objcollide.cpp	\
+	object/objectdock.cpp	\
 	object/object.cpp	\
 	object/objectsort.cpp	\
 	observer/observer.cpp	\
@@ -144,6 +147,8 @@ CODE_SOURCES =	\
 	popup/popup.cpp	\
 	popup/popupdead.cpp	\
 	radar/radar.cpp	\
+	radar/radarorb.cpp \
+	radar/radarsetup.cpp \
 	render/3dclipper.cpp	\
 	render/3ddraw.cpp	\
 	render/3dlaser.cpp	\
@@ -192,29 +197,28 @@ CODE_SOURCES =	\
 	weapon/weapons.cpp	\
 	species_defs/species_defs.cpp 
 
-
 ## conditional includes follow:
 
 ## joystic support sources
 if FS2_JOYSTICK
 
 if FS2_OS_WIN32
-CODE_SOURCES +=	\
+JOY_SOURCES =	\
 	io/joy.cpp	\
 	io/joy_ff.cpp	\
 	io/swff_lib.cpp
-endif # FS2_OS_WIN32
+endif
 
 if FS2_OS_UNIX
-CODE_SOURCES +=	\
+JOY_SOURCES =	\
 	io/joy-unix.cpp
-endif # FS2_OS_UNIX
+endif
 
-endif # FS2_JOYSTICK
+endif
 
 ## networking support sources
 if FS2_NETWORKING
-CODE_SOURCES +=	\
+NETWORK_SOURCES =	\
 	hud/hudobserver.cpp	\
 	irc/irc.cpp	\
 	network/fs2ox.cpp	\
@@ -252,23 +256,24 @@ CODE_SOURCES +=	\
 	fs2open_pxo/udpsocket.cpp
 
 if FS2_OS_WIN32
-CODE_SOURCES +=	\
+NETWORK_SOURCES +=	\
 	network/stand_gui.cpp
-endif # FS2_OS_WIN32
+endif
 
 if FS2_OS_UNIX
-CODE_SOURCES +=	\
+NETWORK_SOURCES +=	\
 	network/stand_gui-unix.cpp
-endif # FS2_OS_UNIX
+endif
 
-endif # FS2_NETWORKING
+endif
 
 ## sound support sources
 if FS2_SOUND
-CODE_SOURCES +=	\
+SOUND_SOURCES =	\
 	gamesnd/eventmusic.cpp	\
 	gamesnd/gamesnd.cpp	\
 	object/objectsnd.cpp	\
+	sound/ogg/ogg.cpp	\
 	sound/ds.cpp	\
 	sound/midifile.cpp	\
 	sound/rbaudio.cpp	\
@@ -281,25 +286,24 @@ CODE_SOURCES +=	\
 	sound/speech.cpp
 
 if FS2_OS_WIN32
-CODE_SOURCES +=	\
+SOUND_SOURCES +=	\
 	sound/dscap.cpp	\
 	sound/ds3d.cpp	\
 	sound/audiostr.cpp	\
 	sound/acm.cpp
-endif # FS2_OS_WIN32
+endif
 
 if FS2_OS_UNIX
-CODE_SOURCES +=	\
+SOUND_SOURCES +=	\
 	sound/audiostr-unix.cpp	\
 	sound/acm-unix.cpp
-endif # FS2_OS_UNIX
+endif
 
-endif # FS2_SOUND
+endif
 
 ## Win32-specific sources
 if FS2_OS_WIN32
-CODE_SOURCES +=	\
-	cutscene/movie.cpp	\
+WIN32_SOURCES =	\
 	directx/dx8show.cpp	\
 	globalincs/windebug.cpp	\
 	glide/glide.cpp	\
@@ -313,62 +317,50 @@ CODE_SOURCES +=	\
 	osapi/osapi.cpp	\
 	osapi/osregistry.cpp	\
 	osapi/outwnd.cpp
-endif # FS2_OS_WIN32
+endif
 
 ## Unix-specific sources
 if FS2_OS_UNIX
-CODE_SOURCES +=	\
+UNIX_SOURCES =	\
 	io/xmouse.cpp	\
 	osapi/osapi_unix.cpp	\
 	osapi/osregistry_unix.cpp	\
 	osapi/outwnd_unix.cpp	\
-	cutscene/movie.cpp	\
 	windows_stub/stubs.cpp
-endif # FS2_OS_UNIX
-
-# Use devIL
-if FS2_DEVIL
-CODE_SOURCES +=	\
-	openil/il_func.cpp
-endif # FS2_DEVIL
-
-#if FS2_SPEECH
-#LDADD += \
-#	-lFestival -lestools -lestbase -leststring -lncurses
-#endif
-
-
-if FS2_OS_WIN32
-## compiler flags
-# INCLUDES = -I.
-AM_CXXFLAGS =	\
-	-fexceptions	\
-	${DX8_INCLUDE}	\
-	${DEVIL_CFLAGS}
-
-AM_LDFLAGS =	\
-	${DX8_LIB}	\
-	${DEVIL_LIBS}
-
-## Win32 libraries needed
-LDADD +=	\
-	-lgdi32 -lole32 -lwsock32 -lwinmm -lmsacm32 -lopengl32	\
-	-lcomctl32 -lstrmiids -ldxguid -lddraw -ldinput
 endif
 
 
-if FS2_OS_UNIX
-## Unix compiler flags
-AM_CXXFLAGS =	\
-	-Wno-missing-braces -Wno-multichar -Wno-deprecated	\
-	${SDL_CFLAGS}	\
-	${OPENAL_CFLAGS}	\
-	${DEVIL_CFLAGS}	\
-	-fsigned-char -DNO_DIRECT3D -DUSE_OPENGL
+## libcode.a
+libcode_a_SOURCES = ${FS2_SOURCES} ${JOY_SOURCES} ${NETWORK_SOURCES}	\
+	${SOUND_SOURCES} ${WIN32_SOURCES} ${UNIX_SOURCES}
 
-AM_LDFLAGS =	\
-	${OGL_LIBDIR} -lGL -lGLU	\
-	${SDL_LIBS}	\
-	${OPENAL_LIBS}	\
-	${DEVIL_LIBS}
+##
+## End CODE library
+##
+###############################################################################
+
+###############################################################################
+##
+## Begin MAIN fs2 binary
+##
+
+if FS2_OS_OSX
+PLATFORM_SOURCES =	\
+	mac_osx/SDLMain.m
 endif
+
+fs2_open_d_SOURCES =	\
+	freespace2/freespace.cpp freespace2/levelpaging.cpp	\
+	${PLATFORM_SOURCES}
+
+fs2_open_r_SOURCES =	\
+	freespace2/freespace.cpp freespace2/levelpaging.cpp	\
+	${PLATFORM_SOURCES}
+
+fs2_open_d_LDADD = libcode.a
+fs2_open_r_LDADD = libcode.a
+
+##
+## End MAIN library
+##
+###############################################################################

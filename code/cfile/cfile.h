@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.9 $
- * $Date: 2004-08-11 05:06:19 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2005-01-30 12:50:08 $
+ * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/08/11 05:06:19  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.8  2004/05/26 21:02:26  wmcoolmon
  * Added weapons_expl modular table, updated cfilesystem to work with modular tables, fixed loading order, fixed ship loading error messages
  *
@@ -362,9 +365,10 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __CFILE_H__
 #define __CFILE_H__
+
+#include "PreProcDefines.h"
 
 #include <time.h>
 #include "globalincs/pstypes.h"
@@ -372,7 +376,7 @@
 #if defined _WIN32
   #define DIR_SEPARATOR_CHAR '\\'
   #define DIR_SEPARATOR_STR  "\\"
-#elif defined unix
+#elif defined SCP_UNIX
   #define DIR_SEPARATOR_CHAR '/'
   #define DIR_SEPARATOR_STR  "/"
 #else
@@ -463,6 +467,9 @@ extern int (*Get_file_list_filter)(char *filename);
 // cfile directory. valid after cfile_init() returns successfully
 #define CFILE_ROOT_DIRECTORY_LEN			256
 extern char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN];
+#ifdef SCP_UNIX
+extern char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN];
+#endif
 
 //================= LOW-LEVEL FUNCTIONS ==================
 // Call this once at the beginning of the program

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-12-20 20:18:30 $
- * $Author: fryday $
+ * $Revision: 2.14 $
+ * $Date: 2005-01-30 12:50:08 $
+ * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/12/20 20:18:30  fryday
+ * Commented out ATL dependencies (And changed one macro to an swprintf instead)
+ * Tiny change in animplay ( pow(2.0, ...) instead of pow(2, ...)) because VS2K5
+ * throws an ambiguity error over that.
+ *
  * Revision 2.12  2004/10/09 17:58:48  taylor
  * one more try to fix the memory leak and end-of-mission crash for talking head anis
  *
@@ -932,6 +937,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
 
 	ptr->total_frames = cfread_short(fp);
 	cfread(&ptr->packer_code, 1, 1, fp);
+	ptr->packer_code = INTEL_SHORT(ptr->packer_code);
 	cfread(&ptr->palette, 256, 3, fp);
 	ptr->num_keys = cfread_short(fp);
 
@@ -1021,6 +1027,8 @@ anim *anim_load(char *real_filename, int file_mapped)
 			ptr->keys[idx].frame_num = 0;
 			cfread(&ptr->keys[idx].frame_num, 2, 1, fp);
 			cfread(&ptr->keys[idx].offset, 4, 1, fp);
+			ptr->keys[idx].frame_num = INTEL_INT( ptr->keys[idx].frame_num );
+			ptr->keys[idx].offset = INTEL_INT( ptr->keys[idx].offset );
 		}
 
 		/*prev_keyp = &ptr->keys;
@@ -1036,6 +1044,7 @@ anim *anim_load(char *real_filename, int file_mapped)
 			cfread(&keyp->offset, 4, 1, fp);
 		}*/
 		cfread(&count, 4, 1, fp);	// size of compressed data
+		count = INTEL_INT( count );
 
 		ptr->cfile_ptr = NULL;
 

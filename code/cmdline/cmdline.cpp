@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.90 $
- * $Date: 2005-01-29 16:30:47 $
- * $Author: phreak $
+ * $Revision: 2.91 $
+ * $Date: 2005-01-30 12:50:08 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2005/01/29 16:30:47  phreak
+ * smart shield command line stuff.  this will be changed in the future, but i want people to test it.
+ * -phreak
+ *
  * Revision 2.89  2005/01/21 08:29:04  taylor
  * add -rlm cmdline option to switch to local viewpoint lighting calculations (OGL only for now)
  *
@@ -601,7 +605,10 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <direct.h>
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #include "globalincs/pstypes.h"
@@ -612,6 +619,9 @@
 #include "species_defs/species_defs.h"
 #include "hud/hudconfig.h"
 
+#ifdef SCP_UNIX
+#include "osapi/osapi.h"
+#endif
 
 // variables
 class cmdline_parm {
@@ -791,6 +801,9 @@ cmdline_parm cell_arg("-cell", NULL);
 cmdline_parm jpgtga_arg("-jpgtga",NULL);
 cmdline_parm no_set_gamma_arg("-no_set_gamma",NULL);
 cmdline_parm d3d_no_vsync_arg("-d3d_no_vsync", NULL);
+#ifdef SCP_UNIX
+	cmdline_parm no_grab("-nograb", NULL);
+#endif
 cmdline_parm pcx32_arg("-pcx32",NULL);
 cmdline_parm pcx32dds_arg("-pcx2dds",NULL);
 cmdline_parm timerbar_arg("-timerbar", NULL);
@@ -884,6 +897,10 @@ char *Cmdline_start_mission = NULL;
 int Cmdline_ambient_factor  = 128;
 int Cmdline_2d_poof			= 0;
 
+#ifdef SCP_UNIX
+	int Cmdline_no_grab = 0;
+#endif
+
 // Lets keep a convention here
 int Cmdline_nohtl = 0;
 int Cmdline_jpgtga = 0;
@@ -924,6 +941,7 @@ extern float Viewer_zoom;
 
 int Cmdline_cell = 0;
 int Cmdline_batch_3dunlit = 0;
+
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -1023,18 +1041,43 @@ void os_validate_parms(char *cmdline)
 		if (token[0] == '-') {
 			parm_found = 0;
 			for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
+#ifdef _WIN32
 				if (!stricmp(parmp->name, token)) {
+#else
+				// make sure to do a case sensitive check here
+				if (!strcmp(parmp->name, token)) {
+#endif
 					parm_found = 1;
 					break;
 				}
 			}
 
 			if (parm_found == 0) {
+#ifdef _WIN32
 				// Changed this to MessageBox, this is a user error not a developer
 				char buffer[128];
 				sprintf(buffer,"Unrecogzined command line parameter %s, continue?",token);
 				if( MessageBox(NULL, buffer, "Warning", MB_OKCANCEL | MB_ICONQUESTION) == IDCANCEL)
 					exit(0);
+#else
+				printf("FS2 Open: The Source Code Project\n");
+				printf("Website: http://freespace.volitionwatch.com/fsscp\n");
+				printf("Mantis (bug reporting): http://mgo.maxgaming.net/mantis/main_page.php\n\n");
+				printf("Usage: fs2 [options]\n");
+
+				// not the prettiest thing but the job gets done
+				int STR_SIZE = 25;
+				char space[STR_SIZE];  // max len of exe_params.name + 5 spaces
+				int p=0, m, sp=0;
+				while (exe_params[p].name[0] == '-') {
+					sp = strlen(exe_params[p].name);
+					for (m = 0; m<STR_SIZE; m++) space[m] = ' ';
+					space[STR_SIZE - sp] = '\0';
+					printf("    [ %s ]%s- %s\n", exe_params[p].name, space, exe_params[p].desc);
+					p++;
+				}
+				exit(0);
+#endif
 			}
 		}
 
@@ -1053,7 +1096,18 @@ void os_init_cmdline(char *cmdline)
 	// read the cmdline.cfg file from the data folder, and pass the command line arguments to
 	// the the parse_parms and validate_parms line.  Read these first so anything actually on
 	// the command line will take precedence
+#ifdef _WIN32
 	fp = fopen("data\\cmdline_fso.cfg", "rt");
+#else
+	char cmdname[MAX_PATH];
+
+	snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline.cfg", detect_home(), Osreg_user_dir);
+	fp = fopen(cmdname, "rt");
+
+	// not found in userdir so check gamedir
+	if (!fp)
+		fp = fopen("data/cmdline_fso.cfg", "rt");
+#endif
 
 	// if the file exists, get a single line, and deal with it
 	if ( fp ) {
@@ -1065,6 +1119,11 @@ void os_init_cmdline(char *cmdline)
 		if ( (p = strrchr(buf, '\n')) != NULL ) {
 			*p = '\0';
 		}
+
+#ifdef SCP_UNIX
+		// append a space for the os_parse_parms() check
+		strcat(buf, " ");
+#endif
 
 		os_parse_parms(buf);
 		os_validate_parms(buf);
@@ -1455,6 +1514,13 @@ bool SetCmdlineParams()
 		Cmdline_d3d_no_vsync = 1;
 	}
 
+#ifdef SCP_UNIX
+	// no key/mouse grab
+	if(no_grab.found()){
+		Cmdline_no_grab = 1;
+	}
+#endif
+
 	if(pcx32_arg.found() )
 	{
 		Cmdline_pcx32 = 1;
@@ -1636,7 +1702,7 @@ int fred2_parse_cmdline(int argc, char *argv[])
 		for (i = 1;  i < argc;  i++)
 			arglen += strlen(argv[i]);
 		if (argc > 2)
-			arglen += argc - 2; // leave room for the separators
+			arglen += argc + 2; // leave room for the separators
 		cmdline = new char [arglen+1];
 		i = 1;
 		memset(cmdline, 0, arglen+1); // clear it out
@@ -1663,31 +1729,35 @@ int parse_cmdline(int argc, char *argv[])
 #endif
 {
    #ifdef _WIN32
-	os_init_cmdline(cmdline);
-   #else
-	if (argc > 1) {
-		// kind of silly -- combine arg list into single string for parsing,
-		// but it fits with the win32-centric existing code.
-		char *cmdline = NULL;
-		unsigned int arglen = 0;
-		int i;
-		for (i = 1;  i < argc;  i++)
-			arglen += strlen(argv[i]);
-		if (argc > 2)
-			arglen += argc - 2; // leave room for the separators
-		cmdline = new char [arglen+1];
-		i = 1;
-		strcpy(cmdline, argv[i]);
-		for ( ; i < argc;  i++) {
-			strcat(cmdline, " ");
-			strcat(cmdline, argv[i]);
-		}
 		os_init_cmdline(cmdline);
-		delete [] cmdline;
-	} else {
-		// no cmdline args
-		os_init_cmdline("");
-	}
+   #else
+		char *argptr = NULL;
+		int i;
+		int len = 1;
+
+		argptr = (char *)malloc(1);
+		*argptr = 0;
+
+		for (i = 1; i < argc; i++) {
+			int oldlen = len-1;
+
+			len += strlen(argv[i])+1;
+
+			argptr = (char *)realloc(argptr, len);
+			if (argptr == NULL) {
+				fprintf(stderr, "ERROR: out of memory in parse_cmdline!\n");
+				exit(1);
+			}
+
+			strcpy(argptr+oldlen, argv[i]);
+			strcat(argptr, " ");
+		}
+		os_init_cmdline(argptr);
+
+		if (argptr != NULL) {
+			free(argptr);
+			argptr = NULL;
+		}
    #endif
 
 

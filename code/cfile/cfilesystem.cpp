@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-11-21 11:27:31 $
+ * $Revision: 2.25 $
+ * $Date: 2005-01-30 12:50:08 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/11/21 11:27:31  taylor
+ * some 64-bit OS comaptibility fixes
+ *
  * Revision 2.23  2004/10/31 21:28:38  taylor
  * support new pilot code, Linux code tree merge, don't use same pilot directory for Inferno builds
  *
@@ -193,7 +196,6 @@
 
 #ifdef SCP_UNIX
 #include <glob.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <fnmatch.h>
@@ -614,7 +616,6 @@ void cf_build_root_list(char *cdrom_dir)
 		strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 	}
 
-	   
 	root->roottype = CF_ROOTTYPE_PATH;
 
 	// set the default path for pilot files
@@ -855,7 +856,7 @@ void cf_search_root_pack(int root_index)
 							strcpy( file->name_ext, find.filename );
 							file->root_index = root_index;
 							file->pathtype_index = j;
-							file->write_time = find.write_time;
+							file->write_time = (time_t)find.write_time;
 							file->size = find.size;
 							file->pack_offset = find.offset;			// Mark as a packed file
 							//mprintf(( "Found pack file '%s'\n", file->name_ext ));

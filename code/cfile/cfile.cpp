@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-01-09 21:40:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.26 $
+ * $Date: 2005-01-30 12:50:08 $
+ * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/01/09 21:40:07  wmcoolmon
+ * Fix for music directory parent
+ *
  * Revision 2.24  2004/12/25 00:22:54  wmcoolmon
  * Added .ogg in proper directories
  *
@@ -280,7 +283,7 @@
 #include <winbase.h>		/* needed for memory mapping of file functions */
 #endif
 
-#ifdef unix
+#ifdef SCP_UNIX
 #include <sys/stat.h>
 #include <glob.h>
 #include <sys/mman.h>
@@ -290,10 +293,14 @@
 #include "parse/encrypt.h"
 #include "cfile/cfilesystem.h"
 #include "cfile/cfilearchive.h"
+#include "osapi/osapi.h"
 
 
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
+#ifdef SCP_UNIX
+char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
+#endif
 
 // During cfile_init, verify that Pathtypes[n].index == n for each item
 // Each path must have a valid parent that can be tracable all the way back to the root 
@@ -332,7 +339,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_PLAYER_IMAGES_MAIN,	"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",						".pcx",						CF_TYPE_PLAYER_MAIN	},
 	{ CF_TYPE_CACHE,					"data" DIR_SEPARATOR_STR "cache",															".clr .tmp .ibx",				CF_TYPE_DATA	}, 	//clr=cached color
 	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",															".hcf",						CF_TYPE_DATA	},	
-	{ CF_TYPE_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",						".plr .csg .css",			CF_TYPE_PLAYERS	},
+	{ CF_TYPE_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",						".pl2 .cs2 .plr .csg .css",			CF_TYPE_PLAYERS	},
  	{ CF_TYPE_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",						".plr",						CF_TYPE_DATA	},
 	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",														".pcx .fs2",				CF_TYPE_DATA	},
 	{ CF_TYPE_CONFIG,					"data" DIR_SEPARATOR_STR "config",															".cfg",						CF_TYPE_DATA	},
@@ -364,7 +371,7 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size);
 
 #if defined _WIN32
 CFILE *cf_open_mapped_fill_cfblock(HANDLE hFile, int type);
-#elif defined unix
+#elif defined SCP_UNIX
 CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type);
 #endif
 
@@ -432,11 +439,7 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 
 		// are we in a root directory?		
 		if(cfile_in_root_dir(buf)){
-#if defined _WIN32
 			MessageBox((HWND)NULL, "Freespace2/Fred2 cannot be run from a drive root directory!", "Error", MB_OK);
-#elif defined unix
-			fprintf(stderr, "Error: Freespace2/Fred2 cannot be run from a drive root directory!\n");
-#endif
 			return 1;
 		}		
 
@@ -450,16 +453,15 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 			buf[i] = 0;						
 			cfile_chdir(buf);
 		} else {
-#if defined _WIN32
 			MessageBox((HWND)NULL, "Error trying to determine executable root directory!", "Error", MB_OK);
-#elif defined unix
-			fprintf(stderr, "Error trying to determine executable root directory!\n");
-#endif
 			return 1;
 		}
 
 		// set root directory
 		strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN-1);
+#ifdef SCP_UNIX
+		snprintf(Cfile_user_dir, MAX_PATH, "%s/%s/", detect_home(), Osreg_user_dir);
+#endif
 
 		for ( i = 0; i < MAX_CFILE_BLOCKS; i++ ) {
 			Cfile_block_list[i].type = CFILE_BLOCK_UNUSED;
@@ -519,7 +521,7 @@ int cfile_push_chdir(int type)
 	int e;
 	char dir[128];
 	char OriginalDirectory[128];
-	char *Drive, *Path;
+	char *Drive = NULL, *Path = NULL;
 	char NoDir[] = "\\.";
 
 	_getcwd(OriginalDirectory, 127);
@@ -563,7 +565,7 @@ int cfile_chdir(char *dir)
 {
 	int e;
 	char OriginalDirectory[128];
-	char *Drive, *Path;
+	char *Drive = NULL, *Path = NULL;
 	char NoDir[] = "\\.";
 
 	_getcwd(OriginalDirectory, 127);
@@ -608,7 +610,6 @@ int cfile_pop_dir()
 // NOTE : WILL NOT DELETE READ-ONLY FILES
 int cfile_flush_dir(int dir_type)
 {
-	int find_handle;
 	int del_count;
 
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
@@ -621,6 +622,7 @@ int cfile_flush_dir(int dir_type)
 	// proceed to delete the files
 	del_count = 0;
 #if defined _WIN32
+	int find_handle;
 	_finddata_t find;
 	find_handle = _findfirst( "*", &find );
 	if (find_handle != -1) {
@@ -635,7 +637,7 @@ int cfile_flush_dir(int dir_type)
 		} while (!_findnext(find_handle, &find));
 		_findclose( find_handle );
 	}
-#elif defined unix
+#elif defined SCP_UNIX
 	glob_t globinfo;
 	memset(&globinfo, 0, sizeof(globinfo));
 	int status = glob("*", 0, NULL, &globinfo);
@@ -875,7 +877,11 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 	
 	if ( strchr(mode,'w') )	{
 		// For write-only files, require a full path or a path type
-		if ( strpbrk(file_path,"/\\:")  ) {  
+#ifdef SCP_UNIX
+		if ( strpbrk(file_path, "/") ) {
+#else
+		if ( strpbrk(file_path,"/\\:")  ) {
+#endif
 			// Full path given?
 			strcpy(longname, file_path );
 		} else {
@@ -923,7 +929,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 				if (hFile != INVALID_HANDLE_VALUE)	{
 					return cf_open_mapped_fill_cfblock(hFile, dir_type);
 				}
-#elif defined unix
+#elif defined SCP_UNIX
 				FILE *fp = fopen( longname, "rb" );
 				if (fp) {
 					return cf_open_mapped_fill_cfblock(fp, dir_type);
@@ -1026,9 +1032,11 @@ int cfclose( CFILE * cfile )
 		result = CloseHandle(cb->hMapFile);		
 		Assert(result);	// Ensure file handle is closed properly
 		result = 0;
-#elif defined unix
+#elif defined SCP_UNIX
 		result = munmap(cb->data, cb->data_length);
 		Assert(result);
+		if ( cb->fp != NULL) {
+			result = fclose(cb->fp);
 #endif
 
 	} else if ( cb->fp != NULL )	{
@@ -1057,6 +1065,7 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 
 	cfile_block_index = cfget_cfile_block();
 	if ( cfile_block_index == -1 ) {
+		fclose(fp);
 		return NULL;
 	} else {
 		CFILE *cfp;
@@ -1069,13 +1078,7 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
 		
-#if defined _WIN32
 		cf_init_lowlevel_read_code(cfp,0,filelength(fileno(fp)) );
-#elif defined unix
-		struct stat statbuf;
-		fstat(fileno(fp), &statbuf);
-		cf_init_lowlevel_read_code(cfp, 0, statbuf.st_size );
-#endif
 
 		return cfp;
 	}
@@ -1095,6 +1098,7 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 	
 	cfile_block_index = cfget_cfile_block();
 	if ( cfile_block_index == -1 ) {
+		fclose(fp);
 		return NULL;
 	} else {
 		CFILE *cfp;
@@ -1124,7 +1128,7 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 //
 #if defined _WIN32
 CFILE *cf_open_mapped_fill_cfblock(HANDLE hFile, int type)
-#elif defined unix
+#elif defined SCP_UNIX
 CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 #endif
 {
@@ -1132,6 +1136,9 @@ CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 
 	cfile_block_index = cfget_cfile_block();
 	if ( cfile_block_index == -1 ) {
+#ifdef SCP_UNIX
+		fclose(fp);
+#endif
 		return NULL;
 	}
 	else {
@@ -1157,7 +1164,7 @@ CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 	
 		cfbp->data = (ubyte*)MapViewOfFile(cfbp->hMapFile, FILE_MAP_READ, 0, 0, 0);
 		Assert( cfbp->data != NULL );		
-#elif defined unix
+#elif defined SCP_UNIX
 		cfbp->fp = fp;
 		cfbp->data = mmap(NULL,						// start
 								cfbp->data_length,	// length
