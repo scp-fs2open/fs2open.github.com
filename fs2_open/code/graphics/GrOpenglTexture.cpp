@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-04-26 12:43:58 $
+ * $Revision: 2.5 $
+ * $Date: 2004-05-06 22:26:52 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/04/26 12:43:58  taylor
+ * minor fixes, HTL lines, 32-bit texture support
+ *
  * Revision 2.3  2004/04/13 01:55:41  phreak
  * put in the correct fields for the CVS comments to register
  * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
@@ -508,130 +511,154 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	
-	//compression takes precedence
-	if (bitmap_type & TCACHE_TYPE_COMPRESSED)
-	{
-		GLenum ctype(0);
-		switch (bm_is_compressed(texture_handle))
+	switch (bitmap_type) {
+
+		case TCACHE_TYPE_COMPRESSED:
 		{
-			case 1:
-				ctype=GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-				break;
+			GLenum ctype;
+			int block_size = 0;
+			int dds_h = tex_h;
+			int dds_w = tex_w;
+			int dsize = 0;
+			int doffset = 0;
 
-			case 2:
-				ctype=GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-				break;
-
-			case 3:
-				ctype=GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-				break;
-
-			default:
-				Assert(0);
-		}
-		glCompressedTexImage2D(GL_TEXTURE_2D, 0, ctype, tex_w, tex_h,0, bm_get_size(texture_handle), (ubyte*)data);
-	}
-	else
-	{
-
-		switch (bitmap_type) {
-	
-			case TCACHE_TYPE_AABITMAP:
+			switch (bm_is_compressed(texture_handle))
 			{
-				int i,j;
-				ubyte *bmp_data = ((ubyte*)data);
-				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
-				ubyte *texmemp = texmem;
-				ubyte xlat[256];
-			
-				for (i=0; i<16; i++) {
-					xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
-				}	
-				xlat[15] = xlat[1];
-				for ( ; i<256; i++ )    {
-					xlat[i] = xlat[0];
+				case 1:
+					ctype = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+					block_size = 8;
+					break;
+
+				case 2:
+					ctype = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+					block_size = 16;
+					break;
+
+				case 3:
+					ctype = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+					block_size = 16;
+					break;
+
+				default:
+					Assert(0);
+			}
+
+			if (block_size > 0) {
+				int i;
+				// render for each mipmap level
+				for (i = 0; i<bm_get_num_mipmaps(texture_handle); i++) {
+					// size of data block (4x4)
+					dsize = ((dds_h + 3) / 4) * ((dds_w + 3) / 4) * block_size;
+					
+					glCompressedTexImage2D(GL_TEXTURE_2D, i, ctype, dds_w, dds_h, 0, dsize, (ubyte*)data + doffset);
+
+					// adjust the data offset for the next block
+					doffset += dsize;
+
+					// reduce size by half for the next pass
+					dds_w = (dds_w / 2);
+					dds_h = (dds_h / 2);
 				}
+			}
+		}
+		break;
+	
+		case TCACHE_TYPE_AABITMAP:
+		{
+			int i,j;
+			ubyte *bmp_data = ((ubyte*)data);
+			ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
+			ubyte *texmemp = texmem;
+			ubyte xlat[256];
 			
-				for (i=0;i<tex_h;i++)
+			for (i=0; i<16; i++) {
+				xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
+			}	
+			xlat[15] = xlat[1];
+			for ( ; i<256; i++ )    {
+				xlat[i] = xlat[0];
+			}
+
+			for (i=0;i<tex_h;i++)
+			{
+				for (j=0;j<tex_w;j++)
 				{
-					for (j=0;j<tex_w;j++)
-					{
-					if (i < bmap_h && j < bmap_w) {
-							*texmemp++ = 0xff;
-							*texmemp++ = xlat[bmp_data[i*bmap_w+j]];
-						} else {
-							*texmemp++ = 0;
-							*texmemp++ = 0;
-						}
+				if (i < bmap_h && j < bmap_w) {
+						*texmemp++ = 0xff;
+						*texmemp++ = xlat[bmp_data[i*bmap_w+j]];
+					} else {
+						*texmemp++ = 0;
+						*texmemp++ = 0;
 					}
 				}
-
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_w, tex_h, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
-				free (texmem);
 			}
-			break;
+
+			glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_w, tex_h, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
+			free (texmem);
+		}
+		break;
 
 
 		case TCACHE_TYPE_BITMAP_SECTION:
-			{
-				int i,j,k;
-				ubyte *bmp_data = ((ubyte*)data);
-				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*byte_mult);
-				ubyte *texmemp = texmem;
-				
-				for (i=0;i<tex_h;i++)
-				{
-					for (j=0;j<tex_w;j++)
-					{
-						if (i < src_h && j < src_w) {
-							for (k = 0; k < byte_mult; k++) {
-								*texmemp++ = bmp_data[((i+sy)*bmap_w+(j+sx))*byte_mult+k];
-							}
-						} else {
-							for (k = 0; k < byte_mult; k++) {
-								*texmemp++ = 0;
-							}
-						}
-					}
-				}
+		{
+			int i,j,k;
+			ubyte *bmp_data = ((ubyte*)data);
+			ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*byte_mult);
+			ubyte *texmemp = texmem;
 
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA, tex_format, texmem);
-				free(texmem);
-				break;
-			}
-		default:
+			for (i=0;i<tex_h;i++)
 			{
-				int i,j,k;
-				ubyte *bmp_data = ((ubyte*)data);
-				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*byte_mult);
-				ubyte *texmemp = texmem;
-				
-				fix u, utmp, v, du, dv;
-				
-				u = v = 0;
-				
-				du = ( (bmap_w-1)*F1_0 ) / tex_w;
-				dv = ( (bmap_h-1)*F1_0 ) / tex_h;
-				
-				for (j=0;j<tex_h;j++)
+				for (j=0;j<tex_w;j++)
 				{
-					utmp = u;
-					for (i=0;i<tex_w;i++)
-					{
+					if (i < src_h && j < src_w) {
 						for (k = 0; k < byte_mult; k++) {
-							*texmemp++ = bmp_data[(f2i(v)*bmap_w+f2i(utmp))*byte_mult+k];
+							*texmemp++ = bmp_data[((i+sy)*bmap_w+(j+sx))*byte_mult+k];
 						}
-						utmp += du;
+					} else {
+						for (k = 0; k < byte_mult; k++) {
+							*texmemp++ = 0;
+						}
 					}
-					v += dv;
 				}
-
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA, tex_format, texmem);
-				free(texmem);
-				break;
 			}
-		}//end switch
-	}//end else
+
+			glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA, tex_format, texmem);
+			free(texmem);
+			break;
+		}
+
+		default:
+		{
+			int i,j,k;
+			ubyte *bmp_data = ((ubyte*)data);
+			ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*byte_mult);
+			ubyte *texmemp = texmem;
+
+			fix u, utmp, v, du, dv;
+
+			u = v = 0;
+
+			du = ( (bmap_w-1)*F1_0 ) / tex_w;
+			dv = ( (bmap_h-1)*F1_0 ) / tex_h;
+
+			for (j=0;j<tex_h;j++)
+			{
+				utmp = u;
+				for (i=0;i<tex_w;i++)
+				{
+					for (k = 0; k < byte_mult; k++) {
+						*texmemp++ = bmp_data[(f2i(v)*bmap_w+f2i(utmp))*byte_mult+k];
+					}
+					utmp += du;
+				}
+				v += dv;
+			}
+
+			glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA, tex_format, texmem);
+			free(texmem);
+			break;
+		}
+	}//end switch
 	
 	t->bitmap_id = texture_handle;
 	t->time_created = GL_frame_count;
@@ -677,21 +704,18 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	switch (bm_is_compressed(bitmap_handle))
 	{
 		case 1:				//dxt1
-			bpp=24;
-			flags |=BMP_TEX_DXT1;
-			bitmap_type|=TCACHE_TYPE_COMPRESSED;
+			bpp = 24;
+			flags |= BMP_TEX_DXT1;
 			break;
 
 		case 2:				//dxt3
-			bpp=32;
-			flags |=BMP_TEX_DXT3;
-			bitmap_type|=TCACHE_TYPE_COMPRESSED;
+			bpp = 32;
+			flags |= BMP_TEX_DXT3;
 			break;
 
 		case 3:				//dxt5
-			bpp=32;
-			flags |=BMP_TEX_DXT5;
-			bitmap_type|=TCACHE_TYPE_COMPRESSED;
+			bpp = 32;
+			flags |= BMP_TEX_DXT5;
 			break;
 		
 		default:
@@ -935,6 +959,11 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 	{
 		GL_last_bitmap_id = -1;
 		return 0;
+	}
+
+	// set compressed type if it's so, needed to be right later
+	if (bm_is_compressed(bitmap_id) > 0) {
+		bitmap_type = TCACHE_TYPE_COMPRESSED;
 	}
 
 	//make sure textuing is on
