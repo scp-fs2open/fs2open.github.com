@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-23 01:47:17 $
+ * $Author: Goober5000 $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -1037,18 +1040,20 @@ void message_training_que(char *text, int timestamp, int length)
 }
 
 // check the training message que to see if we should play a new message yet or not.
+// Goober5000: removed stipulation of instructor being present
 void message_training_que_check()
 {
 	int i, j, iship_num;
 
 	// get the instructor's ship.
 	iship_num = ship_name_lookup(NOX("instructor"));
-	if ( iship_num == -1 )
-		return;
+//	if ( iship_num == -1 )	// commented out by Goober5000
+//		return;
 
 	// if the instructor is dying or departing, do nothing
-	if (Ships[iship_num].flags & (SF_DYING | SF_DEPARTING))
-		return;
+	if ( iship_num != -1 )	// added by Goober5000
+		if (Ships[iship_num].flags & (SF_DYING | SF_DEPARTING))
+			return;
 
 	if (Training_failure)
 		return;
