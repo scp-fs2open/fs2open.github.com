@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-03-10 08:00:16 $
+ * $Revision: 2.16 $
+ * $Date: 2005-03-27 06:14:30 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/03/10 08:00:16  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.14  2005/03/06 11:23:45  wmcoolmon
  * RE-fixed stuff. Ogg support. Briefings.
  *
@@ -215,6 +224,8 @@
  * 
  * $NoKeywords: $
  */
+
+#ifndef USE_OPENAL	// to end of file...
 
 #define VC_EXTRALEAN
 #define STRICT
@@ -2078,3 +2089,5 @@ void audiostream_unpause_all()
 		audiostream_unpause(i);
 	}
 }
+
+#endif	// !USE_OPENAL
