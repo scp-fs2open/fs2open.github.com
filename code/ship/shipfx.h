@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.1 $
- * $Date: 2003-07-04 02:30:54 $
+ * $Revision: 2.2 $
+ * $Date: 2003-07-15 02:51:43 $
  * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/07/04 02:30:54  phreak
+ * support for cloaking added.  needs a cloakmap.pcx
+ * to cloak the players ship, activate cheats and press tilde + x
+ * some more work can be done to smooth out the animation.
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -252,8 +257,9 @@ void shipfx_stop_engine_wash_sound();
 
 //translate the texture matrix some
 void shipfx_cloak_frame(ship *shipp, float frametime);
-void shipfx_start_cloak(ship *shipp);
-void shipfx_stop_cloak(ship *shipp);
+void shipfx_start_cloak(ship *shipp, int warmup = 5000, int recalc_transform = 0);
+void shipfx_stop_cloak(ship *shipp, int warpdown = 5000);
+float shipfx_calc_visibility(object *obj, vector *view_pt);
 
 
 #endif
