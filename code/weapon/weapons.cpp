@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2005/02/14 23:59:23  taylor
+ * make hudparse GCC 3.4 friendly (WMCoolmon way want to check this with tbl)
+ * fix OSX compile problem
+ * debug message in weapons_page_in() should have been real debug message
+ *
  * Revision 2.85  2005/02/04 20:06:10  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -1181,8 +1186,13 @@ int parse_weapon(int subtype, bool replace)
 		wip->tech_desc = strdup(buf);
 	}
 
+	if(optional_string("$Tech Model:"))
+		stuff_string(wip->tech_model, F_NAME, NULL);
+	else
+		wip->tech_model[0] = '\0';
+
 	//Check for the HUD image string
-	if(optional_string("+HUD Image:"))
+	if(optional_string("$HUD Image:"))
 	{
 		stuff_string(wip->hud_filename, F_NAME, NULL);
 	}
