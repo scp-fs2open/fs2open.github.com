@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-01-17 21:59:56 $
+ * $Revision: 2.22 $
+ * $Date: 2004-01-18 14:03:23 $
  * $Author: randomtiger $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/01/17 21:59:56  randomtiger
+ * Some small changes to the main codebase that allow Fred_open OGL to compile.
+ *
  * Revision 2.20  2003/11/11 02:15:47  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -479,7 +482,7 @@ void stars_init()
 						Warning(LOCATION, "cannot find bitmap %s", filename);
 					}
 				}
-#if 0
+#ifndef FRED_OGL
 				// if fred is running we should lock the bitmap now
 				if(Fred_running && (bm->bitmap >= 0)){
 					bm_lock(bm->bitmap, 8, BMP_TEX_OTHER);
@@ -503,7 +506,7 @@ void stars_init()
 					}
 				}
 
-#if 0
+#ifndef FRED_OGL
 				// if fred is running we should lock as a 0, 255, 0 bitmap now
 				if(Fred_running && (bm->bitmap >= 0)){
 					bm_lock(bm->bitmap, 8, BMP_TEX_XPARENT);
@@ -635,7 +638,7 @@ void stars_init()
 				bm->spec_g = spec_g;
 				bm->spec_b = spec_b;
 
-#if 0
+#ifndef FRED_OGL
 				// if fred is running we should lock the bitmap now
 				if(Fred_running){
 					if(bm->bitmap >= 0){
