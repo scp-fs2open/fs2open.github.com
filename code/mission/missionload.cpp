@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-02 23:53:49 $
+ * $Author: Goober5000 $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -92,7 +95,7 @@
  * appended path for j:\tmp missions
  * 
  * 89    10/31/97 11:19a John
- * added filter catagory for j:\tmp\*.fsm
+ * added filter category for j:\tmp\*.fsm
  * 
  * 88    10/12/97 5:22p Lawrance
  * have ESC back out of mission load screen

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.3 $
- * $Date: 2002-12-02 20:47:28 $
+ * $Revision: 2.4 $
+ * $Date: 2002-12-02 23:52:02 $
  * $Author: Goober5000 $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/02 20:47:28  Goober5000
+ * fixed misspelling of "category" as "catagory"
+ *
  * Revision 2.2  2002/10/19 19:29:27  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *

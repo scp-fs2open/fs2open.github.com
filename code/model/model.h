@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.7 $
- * $Date: 2002-12-02 23:14:17 $
+ * $Revision: 2.8 $
+ * $Date: 2002-12-02 23:55:31 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/02 23:14:17  Goober5000
+ * fixed misspelling of "category" as "catagory"
+ *
  * Revision 2.6  2002/11/14 04:18:16  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
