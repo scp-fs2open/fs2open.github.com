@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.9 $
- * $Date: 2003-03-30 04:34:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2003-09-11 19:26:13 $
+ * $Author: argv $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/03/30 04:34:37  Goober5000
+ * preliminary work on ai facing sexp
+ * --Goober5000
+ *
  * Revision 2.8  2003/01/19 22:20:22  Goober5000
  * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
  * and departure into hangars should now all work properly
@@ -394,6 +398,7 @@ typedef struct ai_class {
 #define	SM_BIG_APPROACH		15		// Big ship approaches another
 #define	SM_BIG_CIRCLE			16		// Big ship flies circle around other big ship to get good angle to go parallel
 #define	SM_BIG_PARALLEL		17		// Big ship flies parallel to another
+#define	SM_BIG_FACE			18		// _argv[-1] - face and shoot at target but don't approach.
 
 //	Submodes for docking behavior
 #define	AIS_DOCK_0		21
