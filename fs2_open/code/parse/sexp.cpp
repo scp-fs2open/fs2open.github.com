@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.3 $
- * $Date: 2002-10-29 22:41:48 $
+ * $Revision: 2.4 $
+ * $Date: 2002-11-19 02:15:50 $
  * $Author: sesquipedalian $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/29 22:41:48  sesquipedalian
+ * no message
+ *
  * Revision 2.2  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -6775,7 +6778,9 @@ int sexp_is_tagged(int node)
 	if(Ships[sindex].objnum < 0){
 		return 0;
 	}
-	if(Ships[sindex].tag_left > 0.0f){
+	object *caller = &Objects[Ships[sindex].objnum];
+	if(ship_is_tagged(caller)) // This line and the one above were added.
+	// if(Ships[sindex].tag_left > 0.0f) The broken code. Changed by EdrickV@HLP
 		return 1;
 	}
 
