@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-05-01 21:45:31 $
+ * $Revision: 2.16 $
+ * $Date: 2004-05-01 21:47:43 $
  * $Author: Kazan $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/05/01 21:45:31  Kazan
+ * changed delete[] to free(), checked for null, if null ERROR
+ *
  * Revision 2.14  2004/05/01 19:49:31  Kazan
  * delete[] str_temp
  * A null check on str_temp is not needed - take a close look at the for loop
@@ -490,7 +493,7 @@ void cf_build_root_list(char *cdrom_dir)
 		{
 			str_temp = strdup(cur_pos);
 
-			if (str_temp != null)
+			if (str_temp != NULL)
 			{
 				strcat(str_temp, DIR_SEPARATOR_STR);
 				root = cf_create_root();
