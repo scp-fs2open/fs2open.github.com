@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.50 $
+ * $Revision: 2.51 $
  * $Author: Goober5000 $
- * $Date: 2004-10-12 22:47:14 $
+ * $Date: 2004-10-31 02:04:34 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2004/10/12 22:47:14  Goober5000
+ * added toggle-subsystem-scanning ship flag
+ * --Goober5000
+ *
  * Revision 2.49  2004/10/12 07:34:45  Goober5000
  * added contrail speed threshold
  * --Goober5000
@@ -893,6 +897,9 @@ void conv_fix_punctuation();
 void restore_default_weapons(char *ships_tbl);
 void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
 void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
+
+// Goober5000
+extern int Knossos_warp_ani_used;
 
 #endif
 

@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.77 $
+ * $Revision: 2.78 $
  * $Author: Goober5000 $
- * $Date: 2004-10-15 10:03:09 $
+ * $Date: 2004-10-31 02:04:34 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2004/10/15 10:03:09  Goober5000
+ * added change-alt-name
+ * --Goober5000
+ *
  * Revision 2.76  2004/10/14 01:19:17  Goober5000
  * more ubersexp bugfixing
  * --Goober5000
@@ -1135,9 +1139,11 @@ char *CTEXT(int n);
 #define CDDR(n)		CDR(CDR(n))
 #define CDDDR(n)	CDR(CDDR(n))
 #define CDDDDR(n)	CDR(CDDDR(n))
+#define CDDDDDR(n)	CDR(CDDDDR(n))
 #define CADDR(n)	CAR(CDDR(n))
 #define CADDDR(n)	CAR(CDDDR(n))
 #define CADDDDR(n)	CAR(CDDDDR(n))
+#define CADDDDDR(n)	CAR(CDDDDDR(n))
 
 #define REF_TYPE_SHIP		1
 #define REF_TYPE_WING		2
@@ -1417,5 +1423,8 @@ extern int get_subcategory(int sexp_id);
 
 // Goober5000
 extern void sexp_music_close();
+
+// Goober5000
+extern int Knossos_warp_ani_used;
 
 #endif
