@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.92 $
- * $Date: 2005-03-02 21:24:46 $
- * $Author: taylor $
+ * $Revision: 2.93 $
+ * $Date: 2005-03-03 03:55:03 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2005/03/02 21:24:46  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.91  2005/03/01 06:55:43  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -11862,11 +11865,13 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vector *gpo
 
 	model_find_world_point(gpos, gun_pos, tp->model_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
 
+	//WMC - use_angles was always 0
 	if (use_angles)
 		model_find_world_dir(gvec, &tp->turret_norm, tp->model_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
 	else {
 		//vector	gun_pos2;
 		//vm_vec_add(&gun_pos2, gpos, gun_pos);
+
 		vm_vec_normalized_dir(gvec, targetp, gpos);
 	}
 
@@ -11878,7 +11883,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vector *gpo
 //	Some obscure model thing only John Slagel knows about.
 //	Sets predicted enemy position.
 //	If the turret (*ss) has a subsystem targeted, the subsystem is used as the predicted point.
-int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object *objp, object *lep, vector *predicted_enemy_pos, vector *gvec)
+void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object *objp, object *lep, vector *predicted_enemy_pos, vector *gvec)
 {
 	if (ss->turret_enemy_objnum != -1)	{
 		model_subsystem *tp = ss->system_info;
@@ -11921,15 +11926,12 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 		vector	v2e;
 		vm_vec_normalized_dir(&v2e, predicted_enemy_pos, &gun_pos);
 		if (vm_vec_dot(&v2e, gvec) > tp->turret_fov) {
-			int	rval;
 
-			rval = model_rotate_gun(shipp->modelnum, ss->system_info, &Objects[parent_objnum].orient, 
+			model_rotate_gun(shipp->modelnum, ss->system_info, &Objects[parent_objnum].orient, 
 				&ss->submodel_info_1.angs, &ss->submodel_info_2.angs,
 				&Objects[parent_objnum].pos, predicted_enemy_pos);
 		}
 	}
-
-	return 0;
 }
 
 //	Determine if subsystem *enemy_subsysp is hittable from objp.
@@ -11952,7 +11954,7 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vector *abs_gun
 
 }
 
-#define MAX_AIFFT_TURRETS			60
+#define MAX_AIFFT_TURRETS			200
 ship_subsys *aifft_list[MAX_AIFFT_TURRETS];
 float aifft_rank[MAX_AIFFT_TURRETS];
 int aifft_list_size = 0;
@@ -12382,7 +12384,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	vector	v2e;
 	object	*lep;		//	Last enemy pointer
 	model_subsystem	*tp = ss->system_info;
-	int		use_angles, turret_weapon_class;
+	int		turret_weapon_class;
 	vector	predicted_enemy_pos;
 	object	*objp;
 	//ai_info	*aip;
@@ -12473,7 +12475,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	ship_get_global_turret_info(&Objects[parent_objnum], tp, &gpos, &gvec);
 
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
-	use_angles = aifft_rotate_turret(shipp, parent_objnum, ss, objp, lep, &predicted_enemy_pos, &gvec);
+	aifft_rotate_turret(shipp, parent_objnum, ss, objp, lep, &predicted_enemy_pos, &gvec);
 
 	if ( !timestamp_elapsed(ss->turret_next_fire_stamp)){
 		return;
@@ -12618,7 +12620,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		// We're ready to fire... now get down to specifics, like where is the
 		// actual gun point and normal, not just the one for whole turret.
-		ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
+		//WMC - use_angles was always 0
+		ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, 0, &predicted_enemy_pos);
 		ss->turret_next_fire_pos++;
 
 		// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
@@ -12784,6 +12787,9 @@ void process_subobjects(int objnum)
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
+	//Look for enemies. If none are present, we don't have to move turrets
+	int enemies_present = -1;
+
 	model_subsystem	*psub;
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
@@ -12794,8 +12800,37 @@ void process_subobjects(int objnum)
 
 		switch (psub->type) {
 		case SUBSYSTEM_TURRET:
-			if ( psub->turret_num_firing_points > 0 )	{
-				ai_fire_from_turret(shipp, pss, objnum);
+			if ( psub->turret_num_firing_points > 0 )
+			{
+				if(enemies_present == -1)
+				{
+					enemies_present = 0;
+					for(unsigned int i = 0; i < MAX_OBJECTS; i++)
+					{
+						objp = &Objects[i];
+						switch(objp->type)
+						{
+							case OBJ_SHIP:
+							case OBJ_DEBRIS:
+							case OBJ_CMEASURE:
+							case OBJ_WEAPON:
+								if(obj_team(objp) != shipp->team)
+									enemies_present = 1;
+								break;
+							case OBJ_ASTEROID:
+								enemies_present = 1;
+								break;
+						}
+
+						if(enemies_present==1)
+							break;
+					}
+					//Reset objp
+					objp = &Objects[objnum];
+				}
+				//Only move turrets if enemies are present
+				if(enemies_present == 1 || pss->turret_enemy_objnum >= 0)
+					ai_fire_from_turret(shipp, pss, objnum);
 			} else {
 #ifndef NDEBUG
 				if (!Msg_count_4996) {
