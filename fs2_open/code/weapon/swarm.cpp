@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Swarm.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:56 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-31 08:56:47 $
+ * $Author: et1 $
  *
  * C module for managing swarm missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:56  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:33:09  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -130,7 +133,12 @@
 #define SWARM_CONE_LENGTH			10000.0f	// used to pick a target point far in the distance
 #define SWARM_CHANGE_DIR_TIME		400		// time to force change in direction of swarm missile
 #define SWARM_ANGLE_CHANGE			(4*PI/180)			// in rad
-#define SWARM_MISSILE_DELAY		150		// time delay between each swarm missile that is fired
+
+
+// *No longer need this  -Et1
+//#define SWARM_MISSILE_DELAY		150		// time delay between each swarm missile that is fired
+
+
 #define SWARM_TIME_VARIANCE		100		// max time variance when deciding when to change swarm missile course
 
 #define SWARM_DIST_STOP_SWARMING	300
@@ -245,8 +253,12 @@ void swarm_maybe_fire_missile(int shipnum)
 		return;
 	}
 
-	if ( timestamp_elapsed(sp->next_swarm_fire) ) {
-		sp->next_swarm_fire = timestamp(SWARM_MISSILE_DELAY);
+	if ( timestamp_elapsed(sp->next_swarm_fire) )
+    {
+
+        // *Get timestamp from weapon info's -Et1
+		sp->next_swarm_fire = timestamp(Weapon_info[weapon_info_index].SwarmWait );
+
 		ship_fire_secondary( &Objects[sp->objnum], 1 );
 		sp->num_swarm_missiles_to_fire--;
 	}
@@ -596,11 +608,16 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, int turret
 	// increment ship tsi counter
 	shipp->num_turret_swarm_info++;
 
+
+    // *Unnecessary check, now done on startup   -Et1
+    /*
+
 	// make sure time is sufficient to launch all the missiles before next volley
 #ifndef NDEBUG	
 	Assert(wip->swarm_count * SWARM_MISSILE_DELAY < wip->fire_wait * 1000.0f);
 #endif
 
+    */
 	// initialize tsi
 	tsi->num_to_launch = wip->swarm_count;
 	tsi->parent_objnum = parent_objnum;
@@ -671,8 +688,9 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 						turret_swarm_fire_from_turret(tsi->turret, tsi->parent_objnum, target_objnum, tsi->target_subsys);
 					}
 
-					// set timestamp
-					tsi->time_to_fire = timestamp(SWARM_MISSILE_DELAY);
+                    // *Get timestamp from weapon info's -Et1
+                    tsi->time_to_fire = timestamp( Weapon_info[subsys->system_info->turret_weapon_type].SwarmWait );
+
 
 					// do book keeping
 					tsi->num_to_launch--;
