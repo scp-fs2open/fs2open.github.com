@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.49 $
+ * $Date: 2005-01-29 08:06:54 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.47  2005/01/07 23:15:44  phreak
  * fixed the bug where the player couldn't use the target hud in reticle key.
  *
@@ -1398,12 +1403,13 @@ void hud_make_shader(shader *sh, int r, int g, int b, float dimmer = 1000.0f)
 	float rf,gf,bf,cf;
 
 	// The m matrix converts all colors to shades of green
-	float tmp = 0.0015625f * i2fl(HUD_color_alpha+1.0f) / 16.0f;
+	//float tmp = 16.0f*(0.0015625f * i2fl(HUD_color_alpha+1.0f));
+	float tmp = 0.025 * i2fl(HUD_color_alpha+1.0f);
 
 	rf = tmp*r;
 	gf = tmp*r;
 	bf = tmp*r;
-	cf = (i2fl(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f);
+	cf = 255.0f*((i2fl(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f));
 
 	gr_create_shader( sh, rf, gf, bf, cf );
 }
