@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.117 $
- * $Date: 2004-10-14 23:03:37 $
+ * $Revision: 2.118 $
+ * $Date: 2004-10-15 08:14:07 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.117  2004/10/14 23:03:37  Goober5000
+ * tweakage
+ * --Goober5000
+ *
  * Revision 2.116  2004/10/14 22:28:27  Goober5000
  * added ability for variable names to be used as special arguments
  * --Goober5000
@@ -6623,6 +6627,15 @@ int sexp_is_iff( int n )
 	{
 		ship_or_wing_name = CTEXT(n);
 
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_or_wing_name, NULL, NULL) )
+			continue;
+
+		// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
+		if ( mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) ) 
+			continue;
+
+		// see if we can find anything
 		ship_num = ship_name_lookup(ship_or_wing_name);
 		wing_num = wing_name_lookup(ship_or_wing_name);
 
@@ -6683,6 +6696,14 @@ void sexp_change_iff( int n )
 	for ( ; n != -1; n = CDR(n) )
 	{
 		ship_or_wing_name = CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_or_wing_name, NULL, NULL) )
+			continue;
+
+		// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
+		if ( mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) ) 
+			continue;
 
 		// see if we can find anything
 		ship_num = ship_name_lookup(ship_or_wing_name);
@@ -10651,6 +10672,10 @@ void sexp_damage_escort_list(int node)
 	//loop through the ships
 	for ( ; n != -1; n = CDR(n) )
 	{
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, CTEXT(n), NULL, NULL) )
+			continue;
+
 		shipnum=ship_name_lookup(CTEXT(n));
 		
 		//it may be dead
