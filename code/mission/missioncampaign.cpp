@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-08-18 19:48:29 $
- * $Author: randomtiger $
+ * $Revision: 2.5 $
+ * $Date: 2002-08-27 13:38:58 $
+ * $Author: penguin $
  *
  * source for dealing with campaigns
  *
@@ -210,7 +210,7 @@
 #include "cfile/cfile.h"
 #include "playerman/player.h"
 #include "mission/missiongoals.h"
-#include "cutscene/movie.h"
+// #include "movie.h"
 #include "network/multi.h"
 #include "menuui/techmenu.h"
 #include "gamesnd/eventmusic.h"
@@ -1759,7 +1759,7 @@ void mission_campaign_maybe_play_movie(int type)
 		return;
 
 	// no soup for you!
-	movie_play( filename );
+	// movie_play( filename );
 }
 
 // return nonzero if the passed filename is a multiplayer campaign, 0 otherwise
@@ -1836,10 +1836,10 @@ void mission_campaign_end_do()
 	// did the supernova blow?
 	if(Supernova_status == SUPERNOVA_HIT){
 		// no soup for you!
-		movie_play_two("endpart1.mve", "endprt2b.mve");			// good ending
+		// movie_play_two("endpart1.mve", "endprt2b.mve");			// good ending
 	} else {
 		// no soup for you!
-		movie_play_two("endpart1.mve", "endprt2a.mve");			// good ending
+		// movie_play_two("endpart1.mve", "endprt2a.mve");			// good ending
 	}	
 
 #ifdef FS2_DEMO
