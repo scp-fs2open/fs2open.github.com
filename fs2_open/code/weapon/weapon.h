@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/07/11 03:22:54  bobboau
+ * added the working decal code
+ *
  * Revision 2.29  2004/06/05 19:15:39  phreak
  * spawn weapons can now be specified to be spawned at different angles other than
  * the sphere thats used in retail
@@ -842,6 +845,9 @@ void weapon_render(object * obj);
 void weapon_delete( object * obj );
 void weapon_process_pre( object *obj, float frame_time);
 void weapon_process_post( object *obj, float frame_time);
+
+//Call before weapons_page_in to mark a weapon as used
+void mark_weapon_used(int weapon_id);
 
 // Group_id:  If you should quad lasers, they should all have the same group id.  
 // This will be used to optimize lighting, since each group only needs to cast one light.
