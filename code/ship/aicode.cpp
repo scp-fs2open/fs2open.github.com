@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.98 $
- * $Date: 2005-03-12 23:53:27 $
+ * $Revision: 2.99 $
+ * $Date: 2005-03-14 02:52:58 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2005/03/12 23:53:27  phreak
+ * extra checks in find_parent_rotating_submodel()
+ *
  * Revision 2.97  2005/03/10 08:00:14  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -2507,10 +2510,6 @@ int object_is_targetable(object *target, ship *viewer)
 	{
 		stealth_ship = (Ships[target->instance].flags2 & SF2_STEALTH);
 
-		if (shipfx_calc_visibility(target, &Objects[viewer->objnum].pos) > 0.3f)
-		{
-			return 1;
-		}	
 		if ( ship_is_visible_by_team_new(target, viewer) == 1)
 		{
 			return 1;
