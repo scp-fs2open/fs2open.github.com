@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-07-07 21:00:08 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-07-12 02:50:48 $
+ * $Author: wmcoolmon $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/07/07 21:00:08  Kazan
+ * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
+ *
  * Revision 2.16  2004/03/31 05:42:27  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -2210,7 +2213,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}
 
 	// check to make sure we are otherwise in a state to accept
-	if(Netgame.game_state != NETGAME_STATE_FORMING){
+	if(Netgame.game_state != NETGAME_STATE_FORMING && (Netgame.game_state != NETGAME_STATE_IN_MISSION || Cmdline_rt)){
 		return JOIN_DENY_JR_STATE;
 	}
 	
@@ -2294,9 +2297,9 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}	
 
 	// can't ingame join a non-dogfight game
-	if((Netgame.game_state != NETGAME_STATE_FORMING) && !(Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+/*	if((Netgame.game_state != NETGAME_STATE_FORMING) && !(Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		return JOIN_DENY_JR_TYPE;
-	}	
+	}	*/
 
 #ifndef NO_STANDALONE
 	// if the player was banned by the standalone
@@ -2337,7 +2340,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	} 
 
 	// if the netgame is restricted or is team vs. team
-	if((Netgame.mode == NG_MODE_RESTRICTED) || (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(Netgame.mode == NG_MODE_RESTRICTED){
 		// ingame, we must query the host to see if this guy is accepted
 		if(MULTI_IN_MISSION){
 			return JOIN_QUERY_RESTRICTED;
@@ -2730,7 +2733,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		
 		// flag him appropriately if he's doing an ingame join
 		if(MULTI_IN_MISSION){
-			Int3();
+	//		Int3(); //-C Ingame stuff
 			Net_players[net_player_num].flags |= NETINFO_FLAG_INGAME_JOIN;
 			Net_players[net_player_num].s_info.ingame_join_flags = 0;
 		}		
@@ -2750,8 +2753,36 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		// if he's joining ingame
 		else if(Net_players[net_player_num].flags & NETINFO_FLAG_INGAME_JOIN){
 			// if we're in team vs. team mode
-			if(Netgame.type_flags & NG_TYPE_TEAM){
-				Assert(ingame_join_team != -1);
+			if(Netgame.type_flags & NG_TYPE_TEAM)
+			{
+			/*	int i, j;
+				int team_nums[MULTI_TS_MAX_TEAMS] = {0, 0};\
+
+				//First get the number of players on each team
+				for(i = 0; i < MULTI_TS_MAX_TEAMS; i++)
+				{
+					for(j = 0; j < MULTI_TS_NUM_SHIP_SLOTS; j++)
+					{
+						if(Multi_ts_team[i].multi_ts_flag != MULTI_TS_FLAG_EMPTY && Multi_ts_team[i].multi_ts_flag != MULTI_TS_FLAG_NONE)
+						{
+							team_nums[i]++;
+						}
+					}
+				}
+				//Find the lowest team
+				//Init this to the first team, so it works properly
+				int lowest_team[2] = {team_nums[0], 0};
+				for(i = 0; i < MULTI_TS_MAX_TEAMS;i++)
+				{
+					if(Multi_ts_team[i] < lowest_team[0])
+					{
+						lowest_team[0] Multi_ts_team[i];
+						lowest_team[1] = i;
+					}
+				}
+				
+				ingame_join_team = lowest_team[1];*/
+				//Assert(ingame_join_team != -1);
 
 				Net_players[net_player_num].p_info.team = ingame_join_team;
 			}
@@ -2769,7 +2800,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 	// set my ingame joining flag if the new guy is joining ingame
 	if ( Net_players[net_player_num].flags & NETINFO_FLAG_INGAME_JOIN ){
-		Int3();
+//		Int3(); //-C Ingame stuff
 		Netgame.flags |= NG_FLAG_INGAME_JOINING;
 	}	
 	

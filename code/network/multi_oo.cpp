@@ -1912,8 +1912,8 @@ void multi_oo_server_process()
 
 		// initialize the server's time sync stuff
 		multi_oo_sync_init();
-	}
-	*/
+	}*/
+	
 }
 
 // process datarate limiting stuff for the client
