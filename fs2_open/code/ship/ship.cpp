@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.125 $
- * $Date: 2004-06-07 07:36:08 $
+ * $Revision: 2.126 $
+ * $Date: 2004-06-18 04:59:54 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.125  2004/06/07 07:36:08  wmcoolmon
+ * Warpout failure bug fixingness
+ *
  * Revision 2.124  2004/05/26 21:02:27  wmcoolmon
  * Added weapons_expl modular table, updated cfilesystem to work with modular tables, fixed loading order, fixed ship loading error messages
  *
@@ -11421,6 +11424,31 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 }
 
 // Page in bitmaps for all the ships in this level
+
+extern unsigned int used_weapons[MAX_WEAPON_TYPES];
+void ship_weapons_page_in(ship* sip)
+{
+	int i;
+
+	//Main weapons
+	for(i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
+		used_weapons[sip->weapons.primary_bank_weapons[i]]++;
+
+	for(i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
+		used_weapons[sip->weapons.secondary_bank_weapons[i]]++;
+
+	//Subsystems
+	ship_subsys* sub;
+	for(sub = GET_FIRST(&sip->subsys_list); sub != END_OF_LIST(&sip->subsys_list); sub = GET_NEXT(sub))
+	{
+		for(i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
+			used_weapons[sub->weapons.primary_bank_weapons[i]]++;
+
+		for(i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
+			used_weapons[sub->weapons.secondary_bank_weapons[i]]++;
+
+	}
+}
 void ship_page_in()
 {
 	int i,j;
@@ -11440,6 +11468,12 @@ void ship_page_in()
 			nprintf(( "Paging", "Found support ship '%s'\n", Ship_info[i].name ));
 			ship_class_used[i]++;
 
+			//Add weapons to used_weapons
+			for(j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
+				used_weapons[Ship_info[i].primary_bank_weapons[j]]++;
+			for(j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
+				used_weapons[Ship_info[i].secondary_bank_weapons[j]]++;
+
 			num_subsystems_needed += Ship_info[i].n_subsystems;
 		}
 	}
@@ -11450,6 +11484,9 @@ void ship_page_in()
 		if (Ships[i].objnum > -1)	{
 			nprintf(( "Paging","Found ship '%s'\n", Ships[i].ship_name ));
 			ship_class_used[Ships[i].ship_info_index]++;
+
+			//Add weapons to the used weapons list
+			ship_weapons_page_in(&Ships[i]);
 
 			num_subsystems_needed += Ship_info[Ships[i].ship_info_index].n_subsystems;
 		}
@@ -11462,8 +11499,20 @@ void ship_page_in()
 		nprintf(( "Paging","Found future arrival ship '%s'\n", p_objp->name ));
 		ship_class_used[p_objp->ship_class]++;
 
+		//Get weapons
+		for(i = 0; i < p_objp->subsys_count; i++)
+		{
+			for(j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
+				used_weapons[Subsys_status[p_objp->subsys_index + i].primary_banks[j]]++;
+			
+			for(j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
+				used_weapons[Subsys_status[p_objp->subsys_index + i].secondary_banks[j]]++;
+		}
+
 		num_subsystems_needed += Ship_info[p_objp->ship_class].n_subsystems;
 	}
+
+	mprintf(("About to page in ships!\n"));
 
 
 	// Page in all the ship classes that are used on this level

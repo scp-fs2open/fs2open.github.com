@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2004/06/05 19:15:39  phreak
+ * spawn weapons can now be specified to be spawned at different angles other than
+ * the sphere thats used in retail
+ *
  * Revision 2.63  2004/05/26 21:02:27  wmcoolmon
  * Added weapons_expl modular table, updated cfilesystem to work with modular tables, fixed loading order, fixed ship loading error messages
  *
@@ -4381,13 +4385,26 @@ int weapon_create_group_id()
 	return n;
 }
 
-
+unsigned int used_weapons[MAX_WEAPON_TYPES] = {0};
 void weapons_page_in()
 {
 	int i, j, idx;
 
-	// Page in bitmaps for all weapons
+	// Bitmaps for weapons in weaponry pool
+	for(i = 0; i < Num_teams; i++)
+	{
+		for(j = 0; j < Num_weapon_types; j++)
+		{
+			used_weapons[j] += Team_data[i].weaponry_pool[j];
+		}
+	}
+
+	// Page in bitmaps for all used weapons
 	for (i=0; i<Num_weapon_types; i++ )	{
+		if(!used_weapons[i])
+		{
+			continue;
+		}
 		weapon_info *wip = &Weapon_info[i];
 
 		wip->wi_flags &= (~WIF_THRUSTER);		// Assume no thrusters

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-12 16:26:39 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-06-18 04:59:55 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/12 16:26:39  phreak
+ * bumped MAX_SOUNDS to 450 if INF_BUILD is defined
+ *
  * Revision 2.2  2004/03/05 09:01:59  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -325,7 +328,7 @@ int snd_get_duration(int snd_id);
 // get a 3D vol and pan for a particular sound
 int	snd_get_3d_vol_and_pan(game_snd *gs, vector *pos, float* vol, float *pan, float radius=0.0f);
 
-int	snd_init(int use_a3d, int use_eax);
+int	snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits);
 void	snd_close();
 
 // Return 1 or 0 to show that sound system is inited ok

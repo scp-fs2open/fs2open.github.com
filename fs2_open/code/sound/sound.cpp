@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:01:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-06-18 04:59:55 $
+ * $Author: wmcoolmon $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:01:59  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/02 06:37:24  penguin
  * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
  *  - penguin
@@ -397,7 +401,7 @@ void snd_clear()
 // returns:     1		=> init success
 //              0		=> init failed
 //
-int snd_init(int use_a3d, int use_eax)
+int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits)
 {
 	int rval;
 
@@ -417,7 +421,7 @@ int snd_init(int use_a3d, int use_eax)
 	int num_tries=0;
 	int gave_warning = 0;
 	while(1) {
-		rval = ds_init(use_a3d, use_eax);
+		rval = ds_init(use_a3d, use_eax, sample_rate, sample_bits);
 
 		if( rval != 0 ) {
 			nprintf(( "Sound", "SOUND ==> Error initializing DirectSound, trying again in 1 second.\n"));

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.32 $
- * $Date: 2004-05-30 08:04:49 $
+ * $Revision: 2.33 $
+ * $Date: 2004-06-18 04:59:54 $
  * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2004/05/30 08:04:49  wmcoolmon
+ * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
+ *
  * Revision 2.31  2004/05/29 03:02:53  wmcoolmon
  * Added HUD gauges placement table, "hud_gauges.tbl" or "*-hdg.tbm" table module
  *
@@ -4360,8 +4363,14 @@ void hud_show_lead_indicator(vector *target_world_pos)
 
 	indicator_frame = Lead_indicator_gauge.first_frame + frame_offset;
 
-	Assert(wip->max_speed != 0);
-	time_to_target = dist_to_target / wip->max_speed;
+	if(wip->max_speed != 0)
+	{
+		time_to_target = dist_to_target / wip->max_speed;
+	}
+	else
+	{
+		time_to_target = 0;
+	}
 
 	target_moved_dist = targetp->phys_info.speed * time_to_target;
 
@@ -4419,8 +4428,14 @@ void hud_show_lead_indicator(vector *target_world_pos)
 	//give it the "in secondary range frame
 	indicator_frame = Lead_indicator_gauge.first_frame;
 
-	Assert(wip->max_speed != 0);
-	time_to_target = dist_to_target / wip->max_speed;
+	if(wip->max_speed != 0)
+	{
+		time_to_target = dist_to_target / wip->max_speed;
+	}
+	else
+	{
+		time_to_target = 0;
+	}
 
 	target_moved_dist = targetp->phys_info.speed * time_to_target;
 

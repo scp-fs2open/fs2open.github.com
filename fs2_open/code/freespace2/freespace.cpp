@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.93 $
- * $Date: 2004-05-30 08:04:48 $
+ * $Revision: 2.94 $
+ * $Date: 2004-06-18 04:59:53 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2004/05/30 08:04:48  wmcoolmon
+ * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
+ *
  * Revision 2.92  2004/05/27 00:49:25  wmcoolmon
  * Made HUD.tbl obsolete. Info is now taken directly from $Shield_icon in ships.tbl
  * Now this table can be used for something more useful...say, hud gauge positions?
@@ -2716,9 +2719,9 @@ void game_init()
 		exit(0);
 	}
 
-	if (!Is_standalone) {
-
-		snd_init(use_a3d, use_eax);
+	if (!Is_standalone)
+	{
+		snd_init(use_a3d, use_eax, os_config_read_uint(NULL, "SoundSampleRate", 22050), os_config_read_uint(NULL, "SoundSampleBits", 16));
 	}
 
 	if(fsspeech_init() == false) {
