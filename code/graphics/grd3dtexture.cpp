@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-10-16 17:36:29 $
+ * $Revision: 2.10 $
+ * $Date: 2003-10-17 17:18:42 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/16 17:36:29  randomtiger
+ * D3D now has its own gamma system (stored in GammaD3D reg entry) that effects everything.
+ * Put in Bobs specular fog fix.
+ *
  * Revision 2.8  2003/08/22 07:35:08  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -421,6 +425,8 @@
 #include "graphics/grd3dbmpman.h"
 #include "cmdline/cmdline.h"
 
+int D3D_texture_divider = 1;
+
 #include "network/multi_log.h"
 
 typedef struct tcache_slot_d3d {
@@ -610,7 +616,7 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 	int i,j;	
 	ushort *bmp_data;
 
-	DDPIXELFORMAT *surface_desc;
+	PIXELFORMAT *surface_desc;
 	D3DFORMAT d3d8_format;
 
 	switch( bitmap_type ) {
@@ -653,7 +659,7 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 	if(!reload) {
 
 		DBUGFILE_INC_COUNTER(0);
-		if(FAILED(lpD3DDevice->CreateTexture(
+		if(FAILED(GlobalD3DVars::lpD3DDevice->CreateTexture(
 			tex_w, tex_h,
 			use_mipmapping ? 0 : 1, 
 			0,
@@ -1076,7 +1082,7 @@ void d3d_tcache_init()
 	int i, idx, s_idx;
 	const int use_sections = 1;
 
-	D3D_texture_ram = lpD3DDevice->GetAvailableTextureMem();
+	D3D_texture_ram = GlobalD3DVars::lpD3DDevice->GetAvailableTextureMem();
 
 	// setup texture divider
 	uint tmp_val = os_config_read_uint( NULL, NOX("D3DFast"), 0);
@@ -1092,11 +1098,11 @@ void d3d_tcache_init()
 
   	D3D_min_texture_width  = 16;
 	D3D_min_texture_height = 16;
-	D3D_max_texture_width  = d3d_caps.MaxTextureWidth;
-	D3D_max_texture_height = d3d_caps.MaxTextureHeight;
+	D3D_max_texture_width  = GlobalD3DVars::d3d_caps.MaxTextureWidth;
+	D3D_max_texture_height = GlobalD3DVars::d3d_caps.MaxTextureHeight;
 
-	D3D_square_textures = (d3d_caps.TextureCaps & D3DPTEXTURECAPS_SQUAREONLY) ? 1 : 0; 
-	D3D_pow2_textures   = (d3d_caps.TextureCaps & D3DPTEXTURECAPS_POW2)       ? 1 : 0; 
+	D3D_square_textures = (GlobalD3DVars::d3d_caps.TextureCaps & D3DPTEXTURECAPS_SQUAREONLY) ? 1 : 0; 
+	D3D_pow2_textures   = (GlobalD3DVars::d3d_caps.TextureCaps & D3DPTEXTURECAPS_POW2)       ? 1 : 0; 
 
 
 	// RT I dont think wide surfaces are supported in D3D8 so we need this code

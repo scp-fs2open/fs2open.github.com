@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-10-16 17:36:29 $
+ * $Revision: 2.26 $
+ * $Date: 2003-10-17 17:18:42 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/10/16 17:36:29  randomtiger
+ * D3D now has its own gamma system (stored in GammaD3D reg entry) that effects everything.
+ * Put in Bobs specular fog fix.
+ *
  * Revision 2.24  2003/10/16 00:17:14  randomtiger
  * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
  * As well as initialised in a different mode, bitmaps are stretched and for these modes
@@ -563,6 +567,7 @@
  * $NoKeywords: $
  */
 
+#include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
 #include "graphics/2d.h"
 #include "globalincs/pstypes.h"
@@ -572,19 +577,17 @@
 #include "cfile/cfile.h"
 #include "nebula/neb.h"
 #include "render/3d.h"
-#include "cmdline/cmdline.h"	//DTP for random tigers GF4fix, and the commandline switch.
+#include "cmdline/cmdline.h"	
 #include "debugconsole/timerbar.h"
 #include "debugconsole/dbugfile.h"
 
 #include <D3dx8tex.h>
 
+// Viewport used to change render between full screen and sub sections like the pilot animations
+D3DVIEWPORT8 viewport;
+
 int D3d_last_state = -1;
 
-// Hack! move to another file!
-extern int D3d_rendition_uvs;	
-
-// Hack! move to another file!
-extern int D3D_fog_mode;
 
 /**
  * This function should be used to control blending texture, the z buffer and howthe textures
@@ -607,6 +610,7 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 	if ( current_state == D3d_last_state ) {
 		return;
 	}
+
 	D3d_last_state = current_state;
 
 	switch( ts )	{
@@ -631,7 +635,7 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 
 	case TEXTURE_SOURCE_NO_FILTERING:
 
-		if(D3D_custom_size < 0) {
+		if(GlobalD3DVars::D3D_custom_size < 0) {
 			d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_POINT );
 			d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_POINT );
 		} else {
@@ -662,8 +666,8 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 
 	case ALPHA_BLEND_ALPHA_ADDITIVE:				// Alpha*SrcPixel + 1*DestPixel
 	case ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR:	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel
-		if( d3d_caps.SrcBlendCaps & D3DPBLENDCAPS_ONE &&
-			d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE) {
+		if( GlobalD3DVars::d3d_caps.SrcBlendCaps & D3DPBLENDCAPS_ONE &&
+			GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE) {
 			
 			d3d_SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
 			// Must use ONE:ONE as the Permedia2 can't do SRCALPHA:ONE.
@@ -677,8 +681,8 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 	case ALPHA_BLEND_ALPHA_BLEND_ALPHA:			// Alpha*SrcPixel + (1-Alpha)*DestPixel
 			
 		d3d_SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-		if( d3d_caps.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA &&
-			d3d_caps.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA) {
+		if( GlobalD3DVars::d3d_caps.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA &&
+			GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA) {
 			d3d_SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA );
 			d3d_SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
 		} else {
@@ -737,8 +741,6 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 
 }
 
-extern int D3D_zbias;
-
 /**
  * @param int bias
  *
@@ -746,7 +748,7 @@ extern int D3D_zbias;
  */
 void d3d_zbias(int bias)
 {
-	if(D3D_zbias)
+	if(GlobalD3DVars::D3D_zbias)
 		d3d_SetRenderState(D3DRS_ZBIAS, bias);
 }
 
@@ -768,7 +770,7 @@ void gr_d3d_zbuffer_clear(int mode)
 		// Make sure zbuffering is on
 		gr_d3d_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
 
-		if(FAILED(lpD3DDevice->Clear(0, NULL, D3DCLEAR_ZBUFFER, 0x00000000, 1.0, 0))) {
+		if(FAILED(GlobalD3DVars::lpD3DDevice->Clear(0, NULL, D3DCLEAR_ZBUFFER, 0x00000000, 1.0, 0))) {
 			mprintf(( "Failed to clear zbuffer!\n" ));
 			return;
 		}
@@ -1062,7 +1064,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	// want to be in here!
 	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER )	{
 
-		if (d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE  )	{
+		if (GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE  )	{
 			tmap_type = TCACHE_TYPE_NORMAL;
 			////////////////////////////////
 			alpha_blend = ALPHA_BLEND_ALPHA_ADDITIVE;
@@ -1142,7 +1144,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	float minu=0.0f, minv=0.0f, maxu=1.0f, maxv=1.0f;
 
 	if ( flags & TMAP_FLAG_TEXTURED )	{								
-		if ( D3d_rendition_uvs )	{				
+		if ( GlobalD3DVars::D3D_rendition_uvs )	{				
 			bm_get_info(gr_screen.current_bitmap, &bw, &bh);			
 				
 			uoffset = 2.0f/i2fl(bw);
@@ -1193,14 +1195,14 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 		src_v->color = D3DCOLOR_ARGB(a, r, g, b);
 
-		// if we're fogging and we're doing vertex fog
-		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (D3D_fog_mode == 1)){
+		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && Cmdline_nohtl) {
 			gr_d3d_stuff_fog_value(va->z, &src_v->specular);
 		} else {
 			src_v->specular = 0;
 		}
 
 		int x, y;
+
 		x = fl2i(va->sx*16.0f);
 		y = fl2i(va->sy*16.0f);
 
@@ -1212,7 +1214,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 		if ( flags & TMAP_FLAG_TEXTURED )	{
 			// argh. rendition
-			if ( D3d_rendition_uvs ){				
+			if ( GlobalD3DVars::D3D_rendition_uvs ){				
 				// tiled texture (ships, etc), bitmap sections
 				if(flags & TMAP_FLAG_TILED){					
 					src_v->tu = va->u*u_scale;
@@ -1285,7 +1287,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 			d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 2);
 
-			if(d3d_caps.MaxSimultaneousTextures > 2)
+			if(GlobalD3DVars::d3d_caps.MaxSimultaneousTextures > 2)
 				set_stage_for_cell_glowmapped_shaded();
 			else
 				set_stage_for_cell_shaded();
@@ -1303,7 +1305,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 
-		if(d3d_caps.MaxSimultaneousTextures < 3){
+		if(GlobalD3DVars::d3d_caps.MaxSimultaneousTextures < 3){
 			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 			if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
 				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
@@ -1591,7 +1593,7 @@ void gr_d3d_clear()
 						gr_screen.current_clear_color.green, 
 						gr_screen.current_clear_color.blue);
 
-	lpD3DDevice->Clear(0, NULL, D3DCLEAR_TARGET, color, 0,0);
+	GlobalD3DVars::lpD3DDevice->Clear(0, NULL, D3DCLEAR_TARGET, color, 0,0);
 }
 
 /**
@@ -1651,7 +1653,7 @@ void gr_d3d_set_clip(int x,int y,int w,int h)
 	viewport.MaxZ = 1.0F; // choose something appropriate here!
 
 	// Typically this is used for in game ani / video playing 
-	if(FAILED(lpD3DDevice->SetViewport(&viewport)))
+	if(FAILED(GlobalD3DVars::lpD3DDevice->SetViewport(&viewport)))
 	{
   		mprintf(( "GR_D3D_SET_CLIP: SetViewport failed.\n" ));
 	}
@@ -1681,7 +1683,7 @@ void gr_d3d_reset_clip()
 	viewport.MinZ = 0.0F;
 	viewport.MaxZ = 1.0F; // choose something appropriate here!
 
-	if(FAILED(lpD3DDevice->SetViewport(&viewport)))
+	if(FAILED(GlobalD3DVars::lpD3DDevice->SetViewport(&viewport)))
 	{
   		mprintf(( "GR_D3D_SET_CLIP: SetViewport failed.\n" ));
 	}
@@ -1840,33 +1842,26 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	float fbw = i2fl(bw);
 	float fbh = i2fl(bh);
 
-	extern bool D3D_Antialiasing;
-
 	// Rendition 
-	if(D3D_Antialiasing) {
+	if(GlobalD3DVars::D3D_Antialiasing) {
 		u0 = u_scale*(i2fl(sx)-0.5f) / fbw;
 		v0 = v_scale*(i2fl(sy)+0.05f) / fbh;
 		u1 = u_scale*(i2fl(sx+w)-0.5f) / fbw;
 		v1 = v_scale*(i2fl(sy+h)-0.5f) / fbh;
-	} else if (D3d_rendition_uvs )	{
+	} else if (GlobalD3DVars::D3D_rendition_uvs )	{
 		u0 = u_scale*(i2fl(sx)+0.5f) / fbw;
 		v0 = v_scale*(i2fl(sy)+0.5f) / fbh;
 
 		u1 = u_scale*(i2fl(sx+w)+0.5f) / fbw;
 		v1 = v_scale*(i2fl(sy+h)+0.5f) / fbh;
-	} else if (!Cmdline_gf4fix) { //DTP if not set at commandline do the original code
+	} else {
 		u0 = u_scale*i2fl(sx)/ fbw;
 		v0 = v_scale*i2fl(sy)/ fbh;
 		u1 = u_scale*i2fl(sx+w)/ fbw;
 		v1 = v_scale*i2fl(sy+h)/ fbh;
-	} else {	//DTP; these next 4 lines is random tigers Fix. activated by setting -GF4FIX in the commandline.
-		u0 = u_scale*(i2fl(sx)-0.5f) / fbw;
-		v0 = v_scale*(i2fl(sy)-0.5f) / fbh;
-		u1 = u_scale*(i2fl(sx+w)-0.5f) / fbw;
-		v1 = v_scale*(i2fl(sy+h)-0.5f) / fbh;
-	}
+	} 
 
-	if(D3D_custom_size == -1)
+	if(GlobalD3DVars::D3D_custom_size == -1)
 	{
 		x1 = i2fl(x+gr_screen.offset_x);
 		y1 = i2fl(y+gr_screen.offset_y);
@@ -1895,8 +1890,12 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	uint color;
 
 	if ( gr_screen.current_color.is_alphacolor )	{
-		if( d3d_caps.TextureOpCaps & D3DTEXOPCAPS_MODULATEALPHA_ADDCOLOR) {
-			color = D3DCOLOR_ARGB(gr_screen.current_color.alpha,gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+		if( GlobalD3DVars::d3d_caps.TextureOpCaps & D3DTEXOPCAPS_MODULATEALPHA_ADDCOLOR) {
+			color = D3DCOLOR_ARGB(
+				gr_screen.current_color.alpha,
+				gr_screen.current_color.red, 
+				gr_screen.current_color.green, 
+				gr_screen.current_color.blue);
 		} else {
 			int r = (gr_screen.current_color.red*gr_screen.current_color.alpha)/255;
 			int g = (gr_screen.current_color.green*gr_screen.current_color.alpha)/255;
@@ -2190,7 +2189,7 @@ void gr_d3d_flash(int r, int g, int b)
 
 	if ( r || g || b )	{
 		uint color;
-		if (d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE  )	{
+		if (GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE  )	{
 			gr_d3d_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_NONE );
 			color = D3DCOLOR_ARGB(255, r, g, b);
 		} else {
@@ -2369,7 +2368,9 @@ void gr_d3d_line(int x1,int y1,int x2,int y2)
 	DWORD color;
 
 	// Set up Render State - flat shading - alpha blending
-	if ((d3d_caps.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA) && (d3d_caps.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA)  )	{
+	if ((GlobalD3DVars::d3d_caps.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA) && 
+		(GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA)  )	{
+
 		gr_d3d_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 		color = D3DCOLOR_ARGB(gr_screen.current_color.alpha, gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 	} else {
@@ -2435,17 +2436,17 @@ void gr_d3d_gradient(int x1,int y1,int x2,int y2)
 
 	// Set up Render State - flat shading - alpha blending
 	if (	
-		(d3d_caps.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA) && 
-		(d3d_caps.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA)  )	
+		(GlobalD3DVars::d3d_caps.SrcBlendCaps & D3DPBLENDCAPS_SRCALPHA) && 
+		(GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_INVSRCALPHA)  )	
 	{
 		gr_d3d_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 
-		if (d3d_caps.ShadeCaps & D3DPSHADECAPS_ALPHAGOURAUDBLEND )	
+		if (GlobalD3DVars::d3d_caps.ShadeCaps & D3DPSHADECAPS_ALPHAGOURAUDBLEND )	
 		{
 			color1 = D3DCOLOR_ARGB(gr_screen.current_color.alpha,gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 			color2 = D3DCOLOR_ARGB(0,gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 		} 
-		else if (d3d_caps.ShadeCaps & D3DPSHADECAPS_COLORGOURAUDRGB )	
+		else if (GlobalD3DVars::d3d_caps.ShadeCaps & D3DPSHADECAPS_COLORGOURAUDRGB )	
 		{
 			color1 = D3DCOLOR_ARGB(gr_screen.current_color.alpha,gr_screen.current_color.red,gr_screen.current_color.green,gr_screen.current_color.blue);
 			color2 = D3DCOLOR_ARGB(gr_screen.current_color.alpha,0,0,0);
@@ -2464,7 +2465,7 @@ void gr_d3d_gradient(int x1,int y1,int x2,int y2)
 		int b = (gr_screen.current_color.blue*gr_screen.current_color.alpha)/255;
 
 		color1 = D3DCOLOR_ARGB(255,r,g,b);
-		color2 = (d3d_caps.ShadeCaps & D3DPSHADECAPS_COLORGOURAUDRGB ) ?
+		color2 = (GlobalD3DVars::d3d_caps.ShadeCaps & D3DPSHADECAPS_COLORGOURAUDRGB ) ?
 			D3DCOLOR_ARGB(255,0,0,0) :  color1;
 	}
 
@@ -2720,7 +2721,7 @@ void gr_d3d_print_screen(char *filename)
 {
 	IDirect3DSurface8 *pDestSurface = NULL;
 
-	if(FAILED(lpD3DDevice->CreateImageSurface(
+	if(FAILED(GlobalD3DVars::lpD3DDevice->CreateImageSurface(
 		gr_screen.max_w, gr_screen.max_h, D3DFMT_A8R8G8B8, &pDestSurface)))
 	{
 		mprintf(("Failed to create image surface"));
@@ -2728,7 +2729,7 @@ void gr_d3d_print_screen(char *filename)
 	}
 
 	
-	if(FAILED(lpD3DDevice->GetFrontBuffer(pDestSurface)))
+	if(FAILED(GlobalD3DVars::lpD3DDevice->GetFrontBuffer(pDestSurface)))
 	{
 		pDestSurface->Release();
 		mprintf(("Failed to get front buffer"));
@@ -2880,10 +2881,6 @@ void d3d_render_timer_bar(int colour, float x, float y, float w, float h)
 	d3d_verts[3].sy = max_fh * (y + h);
 
 	gr_d3d_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
-
-	// This is the incorrect call
-	//	d3d_DrawPrimitive(D3DPT_TRIANGLEFAN,D3DVT_TLVERTEX,(LPVOID)d3d_verts,4,NULL);
-	// The correct call now is:-
 
 	d3d_set_initial_render_state();
 

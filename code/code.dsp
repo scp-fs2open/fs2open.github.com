@@ -668,7 +668,23 @@ SOURCE=.\Graphics\GrD3DInternal.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\graphics\grd3dlight.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\grd3dlight.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\Graphics\GrD3DRender.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrD3Dsetup.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\grd3dsetup.h
 # End Source File
 # Begin Source File
 

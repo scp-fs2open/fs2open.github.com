@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.1 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.2 $
+ * $Date: 2003-10-17 17:18:42 $
+ * $Author: randomtiger $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.0.2.5  2002/11/09 19:28:15  randomtiger
  *
  * Fixed small gfx initialisation bug that wasnt actually causing any problems.
@@ -81,14 +84,53 @@
 #ifndef _GRD3D_H
 #define _GRD3D_H
 
-bool gr_d3d_init();
-void gr_d3d_cleanup();
+struct poly_list;
 
-// bitmap functions
+#include "globalincs/systemvars.h"
 
-void gr_d3d_release_rendering_objects();
+bool gr_d3d_resize_screen_pos(int *x, int *y);
+void gr_d3d_exb_flush(int end_of_frame);
 
+void d3d_start_frame();
+void d3d_stop_frame();
+void d3d_set_initial_render_state()	;
+void set_stage_for_cell_shaded();
+void set_stage_for_cell_glowmapped_shaded();
+void set_stage_for_additive_glowmapped();
+void set_stage_for_defuse();
+void set_stage_for_glow_mapped_defuse();
+void set_stage_for_defuse_and_non_mapped_spec();
+void set_stage_for_glow_mapped_defuse_and_non_mapped_spec();
+bool set_stage_for_spec_mapped();
+bool set_stage_for_spec_glow_mapped();
+void set_stage_for_mapped_environment_mapping();
 
-void gr_d3d_set_initial_render_state();
+void gr_d3d_flip();
+void gr_d3d_flip_cleanup();
+void gr_d3d_fade_in(int instantaneous);
+void gr_d3d_fade_out(int instantaneous);
+int gr_d3d_save_screen();
+void gr_d3d_restore_screen(int id);
+void gr_d3d_free_screen(int id);
+void gr_d3d_dump_frame_start(int first_frame, int frames_between_dumps);
+void gr_d3d_flush_frame_dump();
+void gr_d3d_dump_frame_stop();
+void gr_d3d_dump_frame();
+uint gr_d3d_lock();
+void gr_d3d_unlock();
+void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far);
+void gr_d3d_set_gamma(float gamma);
+void gr_d3d_set_cull(int cull);
+void gr_d3d_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct);
+void gr_d3d_filter_set(int filter);
+void gr_d3d_set_clear_color(int r, int g, int b);
+void gr_d3d_get_region(int front, int w, int h, ubyte *data);
+int gr_d3d_make_buffer(poly_list *list);
+void gr_d3d_destroy_buffer(int idx);
+void gr_d3d_render_buffer(int idx);
+void gr_d3d_start_instance_matrix();
+void gr_d3d_end_instance_matrix();
+void d3d_start_clip();
+void d3d_end_clip();
 
 #endif
