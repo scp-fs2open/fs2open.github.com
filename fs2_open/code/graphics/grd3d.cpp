@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.54 $
- * $Date: 2004-02-16 11:47:33 $
- * $Author: randomtiger $
+ * $Revision: 2.55 $
+ * $Date: 2004-02-16 21:53:40 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2004/02/16 11:47:33  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.53  2004/02/15 06:02:31  bobboau
  * fixed sevral asorted matrix errors,
  * OGL people make sure I didn't break anything,
@@ -2004,7 +2011,6 @@ void gr_d3d_render_buffer(int idx)
 		material.Specular.a = 1.0;
 		material.Emissive.a = 1.0f;
 	}
-	if(GR_center_alpha)
 	if(!lighting_enabled){
 		int l = int(255.0f*gr_screen.current_alpha);
 		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(l,l,l,l));
@@ -2050,11 +2056,9 @@ void gr_d3d_render_buffer(int idx)
 			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
 	}
 
-	if(GR_center_alpha){
 	pre_render_lights_init();
 	if(lighting_enabled){
 		shift_active_lights(0);
-	}
 	}
 
 //	bool single_pass_spec = false;
