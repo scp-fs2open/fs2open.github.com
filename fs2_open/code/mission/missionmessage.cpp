@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-11-11 02:15:45 $
+ * $Revision: 2.6 $
+ * $Date: 2004-01-14 21:12:24 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/11/11 02:15:45  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.4  2003/10/16 16:38:16  Kazan
  * couple more types in species_defs.cpp, also finished up "Da Species Upgrade"
  *
@@ -1209,7 +1214,7 @@ int message_calc_anim_start_frame(int time, anim *ani, int reverse)
 void message_play_anim( message_q *q )
 {
 	message_extra	*anim_info;
-	int				is_death_scream=0, persona_index=-1, rand_index=-1;
+	int				is_death_scream=0, persona_index=-1, rand_index=0;
 	char				ani_name[MAX_FILENAME_LEN], *p;
 	MissionMessage	*m;
 
@@ -1247,24 +1252,25 @@ void message_play_anim( message_q *q )
 		}
 
 		if ( Personas[persona_index].flags & (PERSONA_FLAG_WINGMAN | PERSONA_FLAG_SUPPORT) ) {
-			// get a random head -- it's one of two.
+			// get a random head
 			if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
-				rand_index=2;	// 3rd version is always death animation
-				is_death_scream=1;
+				rand_index = MAX_WINGMAN_HEADS;		// [0,MAX) are regular heads; MAX is always death head
+				is_death_scream = 1;
 			} else {
-				rand_index = (Missiontime % MAX_WINGMAN_HEADS);
+				rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
 			}
 			sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
 			subhead_selected = TRUE;
 		} else if ( Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE) ) {
-			// get a random head -- it's one of two.
-			rand_index = (Missiontime % MAX_COMMAND_HEADS);
+			// get a random head
+			rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
 			sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
 			subhead_selected = TRUE;
 		}
+
 		if (!subhead_selected) {
 			// choose between a and b
-			rand_index = (Missiontime % MAX_WINGMAN_HEADS);
+			rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
 			sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
 			mprintf(("message '%s' with invalid head.  Fix by assigning persona to the message.\n", m->name));
 		}
