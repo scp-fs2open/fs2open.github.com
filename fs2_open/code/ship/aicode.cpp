@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-17 23:58:46 $
+ * $Revision: 2.3 $
+ * $Date: 2002-07-18 03:27:38 $
  * $Author: unknownplayer $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/17 23:58:46  unknownplayer
+ *
+ * Minor commenting added to two functions.
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -5435,20 +5439,26 @@ void show_firing_diag()
 //		Select Any ol' weapon.
 //	Returns primary_bank index.
 /**
- * Changed the code into what I feel is an easier to read structure
- * Modified to allow one to specify a shudder weapon to be used (i.e. the maxim gun)
+ * Rewrote a large part of this. It has certain inefficiencies but these are
+ * necessary until I think of a better way, since we may in future have ships
+ * with more then two banks of primaries.
+ *
+ * AI will now not use the Maxim on any shielded target (i.e. fighters) and instead
+ * try and choose a different weapon.
  * ##UnknownPlayer##
  */
 int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 {
+	// Pointer Set Up
 	ship	*shipp = &Ships[objp->instance];
 	ship_weapon *swp = &shipp->weapons;
 	ship_info *sip;
 
-
+	// Debugging
 	//Assert( other_objp != NULL );
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
-
+	// Debugging //
+	
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if (flags & WIF_PUNCTURE) 
@@ -5483,42 +5493,89 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		}
 		
 		// AL 26-3-98: If we couldn't find a puncture weapon, pick first available weapon if one isn't active
-		if ( swp->current_primary_bank < 0 ) 
-		{
-			if ( swp->num_primary_banks > 0 ) 
-			{
-				swp->current_primary_bank = 0;
-			}
-		}
-
+		// ##UnknownPlayer## - removed.
 	}
-	else 
-	{		
-		//	Don't need to be using a puncture weapon.
-		if (swp->current_primary_bank >= 0) 
+	
+	// Code to check for shields on enemy, and to try and arm the maxim if enemy is shieldless - unknownplayer
+	if (other_objp->flags & OF_NO_SHIELDS)	
+	{
+		// Try and find a maxim cannon - this searches for the shudder property
+		for (int i = 0; i < swp->num_primary_banks; i++)
 		{
-			if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags & WIF_PUNCTURE))
+			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				// We are not using a puncture weapon, so return - unknownplayer (yes I gave up on the ##'s)
-				return swp->current_primary_bank;
-			}
-		}
-		for (int i=0; i<swp->num_primary_banks; i++) 
-		{
-			if (swp->primary_bank_weapons[i] > -1)		// If the primary bank has a weapon loaded - unknownplayer
-			{
-				// Is it NOT a puncture weapon, and NOT the maxim if the target has shields? - unknownplayer
-				if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_PUNCTURE))
+				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_SHUDDER)	// Is it a maxim gun?
 				{
-					swp->current_primary_bank = i;		// If so then switch to it - unknownplayer
-					nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
-					return i;							// return the bank no we armed - unknownplayer
+					// Yes.
+					swp->current_primary_bank = i;
+					return i;						// Exit function
 				}
 			}
 		}
-		//	Wasn't able to find a non-puncture weapon.  Stick with what we have.
 	}
 
+	// No gun matches, try and find something that isn't either
+	for (int i = 0; i < swp->num_primary_banks; i++)
+	{
+		if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon
+		{
+			if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_SHUDDER & WIF_PUNCTURE))
+			{
+				swp->current_primary_bank = i;		// Found a match, arm it
+				return i;							// Exit function
+			}
+		}
+	}
+
+	// No gun matches, try and find something that at least isn't the maxim
+	for (i = 0; i < swp->num_primary_banks; i++)
+	{
+		if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon
+		{
+			if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_SHUDDER))
+			{
+				swp->current_primary_bank = i;		// Found a match, arm it
+				return i;							// Exit function
+			}
+		}
+	}
+	
+	// This was moved here because we have more options now
+	// Make sure we eventually arm some weapon if possible
+	if ( swp->current_primary_bank < 0 ) 
+	{
+		if ( swp->num_primary_banks > 0 ) 
+		{
+			swp->current_primary_bank = 0;
+		}
+	}
+
+	/* Code removed by ##UnknownPlayer##
+	//	Don't need to be using a puncture weapon.
+	if (swp->current_primary_bank >= 0) 
+	{
+		if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags & WIF_PUNCTURE))
+		{
+			// We are not using a puncture weapon, so return - unknownplayer (yes I gave up on the ##'s)
+			return swp->current_primary_bank;
+		}
+	}
+	for (int i=0; i<swp->num_primary_banks; i++) 
+	{
+		if (swp->primary_bank_weapons[i] > -1)		// If the primary bank has a weapon loaded - unknownplayer
+		{
+			// Is it NOT a puncture weapon, and NOT the maxim if the target has shields? - unknownplayer
+			if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_PUNCTURE))
+			{
+				swp->current_primary_bank = i;		// If so then switch to it - unknownplayer
+				nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
+				return i;							// return the bank no we armed - unknownplayer
+			}
+		}
+	}
+		//	Wasn't able to find a non-puncture weapon.  Stick with what we have.
+	*/
+	
 	Assert( swp->current_primary_bank != -1 );		// get Alan or Allender
 
 	return swp->current_primary_bank;
@@ -5593,10 +5650,6 @@ void set_primary_weapon_linkage(object *objp)
 //	--------------------------------------------------------------------------
 //	Fire the current primary weapon.
 //	*objp is the object to fire from.
-/**
- * 
- *
- */
 void ai_fire_primary_weapon(object *objp)
 {
 	ship		*shipp = &Ships[objp->instance];
