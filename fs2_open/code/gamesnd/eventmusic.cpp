@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-01-25 04:17:39 $
+ * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -1413,6 +1416,30 @@ int event_music_next_soundtrack(int delta)
 	event_music_level_init(new_soundtrack);
 
 	return Current_soundtrack_num;
+}
+
+// Goober5000 - along the same lines; this is for the sexp
+void event_sexp_change_music(char *name)
+{
+	Assert(name);
+
+	int i, new_soundtrack = -1;
+
+	if ( Event_music_enabled == FALSE || Event_music_level_inited == FALSE )
+	{
+		return;
+	}
+
+	for (i=0; i<Num_soundtracks; i++)
+	{
+		if (!stricmp(name, Soundtracks[i].name))
+		{
+			new_soundtrack = i;
+		}
+	}
+
+	event_music_level_close();
+	event_music_level_init(new_soundtrack);
 }
 
 // ----------------------------------------------------------------
