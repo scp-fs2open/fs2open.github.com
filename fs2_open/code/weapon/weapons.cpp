@@ -1439,7 +1439,23 @@ int parse_weapon()
 	wip->SSM_index =-1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
 	if( optional_string("$SSM:")){
 		stuff_int(&wip->SSM_index);
-	}								// SSM index -Bobboau
+	}// SSM index -Bobboau
+
+	wip->decal_texture = -1;
+	wip->decal_backface_texture = -1;
+	wip->decal_rad = -1;
+	if( optional_string("$decal:")){
+		char tex_name[64];
+		required_string("+texture:");
+		stuff_string(tex_name, F_NAME, NULL);
+		wip->decal_texture = bm_load(tex_name);
+		if( optional_string("+backface texture:")){
+			stuff_string(tex_name, F_NAME, NULL);
+			wip->decal_backface_texture = bm_load(tex_name);
+		}
+		required_string("+radius:");
+		stuff_float(&wip->decal_rad);
+	}
 
 
 	return 0;
@@ -3539,6 +3555,14 @@ void weapons_page_in()
 				bm_page_in_texture(wip->Weapon_particle_spew_bitmap);//page in the bitmap-Bobboau
 			}
 		}
+	//page in decal textures
+		if(wip->decal_texture != -1){
+			bm_page_in_xparent_texture( wip->decal_texture, 1);
+			if(wip->decal_backface_texture != -1){
+				bm_page_in_xparent_texture( wip->decal_backface_texture);
+			}
+
+		}
 
 	}
 
@@ -3577,6 +3601,7 @@ void weapons_page_in()
 		}
 		Assert( cmeasurep->model_num > -1 );
 	}
+
 
 }
 

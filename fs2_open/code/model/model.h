@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.9 $
- * $Date: 2002-12-04 09:44:34 $
- * $Author: DTP $
+ * $Revision: 2.10 $
+ * $Date: 2002-12-07 01:37:42 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2002/12/04 09:44:34  DTP
+ * lowered MAX_POLYGON_MODELS FROM 198 to 128 for safety reasons since we bumped back MAX_SHIP_TYPES to 130
+ *
  * Revision 2.8  2002/12/02 23:55:31  Goober5000
  * fixed misspelling
  *
@@ -302,7 +305,7 @@
 #define _MODEL_H
 
 #include "globalincs/pstypes.h"
-
+#include "decals/decals.h"
 struct object;
 
 #define MAX_PRIMARY_BANKS		3
@@ -489,6 +492,7 @@ typedef struct bsp_info {
 
 	int		is_thruster;
 	int		is_damaged;
+	int		is_nameplate;		//will render with the current nameplate texture
 
 	// Tree info
 	int		parent;					// what is parent for each submodel, -1 if none
@@ -504,6 +508,7 @@ typedef struct bsp_info {
 	int		num_arcs;												// See model_add_arc for more info	
 	vector	arc_pts[MAX_ARC_EFFECTS][2];	
 	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
+
 } bsp_info;
 
 
@@ -677,7 +682,8 @@ typedef struct insignia {
 	float u[MAX_INS_FACES][MAX_INS_FACE_VECS];		// u tex coords on a per-face-per-vertex basis
 	float v[MAX_INS_FACES][MAX_INS_FACE_VECS];		// v tex coords on a per-face-per-vertex bases
 	vector vecs[MAX_INS_VECS];								// vertex list	
-	vector offset;												// global position offset for this insignia
+	vector offset;	// global position offset for this insignia
+	vector norm[MAX_INS_VECS]	;					//normal of the insignia-Bobboau
 } insignia;
 
 #define PM_FLAG_ALLOW_TILING	(1<<0)					// Allow texture tiling
@@ -717,6 +723,7 @@ typedef struct polymodel {
 	int			numframes[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			fps[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			is_ani[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
+	int			nameplate[MAX_MODEL_TEXTURES];				// use the nameplate texture-Bobboau
 	int			ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
 	int			transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau
 
@@ -780,7 +787,7 @@ void model_level_post_init();
 void model_free_all();
 
 // Loads a model from disk and returns the model number it loaded into.
-int model_load(char *filename, int n_subsystems, model_subsystem *subsystems);
+int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1);
 
 // notify the model system that a ship has died
 void model_notify_dead_ship(int objnum);
@@ -1177,3 +1184,7 @@ int model_is_pirate_ship(int modelnum);
 #endif
 
 void set_warp_gloabals(float, float, float, int, float);
+
+void model_set_nameplate_bitmap(int bmap);
+
+int decal_make_model(polymodel * pm);

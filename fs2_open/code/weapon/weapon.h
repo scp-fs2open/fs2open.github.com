@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/11/14 04:18:17  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.3  2002/11/11 20:11:02  phreak
  * changed around the 'weapon_info' struct to allow for custom corkscrew missiles
  *
@@ -564,6 +569,11 @@ typedef struct weapon_info {
 	float cs_twist;
 	int cs_crotate;
 	int cs_delay;
+
+	int decal_texture;
+	int decal_backface_texture;
+	float decal_rad;
+
 } weapon_info;
 
 // Data structure to track the active missiles

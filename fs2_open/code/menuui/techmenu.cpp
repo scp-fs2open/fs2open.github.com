@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-11-27 01:20:51 $
- * $Author: sesquipedalian $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-07 01:37:42 $
+ * $Author: bobboau $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/11/27 01:20:51  sesquipedalian
+ * Added Phreak's fix for the weapons room bug.  Can now view a modified weapons.tbl in the tech room without crashing
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -1506,6 +1509,7 @@ void techroom_close()
 
 void techroom_do_frame(float frametime)
 {
+	
 	int i, k;	
 
 	// turn off controls when overlay is on

@@ -2491,5 +2491,17 @@ SOURCE=.\Network\stand_gui.cpp
 SOURCE=.\Network\stand_gui.h
 # End Source File
 # End Group
+# Begin Group "Decals"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\decals\decals.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\decals\decals.h
+# End Source File
+# End Group
 # End Target
 # End Project

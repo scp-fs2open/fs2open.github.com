@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fvi.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-07 01:37:41 $
+ * $Author: bobboau $
  *
  * Routines to find intersections of various 3d things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -203,6 +206,21 @@ void fvi_two_lines_in_3space(vector *p1, vector *v1, vector *p2, vector *v2, flo
 		*t = FLT_MAX;
 	}
 }
+
+//tells distance from a plain to a point-Bobboau
+float fvi_point_dist_plane(	vector *plane_pnt, vector *plane_norm,		// Plane description, a point and a normal
+					    vector *point	//a point to test
+						)
+{
+	float dist,D;
+		
+	D = -vm_vec_dot(plane_norm,plane_pnt);
+
+	dist = vm_vec_dot(plane_norm, point) + D;
+	return dist;
+}
+
+
 
 
 //--------------------------------------------------------------------

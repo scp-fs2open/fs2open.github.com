@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.11 $
- * $Date: 2002-11-14 06:15:03 $
+ * $Revision: 2.12 $
+ * $Date: 2002-12-07 01:37:42 $
  * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2002/11/14 06:15:03  bobboau
+ * added nameplate code
+ *
  * Revision 2.10  2002/11/14 04:18:17  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -1692,7 +1695,7 @@ int parse_ship()
 			Int3();	// Impossible return value from required_string_3.
 		}
 	}	
-	Assert( hull_percentage_of_hits > 0.0f );		// must be > 0
+//	Assert( hull_percentage_of_hits > 0.0f );		// must be > 0//no it doesn't :P -Bobboau
 
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	sip->n_subsystems = n_subsystems;
@@ -2228,6 +2231,19 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	// set awacs warning flags so awacs ship only asks for help once at each level
 	shipp->awacs_warning_flag = AWACS_WARN_NONE;
+	shipp->nameplate = -1;
+
+	for(i=0; i<MAX_SHIP_DECALS; i++)
+		shipp->decals[i].is_valid = 0;
+
+
+	
+	for(i = 1; i < MAX_SHIP_DECALS; i++){
+		shipp->decals[i].timestamp = timestamp();
+		shipp->decals[i].is_valid = 0;
+	}	
+
+
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -2667,7 +2683,8 @@ void ship_render(object * obj)
 		}
 
 		// maybe set squad logo bitmap
-		model_set_insignia_bitmap(shipp->nameplate);
+		model_set_insignia_bitmap(-1);
+		model_set_nameplate_bitmap(shipp->nameplate);
 #ifndef NO_NETWORK
 		if(Game_mode & GM_MULTIPLAYER){
 			// if its any player's object
@@ -2710,6 +2727,9 @@ void ship_render(object * obj)
 		} else {
 			model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj) );
 		}
+
+//		decal_render_all(obj);
+//		mprintf(("out of the decal stuff\n"));
 
 		// always turn off fog after rendering a ship
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
@@ -2774,6 +2794,7 @@ void ship_render(object * obj)
 		}
 	}
 #endif
+	mprintf(("ship rendered\n"));
 }
 
 void ship_subsystem_delete(ship *shipp)

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-07 01:37:42 $
+ * $Author: bobboau $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -296,10 +299,15 @@ void vm_vec_sub(vector *dest,vector *src0,vector *src1);
 void vm_vec_sub2(vector *dest,vector *src);
 #endif
 
+//averages n vectors
+vector *vm_vec_avg_n(vector *dest, int n, vector src[]);
+
 
 //averages two vectors. returns ptr to dest
 //dest can equal either source
 vector *vm_vec_avg(vector *dest,vector *src0,vector *src1);
+
+vector *vm_vec_avg3(vector *dest,vector *src0,vector *src1,vector *src2);
 
 //averages four vectors. returns ptr to dest
 //dest can equal any source
@@ -651,5 +659,9 @@ void vm_vec_random_in_circle(vector *out, vector *in, matrix *orient, float radi
 // returns 0 if the point is inside the line segment, -1 if "before" the line segment and 1 ir "after" the line segment
 int vm_vec_dist_to_line(vector *p, vector *l0, vector *l1, vector *nearest, float *dist);
 
+void vm_vert2vec(vertex *vert, vector *vec);
+void vm_vec2vert(vector *vec, vertex *vert);
+
 #endif
+
 
