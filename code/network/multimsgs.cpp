@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-07-12 16:32:57 $
- * $Author: Kazan $
+ * $Revision: 2.22 $
+ * $Date: 2004-07-15 00:16:46 $
+ * $Author: wmcoolmon $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/07/12 16:32:57  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.20  2004/07/12 03:34:55  wmcoolmon
  * More in-game stuff, mostly for restricted games
  *
@@ -1742,6 +1745,7 @@ void process_accept_packet(ubyte* data, header* hinfo)
 	if (code & ACCEPT_INGAME) {
 		// the game filename
 		GET_STRING(Game_current_mission_filename);
+		mprintf(("Got mission filename %s", Game_current_mission_filename));
 		Select_default_ship = 0;
 
 		// determine if I'm being placed on a team
@@ -2742,7 +2746,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 
 	// do the normal thing when not ingame joining.  When ingame joining, simply kill off the ship.
 	if ( !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ) {
-//		ship_hit_kill( sobjp, oobjp, percent_killed, sd );
+		ship_hit_kill( sobjp, oobjp, percent_killed, sd );
 	} else {
 		extern void ship_destroyed( int shipnum );
 		ship_destroyed( sobjp->instance );
