@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:45 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-16 01:35:59 $
+ * $Author: bobboau $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:45  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:59  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -353,6 +356,10 @@ void obj_render_all(void (*render_function)(object *objp) )
 
 		(*render_function)(os->obj);
 	}
+
+//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
+	extern void batch_render_lasers();
+	batch_render_lasers();
 
 	// if we're fullneb, switch off the fog effet
 	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){

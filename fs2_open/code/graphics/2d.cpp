@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-03-09 03:23:31 $
+ * $Revision: 2.39 $
+ * $Date: 2005-03-16 01:35:58 $
  * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/03/09 03:23:31  bobboau
+ * added a new interface render funtion
+ *
  * Revision 2.37  2005/03/07 13:10:20  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -1301,8 +1304,41 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	int X=512,Y=512;
 //	big_ole_honkin_hack_test = bm_make_render_target(X,Y,BMP_TEX_STATIC_RENDER_TARGET);
 //	gr_set_render_target(big_ole_honkin_hack_test);
+
+	//get a render target for static environment maps
 	gr_screen.static_environment_map = bm_make_render_target(X,Y, BMP_TEX_STATIC_RENDER_TARGET|BMP_TEX_CUBEMAP);
+	//clear out the 6 faces
+	gr_set_render_target(gr_screen.static_environment_map,0);
+	gr_clear();
+	gr_set_render_target(gr_screen.static_environment_map,1);
+	gr_clear();
+	gr_set_render_target(gr_screen.static_environment_map,2);
+	gr_clear();
+	gr_set_render_target(gr_screen.static_environment_map,3);
+	gr_clear();
+	gr_set_render_target(gr_screen.static_environment_map,4);
+	gr_clear();
+	gr_set_render_target(gr_screen.static_environment_map,5);
+	gr_clear();
+
+	//get the dynamic environment map
 	gr_screen.dynamic_environment_map = bm_make_render_target(X,Y, BMP_TEX_DYNAMIC_RENDER_TARGET|BMP_TEX_CUBEMAP);
+	//clear it out
+	gr_set_render_target(gr_screen.dynamic_environment_map,0);
+	gr_clear();
+	gr_set_render_target(gr_screen.dynamic_environment_map,1);
+	gr_clear();
+	gr_set_render_target(gr_screen.dynamic_environment_map,2);
+	gr_clear();
+	gr_set_render_target(gr_screen.dynamic_environment_map,3);
+	gr_clear();
+	gr_set_render_target(gr_screen.dynamic_environment_map,4);
+	gr_clear();
+	gr_set_render_target(gr_screen.dynamic_environment_map,5);
+	gr_clear();
+
+	//set the render target back to the back buffer
+	gr_set_render_target(-1);
 	return true;
 }
 
@@ -1812,3 +1848,5 @@ poly_list& poly_list::operator = (poly_list &other_list){
 	n_prim = other_list.n_prim;
 	return *this;
 }
+
+

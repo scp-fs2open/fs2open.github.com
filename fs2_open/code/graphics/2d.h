@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.50 $
- * $Date: 2005-03-11 01:27:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.51 $
+ * $Date: 2005-03-16 01:35:58 $
+ * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/03/11 01:27:17  wmcoolmon
+ * I like comments
+ *
  * Revision 2.49  2005/03/10 08:00:04  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -637,6 +640,54 @@ struct poly_list{
 private:
 	int currently_allocated;
 };
+
+class geometry_batcher{
+	int n_to_render;//the number of primitives to render
+	int n_allocated;//the number of verts allocated
+	vertex* vert;
+	vertex** vert_list;//V's stupid rendering functions need this
+	void allocate_internal(int n_verts);
+	//makes sure we have enough space in the memory buffer for the geometry we are about to put into it
+	//you need to figure out how many verts are going to be requiered
+public:
+	geometry_batcher():n_to_render(0),n_allocated(0),vert(NULL){};
+	~geometry_batcher(){if(vert)free((void*)vert);if(vert_list)free(vert_list);};
+
+	void add_alocate(int quad, int n_tri=0);//add this many without loseing what we have
+	void allocate(int quad, int n_tri=0);
+	//everything exept the draw tri comand requiers the same amount of space
+	//so just tell it how many draw_* comands you are going to need seperateing out
+	//draw_tri if you for some reason need it
+	//this must be called every time the geometry batcher is to be used
+	//before the first draw_* comand and after any render comand
+
+	void draw_bitmap(vertex *position, float rad, float depth=0);
+	//draws a bitmap into the geometry batcher
+	void draw_bitmap(vertex *position, float rad, float angle, float depth);
+	//draws a rotated bitmap
+	void draw_tri(vertex* verts);
+	//draws a simple 3 vert polygon
+	void draw_quad(vertex* verts);
+	//draws a simple 4 vert polygon
+	void draw_beam(vector*start,vector*end, float width, float intinsity = 1.0f);
+	//draws a beam
+	float draw_laser(vector *p0,float width1,vector *p1,float width2, int r, int g, int b);
+	//draws a laser
+
+	void render(int flags);
+	//draws all of the batched geometry to the back buffer and flushes the cache
+	//accepts tmap flags so you can use anything you want realy
+
+	void operator =(int){};
+};
+
+struct batch_item{
+	batch_item():texture(-1){};
+
+	geometry_batcher batch;
+	int texture;
+};
+
 
 struct colored_vector{
 	colored_vector():pad(1.0f){};

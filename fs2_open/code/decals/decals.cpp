@@ -2141,6 +2141,8 @@ void decal_render_system(decal_system* system){
 					//if it's still alive render it
 					Assert(list->dec.n_poly > 0 && list->dec.vertex_buffer_start > -1);
 					Assert(list->dec.vertex_buffer_start == 3*(list->dec.vertex_buffer_start/3));
+					if(!list->dec.n_poly)continue;
+					if(list->dec.vertex_buffer_start < 0)continue;
 					float a = 1.0f - ( (float(timestamp()) - float(list->dec.timestamp)) / float(list->dec.burn_time) );
 					gr_set_bitmap( system->decals[i].burn_texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, a );
 					gr_render_buffer(verts_used, list->dec.n_poly, NULL);

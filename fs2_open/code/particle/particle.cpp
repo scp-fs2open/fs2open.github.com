@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-02-04 20:06:06 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-16 01:35:59 $
+ * $Author: bobboau $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/02/04 20:06:06  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.9  2004/11/21 11:33:23  taylor
  * page in all frames at once rather than separately (old code that wasn't updated)
  *
@@ -526,12 +529,15 @@ void particle_kill_all()
 MONITOR( NumParticlesRend );	
 extern int Cmdline_nohtl;
 
+#define MAX_PARTICLE_FRAMES 128
+geometry_batcher PARTICLE_FIRE_batcher[MAX_PARTICLE_FRAMES], PARTICLE_SMOKE_batcher[MAX_PARTICLE_FRAMES], PARTICLE_SMOKE2_batcher[MAX_PARTICLE_FRAMES];
+
 void particle_render_all()
 {
 	particle *p;
 	ubyte flags;
 	float pct_complete;
-	float alpha;
+	float alpha = 1.0f;
 	vertex pos;
 	vector ts, te, temp;
 	int rotate = 1;
@@ -650,7 +656,7 @@ void particle_render_all()
 						break;
 					}
 					*/
-
+/*
 					// set the bitmap
 					gr_set_bitmap(p->reverse ? Anim_bitmap_id_fire+(Anim_num_frames_fire - framenum - 1) : Anim_bitmap_id_fire+framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
 
@@ -662,6 +668,19 @@ void particle_render_all()
 					else {
 						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE|TMAP_HTL_3DU_BATCH);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
+					}
+*/					
+					int cur_frame = p->reverse ? (Anim_num_frames_fire - framenum - 1) : framenum;
+					Assert(cur_frame < MAX_PARTICLE_FRAMES);
+
+					PARTICLE_FIRE_batcher[cur_frame].add_alocate(1);
+					// if this is a tracer style particle
+					if(p->tracer_length > 0.0f){					
+						PARTICLE_FIRE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
+					}
+					// draw as a regular bitmap
+					else {
+						PARTICLE_FIRE_batcher[cur_frame].draw_bitmap(&POS, p->radius);
 					}
 					break;
 				}
@@ -682,7 +701,7 @@ void particle_render_all()
 					*/
 
 					// set the bitmap
-					gr_set_bitmap(p->reverse ? Anim_bitmap_id_smoke+(Anim_num_frames_smoke - framenum - 1) : Anim_bitmap_id_smoke+framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
+					/*gr_set_bitmap(p->reverse ? Anim_bitmap_id_smoke+(Anim_num_frames_smoke - framenum - 1) : Anim_bitmap_id_smoke+framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
 
 					// if this is a tracer style particle
 					if(p->tracer_length > 0.0f){			
@@ -693,6 +712,20 @@ void particle_render_all()
 						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE|TMAP_HTL_3DU_BATCH);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
+					*/
+					int cur_frame = p->reverse ? (Anim_num_frames_smoke - framenum - 1) : framenum;
+					Assert(cur_frame < MAX_PARTICLE_FRAMES);
+
+					PARTICLE_SMOKE_batcher[cur_frame].add_alocate(1);
+					// if this is a tracer style particle
+					if(p->tracer_length > 0.0f){					
+						PARTICLE_SMOKE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
+					}
+					// draw as a regular bitmap
+					else {
+						PARTICLE_SMOKE_batcher[cur_frame].draw_bitmap(&POS, p->radius);
+					}
+
 					break;
 				}
 
@@ -712,7 +745,7 @@ void particle_render_all()
 					*/
 
 					// set the bitmap
-					gr_set_bitmap(p->reverse ? Anim_bitmap_id_smoke2+(Anim_num_frames_smoke2 - framenum - 1) : Anim_bitmap_id_smoke2+framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
+/*					gr_set_bitmap(p->reverse ? Anim_bitmap_id_smoke2+(Anim_num_frames_smoke2 - framenum - 1) : Anim_bitmap_id_smoke2+framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
 					
 					// if this is a tracer style particle
 					if(p->tracer_length > 0.0f){					
@@ -723,9 +756,36 @@ void particle_render_all()
 						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE|TMAP_HTL_3DU_BATCH);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
+					*/
+					int cur_frame = p->reverse ? (Anim_num_frames_smoke2 - framenum - 1) : framenum;
+					Assert(cur_frame < MAX_PARTICLE_FRAMES);
+
+					PARTICLE_SMOKE2_batcher[cur_frame].add_alocate(1);
+					// if this is a tracer style particle
+					if(p->tracer_length > 0.0f){					
+						PARTICLE_SMOKE2_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
+					}
+					// draw as a regular bitmap
+					else {
+						PARTICLE_SMOKE2_batcher[cur_frame].draw_bitmap(&POS, p->radius);
+					}
+
 					break;
 				}
 		}
+	}
+
+	for(i = 0; i<Anim_num_frames_fire; i++){
+		gr_set_bitmap(Anim_bitmap_id_fire + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );		
+		PARTICLE_FIRE_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+	}
+	for(i = 0; i<Anim_num_frames_smoke; i++){
+		gr_set_bitmap(Anim_bitmap_id_smoke + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );		
+		PARTICLE_SMOKE_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+	}
+	for(i = 0; i<Anim_num_frames_smoke2; i++){
+		gr_set_bitmap(Anim_bitmap_id_smoke2 + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );		
+		PARTICLE_SMOKE2_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 	}
 
 	batch_end();
