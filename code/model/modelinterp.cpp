@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.89 $
- * $Date: 2004-10-09 17:48:58 $
+ * $Revision: 2.90 $
+ * $Date: 2004-10-31 21:55:00 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2004/10/09 17:48:58  taylor
+ * da simple IBX code, back to old line rendering for models since it should be faster for OGL now
+ *
  * Revision 2.88  2004/09/05 19:23:24  Goober5000
  * fixed a few warnings
  * --Goober5000
@@ -671,7 +674,6 @@ extern int Cmdline_nohtl;
 
 int glow_maps_active = 1;
 
-extern int OGL_inited;
 
 // a lighting object
 typedef struct model_light_object {
@@ -5169,10 +5171,10 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 			if ( ibuffer_info.read != NULL ) {
 				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = cfread_short( ibuffer_info.read );
 			} else {
-				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = find_fisrt_index_vb(&list[i], j, &model_list);
+				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = find_first_index_vb(&list[i], j, &model_list);
 				Assert(model->buffer[model->n_buffers].index_buffer.index_buffer[j] != -1);
 				Assert(same_vert(&model_list.vert[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].vert[j], &model_list.norm[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].norm[j]));
-			//	Assert(find_fisrt_index_vb(&model_list, j, &list[i]) == j);//there should never ever be any redundant verts
+			//	Assert(find_first_index_vb(&model_list, j, &list[i]) == j);//there should never ever be any redundant verts
 
 				// try to write out generated index buffer for later use
 				if ( ibuffer_info.write != NULL ) {
@@ -5560,8 +5562,8 @@ void recode_sortnorm(int offset, ubyte *bsp_data){
 }
 
 /*
-buffer[j] = find_fisrt_index_vb(list, j, model_list)
-short find_fisrt_index_vb(poly_list *plist, int idx, poly_list *v){
+buffer[j] = find_first_index_vb(list, j, model_list)
+short find_first_index_vb(poly_list *plist, int idx, poly_list *v){
 	for(short i = 0; i<v->n_verts; i++){
 		if(same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx])){
 			return i;
