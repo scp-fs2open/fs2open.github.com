@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-03-07 23:07:20 $
+ * $Revision: 2.19 $
+ * $Date: 2004-03-08 15:06:24 $
  * $Author: Kazan $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/03/07 23:07:20  Kazan
+ * [Incomplete] Readd of Software renderer so Standalone server works
+ *
  * Revision 2.17  2004/02/28 14:14:56  randomtiger
  * Removed a few uneeded if DIRECT3D's.
  * Set laser function to only render the effect one sided.
@@ -565,7 +568,7 @@
 #include <windowsx.h>
 #endif
 
-#include "graphics/GrSoft.h"
+//#include "graphics/GrSoft.h"
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 #include "graphics/2d.h"
@@ -713,7 +716,7 @@ void gr_close()
 		break;
 
 	case GR_SOFTWARE:
-		gr_soft_cleanup();
+		//gr_soft_cleanup();
 		break;
 
 	default:
@@ -1101,7 +1104,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 			break;
 		
 		case GR_SOFTWARE:
-			gr_soft_cleanup();
+			//gr_soft_cleanup();
 			break;
 
 		default:
@@ -1133,7 +1136,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 			break;
 
 		case GR_SOFTWARE:
-			gr_soft_init();
+			//gr_soft_init();
 			break;
 
 		default:

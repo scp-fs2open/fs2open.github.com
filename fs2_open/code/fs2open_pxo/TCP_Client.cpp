@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.12 $
- * $Date: 2004-03-07 23:07:20 $
+ * $Revision: 1.13 $
+ * $Date: 2004-03-08 15:06:23 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2004/03/07 23:07:20  Kazan
+ * [Incomplete] Readd of Software renderer so Standalone server works
+ *
  * Revision 1.11  2004/03/05 21:19:39  Kazan
  * Fixed mission validation (was returning false positives)
  *
@@ -656,7 +659,7 @@ int Ping(const char* target, TCP_Socket &Socket)
 	Socket.IgnorePackets();
 
 	fs2open_ping ping;
-	fs2open_pingreply rping;
+	//fs2open_pingreply rping;
 	ping.pid = PCKT_PING;
 	ping.time = time(0);
 	std::string rctp = target;

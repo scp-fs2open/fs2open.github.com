@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-03-05 21:19:39 $
+ * $Revision: 2.20 $
+ * $Date: 2004-03-08 15:06:24 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/03/05 21:19:39  Kazan
+ * Fixed mission validation (was returning false positives)
+ *
  * Revision 2.18  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -2170,10 +2173,40 @@ void multi_join_load_tcp_addrs()
 		
 		ml_printf("Network (FS2OpenPXO): Got %d servers.\n", numServersFound);
 
+		active_game ag;
 		for (int i = 0; i < numServersFound; i++)
 		{
+
+				// *************** New Way 3/6/04 ********************
+				memset(&ag, 0, sizeof(active_game));
+
+				ag.heard_from_timer = time(NULL);
+				strncpy(ag.name, servers[i].name, MAX_GAMENAME_LEN);
+				
+				// ack - i don't know this tidbit if information.. if this doesn't create a crash i won't bother
+				// otherwise i'll have to modify the protocol, yada yada
+				strncpy(ag.mission_name, servers[i].mission_name, MAX_GAMENAME_LEN);
+
+				strncpy(ag.title, servers[i].title, MAX_GAMENAME_LEN);
+				
+				ag.num_players = servers[i].players;
+				ag.flags = servers[i].flags;
+				ag.comp_version = ag.version = MULTI_FS_SERVER_VERSION;
+
+				memset(&addr,0,sizeof(net_addr));
+				addr.type = NET_TCP;
+				psnet_string_to_addr(&addr,servers[i].ip);
+				addr.port = (short) servers[i].port;
+
+				ag.server_addr = addr;
+				
+			
+				multi_update_active_games(&ag);
+
+				// ############### Old way of doing it ###############
 				// copy the server ip address
 
+				/*
 				memset(&addr,0,sizeof(net_addr));
 				addr.type = NET_TCP;
 				
@@ -2187,7 +2220,7 @@ void multi_join_load_tcp_addrs()
 
 
 				// this is probably safer than what i did below
-				send_server_query(&addr);
+				send_server_query(&addr);*/
 
 				// create a new server item on the list
 				//item = multi_new_server_item();
