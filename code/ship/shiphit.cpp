@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.30 $
- * $Date: 2004-07-26 20:47:52 $
- * $Author: Kazan $
+ * $Revision: 2.31 $
+ * $Date: 2004-08-23 03:34:34 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/07/26 20:47:52  Kazan
+ * remove MCD complete
+ *
  * Revision 2.29  2004/07/12 16:33:06  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -2556,6 +2559,40 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 	}
 }
 
+// Goober5000
+void ship_apply_tag(int ship_num, int tag_level, float tag_time, vector *target, vector *start, int ssm_index)
+{
+	// set time first tagged
+	if (Ships[ship_num].time_first_tagged == 0)
+		Ships[ship_num].time_first_tagged = Missiontime;
+
+	// do tag effect
+	if (tag_level == 1)
+	{
+//		mprintf(("TAGGED %s for %f seconds\n", Ships[ship_num].ship_name, tag_time));
+		Ships[ship_num].tag_left = tag_time;
+		Ships[ship_num].tag_total = tag_time;
+	}
+	else if (tag_level == 2)
+	{
+//		mprintf(("Level 2 TAGGED %s for %f seconds\n", Ships[ship_num].ship_name, tag_time));
+		Ships[ship_num].level2_tag_left = tag_time;
+		Ships[ship_num].level2_tag_total = tag_time;
+	}
+	else if (tag_level == 3)
+	{
+		// tag C creates an SSM strike, yay -Bobboau
+		Assert(target);
+		Assert(start);
+
+		struct ssm_firing_info;
+
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Firing artillery", 1570));
+
+		ssm_create(target, start, ssm_index, NULL);
+	}
+}
+
 // This gets called to apply damage when something hits a particular point on a ship.
 // This assumes that whoever called this knows if the shield got hit or not.
 // hitpos is in world coordinates.
@@ -2630,33 +2667,22 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 	if((other_obj->type == OBJ_WEAPON) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags & WIF_TAG)) {
 #endif
 //mprintf(("doing TAG stuff\n"));
-		if (Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_level == 1) {
-			Ships[ship_obj->instance].tag_left = Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_time;
-			Ships[ship_obj->instance].tag_total = Ships[ship_obj->instance].tag_left;
-			if (Ships[ship_obj->instance].time_first_tagged == 0) {
-				Ships[ship_obj->instance].time_first_tagged = Missiontime;
-			}
-//			mprintf(("TAGGED %s for %f seconds\n", Ships[ship_obj->instance].ship_name, Ships[ship_obj->instance].tag_left));
-		} else if (Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_level == 2) {
-			Ships[ship_obj->instance].level2_tag_left = Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_time;
-			Ships[ship_obj->instance].level2_tag_total = Ships[ship_obj->instance].level2_tag_left;
-			if (Ships[ship_obj->instance].time_first_tagged == 0) {
-				Ships[ship_obj->instance].time_first_tagged = Missiontime;
-			}
-//			mprintf(("Level 2 TAGGED %s for %f seconds\n", Ships[ship_obj->instance].ship_name, Ships[ship_obj->instance].level2_tag_left));
-		} else if (Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_level == 3) {
-		// tag C creates an SSM strike, yay -Bobboau
-			struct ssm_firing_info;
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Firing artillery", 1570));
+		// Goober5000 - temp probably should be hitpos
+		//vector temp;
+		//vm_vec_unrotate(&temp, &ship_obj->pos, &Objects[other_obj->instance].orient);
 
-			vector temp;
-			vm_vec_unrotate(&temp, &ship_obj->pos, &Objects[other_obj->instance].orient);
-			//vm_vec_add2(&temp, &Objects[aip->artillery_objnum].pos);			
-			ssm_create(&temp, &Objects[ship_obj->instance].pos, Weapon_info[Weapons[other_obj->instance].weapon_info_index].SSM_index, NULL);				
-		}
+		//vm_vec_add2(&temp, &Objects[aip->artillery_objnum].pos);
+
+		weapon_info *wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
+
+		// ssm stuff
+		vector *target = hitpos;
+		vector *start = &Objects[ship_obj->instance].pos;
+		int ssm_index = wip->SSM_index;
+
+		ship_apply_tag(ship_obj->instance, wip->tag_level, wip->tag_time, target, start, ssm_index);
 	}
-
 
 #ifndef NDEBUG
 	if (other_obj->type == OBJ_WEAPON) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:34 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-23 03:34:34 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:34  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -118,6 +121,8 @@ struct object;
 // function to destroy a subsystem.  Called internally and from multiplayer messaging code
 extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector *hitpos );
 
+// Goober5000
+extern void ship_apply_tag(int ship_num, int tag_level, float tag_time, vector *target, vector *start, int ssm_index);
 
 // This gets called to apply damage when something hits a particular point on a ship.
 // This assumes that whoever called this knows if the shield got hit or not.
