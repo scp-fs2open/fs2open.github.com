@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.8 $
- * $Date: 2003-10-14 17:39:13 $
+ * $Revision: 2.9 $
+ * $Date: 2003-10-16 00:17:14 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/10/14 17:39:13  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.7  2003/09/26 14:37:14  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -235,6 +245,8 @@ extern D3DPRESENT_PARAMETERS d3dpp;
 
 extern int D3D_texture_divider;
 extern int D3D_32bit;
+extern int D3D_custom_size;
+
 
 extern const char* d3d_error_string(HRESULT error);
 
@@ -402,5 +414,4 @@ HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr);
 HRESULT d3d_SetVertexShader(int vertex_type);
 HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **buffer);
 
-#define VEC2DVEC(v) D3DXVECTOR3(v.xyz.x,v.xyz.y,v.xyz.z)
 #endif //_GRD3DINTERNAL_H

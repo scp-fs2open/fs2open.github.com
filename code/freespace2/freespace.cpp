@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.48 $
- * $Date: 2003-10-15 22:03:24 $
- * $Author: Kazan $
+ * $Revision: 2.49 $
+ * $Date: 2003-10-16 00:17:12 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2003/10/15 22:03:24  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.47  2003/10/14 17:39:12  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -2631,8 +2634,6 @@ void game_init()
 
 #ifdef _WIN32
 	// initialize the graphics system (win32)
-	int trying_d3d = 0;
-	
 	if (!Is_standalone && ptr && (strstr(ptr, NOX("3DFX Glide")))) {
 		// regular or hi-res ?
 		if(has_sparky_hi && strstr(ptr, NOX("(1024 x 768)"))){
@@ -2642,18 +2643,21 @@ void game_init()
 		}
 
 	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("D3D8-") )))	{
-		// regular or hi-res ?
-		if(has_sparky_hi && strstr(ptr, NOX("(1024 x 768)"))){
-			// Direct 3D
-			trying_d3d = 1;
-			gr_init(GR_1024, GR_DIRECT3D, depth);
 
-		} else {
-			// Direct 3D
-			trying_d3d = 1;
-			gr_init(GR_640, GR_DIRECT3D, depth);
+		bool use_hi_res = !strstr(ptr, NOX("(640 x 480)")) && has_sparky_hi;
 
+		// Direct 3D
+		gr_init(use_hi_res ? GR_1024 : GR_640, GR_DIRECT3D, depth);
+		extern int Gr_inited;
+
+		if(!Gr_inited) {
+			extern char Device_init_error[512];		
+			MessageBox( NULL, Device_init_error, "Error intializing Direct3D", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
+			exit(1);
+			return;
 		}
+
+
 	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("OpenGL -") ))){
 		if (has_sparky_hi && strstr(ptr,NOX("1024 x 768"))){
 			gr_init(GR_1024, GR_OPENGL, depth);
@@ -2684,14 +2688,6 @@ void game_init()
 		
 	}
 
-	// tried d3d ?
-	extern int Gr_inited;
-	if(trying_d3d && !Gr_inited){
-		extern char Device_init_error[512];		
-		MessageBox( NULL, Device_init_error, "Error intializing Direct3D", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
-		exit(1);
-		return;
-	}
 #elif defined unix
 	// initialize the graphics system (unix)
 	extern int Gr_inited;
