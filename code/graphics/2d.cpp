@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-10-17 17:18:42 $
+ * $Revision: 2.11 $
+ * $Date: 2003-10-27 23:04:21 $
  * $Author: randomtiger $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/10/17 17:18:42  randomtiger
+ * Big restructure for D3D and new modules grd3dlight and grd3dsetup
+ *
  * Revision 2.9  2003/10/16 00:17:14  randomtiger
  * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
  * As well as initialised in a different mode, bitmaps are stretched and for these modes
@@ -982,9 +985,9 @@ void gr_init_res(int res, int mode, int fred_x, int fred_y)
 	gr_screen.offset_y = 0;
 	gr_screen.clip_left = 0;
 	gr_screen.clip_top = 0;
-	gr_screen.clip_right = gr_screen.max_w - 1;
+	gr_screen.clip_right  = gr_screen.max_w - 1;
 	gr_screen.clip_bottom = gr_screen.max_h - 1;
-	gr_screen.clip_width = gr_screen.max_w;
+	gr_screen.clip_width  = gr_screen.max_w;
 	gr_screen.clip_height = gr_screen.max_h;
 }
 
@@ -1061,14 +1064,6 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 			gr_directdraw_init();
 			break;
 		case GR_DIRECT3D:
-// Check if we want to use the DX8.1 routines - unknownplayer
-// This is here so we can revert to the old ones if necessary
-			// we only care about possible 32 bit stuff here
-			Cmdline_force_32bit = 0;
-			if(depth == 32)
-			{
-				Cmdline_force_32bit = 1;
-			} 
 
 			if(gr_d3d_init() == false)
 			{
@@ -1109,8 +1104,6 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 //  	memmove( Gr_current_palette, Gr_original_palette, 768 );
 //  	gr_set_palette_internal(Gr_current_palette_name, Gr_current_palette,0);	
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);	
-
-	gr_set_gamma(Gr_gamma);
 
 	if ( Gr_cursor == -1 ){
 		Gr_cursor = bm_load( "cursor" );
@@ -1283,7 +1276,7 @@ DCF(bmap, "")
 }
 
 // new bitmap functions
-void gr_bitmap(int x, int y)
+void gr_bitmap(int x, int y, bool allow_scaling)
 {
 	int section_x, section_y;	
 	int x_line, y_line;
@@ -1312,12 +1305,12 @@ void gr_bitmap(int x, int y)
 				bm_get_section_size(gr_screen.current_bitmap, s_idx, idx, &section_x, &section_y);
 
 				// I will tidy this up later - RT
-				if(gr_screen.mode == GR_DIRECT3D)
+				if(gr_screen.mode == GR_DIRECT3D && allow_scaling)
 				{
 					extern bool gr_d3d_resize_screen_pos(int *x, int *y);
 
-					gr_d3d_resize_screen_pos(&x, &y);
-					gr_d3d_resize_screen_pos(&section_x, &section_y);
+				  	gr_d3d_resize_screen_pos(&x, &y);
+				  	gr_d3d_resize_screen_pos(&section_x, &section_y);
 				}
 
 				// RT draws all hall interface stuff

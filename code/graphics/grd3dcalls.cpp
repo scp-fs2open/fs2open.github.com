@@ -12,7 +12,7 @@
 #include "graphics/grd3dinternal.h"
 
 // Uncomment this to disable checking if states are already set, slower but useful for searching for bugs
-#define D3D_CALLS_CHECK 0
+#define D3D_CALLS_CHECK 1
 
 // Heres the internal vertex information that DX need to know to render them
 VertexTypeInfo vertex_types[D3DVT_MAX] =

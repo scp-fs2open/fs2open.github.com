@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.29 $
- * $Date: 2003-10-26 00:31:58 $
+ * $Revision: 2.30 $
+ * $Date: 2003-10-27 23:04:21 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/10/26 00:31:58  randomtiger
+ * Fixed hulls not drawing (with Phreaks advise).
+ * Put my 32bit PCX loading under PCX_32 compile flag until its working.
+ * Fixed a bug with res 640x480 I introduced with my non standard mode code.
+ * Changed JPG and TGA loading command line param to "-t32"
+ *
  * Revision 2.28  2003/10/24 17:35:05  randomtiger
  * Implemented support for 32bit TGA and JPG for D3D
  * Also 32 bit PCX, but it still has some bugs to be worked out
@@ -1412,8 +1418,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			src_v->specular = 0;
 		}
 
-		int x, y;
 
+		int x, y;
 		x = fl2i(va->sx*16.0f);
 		y = fl2i(va->sy*16.0f);
 
@@ -1428,15 +1434,14 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			if ( GlobalD3DVars::D3D_rendition_uvs ){				
 				// tiled texture (ships, etc), bitmap sections
 				if(flags & TMAP_FLAG_TILED){					
-					src_v->tu = va->u*u_scale;
-					src_v->tv = va->v*v_scale;
+				  	src_v->tu = va->u*u_scale;
+				  	src_v->tv = va->v*v_scale;
 				}
 				// sectioned
 				else if(flags & TMAP_FLAG_BITMAP_SECTION){
 					int sw, sh;
 					bm_get_section_size(gr_screen.current_bitmap, 
 						gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &sw, &sh);
-
 
 				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
 				 	src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
@@ -1445,15 +1450,15 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 				// all else.
 				else 
 				{				
-					src_v->tu = flCAP(va->u, minu, maxu);
-					src_v->tv = flCAP(va->v, minv, maxv);
+			   		src_v->tu = flCAP(va->u, minu, maxu);
+			   		src_v->tv = flCAP(va->v, minv, maxv);
 				}				
 			}
 			// yay. non-rendition
 			else {
-				src_v->tu = va->u*u_scale;
-				src_v->tv = va->v*v_scale;
-			}							
+			  	src_v->tu = va->u*u_scale;
+			  	src_v->tv = va->v*v_scale;
+			} 							
 		} else {
 			src_v->tu = 0.0f;
 			src_v->tv = 0.0f;
@@ -1819,6 +1824,9 @@ void gr_d3d_clear()
  */
 void gr_d3d_set_clip(int x,int y,int w,int h)
 {
+	gr_d3d_resize_screen_pos(&x, &y);
+	gr_d3d_resize_screen_pos(&w, &h);
+
 	gr_screen.offset_x = x;
 	gr_screen.offset_y = y;
 
@@ -2293,7 +2301,7 @@ void gr_d3d_aabitmap(int x, int y)
  *
  * @return void
  */
-void gr_d3d_string( int sx, int sy, char *s )
+void gr_d3d_string( int sx, int sy, char *s)
 {
 	int width, spacing, letter;
 	int x, y;

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.43 $
- * $Date: 2003-10-26 00:31:59 $
+ * $Revision: 2.44 $
+ * $Date: 2003-10-27 23:04:22 $
  * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/10/26 00:31:59  randomtiger
+ * Fixed hulls not drawing (with Phreaks advise).
+ * Put my 32bit PCX loading under PCX_32 compile flag until its working.
+ * Fixed a bug with res 640x480 I introduced with my non standard mode code.
+ * Changed JPG and TGA loading command line param to "-t32"
+ *
  * Revision 2.42  2003/10/25 06:56:06  bobboau
  * adding FOF stuff,
  * and fixed a small error in the matrix code,
@@ -3444,7 +3450,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_rotate_all();
 	}else {
-		gr_reset_lighting();
+		// This NULL func ptr was causing a crash in non htl
+		if(!Cmdline_nohtl) {
+			gr_reset_lighting();
+		}
 	}
 
 	if ( pm->submodel[pm->detail[detail_level]].num_children > 0 ){

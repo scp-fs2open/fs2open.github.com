@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.51 $
- * $Date: 2003-10-26 00:31:58 $
+ * $Revision: 2.52 $
+ * $Date: 2003-10-27 23:04:21 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2003/10/26 00:31:58  randomtiger
+ * Fixed hulls not drawing (with Phreaks advise).
+ * Put my 32bit PCX loading under PCX_32 compile flag until its working.
+ * Fixed a bug with res 640x480 I introduced with my non standard mode code.
+ * Changed JPG and TGA loading command line param to "-t32"
+ *
  * Revision 2.50  2003/10/16 17:36:29  randomtiger
  * D3D now has its own gamma system (stored in GammaD3D reg entry) that effects everything.
  * Put in Bobs specular fog fix.
@@ -2553,7 +2559,7 @@ void game_init()
 	
 	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
 
-	if (ptr == NULL )Error( LOCATION, "error reading registry, registry string 'VideocardFs2open' not present,\n this is why you are crashing,\n be sure to use the NEW launcher to set up you're registry,\n make sure you run it without internet explorer or windows explorer running" );
+	if (ptr == NULL )Error( LOCATION, "error reading registry, registry string 'VideocardFs2open' not present,\n this is why you are crashing,\n be sure to use the NEW launcher to set up you're registry,\n" );
 
 	if (ptr == NULL || strstr(ptr, NOX("Direct 3D -") )) {
 #ifdef _WIN32
@@ -9433,7 +9439,7 @@ void display_title_screen()
 		bm_get_info(title_bitmap, &width, &height);
 
 		//Draw it in the center of the screen
-		gr_bitmap((gr_screen.max_w - width)/2, (gr_screen.max_h - height)/2);
+		gr_bitmap(0,0);//(gr_screen.max_w - width)/2, (gr_screen.max_h - height)/2);
 		bm_unload(title_bitmap);
 	}
 

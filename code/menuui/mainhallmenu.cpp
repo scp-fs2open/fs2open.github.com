@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-10-17 17:18:43 $
+ * $Revision: 2.9 $
+ * $Date: 2003-10-27 23:04:22 $
  * $Author: randomtiger $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/10/17 17:18:43  randomtiger
+ * Big restructure for D3D and new modules grd3dlight and grd3dsetup
+ *
  * Revision 2.7  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -1969,6 +1972,9 @@ void main_hall_maybe_blit_tooltips()
 		int shader_y = (Main_hall->region_yval) - Main_hall_tooltip_padding[gr_screen.res];	// subtract more to pull higher
 		// get the width of the string
 		gr_get_string_size(&w, NULL, Main_hall->region_descript[text_index]);
+
+		extern bool gr_d3d_resize_screen_pos(int *x, int *y);
+		gr_d3d_resize_screen_pos(&w, &shader_y);
 
 		gr_set_shader(&Main_hall_tooltip_shader);
 		gr_shade(0, shader_y, gr_screen.clip_width, (gr_screen.clip_height - shader_y));
