@@ -1,13 +1,22 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.8 $
- * $Date: 2005-03-10 08:00:18 $
+ * $Revision: 2.9 $
+ * $Date: 2005-03-24 23:22:59 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/10 08:00:18  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.7  2005/02/04 10:12:33  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -209,8 +218,10 @@ int _chdir(const char *path)
 	int status = chdir(path);
 
 #ifndef NDEBUG
+	int m_error = errno;
+
 	if (status) {
-		Warning(__FILE__, __LINE__, "Cannot chdir to %s: %s", path, strerror(errno));
+		Warning(__FILE__, __LINE__, "Cannot chdir to %s: %s", path, strerror(m_error));
 	}
 #endif
 
