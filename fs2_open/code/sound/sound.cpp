@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-03-24 23:27:25 $
+ * $Revision: 2.18 $
+ * $Date: 2005-03-28 00:40:09 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/03/24 23:27:25  taylor
+ * make sounds.tbl dynamic
+ * have snd_time_remaining() be less stupid
+ * some OpenAL error fixerage
+ * be able to turn off some typically useless debug messages
+ *
  * Revision 2.16  2005/03/14 23:31:54  wmcoolmon
  * Hopefully this will fixx0r Num_sounds
  *
@@ -1551,6 +1557,29 @@ void snd_get_format(int handle, int *bits_per_sample, int *frequency)
 	*frequency = Sounds[handle].info.sample_rate;
 }
 
+// given a sound sig (handle) return the index in Sounds[] for that sound
+int snd_get_index(int sig)
+{
+	int i, channel, channel_id;
+
+	channel = ds_get_channel(sig);
+
+	if (channel < 0)
+		return -1;
+
+	channel_id = ds_get_sound_id(channel);
+
+	for (i=0; i<Num_sounds; i++) {
+		if ( (Sounds[i].flags & SND_F_USED) && (Sounds[i].sig == channel_id) )
+			break;
+	}
+
+	if (i == Num_sounds)
+		return -1;
+
+	return i;
+}
+
 // return the time for the sound to play in milliseconds
 int snd_time_remaining(int handle)
 {
@@ -1571,10 +1600,14 @@ int snd_time_remaining(int handle)
 		return 0;
 	}
 
-	int current_offset, max_offset;
+	int current_offset, max_offset, sdx;
 	int bits_per_sample = 0, frequency = 0;
 
-	snd_get_format(handle, &bits_per_sample, &frequency);
+	sdx = snd_get_index(handle);
+
+	Assert( sdx != -1 );
+
+	snd_get_format(sdx, &bits_per_sample, &frequency);
 
 	if ( (bits_per_sample <= 0) || (frequency <= 0) )
 		return 0;

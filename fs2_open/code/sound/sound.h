@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.8 $
- * $Date: 2005-03-24 23:27:25 $
+ * $Revision: 2.9 $
+ * $Date: 2005-03-28 00:40:09 $
  * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/24 23:27:25  taylor
+ * make sounds.tbl dynamic
+ * have snd_time_remaining() be less stupid
+ * some OpenAL error fixerage
+ * be able to turn off some typically useless debug messages
+ *
  * Revision 2.7  2005/03/14 06:33:38  wmcoolmon
  * Made sounds dynamically allocated
  *
@@ -420,7 +426,7 @@ inline int	snd_size(int handle, int *size)
 #define	snd_ffwd(snd_handle, sg, seconds)							((void)((snd_handle), (sg), (seconds)))
 #define	snd_set_pos(snd_handle, sg, val, as_pct)					((void)((snd_handle), (sg), (val), (as_pct)))
 #define	snd_get_format(handle, bits_per_sample, frequency)		((void)((handle), (bits_per_sample), (frequency)))
-inline int snd_time_remaining(int handle, int bits_per_sample=8, int frequency=11025)
+inline int snd_time_remaining(int handle)
 { return 0; }
 
 #endif  // ifndef NO_SOUND

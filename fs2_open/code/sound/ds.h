@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.10 $
- * $Date: 2005-02-02 10:36:23 $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-28 00:40:09 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/02/02 10:36:23  taylor
+ * merge with Linux/OSX tree - p0202
+ *
  * Revision 2.9  2005/01/31 23:27:55  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -219,6 +222,8 @@ int	ds_get_channel_size(int channel);
 int	ds_is_3d_buffer(int sid);
 int	ds_using_ds3d();
 bool	ds_using_a3d();
+
+int ds_get_sound_id(int channel);
 
 unsigned int ds_get_primary_buffer_interface();
 unsigned int ds_get_dsound_interface();

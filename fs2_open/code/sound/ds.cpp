@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-03-27 06:16:46 $
+ * $Revision: 2.18 $
+ * $Date: 2005-03-28 00:40:09 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/03/27 06:16:46  taylor
+ * don't use a platform specific ifdef since the OpenAL code may work under Windows now too
+ *
  * Revision 2.16  2005/03/24 23:27:25  taylor
  * make sounds.tbl dynamic
  * have snd_time_remaining() be less stupid
@@ -3833,6 +3836,15 @@ void ds_do_frame()
 		}
 	}
 }
+
+// given a valid channel return the sound id
+int ds_get_sound_id(int channel)
+{
+	Assert( channel >= 0 );
+
+	return Channels[channel].snd_id;
+}
+
 
 #ifdef USE_OPENAL
 void ds3d_close()
