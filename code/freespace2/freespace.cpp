@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.11 $
- * $Date: 2002-10-05 16:46:09 $
+ * $Revision: 2.12 $
+ * $Date: 2002-10-19 03:50:28 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2002/10/05 16:46:09  randomtiger
+ * Added us fs2_open people to the credits. Worth looking at just for that.
+ * Added timer bar code, by default its not compiled in.
+ * Use TIMEBAR_ACTIVE in project and dependancy code settings to activate.
+ * Added the new timebar files with the new code.
+ *
  * Revision 2.10  2002/09/20 20:09:01  phreak
  * did glare stuff in game_sunspot_process()
  *
@@ -1036,7 +1042,7 @@ void game_do_training_checks();
 void game_shutdown(void);
 void game_show_event_debug(float frametime);
 void game_event_debug_init();
-void game_frame();
+void game_frame(int paused = false);
 void demo_upsell_show_screens();
 void game_start_subspace_ambient_sound();
 void game_stop_subspace_ambient_sound();
@@ -4282,7 +4288,7 @@ void game_render_hud_3d(vector *eye_pos, matrix *eye_orient)
 }
 
 
-void game_frame()
+void game_frame(int paused)
 {
 	int actually_playing;
 	fix total_time1, total_time2;
@@ -4309,7 +4315,10 @@ void game_frame()
 		demo_close();
 	}
 #endif
-	
+
+	if(!paused)
+	{
+
 	// start timing frame
 	timing_frame_start();
 
@@ -4317,6 +4326,7 @@ void game_frame()
 
 	// var to hold which state we are in
 	actually_playing = game_actually_playing();
+
 	
 #ifndef NO_NETWORK
 	if ((!(Game_mode & GM_MULTIPLAYER)) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) {
@@ -4378,16 +4388,19 @@ void game_frame()
 	}
 #endif  // ifndef NO_NETWORK
 	
-	game_simulation_frame();  
+	game_simulation_frame(); 
 	
-	TIMERBAR_SWITCH_TYPE(TIMERBAR_D3DCODE);
-
 	// if not actually in a game play state, then return.  This condition could only be true in 
 	// a multiplayer game.
-	if ( !actually_playing ) {
+	if (!actually_playing ) {
 		Assert( Game_mode & GM_MULTIPLAYER );
 		return;
 	}
+
+	}
+
+	TIMERBAR_SWITCH_TYPE(TIMERBAR_D3DCODE);
+
 
 	if (!Pre_player_entry) {
 		if (! (Game_mode & GM_STANDALONE_SERVER)) {
@@ -4502,15 +4515,17 @@ void game_frame()
 	// process lightning (nebula only)
 	nebl_process();
 
-	total_time2 = timer_get_fixed_seconds();
-
-	// Got some timing numbers
-	Timing_total = f2fl( total_time2 - total_time1 ) * 1000.0f;
-	Timing_clear = f2fl( clear_time2 - clear_time1 ) * 1000.0f;
-	Timing_render2 = f2fl( render2_time2- render2_time1 ) * 1000.0f;
-	Timing_render3 = f2fl( render3_time2- render3_time1 ) * 1000.0f;
-	Timing_flip = f2fl( flip_time2 - flip_time1 ) * 1000.0f;
-
+	if(!paused)
+	{
+		total_time2 = timer_get_fixed_seconds();
+		
+		// Got some timing numbers
+		Timing_total = f2fl( total_time2 - total_time1 ) * 1000.0f;
+		Timing_clear = f2fl( clear_time2 - clear_time1 ) * 1000.0f;
+		Timing_render2 = f2fl( render2_time2- render2_time1 ) * 1000.0f;
+		Timing_render3 = f2fl( render3_time2- render3_time1 ) * 1000.0f;
+		Timing_flip = f2fl( flip_time2 - flip_time1 ) * 1000.0f;
+	}
 #ifdef DEMO_SYSTEM
 	demo_do_frame_end();
 	if(Demo_error){
@@ -6530,6 +6545,14 @@ void game_do_state(int state)
 			break;
 
 		case GS_STATE_GAME_PAUSED:
+
+			if(pause_get_type() == PAUSE_TYPE_VIEWER)	{
+
+				read_player_controls( Player_obj, flFrametime);
+			//	game_process_keys();
+				game_frame(true);
+			}
+				
 			pause_do(0);
 			break;
 

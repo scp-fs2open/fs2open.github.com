@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-10-17 20:40:51 $
+ * $Revision: 2.4 $
+ * $Date: 2002-10-19 03:50:29 $
  * $Author: randomtiger $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/17 20:40:51  randomtiger
+ * Added ability to remove HUD ingame on keypress shift O
+ * So I've added a new key to the bind list and made use of already existing hud removal code.
+ *
  * Revision 2.2  2002/08/06 16:49:22  phreak
  * added keybing for wireframe hud,
  * fixed previous missile cheat
@@ -361,6 +365,7 @@
 #include "mission/missionmessage.h"
 #include "menuui/mainhallmenu.h"
 #include "ship/aigoals.h"
+#include "missionui/missionpause.h"
 
 // --------------------------------------------------------------
 // Global to file 
@@ -1886,7 +1891,22 @@ void game_process_keys()
 				gameseq_post_event( GS_EVENT_DEBUG_PAUSE_GAME );
 				break;
 
+			case KEY_ALTED + KEY_PAUSE:
+				if( Game_mode & GM_DEAD_BLEW_UP || 
+					Game_mode & GM_DEAD_DIED) {
+					break;
+				}
+
+				pause_set_type(PAUSE_TYPE_VIEWER);
+				game_process_pause_key();
+				break;
 			case KEY_PAUSE:
+				if( Game_mode & GM_DEAD_BLEW_UP || 
+					Game_mode & GM_DEAD_DIED) {
+					break;
+				}
+
+				pause_set_type(PAUSE_TYPE_NORMAL);
 				game_process_pause_key();
 				break;
 
@@ -2185,7 +2205,7 @@ int button_function_critical(int n, net_player *p = NULL)
 // return !0 if the action is allowed, otherwise return 0
 int button_allowed(int n)
 {
-	// RT Commented this out cos it was disabling use off keys when HUD is off
+	// RT Commented this out cos it was disabling use of keys when HUD is off
 #if 0
 	if ( hud_disabled() ) {
 		switch (n) {

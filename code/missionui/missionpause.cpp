@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 03:50:29 $
+ * $Author: randomtiger $
  * 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -51,7 +54,8 @@
 #include "object/object.h"
 #include "graphics/font.h"
 #include "globalincs/alphacolors.h"
-#include "weapon/beam.h"
+#include "weapon/beam.h"	
+#include "controlconfig/controlsconfig.h"
 
 #ifndef NO_NETWORK
 #include "network/multi_pause.h"
@@ -95,6 +99,7 @@ UI_CHECKBOX Pause_ai_render;
 UI_CHECKBOX Pause_firing;
 UI_CHECKBOX Pause_external_view_mode_check;
 UI_BUTTON Pause_continue;
+int Pause_type = PAUSE_TYPE_NORMAL;
 
 // if we're already paused
 int Paused = 0;
@@ -121,6 +126,16 @@ extern int game_single_step;
 // PAUSE FUNCTIONS
 //
 
+int pause_get_type()
+{
+	return Pause_type;
+}
+
+void pause_set_type(int type)
+{
+	Pause_type = type;
+}
+
 // initialize the pause screen
 void pause_init(int multi)
 {
@@ -139,7 +154,10 @@ void pause_init(int multi)
 #ifndef NO_NETWORK
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
 #endif
-		Pause_saved_screen = gr_save_screen();
+
+		if(Pause_type == PAUSE_TYPE_NORMAL)	{
+			Pause_saved_screen = gr_save_screen();
+		}
 
 		// pause all game music
 		audiostream_pause_all();
@@ -181,22 +199,35 @@ void pause_do(int multi)
 	else
 #endif
 	{		
-		//	RENDER A GAME FRAME HERE AS THE BACKGROUND
-		gr_restore_screen(Pause_saved_screen);
-		if (Pause_background_bitmap >= 0) {
-			gr_set_bitmap(Pause_background_bitmap);
-			if(multi){
-				gr_bitmap(0,0);
-			} else {
-				// draw the bitmap
-				gr_bitmap(Please_wait_coords[gr_screen.res][0], Please_wait_coords[gr_screen.res][1]);
+		//	RENDER A GAME FRAME HERE AS THE BACKGROUND (if normal pause)
 
-				// draw "Paused" on it
-				gr_set_color_fast(&Color_normal);
-				gr_set_font(FONT2);
-				gr_get_string_size(&str_w, &str_h, pause_str);
-				gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, pause_str);
-				gr_set_font(FONT1);
+		if(Pause_type == PAUSE_TYPE_NORMAL)	{
+			
+			// Fall back to viewer just incase saved screen is invalid
+			if(Pause_saved_screen == -1){
+				Pause_type = PAUSE_TYPE_VIEWER;
+			}
+			else if(Pause_type == PAUSE_TYPE_NORMAL)	{
+				gr_restore_screen(Pause_saved_screen);
+			}
+		}
+
+		if(Pause_type == PAUSE_TYPE_NORMAL){
+			if (Pause_background_bitmap >= 0) {
+				gr_set_bitmap(Pause_background_bitmap);
+				if(multi){
+					gr_bitmap(0,0);
+				} else {
+					// draw the bitmap
+					gr_bitmap(Please_wait_coords[gr_screen.res][0], Please_wait_coords[gr_screen.res][1]);
+			
+					// draw "Paused" on it
+					gr_set_color_fast(&Color_normal);
+					gr_set_font(FONT2);
+					gr_get_string_size(&str_w, &str_h, pause_str);
+					gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, pause_str);
+					gr_set_font(FONT1);
+				}
 			}
 		}
 	
@@ -210,8 +241,19 @@ void pause_do(int multi)
 		{
 			// otherwise process the ui window here
 			k = Pause_win.process() & ~KEY_DEBUGGED;
-			switch (k) {			
+			switch (k) {  
+		   //	case VIEW_EXTERNAL:
+		   	case KEY_ENTER:
+				if(Pause_type != PAUSE_TYPE_VIEWER)	{
+					break;
+				}
+
+				extern int button_function_demo_valid(int n);
+				button_function_demo_valid(VIEW_EXTERNAL);
+
+				break;
 			case KEY_ESC:
+			case KEY_ALTED + KEY_PAUSE:
 			case KEY_PAUSE:
 				gameseq_post_event(GS_EVENT_PREVIOUS_STATE);		
 				break;
@@ -223,7 +265,9 @@ void pause_do(int multi)
 
 		// a very unique case where we shouldn't be doing the page flip because we're inside of popup code
 		if(!popup_active()){
-			gr_flip();
+			if(Pause_type == PAUSE_TYPE_NORMAL) {
+				gr_flip();
+			}
 		} else {
 			// this should only be happening in a very unique multiplayer case
 			Assert(Game_mode & GM_MULTIPLAYER);
@@ -250,7 +294,10 @@ void pause_close(int multi)
 	else
 #endif
 	{
-		gr_free_screen(Pause_saved_screen);	
+		if(Pause_saved_screen != -1) {
+			gr_free_screen(Pause_saved_screen);
+			Pause_saved_screen = -1;
+		}
 
 		if (Pause_background_bitmap){
 			bm_unload(Pause_background_bitmap);
