@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.37 $
- * $Date: 2003-11-19 20:37:24 $
+ * $Revision: 2.38 $
+ * $Date: 2003-11-29 10:52:09 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/11/19 20:37:24  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.36  2003/11/17 04:25:56  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -679,8 +691,8 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 		d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
 		if( Cmdline_d3dmipmap ) {
 			d3d_SetTextureStageState(0, D3DTSS_MIPFILTER, D3DTEXF_LINEAR );
-			const float f_bias = -6.0f;
-			d3d_SetTextureStageState(0, D3DTSS_MIPMAPLODBIAS, *((LPDWORD) (&f_bias)));
+		  	const float f_bias = -2.0f;
+		 	d3d_SetTextureStageState(0, D3DTSS_MIPMAPLODBIAS, *((LPDWORD) (&f_bias)));
 		}
 
 		// RT This code seems to render inactive text
@@ -1254,9 +1266,10 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 		src_v++;
 	}
 
-	// None if these objects are set to be fogged, but perhaps they should be
-	if(flags & TMAP_FLAG_PIXEL_FOG) {	
-	  	gr_fog_set(GR_FOGMODE_FOG, 0, 255, 0, 1.0f, 750.0f);
+	// None of these objects are set to be fogged, but perhaps they should be
+	if(flags & TMAP_FLAG_PIXEL_FOG) {
+		Assert(0); // Shouldnt be here
+	//  	gr_fog_set(GR_FOGMODE_FOG, 255, 0, 0, 1.0f, 750.0f);
 	} else {
 		gr_fog_set(GR_FOGMODE_NONE,0,0,0);
 	}
@@ -1518,6 +1531,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			src_v->tu = 0.0f;
 			src_v->tv = 0.0f;
 		}
+
 		src_v++;
 	}
 
@@ -2225,7 +2239,7 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	d3d_set_initial_render_state();
 
 	TIMERBAR_PUSH(6);
-	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
+  	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
 	TIMERBAR_POP();
 }
 

@@ -196,7 +196,7 @@ int bm_d3d_create( int bpp, int w, int h, void * data, int flags )
 
 	int i, n, first_slot = MAX_BITMAPS;
 
-	if(bpp != 16){
+	if(bpp == 8){
 		Assert(flags & BMP_AABITMAP);
 	} else {
 		Assert(bpp == 16);
@@ -614,7 +614,7 @@ static void bm_d3d_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte 
 	int idx;	
 
 	if(flags & BMP_AABITMAP){
-		Assert(bmp->bpp == 8);
+   //		Assert(bmp->bpp == 8);
 	} else {
 		Assert(bmp->bpp == 16);
 	}
@@ -834,9 +834,9 @@ void bm_d3d_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp,
 		bmp->flags = be->info.user.flags;		
 		bmp->data = (uint)be->info.user.data;								
 		break;	
-	
+												 
 	case 8:			// Going from 8 bpp to something (probably only for aabitmaps)
-		Assert(flags & BMP_AABITMAP);
+	 //	Assert(flags & BMP_AABITMAP);
 		bmp->bpp = bpp;
 		bmp->flags = be->info.user.flags;		
 		bmp->data = (uint)be->info.user.data;								

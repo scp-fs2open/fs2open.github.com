@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.15 $
- * $Date: 2003-11-19 20:37:24 $
+ * $Revision: 2.16 $
+ * $Date: 2003-11-29 10:52:09 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/11/19 20:37:24  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.14  2003/11/07 18:31:02  randomtiger
  * Fixed a nohtl call to htl funcs (crash with NULL pointer)
  * Fixed a bug with 32bit PCX code.
@@ -279,6 +291,9 @@ typedef struct {
 	static int D3D_custom_size;
 	static int D3D_zbias;
 
+	static float texture_adjust_u;
+	static float texture_adjust_v;
+
 } GlobalD3DVars;
 
 /*
@@ -440,6 +455,8 @@ void gr_d3d_pop_texture_matrix(int unit);
 void gr_d3d_translate_texture_matrix(int unit, vector *shift);
 
 void d3d_render_timer_bar(int colour, float x, float y, float w, float h);
+
+bool gr_d3d_unsize_screen_posf(float *x, float *y);
 
 // GrD3DRender functions
 void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt );
