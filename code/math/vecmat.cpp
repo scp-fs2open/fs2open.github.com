@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-02-14 00:18:33 $
+ * $Revision: 2.9 $
+ * $Date: 2004-05-03 09:27:16 $
  * $Author: randomtiger $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/02/14 00:18:33  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.7  2004/02/13 04:17:13  randomtiger
  * Turned off fog in OGL for Fred.
  * Simulated speech doesnt say tags marked by $ now.
@@ -2549,7 +2560,11 @@ void vm_forward_interpolate(vector *goal_f, matrix *orient, vector *w_in, float 
 
 	// find theta to goal
 	vm_vec_copy_scale(&theta_goal, &local_rot_axis, theta);
-	Assert(fl_abs(theta_goal.xyz.z) < 0.001f);		// check for proper rotation
+
+	// DO NOT COMMENT THIS OUT!!
+	if(!(fl_abs(theta_goal.xyz.z) < 0.001f))	   
+		// check for proper rotation
+		mprintf(("vm_forward_interpolate: Bad rotation"));
 
 	theta_end = vmd_zero_vector;
 	float delta_theta;
