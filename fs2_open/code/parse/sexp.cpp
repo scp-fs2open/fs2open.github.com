@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.126 $
- * $Date: 2005-01-11 21:38:51 $
+ * $Revision: 2.127 $
+ * $Date: 2005-01-17 22:46:32 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.126  2005/01/11 21:38:51  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.125  2005/01/01 07:18:48  wmcoolmon
  * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
  *
@@ -7132,6 +7137,29 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 	if(physics_paused){
 		return;
 	}
+
+
+	// Goober5000 - possibly do on-the-fly string replacement
+	// this is only for dynamic replacement such as values of variables... static replacement (stuff that
+	// doesn't change over the course of a mission) should be done in lcl_replace_stuff
+
+	// find the message
+	int i, message_index = -1;
+	for (i = Num_builtin_messages; i < Num_messages; i++)
+	{
+		// match
+		if (!strcmp(Messages[i].name, name))
+		{
+			message_index = i;
+			break;
+		}
+	}
+
+	// message had better exist
+	Assert(message_index >= 0);
+
+	// replace any variable in this message
+	sexp_replace_variable_names_with_values(Messages[message_index].message, MESSAGE_LENGTH);
 
 	// determine the priority of the message
 	if ( !stricmp(priority, "low") )
@@ -15348,7 +15376,7 @@ void sexp_fred_modify_variable(const char *text, const char *var_name, int index
 }
 
 // return index of sexp_variable_name, -1 if not found
-int get_index_sexp_variable_name(const char* temp_name)
+int get_index_sexp_variable_name(const char *temp_name)
 {
 	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
 		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
@@ -15363,6 +15391,55 @@ int get_index_sexp_variable_name(const char* temp_name)
 	return -1;
 }
 
+// Goober5000 - tests whether a variable name starts here
+// return index of sexp_variable_name, -1 if not found
+int get_index_sexp_variable_name_special(const char *startpos)
+{
+	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
+		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
+			// check case sensitive
+			// check number of chars in variable name
+			if ( !strncmp(startpos, Sexp_variables[i].variable_name, strlen(Sexp_variables[i].variable_name)) ) {
+				return i;
+			}
+		}
+	}
+
+	// not found
+	return -1;
+}
+
+// Goober5000
+void sexp_replace_variable_names_with_values(char *text, int max_len)
+{
+	char *pos = text;
+	do {
+		// look for the meta-character
+		pos = strchr(pos, '$');
+
+		// found?
+		if (pos != NULL)
+		{
+			// see if a variable starts at the next char
+			int var_index = get_index_sexp_variable_name_special(pos+1);
+			if (var_index != -1)
+			{
+				// get the replacement string ($variable)
+				char what_to_replace[TOKEN_LENGTH+1];
+				memset(what_to_replace, 0, TOKEN_LENGTH+1);
+				strncpy(what_to_replace, pos, strlen(Sexp_variables[var_index].variable_name) + 1);
+
+				// replace it
+				pos = text + replace_one(text, what_to_replace, Sexp_variables[var_index].text, max_len);
+			}
+			// no match... so keep iterating along the string
+			else
+			{
+				pos++;
+			}
+		}
+	} while (pos != NULL);
+}
 
 // counts number of sexp_variables that are set
 int sexp_variable_count()
