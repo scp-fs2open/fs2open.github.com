@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.37 $
- * $Date: 2003-07-15 02:41:41 $
+ * $Revision: 2.38 $
+ * $Date: 2003-07-15 02:51:01 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/07/15 02:41:41  phreak
+ * cloaked ships now are less visible with distance
+ *
  * Revision 2.36  2003/07/02 03:31:27  phreak
  * ai now properly fires bomber+ missiles at capital ships.
  *
@@ -11165,10 +11168,10 @@ void turret_fire_weapon(ship_subsys *turret, int parent_objnum, vector *turret_p
 			// fire a beam weapon
 			beam_fire(&fire_info);
 
-			if ((parent_ship->cloak_stage > 0) && (parent_ship->cloak_stage < 3))
+			if (parent_ship->cloak_stage == 2)
 			{
 				beam_weapon_info *bip=&Weapon_info[turret_weapon_class].b_info;
-				shipfx_start_cloak(parent_ship,bip->beam_warmup + bip->beam_warmdown + bip->beam_life + 1000);
+				shipfx_start_cloak(parent_ship,bip->beam_warmup + bip->beam_warmdown + (int)(bip->beam_life*1000.0f) + 1000);
 			}
 
 		} else {
