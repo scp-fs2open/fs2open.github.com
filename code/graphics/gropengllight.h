@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.2 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 1.3 $
+ * $Date: 2005-01-03 18:45:22 $
+ * $Author: taylor $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.1  2004/05/24 07:25:32  taylor
  * filename case change
  *
@@ -37,9 +40,6 @@
 
 #define MAX_LIGHTS 256
 
-//Constants
-const int MAX_OPENGL_LIGHTS = 8; //temporary - will change to dynamic allocation and get rid of this later -Fry_Day
-
 enum
 {
 	LT_DIRECTIONAL,		// A light like a sun
@@ -50,9 +50,9 @@ enum
 //Variables
 extern struct opengl_light opengl_lights[MAX_LIGHTS];
 extern bool active_light_list[MAX_LIGHTS];
-extern int currently_enabled_lights[MAX_OPENGL_LIGHTS];
+extern int *currently_enabled_lights;
 extern bool lighting_is_enabled;
-extern int max_gl_lights;
+extern int GL_max_lights;
 extern int active_gl_lights;
 extern int n_active_gl_lights;
 
