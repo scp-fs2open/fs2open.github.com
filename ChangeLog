@@ -1,3 +1,63 @@
+ChangeLog for fs2_open.  All times are UTC.  
+Updated 2002-08-06 21:27
+
+
+2002-08-06 16:50  phreak
+
+	* code/hud/hudtargetbox.cpp (2.2):
+	
+	added wireframe targetbox feature
+
+2002-08-06 16:50  phreak
+
+	* code/hud/hudtargetbox.h (2.1):
+	
+	added Targetbox_wire variable to check what mode the hud targetbox
+	uses
+
+2002-08-06 16:49  phreak
+
+	* code/io/keycontrol.cpp (2.2):
+	
+	added keybing for wireframe hud, fixed previous missile cheat
+
+2002-08-06 04:39  penguin
+
+	* code/hud/hudwingmanstatus.cpp (2.2):
+	
+	Use text strings for wingmen names instead of ANI
+
+2002-08-06 03:50  penguin
+
+	* code/ui/ui.h (2.2):
+	
+	inserted "class" keyword on "friend" definitions (ANSI C++ )
+
+2002-08-06 02:42  penguin
+
+	* Freespace2.dsp (1.7), code/code.dsp (1.6):
+	
+	Fixed problem w/ compile options for Debug mode
+
+2002-08-06 01:49  penguin
+
+	* code/Makefile (2.4):
+	
+	Removed a couple more include dirs I missed
+
+2002-08-06 01:49  penguin
+
+	* code/: globalincs/pstypes.h (2.4), render/3dclipper.cpp (2.2),
+	render/3ddraw.cpp (2.2):
+	
+	Renamed ccode members to cc_or and cc_and
+
+2002-08-04 05:43  penguin
+
+	* ChangeLog (1.1), code/ChangeLog (1.3):
+	
+	Moved ChangeLog to top-level directory
+
 2002-08-04 05:13  penguin
 
 	RELEASED: fs2_open 3.1 (tag: fs2_open3_1)
