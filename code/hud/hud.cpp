@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-06-11 02:59:48 $
- * $Author: phreak $
+ * $Revision: 2.9 $
+ * $Date: 2003-08-21 08:31:24 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/06/11 02:59:48  phreak
+ * local ssm stuff for hud.
+ * they are always in lock range due to the subspace drive on them
+ * they also can't be targeted when in stage 3.
+ *
  * Revision 2.7  2003/05/21 20:27:07  phreak
  * hud is drawn when in chase camera for player
  *
@@ -1469,7 +1474,7 @@ void hud_maybe_display_supernova()
 	}
 
 	gr_set_color_fast(&Color_bright_red);
-	gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning : %.2f s", time_left);
+	gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning: %.2f s", time_left);
 }
 
 #ifndef NO_NETWORK

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-04-29 01:03:23 $
+ * $Revision: 2.15 $
+ * $Date: 2003-08-21 08:31:24 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.13  2003/01/27 07:46:33  Goober5000
  * finished up my fighterbay code - ships will not be able to arrive from or depart into
  * fighterbays that have been destroyed (but you have to explicitly say in the tables
@@ -965,6 +969,11 @@ void get_turret_subsys_name(model_subsystem *system_info, char *outstr)
 				if (Weapon_info[system_info->turret_weapon_type].wi_flags2 & WIF2_BALLISTIC)
 				{
 					sprintf(outstr, "%s", XSTR("Turret", 1487));
+				}
+				// the TVWP has some primaries flagged as bombs
+				else if (Weapon_info[system_info->turret_weapon_type].wi_flags & WIF_BOMB)
+				{
+					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 				}
 				else
 				{
