@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-01-30 07:39:07 $
+ * $Revision: 2.5 $
+ * $Date: 2004-02-06 21:25:43 $
  * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/01/30 07:39:07  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.3  2003/06/11 02:59:47  phreak
  * local ssm stuff for hud.
  * they are always in lock range due to the subspace drive on them
@@ -460,6 +466,9 @@ comm_order Comm_orders[MAX_SHIP_ORDERS] = {
 // Text to display on the menu
 // Given an index into the Comm_orders array, return the text associated with it.
 // MUST BE 1:1 with Comm_orders.
+// Goober5000 - gah, some idiot changed the first option from "Attack my target"
+// to "Destroy my target", which breaks compatibility with FS1 missions.  So we
+// need to add a special case to avoid a crash in hud_query_order_issued.
 char	*comm_order_menu_text(int index)
 {
 	switch( index )	{
@@ -2820,7 +2829,17 @@ int hud_query_order_issued(char *name, char *order, char *target)
 		if (!stricmp(order, comm_order_menu_text(i)) )
 			o = Comm_orders[i].value;
 
-	Assert(i < MAX_SHIP_ORDERS);
+	// Goober5000 - if not found, check compatibility
+	if (o == -1)
+	{
+		if (!stricmp(order, "Attack my target"))
+		{
+			i = 0;	// it maps to option 0, "Destroy my target"
+			o = Comm_orders[i].value;
+		}
+	}
+
+	Assert(o != -1);
 	for (i=0; i<SQUADMSG_HISTORY_MAX; i++)
 		if (Squadmsg_history[i].order == o)
 			if (ship == Squadmsg_history[i].ship)
