@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.104 $
- * $Date: 2004-09-17 00:28:31 $
+ * $Revision: 2.105 $
+ * $Date: 2004-09-17 07:12:23 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2004/09/17 00:28:31  Goober5000
+ * removed player-not-use-ai and changed player-use-ai to take an argument
+ * --Goober5000
+ *
  * Revision 2.103  2004/09/17 00:18:18  Goober5000
  * changed toggle-hud to hud-disable; added hud-disable-except-messages
  * --Goober5000
@@ -7045,7 +7049,7 @@ void sexp_warp_effect(int n)
 		"\t9:  Warp opening sound (index into sounds.tbl)\r\n"
 		"\t10: Warp closing sound (index into sounds.tbl)\r\n"
 		"\t11: Type (0 for standard blue [default], 1 for Knossos green)\r\n"
-		"\t12: Effect (0 for Bobboau's new effect [default], 1 for original FS2 effect)" },
+		"\t12: Shape (0 for 2-D [default], 1 for 3-D)" },
 */
 {
 	vector origin, location, v_orient;
@@ -7095,18 +7099,18 @@ void sexp_warp_effect(int n)
 	}
 	n = CDR(n);
 
-	// effect type
+	// shape
 	if (sexp_get_val(n) == 0)
 	{
 		// do nothing; this is standard
 	}
 	else if (sexp_get_val(n) == 1)
 	{
-		extra_flags |= FBF_WARP_BOBBOAU;
+		extra_flags |= FBF_WARP_3D;
 	}
 	else
 	{
-		Warning(LOCATION, "warp-effect effect is out of range; quitting the warp...\n");
+		Warning(LOCATION, "warp-effect shape is out of range; quitting the warp...\n");
 		return;
 	}
 

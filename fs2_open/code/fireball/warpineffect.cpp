@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-08-23 04:32:39 $
+ * $Revision: 2.21 $
+ * $Date: 2004-09-17 07:12:22 $
  * $Author: Goober5000 $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/08/23 04:32:39  Goober5000
+ * warp effect is back to FS2 default
+ * --Goober5000
+ *
  * Revision 2.19  2004/07/26 20:47:28  Kazan
  * remove MCD complete
  *
@@ -243,7 +247,7 @@ void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 #define wR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
 #define wP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 
-void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int bobboau_effect)
+void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
 {
 	int i;
 
@@ -316,7 +320,7 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 		}
 	}
 
-	if(Warp_model > -1 && (bobboau_effect || (The_mission.flags & MISSION_FLAG_BOBBOAU_WARP_EFFECT)))
+	if(Warp_model > -1 && (warp_3d || (The_mission.flags & MISSION_FLAG_3D_WARP_EFFECT)))
 	{
 		float model_Interp_scale_x = radius /20;
 		float model_Interp_scale_y = radius /20;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-08-23 04:32:39 $
+ * $Revision: 2.16 $
+ * $Date: 2004-09-17 07:12:22 $
  * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/08/23 04:32:39  Goober5000
+ * warp effect is back to FS2 default
+ * --Goober5000
+ *
  * Revision 2.14  2004/07/26 20:47:28  Kazan
  * remove MCD complete
  *
@@ -662,7 +666,7 @@ void fireball_render(object * obj)
 //				obj->alt_rad = rad;
 
 
-				warpin_render(obj, &obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_BOBBOAU) );
+				warpin_render(obj, &obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_3D) );
 			}
 			break;
 

@@ -9,13 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.46 $
- * $Author: phreak $
- * $Date: 2004-09-01 00:58:46 $
+ * $Revision: 2.47 $
+ * $Author: Goober5000 $
+ * $Date: 2004-09-17 07:12:22 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2004/09/01 00:58:46  phreak
+ * created the mission flag MISSION_FLAG_USE_NEW_AI
+ *
+ * this lets old missions use the retail AI so they are balanced.  new missions would
+ * be able to select this in fred so designers can take advantage of it.
+ *
  * Revision 2.45  2004/08/23 04:32:40  Goober5000
  * warp effect is back to FS2 default
  * --Goober5000
@@ -429,7 +435,7 @@ extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 #define MISSION_FLAG_SUPPORT_REPAIRS_HULL	(1<<6)	// Toggles support ship repair of ship hulls
 #define MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT	(1<<7)	// Beam-free-all by default - Goober5000
 #define MISSION_FLAG_NO_NEB_TRAILS			(1<<8)	//Disables ship trails in nebula -C
-#define MISSION_FLAG_BOBBOAU_WARP_EFFECT	(1<<9)	// use Bobboau's warp effect - Goober5000
+#define MISSION_FLAG_3D_WARP_EFFECT			(1<<9)	// use Bobboau's 3-D warp effect - Goober5000
 #define MISSION_FLAG_NO_BRIEFING			(1<<10)	// no briefing, jump right into mission - Goober5000
 #define MISSION_FLAG_NO_DEBRIEFING			(1<<11)	// no debriefing, just like red-alert - Goober5000
 #define MISSION_FLAG_USE_NEW_AI				(1<<12)	// use SCP AI fixes.  Allows old missions to be balanced. -phreak
