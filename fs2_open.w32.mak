@@ -367,7 +367,7 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP_PROJ=/nologo /MT /W3 /GX /O2 /I "code\Anim" /I "code\Asteroid" /I "code\Bmpman" /I "code\CFile" /I "code\Cmdline" /I "code\CMeasure" /I "code\ControlConfig" /I "code\Cutscene" /I "code\Debris" /I "code\DebugConsole" /I "code\DirectX" /I "code\Fireball" /I "code\GameHelp" /I "code\FREESPACE2" /I "code\GameSequence" /I "code\Gamesnd" /I "code\Glide" /I "code\GlobalIncs" /I "code\Graphics" /I "code\Hud" /I "code\Io" /I "code\JumpNode" /I "code\Lighting" /I "code\Math" /I "code\MenuUI" /I "code\Mission" /I "code\MissionUI" /I "code\Model" /I "code\Network" /I "code\Object" /I "code\Observer" /I "code\OsApi" /I "code\Palman" /I "code\Parse" /I "code\Particle" /I "code\PcxUtils" /I "code\Physics" /I "code\Playerman" /I "code\Popup" /I "code\Radar" /I "code\Render" /I "code\Ship" /I "code\Sound" /I "code\Starfield" /I "code\Stats" /I "code\TgaUtils" /I "code\UI" /I "code\VCodec" /I "code\Weapon" /I "code\Localization" /I "code\Nebula" /I "code\Demo" /I "code\Inetfile" /I "code\ExceptionHandler" /I "code\windows_stub" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" $(NETWORK_DEF) $(JOYSTICK_DEF) $(SOUND_DEF) /Fp"$(INTDIR)\fs2_open.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/nologo /MT /W3 /GX /O2 /I "code" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" $(NETWORK_DEF) $(JOYSTICK_DEF) $(SOUND_DEF) /Fp"$(INTDIR)\fs2_open.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\fs2_open.bsc" 
@@ -843,7 +843,7 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP_PROJ=/nologo /MTd /W3 /Gm /GX /ZI /Od /I "code\Anim" /I "code\Asteroid" /I "code\Bmpman" /I "code\CFile" /I "code\Cmdline" /I "code\CMeasure" /I "code\ControlConfig" /I "code\Cutscene" /I "code\Debris" /I "code\DebugConsole" /I "code\DirectX" /I "code\Fireball" /I "code\GameHelp" /I "code\FREESPACE2" /I "code\GameSequence" /I "code\Gamesnd" /I "code\Glide" /I "code\GlobalIncs" /I "code\Graphics" /I "code\Hud" /I "code\Io" /I "code\JumpNode" /I "code\Lighting" /I "code\Math" /I "code\MenuUI" /I "code\Mission" /I "code\MissionUI" /I "code\Model" /I "code\Network" /I "code\Object" /I "code\Observer" /I "code\OsApi" /I "code\Palman" /I "code\Parse" /I "code\Particle" /I "code\PcxUtils" /I "code\Physics" /I "code\Playerman" /I "code\Popup" /I "code\Radar" /I "code\Render" /I "code\Ship" /I "code\Sound" /I "code\Starfield" /I "code\Stats" /I "code\TgaUtils" /I "code\UI" /I "code\VCodec" /I "code\Weapon" /I "code\Localization" /I "code\Nebula" /I "code\Demo" /I "code\Inetfile" /I "code\ExceptionHandler" /I "code\windows_stub" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" $(NETWORK_DEF) $(JOYSTICK_DEF) $(SOUND_DEF) /Fp"$(INTDIR)\fs2_open.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\"\
+CPP_PROJ=/nologo /MTd /W3 /Gm /GX /ZI /Od /I "code" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" $(NETWORK_DEF) $(JOYSTICK_DEF) $(SOUND_DEF) /Fp"$(INTDIR)\fs2_open.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\"\
  /FD /GZ /c 
 MTL_PROJ=/nologo /D "_DEBUG" /mktyplib203 /win32 
 BSC32=bscmake.exe
@@ -1101,1459 +1101,1459 @@ LINK32_OBJS= \
 
 
 !IF "$(CFG)" == "Release" || "$(CFG)" == "Debug"
-SOURCE=.\code\Graphics\2d.cpp
+SOURCE=.\code\graphics\2d.cpp
 
 "$(INTDIR)\2d.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Render\3dclipper.cpp
+SOURCE=.\code\render\3dclipper.cpp
 
 "$(INTDIR)\3dclipper.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Render\3ddraw.cpp
+SOURCE=.\code\render\3ddraw.cpp
 
 "$(INTDIR)\3ddraw.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Render\3dlaser.cpp
+SOURCE=.\code\render\3dlaser.cpp
 
 "$(INTDIR)\3dlaser.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Render\3dmath.cpp
+SOURCE=.\code\render\3dmath.cpp
 
 "$(INTDIR)\3dmath.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Render\3dsetup.cpp
+SOURCE=.\code\render\3dsetup.cpp
 
 "$(INTDIR)\3dsetup.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\aaline.cpp
+SOURCE=.\code\graphics\aaline.cpp
 
 "$(INTDIR)\aaline.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\afterburner.cpp
+SOURCE=.\code\ship\afterburner.cpp
 
 "$(INTDIR)\afterburner.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\ai.cpp
+SOURCE=.\code\ship\ai.cpp
 
 "$(INTDIR)\ai.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\aibig.cpp
+SOURCE=.\code\ship\aibig.cpp
 
 "$(INTDIR)\aibig.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\aicode.cpp
+SOURCE=.\code\ship\aicode.cpp
 
 "$(INTDIR)\aicode.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\aigoals.cpp
+SOURCE=.\code\ship\aigoals.cpp
 
 "$(INTDIR)\aigoals.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\GlobalIncs\alphacolors.cpp
+SOURCE=.\code\globalincs\alphacolors.cpp
 
 "$(INTDIR)\alphacolors.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Anim\animplay.cpp
+SOURCE=.\code\anim\animplay.cpp
 
 "$(INTDIR)\animplay.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Asteroid\asteroid.cpp
+SOURCE=.\code\asteroid\asteroid.cpp
 
 "$(INTDIR)\asteroid.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\awacs.cpp
+SOURCE=.\code\ship\awacs.cpp
 
 "$(INTDIR)\awacs.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\barracks.cpp
+SOURCE=.\code\menuui\barracks.cpp
 
 "$(INTDIR)\barracks.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Weapon\beam.cpp
+SOURCE=.\code\weapon\beam.cpp
 
 "$(INTDIR)\beam.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\bitblt.cpp
+SOURCE=.\code\graphics\bitblt.cpp
 
 "$(INTDIR)\bitblt.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Bmpman\bmpman.cpp
+SOURCE=.\code\bmpman\bmpman.cpp
 
 "$(INTDIR)\bmpman.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\button.cpp
+SOURCE=.\code\ui\button.cpp
 
 "$(INTDIR)\button.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\CFile\cfile.cpp
+SOURCE=.\code\cfile\cfile.cpp
 
 "$(INTDIR)\cfile.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\CFile\cfilearchive.cpp
+SOURCE=.\code\cfile\cfilearchive.cpp
 
 "$(INTDIR)\cfilearchive.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\CFile\cfilelist.cpp
+SOURCE=.\code\cfile\cfilelist.cpp
 
 "$(INTDIR)\cfilelist.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\CFile\cfilesystem.cpp
+SOURCE=.\code\cfile\cfilesystem.cpp
 
 "$(INTDIR)\cfilesystem.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Inetfile\cftp.cpp
+SOURCE=.\code\inetfile\cftp.cpp
 
 "$(INTDIR)\cftp.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\checkbox.cpp
+SOURCE=.\code\ui\checkbox.cpp
 
 "$(INTDIR)\checkbox.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Inetfile\chttpget.cpp
+SOURCE=.\code\inetfile\chttpget.cpp
 
 "$(INTDIR)\chttpget.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\circle.cpp
+SOURCE=.\code\graphics\circle.cpp
 
 "$(INTDIR)\circle.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Cmdline\cmdline.cpp
+SOURCE=.\code\cmdline\cmdline.cpp
 
 "$(INTDIR)\cmdline.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\CMeasure\cmeasure.cpp
+SOURCE=.\code\cmeasure\cmeasure.cpp
 
 "$(INTDIR)\cmeasure.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Object\collidedebrisship.cpp
+SOURCE=.\code\object\collidedebrisship.cpp
 
 "$(INTDIR)\collidedebrisship.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Object\collidedebrisweapon.cpp
+SOURCE=.\code\object\collidedebrisweapon.cpp
 
 "$(INTDIR)\collidedebrisweapon.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Object\collideshipship.cpp
+SOURCE=.\code\object\collideshipship.cpp
 
 "$(INTDIR)\collideshipship.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Object\collideshipweapon.cpp
+SOURCE=.\code\object\collideshipweapon.cpp
 
 "$(INTDIR)\collideshipweapon.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Object\collideweaponweapon.cpp
+SOURCE=.\code\object\collideweaponweapon.cpp
 
 "$(INTDIR)\collideweaponweapon.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\colors.cpp
+SOURCE=.\code\graphics\colors.cpp
 
 "$(INTDIR)\colors.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\DebugConsole\console.cpp
+SOURCE=.\code\debugconsole\console.cpp
 
 "$(INTDIR)\console.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\GameHelp\contexthelp.cpp
+SOURCE=.\code\gamehelp\contexthelp.cpp
 
 "$(INTDIR)\contexthelp.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\ControlConfig\controlsconfig.cpp
+SOURCE=.\code\controlconfig\controlsconfig.cpp
 
 "$(INTDIR)\controlsconfig.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\ControlConfig\controlsconfigcommon.cpp
+SOURCE=.\code\controlconfig\controlsconfigcommon.cpp
 
 "$(INTDIR)\controlsconfigcommon.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Weapon\corkscrew.cpp
+SOURCE=.\code\weapon\corkscrew.cpp
 
 "$(INTDIR)\corkscrew.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\credits.cpp
+SOURCE=.\code\menuui\credits.cpp
 
 "$(INTDIR)\credits.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\GlobalIncs\crypt.cpp
+SOURCE=.\code\globalincs\crypt.cpp
 
 "$(INTDIR)\crypt.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Cutscene\cutscenes.cpp
+SOURCE=.\code\cutscene\cutscenes.cpp
 
 "$(INTDIR)\cutscenes.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Debris\debris.cpp
+SOURCE=.\code\debris\debris.cpp
 
 "$(INTDIR)\debris.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Demo\demo.cpp
+SOURCE=.\code\demo\demo.cpp
 
 "$(INTDIR)\demo.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Weapon\emp.cpp
+SOURCE=.\code\weapon\emp.cpp
 
 "$(INTDIR)\emp.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Parse\encrypt.cpp
+SOURCE=.\code\parse\encrypt.cpp
 
 "$(INTDIR)\encrypt.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\ExceptionHandler\exceptionhandler.cpp
+SOURCE=.\code\exceptionhandler\exceptionhandler.cpp
 
 "$(INTDIR)\exceptionhandler.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Localization\fhash.cpp
+SOURCE=.\code\localization\fhash.cpp
 
 "$(INTDIR)\fhash.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Fireball\fireballs.cpp
+SOURCE=.\code\fireball\fireballs.cpp
 
 "$(INTDIR)\fireballs.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\fishtank.cpp
+SOURCE=.\code\menuui\fishtank.cpp
 
 "$(INTDIR)\fishtank.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Math\fix.cpp
+SOURCE=.\code\math\fix.cpp
 
 "$(INTDIR)\fix.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Weapon\flak.cpp
+SOURCE=.\code\weapon\flak.cpp
 
 "$(INTDIR)\flak.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Math\floating.cpp
+SOURCE=.\code\math\floating.cpp
 
 "$(INTDIR)\floating.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\font.cpp
+SOURCE=.\code\graphics\font.cpp
 
 "$(INTDIR)\font.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\FREESPACE2\freespace.cpp
+SOURCE=.\code\freespace2\freespace.cpp
 
 "$(INTDIR)\freespace.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Math\fvi.cpp
+SOURCE=.\code\math\fvi.cpp
 
 "$(INTDIR)\fvi.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\gadget.cpp
+SOURCE=.\code\ui\gadget.cpp
 
 "$(INTDIR)\gadget.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\GameHelp\gameplayhelp.cpp
+SOURCE=.\code\gamehelp\gameplayhelp.cpp
 
 "$(INTDIR)\gameplayhelp.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\GameSequence\gamesequence.cpp
+SOURCE=.\code\gamesequence\gamesequence.cpp
 
 "$(INTDIR)\gamesequence.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Glide\glide.cpp
+SOURCE=.\code\glide\glide.cpp
 
 "$(INTDIR)\glide.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\gradient.cpp
+SOURCE=.\code\graphics\gradient.cpp
 
 "$(INTDIR)\gradient.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\grd3d.cpp
+SOURCE=.\code\graphics\grd3d.cpp
 
 "$(INTDIR)\grd3d.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\grd3drender.cpp
+SOURCE=.\code\graphics\grd3drender.cpp
 
 "$(INTDIR)\grd3drender.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\grd3dtexture.cpp
+SOURCE=.\code\graphics\grd3dtexture.cpp
 
 "$(INTDIR)\grd3dtexture.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\grdirectdraw.cpp
+SOURCE=.\code\graphics\grdirectdraw.cpp
 
 "$(INTDIR)\grdirectdraw.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\grglide.cpp
+SOURCE=.\code\graphics\grglide.cpp
 
 "$(INTDIR)\grglide.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\grglidetexture.cpp
+SOURCE=.\code\graphics\grglidetexture.cpp
 
 "$(INTDIR)\grglidetexture.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\grsoft.cpp
+SOURCE=.\code\graphics\grsoft.cpp
 
 "$(INTDIR)\grsoft.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\grzbuffer.cpp
+SOURCE=.\code\graphics\grzbuffer.cpp
 
 "$(INTDIR)\grzbuffer.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hud.cpp
+SOURCE=.\code\hud\hud.cpp
 
 "$(INTDIR)\hud.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudartillery.cpp
+SOURCE=.\code\hud\hudartillery.cpp
 
 "$(INTDIR)\hudartillery.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudbrackets.cpp
+SOURCE=.\code\hud\hudbrackets.cpp
 
 "$(INTDIR)\hudbrackets.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudconfig.cpp
+SOURCE=.\code\hud\hudconfig.cpp
 
 "$(INTDIR)\hudconfig.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudescort.cpp
+SOURCE=.\code\hud\hudescort.cpp
 
 "$(INTDIR)\hudescort.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudets.cpp
+SOURCE=.\code\hud\hudets.cpp
 
 "$(INTDIR)\hudets.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudlock.cpp
+SOURCE=.\code\hud\hudlock.cpp
 
 "$(INTDIR)\hudlock.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudmessage.cpp
+SOURCE=.\code\hud\hudmessage.cpp
 
 "$(INTDIR)\hudmessage.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudreticle.cpp
+SOURCE=.\code\hud\hudreticle.cpp
 
 "$(INTDIR)\hudreticle.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudshield.cpp
+SOURCE=.\code\hud\hudshield.cpp
 
 "$(INTDIR)\hudshield.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudsquadmsg.cpp
+SOURCE=.\code\hud\hudsquadmsg.cpp
 
 "$(INTDIR)\hudsquadmsg.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudtarget.cpp
+SOURCE=.\code\hud\hudtarget.cpp
 
 "$(INTDIR)\hudtarget.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudtargetbox.cpp
+SOURCE=.\code\hud\hudtargetbox.cpp
 
 "$(INTDIR)\hudtargetbox.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudwingmanstatus.cpp
+SOURCE=.\code\hud\hudwingmanstatus.cpp
 
 "$(INTDIR)\hudwingmanstatus.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\icon.cpp
+SOURCE=.\code\ui\icon.cpp
 
 "$(INTDIR)\icon.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\inputbox.cpp
+SOURCE=.\code\ui\inputbox.cpp
 
 "$(INTDIR)\inputbox.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\JumpNode\jumpnode.cpp
+SOURCE=.\code\jumpnode\jumpnode.cpp
 
 "$(INTDIR)\jumpnode.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Io\key.cpp
+SOURCE=.\code\io\key.cpp
 
 "$(INTDIR)\key.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Io\keycontrol.cpp
+SOURCE=.\code\io\keycontrol.cpp
 
 "$(INTDIR)\keycontrol.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\keytrap.cpp
+SOURCE=.\code\ui\keytrap.cpp
 
 "$(INTDIR)\keytrap.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\FREESPACE2\levelpaging.cpp
+SOURCE=.\code\freespace2\levelpaging.cpp
 
 "$(INTDIR)\levelpaging.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Lighting\lighting.cpp
+SOURCE=.\code\lighting\lighting.cpp
 
 "$(INTDIR)\lighting.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\line.cpp
+SOURCE=.\code\graphics\line.cpp
 
 "$(INTDIR)\line.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\listbox.cpp
+SOURCE=.\code\ui\listbox.cpp
 
 "$(INTDIR)\listbox.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Localization\localize.cpp
+SOURCE=.\code\localization\localize.cpp
 
 "$(INTDIR)\localize.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\mainhallmenu.cpp
+SOURCE=.\code\menuui\mainhallmenu.cpp
 
 "$(INTDIR)\mainhallmenu.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Playerman\managepilot.cpp
+SOURCE=.\code\playerman\managepilot.cpp
 
 "$(INTDIR)\managepilot.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Stats\medals.cpp
+SOURCE=.\code\stats\medals.cpp
 
 "$(INTDIR)\medals.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\missionbrief.cpp
+SOURCE=.\code\missionui\missionbrief.cpp
 
 "$(INTDIR)\missionbrief.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Mission\missionbriefcommon.cpp
+SOURCE=.\code\mission\missionbriefcommon.cpp
 
 "$(INTDIR)\missionbriefcommon.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Mission\missioncampaign.cpp
+SOURCE=.\code\mission\missioncampaign.cpp
 
 "$(INTDIR)\missioncampaign.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\missioncmdbrief.cpp
+SOURCE=.\code\missionui\missioncmdbrief.cpp
 
 "$(INTDIR)\missioncmdbrief.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\missiondebrief.cpp
+SOURCE=.\code\missionui\missiondebrief.cpp
 
 "$(INTDIR)\missiondebrief.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Mission\missiongoals.cpp
+SOURCE=.\code\mission\missiongoals.cpp
 
 "$(INTDIR)\missiongoals.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Mission\missiongrid.cpp
+SOURCE=.\code\mission\missiongrid.cpp
 
 "$(INTDIR)\missiongrid.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Mission\missionhotkey.cpp
+SOURCE=.\code\mission\missionhotkey.cpp
 
 "$(INTDIR)\missionhotkey.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Mission\missionload.cpp
+SOURCE=.\code\mission\missionload.cpp
 
 "$(INTDIR)\missionload.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Mission\missionlog.cpp
+SOURCE=.\code\mission\missionlog.cpp
 
 "$(INTDIR)\missionlog.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\missionloopbrief.cpp
+SOURCE=.\code\missionui\missionloopbrief.cpp
 
 "$(INTDIR)\missionloopbrief.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Mission\missionmessage.cpp
+SOURCE=.\code\mission\missionmessage.cpp
 
 "$(INTDIR)\missionmessage.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Mission\missionparse.cpp
+SOURCE=.\code\mission\missionparse.cpp
 
 "$(INTDIR)\missionparse.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\missionpause.cpp
+SOURCE=.\code\missionui\missionpause.cpp
 
 "$(INTDIR)\missionpause.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\missionrecommend.cpp
+SOURCE=.\code\missionui\missionrecommend.cpp
 
 "$(INTDIR)\missionrecommend.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\missionscreencommon.cpp
+SOURCE=.\code\missionui\missionscreencommon.cpp
 
 "$(INTDIR)\missionscreencommon.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\missionshipchoice.cpp
+SOURCE=.\code\missionui\missionshipchoice.cpp
 
 "$(INTDIR)\missionshipchoice.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\missionstats.cpp
+SOURCE=.\code\missionui\missionstats.cpp
 
 "$(INTDIR)\missionstats.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Mission\missiontraining.cpp
+SOURCE=.\code\mission\missiontraining.cpp
 
 "$(INTDIR)\missiontraining.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\missionweaponchoice.cpp
+SOURCE=.\code\missionui\missionweaponchoice.cpp
 
 "$(INTDIR)\missionweaponchoice.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Model\modelcollide.cpp
+SOURCE=.\code\model\modelcollide.cpp
 
 "$(INTDIR)\modelcollide.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Model\modelinterp.cpp
+SOURCE=.\code\model\modelinterp.cpp
 
 "$(INTDIR)\modelinterp.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Model\modeloctant.cpp
+SOURCE=.\code\model\modeloctant.cpp
 
 "$(INTDIR)\modeloctant.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Model\modelread.cpp
+SOURCE=.\code\model\modelread.cpp
 
 "$(INTDIR)\modelread.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Io\mouse.cpp
+SOURCE=.\code\io\mouse.cpp
 
 "$(INTDIR)\mouse.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_log.cpp
+SOURCE=.\code\network\multi_log.cpp
 
 "$(INTDIR)\multi_log.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multiutil.cpp
+SOURCE=.\code\network\multiutil.cpp
 
 "$(INTDIR)\multiutil.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Weapon\muzzleflash.cpp
+SOURCE=.\code\weapon\muzzleflash.cpp
 
 "$(INTDIR)\muzzleflash.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Nebula\neb.cpp
+SOURCE=.\code\nebula\neb.cpp
 
 "$(INTDIR)\neb.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Nebula\neblightning.cpp
+SOURCE=.\code\nebula\neblightning.cpp
 
 "$(INTDIR)\neblightning.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Starfield\nebula.cpp
+SOURCE=.\code\starfield\nebula.cpp
 
 "$(INTDIR)\nebula.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Object\objcollide.cpp
+SOURCE=.\code\object\objcollide.cpp
 
 "$(INTDIR)\objcollide.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Object\object.cpp
+SOURCE=.\code\object\object.cpp
 
 "$(INTDIR)\object.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Object\objectsort.cpp
+SOURCE=.\code\object\objectsort.cpp
 
 "$(INTDIR)\objectsort.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Observer\observer.cpp
+SOURCE=.\code\observer\observer.cpp
 
 "$(INTDIR)\observer.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\optionsmenu.cpp
+SOURCE=.\code\menuui\optionsmenu.cpp
 
 "$(INTDIR)\optionsmenu.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\OsApi\osapi.cpp
+SOURCE=.\code\osapi\osapi.cpp
 
 "$(INTDIR)\osapi.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\OsApi\osregistry.cpp
+SOURCE=.\code\osapi\osregistry.cpp
 
 "$(INTDIR)\osregistry.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\OsApi\outwnd.cpp
+SOURCE=.\code\osapi\outwnd.cpp
 
 "$(INTDIR)\outwnd.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Anim\packunpack.cpp
+SOURCE=.\code\anim\packunpack.cpp
 
 "$(INTDIR)\packunpack.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Palman\palman.cpp
+SOURCE=.\code\palman\palman.cpp
 
 "$(INTDIR)\palman.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Parse\parselo.cpp
+SOURCE=.\code\parse\parselo.cpp
 
 "$(INTDIR)\parselo.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Particle\particle.cpp
+SOURCE=.\code\particle\particle.cpp
 
 "$(INTDIR)\particle.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\PcxUtils\pcxutils.cpp
+SOURCE=.\code\pcxutils\pcxutils.cpp
 
 "$(INTDIR)\pcxutils.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Physics\physics.cpp
+SOURCE=.\code\physics\physics.cpp
 
 "$(INTDIR)\physics.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\pixel.cpp
+SOURCE=.\code\graphics\pixel.cpp
 
 "$(INTDIR)\pixel.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Playerman\playercontrol.cpp
+SOURCE=.\code\playerman\playercontrol.cpp
 
 "$(INTDIR)\playercontrol.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\playermenu.cpp
+SOURCE=.\code\menuui\playermenu.cpp
 
 "$(INTDIR)\playermenu.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Popup\popup.cpp
+SOURCE=.\code\popup\popup.cpp
 
 "$(INTDIR)\popup.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Popup\popupdead.cpp
+SOURCE=.\code\popup\popupdead.cpp
 
 "$(INTDIR)\popupdead.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Radar\radar.cpp
+SOURCE=.\code\radar\radar.cpp
 
 "$(INTDIR)\radar.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\radio.cpp
+SOURCE=.\code\ui\radio.cpp
 
 "$(INTDIR)\radio.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\readyroom.cpp
+SOURCE=.\code\menuui\readyroom.cpp
 
 "$(INTDIR)\readyroom.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\rect.cpp
+SOURCE=.\code\graphics\rect.cpp
 
 "$(INTDIR)\rect.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\redalert.cpp
+SOURCE=.\code\missionui\redalert.cpp
 
 "$(INTDIR)\redalert.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\scaler.cpp
+SOURCE=.\code\graphics\scaler.cpp
 
 "$(INTDIR)\scaler.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Stats\scoring.cpp
+SOURCE=.\code\stats\scoring.cpp
 
 "$(INTDIR)\scoring.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\scroll.cpp
+SOURCE=.\code\ui\scroll.cpp
 
 "$(INTDIR)\scroll.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Parse\sexp.cpp
+SOURCE=.\code\parse\sexp.cpp
 
 "$(INTDIR)\sexp.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\shade.cpp
+SOURCE=.\code\graphics\shade.cpp
 
 "$(INTDIR)\shade.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\shield.cpp
+SOURCE=.\code\ship\shield.cpp
 
 "$(INTDIR)\shield.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\ship.cpp
+SOURCE=.\code\ship\ship.cpp
 
 "$(INTDIR)\ship.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\shipcontrails.cpp
+SOURCE=.\code\ship\shipcontrails.cpp
 
 "$(INTDIR)\shipcontrails.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\shipfx.cpp
+SOURCE=.\code\ship\shipfx.cpp
 
 "$(INTDIR)\shipfx.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Ship\shiphit.cpp
+SOURCE=.\code\ship\shiphit.cpp
 
 "$(INTDIR)\shiphit.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Weapon\shockwave.cpp
+SOURCE=.\code\weapon\shockwave.cpp
 
 "$(INTDIR)\shockwave.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\slider.cpp
+SOURCE=.\code\ui\slider.cpp
 
 "$(INTDIR)\slider.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\slider2.cpp
+SOURCE=.\code\ui\slider2.cpp
 
 "$(INTDIR)\slider2.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\snazzyui.cpp
+SOURCE=.\code\menuui\snazzyui.cpp
 
 "$(INTDIR)\snazzyui.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Math\spline.cpp
+SOURCE=.\code\math\spline.cpp
 
 "$(INTDIR)\spline.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Starfield\starfield.cpp
+SOURCE=.\code\starfield\starfield.cpp
 
 "$(INTDIR)\starfield.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Math\staticrand.cpp
+SOURCE=.\code\math\staticrand.cpp
 
 "$(INTDIR)\staticrand.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Stats\stats.cpp
+SOURCE=.\code\stats\stats.cpp
 
 "$(INTDIR)\stats.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Starfield\supernova.cpp
+SOURCE=.\code\starfield\supernova.cpp
 
 "$(INTDIR)\supernova.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Weapon\swarm.cpp
+SOURCE=.\code\weapon\swarm.cpp
 
 "$(INTDIR)\swarm.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\GlobalIncs\systemvars.cpp
+SOURCE=.\code\globalincs\systemvars.cpp
 
 "$(INTDIR)\systemvars.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\techmenu.cpp
+SOURCE=.\code\menuui\techmenu.cpp
 
 "$(INTDIR)\techmenu.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\TgaUtils\tgautils.cpp
+SOURCE=.\code\tgautils\tgautils.cpp
 
 "$(INTDIR)\tgautils.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Io\timer.cpp
+SOURCE=.\code\io\timer.cpp
 
 "$(INTDIR)\timer.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\tmapper.cpp
+SOURCE=.\code\graphics\tmapper.cpp
 
 "$(INTDIR)\tmapper.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\tmapscanline.cpp
+SOURCE=.\code\graphics\tmapscanline.cpp
 
 "$(INTDIR)\tmapscanline.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\tmapscantiled128x128.cpp
+SOURCE=.\code\graphics\tmapscantiled128x128.cpp
 
 "$(INTDIR)\tmapscantiled128x128.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\tmapscantiled16x16.cpp
+SOURCE=.\code\graphics\tmapscantiled16x16.cpp
 
 "$(INTDIR)\tmapscantiled16x16.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\tmapscantiled256x256.cpp
+SOURCE=.\code\graphics\tmapscantiled256x256.cpp
 
 "$(INTDIR)\tmapscantiled256x256.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\tmapscantiled32x32.cpp
+SOURCE=.\code\graphics\tmapscantiled32x32.cpp
 
 "$(INTDIR)\tmapscantiled32x32.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Graphics\tmapscantiled64x64.cpp
+SOURCE=.\code\graphics\tmapscantiled64x64.cpp
 
 "$(INTDIR)\tmapscantiled64x64.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Weapon\trails.cpp
+SOURCE=.\code\weapon\trails.cpp
 
 "$(INTDIR)\trails.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\trainingmenu.cpp
+SOURCE=.\code\menuui\trainingmenu.cpp
 
 "$(INTDIR)\trainingmenu.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\uidraw.cpp
+SOURCE=.\code\ui\uidraw.cpp
 
 "$(INTDIR)\uidraw.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\uimouse.cpp
+SOURCE=.\code\ui\uimouse.cpp
 
 "$(INTDIR)\uimouse.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Math\vecmat.cpp
+SOURCE=.\code\math\vecmat.cpp
 
 "$(INTDIR)\vecmat.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\GlobalIncs\version.cpp
+SOURCE=.\code\globalincs\version.cpp
 
 "$(INTDIR)\version.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Fireball\warpineffect.cpp
+SOURCE=.\code\fireball\warpineffect.cpp
 
 "$(INTDIR)\warpineffect.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Weapon\weapons.cpp
+SOURCE=.\code\weapon\weapons.cpp
 
 "$(INTDIR)\weapons.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\GlobalIncs\windebug.cpp
+SOURCE=.\code\globalincs\windebug.cpp
 
 "$(INTDIR)\windebug.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\UI\window.cpp
+SOURCE=.\code\ui\window.cpp
 
 "$(INTDIR)\window.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Gamesnd\eventmusic.cpp
+SOURCE=.\code\gamesnd\eventmusic.cpp
 
 "$(INTDIR)\eventmusic.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Gamesnd\gamesnd.cpp
+SOURCE=.\code\gamesnd\gamesnd.cpp
 
 "$(INTDIR)\gamesnd.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Object\objectsnd.cpp
+SOURCE=.\code\object\objectsnd.cpp
 
 "$(INTDIR)\objectsnd.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\acm.cpp
+SOURCE=.\code\sound\acm.cpp
 
 "$(INTDIR)\acm.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\audiostr.cpp
+SOURCE=.\code\sound\audiostr.cpp
 
 "$(INTDIR)\audiostr.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\ds.cpp
+SOURCE=.\code\sound\ds.cpp
 
 "$(INTDIR)\ds.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\ds3d.cpp
+SOURCE=.\code\sound\ds3d.cpp
 
 "$(INTDIR)\ds3d.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\dscap.cpp
+SOURCE=.\code\sound\dscap.cpp
 
 "$(INTDIR)\dscap.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\midifile.cpp
+SOURCE=.\code\sound\midifile.cpp
 
 "$(INTDIR)\midifile.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\rbaudio.cpp
+SOURCE=.\code\sound\rbaudio.cpp
 
 "$(INTDIR)\rbaudio.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\rtvoice.cpp
+SOURCE=.\code\sound\rtvoice.cpp
 
 "$(INTDIR)\rtvoice.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\sound.cpp
+SOURCE=.\code\sound\sound.cpp
 
 "$(INTDIR)\sound.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\winmidi.cpp
+SOURCE=.\code\sound\winmidi.cpp
 
 "$(INTDIR)\winmidi.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Sound\winmidi_base.cpp
+SOURCE=.\code\sound\winmidi_base.cpp
 
 "$(INTDIR)\winmidi_base.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\VCodec\codec1.cpp
+SOURCE=.\code\vcodec\codec1.cpp
 
 "$(INTDIR)\codec1.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Io\joy.cpp
+SOURCE=.\code\io\joy.cpp
 
 "$(INTDIR)\joy.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Io\joy_ff.cpp
+SOURCE=.\code\io\joy_ff.cpp
 
 "$(INTDIR)\joy_ff.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Io\swff_lib.cpp
+SOURCE=.\code\io\swff_lib.cpp
 
 "$(INTDIR)\swff_lib.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Hud\hudobserver.cpp
+SOURCE=.\code\hud\hudobserver.cpp
 
 "$(INTDIR)\hudobserver.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi.cpp
+SOURCE=.\code\network\multi.cpp
 
 "$(INTDIR)\multi.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multimsgs.cpp
+SOURCE=.\code\network\multimsgs.cpp
 
 "$(INTDIR)\multimsgs.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multiteamselect.cpp
+SOURCE=.\code\network\multiteamselect.cpp
 
 "$(INTDIR)\multiteamselect.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multiui.cpp
+SOURCE=.\code\network\multiui.cpp
 
 "$(INTDIR)\multiui.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_campaign.cpp
+SOURCE=.\code\network\multi_campaign.cpp
 
 "$(INTDIR)\multi_campaign.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_data.cpp
+SOURCE=.\code\network\multi_data.cpp
 
 "$(INTDIR)\multi_data.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_dogfight.cpp
+SOURCE=.\code\network\multi_dogfight.cpp
 
 "$(INTDIR)\multi_dogfight.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_endgame.cpp
+SOURCE=.\code\network\multi_endgame.cpp
 
 "$(INTDIR)\multi_endgame.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_ingame.cpp
+SOURCE=.\code\network\multi_ingame.cpp
 
 "$(INTDIR)\multi_ingame.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_kick.cpp
+SOURCE=.\code\network\multi_kick.cpp
 
 "$(INTDIR)\multi_kick.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_obj.cpp
+SOURCE=.\code\network\multi_obj.cpp
 
 "$(INTDIR)\multi_obj.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_observer.cpp
+SOURCE=.\code\network\multi_observer.cpp
 
 "$(INTDIR)\multi_observer.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_options.cpp
+SOURCE=.\code\network\multi_options.cpp
 
 "$(INTDIR)\multi_options.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_pause.cpp
+SOURCE=.\code\network\multi_pause.cpp
 
 "$(INTDIR)\multi_pause.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_pinfo.cpp
+SOURCE=.\code\network\multi_pinfo.cpp
 
 "$(INTDIR)\multi_pinfo.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_ping.cpp
+SOURCE=.\code\network\multi_ping.cpp
 
 "$(INTDIR)\multi_ping.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_pmsg.cpp
+SOURCE=.\code\network\multi_pmsg.cpp
 
 "$(INTDIR)\multi_pmsg.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_rate.cpp
+SOURCE=.\code\network\multi_rate.cpp
 
 "$(INTDIR)\multi_rate.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_respawn.cpp
+SOURCE=.\code\network\multi_respawn.cpp
 
 "$(INTDIR)\multi_respawn.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_team.cpp
+SOURCE=.\code\network\multi_team.cpp
 
 "$(INTDIR)\multi_team.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_voice.cpp
+SOURCE=.\code\network\multi_voice.cpp
 
 "$(INTDIR)\multi_voice.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\multi_xfer.cpp
+SOURCE=.\code\network\multi_xfer.cpp
 
 "$(INTDIR)\multi_xfer.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\psnet.cpp
+SOURCE=.\code\network\psnet.cpp
 
 "$(INTDIR)\psnet.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\psnet2.cpp
+SOURCE=.\code\network\psnet2.cpp
 
 "$(INTDIR)\psnet2.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\stand_gui.cpp
+SOURCE=.\code\network\stand_gui.cpp
 
 "$(INTDIR)\stand_gui.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MenuUI\optionsmenumulti.cpp
+SOURCE=.\code\menuui\optionsmenumulti.cpp
 
 "$(INTDIR)\optionsmenumulti.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\MissionUI\chatbox.cpp
+SOURCE=.\code\missionui\chatbox.cpp
 
 "$(INTDIR)\chatbox.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=.\code\Network\fs2ox.cpp
+SOURCE=.\code\network\fs2ox.cpp
 
 "$(INTDIR)\fs2ox.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
