@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2005/02/18 04:54:44  wmcoolmon
+ * Added $Tech Model (after +Tech Description)
+ *
  * Revision 2.86  2005/02/14 23:59:23  taylor
  * make hudparse GCC 3.4 friendly (WMCoolmon way want to check this with tbl)
  * fix OSX compile problem
@@ -2716,8 +2719,8 @@ void weapon_delete(object *obj)
 		wp->flak_index = -1;
 	}
 
-	if (wp->trail_num > -1) {
-		trail_object_died(wp->trail_num);
+	if (wp->trail_ptr != NULL) {
+		trail_object_died(wp->trail_ptr);
 	}
 
 	wp->objnum = -1;
@@ -3469,14 +3472,14 @@ void weapon_process_post(object * obj, float frame_time)
 
 	// trail missiles
 	if ((wip->wi_flags & WIF_TRAIL) && !(wip->wi_flags & WIF_CORKSCREW)) {
-		if ( (wp->trail_num > -1 ) && (wp->lssm_stage!=3))	{
-			if (trail_stamp_elapsed(wp->trail_num)) {
+		if ( (wp->trail_ptr != NULL ) && (wp->lssm_stage!=3))	{
+			if (trail_stamp_elapsed(wp->trail_ptr)) {
 
-				trail_add_segment( wp->trail_num, &obj->pos );
+				trail_add_segment( wp->trail_ptr, &obj->pos );
 				
-				trail_set_stamp(wp->trail_num);
+				trail_set_stamp(wp->trail_ptr);
 			} else {
-				trail_set_segment( wp->trail_num, &obj->pos );
+				trail_set_segment( wp->trail_ptr, &obj->pos );
 			}
 
 		}
@@ -3986,12 +3989,12 @@ int weapon_create( vector * pos, matrix * porient, int weapon_id, int parent_obj
 	}
 
 	if (wip->wi_flags & WIF_TRAIL /*&& !(wip->wi_flags & WIF_CORKSCREW) */) {
-		wp->trail_num = trail_create(wip->tr_info);		
+		wp->trail_ptr = trail_create(wip->tr_info);		
 
-		if ( wp->trail_num > -1 )	{
+		if ( wp->trail_ptr != NULL )	{
 			// Add two segments.  One to stay at launch pos, one to move.
-			trail_add_segment( wp->trail_num, &objp->pos );
-			trail_add_segment( wp->trail_num, &objp->pos );
+			trail_add_segment( wp->trail_ptr, &objp->pos );
+			trail_add_segment( wp->trail_ptr, &objp->pos );
 		}
 	}
 

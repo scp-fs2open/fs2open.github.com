@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.162 $
- * $Date: 2005-02-15 00:03:35 $
- * $Author: taylor $
+ * $Revision: 2.163 $
+ * $Date: 2005-02-19 07:57:02 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.162  2005/02/15 00:03:35  taylor
+ * don't try and draw starfield bitmaps if they aren't valid
+ * make AB thruster stuff in ship_create() a little less weird
+ * replace an Int3() with debug warning and fix crash in docking code
+ * make D3D Textures[] allocate on use like OGL does, can only use one anyway
+ *
  * Revision 2.161  2005/02/10 14:38:50  taylor
  * fix an issue with bm_set_components()
  * abs is for ints fabsf is for floats (camera.cpp)
@@ -1732,7 +1738,7 @@ int ship_obj_list_add(int objnum)
 void ship_obj_list_remove(int index)
 {
 	Assert(index >= 0 && index < MAX_SHIP_OBJS);
-	list_remove(&Ship_obj_list, &Ship_objs[index]);	
+	list_remove( Ship_obj_list, &Ship_objs[index]);	
 	ship_obj_list_reset_slot(index);
 }
 
@@ -3920,7 +3926,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		// set up the linked list
 		ship_system = GET_FIRST( &ship_subsys_free_list );		// get a new element from the ship_subsystem array
 		Assert ( ship_system != &ship_subsys_free_list );		// shouldn't have the dummy element
-		list_remove( &ship_subsys_free_list, ship_system );	// remove the element from the array
+		list_remove( ship_subsys_free_list, ship_system );	// remove the element from the array
 		list_append( &shipp->subsys_list, ship_system );		// link the element into the ship
 
 		ship_system->system_info = sp;						// set the system_info pointer to point to the data read in from the model
@@ -4483,7 +4489,7 @@ void ship_subsystem_delete(ship *shipp)
 	systemp = GET_FIRST( &shipp->subsys_list );
 	while ( systemp != END_OF_LIST(&shipp->subsys_list) ) {
 		temp = GET_NEXT( systemp );								// use temporary since pointers will get screwed with next operation
-		list_remove( &shipp->subsys_list, systemp );			// remove the element
+		list_remove( shipp->subsys_list, systemp );			// remove the element
 		list_append( &ship_subsys_free_list, systemp );		// and place back onto free list
 		systemp = temp;												// use the temp variable to move right along
 	}
@@ -5457,8 +5463,9 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 
 	the_anim = &Thrust_anims[anim_index];
 
-	Assert( frametime > 0.0f );
-	shipp->thruster_frame += frametime * rate;
+	//Assert( frametime > 0.0f );
+	if(frametime > 0.0f)
+		shipp->thruster_frame += frametime * rate;
 
 	// Sanity checks
 	if ( shipp->thruster_frame < 0.0f )	shipp->thruster_frame = 0.0f;
@@ -5485,8 +5492,9 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	// Do it for glow bitmaps
 	the_anim = &Thrust_glow_anims[anim_index];
 
-	Assert( frametime > 0.0f );
-	shipp->thruster_glow_frame += frametime * rate;
+	//Assert( frametime > 0.0f );
+	if(frametime > 0.0f)
+		shipp->thruster_glow_frame += frametime * rate;
 
 	// Sanity checks
 	if ( shipp->thruster_glow_frame < 0.0f )	shipp->thruster_glow_frame = 0.0f;
@@ -5546,8 +5554,9 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 
 	the_anim = &Thrust_anims[anim_index];
 
-	Assert( frametime > 0.0f );
-	weaponp->thruster_frame += frametime * rate;
+	//Assert( frametime > 0.0f );
+	if(frametime > 0.0f)
+		weaponp->thruster_frame += frametime * rate;
 
 	// Sanity checks
 	if ( weaponp->thruster_frame < 0.0f )	weaponp->thruster_frame = 0.0f;
@@ -5571,8 +5580,9 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 	// Do it for glow bitmaps
 	the_anim = &Thrust_glow_anims[anim_index];
 
-	Assert( frametime > 0.0f );
-	weaponp->thruster_glow_frame += frametime * rate;
+	//Assert( frametime > 0.0f );
+	if(frametime > 0.0f)
+		weaponp->thruster_glow_frame += frametime * rate;
 
 	// Sanity checks
 	if ( weaponp->thruster_glow_frame < 0.0f )	weaponp->thruster_glow_frame = 0.0f;
@@ -6944,7 +6954,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 		for ( ship_system = GET_FIRST(&sp->subsys_list); ship_system != END_OF_LIST(&sp->subsys_list);  ) {
 			tmp = GET_NEXT(ship_system);
-			list_remove( &sp->subsys_list, ship_system );
+			list_remove( sp->subsys_list, ship_system );
 			list_append( &ship_subsys_free_list, ship_system );
 			ship_system = tmp;
 		}
@@ -10968,7 +10978,9 @@ float ship_quadrant_shield_strength(object *hit_objp, vector *hitpos)
 		return 0.0f;
 	}
 
-	Assert(hit_objp->shield_quadrant[quadrant_num] <= max_quadrant);
+	//Assert(hit_objp->shield_quadrant[quadrant_num] <= max_quadrant);
+	if(hit_objp->shield_quadrant[quadrant_num] > max_quadrant)
+		mprintf((LOCATION, "Warning: \"%s\" has shield quadrant strength of %f out of %f\n", Ships[hit_objp->instance].ship_name, hit_objp->shield_quadrant[quadrant_num], max_quadrant));
 
 	return hit_objp->shield_quadrant[quadrant_num]/max_quadrant;
 }

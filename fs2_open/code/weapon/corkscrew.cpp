@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Corkscrew.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:56 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-19 07:54:33 $
+ * $Author: wmcoolmon $
  *
  * C module for managing corkscrew missiles
  * 
@@ -252,12 +252,12 @@ void cscrew_process_post(object *objp)
 	vm_vec_sub(&ci->cen_p, &cen, &objp->pos);
 
 	// do trail stuff here
-	if ( wp->trail_num > -1 )	{
-		if (trail_stamp_elapsed(wp->trail_num)) {
-			trail_add_segment( wp->trail_num, &objp->pos );
-			trail_set_stamp(wp->trail_num);
+	if ( wp->trail_ptr != NULL )	{
+		if (trail_stamp_elapsed(wp->trail_ptr)) {
+			trail_add_segment( wp->trail_ptr, &objp->pos );
+			trail_set_stamp(wp->trail_ptr);
 		} else {
-			trail_set_segment( wp->trail_num, &objp->pos );
+			trail_set_segment( wp->trail_ptr, &objp->pos );
 		}
 	}	
 }
