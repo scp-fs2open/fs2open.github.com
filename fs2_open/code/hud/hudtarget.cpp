@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-08-21 06:18:52 $
+ * $Revision: 2.17 $
+ * $Date: 2003-08-21 06:31:19 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/08/21 06:18:52  Goober5000
+ * primary weapons will now truncate properly at a '#' symbol, just like secondaries
+ * --Goober5000
+ *
  * Revision 2.15  2003/08/06 17:44:20  phreak
  * changed the weapon ammo gauges to show additional ammo if a tertiary ammo pod is being used
  *
@@ -4835,7 +4839,9 @@ void hud_show_afterburner_gauge()
 
 	Assert(Player_ship);
 	if ( !(Ship_info[Player_ship->ship_info_index].flags & SIF_AFTERBURNER) ) {
-		percent_left = 0.0f;
+		// Goober5000 - instead of drawing an empty burner gauge, don't draw the gauge at all
+		return;
+		//percent_left = 0.0f;
 	} else {
 		percent_left = Player_ship->afterburner_fuel/Ship_info[Player_ship->ship_info_index].afterburner_fuel_capacity;
 	}
@@ -4873,7 +4879,7 @@ void hud_show_weapon_energy_gauge()
 		return;
 	}
 
-	// also leave if no energy can be stored for weapons
+	// also leave if no energy can be stored for weapons - Goober5000
 	if (Objects[Player_ship->objnum].flags & OF_NO_LASERS)
 	{
 		return;
