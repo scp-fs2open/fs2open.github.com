@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-13 08:13:28 $
+ * $Revision: 2.4 $
+ * $Date: 2002-12-31 08:20:31 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/13 08:13:28  Goober5000
+ * small tweaks and bug fixes for the ballistic primary conversion
+ * ~Goober5000~
+ *
  * Revision 2.2  2002/12/10 05:43:33  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -1265,16 +1269,6 @@ void wl_set_disabled_weapons(int ship_class)
 		//	Determine whether weapon #i is allowed on this ship class in the current type of mission.
 		//	As of 9/6/99, the only difference is dogfight missions have a different list of legal weapons.
 		Wl_icons[i].can_use = weapon_allowed_for_game_type(sip->allowed_weapons[i]);
-
-		// Goober5000: ballistic primaries
-		if (Weapon_info[i].wi_flags2 & WIF2_BALLISTIC)
-		{
-			// not allowed if this ship is not ballistic
-			if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
-			{
-				Wl_icons[i].can_use = 0;
-			}
-		}
 	}
 }
 

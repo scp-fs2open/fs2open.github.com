@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-12-10 05:43:34 $
+ * $Revision: 2.6 $
+ * $Date: 2002-12-31 08:20:31 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/10 05:43:34  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
  * Revision 2.4  2002/10/19 03:50:29  randomtiger
  * Added special pause mode for easier action screenshots.
  * Added new command line parameter for accessing all single missions in tech room. - RT
@@ -779,15 +782,12 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 	ship_weapon *swp = &shipp->weapons;
 	weapon_info *wip;
 
-	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+	for ( index = 0; index < MAX_PRIMARY_BANKS; index++ )
 	{
-		for ( index = 0; index < MAX_PRIMARY_BANKS; index++ )
+		wip = &Weapon_info[swp->primary_bank_weapons[index]];
+		if (wip->wi_flags2 & WIF2_BALLISTIC)
 		{
-			wip = &Weapon_info[swp->primary_bank_weapons[index]];
-			if (wip->wi_flags2 & WIF2_BALLISTIC)
-			{
-				swp->primary_bank_ammo[index] = sip->primary_bank_ammo_capacity[index];
-			}
+			swp->primary_bank_ammo[index] = sip->primary_bank_ammo_capacity[index];
 		}
 	}
 }
