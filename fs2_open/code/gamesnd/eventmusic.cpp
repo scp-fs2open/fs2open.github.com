@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-01-25 04:17:39 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-22 06:06:22 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/25 04:17:39  Goober5000
+ * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
+ * --Ian Warfield
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -1419,7 +1423,7 @@ int event_music_next_soundtrack(int delta)
 }
 
 // Goober5000 - along the same lines; this is for the sexp
-void event_sexp_change_music(char *name)
+void event_sexp_change_soundtrack(char *name)
 {
 	Assert(name);
 
