@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-01-18 00:14:36 $
+ * $Revision: 2.22 $
+ * $Date: 2005-01-26 05:44:10 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/01/18 00:14:36  Goober5000
+ * clarified a bunch of sexp stuff and fixed a bug
+ * --Goober5000
+ *
  * Revision 2.20  2005/01/13 03:33:07  Goober5000
  * hmm, rolled back one of my clarifications since it caused things to get messed up
  * --Goober5000
@@ -1892,8 +1896,16 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		if ( object_is_docked(goal_objp) )
 		{
 			// if the dockpoint I need to dock to is occupied by someone other than me
-			if (dock_find_object_at_dockpoint(goal_objp, aigp->dockee.index) != objp)
+			object *obstacle_objp = dock_find_object_at_dockpoint(goal_objp, aigp->dockee.index);
+			if (obstacle_objp == NULL)
+			{
+				// nobody in the way... we're good
+			}
+			else if (obstacle_objp != objp)
+			{
+				// return NOT_KNOWN which will place the goal on hold until the dockpoint is clear
 				return AI_GOAL_NOT_KNOWN;
+			}
 		}
 
 		// if this ship is docked and needs to get docked with something else, then undock this ship
@@ -1907,20 +1919,12 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			}
 			else if (obstacle_objp != goal_objp)
 			{
-				// if this goal isn't on hold yet, then issue the undock goal and return NOT_KNOWN
-				// which will then place the goal on hold until the undocking is complete.
+				// if this goal isn't on hold yet, then issue the undock goal
 				if ( !(aigp->flags & AIGF_GOAL_ON_HOLD) )
 					ai_add_goal_ship_internal( aip, AI_GOAL_UNDOCK, Ships[obstacle_objp->instance].ship_name, -1, -1, 0 );
 
+				// return NOT_KNOWN which will place the goal on hold until the undocking is complete.
 				return AI_GOAL_NOT_KNOWN;
-			}
-			else
-			{
-				// if this ship is already docked with the guy this order tells him to dock with,
-				// then mark the goal as satisfied.
-				// MWA 2/23/98 -- don't return anything.  Since this item is a goal, the ai_dock code
-				// should remove the goal!!!!
-				//return AI_GOAL_SATISFIED;
 			}
 		}
 
