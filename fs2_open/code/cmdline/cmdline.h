@@ -10,11 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.23 $
- * $Date: 2003-08-22 07:35:08 $
- * $Author: bobboau $
+ * $Revision: 2.24 $
+ * $Date: 2003-09-11 18:55:23 $
+ * $Author: argv $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/08/22 07:35:08  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.22  2003/08/21 20:54:37  randomtiger
  * Fixed switching - RT
  *
@@ -318,5 +323,15 @@ extern float static_point_factor;
 extern double specular_exponent_value;
 
 extern int cell;
+
+// _argv[-1] - use a struct with bitfields to avoid wasting memory.
+struct argv_options {
+	int auto_ets:1;
+	int no_implicit_disable_auto_target:1;
+	int no_auto_target_turret:1;
+	int sound_from_own_turrets:1;
+	int singular_shields:1;
+};
+extern struct argv_options Argv_options;
 
 #endif
