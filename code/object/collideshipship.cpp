@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-01-18 09:25:42 $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-24 03:48:11 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/18 09:25:42  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -735,7 +740,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 	mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);			// flags
 
 	//	Only check invisible face polygons for ship:ship of different teams.
-	if ( !(Ships[heavy_obj->instance].flags & SF2_DONT_COLLIDE_INVIS) ) {
+	if ( !(Ships[heavy_obj->instance].flags2 & SF2_DONT_COLLIDE_INVIS) ) {
 		if ((heavy_obj->flags & OF_PLAYER_SHIP) || (light_obj->flags & OF_PLAYER_SHIP) || (Ships[heavy_obj->instance].team != Ships[light_obj->instance].team) ) {
 			mc.flags |= MC_CHECK_INVISIBLE_FACES;
 		}
