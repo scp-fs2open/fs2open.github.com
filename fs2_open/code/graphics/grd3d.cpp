@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.35 $
- * $Date: 2003-10-29 02:09:17 $
- * $Author: randomtiger $
+ * $Revision: 2.36 $
+ * $Date: 2003-10-30 08:20:36 $
+ * $Author: fryday $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/10/29 02:09:17  randomtiger
+ * Updated timerbar code to work properly, also added support for it in OGL.
+ * In D3D red is general processing (and generic graphics), green is 2D rendering, dark blue is 3D unlit, light blue is HT&L renders and yellow is the presentation of the frame to D3D. OGL is all red for now. Use compile flag TIMERBAR_ON with code lib to activate it.
+ * Also updated some more D3D device stuff that might get a bit more speed out of some cards.
+ *
  * Revision 2.34  2003/10/27 23:04:21  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -1853,11 +1858,12 @@ void gr_d3d_render_buffer(int idx)
 //	int same = (gr_screen.current_bitmap != SPECMAP)?0:1;
 //	if(!same)d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0);
 	d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0);
-
-	if(gr_zbuffering_mode == GR_ZBUFF_READ)
-		gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_READ);
-	else
-		gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
+	if(!gr_zbuffering_mode)
+		gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_NONE);
+	else if(gr_zbuffering_mode == GR_ZBUFF_READ)
+			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_READ);
+		else
+			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
 
 	pre_render_lights_init();
 	if(lighting_enabled){
@@ -1894,8 +1900,13 @@ void gr_d3d_render_buffer(int idx)
 /*	if(single_pass_spec){
 		return;
 	}*/
-
-	gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+	if (gr_zbuffering_mode)
+	{
+		gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+	}
+	else
+		gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_NONE );
+		
 
 	color old_fog_color = gr_screen.current_fog_color;
 	gr_d3d_fog_set(gr_screen.current_fog_mode, 0,0,0, gr_screen.fog_near, gr_screen.fog_far);
