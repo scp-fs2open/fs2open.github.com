@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-11-12 00:31:45 $
+ * $Revision: 2.14 $
+ * $Date: 2003-11-12 00:44:52 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/11/12 00:31:45  Kazan
+ * A few multi tweaks - fixed a couple warning-killing collisions between goober and me (kazan)
+ *
  * Revision 2.12  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -2940,19 +2943,19 @@ int Msg_rank_list_coords[GR_NUM_RESOLUTIONS][4] = {
 
 
 // button defs
-#define MULTI_SG_NUM_BUTTONS	10
+#define MULTI_SG_NUM_BUTTONS	12
 #define MSG_OPEN_GAME			0
 #define MSG_CLOSED_GAME			1
 #define MSG_RESTRICTED_GAME		2
-#define MSG_PASSWD_GAME			1
-#define MSG_RANK_SET_GAME		2
-#define MSG_RANK_SCROLL_UP		3
-#define MSG_RANK_SCROLL_DOWN	4
-#define MSG_RANK_ABOVE			5
-#define MSG_RANK_BELOW			6
-#define MSG_HELP					7
-#define MSG_OPTIONS				8
-#define MSG_ACCEPT				9
+#define MSG_PASSWD_GAME			3
+#define MSG_RANK_SET_GAME		4
+#define MSG_RANK_SCROLL_UP		5
+#define MSG_RANK_SCROLL_DOWN	6
+#define MSG_RANK_ABOVE			7
+#define MSG_RANK_BELOW			8
+#define MSG_HELP				9
+#define MSG_OPTIONS				10
+#define MSG_ACCEPT				11
 
 UI_WINDOW Multi_sg_window;												// the window object for the join screen
 UI_BUTTON Multi_sg_rank_button;										// for selecting the rank marker
@@ -2991,7 +2994,7 @@ ui_button_info Multi_sg_buttons[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_BUTTONS] = {
 	},
 };
 
-#define MULTI_SG_NUM_TEXT			11
+#define MULTI_SG_NUM_TEXT			13
 UI_XSTR Multi_sg_text[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_TEXT] = {
 	{ // GR_640
 		{"Open",					1322,		34,	191,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_OPEN_GAME].button},
