@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.9 $
+ * $Revision: 2.10 $
  * $Author: Goober5000 $
- * $Date: 2002-12-21 17:58:11 $
+ * $Date: 2002-12-22 17:22:47 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2002/12/21 17:58:11  Goober5000
+ * rearranged the sexp list and got the preliminary subcategories working - still need to work on the actual submenu
+ * --Goober5000
+ *
  * Revision 2.8  2002/12/17 02:21:42  Goober5000
  * cosmetic fixed; also OP_SET_SCANNED and OP_SET_UNSCANNED added in preparation for the set-scanned and set-unscanned sexp commit
  * --Goober5000
@@ -404,8 +408,14 @@
 #define	OP_CATEGORY_UNLISTED		0x0b00
 #define	OP_CATEGORY_GOAL_EVENT	0x0c00
 
-#define SUBCATEGORY_MASK									0x000f
 
+// New subcategories! :) -- Goober5000
+// Adding more subcategories is possible with the new code.  All that needs to be done is
+// to add a #define here (a number from 0x0000 to 0x00ff ORred with the category that it
+// goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
+// will return the subcategory for each sexp that uses it, and the submenu name in the
+// op_submenu[] array in sexp_tree.cpp.
+#define SUBCATEGORY_MASK									0x00ff
 #define CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS		(0x0000 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_AI_AND_IFF						(0x0001 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO				(0x0002 | OP_CATEGORY_CHANGE)
