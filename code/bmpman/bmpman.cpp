@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.35 $
- * $Date: 2004-11-04 08:33:44 $
+ * $Revision: 2.36 $
+ * $Date: 2004-11-21 11:26:39 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2004/11/04 08:33:44  taylor
+ * note to self: copy is down pat, now just learn how to paste, moron
+ *
  * Revision 2.34  2004/10/31 21:26:27  taylor
  * bmpman merge, EFF animation support, better page in stuff, dozen or so smaller fixes and cleanup
  *
@@ -1016,12 +1019,11 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 	return bm_bitmaps[n].handle;
 }
 
-// sub helper function. Given a raw filename and an extension, try and find the bitmap
-// returns -1 if it could not be found
-//          0 if it was found as a file
-//          1 if it already exists, fills in handle
-int Bm_ignore_duplicates = 0;
-int bm_load_sub(char *real_filename, const char *ext, int *handle, CFILE **img_cfp, int dir_type = CF_TYPE_ANY)
+// slow sub helper function. Given a raw filename and an extension, try and find the bitmap
+// that isn't already loaded and may exist somewhere on the disk
+// returns  0 if it could not be found
+//          1 if it was found as a file, fills img_cfg if available
+int bm_load_sub_slow(char *real_filename, const char *ext, CFILE **img_cfp = NULL, int dir_type = CF_TYPE_ANY)
 {	
 	int i;
 	char filename[MAX_FILENAME_LEN] = "";
@@ -1030,28 +1032,50 @@ int bm_load_sub(char *real_filename, const char *ext, int *handle, CFILE **img_c
 	strcat( filename, ext );	
 	for (i=0; i<(int)strlen(filename); i++ ){
 		filename[i] = char(tolower(filename[i]));
-	}		
-
-	// try to find given filename to see if it has been loaded before
-	if(!Bm_ignore_duplicates){
-		for (i = 0; i < MAX_BITMAPS; i++) {
-			if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && !stricmp(filename, bm_bitmaps[i].filename) ) {
-				nprintf (("BmpMan", "Found bitmap %s -- number %d\n", filename, i));
-				*handle = bm_bitmaps[i].handle;
-				return 1;
-			}
-		}	
 	}
 
 	// try and find the file
 	CFILE *test = cfopen(filename, "rb", CFILE_NORMAL, dir_type);
 	if (test != NULL) {
-		*img_cfp = test;
-		return 0;
+		if (img_cfp != NULL)
+			*img_cfp = test;
+
+		return 1;
 	}
 
 	// could not be found
-	return -1;
+	return 0;
+}
+
+// fast sub helper function. Given a raw filename and an extension, try and find a bitmap
+// that's already loaded
+// returns  0 if it could not be found
+//          1 if it already exists, fills in handle
+int Bm_ignore_duplicates = 0;
+int bm_load_sub_fast(char *real_filename, const char *ext, int *handle)
+{
+	if (Bm_ignore_duplicates)
+		return 0;
+
+	int i;
+	char filename[MAX_FILENAME_LEN] = "";
+
+	strcpy( filename, real_filename );
+	strcat( filename, ext );	
+	for (i=0; i<(int)strlen(filename); i++ ){
+		filename[i] = char(tolower(filename[i]));
+	}
+
+	for (i = 0; i < MAX_BITMAPS; i++) {
+		if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && !stricmp(filename, bm_bitmaps[i].filename) ) {
+			nprintf (("BmpMan", "Found bitmap %s -- number %d\n", filename, i));
+			*handle = bm_bitmaps[i].handle;
+			return 1;
+		}
+	}
+
+	// not found to be loaded already
+	return 0;
 }
 
 // This loads a bitmap so we can draw with it later.
@@ -1100,23 +1124,21 @@ int bm_load( char * real_filename )
 		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".dds", ".pcx"};
 		
 		// Only load TGA and JPG if given flag, support DDS and PCX by default
-		i = Cmdline_jpgtga ? 0 : 2; // 2 Means start with DDS and fall back to PCX
+		i = n = Cmdline_jpgtga ? 0 : 2; // 2 Means start with DDS and fall back to PCX
 
-		for(; i<NUM_TYPES; i++)
-		{
+		for(; n<NUM_TYPES; n++) {
+			// see if it's already loaded
+			if ( bm_load_sub_fast(filename, ext_list[n], &handle) )
+				return handle;
+		}
+
+		for(; i<NUM_TYPES; i++) {
 			// if we can't use dds files then skip them
 			if ( (gr_screen.mode == GR_OPENGL) && !Texture_compression_enabled && (type_list[i] == BM_TYPE_DDS) )
 				continue;
 
-			n = bm_load_sub(filename, ext_list[i], &handle, &img_cfp);
-			
-			// Image is already loaded
-			if(n == 1) {
-				return handle;
-			}
-
-			// File was found
-			if(n == 0)	{
+			if ( bm_load_sub_slow(filename, ext_list[i], &img_cfp) ) {
+				// found the file
 				strcat(filename, ext_list[i]);
 				type = type_list[i];
 				found = true;
@@ -1302,7 +1324,7 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 	required_string_ex( "$Frames:" );
 	stuff_int_ex(&frames);
 
-	if (optional_string_ex( "$FPS:" ));
+	if (optional_string_ex( "$FPS:" ))
 		stuff_int_ex(&fps);
 
 	mprintf(("EFF = filename: %s, type: %s, frames: %d, fps: %d\n", filename, ext, frames, fps));
@@ -1387,20 +1409,24 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI};
 		const char *ext_list[NUM_TYPES] = {".eff", ".ani"};
 
-		for(i=0; i<NUM_TYPES; i++) {
-			n = bm_load_sub(filename, ext_list[i], &handle, &img_cfp, dir_type);
-
-			// Image is already loaded
-			if(n == 1) {
+		for (i=0; i<NUM_TYPES; i++) {
+			if ( bm_load_sub_fast(filename, ext_list[i], &handle) ) {
 				n = handle % MAX_BITMAPS;
 				Assert( bm_bitmaps[n].handle == handle );
-				if (nframes) *nframes = bm_bitmaps[n].info.ani.num_frames;
-				if (fps) *fps = bm_bitmaps[n].info.ani.fps;
+
+				if (nframes)
+					*nframes = bm_bitmaps[n].info.ani.num_frames;
+
+				if (fps)
+					*fps = bm_bitmaps[n].info.ani.fps;
+
 				return handle;
 			}
+		}
 
-			// File was found
-			if(( n == 0) && (img_cfp != NULL))	{
+		for (i=0; i<NUM_TYPES; i++) {
+			if ( bm_load_sub_slow(filename, ext_list[i], &img_cfp, dir_type) ) {
+				// File was found
 				strcat(filename, ext_list[i]);
 				type = type_list[i];
 				found = true;
@@ -1462,9 +1488,29 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		if (type == BM_TYPE_EFF) {
 			sprintf(bm_bitmaps[n+i].info.eff.filename, "%s_%.4d", clean_name, i);
 			ubyte dds_type = BM_TYPE_NONE;
-			gr_bm_load(c_type, n+i, bm_bitmaps[n+i].info.eff.filename, NULL, &anim_width, &anim_height, &bpp, &dds_type, &mm_lvl, &img_size);
-			if (dds_type != BM_TYPE_NONE) c_type = dds_type;
-			bm_bitmaps[n+i].info.eff.type = c_type;
+			if (!gr_bm_load(c_type, n+i, bm_bitmaps[n+i].info.eff.filename, NULL, &anim_width, &anim_height, &bpp, &dds_type, &mm_lvl, &img_size)) {
+				if (dds_type != BM_TYPE_NONE)
+					c_type = dds_type;
+
+				bm_bitmaps[n+i].info.eff.type = c_type;
+			} else {
+				// if we didn't get anything then bail out now
+				if ( i == 0 ) {
+					mprintf(("EFF: No frame images were found.  EFF, %s, is invalid.\n", filename));
+					return -1;
+				}
+
+				mprintf(("EFF: Unable to load all frames for '%s', stopping at #%d\n", filename, i));
+
+				// reset total frames to current
+				anim_frames = i;
+
+				// update all previous frames with the new count
+				for (i=0; i<anim_frames; i++)
+					bm_bitmaps[n+i].info.ani.num_frames = (ubyte)anim_frames;
+
+				break;
+			}
 		}
 
 		bm_bitmaps[n+i].info.ani.first_frame = n;
