@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-11-17 04:25:57 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-25 15:04:46 $
+ * $Author: fryday $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/11/17 04:25:57  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.9  2003/11/16 04:09:27  Goober5000
  * language
  *
@@ -635,8 +641,9 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 	vm_vert2vec(pnt, &PNT);
 	vector p[4];
 	vertex P[4];
-	matrix m;
-	vm_set_identity(&m);
+	//unused variables that were there for some reason
+//	matrix m;
+//	vm_set_identity(&m);
 
 	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
 	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
@@ -1802,9 +1809,17 @@ int g3_draw_rod(vector *p0,float width1,vector *p1,float width2, vertex * verts,
 		if ( verts )	{
 			pts[i] = verts[i];
 		}
-		g3_rotate_vertex( &pts[i], &vecs[i] );
+		if(Cmdline_nohtl)g3_rotate_vertex( &pts[i], &vecs[i] );
+		else g3_rotate_vertex( &pts[i], &vecs[i] );
 	}
-
+	ptlist[0]->u = 0.0f;
+	ptlist[0]->v = 0.0f;
+	ptlist[1]->u = 1.0f;
+	ptlist[1]->v = 0.0f;
+	ptlist[2]->u = 1.0f;
+	ptlist[2]->v = 1.0f;
+	ptlist[3]->u = 0.0f;
+	ptlist[3]->v = 1.0f;
 	return g3_draw_poly(4,ptlist,tmap_flags);
 }
 
