@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.39 $
+ * $Revision: 2.40 $
  * $Author: Goober5000 $
- * $Date: 2003-03-30 07:27:33 $
+ * $Date: 2003-04-04 22:11:06 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/03/30 07:27:33  Goober5000
+ * resolved a nasty bug that caused some missions to crash
+ * --Goober5000
+ *
  * Revision 2.38  2003/03/30 04:34:38  Goober5000
  * preliminary work on ai facing sexp
  * --Goober5000
@@ -681,7 +685,7 @@
 #define OP_GET_OBJECT_RELATIVE_X			(0x0022 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_RELATIVE_Y			(0x0023 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_RELATIVE_Z			(0x0024 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
-//bleh #define OP_IS_MISSILE_LOCKED				(0x0025 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Sesquipedalian
+#define OP_IS_MISSILE_LOCKED				(0x0025 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Sesquipedalian
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
