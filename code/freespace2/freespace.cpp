@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.97 $
- * $Date: 2004-07-01 01:12:31 $
- * $Author: bobboau $
+ * $Revision: 2.98 $
+ * $Date: 2004-07-01 02:06:31 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2004/07/01 01:12:31  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.96  2004/06/22 23:14:09  wmcoolmon
  * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
  * OGG code has been commented out, so you don't need the SDK yet.
@@ -1071,6 +1075,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
+#include "radar/radarsetup.h"
 
 #if defined(ENABLE_AUTO_PILOT)
 #include "autopilot/autopilot.h"
@@ -2979,7 +2984,7 @@ void game_init()
 	gamesnd_parse_soundstbl();
 
 	if (!Is_standalone)
-		radar_init();
+		select_radar_mode(RADAR_MODE_STANDARD);
 
 	gameseq_init();
 

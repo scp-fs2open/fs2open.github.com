@@ -701,6 +701,10 @@ SOURCE=.\Hud\HUDObserver.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\hud\hudparse.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Hud\HUDreticle.cpp
 # End Source File
 # Begin Source File
@@ -1525,6 +1529,14 @@ SOURCE=.\Radar\Radar.cpp
 # Begin Source File
 
 SOURCE=.\Radar\Radar.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\radar\radarsetup.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\radar\radarsetup.h
 # End Source File
 # End Group
 # Begin Group "Render"
@@ -2571,9 +2583,5 @@ SOURCE=.\Autopilot\Autopilot.cpp
 SOURCE=.\Autopilot\Autopilot.h
 # End Source File
 # End Group
-# Begin Source File
-
-SOURCE=.\hud\hudparse.cpp
-# End Source File
 # End Target
 # End Project
