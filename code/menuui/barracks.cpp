@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-12-22 21:49:05 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-01-09 22:27:38 $
+ * $Author: wmcoolmon $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/12/22 21:49:05  taylor
+ * add a popup to make sure people know about pilot upgrade
+ *
  * Revision 2.10  2004/10/31 21:53:23  taylor
  * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
  *
@@ -166,7 +169,7 @@
 int delete_pilot_file( char *pilot_name, int single );		// manage_pilot.cpp
 
 // stats defines
-#define NUM_STAT_LINES (21 + MAX_SHIP_TYPES)	// Goober5000
+//#define NUM_STAT_LINES (21 + MAX_SHIP_TYPES)	// Goober5000
 #define STAT_COLUMN1_W 40
 #define STAT_COLUMN2_W 10
 
@@ -394,8 +397,8 @@ UI_XSTR Barracks_text[GR_NUM_RESOLUTIONS][BARRACKS_NUM_TEXT] = {
 
 
 static int Num_stat_lines;
-static char Stat_labels[NUM_STAT_LINES][STAT_COLUMN1_W];
-static char Stats[NUM_STAT_LINES][STAT_COLUMN2_W];
+static char (*Stat_labels)[STAT_COLUMN1_W];
+static char (*Stats)[STAT_COLUMN2_W];
 
 extern int Player_sel_mode;
 
@@ -431,36 +434,51 @@ void barracks_squad_change_popup();
 
 void barracks_init_stats(scoring_struct *stats)
 {
+	int Max_stat_lines = Num_ship_types + 21;
 	int i;
 	float f;
 
+	//Set up variables
+	if(Stat_labels != NULL)
+	{
+		delete[] Stat_labels;
+	}
+	if(Stats != NULL)
+	{
+		delete[] Stats;
+	}
+
+	Stat_labels = (char (*)[STAT_COLUMN1_W]) new char[Max_stat_lines * STAT_COLUMN1_W];
+	Stats = (char (*)[STAT_COLUMN2_W]) new char[Max_stat_lines * STAT_COLUMN2_W];
+
+	//Now start throwing stuff in
 	Num_stat_lines = 0;
 
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "*All Time Stats", 50));
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	Stat_labels[Num_stat_lines][0] = 0;
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;	
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon shots:", 51));
 	sprintf(Stats[Num_stat_lines], "%d", stats->p_shots_fired);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon hits:", 52));
 	sprintf(Stats[Num_stat_lines], "%d", stats->p_shots_hit);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary friendly hits:", 53));
 	sprintf(Stats[Num_stat_lines], "%d", stats->p_bonehead_hits);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary hit %:", 54));
 	if (stats->p_shots_fired > 0) {
 		f = (float) stats->p_shots_hit * 100.0f / (float) stats->p_shots_fired;
@@ -470,7 +488,7 @@ void barracks_init_stats(scoring_struct *stats)
 	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary friendly hit %:", 56));
 	if (stats->p_bonehead_hits > 0) {
 		f = (float) stats->p_bonehead_hits * 100.0f / (float) stats->p_shots_fired;
@@ -480,27 +498,27 @@ void barracks_init_stats(scoring_struct *stats)
 	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	Stat_labels[Num_stat_lines][0] = 0;
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon shots:", 57));
 	sprintf(Stats[Num_stat_lines], "%d", stats->s_shots_fired);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon hits:", 58));
 	sprintf(Stats[Num_stat_lines], "%d", stats->s_shots_hit);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary friendly hits:", 59));
 	sprintf(Stats[Num_stat_lines], "%d", stats->s_bonehead_hits);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary hit %:", 60));
 	if (stats->s_shots_fired > 0) {
 		f = (float) stats->s_shots_hit * 100.0f / (float) stats->s_shots_fired;
@@ -510,7 +528,7 @@ void barracks_init_stats(scoring_struct *stats)
 	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary friendly hit %:", 61));
 	if (stats->s_bonehead_hits > 0) {
 		f = (float) stats->s_bonehead_hits * 100.0f / (float) stats->s_shots_fired;
@@ -520,27 +538,27 @@ void barracks_init_stats(scoring_struct *stats)
 	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	Stat_labels[Num_stat_lines][0] = 0;
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Total kills:", 62));
 	sprintf(Stats[Num_stat_lines], "%d", stats->kill_count_ok);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Assists:", 63));
 	sprintf(Stats[Num_stat_lines], "%d", stats->assists);
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	Stat_labels[Num_stat_lines][0] = 0;
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	Stat_labels[Num_stat_lines][0] = 0;
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
@@ -549,20 +567,20 @@ void barracks_init_stats(scoring_struct *stats)
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
-	Assert(Num_stat_lines < NUM_STAT_LINES);
+	Assert(Num_stat_lines < Max_stat_lines);
 	Stat_labels[Num_stat_lines][0] = 0;
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
 	// Goober5000 - make sure we have room for all ships
-	Assert(Num_stat_lines + Num_ship_types < NUM_STAT_LINES);
+	Assert(Num_stat_lines + Num_ship_types < Max_stat_lines);
 
 	for (i=0; i<Num_ship_types; i++) {
 		if (stats->kills[i]) {
-			Assert(Num_stat_lines < NUM_STAT_LINES);
+			Assert(Num_stat_lines < Max_stat_lines);
 
 			// Goober5000 - in case above Assert isn't triggered (such as in non-debug builds)
-			if (Num_stat_lines >= NUM_STAT_LINES)
+			if (Num_stat_lines >= Max_stat_lines)
 			{
 				break;
 			}
@@ -1444,6 +1462,10 @@ void barracks_draw_squad_pic()
 // -----------------------------------------------------------------------------
 void barracks_init()
 {
+	//Set these to null, 'cause they aren't allocated yet.
+	Stat_labels = NULL;
+	Stats = NULL;
+
 	UI_WINDOW *w = &Ui_window;
 
 	// save current pilot file, so we don't possibly loose it.
@@ -1791,6 +1813,15 @@ void barracks_close()
 
 	// unload the overlay bitmap
 	help_overlay_unload(BARRACKS_OVERLAY);
+
+	if(Stat_labels != NULL)
+	{
+		delete[] Stat_labels;
+	}
+	if(Stats != NULL)
+	{
+		delete[] Stats;
+	}
 
 	game_flush();
 }
