@@ -59,13 +59,10 @@ int bm_d3d_get_next_handle()
 // Returns true if bitmap n can free it's data.
 static void bm_d3d_free_data(int n)
 {
-	bitmap_entry	*be;
-	bitmap			*bmp;
-
 	Assert( n >= 0 && n < MAX_BITMAPS );
 
-	be = &bm_bitmaps[n];
-	bmp = &be->bm;
+	bitmap_entry	*be = &bm_bitmaps[n];
+	bitmap			*bmp = &be->bm;
 
 	if(d3d_bitmap_entry[n].tinterface != NULL) {
 	   	d3d_bitmap_entry[n].tinterface->Release();
@@ -155,25 +152,23 @@ int bm_d3d_create( int bpp, int w, int h, void * data, int flags )
 
 	Assert(bm_d3d_inited);
 
-	int i, n, first_slot = MAX_BITMAPS;
-
 	if(bpp == 8){
 		Assert(flags & BMP_AABITMAP);
 	} else {
 		Assert(bpp == 16);
 	}
 
-	for (i = MAX_BITMAPS-1; i >= 0; i-- ) {
+	int n = MAX_BITMAPS;
+
+	for (int i = MAX_BITMAPS-1; i >= 0; i-- ) {
 		if ( bm_bitmaps[i].type == BM_TYPE_NONE )	{
-			first_slot = i;
+			n = i;
 			break;
 		}
 	}
 
 	Assert(d3d_bitmap_entry[i].tinterface == NULL);
 
-
-	n = first_slot;
 	Assert( n > -1 );
 
 	// Out of bitmap slots
@@ -283,20 +278,19 @@ int bm_d3d_load( char * real_filename )
 		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".dds", ".pcx"};
 		
 		// Only load TGA and JPG if given flag, support DDS and PCX by default
-		int i = Cmdline_jpgtga ? 0 : 2; // 2 Means start with DDS and fall back to PCX
+		i = Cmdline_jpgtga ? 0 : 2; // 2 Means start with DDS and fall back to PCX
 
-		for(; i < NUM_TYPES; i++) {
-		
-			int handle = 0;
-			int result = bm_d3d_load_sub(filename, ext_list[i], &handle);
+		for(; i < NUM_TYPES; i++)
+		{
+			n = bm_d3d_load_sub(filename, ext_list[i], &h);
 			
 			// Image is already loaded
-			if(result == 1) {
+			if(n == 1) {
 				return handle;
 			}
 
 			// File was found
-			if(result == 0)	{
+			if(n == 0)	{
 				strcat(filename, ext_list[i]);
 				type = type_list[i];
 				found = true;
@@ -313,17 +307,16 @@ int bm_d3d_load( char * real_filename )
 	Assert(type != BM_TYPE_NONE);
 
 	// Find an open slot
-	int first_slot = MAX_BITMAPS;
+	n = MAX_BITMAPS;
 	for (i = 0; i < MAX_BITMAPS; i++) {
 		if ( (bm_bitmaps[i].type == BM_TYPE_NONE) ){
-			first_slot = i;
+			n = i;
 			break;
 		}
 	}
 
 	Assert(d3d_bitmap_entry[i].tinterface == NULL);
 
-	n = first_slot;
 	Assert( n < MAX_BITMAPS );	
 
 	if ( n == MAX_BITMAPS ) return -1;	
@@ -1114,11 +1107,6 @@ int bm_d3d_unload( int handle )
 	}
 
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE!
-
-	if(stricmp("2_Credits.jpg", be->filename) == 0)
-	{
-		mprintf(("unloading 2_Credits.jpg\n"));
-	}
 
 	// If it is locked, cannot free it.
 	if (be->ref_count != 0) {
