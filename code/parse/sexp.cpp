@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.73 $
- * $Date: 2003-09-11 19:18:13 $
- * $Author: argv $
+ * $Revision: 2.74 $
+ * $Date: 2003-09-11 23:21:54 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2003/09/11 19:18:13  argv
+ * Several new sexps, such as power drain control. Also increased maximum sexp operators to 4096, though there may be another limit at 1024.
+ *
  * Revision 2.72  2003/09/05 05:06:32  Goober5000
  * merged num-ships-in-battle and num-ships-in-battle-team, making the
  * team argument optional
@@ -790,12 +793,6 @@ sexp_oper Operators[] = {
 	{ "get-object-relative-x",		OP_GET_OBJECT_RELATIVE_X,			4,	5	},	// Goober5000
 	{ "get-object-relative-y",		OP_GET_OBJECT_RELATIVE_Y,			4,	5	},	// Goober5000
 	{ "get-object-relative-z",		OP_GET_OBJECT_RELATIVE_Z,			4,	5	},	// Goober5000
-	{ "power-drain",				OP_POWER_DRAIN,						1,	1	},	// _argv[-1], args: ship-name
-	{ "power-drain-pct",			OP_POWER_DRAIN_PCT,					1,	1	},	// _argv[-1], args: ship-name
-	{ "power-drain-effective",		OP_POWER_DRAIN_EFF,					1,	1	},	// _argv[-1], args: ship-name
-	{ "power-drain-effective-pct",	OP_POWER_DRAIN_EFF_PCT,				1,	1	},	// _argv[-1], args: ship-name
-	{ "power-output",				OP_POWER_OUTPUT,					1,	2	},	// _argv[-1], args: ship-name [subsys]
-	{ "power-output-pct",			OP_POWER_OUTPUT_PCT,				1,	2	},	// _argv[-1], args: ship-name [subsys]
 	{ "max-speed",					OP_MAX_SPEED,						1,	INT_MAX }, // _argv[-1], args: ship-name...
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
@@ -947,8 +944,6 @@ sexp_oper Operators[] = {
 	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
 	{ "turret-tagged-specific",		OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
 	{ "turret-tagged-clear-specific", OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
-	{ "add-power-drain",			OP_ADD_POWER_DRAIN,				2,	INT_MAX	}, // _argv[-1], args: amount, ship-name...
-	{ "add-power-drain-pct",		OP_ADD_POWER_DRAIN_PCT,			2,	INT_MAX }, // _argv[-1], args: amount, ship-name...
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -4892,6 +4887,7 @@ int sexp_max_speed(int n) {
 		return (int) speed;
 }
 
+/* Goober5000 - commented these out until _argv[-1] consolidates them
 // _argv[-1]
 int sexp_power_drain(int n, int op) {
 	char *object_name = CTEXT(n);
@@ -5012,6 +5008,7 @@ void sexp_add_power_drain(int n, int op) {
 		sp->power_drain += (op == OP_ADD_POWER_DRAIN_PCT ? (amount / 100) * Ship_info[sp->ship_info_index].full_power_output : amount);
 	}
 }
+*/
 
 // Goober5000
 void sexp_set_ship_position(int n)
@@ -11506,20 +11503,6 @@ int eval_sexp(int cur_node)
 				break;
 
 			// _argv[-1]
-			case OP_POWER_DRAIN:
-			case OP_POWER_DRAIN_PCT:
-			case OP_POWER_DRAIN_EFF:
-			case OP_POWER_DRAIN_EFF_PCT:
-				sexp_val = sexp_power_drain(node, op_num);
-				break;
-
-			// _argv[-1]
-			case OP_POWER_OUTPUT:
-			case OP_POWER_OUTPUT_PCT:
-				sexp_val = sexp_power_output(node, op_num);
-				break;
-
-			// _argv[-1]
 			case OP_MAX_SPEED:
 				sexp_val = sexp_max_speed(node);
 				break;
@@ -11823,13 +11806,6 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
-			// _argv[-1]
-			case OP_ADD_POWER_DRAIN:
-			case OP_ADD_POWER_DRAIN_PCT:
-				sexp_add_power_drain(node, op_num);
-				sexp_val = 1;
-				break;
-
 			case OP_LOCK_ROTATING_SUBSYSTEM:
 			case OP_FREE_ROTATING_SUBSYSTEM:
 				sexp_set_subsys_rotation(node, op_num == OP_LOCK_ROTATING_SUBSYSTEM);
@@ -12064,10 +12040,6 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_RELATIVE_X:
 		case OP_GET_OBJECT_RELATIVE_Y:
 		case OP_GET_OBJECT_RELATIVE_Z:
-		case OP_POWER_DRAIN:
-		case OP_POWER_DRAIN_PCT:
-		case OP_POWER_DRAIN_EFF:
-		case OP_POWER_DRAIN_EFF_PCT:
 		case OP_MAX_SPEED:
 			return OPR_NUMBER;
 
@@ -12098,8 +12070,6 @@ int query_operator_return_type(int op)
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_SHIP_VISIBLE:
 		case OP_TEAM_SCORE:
-		case OP_POWER_OUTPUT:
-		case OP_POWER_OUTPUT_PCT:
 		case OP_NUM_SHIPS_IN_BATTLE:
 			return OPR_POSITIVE;
 
@@ -12222,8 +12192,6 @@ int query_operator_return_type(int op)
 		case OP_NOT_KAMIKAZE:
 		case OP_TURRET_TAGGED_SPECIFIC:
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
-		case OP_ADD_POWER_DRAIN:
-		case OP_ADD_POWER_DRAIN_PCT:
 		case OP_LOCK_ROTATING_SUBSYSTEM:
 		case OP_FREE_ROTATING_SUBSYSTEM:
 		case OP_PLAYER_USE_AI:
@@ -13119,26 +13087,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 
 		// _argv[-1]
-		case OP_POWER_DRAIN:
-		case OP_POWER_DRAIN_PCT:
-		case OP_POWER_DRAIN_EFF:
-		case OP_POWER_DRAIN_EFF_PCT:
 		case OP_MAX_SPEED:
 			return OPF_SHIP;
-
-		case OP_POWER_OUTPUT:
-		case OP_POWER_OUTPUT_PCT:
-			if (argnum == 0)
-				return OPF_SHIP;
-			else
-				return OPF_SUBSYSTEM;
-
-		case OP_ADD_POWER_DRAIN:
-		case OP_ADD_POWER_DRAIN_PCT:
-			if (argnum == 0)
-				return OPF_NUMBER;
-			else
-				return OPF_SHIP;
 
 		case OP_NUM_SHIPS_IN_BATTLE:
 			return OPF_IFF;
