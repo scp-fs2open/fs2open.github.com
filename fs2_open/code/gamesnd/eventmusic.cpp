@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-08-25 04:46:53 $
+ * $Revision: 2.6 $
+ * $Date: 2003-10-14 16:47:34 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/08/25 04:46:53  Goober5000
+ * added extra code to enable playing of FS1 music tracks
+ * --Goober5000
+ *
  * Revision 2.4  2003/04/29 01:03:23  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -200,6 +204,7 @@ static int Mission_over_timestamp;
 static int Victory2_music_played;
 static int Next_arrival_timestamp;
 static int Check_for_battle_music;
+static int Current_soundtrack_fs1_style;
 
 // stores the number of measures for the different patterns (data from music.tbl)
 float	Pattern_num_measures[MAX_SOUNDTRACKS][MAX_PATTERNS];
@@ -644,6 +649,9 @@ void event_music_level_init(int force_soundtrack)
 	Victory2_music_played = 0;
 	Check_for_battle_music = 0;
 
+	// Goober5000 - is this FS1 style?
+	Current_soundtrack_fs1_style = stristr(Soundtracks[Current_soundtrack_num].name, "fs1") ? 1 : 0;
+
 	if ( Event_music_level_inited ) {
 		if ( force_soundtrack != -1 )  {
 			event_music_first_pattern();
@@ -910,10 +918,10 @@ int event_music_friendly_arrival()
 	if ( Current_pattern != -1 ) {
 		// AL 06-24-99: always overlay allied arrivals
 		// Goober5000 - bah, this screws up the FS1 music... so this is a hack to *not* overlay
-		// *if* the soundtrack is greater than 6 (all the FS2 tracks are 0-6)
+		// *if* the soundtrack title includes "FS1" in it (as set in event_music_level_init)
 
 		// don't overlay
-		if (Current_soundtrack_num > 6) {
+		if (Current_soundtrack_fs1_style) {
 			Patterns[Current_pattern].next_pattern = next_pattern;
 			Patterns[Current_pattern].force_pattern = TRUE;
 		// overlay
