@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-03 09:31:59 $
+ * $Revision: 2.6 $
+ * $Date: 2003-03-03 09:53:32 $
  * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/03 09:31:59  Goober5000
+ * changed "Subspace node activated" message to "Subspace drive activated"
+ * --Goober5000
+ *
  * Revision 2.4  2003/01/19 01:07:42  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -1110,9 +1114,9 @@ void shipfx_warpout_start( object *objp )
 	if (shipp->special_warp_objnum >= 0) {
 		// cap radius to size of knossos
 		effect_radius = min(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
-		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, shipp->special_warp_objnum, effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
 	} else {
-		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
 	}
 	if (warp_objnum < 0 )	{	// JAS: This must always be created, if not, just warp the ship in
 		shipfx_actually_warpout(shipp,objp);
