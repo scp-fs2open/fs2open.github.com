@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-22 01:39:24 $
+ * $Revision: 2.3 $
+ * $Date: 2002-07-29 20:12:31 $
  * $Author: penguin $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/22 01:39:24  penguin
+ * Added ifndef NO_STANDALONE
+ *
  * Revision 2.1  2002/07/07 19:55:58  penguin
  * Back-port to MSVC
  *
@@ -473,16 +476,17 @@
  * 
  */
 
-#include <windows.h>
-
 #include <stdlib.h>
-#include <process.h>
 #include <time.h>
-#include <direct.h>
 
-#ifndef _WIN32
-#include <unistd.h>
-#include <sys/stat.h>
+#ifdef _WIN32
+ #include <windows.h>
+ #include <process.h>
+ #include <direct.h>
+ #include <io.h>
+#else
+ #include <unistd.h>
+ #include <sys/stat.h>
 #endif
 
 #include "pstypes.h"
@@ -626,8 +630,6 @@
 #include "glide.h"
 #include "supernova.h"
 #include "hudshield.h"
-#include <io.h>
-// #include "names.h"
 #include "shiphit.h"
 #include "missionloopbrief.h"
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-29 20:12:31 $
  * $Author: penguin $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -226,8 +229,11 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <windows.h>
 #include <windowsx.h>
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include "grinternal.h"
