@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/Encrypt.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:47 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-01-31 10:34:38 $
+ * $Author: taylor $
  *
  * Module for encryption code common to FreeSpace and related tools
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:47  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:33:01  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -81,8 +84,13 @@
 
 
 
+#if BYTE_ORDER == BIG_ENDIAN
+const uint Encrypt_new_signature			= 0x551a335c;		// new encrpytion
+const uint Encrypt_signature				= 0xefbeadde;		// full encryption
+#else
 const uint Encrypt_new_signature			= 0x5c331a55;		// new encryption
 const uint Encrypt_signature				= 0xdeadbeef;		// full encryption
+#endif
 const uint Encrypt_signature_8bit		= 0xcacacaca;		// light encryption - doesn't use 7bit chars
 
 int Encrypt_inited = 0;

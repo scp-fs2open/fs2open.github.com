@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:53 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2005-01-31 10:34:40 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:53  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/12 16:33:07  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -309,7 +312,7 @@ player *Medals_player;
 
 static bitmap *Medals_mask;
 int Medals_mask_w, Medals_mask_h;
-static int Medal_palette;              // Medal palette bitmap
+//static int Medal_palette;              // Medal palette bitmap
 static int Medals_bitmap_mask;         // the mask for the medal case
 static int Medals_bitmap;              // the medal case itself
 static int Medal_bitmaps[NUM_MEDALS];  // bitmaps for the individual medals
@@ -721,7 +724,7 @@ void init_medal_bitmaps()
 			// for this medal.  if the player has > 1 of these types of medals, then determien
 			// which of the possible version to use based on the player's count of this medal
 			strcpy( filename, Medals[idx].bitmap );
-#ifdef _WIN32
+
 			_splitpath( filename, NULL, NULL, base, NULL );
 
 			num_medals = Player_score->medals[idx];
@@ -735,11 +738,6 @@ void init_medal_bitmaps()
 				// has no character. next version is a, then b, etc.
 				sprintf( base, "%s%c", base, (num_medals-2)+'a');
 			}
-#else
-			// mharris FIXME
-			// quick hack for unix - no levels of medals
-			strcpy(base, filename);
-#endif
 
 			// hi-res support
 			if (gr_screen.res == GR_1024) {

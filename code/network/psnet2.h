@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.h $
- * $Revision: 2.7 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2005-01-31 10:34:38 $
+ * $Author: taylor $
  *
  * Header file for the application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.6  2004/03/08 22:02:39  Kazan
  * Lobby GUI screen restored
  *
@@ -78,11 +81,12 @@
 #ifndef _PSNET2_H
 #define _PSNET2_H
 
-#include "globalincs/pstypes.h"
 
 #ifdef _WIN32
 #include <winsock.h>
 #endif
+
+#include "globalincs/pstypes.h"
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 DEFINES/VARS
@@ -111,15 +115,10 @@ typedef struct net_addr	{
 } net_addr;
 
 // define these in such a manner that a call to psnet_send_reliable is exactly the same and the new code in unobtrusive
-#ifdef _WIN32
 typedef uint PSNET_SOCKET;
 typedef uint PSNET_SOCKET_RELIABLE;
-
+#if defined(_WIN32)
 typedef int socklen_t;
-#else
-typedef int SOCKET;
-typedef int PSNET_SOCKET;
-typedef int PSNET_SOCKET_RELIABLE;
 #endif
 
 #undef INVALID_SOCKET

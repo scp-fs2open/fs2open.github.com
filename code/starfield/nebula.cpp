@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:53 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-01-31 10:34:39 $
+ * $Author: taylor $
  *
  * Code to load & display nebulas
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:53  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:33:07  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -157,9 +160,9 @@
 #define MAX_TRIS 200
 #define MAX_POINTS 300
 
-static int neb_w = 0, neb_h = 0;
+//static int neb_w = 0, neb_h = 0;
 
-static int nebula_inited = 0;
+//static int nebula_inited = 0;
 static int num_pts = 0;
 
 static vector nebula_vecs[MAX_POINTS];

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.5 $
- * $Date: 2004-11-21 11:27:31 $
+ * $Revision: 2.6 $
+ * $Date: 2005-01-31 10:34:38 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/11/21 11:27:31  taylor
+ * some 64-bit OS comaptibility fixes
+ *
  * Revision 2.4  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -157,6 +160,7 @@
 #include "graphics/font.h"
 #include "graphics/2d.h"
 #include "graphics/grzbuffer.h"
+#include "globalincs/pstypes.h" // IAM_64BIT
 
 extern int Gr_cursor;
 

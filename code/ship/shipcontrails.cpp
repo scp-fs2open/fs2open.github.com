@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-01-28 11:39:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2005-01-31 10:34:39 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/01/28 11:39:18  Goober5000
+ * cleaned up some build warnings
+ * --Goober5000
+ *
  * Revision 2.14  2005/01/28 11:06:23  Goober5000
  * changed a bunch of transpose-rotate sequences to use unrotate instead
  * --Goober5000
@@ -86,9 +90,9 @@
  * $NoKeywords: $
  */
 
-#include "Ship/ShipContrails.h"
-#include "Ship/Ship.h"
-#include "mission/MissionParse.h"
+#include "ship/shipcontrails.h"
+#include "ship/ship.h"
+#include "mission/missionparse.h"
 
 
 

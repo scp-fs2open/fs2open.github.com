@@ -11,6 +11,9 @@
 #ifndef _FS2_REGISTRY_HEADER_FILE
 #define _FS2_REGISTRY_HEADER_FILE
 
+
+#include <stdlib.h>
+
 // ------------------------------------------------------------------------------------------------------------
 // REGISTRY DEFINES/VARS
 //
@@ -20,7 +23,10 @@ extern char *Osreg_company_name;
 extern char *Osreg_class_name;
 extern char *Osreg_app_name;
 extern char *Osreg_title;
- 
+#if defined unix
+extern char *Osreg_user_dir;
+#endif
+
 
 // ------------------------------------------------------------------------------------------------------------
 // REGISTRY FUNCTIONS

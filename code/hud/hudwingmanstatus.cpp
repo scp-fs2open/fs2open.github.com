@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-12-14 14:46:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-01-31 10:34:38 $
+ * $Author: taylor $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/12/14 14:46:12  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.7  2004/11/27 10:45:36  taylor
  * some fixes for position problems on the HUD in non-standard resolutions
  * few compiler warning fixes
@@ -128,6 +132,8 @@
  *
  * $NoKeywords: $
  */
+
+#include <ctype.h> // for 'tolower'
 
 #include "hud/hud.h"
 #include "hud/hudwingmanstatus.h"

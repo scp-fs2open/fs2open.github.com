@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.h $
- * $Revision: 1.4 $
- * $Date: 2004-08-20 05:13:07 $
- * $Author: Kazan $
+ * $Revision: 1.5 $
+ * $Date: 2005-01-31 10:34:38 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/08/20 05:13:07  Kazan
+ * wakka wakka - fix minor booboo
+ *
  * Revision 1.3  2004/08/11 05:06:25  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
