@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-01-27 11:26:23 $
+ * $Revision: 2.51 $
+ * $Date: 2005-01-28 11:06:23 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/01/27 11:26:23  Goober5000
+ * dock points on rotating submodels is *almost* working
+ * --Goober5000
+ *
  * Revision 2.49  2005/01/21 08:58:32  taylor
  * cleanup debug messages for texture loading making the output more readable and useful
  *
@@ -3217,7 +3221,7 @@ void model_find_obj_dir(vector *w_vec, vector *m_vec, object *ship_obj, int sub_
 	mn = sub_model_num;
 
 	// instance up the tree for this point
-	while ((mn>-1) && (pm->submodel[mn].parent > -1)) {
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
 		
 		vm_angles_2_matrix(&m, &pm->submodel[mn].angs);
 		vm_vec_unrotate(&tvec, &vec, &m);
@@ -3244,12 +3248,10 @@ void model_rot_sub_into_obj(vector * outpnt, vector *mpnt,polymodel *pm, int sub
 	mn = sub_model_num;
 
 	//instance up the tree for this point
-	while ((mn>-1) && (pm->submodel[mn].parent > -1) ) {
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
 		
 		vm_angles_2_matrix(&m,&pm->submodel[mn].angs );
-		vm_transpose_matrix(&m);
-		vm_vec_rotate(&tpnt,&pnt,&m);
-
+		vm_vec_unrotate(&tpnt,&pnt,&m);
 		vm_vec_add(&pnt,&tpnt,&pm->submodel[mn].offset );
 
 		mn = pm->submodel[mn].parent;

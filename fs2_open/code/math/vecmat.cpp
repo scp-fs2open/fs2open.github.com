@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-01-27 05:26:07 $
+ * $Revision: 2.17 $
+ * $Date: 2005-01-28 11:06:23 $
  * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/01/27 05:26:07  Goober5000
+ * added a useful bit of information to vm_vec_rotate and vm_vec_unrotate
+ * --Goober5000
+ *
  * Revision 2.15  2005/01/06 00:39:34  Goober5000
  * gah
  * --Goober5000
@@ -1689,11 +1693,10 @@ void vm_vec_rand_vec_quick(vector *rvec)
 void vm_rot_point_around_line(vector *out, vector *in, float angle, vector *line_point, vector *line_dir)
 {
 	vector tmp, tmp1;
-	matrix m, r, im;
+	matrix m, r;
 	angles ta;
 
 	vm_vector_2_matrix_norm(&m, line_dir, NULL, NULL );
-	vm_copy_transpose_matrix(&im,&m);
 
 	ta.p = ta.h = 0.0f;
 	ta.b = angle;
@@ -1702,7 +1705,7 @@ void vm_rot_point_around_line(vector *out, vector *in, float angle, vector *line
 	vm_vec_sub( &tmp, in, line_point );		// move relative to a point on line
 	vm_vec_rotate( &tmp1, &tmp, &m);			// rotate into line's base
 	vm_vec_rotate( &tmp, &tmp1, &r);			// rotate around Z
-	vm_vec_rotate( &tmp1, &tmp, &im);		// unrotate out of line's base
+	vm_vec_unrotate( &tmp1, &tmp, &m);			// unrotate out of line's base
 	vm_vec_add( out, &tmp1, line_point );	// move back to world coordinates
 }
 
@@ -2262,7 +2265,7 @@ void get_camera_limits(matrix *start_camera, matrix *end_camera, float time, vec
 	vector angle;
 
 	// determine the necessary rotation matrix
-	vm_copy_transpose(&temp, start_camera);
+	vm_copy_transpose_matrix(&temp, start_camera);
 	vm_matrix_x_matrix(&rot_matrix, &temp, end_camera);
 	vm_orthogonalize_matrix(&rot_matrix);
 

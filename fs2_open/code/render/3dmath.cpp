@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dMath.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:50 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-01-28 11:06:22 $
+ * $Author: Goober5000 $
  *
  * 3d Math routines used by the Renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:50  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:33:04  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -375,7 +378,6 @@ vector *g3_rotate_delta_vec(vector *dest,vector *src)
 }
 
 //	vms_vector tempv;
-//	vms_matrix tempm;
 //
 //	tempv.xyz.x =  fixmuldiv(fixdiv((sx<<16) - Canv_w2,Canv_w2),Matrix_scale.xyz.z,Matrix_scale.xyz.x);
 //	tempv.xyz.y = -fixmuldiv(fixdiv((sy<<16) - Canv_h2,Canv_h2),Matrix_scale.xyz.z,Matrix_scale.xyz.y);
@@ -383,9 +385,7 @@ vector *g3_rotate_delta_vec(vector *dest,vector *src)
 //
 //	vm_vec_normalize(&tempv);
 //
-//	vm_copy_transpose_matrix(&tempm,&Unscaled_matrix);
-//
-//	vm_vec_rotate(v,&tempv,&tempm);
+//	vm_vec_unrotate(v, &tempv, &Unscaled_matrix);
 
 /*
 
@@ -401,10 +401,7 @@ void g3_point_2_vec(vector *v,int sx,int sy)
 
 	vm_vec_normalize(&tempv);
 
-	vm_copy_transpose_matrix(&tempm,&Unscaled_matrix);
-
-	vm_vec_rotate(v,&tempv,&tempm);
-
+	vm_vec_unrotate(v, &tempv, &Unscaled_matrix);
 }
 
 //delta rotation functions

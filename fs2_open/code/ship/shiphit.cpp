@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-01-11 21:38:49 $
+ * $Revision: 2.34 $
+ * $Date: 2005-01-28 11:06:23 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.32  2004/08/31 23:36:28  Goober5000
  * when calculating damage for scoring, don't count beams unless they're fired by a fighter or bomber
  * --Goober5000
@@ -783,7 +788,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector* hitpo
 		subsys->submodel_info_1.blown_off = 1;
 	}
 
-	if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >-1) )		{
+	if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
 		subsys->submodel_info_2.blown_off = 1;
 	}
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.154 $
- * $Date: 2005-01-27 04:23:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.155 $
+ * $Date: 2005-01-28 11:06:23 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.154  2005/01/27 04:23:17  wmcoolmon
+ * Ship autorepair, requested by TBP
+ *
  * Revision 2.153  2005/01/17 23:35:45  argv
  * Surface shields.
  *
@@ -8990,7 +8993,6 @@ int ship_query_state(char *name)
 // subsysp is a pointer to the subsystem.
 int get_subsystem_pos(vector *pos, object *objp, ship_subsys *subsysp)
 {
-	matrix	m;
 	model_subsystem	*psub;
 	vector	pnt;
 	ship		*shipp;
@@ -9001,9 +9003,8 @@ int get_subsystem_pos(vector *pos, object *objp, ship_subsys *subsysp)
 	Assert ( subsysp != NULL );
 
 	psub = subsysp->system_info;
-	vm_copy_transpose_matrix(&m, &objp->orient);
 
-	vm_vec_rotate(&pnt, &psub->pnt, &m);
+	vm_vec_unrotate(&pnt, &psub->pnt, &objp->orient);
 	vm_vec_add2(&pnt, &objp->pos);
 
 	if ( pos ){
@@ -9061,11 +9062,11 @@ void ship_model_start(object *objp)
 		}
 
 
-		if ( psub->subobj_num > -1 )	{
+		if ( psub->subobj_num >= 0 )	{
 			model_set_instance(shipp->modelnum, psub->subobj_num, &pss->submodel_info_1 );
 		}
 
-		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >-1) )		{
+		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
 			model_set_instance(shipp->modelnum, psub->turret_gun_sobj, &pss->submodel_info_2 );
 		}
 
@@ -12230,9 +12231,9 @@ void ship_page_in_model_textures(int modelnum, ship_info *sip)
 		{
 			for(j = 0; j<pm->n_glows; j++){
 				glow_bank *bank = &pm->glows[j];
-				if(bank->glow_bitmap >-1)
+				if(bank->glow_bitmap >= 0)
 					bm_page_in_texture( bank->glow_bitmap);
-				if(bank->glow_neb_bitmap >-1)
+				if(bank->glow_neb_bitmap >= 0)
 					bm_page_in_texture( bank->glow_neb_bitmap);
 			}
 		}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.85 $
- * $Date: 2005-01-28 09:01:04 $
+ * $Revision: 2.86 $
+ * $Date: 2005-01-28 11:06:22 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2005/01/28 09:01:04  Goober5000
+ * finished implementing docking to a rotating submodel
+ * --Goober5000
+ *
  * Revision 2.84  2005/01/27 11:26:22  Goober5000
  * dock points on rotating submodels is *almost* working
  * --Goober5000
@@ -4002,7 +4006,6 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 	int			num_points;
 	model_path	*mp;
 	pnode			*ppfp_start = Ppfp;
-	matrix		m;
 	vector		gp0;
 
 	Assert(path_num >= 0);
@@ -4021,8 +4024,7 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 
 	Assert(Ppfp-Path_points + num_points + 4 < MAX_PATH_POINTS);
 
-	vm_copy_transpose_matrix(&m, &mobjp->orient);
-	vm_vec_rotate(&gp0, &mp->verts[0].pos, &m);
+	vm_vec_unrotate(&gp0, &mp->verts[0].pos, &mobjp->orient);
 	vm_vec_add2(&gp0, &mobjp->pos);
 
 	if (pp_collide(&pl_objp->pos, &gp0, mobjp, pl_objp->radius)) {
@@ -9872,7 +9874,7 @@ void set_goal_dock_orient(matrix *dom, vector *docker_p0, vector *docker_p1, vec
 
 	//	Pre-multiply the orientation of the source object (docker_orient) by the transpose
 	//	of the docking bay's orientation, ie unrotate the source object's matrix.
-	vm_transpose(&m2);
+	vm_transpose_matrix(&m2);
 	vm_matrix_x_matrix(dom, &m3, &m2);
 }
 
@@ -11810,12 +11812,10 @@ void ai_dock()
 //	in global space.
 void ship_get_global_turret_info(object *objp, model_subsystem *tp, vector *gpos, vector *gvec)
 {
-	matrix	m;
-	vm_copy_transpose_matrix(&m, &objp->orient);
-//	vm_vec_rotate(gpos, &tp->turret_avg_firing_point, &m);
-	vm_vec_rotate(gpos, &tp->pnt, &m);
+//	vm_vec_unrotate(gpos, &tp->turret_avg_firing_point, &objp->orient);
+	vm_vec_unrotate(gpos, &tp->pnt, &objp->orient);
 	vm_vec_add2(gpos, &objp->pos);
-	vm_vec_rotate(gvec, &tp->turret_norm, &m);	
+	vm_vec_unrotate(gvec, &tp->turret_norm, &objp->orient);	
 }
 
 // Given an object and a turret on that object, return the actual firing point of the gun

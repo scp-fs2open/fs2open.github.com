@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-10-12 07:34:45 $
+ * $Revision: 2.14 $
+ * $Date: 2005-01-28 11:06:23 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/10/12 07:34:45  Goober5000
+ * added contrail speed threshold
+ * --Goober5000
+ *
  * Revision 2.12  2004/07/26 20:47:52  Kazan
  * remove MCD complete
  *
@@ -261,7 +265,6 @@ void ct_update_contrails(ship *shipp)
 	}
 
 	vector v1;
-	matrix m;
 	int idx;
 	ship_info *sip;
 	object *objp;
@@ -273,15 +276,12 @@ void ct_update_contrails(ship *shipp)
 	objp = &Objects[shipp->objnum];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	// get the inverse rotation matrix
-	vm_copy_transpose_matrix(&m, &objp->orient);
-
 	// process each contrail	
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 		// if this is a valid contrail
 			if(shipp->trail_num[idx] >= 0){	
 				// get the point for the contrail
-				vm_vec_rotate(&v1, &sip->ct_info[idx].pt, &m);
+				vm_vec_unrotate(&v1, &sip->ct_info[idx].pt, &objp->orient);
 				vm_vec_add2(&v1, &objp->pos);
 
 				// if the spew stamp has elapsed
@@ -321,16 +321,13 @@ void ct_create_contrails(ship *shipp)
 	objp = &Objects[shipp->objnum];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	// get the inverse rotation matrix
-	vm_copy_transpose_matrix(&m, &objp->orient);
-
 
 	for(idx=0; idx<sip->ct_count; idx++){
 			//if (this is a neb mision and this is a neb trail) or an ABtrail -Bobboau
 			shipp->trail_num[idx] = (short)trail_create(sip->ct_info[idx]);	
 	
 			// add the point		
-			vm_vec_rotate(&v1, &sip->ct_info[idx].pt, &m);
+			vm_vec_unrotate(&v1, &sip->ct_info[idx].pt, &objp->orient);
 			vm_vec_add2(&v1, &objp->pos);
 			trail_add_segment(shipp->trail_num[idx], &v1);
 			trail_add_segment(shipp->trail_num[idx], &v1);
@@ -401,7 +398,6 @@ void ct_create_ABtrails(ship *shipp)
 {
 	vector v1;
 	int idx;
-	matrix m;
 	ship_info *sip;
 	object *objp;
 
@@ -418,17 +414,13 @@ void ct_create_ABtrails(ship *shipp)
 		return;
 	}
 
-	// get the inverse rotation matrix
-	vm_copy_transpose_matrix(&m, &objp->orient);
-
-
 	if(objp->phys_info.flags & PF_AFTERBURNER_ON){//AB trails-Bobboau
 
 		for(idx=0; idx<shipp->ab_count; idx++){
 		
 			shipp->ABtrail_num[idx] = (short)trail_create(shipp->ab_info[idx]);	
 			// get the point for the contrail
-			vm_vec_rotate(&v1, &shipp->ab_info[idx].pt, &m);
+			vm_vec_unrotate(&v1, &shipp->ab_info[idx].pt, &objp->orient);
 			vm_vec_add2(&v1, &objp->pos);
 			// if the spew stamp has elapsed
 			if(trail_stamp_elapsed(shipp->ABtrail_num[idx])){	
@@ -450,7 +442,6 @@ void ct_create_ABtrails(ship *shipp)
 void ct_update_ABtrails(ship *shipp)
 {
 	vector v1;
-	matrix m;
 	int idx;
 	ship_info *sip;
 	object *objp;
@@ -468,14 +459,11 @@ void ct_update_ABtrails(ship *shipp)
 		return;
 	}
 
-	// get the inverse rotation matrix
-	vm_copy_transpose_matrix(&m, &objp->orient);
-
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 		if(objp->phys_info.flags & PF_AFTERBURNER_ON){//ABtrails
 			if(shipp->ABtrail_num[idx] >= 0){	
 				// get the point for the contrail
-				vm_vec_rotate(&v1, &shipp->ab_info[idx].pt, &m);
+				vm_vec_unrotate(&v1, &shipp->ab_info[idx].pt, &objp->orient);
 				vm_vec_add2(&v1, &objp->pos);
 
 				// if the spew stamp has elapsed

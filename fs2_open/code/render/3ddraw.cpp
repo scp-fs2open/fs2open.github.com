@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-07-26 20:47:50 $
- * $Author: Kazan $
+ * $Revision: 2.24 $
+ * $Date: 2005-01-28 11:06:22 $
+ * $Author: Goober5000 $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/07/26 20:47:50  Kazan
+ * remove MCD complete
+ *
  * Revision 2.22  2004/07/12 16:33:04  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -723,11 +726,9 @@ int g3_draw_bitmap_3d_batched(vertex *pnt,int orient, float rad,uint tmap_flags,
 	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
 	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
 
-	matrix te = View_matrix;
-	vm_transpose_matrix(&te);
 	for(int i = 0; i<4; i++){
 		vector t = p[i];
-	  	vm_vec_rotate(&p[i],&t,&te);//point it at the eye
+	  	vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 	  	vm_vec_add2(&p[i],&PNT);//move it
 	}		
 
@@ -784,11 +785,9 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
 	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
 
-	matrix te = View_matrix;
-	vm_transpose_matrix(&te);
 	for(int i = 0; i<4; i++){
 		vector t = p[i];
-		vm_vec_rotate(&p[i],&t,&te);//point it at the eye
+		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 		vm_vec_add2(&p[i],&PNT);//move it
 	}
 
@@ -851,11 +850,9 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 //	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
 //	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
 
-	matrix te = View_matrix;
-	vm_transpose_matrix(&te);
 //	for(int i = 0; i<4; i++){
 //		vector t = p[i];
-//		vm_vec_rotate(&p[i],&t,&te);//point it at the eye
+//		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 //		vm_vec_add2(&p[i],&PNT);//move it
 //	}
 
@@ -897,11 +894,9 @@ int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float
 	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
 	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
 
-	matrix te = View_matrix;
-	vm_transpose_matrix(&te);
 	for(int i = 0; i<4; i++){
 		vector t = p[i];
-		vm_vec_rotate(&p[i],&t,&te);//point it at the eye
+		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 		vm_vec_add2(&p[i],&PNT);//move it
 	}
 
@@ -1117,11 +1112,9 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	p[2].xyz.x = (rad*ca - rad*sa) * aspect;		p[2].xyz.y = (rad*sa + rad*ca);	p[2].xyz.z = -depth;
 	p[3].xyz.x = (-rad*ca - rad*sa) * aspect;	p[3].xyz.y = (-rad*sa + rad*ca);	p[3].xyz.z = -depth;
 
-	matrix te = View_matrix;
-	vm_transpose_matrix(&te);
 	for(int i = 0; i<4; i++){
 		vector t = p[i];
-		vm_vec_rotate(&p[i],&t,&te);//point it at the eye
+		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
 		vm_vec_add2(&p[i],&PNT);//move it
 	}
 

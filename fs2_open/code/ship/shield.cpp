@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-10-31 22:05:30 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2005-01-28 11:06:23 $
+ * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/10/31 22:05:30  taylor
+ * s/OGL_inited/OGL_enabled/g
+ *
  * Revision 2.22  2004/10/09 17:51:23  taylor
  * safer handling of missing shield ani
  *
@@ -539,16 +542,13 @@ extern int Cmdline_nohtl;
 
 void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vector *pos, ubyte r, ubyte g, ubyte b)
 {
-	matrix	m;
 	int		j;
 	vector	pnt;
 	vertex	verts[4];
 
-	vm_copy_transpose_matrix(&m,orient);
-
 	for (j=0; j<4; j++ )	{
 		// Rotate point into world coordinates
-		vm_vec_rotate(&pnt, &trip->verts[j].pos, &m);
+		vm_vec_unrotate(&pnt, &trip->verts[j].pos, orient);
 		vm_vec_add2(&pnt, pos);
 
 		// Pnt is now the x,y,z world coordinates of this vert.
@@ -597,7 +597,6 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vector *
 //	pos		center point of object
 void render_shield_triangle(gshield_tri *trip, matrix *orient, vector *pos, ubyte r, ubyte g, ubyte b)
 {
-	matrix	m;
 	int		j;
 	vector	pnt;
 	vertex	*verts[3];
@@ -606,11 +605,9 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vector *pos, ubyt
 	if (trip->trinum == -1)
 		return;	//	Means this is a quad, must have switched detail_level.
 
-	vm_copy_transpose_matrix(&m,orient);
-
 	for (j=0; j<3; j++ )	{
 		// Rotate point into world coordinates
-		vm_vec_rotate(&pnt, &trip->verts[j].pos, &m);
+		vm_vec_unrotate(&pnt, &trip->verts[j].pos, orient);
 		vm_vec_add2(&pnt, pos);
 
 		// Pnt is now the x,y,z world coordinates of this vert.
@@ -1197,7 +1194,6 @@ int	Break_value = -1;
 void ship_draw_shield( object *objp)
 {
 	int		model_num;
-	matrix	m;
 	int		i;
 	vector	pnt;
 	polymodel * pm; 
@@ -1218,8 +1214,6 @@ void ship_draw_shield( object *objp)
 
 	if (pm->shield.ntris<1) return;
 
-	vm_copy_transpose_matrix(&m, &objp->orient);
-
 	//	Scan all the triangles in the mesh.
 	for (i=0; i<pm->shield.ntris; i++ )	{
 		int		j;
@@ -1239,7 +1233,7 @@ void ship_draw_shield( object *objp)
 		vm_vec_add2(&tri_point, &objp->pos);
 
 		vm_vec_sub(&v2f, &tri_point, &Eye_position);
-		vm_vec_rotate(&gnorm, &tri->norm, &m);
+		vm_vec_unrotate(&gnorm, &tri->norm, &objp->orient);
 
 		if (vm_vec_dot(&gnorm, &v2f) < 0.0f) {
 			int	intensity;
@@ -1259,8 +1253,8 @@ void ship_draw_shield( object *objp)
 				vertex tmp;
 
 				// Rotate point into world coordinates
-				vm_vec_rotate(&pnt, &pm->shield.verts[tri->verts[j]].pos, &m);
-				//vm_vec_rotate(&pnt,&pm->shield[i].pnt[j],&m);
+				vm_vec_unrotate(&pnt, &pm->shield.verts[tri->verts[j]].pos, &objp->orient);
+				//vm_vec_unrotate(&pnt,&pm->shield[i].pnt[j],objp->orient);
 				vm_vec_add2(&pnt, &objp->pos);
 
 				// Pnt is now the x,y,z world coordinates of this vert.
