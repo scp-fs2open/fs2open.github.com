@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-01-19 07:02:15 $
+ * $Revision: 2.20 $
+ * $Date: 2003-01-19 07:13:05 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/01/19 07:02:15  Goober5000
+ * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
+ * all ships, and all ships who have their departure anchor set to a capital ship
+ * should exit to that ship when told to depart
+ * --Goober5000
+ *
  * Revision 2.18  2003/01/19 01:07:42  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -13509,9 +13515,22 @@ void ai_warp_out(object *objp)
 		// check if parent ship still exists; if not, abort depart
 		if ( aip->goal_signature != Objects[aip->goal_objnum].signature )
 		{
-			aip->goals[aip->active_goal].ai_mode = AI_GOAL_NONE;
-			aip->goals[aip->active_goal].ai_submode = 0;
-			aip->mode = AIM_NONE;
+			// if no warp drive, cancel everything
+			if (Ships[objp->instance].flags2 & SF2_NO_SUBSPACE_DRIVE)
+			{
+				aip->goals[aip->active_goal].ai_mode = AI_GOAL_NONE;
+				aip->goals[aip->active_goal].ai_submode = 0;
+				aip->mode = AIM_NONE;
+				Ships[objp->instance].flags &= ~SF_DEPARTING;
+			}
+			// if we have warp, engage warp drive instead
+			else
+			{
+				aip->goals[aip->active_goal].ai_mode = AI_GOAL_WARP;
+				aip->goals[aip->active_goal].ai_submode = -1;
+				aip->mode = AIM_WARP_OUT;
+				aip->submode = AIS_WARP_1;
+			}
 		}
 		break;
 	default:
