@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2004-04-26 01:41:52 $
+ * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.8  2004/02/14 00:18:33  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -2433,7 +2437,7 @@ void brief_unload_anims()
 #if defined(MORE_SPECIES)
 		for(idx=0; idx<MAX_SPECIES_NAMES && i<True_NumSpecies; idx++){
 #else
-		for(idex=0; idx<MAX_SPECIES_NAMES; idx++){
+		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
 #endif
 			hud_anim_release(&Icon_highlight_anims[i][idx]);
 			hud_anim_release(&Icon_fade_anims[i][idx]);
