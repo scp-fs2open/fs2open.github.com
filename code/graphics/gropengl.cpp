@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-08-06 17:26:20 $
+ * $Revision: 2.28 $
+ * $Date: 2003-08-21 15:07:45 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/08/06 17:26:20  phreak
+ * changed default texture filtering to GL_LINEAR
+ *
  * Revision 2.26  2003/08/03 23:35:36  phreak
  * changed some z-buffer stuff so it doesn't clip as noticably
  *
@@ -464,8 +467,11 @@ typedef struct ogl_extension
 #define GL_TEX_COMP_S3TC				6			// S3TC/DXTC compression format
 #define GL_TEX_FILTER_aniso				7			// anisotrophic filtering
 #define GL_NV_RADIAL_FOG				8			// for better looking fog
-#define GL_SECONDARY_COLOR				9			// for better looking fog
-#define GL_NUM_EXTENSIONS				10
+#define GL_SECONDARY_COLOR_3FV			9			// for better looking fog
+#define GL_SECONDARY_COLOR_3UBV			10			// specular
+#define GL_ARB_ENV_COMBINE				11
+#define GL_EXT_ENV_COMBINE				12
+#define GL_NUM_EXTENSIONS				13
 
 static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 {
@@ -478,8 +484,10 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 	{0, NULL, NULL, "GL_EXT_texture_compression_s3tc",0},
 	{0, NULL, NULL, "GL_EXT_texture_filter_anisotropic", 0},
 	{0, NULL, NULL, "GL_NV_fog_distance", 0},
-	{0, NULL, "glSecondaryColor3fvEXT", "GL_EXT_secondary_color", 0}
-
+	{0, NULL, "glSecondaryColor3fvEXT", "GL_EXT_secondary_color", 0},
+	{0, NULL, "glSecondaryColor3ubvEXT", "GL_EXT_secondary_color", 0},
+	{0, NULL, NULL, "GL_ARB_texture_env_combine",0},
+	{0, NULL, NULL, "GL_EXT_texture_env_combine",0}
 };
 
 #define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
@@ -495,25 +503,28 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 
 #define glCompressedTexImage2D GLEXT_CALL(PFNGLCOMPRESSEDTEXIMAGE2DPROC, GL_COMP_TEX)
 
-#define glSecondaryColor3fvEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3FVEXTPROC, GL_SECONDARY_COLOR)
+#define glSecondaryColor3fvEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3FVEXTPROC, GL_SECONDARY_COLOR_3FV)
+
+#define glSecondaryColor3ubvEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3UBVEXTPROC, GL_SECONDARY_COLOR_3UBV)
 
 extern int Texture_compression_enabled;
 
 typedef enum gr_texture_source {
-	TEXTURE_SOURCE_NONE,
+	TEXTURE_SOURCE_NONE=0,
 	TEXTURE_SOURCE_DECAL,
 	TEXTURE_SOURCE_NO_FILTERING,
+	TEXTURE_SOURCE_MODULATE4X,
 } gr_texture_source;
 
 typedef enum gr_alpha_blend {
-        ALPHA_BLEND_NONE,			// 1*SrcPixel + 0*DestPixel
+        ALPHA_BLEND_NONE=0,			// 1*SrcPixel + 0*DestPixel
         ALPHA_BLEND_ALPHA_ADDITIVE,             // Alpha*SrcPixel + 1*DestPixel
         ALPHA_BLEND_ALPHA_BLEND_ALPHA,          // Alpha*SrcPixel + (1-Alpha)*DestPixel
         ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,      // Alpha*SrcPixel + (1-SrcPixel)*DestPixel
 } gr_alpha_blend;
 
 typedef enum gr_zbuffer_type {
-        ZBUFFER_TYPE_NONE,
+        ZBUFFER_TYPE_NONE=0,
         ZBUFFER_TYPE_READ,
         ZBUFFER_TYPE_WRITE,
         ZBUFFER_TYPE_FULL,
@@ -553,6 +564,7 @@ static float max_aniso=1.0f;			//max anisotropic filtering ratio
 static vector tex_shift;
 
 void (*gr_opengl_tmapper_internal)( int nv, vertex ** verts, uint flags, int is_scaler ) = NULL;
+void (*gr_opengl_set_tex_src)(gr_texture_source ts);
 
 inline static void opengl_switch_arb0(int state)
 {
@@ -715,10 +727,22 @@ static inline void opengl_set_max_anistropy()
 //	if (GL_Extensions[GL_TEX_FILTER_aniso].enabled)		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
 }
 
-void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
+gr_texture_source	GL_current_tex_src=TEXTURE_SOURCE_NONE;
+gr_alpha_blend		GL_current_alpha_blend=ALPHA_BLEND_NONE;
+gr_zbuffer_type		GL_current_ztype=ZBUFFER_TYPE_NONE;
+
+void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
+{}
+
+void gr_opengl_set_tex_state_combine_ext(gr_texture_source ts)
+{}
+
+
+void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
 {
 	switch (ts) {
 		case TEXTURE_SOURCE_NONE:
+		
 			//glBindTexture(GL_TEXTURE_2D, 0);
 			opengl_switch_arb0(0);
 			opengl_switch_arb1(0);
@@ -726,12 +750,14 @@ void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_typ
 	
 			gr_tcache_set(-1, -1, NULL, NULL );
 			break;
+		
 		case TEXTURE_SOURCE_DECAL:
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		//	opengl_set_max_anistropy();
 			break;
+		
 		case TEXTURE_SOURCE_NO_FILTERING:
 			opengl_switch_arb0(1);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -739,45 +765,78 @@ void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_typ
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			break;
 		default:
-			break;
+			return;
+	}
+	GL_current_tex_src=ts;
+}
+
+
+void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
+{
+
+	if (ts != GL_current_tex_src)
+	{
+		gr_opengl_set_tex_state_no_combine(ts);
+	}
+
+	if (ab != GL_current_alpha_blend)
+	{
+		switch (ab) {
+			case ALPHA_BLEND_NONE:
+				GL_current_alpha_blend=ab;
+				glBlendFunc(GL_ONE, GL_ZERO);
+				break;
+
+			case ALPHA_BLEND_ALPHA_ADDITIVE:
+				GL_current_alpha_blend=ab;
+				glBlendFunc(GL_ONE, GL_ONE);
+				break;
+
+			case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
+				GL_current_alpha_blend=ab;
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+				break;
+		
+			case ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR:
+				GL_current_alpha_blend=ab;
+				glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+				break;
+	
+			default:
+				break;
+		}
 	}
 	
-	switch (ab) {
-		case ALPHA_BLEND_NONE:
-			glBlendFunc(GL_ONE, GL_ZERO);
-			break;
-		case ALPHA_BLEND_ALPHA_ADDITIVE:
-			glBlendFunc(GL_ONE, GL_ONE);
-			break;
-		case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			break;
-		case ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR:
-			glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
-			break;
-		default:
-			break;
-	}
+	if (zt != GL_current_ztype)
+	{
+		switch (zt) {
+			case ZBUFFER_TYPE_NONE:
+				GL_current_ztype = zt;
+				glDepthFunc(GL_ALWAYS);
+				glDepthMask(GL_FALSE);
+				break;
+
+			case ZBUFFER_TYPE_READ:
+				GL_current_ztype = zt;
+				glDepthFunc(GL_LESS);
+				glDepthMask(GL_FALSE);	
+				break;
+
+			case ZBUFFER_TYPE_WRITE:
+				GL_current_ztype = zt;
+				glDepthFunc(GL_ALWAYS);
+				glDepthMask(GL_TRUE);
+				break;
 	
-	switch (zt) {
-		case ZBUFFER_TYPE_NONE:
-			glDepthFunc(GL_ALWAYS);
-			glDepthMask(GL_FALSE);
-			break;
-		case ZBUFFER_TYPE_READ:
-			glDepthFunc(GL_LESS);
-			glDepthMask(GL_FALSE);	
-			break;
-		case ZBUFFER_TYPE_WRITE:
-			glDepthFunc(GL_ALWAYS);
-			glDepthMask(GL_TRUE);
-			break;
-		case ZBUFFER_TYPE_FULL:
-			glDepthFunc(GL_LESS);
-			glDepthMask(GL_TRUE);
-			break;
-		default:
-			break;
+			case ZBUFFER_TYPE_FULL:
+				GL_current_ztype = zt;
+				glDepthFunc(GL_LESS);
+				glDepthMask(GL_TRUE);
+				break;
+	
+			default:
+				break;
+		}	
 	}		
 }
 
@@ -1009,6 +1068,7 @@ void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, in
 	vertex v[4];
 	vertex *verts[4] = {&v[0], &v[1], &v[2], &v[3]};
 
+	memset(v,0,sizeof(vertex)*4);
 	saved_zbuf = gr_zbuffer_get();
 	
 	// start the frame, no zbuffering, no culling
@@ -1143,6 +1203,9 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 		//glColor3ub(255,255,255);
 	}
+
+	ubyte zero[]={0,0,0};
+	glSecondaryColor3ubvEXT(zero);
 
 	glBegin (GL_QUADS);
 	  glTexCoord2f (u0, v1);
@@ -2059,7 +2122,6 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 	if (CLOAKMAP==gr_screen.current_bitmap)
 		glBlendFunc(GL_ONE, GL_ONE);
 
-
 	glBegin(GL_TRIANGLE_FAN);
 	for (i = nv-1; i >= 0; i--) {		
 		vertex * va = verts[i];
@@ -2113,27 +2175,19 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 			r=g=b=Interp_cloakmap_alpha;
 			a=255;
 		}
-		
+
 		glColor4ub ((ubyte)r,(ubyte)g,(ubyte)b,(ubyte)a);
-	
+
+		ubyte sc[]={(ubyte)(va->spec_r >> 1), (ubyte)(va->spec_g >> 1), (ubyte)(va->spec_b >> 1)};
+		glSecondaryColor3ubvEXT(sc);
+
+			
 		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 2)){
 		
 			// this is for GL_EXT_FOG_COORD 
 			gr_opengl_stuff_fog_coord(va);
 		}
 
-/*		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) ){
-		
-			// this is for GL_EXT_SECONDARY_COLOR
-			//doesn't matter if its there since the error checking code (it is on most gfx cards nowadays)
-			gr_opengl_stuff_secondary_color(va,gr_screen.current_fog_color.red,gr_screen.current_fog_color.green,gr_screen.current_fog_color.blue);
-		}
-		else
-		{
-			gr_opengl_stuff_secondary_color(va,0,0,0);
-		}
-*/
-		
 		int x, y;
 		x = fl2i(va->sx*16.0f);
 		y = fl2i(va->sy*16.0f);
@@ -2249,6 +2303,9 @@ void gr_opengl_scaler(vertex *va, vertex *vb )
 	v->z = va->z;
 	v->u = clipped_u0;
 	v->v = clipped_v0;
+	v->spec_r=0;
+	v->spec_g=0;
+	v->spec_b=0;
 
 	vl[1] = &v[1];	
 	v[1].sx = clipped_x1;
@@ -2257,6 +2314,9 @@ void gr_opengl_scaler(vertex *va, vertex *vb )
 	v[1].z = va->z;
 	v[1].u = clipped_u1;
 	v[1].v = clipped_v0;
+	v[1].spec_r=0;
+	v[1].spec_g=0;
+	v[1].spec_b=0;
 
 	vl[2] = &v[2];	
 	v[2].sx = clipped_x1;
@@ -2265,6 +2325,9 @@ void gr_opengl_scaler(vertex *va, vertex *vb )
 	v[2].z = va->z;
 	v[2].u = clipped_u1;
 	v[2].v = clipped_v1;
+	v[2].spec_r=0;
+	v[2].spec_g=0;
+	v[2].spec_b=0;
 
 	vl[3] = &v[3];	
 	v[3].sx = clipped_x0;
@@ -2273,6 +2336,9 @@ void gr_opengl_scaler(vertex *va, vertex *vb )
 	v[3].z = va->z;
 	v[3].u = clipped_u0;
 	v[3].v = clipped_v1;
+	v[3].spec_r=0;
+	v[3].spec_g=0;
+	v[3].spec_b=0;
 
 	gr_opengl_tmapper_internal( 4, vl, TMAP_FLAG_TEXTURED, 1 );
 }
@@ -3315,6 +3381,7 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 
 	//make sure textuing is on
 	opengl_switch_arb0(1);
+
 	if (GLOWMAP>-1)
 	{
 		opengl_switch_arb1(1);
