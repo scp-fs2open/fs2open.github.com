@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/UI.H $
- * $Revision: 2.2 $
- * $Date: 2002-08-06 03:50:48 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-03-10 18:45:09 $
+ * $Author: Kazan $
  *
  * Include file for our user interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/06 03:50:48  penguin
+ * inserted "class" keyword on "friend" definitions (ANSI C++ )
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -872,6 +875,9 @@ class UI_LISTBOX : public UI_GADGET
 		int last_typed;
 		UI_SCROLLBAR scrollbar;
 
+		// kazan
+		int draw_frame;
+
 		virtual void draw();
 		virtual void process(int focus = 0);
 
@@ -891,6 +897,13 @@ class UI_LISTBOX : public UI_GADGET
 		int add_string(char *str);
 		int sel_changed();           // returns > 0 if the selected item has changed
 		void set_new_list(int _numitems, char **_list);
+
+		// kazan
+		void set_drawframe(int mode);
+		int CurSize();
+		int MaxSize();
+		void RemoveFirstItem();
+		void ScrollEnd();
 
 		int set_bmaps(char *lbox_fname, char *b_up_fname, char *b_down_fname, char *sb_fname);
 		void link_hotspot(int up_button_num, int down_button_num);

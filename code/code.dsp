@@ -2468,5 +2468,17 @@ SOURCE=.\species_defs\species_defs.cpp
 SOURCE=.\species_defs\species_defs.h
 # End Source File
 # End Group
+# Begin Group "irc"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\irc\irc.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\irc\irc.h
+# End Source File
+# End Group
 # End Target
 # End Project

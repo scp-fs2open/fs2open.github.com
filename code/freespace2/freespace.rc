@@ -222,6 +222,15 @@ BEGIN
     CTEXT           "",IDC_FIELD3,27,49,138,8
 END
 
+IDD_DIALOG1 DIALOG DISCARDABLE  0, 0, 186, 95
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -292,6 +301,14 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 179
         TOPMARGIN, 5
+        BOTTOMMARGIN, 88
+    END
+
+    IDD_DIALOG1, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
         BOTTOMMARGIN, 88
     END
 END

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile$
- * $Revision: 1.4 $
- * $Date: 2004-03-08 22:02:39 $
+ * $Revision: 1.5 $
+ * $Date: 2004-03-10 18:45:09 $
  * $Author: Kazan $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/03/08 22:02:39  Kazan
+ * Lobby GUI screen restored
+ *
  * Revision 1.3  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -29,6 +32,8 @@
  * $NoKeywords: $
  */
 
+
+#pragma warning(disable:4786)
 #include "globalincs/pstypes.h"
 #include "ui/ui.h"
 #include "bmpman/bmpman.h"
@@ -37,6 +42,23 @@
 #include "gamesequence/gamesequence.h"
 #include "network/fs2ox.h"
 #include "gamehelp/contexthelp.h"
+#include "network/multi_log.h"
+#include "cmdline/cmdline.h"
+
+//#define RATHAVEN
+
+#if defined(RATHAVEN)
+#include "fs2open_pxo/TCP_Socket.h"
+
+TCP_Socket ServerConnection;
+#else
+
+#include "irc/irc.h"
+
+irc_client IRCConn;
+
+
+#endif
 
 // LOCAL function definitions
 void fs2ox_check_buttons();
@@ -151,17 +173,77 @@ UI_XSTR fs2ox_text[GR_NUM_RESOLUTIONS][FS2OX_NUM_TEXT] = {
 	}
 };
 
+UI_INPUTBOX Chat_input;
 
+#define NUM_LISTS	3
+#define LIST_CHANS	0
+#define LIST_USERS	1
+#define LIST_MESGS	2
+
+UI_LISTBOX ListBoxen[NUM_LISTS];
+int Listbox_coordinates[GR_NUM_RESOLUTIONS][NUM_LISTS][4] =
+{
+	{ // GR_640
+		{ 0, 0, 0, 0 },
+		{ 0, 0, 0, 0 },
+		{ 0, 0, 0, 0 }
+	},
+	{ // GR_1024
+		{ 590 ,120, 380, 85 },
+		{ 45, 190, 215, 385 },
+		{ 310, 265, 660, 315 }
+	}
+};
+
+
+//*void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _numitem, char **_list);
+
+int Chat_input_coords[GR_NUM_RESOLUTIONS][4] = {
+	{ // GR_640 -- NOT YET CONFIRMED!
+		196,	280,	412,	56
+	},
+	{ // GR_1024
+		315,	615,	660,	90
+	}
+};
+
+#define MAX_CHAT_MSGS	256
+//#define MAX_CHAT_MSGLEN 127
+char **MessageList[NUM_LISTS];
+
+extern char Multi_tracker_login[100];
+extern char Multi_tracker_passwd[100];
+extern char Multi_tracker_squad_name[100];
 
 /**
  * Initialize the FS2OX screen.
  */
 void fs2ox_init()
 {
+
+#if defined(RATHAVEN)
+	ServerConnection.InitSocket("207.215.71.69", 4616);
+#else
+	// mgo.maxgaming.org server A
+	//IRCConn.connect(Multi_tracker_login, Multi_tracker_passwd, "65.85.207.108", 6667);
+
+	
+	// mgo.maxgaming.org server b
+	IRCConn.connect(Multi_tracker_login, Multi_tracker_passwd, "68.76.67.228", 6667);
+
+	// irc.sevarg.net
+	//IRCConn.connect(Multi_tracker_login, Multi_tracker_passwd, "65.110.255.247", 6667);
+
+#endif
 	int idx;
 
 	// TODO - init local variable
+	
+	// clear the message list
+	for (idx=0; idx<NUM_LISTS; idx++)
+		MessageList[idx] = new char*[MAX_CHAT_MSGS];
 
+	
 	// reset frame count
 	fs2ox_frame_count = 0;
 
@@ -192,11 +274,22 @@ void fs2ox_init()
 		fs2ox_buttons[gr_screen.res][idx].button.link_hotspot(fs2ox_buttons[gr_screen.res][idx].hotspot);
 	}		
 
+	for (idx=0; idx < NUM_LISTS; idx++){
+		ListBoxen[idx].create(&fs2ox_window, Listbox_coordinates[gr_screen.res][idx][0], Listbox_coordinates[gr_screen.res][idx][1], 
+												Listbox_coordinates[gr_screen.res][idx][2], Listbox_coordinates[gr_screen.res][idx][3], 
+												0, MessageList[idx], NULL, MAX_CHAT_MSGS);
+		ListBoxen[idx].set_drawframe(0);
+	}
+
 	// create all xstrs
 	for(idx=0; idx < FS2OX_NUM_TEXT; idx++){
 		fs2ox_window.add_XSTR(&fs2ox_text[gr_screen.res][idx]);
 	}
 
+
+	//
+	Chat_input.create(&fs2ox_window, Chat_input_coords[gr_screen.res][0], Chat_input_coords[gr_screen.res][1], Chat_input_coords[gr_screen.res][2], Chat_input_coords[gr_screen.res][3], "", /*UI_INPUTBOX_FLAG_INVIS |*/ UI_INPUTBOX_FLAG_ESC_FOC);	
+	Chat_input.set_text("");
 
 	// TODO - load the help overlay
 	//help_overlay_load(FS2OX_OVERLAY);
@@ -215,13 +308,64 @@ void fs2ox_close()
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",fs2ox_bitmap_fname[gr_screen.res]));
 	}
 
+
 	// unload the help overlay
 	//help_overlay_unload(FS2OX_OVERLAY);	
 	
 	// destroy the UI_WINDOW
 	fs2ox_window.destroy();
+	
+	for (int idx=0; idx<NUM_LISTS; idx++)
+	{
+		delete[] MessageList[idx];
+	}
+
+#if defined(RATHAVEN)
+	ServerConnection.Close();
+#else
+	if (IRCConn.isConnected())
+		IRCConn.Disconnect("Exiting");
+#endif
 }
 
+
+std::string strip_pattern(std::string needle, std::string haystack)
+{
+	int index = haystack.find(needle);
+
+	while (index != std::string::npos)
+	{
+		haystack.erase(index, needle.length());
+
+		index = haystack.find(needle);
+	}
+
+	return haystack;
+}
+
+std::string strip_ansi_codes(std::string str)
+// Function to strip ANSI color codes
+// search for '\27'
+{
+
+	const int num_codes = 66;
+	std::string color_codes[66] = 
+      		{ "\033[0;1m",  "\033[1;1m",  "\033[2;1m",  "\033[3;1m",  "\033[4;1m",  "\033[5;1m",  "\033[6;1m",  "\033[7;1m", 
+			  "\033[9;1m",  "\033[22;1m", "\033[23;1m", "\033[24;1m", "\033[27;1m", "\033[29;1m", "\033[30;1m", "\033[31;1m", 
+			  "\033[32;1m", "\033[33;1m", "\033[34;1m", "\033[35;1m", "\033[36;1m", "\033[37;1m", "\033[39;1m", "\033[40;1m", 
+			  "\033[41;1m", "\033[42;1m", "\033[43;1m", "\033[44;1m", "\033[45;1m", "\033[46;1m", "\033[47;1m", "\033[49;1m",
+			  "\033[0m",  "\033[1m",  "\033[2m",  "\033[3m",  "\033[4m",  "\033[5m",  "\033[6m",  "\033[7m", 
+			  "\033[9m",  "\033[22m", "\033[23m", "\033[24m", "\033[27m", "\033[29m", "\033[30m", "\033[31m", 
+			  "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m", "\033[37m", "\033[39m", "\033[40m", 
+			  "\033[41m", "\033[42m", "\033[43m", "\033[44m", "\033[45m", "\033[46m", "\033[47m", "\033[49m",
+			  "\377\374\01", "\377\374\03" };
+
+	for (int i = 0; i < num_codes; i++)
+		str = strip_pattern(color_codes[i], str);
+
+
+	return str;
+}
 
 /**
  * Frame processing for FS2OX screen.
@@ -229,6 +373,98 @@ void fs2ox_close()
 void fs2ox_do_frame()
 {
 
+	static bool firstrecv = true;
+	char text[128];
+	memset(text, 0, 128);
+
+#if defined(RATHAVEN)
+	if (Chat_input.pressed())
+	{
+		Chat_input.get_text(text);
+		Chat_input.set_text("");
+
+
+		text[strlen(text)] = '\n';
+		ServerConnection.SendData(text, strlen(text)+1);
+
+		/*
+		if (text[0] == '+')
+			ListBoxen[LIST_CHANS].add_string(text);
+		else if (text[0] == '@')
+			ListBoxen[LIST_USERS].add_string(text);
+		else
+			ListBoxen[LIST_MESGS].add_string(text);
+			*/
+
+	}
+
+	while (ServerConnection.DataReady())
+	{
+		char input[1024]; // there probably won't be a transfer longer than this
+		char temp[256]; //maximum line length
+		int i = 0, j;
+
+		int transfer = ServerConnection.GetData(input, 1024);
+
+		while (i < transfer)
+		{
+			j=0;
+			while (input[i] != '\n' && input[i] != '\r' && i < transfer)
+			{
+
+				temp[j] = input[i];	
+
+				j++;
+				i++;
+			}
+			temp[j] = '\0';
+			if (ListBoxen[LIST_MESGS].CurSize() == ListBoxen[LIST_MESGS].MaxSize()-1)
+			{
+				ml_printf("Removed first line");
+				ListBoxen[LIST_MESGS].RemoveFirstItem();
+			}
+		
+			std::string text = strip_ansi_codes(temp);
+			if (text.length() > 0 && text != "\n")
+				ListBoxen[LIST_MESGS].add_string((char *)text.c_str());
+			ml_printf("Lines Used: %d / %d", ListBoxen[LIST_MESGS].CurSize(), ListBoxen[LIST_MESGS].MaxSize());
+			ListBoxen[LIST_MESGS].ScrollEnd();
+			i++;
+		}
+
+		
+	}
+#else
+	if (Chat_input.pressed())
+	{
+		Chat_input.get_text(text);
+		Chat_input.set_text("");
+
+		IRCConn.ParseForCommand(text);
+	}
+
+	std::vector<std::string> lines = IRCConn.Maybe_GetRawLines();
+
+	if (lines.size() != 0)
+	{
+		for (int i = 0; i < lines.size(); i++)
+		{
+			if (ListBoxen[LIST_MESGS].CurSize() == ListBoxen[LIST_MESGS].MaxSize()-1)
+			{
+				ml_printf("Removed first line");
+				ListBoxen[LIST_MESGS].RemoveFirstItem();
+			}
+
+			if (lines[i].length() > 0 && lines[i] != "\n")
+				ListBoxen[LIST_MESGS].add_string((char *)lines[i].c_str());
+			ml_printf("Lines Used: %d / %d", ListBoxen[LIST_MESGS].CurSize(), ListBoxen[LIST_MESGS].MaxSize());
+			ListBoxen[LIST_MESGS].ScrollEnd();
+
+		}
+	}
+
+
+#endif
 	int k = fs2ox_window.process();
 
 	// process any keypresses
@@ -293,10 +529,16 @@ void fs2ox_button_pressed(int n)
 
 	// go to the games list
 	case FS2OX_ACCEPT:
+#if !defined(RATHAVEN)
+		IRCConn.Disconnect(std::string("Going to play game (With Mod \"") + Cmdline_mod + "\")");
+#endif
 		gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
 		break;
 
 	case FS2OX_EXIT:
+#if !defined(RATHAVEN)
+		IRCConn.Disconnect("Leaving");
+#endif
 		gameseq_post_event(GS_EVENT_MAIN_MENU);
 		break;
 
