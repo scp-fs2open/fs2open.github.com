@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-11-11 03:56:11 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-16 04:08:47 $
+ * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/11/11 03:56:11  bobboau
+ * lots of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.9  2003/11/09 06:31:40  Kazan
  * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
  * conflicts in cmdline and timerbar.h log entries
@@ -1533,7 +1536,7 @@ void brief_render(float frametime)
 	}
 
 	// maybe output the "more" indicator
-	if ( (Brief_text_max_lines[gr_screen.res] + Top_brief_text_line + 2) < Num_brief_text_lines[0] ) {
+	if ( (Brief_text_max_lines[gr_screen.res] + Top_brief_text_line) < Num_brief_text_lines[0] ) {
 		// can be scrolled down
 		int more_txt_x = Brief_text_coords[gr_screen.res][0] + (Brief_max_line_width[gr_screen.res]/2) - 10;
 		int more_txt_y = Brief_text_coords[gr_screen.res][1] + Brief_text_coords[gr_screen.res][3] - 2;				// located below brief text, centered

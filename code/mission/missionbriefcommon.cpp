@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-10-15 22:03:25 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2003-11-16 04:08:47 $
+ * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/10/15 22:03:25  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.3  2003/09/07 18:14:53  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -278,7 +281,7 @@ int Brief_stage_text_coords_multi[GR_NUM_RESOLUTIONS][2] = {
 };
 
 int Brief_text_max_lines[GR_NUM_RESOLUTIONS] = {
-	6, 11
+	8, 13
 };
 
 #define LOOKAT_DIST	500.0f
