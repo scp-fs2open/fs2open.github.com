@@ -10,11 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.33 $
- * $Date: 2003-10-27 23:04:20 $
+ * $Revision: 2.34 $
+ * $Date: 2003-11-03 18:07:26 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/10/27 23:04:20  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.32  2003/10/24 17:35:04  randomtiger
  * Implemented support for 32bit TGA and JPG for D3D
  * Also 32 bit PCX, but it still has some bugs to be worked out
@@ -358,5 +366,6 @@ extern int Cmdline_cell;
 extern int Cmdline_nohtl;
 extern int Cmdline_32bit_textures;
 extern int Cmdline_no_set_gamma;
+extern int Cmdline_d3d_no_vsync;
 
 #endif
