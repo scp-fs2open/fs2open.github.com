@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.38 $
- * $Date: 2003-09-05 10:41:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.39 $
+ * $Date: 2003-09-06 19:09:24 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/09/05 10:41:48  Goober5000
+ * bah - fixed a dumb bug
+ * --Goober5000
+ *
  * Revision 2.37  2003/09/05 04:25:29  Goober5000
  * well, let's see here...
  *
@@ -980,6 +984,7 @@ void parse_mission_info(mission *pm)
 	pm->support_ships.arrival_anchor = -1;
 	pm->support_ships.departure_location = 0;	// ASSUMPTION: hyperspace
 	pm->support_ships.departure_anchor = -1;
+	pm->support_ships.max_hull_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
 	pm->support_ships.max_support_ships = 0;	// infinite
 	pm->support_ships.ship_class = -1;
 	pm->support_ships.tally = 0;
@@ -990,6 +995,17 @@ void parse_mission_info(mission *pm)
 		stuff_int(&temp);
 
 		pm->support_ships.max_support_ships = (temp > 0) ? -1 : 0;
+	}
+
+	if ( optional_string("+Support Repair Ceiling:"))
+	{
+		float temp;
+		stuff_float(&temp);
+
+		//ONLY set max_hull_repair_val if the value given is valid -C
+		if (temp <= 100.0f && temp >= 0.0f) {
+			pm->support_ships.max_hull_repair_val = temp;
+		}
 	}
 
 	if (optional_string("+All Teams Attack")){
