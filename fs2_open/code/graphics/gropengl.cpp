@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.50 $
- * $Date: 2003-11-25 15:04:45 $
+ * $Revision: 2.51 $
+ * $Date: 2003-11-29 16:11:46 $
  * $Author: fryday $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2003/11/25 15:04:45  fryday
+ * Got lasers to work in HT&L OpenGL
+ * Messed a bit with opengl_tmapper_internal3d, draw_laser functions, and added draw_laser_htl
+ *
  * Revision 2.49  2003/11/22 10:36:32  fryday
  * Changed default alpha value for lasers in OpenGL to be like in D3D
  * Fixed Glowmaps being rendered with GL_NEAREST instead of GL_LINEAR.
@@ -791,12 +795,12 @@ int max_gl_lights;
 
 void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 
-	GLLight->Diffuse.r = FSLight->r * FSLight->intensity;
-	GLLight->Diffuse.g = FSLight->g * FSLight->intensity;
-	GLLight->Diffuse.b = FSLight->b * FSLight->intensity;
-	GLLight->Specular.r = FSLight->spec_r * FSLight->intensity;
-	GLLight->Specular.g = FSLight->spec_g * FSLight->intensity;
-	GLLight->Specular.b = FSLight->spec_b * FSLight->intensity;
+	GLLight->Diffuse.r = FSLight->r;// * FSLight->intensity;
+	GLLight->Diffuse.g = FSLight->g;// * FSLight->intensity;
+	GLLight->Diffuse.b = FSLight->b;// * FSLight->intensity;
+	GLLight->Specular.r = FSLight->spec_r;// * FSLight->intensity;
+	GLLight->Specular.g = FSLight->spec_g;// * FSLight->intensity;
+	GLLight->Specular.b = FSLight->spec_b;// * FSLight->intensity;
 	GLLight->Ambient.r = 0.0f;
 	GLLight->Ambient.g = 0.0f;
 	GLLight->Ambient.b = 0.0f;
@@ -807,9 +811,9 @@ void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 
 	//If the light is a directional light
 	if(FSLight->type == LT_DIRECTIONAL) {
-		GLLight->Position.x = FSLight->vec.xyz.x;
-		GLLight->Position.y = FSLight->vec.xyz.y;
-		GLLight->Position.z = FSLight->vec.xyz.z;
+		GLLight->Position.x = -FSLight->vec.xyz.x;
+		GLLight->Position.y = -FSLight->vec.xyz.y;
+		GLLight->Position.z = -FSLight->vec.xyz.z;
 		GLLight->Position.w = 0.0f; //Directional lights in OpenGL have w set to 0 and the direction vector in the position field
 
 		GLLight->Specular.r *= static_light_factor;
@@ -838,7 +842,7 @@ void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 		//They also have almost no radius...
 //		GLLight->Range = FSLight->radb +FSLight->rada; //No range function in OpenGL that I'm aware of
 		GLLight->ConstantAtten = 0.0f;
-		GLLight->LinearAtten = 0.01f;
+		GLLight->LinearAtten = 0.1f;
 		GLLight->QuadraticAtten = 0.0f; 
 	}
 
@@ -956,6 +960,7 @@ void gr_opengl_set_lighting(bool set, bool state)
 	col.r = col.g = col.b = col.a = set ? 1.0f : 0.0f;  //Adunno why the ambient and diffuse need to be set to 0.0 when lighting is disabled
 														//They just do, and that should suffice as an answer
 	glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE, &col.r); //changed to GL_FRONT_AND_BACK, just to make sure
+	glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR, &col.r); //changed to GL_FRONT_AND_BACK, just to make sure
 	glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,specular_exponent_value);
 	if((gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set){
 		ambient.r = ambient.g = ambient.b = ambient.a = gr_screen.current_alpha;
@@ -4437,13 +4442,12 @@ int gr_opengl_make_buffer(poly_list *list)
 	
 		vertex *vl;
 
-		memcpy(n,list->norm,list->n_poly*sizeof(vector));
+		memcpy(n,list->norm,list->n_poly*sizeof(vector)*3);
 				
 
 		for (int i=0; i < list->n_poly*3; i++)
 		{
 				vl=&list->vert[i];
-
 				v->xyz.x=vl->x; 
 				v->xyz.y=vl->y;
 				v->xyz.z=vl->z;
@@ -4452,6 +4456,7 @@ int gr_opengl_make_buffer(poly_list *list)
 				t->u=vl->u;
 				t->v=vl->v;
 				t++;
+
 		}
 
 		//maybe load it into a vertex buffer object
@@ -5220,7 +5225,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_screen.gf_push_scale_matrix = gr_opengl_push_scale_matrix;
 		gr_screen.gf_pop_scale_matrix = gr_opengl_pop_scale_matrix;
 
-		glEnable(GL_NORMALIZE);
+//		glEnable(GL_NORMALIZE);
 	}
 	else	//use some function stubs
 	{

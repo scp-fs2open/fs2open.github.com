@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.55 $
- * $Date: 2003-11-29 14:54:35 $
- * $Author: randomtiger $
+ * $Revision: 2.56 $
+ * $Date: 2003-11-29 16:11:46 $
+ * $Author: fryday $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2003/11/29 14:54:35  randomtiger
+ * Rendering jumpnodes in htl via the old system to make them display again, appears to be so cheap it wouldnt be worth the effort to convert it to true htl.
+ *
  * Revision 2.54  2003/11/25 15:04:46  fryday
  * Got lasers to work in HT&L OpenGL
  * Messed a bit with opengl_tmapper_internal3d, draw_laser functions, and added draw_laser_htl
@@ -3489,7 +3492,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			}
 			gr_zbuffer_set(zbuf_mode);
 			// When in htl mode render with htl method unless its a jump node
-			if(!Cmdline_nohtl && !(flags | MR_NO_POLYS)) {
+			if(!Cmdline_nohtl && !(flags & MR_NO_POLYS)) {
 				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
 			}
 			else {
@@ -3533,7 +3536,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// draw the hull of the ship
 	
 	// When in htl mode render with htl method unless its a jump node
-	if(!Cmdline_nohtl && !(flags | MR_NO_POLYS)) {
+	if(!Cmdline_nohtl && !(flags & MR_NO_POLYS)) {
 		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
 //		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
 	}
@@ -4659,6 +4662,7 @@ void parse_tmap(int offset, ubyte *bsp_data){
 	int n_vert = bsp_data[offset+36];
 	//int n_tri = n_vert - 2;
 	ubyte *temp_verts;
+	ubyte *p = &bsp_data[offset];
 
 	model_tmap_vert *tverts;
 	tverts = (model_tmap_vert *)&bsp_data[offset+44];
@@ -4678,6 +4682,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		V->u = tverts[0].u;
 		V->v = tverts[0].v;
 		*N = *Interp_norms[(int)tverts[0].normnum];
+		if(IS_VEC_NULL(N))
+			*N = *vp(p+8);
 		vm_vec_normalize(N);
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+1];
@@ -4689,6 +4695,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		V->u = tverts[i].u;
 		V->v = tverts[i].v;
 		*N = *Interp_norms[(int)tverts[i].normnum];
+		if(IS_VEC_NULL(N))
+			*N = *vp(p+8);
 		vm_vec_normalize(N);
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+2];
@@ -4700,6 +4708,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		V->u = tverts[i+1].u;
 		V->v = tverts[i+1].v;
 		*N = *Interp_norms[(int)tverts[i+1].normnum];
+		if(IS_VEC_NULL(N))
+			*N = *vp(p+8);
 		vm_vec_normalize(N);
 
 		list[pof_tex].n_poly++;
