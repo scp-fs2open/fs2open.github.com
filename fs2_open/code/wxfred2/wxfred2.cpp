@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/wxFRED2/wxFRED2.cpp $
- * $Revision: 1.3 $
- * $Date: 2005-03-30 01:23:32 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2005-03-30 16:06:26 $
+ * $Author: taylor $
  *
  * New cross-platform version of FRED2
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/03/30 01:23:32  Goober5000
+ * added header back in, with a small tweak for the .cpp
+ * --Goober5000
+ *
  * Revision 1.2  2005/03/29 13:35:53  Goober5000
  * set up the main menu options
  * --Goober5000
@@ -33,8 +37,8 @@
 #include "wx/wx.h"
 #endif
 
-#include "wxfred2.h"
-#include "fredframe.h"
+#include "wxfred2/wxfred2.h"
+#include "wxfred2/fredframe.h"
 
 
 IMPLEMENT_APP(wxFRED2)
