@@ -6,16 +6,15 @@
 #include "parse/parselo.h"
 #include "graphics/2d.h"
 #include "localization/localize.h"
-#include "ship/ship.h"
 #include "hud/hud.h"
 #include "hud/hudescort.h"
 #include "weapon/emp.h"
 #include "hud/hudparse.h"
-
+#include "ship/ship.h"
 
 
 //Global stuffs
-hud_info* current_hud;
+hud_info* current_hud = NULL; //If not set, it's NULL. This should always be null outside of a mission.
 hud_info default_hud;
 hud_info ship_huds[MAX_SHIP_TYPES];
 extern int ships_inited; //Need this
@@ -139,6 +138,10 @@ int hud_weapon_energy_text(gauge_data* cg, ship* gauge_owner)
 		sprintf(cg->text,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
 		hud_num_make_mono(cg->text);
 	}
+	else
+	{
+		return -1;
+	}
 
 	return 1;
 }
@@ -185,9 +188,11 @@ int hud_weapon_energy(gauge_data* cg, ship* gauge_owner)
 
 	int clip_h = fl2i( (1.0f - percent_left) * cg->image_size[0] + 0.5f );
 
+	//Background
 	cg->frame[0] = 2;
 	cg->frame_info[0][2] = cg->image_size[0] - clip_h;
 
+	//The gauge
 	cg->frame[1] = 3;
 	cg->frame_info[1][0] = clip_h;
 
@@ -859,12 +864,13 @@ void hud_positions_init()
 	for(int i = 0; i < num_files; i++)
 	{
 		//HACK HACK HACK
+		modular_tables_loaded = true;
 		strcat(tbl_file_names[i], ".tbm");
 		parse_hud_gauges_tbl(tbl_file_names[i]);
 	}
-#endif
 
 	set_current_hud(-1);
+#endif
 }
 
 //Depending on the ship number specified, this copies either the default hud or a ship hud
@@ -872,13 +878,24 @@ void hud_positions_init()
 //This enables ship-specific huds.
 //Note that this creates a temporary current hud, so changes aren't permanently saved.
 #ifdef NEW_HUD
-void set_current_hud(int player_ship_num, ship* owner)
+void set_current_hud(ship* owner)
 #else
 void set_current_hud(int player_ship_num)
 #endif
 {
 #ifdef NEW_HUD
-	current_hud = &default_hud;
+	if(owner->ship_hud.loaded != true)
+	{
+		if(ship_huds[owner->ship_info_index].loaded == true)
+		{
+			memcpy(&owner->ship_hud, &ship_huds[owner->ship_info_index], sizeof(hud_info));
+		}
+		else
+		{
+			memcpy(&owner->ship_hud, &default_hud, sizeof(hud_info));
+		}
+	}
+	current_hud = &owner->ship_hud;
 	current_hud->owner = owner;
 #else
 	static hud_info real_current_hud;
@@ -1232,7 +1249,7 @@ int gauge_data::update(ship* gauge_owner, gauge_data* cgp)
 		draw_coords[1] = cgp->coords[1];
 	}
 
-	do
+	//do
 	{
 		if(update_func != NULL)
 		{
@@ -1252,11 +1269,11 @@ int gauge_data::update(ship* gauge_owner, gauge_data* cgp)
 		}
 
 		//If we aren't redrawing and starting the loop, set to 0
-		if(update_num == 0 && (rval == 1 || rval == 0))
+		if(update_num ==0 && (rval == 1 || rval == 0))
 		{
 			if(cgp == NULL)
 			{
-				draw_coords[0] = draw_coords[0] = 0;
+				draw_coords[0] = draw_coords[1] = 0;
 			}
 			else
 			{
@@ -1288,7 +1305,7 @@ int gauge_data::update(ship* gauge_owner, gauge_data* cgp)
 		draw();
 
 		update_num++;
-	} while(rval == 0);
+	}// while(rval == 0);
 
 	if(data_flags & HG_NEEDSUPDATE)
 	{
