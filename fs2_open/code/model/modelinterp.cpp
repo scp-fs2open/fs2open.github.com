@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.101 $
- * $Date: 2005-02-12 12:17:54 $
+ * $Revision: 2.102 $
+ * $Date: 2005-02-15 00:06:27 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2005/02/12 12:17:54  taylor
+ * fix Error() check so that it doesn't hit on MAX_BUFFERS_PER_SUBMODEL-1
+ *
  * Revision 2.100  2005/02/04 23:29:32  taylor
  * merge with Linux/OSX tree - p0204-3
  *
@@ -698,6 +701,7 @@
 #include "particle/particle.h"
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
+#include "globalincs/linklist.h"
 
 
 
@@ -833,6 +837,7 @@ static int FULLCLOAK=-1;
 void model_interp_sortnorm_b2f(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
 void model_interp_sortnorm_f2b(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
 
+int model_should_render_engine_glow(int objnum, int bank_obj);
 
 void model_render_buffers(bsp_info* model, polymodel * pm);
 void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level);
@@ -3903,6 +3908,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			thruster_bank *bank = &pm->thrusters[i];
 			int j;
 
+			// don't draw this thruster if the engine is destroyed or just not on
+			if ((bank->obj_num > -1) && !(model_should_render_engine_glow(objnum, bank->obj_num)))
+				continue;
+
 			for ( j=0; j<bank->num_slots; j++ )	{
 				float d, D;
 				vector tempv;
@@ -6027,4 +6036,48 @@ void trigger_instance::corect(){
 	for(int i = 0; i<3; i++)
 		if((properties.vel.a1d[i]*properties.vel.a1d[i])/properties.accel.a1d[i] > fabs(properties.angle.a1d[i]))
 			properties.vel.a1d[i] = (float)sqrt(fabs(properties.accel.a1d[i] * properties.angle.a1d[i]));
+}
+
+// returns 1 if the thruster should be drawn
+//         0 if it shouldn't
+int model_should_render_engine_glow(int objnum, int bank_obj)
+{
+	if ((bank_obj == -1) || (objnum == -1))
+		return 1;
+
+	object *obj = &Objects[objnum];
+
+	if (obj == NULL)
+		return 1;
+
+	if (obj->type == OBJ_SHIP) {
+		ship_subsys *ssp;
+		ship *shipp = &Ships[obj->instance];
+		ship_info *si = &Ship_info[shipp->ship_info_index];
+
+		char subname[MAX_NAME_LEN];
+		// shipp->subsystems isn't always valid here so don't use it
+		strncpy(subname, si->subsystems[bank_obj].subobj_name, MAX_NAME_LEN);
+
+		ssp = GET_FIRST(&shipp->subsys_list);
+		while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
+			if ( !strcmp(subname, ssp->system_info->name) ) {
+				// this subsystem has 0 or less hits, ie. it's destroyed
+				if ( ssp->current_hits <= 0 )
+					return 0;
+
+				// TODO: there could also be something here for disabled engine subsystems
+				//       if the need arose.
+
+				return 1;
+			}
+			ssp = GET_NEXT( ssp );
+		}
+
+	} else if (obj->type == OBJ_WEAPON) {
+		// for weapons, if needed in the future
+	}
+
+	// default to render glow
+	return 1;
 }

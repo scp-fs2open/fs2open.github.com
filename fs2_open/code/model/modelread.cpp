@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-02-08 23:49:59 $
+ * $Revision: 2.56 $
+ * $Date: 2005-02-15 00:06:27 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/02/08 23:49:59  taylor
+ * update/add .cvsignore files for project file changes
+ * silence warning about depreciated strings.h stuff for MSVC 2005
+ * final model_unload() stuff for WMCoolmon, put in missionweaponchoice.cpp
+ * remove really old project files
+ *
  * Revision 2.54  2005/02/05 04:15:35  taylor
  * more post merge happiness
  *
@@ -2216,6 +2222,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 					bank->num_slots = cfread_int(fp);
 
+					bank ->obj_num = -1;
+
 					if (pm->version < 2117) {
 						bank->wash_info_index = -1;
 					} else {
@@ -2242,6 +2250,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 									if (bank->wash_info_index >= 0) {
 										table_error = 0;
 									}
+									// also set what subsystem this is attached to
+									bank->obj_num = k;
 									break;
 								}
 							}

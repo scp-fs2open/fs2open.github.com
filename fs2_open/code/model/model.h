@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.53 $
- * $Date: 2005-02-08 23:49:59 $
+ * $Revision: 2.54 $
+ * $Date: 2005-02-15 00:06:27 $
  * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/02/08 23:49:59  taylor
+ * update/add .cvsignore files for project file changes
+ * silence warning about depreciated strings.h stuff for MSVC 2005
+ * final model_unload() stuff for WMCoolmon, put in missionweaponchoice.cpp
+ * remove really old project files
+ *
  * Revision 2.52  2005/02/04 23:29:32  taylor
  * merge with Linux/OSX tree - p0204-3
  *
@@ -504,11 +510,6 @@
 
 struct object;
 
-#ifdef INF_BUILD
-#define MAX_POLYGON_MODELS  300
-#else
-#define MAX_POLYGON_MODELS  128 //DTP reset from 198 to original value of 128
-#endif
 
 #define MAX_DEBRIS_OBJECTS	32
 #define MAX_MODEL_DETAIL_LEVELS	8
@@ -735,11 +736,6 @@ typedef struct IBX {
 	char name[MAX_FILENAME_LEN];	// filename of the ibx, this is used in case a safety check fails and we delete the file
 } IBX;
 
-#ifdef INF_BUILD
-#define MAX_BUFFERS_PER_SUBMODEL 24
-#else
-#define MAX_BUFFERS_PER_SUBMODEL 16
-#endif
 
 
 typedef struct bsp_info {
@@ -859,6 +855,8 @@ typedef struct thruster_bank {
 
 	// Engine wash info
 	char		wash_info_index;			// index into Engine_wash_info
+
+	int		obj_num;		// what subsystem number this thruster is on
 } thruster_bank;
 	
 typedef struct glow_bank {  // glow bank struckture -Bobboau

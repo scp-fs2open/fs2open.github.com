@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.75 $
- * $Date: 2005-02-10 04:01:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.76 $
+ * $Date: 2005-02-15 00:06:27 $
+ * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2005/02/10 04:01:42  wmcoolmon
+ * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
+ *
  * Revision 2.74  2005/01/30 03:24:39  wmcoolmon
  * Don't try and create a vertex buffer with no vertices (Seems to cause CTD) and fix to brackets in nonstandard res
  *
@@ -744,7 +747,6 @@
 #include "debugconsole/timerbar.h"
 #include "debugconsole/dbugfile.h"
 #include "freespace2/freespaceresource.h"   
-#include "model/model.h"
 #include "cmdline/cmdline.h"   
 #include "graphics/grbatch.h"
 
@@ -781,16 +783,6 @@ enum stage_state{
 
 LPDIRECT3DCUBETEXTURE8 cube_map;
 
-// Defines and constants
-#define MAX_SUBOBJECTS 64
-
-#ifdef INF_BUILD
-#define MAX_BUFFERS_PER_SUBMODEL 24
-#else
-#define MAX_BUFFERS_PER_SUBMODEL 16
-#endif
-
-#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*MAX_BUFFERS_PER_SUBMODEL
 
 // External variables - booo!
 extern bool env_enabled;

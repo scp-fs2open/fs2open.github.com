@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.7 $
- * $Date: 2005-01-31 23:27:52 $
+ * $Revision: 1.8 $
+ * $Date: 2005-02-15 00:06:26 $
  * $Author: taylor $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/01/31 23:27:52  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 1.6  2004/12/30 21:41:24  Goober5000
  * stupid parenthesis fix
  * --Goober5000
@@ -160,6 +163,14 @@
 // from model.h
 
 #define MAX_MODEL_TEXTURES	64
+
+#ifdef INF_BUILD
+	#define MAX_POLYGON_MODELS  300
+	#define MAX_BUFFERS_PER_SUBMODEL 24
+#else
+	#define MAX_POLYGON_MODELS  128 //DTP reset from 198 to original value of 128
+	#define MAX_BUFFERS_PER_SUBMODEL 16
+#endif
 
 
 // from object.h; probably will be redone eventually
