@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.49 $
- * $Date: 2003-10-23 23:48:03 $
- * $Author: phreak $
+ * $Revision: 2.50 $
+ * $Date: 2004-01-14 06:34:07 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2003/10/23 23:48:03  phreak
+ * added code for the mission parser to recognize user defined skyboxes
+ *
  * Revision 2.48  2003/10/16 16:38:16  Kazan
  * couple more types in species_defs.cpp, also finished up "Da Species Upgrade"
  *
@@ -1027,7 +1030,7 @@ void parse_mission_info(mission *pm)
 	pm->support_ships.departure_anchor = -1;
 	pm->support_ships.max_hull_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
 	pm->support_ships.max_subsys_repair_val = 100.0f;
-	pm->support_ships.max_support_ships = 0;	// infinite
+	pm->support_ships.max_support_ships = -1;	// infinite
 	pm->support_ships.ship_class = -1;
 	pm->support_ships.tally = 0;
 
@@ -1036,7 +1039,7 @@ void parse_mission_info(mission *pm)
 		int temp;
 		stuff_int(&temp);
 
-		pm->support_ships.max_support_ships = (temp > 0) ? -1 : 0;
+		pm->support_ships.max_support_ships = (temp > 0) ? 0 : -1;
 	}
 
 	if ( optional_string("+Hull Repair Ceiling:"))
