@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-04-26 01:40:53 $
+ * $Revision: 2.14 $
+ * $Date: 2004-05-02 01:26:52 $
  * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/04/26 01:40:53  taylor
+ * better anim free stuff, disable for now to prevent CTD
+ *
  * Revision 2.12  2004/03/06 23:28:23  bobboau
  * fixed motion debris
  * animated laser textures
@@ -915,6 +918,7 @@ void message_mission_free_avi(int m_index)
 		return;
 
 #ifndef NDEBUG
+	/*
 	if (Message_avis[m_index].anim_data != NULL) {
 		while (Message_avis[m_index].anim_data->ref_count) {
 			anim_free(Message_avis[m_index].anim_data);
@@ -922,6 +926,7 @@ void message_mission_free_avi(int m_index)
 
 		Message_avis[m_index].anim_data = NULL;
 	}
+	*/
 #endif
 }
 
