@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.91 $
- * $Date: 2005-01-03 18:45:22 $
- * $Author: taylor $
+ * $Revision: 2.92 $
+ * $Date: 2005-01-14 05:28:58 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2005/01/03 18:45:22  taylor
+ * dynamic allocation of num supported OpenGL lights
+ * add config option for more realistic light settings
+ * don't render spec maps in nebula to address lighting issue
+ *
  * Revision 2.90  2005/01/01 11:24:22  taylor
  * good OpenGL spec mapping
  * fix VBO crash with multitexture using same uv coord data
@@ -1677,6 +1682,9 @@ void gr_opengl_gradient(int x1,int y1,int x2,int y2)
 {
 	int clipped = 0, swapped=0;
 
+	gr_resize_screen_pos(&x1, &y1);
+	gr_resize_screen_pos(&x2, &y2);
+
 	if ( !gr_screen.current_color.is_alphacolor )   {
 		gr_line( x1, y1, x2, y2 );
 		return;
@@ -1726,6 +1734,8 @@ void gr_opengl_circle( int xc, int yc, int d )
 {
 	int p,x, y, r;
 
+	gr_resize_screen_pos(&xc, &yc);
+
 	r = d/2;
 	p=3-d;
 	x=0;
@@ -1759,6 +1769,96 @@ void gr_opengl_circle( int xc, int yc, int d )
 		gr_opengl_line( xc-x, yc+y, xc+x, yc+y );
 	}
 	return;
+}
+
+void gr_opengl_curve( int xc, int yc, int r, int direction)
+{
+	int a,b,p;
+	gr_resize_screen_pos(&xc, &yc);
+
+	p=3-(2*r);
+	a=0;
+	b=r;
+
+	// Big clip
+	if ( (xc+r) < gr_screen.clip_left ) return;
+	if ( (yc+r) < gr_screen.clip_top ) return;
+
+	switch(direction)
+	{
+		case 0:
+			yc += r;
+			xc += r;
+			while(a<b)
+			{
+				// Draw the first octant
+				gr_opengl_line(xc - b + 1, yc-a, xc - b, yc-a);
+
+				if (p<0) 
+					p=p+(a<<2)+6;
+				else	{
+					// Draw the second octant
+					gr_opengl_line(xc-a+1,yc-b,xc-a,yc-b);
+					p=p+((a-b)<<2)+10;
+					b--;
+				}
+				a++;
+			}
+			break;
+		case 1:
+			yc += r;
+			while(a<b)
+			{
+				// Draw the first octant
+				gr_opengl_line(xc + b - 1, yc-a, xc + b, yc-a);
+
+				if (p<0) 
+					p=p+(a<<2)+6;
+				else	{
+					// Draw the second octant
+					gr_opengl_line(xc+a-1,yc-b,xc+a,yc-b);
+					p=p+((a-b)<<2)+10;
+					b--;
+				}
+				a++;
+			}
+			break;
+		case 2:
+			xc += r;
+			while(a<b)
+			{
+				// Draw the first octant
+				gr_opengl_line(xc - b + 1, yc+a, xc - b, yc+a);
+
+				if (p<0) 
+					p=p+(a<<2)+6;
+				else	{
+					// Draw the second octant
+					gr_opengl_line(xc-a+1,yc+b,xc-a,yc+b);
+					p=p+((a-b)<<2)+10;
+					b--;
+				}
+				a++;
+			}
+			break;
+		case 3:
+			while(a<b)
+			{
+				// Draw the first octant
+				gr_opengl_line(xc + b - 1, yc+a, xc + b, yc+a);
+
+				if (p<0) 
+					p=p+(a<<2)+6;
+				else	{
+					// Draw the second octant
+					gr_opengl_line(xc+a-1,yc+b,xc+a,yc+b);
+					p=p+((a-b)<<2)+10;
+					b--;
+				}
+				a++;
+			}
+			break;
+	}
 }
 
 
@@ -3354,6 +3454,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_shade = gr_opengl_shade;
 	gr_screen.gf_string = gr_opengl_string;
 	gr_screen.gf_circle = gr_opengl_circle;
+	gr_screen.gf_curve = gr_opengl_curve;
 
 	gr_screen.gf_line = gr_opengl_line;
 	gr_screen.gf_aaline = gr_opengl_aaline;

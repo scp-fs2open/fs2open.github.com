@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.32 $
- * $Date: 2005-01-01 11:24:22 $
- * $Author: taylor $
+ * $Revision: 2.33 $
+ * $Date: 2005-01-14 05:28:57 $
+ * $Author: wmcoolmon $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/01/01 11:24:22  taylor
+ * good OpenGL spec mapping
+ * fix VBO crash with multitexture using same uv coord data
+ * little speedup of opengl_tcache_frame()
+ * error message to make sure hardware supports the minimum texture size
+ * move OpenGL version check out of the extention printout code
+ * disable 2d_poof with OpenGL
+ *
  * Revision 2.31  2004/09/26 16:24:51  taylor
  * handle lost devices better, fix movie crash
  *
@@ -563,6 +571,7 @@ void gr_d3d_create_font_bitmap();
 void gr_d3d_char(int x,int y,int letter);
 void gr_d3d_string( int sx, int sy, char *s );
 void gr_d3d_circle( int xc, int yc, int d );
+void gr_d3d_curve( int xc, int yc, int r, int direction );
 void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize = false);
 void gr_d3d_aaline(vertex *v1, vertex *v2);
 void gr_d3d_gradient(int x1,int y1,int x2,int y2);

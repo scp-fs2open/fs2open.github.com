@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.10 $
- * $Date: 2005-01-01 11:24:23 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-01-14 05:28:58 $
+ * $Author: wmcoolmon $
  *
  * $NoKeywords: $
  */
@@ -44,6 +44,7 @@ void gr_stub_line(int x1,int y1,int x2,int y2, bool resize = false) {}
 void gr_stub_aaline(vertex *v1, vertex *v2) {}
 void gr_stub_gradient(int x1,int y1,int x2,int y2) {}
 void gr_stub_circle( int xc, int yc, int d ) {}
+void gr_stub_curve(int xc, int yc, int r, int direction) {}
 void gr_stub_stuff_fog_coord(vertex *v) {}
 void gr_stub_stuff_secondary_color(vertex *v, ubyte fr, ubyte fg, ubyte fb) {}
 void stub_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, float v_scale, int r, int g, int b, int alpha, int override_primary=0) {}
@@ -157,6 +158,7 @@ void gr_stub_init()
 	gr_screen.gf_shade = gr_stub_shade;
 	gr_screen.gf_string = gr_stub_string;
 	gr_screen.gf_circle = gr_stub_circle;
+	gr_screen.gf_curve	= gr_stub_curve;
 
 	gr_screen.gf_line = gr_stub_line;
 	gr_screen.gf_aaline = gr_stub_aaline;
