@@ -20,6 +20,12 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/10/13 05:57:50  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  * Revision 2.40  2003/09/26 14:37:16  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -871,6 +877,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_TAGGED_ONLY;
 		else if (!stricmp(NOX("beam no whack"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIG2_BEAM_NO_WHACK;
+		else if (!stricmp(NOX("cycle"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_CYCLE;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 
@@ -1763,6 +1771,17 @@ int parse_weapon()
 	if( optional_string("$SSM:")){
 		stuff_int(&wip->SSM_index);
 	}// SSM index -Bobboau
+
+
+	wip->field_of_fire = 0.0f;
+	if( optional_string("$FOF:")){
+		stuff_float(&wip->field_of_fire);
+	}
+
+	wip->shots = 1;
+	if( optional_string("$Shots:")){
+		stuff_int(&wip->shots);
+	}
 
 	wip->decal_texture = -1;
 	wip->decal_backface_texture = -1;
@@ -3297,13 +3316,28 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 //
 // Returns:  index of weapon in the Objects[] array, -1 if the weapon object was not created
 int Weapons_created = 0;
-int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objnum, int secondary_flag, int group_id, int is_locked )
+int weapon_create( vector * pos, matrix * porient, int weapon_id, int parent_objnum, int secondary_flag, int group_id, int is_locked )
 {
 	int			n, objnum;
 	int num_deleted;
 	object		*objp, *parent_objp;
 	weapon		*wp;
 	weapon_info	*wip;
+
+	wip = &Weapon_info[weapon_id];
+
+	//I am hopeing that this way does not alter the input orient matrix
+	//Feild of Fire code -Bobboau
+	matrix morient;
+	matrix *orient;
+	morient = *porient;
+	orient = &morient;
+	if(wip->field_of_fire){
+		vector f;
+		vm_vec_random_cone(&f, &orient->vec.fvec, wip->field_of_fire, NULL);
+		vm_vec_normalize(&f);
+		vm_vector_2_matrix( orient, &f, NULL, NULL);
+	}
 
 	Assert(weapon_id >= 0 && weapon_id < Num_weapon_types);
 
@@ -3352,7 +3386,6 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 
 	// Create laser n!
 	wp = &Weapons[n];
-	wip = &Weapon_info[weapon_id];
 
 	// check if laser or dumbfire missile
 	// set physics flag to allow optimization
@@ -3483,20 +3516,6 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
 	}
 
-	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
-	{
-
-		Assert(parent_objp);		//local ssms must have a parent
-
-		wp->lssm_warpout_time=timestamp(wip->lssm_warpout_delay);
-		wp->lssm_warpin_time=timestamp(wip->lssm_warpout_delay + wip->lssm_warpin_delay);
-		wp->lssm_stage=1;
-	}
-	else{
-		wp->lssm_stage=-1;
-	}
-
-
 	// create the corkscrew
 	if ( wip->wi_flags & WIF_CORKSCREW ) {
 		wp->cscrew_index = (short)cscrew_create(objp);
@@ -3554,7 +3573,6 @@ int weapon_create( vector * pos, matrix * orient, int weapon_id, int parent_objn
 	Num_weapons++;
 	return objnum;
 }
-
 //	Spawn child weapons from object *objp.
 void spawn_child_weapons(object *objp)
 {

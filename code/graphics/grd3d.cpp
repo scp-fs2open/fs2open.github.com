@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.32 $
- * $Date: 2003-10-25 03:26:39 $
- * $Author: phreak $
+ * $Revision: 2.33 $
+ * $Date: 2003-10-25 06:56:05 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/10/25 03:26:39  phreak
+ * fixed some old bugs that reappeared after RT committed his texture code
+ *
  * Revision 2.31  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -1801,7 +1804,6 @@ void gr_d3d_destroy_buffer(int idx){
 
 bool the_lights_are_on;
 extern bool lighting_enabled;
-
 void gr_d3d_render_buffer(int idx)
 {
 	if(!the_lights_are_on){
@@ -1861,7 +1863,7 @@ void gr_d3d_render_buffer(int idx)
 			set_stage_for_defuse();
 	}
 
-	int passes = (n_active_lights/GlobalD3DVars::d3d_caps.MaxActiveLights);
+	int passes = (n_active_lights / GlobalD3DVars::d3d_caps.MaxActiveLights);
 	d3d_SetVertexShader(D3DVT_VERTEX);
 
 	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DVERTEX));
@@ -1894,7 +1896,6 @@ void gr_d3d_render_buffer(int idx)
 	pre_render_lights_init();
 	shift_active_lights(0);
 
-	// Bob, put a return here and look how well the fog works
 	//spec mapping
 	if(SPECMAP > -1){
 		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
@@ -1915,7 +1916,9 @@ void gr_d3d_render_buffer(int idx)
 		}
 	}
 
+	// Revert back to old fog state
 	gr_d3d_fog_set(gr_screen.current_fog_mode, old_fog_color.red,old_fog_color.green,old_fog_color.blue, gr_screen.fog_near, gr_screen.fog_far);
+
 
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-10-25 03:27:21 $
- * $Author: phreak $
+ * $Revision: 2.8 $
+ * $Date: 2003-10-25 06:56:06 $
+ * $Author: bobboau $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/10/25 03:27:21  phreak
+ * fixed some old bugs that reappeared after RT committed his texture code
+ *
  * Revision 2.6  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -393,7 +396,7 @@ void g3_start_instance_matrix(vector *pos,matrix *orient)
 	vm_matrix_x_matrix(&Light_matrix,&saved_orient, orient);
 
 	if(!Cmdline_nohtl)
-		gr_start_instance_matrix(pos,orient);
+		gr_start_instance_matrix(&Object_position,&Object_matrix);
 
 }
 
@@ -435,7 +438,7 @@ void g3_done_instance()
 	Object_position = instance_stack[instance_depth].op;
 
 	if(!Cmdline_nohtl)
-	 	gr_end_instance_matrix();	
+		gr_start_instance_matrix(&Object_position,&Object_matrix);
 }
 
 int G3_user_clip = 0;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.41 $
- * $Date: 2003-10-25 03:27:50 $
- * $Author: phreak $
+ * $Revision: 2.42 $
+ * $Date: 2003-10-25 06:56:06 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/10/25 03:27:50  phreak
+ * fixed some old bugs that reappeared after RT committed his texture code
+ *
  * Revision 2.40  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -4751,6 +4754,9 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 	g3_done_instance();
 }
 
+extern vector Object_position;
+extern matrix Object_matrix;
+
 void model_render_buffers(bsp_info* model, polymodel * pm){
 	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING) );
 	gr_set_cull(1);
@@ -4797,6 +4803,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 			if((Interp_thrust_bitmap>-1) && (Interp_thrust_scale > 0.0f)) {
 				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f);
 			}
+			gr_start_instance_matrix(&Object_position,&Object_matrix);
 		} else if(pm->transparent[model->buffer[i].texture] ){	//trying to get transperent textures-Bobboau
 			if(Warp_Alpha!=-1.0)gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			else gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
@@ -4816,7 +4823,9 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 
 	if(Interp_thrust_scale_subobj){
 			Model_Interp_scale_z = msz;
+			gr_start_instance_matrix(&Object_position,&Object_matrix);
 	}
+	gr_end_instance_matrix();
 //	gr_set_lighting( false );
 
 }
