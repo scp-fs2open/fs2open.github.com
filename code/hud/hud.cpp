@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-17 20:40:50 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-17 07:59:09 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/17 20:40:50  randomtiger
+ * Added ability to remove HUD ingame on keypress shift O
+ * So I've added a new key to the bind list and made use of already existing hud removal code.
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -3100,18 +3104,6 @@ void hud_maybe_render_multi_text()
 	}
 }
 #endif
-
-// cut any text off after (and including) '#' char
-void hud_end_string_at_first_hash_symbol(char *src)
-{
-	char *pointer_to_last_char;
-
-	pointer_to_last_char = strstr(src, NOX("#"));
-
-	if ( pointer_to_last_char ) {
-		*pointer_to_last_char = 0;
-	}
-}
 
 // set the offset values for this render frame
 void HUD_set_offsets(object *viewer_obj, int wiggedy_wack)

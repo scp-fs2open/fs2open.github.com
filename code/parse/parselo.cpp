@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.2 $
- * $Author: bobboau $
- * $Date: 2003-01-05 23:41:51 $
+ * $Revision: 2.3 $
+ * $Author: Goober5000 $
+ * $Date: 2003-01-17 07:59:08 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/05 23:41:51  bobboau
+ * disabled decals (for now), removed the warp ray thingys,
+ * made some better error mesages while parseing weapons and ships tbls,
+ * and... oh ya, added glow mapping
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -1901,4 +1906,21 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 	}
 
 	return line_num;
+}
+
+// Goober5000
+void end_string_at_first_hash_symbol(char *src)
+{
+	char *p = get_pointer_to_first_hash_symbol(src);
+
+	if (p)
+	{
+		*p = '\0';
+	}
+}
+
+// Goober5000
+char *get_pointer_to_first_hash_symbol(char *src)
+{
+	return strchr(src, '#');
 }

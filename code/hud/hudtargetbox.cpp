@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-01-17 01:48:50 $
+ * $Revision: 2.12 $
+ * $Date: 2003-01-17 07:59:09 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/01/17 01:48:50  Goober5000
+ * added capability to the $Texture replace code to substitute the textures
+ * without needing and extra model, however, this way you can't substitute
+ * transparent or animated textures
+ * --Goober5000
+ *
  * Revision 2.10  2003/01/15 20:49:10  Goober5000
  * did the XSTR for the turret thing
  * --Goober5000
@@ -1018,10 +1024,7 @@ void hud_render_target_ship_info(object *target_objp)
 		mission_parse_lookup_alt_index(target_shipp->alt_type_index, temp_name);
 	} else {
 		strcpy(temp_name, Ship_info[base_index].name);	
-		if ( strstr(Ship_info[base_index].name, NOX("#")) ) {			
-			strcpy(temp_name, Ship_info[base_index].name);
-			hud_end_string_at_first_hash_symbol(temp_name);			
-		}	
+		end_string_at_first_hash_symbol(temp_name);			
 	}
 
 	if (Lcl_gr) {
@@ -1479,13 +1482,9 @@ void hud_render_target_debris(object *target_objp)
 		base_index = ship_info_base_lookup( debrisp->ship_info_index );
 
 	// print out ship class that debris came from
-	char *printable_ship_class = Ship_info[base_index].name;
-	if ( strstr(Ship_info[base_index].name, NOX("#")) ) {
-		char temp_name[NAME_LENGTH];
-		strcpy(temp_name, Ship_info[base_index].name);
-		hud_end_string_at_first_hash_symbol(temp_name);
-		printable_ship_class = temp_name;
-	}
+	char printable_ship_class[NAME_LENGTH];
+	strcpy(printable_ship_class, Ship_info[base_index].name);
+	end_string_at_first_hash_symbol(printable_ship_class);
 
 	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, printable_ship_class);	
 	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, XSTR( "debris", 348));	
@@ -1604,9 +1603,8 @@ void hud_render_target_weapon(object *target_objp)
 	gr_get_string_size(&w,&h,outstr);
 
 	// drop name past the # sign
-	if ( strstr(outstr, NOX("#")) ) {			
-		hud_end_string_at_first_hash_symbol(outstr);			
-	}
+	end_string_at_first_hash_symbol(outstr);			
+
 	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, outstr);	
 
 	// If a homing weapon, show time to impact

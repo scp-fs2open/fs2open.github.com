@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-01-03 21:58:08 $
+ * $Revision: 2.12 $
+ * $Date: 2003-01-17 07:59:09 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/01/03 21:58:08  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.10  2002/12/31 19:18:41  Goober5000
  * if it ain't broke, don't fix it
  * --Goober5000
@@ -4948,7 +4955,7 @@ void hud_show_secondary_weapon(int count, ship_weapon *sw, int dual_fire)
 			strcpy(weapon_name, wip->name);
 		}
 
-		hud_end_string_at_first_hash_symbol(weapon_name);
+		end_string_at_first_hash_symbol(weapon_name);
 		
 		if ( sw->current_secondary_bank == i ) {
 			emp_hud_printf(Weapon_sunlinked_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12, EG_NULL, "%c", Lcl_special_chars + 2);			
