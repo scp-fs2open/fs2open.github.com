@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-03-08 18:36:21 $
+ * $Revision: 2.21 $
+ * $Date: 2004-03-20 14:47:13 $
  * $Author: randomtiger $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/03/08 18:36:21  randomtiger
+ * Added complete stub system to replace software.
+ *
  * Revision 2.19  2004/03/08 15:06:24  Kazan
  * Did, undo
  *
@@ -584,6 +587,7 @@
 #include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/dbugfile.h"
+#include "graphics/grbatch.h"
 
 // 3dnow stuff
 // #include "amd3d.h"
@@ -706,7 +710,6 @@ void gr_close()
 {
 	if ( !Gr_inited )	return;
 
-	DBUGFILE_OUTPUT_0("About to palette_flush");
 	palette_flush();
 
 	switch( gr_screen.mode )	{
@@ -725,8 +728,8 @@ void gr_close()
 		Int3();		// Invalid graphics mode
 	}
 
-	DBUGFILE_OUTPUT_0("About to gr_font_close");
 	gr_font_close();
+	batch_deinit();
 
 	Gr_inited = 0;
 }
@@ -1169,6 +1172,11 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 
 	// Call some initialization functions
 	gr_set_shader(NULL);
+
+	if(batch_init()	== false)
+	{
+		return false;
+	}
 
 	return true;
 }

@@ -21,6 +21,7 @@
 #include "graphics/grd3dinternal.h"
 #include "graphics/grd3dbmpman.h"
 #include "graphics/grd3dlight.h"
+#include "graphics/grbatch.h"
 #include "graphics/grd3dbatch.h"
 #include "graphics/grd3dparticle.h"
 
@@ -42,6 +43,8 @@ bool GlobalD3DVars::D3D_window		 = 0;
 
 int GlobalD3DVars::D3D_rendition_uvs = 0;
 int GlobalD3DVars::D3D_zbias         = 1;
+
+int GlobalD3DVars::unlit_3D_batch	 = -1;
 
 float GlobalD3DVars::texture_adjust_u = 0;
 float GlobalD3DVars::texture_adjust_v = 0;
@@ -190,32 +193,6 @@ void d3d_release_rendering_objects()
 	}
 
 //	DBUGFILE_OUTPUT_COUNTER(0, "Number of unfreed textures");
-}
-
-void gr_d3d_cleanup()
-{
-	if (!GlobalD3DVars::D3D_inited) return;
-
-	d3d_batch_deinit();
-
-	d3d_tcache_cleanup();  
-
-	// Ensures gamma options dont return to the desktop
-	gr_d3d_set_gamma(1.0);
-
-	// release surfaces
-	d3d_release_rendering_objects();
-
-	if ( GlobalD3DVars::lpD3D ) {
-		GlobalD3DVars::lpD3D->Release();
-		GlobalD3DVars::lpD3D = NULL; 
-	}
-
-	// restore windows clipping rectangle
- 	ClipCursor(NULL);
-	GlobalD3DVars::D3D_inited = 0;
-
-	DBUGFILE_OUTPUT_4("%f %f %f %f",rt_pointsize,rt_pointsize_A,rt_pointsize_B,rt_pointsize_C);
 }
 
 bool d3d_init_win32(int screen_width, int screen_height)
@@ -1423,6 +1400,9 @@ bool gr_d3d_init()
 		return false;
 	}
 
+	GlobalD3DVars::unlit_3D_batch = d3d_create_batch(1000, D3DVT_LVERTEX, D3DPT_TRIANGLELIST);
+	Assert(GlobalD3DVars::unlit_3D_batch != -1);
+
 	gr_d3d_activate(1);
 	d3d_start_frame();
 
@@ -1438,4 +1418,32 @@ bool gr_d3d_init()
 
 	return true;
 
+}
+
+void gr_d3d_cleanup()
+{
+	if (!GlobalD3DVars::D3D_inited) return;
+
+	d3d_destory_batch(GlobalD3DVars::unlit_3D_batch);
+
+	d3d_batch_deinit();
+
+	d3d_tcache_cleanup();  
+
+	// Ensures gamma options dont return to the desktop
+	gr_d3d_set_gamma(1.0);
+
+	// release surfaces
+	d3d_release_rendering_objects();
+
+	if ( GlobalD3DVars::lpD3D ) {
+		GlobalD3DVars::lpD3D->Release();
+		GlobalD3DVars::lpD3D = NULL; 
+	}
+
+	// restore windows clipping rectangle
+ 	ClipCursor(NULL);
+	GlobalD3DVars::D3D_inited = 0;
+
+	DBUGFILE_OUTPUT_4("%f %f %f %f",rt_pointsize,rt_pointsize_A,rt_pointsize_B,rt_pointsize_C);
 }

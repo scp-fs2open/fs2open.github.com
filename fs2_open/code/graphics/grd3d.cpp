@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.60 $
- * $Date: 2004-03-17 04:07:29 $
- * $Author: bobboau $
+ * $Revision: 2.61 $
+ * $Date: 2004-03-20 14:47:13 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2004/03/17 04:07:29  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.59  2004/02/28 14:14:56  randomtiger
  * Removed a few uneeded if DIRECT3D's.
  * Set laser function to only render the effect one sided.
@@ -664,6 +671,7 @@
 #include "globalincs/alphacolors.h"
 
 #include "graphics/grinternal.h"
+#include "graphics/grbatch.h"
 
 #include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
@@ -688,6 +696,7 @@
 #include "freespace2/freespaceresource.h"   
 #include "model/model.h"
 #include "cmdline/cmdline.h"   
+#include "graphics/grbatch.h"
 
 enum vertex_buffer_type{TRILIST_,LINELIST_,FLAT_};
 // Structures and enums
@@ -908,6 +917,8 @@ void d3d_stop_frame()
 	if (!GlobalD3DVars::D3D_inited) return;
 	if(!GlobalD3DVars::D3D_activate) return;
 
+	batch_render();
+
 	if ( In_frame < 0 || In_frame > 1 )	{
 		mprintf(( "Stop frame error! (%d)\n", In_frame ));
 		return;
@@ -916,7 +927,6 @@ void d3d_stop_frame()
 	if ( In_frame == 0 ) return;
 
 	In_frame--;
-	
 
 	TIMERBAR_END_FRAME();
 	if(FAILED(GlobalD3DVars::lpD3DDevice->EndScene()))

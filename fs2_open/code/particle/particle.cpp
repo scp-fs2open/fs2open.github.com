@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:02:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-20 14:47:13 $
+ * $Author: randomtiger $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:02:09  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2004/01/24 14:31:27  randomtiger
  * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
  * Its optional and off by default, use -d3d_particle to activiate.
@@ -192,6 +196,9 @@
 #ifndef NDEBUG
 #include "io/timer.h"
 #endif
+
+#include "cmdline/cmdline.h"
+#include "graphics/grbatch.h"
 
 typedef struct particle {
 	// old style data
@@ -527,11 +534,7 @@ void particle_render_all()
 
 	p = Particles;
 
-	if(gr_screen.mode == GR_DIRECT3D && Cmdline_d3d_particle)
-	{
-		void gr_d3d_particle_reset_list();
-		gr_d3d_particle_reset_list();
-	}
+	batch_start();
 
 	for (int i=0; i<MAX_PARTICLES; i++, p++ )	{
 		
@@ -714,11 +717,8 @@ void particle_render_all()
 		}
 	}
 
-	if(gr_screen.mode == GR_DIRECT3D && Cmdline_d3d_particle)
-	{
-		bool gr_d3d_particle_render_list();
-		gr_d3d_particle_render_list();
-	}
+	batch_end();
+	batch_render();
 
 //	mprintf(( "NP=%d, NCP=%d\n", n, nclipped ));
 }

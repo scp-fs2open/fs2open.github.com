@@ -1,24 +1,6 @@
 #ifndef _GRD3DBATCH_H_
 #define _GRD3DBATCH_H_
 
-
-// Batch structure to be filled by process requesting batch
-typedef struct {
-	void (*state_set_func)();
-	// For gr_set_bitmap
-	int texture_id;
-	// For gr_tcache_set
-	int bitmap_type;
-
-	// For gr_d3d_set_state
-	int filter_type;
-	int alpha_blend_type;
-	int zbuffer_type;
-
-	int is_set;
-
-} BatchInfo;
-
 bool d3d_batch_init();
 void d3d_batch_deinit();
 

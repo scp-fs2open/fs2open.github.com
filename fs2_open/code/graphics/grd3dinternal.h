@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.24 $
- * $Date: 2004-03-19 14:51:55 $
+ * $Revision: 2.25 $
+ * $Date: 2004-03-20 14:47:13 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/03/19 14:51:55  randomtiger
+ * New command line parameter: -d3d_lesstmem causes D3D to bypass V's secondry texture system.
+ *
  * Revision 2.23  2004/02/20 21:45:41  randomtiger
  * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
  * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
@@ -342,6 +345,8 @@ typedef struct {
 
 	static int D3D_rendition_uvs;
 	static int D3D_zbias;
+
+	static int unlit_3D_batch;
 
 	static float texture_adjust_u;
 	static float texture_adjust_v;

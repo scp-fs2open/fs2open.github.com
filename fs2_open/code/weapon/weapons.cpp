@@ -12,6 +12,13 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2004/03/17 04:07:32  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.56  2004/03/06 23:28:24  bobboau
  * fixed motion debris
  * animated laser textures
@@ -566,6 +573,7 @@
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
 #include "cmdline/cmdline.h"
+#include "graphics/grbatch.h"
 #include "parse/parselo.h"
 
 #ifndef NO_NETWORK
@@ -2327,6 +2335,8 @@ void weapon_render(object *obj)
 		default:
 			Warning(LOCATION, "Unknown weapon rendering type = %i\n", wip->render_type);
 	}
+
+	batch_render();
 }
 
 void weapon_delete(object *obj)
