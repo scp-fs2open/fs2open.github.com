@@ -5,11 +5,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.11 $
- * $Date: 2004-11-22 06:17:57 $
- * $Author: taylor $
+ * $Revision: 1.12 $
+ * $Date: 2005-01-25 23:32:46 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2004/11/22 06:17:57  taylor
+ * make sure species_defs.tbl can be found outside of root[0] and in VPs
+ *
  * Revision 1.10  2004/07/26 20:47:53  Kazan
  * remove MCD complete
  *
@@ -52,9 +55,6 @@
  * Revision 1.1  2003/10/15 22:03:27  Kazan
  * Da Species Update :D
  *
- *
- *
- *
  */
 
 
@@ -68,12 +68,8 @@
 //#include <memory.h>
 
 
-
 // from shield.cpp
 int True_NumSpecies = 3;
-
-// this isn't globalized because it shouldn't be!
-void Init_Species_LoadDefault();
 
 // manually extern everything here - because it's not all needed throughout the entire system
 extern shield_ani Shield_ani[MAX_SHIELD_ANIMS];
@@ -86,7 +82,75 @@ extern char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN];
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-// This function Loads the data from the species_defs.tbl
+// This is the default table
+char *default_species_table = "\
+; -----------------------------------------------			\n\
+; Species_defs.tbl											\n\
+; Derek 'Kazan' Meek										\n\
+; FS2 Open Species table									\n\
+;															\n\
+; -----------------------------------------------			\n\
+															\n\
+#SPECIES DEFS												\n\
+															\n\
+$NumSpecies: 3												\n\
+															\n\
+;------------------------									\n\
+; Terran													\n\
+;------------------------									\n\
+$Species_Name: Terran										\n\
+	+Debris_Texture: debris01a								\n\
+	+Shield_Hit_ani: shieldhit01a							\n\
+$ThrustAnims:												\n\
+	+Pri_Normal:	thruster01								\n\
+	+Pri_Afterburn:	thruster01a								\n\
+	+Sec_Normal:	thruster02-01							\n\
+	+Sec_Afterburn:	thruster02-01a							\n\
+	+Ter_Normal:	thruster03-01							\n\
+	+Ter_Afterburn:	thruster03-01a							\n\
+$ThrustGlows:												\n\
+	+Normal:	thrusterglow01								\n\
+	+Afterburn:	thrusterglow01a								\n\
+															\n\
+;------------------------									\n\
+; Vasudan													\n\
+;------------------------									\n\
+$Species_Name: Vasudan										\n\
+	+Debris_Texture: debris01b								\n\
+	+Shield_Hit_ani: shieldhit01a							\n\
+$ThrustAnims:												\n\
+	+Pri_Normal:	thruster02								\n\
+	+Pri_Afterburn:	thruster02a								\n\
+	+Sec_Normal:	thruster02-02							\n\
+	+Sec_Afterburn:	thruster02-02a							\n\
+	+Ter_Normal:	thruster03-02							\n\
+	+Ter_Afterburn:	thruster03-02a							\n\
+$ThrustGlows:												\n\
+	+Normal:	thrusterglow02								\n\
+	+Afterburn:	thrusterglow02a								\n\
+															\n\
+;------------------------									\n\
+; Shivan													\n\
+;------------------------									\n\
+$Species_Name: Shivan										\n\
+	+Debris_Texture: debris01c								\n\
+	+Shield_Hit_ani: shieldhit01a							\n\
+$ThrustAnims:												\n\
+	+Pri_Normal:	thruster03								\n\
+	+Pri_Afterburn:	thruster03a								\n\
+	+Sec_Normal:	thruster02-03							\n\
+	+Sec_Afterburn:	thruster02-03a							\n\
+	+Ter_Normal:	thruster03-03							\n\
+	+Ter_Afterburn:	thruster03-03a							\n\
+$ThrustGlows:												\n\
+	+Normal:	thrusterglow03								\n\
+	+Afterburn:	thrusterglow03a								\n\
+#END														\n\
+";
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+// This function loads the data from the species_defs.tbl
 // It setups up Species_names, Debris Texture Files, Thruster Animations and Thruster Glow Animations
 // Names only - actual loading is done elsewhere
 
@@ -102,21 +166,19 @@ void Init_Species_Definitions()
 
 	char cstrtemp[MAX_SHIELD_ANIMNAME_LEN+1];
 
+	// Goober5000 - condensed check for table file
 	CFILE *sdt = cfopen("species_defs.tbl", "rb");
-
-	if (sdt == NULL)
-	{
-		Init_Species_LoadDefault();
-		return;
-	}
-	else
-	{
+	int table_exists = (sdt != NULL);
+	if (table_exists)
 		cfclose(sdt);
-		sdt = NULL;
-	}
+
+	// Goober5000 - if table doesn't exist, use the default table (see above)
+	if (table_exists)
+		read_file_text("species_defs.tbl");
+	else
+		read_file_text_from_array(default_species_table);
 
 
-	read_file_text("species_defs.tbl");
 	reset_parse();	
 
 	required_string("#SPECIES DEFS");
@@ -182,133 +244,3 @@ void Init_Species_Definitions()
 	required_string("#END");
 	
 }
-
-
-//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-
-// This function initialized the data to the default [V] hardcoded values
-// See Below this function for what species_defs.tbl this is equivilent to
-void Init_Species_LoadDefault()
-{
-
-	True_NumSpecies = 3;
-
-	// -------------- Terran -------------- 
-
-	strncpy(Species_names[0],					"Terran",			SPECIES_NAME_MAXLEN);
-	strncpy(Debris_texture_files[0],			"debris01a",		MAX_DEBRIS_TNAME_LEN);
-	strcpy(Shield_ani[0].filename, "shieldhit01a");
-
-	// species*2 ? afterburning?1:0
-	strncpy(Thrust_anim_names[0],				"thruster01",		MAX_FILENAME_LEN);
-	strncpy(Thrust_anim_names[1],				"thruster01a",		MAX_FILENAME_LEN);
-	strncpy(Thrust_secondary_anim_names[0],		"thruster02-01",	MAX_FILENAME_LEN);
-	strncpy(Thrust_secondary_anim_names[1],		"thruster02-01a",	MAX_FILENAME_LEN);
-	strncpy(Thrust_tertiary_anim_names[0],		"thruster03-01",	MAX_FILENAME_LEN);
-	strncpy(Thrust_tertiary_anim_names[1],		"thruster03-01",	MAX_FILENAME_LEN);
-	strncpy(Thrust_glow_anim_names[0],			"thrusterglow01",	MAX_FILENAME_LEN);
-	strncpy(Thrust_glow_anim_names[1],			"thrusterglow01a",	MAX_FILENAME_LEN);
-
-
-	// -------------- Vasudan -------------- 
-
-	strncpy(Species_names[1],					"Vasudan",			SPECIES_NAME_MAXLEN);
-	strncpy(Debris_texture_files[1],			"debris01b",		MAX_DEBRIS_TNAME_LEN);
-	strcpy(Shield_ani[1].filename, "shieldhit01a");
-
-	// species*2 ? afterburning?1:0
-	strncpy(Thrust_anim_names[2],				"thruster02",		MAX_FILENAME_LEN);
-	strncpy(Thrust_anim_names[3],				"thruster02a",		MAX_FILENAME_LEN);
-	strncpy(Thrust_secondary_anim_names[2],		"thruster02-02",	MAX_FILENAME_LEN);
-	strncpy(Thrust_secondary_anim_names[3],		"thruster02-02a",	MAX_FILENAME_LEN);
-	strncpy(Thrust_tertiary_anim_names[2],		"thruster03-02",	MAX_FILENAME_LEN);
-	strncpy(Thrust_tertiary_anim_names[3],		"thruster03-02",	MAX_FILENAME_LEN);
-	strncpy(Thrust_glow_anim_names[2],			"thrusterglow02",	MAX_FILENAME_LEN);
-	strncpy(Thrust_glow_anim_names[3],			"thrusterglow02a",	MAX_FILENAME_LEN);
-
-
-
-	// -------------- Shivan -------------- 
-
-	strncpy(Species_names[2],					"Shivan",			SPECIES_NAME_MAXLEN);
-	strncpy(Debris_texture_files[2],			"debris01c",		MAX_DEBRIS_TNAME_LEN);
-	strcpy(Shield_ani[2].filename, "shieldhit01a");
-
-	// species*2 ? afterburning?1:0
-	strncpy(Thrust_anim_names[4],				"thruster03",		MAX_FILENAME_LEN);
-	strncpy(Thrust_anim_names[5],				"thruster03a",		MAX_FILENAME_LEN);
-	strncpy(Thrust_secondary_anim_names[4],		"thruster02-03",	MAX_FILENAME_LEN);
-	strncpy(Thrust_secondary_anim_names[5],		"thruster02-03a",	MAX_FILENAME_LEN);
-	strncpy(Thrust_tertiary_anim_names[4],		"thruster03-03",	MAX_FILENAME_LEN);
-	strncpy(Thrust_tertiary_anim_names[5],		"thruster03-03",	MAX_FILENAME_LEN);
-	strncpy(Thrust_glow_anim_names[4],			"thrusterglow03",	MAX_FILENAME_LEN);
-	strncpy(Thrust_glow_anim_names[5],			"thrusterglow03a",	MAX_FILENAME_LEN);
-
-
-}
-
-// This is equivlient to the table
-/*
-; -----------------------------------------------
-; Species_defs.tbl
-; Derek "Kazan" Meek
-; FS2 Open Species table
-;
-; -----------------------------------------------
-
-#SPECIES DEFS
-
-$NumSpecies: 3
-
-;------------------------
-; Terran
-;------------------------
-$Species_Name: Terran
-	+Debris_Texture: debris01a
-	+Shield_Hit_ani: shieldhit01a
-$ThrustAnims:
-	+Pri_Normal:	thruster01
-	+Pri_Afterburn:	thruster01a
-	+Sec_Normal:	thruster02-01
-	+Sec_Afterburn:	thruster02-01a
-	+Ter_Normal:	thruster03-01
-	+Ter_Afterburn:	thruster03-01a
-$ThrustGlows:
-	+Normal:	thrusterglow01
-	+Afterburn:	thrusterglow01a
-
-;------------------------
-; Vasudan
-;------------------------
-$Species_Name: Vasudan
-	+Debris_Texture: debris01b
-	+Shield_Hit_ani: shieldhit01a
-$ThrustAnims:
-	+Pri_Normal:	thruster02
-	+Pri_Afterburn:	thruster02a
-	+Sec_Normal:	thruster02-02
-	+Sec_Afterburn:	thruster02-02a
-	+Ter_Normal:	thruster03-02
-	+Ter_Afterburn:	thruster03-02a
-$ThrustGlows:
-	+Normal:	thrusterglow02
-	+Afterburn:	thrusterglow02a
-
-;------------------------
-; Shivan
-;------------------------
-$Species_Name: Shivan
-	+Debris_Texture: debris01c
-	+Shield_Hit_ani: shieldhit01a
-$ThrustAnims:
-	+Pri_Normal:	thruster03
-	+Pri_Afterburn:	thruster03a
-	+Sec_Normal:	thruster02-03
-	+Sec_Afterburn:	thruster02-03a
-	+Ter_Normal:	thruster03-03
-	+Ter_Afterburn:	thruster03-03a
-$ThrustGlows:
-	+Normal:	thrusterglow03
-	+Afterburn:	thrusterglow03a
-#END
-*/
