@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-03-03 14:29:39 $
+ * $Revision: 2.30 $
+ * $Date: 2005-03-09 03:23:32 $
  * $Author: bobboau $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/03/03 14:29:39  bobboau
+ * fixed a small error from my earlier commit.
+ *
  * Revision 2.28  2005/03/03 02:39:14  bobboau
  * added trilist suport to the poly rendering functions
  * and a gr_bitmap_list function that uses it
@@ -2416,14 +2419,27 @@ int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flag
 	return ret;
 }
 
+vertex *bitmap_2d_poly_list=NULL;
+vertex **bitmap_2d_poly_vertlist=NULL;
+int bitmap_2d_poly_list_size=0;
+
+void bm_list_shutdown(){
+	if(bitmap_2d_poly_list)delete[]bitmap_2d_poly_list;
+	if(bitmap_2d_poly_vertlist)delete[]bitmap_2d_poly_vertlist;
+}
+
 int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additional_tmap_flags)
 {
 	int ret;
 	int saved_zbuffer_mode;
-	vertex *v = new vertex[6* n_bm];
-	vertex **vertlist = new vertex*[6*n_bm];
-	for(int i = 0; i<6*n_bm; i++)vertlist[i] = &v[i];
-	memset(v,0,sizeof(vertex)*6*n_bm);
+	if(n_bm>bitmap_2d_poly_list_size){
+		if(bitmap_2d_poly_list)delete[]bitmap_2d_poly_list;
+		if(bitmap_2d_poly_vertlist)delete[]bitmap_2d_poly_vertlist;
+		vertex *bitmap_2d_poly_list = new vertex[6* n_bm];
+		vertex **bitmap_2d_poly_vertlist = new vertex*[6*n_bm];
+		for(int i = 0; i<6*n_bm; i++)bitmap_2d_poly_vertlist[i] = &bitmap_2d_poly_list[i];
+		memset(bitmap_2d_poly_list,0,sizeof(vertex)*6*n_bm);
+	}
 
 	int bw, bh;
 
@@ -2435,11 +2451,11 @@ int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additiona
 
 	bm_get_section_size(gr_screen.current_bitmap, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &bw, &bh);
 
-	for(i = 0; i<n_bm;i++){
+	for(int i = 0; i<n_bm;i++){
 		// stuff coords	
 
 		//tri one
-		vertex *V = &v[i*6];
+		vertex *V = &bitmap_2d_poly_list[i*6];
 		V->sx = (float)b_list[i].x;
 		V->sy = (float)b_list[i].y;	
 		V->sw = 0.0f;
@@ -2500,7 +2516,7 @@ int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additiona
 	gr_filter_set(0);
 
 	// set debrief	
-	ret = g3_draw_poly_constant_sw(6*n_bm, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TRILIST | additional_tmap_flags, 0.1f);
+	ret = g3_draw_poly_constant_sw(6*n_bm, bitmap_2d_poly_vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TRILIST | additional_tmap_flags, 0.1f);
 
 	g3_end_frame();
 	
@@ -2509,8 +2525,109 @@ int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additiona
 	// put filtering back on
 	gr_filter_set(1);
 
-	delete[] v;
-	delete[]vertlist;
+	return ret;
+}
+
+//draws an array of bitmap_rect_list objects
+//see tmapper.h for explaination of structure bitmap_rect_list
+int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint additional_tmap_flags)
+{
+	int ret;
+	int saved_zbuffer_mode;
+	if(n_bm>bitmap_2d_poly_list_size){
+		if(bitmap_2d_poly_list)delete[]bitmap_2d_poly_list;
+		if(bitmap_2d_poly_vertlist)delete[]bitmap_2d_poly_vertlist;
+		vertex *bitmap_2d_poly_list = new vertex[6* n_bm];
+		vertex **bitmap_2d_poly_vertlist = new vertex*[6*n_bm];
+		for(int i = 0; i<6*n_bm; i++)bitmap_2d_poly_vertlist[i] = &bitmap_2d_poly_list[i];
+		memset(bitmap_2d_poly_list,0,sizeof(vertex)*6*n_bm);
+	}
+
+	int bw, bh;
+
+	g3_start_frame(1);
+
+	// turn off zbuffering	
+	saved_zbuffer_mode = gr_zbuffer_get();
+	gr_zbuffer_set(GR_ZBUFF_NONE);	
+
+	bm_get_section_size(gr_screen.current_bitmap, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &bw, &bh);
+
+	for(int i = 0; i<n_bm;i++){
+		// stuff coords	
+
+		bitmap_2d_list* b = &b_list[i].screen_rect;
+		texture_rect* t = &b_list[i].texture_rect;
+		//tri one
+		vertex *V = &bitmap_2d_poly_list[i*6];
+		V->sx = (float)b->x;
+		V->sy = (float)b->y;	
+		V->sw = 0.0f;
+		V->u = (float)t->x;
+		V->v = (float)t->y;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		V->sx = (float)(b->x + b->w);
+		V->sy = (float)b->y;	
+		V->sw = 0.0f;
+		V->u = (float)(t->x + t->w);
+		V->v = (float)t->y;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		V->sx = (float)(b->x + b->w);
+		V->sy = (float)(b->y + b->h);	
+		V->sw = 0.0f;
+		V->u = (float)(t->x + t->w);
+		V->v = (float)(t->y + t->h);
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+	
+
+		//tri two
+		V++;
+		V->sx = (float)b->x;
+		V->sy = (float)b->y;	
+		V->sw = 0.0f;
+		V->u = (float)t->x;
+		V->v = (float)t->y;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		V->sx = (float)(b->x + b->w);
+		V->sy = (float)(b->y + b->h);	
+		V->sw = 0.0f;
+		V->u = (float)(t->x + t->w);
+		V->v = (float)(t->y + t->h);
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		V->sx = (float)b->x;
+		V->sy = (float)(b->y + b->h);	
+		V->sw = 0.0f;
+		V->u = (float)t->x;
+		V->v = (float)(t->y + t->h);
+		V->flags = PF_PROJECTED;
+		V->codes = 0;	
+	}
+	
+	// no filtering
+	gr_filter_set(0);
+
+	// set debrief	
+	ret = g3_draw_poly_constant_sw(6*n_bm, bitmap_2d_poly_vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TRILIST | additional_tmap_flags, 0.1f);
+
+	g3_end_frame();
+	
+	gr_zbuffer_set(saved_zbuffer_mode);	
+
+	// put filtering back on
+	gr_filter_set(1);
 
 	return ret;
 }

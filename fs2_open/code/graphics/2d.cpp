@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-03-07 13:10:20 $
+ * $Revision: 2.38 $
+ * $Date: 2005-03-09 03:23:31 $
  * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/03/07 13:10:20  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.36  2005/03/03 02:39:14  bobboau
  * added trilist suport to the poly rendering functions
  * and a gr_bitmap_list function that uses it
@@ -1517,6 +1521,37 @@ void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 
 	//screw bm sections, screw them all to hell, I realy doubt anyone will have any problems with this
 }
+
+// _->NEW<-_ NEW new bitmap functions -Bobboau
+//takes a list of rectangles that have assosiated rectangles in a texture
+void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
+{
+		// get the section as a texture in vram					
+	gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
+
+	for(int i = 0; i<n_bm; i++){
+
+		bitmap_2d_list* l = &list[i].screen_rect;
+
+		//if no valid hight or width values were given get some from the bitmap
+		if(l->w <= 0 || l->h <= 0)
+		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL, NULL);
+		// I will tidy this up later - RT
+		//I doubt it, seeing as you've been gone for nearly half a year :)
+
+		//resize for diferent screen resolutions if needed.
+		if(allow_scaling  || gr_screen.rendering_to_texture != -1)
+		{
+			gr_resize_screen_pos(&l->x, &l->y);
+			gr_resize_screen_pos(&l->w, &l->h);
+		}
+
+	}
+	g3_draw_2d_poly_bitmap_rect_list(list, n_bm, 0);
+
+	//screw bm sections, screw them all to hell, I realy doubt anyone will have any problems with this
+}
+
 
 // given endpoints, and thickness, calculate coords of the endpoint
 void gr_pline_helper(vector *out, vector *in1, vector *in2, int thickness)
