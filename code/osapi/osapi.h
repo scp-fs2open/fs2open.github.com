@@ -59,6 +59,7 @@ int os_foreground();
 // Returns the handle to the main window
 uint os_get_window();
 
+void os_app_activate_set(bool state);
 
 // process management --------------------------------------------------------------
 
