@@ -1679,7 +1679,7 @@ int gauge_var::Evaluate(int* result)
 				break;
 			default:
 				Error(LOCATION, "Unknown data type handed to gauge_var::Evaluate(int* result)!");
-				return;
+				return HG_RETURNNODRAW;
 		}
 
 		switch(var_operator)
@@ -1699,6 +1699,7 @@ int gauge_var::Evaluate(int* result)
 				break;
 			default:
 				Error(LOCATION, "Unknown operator handed to gauge_var::Evaluate(int* result)!");
+				return HG_RETURNNODRAW;
 		}
 
 		cv = cv->next;
@@ -1735,20 +1736,20 @@ int gauge_var::Evaluate(float* result)
 			case GV_INTPTR:
 			case GV_INTVAR:
 				temp_result = i2fl(*int_variable);
-				return;
+				break;
 			case GV_CHARPTR:
 				temp_result = atof(*char_pointer);
-				return;
+				break;
 			case GV_CHARVAR:
 				temp_result = atof(char_variable);
-				return;
+				break;
 			case GV_FLOATPTR:
 			case GV_FLOATVAR:
 				temp_result = (*float_variable);
-				return;
+				break;
 			default:
 				Error(LOCATION, "Unknown data type handed to gauge_var::Evaluate(float* result)!");
-				return;
+				return HG_RETURNNODRAW;
 		}
 
 		switch(var_operator)
@@ -1768,7 +1769,7 @@ int gauge_var::Evaluate(float* result)
 				break;
 			default:
 				Error(LOCATION, "Unknown operator handed to gauge_var::Evaluate(float* result)!");
-				return;
+				return HG_RETURNNODRAW;
 		}
 
 		cv = cv->next;
@@ -1825,7 +1826,7 @@ int gauge_var::Evaluate(char** result)
 				break;
 			default:
 				Error(LOCATION, "Unknown data type handed to gauge_var::Evaluate(char** result)!");
-				return;
+				return HG_RETURNNODRAW;
 		}
 
 		switch(var_operator)
@@ -1835,7 +1836,7 @@ int gauge_var::Evaluate(char** result)
 				break;
 			default:
 				Error(LOCATION, "Unknown operator handed to gauge_var::Evaluate(char** result)!");
-				return;
+				return HG_RETURNNODRAW;
 		}
 		
 		cv = cv->next;
@@ -1847,12 +1848,12 @@ int gauge_var::Evaluate(char** result)
 	}
 	else
 	{
-		size_t new_char_size = strlent(*result) + 1;
+		size_t new_char_size = strlen(*result) + 1;
 		if(prev_data_type != GV_CHARVAR || prev_char_size < new_char_size)
 		{
 			prev_data_type = GV_CHARVAR;
 			DeallocPrevVars();
-			prev_float_result = new char[new_char_size];
+			prev_char_result = new char[new_char_size];
 		}
 		strcpy(prev_char_result, (*result));
 

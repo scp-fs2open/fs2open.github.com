@@ -1,5 +1,5 @@
 //Define or undefine NEW_HUD here so you don't have to recompile everything.
-//#define NEW_HUD
+#define NEW_HUD
 
 #include "PreProcDefines.h"
 #pragma once
@@ -87,6 +87,7 @@ class gauge_var
 	gauge_var *next, *prev;
 
 	void DeallocVars();
+	void DeallocPrevVars();
 public:
 	//Cover all the bases
 	void gauge_var::operator=(int value);
@@ -98,9 +99,9 @@ public:
 	void gauge_var::operator=(char** pointer);
 	void gauge_var::operator=(float* pointer);
 
-	void Evaluate(int* result);
-	void Evaluate(float* result);
-	void Evaluate(char** result);
+	int Evaluate(int* result);
+	int Evaluate(float* result);
+	int Evaluate(char** result);
 
 	int Append();
 	gauge_var();
