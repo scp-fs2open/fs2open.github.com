@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 19:29:28 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-10 05:43:33 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 19:29:28  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -194,7 +197,10 @@
 #define	AIF_AVOIDING_BIG_SHIP				(1 << 21)	//	Avoiding a large ship.
 #define	AIF_BIG_SHIP_COLLIDE_RECOVER_1	(1 << 22)	//	Collided into a big ship.  Recovering by flying away.
 #define	AIF_BIG_SHIP_COLLIDE_RECOVER_2	(1 << 23)	//	Collided into a big ship.  Fly towards big ship sphere perimeter.
-#define	AIF_STEALTH_PURSIUT					(1 << 24)	// Ai is trying to fight stealth ship
+#define	AIF_STEALTH_PURSUIT					(1 << 24)	// Ai is trying to fight stealth ship
+
+// Goober5000
+#define	AIF_UNLOAD_PRIMARIES				(1 << 25)	//	Fire primaries as fast as possible!
 
 #define	AIF_AVOID_SHOCKWAVE	(AIF_AVOID_SHOCKWAVE_SHIP | AIF_AVOID_SHOCKWAVE_WEAPON)
 #define	AIF_FORMATION			(AIF_FORMATION_WING | AIF_FORMATION_OBJECT)
@@ -527,6 +533,7 @@ typedef struct ai_info {
 	int		last_target;
 
 	int		rearm_first_missile;				// flag to show that reloading of missilies hasn't begun yet
+	int		rearm_first_ballistic_primary;		// flag to show that reloading of ballistic primaries hasn't begun yet
 	int		rearm_release_delay;				// timestamp used to delay separation of ships after rearm complete
 
 	fix		afterburner_stop_time;			//	Missiontime to turn off afterburner

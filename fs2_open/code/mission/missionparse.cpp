@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-12-03 23:05:13 $
+ * $Revision: 2.5 $
+ * $Date: 2002-12-10 05:43:34 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/12/03 23:05:13  Goober5000
+ * implemented beam-free-all-by-default mission flag
+ *
  * Revision 2.3  2002/12/03 00:00:52  Goober5000
  * fixed player entry delay bug
  *
@@ -1549,6 +1552,14 @@ int parse_create_object(p_object *objp)
 	if (objp->flags & P_OF_NO_SHIELDS || sip->shields == 0 )
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 
+	// Goober5000
+	if (objp->flags & P_OF_NO_LASERS || sip->max_weapon_reserve < 0.01f)
+		Objects[objnum].flags |= OF_NO_LASERS;
+
+	// Goober5000
+	if (objp->flags & P_OF_NO_ENGINES || sip->max_speed == 0 )
+		Objects[objnum].flags |= OF_NO_ENGINES;
+
 	if (objp->flags & P_SF_ESCORT)
 		Ships[shipnum].flags |= SF_ESCORT;
 
@@ -1683,6 +1694,15 @@ int parse_create_object(p_object *objp)
 				}
 			}
 
+			// primary weapons too - Goober5000
+			for (j=0; j < wp->num_primary_banks; j++)
+				if (Fred_running){
+					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
+				} else {
+					int capacity = fl2i(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j] + 0.5f );
+					wp->primary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size + 0.5f);
+				}
+
 			for (j=0; j < wp->num_secondary_banks; j++)
 				if (Fred_running){
 					wp->secondary_bank_ammo[j] = sssp->secondary_ammo[j];
@@ -1717,6 +1737,12 @@ int parse_create_object(p_object *objp)
 				if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
 					for (j=0; j<MAX_SECONDARY_BANKS; j++)
 						ptr->weapons.secondary_bank_weapons[j] = sssp->secondary_banks[j];
+
+				// Goober5000
+				for (j=0; j<MAX_PRIMARY_BANKS; j++)
+				{
+					ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
+				}
 
 				for (j=0; j<MAX_SECONDARY_BANKS; j++) {
 					// AL 3-5-98:  This is correct for FRED, but not for FreeSpace... but is this even used?
@@ -2291,6 +2317,10 @@ void parse_common_object_data(p_object	*objp)
 
 		if (optional_string("+Primary Banks:"))
 			stuff_int_list(Subsys_status[i].primary_banks, MAX_PRIMARY_BANKS, WEAPON_LIST_TYPE);
+
+		// Goober5000
+		if (optional_string("+Pbank Ammo:"))
+			stuff_int_list(Subsys_status[i].primary_ammo, MAX_PRIMARY_BANKS, RAW_INTEGER_TYPE);
 
 		if (optional_string("+Secondary Banks:"))
 			stuff_int_list(Subsys_status[i].secondary_banks, MAX_SECONDARY_BANKS, WEAPON_LIST_TYPE);
@@ -4838,16 +4868,25 @@ void mission_parse_eval_stuff()
 int allocate_subsys_status()
 {
 	int i;
+	// set primary weapon ammunition here, but does it actually matter? - Goober5000
 
 	Assert(Subsys_index < MAX_SUBSYS_STATUS);
 	Subsys_status[Subsys_index].percent = 0.0f;
+
 	Subsys_status[Subsys_index].primary_banks[0] = SUBSYS_STATUS_NO_CHANGE;
+	Subsys_status[Subsys_index].primary_ammo[0] = 100; // *
+	
 	for (i=1; i<MAX_PRIMARY_BANKS; i++)
+	{
 		Subsys_status[Subsys_index].primary_banks[i] = -1;  // none
+		Subsys_status[Subsys_index].primary_ammo[i] = 100;	// *
+	}
 
 	Subsys_status[Subsys_index].secondary_banks[0] = SUBSYS_STATUS_NO_CHANGE;
 	Subsys_status[Subsys_index].secondary_ammo[0] = 100;
-	for (i=1; i<MAX_SECONDARY_BANKS; i++) {
+	
+	for (i=1; i<MAX_SECONDARY_BANKS; i++)
+	{
 		Subsys_status[Subsys_index].secondary_banks[i] = -1;
 		Subsys_status[Subsys_index].secondary_ammo[i] = 100;
 	}

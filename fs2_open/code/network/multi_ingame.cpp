@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-10 05:43:34 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -1692,6 +1695,7 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 {
 	ubyte data[MAX_PACKET_SIZE],val;
 	ship *shipp;
+	ship_info *sip;
 	int i, packet_size = 0;
 	ushort signature;
 	p_object *pobj;
@@ -1712,6 +1716,7 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 	case INGAME_SR_CONFIRM:
 		// get a pointer to the ship
 		shipp = &Ships[Objects[rdata].instance];
+		sip = &Ship_info[shipp->ship_info_index];
 
 		// add the most recent position and orientation for the requested ship
 		ADD_DATA(Objects[rdata].pos);
@@ -1731,6 +1736,13 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		val = (ubyte)shipp->engine_recharge_index;
 		ADD_DATA(val);
 
+		// add the ballistic primary flag - Goober5000
+		val = 0;
+		if(sip->flags & SIF_BALLISTIC_PRIMARIES){
+			val |= (1<<0);
+		}
+		ADD_DATA(val);
+
 		// add current primary and secondary banks, and add link status
 		val = (ubyte)shipp->weapons.current_primary_bank;
 		ADD_DATA(val);
@@ -1743,6 +1755,16 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		for ( i = 0; i < shipp->weapons.num_secondary_banks; i++ ) {
 			Assert( shipp->weapons.secondary_bank_ammo[i] < UCHAR_MAX );
 			val = (ubyte)shipp->weapons.secondary_bank_ammo[i];
+			ADD_DATA(val);
+		}
+
+		// add the current ammo count for primary banks - copied from above - Goober5000
+		val = (ubyte)shipp->weapons.num_primary_banks;		// for sanity checking
+		ADD_DATA(val);
+		for ( i = 0; i < shipp->weapons.num_primary_banks; i++ )
+		{
+			Assert( shipp->weapons.primary_bank_ammo[i] < UCHAR_MAX );
+			val = (ubyte)shipp->weapons.primary_bank_ammo[i];
 			ADD_DATA(val);
 		}
 
@@ -1832,7 +1854,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 	int team, slot_index, i;
 	uint respawn_count;
-	ubyte val, num_secondary_banks;
+	ubyte val, num_secondary_banks, num_primary_banks;
 	p_object *pobj;
 
 	// get the code
@@ -1960,6 +1982,12 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		GET_DATA(val);
 		Player_ship->engine_recharge_index = val;		
 
+		// handle the ballistic primary flag - Goober5000
+		GET_DATA(val);
+		if(val & (1<<0)){
+			Player_ship->flags |= SIF_BALLISTIC_PRIMARIES;
+		}
+
 		// get current primary and secondary banks, and add link status
 		GET_DATA(val);
 		Player_ship->weapons.current_primary_bank = val;
@@ -1974,6 +2002,14 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 			Player_ship->weapons.secondary_bank_ammo[i] = val;
 		}
 
+		// primary bank ammo data - copied from above - Goober5000
+		GET_DATA( num_primary_banks );
+		Assert( num_primary_banks == Player_ship->weapons.num_primary_banks );
+		for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ )
+		{
+			GET_DATA(val);
+			Player_ship->weapons.primary_bank_ammo[i] = val;
+		}
 
 		// get the link status of weapons
 		GET_DATA(val);

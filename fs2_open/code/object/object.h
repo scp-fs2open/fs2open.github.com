@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-10 05:43:33 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -428,7 +431,7 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_INVULNERABLE		(1<<4)	//	invulnerable
 #define OF_PROTECTED			(1<<5)	// Don't kill this object, probably mission-critical.
 #define OF_PLAYER_SHIP		(1<<6)	// this object under control of some player -- don't do ai stuff on it!!!
-#define OF_NO_SHIELDS		(1<<7)	// object has no shield generator system (i.e. no shileds)
+#define OF_NO_SHIELDS		(1<<7)	// object has no shield generator system (i.e. no shields)
 #define OF_JUST_UPDATED		(1<<8)	// for multiplayer -- indicates that we received object update this frame
 #define OF_COULD_BE_PLAYER (1<<9)	// for multiplayer -- indicates that it is selectable ingame joiners as their ship
 #define OF_WAS_RENDERED		(1<<10)	//	Set if this object was rendered this frame.  Only gets set if OF_RENDERS set.  Gets cleared or set in obj_render_all().
@@ -436,12 +439,14 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_BEAM_PROTECTED	(1<<12)	// don't fire beam weapons at this type of object, probably mission critical.
 #define OF_GUARDIAN			(1<<13)	// Don't allow ship to die, keep at least 1% hull
 #define OF_SPECIAL_WARP		(1<<14)	// Object has special warp-in enabled.
+#define OF_NO_LASERS		(1<<15)	// object has no laser energy management system
+#define OF_NO_ENGINES		(1<<16)	// object has no engine power
 
 // Flags used by Fred
-#define OF_MARKED          (1<<16)   //Object is marked (Fred).  Can be reused in Freespace for anything that won't be used by Fred.
-#define OF_TEMP_MARKED		(1<<17)	//Temporarily marked (Fred).
-#define OF_REFERENCED		(1<<18)	// (Fred) Object is referenced by something somewhere
-#define OF_HIDDEN				(1<<19)  // Object is hidden (not shown) and can't be manipulated
+#define OF_MARKED          (1<<17)   //Object is marked (Fred).  Can be reused in Freespace for anything that won't be used by Fred.
+#define OF_TEMP_MARKED		(1<<18)	//Temporarily marked (Fred).
+#define OF_REFERENCED		(1<<19)	// (Fred) Object is referenced by something somewhere
+#define OF_HIDDEN				(1<<20)  // Object is hidden (not shown) and can't be manipulated
 
 // max # of object sounds per object
 #define MAX_OBJECT_SOUNDS	4

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-10 05:43:33 $
+ * $Author: Goober5000 $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -545,16 +548,34 @@ void red_alert_set_status(int status)
 void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 {
 	int i, sidx;
+	weapon_info *wip;
 
 	if (swp == NULL) {
 		return;
 	}
 
-	for ( i = 0; i < MAX_WL_PRIMARY; i++ ) {
+	// edited to accommodate ballistics - Goober5000
+	for ( i = 0; i < MAX_WL_PRIMARY; i++ )
+	{
+		wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
 		ras->wep[i] = swp->primary_bank_weapons[i];
-		if ( ras->wep[i] >= 0 ) {
-			ras->wep_count[i] = 1;
-		} else {
+		if ( ras->wep[i] >= 0 )
+		{
+			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			{
+				// to avoid triggering the below condition: this way, minimum ammo will be 2...
+				// since the red-alert representation of a conventional primary is 0 -> not used,
+				// 1 -> used, I added the representation 2 and above -> ballistic primary
+				ras->wep_count[i] = swp->primary_bank_ammo[i] + 2;
+			}
+			else
+			{
+				ras->wep_count[i] = 1;
+			}
+		}
+		else
+		{
 			ras->wep_count[i] = -1;
 		}
 	}
@@ -562,9 +583,12 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	for ( i = 0; i < MAX_WL_SECONDARY; i++ ) {
 		sidx = i+MAX_WL_PRIMARY;
 		ras->wep[sidx] = swp->secondary_bank_weapons[i];
-		if ( ras->wep[sidx] >= 0 ) {
+		if ( ras->wep[sidx] >= 0 )
+		{
 			ras->wep_count[sidx] = swp->secondary_bank_ammo[i];
-		} else {
+		}
+		else
+		{
 			ras->wep_count[sidx] = -1;
 		}
 	}
@@ -580,19 +604,35 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 		return;
 	}
 
+	// modified to accommodate ballistics - Goober5000
 	j = 0;
-	for ( i = 0; i < MAX_WL_PRIMARY; i++ ) {
-		if ( (ras->wep_count[i] > 0) && (ras->wep[i] >= 0) ) {
-			swp->primary_bank_weapons[j] = ras->wep[i];			
+	for ( i = 0; i < MAX_WL_PRIMARY; i++ )
+	{
+		if ( (ras->wep_count[i] > 0) && (ras->wep[i] >= 0) )
+		{
+			swp->primary_bank_weapons[j] = ras->wep[i];
+			
+			if (ras->wep_count[i] > 1)	// this is a ballistic primary (!!!)
+			{
+				swp->primary_bank_ammo[j] = ras->wep_count[i] - 2;	// to compensate for storage
+			}
+			else
+			{
+				swp->primary_bank_ammo[i] = 0;
+			}				
+
 			j++;
 		}
 	}
 	swp->num_primary_banks = j;
 
+
 	j = 0;
-	for ( i = 0; i < MAX_WL_SECONDARY; i++ ) {
+	for ( i = 0; i < MAX_WL_SECONDARY; i++ )
+	{
 		sidx = i+MAX_WL_PRIMARY;
-		if ( ras->wep[sidx] >= 0 ) {
+		if ( ras->wep[sidx] >= 0 )
+		{
 			swp->secondary_bank_weapons[j] = ras->wep[sidx];
 			swp->secondary_bank_ammo[j] = ras->wep_count[sidx];
 			j++;

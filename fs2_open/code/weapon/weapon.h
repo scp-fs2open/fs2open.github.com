@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/07 01:37:43  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.4  2002/11/14 04:18:17  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -307,7 +313,7 @@
 #include "ship/ai.h"
 
 #define	WP_UNUSED	-1
-#define	WP_LASER		0
+#define	WP_LASER		0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
 #define	WP_MISSILE	1
 #define	WP_BEAM		2
 
@@ -352,6 +358,8 @@
 #define	WIF_MFLASH			(1 << 29)			// has muzzle flash
 #define	WIF_LOCKARM			(1 << 30)			// if the missile was fired without a lock, it does significanlty less damage on impact
 #define  WIF_STREAM			(1 << 31)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
+
+#define WIF2_BALLISTIC		(1 << 0)			// ballistic primaries - Goober5000
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
@@ -496,6 +504,7 @@ typedef struct weapon_info {
 	float	lifetime;							//	How long this thing lives.
 	float energy_consumed;					// Energy used up when weapon is fired
 	int	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
+	int wi_flags2;							// stupid int wi_flags, only 32 bits... argh - Goober5000
 	float turn_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
@@ -588,6 +597,7 @@ extern weapon_info Weapon_info[MAX_WEAPON_TYPES];
 extern int Num_weapon_types;			// number of weapons in the game
 extern int First_secondary_index;
 extern int Num_weapons;
+
 
 extern int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
 extern int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection

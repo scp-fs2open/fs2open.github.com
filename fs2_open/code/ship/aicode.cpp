@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.8 $
- * $Date: 2002-10-19 19:29:28 $
- * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2002-12-10 05:43:33 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/10/19 19:29:28  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.7  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -736,6 +739,10 @@ fix Skill_level_delay[NUM_SKILL_LEVELS] = {2*F1_0, 3*F1_0/2, 4*F1_0/3, F1_0/2, 0
 //	AI ships link primary weapons if energy levels greater than the following amounts:
 float	Link_energy_levels_always[NUM_SKILL_LEVELS] = {100.0f, 80.0f, 60.0f, 40.0f, 20.0f};	//	always link
 float	Link_energy_levels_maybe[NUM_SKILL_LEVELS] = {90.0f, 60.0f, 40.0f, 20.0f, 10.0f};	//	link if hull strength low
+
+//	AI ships link primary weapons if ammunition levels greater than the following percents (Goober5000):
+float	Link_ammo_levels_always[NUM_SKILL_LEVELS] = {.95f, .80f, .60f, .40f, .20f};	//	always link
+float	Link_ammo_levels_maybe[NUM_SKILL_LEVELS] = {.90f, .60f, .40f, .20f, .10f};	//	link if hull strength low
 
 //	Seconds to add to time it takes to get enemy in range.  Only for player's enemies.
 float	In_range_time[NUM_SKILL_LEVELS] = {2.0f, 1.4f, 0.75f, 0.0f, -1.0f};
@@ -5625,12 +5632,22 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 void set_primary_weapon_linkage(object *objp)
 {
 	ship		*shipp;
+	ship_info *sip;
 	ai_info	*aip;
+	ship_weapon	*swp;
+	weapon_info *wip;
+	
+	int total_ammo;
+	int current_ammo;
+	float ammo_pct;
+	int i;
 
 	shipp = &Ships[objp->instance];
+	sip = &Ship_info[shipp->ship_info_index];
 	aip	= &Ai_info[shipp->ai_index];
 
 	shipp->flags &= ~SF_PRIMARY_LINKED;
+	swp = &shipp->weapons;
 
 	if (Num_weapons > (int) (MAX_WEAPONS * 0.75f)) {
 		if (shipp->flags & SF_PRIMARY_LINKED)
@@ -5655,10 +5672,10 @@ void set_primary_weapon_linkage(object *objp)
 
 	// AL 2-11-98: If ship has a disarm or disable goal, don't link unless both weapons are
 	//					puncture weapons
-	if ( (aip->active_goal != AI_GOAL_NONE) && (aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) ) {
-		if ( aip->goals[aip->active_goal].ai_mode & (AI_GOAL_DISABLE_SHIP|AI_GOAL_DISARM_SHIP) ) {
-			ship_weapon	*swp;
-			swp = &shipp->weapons;
+	if ( (aip->active_goal != AI_GOAL_NONE) && (aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) )
+	{
+		if ( aip->goals[aip->active_goal].ai_mode & (AI_GOAL_DISABLE_SHIP|AI_GOAL_DISARM_SHIP) )
+		{
 			// only continue if both primaries are puncture weapons
 			if ( swp->num_primary_banks == 2 ) {
 				if ( !(Weapon_info[swp->primary_bank_weapons[0]].wi_flags & WIF_PUNCTURE) ) 
@@ -5672,17 +5689,57 @@ void set_primary_weapon_linkage(object *objp)
 	//	Don't want all ships always linking weapons at start, so asynchronize.
 	if (Missiontime < i2f(30))
 		return;
-	else if (Missiontime < i2f(120)) {
+	else if (Missiontime < i2f(120))
+	{
 		int r = static_rand((Missiontime >> 17) ^ OBJ_INDEX(objp));
 		if ( (r&3) != 0)
 			return;
 	}
 
+	// regular lasers
 	if (shipp->weapon_energy > Link_energy_levels_always[Game_skill_level]) {
 		shipp->flags |= SF_PRIMARY_LINKED;
 	} else if (shipp->weapon_energy > Link_energy_levels_maybe[Game_skill_level]) {
 		if (objp->hull_strength < Ship_info[shipp->ship_info_index].initial_hull_strength/3.0f)
 			shipp->flags |= SF_PRIMARY_LINKED;
+	}
+
+	// also check ballistics - Goober5000
+	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+	{
+		total_ammo = 0;
+		current_ammo = 0;
+
+		// count ammo, and do not continue unless all weapons are ballistic
+		for (i = 0; i < swp->num_primary_banks; i++)
+		{
+			wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			{
+				total_ammo += swp->primary_bank_start_ammo[i];
+				current_ammo += swp->primary_bank_ammo[i];
+			}
+			else
+			{
+				return;
+			}
+		}
+
+		ammo_pct = float (current_ammo) / float (total_ammo);
+
+		// link according to defined levels
+		if (ammo_pct > Link_ammo_levels_always[Game_skill_level])
+		{
+			shipp->flags |= SF_PRIMARY_LINKED;
+		}
+		else if (ammo_pct > Link_ammo_levels_maybe[Game_skill_level])
+		{
+			if (objp->hull_strength < Ship_info[shipp->ship_info_index].initial_hull_strength/3.0f)
+			{
+				shipp->flags |= SF_PRIMARY_LINKED;
+			}
+		}
 	}
 }
 
@@ -6502,7 +6559,7 @@ void set_predicted_enemy_pos(vector *predicted_enemy_pos, object *pobjp, object 
 	}
 
 	// if stealthy ship, throw his aim off, more when farther away and when dot is small
-	if ( aip->ai_flags & AIF_STEALTH_PURSIUT ) {
+	if ( aip->ai_flags & AIF_STEALTH_PURSUIT ) {
 		float dist = vm_vec_dist_quick(&pobjp->pos, &eobjp->pos);
 		vector temp;
 		vm_vec_sub(&temp, &eobjp->pos, &pobjp->pos);
@@ -8230,7 +8287,7 @@ void ai_chase()
 	//
 	if ( (aip->submode != SM_AVOID) && (aip->submode != SM_ATTACK_FOREVER) ) {
 		//	If a very long time since attacked, attack no matter what!
-		if ( (aip->submode != SM_SUPER_ATTACK) && (aip->submode != SM_GET_AWAY) && !(aip->ai_flags & AIF_STEALTH_PURSIUT) ) {
+		if ( (aip->submode != SM_SUPER_ATTACK) && (aip->submode != SM_GET_AWAY) && !(aip->ai_flags & AIF_STEALTH_PURSUIT) ) {
 			if (Missiontime - aip->last_attack_time > i2f(6)) {
 				aip->submode = SM_SUPER_ATTACK;
 				aip->submode_start_time = Missiontime;
@@ -8263,7 +8320,7 @@ void ai_chase()
 
 	case SM_ATTACK:
 		// if taraget is stealth and stealth not visible, then enter stealth find mode
-		if ( (aip->ai_flags & AIF_STEALTH_PURSIUT) && (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_INVISIBLE) ) {
+		if ( (aip->ai_flags & AIF_STEALTH_PURSUIT) && (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_INVISIBLE) ) {
 			aip->submode = SM_STEALTH_FIND;
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
@@ -8366,7 +8423,7 @@ void ai_chase()
 
 	case SM_SUPER_ATTACK:
 		// if stealth and invisible, enter stealth find mode
-		if ( (aip->ai_flags & AIF_STEALTH_PURSIUT) && (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_INVISIBLE) ) {
+		if ( (aip->ai_flags & AIF_STEALTH_PURSUIT) && (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_INVISIBLE) ) {
 			aip->submode = SM_STEALTH_FIND;
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
@@ -8456,7 +8513,7 @@ void ai_chase()
 	// Either change to SM_ATTACK or AIM_FIND_STEALTH
 	case SM_STEALTH_FIND:
 		// if time > 5 sec change mode to sweep
-		if ( !(aip->ai_flags & AIF_STEALTH_PURSIUT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_VISIBLE) ) {
+		if ( !(aip->ai_flags & AIF_STEALTH_PURSUIT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_VISIBLE) ) {
 			aip->submode = SM_ATTACK;
 			aip->submode_start_time = Missiontime;
 			aip->last_attack_time = Missiontime;
@@ -8471,7 +8528,7 @@ void ai_chase()
 		break;
 
 	case SM_STEALTH_SWEEP:
-		if ( !(aip->ai_flags & AIF_STEALTH_PURSIUT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_VISIBLE) ) {
+		if ( !(aip->ai_flags & AIF_STEALTH_PURSUIT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_VISIBLE) ) {
 			aip->submode = SM_ATTACK;
 			aip->submode_start_time = Missiontime;
 			aip->last_attack_time = Missiontime;
@@ -13125,7 +13182,10 @@ int maybe_request_support(object *objp)
 	ship_info	*sip;
 	ship			*shipp;
 	ai_info		*aip;
+	weapon_info *wip;
 	int			desire;
+	int i;
+	float r;
 
 	Assert(objp->type == OBJ_SHIP);
 	shipp = &Ships[objp->instance];
@@ -13156,7 +13216,11 @@ int maybe_request_support(object *objp)
 
 	//	Set desire based on hull strength.
 	//	No: We no longer repair hull, so this would cause repeated repair requests.
-	//desire += 6 - (int) ((objp->hull_strength/sip->initial_hull_strength) * 6.0f);
+	// Added back in upon mission flag condition - Goober5000
+	if (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
+	{
+		desire += 6 - (int) ((objp->hull_strength/sip->initial_hull_strength) * 6.0f);
+	}
 
 	//	Set desire based on key subsystems.
 	desire += 2*mrs_subsystem(shipp, SUBSYSTEM_ENGINE);	//	Note, disabled engine forces repair request, regardless of nearby enemies.
@@ -13164,16 +13228,35 @@ int maybe_request_support(object *objp)
 	desire += mrs_subsystem(shipp, SUBSYSTEM_WEAPONS);
 	desire += mrs_subsystem(shipp, SUBSYSTEM_SENSORS);
 
+
 	//	Set desire based on percentage of secondary weapons.
 	ship_weapon *swp = &shipp->weapons;
 
-	for ( int i = 0; i < swp->num_secondary_banks; i++ ) {
+	for ( i = 0; i < swp->num_secondary_banks; i++ ) {
 		if (swp->secondary_bank_start_ammo[i] > 0) {
-//			float r = (float) swp->secondary_bank_ammo[i]*Weapon_info[swp->secondary_bank_weapons[i]].cargo_size/swp->secondary_bank_capacity[i];
-			float r = (float) swp->secondary_bank_ammo[i]/swp->secondary_bank_start_ammo[i];
+//			r = (float) swp->secondary_bank_ammo[i]*Weapon_info[swp->secondary_bank_weapons[i]].cargo_size/swp->secondary_bank_capacity[i];
+			r = (float) swp->secondary_bank_ammo[i]/swp->secondary_bank_start_ammo[i];
 			desire += (int) ((1.0f - r) * 3.0f);
 		}
 	}
+
+	// Set desire based on ballistic weapons - Goober5000
+	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+	{
+		for (i = 0; i < swp->num_primary_banks; i++)
+		{
+			wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			{
+				r = (float) swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i];
+
+				// cube ammo level for better behavior, and adjust for number of banks
+				desire += (int) ((1.0f - r)*(1.0f - r)*(1.0f - r) * (5.0f / swp->num_primary_banks));
+			}
+		}
+	}
+
 
 	//	If no reason to repair, don't bother to see if it's safe to repair.
 	if (desire == 0){
@@ -13996,14 +14079,14 @@ void ai_frame(int objnum)
 	}
 
 	// set base stealth info each frame
-	aip->ai_flags &= ~AIF_STEALTH_PURSIUT;
+	aip->ai_flags &= ~AIF_STEALTH_PURSUIT;
 	if (En_objp && En_objp->type == OBJ_SHIP) {
 		if (Ship_info[Ships[En_objp->instance].ship_info_index].flags & SIF_STEALTH) {
 			int stealth_state = ai_is_stealth_visible(Pl_objp, En_objp);
 			float dist = vm_vec_dist_quick(&En_objp->pos, &Pl_objp->pos);
 
 			if (stealth_state != STEALTH_FULLY_TARGETABLE) {
-				aip->ai_flags |= AIF_STEALTH_PURSIUT;
+				aip->ai_flags |= AIF_STEALTH_PURSUIT;
 			}
 
 			if ( (stealth_state == STEALTH_FULLY_TARGETABLE) || (stealth_state == STEALTH_VISIBLE) ) {
@@ -14335,6 +14418,7 @@ void init_ai_object(int objnum)
 
 	// The next two fields are used to time the rearming to allow useful sound effects for missile rearming
 	aip->rearm_first_missile = TRUE;		//	flag to indicate that next missile to load is the first missile
+	aip->rearm_first_ballistic_primary = TRUE;	// flag to indicate that next ballistic to load is the first ballistic
 	aip->rearm_release_delay = 0;			//	timestamp to delay the separation of docked ships after rearm
 
 	aip->next_predict_pos_time = 0;

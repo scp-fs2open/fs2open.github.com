@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.7 $
- * $Date: 2002-12-07 01:37:42 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2002-12-10 05:43:33 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/07 01:37:42  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.6  2002/11/10 19:57:36  DTP
  * DTP bumped back MAX_SHIP_TYPES to 130
  *
@@ -250,7 +256,6 @@
 #include "graphics/2d.h"			// for color def
 #include "weapon/trails.h"
 #include "palman/palman.h"
-#include "decals/decals.h"
 #ifndef NO_NETWORK
 #include "network/multi_obj.h"
 #endif
@@ -290,6 +295,13 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 
 #define	MAX_PRIMARY_WEAPON_TYPES	10
 #define	MAX_SECONDARY_WEAPON_TYPES	10
+
+// Goober5000 - currently only used in ship_select_next_primary and ship_select_next_secondary
+// Goober5000 - now used in hudtarget.cpp->hud_get_best_primary_bank
+#define MAX_SUPPORTED_PRIMARY_BANKS	2
+#define UPPER_BOUND_PRIMARY_BANK	(MAX_SUPPORTED_PRIMARY_BANKS - 1)
+#define MAX_SUPPORTED_SECONDARY_BANKS	3
+#define UPPER_BOUND_SECONDARY_BANK	(MAX_SUPPORTED_SECONDARY_BANKS - 1)
 
 // defines for 'direction' parameter of ship_select_next_primary()
 #define CYCLE_PRIMARY_NEXT		0
@@ -340,6 +352,13 @@ typedef struct {
 
 	int next_primary_fire_stamp[MAX_PRIMARY_BANKS];			// next time this primary bank can fire
 	int next_secondary_fire_stamp[MAX_SECONDARY_BANKS];	// next time this secondary bank can fire	
+
+	// ballistic primary support - by Goober5000
+	int primary_bank_ammo[MAX_PRIMARY_BANKS];			// Number of missiles left in primary bank
+	int primary_bank_start_ammo[MAX_PRIMARY_BANKS];	// Number of missiles starting in primary bank
+	int primary_bank_capacity[MAX_PRIMARY_BANKS];		// Max number of projectiles in bank
+	int primary_next_slot[MAX_PRIMARY_BANKS];			// Next slot to fire in the bank
+	int primary_bank_rearm_time[MAX_PRIMARY_BANKS];	// timestamp which indicates when bank can get new projectile
 
 	int secondary_bank_ammo[MAX_SECONDARY_BANKS];			// Number of missiles left in secondary bank
 	int secondary_bank_start_ammo[MAX_SECONDARY_BANKS];	// Number of missiles starting in secondary bank
@@ -730,40 +749,42 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_PATH_FIXUP				(1 << 3)		// when set, path verts have been set for this ship's model
 #define	SIF_SUPPORT					(1 << 4)		// this ship can perform repair/rearm functions
 #define	SIF_AFTERBURNER			(1 << 5)		// this ship has afterburners
+#define SIF_BALLISTIC_PRIMARIES (1 << 6)		// this ship can equip primary ballistics - Goober5000
 
 // If you add a new ship type, then please add the appriopriate type in the ship_count
 // structure later in this file!!! and let MWA know!!
-#define	SIF_CARGO					(1 << 6)		// is this ship a cargo type ship -- used for docking purposes
-#define	SIF_FIGHTER					(1 << 7)		// this ship is a fighter
-#define	SIF_BOMBER					(1 << 8)		// this ship is a bomber
-#define	SIF_CRUISER					(1 << 9)		// this ship is a cruiser
-#define	SIF_FREIGHTER				(1 << 10)	// this ship is a freighter
-#define	SIF_CAPITAL					(1 << 11)	// this ship is a capital/installation ship
-#define	SIF_TRANSPORT				(1 << 12)	// this ship is a transport
-#define	SIF_NAVBUOY					(1	<< 13)	// AL 11-24-97: this is a navbuoy
-#define	SIF_SENTRYGUN				(1	<< 14)	// AL 11-24-97: this is a navbuoy with turrets
-#define	SIF_ESCAPEPOD				(1 << 15)	// AL 12-09-97: escape pods that fire from big ships
-#define	SIF_NO_SHIP_TYPE			(1 << 16)	// made distinct to help trap errors
+#define	SIF_CARGO					(1 << 7)		// is this ship a cargo type ship -- used for docking purposes
+#define	SIF_FIGHTER					(1 << 8)		// this ship is a fighter
+#define	SIF_BOMBER					(1 << 9)		// this ship is a bomber
+#define	SIF_CRUISER					(1 << 10)		// this ship is a cruiser
+#define	SIF_FREIGHTER				(1 << 11)	// this ship is a freighter
+#define	SIF_CAPITAL					(1 << 12)	// this ship is a capital/installation ship
+#define	SIF_TRANSPORT				(1 << 13)	// this ship is a transport
+#define	SIF_NAVBUOY					(1	<< 14)	// AL 11-24-97: this is a navbuoy
+#define	SIF_SENTRYGUN				(1	<< 15)	// AL 11-24-97: this is a navbuoy with turrets
+#define	SIF_ESCAPEPOD				(1 << 16)	// AL 12-09-97: escape pods that fire from big ships
+#define	SIF_NO_SHIP_TYPE			(1 << 17)	// made distinct to help trap errors
 
-#define	SIF_SHIP_COPY				(1 << 17)	// this ship is a copy of another ship in the table -- meaningful for scoring and possible other things
-#define	SIF_IN_TECH_DATABASE		(1 << 18)	// is ship type to be listed in the tech database?
-#define	SIF_IN_TECH_DATABASE_M	(1 << 19)	// is ship type to be listed in the tech database for multiplayer?
+#define	SIF_SHIP_COPY				(1 << 18)	// this ship is a copy of another ship in the table -- meaningful for scoring and possible other things
+#define	SIF_IN_TECH_DATABASE		(1 << 19)	// is ship type to be listed in the tech database?
+#define	SIF_IN_TECH_DATABASE_M	(1 << 20)	// is ship type to be listed in the tech database for multiplayer?
 
-#define	SIF_STEALTH					(1 << 20)	// the ship is a stealth ship
-#define	SIF_SUPERCAP				(1 << 21)	// the ship is a supercap
-#define	SIF_DRYDOCK					(1 << 22)	// the ship is a drydock
-#define	SIF_DONT_COLLIDE_INVIS	(1 << 23)	// Don't collide with this ship's invisible polygons
+#define	SIF_STEALTH					(1 << 21)	// the ship is a stealth ship
+#define	SIF_SUPERCAP				(1 << 22)	// the ship is a supercap
+#define	SIF_DRYDOCK					(1 << 23)	// the ship is a drydock
+#define	SIF_DONT_COLLIDE_INVIS	(1 << 24)	// Don't collide with this ship's invisible polygons
 
-#define	SIF_BIG_DAMAGE				(1 << 24)	// this ship is classified as a big damage ship
-#define	SIF_HAS_AWACS				(1 << 25)	// ship has an awacs subsystem
+#define	SIF_BIG_DAMAGE				(1 << 25)	// this ship is classified as a big damage ship
+#define	SIF_HAS_AWACS				(1 << 26)	// ship has an awacs subsystem
 
-#define	SIF_CORVETTE				(1 << 26)	// corvette class (currently this only means anything for briefing icons)
-#define	SIF_GAS_MINER				(1 << 27)	// also just for briefing icons
-#define	SIF_AWACS					(1 << 28)	// ditto
+#define	SIF_CORVETTE				(1 << 27)	// corvette class (currently this only means anything for briefing icons)
+#define	SIF_GAS_MINER				(1 << 28)	// also just for briefing icons
+#define	SIF_AWACS					(1 << 29)	// ditto
 
-#define	SIF_KNOSSOS_DEVICE		(1 << 29)	// this is the knossos device
+#define	SIF_KNOSSOS_DEVICE		(1 << 30)	// this is the knossos device
 
-#define	SIF_NO_FRED					(1 << 30)	// not available in fred
+#define	SIF_NO_FRED					(1 << 31)	// not available in fred
+
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)
@@ -837,7 +858,7 @@ typedef struct ship_info {
 	float		forward_decel;
 	float		slide_accel;
 	float		slide_decel;
-	int		flags;								//	See SIF_xxxx
+	uint		flags;								//	See SIF_xxxx - changed to uint by Goober5000
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
 	float		shields;
 	float		max_speed, min_speed, max_accel;
@@ -870,6 +891,10 @@ typedef struct ship_info {
 	int num_primary_banks;										// Actual number of primary banks (property of model)
 	int num_secondary_banks;									//	Actual number of secondary banks (property of model)
 	int primary_bank_weapons[MAX_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
+	
+	// Goober5000's ballistic conversion
+	int primary_bank_ammo_capacity[MAX_PRIMARY_BANKS];	// Capacity of primary ballistic bank
+	
 	int secondary_bank_weapons[MAX_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
 	int secondary_bank_ammo_capacity[MAX_SECONDARY_BANKS];	// Capacity of bank (not number of missiles)
 
@@ -1070,6 +1095,10 @@ extern void ship_process_targeting_lasers();
 
 extern int ship_select_next_primary(object *objp, int direction);
 extern int  ship_select_next_secondary(object *objp);
+
+// Goober5000
+extern int get_available_primary_weapons(object *objp, int *outlist, int *outbanklist);
+
 extern int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist);
 extern void ship_recalc_subsys_strength( ship *shipp );
 extern void subsys_set(int objnum, int ignore_subsys_info = 0);
@@ -1178,6 +1207,8 @@ extern int get_quadrant(vector *hit_pnt);						//	Return quadrant num of last hi
 extern void ship_obj_list_rebuild();	// only called by save/restore code
 extern int ship_query_state(char *name);
 
+// Goober5000
+int ship_primary_bank_has_ammo(int shipnum);	// check if current primary bank has ammo
 int ship_secondary_bank_has_ammo(int shipnum);	// check if current secondary bank has ammo
 
 void ship_departed( int num );
@@ -1236,6 +1267,11 @@ int ship_get_SIF(int sh);
 extern void ship_do_cargo_revealed( ship *shipp, int from_network = 0 );
 
 float ship_get_secondary_weapon_range(ship *shipp);
+
+// Goober5000
+int primary_out_of_ammo(ship_weapon *swp, int bank);
+int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type);
+
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type);
 
 int is_support_allowed(object *objp);
