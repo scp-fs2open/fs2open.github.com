@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-01-19 07:13:05 $
+ * $Revision: 2.21 $
+ * $Date: 2003-01-19 09:10:40 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/01/19 07:13:05  Goober5000
+ * oops - forgot a bit of departure code :)
+ * --Goober5000
+ *
  * Revision 2.19  2003/01/19 07:02:15  Goober5000
  * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
  * all ships, and all ships who have their departure anchor set to a capital ship
@@ -13089,7 +13093,8 @@ void ai_bay_depart()
 	}
 
 	// check if parent ship still exists, if not abort depart 
-	if ( aip->goal_signature != Objects[aip->goal_objnum].signature ) {
+	if ( (Ships[Objects[aip->goal_objnum].instance].flags & (SF_DYING | SF_DEPARTING)) || ( aip->goal_signature != Objects[aip->goal_objnum].signature) )
+	{
 		aip->mode = AIM_NONE;
 		Ships[Pl_objp->instance].flags &= ~SF_DEPART_DOCKBAY;
 		return;
@@ -13513,7 +13518,7 @@ void ai_warp_out(object *objp)
 		break;
 	case AIS_DEPART_TO_BAY:	// no warp stuff
 		// check if parent ship still exists; if not, abort depart
-		if ( aip->goal_signature != Objects[aip->goal_objnum].signature )
+		if ( (Ships[Objects[aip->goal_objnum].instance].flags & (SF_DYING | SF_DEPARTING)) || ( aip->goal_signature != Objects[aip->goal_objnum].signature) )
 		{
 			// if no warp drive, cancel everything
 			if (Ships[objp->instance].flags2 & SF2_NO_SUBSPACE_DRIVE)
