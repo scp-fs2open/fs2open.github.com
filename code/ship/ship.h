@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.19 $
- * $Date: 2003-01-05 01:26:35 $
+ * $Revision: 2.20 $
+ * $Date: 2003-01-06 17:14:52 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/01/05 01:26:35  Goober5000
+ * added capability of is-iff and change-iff to have wings as well as ships
+ * as their arguments; also allowed a bunch of sexps to accept the player
+ * as an argument where they would previously display a parse error
+ * --Goober5000
+ *
  * Revision 2.18  2003/01/03 21:58:06  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -1076,6 +1082,7 @@ extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 //	Defines a wing of ships.
 typedef struct wing {
 	char	name[NAME_LENGTH];
+	char	wing_squad_filename[MAX_FILENAME_LEN+1];	// Goober5000
 	int	reinforcement_index;					// index in reinforcement struct or -1
 	int	hotkey;
 
@@ -1115,6 +1122,11 @@ typedef struct wing {
 
 	ushort	net_signature;						// starting net signature for ships in this wing. assiged at mission load time
 
+	// Goober5000 - if this wing has a unique squad logo
+	// it's specified for the wing rather than each individual ship to cut down on the amount
+	// of stuff that needs to be sitting in memory at once - each ship uses the wing texture;
+	// and it also makes practical sense: no wing has two different squadrons in it :)
+	int wing_insignia_texture;
 } wing;
 
 #define STARTING_WING_ALPHA		0
@@ -1440,5 +1452,7 @@ extern void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int n
 extern int ship_is_iff(int ship_num, int check_team);
 extern void ship_change_iff(int ship_num, int new_team);
 
+// wing squad logos - Goober5000
+extern void wing_load_squad_bitmap(wing *w);
 
 #endif

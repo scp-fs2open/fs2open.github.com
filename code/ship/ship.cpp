@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.28 $
- * $Date: 2003-01-05 23:41:51 $
- * $Author: bobboau $
+ * $Revision: 2.29 $
+ * $Date: 2003-01-06 17:14:52 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/01/05 23:41:51  bobboau
+ * disabled decals (for now), removed the warp ray thingys,
+ * made some better error mesages while parseing weapons and ships tbls,
+ * and... oh ya, added glow mapping
+ *
  * Revision 2.27  2003/01/05 01:26:35  Goober5000
  * added capability of is-iff and change-iff to have wings as well as ships
  * as their arguments; also allowed a bunch of sexps to accept the player
@@ -2029,7 +2034,13 @@ void ship_level_init()
 
 	num_wings = 0;
 	for (i = 0; i < MAX_WINGS; i++ )
+	{
 		Wings[i].num_waves = -1;
+		Wings[i].wing_insignia_texture = -1;	// Goober5000 - default to no wing insignia
+												// don't worry about releasing textures because
+												// they are released automatically when the model
+												// is unloaded (because they are part of the model)
+	}
 
 	for (i=0; i<MAX_PLAYER_WINGS; i++)
 		Starting_wings[i] = -1;
@@ -2918,12 +2929,27 @@ void ship_render(object * obj)
 			}
 		}
 		// in single player, we want to render model insignias on all ships in alpha beta and gamma
+		// Goober5000 - and also on wings that have their logos set
 		else
 #endif
-		{			
+		{
 			// if its an object in my squadron
 			if(ship_in_abgz(shipp)){
 				model_set_insignia_bitmap(Player->insignia_texture);
+			}
+
+			// maybe it has a wing squad logo - Goober5000
+			if (shipp->wingnum >= 0)
+			{
+				// don't override the player's wing
+				if (shipp->wingnum != Player_ship->wingnum)
+				{
+					// if we have a logo texture
+					if (Wings[shipp->wingnum].wing_insignia_texture >= 0)
+					{
+						model_set_insignia_bitmap(Wings[shipp->wingnum].wing_insignia_texture);
+					}
+				}
 			}
 		}
 
@@ -10100,12 +10126,7 @@ void ship_page_in()
 			num_ship_types_used++;
 
 			// Page in the small hud icons for each ship
-			{
-				extern void hud_ship_icon_page_in(ship_info *sip);
-
-				hud_ship_icon_page_in(si);
-
-			}
+			hud_ship_icon_page_in(si);
 
 			// See if this model was previously loaded by another ship
 			int model_previously_loaded = -1;
@@ -10239,6 +10260,13 @@ void ship_page_in()
 		if((Player != NULL) && (Player->insignia_texture >= 0)){
 			bm_page_in_xparent_texture(Player->insignia_texture);
 		}
+	}
+
+	// page in wing insignia bitmaps - Goober5000
+	for (i = 0; i < MAX_WINGS; i++)
+	{
+		if (Wings[i].wing_insignia_texture >= 0)
+			bm_page_in_xparent_texture(Wings[i].wing_insignia_texture);
 	}
 }
 
@@ -10816,4 +10844,33 @@ void ship_change_iff(int ship_num, int new_team)
 		send_change_iff_packet(Objects[Ships[ship_num].objnum].net_signature, new_team);
 	}
 #endif
+}
+
+// Goober5000 - will attempt to load an insignia bitmap and set it as active for the wing
+// copied more or less from managepilot.cpp
+void wing_load_squad_bitmap(wing *w)
+{
+	// sanity check
+	if(w == NULL)
+	{
+		return;
+	}
+
+	// make sure one is not already set?!?
+	Assert (w->wing_insignia_texture == -1);
+
+	// try and set the new one
+	if(strlen(w->wing_squad_filename) > 0)
+	{
+		// load duplicate because it might be the same as the player's squad,
+		// and we don't want to overlap and breed nasty errors when we unload
+		w->wing_insignia_texture = bm_load_duplicate(w->wing_squad_filename);
+		
+		// lock is as a transparent texture
+		if(w->wing_insignia_texture != -1)
+		{
+			bm_lock(w->wing_insignia_texture, 16, BMP_TEX_XPARENT);
+			bm_unlock(w->wing_insignia_texture);
+		}
+	}
 }
