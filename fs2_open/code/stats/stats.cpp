@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-29 20:12:31 $
  * $Author: penguin $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/13 21:09:29  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -183,8 +186,11 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <io.h>
 #include <winsock.h>
+#endif
+
 #include "freespace.h"
 #include "gamesequence.h"
 #include "key.h"

@@ -6,7 +6,10 @@
 // Written by Matthew F. Storch, Ph.D., copyright (c) 1998 Volition Inc.
 
 #include "pstypes.h"
+
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 #include <math.h>
 #include <assert.h>
