@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.29 $
- * $Date: 2004-04-01 15:28:42 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2004-06-19 22:16:20 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/04/01 15:28:42  taylor
+ * don't load all starfield bitmaps on level load
+ *
  * Revision 2.28  2004/03/17 04:07:32  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -432,6 +435,12 @@ starfield_bitmap *stars_lookup_sun(starfield_bitmap_instance *s)
 
 void stars_load_debris()
 {
+	//We don't need to load debris if it isn't enabled
+	if(Cmdline_nomotiondebris)
+	{
+		return;
+	}
+
 	int i;
 
 	// if we're in nebula mode
@@ -656,6 +665,12 @@ void stars_init()
 			}
 		}
 	}	
+
+	//Don't parse motion debris if we don't have to.
+	if(Cmdline_nomotiondebris)
+	{
+		return;
+	}
 
 	// normal debris pieces
 	count = 0;
@@ -1449,6 +1464,11 @@ void stars_draw_stars()
 
 void stars_draw_debris()
 {
+	if(Cmdline_nomotiondebris)
+	{
+		return;
+	}
+
 	int i;
 	float vdist;
 	vector tmp;
@@ -1659,6 +1679,12 @@ void stars_page_in()
 
 		// next 
 		idx++;
+	}
+
+	//Don't page in motion debris if we don't have to
+	if(Cmdline_nomotiondebris)
+	{
+		return;
 	}
 
 	for (i=0; i<MAX_DEBRIS_VCLIPS; i++ )	{
