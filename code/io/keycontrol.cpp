@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-10-19 03:50:29 $
- * $Author: randomtiger $
+ * $Revision: 2.5 $
+ * $Date: 2002-12-10 05:43:34 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/10/19 03:50:29  randomtiger
+ * Added special pause mode for easier action screenshots.
+ * Added new command line parameter for accessing all single missions in tech room. - RT
+ *
  * Revision 2.3  2002/10/17 20:40:51  randomtiger
  * Added ability to remove HUD ingame on keypress shift O
  * So I've added a new key to the bind list and made use of already existing hud removal code.
@@ -759,9 +763,32 @@ void debug_max_secondary_weapons(object *objp)
 	int index;
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	ship_weapon *swp = &shipp->weapons;
 
-	for ( index = 0; index < MAX_SECONDARY_BANKS; index++ ) {
-		shipp->weapons.secondary_bank_ammo[index] = sip->secondary_bank_ammo_capacity[index];
+	for ( index = 0; index < MAX_SECONDARY_BANKS; index++ )
+	{
+		swp->secondary_bank_ammo[index] = sip->secondary_bank_ammo_capacity[index];
+	}
+}
+
+void debug_max_primary_weapons(object *objp)	// Goober5000
+{
+	int index;
+	ship *shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	ship_weapon *swp = &shipp->weapons;
+	weapon_info *wip;
+
+	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+	{
+		for ( index = 0; index < MAX_PRIMARY_BANKS; index++ )
+		{
+			wip = &Weapon_info[swp->primary_bank_weapons[index]];
+			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			{
+				swp->primary_bank_ammo[index] = sip->primary_bank_ammo_capacity[index];
+			}
+		}
 	}
 }
 
@@ -1047,12 +1074,14 @@ void process_debug_keys(int k)
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Weapon energy and missile count will always be at full for player", 16));
 
 				debug_max_secondary_weapons(Player_obj);
+				debug_max_primary_weapons(Player_obj);
 				if (k & KEY_SHIFTED) {
 					object	*objp;
 
 					for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 						if (objp->type == OBJ_SHIP)
 							debug_max_secondary_weapons(objp);
+							debug_max_primary_weapons(objp);
 				}
 
 			} else

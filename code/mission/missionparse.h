@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.5 $
+ * $Revision: 2.6 $
  * $Author: Goober5000 $
- * $Date: 2002-12-03 23:05:13 $
+ * $Date: 2002-12-10 05:43:34 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/03 23:05:13  Goober5000
+ * implemented beam-free-all-by-default mission flag
+ *
  * Revision 2.4  2002/11/14 06:15:02  bobboau
  * added nameplate code
  *
@@ -441,7 +444,7 @@ typedef struct p_object {
 // special circumstances for those ships.  The order that these bitfields appear
 // in this list MUST match the order that they appear in the flags array in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS	20
+#define MAX_PARSE_OBJECT_FLAGS	22
 
 #define P_OF_CARGO_KNOWN			(1<<0)
 #define P_SF_IGNORE_COUNT			(1<<1)
@@ -463,10 +466,12 @@ typedef struct p_object {
 #define P_OF_BEAM_PROTECTED		(1<<17)
 #define P_SF_GUARDIAN				(1<<18)
 #define P_KNOSSOS_WARP_IN			(1<<19)
+#define P_OF_NO_LASERS				(1<<20)
+#define P_OF_NO_ENGINES				(1<<21)
 
 
 // the following parse object flags are used internally by Freespace
-#define P_SF_USE_UNIQUE_ORDERS	(1<<26)	// tells a newly created ship to use the default orders for that ship
+#define P_SF_USE_UNIQUE_ORDERS		(1<<26)	// tells a newly created ship to use the default orders for that ship
 #define P_SF_INITIALLY_DOCKED		(1<<27)	// is this parse object initially docked with something else
 #define P_SF_CANNOT_ARRIVE			(1<<28)	// used to indicate that this ship's arrival cue will never be true
 #define P_SF_WARP_BROKEN			(1<<29)	// warp engine should be broken for this ship

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.10 $
- * $Date: 2002-12-07 01:37:42 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2002-12-10 05:43:34 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2002/12/07 01:37:42  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.9  2002/12/04 09:44:34  DTP
  * lowered MAX_POLYGON_MODELS FROM 198 to 128 for safety reasons since we bumped back MAX_SHIP_TYPES to 130
  *
@@ -442,6 +448,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	float		awacs_radius;							// radius of effect of the AWACS
 
 	int		primary_banks[MAX_PRIMARY_BANKS];					// default primary weapons -hoffoss
+	int		primary_bank_capacity[MAX_PRIMARY_BANKS];		// capacity of a bank - Goober5000
 	int		secondary_banks[MAX_SECONDARY_BANKS];				// default secondary weapons -hoffoss
 	int		secondary_bank_capacity[MAX_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined

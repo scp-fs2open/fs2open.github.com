@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-10 05:43:35 $
+ * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -530,6 +533,10 @@ extern game_snd Snds_flyby[MAX_SPECIES_NAMES][2];
 // copilot
 #define	SND_COPILOT							162
 
+// added for ballistic primaries - Goober5000
+#define	SND_BALLISTIC_START_LOAD		165
+#define	SND_BALLISTIC_LOAD				166
+
 // supernova 1 and supernova 2
 #define	SND_SUPERNOVA_1					173
 #define	SND_SUPERNOVA_2					174
@@ -537,7 +544,6 @@ extern game_snd Snds_flyby[MAX_SPECIES_NAMES][2];
 // lightning sounds
 #define	SND_LIGHTNING_1					180
 #define	SND_LIGHTNING_2					181
-
 
 //---------------------------------------------------
 // Interface sounds

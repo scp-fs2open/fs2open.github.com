@@ -739,6 +739,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags |= WIF_STREAM;
 		else if (!stricmp(NOX("supercap"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_SUPERCAP;
+		else if (!stricmp(NOX("ballistic"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_BALLISTIC;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -770,6 +772,7 @@ int parse_weapon()
 	weapon_info *wip;
 	char fname[255] = "";
 	int idx;
+	int primary_rearm_rate_specified;
 
 	wip = &Weapon_info[Num_weapon_types];
 
@@ -1073,19 +1076,52 @@ int parse_weapon()
 	required_string("$ImpactSnd:");
 	stuff_int(&wip->impact_snd);
 
-	if (First_secondary_index != -1) {
+	if (First_secondary_index != -1)
+	{
 		required_string("$FlyBySnd:");
 		stuff_int(&wip->flyby_snd);
 	}
+	else
+	{
+		if (optional_string("$FlyBySnd:"))
+		{
+			Warning(LOCATION, "$FlyBySnd: flag not used with primary weapons; ignoring...");
+		}
+	}
 
-	//	Secondary weapons are required to have a rearm rate.
-	if (First_secondary_index != -1) {
+	// handle rearm rate - modified by Goober5000
+	primary_rearm_rate_specified = 0;
+	if (First_secondary_index != -1)		// secondary weapons are required to have a rearm rate
+	{
 		required_string( "$Rearm Rate:");
+
 		stuff_float( &wip->rearm_rate );
 		if (wip->rearm_rate > 0.1f)
+		{
 			wip->rearm_rate = 1.0f/wip->rearm_rate;
+		}
 		else
+		{
 			wip->rearm_rate = 1.0f;
+		}
+	}
+	else
+	{
+		// Anticipate rearm rate for ballistic primaries
+		if (optional_string("$Rearm Rate:"))
+		{
+			primary_rearm_rate_specified = 1;
+
+			stuff_float( &wip->rearm_rate );
+			if (wip->rearm_rate > 0.1f)
+			{
+				wip->rearm_rate = 1.0f/wip->rearm_rate;
+			}
+			else
+			{
+				wip->rearm_rate = 1.0f;
+			}
+		}
 	}
 
 	wip->weapon_range = 999999999.9f;
@@ -1095,6 +1131,42 @@ int parse_weapon()
 
 	wip->spawn_type = -1;
 	parse_wi_flags(wip);
+
+	// be friendly; make sure ballistic flags are synchronized - Goober5000
+	// primary
+	if (First_secondary_index == -1)
+	{
+		// ballistic
+		if (wip->wi_flags2 & WIF2_BALLISTIC)
+		{
+			// rearm rate not specified
+			if (!primary_rearm_rate_specified)
+			{
+				Warning(LOCATION, "$Rearm Rate for ballistic primary %s not specified.  Defaulting to 100...\n", wip->name);
+				wip->rearm_rate = 100.0f;
+			}
+		}
+		// not ballistic
+		else
+		{
+			// rearm rate specified
+			if (primary_rearm_rate_specified)
+			{
+				Warning(LOCATION, "$Rearm Rate specified for non-ballistic primary %s\n", wip->name);
+			}
+		}
+
+	}
+	// secondary
+	else
+	{
+		// ballistic
+		if (wip->wi_flags2 & WIF2_BALLISTIC)
+		{
+			Warning(LOCATION, "Secondary weapons can't be ballistic.  Removing this flag...\n");
+			wip->wi_flags2 &= ~WIF2_BALLISTIC;
+		}
+	}
 
 	char trail_name[MAX_FILENAME_LEN] = "";
 	trail_info *ti = &wip->tr_info;
