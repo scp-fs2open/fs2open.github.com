@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-01-30 07:39:06 $
+ * $Revision: 2.10 $
+ * $Date: 2004-02-04 09:21:36 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/01/30 07:39:06  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.8  2003/11/11 02:15:40  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -776,7 +782,8 @@ void ai_clear_ship_goals( ai_info *aip )
 
 	// next line moved here on 8/5/97 by MWA
 	// Dont reset player ai (and hence target)
-	if ( !((Player_ship != NULL) && (&Ships[aip->shipnum] == Player_ship)) ) {
+	// Goober5000 - account for player ai
+	if ( !((Player_ship != NULL) && (&Ships[aip->shipnum] == Player_ship)) || Player_use_ai ) {
 		ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );
 	}
 }
