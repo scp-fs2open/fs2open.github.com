@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-07-11 03:22:50 $
- * $Author: bobboau $
+ * $Revision: 2.16 $
+ * $Date: 2004-07-12 16:32:49 $
+ * $Author: Kazan $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/07/11 03:22:50  bobboau
+ * added the working decal code
+ *
  * Revision 2.14  2004/07/09 07:32:55  wmcoolmon
  * Fixed conditional.
  *
@@ -163,6 +166,9 @@
 #include "globalincs/systemvars.h"
 #include "playerman/player.h"
 #include "hud/hudparse.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int Show_escort_view;
 

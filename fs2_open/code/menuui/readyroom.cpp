@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-04-10 16:55:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2004-07-12 16:32:53 $
+ * $Author: Kazan $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/04/10 16:55:45  Goober5000
+ * quashed the slider bug!
+ * --Goober5000
+ *
  * Revision 2.8  2004/03/05 09:01:53  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -150,6 +154,9 @@
 #include "menuui/techmenu.h"	// for tech menu reset stuff
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define MAX_MISSIONS	1024
 

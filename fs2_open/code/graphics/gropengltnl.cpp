@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.4 $
- * $Date: 2004-07-11 03:22:49 $
- * $Author: bobboau $
+ * $Revision: 1.5 $
+ * $Date: 2004-07-12 16:32:48 $
+ * $Author: Kazan $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/07/11 03:22:49  bobboau
+ * added the working decal code
+ *
  * Revision 1.3  2004/07/05 05:09:19  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -64,6 +67,9 @@
 #include "render/3d.h"
 
 #include "debugconsole/timerbar.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 extern int VBO_ENABLED;
 extern int GLOWMAP;

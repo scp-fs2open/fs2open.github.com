@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/Popup.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:33:03 $
+ * $Author: Kazan $
  *
  * Code for displaying pop-up dialog boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:11  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2003/03/18 10:07:05  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -208,6 +212,9 @@
 #include "graphics/font.h"
 #include "globalincs/alphacolors.h"
 #include "osapi/osapi.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define POPUP_MAX_CHOICES			3					// max number of buttons allowed on popup
 

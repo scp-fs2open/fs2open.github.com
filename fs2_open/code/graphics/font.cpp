@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-02-20 04:29:54 $
- * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-12 16:32:48 $
+ * $Author: Kazan $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/02/20 04:29:54  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.7  2004/02/14 00:18:31  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -272,6 +277,9 @@
 #include "bmpman/bmpman.h"
 #include "localization/localize.h"
 #include "globalincs/systemvars.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int Num_fonts = 0;
 font Fonts[MAX_FONTS];

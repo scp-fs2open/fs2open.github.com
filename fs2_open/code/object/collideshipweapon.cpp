@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-11 03:22:51 $
- * $Author: bobboau $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-12 16:32:59 $
+ * $Author: Kazan $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/11 03:22:51  bobboau
+ * added the working decal code
+ *
  * Revision 2.10  2004/03/05 09:01:57  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -205,6 +208,10 @@
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
 int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *pair );

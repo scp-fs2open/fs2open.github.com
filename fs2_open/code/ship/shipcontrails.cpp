@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-03-17 04:07:32 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-12 16:33:05 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/03/17 04:07:32  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.9  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -68,6 +75,9 @@
 #include "Ship/ShipContrails.h"
 #include "Ship/Ship.h"
 #include "mission/MissionParse.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // ----------------------------------------------------------------------------------------------
 // CONTRAIL DEFINES/VARS

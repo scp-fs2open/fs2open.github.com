@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-03-16 17:41:12 $
- * $Author: phreak $
+ * $Revision: 2.18 $
+ * $Date: 2004-07-12 16:33:05 $
+ * $Author: Kazan $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/03/16 17:41:12  phreak
+ * really fixed opengl shields this time
+ *
  * Revision 2.16  2004/03/16 11:52:17  randomtiger
  * Commented out shield fix that broke shield rendering for D3D.
  * Fix didnt appear to work for OGL so I didnt bother to if(OGL) it.
@@ -231,6 +234,9 @@
 #include "network/multi.h"
 #include "species_defs/species_defs.h"
 #include "ship/ship.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int	New_shield_system = 1;
 int	Show_shield_mesh = 0;

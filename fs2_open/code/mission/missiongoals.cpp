@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-03-28 17:49:55 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-12 16:32:54 $
+ * $Author: Kazan $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/03/28 17:49:55  taylor
+ * runtime language selection, mantis:0000133
+ *
  * Revision 2.7  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -390,6 +393,9 @@
 #include "network/multimsgs.h"
 #include "network/multi_team.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // timestamp stuff for evaluating mission goals
 #define GOAL_TIMESTAMP				0				// make immediately eval

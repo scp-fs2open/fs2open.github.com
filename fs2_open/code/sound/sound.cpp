@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-06-28 02:13:08 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-12 16:33:06 $
+ * $Author: Kazan $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/06/28 02:13:08  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.6  2004/06/22 23:14:10  wmcoolmon
  * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
  * OGG code has been commented out, so you don't need the SDK yet.
@@ -341,6 +345,11 @@
 #include "sound/dscap.h"
 //#include "sound/ogg/ogg.h"
 		
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
+
 #define SND_F_USED			(1<<0)		// Sounds[] element is used
 
 typedef struct sound	{

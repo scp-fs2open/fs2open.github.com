@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-07-12 14:38:12 $
+ * $Revision: 2.15 $
+ * $Date: 2004-07-12 16:32:57 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/12 14:38:12  Kazan
+ * fix a small multibug in tables validation (I had added this once before.. where did it go)
+ *
  * Revision 2.13  2004/07/12 03:26:03  wmcoolmon
  * Only send ships on the player's team
  *
@@ -386,6 +389,9 @@
 #ifndef NDEBUG
 #include <limits.h>
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // --------------------------------------------------------------------------------------------------
 // DAVE's BIGASS INGAME JOIN WARNING/DISCLAIMER

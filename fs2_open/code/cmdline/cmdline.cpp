@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.75 $
- * $Date: 2004-07-05 05:09:15 $
- * $Author: bobboau $
+ * $Revision: 2.76 $
+ * $Date: 2004-07-12 16:32:42 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2004/07/05 05:09:15  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.74  2004/06/29 06:00:45  wmcoolmon
  * Added "-load_only_used", which makes FS2 load only used weapon data
  *
@@ -557,6 +563,9 @@
 #include "network/multi.h"
 #include "species_defs/species_defs.h"
 #include "hud/hudconfig.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // variables
 class cmdline_parm {

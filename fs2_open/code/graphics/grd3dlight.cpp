@@ -7,6 +7,9 @@
 #include "graphics/grd3dinternal.h"
 #include "cmdline/cmdline.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 // Constants
 const int MAX_LIGHTS     = 256;
 const int MAX_D3D_LIGHTS = 8;		// Maximum number of lights that DX8 supports in one pass

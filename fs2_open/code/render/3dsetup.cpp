@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-02-13 04:17:14 $
- * $Author: randomtiger $
+ * $Revision: 2.16 $
+ * $Date: 2004-07-12 16:33:04 $
+ * $Author: Kazan $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/02/13 04:17:14  randomtiger
+ * Turned off fog in OGL for Fred.
+ * Simulated speech doesnt say tags marked by $ now.
+ * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
+ * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
+ * Error now given on missing briefing icon and bad ship normal data.
+ * Solved more species divide by zero error.
+ * Fixed neb cube crash.
+ *
  * Revision 2.14  2004/01/17 21:59:54  randomtiger
  * Some small changes to the main codebase that allow Fred_open OGL to compile.
  *
@@ -163,6 +172,9 @@
 #include "graphics/tmapper.h"
 #include "graphics/2d.h"			// Needed for w,h,aspect of canvas
 #include "lighting/lighting.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 
 matrix		View_matrix;		// The matrix to convert local coordinates to screen

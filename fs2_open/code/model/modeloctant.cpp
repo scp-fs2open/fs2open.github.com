@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-20 21:17:13 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:56 $
+ * $Author: Kazan $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/20 21:17:13  bobboau
+ * fixed -spec comand line option,
+ * probly some other stuf
+ *
  * Revision 2.2  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -109,6 +113,9 @@
 #include "math/vecmat.h"
 #include "model/modelsinc.h"
 #include "cmdline/cmdline.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 
 // returns 1 if a point is in an octant.

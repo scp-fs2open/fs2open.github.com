@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-01 01:52:20 $
- * $Author: phreak $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-12 16:32:44 $
+ * $Author: Kazan $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/01 01:52:20  phreak
+ * function pointer radar update.
+ * will enable us to make different radar styles that we can switch between
+ *
  * Revision 2.6  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -264,6 +268,10 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 #define MAX_LIFE									10.0f
 #define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fix.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:32:52 $
+ * $Author: Kazan $
  *
  * Code to deal with 16.16 fixed point numbers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/29 20:12:31  penguin
  * added #ifdef _WIN32 around windows-specific system headers
  *
@@ -45,6 +48,9 @@
 
 #include "globalincs/pstypes.h"
 #include "math/fix.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 fix fixmul(fix a, fix b)
 {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-07-11 03:22:48 $
- * $Author: bobboau $
+ * $Revision: 2.26 $
+ * $Date: 2004-07-12 16:32:48 $
+ * $Author: Kazan $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/07/11 03:22:48  bobboau
+ * added the working decal code
+ *
  * Revision 2.24  2004/07/01 01:12:31  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -606,6 +609,9 @@
 
 // 3dnow stuff
 // #include "amd3d.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // Includes for different rendering systems
 #include "graphics/grd3dsetup.h"

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-03-05 09:01:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-12 16:32:59 $
+ * $Author: Kazan $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/05 09:01:57  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.5  2003/04/29 01:03:22  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -538,6 +542,10 @@
 #include "io/timer.h"
 #include "asteroid/asteroid.h"
 #include "playerman/player.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)

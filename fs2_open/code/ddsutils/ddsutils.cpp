@@ -1,6 +1,9 @@
 #include "ddsutils/ddsutils.h"
 #include "cfile/cfile.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 int Texture_compression_enabled=0;
 
 static int dds_read_header_internal(LPDDSURFACEDESC2 lpddsd, char *filename, int *width, int *height, int *bpp, int *compression_type, int *levels)

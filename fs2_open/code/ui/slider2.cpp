@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/SLIDER2.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-07-12 16:33:08 $
+ * $Author: Kazan $
  *
  * Implements UI_SLIDER2 control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -57,6 +60,9 @@
 #include "freespace2/freespace.h"
 #include "bmpman/bmpman.h"
 #include "io/timer.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // captureCallback is called when an item is "selected" by mouse release. That is, the user has clicked, dragged and _released_. 
 // the callback is called when the scrollbar has been released

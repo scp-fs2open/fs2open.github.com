@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-03 06:08:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-12 16:33:03 $
+ * $Author: Kazan $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/03 06:08:54  wmcoolmon
+ * Removed function pointer w/ default arguments for compatibility with .NET Sorry, you'll just have to add that "0" by hand. :p
+ *
  * Revision 2.7  2004/07/01 01:51:54  phreak
  * function pointer radar update.
  * will enable us to make different radar styles that we can switch between
@@ -201,6 +204,9 @@
 #include "localization/localize.h"
 #include "ship/awacs.h"
 #include "radar/radarsetup.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int Radar_radius[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640

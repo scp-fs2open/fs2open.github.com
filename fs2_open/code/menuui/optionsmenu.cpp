@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-05-25 00:38:11 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-12 16:32:53 $
+ * $Author: Kazan $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/05/25 00:38:11  wmcoolmon
+ * Updated function calls for VC7 use
+ *
  * Revision 2.5  2004/03/05 09:01:53  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -283,6 +286,9 @@
 #include "network/multi.h"
 #include "menuui/optionsmenumulti.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // will display a notification warning message
 #define OPTIONS_NOTIFY_TIME			3500

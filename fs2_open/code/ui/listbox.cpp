@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/LISTBOX.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-03-10 18:45:09 $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:33:08 $
  * $Author: Kazan $
  *
  * Code to implement a listbox gadget.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/10 18:45:09  Kazan
+ * partially complete IRC - so i can work on it on my laptop
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -109,6 +112,9 @@
 #include "io/timer.h"
 #include "io/key.h"
 #include "globalincs/alphacolors.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define KEY_BUFFER_TIMEOUT		1000		// time to clear buffer in milliseconds
 

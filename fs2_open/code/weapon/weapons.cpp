@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2004/07/11 03:22:54  bobboau
+ * added the working decal code
+ *
  * Revision 2.68  2004/07/01 01:54:59  phreak
  * function pointer radar update.
  * will enable us to make different radar styles that we can switch between
@@ -621,6 +624,9 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #ifndef NDEBUG
 int Weapon_flyby_sound_enabled = 1;

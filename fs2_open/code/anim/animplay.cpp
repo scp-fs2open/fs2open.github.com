@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-12 16:32:41 $
+ * $Author: Kazan $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.7  2004/02/16 11:47:31  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -248,6 +252,9 @@
 #include "anim/packunpack.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 static color Color_xparent;
 

@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.2 $
- * $Date: 2004-07-01 16:38:18 $
+ * $Revision: 1.3 $
+ * $Date: 2004-07-12 16:32:42 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/07/01 16:38:18  Kazan
+ * working on autonav
+ *
  * Revision 1.1  2004/05/07 23:50:14  Kazan
  * Sorry Guys!
  *
@@ -24,6 +27,9 @@
 #include "ship/ship.h"
 #include "object/object.h"
 #include "parse/sexp.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // Extern functions/variables
 extern void sexp_player_use_ai(int use_ai);

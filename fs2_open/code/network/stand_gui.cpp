@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-03-31 05:42:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-12 16:32:58 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/03/31 05:42:27  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.9  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -396,6 +401,9 @@ extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
 HANDLE Standalone_thread;
 DWORD Standalone_thread_id;
 static HWND Standalone_hwnd = NULL;
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // -----------------------------------------------------------------------------------------
 // standalone global defs

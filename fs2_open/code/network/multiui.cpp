@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.30 $
- * $Date: 2004-07-10 03:18:23 $
+ * $Revision: 2.31 $
+ * $Date: 2004-07-12 16:32:58 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/07/10 03:18:23  Kazan
+ * minor bugfixes - oh yeah reenabling a rule for multistats :P
+ *
  * Revision 2.29  2004/07/07 21:00:08  Kazan
  * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
  *
@@ -591,6 +594,9 @@
 #include "mission/missionbriefcommon.h"
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 extern int Om_tracker_flag; // needed to know whether or not to use FS2OpenPXO
 

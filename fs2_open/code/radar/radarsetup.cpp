@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/radarsetup.cpp $
- * $Revision: 2.1 $
- * $Date: 2004-07-01 01:51:54 $
- * $Author: phreak $
+ * $Revision: 2.2 $
+ * $Date: 2004-07-12 16:33:03 $
+ * $Author: Kazan $
  *
  * C module containg functions to manage different radar modes
  *
@@ -37,6 +37,10 @@
 #include "localization/localize.h"
 #include "ship/awacs.h"
 #include "radar/radarsetup.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 //function pointers for assorted radar functions
 int  (*radar_blip_color)(object *objp)				= NULL;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-03-31 05:42:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-12 16:32:54 $
+ * $Author: Kazan $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/31 05:42:28  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.5  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -197,6 +202,9 @@
 #include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
 #include "weapon/beam.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 static int Key_sets[MAX_KEYED_TARGETS] = {
 	KEY_F5,

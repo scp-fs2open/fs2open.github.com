@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-03-05 09:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-12 16:33:07 $
+ * $Author: Kazan $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/05 09:02:05  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.5  2004/02/20 04:29:56  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -179,6 +183,9 @@
 #ifndef NDEBUG
 #include "cmdline/cmdline.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 //#define MAX_MEDAL_TYPES 63 // the # of medals which exist so far
 

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fvi.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-07 01:37:41 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:32:52 $
+ * $Author: Kazan $
  *
  * Routines to find intersections of various 3d things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/07 01:37:41  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -163,6 +169,9 @@
 #include "math/vecmat.h"
 #include "math/floating.h"
 #include "math/fvi.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define	SMALL_NUM	1E-6
 void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 );

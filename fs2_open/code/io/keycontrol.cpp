@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.32 $
- * $Date: 2004-07-12 03:19:16 $
+ * $Revision: 2.33 $
+ * $Date: 2004-07-12 16:32:51 $
  * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2004/07/12 03:19:16  Kazan
+ * removed a couple pointless useless messages from the debug console
+ *
  * Revision 2.31  2004/05/10 10:51:53  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -465,6 +468,9 @@
 #if defined(ENABLE_AUTO_PILOT)
 #include "autopilot/autopilot.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // --------------------------------------------------------------
 // Global to file 

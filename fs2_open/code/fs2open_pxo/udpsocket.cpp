@@ -10,12 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.cpp $
- * $Revision: 1.5 $
- * $Date: 2004-03-31 05:42:26 $
- * $Author: Goober5000 $
+ * $Revision: 1.6 $
+ * $Date: 2004-07-12 16:32:46 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/03/31 05:42:26  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 1.4  2004/02/21 00:59:43  Kazan
  * FS2NETD License Comments
  *
@@ -35,6 +40,10 @@
 #pragma warning(disable:4711)	// function inlined
 
 #include "udpsocket.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 #if defined(WIN32)
 //*******************************************************************************

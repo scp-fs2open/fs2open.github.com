@@ -11,6 +11,8 @@
 #include <tchar.h>
 #include <atlbase.h>
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 enum PLAYSTATE {Stopped, Paused, Running, Init};
 void Msg(TCHAR *szFormat, ...);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-04-26 00:25:08 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-12 16:32:47 $
+ * $Author: Kazan $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/04/26 00:25:08  taylor
+ * don't preload every sound (fixes some slowdowns), snd_preload option support
+ *
  * Revision 2.4  2004/04/03 02:55:49  bobboau
  * commiting recent minor bug fixes
  *
@@ -187,6 +190,9 @@
 #include "localization/localize.h"
 #include "species_defs/species_defs.h"
 #include "parse/parselo.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // Global array that holds data about the gameplay sound effects.
 game_snd Snds[MAX_GAME_SOUNDS];

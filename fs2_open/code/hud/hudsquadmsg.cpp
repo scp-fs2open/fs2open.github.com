@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-12 16:32:49 $
+ * $Author: Kazan $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.5  2004/02/06 21:25:43  Goober5000
  * ugh... okay, *really* fixed the head thing this time
  * --Goober5000
@@ -280,6 +284,9 @@
 #include "network/multiutil.h"
 #include "network/multi_pmsg.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // defines for different modes in the squad messaging system
 

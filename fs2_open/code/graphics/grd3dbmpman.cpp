@@ -32,6 +32,9 @@
 
 #include "graphics/grd3dbmpman.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 extern bitmap_entry bm_bitmaps[];
 
 D3DBitmapData d3d_bitmap_entry[MAX_BITMAPS];

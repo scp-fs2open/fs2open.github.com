@@ -12,6 +12,9 @@
 #include "globalincs/pstypes.h"
 #include "osapi/osregistry.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 // NEVER ADD ANY OTHER INCLUDES HERE - YOU'LL LIKELY BREAK THE LAUNCHER!!!!!!!!!!!!!
 
 // ------------------------------------------------------------------------------------------------------------

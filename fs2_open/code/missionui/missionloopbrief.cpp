@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:55 $
+ * $Author: Kazan $
  *
  * Campaign Loop briefing screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/09/07 18:14:54  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -72,6 +76,9 @@
 #include "anim/animplay.h"
 #include "freespace2/freespace.h"
 #include "sound/fsspeech.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // MISSION LOOP BRIEF DEFINES/VARS

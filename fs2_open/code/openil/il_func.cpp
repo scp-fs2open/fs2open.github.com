@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/openil/il_func.cpp $
- * $Revision: 1.1 $
- * $Date: 2004-04-26 02:05:17 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-07-12 16:32:59 $
+ * $Author: Kazan $
  *
  * Callback functions for OpenIL (DevIL) to use CFILE
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/04/26 02:05:17  taylor
+ * initial checkin
+ *
  * 
  * $NoKeywords: $
  */
@@ -25,6 +28,8 @@
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int il_inited = 0;
 

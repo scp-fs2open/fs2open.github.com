@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-04-26 13:09:20 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2004-07-12 16:32:43 $
+ * $Author: Kazan $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/04/26 13:09:20  taylor
+ * cvs log header, mark cutscenes viewable for later, gr_flip() to fix OGL white flash
+ *
  * 
  * 
  * $NoKeywords: $
@@ -31,6 +34,9 @@
 #include "cfile/cfile.h"
 #include "cutscene/cutscenes.h" // cutscene_mark_viewable()
 #include "freespace2/freespace.h" // for Game_mode, etc.
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // This module links freespace movie calls to the actual API calls the play the movie.
 // This module handles all the different requires of OS and gfx API and finding the file to play

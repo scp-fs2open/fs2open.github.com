@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-03-31 05:42:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-12 16:33:01 $
+ * $Author: Kazan $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/03/31 05:42:28  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.9  2004/03/06 23:28:23  bobboau
  * fixed motion debris
  * animated laser textures
@@ -185,6 +190,9 @@
 #include "graphics/2d.h"
 #include "freespace2/freespaceresource.h"
 #include "globalincs/systemvars.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define MAX_FILTERS 48
 #define SCROLL_BUFFER_SIZE	512

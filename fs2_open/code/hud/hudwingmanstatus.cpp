@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:02:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:50 $
+ * $Author: Kazan $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:02:04  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/04/29 01:03:23  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -126,6 +130,9 @@
 #include "weapon/emp.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define HUD_WINGMAN_STATUS_NUM_FRAMES	5
 #define BACKGROUND_LEFT						0

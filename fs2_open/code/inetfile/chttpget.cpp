@@ -9,13 +9,17 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/Chttpget.cpp $
-* $Revision: 2.3 $
-* $Date: 2004-02-04 09:02:45 $
-* $Author: Goober5000 $
+* $Revision: 2.4 $
+* $Date: 2004-07-12 16:32:50 $
+* $Author: Kazan $
 *
 * HTTP Client class (get only)
 *
 * $Log: not supported by cvs2svn $
+* Revision 2.3  2004/02/04 09:02:45  Goober5000
+* got rid of unnecessary double semicolons
+* --Goober5000
+*
 * Revision 2.2  2002/08/01 01:41:06  penguin
 * The big include file move
 *
@@ -122,6 +126,9 @@
 #include "globalincs/pstypes.h"
 #include "inetfile/inetgetfile.h"
 #include "inetfile/chttpget.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #ifdef __LINUX__
 

@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Demo/Demo.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:01:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:45 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:01:59  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -63,6 +67,10 @@
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "cfile/cfile.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 // -----------------------------------------------------------------------------------------------------------------------------
 // DEMO DEFINES/VARS

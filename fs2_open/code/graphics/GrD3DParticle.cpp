@@ -15,6 +15,9 @@
 
 #include "GrD3DParticle.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 D3DPOINTVERTEX Particle_list[MAX_PARTICLES];
 int Current_index = 0;
 

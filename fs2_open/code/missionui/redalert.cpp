@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-03-05 09:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-12 16:32:56 $
+ * $Author: Kazan $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.6  2004/02/04 09:02:43  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -205,6 +209,9 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "cfile/cfile.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Red Alert Mission-Level

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-03-31 05:42:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-12 16:32:45 $
+ * $Author: Kazan $
  *
  * Main file for dealing with exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/31 05:42:26  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.4  2004/03/06 23:28:22  bobboau
  * fixed motion debris
  * animated laser textures
@@ -67,6 +72,9 @@ on how to hook it in.
 
 
 #include <windows.h>
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #pragma warning(disable:4711)	// function selected for inlining
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds3d.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-02 06:37:24 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:33:06 $
+ * $Author: Kazan $
  *
  * C file for interface to DirectSound3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/02 06:37:24  penguin
+ * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
+ *  - penguin
+ *
  * Revision 2.2  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -113,6 +117,9 @@
 #include "sound/channel.h"
 #include "sound/sound.h"
 #include "object/object.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 typedef enum 
 {

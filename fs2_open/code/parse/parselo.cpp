@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.20 $
- * $Author: wmcoolmon $
- * $Date: 2004-05-31 08:32:25 $
+ * $Revision: 2.21 $
+ * $Author: Kazan $
+ * $Date: 2004-07-12 16:33:01 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/05/31 08:32:25  wmcoolmon
+ * Custom HUD support, better loading, etc etc.
+ *
  * Revision 2.19  2004/05/29 03:01:00  wmcoolmon
  * Spotted something that might be a problem.
  *
@@ -196,6 +199,9 @@
 #include "cfile/cfile.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5
@@ -2076,8 +2082,8 @@ char *stristr(const char *str, const char *substr)
 	int pos;
 
 	// copy each string
-	char *l_str = strdup(str);
-	char *l_substr = strdup(substr);
+	char *l_str = strdup((char *)str);
+	char *l_substr = strdup((char *)substr);
 
 	// convert to lowercase
 	strlwr(l_str);

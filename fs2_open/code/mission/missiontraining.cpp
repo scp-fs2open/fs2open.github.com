@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:54 $
+ * $Author: Kazan $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/23 01:47:17  Goober5000
  * removed stipulation that "Instructor" be present for training-msg sexp to work
  * --Goober5000
@@ -289,6 +293,10 @@
 #include "globalincs/alphacolors.h"
 #include "network/multi.h"
 #include "ship/ship.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 #define MAX_TRAINING_MSG_LINES		10
 //#define TRAINING_MSG_WINDOW_X			174

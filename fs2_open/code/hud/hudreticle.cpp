@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-28 17:49:54 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:49 $
+ * $Author: Kazan $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/28 17:49:54  taylor
+ * runtime language selection, mantis:0000133
+ *
  * Revision 2.3  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -218,6 +221,9 @@
 #ifndef NO_NETWORK
 #include "network/multi.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 static int Reticle_inited = 0;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/RBAudio.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-07-12 16:33:06 $
+ * $Author: Kazan $
  *
  * source file for redbook audio playback
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -74,6 +77,9 @@
 #include "math/fix.h"
 #include "io/timer.h"
 //#include "winapp.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 
 #define HSG_CD_PLAYBACK 0

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-06-22 23:14:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-12 16:33:06 $
+ * $Author: Kazan $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/06/22 23:14:10  wmcoolmon
+ * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
+ * OGG code has been commented out, so you don't need the SDK yet.
+ *
  * Revision 2.5  2004/06/18 04:59:55  wmcoolmon
  * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
  *
@@ -344,6 +348,9 @@
 
 #include <objbase.h>
 #include <initguid.h>
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // Pointers to functions contained in DSOUND.dll
 HRESULT (__stdcall *pfn_DirectSoundCreate)(LPGUID lpGuid, LPDIRECTSOUND *ppDS, IUnknown FAR *pUnkOuter) = NULL;

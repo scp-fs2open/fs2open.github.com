@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-12 16:32:55 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2003/11/11 02:15:44  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -331,6 +335,10 @@
 #ifndef NDEBUG
 #include <limits.h>
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 //////////////////////////////////////////////////////////////////
 // Game Globals

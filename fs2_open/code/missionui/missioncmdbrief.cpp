@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-05 09:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2004-07-12 16:32:54 $
+ * $Author: Kazan $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.8  2003/11/16 04:08:47  Goober5000
  * fixed briefing scroll and display of "more"
  * --Goober5000
@@ -280,6 +284,9 @@
 #include "anim/packunpack.h"
 #include "anim/animplay.h"
 #include "sound/fsspeech.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define NUM_CMD_SETTINGS	2
 

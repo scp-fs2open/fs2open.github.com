@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.36 $
- * $Date: 2004-04-07 17:20:24 $
- * $Author: phreak $
+ * $Revision: 2.37 $
+ * $Date: 2004-07-12 16:32:49 $
+ * $Author: Kazan $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2004/04/07 17:20:24  phreak
+ * changed around the order of some function calls to get the target model
+ * properly rendering in the hud targetbox
+ *
  * Revision 2.35  2004/04/06 03:09:53  phreak
  * added a control config option for the wireframe hud targetbox i enabled ages ago
  *
@@ -386,6 +390,9 @@
 #ifndef NDEBUG
 #include "hud/hudets.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int Target_window_coords[GR_NUM_RESOLUTIONS][4] =
 {

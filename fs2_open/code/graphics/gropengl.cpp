@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.80 $
- * $Date: 2004-07-11 03:22:49 $
- * $Author: bobboau $
+ * $Revision: 2.81 $
+ * $Date: 2004-07-12 16:32:48 $
+ * $Author: Kazan $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2004/07/11 03:22:49  bobboau
+ * added the working decal code
+ *
  * Revision 2.79  2004/07/01 01:12:31  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -642,6 +645,8 @@
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengltnl.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")

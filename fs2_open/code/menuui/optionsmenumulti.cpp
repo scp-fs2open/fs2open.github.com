@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenuMulti.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:53 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2003/09/23 02:42:53  Kazan
  * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
  *
@@ -233,6 +237,8 @@
  #include "sound/ds.h"
 #endif
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // general data section ------------------------------------------------
 UI_WINDOW *Om_window = NULL;

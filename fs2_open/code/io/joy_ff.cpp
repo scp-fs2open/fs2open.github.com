@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy_ff.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:32:51 $
+ * $Author: Kazan $
  *
  * Code for joystick Force Feedback.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -87,6 +90,9 @@
 #include "osapi/osregistry.h"
 #include "io/joy_ff.h"
 #include "osapi/osapi.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 typedef struct {
 	DIEFFECT effect;

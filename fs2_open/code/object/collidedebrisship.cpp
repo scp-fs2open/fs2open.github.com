@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:01:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:59 $
+ * $Author: Kazan $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:01:57  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/11/11 02:15:42  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -182,6 +186,9 @@
 #include "asteroid/asteroid.h"
 #include "hud/hud.h"
 #include "object/object.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 

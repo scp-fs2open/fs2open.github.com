@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-07-12 16:32:51 $
+ * $Author: Kazan $
  *
  * Code to read the joystick
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -217,6 +220,9 @@
 #include "io/joy_ff.h"
 #include "directx/vdinput.h"
 #include "osapi/osapi.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define PRECALIBRATED 1
 

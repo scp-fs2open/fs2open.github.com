@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-04-10 16:55:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2004-07-12 16:32:53 $
+ * $Author: Kazan $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/04/10 16:55:23  Goober5000
+ * some formatting
+ *
  * Revision 2.17  2004/03/05 09:01:53  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -250,6 +253,9 @@
 #include "localization/localize.h"
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // This is the fs2_open credit list, please only add yourself if you have actually contributed code
 // Rules!

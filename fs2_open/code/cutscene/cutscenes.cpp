@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-04-26 13:11:11 $
- * $Author: taylor $
- * $Revision: 2.11 $
- * $Date: 2004-04-26 13:11:11 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-12 16:32:43 $
+ * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-12 16:32:43 $
+ * $Author: Kazan $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/04/26 13:11:11  taylor
+ * mark view cutscenes ignoring extension and file case
+ *
  * Revision 2.10  2004/03/05 09:01:58  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -218,6 +221,9 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 char *Cutscene_bitmap_name[GR_NUM_RESOLUTIONS] = {
 	"ViewFootage",

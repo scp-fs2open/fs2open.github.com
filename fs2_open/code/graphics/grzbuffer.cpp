@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrZbuffer.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-02-14 00:18:32 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:32:48 $
+ * $Author: Kazan $
  *
  * Code for the software renderer's zbuffer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/02/14 00:18:32  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -45,6 +56,9 @@
 #include "graphics/2d.h"
 #include "math/floating.h"
 #include "graphics/grinternal.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 int gr_zcount=GR_Z_COUNT;
 int gr_zoffset=0;

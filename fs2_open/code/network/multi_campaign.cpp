@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:57 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -190,6 +194,9 @@
 #ifndef NDEBUG
 #include <limits.h>
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER CAMPAIGN DEFINES/VARS

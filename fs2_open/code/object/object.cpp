@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-07-01 01:53:51 $
- * $Author: phreak $
+ * $Revision: 2.22 $
+ * $Date: 2004-07-12 16:32:59 $
+ * $Author: Kazan $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/07/01 01:53:51  phreak
+ * function pointer radar update.
+ * will enable us to make different radar styles that we can switch between
+ *
  * Revision 2.20  2004/03/05 09:01:57  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -525,6 +529,9 @@
 #include "weapon/swarm.h"
 #include "demo/demo.h"
 #include "radar/radarsetup.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 /*
  *  Global variables

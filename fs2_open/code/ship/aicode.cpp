@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.59 $
- * $Date: 2004-05-25 00:26:25 $
- * $Author: wmcoolmon $
+ * $Revision: 2.60 $
+ * $Date: 2004-07-12 16:33:04 $
+ * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2004/05/25 00:26:25  wmcoolmon
+ * cleared up an ambiguous call for VC7
+ *
  * Revision 2.58  2004/04/06 16:19:11  Goober5000
  * commented out one of Bobboau's hacks because it was messing stuff up
  * --Goober5000
@@ -694,6 +697,9 @@
   // still need this...
   #include "network/multi.h"
 
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #pragma optimize("", off)
 #pragma auto_inline(off)

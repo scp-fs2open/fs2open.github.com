@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-05-03 09:27:16 $
- * $Author: randomtiger $
+ * $Revision: 2.10 $
+ * $Date: 2004-07-12 16:32:52 $
+ * $Author: Kazan $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/05/03 09:27:16  randomtiger
+ * fl_abs(theta_goal.xyz.z) < 0.001f is reporting using mprintf now instead of assert
+ *
  * Revision 2.8  2004/02/14 00:18:33  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -287,6 +290,9 @@
 
 #include "math/vecmat.h"
 #include "math/floating.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define	SMALL_NUM	1e-7
 #define	SMALLER_NUM	1e-20

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-12 03:34:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2004-07-12 16:32:57 $
+ * $Author: Kazan $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/12 03:34:55  wmcoolmon
+ * More in-game stuff, mostly for restricted games
+ *
  * Revision 2.19  2004/07/12 03:19:16  Kazan
  * removed a couple pointless useless messages from the debug console
  *
@@ -477,6 +480,7 @@
 #include "mission/missionbriefcommon.h"
 #include "network/multi_log.h"
 
+
 #pragma warning(push)
 // 4018 = signed/unsigned mismatch
 // 4663 = new template specification syntax
@@ -492,6 +496,9 @@ extern int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[];
 extern int PXO_port;
 #pragma warning(pop)
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 

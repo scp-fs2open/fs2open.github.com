@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-04-26 01:41:52 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-12 16:32:53 $
+ * $Author: Kazan $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/04/26 01:41:52  taylor
+ * s/idex/idx/ for brief_unload_anims()
+ *
  * Revision 2.9  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -218,6 +221,8 @@
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // --------------------------------------------------------------------------------------
 // briefing icons

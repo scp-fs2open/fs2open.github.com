@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.85 $
- * $Date: 2004-07-11 03:22:50 $
- * $Author: bobboau $
+ * $Revision: 2.86 $
+ * $Date: 2004-07-12 16:32:56 $
+ * $Author: Kazan $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2004/07/11 03:22:50  bobboau
+ * added the working decal code
+ *
  * Revision 2.84  2004/07/05 05:09:20  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -641,6 +644,8 @@
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 float model_radius = 0;
 

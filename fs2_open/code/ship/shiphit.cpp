@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-03-17 04:07:32 $
- * $Author: bobboau $
+ * $Revision: 2.29 $
+ * $Date: 2004-07-12 16:33:06 $
+ * $Author: Kazan $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/03/17 04:07:32  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.27  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -565,6 +572,9 @@
 #include "network/multi_respawn.h"
 #include "network/multi_pmsg.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)

@@ -24,6 +24,9 @@
 #include "ship/afterburner.h"
 #include "cfile/cfile.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 // ---------------------------------------------------------------------------------------------------
 // OBJECT UPDATE DEFINES/VARS
 //

@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-04-26 02:14:38 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:33:08 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/04/26 02:14:38  taylor
+ * 32-bit support with DevIL
+ *
  * Revision 2.3  2004/02/28 14:14:57  randomtiger
  * Removed a few uneeded if DIRECT3D's.
  * Set laser function to only render the effect one sided.
@@ -85,6 +88,9 @@
 #include "palman/palman.h"
 #include "graphics/2d.h"
 #include "openil/il_func.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // -----------------
 //

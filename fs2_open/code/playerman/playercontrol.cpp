@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-03-05 09:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2004-07-12 16:33:03 $
+ * $Author: Kazan $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/03/05 09:02:05  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.12  2003/12/16 21:01:14  phreak
  * disabled tertiary weapons support pending a rewrite of critical code
  *
@@ -506,6 +510,9 @@
 #ifndef NDEBUG
 #include "io/key.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 ////////////////////////////////////////////////////////////
 // Global object and other interesting player type things

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.2 $
- * $Date: 2004-04-26 12:39:49 $
- * $Author: taylor $
+ * $Revision: 1.3 $
+ * $Date: 2004-07-12 16:32:51 $
+ * $Author: Kazan $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/04/26 12:39:49  taylor
+ * correct header to keep cvs log, minor changes
+ *
  * 
  * $NoKeywords: $
  */
@@ -31,6 +34,8 @@
 #include "graphics/2d.h"
 #include "openil/il_func.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // a placeholder for the future
 #define jpeg_read_bitmap(a, b, c ,d)	jpeg_read_bitmap_32(a, b, c, d)

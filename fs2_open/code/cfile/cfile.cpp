@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-06-22 23:14:09 $
- * $Author: wmcoolmon $
+ * $Revision: 2.19 $
+ * $Date: 2004-07-12 16:32:42 $
+ * $Author: Kazan $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/06/22 23:14:09  wmcoolmon
+ * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
+ * OGG code has been commented out, so you don't need the SDK yet.
+ *
  * Revision 2.17  2004/05/26 02:29:44  wmcoolmon
  * Scratch that - .tbm is a better extension
  *
@@ -268,6 +272,9 @@
 #include "parse/encrypt.h"
 #include "cfile/cfilesystem.h"
 #include "cfile/cfilearchive.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 

@@ -17,6 +17,9 @@
 #include "osapi/osregistry.h"
 #include "debugconsole/dbugfile.h"
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 #pragma warning(disable:4711)	// function selected for inlining
 
 const int MAX_SPEECH_BUFFER_LEN = 4096;

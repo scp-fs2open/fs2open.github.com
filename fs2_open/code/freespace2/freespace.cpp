@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.102 $
- * $Date: 2004-07-12 03:19:15 $
+ * $Revision: 2.103 $
+ * $Date: 2004-07-12 16:32:46 $
  * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2004/07/12 03:19:15  Kazan
+ * removed a couple pointless useless messages from the debug console
+ *
  * Revision 2.101  2004/07/11 03:22:47  bobboau
  * added the working decal code
  *
@@ -1112,6 +1115,13 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #include "network/fs2ox.h"
 #endif
 
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
+
+#if defined(_MCD_CHECK)
+FILE *mem_log = NULL;
+#endif
 
 #ifdef NDEBUG
 #ifdef FRED
@@ -2060,6 +2070,11 @@ void game_level_init(int seed)
 	Campaign_ended_in_mission = 0;
 
 	cube_map_drawen = false;
+
+#if defined(_MCD_CHECK)
+	fputs("Post Level Init Stats: ", mem_log);
+	showMemStats();
+#endif
 }
 
 // called when a mission is over -- does server specific stuff.
@@ -2655,6 +2670,8 @@ void run_launcher()
 
 void game_init()
 {
+
+
 	char *ptr;
 
 	Game_current_mission_filename[0] = 0;
@@ -3079,6 +3096,8 @@ void game_init()
 
 	mprintf(("cfile_init() took %d\n", e1 - s1));
 	// mprintf(("1000 cfopens() took %d\n", e2 - s2));	
+
+
 }
 
 char transfer_text[128];
@@ -7672,6 +7691,11 @@ int WinMainSub(int argc, char *argv[])
 #endif
 {
 
+#if defined(_MCD_CHECK)
+	mem_log = fopen("memory_log.txt", "a");
+	_MCD_MemStatLog(mem_log);
+#endif
+
 #ifdef _DEBUG
 	void memblockinfo_output_memleak();
 	atexit(memblockinfo_output_memleak);
@@ -7784,6 +7808,10 @@ int WinMainSub(int argc, char *argv[])
 #endif
 
 	game_init();
+#if defined(_MCD_CHECK)
+	fputs("Post Init Stats: ", mem_log);
+	showMemStats();
+#endif
 	game_stop_time();
 
    if (Cmdline_SpewMission_CRCs) // -missioncrcs
@@ -7847,6 +7875,11 @@ int WinMainSub(int argc, char *argv[])
 		if ( state == GS_STATE_QUIT_GAME ){
 			break;
 		}
+
+		/*#if defined(_MCD_CHECK)
+	fputs("Post Init Stats: ", mem_log);
+	showMemStats();
+#endif*/
 	} 
 
 #ifdef FS2_DEMO
@@ -7859,6 +7892,10 @@ int WinMainSub(int argc, char *argv[])
 #endif
 
 	game_shutdown();
+#if defined(_MCD_CHECK)
+	fclose(mem_log);
+#endif
+
 #ifdef _WIN32
 	return 1;
 #else
@@ -7872,6 +7909,8 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 int main(int argc, char *argv[])
 #endif
 {
+
+
 #ifdef _WIN32
 #ifdef _DEBUG
 	void memblockinfo_output_memleak();
@@ -7915,7 +7954,7 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
 	_CrtDumpMemoryLeaks();
 #endif
-	
+
 	return result;
 }
 

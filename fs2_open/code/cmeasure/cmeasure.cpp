@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:01:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:43 $
+ * $Author: Kazan $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:01:57  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2003/03/18 10:07:00  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -227,6 +231,10 @@
 #include "ship/ship.h"
 #include "math/staticrand.h"
 #include "object/object.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
+
 
 cmeasure_info Cmeasure_info[MAX_CMEASURE_TYPES];
 cmeasure Cmeasures[MAX_CMEASURES];

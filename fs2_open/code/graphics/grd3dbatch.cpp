@@ -9,6 +9,12 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/05 05:09:19  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.13  2004/03/20 14:47:13  randomtiger
  * Added base for a general dynamic batching solution.
  * Fixed NO_DSHOW_CODE code path bug.
@@ -80,6 +86,9 @@
 #include "2d.h"
 #include "graphics/grd3dinternal.h"
 #include "debugconsole/timerbar.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 const int FONT_VTYPE = D3DVT_VERTEX2D;
 typedef	D3DVERTEX2D FONT_VERTEX;

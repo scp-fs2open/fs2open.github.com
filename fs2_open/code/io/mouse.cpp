@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-02-14 00:18:33 $
- * $Author: randomtiger $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-12 16:32:51 $
+ * $Author: Kazan $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/02/14 00:18:33  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.4  2004/02/04 09:02:44  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -153,6 +164,9 @@
 #include "io/mouse.h"
 #include "graphics/2d.h"
 #include "osapi/osapi.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #define MOUSE_MODE_DI	0
 #define MOUSE_MODE_WIN	1

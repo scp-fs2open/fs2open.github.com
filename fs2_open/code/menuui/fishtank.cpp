@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/fishtank.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-12 16:32:53 $
+ * $Author: Kazan $
  *
  * bloop
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -41,6 +45,9 @@
 #include "menuui/fishtank.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // fish
 typedef struct fish {

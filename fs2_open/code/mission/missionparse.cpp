@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.61 $
- * $Date: 2004-07-01 01:12:32 $
- * $Author: bobboau $
+ * $Revision: 2.62 $
+ * $Date: 2004-07-12 16:32:54 $
+ * $Author: Kazan $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2004/07/01 01:12:32  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.60  2004/05/11 02:52:12  Goober5000
  * completed the FRED import conversion stuff that I started ages ago
  * --Goober5000
@@ -647,6 +651,9 @@
   //extern ushort multi_assign_network_signature( int what_kind );
   #include "network/multiutil.h"
 #endif
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 LOCAL struct {
 	p_object *docker;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.68 $
- * $Date: 2004-07-11 03:22:48 $
- * $Author: bobboau $
+ * $Revision: 2.69 $
+ * $Date: 2004-07-12 16:32:48 $
+ * $Author: Kazan $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2004/07/11 03:22:48  bobboau
+ * added the working decal code
+ *
  * Revision 2.67  2004/07/05 05:09:19  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -724,6 +727,9 @@
 #include "model/model.h"
 #include "cmdline/cmdline.h"   
 #include "graphics/grbatch.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 enum vertex_buffer_type{TRILIST_,LINELIST_,FLAT_};
 // Structures and enums

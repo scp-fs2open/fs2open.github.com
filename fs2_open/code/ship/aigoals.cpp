@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-12 16:33:05 $
+ * $Author: Kazan $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.10  2004/02/04 09:21:36  Goober5000
  * more player ai stuff
  * --Goober5000
@@ -521,6 +525,9 @@
 #include "network/multi.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // all ai goals dealt with in this code are goals that are specified through
 // sexpressions in the mission file.  They are either specified as part of a

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-03-05 09:01:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-12 16:33:04 $
+ * $Author: Kazan $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/03/05 09:01:51  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.7  2003/11/11 02:15:40  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -373,6 +377,9 @@
 #include "weapon/weapon.h"
 #include "io/timer.h"
 #include "mission/missionparse.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 #pragma optimize("", off)
 #pragma auto_inline(off)

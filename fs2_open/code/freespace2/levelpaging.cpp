@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/LevelPaging.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-01 01:53:00 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-12 16:32:46 $
+ * $Author: Kazan $
  *
  * Code to page in all the bitmaps at the beginning of a level.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/01 01:53:00  phreak
+ * function pointer radar update.
+ * will enable us to make different radar styles that we can switch between
+ *
  * Revision 2.3  2004/06/18 04:59:53  wmcoolmon
  * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
  *
@@ -68,6 +72,9 @@
 
 #include "freespace2/freespace.h"
 #include "freespace2/levelpaging.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 // All the page in functions
 extern void ship_page_in();

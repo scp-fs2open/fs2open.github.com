@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGrid.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-12 16:32:54 $
+ * $Author: Kazan $
  *
  * C module for grid specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2004/01/19 00:56:10  randomtiger
  * Some more small changes for Fred OGL
  *
@@ -67,6 +71,9 @@
 #include "math/fvi.h"
 #include "render/3d.h"
 #include "graphics/2d.h"
+
+// memory tracking - ALWAYS INCLUDE LAST
+#include "mcd/mcd.h"
 
 grid	Global_grid;
 grid	*The_grid;
