@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-03-05 09:01:53 $
+ * $Revision: 2.18 $
+ * $Date: 2004-04-10 16:55:23 $
  * $Author: Goober5000 $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.16  2004/02/28 14:14:57  randomtiger
  * Removed a few uneeded if DIRECT3D's.
  * Set laser function to only render the effect one sided.
@@ -247,14 +251,14 @@
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
 
-// This is the fs2_open credit list, please only add yourself if you have actually contributed code// Rules!
+// This is the fs2_open credit list, please only add yourself if you have actually contributed code
+// Rules!
 char *fs2_open_credit_text = 
 	"FS2_OPEN STAFF:\n"
 	"\n"
 	"Project Leaders:\n"
 	"\n"
 	"Edward \"Inquisitor\" Gardner\n"
-	"\n"
 	"Ian \"Goober5000\" Warfield\n"
 	"\n"
 	"Programmers:\n"
@@ -285,7 +289,7 @@ char *fs2_open_credit_text =
 	"\n"
 	"Web Support:\n"
 	"\n"
-	"Colin \"IceFire\" Czerneda and the staff at VolitionWatch.com\n"
+	"Colin \"IceFire\" Czerneda and the staff at Volition Watch\n"
 	"Alex \"Thunder\" Avery and the staff at Hard Light Productions\n"
 	"\n"
 	"Special thanks to:\n"
@@ -294,7 +298,7 @@ char *fs2_open_credit_text =
 	"for donating a graphics card!\n"
 	"\n"
 	"\"Lightspeed\"\n"
-	"for helping out whenever and whereever he could\n"
+	"for helping out whenever and whereever he can\n"
 	"\n"
 	"Very special thanks to:\n"
 	"\n"
