@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-05-01 17:10:37 $
- * $Author: Kazan $
+ * $Revision: 2.13 $
+ * $Date: 2004-05-01 19:33:20 $
+ * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,15 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/05/01 17:10:37  Kazan
+ * Multiple -mod - "-mod ModA,ModB,ModC" in order of priority
+ * Giving you:
+ * Root: ModA
+ * Root: ModB
+ * Root: ModC
+ * Root: Fs2Default
+ * Root: CDRom
+ *
  * Revision 2.11  2004/04/26 00:26:37  taylor
  * use absolute moddir path, faster cfilesystem searching
  *
@@ -881,6 +890,7 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 			case CF_TYPE_SINGLE_PLAYERS:
 			case CF_TYPE_MULTI_PLAYERS:
 			case CF_TYPE_MULTI_CACHE:
+			case CF_TYPE_MISSIONS:
 				cfs_slow_search = 1;
 				break;
  
