@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-06-26 00:27:20 $
+ * $Author: wmcoolmon $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2003/01/27 07:46:33  Goober5000
  * finished up my fighterbay code - ships will not be able to arrive from or depart into
  * fighterbays that have been destroyed (but you have to explicitly say in the tables
@@ -242,6 +246,12 @@
 #include "weapon/emp.h"
 #include "ship/ship.h"
 #include "object/object.h"
+
+//For target info ONLY
+#include "asteroid/asteroid.h"
+#include "jumpnode/jumpnode.h"
+#include "weapon/weapon.h"
+#include "parse/parselo.h"
 
 #define FADE_FACTOR	2			// how much the bounding brackets get faded
 #define LOWEST_RED	50			// lowest r value for bounding bracket
@@ -635,6 +645,8 @@ void draw_bounding_brackets_subobject()
 }
 
 extern int HUD_drew_selection_bracket_on_target;
+//Do we want to show the ship & class name?
+extern int Cmdline_targetinfo;
 
 // Display the current target distance, right justified at (x,y)
 void hud_target_show_dist_on_bracket(int x, int y, float distance)
@@ -784,6 +796,56 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 					GR_AABITMAP(Ships_attacking_bitmap, x2+3, y1+i*7);					
 				}
 			}
+
+			//Increment for the position of ship name/class.
+			//DEPENDANT ON ATTACKER SIZE (X)
+			x2 += 7;
+		}
+	}
+	if(Cmdline_targetinfo)
+	{
+		object* t_objp = &Objects[target_objnum];
+		char* tinfo_name = NULL;
+		char* tinfo_class = NULL;
+		char buffer[NAME_LENGTH];
+
+		switch(t_objp->type)
+		{
+			case OBJ_SHIP:
+				tinfo_name = Ships[t_objp->instance].ship_name;
+				tinfo_class = Ship_info[Ships[t_objp->instance].ship_info_index].name;
+				break;
+			case OBJ_DEBRIS:
+				tinfo_name = XSTR( "Debris", 348);
+				break;
+			case OBJ_WEAPON:
+				strcpy(buffer, Weapon_info[t_objp->instance].name);
+				end_string_at_first_hash_symbol(buffer);
+				tinfo_name = buffer;
+				break;
+			case OBJ_ASTEROID:
+				switch(Asteroids[t_objp->instance].type)
+				{
+					case ASTEROID_TYPE_SMALL:
+					case ASTEROID_TYPE_MEDIUM:
+					case ASTEROID_TYPE_BIG:
+						tinfo_name = NOX("Asteroid");
+					default:
+						tinfo_name = XSTR( "Debris", 348);
+				}
+				break;
+			case OBJ_JUMP_NODE:
+				tinfo_name = Jump_nodes[t_objp->instance].name;
+				break;
+		}
+
+		if(tinfo_name)
+		{
+			gr_string(x2+3, y1, tinfo_name);
+		}
+		if(tinfo_class)
+		{
+			gr_string(x2+3, y1+9, tinfo_class);
 		}
 	}
 }
