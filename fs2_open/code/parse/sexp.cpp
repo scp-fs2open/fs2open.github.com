@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.132 $
- * $Date: 2005-01-26 06:49:50 $
+ * $Revision: 2.133 $
+ * $Date: 2005-01-26 06:58:37 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2005/01/26 06:49:50  Goober5000
+ * whoops... need to free variable blocks for special hitpoints
+ * --Goober5000
+ *
  * Revision 2.131  2005/01/26 01:52:21  Goober5000
  * Bah - I am a moron. :) I see the reason why rand shouldn't work
  * multiple times.  It's been fixed thus.
@@ -3179,7 +3183,10 @@ int stuff_sexp_variable_list()
 		} else if (!stricmp(str_type, "string")) {
 			type = SEXP_VARIABLE_STRING;
 		} else if (!stricmp(str_type, "block")) {
-			type = SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_EXP;
+			// Goober5000 - This looks dangerous... these flags are needed for certain things, but it
+			// looks like BLOCK_*_SIZE is the only thing that keeps a block from running off the end
+			// of its boundary.
+			type = SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_EXP | SEXP_VARIABLE_BLOCK_HIT;
 		} else {
 			type = SEXP_VARIABLE_UNKNOWN;
 			Error(LOCATION, "SEXP variable '%s' is an unknown type!", var_name);
