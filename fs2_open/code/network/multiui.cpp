@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-11-12 00:44:52 $
+ * $Revision: 2.15 $
+ * $Date: 2003-11-13 03:59:54 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/11/12 00:44:52  Kazan
+ * (Kazan) /me slaps forehead... make sure things compile before committing.. sorry guys
+ *
  * Revision 2.13  2003/11/12 00:31:45  Kazan
  * A few multi tweaks - fixed a couple warning-killing collisions between goober and me (kazan)
  *
@@ -554,7 +557,7 @@
 
 extern int Om_tracker_flag; // needed to know whether or not to use FS2OpenPXO
 
-unsigned int PXO_SID = -1; // FS2 Open PXO Session ID
+int PXO_SID = -1; // FS2 Open PXO Session ID
 
 #if !defined(PXO_TCP)
 extern UDP_Socket FS2OpenPXO_Socket(FS2OPEN_CLIENT_PORT); // obvious :D - Kazan

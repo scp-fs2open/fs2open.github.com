@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-11-11 02:15:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2003-11-13 03:59:54 $
+ * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/11/11 02:15:44  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.15  2003/10/30 15:30:23  Kazan
  * lil update
  *
@@ -448,7 +453,7 @@ extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
 extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
 #endif
 
-extern unsigned int PXO_SID; // FS2 Open PXO Session ID
+extern int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[32];
 extern int PXO_port;
 
