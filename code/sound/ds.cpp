@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-03-28 00:40:09 $
+ * $Revision: 2.19 $
+ * $Date: 2005-04-01 07:33:08 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/03/28 00:40:09  taylor
+ * fix to snd_time_remaining() to make sure we are getting the correct index into Sounds[]
+ *
  * Revision 2.17  2005/03/27 06:16:46  taylor
  * don't use a platform specific ifdef since the OpenAL code may work under Windows now too
  *
@@ -528,7 +531,7 @@ GUID DSPROPSETID_EAXBUFFER_ReverbProperties_Def = {0x4a4e6fc0, 0xc341, 0x11d1, {
 void ds_get_soundcard_caps(DSCAPS *dscaps);
 
 #elif defined(USE_OPENAL)
-
+/* -- moved to ds.h
 typedef struct channel
 {
     int   sig;		// uniquely identifies the sound playing on the channel
@@ -540,7 +543,7 @@ typedef struct channel
 	int   priority;		// implementation dependant priority
 	bool  is_voice_msg;
     DWORD last_position;
-} channel;
+} channel; */
 
 typedef struct sound_buffer
 {
@@ -556,8 +559,8 @@ typedef struct sound_buffer
 
 #define MAX_DS_SOFTWARE_BUFFERS	256
 
-static int MAX_CHANNELS = 1000;		// initialized properly in ds_init_channels()
-channel *Channels;
+static int MAX_CHANNELS = 32;		// initialized properly in ds_init_channels()
+channel *Channels = NULL;
 static int channel_next_sig = 1;
 
 sound_buffer sound_buffers[MAX_DS_SOFTWARE_BUFFERS];
@@ -1252,8 +1255,6 @@ void ds_init_channels()
 #ifdef USE_OPENAL
 	int i;
 
-	MAX_CHANNELS = 32;
-
 	Channels = (channel*) malloc(sizeof(channel) * MAX_CHANNELS);
 	if (Channels == NULL) {
 		Error(LOCATION, "Unable to allocate %d bytes for %d audio channels.", sizeof(channel) * MAX_CHANNELS, MAX_CHANNELS);
@@ -1506,17 +1507,18 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 {
 #ifdef USE_OPENAL
 //	NOTE: A3D and EAX are unused in OpenAL
-	const ALubyte *initStr = (const ALubyte *)"\'( (sampling-rate 22050 ))";
 	int attr[] = { ALC_FREQUENCY, sample_rate, ALC_SYNC, AL_FALSE, 0 };
+	char *extlist, *curext;
+	static const char *OAL_extensions;
 
 	Ds_use_a3d = 0;
 	Ds_use_eax = 0;
-	Ds_use_ds3d = 0;
+	Ds_use_ds3d = 1;
 
 	nprintf(( "Sound", "SOUND ==> Initializing OpenAL...\n" ));
 
 	// load OpenAL
-	ds_sound_device = alcOpenDevice (initStr);
+	ds_sound_device = alcOpenDevice( NULL );
 
 	if (ds_sound_device == NULL) {
 		nprintf(("Sound", "SOUND ==> Couldn't open OpenAL device\n"));
@@ -1524,30 +1526,55 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	}
 
 	// Create Sound Device
-	ds_sound_context = alcCreateContext (ds_sound_device, attr);
+	ds_sound_context = alcCreateContext( ds_sound_device, attr );
 
 	if (ds_sound_context == NULL) {
 		nprintf(("Sound", "SOUND ==> Couldn't create OpenAL context\n"));
+		alcCloseDevice( ds_sound_device );
 		return -1;
 	}
 
-	alcMakeContextCurrent (ds_sound_context);
+	alcMakeContextCurrent( ds_sound_context );
 
-	if (alcGetError(ds_sound_device) != ALC_NO_ERROR) {
+	if (alcGetError( ds_sound_device ) != ALC_NO_ERROR) {
 		nprintf(("Sound", "SOUND ==> Couldn't initialize OpenAL\n"));
 		return -1;
 	}
 
 	OpenAL_ErrorCheck();
 
+	mprintf(("OpenAL INITED!\n"));
+	mprintf(("\n"));
+	mprintf(( "Vendor     : %s\n", alGetString( AL_VENDOR ) ));
+	mprintf(( "Renderer   : %s\n", alGetString( AL_RENDERER ) ));
+	mprintf(( "Version    : %s\n", alGetString( AL_VERSION ) ));
+	mprintf(( "Extensions : \n" ));
+
+	// print out OpenAL extensions
+	OAL_extensions=(const char*)alGetString( AL_EXTENSIONS );
+
+	extlist = (char*)malloc( strlen(OAL_extensions) );
+
+	if (extlist != NULL) {
+		memcpy(extlist, OAL_extensions, strlen(OAL_extensions));
+
+		curext=strtok(extlist, " ");
+
+		while (curext) {
+			mprintf(( "    %s\n", curext ));
+			curext = strtok(NULL, " ");
+		}
+
+		free(extlist);
+		extlist = NULL;
+	}
+
 	// make sure we can actually use AL_BYTE_LOKI (Mac OpenAL doesn't have it)
 	AL_play_position = alIsExtensionPresent( (ALubyte*)"AL_LOKI_play_position" );
 
-	// Initialize DirectSound3D.  Since software performance of DirectSound3D is unacceptably
-	// slow, we require the voice manger (a DirectSound extension) to be present.  The 
-	// exception is when A3D is being used, since A3D has a resource manager built in.
-//	if (Ds_use_ds3d && ds3d_init(0) != 0)
-//		Ds_use_ds3d = 0;
+	// not a big deal here, but for consitancy sake
+	if (Ds_use_ds3d && ds3d_init(0) != 0)
+		Ds_use_ds3d = 0;
 
 	// setup default listener position/orientation
 	// this is needed for 2D pan
@@ -2016,7 +2043,7 @@ void ds_close()
 	Channels = NULL;
 
 #ifdef USE_OPENAL
-	alcMakeContextCurrent(NULL);
+//	alcMakeContextCurrent(NULL);	// hangs on me for some reason
 
 	if (ds_sound_context != NULL)
 		alcDestroyContext(ds_sound_context);
@@ -3125,9 +3152,89 @@ void ds_chg_loop_status(int channel, int loop)
 int ds3d_play(int sid, int hid, int snd_id, vector *pos, vector *vel, int min, int max, int looping, int max_volume, int estimated_vol, int priority )
 {
 #ifdef USE_OPENAL
-	STUB_FUNCTION;
+	int channel;
+	
+	if (!ds_initialized)
+		return -1;
 
-	return -1;
+	channel = ds_get_free_channel(estimated_vol, snd_id, priority);
+
+	if (channel > -1)	{
+		if ( Channels[channel].source_id == 0 ) {
+			return -1;
+		}
+		
+		alDistanceModel(AL_INVERSE_DISTANCE);
+		
+		// reset pitch value since it could have been changed for this source
+		alSourcef(Channels[channel].source_id, AL_PITCH, 1.0);
+
+		OpenAL_ErrorCheck();
+
+		// set up 3D sound data here
+		ds3d_update_buffer(channel, i2fl(min), i2fl(max), pos, vel);
+		
+		// Actually play it
+		Channels[channel].vol = estimated_vol;
+		Channels[channel].looping = looping;
+		Channels[channel].priority = priority;
+
+		// set volume
+		ALfloat alvol = (estimated_vol != -10000) ? pow(10.0, (float)estimated_vol / (-600.0 / log10(.5))): 0.0;
+		alSourcef(Channels[channel].source_id, AL_GAIN, alvol);		
+
+		OpenAL_ErrorCheck();
+
+		// set maximum "inner cone" volume
+		ALfloat max_vol = (max_volume != -10000) ? pow(10.0, (float)max_volume / (-600.0 / log10(.5))): 0.0;
+		alSourcef(Channels[channel].source_id, AL_MAX_GAIN, max_vol);		
+
+		OpenAL_ErrorCheck();
+
+		ALint status;
+		alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status);
+
+		OpenAL_ErrorCheck();
+
+		if (status == AL_PLAYING)
+			alSourceStop(Channels[channel].source_id);
+		
+		OpenAL_ErrorCheck();
+		
+		alSourcei (Channels[channel].source_id, AL_BUFFER, sound_buffers[sid].buf_id);
+		
+		OpenAL_ErrorCheck();
+
+		alSourcei (Channels[channel].source_id, AL_LOOPING, (looping) ? AL_TRUE : AL_FALSE);		
+
+		OpenAL_ErrorCheck();
+
+//		alSourcei(Channels[channel].source_id, AL_SOURCE_RELATIVE, AL_TRUE);
+		
+//		OpenAL_ErrorCheck();
+		
+		alSourcePlay(Channels[channel].source_id);
+
+		OpenAL_ErrorCheck();
+				
+		sound_buffers[sid].source_id = channel;
+		Channels[channel].buf_id = sid;
+	}
+	else {
+//		nprintf(( "Sound", "SOUND ==> Not playing sound requested at volume %.2f\n", ds_get_percentage_vol(volume) ));
+		return -1;
+	}
+
+	Channels[channel].snd_id = snd_id;
+	Channels[channel].sig = channel_next_sig++;
+	if (channel_next_sig < 0 ) {
+		channel_next_sig = 1;
+	}
+
+	Channels[channel].last_position = 0;
+
+	return Channels[channel].sig;
+
 #else
 	int				channel;
 	HRESULT			hr;
@@ -3847,59 +3954,6 @@ int ds_get_sound_id(int channel)
 
 
 #ifdef USE_OPENAL
-void ds3d_close()
-{
-	STUB_FUNCTION;
-}
-
-int ds3d_update_buffer(int channel, float min, float max, vector *pos, vector *vel)
-{
-//	STUB_FUNCTION;
-
-	return -1;
-}
-
-int ds3d_update_listener(vector *pos, vector *vel, matrix *orient)
-{
-//	STUB_FUNCTION;
-
-#if 0
-	ALfloat posv[] = { pos->x, pos->y, pos->z };
-	ALfloat velv[] = { vel->x, vel->y, vel->z };
-	ALfloat oriv[] = { orient->a1d[0],
-			orient->a1d[1], orient->a1d[2],
-			orient->a1d[3], orient->a1d[4],
-			orient->a1d[5] };
-	alListenerfv(AL_POSITION, posv);
-	alListenerfv(AL_VELOCITY, velv);
-	alListenerfv(AL_ORIENTATION, oriv);
-#endif
-
-	return -1;
-}
-
-int ds3d_init (int unused)
-{
-	STUB_FUNCTION;
-
-#if 0
-	ALfloat pos[] = { 0.0, 0.0, 0.0 },
-		vel[] = { 0.0, 0.0, 0.0 },
-		ori[] = { 0.0, 0.0, 1.0, 0.0, -1.0, 0.0 };
-
-	alListenerfv (AL_POSITION, pos);
-	alListenerfv (AL_VELOCITY, vel);
-	alListenerfv (AL_ORIENTATION, ori);
-
-	if(alGetError() != AL_NO_ERROR)
-		return -1;
-
-	return 0;
-#endif
-
-	return -1;
-}
-
 void dscap_close()
 {
 	STUB_FUNCTION;

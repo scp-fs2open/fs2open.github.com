@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.2 $
- * $Date: 2005-03-27 08:51:24 $
+ * $Revision: 1.3 $
+ * $Date: 2005-04-01 07:33:08 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2005/03/27 08:51:24  taylor
+ * this is what coding on an empty stomach will get you
+ *
  * Revision 1.1  2005/03/27 05:48:58  taylor
  * initial import of OpenAL streaming (many thanks to Pierre Willenbrock for the missing parts)
  *
@@ -1449,11 +1452,11 @@ void audiostream_init()
 		Audio_streams[i].type = ASF_NONE;
 	}
 
-	INITIALIZE_CRITICAL_SECTION( Global_service_lock );
-
 #ifdef SCP_UNIX
 	SDL_InitSubSystem(SDL_INIT_TIMER);
 #endif
+
+	INITIALIZE_CRITICAL_SECTION( Global_service_lock );
 
 	Audiostream_inited = 1;
 }

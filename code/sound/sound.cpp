@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-03-28 00:40:09 $
+ * $Revision: 2.19 $
+ * $Date: 2005-04-01 07:33:08 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/03/28 00:40:09  taylor
+ * fix to snd_time_remaining() to make sure we are getting the correct index into Sounds[]
+ *
  * Revision 2.17  2005/03/24 23:27:25  taylor
  * make sounds.tbl dynamic
  * have snd_time_remaining() be less stupid
@@ -800,9 +803,7 @@ void snd_close(void)
 	snd_stop_all();
 	if (!ds_initialized) return;
 	snd_unload_all();		// free the sound data stored in DirectSound secondary buffers
-#ifdef _WIN32
 	ACM_close();	// Close the Audio Compression Manager (ACM)
-#endif
 	ds3d_close();	// Close DirectSound3D
 	dscap_close();	// Close DirectSoundCapture
 	ds_close();		// Close DirectSound off
