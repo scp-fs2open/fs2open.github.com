@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-06-11 03:03:16 $
+ * $Revision: 2.6 $
+ * $Date: 2003-06-25 03:16:32 $
  * $Author: phreak $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/06/11 03:03:16  phreak
+ * the ai can now use local ssms. they are able to use them at *very* long range
+ *
  * Revision 2.4  2003/03/20 08:24:45  unknownplayer
  * Modified the command line options so they are all in lower-case characters.
  * Made a slight AI adjustment to how ships choose to attack turrets (they now have a 25% chance of attacking a beam turret which has fired at them from another ship)
@@ -1070,7 +1073,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vector *
 						if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
 							float firing_range;
 							if (swip->wi_flags2 & WIF2_LOCAL_SSM)
-								firing_range=1000000.0f;
+								firing_range=swip->lssm_lock_range;
 							else
 								firing_range= swip->max_speed * swip->lifetime;
 							// reduce firing range of secondaries in nebula
