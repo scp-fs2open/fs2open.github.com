@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-11-02 05:50:08 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2003-11-09 06:31:40 $
+ * $Author: Kazan $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/11/02 05:50:08  bobboau
+ * modified trails to render with tristrips now rather than with stinky old trifans,
+ * MUCH faster now, at least one order of magnatude.
+ *
  * Revision 2.5  2003/10/23 18:03:25  randomtiger
  * Bobs changes (take 2)
  *
@@ -394,7 +398,8 @@ void trail_render( trail * trailp )
 void trail_render( trail * trailp )
 {		
 	TIMERBAR_PUSH(6);
-	gr_set_lighting(false,false);//this shouldn't need to be here but it does need to be here, WHY!!!!!!!?-Bobboau
+
+	if (!Cmdline_nohtl) gr_set_lighting(false,false);//this shouldn't need to be here but it does need to be here, WHY!!!!!!!?-Bobboau
 	trail_info *ti;	
 
 	if ( trailp->tail == trailp->head ) return;
