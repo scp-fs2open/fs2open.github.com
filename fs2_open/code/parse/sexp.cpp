@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.118 $
- * $Date: 2004-10-15 08:14:07 $
+ * $Revision: 2.119 $
+ * $Date: 2004-10-15 09:21:55 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.118  2004/10/15 08:14:07  Goober5000
+ * extra coding insurance
+ * --Goober5000
+ *
  * Revision 2.117  2004/10/14 23:03:37  Goober5000
  * tweakage
  * --Goober5000
@@ -6594,6 +6598,14 @@ void sexp_invalidate_argument(int n)
 	}
 }
 
+// Goober5000
+int sexp_ingame_ship_is_iff(int ship_num, int check_team)
+{
+	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
+
+	return (Ships[ship_num].team == check_team);
+}
+
 // Goober5000 - added wing capability
 int sexp_is_iff( int n )
 {
@@ -6642,7 +6654,7 @@ int sexp_is_iff( int n )
 		if (ship_num != -1)
 		{
 			// if the team doesn't match the team specified, return false immediately
-			if (!ship_is_iff(ship_num, team))
+			if (!sexp_ingame_ship_is_iff(ship_num, team))
 			{
 				return SEXP_FALSE;
 			}
@@ -6655,7 +6667,7 @@ int sexp_is_iff( int n )
 			for (i=0; i<wingp->current_count; i++)
 			{
 				// if the team doesn't match the team specified, return false immediately
-				if (!ship_is_iff(wingp->ship_index[i], team))
+				if (!sexp_ingame_ship_is_iff(wingp->ship_index[i], team))
 				{
 					return SEXP_FALSE;
 				}
@@ -6667,15 +6679,41 @@ int sexp_is_iff( int n )
 	return SEXP_TRUE;
 }
 
+// Goober5000
+void sexp_ingame_ship_change_iff(int ship_num, int new_team)
+{
+	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
+
+	Ships[ship_num].team = new_team;
+
+#ifndef NO_NETWORK
+	// send a network packet if we need to
+	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0)){
+		send_change_iff_packet(Objects[Ships[ship_num].objnum].net_signature, new_team);
+	}
+#endif
+}
+
+// Goober5000
+void sexp_parse_ship_change_iff(p_object *parse_obj, int new_team)
+{
+	Assert(parse_obj);
+
+	parse_obj->team = new_team;
+}
+
 // Goober5000 - added wing capability
 void sexp_change_iff( int n )
 {
 	char *ship_or_wing_name, *new_iff;
 	int i, ship_num, wing_num, new_team;
 	wing *wingp;
+	p_object *parse_obj;
 
 	Assert ( n >= 0 );
 	new_iff = CTEXT(n);
+	n = CDR(n);
+
 	if ( !stricmp(new_iff, "friendly") )
 		new_team = TEAM_FRIENDLY;
 	else if ( !stricmp(new_iff, "hostile") )
@@ -6692,7 +6730,6 @@ void sexp_change_iff( int n )
 		Int3();
 	}
 
-	n = CDR(n);
 	for ( ; n != -1; n = CDR(n) )
 	{
 		ship_or_wing_name = CTEXT(n);
@@ -6705,24 +6742,38 @@ void sexp_change_iff( int n )
 		if ( mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) ) 
 			continue;
 
-		// see if we can find anything
+		// search for it
 		ship_num = ship_name_lookup(ship_or_wing_name);
 		wing_num = wing_name_lookup(ship_or_wing_name);
 
-		// change ship
+		// change ingame ship
 		if (ship_num != -1)
 		{
-			ship_change_iff(ship_num, new_team);
+			sexp_ingame_ship_change_iff(ship_num, new_team);
 		}
-
-		// change wing
-		if (wing_num != -1)
+		// change ship yet to arrive
+		else if (parse_obj = mission_parse_get_arrival_ship(ship_or_wing_name), parse_obj)
+		{
+			sexp_parse_ship_change_iff(parse_obj, new_team);
+		}
+		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
+		else if (wing_num != -1)
 		{
 			wingp = &Wings[wing_num];
 			
-			for (i=0; i<wingp->current_count; i++)
+			// current ships
+			for (i = 0; i < wingp->current_count; i++)
 			{
-				ship_change_iff(wingp->ship_index[i], new_team);
+				sexp_ingame_ship_change_iff(wingp->ship_index[i], new_team);
+			}
+
+			// ships yet to arrive
+			for (parse_obj = GET_FIRST(&ship_arrival_list); parse_obj != END_OF_LIST(&ship_arrival_list); parse_obj = GET_NEXT(parse_obj))
+			{
+				if (parse_obj->wingnum == wing_num)
+				{
+					sexp_parse_ship_change_iff(parse_obj, new_team);
+				}
 			}
 		}
 	}
@@ -9463,65 +9514,106 @@ void sexp_shields_off(int n, int shields_off ) //-Sesquipedalian
 	}
 }
 
+// Goober5000
+void sexp_ingame_ship_kamikaze(int ship_num, int kdamage)
+{
+	ai_info * aip;
+
+	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
+
+	aip = &Ai_info[Ships[ship_num].ai_index];
+
+	if (kdamage > 0)
+	{
+		aip->ai_flags |= AIF_KAMIKAZE;
+		aip->kamikaze_damage = i2fl(kdamage); 
+	}
+	else
+	{
+		aip->ai_flags &= ~AIF_KAMIKAZE;
+		aip->kamikaze_damage = 0.0f;
+	}
+}
+
+// Goober5000
+void sexp_parse_ship_kamikaze(p_object *parse_obj, int kdamage)
+{
+	Assert(parse_obj);
+
+	if (kdamage > 0)
+	{
+		parse_obj->flags |= P_AIF_KAMIKAZE;
+		parse_obj->kamikaze_damage = i2fl(kdamage);
+	}
+	else
+	{
+		parse_obj->flags &= ~P_AIF_KAMIKAZE;
+		parse_obj->kamikaze_damage = 0.0f;
+	}
+}
+
+// Goober5000 - redone, added wing stuff
 void sexp_kamikaze(int n, int kamikaze)
 {
-	char *ship_name;
-	int num;
+	int i, ship_num, wing_num;
 	int kdamage;
-	ai_info * aip;
+	char *ship_or_wing_name;
+	wing *wingp;
+	p_object *parse_obj;
 	
-	kdamage = sexp_get_val(n);
-	n=CDR(n);
-
-	while (n!=-1)
+	kdamage = 0;
+	if (kamikaze)
 	{
-		ship_name=CTEXT(n);
+		kdamage = sexp_get_val(n);
+		n = CDR(n);
+	}
+
+	for ( ; n != -1; n = CDR(n) )
+	{
+		ship_or_wing_name = CTEXT(n);
 
 		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			return;
-	
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 ) {
-			aip=&Ai_info[Ships[num].ai_index];
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_or_wing_name, NULL, NULL) )
+			continue;
 
-			if (kamikaze)
-			{
-				aip->ai_flags |= AIF_KAMIKAZE;
-				aip->kamikaze_damage = i2fl(kdamage); 
-			}
-			else
-			{
-				aip->ai_flags &= ~AIF_KAMIKAZE;
-				aip->kamikaze_damage = 0.0f;
-			}
-		} else {
-			p_object *parse_obj;
-	
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj ) {
+		// might be a wing - check to see if wing destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) )
+			continue;
 
-				if (kamikaze)
-				{
-					parse_obj->flags |= P_AIF_KAMIKAZE;
-					parse_obj->kamikaze_damage = i2fl(kdamage);
-				}
-				else
-				{
-					parse_obj->flags &= ~P_AIF_KAMIKAZE;
-					parse_obj->kamikaze_damage = 0.0f;
-				}
-			
-#ifndef NDEBUG
-			}else {
-				Int3();	// get allender -- could be a potential problem here
-#endif
-			}
+		// search for it
+		ship_num = ship_name_lookup(ship_or_wing_name);
+		wing_num = wing_name_lookup(ship_or_wing_name);
 
+		// change ingame ship
+		if (ship_num != -1)
+		{
+			sexp_ingame_ship_kamikaze(ship_num, kdamage);
 		}
-		n=CDR(n);
+		// change ship yet to arrive
+		else if (parse_obj = mission_parse_get_arrival_ship(ship_or_wing_name), parse_obj)
+		{
+			sexp_parse_ship_kamikaze(parse_obj, kdamage);
+		}
+		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
+		else if (wing_num != -1)
+		{
+			wingp = &Wings[wing_num];
+			
+			// current ships
+			for (i = 0; i < wingp->current_count; i++)
+			{
+				sexp_ingame_ship_kamikaze(wingp->ship_index[i], kdamage);
+			}
+
+			// ships yet to arrive
+			for (parse_obj = GET_FIRST(&ship_arrival_list); parse_obj != END_OF_LIST(&ship_arrival_list); parse_obj = GET_NEXT(parse_obj))
+			{
+				if (parse_obj->wingnum == wing_num)
+				{
+					sexp_parse_ship_kamikaze(parse_obj, kdamage);
+				}
+			}
+		}
 	}
 }
 
@@ -13449,7 +13541,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_VANISH:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
-		case OP_NOT_KAMIKAZE:
 		case OP_SHIP_STEALTHY:
 		case OP_SHIP_UNSTEALTHY:
 		case OP_FRIENDLY_STEALTH_INVISIBLE:
@@ -14253,7 +14344,10 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum==0)
 				return OPF_POSITIVE;
 			else
-				return OPF_SHIP;
+				return OPF_SHIP_WING;
+
+		case OP_NOT_KAMIKAZE:
+			return OPF_SHIP_WING;
 
 		case OP_NUM_SHIPS_IN_BATTLE:
 			return OPF_IFF;

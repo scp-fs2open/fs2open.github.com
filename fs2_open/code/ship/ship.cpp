@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.136 $
- * $Date: 2004-08-20 05:13:08 $
- * $Author: Kazan $
+ * $Revision: 2.137 $
+ * $Date: 2004-10-15 09:21:55 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.136  2004/08/20 05:13:08  Kazan
+ * wakka wakka - fix minor booboo
+ *
  * Revision 2.135  2004/07/26 20:47:51  Kazan
  * remove MCD complete
  *
@@ -12513,29 +12516,6 @@ void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_c
 		ss = GET_NEXT( ss );
 	}
 	Int3();	// subsystem not found
-}
-
-// Goober5000: check ship's iff, currently only called from is-iff in sexp.cpp
-int ship_is_iff(int ship_num, int check_team)
-{
-	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
-
-	return (Ships[ship_num].team == check_team);
-}
-
-// Goober5000: change ship's iff, currently only called from change-iff in sexp.cpp
-void ship_change_iff(int ship_num, int new_team)
-{
-	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
-
-	Ships[ship_num].team = new_team;
-
-#ifndef NO_NETWORK
-	// send a network packet if we need to
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0)){
-		send_change_iff_packet(Objects[Ships[ship_num].objnum].net_signature, new_team);
-	}
-#endif
 }
 
 // Goober5000 - will attempt to load an insignia bitmap and set it as active for the wing

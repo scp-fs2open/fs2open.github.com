@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.68 $
- * $Date: 2004-10-12 22:47:14 $
+ * $Revision: 2.69 $
+ * $Date: 2004-10-15 09:21:55 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2004/10/12 22:47:14  Goober5000
+ * added toggle-subsystem-scanning ship flag
+ * --Goober5000
+ *
  * Revision 2.67  2004/10/12 07:34:45  Goober5000
  * added contrail speed threshold
  * --Goober5000
@@ -3090,7 +3094,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 				return 0;
 			}
 
-			// check status of fighterbays - if they're destroyed, we can't launch - but we want to reeval later
+			// Goober5000 - check status of fighterbays - if they're destroyed, we can't launch - but we want to reeval later
 			if (ship_fighterbays_all_destroyed(&Ships[shipnum]))
 				return 0;
 		}
