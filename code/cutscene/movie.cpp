@@ -5,6 +5,7 @@
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"	
 #include "debugconsole/dbugfile.h" 
+#include "cfile/cfile.h"
 
 // This module links freespace movie calls to the actual API calls the play the movie.
 // This module handles all the different requires of OS and gfx API and finding the file to play
@@ -22,6 +23,49 @@ void process_messages()
 
 #include "graphics/grd3dinternal.h"
 
+// filename		- file to search for
+// out_name		- output, full path to file
+// returns non-zero if file is found
+int movie_find(char *filename, char *out_name)
+{
+	char full_path[MAX_PATH];
+	char tmp_name[MAX_PATH];
+	char search_name[MAX_PATH];
+	int i, size, offset = 0;
+	const int NUM_EXT = 2;
+	const char *movie_ext[NUM_EXT] = { ".avi", ".mpg" };
+
+	if (out_name == NULL) {
+		return 0;
+	}
+
+	// remove extension
+	strcpy( tmp_name, filename );
+	char *p = strchr( tmp_name, '.' );
+	if ( p ) {
+		*p = 0;
+	}
+	
+	for (i=0; i<NUM_EXT; i++) {
+		strcpy( search_name, tmp_name );
+		strcat( search_name, movie_ext[i] );
+
+		// try and find the file
+    	if ( cf_find_file_location(search_name, CF_TYPE_ANY, full_path, &size, &offset, 0) ) {
+			// if it's not in a packfile then we're done
+			if (offset == 0) {
+				strcpy( out_name, full_path );
+				return 1;
+			}
+    	}
+		
+		// clear old string
+		strcpy( search_name, "" );
+	}
+
+	return 0;
+}
+
 // Play one movie
 bool movie_play(char *name)
 {
@@ -35,21 +79,16 @@ bool movie_play(char *name)
  	if(Cmdline_window) return false;
 
 	char full_name[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, full_name);
-	strcat(full_name, "\\");
-	strcat(full_name, name);
+	int rc = 0;
 
-	// Check file exists, assume its not in a vp file
-	FILE *fp = fopen(full_name,"rb");
-	DBUGFILE_OUTPUT_1("About to play: %s",full_name);
-		
-	if(fp == NULL)
-	{
-		DBUGFILE_OUTPUT_1("MOVIE ERROR: Cant open movie file %s",full_name);
+	rc = movie_find(name, full_name);
+
+	if (!rc) {
+		DBUGFILE_OUTPUT_1("MOVIE ERROR: Cant open movie file %s", name);
 		return false;
+	} else {
+		DBUGFILE_OUTPUT_1("About to play: %s", full_name);
 	}
-
-	fclose(fp);
 
 	process_messages();
 
