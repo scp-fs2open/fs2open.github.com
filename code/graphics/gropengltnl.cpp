@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.8 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 1.9 $
+ * $Date: 2004-07-29 09:35:29 $
+ * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 1.7  2004/07/17 18:49:57  taylor
  * oops, I can't spell
  *
@@ -201,6 +204,9 @@ uint opengl_create_vbo(uint size, void** data)
 
 int gr_opengl_make_buffer(poly_list *list, uint flags)
 {
+	if (Cmdline_nohtl)
+		return -1;
+
 	int buffer_num=opengl_find_first_free_buffer();
 
 	//we have a valid buffer
@@ -261,6 +267,9 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 	
 void gr_opengl_destroy_buffer(int idx)
 {
+	if (Cmdline_nohtl)
+		return;
+
 	if (idx > -1)
 		gr_opengl_set_buffer(idx);
 
@@ -290,6 +299,9 @@ void gr_opengl_destroy_buffer(int idx)
 
 void gr_opengl_set_buffer(int idx)
 {
+	if (Cmdline_nohtl)
+		return;
+
 	g_vbp=&vertex_buffers[idx];
 }
 
@@ -300,6 +312,9 @@ extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
 void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 {
+	if (Cmdline_nohtl)
+		return;
+
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
 
@@ -471,6 +486,9 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 
 void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
 {
+	if (Cmdline_nohtl)
+		return;
+
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
 
@@ -492,6 +510,9 @@ void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
 
 void gr_opengl_start_instance_angles(vector *pos, angles* rotation)
 {
+	if (Cmdline_nohtl)
+		return;
+
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
 
@@ -502,6 +523,9 @@ void gr_opengl_start_instance_angles(vector *pos, angles* rotation)
 
 void gr_opengl_end_instance_matrix()
 {
+	if (Cmdline_nohtl)
+		return;
+
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
 
@@ -513,6 +537,9 @@ void gr_opengl_end_instance_matrix()
 //the projection matrix; fov, aspect ratio, near, far
 void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, float z_far)
 {
+	if (Cmdline_nohtl)
+		return;
+
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
@@ -523,6 +550,9 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 
 void gr_opengl_end_projection_matrix()
 {
+	if (Cmdline_nohtl)
+		return;
+
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
@@ -531,6 +561,9 @@ void gr_opengl_end_projection_matrix()
 
 void gr_opengl_set_view_matrix(vector *pos, matrix* orient)
 {
+	if (Cmdline_nohtl)
+		return;
+
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_modelview_matrix_depth == 1);
 	glMatrixMode(GL_MODELVIEW);
@@ -556,6 +589,9 @@ void gr_opengl_set_view_matrix(vector *pos, matrix* orient)
 
 void gr_opengl_end_view_matrix()
 {
+	if (Cmdline_nohtl)
+		return;
+
 	Assert(GL_modelview_matrix_depth == 2);
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
@@ -568,6 +604,9 @@ void gr_opengl_end_view_matrix()
 
 void gr_opengl_push_scale_matrix(vector *scale_factor)
 {
+	if (Cmdline_nohtl)
+		return;
+
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
 
@@ -579,6 +618,9 @@ void gr_opengl_push_scale_matrix(vector *scale_factor)
 
 void gr_opengl_pop_scale_matrix()
 {
+	if (Cmdline_nohtl)
+		return;
+
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
 
@@ -589,11 +631,17 @@ void gr_opengl_pop_scale_matrix()
 
 void gr_opengl_end_clip_plane()
 {
+	if (Cmdline_nohtl)
+		return;
+
 	glDisable(GL_CLIP_PLANE0);
 }
 
 void gr_opengl_start_clip_plane()
 {
+	if (Cmdline_nohtl)
+		return;
+
 	double clip_equation[4];
 	vector n;
 	vector p;
@@ -610,5 +658,8 @@ void gr_opengl_start_clip_plane()
 }
 
 //face -1 is to turn it off, the rest are right, left, up, down , front, and back
-void gr_opengl_render_to_env(int FACE){
+void gr_opengl_render_to_env(int FACE)
+{
+	if (Cmdline_nohtl)
+		return;
 }
