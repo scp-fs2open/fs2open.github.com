@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-03-20 08:24:45 $
- * $Author: unknownplayer $
- * $Revision: 2.19 $
- * $Date: 2003-03-20 08:24:45 $
- * $Author: unknownplayer $
+ * $Revision: 2.20 $
+ * $Date: 2003-03-29 09:42:05 $
+ * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2003-03-29 09:42:05 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/03/20 08:24:45  unknownplayer
+ * Modified the command line options so they are all in lower-case characters.
+ * Made a slight AI adjustment to how ships choose to attack turrets (they now have a 25% chance of attacking a beam turret which has fired at them from another ship)
+ *
  * Revision 2.18  2003/03/18 10:07:00  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -339,6 +343,7 @@ cmdline_parm fps_arg("-fps", NULL);
 cmdline_parm d3dlowmem_arg("-d3dlowmem", NULL); //DTP for random tigers GF4fix
 cmdline_parm d3dlauncher_arg("-d3dlauncher", NULL);
 cmdline_parm d3dmipmap_arg("-d3dmipmap", NULL);
+cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// beams do not pierce shields - Goober5000
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -377,6 +382,8 @@ int Cmdline_show_fps = 0;
 int Cmdline_d3dlowmem = 0;
 int Cmdline_d3dlauncher = 0;
 int Cmdline_d3dmipmap = 0;
+
+int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 
 static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
@@ -781,6 +788,10 @@ int parse_cmdline(int argc, char *argv[])
 
 	if( d3dmipmap_arg.found() ) {
 		Cmdline_d3dmipmap = 1;
+	}
+
+	if ( beams_no_pierce_shields_arg.found() ) {
+		Cmdline_beams_no_pierce_shields = 1;
 	}
 
 	return 1;

@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.18 $
- * $Date: 2003-03-18 10:07:00 $
- * $Author: unknownplayer $
+ * $Revision: 2.19 $
+ * $Date: 2003-03-29 09:42:05 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/03/18 10:07:00  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.17  2003/02/22 04:13:17  wmcoolmon
  * Added "-dshowvid" command-line option, which must be set in order for movies to play.
  *
@@ -277,5 +280,7 @@ extern int Cmdline_dshowvid;
 extern int Cmdline_d3dlowmem;
 extern int Cmdline_d3dlauncher;
 extern int Cmdline_d3dmipmap;
+
+extern int Cmdline_beams_no_pierce_shields;	// Goober5000
 
 #endif

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-02-25 06:22:49 $
- * $Author: bobboau $
+ * $Revision: 2.6 $
+ * $Date: 2003-03-29 09:42:05 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/02/25 06:22:49  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.4  2003/01/24 03:48:11  Goober5000
  * aw, nuts - fixed a dumb bug with my new don't-collide-invisible code :p
  * --Goober5000
@@ -355,11 +361,11 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 			//			vector through to the hull if there is leftover damage.
 			if (!(shipp->flags & SF_DYING) && ship_is_shield_up(ship_obj,quadrant_num) ) {
 
-				// WIF2_PIERCE pierces shields
+				// WIF2_PIERCE_SHIELDS pierces shields
 				// AL 1-14-97: "Puncture" doesn't mean penetrate shield anymore, it means that it punctures
 				//					hull do inflict maximum subsystem damage
 
-				if ( Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].wi_flags2 & WIF2_PIERCE )	{
+				if ( Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS )	{
 					// If this weapon punctures the shield, then do
 					// the hit effect, but act like a shield collision never occurred.
 					quadrant_num = -1;	// ignore shield hit

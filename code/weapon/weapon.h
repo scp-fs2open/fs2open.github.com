@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/03/03 04:28:37  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.8  2003/02/25 06:22:50  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -379,7 +383,7 @@
 #define  WIF_STREAM			(1 << 31)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
 
 #define WIF2_BALLISTIC					(1 << 0)	// ballistic primaries - Goober5000
-#define WIF2_PIERCE						(1 << 1)	// shield pierceing -Bobboau
+#define WIF2_PIERCE_SHIELDS				(1 << 1)	// shield pierceing -Bobboau
 #define WIF2_DEFAULT_IN_TECH_DATABASE	(1 << 2)	// default in tech database - Goober5000
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
