@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-11-14 06:15:02 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-03 00:00:52 $
+ * $Author: Goober5000 $
  *
- * main upper level code for pasring stuff
+ * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/11/14 06:15:02  bobboau
+ * added nameplate code
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -408,7 +411,7 @@ int Num_team_names = MAX_TEAM_NAMES;
 int Num_parse_goals;
 int Player_starts = 1;
 int Num_teams;
-fix Entry_delay_time;
+fix Entry_delay_time = 0;
 
 ushort Current_file_checksum = 0;
 ushort Last_file_checksum = 0;
@@ -792,6 +795,10 @@ void parse_mission_info(mission *pm)
 		stuff_float(&temp);
 		Assert(temp >= 0.0f);
 		Entry_delay_time = fl2f(temp);
+	}
+	else
+	{
+		Entry_delay_time = 0;
 	}
 
 	if (optional_string("+Viewer pos:")){
