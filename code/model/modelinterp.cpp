@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.98 $
- * $Date: 2005-01-30 09:27:40 $
+ * $Revision: 2.99 $
+ * $Date: 2005-01-30 10:49:26 $
  * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2005/01/30 09:27:40  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 2.97  2005/01/30 03:23:22  wmcoolmon
  * Improved user-friendliness - give an Error instead of a CTD
  *
@@ -5507,9 +5511,8 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 			texture = Interp_forced_bitmap;
 		}else if(Warp_Map > -1){
 			texture = Warp_Map;
-// Goober5000 - see below
-//		}else if(Interp_replacement_bitmap >= 0){
-//			texture = Interp_replacement_bitmap;
+		}else if(Interp_replacement_bitmap >= 0){
+			texture = Interp_replacement_bitmap;
 		}else if(Interp_thrust_scale_subobj){
 			texture = Interp_thrust_bitmap;
 		} else {
@@ -5536,9 +5539,9 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 
 		if(texture == -1)continue;
 
-		// Goober5000 - this should fix replacement textures under HTL
-		if (Interp_replacement_textures != NULL)
-			texture = Interp_replacement_textures[texture];
+// Goober5000 - this should fix replacement textures under HTL, but it doesn't... more work needed :(
+//		if (Interp_replacement_textures != NULL)
+//			texture = Interp_replacement_textures[texture];
 
 		if(Interp_thrust_scale_subobj) {
 
