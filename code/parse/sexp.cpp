@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.49 $
- * $Date: 2003-03-21 04:51:32 $
+ * $Revision: 2.50 $
+ * $Date: 2003-03-21 08:33:33 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2003/03/21 04:51:32  Goober5000
+ * added get-relative-object-*, where * = x, y, and z; these sexps return the
+ * world coordinates of a set of relative coordinates to an object; also, fixed many
+ * places in sexp.cpp so that now sexps can accept other sexps as parameters,
+ * wherease before they weren't able to
+ * --Goober5000
+ *
  * Revision 2.48  2003/03/20 09:17:16  Goober5000
  * implemented EMP as part of weapon-effect sexp
  * --Goober5000
@@ -5957,7 +5964,7 @@ void sexp_change_music(int n)
 void sexp_explosion_effect(int n)
 /* From the SEXP help...
 	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
-		"\tCauses an explosion at a given origin, with the given parameters.  The explosion goes off immediately.  "
+		"\tCauses an explosion at a given origin, with the given parameters.  "
 		"Takes 11 or 13 arguments...\r\n"
 		"\t1:  Origin X\r\n"
 		"\t2:  Origin Y\r\n"
