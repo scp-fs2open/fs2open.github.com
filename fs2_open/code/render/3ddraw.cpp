@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-04-11 13:56:33 $
- * $Author: randomtiger $
+ * $Revision: 2.21 $
+ * $Date: 2004-04-26 12:36:10 $
+ * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/04/11 13:56:33  randomtiger
+ * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
+ *
  * Revision 2.19  2004/04/08 20:13:17  phreak
  * got rid of some compile warnings
  *
@@ -2072,17 +2075,39 @@ int g3_draw_rod(vector *p0,float width1,vector *p1,float width2, vertex * verts,
 		if ( verts )	{
 			pts[i] = verts[i];
 		}
-		if(Cmdline_nohtl)g3_rotate_vertex( &pts[i], &vecs[i] );
-		else g3_rotate_vertex( &pts[i], &vecs[i] );
+		if(Cmdline_nohtl)
+			g3_rotate_vertex( &pts[i], &vecs[i] );
+		else
+			g3_transfer_vertex( &pts[i], &vecs[i] );
 	}
 	ptlist[0]->u = 0.0f;
 	ptlist[0]->v = 0.0f;
+	ptlist[0]->r = gr_screen.current_color.red;
+	ptlist[0]->g = gr_screen.current_color.green;
+	ptlist[0]->b = gr_screen.current_color.blue;
+	ptlist[0]->a = gr_screen.current_color.alpha;
+
 	ptlist[1]->u = 1.0f;
 	ptlist[1]->v = 0.0f;
+	ptlist[1]->r = gr_screen.current_color.red;
+	ptlist[1]->g = gr_screen.current_color.green;
+	ptlist[1]->b = gr_screen.current_color.blue;
+	ptlist[1]->a = gr_screen.current_color.alpha;
+
 	ptlist[2]->u = 1.0f;
 	ptlist[2]->v = 1.0f;
+	ptlist[2]->r = gr_screen.current_color.red;
+	ptlist[2]->g = gr_screen.current_color.green;
+	ptlist[2]->b = gr_screen.current_color.blue;
+	ptlist[2]->a = gr_screen.current_color.alpha;
+
 	ptlist[3]->u = 0.0f;
 	ptlist[3]->v = 1.0f;
+	ptlist[3]->r = gr_screen.current_color.red;
+	ptlist[3]->g = gr_screen.current_color.green;
+	ptlist[3]->b = gr_screen.current_color.blue;
+	ptlist[3]->a = gr_screen.current_color.alpha;
+
 	return g3_draw_poly(4,ptlist,tmap_flags);
 }
 
