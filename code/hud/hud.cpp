@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-02-14 23:54:11 $
- * $Author: taylor $
+ * $Revision: 2.39 $
+ * $Date: 2005-02-27 07:07:47 $
+ * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/02/14 23:54:11  taylor
+ * make loading screen shader a bit taller
+ * add i.o to credits for Linux and OSX code
+ * add libjpeg and ogg stuff to credits for license compliance
+ * replace an Int3() with a debug message in the hud code
+ *
  * Revision 2.37  2005/02/13 08:38:54  wmcoolmon
  * nonstandard resolution-friendly function updates
  *
@@ -1568,9 +1574,9 @@ void hud_show_mission_time()
 	// display time compression as xN
 	time_comp = f2fl(Game_time_compression);
 	if ( time_comp < 1 ) {
-		gr_printf(Mission_time_text_val_coords[gr_screen.res][0], Mission_time_text_val_coords[gr_screen.res][1], /*XSTR( "x%.1f", 215), time_comp)*/ NOX("1/%.0f"), 1/time_comp);
+		gr_printf(Mission_time_text_val_coords[gr_screen.res][0], Mission_time_text_val_coords[gr_screen.res][1], /*XSTR( "x%.1f", 215), time_comp)*/ NOX("%.2f"), time_comp);
 	} else {
-		gr_printf(Mission_time_text_val_coords[gr_screen.res][0], Mission_time_text_val_coords[gr_screen.res][1], XSTR( "x%.0f", 216), time_comp);
+		gr_printf(Mission_time_text_val_coords[gr_screen.res][0], Mission_time_text_val_coords[gr_screen.res][1], XSTR( "x%.2f", 216), time_comp);
 	}
 }
 
@@ -2277,7 +2283,7 @@ int hud_anim_load(hud_anim *ha)
 //				loop			=>	anim should loop (default 1)
 //				hold_last	=>	should last frame be held (default 0)
 //				reverse		=>	play animation in reverse (default 0)
-int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse)
+int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse,bool resize)
 {
 	int framenum;
 
@@ -2312,9 +2318,9 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 	if(emp_should_blit_gauge()){
 		gr_set_bitmap(ha->first_frame + framenum);
 		if ( draw_alpha ){
-			gr_aabitmap(ha->sx, ha->sy);
+			gr_aabitmap(ha->sx, ha->sy,resize);
 		} else {
-			gr_bitmap(ha->sx, ha->sy);
+			gr_bitmap(ha->sx, ha->sy,resize);
 		}
 	}
 
@@ -2398,7 +2404,7 @@ void hud_show_text_flash_icon(char *txt, int y, int bright)
 
 	// string
 	hud_set_gauge_color(HUD_TEXT_FLASH, HUD_C_BRIGHT);	
-	gr_string(0x8000, y, txt);
+	gr_string(fl2i((gr_screen.max_w - w) / 2.0f), y, txt, false);
 
 	// go back to normal font
 	gr_set_font(FONT1);
