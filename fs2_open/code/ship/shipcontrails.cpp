@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-12 00:19:55 $
+ * $Revision: 2.5 $
+ * $Date: 2003-01-12 03:26:41 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/12 00:19:55  wmcoolmon
+ * It turns out the version in the CVS did not toggle the ship trails with the flag...fixed this.
+ *
  * Revision 2.3  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -144,17 +147,17 @@ void ct_ship_process(ship *shipp)
 #ifdef MULTIPLAYER_BETA_BUILD
 	return;
 #else
-	int idx;		
-	object *objp;
 
 	Assert(shipp != NULL);
 	Assert(shipp->objnum >= 0);
-	objp = &Objects[shipp->objnum];
 	
-	// if not a fullneb mission - do nothing
+	// if trails aren't enabled, return
 	if(The_mission.flags & MISSION_FLAG_SHIP_TRAILS){
 		return;
 	}
+	int idx;		
+	object *objp;
+	objp = &Objects[shipp->objnum];
 
 	// if this is not a ship, we don't care
 	if((objp->type != OBJ_SHIP) || (Ship_info[Ships[objp->instance].ship_info_index].ct_count <= 0)){
