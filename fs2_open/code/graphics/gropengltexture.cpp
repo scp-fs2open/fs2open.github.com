@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.10 $
- * $Date: 2004-11-29 18:02:01 $
+ * $Revision: 1.11 $
+ * $Date: 2004-12-02 11:14:29 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2004/11/29 18:02:01  taylor
+ * make sure we are checking the right bitmap_id
+ *
  * Revision 1.9  2004/10/31 21:46:10  taylor
  * Linux tree merge, better DDS support, texture panning
  *
@@ -290,12 +293,10 @@ int opengl_free_texture (tcache_slot_opengl *t);
 
 void opengl_free_texture_with_handle(int handle)
 {
-	for(int i=0; i<MAX_BITMAPS; i++ )  {
-		if (Textures[i].bitmap_id == handle) {
-			Textures[i].used_this_frame = 0; // this bmp doesn't even exist any longer...
-			opengl_free_texture ( &Textures[i] );
-		}
-	}
+	int n = bm_get_cache_slot(handle, 1);
+
+	Textures[n].used_this_frame = 0;
+	opengl_free_texture( &Textures[n] );
 }
 
 void opengl_tcache_flush ()
