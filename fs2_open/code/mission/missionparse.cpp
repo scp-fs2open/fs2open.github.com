@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.55 $
- * $Date: 2004-03-05 09:02:06 $
+ * $Revision: 2.56 $
+ * $Date: 2004-04-13 05:42:45 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.54  2004/02/07 00:48:53  Goober5000
  * made FS2 able to account for subsystem mismatches between ships.tbl and the
  * model file - e.g. communication vs. communications
@@ -1759,6 +1763,9 @@ int parse_create_object(p_object *objp)
 	Assert(objnum != -1);
 	shipnum = Objects[objnum].instance;
 
+	shipp = &Ships[shipnum];
+	sip = &Ship_info[shipp->ship_info_index];
+
 	// if arriving through knossos, adjust objpj->pos to plane of knossos and set flag
 	// special warp is single player only
 	if ((objp->flags & P_KNOSSOS_WARP_IN) && !(Game_mode & GM_MULTIPLAYER)) {
@@ -1772,12 +1779,35 @@ int parse_create_object(p_object *objp)
 	strcpy(Ships[shipnum].ship_name, objp->name);
 	Ships[shipnum].escort_priority = objp->escort_priority;
 	Ships[shipnum].special_exp_index = objp->special_exp_index;
+
 	// Goober5000
 	Ships[shipnum].special_hitpoint_index = objp->special_hitpoint_index;
 	Ships[shipnum].ship_initial_shield_strength = objp->ship_initial_shield_strength;
 	Ships[shipnum].ship_initial_hull_strength = objp->ship_initial_hull_strength;
 
+	// Goober5000 - ugh, this is really stupid having to do this here; if the
+	// ship creation code was better organized this wouldn't be necessary
+	if (shipp->special_hitpoint_index >= 0)
+	{
+		float hull_factor = shipp->ship_initial_hull_strength / sip->initial_hull_strength;
+		ship_subsys *ss;
+
+		for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss) )
+		{
+			ss->max_hits *= hull_factor;
+
+			if (Fred_running)
+				ss->current_hits = 0.0f;
+			else
+				ss->current_hits = ss->max_hits;
+		}
+
+		ship_recalc_subsys_strength( shipp );
+	}
+
+
 	Ships[shipnum].respawn_priority = objp->respawn_priority;
+
 #ifndef NO_NETWORK
 	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (objp->wingnum >= 0)){
@@ -1788,9 +1818,6 @@ int parse_create_object(p_object *objp)
 		}
 	}
 #endif
-
-	sip = &Ship_info[Ships[shipnum].ship_info_index];
-	shipp = &Ships[shipnum];
 
 	if ( !Fred_running ) {
 		ship_assign_sound(&Ships[shipnum]);
@@ -2111,7 +2138,7 @@ int parse_create_object(p_object *objp)
 					ptr->current_hits = sssp->percent;
 					ptr->max_hits = 100.0f;
 				} else {
-					ptr->max_hits = ptr->system_info->max_subsys_strength * Ships[shipnum].ship_initial_hull_strength / sip->initial_hull_strength;
+					ptr->max_hits = ptr->system_info->max_subsys_strength * (Ships[shipnum].ship_initial_hull_strength / sip->initial_hull_strength);
 
 					float new_hits;
 					new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
