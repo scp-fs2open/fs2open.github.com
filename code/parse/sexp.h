@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.79 $
- * $Author: Goober5000 $
- * $Date: 2004-11-17 22:23:13 $
+ * $Revision: 2.80 $
+ * $Author: phreak $
+ * $Date: 2004-12-23 15:57:42 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2004/11/17 22:23:13  Goober5000
+ * added two new sexps
+ * --Goober5000
+ *
  * Revision 2.78  2004/10/31 02:04:34  Goober5000
  * added Knossos_warp_ani_used flag for taylor
  * --Goober5000
@@ -1024,6 +1028,8 @@ struct ship_subsys;
 #define OP_SHIP_TAG							(0x0098 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SHIP_UNTAG						(0x0099 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SHIP_CHANGE_ALT_NAME				(0x009a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SCRAMBLE_MESSAGES				(0x009b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// phreak
+#define OP_UNSCRAMBLE_MESSAGES				(0x009c | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// phreak
 
 /* made obsolete by Goober5000
 // debugging sexpressions
