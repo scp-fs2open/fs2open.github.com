@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-01-09 22:27:38 $
+ * $Revision: 2.13 $
+ * $Date: 2005-01-10 04:44:03 $
  * $Author: wmcoolmon $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/01/09 22:27:38  wmcoolmon
+ * Techroom and Barracks now allocate memory only when open, and only for the number of ships currently loaded
+ *
  * Revision 2.11  2004/12/22 21:49:05  taylor
  * add a popup to make sure people know about pilot upgrade
  *
@@ -1817,10 +1820,12 @@ void barracks_close()
 	if(Stat_labels != NULL)
 	{
 		delete[] Stat_labels;
+		Stat_labels = NULL;
 	}
 	if(Stats != NULL)
 	{
 		delete[] Stats;
+		Stats = NULL;
 	}
 
 	game_flush();

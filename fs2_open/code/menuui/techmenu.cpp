@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-01-09 22:27:38 $
+ * $Revision: 2.21 $
+ * $Date: 2005-01-10 04:44:03 $
  * $Author: wmcoolmon $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/01/09 22:27:38  wmcoolmon
+ * Techroom and Barracks now allocate memory only when open, and only for the number of ships currently loaded
+ *
  * Revision 2.19  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -1623,6 +1626,7 @@ void techroom_close()
 	if(Ship_list != NULL)
 	{
 		delete[] Ship_list;
+		Ship_list = NULL;
 	}
 }
 
