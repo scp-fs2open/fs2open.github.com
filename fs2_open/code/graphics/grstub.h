@@ -2,8 +2,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.8 $
- * $Date: 2004-10-31 21:46:38 $
+ * $Revision: 2.9 $
+ * $Date: 2004-11-23 00:10:06 $
  * $Author: taylor $
  *
  * $NoKeywords: $
@@ -135,7 +135,7 @@ void gr_stub_bm_create(int n) { return; }
 void gr_stub_bm_init(int n) { return; }
 int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size) { return 0; }
 void gr_stub_bm_page_in_start() { return; }
-int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) { return -1; }
+int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags) { return -1; }
 
 void gr_stub_init() 
 {

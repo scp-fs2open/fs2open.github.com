@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.36 $
- * $Date: 2004-10-31 21:36:39 $
+ * $Revision: 2.37 $
+ * $Date: 2004-11-23 00:10:06 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2004/10/31 21:36:39  taylor
+ * s/fisrt/first/g, bmpman merge
+ *
  * Revision 2.35  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -827,7 +830,7 @@ typedef struct screen {
 	int (*gf_bm_load)(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size);
 	void (*gf_bm_init)(int n);
 	void (*gf_bm_page_in_start)();
-	int (*gf_bm_lock)(char *filename, int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags);
+	int (*gf_bm_lock)(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
 	void (*gf_translate_texture_matrix)(int unit, vector *shift);
 	void (*gf_push_texture_matrix)(int unit);

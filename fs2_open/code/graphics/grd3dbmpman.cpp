@@ -26,6 +26,8 @@
 #include "tgautils/tgautils.h"
 #include "graphics/grd3dbmpman.h"
 
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
 
 
 D3DBitmapData d3d_bitmap_entry[MAX_BITMAPS];
@@ -335,10 +337,13 @@ void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum)
 }
 
 // Lock an image files data into memory
-int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags)
+int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags)
 {
 	ubyte c_type = BM_TYPE_NONE;
 	char realname[MAX_FILENAME_LEN];
+
+	bitmap_entry *be = &bm_bitmaps[bitmapnum];
+	bitmap *bmp = &be->bm;
 
 	// make sure we use the real graphic type for EFFs
 	if ( be->type == BM_TYPE_EFF ) {
