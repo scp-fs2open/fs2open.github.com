@@ -1,4 +1,4 @@
-# Anjuta Version 1.2.1 
+# Anjuta Version 1.2.2 
 Compatibility Level: 1 
 
 <PROJECT_DESCRIPTION_START>
@@ -22,7 +22,7 @@ FS2 Open: SCP<PROJECT_DESCRIPTION_END>
 
 props.file.type=project
 
-anjuta.version=1.2.3
+anjuta.version=1.2.2
 anjuta.compatibility.level=1
 
 project.name=FS2_Open
@@ -52,7 +52,7 @@ anjuta.program.arguments=
 preferences.build.option.jobs=0
 preferences.build.option.silent=0
 preferences.build.option.autosave=0
-preferences.anjuta.make.options=-k
+preferences.anjuta.make.options=-k --directory=../../
 preferences.make=make
 preferences.build.option.keep.going=1
 preferences.build.option.warn.undef=0
