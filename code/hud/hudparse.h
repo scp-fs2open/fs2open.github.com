@@ -1,0 +1,1 @@
+void hud_positions_init();
