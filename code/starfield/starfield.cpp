@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-03-01 06:55:45 $
- * $Author: bobboau $
+ * $Revision: 2.44 $
+ * $Date: 2005-03-01 23:08:23 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/03/01 06:55:45  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.42  2005/02/23 04:57:29  taylor
  * even more bm_unload() -> bm_release() changes
  *
@@ -1397,7 +1401,7 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap);
 				}
 				if(Cmdline_nohtl){
-		//			g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, env);
+					g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
 				}else{
 //					g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
 					gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
@@ -1415,7 +1419,7 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 				}
 					
 				if(Cmdline_nohtl){
-		//			g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT, env);
+					g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);
 				}else{
 //					g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
 					gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-03-01 06:55:41 $
- * $Author: bobboau $
+ * $Revision: 2.58 $
+ * $Date: 2005-03-01 23:08:24 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/03/01 06:55:41  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.56  2005/02/15 00:06:27  taylor
  * clean up some model related globals
  * code to disable individual thruster glows
@@ -2581,8 +2585,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 //Goober
 void model_load_texture(polymodel *pm, int i, char *file)
 {
-	char tmp_name[256];
-	strcpy(tmp_name, file);
+	// NOTE: it doesn't help to use more than MAX_FILENAME_LEN here as bmpman will use that restriction
+	//       we also have to make sure there is always a trailing NUL since overflow doesn't add it
+	char tmp_name[MAX_FILENAME_LEN];
+	memset(tmp_name, 0, MAX_FILENAME_LEN);
+	strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 
 	pm->transparent[i]=0;	//it's transparent
 	pm->ambient[i]=0;		//ambient glow
@@ -2643,8 +2650,10 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		pm->glow_is_ani[i] = 0;
 		pm->glow_numframes[i] = 0;
 	} else {
-		strcpy( tmp_name, file );
-		strcat( tmp_name, "-glow" );
+		memset(tmp_name, 0, MAX_FILENAME_LEN);
+		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
+		strncat(tmp_name, "-glow", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
+
 		pm->glow_textures[i] = bm_load_animation( tmp_name, &pm->glow_numframes[i], &pm->glow_fps[i], 1, CF_TYPE_MAPS );
 		if (pm->glow_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
 							
@@ -2672,8 +2681,10 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		pm->specular_textures[i] = -1;
 		pm->specular_original_textures[i] = -1;
 	} else {
-		strcpy(tmp_name, file);
-		strcat( tmp_name, "-shine");
+		memset(tmp_name, 0, MAX_FILENAME_LEN);
+		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
+		strncat(tmp_name, "-shine", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
+
 		pm->specular_textures[i] = bm_load( tmp_name );
 		if (pm->specular_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
 							
