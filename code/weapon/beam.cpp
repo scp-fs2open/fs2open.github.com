@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.41 $
- * $Date: 2004-11-21 11:38:17 $
- * $Author: taylor $
+ * $Revision: 2.42 $
+ * $Date: 2005-01-02 23:22:22 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2004/11/21 11:38:17  taylor
+ * support for animated beam sections
+ * various weapon-only-used fixes
+ * remove the -1 frame fix since it was fixed elsewhere
+ *
  * Revision 2.40  2004/07/26 20:47:56  Kazan
  * remove MCD complete
  *
@@ -714,7 +719,7 @@ void beam_recalc_sounds(beam *b);
 void beam_apply_whack(beam *b, object *objp, vector *hit_point);
 
 // return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
-float beam_get_ship_damage(beam *b, object *objp, vector *hit_pos);
+float beam_get_ship_damage(beam *b, object *objp);
 
 // if the beam is likely to tool a given target before its lifetime expires
 int beam_will_tool_target(beam *b, object *objp);
@@ -3111,7 +3116,6 @@ void beam_handle_collisions(beam *b)
 	qsort(b->f_collisions, b->f_collision_count, sizeof(beam_collision), beam_sort_collisions_func);
 
 	// now apply all collisions until we reach a ship which "stops" the beam or we reach the end of the list
-	float dam = wi->damage;
 	for(idx=0; idx<b->f_collision_count; idx++){	
 		int model_num = -1;
 		int do_damage = 0;
@@ -3122,16 +3126,16 @@ void beam_handle_collisions(beam *b)
 		if((target < 0) || (target >= MAX_OBJECTS)){
 			continue;
 		}
-//mprintf(("object valid\n"));
+
 		// try and get a model to deal with		
 		model_num = beam_get_model(&Objects[target]);
 		if(model_num < 0){
 			continue;
 		}
-//mprintf(("got a model\n"));
+
 		// add lighting
 		beam_add_light(b, target, 2, &b->f_collisions[idx].cinfo.hit_point_world);
-//mprintf(("adding a light\n"));
+
 		// add to the recent collision list
 		r_coll[r_coll_count].c_objnum = target;
 		r_coll[r_coll_count].c_sig = Objects[target].signature;
@@ -3149,18 +3153,18 @@ void beam_handle_collisions(beam *b)
 				first_hit = 0;
 			}
 		}
-//mprintf(("de\n"));				
+
 		// if the damage timestamp has expired or is not set yet, apply damage
 		if((r_coll[r_coll_count].c_stamp == -1) || timestamp_elapsed(r_coll[r_coll_count].c_stamp)){
 			do_damage = 1;
 			r_coll[r_coll_count].c_stamp = timestamp(BEAM_DAMAGE_TIME);
 		}
-//mprintf(("ts elapsed\n"));
+
 		// if no damage - don't even indicate it has been hit
 		if(wi->damage <= 0){
 			do_damage = 0;
 		}
-//mprintf(("do nothing\n"));
+
 		// increment collision count
 		r_coll_count++;		
 
@@ -3168,10 +3172,9 @@ void beam_handle_collisions(beam *b)
 		if(first_hit){
 			snd_play_3d( &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
-//mprintf(("play the sound\n"));		
+
 		// do damage
 		if(do_damage && !physics_paused){
-		//	mprintf(("doing damage "));
 			// maybe draw an explosion
 			if(wi->impact_weapon_expl_index >= 0){
 				int ani_handle = weapon_get_expl_handle(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
@@ -3180,13 +3183,11 @@ void beam_handle_collisions(beam *b)
 
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
-			//	mprintf(("beams hitting debris\n"));
 				// hit the debris - the debris hit code takes care of checking for MULTIPLAYER_CLIENT, etc
 				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, Weapon_info[b->weapon_info_index].damage);
 				break;
 
 			case OBJ_WEAPON:
-			//	mprintf(("beams hitting a weapon\n"));
 				// detonate the missile
 				Assert(Weapon_info[Weapons[Objects[target].instance].weapon_info_index].subtype == WP_MISSILE);
 #ifndef NO_NETWORK
@@ -3198,7 +3199,6 @@ void beam_handle_collisions(beam *b)
 				break;
 
 			case OBJ_ASTEROID:
-			//	mprintf(("beam hitting a asteroid\n"));
 				// hit the asteroid
 #ifndef NO_NETWORK
 				if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER)
@@ -3208,25 +3208,20 @@ void beam_handle_collisions(beam *b)
 				}
 				break;
 			case OBJ_SHIP:	
-			//	mprintf(("beam hitting a ship %s, shield quadrant %d\n", Ships[Objects[target].instance].ship_name, b->f_collisions[idx].quadrant));
 				// hit the ship - again, the innards of this code handle multiplayer cases
 				// maybe vaporize ship.
-				dam = beam_get_ship_damage(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
-				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, dam, b->f_collisions[idx].quadrant);
+				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), -1);
 
-
-				// GAH!! Bobboau, the shields are almost always up!  Anyway, some people complained.
-				//fine :\... -Bobboau
 				// if this is the first hit on the player ship. whack him
-				if(do_damage)	// && !(b->f_collisions[idx].quadrant)) //I didn't want the beam wacking things if it's hitting just shields -Bobboau
+				if(do_damage)
 				{
-					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
+					// Goober5000 - AGH!  BAD BAD BAD BAD BAD BAD BAD BAD bug!  The whack's hit point is in *local*
+					// coordinates, NOT world coordinates!
+					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point);
 				}
 				break;
 			}		
-			if(dam == 0)break;
 		}				
-//mprintf(("out of handeling colisions\n"));
 
 		// if the radius of the target is somewhat close to the radius of the beam, "stop" the beam here
 		// for now : if its smaller than about 1/3 the radius of the ship
@@ -3239,7 +3234,7 @@ void beam_handle_collisions(beam *b)
 			break;
 		}
 	}
-//mprintf(("beam stopped\n"));
+
 	// store the new recent collisions
 	for(idx=0; idx<r_coll_count; idx++){
 		b->r_collisions[idx] = r_coll[idx];
@@ -3450,16 +3445,8 @@ void beam_apply_whack(beam *b, object *objp, vector *hit_point)
 }
 
 // return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
-//now also atenuates for distance-Bobboau
-float beam_get_ship_damage(beam *b, object *objp, vector *hit_pos)
-{
-	float dist = vm_vec_dist(&b->last_start, hit_pos);
-	if(dist > b->range)return 0.0f;
-
-	float aten = 1.0;
-	float pre = b->range*b->damage_threshold;
-	if((b->range != pre)&&(dist > pre))aten = 1.0f - (dist - pre)/(b->range - pre);
-
+float beam_get_ship_damage(beam *b, object *objp)
+{	
 	// if the beam is on the same team as the object
 	Assert((objp != NULL) && (b != NULL));
 	if((objp == NULL) || (b == NULL)){
@@ -3470,18 +3457,18 @@ float beam_get_ship_damage(beam *b, object *objp, vector *hit_pos)
 		return 0.0f;
 	}
 
+	// Bobboau, if you're going to re-implement attenuation, this is how you should do it.
+	//float dist = vm_vec_dist_quick(b->objp->pos, objp->pos);
+	float attenuation = 1.0f; // or scaled by dist
+	//-- Goober5000
+
 	// same team. yikes
 	if((b->team == Ships[objp->instance].team) && (Weapon_info[b->weapon_info_index].damage > Beam_friendly_cap[Game_skill_level])){
-		return Beam_friendly_cap[Game_skill_level];
+		return Beam_friendly_cap[Game_skill_level] * attenuation;
 	}
 
 	// normal damage
-//		gr_printf(10, 20, "atened to %f", aten);
-//		HUD_printf("atened to %f", aten);
-
-	//atenuated damage, if I did everything right this should act like normal 
-	//unless you specificly specify it in the tables -Bobboau
-	return Weapon_info[b->weapon_info_index].damage /* aten*/;
+	return Weapon_info[b->weapon_info_index].damage * attenuation;
 }
 
 // if the beam is likely to tool a given target before its lifetime expires
