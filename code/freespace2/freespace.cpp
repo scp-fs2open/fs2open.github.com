@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.111 $
- * $Date: 2004-10-31 21:31:34 $
+ * $Revision: 2.112 $
+ * $Date: 2004-11-26 08:41:11 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2004/10/31 21:31:34  taylor
+ * bump COUNT_ESTIMATE, reset time compression at the start of a mission, new pilot file support, add feature_disabled popup
+ *
  * Revision 2.110  2004/08/23 07:48:08  Goober5000
  * fix0red some warnings
  * --Goober5000
@@ -9791,10 +9794,17 @@ void multi_update_valid_tables(); // in multiutil.obj
 
 int game_hacked_data()
 {
-	// hacked!
-	/*if(!Game_weapons_tbl_valid || !Game_ships_tbl_valid){
-		return 1;
-	}*/
+	int retval = 0;
+
+#ifndef NO_NETWORK
+	// LAN game, only check if weapon and ship are valid since we can't or don't
+	// won't to validate against PXO server
+	if (!Om_tracker_flag) {
+		if (!Game_weapons_tbl_valid || !Game_ships_tbl_valid)
+			retval = 1;
+		
+		return retval;
+	}
 
 	if (!cf_exist( "tvalid.cfg", CF_TYPE_DATA ))
 	{
@@ -9813,8 +9823,6 @@ int game_hacked_data()
 	char *buffer = new char[cfilelength(tvalid_cfg)];
 	cfread(buffer, 1, cfilelength(tvalid_cfg), tvalid_cfg);	
 	
-	int retval = 0;
-
 	if (strstr(buffer, "invalid")) // got hacked data
 		retval = 1;
 
@@ -9823,6 +9831,8 @@ int game_hacked_data()
 
 	if (tvalid_cfg != NULL)
 		cfclose(tvalid_cfg);
+#endif
+
 	// not hacked
 	return retval;
 }

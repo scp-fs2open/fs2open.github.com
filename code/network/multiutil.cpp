@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-08-26 18:19:36 $
- * $Author: Kazan $
+ * $Revision: 2.25 $
+ * $Date: 2004-11-26 08:41:11 $
+ * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/08/26 18:19:36  Kazan
+ * small standalone-related multibug fix
+ * prohibited execution of process_debug_keys(int) while Game_mode & GM_MULTIPLAYER
+ *
  * Revision 2.23  2004/07/26 20:47:43  Kazan
  * remove MCD complete
  *
@@ -3587,6 +3591,9 @@ void Kaz_NoBackGround_DrawString(char *str)
 
 void multi_update_valid_tables()
 {
+	// if we're not on FS2NetD (PXO) then don't bother with this function
+	if (!Om_tracker_flag)
+		return;
 
 	static char Server[32];
 	static int port = -1;
