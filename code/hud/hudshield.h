@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.h $
- * $Revision: 2.1 $
- * $Date: 2003-01-06 17:14:52 $
+ * $Revision: 2.2 $
+ * $Date: 2003-09-12 00:12:13 $
  * $Author: Goober5000 $
  *
  * Header file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/01/06 17:14:52  Goober5000
+ * added wing configurable squad logos - put +Squad Logo: filename.pcx as
+ * the last entry in each wing that you want (but the player's squad logo will
+ * still be the squad logo for the player's wing)
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -74,7 +80,7 @@ typedef struct shield_hit_info
 	int shield_hit_next_flash[NUM_SHIELD_HIT_MEMBERS];
 } shield_hit_info;
 
-extern ubyte Quadrant_xlate[4];
+extern ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS];
 
 struct player;
 

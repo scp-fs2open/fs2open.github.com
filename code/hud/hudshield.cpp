@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-09-11 19:06:27 $
- * $Author: argv $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-12 00:12:13 $
+ * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/09/11 19:06:27  argv
+ * Singular shield support, and a couple of other things.
+ *
  * Revision 2.5  2003/09/09 05:51:14  Goober5000
  * if player has primitive sensors, hud will not display shield icons or message sender brackets
  * --Goober5000
@@ -304,7 +307,7 @@ hud_frames Shield_mini_gauge;
 static shield_hit_info	Shield_hit_data[2];
 
 // translate between clockwise-from-top shield quadrant ordering to way quadrants are numbered in the game
-ubyte Quadrant_xlate[4] = {1,0,2,3};
+ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS] = {1,0,2,3};
 
 void hud_shield_game_init()
 {
@@ -453,7 +456,7 @@ void hud_shield_show(object *objp)
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
 	// _argv[-1] - singular shield.
-	max_shield = sp->ship_initial_shield_strength / (sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1.0f : 4.0f);
+	max_shield = sp->ship_initial_shield_strength / (1.0f * (sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1 : MAX_SHIELD_SECTIONS));
 
 	for ( i = 0; i < 4; i++ ) {
 
@@ -773,9 +776,9 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
 	// _argv[-1] - singular shield.
-	max_shield = sp->ship_initial_shield_strength / (sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1.0f : 4.0f);
+	max_shield = sp->ship_initial_shield_strength / (1.0f * (sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1 : MAX_SHIELD_SECTIONS));
 
-	for ( i = 0; i < 4; i++ ) {
+	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 
 		if ( objp->flags & OF_NO_SHIELDS ) {
 			break;
