@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-03-07 13:10:21 $
- * $Author: bobboau $
+ * $Revision: 1.8 $
+ * $Date: 2005-03-11 14:11:53 $
+ * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/03/07 13:10:21  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 1.6  2005/02/04 20:06:04  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -51,6 +55,8 @@
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
+
+extern int Cmdline_jpgtga;
 
 
 // anything API specific to freeing bm data
@@ -172,8 +178,8 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 	if (Is_standalone) {
 		true_bpp = 8;
 	}
-	// not really sure how we this is going to work out in every case but...
-	else if (bmp->true_bpp > bpp) {
+	// not really sure how well this is going to work out in every case but...
+	else if ( Cmdline_jpgtga && (bmp->true_bpp > bpp) ) {
 		true_bpp = bmp->true_bpp;
 	} else {
 		true_bpp = bpp;

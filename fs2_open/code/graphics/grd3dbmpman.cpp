@@ -31,6 +31,7 @@
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
 
+extern int Cmdline_jpgtga;
 
 D3DBitmapData d3d_bitmap_entry[MAX_BITMAPS];
 bool Supports_compression[NUM_COMPRESSION_TYPES];
@@ -366,8 +367,8 @@ int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte f
 	if (Is_standalone) {
 		true_bpp = 8;
 	}
-	// not really sure how we this is going to work out in every case but...
-	else if (bmp->true_bpp > bpp) {
+	// not really sure how well this is going to work out in every case but...
+	else if ( Cmdline_jpgtga && (bmp->true_bpp > bpp) ) {
 		true_bpp = bmp->true_bpp;
 	} else {
 		true_bpp = bpp;
