@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-03-31 12:45:22 $
+ * $Revision: 2.47 $
+ * $Date: 2005-04-01 08:50:25 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/03/31 12:45:22  Goober5000
+ * whoops
+ * --Goober5000
+ *
  * Revision 2.45  2005/03/31 12:43:51  Goober5000
  * implemented the apply-to-all wing loadout button
  * --Goober5000
@@ -1271,6 +1275,7 @@ void weapon_button_do(int i)
 #endif
 
 			case WL_BUTTON_APPLY_ALL:
+				wl_apply_current_loadout_to_all_ships_in_current_wing();
 				break;
 
 			default:
@@ -4909,7 +4914,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			// did it work?  if not, notify the player
 			if ((result == 0) || (result == 2))
 			{
-				ss_return_name(source_slot / MAX_WING_SLOTS, source_slot % MAX_WING_SLOTS, ship_name);
+				ss_return_name(cur_slot / MAX_WING_SLOTS, cur_slot % MAX_WING_SLOTS, ship_name);
 
 				if (result == 0)
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "No more %s available to arm %s", Weapon_info[weapon_type_to_add].name, ship_name);
@@ -4919,4 +4924,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			}
 		}
 	}
+
+	// play sound
+	gamesnd_play_iface(SND_ICON_DROP_ON_WING);
 }
