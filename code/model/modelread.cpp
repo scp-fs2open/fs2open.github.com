@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.47 $
- * $Date: 2004-12-05 22:01:12 $
- * $Author: bobboau $
+ * $Revision: 2.48 $
+ * $Date: 2005-01-11 21:38:50 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2004/12/05 22:01:12  bobboau
+ * sevral feature additions that WCS wanted,
+ * and the foundations of a submodel animation system,
+ * the calls to the animation triggering code (exept the procesing code,
+ * wich shouldn't do anything without the triggering code)
+ * have been commented out.
+ *
  * Revision 2.46  2004/10/09 17:45:45  taylor
  * da simple IBX code
  *
@@ -4151,7 +4158,8 @@ void model_add_arc(int model_num, int sub_model_num, vector *v1, vector *v2, int
 
 // function to return an index into the docking_bays array which matches the criteria passed
 // to this function.  dock_type is one of the DOCK_TYPE_XXX defines in model.h
-int model_find_dock_index(int modelnum, int dock_type)
+// Goober5000 - now finds more than one dockpoint of this type
+int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 {
 	int i;
 
@@ -4163,7 +4171,7 @@ int model_find_dock_index(int modelnum, int dock_type)
 	if ( pm->n_docks <= 0 )
 		return -1;
 
-	for (i = 0; i < pm->n_docks; i++ ) {
+	for (i = index_to_start_at; i < pm->n_docks; i++ ) {
 		if ( dock_type & pm->docking_bays[i].type_flags )
 			return i;
 	}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.75 $
- * $Date: 2005-01-03 01:05:08 $
- * $Author: phreak $
+ * $Revision: 2.76 $
+ * $Date: 2005-01-11 21:38:50 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2005/01/03 01:05:08  phreak
+ * made custom loading screens work if only one resolution has been specified.
+ *
  * Revision 2.74  2004/12/22 21:48:21  taylor
  * safety check against very large missions
  *
@@ -4521,29 +4524,6 @@ void post_process_mission()
 	ai_post_process_mission();
 
 
-	/*
-	for (i=0; i<Total_initially_docked; i++) {
-		z = ship_name_lookup(Initially_docked[i].dockee);
-		if (z >= 0) {
-			Assert(Initially_docked[i].docker->type == OBJ_SHIP);
-			p1 = model_find_dock_name_index(Ships[Initially_docked[i].docker->instance].modelnum,
-				Initially_docked[i].docker_point);
-			Assert(Objects[z].type == OBJ_SHIP);
-			p2 = model_find_dock_name_index(Ships[Objects[z].instance].modelnum,
-				Initially_docked[i].dockee_point);
-
-			if ((p1 >= 0) && (p2 >= 0)) {
-				nprintf(("AI", "Initially Docked: %s with %s\n", Ships[Initially_docked[i].docker->instance].ship_name, Ships[Objects[z].instance].ship_name));
-				if (ship_docking_valid(Initially_docked[i].docker->instance, Objects[z].instance))  // only dock if they are allowed to be docked.
-					ai_dock_with_object(Initially_docked[i].docker, &Objects[z], 89, AIDO_DOCK_NOW, p1, p2);
-					
-			} else
-				Int3();		//	Curious.  Two ships told to dock, but one of the dock points is bogus.  
-								// Get Allender or Hoffoss, one of whom probably wrote the above if ()
-		}
-	}
-	*/
-
 	// we must also count all of the ships of particular types.  We count all of the ships that do not have
 	// their SF_IGNORE_COUNT flag set.  We don't count ships in wings when the equivalent wing flag is set.
 	// in counting ships in wings, we increment the count by the wing's wave count to account for everyone.
@@ -4894,9 +4874,9 @@ void mission_parse_do_initial_docks()
 				if ((p1 >= 0) && (p2 >= 0)) {
 					nprintf(("AI", "Initially Docked: %s with %s\n", Ships[shipnum].ship_name, Ships[Objects[objnum].instance].ship_name));
 					if (ship_docking_valid(shipnum, Objects[objnum].instance))  // only dock if they are allowed to be docked.
-						ai_dock_with_object(&Objects[Ships[shipnum].objnum], &Objects[objnum], 89, AIDO_DOCK_NOW, p1, p2);
+						ai_dock_with_object(&Objects[Ships[shipnum].objnum], p1, &Objects[objnum], p2, 89, AIDO_DOCK_NOW);
 					else
-						ai_dock_with_object(&Objects[objnum], &Objects[Ships[shipnum].objnum], 89, AIDO_DOCK_NOW, p2, p1);
+						ai_dock_with_object(&Objects[objnum], p1, &Objects[Ships[shipnum].objnum], p2, 89, AIDO_DOCK_NOW);
 						
 				} else
 					Int3();		//	Curious.  Two ships told to dock, but one of the dock points is bogus.  
@@ -5390,7 +5370,7 @@ void mission_eval_arrivals()
 
 	// check for any initially docked ships.  Do it after all are created since the next function
 	// messes with the ship_arrival_list
-	mission_parse_do_initial_docks();			// maybe create it's docked counterpart
+	mission_parse_do_initial_docks();			// maybe create its docked counterpart
 
 	mission_parse_mark_non_arrivals();			// mark parse objects which can no longer arrive
 
@@ -5552,7 +5532,7 @@ int mission_do_departure( object *objp )
 
 	MONITOR_INC(NumShipDepartures,1);
 
-	// if ship has no subspace drive but is cued to warp out, find it somewhere to depart
+	// Goober5000 - if ship has no subspace drive but is cued to warp out, find it somewhere to depart
 	if ((shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) && (shipp->departure_location != DEPART_AT_DOCK_BAY))
 	{
 		// locate a capital ship on the same team:

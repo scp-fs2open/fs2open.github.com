@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-23 03:34:34 $
+ * $Revision: 2.5 $
+ * $Date: 2005-01-11 21:38:49 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/23 03:34:34  Goober5000
+ * modularized tag stuff in preparation for sexp
+ * --Goober5000
+ *
  * Revision 2.3  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -147,8 +151,8 @@ void ship_hit_kill( object *ship_obj, object *other_obj, float percent_killed, i
 void ship_self_destruct( object *objp );
 
 // Call this instead of physics_apply_whack directly to 
-// deal with two ships docking properly.
-void ship_apply_whack(vector *force, vector *new_pos, object *objp);
+// deal with two docked ships properly.
+void ship_apply_whack(vector *force, vector *hit_pos, object *objp);
 
 // externed for code in missionparse to create sparks on a ship with < 100% hull integrity.
 void ship_hit_sparks_no_rotate(object *ship_obj, vector *hitpos);

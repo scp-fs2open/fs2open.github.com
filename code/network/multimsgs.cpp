@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-10-03 21:41:11 $
- * $Author: Kazan $
+ * $Revision: 2.25 $
+ * $Date: 2005-01-11 21:38:50 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/10/03 21:41:11  Kazan
+ * Autopilot convergence collision fix for ai_fly_to_ship() and ai_waypoints() -- mathematically expensive, only usable by autopilot
+ *
  * Revision 2.23  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -488,6 +491,7 @@
 #include "missionui/missionscreencommon.h"
 #include "mission/missionbriefcommon.h"
 #include "network/multi_log.h"
+#include "object/objectdock.h"
 
 
 #pragma warning(push)
@@ -5091,7 +5095,16 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 		// packet.  Also set any other flags/modes which need to be set to prevent Asserts.
 		// bleah.
 		if ( (code == REPAIR_INFO_BEGIN) && (repair_objp != NULL) ) {
-			ai_do_objects_docked_stuff( repaired_objp, repair_objp );
+			// find indexes from goal
+			ai_info *aip = &Ai_info[Ships[repair_objp->instance].ai_index];
+			Assert(aip->active_goal >= 0);
+			ai_goal *aigp = &aip->goals[aip->active_goal];
+			Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+
+			int docker_index = aigp->docker.index;
+			int dockee_index = aigp->dockee.index;
+
+			ai_do_objects_docked_stuff( repair_objp, docker_index, repaired_objp, dockee_index );
 			Ai_info[Ships[repair_objp->instance].ai_index].mode = AIM_DOCK;
 		}
 
@@ -5118,7 +5131,8 @@ void send_ai_info_update_packet( object *objp, char what )
 	ushort other_signature;
 	ubyte data[MAX_PACKET_SIZE];
 	ai_info *aip;
-	ubyte dock_index, dockee_index;
+	ai_goal *aigp = NULL;
+	ubyte docker_index, dockee_index;
 
 	// Assert( objp->type == OBJ_SHIP );
 	if(objp->type != OBJ_SHIP){
@@ -5130,6 +5144,9 @@ void send_ai_info_update_packet( object *objp, char what )
 	if ( Ships[objp->instance].flags & (SF_DEPARTING | SF_DYING) )
 		return;
 
+	// possibly docked (multi only supports one docked object)
+	object *docked_objp = dock_get_first_docked_object(objp);
+
 	BUILD_HEADER( AI_INFO_UPDATE );
 	ADD_DATA( objp->net_signature );
 	ADD_DATA( what );
@@ -5139,22 +5156,23 @@ void send_ai_info_update_packet( object *objp, char what )
 	switch( what ) {
 
 	case AI_UPDATE_DOCK:
-		// for docking ships, add the signature of the ship that we are docking with.
-		Assert( aip->dock_objnum != -1 );
-		other_signature = Objects[aip->dock_objnum].net_signature;
-		dock_index = (ubyte)(aip->dock_index);
-		dockee_index = (ubyte)(aip->dockee_index);
+		// for docking ships, add the signature of the ship that we are docked with.
+		Assert( docked_objp != NULL );
+		other_signature = docked_objp->net_signature;
+
+		// Goober5000 - this is sort of weird, but it's the best way to do it
+		docker_index = (ubyte) dock_find_dockpoint_used_by_object(objp, docked_objp);
+		dockee_index = (ubyte) dock_find_dockpoint_used_by_object(docked_objp, objp);
+
 		ADD_DATA( other_signature );
-		ADD_DATA(dock_index);
-		ADD_DATA(dockee_index);
+		ADD_DATA( docker_index );
+		ADD_DATA( dockee_index );
 		break;
 
 	case AI_UPDATE_UNDOCK:
-		// for undocking ships, check the dock_objnum since we might or might not have it
-		// depending on whether or not a ship was destroyed while we were docked.
-		other_signature = 0;
-		if ( aip->dock_objnum != -1 )
-			other_signature = Objects[aip->dock_objnum].net_signature;
+		// same for undocking ships
+		Assert( docked_objp != NULL );
+		other_signature = docked_objp->net_signature;
 		ADD_DATA( other_signature );
 
 		break;
@@ -5165,11 +5183,14 @@ void send_ai_info_update_packet( object *objp, char what )
 		// for orders, we only need to send a little bit of information here.  Be sure that the
 		// first order for this ship is active
 		Assert( (aip->active_goal != AI_GOAL_NONE) && (aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) );
-		ADD_DATA( aip->goals[0].ai_mode );
-		ADD_DATA( aip->goals[0].ai_submode );
+		aigp = &aip->goals[aip->active_goal];
+
+		ADD_DATA( aigp->ai_mode );
+		ADD_DATA( aigp->ai_submode );
+
 		shipnum = -1;
-		if ( aip->goals[0].ship_name != NULL )
-			shipnum = ship_name_lookup( aip->goals[0].ship_name );
+		if ( aigp->ship_name != NULL )
+			shipnum = ship_name_lookup( aigp->ship_name );
 
 		// the ship_name member of the goals structure may or may not contain a real shipname.  If we don't
 		// have a valid shipnum, then don't sweat it since it may not really be a ship.
@@ -5182,12 +5203,13 @@ void send_ai_info_update_packet( object *objp, char what )
 		ADD_DATA( other_signature );
 
 		// for docking, add the dock and dockee index
-		if ( aip->goals[0].ai_mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
-			Assert( (aip->goals[0].docker.index >= 0) && (aip->goals[0].docker.index < UCHAR_MAX) );
-			Assert( (aip->goals[0].dockee.index >= 0) && (aip->goals[0].dockee.index < UCHAR_MAX) );
-			dock_index = (ubyte)aip->goals[0].docker.index;
-			dockee_index = (ubyte)aip->goals[0].dockee.index;
-			ADD_DATA( dock_index );
+		if ( aigp->ai_mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
+			Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+			Assert( (aigp->docker.index >= 0) && (aigp->docker.index < UCHAR_MAX) );
+			Assert( (aigp->dockee.index >= 0) && (aigp->dockee.index < UCHAR_MAX) );
+			docker_index = (ubyte) aigp->docker.index;
+			dockee_index = (ubyte) aigp->dockee.index;
+			ADD_DATA( docker_index );
 			ADD_DATA( dockee_index );
 		}
 		break;
@@ -5210,8 +5232,9 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 	ushort net_signature, other_net_signature;
 	object *objp, *other_objp;
 	ai_info *aip;
+	ai_goal *aigp = NULL;
 	char code;
-	ubyte dock_index = 0, dockee_index = 0;
+	ubyte docker_index = 0, dockee_index = 0;
 
 	GET_DATA( net_signature );		// signature of the object that we are dealing with.
 	GET_DATA( code );					// code of what we are doing.
@@ -5222,7 +5245,7 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 	switch( code ) {
 	case AI_UPDATE_DOCK:
 		GET_DATA( other_net_signature );
-		GET_DATA( dock_index );
+		GET_DATA( docker_index );
 		GET_DATA( dockee_index );
 		other_objp = multi_get_network_object( other_net_signature );
 		if ( !other_objp )
@@ -5233,14 +5256,9 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 			break;
 		}
 
-		Assert( other_objp->type == OBJ_SHIP );
-		Ai_info[Ships[objp->instance].ai_index].dock_index = dock_index;
-		Ai_info[Ships[objp->instance].ai_index].dockee_index = dockee_index;
-
-		Ai_info[Ships[other_objp->instance].ai_index].dock_index = dockee_index;
-		Ai_info[Ships[other_objp->instance].ai_index].dockee_index = dock_index;
-
-		ai_do_objects_docked_stuff( objp, other_objp );
+		// don't assign the dock indexes, because they're part of the docking ship's goal code... just dock them
+		// (and besides, we might be docking initially docked ships and we wouldn't have an active goal)
+		ai_do_objects_docked_stuff( objp, docker_index, other_objp, dockee_index );
 		break;
 
 	case AI_UPDATE_UNDOCK:
@@ -5259,7 +5277,7 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 		GET_DATA( submode );
 		GET_DATA( other_net_signature );
 		if ( mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
-			GET_DATA(dock_index);
+			GET_DATA(docker_index);
 			GET_DATA(dockee_index);
 		}
 
@@ -5270,13 +5288,15 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 		// set up the information in the first goal element of the object in question
 		aip = &Ai_info[Ships[objp->instance].ai_index];
 		aip->active_goal = 0;
-		aip->goals[0].ai_mode = mode;
-		aip->goals[0].ai_submode = submode;
+		aigp = &aip->goals[aip->active_goal];
+		aigp->ai_mode = mode;
+		aigp->ai_submode = submode;
 
-		// for docking, add the dock and dockee index
+		// for docking, add the docker and dockee index to the active goal
 		if ( mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
-			aip->dock_index = dock_index;
-			aip->dockee_index = dockee_index;
+			aigp->docker.index = docker_index;
+			aigp->dockee.index = dockee_index;
+			aigp->flags |= AIGF_DOCK_INDEXES_VALID;
 		}
 
 		// get a shipname if we can.
@@ -5285,18 +5305,12 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 			// get a pointer to the shipname in question.  Use the ship_name value in the
 			// ship.  We are only using this for HUD display, so I think that using this
 			// method will be fine.
-			aip->goals[0].ship_name = Ships[other_objp->instance].ship_name;
+			aigp->ship_name = Ships[other_objp->instance].ship_name;
 
 			// special case for destroy subsystem -- get the ai_info pointer to our target ship
 			// so that we can properly set up what subsystem this ship is attacking.
 			if ( (mode == AI_GOAL_DESTROY_SUBSYSTEM ) && (submode >= 0) )
 				aip->targeted_subsys = ship_get_indexed_subsys( &Ships[other_objp->instance], submode);
-
-			// if docking -- set the dock index and dockee index of this other ship
-		if ( mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
-				Ai_info[Ships[other_objp->instance].ai_index].dock_index = dockee_index;
-				Ai_info[Ships[other_objp->instance].ai_index].dockee_index = dock_index;
-			}
 		}
 
 		break;

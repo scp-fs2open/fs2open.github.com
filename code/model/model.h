@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.47 $
- * $Date: 2005-01-01 19:45:32 $
- * $Author: taylor $
+ * $Revision: 2.48 $
+ * $Date: 2005-01-11 21:38:50 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/01/01 19:45:32  taylor
+ * add MR_NO_FOGGING flag to easily render models without fog (warp model, targetbox models)
+ *
  * Revision 2.46  2004/12/05 22:01:11  bobboau
  * sevral feature additions that WCS wanted,
  * and the foundations of a submodel animation system,
@@ -1255,7 +1258,7 @@ extern void submodel_get_two_random_points(int model_num, int submodel_num, vect
 // gets the index into the docking_bays array of the specified type of docking point
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name
-extern int model_find_dock_index(int modelnum, int dock_type);
+extern int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at = 0);
 extern int model_find_dock_name_index( int modelnum, char *name );
 
 // returns the actual name of a docking point on a model, needed by Fred.

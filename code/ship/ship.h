@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.73 $
- * $Date: 2005-01-01 07:18:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.74 $
+ * $Date: 2005-01-11 21:38:49 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2005/01/01 07:18:48  wmcoolmon
+ * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
+ *
  * Revision 2.72  2004/12/25 09:28:09  wmcoolmon
  * Sync to current NEW_HUD code
  *
@@ -869,7 +872,7 @@ typedef struct ship {
 	int	end_death_time;				// Time until big fireball starts
 	int	really_final_death_time;	// Time until ship breaks up and disappears
 	vector	deathroll_rotvel;			// Desired death rotational velocity
-	int	dock_objnum_when_dead;		// Objnum of ship docked to when ship died (-1 if none)
+
 	int	final_warp_time;	// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 	vector	warp_effect_pos;		// where the warp in effect comes in at
 	vector	warp_effect_fvec;		// The warp in effect's forward vector
@@ -1713,7 +1716,7 @@ void ship_get_global_turret_info(object *objp, model_subsystem *tp, vector *gpos
 int object_in_turret_fov(object *objp, model_subsystem *tp, vector *tvec, vector *tpos, float dist);
 
 // forcible jettison cargo from a ship
-void ship_jettison_cargo(ship *shipp);
+void object_jettison_cargo(object *objp, object *cargo_objp);
 
 // get damage done by exploding ship, takes into account mods for individual ship
 float ship_get_exp_damage(object* objp);
@@ -1813,5 +1816,7 @@ int ship_get_animation_time_type(ship *shipp, int animation_type);
 int ship_starting_wing_lookup(char *wing_name);
 int ship_squadron_wing_lookup(char *wing_name);
 int ship_tvt_wing_lookup(char *wing_name);
+
+void ship_vanished(object *objp);
 
 #endif

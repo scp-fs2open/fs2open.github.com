@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.32 $
- * $Date: 2004-08-31 23:36:28 $
+ * $Revision: 2.33 $
+ * $Date: 2005-01-11 21:38:49 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2004/08/31 23:36:28  Goober5000
+ * when calculating damage for scoring, don't count beams unless they're fired by a fighter or bomber
+ * --Goober5000
+ *
  * Revision 2.31  2004/08/23 03:34:34  Goober5000
  * modularized tag stuff in preparation for sexp
  * --Goober5000
@@ -574,6 +578,7 @@
 #include "weapon/emp.h"
 #include "weapon/beam.h"
 #include "demo/demo.h"
+#include "object/objectdock.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1831,7 +1836,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		rotvel_mag = 150.0f / objp->radius;
 	}
 
-	if (sp->dock_objnum_when_dead != -1) {
+	if (object_is_docked(objp)) {
 		// don't change current rotvel
 		sp->deathroll_rotvel = objp->phys_info.rotvel;
 	} else {
@@ -2072,25 +2077,10 @@ void ship_self_destruct( object *objp )
 extern int Homing_hits, Homing_misses;
 
 // Call this instead of physics_apply_whack directly to 
-// deal with two ships docking properly.
-void ship_apply_whack(vector *force, vector *new_pos, object *objp)
+// deal with two docked ships properly.
+// Goober5000 - note... hit_pos is in *local* coordinates
+void ship_apply_whack(vector *force, vector *hit_pos, object *objp)
 {
-	if (objp->type == OBJ_SHIP)	{
-		if (Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_SUPPORT | SIF_CARGO)) {
-			int	docked_to_objnum;	
-			ai_info *aip;
-
-			aip = &Ai_info[Ships[objp->instance].ai_index];
-		
-			if (aip->ai_flags & AIF_DOCKED) {
-				docked_to_objnum = aip->dock_objnum;
-				if (aip->dock_objnum != -1) {
-					physics_apply_whack(force, new_pos, &Objects[docked_to_objnum].phys_info, &Objects[docked_to_objnum].orient, Objects[docked_to_objnum].phys_info.mass + objp->phys_info.mass);
-					return;
-				}
-			}
-		}
-	}
 	if (objp == Player_obj) {
 		nprintf(("Sandeep", "Playing stupid joystick effect\n"));
 		vector test;
@@ -2098,8 +2088,36 @@ void ship_apply_whack(vector *force, vector *new_pos, object *objp)
 
 		game_whack_apply( -test.xyz.x, -test.xyz.y );
 	}
-					
-	physics_apply_whack(force, new_pos, &objp->phys_info, &objp->orient, objp->phys_info.mass);
+
+	if (object_is_docked(objp))
+	{
+		float overall_mass = dock_calc_total_docked_mass(objp);
+
+		// Goober5000 - this code attempts to account properly for whacking a docked object as one mass.
+		// It isn't perfect, because physics doesn't completely account for it (particularly because it
+		// still uses the moment of inertia for the whacked object, not for all objects).  Commenting
+		// the bracketed code restores Volition's code, but it doesn't calculate the correct torque.
+		{
+			vector world_hit_pos, world_center_pos;
+
+			// calc world hit pos of the hit ship
+			vm_vec_unrotate(&world_hit_pos, hit_pos, &objp->orient);
+			vm_vec_add2(&world_hit_pos, &objp->pos);
+
+			// calc overall world center of ships
+			dock_calc_docked_center(&world_center_pos, objp);
+
+			// the new hitpos is the vector from world center to world hitpos
+			vm_vec_sub(hit_pos, &world_hit_pos, &world_center_pos);
+		}
+
+		// whack it
+		physics_apply_whack(force, hit_pos, &objp->phys_info, &objp->orient, overall_mass);
+	}
+	else
+	{
+		physics_apply_whack(force, hit_pos, &objp->phys_info, &objp->orient, objp->phys_info.mass);
+	}					
 }
 
 float Skill_level_player_damage_scale[NUM_SKILL_LEVELS] = {0.25f, 0.5f, 0.65f, 0.85f, 1.0f};

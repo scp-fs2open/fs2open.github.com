@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-01-02 23:22:22 $
+ * $Revision: 2.43 $
+ * $Date: 2005-01-11 21:38:49 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/01/02 23:22:22  Goober5000
+ * got rid of a nasty nasty bug in the beam collision function, and cleaned up some of Bobboau's old comments
+ * --Goober5000
+ *
  * Revision 2.41  2004/11/21 11:38:17  taylor
  * support for animated beam sections
  * various weapon-only-used fixes
@@ -3414,8 +3418,9 @@ void beam_apply_whack(beam *b, object *objp, vector *hit_point)
 		return;
 	}
 
-	// don't whack docking ships - and don't whack if the beam isn't supposed to
-	if(Ai_info[shipp->ai_index].ai_flags & AIF_DOCKED || wip->wi_flags2 & WIF2_BEAM_NO_WHACK){
+	// don't whack docked ships - and don't whack if the beam isn't supposed to
+	// Goober5000 - whacking docked ships should work now, so whack them
+	if(/*object_is_docked(objp) ||*/ (wip->wi_flags2 & WIF2_BEAM_NO_WHACK) ){
 		return;
 	}
 
@@ -3423,6 +3428,7 @@ void beam_apply_whack(beam *b, object *objp, vector *hit_point)
 	float whack;
 	float dist;
 
+	// this if block was added by Bobboau to make beams whack properly while preserving reverse compatibility
 	if(wip->mass == 100.0f){
 		if(wip->damage < b_whack_damage){
 			whack = b_whack_small;

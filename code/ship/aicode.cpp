@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.78 $
- * $Date: 2005-01-01 10:38:23 $
- * $Author: taylor $
+ * $Revision: 2.79 $
+ * $Date: 2005-01-11 21:38:48 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2005/01/01 10:38:23  taylor
+ * asteroid targetting code for capships, enabled by default, matches FS1 behavior
+ *
  * Revision 2.77  2004/12/31 03:13:08  argv
  * I've just been informed that turrets do not shoot asteroids in the retail
  * game, and that this implementation causes them to shoot at the parent ship,
@@ -760,6 +763,7 @@
 #include "ship/awacs.h"
 #include "math/fvi.h"
 #include "parse/parselo.h"
+#include "object/objectdock.h"
 
 #ifndef NO_NETWORK
 #include "network/multimsgs.h"
@@ -1066,8 +1070,10 @@ int Ai_last_arrive_path;	// index of ship_bay path used by last arrival from a f
 
 // forward declarations
 int	ai_return_path_num_from_dockbay(object *dockee_objp, int dockbay_index);
-void	create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int count=1);
-void	copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int count, int path_num, pnode *pnp, int randomize_pnt=-1);
+void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int count=1);
+void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int count, int path_num, pnode *pnp, int randomize_pnt=-1);
+void ai_cleanup_rearm_mode(object *objp);
+void ai_cleanup_dock_mode(object *dying_objp);
 
 // ai_set_rearm_status takes a team (friendly, hostile, neutral) and a time.  This function
 // sets the timestamp used to tell is it is a good time for this team to rearm.  Once the timestamp
@@ -2008,25 +2014,19 @@ void ai_object_init(object * obj, int ai_index)
 //	If *aip is docked, set max acceleration to A->mass/(A->mass + B->mass) where A is *aip and B is dock object
 void adjust_accel_for_docking(ai_info *aip)
 {
-	if (aip->dock_objnum != -1) {
-		object	*obj2p = &Objects[aip->dock_objnum];
-		object	*obj1p;
+	object *objp = &Objects[Ships[aip->shipnum].objnum];
 
-		obj1p = &Objects[Ships[aip->shipnum].objnum];
+	if (object_is_docked(objp))
+	{
+		float ratio = objp->phys_info.mass / dock_calc_total_docked_mass(objp);
 
-		if (obj2p->signature == aip->dock_signature) {
-			float	ratio;
+		// put cap on how much ship can slow down
+		if (ratio < 0.8) {
+			ratio = 0.8f;
+		}
 
-			ratio = obj1p->phys_info.mass / (obj1p->phys_info.mass + obj2p->phys_info.mass);
-
-			// put cap on how much ship can slow down
-			if (ratio < 0.8) {
-				ratio = 0.8f;
-			}
-
-			if (AI_ci.forward > ratio) {
-				AI_ci.forward = ratio;
-			}
+		if (AI_ci.forward > ratio) {
+			AI_ci.forward = ratio;
 		}
 	}
 }
@@ -2458,10 +2458,8 @@ float get_wing_lowest_max_speed(object *objp)
 			//	ignore the poor guy.
 			float	cur_max = oshipp->current_max_speed;
 
-			if (oaip->ai_flags & AIF_DOCKED) {
-				if (oaip->dock_objnum > -1)
-					if (Objects[oaip->dock_objnum].type == OBJ_SHIP) 
-						cur_max *= o->phys_info.mass/(o->phys_info.mass + Objects[oaip->dock_objnum].phys_info.mass);
+			if (object_is_docked(o)) {
+				cur_max *= o->phys_info.mass / dock_calc_total_docked_mass(o);
 			}
 							
 			if ((oshipp->current_max_speed > 5.0f) && (cur_max < lowest_max_speed)) {
@@ -3448,10 +3446,10 @@ void ai_set_goal_maybe_abort_dock(object *objp, ai_info *aip)
 	if (aip->ai_flags & AIF_AWAITING_REPAIR) {
 		object	*repair_obj;
 
-		if (aip->dock_objnum == -1) {
+		if (aip->support_ship_objnum == -1) {
 			repair_obj = NULL;
 		} else {
-			repair_obj = &Objects[aip->dock_objnum];
+			repair_obj = &Objects[aip->support_ship_objnum];
 		}
 		ai_do_objects_repairing_stuff( objp, repair_obj, REPAIR_INFO_ABORT );
 	}
@@ -3973,7 +3971,7 @@ void ai_find_path(object *pl_objp, int objnum, int path_num, int exit_flag, int 
 
 			ship	*shipp = &Ships[objp->instance];
 			pm = model_get( shipp->modelnum );
-			if(pm->n_paths <= path_num)Error(LOCATION,"ai_find_path tring to find a path (%d) that doesn't exsist, on ship %s", path_num, shipp->ship_name);
+			if(pm->n_paths <= path_num)Error(LOCATION,"ai_find_path tring to find a path (%d) that doesn't exist, on ship %s", path_num, shipp->ship_name);
 		//	Assert(pm->n_paths > path_num);
 			aip->goal_objnum = objp-Objects;
 			aip->goal_signature = objp->signature;
@@ -4090,20 +4088,62 @@ void ai_stay_still(object *still_objp, vector *view_pos)
 // when two objects have completed docking.  used because we can dock object initially at misison load
 // time (meaning that ai_dock() might never get called).  docker has docked with dockee (i.e. docker
 // would be a freighter and dockee would be a cargo).
-void ai_do_objects_docked_stuff(object *docker, object *dockee)
+void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee, int dockee_point)
 {
-	ai_info *aip, *other_aip;
+	Assert((docker != NULL) && (dockee != NULL));
 
-	aip = &Ai_info[Ships[docker->instance].ai_index];
-	other_aip = &Ai_info[Ships[dockee->instance].ai_index];
+	// make sure they're not already docked!
+	if (dock_check_find_direct_docked_object(docker, dockee))
+	{
+		Warning(LOCATION, "Call to ai_do_objects_docked_stuff when objects are already docked!  Trace out and fix!\n");
+		return;
+	}
 
-	// set the flags and dock_objnum for both objects
-	aip->ai_flags |= AIF_DOCKED;
-	aip->dock_objnum = OBJ_INDEX(dockee);
-	other_aip->ai_flags |= AIF_DOCKED;
-	other_aip->dock_objnum = OBJ_INDEX(docker);
-	aip->dock_signature = dockee->signature;
-	other_aip->dock_signature = docker->signature;
+#ifndef NO_NETWORK
+	// if this is a multi game, we currently only support one-on-one docking
+	if (Game_mode & GM_MULTIPLAYER)
+	{
+		if (object_is_docked(docker))
+		{
+			Error(LOCATION, "Ship %s tried to dock to more than one object.  Multiplayer currently does not support multiple ship docking.\n", Ships[docker->instance].ship_name);
+			return;
+		}
+
+		if (object_is_docked(dockee))
+		{
+			Error(LOCATION, "Ship %s tried to dock to more than one object.  Multiplayer currently does not support multiple ship docking.\n", Ships[dockee->instance].ship_name);
+			return;
+		}
+	}
+#endif
+
+	// link the two objects
+	dock_dock_objects(docker, docker_point, dockee, dockee_point);
+
+	if (docker->type == OBJ_SHIP && dockee->type == OBJ_SHIP)
+	{
+		// maybe set support ship info
+		if ((Ship_info[Ships[docker->instance].ship_info_index].flags & SIF_SUPPORT)
+			|| (Ship_info[Ships[dockee->instance].ship_info_index].flags & SIF_SUPPORT))
+		{
+			ai_info *docker_aip = &Ai_info[Ships[docker->instance].ai_index];
+			ai_info *dockee_aip = &Ai_info[Ships[dockee->instance].ai_index];
+
+#ifndef NDEBUG
+			// support ship can only dock with one thing at a time
+			if (Ship_info[Ships[docker->instance].ship_info_index].flags & SIF_SUPPORT)
+				Assert(docker->dock_list->next == NULL);
+			else
+				Assert(dockee->dock_list->next == NULL);
+#endif
+
+			// set stuff for both objects
+			docker_aip->support_ship_objnum = OBJ_INDEX(dockee);
+			dockee_aip->support_ship_objnum = OBJ_INDEX(docker);
+			docker_aip->support_ship_signature = dockee->signature;
+			dockee_aip->support_ship_signature = docker->signature;
+		}
+	}
 
 #ifndef NO_NETWORK
 	// add multiplayer hook here to deal with docked objects.  We need to only send information
@@ -4114,32 +4154,42 @@ void ai_do_objects_docked_stuff(object *docker, object *dockee)
 }
 
 // code which is called when objects become undocked. Equivalent of above function.
-// dockee might not be valid since this code can get called to cleanup after a ship
-// has blown up!
+// Goober5000 - dockee must always be non-NULL
 void ai_do_objects_undocked_stuff( object *docker, object *dockee )
 {
-	ai_info *aip, *other_aip;
+	Assert((docker != NULL) && (dockee != NULL));
+
+	// make sure they're not already undocked!
+	if (!dock_check_find_direct_docked_object(docker, dockee))
+	{
+		Warning(LOCATION, "Call to ai_do_objects_undocked_stuff when objects are already undocked!  Trace out and fix!\n");
+		return;
+	}
 
 #ifndef NO_NETWORK
 	// add multiplayer hook here to deal with undocked objects.  Do it before we
-	// do anything else.  We don't need to send info for both objects, since we can find
-	// it be dock_objnum
+	// do anything else.  We don't need to send info for both objects, since multi
+	// only supports one docked object
 	if ( MULTIPLAYER_MASTER )
 		send_ai_info_update_packet( docker, AI_UPDATE_UNDOCK );
 #endif
 
-	aip = &Ai_info[Ships[docker->instance].ai_index];
+	if (docker->type == OBJ_SHIP && dockee->type == OBJ_SHIP)
+	{
+		ai_info *docker_aip = &Ai_info[Ships[docker->instance].ai_index];
+		ai_info *dockee_aip = &Ai_info[Ships[dockee->instance].ai_index];
 
-	// set the flags and dock_objnum for both objects
-	aip->ai_flags &= ~(AIF_DOCKED | AIF_BEING_REPAIRED);
-	aip->dock_objnum = -1;
-	
-	if ( dockee != NULL ) {
-		other_aip = &Ai_info[Ships[dockee->instance].ai_index];
-		other_aip->ai_flags &= ~(AIF_DOCKED | AIF_BEING_REPAIRED);
-		other_aip->dock_objnum = -1;
+		// clear stuff for both objects
+		docker_aip->ai_flags &= ~AIF_BEING_REPAIRED;
+		dockee_aip->ai_flags &= ~AIF_BEING_REPAIRED;
+		docker_aip->support_ship_objnum = -1;
+		dockee_aip->support_ship_objnum = -1;
+		docker_aip->support_ship_signature = -1;
+		docker_aip->support_ship_signature = -1;
 	}
 
+	// unlink the two objects
+	dock_undock_objects(docker, dockee);
 }
 
 
@@ -4151,45 +4201,36 @@ void ai_do_objects_undocked_stuff( object *docker, object *dockee )
 //		AIDO_DOCK		set goal of docking
 //		AIDO_DOCK_NOW	immediately dock, used for ships that need to be docked at mission start
 //		AIDO_UNDOCK		set goal of undocking
-void ai_dock_with_object(object *docker, object *dockee, int priority, int dock_type, int docker_index, int dockee_index)
+void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int priority, int dock_type)
 {
-	ai_info		*aip;
-	polymodel	*pm;
-	ai_info		*dockee_aip;
-
 	Assert(docker != NULL);
 	Assert(dockee != NULL);
 	Assert(docker->instance != -1);
+	Assert(dockee->instance != -1);
 	Assert(Ships[docker->instance].ai_index != -1);
 	Assert(Ships[dockee->instance].ai_index != -1);
-	Assert( docker_index != -1 );
-	Assert( dockee_index != -1 );
+	Assert(docker_index != -1);
+	Assert(dockee_index != -1);
 
-	aip = &Ai_info[Ships[docker->instance].ai_index];
+	ai_info *aip = &Ai_info[Ships[docker->instance].ai_index];
+//	ai_info *dockee_aip = &Ai_info[Ships[dockee->instance].ai_index];
 
-	if ((aip->ai_flags & AIF_DOCKED) && (dock_type == AIDO_DOCK)) {
-		object	*dockee2;
-		int		docker_index2, dockee_index2;
-
-		Assert(aip->dock_objnum > -1);
-		dockee2 = &Objects[aip->dock_objnum];
-		docker_index2 = aip->dock_index;
-		dockee_index2 = aip->dockee_index;
+	/* Goober5000 - as MWA says, the is_goal_achievable code should take care of this
+	if (object_is_docked(docker) && (dock_type == AIDO_DOCK)) {
 		// MWA -- 2/9/98.  use the goal code to undock the ships since goals might need to get removed
 		// and that code will do it properly.  I'd actually be surprised if we got into this code anymore
 		// since the outer layer goal code should deal with this issue....but who knows...
-		ai_add_goal_ship_internal( aip, AI_GOAL_UNDOCK, NULL, -1, -1, 0 );
+		ai_add_goal_ship_internal( ... AI_GOAL_UNDOCK ... );
 
 		// old code below
-		//ai_dock_with_object(docker, dockee2, priority, AIDO_UNDOCK, docker_index2, dockee_index2);
-		nprintf(("AI", "Ship %s told to dock with %s, but it was already docked with %s.\n", Ships[docker->instance].ship_name, Ships[dockee->instance].ship_name, Ships[Objects[aip->dock_objnum].instance].ship_name));
+		//ai_dock_with_object( ... AIDO_UNDOCK ... );
+		nprintf(("AI", "Ship %s told to dock with %s, but it was already docked with %s.\n", Ships[docker->instance].ship_name, Ships[dockee->instance].ship_name, Ships[dock_get_first_docked_object(docker)->instance].ship_name));
 		nprintf(("AI", "...so ship %s will now undock.\n", Ships[docker->instance].ship_name));
 		return;
 	}
+	*/
 
-	dockee_aip = &Ai_info[Ships[dockee->instance].ai_index];
-
-	aip->goal_objnum = dockee - Objects;
+	aip->goal_objnum = OBJ_INDEX(dockee);
 	aip->goal_signature = dockee->signature;
 
 	aip->mode = AIM_DOCK;
@@ -4199,7 +4240,7 @@ void ai_dock_with_object(object *docker, object *dockee, int priority, int dock_
 		aip->submode = AIS_DOCK_0;
 		break;
 	case AIDO_DOCK_NOW:
-		aip->submode = AIS_DOCK_3A;
+		aip->submode = AIS_DOCK_4A;
 		break;
 	case AIDO_UNDOCK:
 		aip->submode = AIS_UNDOCK_0;
@@ -4209,39 +4250,29 @@ void ai_dock_with_object(object *docker, object *dockee, int priority, int dock_
 	}
 
 	aip->submode_start_time = Missiontime;
-	aip->dock_index = docker_index;
-	aip->dockee_index = dockee_index;
 
-	dockee_aip->dock_index = dockee_index;
-	dockee_aip->dockee_index = docker_index;
-
-	// get the path number to the docking point on the dockee.  Each docking point contains a list
-	// of paths that the point can be reached by.  Pick the first path in the path list for now.
-	// We only want to do this stuff if we are docking!!!  Be sure to set the path index
-	if ((dock_type == AIDO_DOCK) || (dock_type == AIDO_DOCK_NOW)) {
-		pm = model_get( Ships[dockee->instance].modelnum );
+	// Goober5000 - we no longer need to set dock_path_index because it's easier to grab the path from the dockpoint
+	// a debug check would be a good thing here, though
+#ifndef NDEBUG
+	if (dock_type == AIDO_UNDOCK)
+	{
+		polymodel	*pm = model_get(Ships[dockee->instance].modelnum);
 		Assert( pm->docking_bays[dockee_index].num_spline_paths > 0 );
-
-		// only set the dock path index if we are docking.  undocking will assume that dock_path_index
-		// already set from some other docking command
-		aip->dock_path_index = dockee_index;
-		dockee_aip->dock_path_index = docker_index;
 	}
+#endif
 
-	if (dock_type != AIDO_DOCK_NOW) {
-		int path_num;
-		//	Note: Second parameter is dock path index.  This should be specified as an
-		//	_input_ to this function and passed through.  The path index should be already
-		// set for the undock function
-		path_num = ai_return_path_num_from_dockbay(dockee, dockee_index);
-		ai_find_path(docker, dockee-Objects, path_num, 0);
-//		ai_find_path(dockee-Objects, dockee_index, 0);
-	} else {
-		dock_orient_and_approach(docker, dockee, DOA_DOCK_STAY);
-		//aip->dock_objnum = OBJ_INDEX(dockee);
-		ai_do_objects_docked_stuff( docker, dockee );
+	// dock instantly
+	if (dock_type == AIDO_DOCK_NOW)
+	{
+		dock_orient_and_approach(docker, docker_index, dockee, dockee_index, DOA_DOCK_STAY);
+		ai_do_objects_docked_stuff( docker, docker_index, dockee, dockee_index );
 	}
-
+	// pick a path to use to start docking
+	else
+	{
+		int path_num = ai_return_path_num_from_dockbay(dockee, dockee_index);
+		ai_find_path(docker, OBJ_INDEX(dockee), path_num, 0);
+	}
 }
 
 
@@ -4847,9 +4878,13 @@ float ai_path()
 	Assert(num_paths > 0);
 
 	if (aip->path_start == -1) {
-		int path_num;
-		path_num = ai_return_path_num_from_dockbay(&Objects[aip->goal_objnum], aip->dockee_index);
 		Assert(aip->goal_objnum >= 0 && aip->goal_objnum < MAX_OBJECTS);
+		int path_num;
+		Assert(aip->active_goal >= 0);
+		ai_goal *aigp = &aip->goals[aip->active_goal];
+		Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+
+		path_num = ai_return_path_num_from_dockbay(&Objects[aip->goal_objnum], aigp->dockee.index);
 		ai_find_path(Pl_objp, aip->goal_objnum, path_num, 0);
 	}
 
@@ -6878,8 +6913,9 @@ void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_index)
 
 			if (Ships[A->instance].team == firing_ship_team) {
 				ai_info	*aip = &Ai_info[Ships[A->instance].ai_index];
+
 				// AL 1-5-98: only avoid shockwave if not docked or repairing
-				if ( !(aip->ai_flags & (AIF_DOCKED|AIF_BEING_REPAIRED)) ) {
+				if ( !object_is_docked(A) && !(aip->ai_flags & (AIF_REPAIRING|AIF_BEING_REPAIRED)) ) {
 					aip->ai_flags |= AIF_AVOID_SHOCKWAVE_WEAPON;
 				}
 			}
@@ -9636,7 +9672,7 @@ void set_goal_dock_orient(matrix *dom, dock_bay *db_dest, dock_bay *db_src, matr
 //	DOA_UNDOCK_1	means undock, moving to point nearest dock bay
 //	DOA_UNDOCK_2	means undock, moving to point nearest dock bay and facing away from ship
 //	DOA_DOCK_STAY	means rigidly maintain position in dock bay.
-float dock_orient_and_approach(object *objp, object *dobjp, int dock_mode)
+float dock_orient_and_approach(object *objp, int docker_index, object *dobjp, int dockee_index, int dock_mode)
 {
 	ship_info	*sip0, *sip1;
 	polymodel	*pm0, *pm1;
@@ -9644,9 +9680,11 @@ float dock_orient_and_approach(object *objp, object *dobjp, int dock_mode)
 	matrix		dom, nm;
 	vector		goal_point, docker_point;
 	float			fdist = UNINITIALIZED_VALUE;
-	int			docker_index, dockee_index;		// index into docking_bays[] array for objects docking
-																// docker is Pl_objp -- dockee is dobjp
+
+
 	aip = &Ai_info[Ships[objp->instance].ai_index];
+
+	// docker is Pl_objp -- dockee is dobjp
 
 	//	If dockee has moved much, then path will be recreated.
 	//	Might need to change state if moved too far.
@@ -9666,9 +9704,6 @@ float dock_orient_and_approach(object *objp, object *dobjp, int dock_mode)
 	sip1 = &Ship_info[Ships[dobjp->instance].ship_info_index];
 	pm0 = model_get( sip0->modelnum );
 	pm1 = model_get( sip1->modelnum );
-
-	docker_index = aip->dock_index;
-	dockee_index = aip->dockee_index;
 
 	Assert( docker_index >= 0 );
 	Assert( dockee_index >= 0 );
@@ -9790,8 +9825,8 @@ float dock_orient_and_approach(object *objp, object *dobjp, int dock_mode)
 		} else {
 			Assert(dock_mode == DOA_DOCK_STAY);
 			objp->orient = dom;
-			vector	temp;
-			vm_vec_sub(&temp, &goal_point, &docker_point);
+//			vector	temp;
+//			vm_vec_sub(&temp, &goal_point, &docker_point);
 			vm_vec_sub(&objp->pos, &goal_point, &docker_point);
 		}
 
@@ -9869,10 +9904,18 @@ float dock_orient_and_approach(object *objp, object *dobjp, int dock_mode)
 #ifndef NDEBUG
 	//	For debug purposes, compute global orientation of both dock vectors and show
 	//	how close they are.
+/*
 	vector	d0, d1;
+
+	if (dock_mode == DOA_UNDOCK_3)
+	{
+		docker_index = 0;
+		dockee_index = 0;
+	}
 
 	vm_vec_unrotate(&d0, &pm0->docking_bays[docker_index].norm[0], &objp->orient);
 	vm_vec_unrotate(&d1, &pm1->docking_bays[dockee_index].norm[0], &dobjp->orient);
+*/
 
 	//nprintf(("AI", "or/app: dist = %7.3f/%7.3f, dot = %7.3f, global dot = %7.3f\n", 
 	//	vm_vec_dist_quick(&goal_point, &objp->pos), fdist,
@@ -10593,10 +10636,8 @@ void ai_guard()
 			float speed = guard_objp->phys_info.speed;
 
 			if (guard_objp->type == OBJ_SHIP) {
-				ai_info	*guard_aip = &Ai_info[Ships[guard_objp->instance].ai_index];
-
-				if (guard_aip->dock_objnum != -1) {
-					speed = max(speed, Objects[guard_aip->dock_objnum].phys_info.speed);
+				if (object_is_docked(guard_objp)) {
+					speed = dock_calc_docked_speed(guard_objp);
 				}
 			}
 			
@@ -10683,34 +10724,6 @@ void ai_guard()
 
 }
 
-// Return the object of the ship that the given object is docked
-// with.  Currently, we know a ship is docked when his ai_mode is AIM_DOCK,
-// and his submode is AIS_DOCK_3.  I suppose that this is likely to change though.
-// Also, the objnum that was is passed in may not be the object that actually
-// performed the docking maneuver.  This code will account for that case.
-object *ai_find_docked_object( object *docker )
-{
-	ai_info	*aip;
-
-	// we are trying to find the dockee of docker.  (Note that that these terms
-	// are totally relative to what is passed in as a parameter.)
-
-	// first thing to attempt is to check and see if this object is docked with something.
-	Assert( docker->type == OBJ_SHIP );		// this had probably better be a ship!!!
-	aip = &Ai_info[Ships[docker->instance].ai_index];
-	if ( !(aip->ai_flags & AIF_DOCKED) )		// flag not set if not docked with anything
-		return NULL;
-
-	if ( aip->dock_objnum == -1 ) {
-		Int3();											// mwa says this is wrong wrong wrong
-		ai_do_objects_undocked_stuff( docker, NULL );
-		return NULL;
-	}
-
-	return &Objects[aip->dock_objnum];
-
-}
-
 
 // define for the points subtracted from score for a rearm started on a player.
 #define REPAIR_PENALTY		50
@@ -10778,9 +10791,9 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		break;
 
 	case REPAIR_INFO_END:
-		// when only awaiting repair, and the repair is ended, then set dock_objnum to -1.
+		// when only awaiting repair, and the repair is ended, then set support to -1.
 		if ( aip->ai_flags & AIF_AWAITING_REPAIR ){
-			aip->dock_objnum = -1;
+			aip->support_ship_objnum = -1;
 		}
 		aip->ai_flags &= ~(AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED );
 		stamp = timestamp((int) ((30 + 10*frand()) * 1000));
@@ -10795,12 +10808,18 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		break;
 
 	case REPAIR_INFO_ABORT:
+		if (repair_objp != NULL)
+		{
+			ai_do_objects_undocked_stuff(repair_objp, repaired_objp);
+		}
+		// fall through
+
 	case REPAIR_INFO_KILLED:
-		// 5/4/98 -- MWA -- Need to set dock objnum to -1 to let code know this guy who was getting
+		// 5/4/98 -- MWA -- Need to set support objnum to -1 to let code know this guy who was getting
 		// repaired (or queued for repair), isn't really going to be docked with anyone anymore.
-		aip->dock_objnum = -1;
-		aip->ai_flags &= ~AIF_DOCKED;
+		aip->support_ship_objnum = -1;
 		aip->ai_flags &= ~(AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED );
+
 		if (repair_objp != NULL) {
 			repair_aip = &Ai_info[Ships[repair_objp->instance].ai_index];
 			repair_aip->ai_flags &= ~(AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED );
@@ -10840,10 +10859,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		break;
 
 	case REPAIR_INFO_ONWAY:
-		// need to set the dock_signature so that clients in multiplayer games rearm correctly
+		// need to set the signature so that clients in multiplayer games rearm correctly
 		Assert( repair_objp );
-		aip->dock_signature = repair_objp->signature; 
-		aip->dock_objnum = OBJ_INDEX(repair_objp);
+		aip->support_ship_signature = repair_objp->signature;
+		aip->support_ship_objnum = OBJ_INDEX(repair_objp);
 		stamp = timestamp(-1);
 		break;
 
@@ -10896,47 +10915,53 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 #endif
 }
 
-//	Cleanup AI stuff for when a ship was supposed to dock with another, but the ship
-//	it was supposed to dock with is no longer valid.
-void ai_cleanup_dock_mode(ai_info *aip, ship *shipp)
+// Goober5000 - split from ai_cleanup_dock_mode
+void ai_cleanup_rearm_mode(object *objp)
 {
-	object *objp;
-
-	objp = &Objects[shipp->objnum];
+	ai_info *aip = &Ai_info[Ships[objp->instance].ai_index];
 	aip->mode = AIM_NONE;
 
 	if (aip->ai_flags & AIF_REPAIRING) {
 		Assert( aip->goal_objnum != -1 );
-		ai_do_objects_repairing_stuff( &Objects[aip->goal_objnum], &Objects[shipp->objnum], REPAIR_INFO_KILLED );
+		ai_do_objects_repairing_stuff( &Objects[aip->goal_objnum], objp, REPAIR_INFO_KILLED );
 	} else if ( aip->ai_flags & AIF_BEING_REPAIRED ) {
-		// MWA -- note that we have to use dock_objnum here instead of goal_objnum.
-		Assert( aip->dock_objnum != -1 );
-		ai_do_objects_repairing_stuff( &Objects[shipp->objnum], &Objects[aip->dock_objnum], REPAIR_INFO_KILLED );
+		// MWA/Goober5000 -- note that we have to use support object here instead of goal_objnum.
+		Assert( aip->support_ship_objnum != -1 );
+		ai_do_objects_repairing_stuff( objp, &Objects[aip->support_ship_objnum], REPAIR_INFO_KILLED );
 	} else if ( aip->ai_flags & AIF_AWAITING_REPAIR ) {
-		// need to find the support ship that has me as a goal_objnum
-		// MWA -- note that we have to use dock_objnum here instead of goal_objnum.
+		// MWA/Goober5000 -- note that we have to use support object here instead of goal_objnum.
 		// MWA -- 3/38/98  Check to see if this guy is queued for a support ship, or there is already
 		// one in the mission
 		if ( mission_is_repair_scheduled(objp) ) {
 			mission_remove_scheduled_repair( objp );			// this function will notify multiplayer clients.
 		} else {
-			if ( aip->dock_objnum != -1 )
-				ai_do_objects_repairing_stuff( objp, &Objects[aip->dock_objnum], REPAIR_INFO_ABORT );
+			if ( aip->support_ship_objnum != -1 )
+				ai_do_objects_repairing_stuff( objp, &Objects[aip->support_ship_objnum], REPAIR_INFO_ABORT );
 			else
 				ai_do_objects_repairing_stuff( objp, NULL, REPAIR_INFO_ABORT );
 		}
 	}
+}
 
-	if ( aip->ai_flags & AIF_DOCKED ) {
-		ai_info *other_aip;
+// Goober5000 - this function should ONLY need to be called from a ship doing a deathroll.  It
+// ensures that any ship docking or undocking with it will finish gracefully.
+void ai_cleanup_dock_mode(object *dying_objp)
+{
+	// process all directly docked objects
+	for (dock_instance *ptr = dying_objp->dock_list; ptr != NULL; ptr = ptr->next)
+	{
+		// don't process if it's not a ship
+		if (ptr->docked_objp->type != OBJ_SHIP)
+			continue;
 
-		Assert( aip->dock_objnum != -1 );
+		// get ai of docked object
+		ai_info *other_aip = &Ai_info[Ships[ptr->docked_objp->instance].ai_index];
 
-		// if docked, and the dock_objnum is not undocking, force them to near last stage
-		other_aip = &Ai_info[Ships[Objects[aip->dock_objnum].instance].ai_index];
+		// if the docked object is in dock mode, force them to near last stage
 		if ( (other_aip->mode == AIM_DOCK) && (other_aip->submode < AIS_UNDOCK_3) )
 			other_aip->submode = AIS_UNDOCK_3;
-		ai_do_objects_undocked_stuff( objp, &Objects[aip->dock_objnum] );
+		
+		// don't actually undock any ships, because do_dying_undock_physics will take care of it
 	}
 }
 
@@ -11067,21 +11092,51 @@ int Dock_path_warning_given = 0;
 //	undock.
 void ai_dock()
 {
-	ship			*shipp = &Ships[Pl_objp->instance];
+	ship		*shipp = &Ships[Pl_objp->instance];
 	ai_info		*aip = &Ai_info[shipp->ai_index];
-	object		*goal_objp;
-	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
-	//	Make sure object we're supposed to dock with still exists.
+	//	Make sure object we're supposed to dock with or undock from still exists.
 	if ((aip->goal_objnum == -1) || (Objects[aip->goal_objnum].signature != aip->goal_signature)) {
-		ai_cleanup_dock_mode(aip, shipp);
+		ai_cleanup_rearm_mode(Pl_objp);
 		return;
 	}
 
-	goal_objp = &Objects[aip->goal_objnum];
+	ship_info	*sip = &Ship_info[shipp->ship_info_index];
+	object		*goal_objp = &Objects[aip->goal_objnum];
 
-	//	For docking submodes (ie, not undocking), follow path.  Once at second last
-	//	point on path (point just before point on dock platform), orient into position.
+	int docker_index, dockee_index;
+
+	ai_goal *aigp;
+	if (aip->active_goal >= 0)
+		aigp = &aip->goals[aip->active_goal];
+	else
+		aigp = NULL;
+
+	// get the indexes
+	if ((aip->submode == AIS_DOCK_2) || (aip->submode == AIS_DOCK_3) || (aip->submode == AIS_DOCK_4))
+	{
+		// get them from the active goal
+		Assert(aigp != NULL);
+		Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+		docker_index = aigp->docker.index;
+		dockee_index = aigp->dockee.index;
+	}
+	else if ((aip->submode == AIS_UNDOCK_0) || (aip->submode == AIS_UNDOCK_1) || (aip->submode == AIS_UNDOCK_2))
+	{
+		// get them from the guy I'm docked to
+		docker_index = dock_find_dockpoint_used_by_object(Pl_objp, goal_objp);
+		dockee_index = dock_find_dockpoint_used_by_object(goal_objp, Pl_objp);
+	}
+	else
+	{
+		// indexes aren't needed or (in case of AIS_UNDOCK_3) aren't actually used
+		docker_index = 0;
+		dockee_index = 0;
+	}
+
+	// For docking submodes (ie, not undocking), follow path.  Once at second last
+	// point on path (point just before point on dock platform), orient into position.
+	//
 	// For undocking, first mode pushes docked ship straight back from docking point
 	// second mode turns ship and moves to point on docking radius
 	switch (aip->submode) {
@@ -11151,21 +11206,22 @@ void ai_dock()
 			aip->submode = AIS_DOCK_1;
 		} else {
 			//nprintf(("AI", "Time = %7.3f, submode = %i\n", f2fl(Missiontime), aip->submode));
-			dist = dock_orient_and_approach(Pl_objp, &Objects[aip->goal_objnum], DOA_APPROACH);
+			dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_APPROACH);
 			Assert(dist != UNINITIALIZED_VALUE);
 
 			if (dist == DOCK_BACKUP_RETURN_VAL) {
-				int path_num;
-				aip->submode = AIS_DOCK_1;
-				path_num = ai_return_path_num_from_dockbay(&Objects[aip->goal_objnum], aip->dockee_index);
 				Assert(aip->goal_objnum >= 0 && aip->goal_objnum < MAX_OBJECTS);
+				int path_num;
+
+				aip->submode = AIS_DOCK_1;
+				path_num = ai_return_path_num_from_dockbay(goal_objp, dockee_index);
 				ai_find_path(Pl_objp, aip->goal_objnum, path_num, 0);
 				break;
 			}
 
 			//nprintf(("AI", "Dock 2: dist = %7.3f\n", vm_vec_dist_quick(&Pl_objp->pos, &goal_point)));
 			float	tolerance;
-			if (Objects[aip->goal_objnum].flags & OF_PLAYER_SHIP)
+			if (goal_objp->flags & OF_PLAYER_SHIP)
 				tolerance = 6*flFrametime + 1.0f;
 			else
 				tolerance = 4*flFrametime + 0.5f;
@@ -11180,7 +11236,6 @@ void ai_dock()
 						  }
 
 	case AIS_DOCK_3:
-	case AIS_DOCK_3A:
 		{
 		Assert(aip->goal_objnum != -1);
 		int	r;
@@ -11192,7 +11247,7 @@ void ai_dock()
 		} else {
 
 			//nprintf(("AI", "Time = %7.3f, submode = %i\n", f2fl(Missiontime), aip->submode));
-			float dist = dock_orient_and_approach(Pl_objp, &Objects[aip->goal_objnum], DOA_DOCK);
+			float dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_DOCK);
 			Assert(dist != UNINITIALIZED_VALUE);
 
 			if (dist == DOCK_BACKUP_RETURN_VAL) {
@@ -11204,17 +11259,19 @@ void ai_dock()
 
 			if (dist < 2*flFrametime * (1.0f + fl_sqrt(goal_objp->phys_info.speed))) {
 				// - Removed by MK on 11/7/97, causes errors for ships docked at mission start: maybe_recreate_path(Pl_objp, aip, 1);
-				dist = dock_orient_and_approach(Pl_objp, &Objects[aip->goal_objnum], DOA_DOCK);
+				dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_DOCK);
 				Assert(dist != UNINITIALIZED_VALUE);
 
 				physics_ship_init(Pl_objp);
 
-				ai_do_objects_docked_stuff( Pl_objp, goal_objp );
+				ai_do_objects_docked_stuff( Pl_objp, docker_index, goal_objp, dockee_index );
 
-				if (aip->submode == AIS_DOCK_3) {
+				if (aip->submode == AIS_DOCK_3)
+				{
 				//	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCKED, 1);
 					snd_play_3d( &Snds[SND_DOCK_ATTACH], &Pl_objp->pos, &View_position );
 					hud_maybe_flash_docking_text(Pl_objp);
+					hud_maybe_flash_docking_text(goal_objp);
 					// ai_dock_shake(Pl_objp, goal_objp);
 
 					if ((Pl_objp == Player_obj) || (goal_objp == Player_obj))
@@ -11238,14 +11295,14 @@ void ai_dock()
 	case AIS_DOCK_4A:
 		//nprintf(("AI", "Time = %7.3f, submode = %i\n", f2fl(Missiontime), aip->submode));
 		//nprintf(("AI", "."));
-		if (aip->active_goal >= 0) {
+		if (aigp == NULL) {	//	Can happen for initially docked ships.
+			ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );		// do the default behavior
+		} else {
 			mission_log_add_entry(LOG_SHIP_DOCK, Ships[Pl_objp->instance].ship_name, Ships[goal_objp->instance].ship_name);
 
-			if (aip->goals[aip->active_goal].ai_mode == AI_GOAL_DOCK) {
+			if (aigp->ai_mode == AI_GOAL_DOCK) {
 				ai_mission_goal_complete( aip );					// Note, this calls ai_set_default_behavior().
 			} 
-		} else {	//	Can happen for initially docked ships.
-			ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );		// do the default behavior
 		}
 		
 		break;
@@ -11256,18 +11313,25 @@ void ai_dock()
 		Assert((aip->goal_objnum >= -1) && (aip->goal_objnum < MAX_OBJECTS));
 
 		//nprintf(("AI", "Time = %7.3f, submode = %i\n", f2fl(Missiontime), aip->submode));
-		float dist = dock_orient_and_approach(Pl_objp, &Objects[aip->goal_objnum], DOA_DOCK);
+		float dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_DOCK);
 		Assert(dist != UNINITIALIZED_VALUE);
 
-		object	*goal_objp = &Objects[aip->goal_objnum];
 		Assert(goal_objp->type == OBJ_SHIP);
-		ship			*goal_shipp = &Ships[goal_objp->instance];		
+		ship		*goal_shipp = &Ships[goal_objp->instance];		
 		ai_info		*goal_aip = &Ai_info[goal_shipp->ai_index];
 
 		//nprintf(("AI", "Dock 4: dist = %7.3f\n", dist));
 
+		// Goober5000 - moved from call_doa
+		// Abort if the ship being repaired exceeds my max speed
+		if (goal_objp->phys_info.speed > MAX_REPAIR_SPEED)
+		{
+			// call the ai_abort rearm request code
+			ai_abort_rearm_request( Pl_objp );
+		}
 		//	Make sure repair has not broken off.
-		if (dist > 5.0f) {	//	Oops, too far away!
+		else if (dist > 5.0f)	//	Oops, too far away!
+		{
 			if ( goal_aip->ai_flags & AIF_BEING_REPAIRED )
 				ai_do_objects_repairing_stuff( goal_objp, Pl_objp, REPAIR_INFO_BROKEN);
 
@@ -11276,7 +11340,9 @@ void ai_dock()
 				aip->submode = AIS_DOCK_2;
 				aip->submode_start_time = Missiontime;
 			}
-		} else {
+		}
+		else
+		{
 			if ( goal_aip->ai_flags & AIF_AWAITING_REPAIR )
 				ai_do_objects_repairing_stuff( goal_objp, Pl_objp, REPAIR_INFO_BEGIN );
 		}
@@ -11292,15 +11358,13 @@ void ai_dock()
 
 		aip->submode = AIS_UNDOCK_1;
 		aip->submode_start_time = Missiontime;
-		if (aip->dock_objnum == -1) {
+		if (aip->goal_objnum == -1) {		// Goober5000 - this is taken care of at the beginning of the function, but whatever...
 			aip->submode = AIS_UNDOCK_3;
 		} else {
 
-			// set up the path points for the undocking procedure.  dock_path_index member should
-			// have gotten set in the docking code.
-			Assert( aip->dock_path_index != -1 );
-			path_num = ai_return_path_num_from_dockbay(goal_objp, aip->dock_path_index);
-			ai_find_path(Pl_objp, goal_objp-Objects, path_num, 0);
+			// set up the path points for the undocking procedure
+			path_num = ai_return_path_num_from_dockbay(goal_objp, dockee_index);
+			ai_find_path(Pl_objp, OBJ_INDEX(goal_objp), path_num, 0);
 
 			// Play a ship docking detach sound
 			snd_play_3d( &Snds[SND_DOCK_DETACH], &Pl_objp->pos, &View_position );
@@ -11325,10 +11389,10 @@ void ai_dock()
 			aip->submode_start_time = 0;
 		}
 
-		dist = dock_orient_and_approach(Pl_objp, &Objects[aip->goal_objnum], DOA_UNDOCK_1);
+		dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_UNDOCK_1);
 		Assert(dist != UNINITIALIZED_VALUE);
 
-		float dist_to_dock_obj = vm_vec_dist_quick(&Pl_objp->pos, &Objects[aip->goal_objnum].pos);
+		float dist_to_dock_obj = vm_vec_dist_quick(&Pl_objp->pos, &goal_objp->pos);
 
 		//	Move to within 0.1 units of second last point on path before orienting, or just plain far away from docked-to ship.
 		//	This allows undock to complete if first ship flies away.
@@ -11343,11 +11407,11 @@ void ai_dock()
 		ai_info *other_aip;
 
 		// get pointer to docked object's aip to reset flags, etc
-		Assert( aip->dock_objnum != -1 );
-		other_aip = &Ai_info[Ships[Objects[aip->dock_objnum].instance].ai_index];
+		Assert( aip->goal_objnum != -1 );
+		other_aip = &Ai_info[Ships[goal_objp->instance].ai_index];
 
 		//	Second stage of undocking.
-		dist = dock_orient_and_approach(Pl_objp, &Objects[aip->goal_objnum], DOA_UNDOCK_2);
+		dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_UNDOCK_2);
 		Assert(dist != UNINITIALIZED_VALUE);
 
 
@@ -11357,18 +11421,13 @@ void ai_dock()
 		if ((dist < 2.0f) || (vm_vec_dist_quick(&Pl_objp->pos, &goal_objp->pos) > (Pl_objp->radius + goal_objp->radius)*2) || (goal_objp->phys_info.speed > MAX_UNDOCK_ABORT_SPEED) ) {
 			// reset the dock flags.  If rearm/repair, reset rearm repair flags for those ships as well.
 			if ( sip->flags & SIF_SUPPORT ) {
-				ai_do_objects_repairing_stuff( &Objects[aip->dock_objnum], Pl_objp, REPAIR_INFO_END );
+				ai_do_objects_repairing_stuff( &Objects[aip->support_ship_objnum], Pl_objp, REPAIR_INFO_END );
 			}
 
-			// clear out flags for AIF_DOCKED for both objects.
+			// clear out dock stuff for both objects.
 			ai_do_objects_undocked_stuff( Pl_objp, goal_objp );
 			physics_ship_init(Pl_objp);
 			aip->submode = AIS_UNDOCK_3;				//	The do-nothing mode, until another order is issued
-
-			//aip->ai_flags &= ~AIF_DOCKED;		//	@MK, 9/18/97
-			//other_aip->ai_flags &= ~AIF_DOCKED;
-			//aip->dock_objnum = -1;					// invalidate who obj is docked with
-			//other_aip->dock_objnum = -1;			// MWA 10/07/97 invalide docked objects dock_objnum value as well
 
 			// don't add undock log entries for support ships.
 			if ( !(sip->flags & SIF_SUPPORT) )
@@ -11378,7 +11437,7 @@ void ai_dock()
 		break;
 		}
 	case AIS_UNDOCK_3: {
-		float dist = dock_orient_and_approach(Pl_objp, &Objects[aip->goal_objnum], DOA_UNDOCK_3);
+		float dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_UNDOCK_3);
 		Assert(dist != UNINITIALIZED_VALUE);
 
 		if (dist < Pl_objp->radius/2 + 5.0f) {
@@ -11389,7 +11448,7 @@ void ai_dock()
 		// possible that this flag hasn't been cleared yet.  When aborting a rearm, this submode might
 		// be entered directly.
 		if ( (sip->flags & SIF_SUPPORT) && (aip->ai_flags & AIF_REPAIRING) ) {
-			ai_do_objects_repairing_stuff( &Objects[aip->goal_objnum], Pl_objp, REPAIR_INFO_ABORT );
+			ai_do_objects_repairing_stuff( goal_objp, Pl_objp, REPAIR_INFO_ABORT );
 		}
 
 		break;
@@ -11397,29 +11456,24 @@ void ai_dock()
 	case AIS_UNDOCK_4: {
 		ai_info *other_aip;
 
-		// MWA 10/07/97  I'm slightly confused by the dual use of goal_objnum and dock_objnum.  Seems to me
-		// that goal_objnum and dock_objnum are the same through this whole docking/undocking process, although
-		// I could be wrong.  dock_objnum was reset in undock_2 submode so try to use goal_objnum here to
-		// get other ships ai_info pointer
 		Assert( aip->goal_objnum != -1 );
-		other_aip = &Ai_info[Ships[Objects[aip->goal_objnum].instance].ai_index];
+		other_aip = &Ai_info[Ships[goal_objp->instance].ai_index];
 
 		aip->mode = AIM_NONE;
-		aip->dock_path_index = -1;		// invalidate the docking path index
 
 		// these flags should have been cleared long ago!
 		// Get Allender if you hit one of these!!!!!
 		// removed by allender on 2/16 since a ship may be docked with some other ship, but still be the
-		// goal_objnum of this ship ending it's undocking mode.
-		//Assert( !(aip->ai_flags & AIF_DOCKED) );
-		//Assert( !(other_aip->ai_flags & AIF_DOCKED) );
+		// goal_objnum of this ship ending its undocking mode.
+		//Assert( !(aip_is_docked) );
+		//Assert( !(other_aip_is_docked) );
 		//Assert( !(aip->ai_flags & AIF_REPAIRING) );
 		//Assert( !(other_aip->ai_flags & AIF_BEING_REPAIRED) );
 		//Assert( !(other_aip->ai_flags & AIF_AWAITING_REPAIR) );
 
 		// only call mission goal complete if this was indeed an undock goal
 		if ( aip->active_goal > -1 ) {
-			if ( aip->goals[aip->active_goal].ai_mode == AI_GOAL_UNDOCK )
+			if ( aigp->ai_mode == AI_GOAL_UNDOCK )
 				ai_mission_goal_complete( aip );			// this call should reset the AI mode
 			//else
 			//	aip->active_goal = -1;						// this ensures that this ship might get new goal
@@ -12185,8 +12239,11 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	//	If still don't have an enemy, return.  Or, if enemy is protected, return.
 	if (ss->turret_enemy_objnum != -1) {
-		//	Don't shoot at ship we're going to dock with.
-		if (ss->turret_enemy_objnum == aip->dock_objnum) {
+		//	Don't shoot at ship we're docked with.
+		// Volition originally meant for us to also not shoot at a ship we're docking with, but they messed it up so that
+		// it didn't work.  And with the new code, it's expensive.  So we keep the old behavior.
+		if (dock_check_find_docked_object(objp, &Objects[ss->turret_enemy_objnum]))
+		{
 			ss->turret_enemy_objnum = -1;
 			return;
 		}
@@ -12809,6 +12866,31 @@ int formation_is_leader_chaotic(object *objp)
 	return (Leader_chaos > 1.0f);
 }
 
+void ai_most_massive_object_of_its_wing_of_all_docked_objects_helper(object *objp, dock_function_info *infop)
+{
+	// check that I am a ship
+	if (objp->type == OBJ_SHIP)
+	{
+		// check that wings match
+		if (Ai_info[Ships[objp->instance].ai_index].wing == infop->parameter_variables.int_value)
+		{
+			// if this guy has a higher mass, he is now the most massive object
+			if (objp->phys_info.mass > infop->maintained_variables.objp_value->phys_info.mass)
+			{
+				infop->maintained_variables.objp_value = objp;
+			}
+			// if masses are equal, then check if this guy has a higher signature - if so, he is now the most massive object
+			else if (objp->phys_info.mass == infop->maintained_variables.objp_value->phys_info.mass)
+			{
+				if (objp->signature > infop->maintained_variables.objp_value->signature)
+				{
+					infop->maintained_variables.objp_value = objp;
+				}
+			}
+		}
+	}
+}
+
 // Fly in formation.
 //	Make Pl_objp assume its proper place in formation.
 //	If the leader of the wing is doing something stupid, like fighting a battle,
@@ -12869,18 +12951,23 @@ int ai_formation()
 
 	}
 
-	//	If docked with a ship in this wing, only the more massive one actually flies in formation.
-	if (aip->dock_objnum != -1) {
-		object	*other_objp = &Objects[aip->dock_objnum];
-		ai_info	*other_aip = &Ai_info[Ships[other_objp->instance].ai_index];
+	// if Pl_objp is docked with a ship in his own wing, only the most massive one
+	// in the whole assembly actually flies in formation
+	// Goober5000 - this is really stupid code
+	if (object_is_docked(Pl_objp))
+	{
+		// assume I am the most massive
+		dock_function_info dfi;
+		dfi.parameter_variables.int_value = aip->wing;
+		dfi.maintained_variables.objp_value = Pl_objp;
+		
+		// check docked objects
+		dock_evaluate_all_docked_objects(Pl_objp, &dfi, ai_most_massive_object_of_its_wing_of_all_docked_objects_helper);
 
-		if (aip->wing == other_aip->wing) {
-			if (Pl_objp->phys_info.mass < other_objp->phys_info.mass)
-				return 0;
-			else if (Pl_objp->phys_info.mass == other_objp->phys_info.mass) {
-				if (Pl_objp->signature < other_objp->signature)
-					return 0;
-			}
+		// if I am not the most massive, return
+		if (dfi.maintained_variables.objp_value != Pl_objp)
+		{
+			return 0;
 		}
 	}
 
@@ -13064,6 +13151,9 @@ int ai_formation()
 }
 
 //	Return index of object repairing object objnum.
+/* Goober5000 - this seems to be old code; it was only referenced (commented) in ai_do_repair_frame.  I would
+   use it in the new docking code, but it looks like it would be very slow.  Using support_ship_objnum seems
+   to be the best solution.
 int find_repairing_objnum(int objnum)
 {
 	object		*objp;
@@ -13092,6 +13182,7 @@ int find_repairing_objnum(int objnum)
 
 	return -1;
 }
+*/
 
 //	If object *objp is being repaired, deal with it!
 void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
@@ -13102,20 +13193,19 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 	}
 
 	if (aip->ai_flags & (AIF_BEING_REPAIRED | AIF_AWAITING_REPAIR)) {
-		int	dock_objnum;
+		int	support_objnum;
 		ai_info	*repair_aip;
 
-		dock_objnum = aip->dock_objnum; // find_repairing_objnum(objp-Objects);
-		//Assert(dock_objnum != -1);
-		if (dock_objnum == -1)
+		support_objnum = aip->support_ship_objnum; // find_repairing_objnum(objp-Objects);
+
+		if (support_objnum == -1)
 			return;
-		if (Objects[dock_objnum].signature != aip->dock_signature) {
-			Int3();		//	Curious -- object numbers match, but signatures do not.
-							//	Must mean original repair ship died and was replaced by current ship.
-			return;
-		}
+
+		//	Curious -- object numbers match, but signatures do not.
+		//	Must mean original repair ship died and was replaced by current ship.
+		Assert(Objects[support_objnum].signature == aip->support_ship_signature);
 	
-		repair_aip = &Ai_info[Ships[Objects[dock_objnum].instance].ai_index];
+		repair_aip = &Ai_info[Ships[Objects[support_objnum].instance].ai_index];
 		//Assert(repair_aip->mode == AIM_DOCK);
 
 		if (aip->ai_flags & AIF_BEING_REPAIRED) {
@@ -13138,7 +13228,7 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 					if ( !MULTIPLAYER_CLIENT )
 #endif
 					{
-						ai_do_objects_repairing_stuff( objp, &Objects[dock_objnum], REPAIR_INFO_COMPLETE );
+						ai_do_objects_repairing_stuff( objp, &Objects[support_objnum], REPAIR_INFO_COMPLETE );
 					}
 				}
 			}
@@ -13169,30 +13259,17 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 }
 
 //	Shell around dock_orient_and_approach to detect whether dock process should be aborted.
-//	obj1 is the ship performing the repair.
-//	obj2 is the ship being repaired.
-void call_doa(object *obj1, object *obj2, ship_info *sip1)
+//	Goober5000 - The child should always keep up with the parent.
+void call_doa(object *child, object *parent)
 {
-	if (sip1->flags & SIF_SUPPORT) {
-		if (obj2->phys_info.speed > MAX_REPAIR_SPEED) {
+	Assert(dock_check_find_direct_docked_object(parent, child));
 
-			// call the ai_abort rearm request code
-			ai_abort_rearm_request( obj2 );
-		} else
-			dock_orient_and_approach(obj1, obj2, DOA_DOCK_STAY);
-	} else {
-		if (Ship_info[Ships[obj1->instance].ship_info_index].flags & SIF_CARGO)
-			dock_orient_and_approach(obj1, obj2, DOA_DOCK_STAY);
-		else if (Ship_info[Ships[obj2->instance].ship_info_index].flags & SIF_CARGO)
-			dock_orient_and_approach(obj2, obj1, DOA_DOCK_STAY);
-		else {
-			//mprintf(("Warning: Not sure, but making %s [%s] move to stay docked with %s [%s]\n",
-			//	Ships[obj1->instance].ship_name, Ship_info[Ships[obj1->instance].ship_info_index].name, Ships[obj2->instance].ship_name, Ship_info[Ships[obj2->instance].ship_info_index].name));
-			dock_orient_and_approach(obj1, obj2, DOA_DOCK_STAY);
+	// get indexes
+	int parent_index = dock_find_dockpoint_used_by_object(parent, child);
+	int child_index = dock_find_dockpoint_used_by_object(child, parent);
 
-		}
-	}
-
+	// child keeps up with parent
+	dock_orient_and_approach(child, child_index, parent, parent_index, DOA_DOCK_STAY);
 }
 
 //	Maybe launch a countermeasure.
@@ -13523,7 +13600,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 					}
 					break;
 				case AIM_DOCK:	//	Ships in dock mode can evade iif they are not currently repairing or docked.
-					if (aip->ai_flags & (AIF_REPAIRING | AIF_DOCKED))
+					if (object_is_docked(objp) || (aip->ai_flags & (AIF_REPAIRING|AIF_BEING_REPAIRED)))
 						break;
 				case AIM_GUARD:
 					//	If in guard mode and far away from guard object, don't pursue guy that hit me.
@@ -14335,12 +14412,12 @@ void ai_maybe_depart(object *objp)
 		return;
 
 	//	If a support ship with no goals and low hull, depart.  Be sure that there are no pending goals
-	// in the support ships ai_goal array.  Just process this ships goals.
+	// in the support ships ai_goal array.  Just process this ship's goals.
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 	if (sip->flags & SIF_SUPPORT) {
 		if ( timestamp_elapsed(aip->warp_out_timestamp) ) {
 			ai_process_mission_orders( OBJ_INDEX(objp), aip );
-			if ( (aip->dock_objnum == -1) && (objp->hull_strength/shipp->ship_initial_hull_strength < 0.25f) ) {
+			if ( (aip->support_ship_objnum == -1) && (objp->hull_strength/shipp->ship_initial_hull_strength < 0.25f) ) {
 				if (!(shipp->flags & SF_DEPARTING))
 					mission_do_departure(objp);
 			}
@@ -14405,10 +14482,9 @@ void ai_warp_out(object *objp)
 		break;
 	case AIS_WARP_3:
 		//	Rampup desired_vel in here from current to desired velocity and set PF_USE_VEL. (not sure this is the right flag)
-		//	desired velocity is computed in shipfx_calculate_warp_time().  See shipfx#572 for sample code.
+		//	See shipfx#572 for sample code.
 		float	speed, goal_speed;
-		float shipfx_calculate_warp_speed(object*);
-		goal_speed = shipfx_calculate_warp_speed(objp);
+		goal_speed = ship_get_warp_speed(objp);
 
 		// HUGE ships go immediately to AIS_WARP_4
 		if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_HUGE_SHIP) {
@@ -14527,12 +14603,14 @@ void ai_announce_ship_dying(object *dying_objp)
 		ship_obj	*so;
 
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-			if (Ship_info[Ships[Objects[so->objnum].instance].ship_info_index].flags & (SIF_SMALL_SHIP | SIF_FREIGHTER)) {
-				ai_info	*aip;
+			object	*A = &Objects[so->objnum];
+			Assert(A->type == OBJ_SHIP);
 
-				aip = &Ai_info[Ships[Objects[so->objnum].instance].ai_index];
+			if (Ship_info[Ships[A->instance].ship_info_index].flags & (SIF_SMALL_SHIP | SIF_FREIGHTER | SIF_TRANSPORT)) {
+				ai_info	*aip = &Ai_info[Ships[A->instance].ai_index];
 
-				if ( !(aip->ai_flags & (AIF_DOCKED|AIF_BEING_REPAIRED)) ) {
+				// AL 1-5-98: only avoid shockwave if not docked or repairing
+				if ( !object_is_docked(A) && !(aip->ai_flags & (AIF_REPAIRING|AIF_BEING_REPAIRED)) ) {
 					aip->ai_flags |= AIF_AVOID_SHOCKWAVE_SHIP;
 				}
 			}
@@ -14838,13 +14916,13 @@ int ai_await_repair_frame(object *objp, ai_info *aip)
 	if (!(aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED)))
 		return 0;
 
-	if (aip->dock_objnum == -1)
+	if (aip->support_ship_objnum == -1)
 		return 0;
 
 	ship	*shipp;
 	ship_info	*sip;
 
-	shipp = &Ships[Objects[aip->dock_objnum].instance];
+	shipp = &Ships[Objects[aip->support_ship_objnum].instance];
 	sip = &Ship_info[shipp->ship_info_index];
 
 	aip->ai_flags &= ~AIF_FORMATION_OBJECT;	//	Prevents endless rotation.
@@ -14855,7 +14933,7 @@ int ai_await_repair_frame(object *objp, ai_info *aip)
 	vector	goal_point;
 	object	*repair_objp;
 
-	repair_objp = &Objects[aip->dock_objnum];
+	repair_objp = &Objects[aip->support_ship_objnum];
 
 	if (Ships[repair_objp->instance].team == TEAM_TRAITOR) {
 		ai_abort_rearm_request(repair_objp);
@@ -15411,7 +15489,6 @@ void init_ai_object(int objnum)
 	aip->guard_objnum = -1;
 	aip->guard_signature = -1;
 	aip->guard_wingnum = -1;
-	aip->dock_signature = -1;
 	aip->submode = 0;
 	aip->previous_submode = 0;
 	aip->best_dot_to_enemy = -1.0f;
@@ -15470,9 +15547,9 @@ void init_ai_object(int objnum)
 	aip->path_goal_dist = -1;
 	aip->path_length = 0;
 	aip->path_subsystem_next_check = 1;
-	aip->dock_path_index = -1;
-	aip->dock_index = -1;
-	aip->dock_objnum = -1;
+
+	aip->support_ship_objnum = -1;
+	aip->support_ship_signature = -1;
 
 	aip->danger_weapon_objnum = -1;
 	aip->danger_weapon_signature = -1;
@@ -16237,11 +16314,11 @@ void ai_ship_destroy(int shipnum, int method)
 	objnum = Ships[shipnum].objnum;
 	dead_aip = &Ai_info[Ships[shipnum].ai_index];
 
-	// if I was getting repaired, or awaiting repair, then cleanup the repair mode.  When awaiting repair, the dock_objnum
-	// is -1.  When the support ship is on the way, the dock_objnum >= 0 (points to support ship).
+	// if I was getting repaired, or awaiting repair, then cleanup the repair mode.  When awaiting repair, the support objnum
+	// is -1.  When the support ship is on the way, the suppoort objnum >= 0 (points to support ship).
 	if ( dead_aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED) ) {
-		if ( dead_aip->dock_objnum >= 0 )
-			ai_do_objects_repairing_stuff( &Objects[objnum], &Objects[dead_aip->dock_objnum], REPAIR_INFO_END);
+		if ( dead_aip->support_ship_objnum >= 0 )
+			ai_do_objects_repairing_stuff( &Objects[objnum], &Objects[dead_aip->support_ship_objnum], REPAIR_INFO_END);
 		else
 			ai_do_objects_repairing_stuff( &Objects[objnum], NULL, REPAIR_INFO_END );
 	}
@@ -16256,16 +16333,11 @@ void ai_ship_destroy(int shipnum, int method)
 
 		ai_info	*aip = &Ai_info[shipp->ai_index];
 
-		// MWA 2/11/98
-		// code commented out below is taken care of in ai_cleanup_dock_mode when gets called when the
-		// support ship starts it's death roll.
-
 		//	If the destroyed ship was on its way to repair the current ship
-		if (aip->dock_objnum == objnum) {
-
-			// clean up the flags for any kind of docking mode.  If aip was part of a goal of dock/undock
-			// then it will get cleaned up by the goal code.
-			ai_do_objects_undocked_stuff( other_objp, NULL );
+		if (aip->support_ship_objnum == objnum)
+		{
+			// just a check to see what's going on
+			Error(LOCATION, "Contact Goober5000 if you get this error.  Let him know whether any support ships left the area or were destroyed.  Check whether everything else keeps working properly.  Click OK to keep playing.\n");
 
 			if ( aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED) ) {
 				int abort_reason;
@@ -16348,28 +16420,16 @@ void ai_warp_out(object *objp, vector *vp)
 
 
 //	Do stuff at start of deathroll.
-void ai_deathroll_start(object *ship_obj)
+void ai_deathroll_start(object *ship_objp)
 {
-	ai_info	*aip;
-	ship		*shipp, *other_ship;
+	// make sure this is a ship
+	Assert(ship_objp->type == OBJ_SHIP);
 
-	shipp = &Ships[ship_obj->instance];
-	aip = &Ai_info[shipp->ai_index];
+	// clean up any rearm-related stuff
+	ai_cleanup_rearm_mode(ship_objp);
 
-	// mark object we are docked with so we can do damage and separate during deathroll
-	// keep dock_objnum_when_dead from being changed if already set (only allow to be set when -1)
-	if (Ships[ship_obj->instance].dock_objnum_when_dead == -1) {
-		Ships[ship_obj->instance].dock_objnum_when_dead = aip->dock_objnum;
-		// set other_ship dock_objnum_when_dead, if other_ship exits.
-		if (Ships[ship_obj->instance].dock_objnum_when_dead != -1) {
-			other_ship = &Ships[Objects[aip->dock_objnum].instance];
-			other_ship->dock_objnum_when_dead = shipp->objnum;
-		}
-	}
-
-	ai_cleanup_dock_mode(aip, shipp);
-
-	aip->mode = AIM_NONE;
+	// clean up anybody docking or undocking to me
+	ai_cleanup_dock_mode(ship_objp);
 }
 
 //	Object *requester_objp tells rearm ship to abort rearm.
@@ -16397,19 +16457,19 @@ int ai_abort_rearm_request(object *requester_objp)
 	
 	if (requester_aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED)){
 
-		// dock_objnum is always valid once a rearm repair has been requested.  It points to the
+		// support objnum is always valid once a rearm repair has been requested.  It points to the
 		// ship that is coming to repair me.
-		if (requester_aip->dock_objnum != -1) {
+		if (requester_aip->support_ship_objnum != -1) {
 			object	*repair_objp;
 			ai_info	*repair_aip;
 
-			repair_objp = &Objects[requester_aip->dock_objnum];
+			repair_objp = &Objects[requester_aip->support_ship_objnum];
 			repair_aip = &Ai_info[Ships[repair_objp->instance].ai_index];
 
 			//	Make sure signatures match.  This prevents nasty bugs in which an object
 			//	that was repairing another is destroyed and is replaced by another ship
 			//	before this code comes around.
-			if (repair_objp->signature == requester_aip->dock_signature) {
+			if (repair_objp->signature == requester_aip->support_ship_signature) {
 
 				Assert( repair_objp->type == OBJ_SHIP );
 
@@ -16493,7 +16553,7 @@ int ai_issue_rearm_request(object *requester_objp)
 	
 	//	Make sure not already awaiting repair.
 	if (requester_aip->ai_flags & AIF_AWAITING_REPAIR) {
-		nprintf(("AI", "Ship %s already awaiting rearm by ship %s.\n", requester_shipp->ship_name, &Ships[Objects[requester_aip->dock_objnum].instance].ship_name));	
+		nprintf(("AI", "Ship %s already awaiting rearm by ship %s.\n", requester_shipp->ship_name, &Ships[Objects[requester_aip->support_ship_objnum].instance].ship_name));	
 		return -1;
 	}
 
@@ -16526,21 +16586,22 @@ int ai_issue_rearm_request(object *requester_objp)
 }
 
 // make objp rearm and repair goal_objp
-void ai_rearm_repair( object *objp, object  *goal_objp, int priority, int docker_index, int dockee_index )
+void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int dockee_index, int priority )
 {
 	ai_info *aip, *goal_aip;
 
 	aip = &Ai_info[Ships[objp->instance].ai_index];
-	aip->goal_objnum = goal_objp-Objects;
+	aip->goal_objnum = OBJ_INDEX(goal_objp);
 
 	// nprintf(("AI", "Ship %s preparing to rearm ship %s.\n", shipp->ship_name, requester_shipp->ship_name));
 
-	ai_dock_with_object(objp, goal_objp, priority, AIDO_DOCK, docker_index, dockee_index);
+	ai_dock_with_object(objp, docker_index, goal_objp, dockee_index, priority, AIDO_DOCK);
 	aip->ai_flags |= AIF_REPAIRING;						//	Tell that repair guy is busy trying to repair someone.
 
 	goal_aip = &Ai_info[Ships[goal_objp->instance].ai_index];
-	goal_aip->dock_objnum = objp-Objects;		//	Tell which object is coming to repair.
-	goal_aip->dock_signature = objp->signature;
+
+	goal_aip->support_ship_objnum = OBJ_INDEX(objp);		//	Tell which object is coming to repair.
+	goal_aip->support_ship_signature = objp->signature;
 
 	ai_do_objects_repairing_stuff( goal_objp, objp, REPAIR_INFO_ONWAY );
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-01-07 23:15:44 $
- * $Author: phreak $
+ * $Revision: 2.48 $
+ * $Date: 2005-01-11 21:38:49 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/01/07 23:15:44  phreak
+ * fixed the bug where the player couldn't use the target hud in reticle key.
+ *
  * Revision 2.46  2004/12/26 22:45:58  taylor
  * fix some hud stuff getting drawn multiple times, don't show target data if HUD_disabled_except_messages is set
  *
@@ -4613,27 +4616,10 @@ vector* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vector*
 // text on the HUD.
 void hud_maybe_flash_docking_text(object *objp)
 {
-	ai_info	*aip;
-	int		docker_objnum, dockee_objnum;
-
-	if ( Player_ai->target_objnum < 0 ) {
-		return;
-	}
-	
-	if ( objp->type != OBJ_SHIP ) {
-		return;
-	}
-	
-	aip = &Ai_info[Ships[objp->instance].ai_index];
-	docker_objnum = -1;
-	dockee_objnum = -1;
-
-	if ( aip->ai_flags & AIF_DOCKED ) {
-		docker_objnum = OBJ_INDEX(objp);
-		dockee_objnum = aip->dock_objnum;
-	}
-
-	if ( (Player_ai->target_objnum == docker_objnum) || (Player_ai->target_objnum == dockee_objnum) ) {
+	// Goober5000 - with the new docking code, it's a lot simpler to just check if the object
+	// is targeted and has docked; the function can be called with each object that has docked
+	if (object_is_docked(objp) && Player_ai->target_objnum == OBJ_INDEX(objp))
+	{
 		hud_targetbox_start_flash(TBOX_FLASH_DOCKED, 2000);
 	}
 }

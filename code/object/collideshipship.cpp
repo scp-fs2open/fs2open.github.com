@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:45 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2005-01-11 21:38:49 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:45  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/12 16:32:59  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -545,7 +548,7 @@
 #include "io/timer.h"
 #include "asteroid/asteroid.h"
 #include "playerman/player.h"
-
+#include "object/objectdock.h"
 
 
 
@@ -598,18 +601,16 @@ int ships_are_docking(object *objp1, object *objp2)
 	}
 	*/
 
-	if (aip1->ai_flags & AIF_DOCKED) {
-		if (aip1->dock_objnum == objp2-Objects){
-			return 1;
-		}
+	if (dock_check_find_docked_object(objp1, objp2)) {
+		return 1;
 	}
 
 	if (aip1->mode == AIM_DOCK) {
-		if (aip1->goal_objnum == objp2-Objects){
+		if (aip1->goal_objnum == OBJ_INDEX(objp2)){
 			return 1;
 		}
 	} else if (aip2->mode == AIM_DOCK) {
-		if (aip2->goal_objnum == objp1-Objects){
+		if (aip2->goal_objnum == OBJ_INDEX(objp1)){
 			return 1;
 		}
 	}

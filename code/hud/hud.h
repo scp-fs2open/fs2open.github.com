@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.8 $
- * $Date: 2005-01-01 07:18:47 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2005-01-11 21:38:49 $
+ * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/01/01 07:18:47  wmcoolmon
+ * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
+ *
  * Revision 2.7  2004/09/17 00:18:17  Goober5000
  * changed toggle-hud to hud-disable; added hud-disable-except-messages
  * --Goober5000
@@ -421,7 +424,7 @@ void	hud_maybe_clear_head_area();
 
 int	hud_wing_index_from_ship(int shipnum);
 int	hud_wing_slot_from_name(char *name);
-int	hud_support_get_dock_time( int objnum );
+int	hud_get_dock_time( object *docker_objp );
 void	hud_show_radar();
 void	hud_show_target_model();
 void	hud_show_voice_status();

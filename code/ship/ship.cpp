@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.148 $
- * $Date: 2005-01-11 04:05:22 $
- * $Author: taylor $
+ * $Revision: 2.149 $
+ * $Date: 2005-01-11 21:38:48 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.148  2005/01/11 04:05:22  taylor
+ * fully working (??) -loadonlyused, allocate used_weapons[] and ship_class_used[] only when needed
+ *
  * Revision 2.147  2005/01/03 18:47:06  taylor
  * more -loadonlyused fixes
  *
@@ -1356,6 +1359,7 @@
 #include "weapon/flak.h"								//phreak addded 11/05/02 for flak primaries
 #include "mission/missioncampaign.h"
 #include "radar/radarsetup.h"
+#include "object/objectdock.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
@@ -3266,6 +3270,7 @@ void physics_ship_init(object *objp)
 		pi->mass=amass*sinfo->density;
 	}
 
+	pi->center_of_mass = pm->center_of_mass;
 	pi->I_body_inv = pm->moment_of_inertia;
 	// scale pm->I_body_inv value by density
 	vm_vec_scale( &pi->I_body_inv.vec.rvec, sinfo->density );
@@ -3357,7 +3362,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->time_cargo_revealed = 0;
 	shipp->time_first_tagged = 0;
 	shipp->wash_timestamp = timestamp(0);
-	shipp->dock_objnum_when_dead = -1;
 	shipp->large_ship_blowup_index = -1;
 	shipp->respawn_priority = 0;
 	for (i=0; i<NUM_SUB_EXPL_HANDLES; i++) {
@@ -3921,6 +3925,34 @@ DCF_BOOL( show_paths, Show_paths );
 int Show_fpaths = 0;
 DCF_BOOL( show_fpaths, Show_fpaths );
 
+void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
+{
+	// only check ships
+	if (objp->type != OBJ_SHIP)
+		return;
+
+	// am I arriving or departing by warp?
+	if ( Ships[objp->instance].flags & (SF_ARRIVING|SF_DEPART_WARP) )
+	{
+#ifndef NDEBUG
+		// in debug builds, make sure only one of the docked objects has these flags set
+		if (infop->maintained_variables.bool_value)
+		{
+			Warning(LOCATION, "Ship %s and its docked ship %s are arriving or departing at the same time.\n",
+			Ships[infop->maintained_variables.objp_value->instance].ship_name, Ships[objp->instance].ship_name);
+		}
+#endif
+		// we found someone
+		infop->maintained_variables.bool_value = true;
+		infop->maintained_variables.objp_value = objp;
+
+#ifdef NDEBUG
+		// return early in release builds
+		infop->early_return_condition = true;
+#endif
+	}
+}
+
 void ship_render(object * obj)
 {
 	int num;
@@ -4086,29 +4118,21 @@ void ship_render(object * obj)
 		// fill the model flash lighting values in
 		shipfx_flash_light_model( obj, shipp );
 
-		object *docked_objp = NULL;
-		ship * docked_shipp = NULL;
-		ship * warp_shipp = shipp;
-			 
-		// check to see if departing ship is docked with anything.
-		docked_objp = ai_find_docked_object( obj );
-		if ( docked_objp ) {
-			docked_shipp = &Ships[docked_objp->instance];
-
-			if ( docked_shipp->flags & (SF_DEPART_WARP|SF_ARRIVING) )	{
-				warp_shipp = docked_shipp;
-			}
-		}
-
-		// Warp_shipp points to the ship that is going through a
-		// warp... either this ship or the ship it is docked with.
 		
 		// If the ship is going "through" the warp effect, then
 		// set up the model renderer to only draw the polygons in front
 		// of the warp in effect
 		int clip_started = 0;
+		dock_function_info dfi;
 
-		if ( warp_shipp->flags & (SF_ARRIVING|SF_DEPART_WARP) ) {
+		// look for a warping ship, whether for me or for anybody I'm docked with
+		dock_evaluate_all_docked_objects(obj, &dfi, ship_find_warping_ship_helper);
+
+		// Warp_shipp points to the ship that is going through a
+		// warp... either this ship or the ship it is docked with.
+		if ( dfi.maintained_variables.bool_value )
+		{
+			ship *warp_shipp = &Ships[dfi.maintained_variables.objp_value->instance];
 
 			clip_started = 1;
 			g3_start_user_clip_plane( &warp_shipp->warp_effect_pos, &warp_shipp->warp_effect_fvec );
@@ -4494,29 +4518,32 @@ void ship_destroyed( int num )
 	ship_clear_decals(shipp);
 }
 
-void ship_vanished(int num)
+void ship_vanished(object *objp)
 {
-	ship *sp;
-	object *objp;	
+	// Goober5000 - moved here from sexp_ship_vanish()
+	objp->flags |= OF_SHOULD_BE_DEAD;
 
-	sp = &Ships[num];
-	objp = &Objects[sp->objnum];
+	// Goober5000
+	if (objp->type == OBJ_SHIP)
+	{
+		ship *sp = &Ships[objp->instance];
 
-	// demo recording
-	if(Game_mode & GM_DEMO_RECORD){
-		demo_POST_departed(Objects[Ships[num].objnum].signature, Ships[num].flags);
+		// demo recording
+		if(Game_mode & GM_DEMO_RECORD){
+			demo_POST_departed(objp->signature, sp->flags);
+		}
+
+		// add the information to the exited ship list
+		ship_add_exited_ship( sp, SEF_DEPARTED );
+
+		// update wingman status gauge
+		if ( (sp->wing_status_wing_index >= 0) && (sp->wing_status_wing_pos >= 0) ) {
+			hud_set_wingman_status_departed(sp->wing_status_wing_index, sp->wing_status_wing_pos);
+		}
+
+		ai_ship_destroy(objp->instance, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
+		ship_clear_decals(sp);
 	}
-
-	// add the information to the exited ship list
-	ship_add_exited_ship( sp, SEF_DEPARTED );
-
-	// update wingman status gauge
-	if ( (sp->wing_status_wing_index >= 0) && (sp->wing_status_wing_pos >= 0) ) {
-		hud_set_wingman_status_departed(sp->wing_status_wing_index, sp->wing_status_wing_pos);
-	}
-
-	ai_ship_destroy(num, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
-	ship_clear_decals(sp);
 }
 
 void ship_departed( int num )
@@ -4727,47 +4754,57 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 	}
 }
 
-void do_dying_undock_physics(object* objp, ship* sp) 
+// Goober5000 - fyi, this function is only ever called once for any ship that dies
+void do_dying_undock_physics(object *dying_objp, ship *dying_shipp) 
 {
-	Assert(sp->dock_objnum_when_dead >= 0);
-	if(sp->dock_objnum_when_dead < 0){
-		return;
-	}
-	object* dock_obj = &Objects[sp->dock_objnum_when_dead];
+	// this function should only be called for an object that's docked... no harm in calling it
+	// if it's not docked, but we want to enforce this
+	Assert(object_is_docked(dying_objp));
 
-	// sanity checks
-	Assert(objp->type == OBJ_SHIP);
-	Assert(dock_obj->type == OBJ_SHIP);
-	if((objp->type != OBJ_SHIP) || (dock_obj->type != OBJ_SHIP)){
-		return;
-	}
+	dock_instance *ptr;
+	object *docked_objp;
 
-	float damage = 0.2f*sp->ship_initial_hull_strength;
-	ship_apply_global_damage(dock_obj, objp, &objp->pos, damage);
+	float damage;
+	float impulse_mag;
+	float total_docked_mass;
 
-	// do physics
 	vector impulse_norm, impulse_vec, pos;
-	vm_vec_sub(&impulse_norm, &dock_obj->pos, &objp->pos);
-	vm_vec_normalize(&impulse_norm);
-	// set for relative separation velocity of ~30
-	float impulse_mag = 50.f*dock_obj->phys_info.mass*objp->phys_info.mass/(dock_obj->phys_info.mass + objp->phys_info.mass);
-	vm_vec_copy_scale(&impulse_vec, &impulse_norm, impulse_mag);
-	vm_vec_rand_vec_quick(&pos);
-	vm_vec_scale(&pos, dock_obj->radius);
-	// apply whack to dock obj
-	physics_apply_whack(&impulse_vec, &pos, &dock_obj->phys_info, &dock_obj->orient, dock_obj->phys_info.mass);
-	// enhance rotation of the docked ship
-	vm_vec_scale(&dock_obj->phys_info.rotvel, 2.0f);
 
-	// apply whack to ship
-	vm_vec_negate(&impulse_vec);
-	vm_vec_rand_vec_quick(&pos);
-	vm_vec_scale(&pos, objp->radius);
-	physics_apply_whack(&impulse_vec, &pos, &objp->phys_info, &objp->orient, objp->phys_info.mass);
+	// damage applied to each docked object
+	damage = 0.2f * dying_shipp->ship_initial_hull_strength;
 
-	// reset dock_objnum_when_dead to -1 for dockee, since docker has blown up.
-	if (Ships[dock_obj->instance].dock_objnum_when_dead == sp->objnum) {
-		Ships[dock_obj->instance].dock_objnum_when_dead = -1;
+	// mass of the whole assembly
+	total_docked_mass = dock_calc_total_docked_mass(dying_objp);
+
+	// Goober5000 - do stuff for every object directly docked to dying_objp
+	for (ptr = dying_objp->dock_list; ptr != NULL; ptr = ptr->next)
+	{
+		docked_objp = ptr->docked_objp;
+
+		// damage this docked object
+		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage);
+
+		// do physics
+		vm_vec_sub(&impulse_norm, &docked_objp->pos, &dying_objp->pos);
+		vm_vec_normalize(&impulse_norm);
+		// set for relative separation velocity of ~30
+		impulse_mag = 50.f * docked_objp->phys_info.mass * dying_objp->phys_info.mass / total_docked_mass;
+		vm_vec_copy_scale(&impulse_vec, &impulse_norm, impulse_mag);
+		vm_vec_rand_vec_quick(&pos);
+		vm_vec_scale(&pos, docked_objp->radius);
+		// apply whack to docked object
+		physics_apply_whack(&impulse_vec, &pos, &docked_objp->phys_info, &docked_objp->orient, docked_objp->phys_info.mass);
+		// enhance rotation of the docked object
+		vm_vec_scale(&docked_objp->phys_info.rotvel, 2.0f);
+
+		// apply whack to dying object
+		vm_vec_negate(&impulse_vec);
+		vm_vec_rand_vec_quick(&pos);
+		vm_vec_scale(&pos, dying_objp->radius);
+		physics_apply_whack(&impulse_vec, &pos, &dying_objp->phys_info, &dying_objp->orient, dying_objp->phys_info.mass);
+
+		// undock these objects
+		ai_do_objects_undocked_stuff(dying_objp, docked_objp);
 	}
 }
 
@@ -4803,7 +4840,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				}
 
 				// if dying ship is docked, do damage to docked and physics
-				if (sp->dock_objnum_when_dead != -1)  {
+				if (object_is_docked(objp))  {
 					do_dying_undock_physics(objp, sp);
 				}			
 
@@ -4928,17 +4965,6 @@ void ship_dying_frame(object *objp, int ship_num)
 				rad += objp->radius*0.40f;
 				fireball_create( &outpnt, FIREBALL_EXPLOSION_MEDIUM, OBJ_INDEX(objp), rad, 0, &objp->phys_info.vel );
 			}
-
-			// if ship is docked, undock now.
-			if (sp->dock_objnum_when_dead != -1)  {				
-				// other ship undocks
-				//	These asserts should no longer be needed and they cause a problem that is not obvious how to fix.
-				//Assert( !(Ai_info[Ships[dock_obj->instance].ai_index].ai_flags & AIF_DOCKED) );
-				//Assert( Ai_info[Ships[dock_obj->instance].ai_index].dock_objnum == -1 );
-				// MWA  Ai_info[Ships[dock_obj->instance].ai_index].ai_flags &= ~AIF_DOCKED;
-				// MWA  Ai_info[Ships[dock_obj->instance].ai_index].dock_objnum = -1;
-				// MWA Ai_info[Ships[dock_obj->instance].ai_index].mode = AIM_NONE;
-			}
 		}
 
 		if ( timestamp_elapsed(sp->final_death_time))	{
@@ -4971,7 +4997,7 @@ void ship_dying_frame(object *objp, int ship_num)
 			}
 
 			// if dying ship is docked, do damage to docked and physics
-			if (sp->dock_objnum_when_dead != -1)  {
+			if (object_is_docked(objp))  {
 				do_dying_undock_physics(objp, sp);
 			}			
 
@@ -10854,7 +10880,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_CHASE_WING:
 			if ( aigp->ship_name ) {
 				strcat(outbuf, aigp->ship_name);
-				strcat(outbuf, XSTR( " Wing", 494));
+				strcat(outbuf, XSTR( "'s Wing", 494));
 			} else {
 				strcpy(outbuf, XSTR( "no orders", 495));
 			}
@@ -10954,7 +10980,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		}
 
 	} else if ( (aip->mode == AIM_DOCK) && (aip->submode < AIS_DOCK_4) ) {
-		time = hud_support_get_dock_time( OBJ_INDEX(objp) );
+		time = hud_get_dock_time( objp );
 	} else {
 		// don't return anytime for time to except for waypoints and actual docking.
 		return NULL;
@@ -12250,28 +12276,13 @@ int ship_get_random_ship()
 }
 
 // forcible jettison cargo from a ship
-void ship_jettison_cargo(ship *shipp)
+void object_jettison_cargo(object *objp, object *cargo_objp)
 {
-	object *objp;
-	object *cargo_objp;
-	vector impulse, pos;
+	// make sure we are docked
+	Assert((objp != NULL) && (cargo_objp != NULL));
+	Assert(dock_check_find_direct_docked_object(objp, cargo_objp));
 
-	// make sure we are docked with a valid object
-	if(shipp->objnum < 0){
-		return;
-	}
-	objp = &Objects[shipp->objnum];
-	if(Ai_info[shipp->ai_index].dock_objnum == -1){
-		return;
-	}
-	if(Objects[Ai_info[shipp->ai_index].dock_objnum].type != OBJ_SHIP){
-		Int3();
-		return;
-	}
-	if(Ai_info[Ships[Objects[Ai_info[shipp->ai_index].dock_objnum].instance].ai_index].dock_objnum != OBJ_INDEX(objp)){
-		return;
-	}
-	cargo_objp = &Objects[Ai_info[shipp->ai_index].dock_objnum];
+	vector impulse, pos;
 
 	// undock the objects
 	ai_do_objects_undocked_stuff( objp, cargo_objp );
@@ -12635,8 +12646,8 @@ float ship_get_max_speed(ship *shipp)
 float ship_get_warp_speed(object *objp)
 {
 	Assert(objp->type == OBJ_SHIP);
-	float shipfx_calculate_warp_speed(object *);
-	return shipfx_calculate_warp_speed(objp);
+
+	return shipfx_calculate_warp_dist(objp) / shipfx_calculate_warp_time(objp);
 }
 
 // returns true if ship is beginning to speed up in warpout 

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.33 $
- * $Date: 2004-12-05 22:01:12 $
- * $Author: bobboau $
+ * $Revision: 2.34 $
+ * $Date: 2005-01-11 21:38:49 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2004/12/05 22:01:12  bobboau
+ * sevral feature additions that WCS wanted,
+ * and the foundations of a submodel animation system,
+ * the calls to the animation triggering code (exept the procesing code,
+ * wich shouldn't do anything without the triggering code)
+ * have been commented out.
+ *
  * Revision 2.32  2004/10/31 22:02:47  taylor
  * little cleanup
  *
@@ -377,6 +384,7 @@
 #include "playerman/player.h"
 #include "weapon/shockwave.h"
 #include "parse/parselo.h"
+#include "object/objectdock.h"
 
 // Needed for TBP warp effect override  -Et1
 #include "cmdline/cmdline.h"
@@ -737,37 +745,28 @@ void shipfx_blow_up_model(object *obj,int model, int submodel, int ndebris, vect
 // Given an ship, find the radius of it as viewed from the front.
 static float shipfx_calculate_effect_radius( object *objp )
 {
-	float w,h,rad;
-	ship *shipp = &Ships[objp->instance];
+	float rad;
 
-	polymodel *pm = model_get( shipp->modelnum );
-
-	w = pm->maxs.xyz.x - pm->mins.xyz.x;
-	h = pm->maxs.xyz.y - pm->mins.xyz.y;
-	
-	if ( w > h )	{
-		rad = w / 2.0f;
-	} else {
-		rad = h / 2.0f;
+	// if docked, we need to calculate the overall cross-sectional radius around the z-axis (longitudinal axis)
+	if (object_is_docked(objp))
+	{
+		rad = dock_calc_cross_sectional_radius_perpendicular_to_axis(objp, Z_AXIS);
 	}
+	// if it's not docked, we can save a lot of work by just using width and height
+	else
+	{
+		float w, h;
+		polymodel *pm = model_get(Ships[objp->instance].modelnum);
 
-	object *docked_objp = ai_find_docked_object( objp );
-
-	//	If ship is docked then center wormhold about their center and make radius large enough.
-	if ( docked_objp ) {
-		ship *docked_shipp = &Ships[docked_objp->instance];
-		
-		pm = model_get( docked_shipp->modelnum );
-		
 		w = pm->maxs.xyz.x - pm->mins.xyz.x;
 		h = pm->maxs.xyz.y - pm->mins.xyz.y;
-		
-		if ( w > h )	{
-			rad += w / 2.0f;
-		} else {
-			rad += h / 2.0f;
-		}
+	
+		if ( w > h )
+			rad = w / 2.0f;
+		else
+			rad = h / 2.0f;
 	}
+
 	return rad*3.0f;
 }
 
@@ -790,7 +789,7 @@ static float shipfx_calculate_effect_radius( object *objp )
 #define SMALLEST_RAD_TIME 1.5f
 
 
-static float shipfx_calculate_warp_time( object * objp )
+float shipfx_calculate_warp_time(object *objp)
 {
 	// Find rad_percent from 0 to 1, 0 being smallest ship, 1 being largest
 	float rad_percent = (objp->radius-SMALLEST_RAD) / (LARGEST_RAD-SMALLEST_RAD);
@@ -804,8 +803,7 @@ static float shipfx_calculate_warp_time( object * objp )
 	return rad_time;
 }
 
-// calculate warp speed
-float shipfx_calculate_warp_speed(object *objp)
+float shipfx_calculate_warp_dist(object *objp)
 {
 	float length;
 
@@ -815,14 +813,13 @@ float shipfx_calculate_warp_speed(object *objp)
 	} else {
 		length = ship_get_length(&Ships[objp->instance]);
 	}
-	return length / shipfx_calculate_warp_time(objp);
+	return length;
 }
-
 
 // This is called to actually warp this object in
 // after all the flashy fx are done, or if the flashy 
 // fx don't work for some reason.
-void shipfx_actually_warpin( 	ship *shipp, object *objp )
+void shipfx_actually_warpin(ship *shipp, object *objp)
 {
 	shipp->flags &= (~SF_ARRIVING_STAGE_1);
 	shipp->flags &= (~SF_ARRIVING_STAGE_2);
@@ -926,14 +923,6 @@ void shipfx_warpin_start( object *objp )
 
 		shipp->final_warp_time = timestamp(fl2i(SHIPFX_WARP_DELAY*1000.0f));
 		shipp->flags |= SF_ARRIVING_STAGE_1;
-
-		// see if this ship is docked with anything, and if so, make docked ship be "arriving"
-		/*
-		if ( Ai_info[shipp->ai_index].dock_objnum != -1 ) {
-			Ships[Ai_info[shipp->ai_index].dock_objnum].final_warp_time = timestamp(fl2i(warp_time*1000.0f));
-			Ships[Ai_info[shipp->ai_index].dock_objnum].flags |= SF_ARRIVING_STAGE_1;
-		}
-		*/
 	}
 }
 
@@ -956,9 +945,9 @@ void shipfx_warpin_frame( object *objp, float frametime )
 			shipp->flags |= SF_ARRIVING_STAGE_2;
 
 			float warp_time = shipfx_calculate_warp_time(objp);
-			float speed = shipfx_calculate_warp_speed(objp);			// How long it takes to move through warp effect
+			float speed = shipfx_calculate_warp_dist(objp) / warp_time;		// How long it takes to move through warp effect
 
-			// Make ship move at velocity so that it moves two radius's in warp_time seconds.
+			// Make ship move at velocity so that it moves two radii in warp_time seconds.
 			vector vel;
 			vel = objp->orient.vec.fvec;
 			vm_vec_scale( &vel, speed );
@@ -970,15 +959,6 @@ void shipfx_warpin_frame( object *objp, float frametime )
 			objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
 
 			shipp->final_warp_time = timestamp(fl2i(warp_time*1000.0f));
-
-			/*
-			// see if this ship is docked with anything, and if so, make docked ship be "arriving"
-			if ( Ai_info[shipp->ai_index].dock_objnum != -1 ) {
-				Ships[Ai_info[shipp->ai_index].dock_objnum].flags &= (~SF_ARRIVING_STAGE_1);
-				Ships[Ai_info[shipp->ai_index].dock_objnum].flags |= SF_ARRIVING_STAGE_2;
-				Ships[Ai_info[shipp->ai_index].dock_objnum].final_warp_time = timestamp(fl2i(warp_time*1000.0f));
-			}
-			*/
 		} 
 	} else if ( shipp->flags & SF_ARRIVING_STAGE_2 )	{
 		if ( timestamp_elapsed(shipp->final_warp_time) ) {
@@ -994,6 +974,14 @@ void shipfx_warpin_frame( object *objp, float frametime )
 	}
 
 }
+
+void shipfx_warpout_helper(object *objp, dock_function_info *infop)
+{
+	objp->flags |= OF_SHOULD_BE_DEAD;
+
+	if (objp->type == OBJ_SHIP)
+		ship_departed(objp->instance);
+}
  
 // This is called to actually warp this object out
 // after all the flashy fx are done, or if the flashy 
@@ -1005,27 +993,14 @@ void shipfx_actually_warpout( ship *shipp, object *objp )
 	if ( objp == Player_obj )	{
 		// Normally, this will never get called for the player. If it
 		// does, it is because some error (like the warpout effect
-		// couldn't start) so go ahead an warp the player out.
+		// couldn't start) so go ahead and warp the player out.
 		// All this does is set the event to go to debriefing, the
 		// same thing that happens after the player warp out effect
 		// ends.
 		gameseq_post_event( GS_EVENT_DEBRIEF );	// proceed to debriefing
 	} else {
-		object *docked_objp;
-		
-		// Code for objects except player ship warping out
-		objp->flags |= OF_SHOULD_BE_DEAD;
-		// check to see if departing ship is docked with anything and if so, mark that object
-		// gone as well
-		docked_objp = ai_find_docked_object( objp );
-		if ( docked_objp ) {
-			docked_objp->flags |= OF_SHOULD_BE_DEAD;
-		}
-
-		ship_departed( objp->instance );
-		if ( docked_objp ){
-			ship_departed( docked_objp->instance );
-		}
+		dock_function_info dfi;
+		dock_evaluate_all_docked_objects(objp, &dfi, shipfx_warpout_helper);
 	}
 }
 
@@ -1034,7 +1009,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 {
 	object	*sp_objp = NULL;
 	ship		*shipp;
-	int		valid_refenence_ship = FALSE, ref_objnum;
+	int		valid_reference_ship = FALSE, ref_objnum;
 	vector	facing_normal, vec_to_knossos;
 	float		dist_to_plane;
 
@@ -1045,7 +1020,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 	}
 
 	// find special warp ship reference
-	valid_refenence_ship = FALSE;
+	valid_reference_ship = FALSE;
 	ref_objnum = Ships[objp->instance].special_warp_objnum;
 
 	// Validate reference_objnum
@@ -1054,12 +1029,12 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 		if (sp_objp->type == OBJ_SHIP) {
 			shipp = &Ships[sp_objp->instance];
 			if (Ship_info[shipp->ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
-				valid_refenence_ship = TRUE;
+				valid_reference_ship = TRUE;
 			}
 		}
 	}
 	
-	if (!valid_refenence_ship) {
+	if (!valid_reference_ship) {
 		Int3();
 		mprintf(("special warpout reference ship not found\n"));
 		return -1;
@@ -1095,12 +1070,14 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 		mprintf(("special warpout angle exceeded\n"));
 		return -1;
 	}
-
-	// Calculate speed needed to get 
-	*speed = shipfx_calculate_warp_speed(objp);
 	
 	// Calculate how long to fly through the effect.  Not to get to the effect, just through it.
 	*warp_time = shipfx_calculate_warp_time(objp);
+
+	// Calculate speed to fly through
+	*speed = shipfx_calculate_warp_dist(objp) / *warp_time;
+	
+	// increase time, because we have extra distance to cover
 	*warp_time += dist_to_plane / *speed;
 
 	return 0;
@@ -1120,46 +1097,58 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vector 
 		}
 	}
 
-	object	*docked_objp = ai_find_docked_object( objp );
-	vector	center_pos = objp->pos;
-	float		radius, ship_move_dist, warp_dist;
+	float ship_move_dist, warp_dist;
+	vector	center_pos;
 
-	radius = objp->radius;
-
-	//	If ship is docked then center wormhold about their center and make radius large enough.
-	if ( docked_objp ) {
-		vm_vec_avg(&center_pos, &objp->pos, &docked_objp->pos);
-		radius += docked_objp->radius;
-	}
 
 	// Calculate how long to fly through the effect.  Not to get to the effect, just through it.
 	*warp_time = shipfx_calculate_warp_time(objp);
 
 	// Pick some speed at which we want to go through the warp effect.  
-	// This is determined by shipfx_calculate_warp_time specifying how long
-	// it should take to go through the effect, or 2R.
-	*speed = shipfx_calculate_warp_speed(objp);
+	*speed = shipfx_calculate_warp_dist(objp) / *warp_time;
 
 	if ( objp == Player_obj )	{
 		// Goober5000 - cap at 65
 		*speed = min(0.8f*objp->phys_info.max_vel.xyz.z, 65.0f);
 	}
 
-	// Now we know our speed. Figure out how far the warp effect will be from here.  
-	ship_move_dist = (*speed * SHIPFX_WARP_DELAY) + radius*1.5f;		// We want to get to 1.5R away from effect
-	if ( ship_move_dist < radius*1.5f ) {
-		ship_move_dist = radius*1.5f;
-	}
+	// center the effect properly
+	if (object_is_docked(objp))
+		dock_calc_docked_center(&center_pos, objp);
+	else
+		center_pos = objp->pos;
+
 
 	// If this is a huge ship, set the distance to the length of the ship
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_HUGE_SHIP) {
+	if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_HUGE_SHIP)
+	{
 		ship_move_dist = 0.5f * ship_get_length(&Ships[objp->instance]);
 	}
+	else
+	{
+		float radius;
+
+		if (object_is_docked(objp))
+		{
+			// we need to get the radius of our ship lengthwise, so find the radius around the x-axis (horizontal axis)
+			radius = dock_calc_cross_sectional_radius_perpendicular_to_axis(objp, X_AXIS);
+		}
+		else
+			radius = objp->radius;
+
+		// Now we know our speed. Figure out how far the warp effect will be from here.  
+		ship_move_dist = (*speed * SHIPFX_WARP_DELAY) + radius*1.5f;		// We want to get to 1.5R away from effect
+		if ( ship_move_dist < radius*1.5f ) {
+			ship_move_dist = radius*1.5f;
+		}
+	}
+
 
 	// Acount for time to get to warp effect, before we actually go through it.
 	*warp_time += ship_move_dist / *speed;
 
 	warp_dist = ship_move_dist;
+
 	// allow for off center
 	if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_HUGE_SHIP) {
 		polymodel *pm = model_get(Ships[objp->instance].modelnum);

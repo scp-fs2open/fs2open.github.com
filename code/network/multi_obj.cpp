@@ -539,11 +539,13 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 		packet_size += 4;
 		memcpy(data + packet_size + header_bytes, &Ai_info[shipp->ai_index].submode, sizeof(int));
 		packet_size += 4;
-		if((Ai_info[shipp->ai_index].dock_objnum < 0) || (Ai_info[shipp->ai_index].dock_objnum >= MAX_OBJECTS)){
+
+		if((Ai_info[shipp->ai_index].support_ship_objnum < 0) || (Ai_info[shipp->ai_index].support_ship_objnum >= MAX_OBJECTS)){
 			dock_sig = 0;
 		} else {
-			dock_sig = Objects[Ai_info[shipp->ai_index].dock_objnum].net_signature;
+			dock_sig = Objects[Ai_info[shipp->ai_index].support_ship_objnum].net_signature;
 		}		
+
 		memcpy(data + packet_size + header_bytes, &dock_sig, sizeof(ushort));
 		packet_size += 2;
 	} else {
@@ -960,7 +962,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 
 			object *objp = multi_get_network_object( dock_sig );
 			if(objp != NULL){
-				Ai_info[shipp->ai_index].dock_objnum = OBJ_INDEX(objp);
+				Ai_info[shipp->ai_index].support_ship_objnum = OBJ_INDEX(objp);
 			}
 		}			
 	} 

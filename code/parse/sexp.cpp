@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.125 $
- * $Date: 2005-01-01 07:18:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.126 $
+ * $Date: 2005-01-11 21:38:51 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.125  2005/01/01 07:18:48  wmcoolmon
+ * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
+ *
  * Revision 2.124  2004/12/23 15:57:42  phreak
  * commits for scramble-messages and unscramble-messages
  * -phreak
@@ -881,6 +884,7 @@
 #include "cmdline/cmdline.h"
 #include "hud/hudparse.h"
 #include "hud/hudartillery.h"
+#include "object/objectdock.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1067,7 +1071,7 @@ sexp_oper Operators[] = {
 	{ "transfer-cargo",				OP_TRANSFER_CARGO,				1, 2,			},
 	{ "exchange-cargo",				OP_EXCHANGE_CARGO,				2, 2,			},
 	{ "set-cargo",					OP_SET_CARGO,					2, 3,			},
-	{ "jettison-cargo-delay",		OP_JETTISON_CARGO,				2, 2			},
+	{ "jettison-cargo-delay",		OP_JETTISON_CARGO,				2, INT_MAX,		},
 	{ "cargo-no-deplete",			OP_CARGO_NO_DEPLETE,			1,	2			},
 	{ "set-scanned",				OP_SET_SCANNED,					1, 2 },
 	{ "set-unscanned",				OP_SET_UNSCANNED,				1, 2 },
@@ -1209,7 +1213,7 @@ sexp_oper Operators[] = {
 	{ "ai-warp",					OP_AI_WARP,						2, 2, },
 	{ "ai-warp-out",				OP_AI_WARP_OUT,				1, 1, },
 	{ "ai-dock",					OP_AI_DOCK,						4, 4, },
-	{ "ai-undock",					OP_AI_UNDOCK,					1, 1, },
+	{ "ai-undock",					OP_AI_UNDOCK,					1, 2, },
 	{ "ai-waypoints",				OP_AI_WAYPOINTS,				2, 2, },
 	{ "ai-waypoints-once",		OP_AI_WAYPOINTS_ONCE,		2, 2, },
 	{ "ai-ignore",					OP_AI_IGNORE,					2, 2, },
@@ -3832,22 +3836,7 @@ int sexp_num_ships_in_battle(int n)
 //Gets the 'real' speed of an object, taking into account docking
 int sexp_get_real_speed(object *obj)
 {
-	float speed = obj->phys_info.speed;
-	if(speed < 0.1f)
-		speed = 0.0f;
-
-	if(speed == 0.0f && obj->type == OBJ_SHIP)
-	{
-		ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
-		if ( aip->ai_flags & AIF_DOCKED ) {
-			Assert( aip->dock_objnum != -1 );
-			speed = Objects[aip->dock_objnum].phys_info.fspeed;
-			if ( speed < 0.1 )
-				speed = 0.0f;
-		}
-	}
-
-	return fl2i(speed);
+	return fl2i(dock_calc_docked_fspeed(obj));
 }
 
 //Gets the current speed of the specified object
@@ -8247,7 +8236,6 @@ void sexp_transfer_cargo( int n )
 {
 	char *shipname1, *shipname2;
 	int shipnum1, shipnum2, i;
-	object *objp;
 
 	shipname1 = CTEXT(n);
 	shipname2 = CTEXT(CDR(n));
@@ -8259,8 +8247,8 @@ void sexp_transfer_cargo( int n )
 		return;
 
 	// we must be sure that these two objects are indeed docked
-	objp = ai_find_docked_object( &Objects[Ships[shipnum1].objnum] );
-	if ( objp != &Objects[Ships[shipnum2].objnum] ) {
+	if (!dock_check_find_direct_docked_object(&Objects[Ships[shipnum1].objnum], &Objects[Ships[shipnum2].objnum]))
+	{
 		Int3();			// you are trying to transfer cargo between two ships not docked
 		return;
 	}
@@ -8300,7 +8288,6 @@ void sexp_exchange_cargo( int n )
 {
 	char *shipname1, *shipname2;
 	int shipnum1, shipnum2, temp;
-	object *objp;
 
 	shipname1 = CTEXT(n);
 	shipname2 = CTEXT(CDR(n));
@@ -8312,8 +8299,8 @@ void sexp_exchange_cargo( int n )
 		return;
 
 	// we must be sure that these two objects are indeed docked
-	objp = ai_find_docked_object( &Objects[Ships[shipnum1].objnum] );
-	if ( objp != &Objects[Ships[shipnum2].objnum] ) {
+	if (!dock_check_find_direct_docked_object(&Objects[Ships[shipnum1].objnum], &Objects[Ships[shipnum2].objnum]))
+	{
 		Int3();			// you are trying to transfer cargo between two ships not docked
 		return;
 	}
@@ -8363,12 +8350,37 @@ void sexp_jettison_cargo( int n )
 
 	// lookup the ship
 	ship_index = ship_name_lookup(shipname);
-	if(ship_index < 0){
+	if(ship_index < 0)
 		return;
+	object *parent_objp = &Objects[Ships[ship_index].objnum];
+
+	n = CDDR(n);
+
+	// no arguments - jettison all docked objects
+	if (n == -1)
+	{
+		for (dock_instance *ptr = parent_objp->dock_list; ptr != NULL; ptr = ptr->next)
+		{
+			object_jettison_cargo(parent_objp, ptr->docked_objp);
+		}
 	}
-	
-	// jettison cargo
-	ship_jettison_cargo(&Ships[ship_index]);
+	// arguments - jettison only those objects
+	else
+	{
+		for (; n != -1; n = CDR(n))
+		{
+			// make sure ship exists
+			ship_index = ship_name_lookup(CTEXT(n));
+			if (ship_index < 0)
+				continue;
+
+			// make sure we are docked to it
+			if (!dock_check_find_direct_docked_object(parent_objp, &Objects[Ships[ship_index].objnum]))
+				continue;
+
+			object_jettison_cargo(parent_objp, &Objects[Ships[ship_index].objnum]);			
+		}
+	}
 }
 
 void sexp_cargo_no_deplete( int n )
@@ -9487,12 +9499,15 @@ void sexp_ships_guardian( int n, int guardian )
 	}
 }
 
+void sexp_ship_vanish_helper(object *objp, dock_function_info *infop)
+{
+	ship_vanished(objp);
+}
+
 // make ship vanish without a trace (and what its docked to)
-void ship_vanished(int);
 void sexp_ship_vanish( int n )
 {
 	char *ship_name;
-	object *objp, *docked_objp;
 	int num;
 
 	// if MULTIPLAYER bail
@@ -9507,28 +9522,12 @@ void sexp_ship_vanish( int n )
 		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
 			continue;
 
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
+		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive
 		num = ship_name_lookup(ship_name);
-		if ( num != -1 ) {
-			objp = &Objects[Ships[num].objnum];
-
-			// check if docked
-			docked_objp = ai_find_docked_object( objp );
-
-			// kill
-			objp->flags |= OF_SHOULD_BE_DEAD;
-
-			// make vanish
-			ship_vanished(num);
-
-			if (docked_objp) {
-				// kill
-				docked_objp->flags |= OF_SHOULD_BE_DEAD;
-
-				// vanish
-				ship_vanished(docked_objp->instance);
-			}
+		if ( num != -1 )
+		{
+			dock_function_info dfi;
+			dock_evaluate_all_docked_objects(&Objects[Ships[num].objnum], &dfi, sexp_ship_vanish_helper);
 		}
 	}
 }
@@ -14063,7 +14062,6 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_POSITIVE;
 
-		case OP_AI_UNDOCK:
 		case OP_AI_KEEP_SAFE_DISTANCE:
 			return OPF_POSITIVE;
 
@@ -14076,6 +14074,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_DOCKEE_POINT;
 			else
 				return OPF_POSITIVE;
+
+		case OP_AI_UNDOCK:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else
+				return OPF_SHIP;
 
 		case OP_AI_CHASE_WING:
 		case OP_AI_GUARD_WING:
@@ -14433,10 +14437,10 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_JETTISON_CARGO:
-			if(argnum == 0){
-				return OPF_SHIP;
-			} else {
+			if(argnum == 1){
 				return OPF_POSITIVE;
+			} else {
+				return OPF_SHIP;
 			}
 
 		case OP_CARGO_NO_DEPLETE:

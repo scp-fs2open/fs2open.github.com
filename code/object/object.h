@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.7 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2005-01-11 21:38:49 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.6  2004/05/10 08:03:30  Goober5000
  * fixored the handling of no lasers and no engines... the tests should check the ship,
  * not the object
@@ -431,30 +434,34 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 // }
 
 //Misc object flags
-#define OF_RENDERS			(1<<0)	//It renders as something ( objtype_render gets called)
-#define OF_COLLIDES			(1<<1)	//It collides with stuff (objtype_check_impact & objtype_hit gets called)
-#define OF_PHYSICS			(1<<2)	//It moves with standard physics.
-#define OF_SHOULD_BE_DEAD	(1<<3)	//this object should be dead, so next time we can, we should delete this object.
-#define OF_INVULNERABLE		(1<<4)	//	invulnerable
-#define OF_PROTECTED			(1<<5)	// Don't kill this object, probably mission-critical.
-#define OF_PLAYER_SHIP		(1<<6)	// this object under control of some player -- don't do ai stuff on it!!!
-#define OF_NO_SHIELDS		(1<<7)	// object has no shield generator system (i.e. no shields)
-#define OF_JUST_UPDATED		(1<<8)	// for multiplayer -- indicates that we received object update this frame
-#define OF_COULD_BE_PLAYER (1<<9)	// for multiplayer -- indicates that it is selectable ingame joiners as their ship
-#define OF_WAS_RENDERED		(1<<10)	//	Set if this object was rendered this frame.  Only gets set if OF_RENDERS set.  Gets cleared or set in obj_render_all().
-#define OF_NOT_IN_COLL		(1<<11)	// object has not been added to collision list
-#define OF_BEAM_PROTECTED	(1<<12)	// don't fire beam weapons at this type of object, probably mission critical.
-#define OF_GUARDIAN			(1<<13)	// Don't allow ship to die, keep at least 1% hull
-#define OF_SPECIAL_WARP		(1<<14)	// Object has special warp-in enabled.
+#define OF_RENDERS					(1<<0)	// It renders as something ( objtype_render gets called)
+#define OF_COLLIDES					(1<<1)	// It collides with stuff (objtype_check_impact & objtype_hit gets called)
+#define OF_PHYSICS					(1<<2)	// It moves with standard physics.
+#define OF_SHOULD_BE_DEAD			(1<<3)	// this object should be dead, so next time we can, we should delete this object.
+#define OF_INVULNERABLE				(1<<4)	// invulnerable
+#define OF_PROTECTED				(1<<5)	// Don't kill this object, probably mission-critical.
+#define OF_PLAYER_SHIP				(1<<6)	// this object under control of some player -- don't do ai stuff on it!!!
+#define OF_NO_SHIELDS				(1<<7)	// object has no shield generator system (i.e. no shields)
+#define OF_JUST_UPDATED				(1<<8)	// for multiplayer -- indicates that we received object update this frame
+#define OF_COULD_BE_PLAYER			(1<<9)	// for multiplayer -- indicates that it is selectable ingame joiners as their ship
+#define OF_WAS_RENDERED				(1<<10)	// Set if this object was rendered this frame.  Only gets set if OF_RENDERS set.  Gets cleared or set in obj_render_all().
+#define OF_NOT_IN_COLL				(1<<11)	// object has not been added to collision list
+#define OF_BEAM_PROTECTED			(1<<12)	// don't fire beam weapons at this type of object, probably mission critical.
+#define OF_GUARDIAN					(1<<13)	// Don't allow ship to die, keep at least 1% hull
+#define OF_SPECIAL_WARP				(1<<14)	// Object has special warp-in enabled.
+#define OF_DOCKED_ALREADY_HANDLED	(1<<15)	// Goober5000 - a docked object that we already moved
 
 // Flags used by Fred
-#define OF_MARKED          (1<<17)   //Object is marked (Fred).  Can be reused in Freespace for anything that won't be used by Fred.
-#define OF_TEMP_MARKED		(1<<18)	//Temporarily marked (Fred).
+#define OF_MARKED			(1<<17)	// Object is marked (Fred).  Can be reused in Freespace for anything that won't be used by Fred.
+#define OF_TEMP_MARKED		(1<<18)	// Temporarily marked (Fred).
 #define OF_REFERENCED		(1<<19)	// (Fred) Object is referenced by something somewhere
-#define OF_HIDDEN				(1<<20)  // Object is hidden (not shown) and can't be manipulated
+#define OF_HIDDEN			(1<<20)	// Object is hidden (not shown) and can't be manipulated
+
 
 // max # of object sounds per object
 #define MAX_OBJECT_SOUNDS	4
+
+struct dock_instance;
 
 typedef struct object {
 	struct object	*next, *prev;	// for linked lists of objects
@@ -475,7 +482,9 @@ typedef struct object {
 	float				hull_strength;	//	Remaining hull strength.
 	short				objsnd_num[MAX_OBJECT_SOUNDS];		// Index of persistant sound struct.  -1 if no persistant sound assigned.
 	ushort			net_signature;
-	int				num_pairs;		// How many object pairs this is associated with.  When 0 then there are no more.		
+	int				num_pairs;		// How many object pairs this is associated with.  When 0 then there are no more.
+
+	dock_instance	*dock_list;		// Goober5000 - objects this object is docked to
 } object;
 
 // object backup struct used by Fred.
@@ -614,6 +623,10 @@ void obj_client_post_interpolate();
 
 // move an observer object in multiplayer
 void obj_observer_move(float flFrametime);
+
+// Goober5000
+int object_is_docked(object *objp);
+void obj_move_one_docked_object(object *objp, object *parent_objp);
 
 
 #endif
