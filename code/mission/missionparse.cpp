@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.26 $
- * $Date: 2003-01-19 07:02:16 $
+ * $Revision: 2.27 $
+ * $Date: 2003-01-19 07:45:38 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/01/19 07:02:16  Goober5000
+ * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
+ * all ships, and all ships who have their departure anchor set to a capital ship
+ * should exit to that ship when told to depart
+ * --Goober5000
+ *
  * Revision 2.25  2003/01/18 23:25:39  Goober5000
  * made "no-subspace-drive" applicable to all ships and fixed a really *STUPID*
  * bug that made FRED keep crashing (missing comma, bleagh!)
@@ -5483,7 +5489,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	// Goober5000 - who knew of the SCP release? ;) only determine ship class if not set by SEXP
 	pobj->ship_class = The_mission.support_ships.ship_class;
-	if (pobj->ship_class == -1)
+	if (pobj->ship_class < 0)
 	{
 		requester_species = Ship_info[requester_shipp->ship_info_index].species;
 

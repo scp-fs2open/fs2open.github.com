@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.33 $
- * $Date: 2003-01-19 07:02:16 $
+ * $Revision: 2.34 $
+ * $Date: 2003-01-19 07:45:38 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/01/19 07:02:16  Goober5000
+ * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
+ * all ships, and all ships who have their departure anchor set to a capital ship
+ * should exit to that ship when told to depart
+ * --Goober5000
+ *
  * Revision 2.32  2003/01/18 09:25:41  Goober5000
  * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
  * than SF_ flags
@@ -706,6 +712,7 @@ sexp_oper Operators[] = {
 
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
+	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 6 },	// Goober5000
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,		3, INT_MAX },					//phreak
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
@@ -8246,6 +8253,85 @@ void sexp_damage_escort_list(int node)
 	}
 }
 
+// Goober5000 - set stuff for mission support ship
+void sexp_set_support_ship(int n)
+{
+	int i, temp_val;
+
+	// get arrival location
+	temp_val = -1;
+	for (i=0; i<MAX_ARRIVAL_NAMES; i++)
+	{
+		if (!stricmp(CTEXT(n), Arrival_location_names[i]))
+			temp_val = i;
+	}
+	if (temp_val < 0)
+	{
+		Warning(LOCATION, "Support ship arrival location '%s' not found.\n", CTEXT(n));
+		return;
+	}
+	The_mission.support_ships.arrival_location = temp_val;
+
+	// get arrival anchor
+	n = CDR(n);
+	temp_val = -1;
+	for (i=0; i<MAX_SHIPS+MAX_WINGS; i++)
+	{
+		if (!stricmp(CTEXT(n), Parse_names[i]))
+			temp_val = i;
+	}
+	if (temp_val < 0)
+	{
+		Warning(LOCATION, "Support ship arrival anchor '%s' not found.\n", CTEXT(n));
+		return;
+	}
+	The_mission.support_ships.arrival_anchor = temp_val;
+
+	// get departure location
+	n = CDR(n);
+	temp_val = -1;
+	for (i=0; i<MAX_DEPARTURE_NAMES; i++)
+	{
+		if (!stricmp(CTEXT(n), Departure_location_names[i]))
+			temp_val = i;
+	}
+	if (temp_val < 0)
+	{
+		Warning(LOCATION, "Support ship departure location '%s' not found.\n", CTEXT(n));
+		return;
+	}
+	The_mission.support_ships.departure_location = temp_val;
+
+	// get departure anchor
+	n = CDR(n);
+	temp_val = -1;
+	for (i=0; i<MAX_SHIPS+MAX_WINGS; i++)
+	{
+		if (!stricmp(CTEXT(n), Parse_names[i]))
+			temp_val = i;
+	}
+	if (temp_val < 0)
+	{
+		Warning(LOCATION, "Support ship departure anchor '%s' not found.\n", CTEXT(n));
+		return;
+	}
+	The_mission.support_ships.departure_anchor = temp_val;
+
+	// get ship class
+	n = CDR(n);
+	temp_val = ship_info_lookup(CTEXT(n));
+	if ((temp_val < 0) && (stricmp(CTEXT(n), "<any support ship class>")))
+	{
+		Warning(LOCATION, "Support ship class '%s' not found.\n", CTEXT(n));
+		return;
+	}
+	The_mission.support_ships.ship_class = temp_val;
+
+	// get max number of ships allowed
+	n = CDR(n);
+	The_mission.support_ships.max_support_ships = atoi(CTEXT(n));
+}
+
 // Goober5000
 // set *all* the escort priorities of ships in escort list as follows: most damaged ship gets
 // first priority in the argument list, next damaged gets next priority, etc.; if there are more
@@ -9772,6 +9858,12 @@ int eval_sexp(int cur_node)
 				break;
 
 			// Goober5000
+			case OP_SET_SUPPORT_SHIP:
+				sexp_set_support_ship(node);
+				sexp_val = 1;
+				break;
+
+			// Goober5000
 			case OP_CHANGE_SHIP_MODEL:
 				sexp_change_ship_model(node);
 				sexp_val = 1;
@@ -10102,6 +10194,7 @@ int query_operator_return_type(int op)
 		case OP_COLLIDE_INVISIBLE:
 		case OP_CHANGE_SHIP_MODEL:
 		case OP_CHANGE_SHIP_CLASS:
+		case OP_SET_SUPPORT_SHIP:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -10842,6 +10935,17 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_CLASS_NAME;
 			else
 				return OPF_SHIP;
+
+		// Goober5000 - this is complicated :)
+		case OP_SET_SUPPORT_SHIP:
+			if ((argnum == 0) || (argnum == 2))
+				return OPF_DEPARTURE_LOCATION;	// use this for both because we don't want Near Ship or In Front of Ship
+			if ((argnum == 1) || (argnum == 3))
+				return OPF_SHIP_WITH_BAY;		// same - we don't want to anchor around anything without a docking bay
+			if (argnum == 4)
+				return OPF_SUPPORT_SHIP_CLASS;
+			if (argnum == 5)
+				return OPF_NUMBER;
 
 		default:
 			Int3();
@@ -11717,6 +11821,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIELDS_OFF:
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
+		case OP_SET_SUPPORT_SHIP:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_DONT_COLLIDE_INVISIBLE:
