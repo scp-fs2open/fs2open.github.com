@@ -9,13 +9,20 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-03-17 04:07:29 $
- * $Author: bobboau $
+ * $Revision: 2.14 $
+ * $Date: 2004-05-08 01:08:48 $
+ * $Author: Goober5000 $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/03/17 04:07:29  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.12  2004/03/05 09:02:00  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -253,9 +260,11 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 
 		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, -1.0f);
 
-		gr_set_cull(0);
 /*
 //this is that half done effect that was pissing people off-Bobboau
+
+		gr_set_cull(0);
+
 		matrix m;
 		vector ray_dir;
 		vm_vector_2_matrix(&m, &orient->vec.fvec, NULL, NULL);//this is the beam things that will come outof the point-Bobboau
@@ -286,8 +295,9 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 			gr_set_bitmap(Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
 			g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
 		}
-*/
+
 		gr_set_cull(1);
+*/
 
 		vecs[4] = center;		//this is for the warp glow-Bobboau
 		verts[4].u = 0.5f; verts[4].v = 0.5f; 
