@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.13 $
- * $Date: 2004-03-07 23:07:20 $
- * $Author: Kazan $
+ * $Revision: 1.14 $
+ * $Date: 2004-05-25 00:21:39 $
+ * $Author: wmcoolmon $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2004/03/07 23:07:20  Kazan
+ * [Incomplete] Readd of Software renderer so Standalone server works
+ *
  * Revision 1.12  2004/03/05 09:01:56  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -54,7 +57,7 @@
 #include "Client.h"
 //#include "protocol.h"
 #include "udpsocket.h"
-#include <iostream.h>
+#include <iostream>
 #include <time.h>
 #include "network/multi_log.h"
 #include "playerman/player.h"
@@ -408,7 +411,7 @@ int Fs2OpenPXO_Login(const char* username, const char* password, UDP_Socket &Soc
 
 	if (Socket.SendPacket((char *) &loginpckt, sizeof(loginpckt), sender, port) == -1)
 	{
-		cout << "Error Sending Packet" << endl;
+		std::cout << "Error Sending Packet" << std::endl;
 	}
 	
 	// await reply
@@ -541,7 +544,7 @@ int Ping(const char* target)
 	UDP_Socket Socket(FS2OPEN_CLIENT_PORT);
 	if (!Socket.InitSocket())
 	{
-		cout << "Initialization Error!" << endl;
+		std::cout << "Initialization Error!" << std::endl;
 		exit(1);
 	}
 

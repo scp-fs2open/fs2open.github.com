@@ -11,11 +11,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.15 $
- * $Date: 2004-03-31 05:42:26 $
- * $Author: Goober5000 $
+ * $Revision: 1.16 $
+ * $Date: 2004-05-25 00:21:39 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2004/03/31 05:42:26  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 1.14  2004/03/09 17:59:01  Kazan
  * Disabled multithreaded TCP_Socket in favor of safer single threaded
  * FS2NetD doesn't kill the game on connection failure now - just gives warning message and effectively dsiables itself until they try to connect again
@@ -78,7 +83,7 @@
 #include "Client.h"
 #include "protocol.h"
 #include "TCP_Socket.h"
-#include <iostream.h>
+#include <iostream>
 #include "playerman/player.h"
 #include "ship/ship.h"
 #include <time.h>
@@ -546,7 +551,7 @@ int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Soc
 
 	if (Socket.SendData((char *) &loginpckt, sizeof(loginpckt)) == -1)
 	{
-		cout << "Error Sending Packet" << endl;
+		std::cout << "Error Sending Packet" << std::endl;
 		return -1;
 	}
 	
