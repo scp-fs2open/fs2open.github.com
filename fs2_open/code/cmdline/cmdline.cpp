@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-08-22 07:35:08 $
- * $Author: bobboau $
- * $Revision: 2.24 $
- * $Date: 2003-08-22 07:35:08 $
- * $Author: bobboau $
+ * $Revision: 2.25 $
+ * $Date: 2003-09-09 17:10:54 $
+ * $Author: matt $
+ * $Revision: 2.25 $
+ * $Date: 2003-09-09 17:10:54 $
+ * $Author: matt $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/08/22 07:35:08  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.23  2003/08/21 20:54:37  randomtiger
  * Fixed switching - RT
  *
@@ -377,6 +382,7 @@ cmdline_parm spec_exp_arg("-spec_exp", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_point_arg("-spec_point", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_static_arg("-spec_static", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_tube_arg("-spec_tube", NULL);	// comand line FOV -Bobboau
+cmdline_parm nospec_arg("-nospec", NULL); // skip specular highlighting -Sticks
 
 cmdline_parm cell_arg("-cell", NULL);
 
@@ -426,6 +432,7 @@ extern float VIEWER_ZOOM_DEFAULT;
 extern float Viewer_zoom;
 
 int cell = 0;
+int nospec = 0;
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -849,6 +856,9 @@ int parse_cmdline(int argc, char *argv[])
 		cell = 1;
 	}
 
+	if ( nospec_arg.found() ) {
+		nospec = 1;
+	}
 	return 1;
 }
 
