@@ -161,21 +161,6 @@ int MulDiv(int number, int numerator, int denominator)
 	return result;
 }
 
-#ifdef NO_SOUND
-#include "gamesnd.h"
-// dummy callback -- real one is in gamesnd.cpp
-void common_play_highlight_sound()
-{
-}
-
-game_snd Snds[MAX_GAME_SOUNDS];
-game_snd Snds_iface[MAX_INTERFACE_SOUNDS];
-int Snds_iface_handle[MAX_INTERFACE_SOUNDS];
-game_snd Snds_flyby[MAX_SPECIES_NAMES][2];
-
-#endif  // ifdef NO_SOUND
-
-
 
 void strlwr(char *s)
 {
