@@ -9,9 +9,9 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.53 $
+ * $Revision: 2.54 $
  * $Author: Goober5000 $
- * $Date: 2003-09-11 23:21:54 $
+ * $Date: 2003-09-13 06:02:07 $
  *
  * header for sexpression parsing
  *
@@ -761,7 +761,6 @@
 #define OP_IS_SHIP_TYPE						(0x0026 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_SHIP_CLASS					(0x0027	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_NUM_SHIPS_IN_BATTLE				(0x0028 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
-#define OP_MAX_SPEED						(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// _argv[-1]
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)

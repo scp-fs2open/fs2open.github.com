@@ -9,9 +9,9 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.30 $
- * $Author: argv $
- * $Date: 2003-09-11 19:10:33 $
+ * $Revision: 2.31 $
+ * $Author: Goober5000 $
+ * $Date: 2003-09-13 06:02:06 $
  *
  * main header file for parsing code  
  *
@@ -588,7 +588,7 @@ typedef struct p_object {
 // circumstances for those ships.  This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS	20 // _argv[-1] - reduced from 22, to avoid crash.
+#define MAX_PARSE_OBJECT_FLAGS	22
 
 #define P_OF_CARGO_KNOWN			(1<<0)
 #define P_SF_IGNORE_COUNT			(1<<1)
@@ -632,11 +632,10 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	3 // _argv[-1] - reduced from 5, to avoid crash.
+#define MAX_PARSE_OBJECT_FLAGS_2	5
 
 #define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE		(1<<1)
-#define P2_SF2_BEAM_FREE_ALL			(1<<2) // _argv[-1] - implicit beam-free-all for this ship.
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

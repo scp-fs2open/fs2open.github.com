@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-09-11 19:44:27 $
- * $Author: argv $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-13 06:02:04 $
+ * $Author: Goober5000 $
  *
  * Header file for managing corkscrew missiles
  *
@@ -483,7 +483,7 @@ void emp_start_local(float intensity, float time)
 	}
 
 	// start the emp icon flashing
-	hud_start_text_flash(NOX("EMP" /*"Emp"*/), 5000);
+	hud_start_text_flash(NOX("Emp"), 5000);
 
 	// determine how much we have to decrement the effect per second
 	Emp_decr = Emp_intensity / time;
@@ -525,7 +525,7 @@ void emp_process_local()
 
 		// reset the timestamp
 		Emp_wacky_target_timestamp = timestamp((int)frand_range(100.0f, 750.0f * (1.0f - Emp_intensity)));
-	}
+	}			
 }
 
 // randomly say yes or no to a gauge, if emp is not active, always say yes

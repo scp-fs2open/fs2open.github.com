@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-09-11 19:12:40 $
- * $Author: argv $
+ * $Revision: 2.17 $
+ * $Date: 2003-09-13 06:02:06 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
@@ -3443,23 +3443,6 @@ int wl_update_ship_weapons(int objnum, wss_unit *slot )
 		if ( wl_slots_all_empty(slot) ) {
 			return -1;
 		}
-	}
-
-	// _argv[-1] - since the ship class can obviously get changed in loadout, we need to deal with beam free again.
-	// By 'again' I mean that it was already done in missionparse.cpp, but that only applies to the default ship!
-	ship *shipp = &Ships[Objects[objnum].instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
-
-	for (ship_subsys *ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
-		if (ss->system_info->type != SUBSYSTEM_TURRET)
-			continue;
-		if (ss->system_info->beam_free_by_default == 0)
-			continue;
-		if (!(sip->flags2 & SIF2_BEAM_FREE_BY_DEFAULT) && ss->system_info->beam_free_by_default == 1)
-			continue;
-
-		ss->weapons.flags |= SW_FLAG_BEAM_FREE;
-		ss->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 	}
 
 	wl_bash_ship_weapons(&Ships[Objects[objnum].instance].weapons, slot);

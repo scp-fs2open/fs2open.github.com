@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-09-11 19:16:45 $
- * $Author: argv $
+ * $Revision: 2.14 $
+ * $Date: 2003-09-13 06:02:05 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
@@ -684,7 +684,6 @@ int free_object_slots(int num_used)
 
 float get_shield_strength(object *objp)
 {
-	// _argv[-1] - singular shield.
 	int	i;
 	float	strength;
 
@@ -692,36 +691,26 @@ float get_shield_strength(object *objp)
 
 	// no shield system, no strength!
 	if ( objp->flags & OF_NO_SHIELDS ){
-		return 0;
-		//return strength;
-	}
-
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
-		return objp->shield_quadrant[0];
-	else {
-		for (i=0; i<MAX_SHIELD_SECTIONS; i++){
-			strength += objp->shield_quadrant[i];
-		}
-
 		return strength;
 	}
+
+	for (i=0; i<MAX_SHIELD_SECTIONS; i++){
+		strength += objp->shield_quadrant[i];
+	}
+
+	return strength;
 }
 
 void set_shield_strength(object *objp, float strength)
 {
-	// _argv[-1] - singular shield.
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
-		objp->shield_quadrant[0] = strength;
-	else {
-		int	i;
+	int	i;
 
-		if ( (strength - Ships[objp->instance].ship_initial_shield_strength) > 0.1 ){
-			Int3();
-		}
+	if ( (strength - Ships[objp->instance].ship_initial_shield_strength) > 0.1 ){
+		Int3();
+	}
 
-		for (i=0; i<MAX_SHIELD_SECTIONS; i++){
-			objp->shield_quadrant[i] = strength/MAX_SHIELD_SECTIONS;
-		}
+	for (i=0; i<MAX_SHIELD_SECTIONS; i++){
+		objp->shield_quadrant[i] = strength/MAX_SHIELD_SECTIONS;
 	}
 }
 
@@ -729,28 +718,19 @@ void set_shield_strength(object *objp, float strength)
 //	Apply delta/MAX_SHIELD_SECTIONS to each shield section.
 void add_shield_strength(object *objp, float delta)
 {
-	// _argv[-1] - singular shield.
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS) {
-		objp->shield_quadrant[0] += delta;
-		if (objp->shield_quadrant[0] > Ships[objp->instance].ship_initial_shield_strength)
-			objp->shield_quadrant[0] = Ships[objp->instance].ship_initial_shield_strength;
-		else if (objp->shield_quadrant[0] < 0.0f)
-			objp->shield_quadrant[0] = 0.0f;
-	}
-	else {
-		int	i;
-		float	section_max;
+	int	i;
+	float	section_max;
 
-		section_max = Ships[objp->instance].ship_initial_shield_strength/MAX_SHIELD_SECTIONS;
+	section_max = Ships[objp->instance].ship_initial_shield_strength/MAX_SHIELD_SECTIONS;
 
-		for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
-			objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
-			if (objp->shield_quadrant[i] > section_max)
-				objp->shield_quadrant[i] = section_max;
-			else if (objp->shield_quadrant[i] < 0.0f)
-				objp->shield_quadrant[i] = 0.0f;
-		}
+	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
+		objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
+		if (objp->shield_quadrant[i] > section_max)
+			objp->shield_quadrant[i] = section_max;
+		else if (objp->shield_quadrant[i] < 0.0f)
+			objp->shield_quadrant[i] = 0.0f;
 	}
+
 }
 
 //sets up the free list & init player & whatever else

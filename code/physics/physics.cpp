@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-09-11 19:22:52 $
- * $Author: argv $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-13 06:02:07 $
+ * $Author: Goober5000 $
  *
  * Physics stuff
  *
@@ -878,9 +878,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		ci->heading += wash_rot->xyz.y;
 	}
 
-	//if (ci->vertical && ci->forward)
-	//	Int3();
-
 	if (ci->pitch > 1.0f ) ci->pitch = 1.0f;
 	else if (ci->pitch < -1.0f ) ci->pitch = -1.0f;
 
@@ -932,13 +929,13 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		goal_vel.xyz.z = ci->forward* pi->booster_max_vel.xyz.z;
 	}
 	else {
-		goal_vel.xyz.x = ci->sideways*pi->max_vel.xyz.x*pi->max_speed_mul;
-		goal_vel.xyz.y = ci->vertical*pi->max_vel.xyz.y*pi->max_speed_mul;
+		goal_vel.xyz.x = ci->sideways*pi->max_vel.xyz.x;
+		goal_vel.xyz.y = ci->vertical*pi->max_vel.xyz.y;
 		goal_vel.xyz.z = ci->forward* pi->max_vel.xyz.z;
 	}
 
-	if ( goal_vel.xyz.z < (-pi->max_rear_vel) * pi->max_speed_mul) 
-		goal_vel.xyz.z = (-pi->max_rear_vel) * pi->max_speed_mul;
+	if ( goal_vel.xyz.z < -pi->max_rear_vel ) 
+		goal_vel.xyz.z = -pi->max_rear_vel;
 
 
 	if ( pi->flags & PF_ACCELERATES )	{

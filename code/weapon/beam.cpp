@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-09-11 19:43:43 $
- * $Author: argv $
+ * $Revision: 2.25 $
+ * $Date: 2003-09-13 06:02:04 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
@@ -383,7 +383,6 @@
 #include "lighting/lighting.h"
 #include "hud/hudshield.h"
 //#include "decals/decals.h"	//shouldn't need it becase it's in ship.h
-#include "cmdline/cmdline.h" // _argv[-1] - for command line options.
 
 
 // ------------------------------------------------------------------------------------------------
@@ -732,14 +731,6 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 	firing_ship = &Ships[fire_info->shooter->instance];
 
-	// _argv[-1] - if we can't fire the beam for even one second due to lack of energy, don't bother.
-	if (wip->wi_flags2 & WIF2_USE_ENERGY_ON_TURRET && wip->energy_consumed > 0 && firing_ship->weapon_energy < wip->energy_consumed)
-		return -1;
-
-	// _argv[-1] - if the shooter has exploded, don't fire.
-	if (firing_ship->flags & SF_EXPLODED)
-		return -1;
-
 	// get a free beam
 	new_item = GET_FIRST(&Beam_free_list);
 	Assert( new_item != &Beam_free_list );		// shouldn't have the dummy element
@@ -781,6 +772,11 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
 	
+	// if the targeted subsystem is not NULL, force it to be a type A beam
+	if(new_item->target_subsys != NULL){
+		new_item->type = BEAM_TYPE_A;
+	}
+
 	// type D weapons can only fire at small ships and missiles
 	if(new_item->type == BEAM_TYPE_D){
 		// if its a targeted ship, get the target ship
@@ -793,27 +789,7 @@ int beam_fire(beam_fire_info *fire_info)
 			}
 		}
 	}
-
-	if (wip->wi_flags2 & WIF2_RANDOM_BEAM_SLASH && new_item->life_total >= 1.0f) {
-		if (new_item->type == BEAM_TYPE_A) {
-			// _argv[-1] - randomly force type A beams to type B (slash). whee!
-			if (rand() % 2 == 0)
-				new_item->type = BEAM_TYPE_B;
-		}
-
-		else if (new_item->type == BEAM_TYPE_B) {
-			// _argv[-1] - and vice versa.
-			if (rand() % 2 == 0)
-				new_item->type = BEAM_TYPE_A;
-		}
-	}
-
-	// if the targeted subsystem is not NULL, force it to be a type A beam
-	// _argv[-1] - moved down here because of the randomness stuff above.
-	if(new_item->target_subsys != NULL){
-		new_item->type = BEAM_TYPE_A;
-	}
-
+	
 	// ----------------------------------------------------------------------
 	// THIS IS THE CRITICAL POINT FOR MULTIPLAYER
 	// beam_get_binfo(...) determines exactly how the beam will behave over the course of its life
@@ -1413,21 +1389,7 @@ void beam_move_all_post()
 			if(moveup->shrink < 0.1f){
 				moveup->shrink = 0.1f;
 			}
-		}
-		
-		// _argv[-1] - allow beam turrets to consume ship weapon energy. fighter beams have their energy consumption done elsewhere.
-		if (Weapon_info[moveup->weapon_info_index].wi_flags2 & WIF2_USE_ENERGY_ON_TURRET && Weapon_info[moveup->weapon_info_index].energy_consumed > 0 && moveup->objp->type == OBJ_SHIP && moveup->subsys != NULL) {
-			float eng = Weapon_info[moveup->weapon_info_index].energy_consumed * flFrametime;
-			if (Ships[moveup->objp->instance].weapon_energy < eng)
-				// out of power, so power down.
-				bf_status = -2;
-			else
-				Ships[moveup->objp->instance].weapon_energy -= eng;
-		}
-
-		if (Ships[moveup->objp->instance].flags & SF_EXPLODED)
-			// _argv[-1] - ship has exploded, so kill beams.
-			bf_status = -1;
+		}		
 
 		// stop shooting?
 		if(bf_status <= 0){
@@ -2101,8 +2063,7 @@ void beam_start_warmup(beam *b)
 	b->warmup_stamp = timestamp(Weapon_info[b->weapon_info_index].b_info.beam_warmup);
 
 	// start playing warmup sound
-	// _argv[-1] - don't play sound for own beam turrets if player doesn't want that.
-	if(!(Game_mode & GM_STANDALONE_SERVER) && (b->objp != Player_obj || Argv_options.sound_from_own_turrets) && (Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound >= 0)){		
+	if(!(Game_mode & GM_STANDALONE_SERVER) && (Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound >= 0)){		
 		snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound], &b->last_start, &View_position);
 	}
 }
@@ -2558,7 +2519,6 @@ int beam_collide_ship(obj_pair *pair)
 	if(widest > pair->b->radius * BEAM_AREA_PERCENT){
 		test_collide.radius = beam_get_widest(b) * 0.5f;
 		//if the shields have any juice check them otherwise check the model
-		// _argv[-1] - changed method of checking if shields are up.
 		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for beams wich have a positive sheild factor -Bobboau
 //			mprintf(("I think this ship has shields\n"));
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_SPHERELINE;	
@@ -2567,8 +2527,7 @@ int beam_collide_ship(obj_pair *pair)
 			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 		}
 	} else {	
-		// _argv[-1] - fixed a bug where beams would go THROUGH ships with surface shields.
-		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for type c beams -Bobboau
+		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for type c beams -Bobboau
 //			mprintf(("there is a shield, isn't it\n"));
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_RAY;	
 		}else{	
@@ -2580,35 +2539,32 @@ int beam_collide_ship(obj_pair *pair)
 	model_collide(&test_collide);
 
 	quad = -1;
-	if ((test_collide.flags & MC_CHECK_SHIELD) || (!(Objects[shipp->objnum].flags & OF_NO_SHIELDS) && !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS)))	//if we're checking shields
+	if(test_collide.flags & MC_CHECK_SHIELD)	//if we're checking shields
 	{
 		quad = get_quadrant(&test_collide.hit_point);//find which quadrant we hit
 //mprintf(("the thing I hit was hit in quadrant %d\n", quad));
 		//then if the beam does more damage than that quadrant can take
-		// _argv[-1] - singular shield.
-		if(!ship_is_shield_up(&Objects[shipp->objnum], quad) || Objects[shipp->objnum].shield_quadrant[sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : quad] < (bwi->damage * bwi->shield_factor * 2.0f))
+		if(Objects[shipp->objnum].shield_quadrant[quad] < (bwi->damage * bwi->shield_factor * 2.0f))
 		//if(!(ship_is_shield_up(&Objects[shipp->objnum], get_quadrant(&test_collide.hit_point))))
 		{
-			// _argv[-1] - don't do new model_collide for surface shields.
-			if (test_collide.flags & MC_CHECK_SHIELD) {
-				//go through the shield and hit the hull -Bobboau
-				if(widest > pair->b->radius * BEAM_AREA_PERCENT)
-				{
-					test_collide.radius = beam_get_widest(b) * 0.5f;
-					test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
-				}
-				else
-				{	
-					test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
-				}
-				model_collide(&test_collide);
+			//go through the shield and hit the hull -Bobboau
+			if(widest > pair->b->radius * BEAM_AREA_PERCENT)
+			{
+				test_collide.radius = beam_get_widest(b) * 0.5f;
+				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 			}
+			else
+			{	
+				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
+			}
+			model_collide(&test_collide);
 		}
 		else
 		{
 			quad = -1;
 		}
 	}
+
 
 	// if we got a hit
 	if(test_collide.num_hits)
@@ -2619,8 +2575,7 @@ int beam_collide_ship(obj_pair *pair)
 		// if we went through the shield
 	//	if (quad != -1)
 	//	{
-	//		// _argv[-1] - singular shield.
-	//		Objects[shipp->objnum].shield_quadrant[sip->flags2 & SIF2_SINGULAR_SHIELDS ? 0 : quad] = 0.0f;	// Bobboau's addition: now works correctly
+	//		Objects[shipp->objnum].shield_quadrant[quad] = 0.0f;	// Bobboau's addition: now works correctly
 	//	}
 	}	
 
@@ -2948,7 +2903,6 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 		bc = &b->f_collisions[b->f_collision_count++];
 		bc->c_objnum = OBJ_INDEX(hit_object);
 		bc->cinfo = *cinfo;
-		bc->quadrant = -1;
 
 /*		decal_point dec;
 		vector bfvec;
@@ -2967,25 +2921,19 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 //		decal_create_simple(hit_object, &dec, bwi->b_info.beam_glow_bitmap);//this is the old decals, not the new/better ones
 		decal_create(hit_object, &dec, bc->cinfo.hit_submodel, bwi->decal_texture, bwi->decal_backface_texture);
 */
-
-		// _argv[-1] - add support for surface shields.
-		quadrant_num = get_quadrant(&cinfo->hit_point);
 		
-		if ((cinfo->flags & MC_CHECK_SHIELD && cinfo->num_hits) || (hit_object->type == OBJ_SHIP && !(hit_object->flags & OF_NO_SHIELDS) && ship_is_shield_up(hit_object, quadrant_num))) {
-		//if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam sheild hit code -Bobboau
-			bc->quadrant= quadrant_num;// = get_quadrant(&cinfo->hit_point);
+		if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam sheild hit code -Bobboau
+			bc->quadrant= quadrant_num = get_quadrant(&cinfo->hit_point);
 			if (!(hit_object->flags & SF_DYING) ) {
-				if (cinfo->flags & MC_CHECK_SHIELD) // _argv[-1] - don't do this for surface shields!
-					add_shield_point(hit_object-Objects, cinfo->shield_hit_tri, &cinfo->hit_point);
+				add_shield_point(hit_object-Objects, cinfo->shield_hit_tri, &cinfo->hit_point);
 				hud_shield_quadrant_hit(hit_object, quadrant_num);
 			}
 		}
 		else
 		{
 			bc->quadrant=-1;
-			//quadrant_num = get_quadrant(&cinfo->hit_point);
-			// _argv[-1] - singular shield. this one was OBSCURE!
-			hit_object->shield_quadrant[Ship_info[Ships[hit_object->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS ? 0 : quadrant_num]=0.0f;
+			quadrant_num = get_quadrant(&cinfo->hit_point);
+			hit_object->shield_quadrant[quadrant_num]=0.0f;
 		}
 
 		// done
@@ -3105,7 +3053,7 @@ mprintf(("do nothing\n"));
 
 		// play the impact sound
 		if(first_hit){
-			snd_play_3d(b->f_collisions[idx].quadrant != -1 ? &Snds[SND_SHIELD_HIT] : &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
+			snd_play_3d( &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
 mprintf(("play the sound\n"));		
 		// do damage
@@ -3157,9 +3105,8 @@ mprintf(("play the sound\n"));
 				// GAH!! Bobboau, the shields are almost always up!  Anyway, some people complained.
 				//fine :\... -Bobboau
 				// if this is the first hit on the player ship. whack him
-				// _argv[-1] - don't whack for fighter beams.
-				// Is that the right thing to do? Or should we just use proportional whacking anyway? That would make it even harder to keep a beam on a target...
-				if(do_damage && (!(Weapon_info[b->weapon_info_index].beam_no_whack_through_shields) || (b->f_collisions[idx].quadrant < 0))) { //I didn't want the beam wacking things if it's hitting just sheilds -Bobboau
+				if(do_damage)	// && !(b->f_collisions[idx].quadrant)) //I didn't want the beam wacking things if it's hitting just sheilds -Bobboau
+				{
 					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
 				}
 				break;
@@ -3360,20 +3307,11 @@ void beam_apply_whack(beam *b, object *objp, vector *hit_point)
 	float whack;
 	float dist;
 
-	/*
 	if(wip->damage < b_whack_damage){
 		whack = b_whack_small;
 	} else {
 		whack = b_whack_big;
 	}
-	*/
-
-	// _argv[-1] - use beam weapon's mass if appropriate.
-	if (wip->beam_use_mass_for_whack)
-		whack = wip->mass;
-	else
-		// _argv[-1] - make it proportional, so low-yield fighter and AAA beams don't send ships flying.
-		whack = wip->damage * 5;
 
 	// whack direction
 	vector whack_dir, temp;
@@ -3408,12 +3346,9 @@ float beam_get_ship_damage(beam *b, object *objp, vector *hit_pos)
 	}
 
 	// same team. yikes
-	// _argv[-1] - this is way too easy.
-#ifdef FS2_ALLOW_FRIENDLY_BEAM_FIRE
 	if((b->team == Ships[objp->instance].team) && (Weapon_info[b->weapon_info_index].damage > Beam_friendly_cap[Game_skill_level])){
 		return Beam_friendly_cap[Game_skill_level];
 	}
-#endif
 
 	// normal damage
 //		gr_printf(10, 20, "atened to %f", aten);

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.4 $
- * $Date: 2003-09-11 19:23:18 $
- * $Author: argv $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-13 06:02:07 $
+ * $Author: Goober5000 $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
@@ -219,8 +219,6 @@ typedef struct physics_info {
 	int		afterburner_decay;	// timestamp used to control how long ship shakes after afterburner released
 	int		shockwave_decay;		// timestamp used to control how long ship affected after hit by shockwave
 	int		reduced_damp_decay;	// timestamp used to control how long ship ship has reduced damp physics	
-
-	float	max_speed_mul;		// _argv[-1] - factor to multiply lateral thrust by, affected by engine power.
 } physics_info;
 
 // All of these are numbers from -1.0 to 1.0 indicating

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-09-11 19:11:36 $
- * $Author: argv $
+ * $Revision: 2.3 $
+ * $Date: 2003-09-13 06:02:06 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
  * Revision 2.1  2002/08/01 01:41:07  penguin
@@ -1320,10 +1320,6 @@ void wss_direct_restore_loadout()
 	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
 		return;
 	}
-
-	// only restore if mission isn't scramble
-	if (The_mission.scramble)
-		return;
 
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
 
