@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-17 23:58:46 $
+ * $Author: unknownplayer $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -5431,35 +5434,47 @@ void show_firing_diag()
 //	Else
 //		Select Any ol' weapon.
 //	Returns primary_bank index.
+/**
+ * Changed the code into what I feel is an easier to read structure
+ * Modified to allow one to specify a shudder weapon to be used (i.e. the maxim gun)
+ * ##UnknownPlayer##
+ */
 int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 {
 	ship	*shipp = &Ships[objp->instance];
 	ship_weapon *swp = &shipp->weapons;
 	ship_info *sip;
 
+
 	//Assert( other_objp != NULL );
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
 
 	sip = &Ship_info[shipp->ship_info_index];
 
-	if (flags & WIF_PUNCTURE) {
-		if (swp->current_primary_bank >= 0) {
+	if (flags & WIF_PUNCTURE) 
+	{
+		if (swp->current_primary_bank >= 0) 
+		{
 			int	bank_index;
 
 			bank_index = swp->current_primary_bank;
 
-			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags & WIF_PUNCTURE) {
+			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags & WIF_PUNCTURE) 
+			{
 				//nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[bank_index]].name));
 				return swp->current_primary_bank;
 			}
 		}
-		for (int i=0; i<swp->num_primary_banks; i++) {
+		for (int i=0; i<swp->num_primary_banks; i++) 
+		{
 			int	weapon_info_index;
 
 			weapon_info_index = swp->primary_bank_weapons[i];
 
-			if (weapon_info_index > -1){
-				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) {
+			if (weapon_info_index > -1)
+			{
+				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) 
+				{
 					swp->current_primary_bank = i;
 					//nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
 					return i;
@@ -5468,24 +5483,36 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		}
 		
 		// AL 26-3-98: If we couldn't find a puncture weapon, pick first available weapon if one isn't active
-		if ( swp->current_primary_bank < 0 ) {
-			if ( swp->num_primary_banks > 0 ) {
+		if ( swp->current_primary_bank < 0 ) 
+		{
+			if ( swp->num_primary_banks > 0 ) 
+			{
 				swp->current_primary_bank = 0;
 			}
 		}
 
-	} else {		//	Don't need to be using a puncture weapon.
-		if (swp->current_primary_bank >= 0) {
-			if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags & WIF_PUNCTURE)){
+	}
+	else 
+	{		
+		//	Don't need to be using a puncture weapon.
+		if (swp->current_primary_bank >= 0) 
+		{
+			if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags & WIF_PUNCTURE))
+			{
+				// We are not using a puncture weapon, so return - unknownplayer (yes I gave up on the ##'s)
 				return swp->current_primary_bank;
 			}
 		}
-		for (int i=0; i<swp->num_primary_banks; i++) {
-			if (swp->primary_bank_weapons[i] > -1) {
-				if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_PUNCTURE)) {
-					swp->current_primary_bank = i;
+		for (int i=0; i<swp->num_primary_banks; i++) 
+		{
+			if (swp->primary_bank_weapons[i] > -1)		// If the primary bank has a weapon loaded - unknownplayer
+			{
+				// Is it NOT a puncture weapon, and NOT the maxim if the target has shields? - unknownplayer
+				if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_PUNCTURE))
+				{
+					swp->current_primary_bank = i;		// If so then switch to it - unknownplayer
 					nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
-					return i;
+					return i;							// return the bank no we armed - unknownplayer
 				}
 			}
 		}
@@ -5566,9 +5593,13 @@ void set_primary_weapon_linkage(object *objp)
 //	--------------------------------------------------------------------------
 //	Fire the current primary weapon.
 //	*objp is the object to fire from.
+/**
+ * 
+ *
+ */
 void ai_fire_primary_weapon(object *objp)
 {
-	ship			*shipp = &Ships[objp->instance];
+	ship		*shipp = &Ships[objp->instance];
 	ship_weapon	*swp = &shipp->weapons;
 	ship_info	*sip;
 	ai_info		*aip;
