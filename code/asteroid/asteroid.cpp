@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-11-17 06:52:51 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2004-02-14 00:18:29 $
+ * $Author: randomtiger $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/11/17 06:52:51  bobboau
+ * got assert to work again
+ *
  * Revision 2.3  2003/10/15 22:03:23  Kazan
  * Da Species Update :D
  *
@@ -2369,14 +2372,8 @@ void asteroid_page_in()
 				for (j=0; j<asip->modelp[k]->n_textures; j++ )	{
 					int bitmap_num = asip->modelp[k]->original_textures[j];
 
-
-					// if we're in Glide (and maybe later with D3D), use nondarkening textures
 					if ( bitmap_num > -1 )	{
-						if(gr_screen.mode == GR_GLIDE){
-							bm_page_in_nondarkening_texture( bitmap_num );
-						} else {
-							bm_page_in_texture( bitmap_num );
-						}				
+						bm_page_in_texture( bitmap_num );
 					}					
 				}
 

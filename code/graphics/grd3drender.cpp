@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.40 $
- * $Date: 2003-12-08 22:30:02 $
+ * $Revision: 2.41 $
+ * $Date: 2004-02-14 00:18:31 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/12/08 22:30:02  randomtiger
+ * Put render state and other direct D3D calls repetition check back in, provides speed boost.
+ * Fixed bug that caused fullscreen only crash with DXT textures
+ * Put dithering back in for tgas and jpgs
+ *
  * Revision 2.39  2003/11/29 17:13:53  randomtiger
  * Undid my node fix, it introduced a lot of bugs, update again if you have that version.
  *
@@ -712,7 +717,7 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 
 	case TEXTURE_SOURCE_NO_FILTERING:
 
-		if(GlobalD3DVars::D3D_custom_size < 0) {
+		if(gr_screen.custom_size < 0) {
 			d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_POINT );
 			d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_POINT );
 		} else {
@@ -1181,11 +1186,7 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 		}
 
 		// use nonfiltered textures for bitmap sections
-		if(flags & TMAP_FLAG_BITMAP_SECTION) {
-			texture_source = TEXTURE_SOURCE_NO_FILTERING;
-		} else {
-			texture_source = TEXTURE_SOURCE_DECAL;
-		}
+		texture_source = TEXTURE_SOURCE_DECAL;
 	}
 	
 	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
@@ -1404,7 +1405,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	texture_source = TEXTURE_SOURCE_NONE;
  
 	if ( flags & TMAP_FLAG_TEXTURED )	{
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0))	{
 			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
 			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
@@ -1906,8 +1907,8 @@ void gr_d3d_clear()
  */
 void gr_d3d_set_clip(int x,int y,int w,int h)
 {
-	gr_d3d_resize_screen_pos(&x, &y);
-	gr_d3d_resize_screen_pos(&w, &h);
+	gr_resize_screen_pos(&x, &y);
+	gr_resize_screen_pos(&w, &h);
 
 	gr_screen.offset_x = x;
 	gr_screen.offset_y = y;
@@ -2162,7 +2163,7 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 		v1 = v_scale*i2fl(sy+h)/ fbh;
 	} 
 
-	if(GlobalD3DVars::D3D_custom_size == -1)
+	if(gr_screen.custom_size == -1)
 	{
 		x1 = i2fl(x+gr_screen.offset_x);
 		y1 = i2fl(y+gr_screen.offset_y);
@@ -2170,15 +2171,14 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 		y2 = i2fl(y+h+gr_screen.offset_y);
 
 	} else {
-		extern bool gr_d3d_resize_screen_pos(int *x, int *y);
 
 		int nx = x+gr_screen.offset_x;
 		int ny = y+gr_screen.offset_y;
 		int nw = x+w+gr_screen.offset_x;
 		int nh = y+h+gr_screen.offset_y;
 
-		gr_d3d_resize_screen_pos(&nx, &ny);
-		gr_d3d_resize_screen_pos(&nw, &nh);
+		gr_resize_screen_pos(&nx, &ny);
+		gr_resize_screen_pos(&nw, &nh);
 
 		x1 = i2fl(nx);
 		y1 = i2fl(ny);
@@ -2645,8 +2645,14 @@ void gr_d3d_circle( int xc, int yc, int d )
  *
  * @return void
  */
-void gr_d3d_line(int x1,int y1,int x2,int y2)
+void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize)
 {
+	if(resize)
+	{
+		gr_resize_screen_pos(&x1, &y1);
+		gr_resize_screen_pos(&x2, &y2);
+	}
+
 	int clipped = 0, swapped=0;
 	DWORD color;
 

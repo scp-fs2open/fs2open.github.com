@@ -9,11 +9,6 @@
 
 #include "globalincs/pstypes.h"
 
-
-int Gr_scaler_zbuffering;
-int Tmap_npixels;
-
-
 void WinAssert(char * text, char *filename, int line)
 {
 	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d\n",

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-12-08 22:30:02 $
+ * $Revision: 2.6 $
+ * $Date: 2004-02-14 00:18:29 $
  * $Author: randomtiger $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/12/08 22:30:02  randomtiger
+ * Put render state and other direct D3D calls repetition check back in, provides speed boost.
+ * Fixed bug that caused fullscreen only crash with DXT textures
+ * Put dithering back in for tgas and jpgs
+ *
  * Revision 2.4  2003/11/29 10:52:08  randomtiger
  * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
@@ -650,9 +655,7 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 			int temp_file_offset = 0;			
 
 			// if we're using bitmap polys
-			if(Gr_bitmap_poly){
-				BM_SELECT_TEX_FORMAT();
-			}
+			BM_SELECT_TEX_FORMAT();
 
 			if ( anim_instance_is_streamed(instance) ) {
 				if ( instance->xlate_pal ){

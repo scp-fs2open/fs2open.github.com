@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/slider.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-02-14 00:18:36 $
+ * $Author: randomtiger $
  *
  * C++ file for controlling and displaying a horizontal slider
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -194,6 +197,8 @@ void UI_DOT_SLIDER_NEW::process(int focus)
 	if (button.button_down() || button.pressed() || mouse_captured()) {
 		capture_mouse();  // while we are changing level, ignore all other buttons
 		
+		gr_unsize_screen_pos(&ui_mouse.x, NULL);
+
 		pos = (ui_mouse.x - x) / dot_width;		
 
 		if (pos < 0){

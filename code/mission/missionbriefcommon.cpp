@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-02-13 04:17:13 $
+ * $Revision: 2.8 $
+ * $Date: 2004-02-14 00:18:33 $
  * $Author: randomtiger $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/02/13 04:17:13  randomtiger
+ * Turned off fog in OGL for Fred.
+ * Simulated speech doesnt say tags marked by $ now.
+ * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
+ * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
+ * Error now given on missing briefing icon and bad ship normal data.
+ * Solved more species divide by zero error.
+ * Fixed neb cube crash.
+ *
  * Revision 2.6  2004/01/24 12:47:48  randomtiger
  * Font and other small changes for Fred
  *
@@ -1212,15 +1221,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-#ifndef FRED_OGL
-			if ( Fred_running )	{
-				gr_aascaler(&va, &vb);
-			} else 
-#endif
-			{
-				// Don't bother scaling for the game
-				gr_aabitmap(bx, by);
-			}
+			gr_aabitmap(bx, by);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {

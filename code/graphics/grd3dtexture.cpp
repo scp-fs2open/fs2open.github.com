@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-01-29 01:34:02 $
+ * $Revision: 2.28 $
+ * $Date: 2004-02-14 00:18:32 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/01/29 01:34:02  randomtiger
+ * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
+ * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
+ *
  * Revision 2.26  2004/01/26 20:03:51  randomtiger
  * Fix to blurring of interface bitmaps from TGA and JPG.
  * Changes to the pointsprite system, better but not perfect yet.
@@ -515,8 +519,6 @@
 #include "graphics/grd3dbmpman.h"
 #include "cmdline/cmdline.h"
 
-int D3D_texture_divider = 1;
-
 #include "network/multi_log.h"
 
 typedef struct tcache_slot_d3d {
@@ -537,12 +539,8 @@ typedef struct tcache_slot_d3d {
 
 bool Supports_compression[NUM_COMPRESSION_TYPES];
 
-static void *Texture_sections = NULL;
 tcache_slot_d3d *Textures = NULL;
 
-
-int D3D_texture_sections = 0;
-int D3D_texture_ram = 0;
 int D3D_frame_count = 0;
 int D3D_min_texture_width = 0;
 int D3D_max_texture_width = 0;
@@ -564,21 +562,12 @@ int D3D_last_section_y = -1;
  */
 bool d3d_free_texture( tcache_slot_d3d *t )
 {
-	int idx, s_idx;
-
 	// Bitmap changed!!	
 	if ( t->bitmap_id > -1 )	{				
-		// if I, or any of my children have been used this frame, bail		
+		// if I have been used this frame, bail		
 		if(t->used_this_frame){			
 			return false;
 		}		
-		for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-			for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-				if((t->data_sections[idx][s_idx] != NULL) && (t->data_sections[idx][s_idx]->used_this_frame)){
-					return false;
-				}
-			}
-		}
 
 		if(t->d3d8_thandle)
 		{
@@ -591,16 +580,6 @@ bool d3d_free_texture( tcache_slot_d3d *t )
 			D3D_last_bitmap_id = -1;
 		}
 			
-		// if this guy has children, free them too, since the children
-		// actually make up his size
-		for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-			for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-				if(t->data_sections[idx][s_idx] != NULL){
-					d3d_free_texture(t->data_sections[idx][s_idx]);						
-				}
-			}
-		}			
-
 		t->bitmap_id = -1;
 		t->used_this_frame = 0;
 		D3D_textures_in -= t->size;		
@@ -974,9 +953,6 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 	int max_h = bmp->h; 
 		
 	if ( bitmap_type != TCACHE_TYPE_AABITMAP )	{
-		max_w /= D3D_texture_divider;
-		max_h /= D3D_texture_divider;
-
 		// Detail.debris_culling goes from 0 to 4.
 		max_w /= 16 >> Detail.hardware_textures;
 		max_h /= 16 >> Detail.hardware_textures;
@@ -1006,7 +982,7 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 	return ret_val;
 }
 
-int d3d_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslot, int sx, int sy, int fail_on_full)
+int d3d_create_texture_sectioned(int bitmap_handle, tcache_slot_d3d *tslot, int sx, int sy, int fail_on_full)
 {
 	ubyte flags;
 	bitmap *bmp;
@@ -1014,11 +990,7 @@ int d3d_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_slot
 	int section_x, section_y;
 	int reload = 0;
 
-	// setup texture/bitmap flags
-	Assert(bitmap_type == TCACHE_TYPE_BITMAP_SECTION);
-	if(bitmap_type != TCACHE_TYPE_BITMAP_SECTION){
-		bitmap_type = TCACHE_TYPE_BITMAP_SECTION;
-	}
+	int bitmap_type = TCACHE_TYPE_BITMAP_SECTION;
    
 	flags = BMP_TEX_XPARENT;   
 	
@@ -1066,7 +1038,6 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage )
 {
 	bitmap *bmp = NULL;
-	int idx, s_idx;	
 	int ret_val = 1;
 
 	if ( bitmap_id < 0 )	{
@@ -1097,17 +1068,6 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 	if ( (D3D_last_bitmap_id == bitmap_id) && (D3D_last_bitmap_type==bitmap_type) && (t->bitmap_id == bitmap_id) && (D3D_last_section_x == sx) && (D3D_last_section_y == sy))	{
 		t->used_this_frame++;
 		
-		// mark all children as used
-		if(D3D_texture_sections){
-			for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-				for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-					if(t->data_sections[idx][s_idx] != NULL){
-						t->data_sections[idx][s_idx]->used_this_frame++;
-					}
-				}
-			}
-		}
-
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
 		return 1;
@@ -1115,13 +1075,6 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 
 	// if this is a sectioned bitmap
 	if(bitmap_type == TCACHE_TYPE_BITMAP_SECTION){	 
-		int result = (sx >= 0) && (sy >= 0) && (sx < MAX_BMAP_SECTIONS_X) && (sy < MAX_BMAP_SECTIONS_Y);
-
-		// Bad section
-		Assert(result);
-		if(!result){
-			return 0;
-		}		
 
 		ret_val = 1;
 
@@ -1132,32 +1085,21 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 			bmp = bm_lock(bitmap_id, 16, BMP_TEX_XPARENT);	
 			bm_unlock(bitmap_id);		
 			
-			// now lets do something for each texture			
-			for(idx=0; idx<bmp->sections.num_x; idx++){
-				for(s_idx=0; s_idx<bmp->sections.num_y; s_idx++){																				
-					// hmm. i'd rather we didn't have to do it this way...
-				   	if(!d3d_create_texture_sectioned(bitmap_id, bitmap_type, t->data_sections[idx][s_idx], idx, s_idx, fail_on_full)){
-				   		ret_val = 0;
-				   	}
-
-					// not used this frame
-					t->data_sections[idx][s_idx]->used_this_frame = 0;
-				}
+			if(!d3d_create_texture_sectioned(bitmap_id, t, 0, 0, fail_on_full)){
+				ret_val = 0;
 			}
+
+			// not used this frame
+			t->used_this_frame = 0;
 
 			// zero out pretty much everything in the parent struct since he's just the root
 			t->bitmap_id = bitmap_id;			
-			t->time_created = t->data_sections[sx][sy]->time_created;
 			t->used_this_frame = 0;
 		}  
 
 		// argh. we failed to upload. free anything we can
 		if(!ret_val){
 			d3d_free_texture(t);
-		}
-		// swap in the texture we want				
-		else {			
-			t = t->data_sections[sx][sy];
 		}
 	}
 	// all other "normal" textures
@@ -1187,28 +1129,12 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 
 int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force )
 {
-	return d3d_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0 );
+	return d3d_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, 0, 0, force, 0 );
 }
 
 void d3d_tcache_init()
 {
-	int i, idx, s_idx;
-	const int use_sections = 1;
-
-	D3D_texture_ram = GlobalD3DVars::lpD3DDevice->GetAvailableTextureMem();
-
-	// setup texture divider
-	uint tmp_val = os_config_read_uint( NULL, NOX("D3DFast"), 0);
-	D3D_texture_divider = 1;
-	if(tmp_val){
-		D3D_texture_divider = 4;
-	}			
-
-#ifndef NDEBUG
-	int megs = D3D_texture_ram / (1024*1024);		
-	mprintf(( "TEXTURE RAM: %d bytes (%d MB) available, size divisor = %d\n", D3D_texture_ram, megs, D3D_texture_divider ));
-#endif
-
+	int i; 	
   	D3D_min_texture_width  = 16;
 	D3D_min_texture_height = 16;
 	D3D_max_texture_width  = GlobalD3DVars::d3d_caps.MaxTextureWidth;
@@ -1243,18 +1169,14 @@ void d3d_tcache_init()
 
 	{
 		if(	!os_config_read_uint( NULL, NOX("D3DUseLargeTextures"), 0 )) {
-			if ( D3D_max_texture_width > 256 )	{
-				D3D_max_texture_width = 256;
+			if ( D3D_max_texture_width > 1024 )	{
+				D3D_max_texture_width = 1024;
 			}
 
-			if ( D3D_max_texture_height > 256 )	{
-				D3D_max_texture_height = 256;
+			if ( D3D_max_texture_height > 1024 )	{
+				D3D_max_texture_height = 1024;
 			}	
-			DBUGFILE_OUTPUT_0("Using small textures");
-		} else {
-			bm_d3d_set_max_bitmap_size(D3D_max_texture_height);
-			DBUGFILE_OUTPUT_0("Using large textures");
-		}
+		} 
 	}
 
 	DBUGFILE_OUTPUT_2("Max textures: %d %d",D3D_max_texture_width,D3D_max_texture_height);
@@ -1266,17 +1188,7 @@ void d3d_tcache_init()
 		exit(1);
 	}
 
-	if(use_sections){
-		Texture_sections = (tcache_slot_d3d*)malloc(MAX_BITMAPS * MAX_BMAP_SECTIONS_X * MAX_BMAP_SECTIONS_Y * sizeof(tcache_slot_d3d));
-		if(!Texture_sections){
-			DBUGFILE_OUTPUT_0("exit");
-			exit(1);
-		}
-		memset(Texture_sections, 0, MAX_BITMAPS * MAX_BMAP_SECTIONS_X * MAX_BMAP_SECTIONS_Y * sizeof(tcache_slot_d3d));
-	}
-
 	// Init the texture structures
-	int section_count = 0;
 	for( i=0; i<MAX_BITMAPS; i++ )	{
 		Textures[i].d3d8_thandle = NULL;
 
@@ -1285,32 +1197,7 @@ void d3d_tcache_init()
 		Textures[i].used_this_frame = 0; 
 
 		Textures[i].parent = NULL;
-
-		// allocate sections
-		if(use_sections){
-			for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-				for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-					Textures[i].data_sections[idx][s_idx] = &((tcache_slot_d3d*)Texture_sections)[section_count++];
-					Textures[i].data_sections[idx][s_idx]->parent = &Textures[i];
-					
-					Textures[i].data_sections[idx][s_idx]->bitmap_id = -1;
-					Textures[i].data_sections[idx][s_idx]->size = 0;
-					Textures[i].data_sections[idx][s_idx]->used_this_frame = 0;
-
-					Textures[i].data_sections[idx][s_idx]->d3d8_thandle = NULL;
-
-				}
-			}
-		} else {
-			for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-				for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-					Textures[i].data_sections[idx][s_idx] = NULL;					
-				}
-			}
-		}
 	}
-
-	D3D_texture_sections = use_sections;
 
 	D3D_last_detail = Detail.hardware_textures;
 	D3D_last_bitmap_id = -1;
@@ -1351,17 +1238,10 @@ void d3d_tcache_cleanup()
 		free(Textures);
 		Textures = NULL;
 	}
-
-	if(Texture_sections != NULL){
-		free(Texture_sections);
-		Texture_sections = NULL;
-	}
 }
 
 void d3d_tcache_frame()
 {
-	int idx, s_idx;
-
 	D3D_last_bitmap_id = -1;
 	D3D_textures_in_frame = 0;
 
@@ -1370,20 +1250,6 @@ void d3d_tcache_frame()
 	int i;
 	for( i=0; i<MAX_BITMAPS; i++ )	{
 		Textures[i].used_this_frame = 0; 
-
-		// data sections
-		if(Textures[i].data_sections[0][0] != NULL){
-			Assert(D3D_texture_sections);
-			if(D3D_texture_sections){				
-				for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-					for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-						if(Textures[i].data_sections[idx][s_idx] != NULL){
-							Textures[i].data_sections[idx][s_idx]->used_this_frame = 0;
-						}
-					}
-				}
-			}
-		}
 	}
 }
 

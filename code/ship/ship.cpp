@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.105 $
- * $Date: 2004-02-07 00:48:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.106 $
+ * $Date: 2004-02-14 00:18:35 $
+ * $Author: randomtiger $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2004/02/07 00:48:52  Goober5000
+ * made FS2 able to account for subsystem mismatches between ships.tbl and the
+ * model file - e.g. communication vs. communications
+ * --Goober5000
+ *
  * Revision 2.104  2004/02/05 14:31:44  Goober5000
  * fixed a few random bugs
  * --Goober5000
@@ -2494,6 +2499,12 @@ strcpy(parse_error_text, temp_error);
 			stuff_string(sp->subobj_name, F_NAME, ",");
 			Mp++;
 			stuff_float(&percentage_of_hits);
+
+	//		if (percentage_of_hits == 0.0f)
+			{
+	//			Warning(LOCATION, "Subsystem %s on ship %s has 0 hitpoints.\n", sp->subobj_name, sp->name);
+			}
+
 			stuff_float(&turning_rate);
 			hull_percentage_of_hits -= percentage_of_hits;
 			sp->max_subsys_strength = sip->initial_hull_strength * (percentage_of_hits / 100.0f);
@@ -11481,15 +11492,7 @@ void ship_page_in()
 				{
 					if (Ships[i].replacement_textures[j] != -1)
 					{
-						// if we're in Glide (and maybe later with D3D), use nondarkening textures
-						if(gr_screen.mode == GR_GLIDE)
-						{
-							bm_page_in_nondarkening_texture( Ships[i].replacement_textures[j] );
-						}
-						else
-						{
-							bm_page_in_texture( Ships[i].replacement_textures[j] );
-						}
+						bm_page_in_texture( Ships[i].replacement_textures[j] );
 					}
 				}
 			}
@@ -11531,15 +11534,7 @@ void ship_page_in_model_textures(int modelnum)
 			}
 			else
 			{
-				// if we're in Glide (and maybe later with D3D), use nondarkening textures
-				if(gr_screen.mode == GR_GLIDE)
-				{
-					bm_page_in_nondarkening_texture( bitmap_num, pm->num_frames[i] );
-				}
-				else
-				{
-					bm_page_in_texture( bitmap_num, pm->num_frames[i] );
-				}
+				bm_page_in_texture( bitmap_num, pm->num_frames[i] );
 			}
 		}
 	}

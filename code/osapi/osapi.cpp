@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-01-24 15:52:26 $
+ * $Revision: 2.14 $
+ * $Date: 2004-02-14 00:18:35 $
  * $Author: randomtiger $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/01/24 15:52:26  randomtiger
+ * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
+ * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
+ *
  * Revision 2.12  2004/01/17 21:59:54  randomtiger
  * Some small changes to the main codebase that allow Fred_open OGL to compile.
  *
@@ -669,25 +673,14 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 // create the main window
 BOOL win32_create_window()
 {
-	int windowed = 0;
-	int hires = 1;
-	char *ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);	
-	if(ptr && ( (strstr(ptr, NOX("D3D8-")) ) || (strstr(ptr, NOX("OpenGL -")))) && Cmdline_window){
-		windowed = 1;
-	}
-	// Lets work this out the other way round, assume its hi-res
-	// For example 800x600 would be better running with 1024x768 data
-	if(ptr && strstr(ptr, NOX("640"))){
-		hires = 0;
-	}
-
 	WNDCLASSEX wclass;							// Huh?
 	HINSTANCE hInst = GetModuleHandle(NULL);
 
 	wclass.hInstance 		= hInst;
 	wclass.lpszClassName = szWinClass;
-	wclass.lpfnWndProc	= (WNDPROC)win32_message_handler;		
-	if(windowed){
+	wclass.lpfnWndProc	= (WNDPROC)win32_message_handler;	  
+	
+	if(Cmdline_window){
 		wclass.style			= CS_VREDRAW | CS_HREDRAW | CS_OWNDC;
 	} else {
 		wclass.style			= CS_BYTEALIGNCLIENT|CS_VREDRAW | CS_HREDRAW;
@@ -705,7 +698,7 @@ BOOL win32_create_window()
 	if (!RegisterClassEx(&wclass)) return FALSE;
 	
 	int style;
-	if(windowed){
+	if(Cmdline_window){
 		style = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	} else {
 		style = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
@@ -719,8 +712,18 @@ BOOL win32_create_window()
 
 	// Make a 32x32 window.  It never should get shown, because the graphics code
 	// will then size it.
-	if(windowed)			// Let it here be known that I hate the coding style they use for {'s - UP
+	if(Cmdline_window)			// Let it here be known that I hate the coding style they use for {'s - UP
 	{
+		int hires = 1;
+		char *ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);
+		
+		// Lets work this out the other way round, assume its hi-res
+		// For example 800x600 would be better running with 1024x768 data
+		if(ptr && strstr(ptr, NOX("640"))){
+			hires = 0;
+		}
+
+
 		hwndApp = CreateWindow( szWinClass, szWinTitle,
 									style,   
 									CW_USEDEFAULT,
@@ -750,7 +753,7 @@ BOOL win32_create_window()
 		outwnd_init(1);
 	#endif	
 
-	if(windowed){
+	if(Cmdline_window){
 		ShowWindow( hwndApp, SW_SHOWNORMAL );
 		UpdateWindow( hwndApp );
 	}

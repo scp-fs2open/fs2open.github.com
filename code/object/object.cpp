@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-02-06 22:58:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2004-02-14 00:18:35 $
+ * $Author: randomtiger $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/02/06 22:58:18  Goober5000
+ * fixed a small HUD bug I introduced
+ * --Goober5000
+ *
  * Revision 2.17  2004/02/05 14:31:44  Goober5000
  * fixed a few random bugs
  * --Goober5000
@@ -1636,27 +1640,23 @@ void obj_move_all_post(object *objp, float frametime)
 			}
 
 			if ( cast_light )	{
-				if ( D3D_enabled || OGL_inited )	{
-					weapon_info * wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+				weapon_info * wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 
-					if ( wi->render_type == WRT_LASER )	{
-						color c;
-						float r,g,b;
+				if ( wi->render_type == WRT_LASER )	{
+					color c;
+					float r,g,b;
 
-						// get the laser color
-						weapon_get_laser_color(&c, objp);
+					// get the laser color
+					weapon_get_laser_color(&c, objp);
 
-						r = i2fl(c.red)/255.0f;
-						g = i2fl(c.green)/255.0f;
-						b = i2fl(c.blue)/255.0f;
-						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
-						//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 0.0f, 0.0f, 1.0f, objp->parent );
-					} else {
-						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
-					} 
+					r = i2fl(c.red)/255.0f;
+					g = i2fl(c.green)/255.0f;
+					b = i2fl(c.blue)/255.0f;
+					light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
+					//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 0.0f, 0.0f, 1.0f, objp->parent );
 				} else {
 					light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
-				}
+				} 
 			}
 		}
 		break;	

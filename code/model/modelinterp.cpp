@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.67 $
- * $Date: 2004-02-13 04:17:14 $
+ * $Revision: 2.68 $
+ * $Date: 2004-02-14 00:18:34 $
  * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2004/02/13 04:17:14  randomtiger
+ * Turned off fog in OGL for Fred.
+ * Simulated speech doesnt say tags marked by $ now.
+ * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
+ * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
+ * Error now given on missing briefing icon and bad ship normal data.
+ * Solved more species divide by zero error.
+ * Fixed neb cube crash.
+ *
  * Revision 2.66  2004/02/06 23:00:29  Goober5000
  * commented my tmap_num Asserts
  * --Goober5000
@@ -581,7 +590,6 @@ extern int Cmdline_nohtl;
 int glow_maps_active = 1;
 
 extern int OGL_inited;
-extern int Gr_scaler_zbuffering;
 
 // a lighting object
 typedef struct model_light_object {
@@ -1219,13 +1227,9 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 		Interp_list[i] = &Interp_points[verts[i*2]];
 
 		if ( Interp_flags & MR_NO_LIGHTING )	{
-			if ( D3D_enabled || OGL_inited )	{
 				Interp_list[i]->r = 191;
 				Interp_list[i]->g = 191;
 				Interp_list[i]->b = 191;
-			} else {
-				Interp_list[i]->b = 191;
-			}
 		} else if(Cmdline_cell){
 			Interp_list[i]->r = 0;
 			Interp_list[i]->g = 0;
@@ -1235,29 +1239,17 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 			int norm = verts[i*2+1];
 	
 			if ( Interp_flags & MR_NO_SMOOTHING )	{
-				if ( D3D_enabled || OGL_inited )	{
-					light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-				} else {
-					Interp_list[i]->b = light_apply( Interp_verts[vertnum], vp(p+8), Interp_light );
-				}
+				light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
 			} else {
 				// if we're not using saved lighting
 				if ( !Interp_use_saved_lighting && !Interp_light_applied[norm] )	{
-					if ( D3D_enabled || OGL_inited )	{
-						light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], vp(p+8), Interp_light );
-					} else {
-						Interp_lighting->b[norm] = light_apply( Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-					}
+					light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], vp(p+8), Interp_light );
 					Interp_light_applied[norm] = 1;
 				}
 
-				if ( D3D_enabled || OGL_inited )	{
-					Interp_list[i]->r = Interp_lighting->r[norm];
-					Interp_list[i]->g = Interp_lighting->g[norm];
-					Interp_list[i]->b = Interp_lighting->b[norm];
-				} else {
-					Interp_list[i]->b = Interp_lighting->b[norm];
-				}
+				Interp_list[i]->r = Interp_lighting->r[norm];
+				Interp_list[i]->g = Interp_lighting->g[norm];
+				Interp_list[i]->b = Interp_lighting->b[norm];
 			}
 		}
 	}
@@ -1268,11 +1260,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 	}
 
 	if ( !(Interp_flags & MR_NO_POLYS))	{
-		if ( D3D_enabled || OGL_inited )	{
-			g3_draw_poly( nv, Interp_list, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB );	
-		} else {
-			g3_draw_poly( nv, Interp_list, TMAP_FLAG_GOURAUD | TMAP_FLAG_RAMP );	
-		}
+		g3_draw_poly( nv, Interp_list, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB );	
 	}
 
 	if (Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET))	{
@@ -1423,14 +1411,9 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	//		Assert( verts[i].normnum == verts[i].vertnum );
 			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->ambient[tmap_num]))	{	//gets the ambient glow to work
-				if ( D3D_enabled || OGL_inited )	{
-					Interp_list[i]->r = 191;
-					Interp_list[i]->g = 191;
-					Interp_list[i]->b = 191;
-
-				} else {
-					Interp_list[i]->b = 191;
-				}
+				Interp_list[i]->r = 191;
+				Interp_list[i]->g = 191;
+				Interp_list[i]->b = 191;
 				
 				Interp_list[i]->spec_r = 0;
 				Interp_list[i]->spec_g = 0;
@@ -1445,52 +1428,18 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				int norm = verts[i].normnum;
 		
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
-					if ( D3D_enabled || OGL_inited )	{
-						light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-						if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell && !Cmdline_nospec )
-							light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
+					light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
+					if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell && !Cmdline_nospec )
+						light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
 					//	interp_compute_environment_mapping(vp(p+8), Interp_list[i]);
-					} else {
-						Interp_list[i]->b = light_apply( Interp_verts[vertnum], vp(p+8), Interp_light );
-					}
 				} else {					
 					// if we're applying lighting as normal, and not using saved lighting
 					if ( !Interp_use_saved_lighting && !Interp_light_applied[norm] )	{
 
-						if ( D3D_enabled || OGL_inited )	{
-							light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-							if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell && !Cmdline_nospec )
-								light_apply_specular( &Interp_lighting->spec_r[norm], &Interp_lighting->spec_g[norm], &Interp_lighting->spec_b[norm], Interp_verts[vertnum], Interp_norms[norm],  &View_position);
+						light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], Interp_norms[norm], Interp_light );
+						if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell && !Cmdline_nospec )
+							light_apply_specular( &Interp_lighting->spec_r[norm], &Interp_lighting->spec_g[norm], &Interp_lighting->spec_b[norm], Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 						//	interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
-
-						} else {
-							int li;
-							ubyte l;
-							l = light_apply( Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-
-
-							if ( Detail.lighting > 1 )	{
-								// Add in precalculated muzzle flashes
-								float fl = i2fl(l)/255.0f;
-								ubyte *tmp = &Interp_lights[norm*pm->num_lights];
-
-								for ( li=0; li<pm->num_lights; li++ )	{
-									fl += i2fl(tmp[li])*pm->lights[li].value;
-								}
-
-								if ( fl < 0.0f )	{
-									fl = 0.0f;
-								} else if ( fl > 1.0f )	{
-									fl = 1.0f;
-								}
-
-								l = (ubyte)fl2i(fl*255.0f);
-
-							}
-
-							Interp_lighting->b[norm] = l;
-						}
-
 
 						Interp_light_applied[norm] = 1;
 					}else if(Interp_light_applied[norm]){
@@ -1499,17 +1448,13 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					//	interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 					}
 
-					if ( D3D_enabled || OGL_inited )	{
-						Interp_list[i]->spec_r = Interp_lighting->spec_r[norm];
-						Interp_list[i]->spec_g = Interp_lighting->spec_g[norm];
-						Interp_list[i]->spec_b = Interp_lighting->spec_b[norm];
+					Interp_list[i]->spec_r = Interp_lighting->spec_r[norm];
+					Interp_list[i]->spec_g = Interp_lighting->spec_g[norm];
+					Interp_list[i]->spec_b = Interp_lighting->spec_b[norm];
 
-						Interp_list[i]->r = Interp_lighting->r[norm];
-						Interp_list[i]->g = Interp_lighting->g[norm];
-						Interp_list[i]->b = Interp_lighting->b[norm];
-					} else {
-						Interp_list[i]->b = Interp_lighting->b[norm];
-					}
+					Interp_list[i]->r = Interp_lighting->r[norm];
+					Interp_list[i]->g = Interp_lighting->g[norm];
+					Interp_list[i]->b = Interp_lighting->b[norm];
 //					if((Detail.lighting > 2) && (model_current_LOD < 2))
 //						light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 				}
@@ -2750,11 +2695,7 @@ void model_render(int model_num, matrix *orient, vector * pos, uint flags, int o
 	int num_lights = 0;
 
 	if ( !(flags & MR_NO_LIGHTING ) )	{
-		if ( D3D_enabled || OGL_inited  )	{
-			num_lights = light_filter_push( objnum, pos, pm->rad );
-		} else {
-			num_lights = light_filter_push( objnum, pos, pm->rad );
-		}
+		num_lights = light_filter_push( objnum, pos, pm->rad );
 	}
 
 	model_try_cache_render(model_num, orient, pos, flags, objnum, num_lights );
@@ -3391,11 +3332,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	pm = model_get(model_num);	
 
 	// Set the flags we will pass to the tmapper
-	if ( D3D_enabled || OGL_inited )	{
-		Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
-	} else {
-		Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RAMP;
-	}
+	Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
 	// if we're in nebula mode
 	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
@@ -3746,10 +3683,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 								gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
 							//	mprintf(( "rendering glow with texture %d\n", bank->glow_bitmap ));
-								Gr_scaler_zbuffering = 1;
 								g3_draw_bitmap(&p,0,w*0.5f, TMAP_FLAG_TEXTURED );
 								//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
-								Gr_scaler_zbuffering = 0;
 
 							}//d>0
 							break;
@@ -3932,14 +3867,13 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				if ( d > 0.0f){
 					gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
 					{
-						//primary thruster glows, sort of a lens flare/engine wash thing						Gr_scaler_zbuffering = 1;
+						//primary thruster glows, sort of a lens flare/engine wash thing 
 
 //						g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
 						if(Cmdline_nohtl)g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
 						else g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, 0.375f*w );
 
 						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
-						Gr_scaler_zbuffering = 0;
 					}
 				}//d>0
 
@@ -3948,12 +3882,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					//thus is imostly for haveing a glow that is visable from the front
 					gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (The_mission.flags & MISSION_FLAG_FULLNEB)?(1.0f - neb2_get_fog_intensity(&npnt)):1.0f );
 					
-					Gr_scaler_zbuffering = 1;
 					p.sw -= w;
 					//g3_draw_bitmap(&p,0,w, TMAP_FLAG_TEXTURED );
 					if(Cmdline_nohtl)g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED); 
 					else g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, -0.375f*(D>0)?D:-D);
- 					Gr_scaler_zbuffering = 0;
 				}
 				
 
@@ -4188,11 +4120,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 	pm = model_get(model_num);
 
 	// Set the flags we will pass to the tmapper
-	if ( D3D_enabled || OGL_inited )	{
-		Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
-	} else {
-		Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RAMP;
-	}
+	Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
 	// if we're in nebula mode
 	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
@@ -4211,11 +4139,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 	}
 
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
-		if ( D3D_enabled || OGL_inited )	{
-			light_filter_push( -1, pos, pm->submodel[submodel_num].rad );
-		} else {
-			light_filter_push( light_ignore_id, pos, pm->submodel[submodel_num].rad );
-		}
+		light_filter_push( -1, pos, pm->submodel[submodel_num].rad );
 	}
 
 	g3_start_instance_matrix(pos,orient);
@@ -4656,14 +4580,8 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 		int bitmap_num = pm->original_textures[idx];
 
 		if ( bitmap_num > -1 )	{
-			// if we're in Glide (and maybe later with D3D), use nondarkening textures
-			if(gr_screen.mode == GR_GLIDE){
-				bm_lock(bitmap_num, 16, BMP_TEX_NONDARK);
-				bm_unlock(bitmap_num);
-			} else {
-				bm_lock(bitmap_num, 16, BMP_TEX_OTHER);
-				bm_unlock(bitmap_num);
-			}
+			bm_lock(bitmap_num, 16, BMP_TEX_OTHER);
+			bm_unlock(bitmap_num);
 		}
 	}
 }

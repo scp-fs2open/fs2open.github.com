@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-10-16 17:36:29 $
+ * $Revision: 2.4 $
+ * $Date: 2004-02-14 00:18:33 $
  * $Author: randomtiger $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/10/16 17:36:29  randomtiger
+ * D3D now has its own gamma system (stored in GammaD3D reg entry) that effects everything.
+ * Put in Bobs specular fog fix.
+ *
  * Revision 2.2  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -1390,12 +1394,7 @@ void draw_gamma_box()
 		ushort clr_half_white = 0;
 		ubyte r, g, b, a;
 
-		// if we're in bitmap poly mode
-		if(Gr_bitmap_poly){
-			BM_SELECT_TEX_FORMAT();
-		} else {
-			BM_SELECT_SCREEN_FORMAT();
-		}
+		BM_SELECT_TEX_FORMAT();
 
 		// set full white
 		r = g = b = a = 255;		
@@ -1601,7 +1600,6 @@ void options_menu_do_frame(float frametime)
 		y = Options_gamma_num_coords[gr_screen.res][OPTIONS_Y_COORD]; // + Options_gamma_num_coords[gr_screen.res][OPTIONS_H_COORD] / 2 - gr_get_font_height() / 2;
 
 		gr_printf(x, y, NOX("%.2f"), Freespace_gamma);
-		//gr_printf(GAMMA_TEXT_X, GAMMA_TEXT_Y, "Squint and try to make the above\nbar appear to be one solid color.\nThere are more 'ranges' to see\nif you set this in Glide mode.");
 	}
 	//==============================================================================
 

@@ -2,13 +2,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.61 $
- * $Date: 2004-02-13 04:17:12 $
+ * $Revision: 2.62 $
+ * $Date: 2004-02-14 00:18:32 $
  * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2004/02/13 04:17:12  randomtiger
+ * Turned off fog in OGL for Fred.
+ * Simulated speech doesnt say tags marked by $ now.
+ * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
+ * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
+ * Error now given on missing briefing icon and bad ship normal data.
+ * Solved more species divide by zero error.
+ * Fixed neb cube crash.
+ *
  * Revision 2.60  2004/02/05 01:41:33  randomtiger
  * Small changes, deleted old dshow stuff
  *
@@ -1163,7 +1172,7 @@ void opengl_go_fullscreen(HWND wnd)
 	dm.dmBitsPerPel=gr_screen.bits_per_pixel;
 	dm.dmFields=DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 	ChangeDisplaySettings(&dm,CDS_FULLSCREEN);
-	os_resume();
+	os_resume();  
 }
 
 void opengl_minimize()
@@ -1212,8 +1221,14 @@ void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
 		
 		case TEXTURE_SOURCE_NO_FILTERING:
 			opengl_switch_arb0(1);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			if(gr_screen.custom_size < 0) {
+				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			} else {
+				// If we are using a non standard mode we will need this because textures are being stretched
+ 				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			}
 		
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
 			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
@@ -1477,7 +1492,7 @@ void gr_opengl_flip()
 	 		// stuff
 	 	} else {
 	 		gr_set_bitmap(Gr_cursor);
-			gr_bitmap( mx, my );
+			gr_bitmap( mx, my, false);
 	 	}
 	 }
 	 
@@ -1529,6 +1544,8 @@ void gr_opengl_flip_window(uint _hdc, int x, int y, int w, int h )
 
 void gr_opengl_set_clip(int x,int y,int w,int h)
 {
+	gr_resize_screen_pos(&x, &y);
+	gr_resize_screen_pos(&w, &h);
 
 	// check for sanity of parameters
 	if (x < 0)
@@ -1621,7 +1638,7 @@ void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, in
 	saved_zbuf = gr_zbuffer_get();
 	
 	// start the frame, no zbuffering, no culling
-#ifndef FRED_OGL
+#ifndef FRED
 	g3_start_frame(1);	
 #endif
 	gr_zbuffer_set(GR_ZBUFF_NONE);		
@@ -1679,7 +1696,7 @@ void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, in
 	// draw the polys
 	g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_ALPHA, 0.1f);		
 
-#ifndef FRED_OGL
+#ifndef FRED
  	g3_end_frame();
 #endif
 
@@ -1744,10 +1761,26 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	u1 = u_scale*i2fl(sx+w)/i2fl(bw);
 	v1 = v_scale*i2fl(sy+h)/i2fl(bh);
 
-	x1 = i2fl(x+gr_screen.offset_x);
-	y1 = i2fl(y+gr_screen.offset_y);
-	x2 = i2fl(x+w+gr_screen.offset_x);
-	y2 = i2fl(y+h+gr_screen.offset_y);
+	if(gr_screen.custom_size == -1)
+	{
+		x1 = i2fl(x+gr_screen.offset_x);
+		y1 = i2fl(y+gr_screen.offset_y);
+		x2 = i2fl(x+w+gr_screen.offset_x);
+		y2 = i2fl(y+h+gr_screen.offset_y);
+	} else {
+		int nx = x+gr_screen.offset_x;
+		int ny = y+gr_screen.offset_y;
+		int nw = x+w+gr_screen.offset_x;
+		int nh = y+h+gr_screen.offset_y;
+
+		gr_resize_screen_pos(&nx, &ny);
+		gr_resize_screen_pos(&nw, &nh);
+
+		x1 = i2fl(nx);
+		y1 = i2fl(ny);
+		x2 = i2fl(nw);
+		y2 = i2fl(nh);
+	}
 
 	if ( gr_screen.current_color.is_alphacolor )	{
 		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue,gr_screen.current_color.alpha);
@@ -1958,8 +1991,14 @@ void gr_opengl_string( int sx, int sy, char *s )
 	TIMERBAR_POP();
 }
 
-void gr_opengl_line(int x1,int y1,int x2,int y2)
+void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 {
+	if(resize)
+	{
+		gr_resize_screen_pos(&x1, &y1);
+		gr_resize_screen_pos(&x2, &y2);
+	}
+
 	int clipped = 0, swapped=0;
 
 	gr_opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
@@ -2899,7 +2938,7 @@ void gr_opengl_cleanup(int minimize)
 	HWND wnd=(HWND)os_get_window();
 	if ( !OGL_inited )	return;
 
-#ifndef FRED_OGL
+#ifndef FRED
 	gr_reset_clip();
 	gr_clear();
 	gr_flip();
@@ -4346,7 +4385,7 @@ void gr_opengl_bitmap(int x, int y)
 
 	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
 
-	gr_bitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
+	gr_opengl_bitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
 }
 
 void gr_opengl_push_texture_matrix(int unit)
@@ -5141,8 +5180,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	
 	Bm_pixel_format = BM_PIXEL_FORMAT_ARGB;
 		
-
-	Gr_bitmap_poly = 1;
 	if(!Fred_running)
 		OGL_fogmode=1;
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-02-04 09:02:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-02-14 00:18:33 $
+ * $Author: randomtiger $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/02/04 09:02:44  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.3  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -578,10 +582,10 @@ void mouse_eval_deltas_di()
 		Mouse_y = 0;
 
 	if (Mouse_x >= gr_screen.max_w)
-		Mouse_x = gr_screen.max_w - 1;
+   		Mouse_x = gr_screen.max_w - 1;
 
 	if (Mouse_y >= gr_screen.max_h)
-		Mouse_y = gr_screen.max_h - 1;
+  		Mouse_y = gr_screen.max_h - 1;
 
 	// keep the mouse inside our window so we don't switch applications or anything (debug bug people reported?)
 	// JH: Dang!  This makes the mouse readings in DirectInput act screwy!
@@ -633,7 +637,7 @@ int mouse_get_pos(int *xpos, int *ypos)
 	}
 
 	if (Mouse_y >= gr_screen.max_h){
-		Mouse_y = gr_screen.max_h - 1;
+ 		Mouse_y = gr_screen.max_h - 1;
 	}
 	
 	if (xpos){

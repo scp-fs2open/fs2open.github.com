@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-02-13 04:17:13 $
+ * $Revision: 2.8 $
+ * $Date: 2004-02-14 00:18:33 $
  * $Author: randomtiger $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/02/13 04:17:13  randomtiger
+ * Turned off fog in OGL for Fred.
+ * Simulated speech doesnt say tags marked by $ now.
+ * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
+ * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
+ * Error now given on missing briefing icon and bad ship normal data.
+ * Solved more species divide by zero error.
+ * Fixed neb cube crash.
+ *
  * Revision 2.6  2003/10/14 16:27:01  Goober5000
  * commented back in null vector warning, because any code that flags this
  * is buggy and should be fixed (and it only pops up in release builds anyway)
@@ -580,6 +589,7 @@ float vm_vec_mag(vector *v)
 	x = v->xyz.x*v->xyz.x;
 	y = v->xyz.y*v->xyz.y;
 	z = v->xyz.z*v->xyz.z;
+
 	mag1 = x+y+z;
 
 	if ( mag1 < 0.0 )

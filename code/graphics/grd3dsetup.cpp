@@ -41,7 +41,6 @@ bool GlobalD3DVars::D3D_Antialiasing = 0;
 bool GlobalD3DVars::D3D_window		 = 0;
 
 int GlobalD3DVars::D3D_rendition_uvs = 0;
-int GlobalD3DVars::D3D_custom_size   = -1;
 int GlobalD3DVars::D3D_zbias         = 1;
 
 float GlobalD3DVars::texture_adjust_u = 0;
@@ -849,7 +848,6 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_set_clear_color = gr_d3d_set_clear_color;
 
 	// now for the bitmap functions
-	gr_screen.gf_bm_set_max_bitmap_size     = bm_d3d_set_max_bitmap_size;     
 	gr_screen.gf_bm_get_next_handle         = bm_d3d_get_next_handle;         
 	gr_screen.gf_bm_close                   = bm_d3d_close;                   
 	gr_screen.gf_bm_init                    = bm_d3d_init;                    
@@ -913,21 +911,6 @@ void d3d_setup_function_pointers()
 
 int d3d_match_mode(int adapter)
 {
-	char *ptr = os_config_read_string(NULL, NOX("videocardFs2open"), NULL);	
-	uint width, height;
-	int cdepth;
-
-	if(ptr == NULL)
-	{
-		strcpy(Device_init_error, "Cant get 'videocardFs2open' reg entry");
-		return -1;
-	}
-
-	if(sscanf(ptr, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) {
-		strcpy(Device_init_error, "Cant understand 'videocardFs2open' reg entry");
-		return -1;
-	}
-
 	int num_modes = GlobalD3DVars::lpD3D->GetAdapterModeCount(adapter);
 
 	if(num_modes == 0) {
@@ -941,9 +924,9 @@ int d3d_match_mode(int adapter)
 		GlobalD3DVars::lpD3D->EnumAdapterModes(adapter, i, &mode); 
 
 		// ignore invalid modes
-		if(cdepth != d3d_get_mode_bit(mode.Format)) continue; 
-		if(width  != mode.Width)  continue; 
-		if(height != mode.Height) continue; 
+		if(gr_screen.bits_per_pixel != d3d_get_mode_bit(mode.Format)) continue; 
+		if(gr_screen.max_w          != mode.Width)  continue; 
+		if(gr_screen.max_h          != mode.Height) continue; 
 
 		// This is the mode we want
 		return i;
@@ -1129,26 +1112,12 @@ bool d3d_init_device()
 		GlobalD3DVars::d3dpp.BackBufferWidth  = mode.Width;
 		GlobalD3DVars::d3dpp.BackBufferHeight = mode.Height;
 
-		// Determine if we are using a custom size
-		if((mode.Width != 1024 && mode.Height != 768) &&
-		   (mode.Width !=  640 && mode.Height != 480) ) {
-			GlobalD3DVars::D3D_custom_size = GR_1024;
-
-			// Override these values
-			gr_screen.max_w = mode.Width;
-			gr_screen.max_h = mode.Height;
-			gr_screen.clip_right  = gr_screen.max_w - 1;
-			gr_screen.clip_bottom = gr_screen.max_h - 1;
-			gr_screen.clip_width  = gr_screen.max_w;
-			gr_screen.clip_height = gr_screen.max_h;
-		}
-
 		// Calculate texture pullback values
-		if(GlobalD3DVars::D3D_custom_size != -1)
+		if(gr_screen.custom_size != -1)
 		{
 			GlobalD3DVars::texture_adjust_u = 0.0044f;
 			GlobalD3DVars::texture_adjust_v = 0.0044f;
-			gr_d3d_unsize_screen_posf(&GlobalD3DVars::texture_adjust_u, &GlobalD3DVars::texture_adjust_v);
+			gr_unsize_screen_posf(&GlobalD3DVars::texture_adjust_u, &GlobalD3DVars::texture_adjust_v);
 		}
 
 		GlobalD3DVars::d3dpp.FullScreen_RefreshRateInHz      = D3DPRESENT_RATE_DEFAULT;
@@ -1341,8 +1310,6 @@ void d3d_setup_color()
 	}
 
 	// determine 32 bit status
-	gr_screen.bits_per_pixel  = d3d_get_mode_bit(GlobalD3DVars::d3dpp.BackBufferFormat);
-	gr_screen.bytes_per_pixel = gr_screen.bits_per_pixel / 8;
 	D3D_32bit                 = gr_screen.bits_per_pixel == 32 ? 1 : 0;
 	mprintf(("D3D_32bit %d, bits_per_pixel %d",D3D_32bit, gr_screen.bits_per_pixel));
 }
@@ -1433,7 +1400,6 @@ bool gr_d3d_init()
 
 	// Tell Freespace code that we're using Direct3D.
 	D3D_enabled    = 1;
-  	Gr_bitmap_poly = 1;
 	GlobalD3DVars::D3D_inited = true;	
 
   	d3d_tcache_init();
@@ -1457,6 +1423,7 @@ bool gr_d3d_init()
 	Mouse_hidden++;
 	gr_reset_clip();
 	gr_clear();
+	gr_flip();
 	gr_flip();
 	Mouse_hidden--;
 

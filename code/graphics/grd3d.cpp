@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.50 $
- * $Date: 2004-01-24 14:31:27 $
+ * $Revision: 2.51 $
+ * $Date: 2004-02-14 00:18:31 $
  * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2004/01/24 14:31:27  randomtiger
+ * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
+ * Its optional and off by default, use -d3d_particle to activiate.
+ * Also bumped up D3D ambient light setting, it was way too dark.
+ * Its now set to something similar to the original game.
+ *
  * Revision 2.49  2004/01/20 22:37:44  Goober5000
  * First of all, this should be more readable, second of all, old_fog_color wasn't
  * initialized and VC++ is complaining.  Someone want to fix this?
@@ -716,88 +722,6 @@ void d3d_string_mem_use(int x, int y)
 	char mem_buffer[50];
 	sprintf(mem_buffer,"Texture mem free: %d Meg", GlobalD3DVars::lpD3DDevice->GetAvailableTextureMem()/1024/1024);
 	gr_string( x, y, mem_buffer);
-}
-
-
-
-/**
- * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
- * lengths in order to keep the correctly scaled to nonstandard resolutions
- *
- * @param int *x - x value (width to be scaled), can be NULL
- * @param int *y - y value (height to be scaled), can be NULL
- * @return always true
- */
-bool gr_d3d_resize_screen_pos(int *x, int *y)
-{
-	if(GlobalD3DVars::D3D_custom_size < 0)	return false;
-
-	int div_by_x = (GlobalD3DVars::D3D_custom_size == GR_1024) ? 1024 : 640;
-	int div_by_y = (GlobalD3DVars::D3D_custom_size == GR_1024) ?  768 : 480;
-			
-	if(x) {
-		(*x) *= GlobalD3DVars::d3dpp.BackBufferWidth;
-		(*x) /= div_by_x;
-	}
-
-	if(y) {
-		(*y) *= GlobalD3DVars::d3dpp.BackBufferHeight;
-		(*y) /= div_by_y;
-	}
-
-	return true;
-}
-
-/**
- *
- * @param int *x - x value (width to be unsacled), can be NULL
- * @param int *y - y value (height to be unsacled), can be NULL
- * @return always true
- */
-bool gr_d3d_unsize_screen_pos(int *x, int *y)
-{
-	if(GlobalD3DVars::D3D_custom_size < 0)	return false;
-
-	int mult_by_x = (GlobalD3DVars::D3D_custom_size == GR_1024) ? 1024 : 640;
-	int mult_by_y = (GlobalD3DVars::D3D_custom_size == GR_1024) ?  768 : 480;
-			
-	if(x) {
-		(*x) *= mult_by_x;
-		(*x) /= GlobalD3DVars::d3dpp.BackBufferWidth;
-	}
-
-	if(y) {
-		(*y) *= mult_by_y;
-		(*y) /= GlobalD3DVars::d3dpp.BackBufferHeight;
-	}
-
-	return true;
-}
-
-/**
- *
- * @param int *x - x value (width to be unsacled), can be NULL
- * @param int *y - y value (height to be unsacled), can be NULL
- * @return always true
- */
-bool gr_d3d_unsize_screen_posf(float *x, float *y)
-{
-	if(GlobalD3DVars::D3D_custom_size < 0)	return false;
-
-	float mult_by_x = (float) ((GlobalD3DVars::D3D_custom_size == GR_1024) ? 1024 : 640);
-	float mult_by_y = (float) ((GlobalD3DVars::D3D_custom_size == GR_1024) ?  768 : 480);
-			
-	if(x) {
-		(*x) *= mult_by_x;
-		(*x) /= (float) GlobalD3DVars::d3dpp.BackBufferWidth;
-	}
-
-	if(y) {
-		(*y) *= mult_by_y;
-		(*y) /= (float) GlobalD3DVars::d3dpp.BackBufferHeight;
-	}
-
-	return true;
 }
 
 void d3d_fill_pixel_format(PIXELFORMAT *pixelf, D3DFORMAT tformat);
@@ -1581,8 +1505,6 @@ void gr_d3d_dump_frame_start(int first_frame, int frames_between_dumps)
 
 void gr_d3d_flush_frame_dump()
 {
-	extern int tga_compress(char *out, char *in, int bytecount);
-
 	int i,j;
 	char filename[MAX_PATH_LEN], *movie_path = ".\\";
 	ubyte outrow[1024*3*4];
@@ -1620,7 +1542,7 @@ void gr_d3d_flush_frame_dump()
 		for (j=0;j<h;j++)	{
 			ubyte *src_ptr = D3d_dump_buffer+(i*D3d_dump_frame_size)+(j*w*2);
 
-			int len = tga_compress( (char *)outrow, (char *)src_ptr, w*sizeof(short) );
+			int len = 0;//tga_compress( (char *)outrow, (char *)src_ptr, w*sizeof(short) );
 
 			cfwrite(outrow,len,1,f);
 		}

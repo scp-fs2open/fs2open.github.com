@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-01-24 12:47:48 $
+ * $Revision: 2.7 $
+ * $Date: 2004-02-14 00:18:31 $
  * $Author: randomtiger $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/01/24 12:47:48  randomtiger
+ * Font and other small changes for Fred
+ *
  * Revision 2.5  2004/01/19 00:56:09  randomtiger
  * Some more small changes for Fred OGL
  *
@@ -654,74 +657,16 @@ void gr8_string(int sx, int sy, char *s )
 	gr_unlock();
 }
 
-#ifndef NO_SOFTWARE_RENDERING
 #ifdef _WIN32
 HFONT MyhFont = NULL;
-extern HDC hDibDC;
+HDC hDibDC = NULL;
 
 void gr_string_win(int x, int y, char *s)
 {
-#ifdef FRED_OGL
-
 	int old_bitmap = gr_screen.current_bitmap; 
 	gr_set_font(FONT1);
    	gr_string(x,y,s);
 	gr_screen.current_bitmap = old_bitmap; 
-   	return;
-#endif
-
-	char *ptr;
-	SIZE size;
-
-	if ( MyhFont==NULL )	{
-		MyhFont = CreateFont(14, 0, 0, 0,				// height,width,?,?
-				700,
-				FALSE,
-				FALSE,
-				FALSE,											// strikeout?
-				ANSI_CHARSET,									// character set
-				OUT_DEVICE_PRECIS,
-				CLIP_DEFAULT_PRECIS,
-				DEFAULT_QUALITY,
-				DEFAULT_PITCH | FF_DONTCARE,
-//				NULL );
-//				"Times New Roman" );
-//XSTR:OFF
-				"Ariel" );
-//XSTR:ON
-	}
-
-  	SelectObject( hDibDC, MyhFont );
-
-	if ( gr_screen.bits_per_pixel==8 )
-		SetTextColor(hDibDC, PALETTEINDEX(gr_screen.current_color.raw8));
-	else
-		SetTextColor(hDibDC, RGB(gr_screen.current_color.red,gr_screen.current_color.green,gr_screen.current_color.blue));
-
- 	SetBkMode(hDibDC,TRANSPARENT);
-
-	HRGN hclip;
-	hclip = CreateRectRgn( gr_screen.offset_x, 
-								  gr_screen.offset_y, 
-								  gr_screen.offset_x+gr_screen.clip_width-1, 
-								  gr_screen.offset_y+gr_screen.clip_height-1 );
-
- 	SelectClipRgn(hDibDC, hclip );
-								  
-
-	x += gr_screen.offset_x;
-	y += gr_screen.offset_y;
-   //	ptr = strchr(s,'\n);  
-   	while ((ptr = strchr(s, '\n'))!=NULL) {
-	  	TextOut(hDibDC, x, y, s, ptr - s);
-		GetTextExtentPoint32(hDibDC, s, ptr - s, &size);
-		y += size.cy;
-		s = ptr + 1;
-	}
-
-  	TextOut(hDibDC, x, y, s, strlen(s));
-  	SelectClipRgn(hDibDC, NULL);
-	DeleteObject(hclip);
 }
 
 void gr_get_string_size_win(int *w, int *h, char *text)
@@ -755,7 +700,6 @@ void gr_get_string_size_win(int *w, int *h, char *text)
 		*h += size.cy;
 }
 #endif   // ifdef _WIN32
-#endif   // ifndef NO_SOFTWARE_RENDERING
 
 char grx_printf_text[2048];	
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-02-07 00:48:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2004-02-14 00:18:36 $
+ * $Author: randomtiger $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/02/07 00:48:52  Goober5000
+ * made FS2 able to account for subsystem mismatches between ships.tbl and the
+ * model file - e.g. communication vs. communications
+ * --Goober5000
+ *
  * Revision 2.23  2004/01/30 07:39:06  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -1842,13 +1847,8 @@ void shipfx_emit_spark( int n, int sn )
 				}
 			}
 
-			if ( D3D_enabled || OGL_inited ) {
-				pe.num_low  = 25;				// Lowest number of particles to create (hardware)
-				pe.num_high = 30;				// Highest number of particles to create (hardware)
-			} else {
-				pe.num_low  = 5;				// Lowest number of particles to create (software)
-				pe.num_high = 7;				// Highest number of particles to create (software)
-			}
+			pe.num_low  = 25;				// Lowest number of particles to create (hardware)
+			pe.num_high = 30;				// Highest number of particles to create (hardware)
 			pe.normal_variance = 1.0f;	//	How close they stick to that normal 0=good, 1=360 degree
 			pe.min_vel = 2.0f;				// How fast the slowest particle can move
 			pe.max_vel = 12.0f;				// How fast the fastest particle can move
@@ -1860,13 +1860,8 @@ void shipfx_emit_spark( int n, int sn )
 
 			pe.min_rad = 0.7f;				// Min radius
 			pe.max_rad = 1.3f;				// Max radius
-			if ( D3D_enabled || OGL_inited ) {
-				pe.num_low  = int (20 * spark_num_scale);		// Lowest number of particles to create (hardware)
-				pe.num_high = int (50 * spark_num_scale);		// Highest number of particles to create (hardware)
-			} else {
-				pe.num_low  = 2;			// Lowest number of particles to create (software)
-				pe.num_high = 8;		// Highest number of particles to create (software)
-			}
+			pe.num_low  = int (20 * spark_num_scale);		// Lowest number of particles to create (hardware)
+			pe.num_high = int (50 * spark_num_scale);		// Highest number of particles to create (hardware)
 			pe.normal_variance = 0.2f * spark_width_scale;		//	How close they stick to that normal 0=good, 1=360 degree
 			pe.min_vel = 3.0f;				// How fast the slowest particle can move
 			pe.max_vel = 12.0f;				// How fast the fastest particle can move

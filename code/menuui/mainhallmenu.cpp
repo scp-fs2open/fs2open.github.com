@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-01-24 15:52:26 $
+ * $Revision: 2.12 $
+ * $Date: 2004-02-14 00:18:33 $
  * $Author: randomtiger $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/01/24 15:52:26  randomtiger
+ * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
+ * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
+ *
  * Revision 2.10  2003/11/06 21:10:26  randomtiger
  * Added my batching solution for more efficient d3d_string.
  * Its part of the new grd3dbatch module, most of this isnt in use but it might help out later so I've left it in.
@@ -1347,25 +1351,6 @@ void main_hall_do(float frametime)
 	// blit ship and weapon table status
 	main_hall_blit_table_status();
 
-	// if we're in nice D3D texture format
-#ifndef NDEBUG
-	gr_set_color_fast(&Color_white);
-
-#ifndef NO_DIRECT3D
-	// d3d
-	if(gr_screen.mode == GR_DIRECT3D){
-		if(Bm_pixel_format == BM_PIXEL_FORMAT_ARGB_D3D){		
-			gr_string(320, gr_screen.max_h - 10, "D3D ARGB");
-		}
-	} else if(gr_screen.mode == GR_GLIDE){
-		extern int Glide_voodoo3;
-		if(Glide_voodoo3){
-			gr_string(320, gr_screen.max_h - 20, "VOODOO 3");
-		}
-	}
-#endif
-#endif	
-
 	gr_flip();
 
 	// maybe run the player tips popup
@@ -1985,8 +1970,7 @@ void main_hall_maybe_blit_tooltips()
 		// get the width of the string
 		gr_get_string_size(&w, NULL, Main_hall->region_descript[text_index]);
 
-		extern bool gr_d3d_resize_screen_pos(int *x, int *y);
-		gr_d3d_resize_screen_pos(&w, &shader_y);
+		gr_resize_screen_pos(&w, &shader_y);
 
 		gr_set_shader(&Main_hall_tooltip_shader);
 		gr_shade(0, shader_y, gr_screen.clip_width, (gr_screen.clip_height - shader_y));

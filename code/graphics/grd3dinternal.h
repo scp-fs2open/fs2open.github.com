@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.20 $
- * $Date: 2004-01-26 20:03:51 $
+ * $Revision: 2.21 $
+ * $Date: 2004-02-14 00:18:31 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/01/26 20:03:51  randomtiger
+ * Fix to blurring of interface bitmaps from TGA and JPG.
+ * Changes to the pointsprite system, better but not perfect yet.
+ *
  * Revision 2.19  2004/01/24 14:31:27  randomtiger
  * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
  * Its optional and off by default, use -d3d_particle to activiate.
@@ -314,7 +318,6 @@ typedef struct {
 	static bool D3D_window;
 
 	static int D3D_rendition_uvs;
-	static int D3D_custom_size;
 	static int D3D_zbias;
 
 	static float texture_adjust_u;
@@ -479,7 +482,7 @@ void gr_d3d_create_font_bitmap();
 void gr_d3d_char(int x,int y,int letter);
 void gr_d3d_string( int sx, int sy, char *s );
 void gr_d3d_circle( int xc, int yc, int d );
-void gr_d3d_line(int x1,int y1,int x2,int y2);
+void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize = false);
 void gr_d3d_aaline(vertex *v1, vertex *v2);
 void gr_d3d_gradient(int x1,int y1,int x2,int y2);
 void gr_d3d_set_palette(ubyte *new_palette, int restrict_alphacolor);
@@ -490,8 +493,6 @@ void gr_d3d_pop_texture_matrix(int unit);
 void gr_d3d_translate_texture_matrix(int unit, vector *shift);
 
 void d3d_render_timer_bar(int colour, float x, float y, float w, float h);
-
-bool gr_d3d_unsize_screen_posf(float *x, float *y);
 
 // GrD3DRender functions
 void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt );

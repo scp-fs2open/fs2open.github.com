@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-11-12 06:05:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2004-02-14 00:18:33 $
+ * $Author: randomtiger $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/11/12 06:05:00  Goober5000
+ * added Bobboau's real name to the credits, with his permission
+ * --Goober5000
+ *
  * Revision 2.13  2003/11/11 02:15:43  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -232,8 +236,9 @@ char *fs2_open_credit_text =
 	"FS2_OPEN STAFF:\n"
 	"\n"
 	"\n"
-	"Project leader:\n"
+	"Project leaders:\n"
 	"Edward \"Inquisitor\" Gardner\n"
+	"Ian \"Goober5000\" Warfield\n"
 	"\n"
 	"Programmers:\n"
 	"\n"
@@ -863,17 +868,7 @@ void credits_do_frame(float frametime)
 		sy = fl2i(Credit_position-0.5f);
 	}
 
-#ifdef _WIN32
-	// HACK - I don't want to change the string code, so we'll just use a special version here
-	if(gr_screen.mode == GR_GLIDE){
-		extern void gr_glide_string_hack(int sx, int sy, char *s);
-		gr_glide_string_hack(0x8000, sy, Credit_text);
-	} 
-	else
-#endif
-	{
-		gr_string(0x8000, sy, Credit_text);
-	}
+	gr_string(0x8000, sy, Credit_text);
 
 	int temp_time;
 	temp_time = timer_get_milliseconds();

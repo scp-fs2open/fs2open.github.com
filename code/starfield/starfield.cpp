@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-01-19 00:56:10 $
+ * $Revision: 2.24 $
+ * $Date: 2004-02-14 00:18:36 $
  * $Author: randomtiger $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/01/19 00:56:10  randomtiger
+ * Some more small changes for Fred OGL
+ *
  * Revision 2.22  2004/01/18 14:03:23  randomtiger
  * A couple of FRED_OGL changes.
  *
@@ -485,13 +488,6 @@ void stars_init()
 						Warning(LOCATION, "cannot find bitmap %s", filename);
 					}
 				}
-#ifndef FRED_OGL
-				// if fred is running we should lock the bitmap now
-				if(Fred_running && (bm->bitmap >= 0)){
-					bm_lock(bm->bitmap, 8, BMP_TEX_OTHER);
-					bm_unlock(bm->bitmap);
-				} 
-#endif
 			}
 		}
 		// green xparency bitmap
@@ -508,15 +504,6 @@ void stars_init()
 						Warning(LOCATION, "cannot find bitmap %s", filename);
 					}
 				}
-
-#ifndef FRED_OGL
-				// if fred is running we should lock as a 0, 255, 0 bitmap now
-				if(Fred_running && (bm->bitmap >= 0)){
-					bm_lock(bm->bitmap, 8, BMP_TEX_XPARENT);
-					bm_unlock(bm->bitmap);
-				} 
-#endif
-
 			}
 		}
 	}
@@ -640,20 +627,6 @@ void stars_init()
 				bm->spec_r = spec_r;
 				bm->spec_g = spec_g;
 				bm->spec_b = spec_b;
-
-#ifndef FRED_OGL
-				// if fred is running we should lock the bitmap now
-				if(Fred_running){
-					if(bm->bitmap >= 0){
-						bm_lock(bm->bitmap, 8, BMP_TEX_OTHER);
-						bm_unlock(bm->bitmap);
-					}
-					if(bm->glow_bitmap >= 0){
-						bm_lock(bm->glow_bitmap, 8, BMP_TEX_OTHER);
-						bm_unlock(bm->glow_bitmap);
-					}
-				} 
-#endif
 			}
 		}
 	}	
@@ -719,9 +692,6 @@ void stars_level_init()
 		}
 		vm_vec_copy_normalize(&Stars[i].pos, &v);
 
-#ifndef FRED_OGL
-		if (!Fred_running)
-#endif
 		{
 			red= (ubyte)(myrand() % 63 +192);		//192-255
 			green= (ubyte)(myrand() % 63 +192);		//192-255
@@ -1076,13 +1046,6 @@ void stars_draw_bitmaps( int show_bitmaps )
 			continue;
 		}
 	
-#ifndef FRED_OGL
-		// set the bitmap				
-		if(Fred_running){
-			gr_set_bitmap(Starfield_bitmaps[star_index].bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
-			g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);
-		} else 
-#endif
 		{
 			
 			if(Starfield_bitmaps[star_index].xparent){
@@ -1464,19 +1427,7 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 			}
 
 			if ( (Star_flags & STAR_FLAG_ANTIALIAS) || (D3D_enabled) )	{
-#ifndef FRED_OGL
-				if (!Fred_running)
-#endif
-
-				{
-					gr_set_color_fast( &sp->col );
-				}
-#ifndef FRED_OGL
-				else
-				{
-					gr_set_color_fast( &star_aacolors[color] );
-				}
-#endif
+				gr_set_color_fast( &sp->col );
 
 				/* if the two points are the same, fudge it, since some D3D cards (G200 and G400) are lame.				
 				if( (fl2i(p1.sx) == fl2i(p2.sx)) && (fl2i(p1.sy) == fl2i(p2.sy)) ){					
@@ -1497,20 +1448,7 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 				}
 				gr_aaline(&p1,&p2);
 			} else {
-#ifndef FRED_OGL
-
-				// use alphablended line so that dark stars don't look bad on top of nebulas
-				if (!Fred_running)
-#endif
-				{
-					gr_set_color_fast( &sp->col );
-				}
-#ifndef FRED_OGL
-				else
-				{
-					gr_set_color_fast( &star_aacolors[color] );
-				}
-#endif
+				gr_set_color_fast( &sp->col );
 
 				if ( Star_flags & STAR_FLAG_TAIL )	{
 					gr_line(fl2i(p1.sx),fl2i(p1.sy),fl2i(p2.sx),fl2i(p2.sy));

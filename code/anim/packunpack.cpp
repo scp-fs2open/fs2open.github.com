@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-10-24 17:35:04 $
+ * $Revision: 2.4 $
+ * $Date: 2004-02-14 00:18:29 $
  * $Author: randomtiger $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
@@ -18,6 +18,11 @@
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/10/24 17:35:04  randomtiger
+ * Implemented support for 32bit TGA and JPG for D3D
+ * Also 32 bit PCX, but it still has some bugs to be worked out
+ * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
+ *
  * Revision 2.2  2003/03/18 10:07:00  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -282,10 +287,7 @@ int anim_get_next_frame(anim_instance *inst)
 
 	anim_check_for_palette_change(inst);
 
-	// if we're using bitmap polys
-	if(Gr_bitmap_poly){
-		BM_SELECT_TEX_FORMAT();
-	}
+	BM_SELECT_TEX_FORMAT();
 
 	if ( anim_instance_is_streamed(inst) ) {
 		inst->file_offset = unpack_frame_from_file(inst, inst->frame, inst->parent->width*inst->parent->height, inst->parent->palette_translation, aabitmap, bpp);

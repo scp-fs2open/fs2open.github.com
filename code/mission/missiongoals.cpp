@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-10-08 06:32:06 $
- * $Author: argv $
+ * $Revision: 2.6 $
+ * $Date: 2004-02-14 00:18:34 $
+ * $Author: randomtiger $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/10/08 06:32:06  argv
+ * Negative repeat count means repeat indefinitely. A trivial change, it should not break anything.
+ *
  * Revision 2.4  2003/09/13 06:02:06  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -690,8 +693,10 @@ void goal_text::display(int n, int y)
 
 		gr_get_string_size(&w, &h, buf);
 		y1 = y + h / 2 - 1;
-		gr_line(Goal_screen_icon_x, y1, Goal_screen_text_x - 2, y1);
-		gr_line(Goal_screen_text_x + w + 1, y1, Goal_screen_icon_x + Goal_screen_text_w, y1);
+
+		// custom_size me
+		gr_line(Goal_screen_icon_x, y1, Goal_screen_text_x - 2, y1, true);
+		gr_line(Goal_screen_text_x + w + 1, y1, Goal_screen_icon_x + Goal_screen_text_w, y1, true);
 
 	} else {
 		gr_set_color_fast(&Color_text_normal);

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-02-04 09:02:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2004-02-14 00:18:37 $
+ * $Author: randomtiger $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/02/04 09:02:42  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.11  2003/11/19 20:37:25  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -383,15 +387,9 @@ void trail_render( trail * trailp )
 				vlist[2]->u = 1.0f;  vlist[2]->v = 0.5f; vlist[1]->spec_r=vlist[1]->spec_g=vlist[1]->spec_b=0;
 
 				gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, l/255.0f );
-				if ( D3D_enabled || OGL_inited )	{
 
 					if(Cmdline_nohtl)g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD );
 					else g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
-				} else {
-					if(Cmdline_nohtl)g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED );
-					else g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-				}
-
 
 			} else {
 				vertex *vlist[4];
@@ -406,13 +404,8 @@ void trail_render( trail * trailp )
 				vlist[3]->u = 0.0f;  vlist[3]->v = 1.0f; vlist[3]->spec_r=vlist[3]->spec_g=vlist[3]->spec_b=0;
 
 				gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, l/255.0f );
-				if ( D3D_enabled || OGL_inited )	{
 					if(Cmdline_nohtl)g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD );
 					else g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
-				} else {
-					if(Cmdline_nohtl)g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED );
-					else g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
-				}
 			}
 		}
 		last_pos = pos;
@@ -573,13 +566,8 @@ void trail_render( trail * trailp )
 	if(nv%2 != 1)Error( LOCATION, "even number of verts verts in trail render\n" );//there should always be three virts in the last section and 2 everyware else, therefore there should always be an odd number of verts
 
 	gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-	if ( D3D_enabled || OGL_inited )	{
-		if(Cmdline_nohtl)	g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TRISTRIP );
-		else				g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
-	} else {
-		if(Cmdline_nohtl)g3_draw_poly( nv, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TRISTRIP);
-		else g3_draw_poly( nv, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP);
-	}
+	if(Cmdline_nohtl)	g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TRISTRIP );
+	else				g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
 	TIMERBAR_POP();
 }
 
