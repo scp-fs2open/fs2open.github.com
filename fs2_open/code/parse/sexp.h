@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.41 $
- * $Author: sesquipedalian $
- * $Date: 2003-04-05 20:17:23 $
+ * $Revision: 2.42 $
+ * $Author: Goober5000 $
+ * $Date: 2003-04-05 20:47:58 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/04/05 20:17:23  sesquipedalian
+ * Recommit of is-missile-locked.
+ * I changed the sexp's category from non-campaign to training, so you may get a conflict with that.
+ *
  * Revision 2.39  2003/03/30 07:27:33  Goober5000
  * resolved a nasty bug that caused some missions to crash
  * --Goober5000
@@ -856,7 +860,7 @@
 #define OP_SECONDARIES_DEPLETED				(0x000c | OP_CATEGORY_TRAINING)
 #define OP_FACING2								(0x000d | OP_CATEGORY_TRAINING)
 #define OP_PRIMARIES_DEPLETED					(0x000e | OP_CATEGORY_TRAINING)	// Goober5000
-#define OP_IS_MISSILE_LOCKED				(0x000f | OP_CATEGORY_TRAINING)	// Sesquipedalian
+#define OP_MISSILE_LOCKED						(0x000f | OP_CATEGORY_TRAINING)	// Sesquipedalian
 
 #define OP_SET_TRAINING_CONTEXT_FLY_PATH	(0x0080 | OP_CATEGORY_TRAINING)
 #define OP_SET_TRAINING_CONTEXT_SPEED		(0x0081 | OP_CATEGORY_TRAINING)
