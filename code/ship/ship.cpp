@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.59 $
- * $Date: 2003-04-29 01:03:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.60 $
+ * $Date: 2003-05-09 23:53:32 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2003/04/29 01:03:21  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.58  2003/03/30 07:27:34  Goober5000
  * resolved a nasty bug that caused some missions to crash
  * --Goober5000
@@ -2447,6 +2451,14 @@ void physics_ship_init(object *objp)
 	// use mass and I_body_inv from POF read into polymodel
 	physics_init(pi);
 	pi->mass = pm->mass * sinfo->density;
+
+	if (pi->mass==0.0f)
+	{
+		nprintf(("Physics", "pi->mass==0.0f. setting to 10.0f"));
+		pi->mass=10.0f;
+		Warning(LOCATION, "%s (%s) has no mass! setting to 10", sinfo->name, sinfo->pof_file);
+	}
+
 	pi->I_body_inv = pm->moment_of_inertia;
 	// scale pm->I_body_inv value by density
 	vm_vec_scale( &pi->I_body_inv.vec.rvec, sinfo->density );
