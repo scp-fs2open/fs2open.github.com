@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.31 $
- * $Date: 2003-01-19 22:20:23 $
+ * $Revision: 2.32 $
+ * $Date: 2003-01-26 00:20:01 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/01/19 22:20:23  Goober5000
+ * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
+ * and departure into hangars should now all work properly
+ * --Goober5000
+ *
  * Revision 2.30  2003/01/19 09:14:05  Goober5000
  * fixed fiddly code
  * --Goober5000
@@ -898,16 +903,11 @@ void parse_mission_info(mission *pm)
 		nebl_set_storm(Mission_parse_storm_name);
 	}
 
-	// If ship trails are not explicitly defined and nebula is enabled
-	//enable ship trails as well -Coolmon
-	if (pm->flags & MISSION_FLAG_FULLNEB)
+	// if this is a nebula mission and the "no ship trails in nebula" flag is not set,
+	// enable ship trails
+	if ((pm->flags & MISSION_FLAG_FULLNEB) && (!(pm->flags & MISSION_FLAG_NO_NEB_TRAILS)))
 	{
-			pm->flags |= MISSION_FLAG_SHIP_TRAILS;
-	}
-	//If nebula is enabled, enable ship trails too -C
-	else if(pm->flags & MISSION_FLAG_FULLNEB && pm->flags & MISSION_FLAG_NO_NEB_TRAILS)
-	{
-		pm->flags &= ~MISSION_FLAG_SHIP_TRAILS;
+		pm->flags |= MISSION_FLAG_SHIP_TRAILS;
 	}
 
 	// get the number of players if in a multiplayer mission
