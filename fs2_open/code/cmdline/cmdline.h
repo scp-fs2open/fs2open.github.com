@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.11 $
- * $Date: 2002-10-31 21:14:16 $
+ * $Revision: 2.12 $
+ * $Date: 2002-11-10 16:30:53 $
  * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2002/10/31 21:14:16  DTP
+ * DTP Quickly added something needed to cmdline.h, since otherwise we can not compile the code as it misses some externals. Thought a rollback rolled all back.
+ *
  * Revision 2.10  2002/10/30 20:22:30  inquisitor
  * Bad Committ, Rolling back
  *
@@ -223,6 +226,5 @@ extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
 extern int Cmdline_allslev;
 extern int Cmdline_phreak;
 extern char *Cmdline_mod; //DTP for mod support
-extern char *Hold_mod;	//DTP for mod support.
 
 #endif
