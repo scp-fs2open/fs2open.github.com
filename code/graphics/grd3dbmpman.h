@@ -16,6 +16,13 @@
 
 #define MAX_BITMAPS 3500			// How many bitmaps the game can handle
 
+typedef struct {
+
+	IDirect3DBaseTexture8 *tinterface;
+	float uscale, vscale;
+
+} D3DBitmapData;
+
 int bm_d3d_get_next_handle();
 
 // 16 bit pixel formats
