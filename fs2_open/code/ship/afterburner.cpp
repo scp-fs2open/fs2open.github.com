@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-09-13 06:02:03 $
+ * $Revision: 2.6 $
+ * $Date: 2003-11-23 00:59:01 $
  * $Author: Goober5000 $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/13 06:02:03  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.3  2003/08/21 06:11:32  Goober5000
  * removed an extraneous thingy
  * --Goober5000
@@ -363,7 +367,8 @@ void afterburners_update(object *objp, float fl_frametime)
 #ifndef NO_NETWORK
 	if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER || (objp == Player_obj)){
 #else
-	if (objp != Player_obj) {
+	// changed from != to == by Goober5000... this seems to be a bug
+	if (objp == Player_obj) {
 #endif
 		if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 			// Recover afterburner fuel
