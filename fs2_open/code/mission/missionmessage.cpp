@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-02-06 21:26:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2004-02-13 04:17:13 $
+ * $Author: randomtiger $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/02/06 21:26:07  Goober5000
+ * fixed a small compatibility bug
+ * --Goober5000
+ *
  * Revision 2.7  2004/02/05 14:29:33  Goober5000
  * fixed the talking head error
  * --Goober5000
@@ -1756,9 +1760,14 @@ int message_get_persona( ship *shipp )
 		}
 
 		// we didn't find an unused one - so we randomly select one
-
-		i = (rand() % count);
-		i = slist[i];
+		if(count != 0)
+		{
+			i = (rand() % count);
+			i = slist[i];
+		}
+		// RT Protect against count being zero
+		else
+			i = slist[0];
 
 		return i;
 

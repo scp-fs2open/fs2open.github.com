@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.29 $
- * $Date: 2004-02-07 01:25:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.30 $
+ * $Date: 2004-02-13 04:17:14 $
+ * $Author: randomtiger $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/02/07 01:25:15  Goober5000
+ * hehe, fixed the subsystem compare so it's not destructive :-p
+ * and also fixed the model checking routine
+ * --Goober5000
+ *
  * Revision 2.28  2004/02/07 00:48:52  Goober5000
  * made FS2 able to account for subsystem mismatches between ships.tbl and the
  * model file - e.g. communication vs. communications
@@ -845,6 +850,7 @@
 #include "math/fvi.h"
 
 #include <direct.h>
+#include <windows.h>
 
 #define MAX_SUBMODEL_COLLISION_ROT_ANGLE (PI / 6.0f)	// max 30 degrees per frame
 
@@ -2455,9 +2461,21 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	pm->id = Model_signature + num;
 	Assert( (pm->id % MAX_POLYGON_MODELS) == num );
 
+	extern int Parse_normal_problem_count;
+	Parse_normal_problem_count = 0;
+
 	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
 		return -1;
 	}
+
+	if(Fred_running && Parse_normal_problem_count > 0)
+	{
+		char buffer[100];
+		sprintf(buffer,"Serious problem loading model %s, %d normals capped to zero",
+			filename, Parse_normal_problem_count);
+		MessageBox(NULL,buffer,"Error", MB_OK);
+	}
+
 
 //mprintf(( "Loading model '%s'\n", filename ));
 //key_getch();

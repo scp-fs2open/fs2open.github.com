@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-01-24 14:31:27 $
+ * $Revision: 2.14 $
+ * $Date: 2004-02-13 04:17:14 $
  * $Author: randomtiger $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/01/24 14:31:27  randomtiger
+ * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
+ * Its optional and off by default, use -d3d_particle to activiate.
+ * Also bumped up D3D ambient light setting, it was way too dark.
+ * Its now set to something similar to the original game.
+ *
  * Revision 2.12  2004/01/19 00:56:10  randomtiger
  * Some more small changes for Fred OGL
  *
@@ -272,6 +278,14 @@ free_points:
 //draws a line. takes two points.  returns true if drew
 int g3_draw_line(vertex *p0,vertex *p1)
 {
+#ifdef FRED_OGL_COMMENT_OUT_FOR_NOW
+	if(Fred_running && !Cmdline_nohtl)
+	{
+  		gr_aaline( p0, p1 );
+		return 0;
+	}
+#endif
+
 	ubyte codes_or;
 
 	Assert( G3_count == 1 );

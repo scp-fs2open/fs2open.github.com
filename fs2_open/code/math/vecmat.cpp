@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-10-14 16:27:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-02-13 04:17:13 $
+ * $Author: randomtiger $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/10/14 16:27:01  Goober5000
+ * commented back in null vector warning, because any code that flags this
+ * is buggy and should be fixed (and it only pops up in release builds anyway)
+ * --Goober5000
+ *
  * Revision 2.5  2003/10/13 05:57:48  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
  * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
@@ -576,8 +581,10 @@ float vm_vec_mag(vector *v)
 	y = v->xyz.y*v->xyz.y;
 	z = v->xyz.z*v->xyz.z;
 	mag1 = x+y+z;
+
 	if ( mag1 < 0.0 )
-		Int3();
+		return 0;
+
 	mag2 = fl_sqrt(mag1);
 	if ( mag2 < 0.0 )
 		Int3();
@@ -674,18 +681,19 @@ float vm_vec_dist_quick(vector *v0,vector *v1)
 //normalize a vector. returns mag of source vec
 float vm_vec_copy_normalize(vector *dest,vector *src)
 {
-	static int ben_warned = false;//added this so the warning could be sounded and you can still get on with playing-Bobboau
 	float m;
 
 	m = vm_vec_mag(src);
 
 	//	Mainly here to trap attempts to normalize a null vector.
 	if (m <= 0.0f) {
-		if(!ben_warned){
-			Warning(LOCATION,	"Null vector in vector normalize.\n"
-								"Trace out of vecmat.cpp and find offending code.\n");
-			ben_warned = true;
+		static int been_warned2 = false;//added this so the warning could be sounded and you can still get on with playing-Bobboau
+		if(!been_warned2){
+			Warning(LOCATION, "Null vector in vector normalize.\n"
+							  "Trace out of vecmat.cpp and find offending code.\n");
+			been_warned2 = true;
 		}
+
 		dest->xyz.x = 1.0f;
 		dest->xyz.y = 0.0f;
 		dest->xyz.z = 0.0f;

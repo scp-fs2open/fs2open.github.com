@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-02-04 04:28:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2004-02-13 04:17:14 $
+ * $Author: randomtiger $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/02/04 04:28:15  Goober5000
+ * fixed Asserts in two places and commented out an unneeded variable
+ * --Goober5000
+ *
  * Revision 2.15  2004/01/12 21:12:42  randomtiger
  * Added fix for fogging debris in D3D htl.
  *
@@ -513,7 +517,7 @@ void neb2_level_init()
 	*/
 
 	extern int Cmdline_nohtl;
-	if(Cmdline_nohtl) {
+	if(Cmdline_nohtl || Fred_running) {
 		// by default we'll use pof rendering
 		Neb2_render_mode = NEB2_RENDER_POF;
 		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
@@ -1223,6 +1227,11 @@ void neb2_render_player()
 	for(idx1=0; idx1<Neb2_slices; idx1++){
 		for(idx2=0; idx2<Neb2_slices; idx2++){
 			for(idx3=0; idx3<Neb2_slices; idx3++){
+
+				// Miss this one out if the id is -1
+				if(Neb2_cubes[idx1][idx2][idx3].bmap == -1)
+					continue;
+
 				pneb_tried++;				
 
 				// rotate the poof
