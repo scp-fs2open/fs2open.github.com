@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-11-29 10:52:08 $
+ * $Revision: 2.5 $
+ * $Date: 2003-12-08 22:30:02 $
  * $Author: randomtiger $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/11/29 10:52:08  randomtiger
+ * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Added stats command for ingame stats on memory usage.
+ * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
+ * Added fix for fonts wrapping round in non standard hi res modes.
+ * Changed D3D mipmapping to a good value to suit htl mode.
+ * Added new fog colour method which makes use of the bitmap, making this htl feature backcompatible again.
+ *
  * Revision 2.3  2003/11/11 02:15:41  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -921,10 +929,8 @@ anim *anim_load(char *real_filename, int file_mapped)
 	int			count,idx;
 	char name[_MAX_PATH];
 
-	// Unless told otherwise in D3D everything is loaded for speed, lets make use of all that memory
-	// people have
-	if(gr_screen.mode == GR_DIRECT3D && Cmdline_d3dlowmem == 0) {
-	 //	file_mapped = 0;
+	if(Cmdline_cache_ani) {
+	 	file_mapped = PAGE_FROM_MEM;
 	}
 
 	Assert ( real_filename != NULL );
@@ -996,7 +1002,7 @@ anim *anim_load(char *real_filename, int file_mapped)
 
 		ptr->cfile_ptr = NULL;
 
-		if ( file_mapped ) {
+		if ( file_mapped == PAGE_FROM_MEM) {
 			// Try mapping the file to memory 
 			ptr->flags |= ANF_MEM_MAPPED;
 			ptr->cfile_ptr = cfopen(name, "rb", CFILE_MEMORY_MAPPED);

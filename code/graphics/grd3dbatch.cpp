@@ -9,6 +9,13 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/12/04 20:39:09  randomtiger
+ * Added DDS image support for D3D
+ * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
+ * Hopefully have fixed D3D text batching bug that caused old values to appear
+ * Added Hud_target_object_factor variable to control 3D object sizes of zoom in HUD target
+ * Fixed jump nodes not showing
+ *
  * Revision 2.7  2003/11/29 10:52:09  randomtiger
  * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
@@ -787,10 +794,11 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 			continue;
 		}
 
-		d3d_SetVertexShader(FONT_VTYPE);
-		hr = GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vbuffer, vertex_types[FONT_VTYPE].size); 
-
+		hr = d3d_SetVertexShader(FONT_VTYPE);
 		Assert(SUCCEEDED(hr));
+		hr = GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vbuffer, vertex_types[FONT_VTYPE].size); 
+		Assert(SUCCEEDED(hr));
+
 		hr = GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, char_count * 2);
 		Assert(SUCCEEDED(hr));
 

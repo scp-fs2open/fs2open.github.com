@@ -81,6 +81,7 @@ PIXELFORMAT			NonAlphaTextureFormat;
 
 D3DFORMAT default_non_alpha_tformat = D3DFMT_UNKNOWN;
 D3DFORMAT default_alpha_tformat		= D3DFMT_UNKNOWN;
+D3DFORMAT default_compressed_format = D3DFMT_UNKNOWN;
 
 void d3d_clip_cursor()
 {
@@ -745,6 +746,15 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 	{
 		Supports_compression[ct] = d3d_texture_format_is_supported(compression_types[ct], adapter, mode);
 	}
+
+  	if(Cmdline_dxt && Supports_compression[Cmdline_dxt-1] && D3D_32bit) 
+	{
+		Cmdline_dxt = 0;
+	}
+	else
+	{
+		default_compressed_format = (D3DFORMAT) (D3DFMT_DXT1 + Cmdline_dxt - 1);
+	}
 }
 
 /**
@@ -1167,7 +1177,8 @@ bool d3d_init_device()
 	// Use a pure device if we can, it really speeds things up
 	// However it means we cant use Get* functions (aside from GetFrontBuffer, GetCaps, etc)
 	if(got_caps && GlobalD3DVars::d3d_caps.DevCaps & D3DDEVCAPS_PUREDEVICE) {
-	 	vptypes[0] |= D3DCREATE_PUREDEVICE;
+	  	vptypes[0] |= D3DCREATE_PUREDEVICE;
+		mprintf(("Using PURE D3D Device"));
 	}
 
 	bool have_device = false;

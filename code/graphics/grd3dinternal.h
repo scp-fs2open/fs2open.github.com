@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.17 $
- * $Date: 2003-12-05 18:17:06 $
+ * $Revision: 2.18 $
+ * $Date: 2003-12-08 22:30:02 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/12/05 18:17:06  randomtiger
+ * D3D now supports loading for DXT1-5 into the texture itself, defaults to on same as OGL.
+ * Fixed bug in old ship choice screen that stopped ani repeating.
+ * Changed all builds (demo, OEM) to use retail reg path, this means launcher can set all them up successfully.
+ *
  * Revision 2.16  2003/11/29 10:52:09  randomtiger
  * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
@@ -400,6 +405,7 @@ extern int D3D_32bit;
 // 16 bit formats for pcx media
 extern D3DFORMAT default_non_alpha_tformat;
 extern D3DFORMAT default_alpha_tformat;
+extern D3DFORMAT default_compressed_format;
 
 extern PIXELFORMAT AlphaTextureFormat;
 extern PIXELFORMAT NonAlphaTextureFormat;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.39 $
- * $Date: 2003-11-29 17:13:53 $
+ * $Revision: 2.40 $
+ * $Date: 2003-12-08 22:30:02 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/11/29 17:13:53  randomtiger
+ * Undid my node fix, it introduced a lot of bugs, update again if you have that version.
+ *
  * Revision 2.38  2003/11/29 10:52:09  randomtiger
  * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
@@ -2432,7 +2435,7 @@ void gr_d3d_string( int sx, int sy, char *s)
 
 
 	d3d_set_initial_render_state();
-	d3d_batch_string(sx, sy, s, bw, bh, u_scale, v_scale, color);
+  	d3d_batch_string(sx, sy, s, bw, bh, u_scale, v_scale, color);
 
 	TIMERBAR_POP();
 }

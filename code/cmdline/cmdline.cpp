@@ -9,11 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.49 $
- * $Date: 2003-12-04 20:39:09 $
+ * $Revision: 2.50 $
+ * $Date: 2003-12-08 22:30:02 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2003/12/04 20:39:09  randomtiger
+ * Added DDS image support for D3D
+ * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
+ * Hopefully have fixed D3D text batching bug that caused old values to appear
+ * Added Hud_target_object_factor variable to control 3D object sizes of zoom in HUD target
+ * Fixed jump nodes not showing
+ *
  * Revision 2.48  2003/12/03 19:27:00  randomtiger
  * Changed -t32 flag to -jpgtga
  * Added -query_flag to identify builds with speech not compiled and other problems
@@ -486,7 +493,7 @@ cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including
 cmdline_parm dnoshowvid_arg("-dnoshowvid", NULL); // Allows video streaming
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
 cmdline_parm fps_arg("-fps", NULL);
-cmdline_parm d3dlowmem_arg("-d3dlowmem", NULL); //DTP for random tigers GF4fix
+cmdline_parm cache_ani_arg("-cache_ani", NULL);  
 cmdline_parm d3dmipmap_arg("-d3dmipmap", NULL);
 cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// beams do not pierce shields - Goober5000
 cmdline_parm fov_arg("-fov", NULL);	// comand line FOV -Bobboau
@@ -509,6 +516,7 @@ cmdline_parm timerbar_arg("-timerbar", NULL);
 cmdline_parm stats_arg("-stats", NULL);
 cmdline_parm query_speech_arg("-query_speech", NULL);
 cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);
+cmdline_parm dxt_arg("-dxt",NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -548,8 +556,9 @@ int Cmdline_show_fps = 0;
 int Cmdline_safeloading = 0;
 int Cmdline_nospec = 0;
 int Cmdline_noglow = 0;
+int Cmdline_dxt = 0;
 
-int Cmdline_d3dlowmem = 0;
+int Cmdline_cache_ani = 0;
 int Cmdline_d3dmipmap = 0;
 
 // Lets keep a convention here
@@ -559,7 +568,6 @@ int Cmdline_no_set_gamma = 0;
 int Cmdline_d3d_no_vsync = 0;
 int Cmdline_pcx32 = 0;
 int Cmdline_query_speech = 0;
-
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 
@@ -588,7 +596,7 @@ char *drop_extra_chars(char *str)
 	while (str[s] && is_extra_space(str[s]))
 		s++;
 
-	e = strlen(str) - 1;
+	e = strlen(str);
 	while (e > s) {
 		if (!is_extra_space(str[e])){
 			break;
@@ -939,8 +947,8 @@ void SetCmdlineParams()
 		Cmdline_safeloading = 1;
 	}
 
-	if( d3dlowmem_arg.found() ) {
-		Cmdline_d3dlowmem = 1;
+	if( cache_ani_arg.found() ) {
+		Cmdline_cache_ani = 1;
 	}
 
 	if( d3dmipmap_arg.found() ) {
@@ -1028,6 +1036,15 @@ void SetCmdlineParams()
 	if(ship_choice_3d_arg.found() )
 	{
 		Cmdline_ship_choice_3d = 1;
+	}
+
+	if(dxt_arg.found()) {
+		Cmdline_dxt = dxt_arg.get_int();
+
+		if(Cmdline_dxt < 0 || Cmdline_dxt > 5)
+		{
+			Cmdline_dxt = 0;
+		}
 	}
 }
 

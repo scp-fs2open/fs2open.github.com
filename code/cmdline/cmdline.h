@@ -11,11 +11,18 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.42 $
- * $Date: 2003-12-04 20:39:09 $
+ * $Revision: 2.43 $
+ * $Date: 2003-12-08 22:30:02 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/12/04 20:39:09  randomtiger
+ * Added DDS image support for D3D
+ * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
+ * Hopefully have fixed D3D text batching bug that caused old values to appear
+ * Added Hud_target_object_factor variable to control 3D object sizes of zoom in HUD target
+ * Fixed jump nodes not showing
+ *
  * Revision 2.41  2003/12/03 19:27:00  randomtiger
  * Changed -t32 flag to -jpgtga
  * Added -query_flag to identify builds with speech not compiled and other problems
@@ -406,7 +413,7 @@ extern int Cmdline_show_stats;
 extern int Cmdline_safeloading;
 extern int Cmdline_nospec;
 
-extern int Cmdline_d3dlowmem;
+extern int Cmdline_cache_ani;
 extern int Cmdline_d3dmipmap;
 
 extern int Cmdline_beams_no_pierce_shields;	// Goober5000
@@ -419,6 +426,7 @@ extern double specular_exponent_value;
 
 extern int Cmdline_cell;
 extern int Cmdline_nohtl;
+extern int Cmdline_dxt;
 extern int Cmdline_jpgtga;
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_d3d_no_vsync;
