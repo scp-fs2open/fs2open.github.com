@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-04-03 08:48:30 $
+ * $Revision: 2.49 $
+ * $Date: 2005-04-03 11:47:01 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/04/03 08:48:30  Goober5000
+ * brought weapon loadout banks into agreement with ship info banks
+ * improved error reporting on apply-to-all
+ * --Goober5000
+ *
  * Revision 2.47  2005/04/01 08:50:25  Goober5000
  * fixed a few errors in apply-to-all
  * --Goober5000
@@ -4914,16 +4919,8 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			// add from the weapon pool
 			result = wl_drop(-1, weapon_type_to_add, cur_bank, -1, cur_slot, -1, true);
 
-			// bank left unfilled
-			if (result == 0)
-			{
-				sprintf(error_messages[cur_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("No more %s available to arm %s"), Weapon_info[weapon_type_to_add].name, ship_name);
-				error_flag = true;
-				continue;
-			}
-
-			// bank left partially filled
-			if (result == 2)
+			// bank left unfilled or partially filled
+			if ((result == 0) || (result == 2))
 			{
 				sprintf(error_messages[cur_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("Insufficient %s available to arm %s"), Weapon_info[weapon_type_to_add].name, ship_name);
 				error_flag = true;
@@ -4941,7 +4938,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 		int i, j;
 		bool is_duplicate;
 		char error_msg[MAX_WING_SLOTS * MAX_SHIP_WEAPONS * (50 + NAME_LENGTH * 2) + 40];
-		strcpy(error_msg, "The following errors were encountered:\n");
+		strcpy(error_msg, "The following errors were encountered:\n\n");
 
 		// copy all messages
 		for (i = 0; i < (MAX_WING_SLOTS * MAX_SHIP_WEAPONS); i++)
@@ -4952,7 +4949,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 
 			// check for duplicate messages
 			is_duplicate = false;
-			for (j = i-1; j >= 0; j--)
+			for (j = 0; j < i; j++)
 			{
 				if (strcmp(error_messages[i], error_messages[j]) == 0)
 				{
@@ -4966,13 +4963,12 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			}
 
 			// copy message
-			strcat(error_msg, "\t");
 			strcat(error_msg, error_messages[i]);
 			strcat(error_msg, "\n");
 		}
 
 		// remove last endline
-		error_msg[strlen(error_msg)-2] = '\0';
+		error_msg[strlen(error_msg)-1] = '\0';
 
 		// display popup
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, error_msg);
