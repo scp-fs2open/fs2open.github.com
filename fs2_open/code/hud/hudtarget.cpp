@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-06-11 02:59:47 $
+ * $Revision: 2.15 $
+ * $Date: 2003-08-06 17:44:20 $
  * $Author: phreak $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/06/11 02:59:47  phreak
+ * local ssm stuff for hud.
+ * they are always in lock range due to the subspace drive on them
+ * they also can't be targeted when in stage 3.
+ *
  * Revision 2.13  2003/04/29 01:03:23  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -5004,8 +5009,14 @@ void hud_show_secondary_weapon(int count, ship_weapon *sw, int dual_fire)
 			emp_hud_string(Weapon_secondary_name_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);			
 		}
 
+		int ammo=sw->secondary_bank_ammo[i];
+		if ((Tertiary_weapon_info[Player_ship->tertiary_weapon_info_idx].type == TWT_AMMO_POD) && (i == Player_ship->ammopod_current_secondary))
+		{
+			ammo+=Player_ship->ammopod_current_ammo;
+		}
+
 		// print out the ammo right justified
-		sprintf(ammo_str, "%d", sw->secondary_bank_ammo[i]);
+		sprintf(ammo_str, "%d", ammo);
 		hud_num_make_mono(ammo_str);
 		gr_get_string_size(&w, &h, ammo_str);
 
