@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.43 $
- * $Date: 2003-09-23 02:42:52 $
+ * $Revision: 2.44 $
+ * $Date: 2003-09-24 19:35:57 $
  * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/09/23 02:42:52  Kazan
+ * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
+ *
  * Revision 2.42  2003/09/14 19:01:16  wmcoolmon
  * Changed "cell" to "Cmdline_cell" -C
  *
@@ -2632,22 +2635,24 @@ void game_init()
 	} else {
 		// Software
 		//NOT USED ANYMORE
-		Error(LOCATION,"Software mode is unsupported, use hardware acceleration.  If not using software mode, then something was misspelled.  GET A PROGRAMMER!!");
-		/*
+		if (!Is_standalone)
+			Error(LOCATION,"Software mode is unsupported, use hardware acceleration.  If not using software mode, then something was misspelled.  GET A PROGRAMMER!!");
+		
+		//  -------- THIS MUST BE UNCOMMENTED FOR THE STAND ALONE TO WORK! --------
 		#ifndef NDEBUG
 			if ( Use_fullscreen_at_startup && !Is_standalone)	{		
 				gr_init(GR_640, GR_DIRECTDRAW);
 			} else {
-				gr_init(GR_640, GR_SOFTWARE);
+				gr_init(GR_640, GR_SOFTWARE); // STANDALONE SERVER
 			}
 		#else
 			if ( !Is_standalone ) {
 				gr_init(GR_640, GR_DIRECTDRAW);
 			} else {
-				gr_init(GR_640, GR_SOFTWARE);
+				gr_init(GR_640, GR_SOFTWARE); // STANDALONE SERVER
 			}
 		#endif
-		*/
+		
 	}
 
 	// tried d3d ?

@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-04-29 01:03:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2003-09-24 19:35:59 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/04/29 01:03:24  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.6  2003/03/18 10:07:04  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -365,6 +369,8 @@
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
 #include "debugconsole/dbugfile.h"
+
+
 
 // --------------------------------------------------------------------------------------------------
 // DAVE's BIGASS INGAME JOIN WARNING/DISCLAIMER
@@ -1097,6 +1103,8 @@ void multi_ingame_join_button_pressed(int n)
 // ingame join ship selection screen do
 void multi_ingame_select_do()
 {	
+
+
 	int k = Multi_ingame_window.process();
 
 	// process any keypresses

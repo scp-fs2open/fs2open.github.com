@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-09-23 02:42:54 $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-24 19:35:59 $
  * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/09/23 02:42:54  Kazan
+ * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
+ *
  * Revision 2.3  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -2167,7 +2170,8 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 			// we probably eventually want to make sure he's not passing us a fake tracker id#
 			if (MULTI_IS_TRACKER_GAME) {
 				if(jr->tracker_id < 0){
-					return JOIN_DENY_JR_TRACKER_INVAL;
+					// FS2 Open PXO doesn't use this
+					//return JOIN_DENY_JR_TRACKER_INVAL; 
 				}			
 			}			
 
@@ -2206,7 +2210,8 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	// we probably eventually want to make sure he's not passing us a fake tracker id#
 	if (MULTI_IS_TRACKER_GAME) {
 		if(jr->tracker_id < 0){
-			return JOIN_DENY_JR_TRACKER_INVAL;
+			// FS2Open PXO Doesn't use this
+			//return JOIN_DENY_JR_TRACKER_INVAL;
 		}			
 	}
 
@@ -3229,6 +3234,15 @@ void multi_update_valid_missions()
 
 	if (port == -1)
 	{
+		if (!FS2OpenPXO_Socket.isInitialized())
+		{
+				if (!FS2OpenPXO_Socket.InitSocket())
+				{
+					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+				}
+		}
+
+
 		CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
 		if(file == NULL){
 			ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
@@ -3242,6 +3256,9 @@ void multi_update_valid_missions()
 			ml_printf("Network", "No Masterserver definition!\n");
 			return;
 		}
+
+		if (strstr(Server, "\n"))
+			*strstr(Server, "\n") = '\0';
 
 		if (cfgets(Port, 32, file) != NULL)
 			port = atoi(Port);

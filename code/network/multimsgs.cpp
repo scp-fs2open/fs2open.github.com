@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-04-29 01:03:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2003-09-24 19:35:59 $
+ * $Author: Kazan $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/04/29 01:03:24  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.7  2003/02/16 18:55:35  phreak
  * fixed typecasting warnings
  *
@@ -438,6 +442,13 @@
 #include "network/multi_rate.h"
 #include "nebula/neblightning.h"
 #include "hud/hudescort.h"
+
+
+#include "fs2open_pxo/Client.h"
+extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+extern unsigned int PXO_SID; // FS2 Open PXO Session ID
+extern char PXO_Server[];
+extern int PXO_port;
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -5226,7 +5237,9 @@ void process_store_stats_packet(ubyte *data, header *hinfo)
 	} else {			
 		if(accept){
 			// all players should mark the stats as being accepted in the debriefing
-			multi_debrief_stats_accept();			
+			multi_debrief_stats_accept();		
+			
+
 		} else {
 			// all players should mark the stats as being "tossed" in the debriefing
 			multi_debrief_stats_toss();			

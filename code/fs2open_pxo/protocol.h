@@ -165,7 +165,7 @@ struct fs2open_pilot_reply
          unsigned int PriFHits; 
          unsigned int SecShots; 
          unsigned int SecHits; 
-         unsigned int SecFHist;
+         unsigned int SecFHits;
          
          unsigned int ship_types;
          fs2open_ship_typekill *type_kills; 
@@ -194,7 +194,7 @@ struct fs2open_pilot_update
          unsigned int PriFHits; 
          unsigned int SecShots; 
          unsigned int SecHits; 
-         unsigned int SecFHist;
+         unsigned int SecFHits;
          
          unsigned int ship_types;
          fs2open_ship_typekill *type_kills;          

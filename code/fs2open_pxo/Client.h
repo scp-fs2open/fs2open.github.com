@@ -10,6 +10,11 @@
 #include "protocol.h"
 #include "udpsocket.h"
 
+// Getting linked into FS2 Here
+#include "Playerman/Player.h"
+
+
+
 struct net_server
 {
       char servername[65];
@@ -21,7 +26,12 @@ struct net_server
       int ping; // will be determined by client
 };
 
+
+
 // Variants of the above functions with persistant connections
+int SendPlayerData(int SID, const char* player_name, const char* user, player *pl, const char* masterserver, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
+int GetPlayerData(int SID, const char* player_name, player *pl, const char* masterserver, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, bool CanCreate=false, int timeout=15);
+
 net_server* GetServerList(const char* masterserver, int &numServersFound, UDP_Socket &Socket, int port=FS2OPEN_PXO_PORT, int timeout=15);
 int Ping(const char* target, UDP_Socket &Socket);
 void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
