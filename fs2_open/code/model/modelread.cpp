@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.26 $
- * $Date: 2003-11-11 02:15:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.27 $
+ * $Date: 2003-11-11 18:06:49 $
+ * $Author: phreak $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/11/11 02:15:45  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.25  2003/10/14 17:39:15  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -2723,7 +2728,7 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vector * pos,int *x1, 
 
 	po = model_get(model_num);
 
-	g3_start_instance_matrix(pos,orient);
+	g3_start_instance_matrix(pos,orient,false);
 	
 	n_valid_pts = 0;
 
@@ -2789,7 +2794,7 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vecto
 	if ( (submodel < 0) || (submodel >= po->n_models ) ) return 1;
 	sm = &po->submodel[submodel];
 	
-	g3_start_instance_matrix(pos,orient);
+	g3_start_instance_matrix(pos,orient,false);
 	
 	n_valid_pts = 0;
 
