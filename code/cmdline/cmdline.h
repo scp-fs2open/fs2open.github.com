@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.22 $
- * $Date: 2003-08-21 20:54:37 $
- * $Author: randomtiger $
+ * $Revision: 2.23 $
+ * $Date: 2003-08-22 07:35:08 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/08/21 20:54:37  randomtiger
+ * Fixed switching - RT
+ *
  * Revision 2.21  2003/08/12 03:18:33  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -314,5 +317,6 @@ extern float static_tube_factor;
 extern float static_point_factor;
 extern double specular_exponent_value;
 
+extern int cell;
 
 #endif

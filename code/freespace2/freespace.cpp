@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.38 $
- * $Date: 2003-08-21 20:54:38 $
- * $Author: randomtiger $
+ * $Revision: 2.39 $
+ * $Date: 2003-08-22 07:35:08 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/08/21 20:54:38  randomtiger
+ * Fixed switching - RT
+ *
  * Revision 2.37  2003/08/16 03:52:23  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -2755,6 +2758,7 @@ void game_init()
 	// initialize alpha colors
 	alpha_colors_init();	
 
+	if(cell)cell_shaded_lightmap = bm_load("cellmap");
 	Viewer_mode = 0;
 //	Game_music_paused = 0;
 	Game_paused = 0;

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-08-16 03:52:23 $
+ * $Revision: 2.16 $
+ * $Date: 2003-08-22 07:35:08 $
  * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/08/16 03:52:23  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.14  2003/08/12 03:18:33  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -1205,6 +1214,8 @@ void gr_d3d_tmapper_internal_3d( int nverts, vertex **verts, uint flags, int is_
 
 extern int spec;
 bool env_enabled = false;
+extern int cell_shaded_lightmap;
+bool cell_enabled = false;
 
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
@@ -1436,7 +1447,10 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		src_v++;
 	}
 
-	int ra = 0, ga = 0, ba = 0;		
+	int ra = 0, ga = 0, ba = 0;	
+
+	float f_float;	
+
 	// if we're rendering against a fullneb background
 	if(flags & TMAP_FLAG_PIXEL_FOG){	
 		int r, g, b;
@@ -1452,16 +1466,56 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		}				
 		ra /= nverts;
 		ga /= nverts;
-		ba /= nverts;		
+		ba /= nverts;
 
 		// set fog
 		gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 	}					
 
 	//BEGIN FINAL SETTINGS
+	if(cell && cell_enabled){
+	
+		if(GLOWMAP < 0){
+			d3d_SetTexture(2, NULL);
+			d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	
+			set_stage_for_cell_shaded();
+		}else{
+			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+			d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 2);
 
-	//set for the most basic rendering type, change it later if needed
-//	d3d_set_initial_render_state();
+			if(d3d_caps.MaxSimultaneousTextures > 2)
+				set_stage_for_cell_glowmapped_shaded();
+			else
+				set_stage_for_cell_shaded();
+
+		}
+
+		gr_screen.gf_set_bitmap(cell_shaded_lightmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);
+
+		for (i=0; i<nverts; i++ )	{
+			//d3d_verts[i].color = D3DCOLOR_ARGB(255,255,255,255);
+			d3d_verts[i].env_u = ((verts[i]->r + verts[i]->g + verts[i]->b)/3)/255.0f;
+			d3d_verts[i].env_v = 0.0f;
+		}
+
+		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+
+		if(d3d_caps.MaxSimultaneousTextures < 3){
+			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+			if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
+				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
+			set_stage_for_additive_glowmapped();
+			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+			d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+			gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
+		}
+
+		return;
+	}
 
 	//a bit of optomiseation, if there is no specular highlights don't bother waisting the recorses on trying to render them
 	bool has_spec = false;
@@ -1472,51 +1526,44 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		}
 	}
 
-	//if this poly has specular but no spec map has been set
-	if(has_spec && (SPECMAP < 0)){
-		//if there is a glow map also
-		if(GLOWMAP > -1){
-			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
-			if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1))	{
-				mprintf(( "Not rendering glowmap texture because it didn't fit in VRAM!\n" ));
-				return;
-			}
-
-			set_stage_for_glow_mapped_defuse_and_non_mapped_spec();
-		}else{
-			set_stage_for_defuse_and_non_mapped_spec();
-		}
-	}
-
-
-	//if this poly has no specular of any kind
-	if(!has_spec){
-		//if there is a glow map also
-		if(GLOWMAP > -1){
-			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
-			if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1))	{
-				mprintf(( "Not rendering glowmap texture because it didn't fit in VRAM!\n" ));
-				return;
-			}
-			
-			set_stage_for_glow_mapped_defuse();
-		}else{
-			set_stage_for_defuse();
-		}
+	if(GLOWMAP < 0){
+		d3d_SetTexture(1, NULL);
+		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	}else{
-			//if there is a glow map also
-		if(GLOWMAP > -1){
-			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
-			if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1))	{
-				mprintf(( "Not rendering glowmap texture because it didn't fit in VRAM!\n" ));
-				return;
+		gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);
+	}
+
+	if(has_spec){
+		if(SPECMAP < 0){
+			//nonmapped specular
+			if(GLOWMAP > -1){
+				//glow mapped
+				set_stage_for_glow_mapped_defuse_and_non_mapped_spec();
+			}else{
+				//non glowmapped
+				set_stage_for_defuse_and_non_mapped_spec();
 			}
+		}else{
+			//mapped specular
+			if(GLOWMAP > -1){
+				//glowmapped
+				set_stage_for_glow_mapped_defuse();
+			}else{
+				//non glowmapped
+				set_stage_for_defuse();
+			}
+		}
+	}else{//has_spec
+		//defuse only
+		if(GLOWMAP > -1){
+			//glowmapped
 			set_stage_for_glow_mapped_defuse();
 		}else{
+			//non glowmapped
 			set_stage_for_defuse();
 		}
 	}
-
 
 	// Draws just about everything except stars and lines
  	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
@@ -1529,13 +1576,29 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 				return;
 			}
 		for (i=0; i<nverts; i++ )	{
-			d3d_verts[i].specular = D3DCOLOR_RGBA(verts[i]->spec_r, verts[i]->spec_g, verts[i]->spec_b, *(((ubyte*)&d3d_verts[i].specular)+3));
+			if(flags & TMAP_FLAG_PIXEL_FOG){
+				// linear fog formula
+				f_float = (gr_screen.fog_far - verts[i]->z) / (gr_screen.fog_far - gr_screen.fog_near);
+				if(f_float < 0.0f){
+					f_float = 0.0f;
+				} else if(f_float > 1.0f){
+					f_float = 1.0f;
+				}
+
+				d3d_verts[i].specular = D3DCOLOR_RGBA((ubyte)((int)verts[i]->spec_r * f_float), (ubyte)((int)verts[i]->spec_g * f_float), (ubyte)((int)verts[i]->spec_b * f_float), *(((ubyte*)&d3d_verts[i].specular)+3));
+			}else
+				d3d_verts[i].specular = D3DCOLOR_RGBA(verts[i]->spec_r, verts[i]->spec_g, verts[i]->spec_b, *(((ubyte*)&d3d_verts[i].specular)+3));
 		}
 
-		if(set_stage_for_spec_mapped())
-		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+		if(set_stage_for_spec_mapped()){
+			//spec mapping is always done on a second pass
+			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+			if(flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+			d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+			if(flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
+			gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
+		}
 	}
-//	d3d_set_initial_render_state();
 
 }
 
@@ -2050,6 +2113,8 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	src_v->tu = u0;
 	src_v->tv = v1;
 
+	d3d_set_initial_render_state();
+
 	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
 }
 
@@ -2339,6 +2404,8 @@ void gr_d3d_flash(int r, int g, int b)
 		src_v->sx = x1;
 		src_v->sy = y2;
 
+		d3d_set_initial_render_state();
+
 		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
 	}
 }
@@ -2489,6 +2556,8 @@ void gr_d3d_line(int x1,int y1,int x2,int y2)
 	a->color = color;
 	b->color = color;
 
+	d3d_set_initial_render_state();
+
 	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_LINELIST,(LPVOID)d3d_verts,2);
 }
 
@@ -2574,6 +2643,8 @@ void gr_d3d_gradient(int x1,int y1,int x2,int y2)
 		a->color = color1;
 		b->color = color2;
 	}
+
+	d3d_set_initial_render_state();
 
 	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_LINELIST,(LPVOID)d3d_verts,2);
 }
@@ -2869,6 +2940,9 @@ void d3d_render_timer_bar(int colour, float x, float y, float w, float h)
 	// This is the incorrect call
 	//	d3d_DrawPrimitive(D3DPT_TRIANGLEFAN,D3DVT_TLVERTEX,(LPVOID)d3d_verts,4,NULL);
 	// The correct call now is:-
+
+	d3d_set_initial_render_state();
+
 	d3d_DrawPrimitive(D3DVT_TLVERTEX,D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
 }
 

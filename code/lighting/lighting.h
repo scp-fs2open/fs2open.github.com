@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.h $
- * $Revision: 2.2 $
- * $Date: 2003-08-16 03:52:23 $
+ * $Revision: 2.3 $
+ * $Date: 2003-08-22 07:35:09 $
  * $Author: bobboau $
  *
  * Include file for lighting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/08/16 03:52:23  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.1  2003/08/12 03:18:33  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -153,5 +162,6 @@ int light_get_global_dir(vector *pos, int n);
 // Set to non-zero if we're in a shadow.
 void light_set_shadow( int state );
 
+extern int cell_shaded_lightmap;
 
 #endif

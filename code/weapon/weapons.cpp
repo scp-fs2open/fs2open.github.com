@@ -20,6 +20,9 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/08/06 17:36:17  phreak
+ * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
+ *
  * Revision 2.33  2003/06/25 03:21:03  phreak
  * added support for weapons that only fire when tagged
  * also added limited firing range for local ssms
@@ -500,7 +503,7 @@ missile_obj Missile_obj_list;						// head of linked list of missile_obj structs
 
 // WEAPON EXPLOSION INFO
 #define MAX_weapon_expl_lod						4
-#define MAX_Weapon_expl_info					3
+#define MAX_Weapon_expl_info					20
 
 typedef struct weapon_expl_lod {
 	char	filename[MAX_FILENAME_LEN];
@@ -1077,6 +1080,14 @@ int parse_weapon()
 			wip->wi_flags |= WIF_SHOCKWAVE;
 		}
 		diag_printf ("Shockwave speed -- %7.3f\n", wip->shockwave_speed);
+
+		wip->shockwave_model = -1;
+		if(optional_string("$Shockwave_model:")){
+			char shockwave_model_filename[32];
+			stuff_string( shockwave_model_filename, F_NAME, NULL);
+			wip->shockwave_model = model_load(shockwave_model_filename, 0, NULL, 0);
+		}
+
 	} 
 	// for primary weapons they're optional
 	else {
@@ -1107,6 +1118,13 @@ int parse_weapon()
 				wip->wi_flags |= WIF_SHOCKWAVE;
 			}
 			diag_printf ("Shockwave speed -- %7.3f\n", wip->shockwave_speed);
+		}
+
+		wip->shockwave_model = -1;
+		if(optional_string("$Shockwave_model:")){
+			char shockwave_model_filename[32];
+			stuff_string( shockwave_model_filename, F_NAME, NULL);
+			wip->shockwave_model = model_load("shockwave_model_filename", 0, NULL, 0);
 		}
 	}
 
@@ -4006,7 +4024,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vector * hitpos )
 			sci.speed = wip->shockwave_speed;
 			sci.rot_angle = 0.0f;
 
-			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, &sci, sw_flag);
+			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, &sci, sw_flag, -1, wip->shockwave_model);
 //			snd_play_3d( &Snds[SND_SHOCKWAVE_IMPACT], hitpos, &Eye_position );
 		}
 		else {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.43 $
- * $Date: 2003-08-06 17:37:08 $
- * $Author: phreak $
+ * $Revision: 2.44 $
+ * $Date: 2003-08-22 07:35:09 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/08/06 17:37:08  phreak
+ * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
+ *
  * Revision 2.42  2003/07/15 02:52:40  phreak
  * ships now decloak when firing
  *
@@ -1116,6 +1119,7 @@ typedef struct ship_info {
 	int	explosion_propagates;				// If true, then the explosion propagates
 	float	shockwave_speed;						// speed at which shockwave expands, 0 means no shockwave
 	int	shockwave_count;						// the # of total shockwaves
+	int shockwave_moddel;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl

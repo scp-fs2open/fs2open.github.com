@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.5 $
- * $Date: 2003-08-16 03:52:23 $
+ * $Revision: 2.6 $
+ * $Date: 2003-08-22 07:35:08 $
  * $Author: bobboau $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/08/16 03:52:23  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.4  2003/07/04 02:27:48  phreak
  * added support for cloaking.
  * i will need to contact someone who knows d3d to get this to work
@@ -219,6 +228,9 @@ void set_stage_for_glow_mapped_defuse();
 void set_stage_for_defuse_and_non_mapped_spec();
 void set_stage_for_glow_mapped_defuse_and_non_mapped_spec();
 bool set_stage_for_spec_mapped();
+void set_stage_for_cell_shaded();
+void set_stage_for_cell_glowmapped_shaded();
+void set_stage_for_additive_glowmapped();
 
 void d3d_tcache_init();
 void d3d_tcache_cleanup();

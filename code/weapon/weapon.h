@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/08/06 17:36:17  phreak
+ * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
+ *
  * Revision 2.15  2003/06/25 03:21:03  phreak
  * added support for weapons that only fire when tagged
  * also added limited firing range for local ssms
@@ -557,10 +560,13 @@ typedef struct weapon_info {
 	float	max_speed;							// initial speed of the weapon
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
+
 	float	blast_force;						// force this weapon exhibits when hitting an object
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	inner_radius, outer_radius;	// damage radii for missiles (0 means impact only)
 	float	shockwave_speed;					// speed of shockwave ( 0 means none )
+	int		shockwave_model;					//model for the shock wave -Bobboau
+
 	float	armor_factor, shield_factor, subsystem_factor;	//	in 0.0..2.0, scale of damage done to type of thing
 	float	lifetime;							//	How long this thing lives.
 	float energy_consumed;					// Energy used up when weapon is fired
