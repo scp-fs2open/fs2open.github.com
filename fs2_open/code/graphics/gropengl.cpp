@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.26 $
- * $Date: 2003-08-03 23:35:36 $
+ * $Revision: 2.27 $
+ * $Date: 2003-08-06 17:26:20 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/08/03 23:35:36  phreak
+ * changed some z-buffer stuff so it doesn't clip as noticably
+ *
  * Revision 2.25  2003/07/15 02:34:59  phreak
  * fun work optimizing the cloak effect
  *
@@ -709,7 +712,7 @@ void opengl_minimize()
 
 static inline void opengl_set_max_anistropy()
 {
-	if (GL_Extensions[GL_TEX_FILTER_aniso].enabled)		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
+//	if (GL_Extensions[GL_TEX_FILTER_aniso].enabled)		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
 }
 
 void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
@@ -724,17 +727,15 @@ void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_typ
 			gr_tcache_set(-1, -1, NULL, NULL );
 			break;
 		case TEXTURE_SOURCE_DECAL:
-			opengl_switch_arb0(1);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			opengl_set_max_anistropy();
+		//	opengl_set_max_anistropy();
 			break;
 		case TEXTURE_SOURCE_NO_FILTERING:
 			opengl_switch_arb0(1);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			opengl_set_max_anistropy();
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			break;
 		default:
@@ -2888,8 +2889,8 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	
 	//compression takes precedence
 	if (bitmap_type & TCACHE_TYPE_COMPRESSED)
@@ -4260,7 +4261,12 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	if (GL_Extensions[GL_TEX_FILTER_aniso].enabled)
 	{
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_aniso);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
 	}
+
+	
+//	glTexParameteri(GL_TEXTURE_2D,GL_GENERATE_MIPMAP_SGIS,GL_TRUE);
+//	glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
 
 	glActiveTextureARB(GL_TEXTURE0_ARB);
 	glEnable(GL_TEXTURE_2D);
