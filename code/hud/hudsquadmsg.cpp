@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-01-19 22:20:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2003-06-11 02:59:47 $
+ * $Author: phreak $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/19 22:20:23  Goober5000
+ * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
+ * and departure into hangars should now all work properly
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -1245,6 +1250,11 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	// if it's a weapon, then it needs to be a WIF_BOMB weapon.  Only attack order valid, and only
 	// valid on bombs not on the player's team
 	if ( objp->type == OBJ_WEAPON ) {
+		
+		if (Weapons[objp->instance].lssm_stage==3){
+			return 0;
+		}
+		
 		if ( (Comm_orders[order].value == ATTACK_TARGET_ITEM )
 			&& (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
 			&& (Weapons[objp->instance].team != ordering_shipp->team) )

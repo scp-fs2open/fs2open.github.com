@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-05-21 20:27:07 $
+ * $Revision: 2.8 $
+ * $Date: 2003-06-11 02:59:48 $
  * $Author: phreak $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/05/21 20:27:07  phreak
+ * hud is drawn when in chase camera for player
+ *
  * Revision 2.6  2003/04/29 01:03:23  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -1506,6 +1509,19 @@ void HUD_render_2d(float frametime)
 	int show_gauge_flag;
 
 	HUD_reset_clip();
+
+	//make sure that the player isn't targeting a 3rd stage local ssm
+	if (Player_ai->target_objnum > -1)
+	{
+		if (Objects[Player_ai->target_objnum].type == OBJ_WEAPON)
+		{
+			if (Weapons[Objects[Player_ai->target_objnum].instance].lssm_stage==3)
+			{
+				set_target_objnum( Player_ai, -1 );
+				hud_lock_reset();
+			}
+		}
+	}
 
 /*
 	// show some scoring debug stuff
