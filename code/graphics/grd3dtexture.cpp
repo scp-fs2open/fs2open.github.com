@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.42 $
- * $Date: 2004-07-29 03:41:46 $
+ * $Revision: 2.43 $
+ * $Date: 2004-10-31 21:40:11 $
  * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2004/07/29 03:41:46  taylor
+ * plug memory leaks
+ *
  * Revision 2.41  2004/07/26 20:47:31  Kazan
  * remove MCD complete
  *
@@ -589,9 +592,6 @@
 #include "network/multi_log.h"
 
 
-
-bool Supports_compression[NUM_COMPRESSION_TYPES];
-
 tcache_slot_d3d Textures[MAX_BITMAPS];
 
 int D3D_frame_count = 0;
@@ -1129,7 +1129,7 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 	return 1;
 }
 
-int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force )
+int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force)
 {
 	return d3d_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, 0, 0, force, 0 );
 }
@@ -1274,26 +1274,6 @@ int gr_d3d_preload(int bitmap_num, int is_aabitmap)
 	return retval;
 }
 
-#include "cfile/cfile.h"
-/* PCX Header data type */
-typedef struct	{
-	ubyte		Manufacturer;
-	ubyte		Version;
-	ubyte		Encoding;
-	ubyte		BitsPerPixel;
-	short		Xmin;
-	short		Ymin;
-	short		Xmax;
-	short		Ymax;
-	short		Hdpi;
-	short		Vdpi;
-	ubyte		ColorMap[16][3];
-	ubyte		Reserved;
-	ubyte		Nplanes;
-	short		BytesPerLine;
-	ubyte		filler[60];
-} PCXHeader;
-
 int d3d_get_valid_texture_size(int value, bool width)
 {
 	int min = width ? D3D_min_texture_width : D3D_min_texture_height;
@@ -1312,179 +1292,6 @@ int d3d_get_valid_texture_size(int value, bool width)
 
 	// value is too big
 	return -1;
-}
-
-IDirect3DTexture8 *d3d_make_texture(void *data, int bitmapnum, int size, int type, int flags) 
-{
-	D3DXIMAGE_INFO source_desc;
-	if(FAILED(D3DXGetImageInfoFromFileInMemory(data, size,	&source_desc))) {
-		return NULL;
-	} 
-
-	D3DFORMAT use_format  = D3DFMT_UNKNOWN;
-
-	// User is requesting we use compressed textures then pretend that the source is compressed
-	// DX will workout that its not but it means it can use the same code as before
-	if(Cmdline_dxt)
-	{
-		source_desc.Format = default_compressed_format;
-	}	
-
-	// Determine the destination (texture) format to hold the image
-	switch(source_desc.Format)
-	{
-		case D3DFMT_DXT1: if(Supports_compression[0]) {use_format = D3DFMT_DXT1; break;}
-		case D3DFMT_DXT2: if(Supports_compression[1]) {use_format = D3DFMT_DXT2; break;}
-		case D3DFMT_DXT3: if(Supports_compression[2]) {use_format = D3DFMT_DXT3; break;}
-		case D3DFMT_DXT4: if(Supports_compression[3]) {use_format = D3DFMT_DXT4; break;}
-		case D3DFMT_DXT5: if(Supports_compression[4]) {use_format = D3DFMT_DXT5; break;}
-		default:
-		{
-			bool use_alpha_format = false;	// initialization added by Goober5000
-
-			// Determine if the destination format needs to store alpha details
-			switch(type)
-			{
-			case BM_TYPE_TGA: use_alpha_format = (source_desc.Format == D3DFMT_A8R8G8B8); break; // 32 Bit TGAs only
-			case BM_TYPE_JPG: use_alpha_format = false; break; // JPG: Never 
-			case BM_TYPE_DDS: use_alpha_format = true;  break; // DDS: Always
-			default: Assert(0);	// just in case -- Goober5000
-			}
-
-			if(gr_screen.bits_per_pixel == 32) {
-				use_format = use_alpha_format ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8;
-			} else {
-				use_format = use_alpha_format ? default_alpha_tformat : default_non_alpha_tformat;
-			}
-		}
-	}
-
-	extern D3DBitmapData d3d_bitmap_entry[MAX_BITMAPS];
-
-	float *uscale = &(d3d_bitmap_entry[bitmapnum].uscale);
-	float *vscale = &(d3d_bitmap_entry[bitmapnum].vscale);
-	  
-	bool use_mipmapping = (Cmdline_d3dmipmap > 0);
-
-	DWORD filter = D3DX_FILTER_LINEAR; // Linear, enough to smooth rescales but not too much blur
-
-	*uscale = *vscale = 1.0;
-
-	if(flags == TCACHE_TYPE_BITMAP_SECTION) {
-		use_mipmapping = 0;
-	  	filter = D3DX_FILTER_NONE; 
-		*uscale = ((float) source_desc.Width)  / ((float) d3d_get_valid_texture_size(source_desc.Width, true));
-		*vscale = ((float) source_desc.Height) / ((float) d3d_get_valid_texture_size(source_desc.Height, false));
-	} else if(gr_screen.bits_per_pixel == 16 && ((type == BM_TYPE_TGA) || (type == BM_TYPE_JPG))) {
-	  	filter |=D3DX_FILTER_DITHER;
-	}
-
-	IDirect3DTexture8 *ptexture = NULL;
-	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(
-		GlobalD3DVars::lpD3DDevice,
-		data, size,
-	  	// Opertunity to control sizes here.
-		D3DX_DEFAULT,
-		D3DX_DEFAULT,
-		use_mipmapping ? 0 : 1, 
-		0, 
-		use_format,
-		D3DPOOL_MANAGED, 
-		filter,
-	 	D3DX_DEFAULT,
-		0, 
-		&source_desc, 
-		NULL, &ptexture);
-
-	return SUCCEEDED(hr) ? ptexture : NULL;
-}
-
-void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum)
-{
-	char filename[MAX_FILENAME_LEN];
-
-	strcpy( filename, file);
-	char *p = strchr( filename, '.' );
-	if ( p ) *p = 0;
-
-	switch(type)
-	{
-		case BM_TYPE_DDS: strcat( filename, ".dds" ); break;
-		case BM_TYPE_TGA: strcat( filename, ".tga" ); break;
-		case BM_TYPE_JPG: strcat( filename, ".jpg" ); break;
-		default: return NULL;
-	}
-
-	CFILE *targa_file = cfopen( filename , "rb" );
-
-	if (targa_file == NULL){
-		DBUGFILE_OUTPUT_1("Failed to open through cfopen '%s'", filename);
-		return NULL;
-	}		
-
-	int size = cfilelength(targa_file);
-	void *tga_data = malloc(size);
-
-	if(tga_data == NULL) {
-		return NULL;
-	}
-
-	cfread(tga_data, size, 1, targa_file);	
-
-	cfclose(targa_file);
-	targa_file = NULL;
-
-	IDirect3DTexture8 *ptexture = d3d_make_texture(tga_data, bitmapnum, size, type, flags);
-
-	free(tga_data);
-
-	return ptexture;
-}
-
-bool d3d_read_header_d3dx(char *file, int type, int *w, int *h)
-{
-	char filename[MAX_FILENAME_LEN];
-
-	strcpy( filename, file);
-	char *p = strchr( filename, '.' );
-	if ( p ) *p = 0;
-
-	switch(type)
-	{
-		case BM_TYPE_DDS: strcat( filename, ".dds" ); break;  
-		case BM_TYPE_TGA: strcat( filename, ".tga" ); break;
-		case BM_TYPE_JPG: strcat( filename, ".jpg" ); break;
-	}
-
-	CFILE *targa_file = cfopen( filename , "rb" );
-
-	if (targa_file == NULL){
-		return false;
-	}		
-
-	int size = cfilelength(targa_file);
-	void *tga_data = malloc(size);//I freed this - Bobboau
-
-	if(tga_data == NULL) {
-		return false;
-	}
-
-	cfread(tga_data, size, 1, targa_file);	
-
-	cfclose(targa_file);
-	targa_file = NULL;
-
-	D3DXIMAGE_INFO source_desc;
-	if(FAILED(D3DXGetImageInfoFromFileInMemory(tga_data, size,	&source_desc))) {
-		free(tga_data);//right here -Bobboau
-		return false;
-	} 
-
-	if(w) *w = source_desc.Width;
-	if(h) *h = source_desc.Height;
-	
-	free(tga_data);//and right here -Bobboau
-	return true;
 }
 
 //added this to fix AA lines, but then found I didn't need to, 
