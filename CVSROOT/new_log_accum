@@ -1,0 +1,757 @@
+#!/usr/bin/perl -w
+#
+# Copyright (C) 2000 by Kevin L. Mitchell <klmitch@mit.edu>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+# 02111-1307, USA.
+#
+# Script to accumulate log messages for an entire tree and send them along
+# with the diffs; deals correctly with all manner of branching (I hope)
+#
+# $Id: new_log_accum,v 1.1 2002-08-11 23:05:15 drevil Exp $
+#
+
+use strict;
+
+use vars qw($MAILER $CVS $debug $boundary);
+use MD5;
+
+# Set this to the full path of a mailer that takes a list
+# of email addresses as arguments...
+$MAILER = "/usr/sbin/sendmail -oi -oeq";
+
+# Set this to the path of the CVS binary responsible for this tree...
+$CVS = "/usr/bin/cvs";
+
+# Don't touch this; use the -d command line option
+$debug = 0;
+
+# This is initialized by build_mailheader()
+$boundary = '';
+
+use POSIX qw(setsid);
+
+# We have to dissociate from our parent, so that the CVS commit can
+# complete, before we try to extract the diffs
+sub daemonize {
+    defined(my $pid = fork()) || die "Can't fork: $!";
+    exit(0)
+	if $pid;
+    setsid() || die "Can't start a new session: $!";
+}
+
+# Debugging output
+sub debug (@) {
+    print STDERR @_
+	if ($debug);
+}
+
+# Constants used in the FSM below for parsing the log message
+sub STATE_NONE     { 0 }
+sub STATE_MODIFIED { 1 }
+sub STATE_ADDED    { 2 }
+sub STATE_REMOVED  { 3 }
+sub STATE_LOG1     { 4 }
+sub STATE_LOG2     { 5 }
+
+# This routine removes everything in a directory
+sub clear_dir {
+    my ($dir) = @_;
+    my ($file);
+
+    opendir(DIR, $dir) || die "Cannot clear directory $dir: $!";
+    while ($file = readdir(DIR)) {
+	next
+	    if ($file eq "." || $file eq "..");
+
+	$file = "$dir/$file";
+
+	if (-d $file) {
+	    # It's a directory, recurse into it, then delete it.
+	    clear_dir($file);
+	    rmdir($file);
+	} else {
+	    # It's a file, delete it.
+	    unlink($file);
+	}
+    }
+    closedir(DIR);
+}
+
+# This routine prepares a temporary directory, hopefully in a secure
+# fashion; it uses the process group to make secondary programs be able
+# to find it.
+sub tmpdir (;$) {
+    my ($clear) = @_;
+    my ($pgrp, $own, $mode, $tmpdir);
+
+    $pgrp = getpgrp();
+
+    die "Don't run $0 setuid!"
+	unless ($< == $>);
+
+    # Decide on the directory name, using various environment variables
+    $tmpdir = ($ENV{TMPDIR} || $ENV{TMP} || $ENV{TEMP} || "/tmp") .
+	"/.#cvs.$pgrp";
+
+    # Doesn't exist, but we can't create it...
+    die "Can't create temporary directory $tmpdir: $!"
+	unless (-e $tmpdir || mkdir($tmpdir, 0700));
+
+    die "Temporary directory $tmpdir is not a directory"
+	unless (-d $tmpdir);
+
+    # Check ownership and permissions
+    (undef, undef, $mode, undef, $own, undef) = stat($tmpdir);
+
+    die "Temporary directory $tmpdir not owned by $< (owned by $own)"
+	unless ($own == $<);
+
+    die "Temporary directory $tmpdir group-writable"
+	if ($mode & 0020);
+    die "Temporary directory $tmpdir other-writable"
+	if ($mode & 0002);
+
+    # If we're supposed to clear the directory, do so...
+    clear_dir($tmpdir)
+	if ($clear);
+
+    return $tmpdir;
+}
+
+# Routine to remove the temporary directory when done
+sub cleanup_dir ($) {
+    # If we're debugging, we may want to look at the contents...
+    return
+	if ($debug);
+
+    clear_dir($_[0]);
+    rmdir($_[0]);
+}
+
+# Retrieve a single line from a specified file
+sub get_line ($) {
+    my ($fname) = @_;
+
+    open(FILE, "<$fname") || die "Cannot open file $fname for reading";
+    my $line = <FILE>;
+    close(FILE);
+
+    # Chomp off the \n
+    chomp $line;
+
+    return $line;
+}
+
+# Routine that only allows one value to be pushed on the array;
+# implemented by making the first element of the array a hash-reference.
+# When we add a new value, we also increment the count of an element in
+# the hash with the key being the array value...
+sub push_once (\@@) {
+    my ($array, @values) = @_;
+
+    # If the array is empty, create our hash ref
+    push @{$array}, {}
+	if (@{$array} == 0);
+
+    foreach my $value (@values) {
+	push @{$array}, $value
+	    if (!exists($array->[0]{$value}));
+
+	$array->[0]{$value}++;
+    }
+
+    return @{$array} - 1;
+}
+
+# Filter //, /./, and remove leading ./ or / from filenames
+sub fname_filter ($) {
+    my ($fname) = @_;
+
+    $fname =~ s,//,/,g;
+    $fname =~ s,/\./,/,g;
+    $fname =~ s,^\.?/,,g;
+
+    return $fname;
+}
+
+# Store file data in a temporary file
+sub names_to_file ($$@) {
+    my ($fname, $dir, @names) = @_;
+
+    if (@names > 0) {
+	open(FILE, ">>$fname") || die "Cannot open file $fname for appending";
+
+	# Store the directory data
+	print FILE "D $dir\n";
+
+	foreach my $name (@names) {
+	    # Mark record as a file...
+	    print FILE "F ";
+
+	    # Store the tag, if there is one...
+	    print FILE "$name->{tag}"
+		if (defined($name->{tag}));
+
+	    # Then store old revision, new revision, and file name
+	    print FILE ":$name->{old}:$name->{new}:$name->{file}\n";
+	}
+
+	close(FILE);
+    }
+}
+
+# Retrieve file data from temporary file; updates branch tags with what it
+# reads
+sub file_to_names (\@$) {
+    my ($btags, $fname) = @_;
+    my ($dir) = (undef);
+    my (@names) = ();
+
+    debug "Reading file names from $fname...\n";
+
+    # We may not have, say, added a file in this subdirectory...
+    return ()
+	if (!-e $fname);
+
+    open(FILE, "<$fname");
+    while(<FILE>) {
+	chomp;
+
+	# Get record type...
+	my ($type, $data) = split(' ', $_, 2);
+
+	# ok, it's a directory, remember that...
+	if ($type eq "D") {
+	    $dir = $data;
+
+	    debug "Read directory $dir\n";
+
+	    next;
+	}
+
+	debug "Read file $data\n";
+
+	# Get all the information about the file
+	my ($tag, $old, $new, $file) = split(':', $data);
+
+	# and store it all
+	push(@names, { tag => $tag, old => $old, new => $new, file => $file,
+		       dir => $dir, name => fname_filter("$dir/$file") });
+
+	# Remember the tags...
+	push_once(@{$btags}, $tag)
+	    if (defined($tag) && $tag ne "");
+    }
+    close(FILE);
+
+    return @names;
+}
+
+# Create a text-formatted list of names
+sub name_to_list (\@@) {
+    my ($btags, @names) = @_;
+    my (@nlist, @nline) = ();
+
+    debug "Tags:", join(':', @{$btags}), "\n";
+
+    # We group them by tag
+    foreach my $tag ("", @{$btags}[1..$#{$btags}]) {
+	debug "Processing tag $tag...\n";
+
+	@nlist = ();
+
+	# Get a list of files by the tag...
+	foreach my $name (@names) {
+	    debug "Processing $name->{file}...\n";
+
+	    next
+		if ($name->{tag} ne $tag);
+
+	    debug "Pushing $name->{name} on \@nlist...\n";
+	    push(@nlist, $name->{name});
+	}
+
+	# If the tag is not the empty string, list the tag...
+	push(@nline, "  Tag: $tag", "    ")
+	    if ($tag ne "");
+
+	# Now list each file name
+	foreach my $name (@nlist) {
+	    # indent if we run past the end of line limit
+	    push(@nline, "    ")
+		if (@nline == 0 || ($nline[$#nline] ne "    " &&
+		    length($nline[$#nline]) + length($name) + 1 > 70));
+
+	    # add the file name to the list
+	    debug "Adding $name to \@nline...\n";
+	    $nline[$#nline] .= " $name";
+	}
+    }
+
+    return @nline;
+}
+
+# write the log message to a temporary file
+sub write_log ($@) {
+    my ($fname, @text) = @_;
+
+    open(FILE, ">$fname") || die "Cannot open file $fname for writing";
+    print FILE join("\n", @text), "\n";
+    close(FILE);
+}
+
+# Build the header of the commit message: CVSROOT, module name, any
+# branch tags, and the commit time
+sub build_header ($@) {
+	my ($module, $subject, $mailto, @branch_tags) = @_;
+	my (@text, @mailto);
+	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime(time());
+	my ($user, $dummy);
+	my ($digest);
+
+	($user, $dummy, $dummy, $dummy, $dummy, $dummy, $dummy) = getpwuid($<);
+
+	@mailto = @{$mailto};
+
+	# generate a unique boundary by calculating the md5sum of the
+	# current time
+	$digest = new MD5;
+	$digest->reset();
+	$digest->add(time() . rand());
+	$boundary = "----=MIME." . unpack("H*", $digest->digest());
+	
+	# Build the mail header
+	push(@text, "From: $user");
+	push(@text, "To: " . join(' ', @mailto));
+	push(@text, "Subject: $subject");
+	push(@text, "MIME-Version: 1.0");
+	push(@text, "Content-Type: multipart/mixed; boundary=\"$boundary\"");
+	push(@text, "");
+	push(@text, "This is a multipart message as defined by RFC2049 (MIME)");
+	push(@text, "");
+	push(@text, "--$boundary");
+	push(@text, "Content-Type: text/plain; charset=us-ascii");
+	push(@text, "Content-Disposition: inline");
+	push(@text, "");
+
+	# Build the commit message header
+	push(@text, "Commiter   : $user");
+	push(@text, "CVSROOT    : $ENV{CVSROOT}");
+	push(@text, "Module     : $module");
+	push(@text, "Branch tags: " . join(' ', @branch_tags[1..$#branch_tags]))
+	if (@branch_tags > 0);
+		push(@text, sprintf("Commit time: %04d-%02d-%02d %02d:%02d:%02d UTC",
+			$year + 1900, $mon + 1, $mday, $hour, $min, $sec));
+
+	return @text, "";
+}
+
+# Send the mail message
+sub send_mail {
+    my ($mailto, $text) = @_;
+    my (@mailto, @text);
+    # I <heart> perl
+    @mailto = @{$mailto};
+    @text = @{$text};
+
+    open(MAIL, "|$MAILER " . join(' ', @mailto));
+    push(@text, "--$boundary--", "");
+    print MAIL join("\n", @text), "\n";
+    close(MAIL);
+}
+
+# Find the tmp directory
+my ($tmpdir) = (tmpdir());
+
+my (@mailto) = ();
+my (@files) = ();
+my (@path) = ();
+my ($modname, $repdir, $dir) = (undef, undef, undef);
+
+# Process command line arguments
+while (@ARGV > 0) {
+    my ($arg) = (shift(@ARGV));
+
+    if ($arg eq '-d') {
+	# Turn on debugging
+	$debug++;
+    } elsif ($arg eq '-M') {
+	# Module name explicitly set -- XXX Not tested, use at your own risk
+	die "Argument for -M missing"
+	    unless (@ARGV > 0);
+
+	$modname = shift(@ARGV);
+    } elsif ($arg eq '-m') {
+	# An address to mail the notification to
+	die "Argument for -m missing"
+	    unless (@ARGV > 0);
+
+	push(@mailto, shift(@ARGV));
+    } else {
+	# the list of filenames passed by CVS--you *must* use %{sVv}!
+	die "Too many arguments!"
+	    unless (@files == 0);
+
+	@files = split(" ", $arg);
+    }
+}
+
+die "Nobody to mail to"
+    unless (@mailto > 0);
+
+die "No files to process"
+    unless (@files > 1);
+
+# The repository directory
+$repdir = shift(@files);
+
+# break it appart...
+@path = split("/", $repdir);
+
+# Now we know the module name, if it wasn't explicitly set
+$modname = $path[0]
+    unless (defined($modname));
+
+# Figure out what our directory is
+if (@path == 1) {
+    $dir = ".";
+} else {
+    $dir = join("/", @path[1..$#path]);
+}
+
+# append a / to it...
+$dir .= "/";
+
+debug "module = $modname\n";
+debug "dir    = $dir\n";
+debug "path   = ", join(":", @path), "\n";
+debug "files  = ", join(":", @files), "\n";
+debug "tmpdir = $tmpdir\n";
+
+my (%fversions);
+
+# Unless its a new directory or imported sources, create file records
+unless (defined($files[1]) && defined($files[2]) &&
+	(($files[1] eq "New" && $files[2] eq "directory") ||
+	 ($files[1] eq "Imported" && $files[2] eq "sources"))) {
+
+    foreach my $fname (@files) {
+	# You *must* use %{sVv} in the call in loginfo!
+	die "Invalid filenames"
+	    unless ($fname =~ /^(.*),([0-9.]+|NONE),([0-9.]+|NONE)$/);
+
+	$fversions{$1} = {
+	    old => ($2 eq "NONE" ? "0" : $2),
+	    new => ($3 eq "NONE" ? "0" : $3),
+	};
+    }
+}
+
+# process log message
+my ($state, $tag) = (STATE_NONE, undef);
+
+my (@modified, @added, @removed, @log, @branch_tags) = ();
+
+while (<STDIN>) {
+    chomp;
+
+    debug "State $state, line:$_\n";
+
+    # Ignore empty space at the beginning of the log message
+    next
+	if ($state == STATE_LOG1 && /^\s*$/);
+
+    # We're done ignoring empty space
+    if ($state == STATE_LOG1) {
+	$state = STATE_LOG2;
+    }
+
+    if ($state == STATE_LOG2) {
+	# Don't modify the lines at all if we're processing the log message
+	push(@log, $_);
+	next;
+    } else {
+	# Strip out leading and trailing space
+	s/^\s*(.*?)\s*$/$1/;
+    }
+
+    if (/^Modified Files/) {
+	# Collect list of modified files
+	debug "State switching to STATE_MODIFIED\n";
+
+	$state = STATE_MODIFIED;
+	$tag = undef;
+
+	next;
+
+    } elsif (/^Added Files/) {
+	# Collect list of added files
+	debug "State switching to STATE_ADDED\n";
+
+	$state = STATE_ADDED;
+	$tag = undef;
+
+	next;
+
+    } elsif (/^Removed Files/) {
+	# Collect list of removed files
+	debug "State switching to STATE_REMOVED\n";
+
+	$state = STATE_REMOVED;
+	$tag = undef;
+
+	next;
+
+    } elsif (/^Log Message/) {
+	# Collect log message
+	debug "State switching to STATE_LOG1\n";
+
+	$state = STATE_LOG1;
+	$tag = undef;
+
+	next;
+
+    } elsif (/^Revision\/Branch/) {
+	# Parse old-style Revision/Branch field
+	debug "Found a branch tag\n";
+
+	/^[^:]+:\s*(.*)/;
+
+	push_once(@branch_tags, $1);
+
+	warn "Tag == $tag"
+	    if (defined($tag));
+
+	next;
+    }
+
+    # Ignore the stuff at the top of the commit report
+    next
+	if ($state == STATE_NONE);
+
+    if (/^Tag:\s*(.*)$/) {
+	# Remember the tag
+	debug "Setting tag to $1\n";
+	$tag = $1;
+	next;
+    }
+
+    my (@tfiles) = ();
+
+    # Find the file in our command line list of files
+    foreach my $file (split) {
+	die "Nothing known about file $file!"
+	    unless (exists($fversions{$file}));
+
+	push @tfiles, {
+	    file => $file,
+	    tag => $tag,
+	    old => $fversions{$file}{old},
+	    new => $fversions{$file}{new},
+	};
+    }
+
+    # Store the file list in the correct array
+    push(@modified, @tfiles)
+	if ($state == STATE_MODIFIED);
+
+    push(@added, @tfiles)
+	if ($state == STATE_ADDED);
+
+    push(@removed, @tfiles)
+	if ($state == STATE_REMOVED);
+}
+
+# Remove trailing blank lines from the log message
+while (@log > 0 && $log[$#log] =~ /^\s*$/) {
+    pop(@log);
+}
+
+# If a new directory was added, we're done...
+if (defined($files[1]) && defined($files[2]) &&
+    $files[1] eq "New" && $files[2] eq "directory") {
+
+    my (@text) = ();
+
+    # If there was a sticky tag for the directory, make it a branch tag
+    if ($log[$#log] =~ /^--> Using per-directory sticky tag \`(.*)\'$/) {
+	push_once(@branch_tags, $1);
+	pop(@log);
+    }
+
+    # Build the message...
+    push(@text, build_header($modname, "Module $modname: New directory $dir",
+	 \@mailto, @branch_tags));
+    push(@text, "Log message:", "", @log);
+
+    # and send it (synchronously)
+    send_mail(\@mailto, \@text);
+
+    # Clean up after ourselves and exit.
+    cleanup_dir($tmpdir);
+    exit(0);
+}
+
+# If an import was done, we're done...
+if (defined($files[1]) && defined($files[2]) &&
+    $files[1] eq "Imported" && $files[2] eq "sources") {
+
+    my (@text) = ();
+
+    # Build the message...
+    push(@text, build_header($modname, "Module $modname: Imported $dir",
+	\@mailto, @branch_tags));
+    push(@text, "Log message:", "", @log);
+
+    # and send it (synchronously)
+    send_mail(\@mailto, \@text);
+
+    # Clean up after ourselves and exit.
+    cleanup_dir($tmpdir);
+    exit(0);
+}
+
+debug "Searching for log file index...";
+
+my ($i);
+
+# Look for an empty log file or one that matches our current log message
+for ($i = 0; ; $i++) {
+    my (@text);
+
+    # found one that doesn't exist...
+    last
+	if (!-e "$tmpdir/logfile.$i");
+
+    # read in the log file
+    open(FILE, "<$tmpdir/logfile.$i");
+    while (<FILE>) {
+	chomp;
+	push(@text, $_);
+    }
+    close(FILE);
+
+    # If the log file was empty, use it
+    last
+	if (@text == 0);
+
+    # If the log messages are identical, use that
+    last
+	if (join(' ', @log) eq join(' ', @text));
+}
+
+debug "$tmpdir/logfile.$i\n";
+
+# Store modified, added, and removed file lists, along with the log message
+names_to_file("$tmpdir/modified.$i", $dir, @modified);
+names_to_file("$tmpdir/added.$i",    $dir, @added);
+names_to_file("$tmpdir/removed.$i",  $dir, @removed);
+write_log("$tmpdir/logfile.$i", @log);
+
+# Now check to see if we're at the end of our rope
+my ($lastdir) = (get_line("$tmpdir/lastdir"));
+
+debug "Checking $ENV{CVSROOT}/$repdir against lastdir $lastdir\n";
+
+# Nope, exit instead of sending a message
+exit(0)
+    if ($lastdir ne "$ENV{CVSROOT}/$repdir");
+
+debug "At last, we've reached the end\n";
+
+# We have to daemonize and sleep so that there isn't any lock hanging
+# around when we get to the cvs rdiff below...
+daemonize();
+sleep(10);
+
+# Build the mail message...
+my (@text) = ();
+@files = ();
+@branch_tags = ();
+
+for ($i = 0; ; $i++) {
+    # No more log files
+    last
+	if (!-e "$tmpdir/logfile.$i");
+
+    # read and insert the log message
+    open(FILE, "<$tmpdir/logfile.$i");
+    push(@text, "Log message:", "");
+    while (<FILE>) {
+	chomp;
+	push(@text, $_);
+    }
+    push(@text, "");
+    close(FILE);
+
+    # read modified list and list all modified files if non-empty
+    @modified = file_to_names(@branch_tags, "$tmpdir/modified.$i");
+    push(@text, "Modified files:", name_to_list(@branch_tags, @modified), "")
+	if (@modified > 0);
+
+    # read added list and list all added files if non-empty
+    @added = file_to_names(@branch_tags, "$tmpdir/added.$i");
+    push(@text, "Added files:", name_to_list(@branch_tags, @added), "")
+	if (@added > 0);
+
+    # read removed list and list all removed files if non-empty
+    @removed = file_to_names(@branch_tags, "$tmpdir/removed.$i");
+    push(@text, "Removed files:", name_to_list(@branch_tags, @removed), "")
+	if (@removed > 0);
+
+    # remember all the files we looked at
+    push(@files, @modified, @added, @removed);
+}
+
+# Now that name_to_list has rebuilt our list of branch tags, we can build the
+# header and prepend it to the message
+unshift(@text, build_header($modname, "Module $modname: Change committed",
+	\@mailto, @branch_tags));
+
+# sort the files out for our diff
+@files = sort { $a->{name} cmp $b->{name} } @files;
+
+my ($user, $filename);
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime(time());
+$user = getpwuid($<);
+
+$filename = sprintf("%s.%04d%02d%02d.%02d%02d%02d.%s.diff", $modname,
+	$year + 1900, $mon + 1, $mday, $hour, $min, $sec, $user);
+
+push(@text, "--$boundary");
+push(@text, "Content-Type: text/plain; name=\"$filename\"");
+push(@text, "Content-Disposition: attachment; filename=\"$filename\"");
+push(@text, "Content-Transfer-Encoding: 8bit");
+push(@text, "");
+
+foreach my $file (@files) {
+    debug "Diffing file $file->{name}...\n";
+
+    # Run cvs rdiff, extracting a diff between the old version and the new
+    open(DIFF, "$CVS -Q rdiff -u -r $file->{old} -r $file->{new} " .
+	 "$modname/$file->{name}|");
+    while (<DIFF>) {
+	chomp;
+	push(@text, $_);
+    }
+    close(DIFF);
+}
+
+# send the mail...
+send_mail(\@mailto, \@text);
+
+# and clean up after ourselves
+cleanup_dir($tmpdir);

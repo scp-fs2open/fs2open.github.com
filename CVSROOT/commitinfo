@@ -13,3 +13,5 @@
 #
 # If the name "ALL" appears as a regular expression it is always used
 # in addition to the first matching regex or "DEFAULT".
+DEFAULT	$CVSROOT/CVSROOT/new_commit_prep
+CVSROOT	$CVSROOT/CVSROOT/new_commit_prep

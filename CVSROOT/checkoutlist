@@ -11,3 +11,5 @@
 #	[<whitespace>]<filename><whitespace><error message><end-of-line>
 #
 # comment lines begin with '#'
+new_commit_prep	Error checking out/updating CVSROOT/new_commit_prep
+new_log_accum	Error checking out/updating CVSROOT/new_log_accum

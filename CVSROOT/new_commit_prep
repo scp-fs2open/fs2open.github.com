@@ -1,0 +1,104 @@
+#!/usr/bin/perl -w
+#
+# Copyright (C) 2000 by Kevin L. Mitchell <klmitch@mit.edu>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+# 02111-1307, USA.
+#
+# Script to store the last visited directory for newlogaccum.pl.
+#
+# $Id: new_commit_prep,v 1.1 2002-08-11 23:05:15 drevil Exp $
+
+use strict;
+
+# This routine removes everything in a directory
+sub clear_dir {
+    my ($dir) = @_;
+    my ($file);
+
+    opendir(DIR, $dir) || die "Cannot clear directory $dir: $!";
+    while ($file = readdir(DIR)) {
+	next
+	    if ($file eq "." || $file eq "..");
+
+	$file = "$dir/$file";
+
+	if (-d $file) {
+	    # It's a directory, recurse into it, then delete it.
+	    clear_dir($file);
+	    rmdir($file);
+	} else {
+	    # It's a file, delete it.
+	    unlink($file);
+	}
+    }
+    closedir(DIR);
+}
+
+# This routine prepares a temporary directory, hopefully in a secure
+# fashion; it uses the process group to make secondary programs be able
+# to find it.
+sub tmpdir (;$) {
+    my ($clear) = @_;
+    my ($pgrp, $own, $mode, $tmpdir);
+
+    $pgrp = getpgrp();
+
+    die "Don't run $0 setuid!"
+	unless ($< == $>);
+
+    # Decide on the directory name, using various environment variables
+    $tmpdir = ($ENV{TMPDIR} || $ENV{TMP} || $ENV{TEMP} || "/tmp") .
+	"/.#cvs.$pgrp";
+
+    # Doesn't exist, but we can't create it...
+    die "Can't create temporary directory $tmpdir: $!"
+	unless (-e $tmpdir || mkdir($tmpdir, 0700));
+
+    die "Temporary directory $tmpdir is not a directory"
+	unless (-d $tmpdir);
+
+    # Check ownership and permissions
+    (undef, undef, $mode, undef, $own, undef) = stat($tmpdir);
+
+    die "Temporary directory $tmpdir not owned by $< (owned by $own)"
+	unless ($own == $<);
+
+    die "Temporary directory $tmpdir group-writable"
+	if ($mode & 0020);
+    die "Temporary directory $tmpdir other-writable"
+	if ($mode & 0002);
+
+    # If we're supposed to clear the directory, do so...
+    clear_dir($tmpdir)
+	if ($clear);
+
+    return $tmpdir;
+}
+
+# This routine writes a single line to a file
+sub write_line ($$) {
+    my ($fname, $line) = @_;
+
+    open(FILE, ">$fname") || die "Cannot open file $fname for writing";
+    print FILE "$line\n";
+    close(FILE);
+}
+
+# Create and empty the temporary directory
+my ($tmpdir) = (tmpdir(1));
+
+# Store the directory name
+write_line("$tmpdir/lastdir", shift(@ARGV));
