@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-06-18 04:59:55 $
+ * $Revision: 2.6 $
+ * $Date: 2004-06-22 23:14:10 $
  * $Author: wmcoolmon $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/06/18 04:59:55  wmcoolmon
+ * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
+ *
  * Revision 2.4  2004/03/05 09:01:59  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -316,6 +319,7 @@
  */
 
 #include <windows.h>
+#include <limits.h>
 
 #include "render/3d.h"
 #include "sound/sound.h"
@@ -331,6 +335,7 @@
 #include "sound/ds3d.h"
 #include "sound/acm.h"
 #include "sound/dscap.h"
+//#include "sound/ogg/ogg.h"
 		
 #define SND_F_USED			(1<<0)		// Sounds[] element is used
 
@@ -445,6 +450,11 @@ int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short 
 		HWND hwnd = (HWND)os_get_window();
 		MessageBox(hwnd, XSTR("Could not properly initialize the Microsoft ADPCM codec.\n\nPlease see the readme.txt file for detailed instructions on installing the Microsoft ADPCM codec.",972), NULL, MB_OK);
 //		Warning(LOCATION, "Could not properly initialize the Microsoft ADPCM codec.\nPlease see the readme.txt file for detailed instructions on installing the Microsoft ADPCM codec.");
+	}
+
+	if ( OGG_init() == -1)
+	{
+		mprintf(("Could not initialize the OGG vorbis converter."));
 	}
 
 	// Init the audio streaming stuff
@@ -598,17 +608,53 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 
 	si = &snd->info;
 
-	if ( ds_parse_wave(gs->filename, &si->data, &si->size, &header) == -1 )
+	CFILE * fp = cfopen(gs->filename, "rb");
+	if(fp == NULL)
+	{
+		mprintf(("Couldn't open sound file %s\n", gs->filename));
+	}
+	//Because ds_parse_wave uses seek_set, we can get away with not resetting the stream
+/*	if(!ov_open_callbacks(fp, &si->ogg_info, NULL, 0, cfile_callbacks))
+	{
+		//It's an OGG
+		ov_info(&si->ogg_info, -1);
+		si->format = OGG_FORMAT_VORBIS;
+		si->n_channels = si->ogg_info.vi->channels;
+		si->sample_rate = si->ogg_info.vi->rate;
+		si->bits = 16;								//OGGs always decoded at 16 bits here
+		si->n_block_align = si->n_channels * 2;
+		si->avg_bytes_per_sec = si->sample_rate * si->n_block_align;
+		if(ov_pcm_total(&si->ogg_info, -1) < UINT_MAX)
+		{
+			si->size = (uint) ov_pcm_total(&si->ogg_info, -1) * si->n_block_align;
+		}
+		else
+		{
+			mprintf(("%s is too big to play!", gs->filename));
+			return -1;
+		}
+		snd->duration = fl2i(1000.0f * (si->size / (si->bits/8.0f)) / si->sample_rate);
+	}
+	else*/ if ( ds_parse_wave(fp, &si->data, &si->size, &header) != -1 )
+	{
+		//It's some sort of WAV
+		si->format					= header->wFormatTag;		// 16-bit flag (wFormatTag)
+		si->n_channels				= header->nChannels;			// 16-bit channel count (nChannels)
+		si->sample_rate			= header->nSamplesPerSec;	// 32-bit sample rate (nSamplesPerSec)
+		si->avg_bytes_per_sec	= header->nAvgBytesPerSec;	// 32-bit average bytes per second (nAvgBytesPerSec)
+		si->n_block_align			= header->nBlockAlign;		// 16-bit block alignment (nBlockAlign)
+		si->bits						= header->wBitsPerSample;	// Read 16-bit bits per sample	
+		snd->duration = fl2i(1000.0f * (si->size / (si->bits/8.0f)) / si->sample_rate);
+
+		//Only close the FP if it's not Vorbis...vorbis neeeds it.
+		cfclose(fp);
+	}
+	else
+	{
+		mprintf(("Could not read sound file %s", gs->filename));
 		return -1;
+	}		
 
-	si->format					= header->wFormatTag;		// 16-bit flag (wFormatTag)
-	si->n_channels				= header->nChannels;			// 16-bit channel count (nChannels)
-	si->sample_rate			= header->nSamplesPerSec;	// 32-bit sample rate (nSamplesPerSec)
-	si->avg_bytes_per_sec	= header->nAvgBytesPerSec;	// 32-bit average bytes per second (nAvgBytesPerSec)
-	si->n_block_align			= header->nBlockAlign;		// 16-bit block alignment (nBlockAlign)
-	si->bits						= header->wBitsPerSample;	// Read 16-bit bits per sample			
-
-	snd->duration = fl2i(1000.0f * (si->size / (si->bits/8.0f)) / si->sample_rate);
 	type = 0;
 
 	if ( allow_hardware_load ) {

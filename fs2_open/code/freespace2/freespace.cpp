@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.95 $
- * $Date: 2004-06-19 12:45:47 $
- * $Author: randomtiger $
+ * $Revision: 2.96 $
+ * $Date: 2004-06-22 23:14:09 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2004/06/19 12:45:47  randomtiger
+ * Changed startup code to catch D3D9 request from launcher.
+ * No actual startup code has been implemented.
+ *
  * Revision 2.94  2004/06/18 04:59:53  wmcoolmon
  * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
  *
@@ -1524,7 +1528,7 @@ float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 #ifndef NO_SOUND
 // EAX stuff
 sound_env Game_sound_env;
-sound_env Game_default_sound_env = {SND_ENV_GENERIC, 0.2F,0.2F,1.0F};
+sound_env Game_default_sound_env = {SND_ENV_BATHROOM, 0.2F,0.2F,1.0F};
 int Game_sound_env_update_timestamp;
 #endif
 
@@ -2251,7 +2255,7 @@ void game_maybe_update_sound_environment()
 //
 void game_assign_sound_environment()
 {
-	/*
+/*
 	if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
 		Game_sound_env.id = SND_ENV_DRUGGED;
 		Game_sound_env.volume = 0.800f;
@@ -2727,7 +2731,9 @@ void game_init()
 
 	if (!Is_standalone)
 	{
-		snd_init(use_a3d, use_eax, os_config_read_uint(NULL, "SoundSampleRate", 22050), os_config_read_uint(NULL, "SoundSampleBits", 16));
+		unsigned int UserSampleRate = os_config_read_uint(NULL, "SoundSampleRate", 22050);
+		unsigned int UserSampleBits = (unsigned short) os_config_read_uint(NULL, "SoundSampleBits", 16);
+		snd_init(use_a3d, use_eax, UserSampleRate, UserSampleBits);
 	}
 
 	if(fsspeech_init() == false) {

@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2004/06/18 04:59:55  wmcoolmon
+ * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
+ *
  * Revision 2.64  2004/06/05 19:15:39  phreak
  * spawn weapons can now be specified to be spawned at different angles other than
  * the sphere thats used in retail
@@ -4401,10 +4404,10 @@ void weapons_page_in()
 
 	// Page in bitmaps for all used weapons
 	for (i=0; i<Num_weapon_types; i++ )	{
-		if(!used_weapons[i])
+		/*if(!used_weapons[i])
 		{
 			continue;
-		}
+		}*/
 		weapon_info *wip = &Weapon_info[i];
 
 		wip->wi_flags &= (~WIF_THRUSTER);		// Assume no thrusters
