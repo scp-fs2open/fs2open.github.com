@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-04-29 01:03:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2003-07-15 16:05:33 $
+ * $Author: phreak $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/04/29 01:03:22  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.7  2003/03/20 23:30:03  Goober5000
  * comments
  * --Goober500
@@ -1521,6 +1525,7 @@ void obj_clear_weapon_group_id_list()
 
 int Arc_light = 1;		// If set, electrical arcs on debris cast light
 DCF_BOOL(arc_light, Arc_light)	
+extern int OGL_inited;
 
 void obj_move_all_post(object *objp, float frametime)
 {
@@ -1545,7 +1550,7 @@ void obj_move_all_post(object *objp, float frametime)
 			}
 
 			if ( cast_light )	{
-				if ( D3D_enabled )	{
+				if ( D3D_enabled || OGL_inited )	{
 					weapon_info * wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 
 					if ( wi->render_type == WRT_LASER )	{
