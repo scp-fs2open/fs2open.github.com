@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-03-17 04:07:29 $
- * $Author: bobboau $
+ * $Revision: 2.12 $
+ * $Date: 2004-05-12 22:49:14 $
+ * $Author: phreak $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/17 04:07:29  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.10  2004/03/05 09:02:00  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -381,7 +388,7 @@
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
 
-int wm;
+int Warp_model;
 
 #define WARPHOLE_GROW_TIME		(3.5f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
@@ -558,9 +565,9 @@ void fireball_init()
 	}
 
 	mprintf(("loading warp model"));
-	wm = -1;
-	wm = model_load("warp.pof", 0, NULL, 0);
-	mprintf((" %d\n", wm));
+	Warp_model = -1;
+	Warp_model = model_load("warp.pof", 0, NULL, 0);
+	mprintf((" %d\n", Warp_model));
 
 
 }
