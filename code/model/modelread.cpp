@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-01-15 08:57:23 $
+ * $Revision: 2.12 $
+ * $Date: 2003-01-15 23:23:30 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/01/15 08:57:23  Goober5000
+ * assigning duplicate models to ships now works; committing so I have a base
+ * to fall back to as I work on texture replacement
+ * --Goober5000
+ *
  * Revision 2.10  2003/01/15 05:18:13  Goober5000
  * moved texture loading around a bit; added Texture_replace in preparation
  * for some cool stuff
@@ -991,7 +996,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 	strcpy(lcdname, dname);
 	strlwr(lcdname);
 
-	// check the name for it's specific type
+	// check the name for its specific type
 	if ( strstr(lcdname, "engine") ) {
 		subsystemp->type = SUBSYSTEM_ENGINE;
 	} else if ( strstr(lcdname, "radar") ) {
@@ -1130,7 +1135,6 @@ mprintf(("animation values, %f %f %d", subsystemp->ai_rotation.min, subsystemp->
 			}
 		}
 	}
-
 }
 
 // used in collision code to check if submode rotates too far
@@ -3336,7 +3340,7 @@ void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_subm
 	Assert(objp->type == OBJ_SHIP);
 
 	// Check if not currently rotating - then treat as part of superstructure.
-	int modelnum = Ship_info[Ships[objp->instance].ship_info_index].modelnum;
+	int modelnum = Ships[objp->instance].modelnum;
 	polymodel *pm = model_get(modelnum);
 	bsp_info *child_submodel;
 

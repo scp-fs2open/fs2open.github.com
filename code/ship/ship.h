@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.22 $
- * $Date: 2003-01-15 08:57:23 $
+ * $Revision: 2.23 $
+ * $Date: 2003-01-15 23:23:30 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/01/15 08:57:23  Goober5000
+ * assigning duplicate models to ships now works; committing so I have a base
+ * to fall back to as I work on texture replacement
+ * --Goober5000
+ *
  * Revision 2.21  2003/01/15 07:09:09  Goober5000
  * changed most references to modelnum to use ship instead of ship_info --
  * this will help with the change-model sexp and any other instances of model
@@ -689,6 +694,10 @@ typedef struct ship {
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
 
+	// subsystem information - Goober5000, in case of duplicate
+	int		n_subsystems;						// this number comes from ships.tbl
+	model_subsystem *subsystems;				// see model.h for structure definition
+
 	float	*shield_integrity;					//	Integrity at each triangle in shield mesh.
 
 	// ETS fields
@@ -1182,7 +1191,7 @@ extern void ship_level_init();		// called before the start of each level
 //returns -1 if failed
 extern int ship_create(matrix * orient, vector * pos, int ship_type, char *ship_name = NULL);
 extern void change_ship_type(int n, int ship_type);
-extern void ship_model_change(int n, int ship_type);
+extern void ship_model_change(int n, int ship_type, int force_ship_info_stuff = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * objp );

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-10-19 19:29:29 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2003-01-15 23:23:30 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/10/19 19:29:29  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.5  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -651,6 +654,11 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector* hitpo
 	for ( i = 0; i < sip->n_subsystems; i++ ) {
 		if ( &(sip->subsystems[i]) == psub )
 			break;
+
+		// check alt stuff too
+		if ( ship_p->alt_modelnum != -1 )
+			if ( &(ship_p->subsystems[i]) == psub )
+				break;
 	}
 	Assert( i < sip->n_subsystems );
 	Assert( i < 65535 );
