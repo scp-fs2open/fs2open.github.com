@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-01-27 01:12:15 $
- * $Author: DTP $
+ * $Revision: 2.3 $
+ * $Date: 2004-02-20 04:29:56 $
+ * $Author: bobboau $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/27 01:12:15  DTP
+ * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still cant join. narrowing it down.
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -233,8 +236,11 @@ float Scoring_scale_factors[NUM_SKILL_LEVELS] = {
 	1.25f					// insane
 };
 
+void scoreing_close();
+
 void parse_rank_tbl()
 {
+	atexit(scoreing_close);
 	char buf[MULTITEXT_LENGTH];
 	int rval, idx;
 
@@ -1252,4 +1258,8 @@ DCF(rank, "changes scoring vars")
 	dc_printf("2 : Lietenant\n3 : Lieutenant Commander\n");
 	dc_printf("4 : Commander\n5 : Captain\n6 : Commodore\n");
 	dc_printf("7 : Rear Admiral\n8 : Vice Admiral\n9 : Admiral");
+}
+
+void scoreing_close(){
+	for(int i = 0; i<NUM_RANKS; i++)if(Ranks[i].promotion_text)free(Ranks[i].promotion_text);
 }

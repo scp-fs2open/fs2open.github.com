@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.57 $
- * $Date: 2004-01-31 04:06:29 $
- * $Author: phreak $
+ * $Revision: 2.58 $
+ * $Date: 2004-02-20 04:29:56 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2004/01/31 04:06:29  phreak
+ * commented out decal references
+ *
  * Revision 2.56  2004/01/29 01:34:02  randomtiger
  * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
  * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
@@ -678,7 +681,7 @@ typedef struct ship_subsys_info {
 // moved here from Shield.cpp by Kazan
 // For Species_Defs.cpp stuff
 typedef struct shield_ani {
-	char		*filename;
+	char		filename[32];
 	int		first_frame;
 	int		nframes;
 } shield_ani;

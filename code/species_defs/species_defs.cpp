@@ -5,11 +5,16 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.5 $
- * $Date: 2003-11-11 02:15:46 $
- * $Author: Goober5000 $
+ * $Revision: 1.6 $
+ * $Date: 2004-02-20 04:29:56 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2003/11/11 02:15:46  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 1.4  2003/11/06 20:22:18  Kazan
  * slight change to .dsp - leave the release target as fs2_open_r.exe already
  * added myself to credit
@@ -107,7 +112,7 @@ void Init_Species_Definitions()
 		memset(cstrtemp, 0, MAX_SHIELD_ANIMNAME_LEN+1);
 		required_string("+Shield_Hit_ani:");
 		stuff_string(cstrtemp,										F_NAME, NULL, MAX_SHIELD_ANIMNAME_LEN);
-		Shield_ani[i].filename = strdup(cstrtemp);
+		strcpy(Shield_ani[i].filename, cstrtemp);
 
 		// Thruster Anims
 		thrust_index = i*2;
@@ -163,7 +168,7 @@ void Init_Species_LoadDefault()
 
 	strncpy(Species_names[0],					"Terran",			SPECIES_NAME_MAXLEN);
 	strncpy(Debris_texture_files[0],			"debris01a",		MAX_DEBRIS_TNAME_LEN);
-	Shield_ani[0].filename =		strdup("shieldhit01a");
+	strcpy(Shield_ani[0].filename, "shieldhit01a");
 
 	// species*2 ? afterburning?1:0
 	strncpy(Thrust_anim_names[0],				"thruster01",		MAX_FILENAME_LEN);
@@ -180,7 +185,7 @@ void Init_Species_LoadDefault()
 
 	strncpy(Species_names[1],					"Vasudan",			SPECIES_NAME_MAXLEN);
 	strncpy(Debris_texture_files[1],			"debris01b",		MAX_DEBRIS_TNAME_LEN);
-	Shield_ani[1].filename =		strdup("shieldhit01a");
+	strcpy(Shield_ani[1].filename, "shieldhit01a");
 
 	// species*2 ? afterburning?1:0
 	strncpy(Thrust_anim_names[2],				"thruster02",		MAX_FILENAME_LEN);
@@ -198,7 +203,7 @@ void Init_Species_LoadDefault()
 
 	strncpy(Species_names[2],					"Shivan",			SPECIES_NAME_MAXLEN);
 	strncpy(Debris_texture_files[2],			"debris01c",		MAX_DEBRIS_TNAME_LEN);
-	Shield_ani[2].filename =		strdup("shieldhit01a");
+	strcpy(Shield_ani[2].filename, "shieldhit01a");
 
 	// species*2 ? afterburning?1:0
 	strncpy(Thrust_anim_names[4],				"thruster03",		MAX_FILENAME_LEN);

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-11-11 02:15:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2004-02-20 04:29:55 $
+ * $Author: bobboau $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/11/11 02:15:43  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.6  2003/10/27 23:04:22  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -1519,9 +1524,14 @@ char *Player_tips[MAX_PLAYER_TIPS];
 int Num_player_tips;
 int Player_tips_shown = 0;
 
+void kill_player_tips(){
+	for(int i = 0; i<Num_player_tips; i++)safe_kill(Player_tips[i]);
+}
+
 // tooltips
 void player_tips_init()
 {
+	atexit(kill_player_tips);
 	Num_player_tips = 0;
 
 	// begin external localization stuff
@@ -1542,6 +1552,7 @@ void player_tips_init()
 	// stop externalizing, homey
 	lcl_ext_close();
 }
+
 void player_tips_popup()
 {
 	int tip, ret;	

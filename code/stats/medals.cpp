@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-18 10:07:06 $
- * $Author: unknownplayer $
+ * $Revision: 2.5 $
+ * $Date: 2004-02-20 04:29:56 $
+ * $Author: bobboau $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/18 10:07:06  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.3  2003/01/15 21:29:04  anonymous
  * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
  *
@@ -401,6 +404,10 @@ void parse_medal_tbl()
 
 	// close localization
 	lcl_ext_close();
+}
+
+void medal_close(){
+	for(int i = 0; i<MAX_BADGES; i++)if(Badge_info[i].promotion_text)free(Badge_info[i].promotion_text);
 }
 
 void medal_main_init(player *pl, int mode)

@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-02-14 00:18:31 $
- * $Author: randomtiger $
+ * $Revision: 2.8 $
+ * $Date: 2004-02-20 04:29:54 $
+ * $Author: bobboau $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/02/14 00:18:31  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.6  2004/01/24 12:47:48  randomtiger
  * Font and other small changes for Fred
  *
@@ -260,11 +271,23 @@
 #include "io/key.h"
 #include "bmpman/bmpman.h"
 #include "localization/localize.h"
+#include "globalincs/systemvars.h"
 
 int Num_fonts = 0;
 font Fonts[MAX_FONTS];
 font *Current_font = NULL;
 
+
+void close_font(){
+	for(int i = 0; i<MAX_FONTS; i++){
+		safe_kill(Fonts[i].char_data);
+		safe_kill(Fonts[i].pixel_data);
+		safe_kill(Fonts[i].bm_data);
+		safe_kill(Fonts[i].bm_u);
+		safe_kill(Fonts[i].bm_v);
+		safe_kill(Fonts[i].kern_data);
+	}
+}
 
 // crops a string if required to force it to not exceed max_width pixels when printed.
 // Does this by dropping characters at the end of the string and adding '...' to the end.
@@ -855,6 +878,7 @@ void grx_set_font(int fontnum)
 
 void gr_font_init()
 {
+	atexit(close_font);
 	gr_init_font( NOX("font01.vf") );
 	gr_init_font( NOX("font02.vf") );
 	gr_init_font( NOX("font03.vf") );

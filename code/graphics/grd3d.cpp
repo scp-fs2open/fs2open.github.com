@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.55 $
- * $Date: 2004-02-16 21:53:40 $
+ * $Revision: 2.56 $
+ * $Date: 2004-02-20 04:29:54 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2004/02/16 21:53:40  bobboau
+ * fixing lighting bug I accedently introduced
+ *
  * Revision 2.54  2004/02/16 11:47:33  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -1987,6 +1990,7 @@ extern int GR_center_alpha;
 bool the_lights_are_on;
 extern bool lighting_enabled;
 void gr_d3d_center_alpha_int(int type);
+extern void d3d_zbias(int bias);
 
 void gr_d3d_render_buffer(int idx)
 {
@@ -2132,6 +2136,7 @@ void gr_d3d_render_buffer(int idx)
 
 	//spec mapping
 	if(SPECMAP > -1){
+		d3d_zbias(1);
 		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 		if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
 				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
@@ -2149,6 +2154,7 @@ void gr_d3d_render_buffer(int idx)
 			}
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
 		}
+		d3d_zbias(0);
 	}
 
 	// Revert back to old fog state

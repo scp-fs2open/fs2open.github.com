@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-02-20 04:29:54 $
+ * $Author: bobboau $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -452,6 +455,12 @@ void launch_context_help()
 	} // end switch
 }
 
+void close_help(){
+	for (int overlay_id=0; overlay_id<MAX_HELP_OVERLAYS; overlay_id++){
+		for(int i = 0; i<HELP_MAX_ITEM; i++)
+		safe_kill(help_overlaylist[overlay_id].textlist[GR_640][i].string);
+	}
+}
 
 // Called once at the beginning of the game to load help bitmaps & data
 void help_overlay_init() 
@@ -470,10 +479,10 @@ void help_overlay_init()
 		Int3();
 	}
 
+	atexit(close_help);
 	// parse help.tbl
 	parse_helptbl();
 }
-
 
 // parses help.tbl and populates help_overlaylist[]
 void parse_helptbl()

@@ -9,12 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-01-30 07:39:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2004-02-20 04:29:55 $
+ * $Author: bobboau $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/01/30 07:39:07  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.6  2003/10/07 03:43:22  Goober5000
  * fixed some warnings
  * --Goober5000
@@ -459,6 +465,8 @@ void lcl_ext_setup_pointers();
 // initialize localization, if no language is passed - use the language specified in the registry
 void lcl_init(int lang_init)
 {
+	atexit(lcl_xstr_close);
+
 	char lang_string[128];
 	char *ret;
 	int lang, idx;
@@ -658,6 +666,7 @@ void lcl_xstr_close()
 			Xstr_table[i].str = NULL;
 		}
 	}
+	free(Lcl_ext_filename);
 }
 
 

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-02-16 11:47:34 $
- * $Author: randomtiger $
+ * $Revision: 2.15 $
+ * $Date: 2004-02-20 04:29:57 $
+ * $Author: bobboau $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/02/16 11:47:34  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.13  2004/02/14 00:18:37  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -574,7 +581,7 @@ void trail_render( trail * trailp )
 	gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 	if(Cmdline_nohtl)	g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TRISTRIP );
 	else				g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
-	TIMERBAR_POP();
+//	TIMERBAR_POP();
 }
 
 

@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.3 $
- * $Date: 2003-09-26 14:37:14 $
+ * $Revision: 2.4 $
+ * $Date: 2004-02-20 04:29:54 $
  * $Author: bobboau $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/26 14:37:14  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.2  2002/10/05 16:46:09  randomtiger
  * Added us fs2_open people to the credits. Worth looking at just for that.
  * Added timer bar code, by default its not compiled in.
@@ -367,6 +377,8 @@ enum
 
 #define MAX_LIGHTS 256
 #define MAX_LIGHT_LEVELS 16
+
+#define safe_kill(a) if(a)free(a)
 
 
 #endif

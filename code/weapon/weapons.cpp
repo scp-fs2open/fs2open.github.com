@@ -12,6 +12,17 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2004/02/14 00:18:37  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.52  2004/02/05 14:31:45  Goober5000
  * fixed a few random bugs
  * --Goober5000
@@ -2130,10 +2141,11 @@ void create_weapon_names()
 	for (i=0; i<Num_weapon_types; i++)
 		Weapon_names[i] = Weapon_info[i].name;
 }
-
+void weapons_info_close();
 // This will get called once at game startup
 void weapon_init()
 {
+	atexit(weapons_info_close);
 	int rval;
 
 	if ( !Weapons_inited ) {
@@ -4728,4 +4740,11 @@ int weapon_get_expl_handle(int weapon_expl_index, vector *pos, float size)
 
 	best_lod = min(best_lod, wei->lod_count - 1);
 	return wei->lod[best_lod].bitmap_id;
+}
+
+void weapons_info_close(){
+	for(int i = 0; i<MAX_WEAPON_TYPES; i++){
+		if(Weapon_info[i].desc)free(Weapon_info[i].desc);
+		if(Weapon_info[i].tech_desc)free(Weapon_info[i].tech_desc);
+	}
 }

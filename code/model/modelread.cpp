@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.31 $
- * $Date: 2004-02-15 06:02:32 $
+ * $Revision: 2.32 $
+ * $Date: 2004-02-20 04:29:55 $
  * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/02/15 06:02:32  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.30  2004/02/13 04:17:14  randomtiger
  * Turned off fog in OGL for Fred.
  * Simulated speech doesnt say tags marked by $ now.
@@ -915,6 +920,8 @@ static void model_unload(int modelnum)
 #ifndef NDEBUG
 	Model_ram -= pm->ram_used;
 #endif
+
+	safe_kill(pm->ship_bay);
 	
 	if (pm->paths)	{
 		for (i=0; i<pm->n_paths; i++ )	{
