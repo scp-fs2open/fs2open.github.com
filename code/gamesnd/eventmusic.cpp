@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-12 16:32:47 $
- * $Author: Kazan $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-17 09:26:00 $
+ * $Author: taylor $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/12 16:32:47  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.11  2004/06/18 04:59:54  wmcoolmon
  * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
  *
@@ -416,13 +419,16 @@ void event_music_init()
 
 	//Do teh parsing
 	event_music_parse_musictbl("music.tbl", false);
-	char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-msc.tbm", CF_SORT_REVERSE);
+
+	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+	char *tbl_file_names[MAX_TBL_PARTS];
+
+	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-msc.tbm", CF_SORT_REVERSE);
 	for(int i = 0; i < num_files; i++)
 	{
 		//HACK HACK HACK
-		strcat(tbl_files[i], ".tbm");
-		event_music_parse_musictbl(tbl_files[i], true);
+		strcat(tbl_file_names[i], ".tbm");
+		event_music_parse_musictbl(tbl_file_names[i], true);
 	}
 	Event_music_inited = TRUE;
 	Event_music_begun = FALSE;

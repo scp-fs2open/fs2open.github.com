@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.131 $
- * $Date: 2004-07-14 01:26:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.132 $
+ * $Date: 2004-07-17 09:25:59 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.131  2004/07/14 01:26:10  wmcoolmon
+ * Better -load_only_used handling
+ *
  * Revision 2.130  2004/07/12 16:33:05  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -2902,6 +2905,8 @@ DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 void ship_init()
 {
 	int rval;
+	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+	char *tbl_file_names[MAX_TBL_PARTS];
 
 	if ( !ships_inited ) {
 		
@@ -2917,13 +2922,12 @@ void ship_init()
 			parse_shiptbl("ships.tbl", false);
 
 			//Then other ones
-			char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-shp.tbm", CF_SORT_REVERSE);
+			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-shp.tbm", CF_SORT_REVERSE);
 			for(int i = 0; i < num_files; i++)
 			{
 				//HACK HACK HACK
-				strcat(tbl_files[i], ".tbm");
-				parse_shiptbl(tbl_files[i], true);
+				strcat(tbl_file_names[i], ".tbm");
+				parse_shiptbl(tbl_file_names[i], true);
 			}
 			ships_inited = 1;
 		}
