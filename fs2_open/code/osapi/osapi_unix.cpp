@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:08 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 16:11:41 $
  * $Author: Goober5000 $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:08  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -97,6 +101,8 @@
  *
  * $NoKeywords: $
  */
+
+#ifndef WIN32	// Goober5000
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -794,3 +800,5 @@ void debug_int3()
 {
    abort();
 }
+
+#endif		// Goober5000 - #ifndef WIN32
