@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.56 $
- * $Author: wmcoolmon $
- * $Date: 2005-03-25 06:57:35 $
+ * $Revision: 2.57 $
+ * $Author: Goober5000 $
+ * $Date: 2005-03-27 12:28:33 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/03/25 06:57:35  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.55  2005/01/21 08:56:50  taylor
  * make Subsys_status dynamic but allocate in blocks for speed and to help prevent memory fragmentation
  *
@@ -732,8 +735,8 @@ typedef struct p_object {
 
 	char	alt_type_index;					// optional alt type index
 
-	float ship_initial_hull_strength;
-	float ship_initial_shield_strength;
+	float ship_max_hull_strength;
+	float ship_max_shield_strength;
 
 	// Goober5000
 	int num_texture_replacements;

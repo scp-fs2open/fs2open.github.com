@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2005/03/25 06:57:38  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.100  2005/03/24 23:24:01  taylor
  * use SWARM_MISSILE_DELAY again so that it's easier to keep up with
  * fix compiler warnings
@@ -5161,7 +5164,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		sip = &Ship_info[Ships[target->instance].ship_info_index];
 
 		// get hull pct of the ship currently
-		hull_pct = target->hull_strength / shipp->ship_initial_hull_strength;
+		hull_pct = get_hull_pct(target);
 
 		// if it has hit a supercap ship and is not a supercap class weapon
 		if((sip->flags & SIF_SUPERCAP) && !(wip->wi_flags & WIF_SUPERCAP)){

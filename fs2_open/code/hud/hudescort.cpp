@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-03-02 21:24:44 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2005-03-27 12:28:33 $
+ * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.20  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -758,7 +761,7 @@ void hud_escort_show_icon_dogfight(int x, int y, int index)
 			return;
 		}
 
-		hull_integrity = (int)(((float)objp->hull_strength / (float)Ships[objp->instance].ship_initial_hull_strength) * 100.0f);
+		hull_integrity = (int)(((float)objp->hull_strength / (float)Ships[objp->instance].ship_max_hull_strength) * 100.0f);
 		if(hull_integrity < 0){
 			hull_integrity = 0;
 		}

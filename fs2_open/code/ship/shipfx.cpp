@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-03-24 23:27:26 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2005-03-27 12:28:35 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/03/24 23:27:26  taylor
+ * make sounds.tbl dynamic
+ * have snd_time_remaining() be less stupid
+ * some OpenAL error fixerage
+ * be able to turn off some typically useless debug messages
+ *
  * Revision 2.38  2005/03/15 01:40:07  phreak
  * Awesome 2-for-1 deal!!!
  * Firstly, the Colossus should now warp out correctly.  No more warphole forming inside of it
@@ -1223,7 +1229,7 @@ void shipfx_warpout_start( object *objp )
 
 	// if we're HUGE, keep alive - set guardian
 	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP) {
-		objp->flags |= OF_GUARDIAN;
+		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 	}
 
 	// post a warpin event
@@ -1835,7 +1841,7 @@ void shipfx_emit_spark( int n, int sn )
 	obj = &Objects[shipp->objnum];
 	ship_info* si = &Ship_info[shipp->ship_info_index];
 
-	float hull_percent = obj->hull_strength / shipp->ship_initial_hull_strength;
+	float hull_percent = get_hull_pct(obj);
 	if (hull_percent < 0.001) {
 		hull_percent = 0.001f;
 	}
@@ -2569,7 +2575,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 	should_arc = 1;
 	int disrupted_arc=0;
 
-	float damage = obj->hull_strength / shipp->ship_initial_hull_strength;	
+	float damage = get_hull_pct(obj);	
 
 	if (damage < 0) {
 		damage = 0.0f;
@@ -3166,7 +3172,7 @@ void engine_wash_ship_process(ship *shipp)
 		if (!do_damage) {
 			damage = 0;
 		} else {
-			damage = (0.001f * 0.003f * ENGINE_WASH_CHECK_INTERVAL * shipp->ship_initial_hull_strength * shipp->wash_intensity);
+			damage = (0.001f * 0.003f * ENGINE_WASH_CHECK_INTERVAL * shipp->ship_max_hull_strength * shipp->wash_intensity);
 		}
 
 		ship_apply_wash_damage(&Objects[shipp->objnum], max_ship_intensity_objp, damage);
@@ -3302,7 +3308,7 @@ void shipfx_cloak_frame(ship *shipp, float frametime)
 			//find an approiate alpha level for the ship
 			object *obj=&Objects[shipp->objnum];
 			//stop cloaking if <20% hits left. make it look cool tho
-			if ((obj->hull_strength / shipp->ship_initial_hull_strength) < .2f)
+			if (get_hull_pct(obj) < .2f)
 			{
 				shipfx_stop_cloak(shipp,25000);
 				break;			//dont need to calc alpha

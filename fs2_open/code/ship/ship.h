@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.84 $
- * $Date: 2005-03-25 06:57:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.85 $
+ * $Date: 2005-03-27 12:28:35 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2005/03/25 06:57:38  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.83  2005/03/19 18:02:34  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -613,6 +616,8 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 #define	PDS_DIED		2
 #define	PDS_EJECTED	3
 
+#define SHIP_GUARDIAN_THRESHOLD_DEFAULT	1	// Goober5000
+
 #define	HULL_DAMAGE_THRESHOLD_PERCENT	0.25f	//	Apply damage to hull, not shield if shield < this
 
 // the #defines below are to avoid round-off errors
@@ -718,6 +723,8 @@ typedef	struct ship_subsys {
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 	float		current_hits;							// current number of hits this subsystem has left.
 	float		max_hits;
+
+	int subsys_guardian_threshold;	// Goober5000
 
 	// turret info
 	//Important -WMC
@@ -939,8 +946,11 @@ typedef struct ship {
 	int	special_exp_index;
 	int special_hitpoint_index;
 
-	float ship_initial_shield_strength;
-	float ship_initial_hull_strength;
+	float ship_max_shield_strength;
+	float ship_max_hull_strength;
+
+	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
+
 
 	char	ship_name[NAME_LENGTH];
 
@@ -1314,7 +1324,6 @@ typedef struct ship_info {
 	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
 	uint		flags2;							//	See SIF2_xxxx - added by Goober5000
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
-	float		initial_shield_strength;
 	float		max_speed, min_speed, max_accel;
 
 	// ship explosion info
@@ -1354,9 +1363,12 @@ typedef struct ship_info {
 	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
 	int secondary_bank_ammo_capacity[MAX_SHIP_SECONDARY_BANKS];	// Capacity of bank (not number of missiles)
 
-	float	initial_hull_strength;			// Initial hull strength of this class of ship.
+	float	max_hull_strength;				// Max hull strength of this class of ship.
+	float	max_shield_strength;
+
 	float	hull_repair_rate_percent;				//How much of the hull is repaired every second
 	float	subsys_repair_rate_percent;		//How fast 
+
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
 
 	vector	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)

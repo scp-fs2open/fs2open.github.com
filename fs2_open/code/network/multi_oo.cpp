@@ -803,7 +803,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	// hull info
 	if ( oo_flags & OO_HULL_NEW ){
 		// add the hull value for this guy		
-		temp = (objp->hull_strength  / shipp->ship_initial_hull_strength);		
+		temp = get_hull_pct(objp);
 		PACK_PERCENT(temp);		
 		R_HULL_ADD(pl, 1);
 				
@@ -1129,7 +1129,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data, ushort packet_sequence_num
 	// hull info
 	if ( oo_flags & OO_HULL_NEW ){
 		UNPACK_PERCENT(fpct);
-		pobjp->hull_strength = fpct * Ships[pobjp->instance].ship_initial_hull_strength;
+		pobjp->hull_strength = fpct * Ships[pobjp->instance].ship_max_hull_strength;
 
 		// TEST code
 #ifndef NDEBUG		

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.2 $
- * $Date: 2005-03-25 07:01:53 $
- * $Author: wmcoolmon $
+ * $Revision: 1.3 $
+ * $Date: 2005-03-27 12:28:31 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2005/03/25 07:01:53  wmcoolmon
+ * Added taylor's old-weapon code fix
+ *
  * Revision 1.1  2005/03/25 06:45:12  wmcoolmon
  * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
  *
@@ -6259,7 +6262,7 @@ void set_primary_weapon_linkage(object *objp)
 	if (shipp->weapon_energy > Link_energy_levels_always[Game_skill_level]) {
 		shipp->flags |= SF_PRIMARY_LINKED;
 	} else if (shipp->weapon_energy > Link_energy_levels_maybe[Game_skill_level]) {
-		if (objp->hull_strength < shipp->ship_initial_hull_strength/3.0f)
+		if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f)
 			shipp->flags |= SF_PRIMARY_LINKED;
 	}
 
@@ -6295,7 +6298,7 @@ void set_primary_weapon_linkage(object *objp)
 		}
 		else if (ammo_pct > Link_ammo_levels_maybe[Game_skill_level])
 		{
-			if (objp->hull_strength < shipp->ship_initial_hull_strength/3.0f)
+			if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f)
 			{
 				shipp->flags |= SF_PRIMARY_LINKED;
 			}
@@ -9241,7 +9244,7 @@ void ai_chase()
 										if (count > 3)
 											spawn_fire = 1;
 										else if (count >= 1) {
-											float hull_percent = Pl_objp->hull_strength/temp_shipp->ship_initial_hull_strength;
+											float hull_percent = Pl_objp->hull_strength/temp_shipp->ship_max_hull_strength;
 
 											if (hull_percent < 0.01f)
 												hull_percent = 0.01f;
@@ -13388,11 +13391,11 @@ int maybe_request_support(object *objp)
 	desire = 0;
 
 	//	Set desire based on hull strength.
-	//	No: We no longer repair hull, so this would cause repeated repair requests.
+	//	Note: We no longer repair hull, so this would cause repeated repair requests.
 	// Added back in upon mission flag condition - Goober5000
 	if (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
 	{
-		desire += 6 - (int) ((objp->hull_strength/shipp->ship_initial_hull_strength) * 6.0f);
+		desire += 6 - (int) (get_hull_pct(objp) * 6.0f);
 	}
 
 	//	Set desire based on key subsystems.
@@ -13495,7 +13498,7 @@ void ai_maybe_depart(object *objp)
 	if (sip->flags & SIF_SUPPORT) {
 		if ( timestamp_elapsed(aip->warp_out_timestamp) ) {
 			ai_process_mission_orders( OBJ_INDEX(objp), aip );
-			if ( (aip->support_ship_objnum == -1) && (objp->hull_strength/shipp->ship_initial_hull_strength < 0.25f) ) {
+			if ( (aip->support_ship_objnum == -1) && (get_hull_pct(objp) < 0.25f) ) {
 				if (!(shipp->flags & SF_DEPARTING))
 					mission_do_departure(objp);
 			}
@@ -14860,8 +14863,8 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 		
 		// wacky stuff here
 		ship_info *sip = &Ship_info[Ships[objp_hit->instance].ship_info_index];
-		if (shipp_hit->ship_initial_hull_strength > 1000.0f) {
-			float factor = shipp_hit->ship_initial_hull_strength / 1000.0f;
+		if (shipp_hit->ship_max_hull_strength > 1000.0f) {
+			float factor = shipp_hit->ship_max_hull_strength / 1000.0f;
 			factor = MIN(100.0f, factor);
 			damage /= factor;
 		}
@@ -14900,7 +14903,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 				mission_do_departure(objp_hit);
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
 
-				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 2*(get_shield_strength(objp_hitter) + shipp_hitter->ship_initial_hull_strength) );
+				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 2*(get_shield_strength(objp_hitter) + shipp_hitter->ship_max_hull_strength) );
 				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 1.0f );
 			} else if (Missiontime - pp->last_warning_message_time > F1_0*4) {
 				// warning every 4 sec
@@ -15198,8 +15201,8 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vector *hitpos, int shield
 
 	//	If this ship is awaiting repair, abort!
 	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED)) {
-		if (objp_ship->hull_strength/shipp->ship_initial_hull_strength < 0.3f) {
-			//	No, only abort if hull below a certain level.
+		if (get_hull_pct(objp_ship) < 0.3f) {
+			//	Note, only abort if hull below a certain level.
 			aip->next_rearm_request_timestamp = timestamp(NEXT_REARM_TIMESTAMP/2);	//	Might request again after 15 seconds.
 			if ( !(objp_ship->flags & OF_PLAYER_SHIP) )						// mwa -- don't abort rearm for a player
 				ai_abort_rearm_request(objp_ship);

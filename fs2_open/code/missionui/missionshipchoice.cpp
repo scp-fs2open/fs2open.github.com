@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-03-25 06:57:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.40 $
+ * $Date: 2005-03-27 12:28:33 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.38  2005/03/14 06:38:06  wmcoolmon
  * Commented out now-unneccessary Int3()
  *
@@ -1597,7 +1600,7 @@ void ship_select_blit_ship_info()
 	}
 	else
 	{
-		int sum = fl2i(sip->initial_hull_strength + sip->initial_shield_strength);
+		int sum = fl2i(sip->max_hull_strength + sip->max_shield_strength);
 		if(sum <= 600)
 			strcpy(str, "Light");
 		else if(sum <= 700)

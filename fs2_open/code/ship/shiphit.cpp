@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-03-10 08:00:16 $
- * $Author: taylor $
+ * $Revision: 2.38 $
+ * $Date: 2005-03-27 12:28:35 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/03/10 08:00:16  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.36  2005/03/02 21:24:47  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -988,6 +997,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 	float hitpos_dist = vm_vec_dist( hitpos, &ship_obj->pos );	
 	if ( hitpos_dist > ship_obj->radius * 2.0f )	{
 		mprintf(( "BOGUS HITPOS PASSED TO DO_SUBOBJ_HIT_STUFF (%.1f > %.1f)!\n", hitpos_dist, ship_obj->radius * 2.0f ));
+		Assert(false);
 		// Int3();	// Get John ASAP!!!!  Someone passed a local coordinate instead of world for hitpos probably.
 	}
 #endif
@@ -1097,8 +1107,22 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 				damage_to_apply *= Skill_level_subsys_damage_scale[Game_skill_level];
 			}
 		
+			// Goober5000 - subsys guardian
+			if (subsys->subsys_guardian_threshold > 0)
+			{
+				float min_subsys_strength = 0.01f * subsys->subsys_guardian_threshold * subsys->max_hits;
+				if ( (subsys->current_hits - damage_to_apply) < min_subsys_strength ) {
+					// find damage needed to take object to min subsys strength
+					damage_to_apply = subsys->current_hits - min_subsys_strength;
+
+					// make sure damage is positive
+					damage_to_apply = MAX(0, damage_to_apply);
+				}
+			}
+
 			subsys->current_hits -= damage_to_apply;
 			ship_p->subsys_info[subsys->system_info->type].current_hits -= damage_to_apply;
+
 			damage_left -= damage_to_apply;		// decrease the damage left to apply to the ship subsystems
 
 			if (subsys->current_hits < 0.0f) {
@@ -1423,7 +1447,7 @@ int get_max_sparks(object* ship_obj)
 	ship *ship_p = &Ships[ship_obj->instance];
 	ship_info* si = &Ship_info[ship_p->ship_info_index];
 	if (si->flags & SIF_FIGHTER) {
-		float hull_percent = ship_obj->hull_strength / ship_p->ship_initial_hull_strength;
+		float hull_percent = ship_obj->hull_strength / ship_p->ship_max_hull_strength;
 
 		if (hull_percent > 0.8f) {
 			return 1;
@@ -2164,7 +2188,7 @@ void shiphit_hit_after_death(object *ship_obj, float damage)
 	if (ship_obj->radius > BIG_SHIP_MIN_RADIUS)
 		return;
 
-	percent_killed = damage/shipp->ship_initial_hull_strength;
+	percent_killed = damage/shipp->ship_max_hull_strength;
 	if (percent_killed > 1.0f)
 		percent_killed = 1.0f;
 
@@ -2455,8 +2479,8 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 			}
 
 			// if ship is flagged as can not die, don't let it die
-			if (ship_obj->flags & OF_GUARDIAN) {
-				float min_hull_strength = 0.01f * Ships[ship_obj->instance].ship_initial_hull_strength;
+			if (shipp->ship_guardian_threshold > 0) {
+				float min_hull_strength = 0.01f * shipp->ship_guardian_threshold * shipp->ship_max_hull_strength;
 				if ( (ship_obj->hull_strength - damage) < min_hull_strength ) {
 					// find damage needed to take object to min hull strength
 					damage = ship_obj->hull_strength - min_hull_strength;
@@ -2562,7 +2586,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 					shipp->wash_killed = 1;
 				}
 
-				float percent_killed = -ship_obj->hull_strength/shipp->ship_initial_hull_strength;
+				float percent_killed = -get_hull_pct(ship_obj);
 				if (percent_killed > 1.0f){
 					percent_killed = 1.0f;
 				}

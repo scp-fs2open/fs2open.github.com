@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-03-25 06:57:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.28 $
+ * $Date: 2005-03-27 12:28:33 $
+ * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/03/25 06:57:34  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.26  2005/03/10 08:00:06  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -607,7 +610,7 @@ void hud_shield_show(object *objp)
 		HUD_reset_clip();
 	}
 
-	if(!sip->initial_shield_strength)
+	if(!sip->max_shield_strength)
 		return;
 
 	// draw the four quadrants
@@ -909,7 +912,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	Assert(direction >= 0 && direction < MAX_SHIELD_SECTIONS);
 	Assert(objp->type == OBJ_SHIP);
 	
-	xfer_amount = Ships[objp->instance].ship_initial_shield_strength * SHIELD_TRANSFER_PERCENT;
+	xfer_amount = Ships[objp->instance].ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
 	max_quadrant_val = get_max_shield_quad(objp);
 
 	if ( (objp->shield_quadrant[direction] + xfer_amount) > max_quadrant_val )
@@ -974,19 +977,10 @@ void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 #ifndef NEW_HUD
 	char	text_integrity[64];
 	int	numeric_integrity;
-	float p_target_integrity,initial_hull;
+	float p_target_integrity;
 	int	final_pos[2];
 
-	initial_hull = Ships[objp->instance].ship_initial_hull_strength;
-	if (  initial_hull <= 0 ) {
-		Int3(); // illegal initial hull strength
-		p_target_integrity = 0.0f;
-	} else {
-		p_target_integrity = objp->hull_strength / initial_hull;
-		if (p_target_integrity < 0){
-			p_target_integrity = 0.0f;
-		}
-	}
+	p_target_integrity = get_hull_pct(objp);
 
 	numeric_integrity = fl2i(p_target_integrity*100 + 0.5f);
 	if(numeric_integrity > 100){
