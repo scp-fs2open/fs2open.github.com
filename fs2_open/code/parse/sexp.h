@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.54 $
+ * $Revision: 2.55 $
  * $Author: Goober5000 $
- * $Date: 2003-09-13 06:02:07 $
+ * $Date: 2003-10-20 11:49:18 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2003/09/13 06:02:07  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.51  2003/09/05 05:06:32  Goober5000
  * merged num-ships-in-battle and num-ships-in-battle-team, making the
  * team argument optional
@@ -669,6 +673,9 @@
 #define	OP_DIV									(0x0004 | OP_CATEGORY_ARITHMETIC)
 #define	OP_RAND									(0x0005 | OP_CATEGORY_ARITHMETIC)
 #define OP_ABS									(0x0006	| OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_MIN									(0x0007	| OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_MAX									(0x0008	| OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_AVG									(0x0009	| OP_CATEGORY_ARITHMETIC)	// Goober5000
 
 #define	OP_TRUE									(0x0000 | OP_CATEGORY_LOGICAL)
 #define	OP_FALSE									(0x0001 | OP_CATEGORY_LOGICAL)
