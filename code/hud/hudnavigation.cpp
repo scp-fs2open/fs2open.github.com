@@ -4,11 +4,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.4 $
- * $Date: 2004-07-26 17:54:04 $
+ * $Revision: 1.5 $
+ * $Date: 2004-07-26 19:39:49 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/07/26 17:54:04  Kazan
+ * Autopilot system completed -- i am dropping plans for GUI nav map
+ * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
+ * Fixed FPS counter during time compression
+ *
  * Revision 1.3  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -26,6 +31,7 @@
  *
  */
 
+#if defined(ENABLE_AUTO_PILOT)
 
 #include "Hud/HUDNavigation.h"
 #include "Autopilot/Autopilot.h"
@@ -40,12 +46,14 @@
 // memory tracking - ALWAYS INCLUDE LAST
 #include "mcd/mcd.h"
 
+
+
+
+
 extern int sexp_distance2(int obj1, char *subj);
 extern void hud_target_show_dist_on_bracket(int x, int y, float distance);
 extern void draw_brackets_square(int x1, int y1, int x2, int y2);
 extern void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick);
-
-
 extern float Cmdline_fov;
 // Draws the Navigation stuff on the HUD
 void HUD_Draw_Navigation()
@@ -131,6 +139,6 @@ void HUD_Draw_Navigation()
 		gr_string( 20, 120, "No Nav Point Selected");
 	}*/
 }
-
+#endif //ENABLE_AUTO_PILOT
 
 
