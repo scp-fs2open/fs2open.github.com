@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-03-14 06:33:38 $
+ * $Revision: 2.15 $
+ * $Date: 2005-03-14 06:38:31 $
  * $Author: wmcoolmon $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/03/14 06:33:38  wmcoolmon
+ * Made sounds dynamically allocated
+ *
  * Revision 2.13  2005/03/03 06:05:32  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -387,11 +390,6 @@ typedef struct sound	{
 //sound	Sounds[MAX_SOUNDS];
 std::vector<sound> Sounds;
 int Num_sounds=0;
-
-void GetSoundSize()
-{
-	int testsize = sizeof(Sounds);
-}
 
 int Sound_enabled = TRUE;				// global flag to turn sound on/off
 int Snd_sram;								// mem (in bytes) used up by storing sounds in system memory
