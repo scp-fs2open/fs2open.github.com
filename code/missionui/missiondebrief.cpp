@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-07-12 16:32:54 $
- * $Author: Kazan $
+ * $Revision: 2.23 $
+ * $Date: 2004-07-17 18:46:08 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/07/12 16:32:54  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.21  2004/07/10 03:18:22  Kazan
  * minor bugfixes - oh yeah reenabling a rule for multistats :P
  *
@@ -2682,6 +2685,9 @@ void debrief_close()
 			}
 		}
 	}
+
+	// clear out debrief info parsed from mission file - taylor
+	mission_debrief_common_reset();
 
 	// unload the overlay bitmap
 //	help_overlay_unload(DEBRIEFING_OVERLAY);

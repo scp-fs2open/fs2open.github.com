@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.132 $
- * $Date: 2004-07-17 09:25:59 $
+ * $Revision: 2.133 $
+ * $Date: 2004-07-17 18:46:09 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2004/07/17 09:25:59  taylor
+ * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
+ *
  * Revision 2.131  2004/07/14 01:26:10  wmcoolmon
  * Better -load_only_used handling
  *
@@ -9538,6 +9541,52 @@ void ship_close()
 		if ( Ship_info[i].subsystems != NULL ) {
 			free(Ship_info[i].subsystems);
 		}
+
+		// free info from parsed table data
+		if (Ship_info[i].type_str != NULL) {
+			free(Ship_info[i].type_str);
+			Ship_info[i].type_str = NULL;
+		}
+
+		if (Ship_info[i].maneuverability_str != NULL) {
+			free(Ship_info[i].maneuverability_str);
+			Ship_info[i].maneuverability_str = NULL;
+		}
+
+		if (Ship_info[i].armor_str != NULL) {
+			free(Ship_info[i].armor_str);
+			Ship_info[i].armor_str = NULL;
+		}
+
+		if (Ship_info[i].manufacturer_str != NULL) {
+			free(Ship_info[i].manufacturer_str);
+			Ship_info[i].manufacturer_str = NULL;
+		}
+
+		if (Ship_info[i].desc != NULL) {
+			free(Ship_info[i].desc);
+			Ship_info[i].desc = NULL;
+		}
+
+		if (Ship_info[i].tech_desc != NULL) {
+			free(Ship_info[i].tech_desc);
+			Ship_info[i].tech_desc = NULL;
+		}
+
+		if (Ship_info[i].ship_length != NULL) {
+			free(Ship_info[i].ship_length);
+			Ship_info[i].ship_length = NULL;
+		}
+
+		if (Ship_info[i].gun_mounts != NULL) {
+			free(Ship_info[i].gun_mounts);
+			Ship_info[i].gun_mounts = NULL;
+		}
+
+		if (Ship_info[i].missile_banks != NULL) {
+			free(Ship_info[i].missile_banks);
+			Ship_info[i].missile_banks = NULL;
+		}
 	}
 
 	if(CLOAKMAP != -1)
@@ -12720,21 +12769,6 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 		submodel_stepped_rotate(psub, &pss->submodel_info_1);
 	} else {
 		submodel_rotate(psub, &pss->submodel_info_1 );
-	}
-}
-
-
-void ship_info_close(){
-	for(int i = 0; i<MAX_SHIP_TYPES; i++){
-		safe_kill(Ship_info[i].type_str);
-		safe_kill(Ship_info[i].maneuverability_str);
-		safe_kill(Ship_info[i].armor_str);
-		safe_kill(Ship_info[i].manufacturer_str);
-		safe_kill(Ship_info[i].desc);
-		safe_kill(Ship_info[i].tech_desc);
-		safe_kill(Ship_info[i].ship_length);
-		safe_kill(Ship_info[i].gun_mounts);
-		safe_kill(Ship_info[i].missile_banks);
 	}
 }
 

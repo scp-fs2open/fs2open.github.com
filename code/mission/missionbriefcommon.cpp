@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-12 16:32:53 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-17 18:46:08 $
+ * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/12 16:32:53  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.10  2004/04/26 01:41:52  taylor
  * s/idex/idx/ for brief_unload_anims()
  *
@@ -525,6 +528,10 @@ void mission_brief_common_init()
 	gr_init_alphacolor( &Brief_color_green, 50, 100, 50, 255 );
 	gr_init_alphacolor( &Brief_color_red, 140, 20, 20, 255 );
 
+	// extra catch to reset everything that's already loaded - taylor
+	mission_brief_common_reset();
+	mission_debrief_common_reset();
+
 	if ( Fred_running )	{
 		// If Fred is running malloc out max space
 		for (i=0; i<MAX_TEAMS; i++ )	{
@@ -602,6 +609,16 @@ void mission_brief_common_reset()
 			}
 		}
 	}
+}
+
+// split from above since we need to clear them separately - taylor
+void mission_debrief_common_reset()
+{
+	int i, j;
+
+	if ( Fred_running ) {
+		return;						// Don't free these under Fred.
+	}
 
 	for (i=0; i<MAX_TEAMS; i++ )	{
 		for (j=0; j<MAX_DEBRIEF_STAGES; j++ )	{
@@ -609,13 +626,13 @@ void mission_brief_common_reset()
 				free(Debriefings[i].stages[j].new_text);
 				Debriefings[i].stages[j].new_text = NULL;
 			}
+
 			if ( Debriefings[i].stages[j].new_recommendation_text )	{
 				free(Debriefings[i].stages[j].new_recommendation_text);
 				Debriefings[i].stages[j].new_recommendation_text = NULL;
 			}
 		}
 	}
-		
 }
 
 

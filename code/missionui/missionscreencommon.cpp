@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-12 16:32:55 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-17 18:46:08 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/12 16:32:55  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.5  2004/03/05 09:01:55  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1162,7 +1165,11 @@ void common_select_close()
 	}
 
 	nprintf(("Alan","entering common_select_close()\n"));
-	
+
+	// catch open anims that weapon_select_init_team() opened when not in weapon_select - taylor
+	// *** not the same as weapon_select_close() ***
+	weapon_select_close_team();
+
 	weapon_select_close();
 #ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){

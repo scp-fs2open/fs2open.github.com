@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-12 16:32:53 $
- * $Author: Kazan $
+ * $Revision: 2.14 $
+ * $Date: 2004-07-17 18:46:08 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/12 16:32:53  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.12  2004/03/27 22:27:07  randomtiger
  * Committed possible fix to cutscene listing problem in techroom, as described in mantis.
  *
@@ -1521,8 +1524,9 @@ void mission_campaign_store_goals_and_events_and_variables()
 	// After that, we can determine which mission is tagged as the next mission.  Finally, we
 	// can save the campaign save file
 	// we might have goal and event status if the player replayed a mission
-	if ( mission->num_goals > 0 ) {
+	if ( mission->goals != NULL ) {
 		free( mission->goals );
+		mission->goals = NULL;
 	}
 
 	mission->num_goals = Num_goals;
@@ -1547,8 +1551,9 @@ void mission_campaign_store_goals_and_events_and_variables()
 
 	// do the same thing for events as we did for goals
 	// we might have goal and event status if the player replayed a mission
-	if ( mission->num_events > 0 ) {
+	if ( mission->events != NULL ) {
 		free( mission->events );
+		mission->events = NULL;
 	}
 
 	mission->num_events = Num_mission_events;
@@ -1582,8 +1587,9 @@ void mission_campaign_store_goals_and_events_and_variables()
 	}
 
 	// Goober5000 - handle campaign-persistent variables -------------------------------------
-	if (mission->num_saved_variables > 0) {
+	if (mission->saved_variables != NULL) {
 		free( mission->saved_variables );
+		mission->saved_variables = NULL;
 	}
 
 	mission->num_saved_variables = sexp_campaign_persistent_variable_count();
@@ -1664,14 +1670,23 @@ void mission_campaign_mission_over()
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact
 		// that the player played this mission in the campaign.
-		free( mission->goals );
+		if (mission->goals != NULL) {
+			free( mission->goals );
+			mission->goals = NULL;
+		}
 		mission->num_goals = 0;
 
-		free( mission->events );
+		if (mission->events != NULL) {
+			free( mission->events );
+			mission->events = NULL;
+		}
 		mission->num_events = 0;
 
 		// Goober5000
-		free( mission->saved_variables );
+		if (mission->saved_variables != NULL) {
+			free( mission->saved_variables );
+			mission->saved_variables = NULL;
+		}
 		mission->num_saved_variables = 0;
 
 		Sexp_nodes[mission->formula].value = SEXP_UNKNOWN;
@@ -1689,32 +1704,55 @@ void mission_campaign_close()
 {
 	int i;
 
-	if (Campaign.desc)
+	if (Campaign.desc != NULL) {
 		free(Campaign.desc);
+		Campaign.desc = NULL;
+	}
 
 	// be sure to remove all old malloced strings of Mission_names
 	// we must also free any goal stuff that was from a previous campaign
 	for ( i=0; i<Campaign.num_missions; i++ ) {
-		if ( Campaign.missions[i].name ){
+		if ( Campaign.missions[i].name != NULL ) {
 			free(Campaign.missions[i].name);
+			Campaign.missions[i].name = NULL;
 		}
 
-		if (Campaign.missions[i].notes){
+		if (Campaign.missions[i].notes != NULL) {
 			free(Campaign.missions[i].notes);
+			Campaign.missions[i].notes = NULL;
 		}
 
-		if ( Campaign.missions[i].num_goals > 0 ){
+		if ( Campaign.missions[i].goals != NULL ) {
 			free ( Campaign.missions[i].goals );
+			Campaign.missions[i].goals = NULL;
 		}
 
-		if ( Campaign.missions[i].num_events > 0 ){
+		if ( Campaign.missions[i].events != NULL ) {
 			free ( Campaign.missions[i].events );
+			Campaign.missions[i].events = NULL;
 		}
 
 		// Goober5000
-		if ( Campaign.missions[i].num_saved_variables > 0 ){
+		if ( Campaign.missions[i].saved_variables != NULL ) {
 			free ( Campaign.missions[i].saved_variables );
+			Campaign.missions[i].saved_variables = NULL;
 		}
+
+		// the next three are strdup'd return values from parselo.cpp - taylor
+		if (Campaign.missions[i].mission_loop_desc != NULL) {
+			free(Campaign.missions[i].mission_loop_desc);
+			Campaign.missions[i].mission_loop_desc = NULL;
+		}
+
+		if (Campaign.missions[i].mission_loop_brief_anim != NULL) {
+			free(Campaign.missions[i].mission_loop_brief_anim);
+			Campaign.missions[i].mission_loop_brief_anim = NULL;
+		}
+
+		if (Campaign.missions[i].mission_loop_brief_sound != NULL) {
+			free(Campaign.missions[i].mission_loop_brief_sound);
+			Campaign.missions[i].mission_loop_brief_sound = NULL;
+ 		}
 
 		if ( !Fred_running ){
 			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-12 16:32:48 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2004-07-17 18:46:07 $
+ * $Author: taylor $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/12 16:32:48  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.8  2004/02/20 04:29:54  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -285,17 +288,6 @@ int Num_fonts = 0;
 font Fonts[MAX_FONTS];
 font *Current_font = NULL;
 
-
-void close_font(){
-	for(int i = 0; i<MAX_FONTS; i++){
-		safe_kill(Fonts[i].char_data);
-		safe_kill(Fonts[i].pixel_data);
-		safe_kill(Fonts[i].bm_data);
-		safe_kill(Fonts[i].bm_u);
-		safe_kill(Fonts[i].bm_v);
-		safe_kill(Fonts[i].kern_data);
-	}
-}
 
 // crops a string if required to force it to not exceed max_width pixels when printed.
 // Does this by dropping characters at the end of the string and adding '...' to the end.
@@ -749,7 +741,44 @@ void _cdecl gr_printf( int x, int y, char * format, ... )
 
 void gr_font_close()
 {
+	font *fnt;
+	int i;
 
+	fnt = Fonts;
+
+	for (i=0; i<Num_fonts; i++) {
+		if (fnt->kern_data) {
+			free(fnt->kern_data);
+			fnt->kern_data = NULL;
+		}
+
+		if (fnt->char_data) {
+			free(fnt->char_data);
+			fnt->char_data = NULL;
+		}
+
+		if (fnt->pixel_data) {
+			free(fnt->pixel_data);
+			fnt->pixel_data = NULL;
+		}
+
+		if (fnt->bm_data) {
+			free(fnt->bm_data);
+			fnt->bm_data = NULL;
+		}
+
+		if (fnt->bm_u) {
+			free(fnt->bm_u);
+			fnt->bm_u = NULL;
+		}
+
+		if (fnt->bm_v) {
+			free(fnt->bm_v);
+			fnt->bm_v = NULL;
+		}
+
+		fnt++;
+	}
 }
 
 // Returns -1 if couldn't init font, otherwise returns the
@@ -886,7 +915,6 @@ void grx_set_font(int fontnum)
 
 void gr_font_init()
 {
-	atexit(close_font);
 	gr_init_font( NOX("font01.vf") );
 	gr_init_font( NOX("font02.vf") );
 	gr_init_font( NOX("font03.vf") );

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-07-12 16:32:55 $
- * $Author: Kazan $
+ * $Revision: 2.24 $
+ * $Date: 2004-07-17 18:46:08 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/07/12 16:32:55  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.22  2004/05/10 10:51:53  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -2203,6 +2206,17 @@ void weapon_select_init_team(int team_num)
 	wl_load_all_anims();
 
 	wl_fill_slots();
+}
+
+// close out what weapon_select_init_team() set up but only when we are not acutally
+// in the weapon select screen - taylor
+void weapon_select_close_team()
+{
+	if (Weapon_select_open)
+		return;
+
+	wl_unload_all_anim_instances();
+	wl_unload_all_anims();
 }
 
 // This init is called even before the weapons loadout screen is entered.  It is called when the

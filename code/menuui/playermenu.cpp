@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-12 16:32:53 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-17 18:46:07 $
+ * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/12 16:32:53  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.10  2004/03/28 17:49:55  taylor
  * runtime language selection, mantis:0000133
  *
@@ -1531,14 +1534,9 @@ char *Player_tips[MAX_PLAYER_TIPS];
 int Num_player_tips;
 int Player_tips_shown = 0;
 
-void kill_player_tips(){
-	for(int i = 0; i<Num_player_tips; i++)safe_kill(Player_tips[i]);
-}
-
 // tooltips
 void player_tips_init()
 {
-	atexit(kill_player_tips);
 	Num_player_tips = 0;
 
 	// begin external localization stuff
@@ -1558,6 +1556,19 @@ void player_tips_init()
 
 	// stop externalizing, homey
 	lcl_ext_close();
+}
+
+// close out player tips - *only call from game_shutdown()*
+void player_tips_close()
+{
+	int i;
+
+	for (i=0; i<MAX_PLAYER_TIPS; i++) {
+		if (Player_tips[i] != NULL) {
+			free(Player_tips[i]);
+			Player_tips[i] = NULL;
+		}
+	}
 }
 
 void player_tips_popup()
