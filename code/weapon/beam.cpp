@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-07-15 02:39:59 $
+ * $Revision: 2.22 $
+ * $Date: 2003-07-16 23:12:44 $
  * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/07/15 02:39:59  phreak
+ * fixed problem where beams that ignore shields do not fully damage the target
+ * disabled attenuation for beams, pending rework
+ *
  * Revision 2.20  2003/05/04 20:21:00  phreak
  * beams can't fire when disrupted.
  * cycle ends if the beam is firing and shooting ship is disrupted
@@ -2911,7 +2915,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 */
 		
 		if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam sheild hit code -Bobboau
-			quadrant_num = get_quadrant(&cinfo->hit_point);
+			bc->quadrant= quadrant_num = get_quadrant(&cinfo->hit_point);
 			if (!(hit_object->flags & SF_DYING) ) {
 				add_shield_point(hit_object-Objects, cinfo->shield_hit_tri, &cinfo->hit_point);
 				hud_shield_quadrant_hit(hit_object, quadrant_num);
