@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.40 $
- * $Date: 2003-10-23 18:03:24 $
- * $Author: randomtiger $
+ * $Revision: 2.41 $
+ * $Date: 2003-10-25 03:27:50 $
+ * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.39  2003/10/23 13:53:36  fryday
  * Simplified model rendering, and it fixed up a serious bug on my system in which models with submodels didn't get their hull rendered
  *
@@ -4794,7 +4797,6 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 			if((Interp_thrust_bitmap>-1) && (Interp_thrust_scale > 0.0f)) {
 				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f);
 			}
-			gr_start_instance_matrix();
 		} else if(pm->transparent[model->buffer[i].texture] ){	//trying to get transperent textures-Bobboau
 			if(Warp_Alpha!=-1.0)gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			else gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
@@ -4814,9 +4816,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 
 	if(Interp_thrust_scale_subobj){
 			Model_Interp_scale_z = msz;
-			gr_start_instance_matrix();
 	}
-	gr_end_instance_matrix();
 //	gr_set_lighting( false );
 
 }

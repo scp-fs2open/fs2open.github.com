@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-10-23 18:03:24 $
- * $Author: randomtiger $
+ * $Revision: 2.7 $
+ * $Date: 2003-10-25 03:27:21 $
+ * $Author: phreak $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.5  2003/10/14 17:39:18  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -390,7 +393,7 @@ void g3_start_instance_matrix(vector *pos,matrix *orient)
 	vm_matrix_x_matrix(&Light_matrix,&saved_orient, orient);
 
 	if(!Cmdline_nohtl)
-		gr_start_instance_matrix();
+		gr_start_instance_matrix(pos,orient);
 
 }
 
@@ -432,8 +435,7 @@ void g3_done_instance()
 	Object_position = instance_stack[instance_depth].op;
 
 	if(!Cmdline_nohtl)
-	   	gr_start_instance_matrix();	// Shouldnt this be gr_end_instance_matrix
-//	 	gr_end_instance_matrix();	
+	 	gr_end_instance_matrix();	
 }
 
 int G3_user_clip = 0;
