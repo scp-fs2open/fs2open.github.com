@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.179 $
- * $Date: 2005-03-31 12:38:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.180 $
+ * $Date: 2005-04-01 07:29:40 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.179  2005/03/31 12:38:24  Goober5000
+ * fix type mismatch
+ * --Goober5000
+ *
  * Revision 2.178  2005/03/30 05:37:22  wmcoolmon
  * Whoops.
  *
