@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-18 19:48:29 $
+ * $Author: randomtiger $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:58  penguin
  * Back-port to MSVC
  *
@@ -158,7 +161,7 @@
 #include "freespace2/freespace.h"
 #include "io/key.h"
 #include "bmpman/bmpman.h"
-// #include "movie.h"
+#include "movie.h"
 #include "popup/popup.h"
 #include "menuui/mainhallmenu.h"
 #include "globalincs/alphacolors.h"
@@ -448,7 +451,6 @@ void cutscenes_screen_play()
 	full_name = cf_add_ext(name, NOX(".mve"));
 
 	// no soup for you!
-	/*
 	int rval = movie_play(full_name);
 	if ( !rval ) {
 		char str[256];
@@ -456,7 +458,7 @@ void cutscenes_screen_play()
 		sprintf(str, XSTR( "Unable to play movie %s.", 204), Cutscenes[which_cutscene].name );
 		popup(0, 1, POPUP_OK, str );
 	}
-	*/
+	
 }
 
 void cutscenes_screen_scroll_line_up()

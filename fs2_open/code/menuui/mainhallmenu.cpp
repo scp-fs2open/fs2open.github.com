@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-04 05:12:10 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-08-18 19:48:29 $
+ * $Author: randomtiger $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/04 05:12:10  penguin
+ * Change version display location
+ *
  * Revision 2.2  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -1055,11 +1058,11 @@ void main_hall_do(float frametime)
 #ifndef NDEBUG	
 	case KEY_1:		
 		// no soup for you!
-		// movie_play("endprt2b.mve", 0);
+		movie_play("endprt2b.mve", 0);
 		break;
 	case KEY_2:		
 		// no soup for you!
-		// movie_play_two("endprt2a.mve", "endprt2b.mve", 0);
+		movie_play_two("endprt2a.mve", "endprt2b.mve", 0);
 		break;
 	case KEY_3:		
 		main_hall_campaign_cheat();	

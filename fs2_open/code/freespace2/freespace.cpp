@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-08-13 03:34:00 $
- * $Author: penguin $
+ * $Revision: 2.7 $
+ * $Date: 2002-08-18 19:48:29 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/08/13 03:34:00  penguin
+ * 1. Disable CD checking
+ * 2. Add CVS tag to version string
+ *
  * Revision 2.5  2002/08/04 05:11:05  penguin
  * Don't write version to registry; change way version string is formatted
  *
@@ -617,7 +621,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "freespace2/levelpaging.h"
 #include "observer/observer.h"
 #include "cutscene/cutscenes.h"
-// #include "movie.h"
+#include "cutscene/movie.h"
 #include "weapon/emp.h"
 #include "localization/localize.h"
 #include "osapi/osregistry.h"
@@ -2231,6 +2235,10 @@ void game_init()
 /////////////////////////////
 // SOUND INIT END
 /////////////////////////////
+
+#ifdef _WIN32
+	movie_play( NOX("intro.mve"));
+#endif
 	
 	ptr = os_config_read_string(NULL, NOX("Videocard"), NULL);	
 	if (ptr == NULL) {
@@ -7016,6 +7024,12 @@ int WinMainSub(int argc, char *argv[])
 		return 1;
 	}
 
+
+// Windows code now plays the intro movie in game_init
+#ifndef _WIN32
+
+// Intro playing code has been moved above before graphics are set up to
+// avoid switching and other glitches
 	// non-demo, non-standalone, play the intro movie
 	if(!Is_standalone){
 #ifndef DEMO
@@ -7041,13 +7055,13 @@ int WinMainSub(int argc, char *argv[])
 
 		// in RELEASE_REAL builds make the user stick in CD2 if there are no pilots on disk so that we guarantee he plays the movie
 		// no soup for you!
-		// movie_play( NOX("intro.mve"), 0 );
+		movie_play( NOX("intro.mve"), 0 );
 
 		// debug version, movie will only play with -showmovies
 		#else if !defined(NDEBUG)
 		
 		// no soup for you!
-		// movie_play( NOX("intro.mve"), 0);
+		movie_play( NOX("intro.mve"), 0);
 /*
 #ifndef NDEBUG
 		if ( Cmdline_show_movies )
@@ -7058,6 +7072,7 @@ int WinMainSub(int argc, char *argv[])
 	}
 
 #endif // ifndef DEMO
+#endif
 
 	if (Is_standalone){
 		gameseq_post_event(GS_EVENT_STANDALONE_MAIN);
