@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.109 $
- * $Date: 2004-03-05 09:01:52 $
+ * $Revision: 2.110 $
+ * $Date: 2004-03-05 23:41:04 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.109  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.108  2004/02/20 04:29:56  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -10783,6 +10787,11 @@ void ship_maybe_praise_player(ship *deader_sp)
 // -----------------------------------------------------------------------------
 void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 {
+	// Goober5000 - bail if not in main fs2 campaign
+	// (stupid coders... it's the FREDder's responsibility to add this message)
+	if (stricmp(Campaign.filename, "freespace2"))
+		return;
+
 	object *objp;
 	int message = -1;
 	objp = &Objects[sp->objnum];
