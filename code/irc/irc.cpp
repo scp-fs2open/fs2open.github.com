@@ -10,11 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.3 $
- * $Date: 2004-03-31 05:42:28 $
+ * $Revision: 1.4 $
+ * $Date: 2004-04-03 06:22:33 $
  * $Author: Goober5000 $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/03/31 05:42:28  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 1.2  2004/03/10 20:51:16  Kazan
  * irc
  *
@@ -436,9 +441,9 @@ std::vector<std::string> irc_client::SplitOnStr(std::string haystack, std::strin
 	std::vector<std::string> Lines(5); // 5 is a good starting point;
 
 	break_index = haystack.find(divide);
-	while (break_index != std::string::npos)
+	while (break_index != (int)std::string::npos)
 	{
-		if (curline >= Lines.size())
+		if (curline >= (int)Lines.size())
 			Lines.resize(Lines.size()*2);
 
 		// copy the line
@@ -453,7 +458,7 @@ std::vector<std::string> irc_client::SplitOnStr(std::string haystack, std::strin
 	// catch any trailing
 	if (haystack.length() > 0)
 	{
-		while (curline >= Lines.size())
+		while (curline >= (int)Lines.size())
 			Lines.resize(Lines.size()+1);
 
 		Lines[curline] = haystack;

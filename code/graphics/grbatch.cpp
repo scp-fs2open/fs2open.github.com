@@ -87,7 +87,7 @@ vertex *batch_get_block(int num_verts, int flags)
 		return NULL;
 	}
 
-	int vcurrent = 0;
+	//int vcurrent = 0;
 
 	// We've run out of vertex slots!
 	if(num_verts >= (BATCH_MAX_VERTEX - Batch_vertex_current))

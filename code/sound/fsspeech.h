@@ -17,6 +17,8 @@ enum
 	FSSPEECH_FROM_MAX
 };
 
+#ifdef FS2_SPEECH
+
 bool fsspeech_init();
 void fsspeech_deinit();
 void fsspeech_play(int type, char *text);
@@ -27,6 +29,21 @@ void fsspeech_start_buffer();
 void fsspeech_stuff_buffer(char *text);
 void fsspeech_play_buffer(int type);
 
-bool fsspeech_was_compiled();
+#define fsspeech_was_compiled()	(true)
+
+#else
+
+// stub functions (c.f. NO_SOUND)
+#define fsspeech_init()	(false)
+#define fsspeech_deinit()
+#define fsspeech_play(type, text) ((void) ((type), (text)))
+#define fsspeech_stop()
+#define fsspeech_pause(playing) ((void) (playing))
+#define fsspeech_start_buffer()
+#define fsspeech_stuff_buffer(text) ((void) (text))
+#define fsspeech_play_buffer(type) ((void) (type))
+#define fsspeech_was_compiled() (false)
 
 #endif
+
+#endif	// header define

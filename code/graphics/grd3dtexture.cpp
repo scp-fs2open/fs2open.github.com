@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.35 $
- * $Date: 2004-03-19 14:51:55 $
- * $Author: randomtiger $
+ * $Revision: 2.36 $
+ * $Date: 2004-04-03 06:22:32 $
+ * $Author: Goober5000 $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2004/03/19 14:51:55  randomtiger
+ * New command line parameter: -d3d_lesstmem causes D3D to bypass V's secondry texture system.
+ *
  * Revision 2.34  2004/03/19 12:35:58  randomtiger
  * Further D3D texture system simplification.
  *
@@ -1020,7 +1023,7 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 
 int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage )
 {
-	bitmap *bmp = NULL;
+	//bitmap *bmp = NULL;
 
 	if ( bitmap_id < 0 )	{
 		D3D_last_bitmap_id  = -1;

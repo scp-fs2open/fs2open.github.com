@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-04-03 06:22:32 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -29,6 +32,11 @@
 #ifndef _FS2_MULTI_DATA_RATE_HEADER_FILE
 #define _FS2_MULTI_DATA_RATE_HEADER_FILE
 
+// keep this defined to compile in rate checking
+#if !defined(NDEBUG) || defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
+	#define MULTI_RATE
+#endif
+
 // -----------------------------------------------------------------------------------------------------------------------
 // MULTI RATE DEFINES/VARS
 //
@@ -40,6 +48,7 @@
 // -----------------------------------------------------------------------------------------------------------------------
 // MULTI RATE FUNCTIONS
 //
+#ifdef MULTI_RATE
 
 // notify of a player join
 void multi_rate_reset(int np_index);
@@ -53,4 +62,16 @@ void multi_rate_process();
 // display
 void multi_rate_display(int np_index, int x, int y);
 
+#else
+
+// stubs using #defines (c.f. NO_SOUND)
+#define multi_rate_reset(np_index) ((void) (np_index))
+#define multi_rate_add(np_index, type, size) ((np_index), (type), (size), 0)
+#define multi_rate_process()
+#define multi_rate_display(np_index, x, y) ((void) ((np_index), (x), (y)))
+
 #endif
+
+
+
+#endif	// header define

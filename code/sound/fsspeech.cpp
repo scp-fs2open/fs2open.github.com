@@ -8,13 +8,14 @@
 
 // This module contains freespace specific stuff leaving the speech module to handle generic stuff.
 
-#include <windows.h>  
+#include "sound/fsspeech.h"
 
+#ifdef FS2_SPEECH
+
+#include <windows.h>  
 #include "sound/speech.h"
 #include "osapi/osregistry.h"
-
 #include "debugconsole/dbugfile.h"
-#include "sound/fsspeech.h"
 
 #pragma warning(disable:4711)	// function selected for inlining
 
@@ -31,18 +32,8 @@ char *FSSpeech_play_id[FSSPEECH_FROM_MAX] =
 char Speech_buffer[MAX_SPEECH_BUFFER_LEN] = "";
 int  Speech_buffer_len;
 
-bool fsspeech_was_compiled()
-{
-#if FS2_SPEECH
-	return true;
-#else
-	return false;
-#endif
-}
-
 bool fsspeech_init()
 {
-#if FS2_SPEECH
 	if(speech_init() == false) {
 		return false;
 	}
@@ -54,15 +45,12 @@ bool fsspeech_init()
 	}
 
 	int volume = os_config_read_uint(NULL, "SpeechVolume", 100);
-	speech_set_volume(volume);
+	speech_set_volume((unsigned short) volume);
 
 	int voice = os_config_read_uint(NULL, "SpeechVoice", 0);
 	speech_set_voice(voice);
 
 	return true;
-#else
-	return false;
-#endif
 }
 
 void fsspeech_deinit()
@@ -114,3 +102,5 @@ void fsspeech_play_buffer(int type)
 {
 	fsspeech_play(type, Speech_buffer);
 }
+
+#endif	// FS2_SPEECH defined
