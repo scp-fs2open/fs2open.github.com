@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.35 $
- * $Date: 2003-11-17 04:25:57 $
- * $Author: bobboau $
+ * $Revision: 2.36 $
+ * $Date: 2003-12-17 23:24:24 $
+ * $Author: phreak $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/11/17 04:25:57  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.34  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -585,6 +591,13 @@ struct buffer_data{
 //other things we may want to keep track of for vertex buffers, like material settings
 };
 
+#ifdef INF_BUILD
+#define MAX_BUFFERS_PER_SUBMODEL 24
+#else
+#define MAX_BUFFERS_PER_SUBMODEL 16
+#endif
+
+
 typedef struct bsp_info {
 	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
 	int		movement_type;			// -1 if no movement, otherwise rotational or positional movement -- subobjects only
@@ -636,7 +649,7 @@ typedef struct bsp_info {
 	int n_buffers;
 	int flat_buffer;
 	int flat_line_buffer;
-	buffer_data buffer[MAX_MODEL_TEXTURES/4];
+	buffer_data buffer[MAX_BUFFERS_PER_SUBMODEL];
 	//I figured that, 64 textures per model, half of that would probly be in LOD0, and half of that might be in the main model, I don't think we'd need more than 12 textures (and thus vertex buffers) per submodel
 } bsp_info;
 

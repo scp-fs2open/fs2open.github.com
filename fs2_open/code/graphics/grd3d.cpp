@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.47 $
- * $Date: 2003-12-08 22:30:02 $
- * $Author: randomtiger $
+ * $Revision: 2.48 $
+ * $Date: 2003-12-17 23:25:10 $
+ * $Author: phreak $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/12/08 22:30:02  randomtiger
+ * Put render state and other direct D3D calls repetition check back in, provides speed boost.
+ * Fixed bug that caused fullscreen only crash with DXT textures
+ * Put dithering back in for tgas and jpgs
+ *
  * Revision 2.46  2003/11/29 10:52:09  randomtiger
  * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
@@ -645,7 +650,14 @@ enum stage_state{
 
 // Defines and constants
 #define MAX_SUBOBJECTS 64
-#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*(MAX_MODEL_TEXTURES/4)
+
+#ifdef INF_BUILD
+#define MAX_BUFFERS_PER_SUBMODEL 24
+#else
+#define MAX_BUFFERS_PER_SUBMODEL 16
+#endif
+
+#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*MAX_BUFFERS_PER_SUBMODEL
 
 // External variables - booo!
 extern bool env_enabled;
