@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.29 $
- * $Date: 2004-05-03 21:22:21 $
- * $Author: Kazan $
+ * $Revision: 2.30 $
+ * $Date: 2004-05-10 06:11:47 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/05/03 21:22:21  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.28  2004/04/26 19:50:04  Goober5000
  * added back in Kazan's line: now you can slow down in cheat mode
  * whether you press tilde or not
@@ -2962,7 +2967,7 @@ int button_function(int n)
 			if (collide_predict_large_ship(Player_obj, 200.0f)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 				HUD_printf(XSTR( "** WARNING ** Collision danger.  Warpout not activated.", 39));
-			} else if (ship_get_subsystem_strength( Player_ship, SUBSYSTEM_ENGINE ) < 0.1f) {
+			} else if (!ship_can_warp(Player_ship)  /*ship_get_subsystem_strength( Player_ship, SUBSYSTEM_ENGINE ) < 0.1f*/) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 				HUD_printf(XSTR( "Engine failure.  Cannot engage warp drive.", 40));
 			} else {
