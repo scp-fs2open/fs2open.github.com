@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.39 $
- * $Date: 2003-10-23 18:03:24 $
+ * $Revision: 2.40 $
+ * $Date: 2003-10-24 17:35:05 $
  * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.38  2003/10/20 22:32:37  phreak
  * cleaned up a bunch of repeated code
  *
@@ -4637,7 +4640,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.gf_bm_page_in_start           = bm_gfx_page_in_start;           
 	gr_screen.gf_bm_page_in_stop            = bm_gfx_page_in_stop;            
 	gr_screen.gf_bm_get_cache_slot          = bm_gfx_get_cache_slot;          
-	gr_screen.gf_bm_24_to_16                = bm_gfx_24_to_16;                
 	gr_screen.gf_bm_get_components          = bm_gfx_get_components;          
 	gr_screen.gf_bm_get_section_size        = bm_gfx_get_section_size;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.10 $
- * $Date: 2003-10-23 18:03:24 $
+ * $Revision: 2.11 $
+ * $Date: 2003-10-24 17:35:05 $
  * $Author: randomtiger $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.9  2003/10/21 18:23:15  phreak
  * added gr_flip_window back in.  its used in FRED
  *
@@ -685,7 +688,6 @@ typedef struct screen {
 	void (*gf_bm_page_in_start)();
 	void (*gf_bm_page_in_stop)();
 	int (*gf_bm_get_cache_slot)( int bitmap_id, int separate_ani_frames );
-	void (*gf_bm_24_to_16)(int bit_24, ushort *bit_16);
 	void (*gf_bm_get_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 	void (*gf_bm_get_section_size)(int bitmapnum, int sx, int sy, int *w, int *h);
 
@@ -895,7 +897,6 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define bm_page_in_start           GR_CALL(*gr_screen.gf_bm_page_in_start)
 #define bm_page_in_stop            GR_CALL(*gr_screen.gf_bm_page_in_stop)
 #define bm_get_cache_slot          GR_CALL(*gr_screen.gf_bm_get_cache_slot)
-#define bm_24_to_16                GR_CALL(*gr_screen.gf_bm_24_to_16)
 #define bm_get_components          GR_CALL(*gr_screen.gf_bm_get_components)
 #define bm_get_section_size        GR_CALL(*gr_screen.gf_bm_get_section_size)
 

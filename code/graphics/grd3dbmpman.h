@@ -135,9 +135,6 @@ void bm_d3d_page_in_aabitmap( int bitmapnum, int num_frames=1 );
 //       2 = Debug low memory ( only use first frame of each ani )
 void bm_d3d_set_low_mem( int mode );
 
-// convert a 24 bit value to a 16 bit value
-void bm_d3d_24_to_16(int bit_24, ushort *bit_16);
-
 // get the rgba components of a pixel, any of the parameters can be NULL
 void bm_d3d_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 

@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.31 $
- * $Date: 2003-10-17 17:18:42 $
+ * $Revision: 2.32 $
+ * $Date: 2003-10-24 17:35:04 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/10/17 17:18:42  randomtiger
+ * Big restructure for D3D and new modules grd3dlight and grd3dsetup
+ *
  * Revision 2.30  2003/10/12 03:41:37  Kazan
  * #Kazan# FS2NetD client code gone multithreaded, some Fred2 Open -mod stuff [obvious code.lib] including a change in cmdline.cpp, changed Stick's "-nohtl" to "-htl" - HTL is _OFF_ by default here (Bobboau and I decided this was a better idea for now)
  *
@@ -349,5 +352,6 @@ extern double specular_exponent_value;
 
 extern int Cmdline_cell;
 extern int Cmdline_nohtl;
+extern int Cmdline_32bit_textures;
 
 #endif

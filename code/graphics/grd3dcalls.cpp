@@ -359,8 +359,8 @@ IDirect3DBaseTexture8 *tinterfaces[MAX_TSTAGES] = {NULL,NULL,NULL,NULL,NULL,NULL
 HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr)
 {
 #ifdef D3D_CALLS_CHECK
-	if(	texture_ptr == tinterfaces[stage]) {
-		return S_OK;
+ 	if(	texture_ptr == tinterfaces[stage]) {
+   		return S_OK;
 	}
 #endif
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-10-23 18:03:24 $
+ * $Revision: 2.28 $
+ * $Date: 2003-10-24 17:35:05 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.26  2003/10/17 17:18:42  randomtiger
  * Big restructure for D3D and new modules grd3dlight and grd3dsetup
  *
@@ -1303,11 +1306,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			}
 		}
 	} else {
-		if(Bm_pixel_format == BM_PIXEL_FORMAT_ARGB_D3D){
-			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-		} else {
-			alpha_blend = ALPHA_BLEND_NONE;
-		}
+		alpha_blend = ALPHA_BLEND_NONE;
 		alpha = 255;
 	}
 
@@ -1435,12 +1434,12 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 
 				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
-					src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
-					src_v->tv = (va->v + (0.5f / i2fl(sh))) * v_scale;
-				}										   
-
+				 	src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
+				 	src_v->tv = (va->v + (0.5f / i2fl(sh))) * v_scale;
+				}
 				// all else.
-				else {				
+				else 
+				{				
 					src_v->tu = flCAP(va->u, minu, maxu);
 					src_v->tv = flCAP(va->v, minv, maxv);
 				}				
@@ -3091,7 +3090,7 @@ void d3d_render_timer_bar(int colour, float x, float y, float w, float h)
 
 	d3d_set_initial_render_state();
 
-	d3d_DrawPrimitive(D3DVT_TLVERTEX,D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
+ 	d3d_DrawPrimitive(D3DVT_TLVERTEX,D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
 }
 
 void gr_d3d_push_texture_matrix(int unit)

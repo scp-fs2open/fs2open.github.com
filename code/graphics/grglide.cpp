@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrGlide.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-07-04 02:27:48 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2003-10-24 17:35:05 $
+ * $Author: randomtiger $
  *
  * Code that uses 3DFX's Glide graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/07/04 02:27:48  phreak
+ * added support for cloaking.
+ * i will need to contact someone who knows d3d to get this to work
+ *
  * Revision 2.3  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -3812,7 +3816,6 @@ void gr_glide_init()
 	gr_screen.gf_bm_page_in_start           = bm_gfx_page_in_start;           
 	gr_screen.gf_bm_page_in_stop            = bm_gfx_page_in_stop;            
 	gr_screen.gf_bm_get_cache_slot          = bm_gfx_get_cache_slot;          
-	gr_screen.gf_bm_24_to_16                = bm_gfx_24_to_16;                
 	gr_screen.gf_bm_get_components          = bm_gfx_get_components;          
 	gr_screen.gf_bm_get_section_size        = bm_gfx_get_section_size;
 

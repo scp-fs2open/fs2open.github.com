@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:00 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2003-10-24 17:35:04 $
+ * $Author: randomtiger $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
  * Anim files.  Also handles Anim loading, creating Anim instances (for
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:00  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/11/04 03:02:27  randomtiger
  *
  * I have made some fairly drastic changes to the bumpman system. Now functionality can be engine dependant.
@@ -794,6 +797,15 @@ int pack_frame(ubyte *frame, ubyte *frame2, ubyte *save, long size, long max, in
 	return packed_size;
 }
 
+// convert a 24 bit value to a 16 bit value
+void convert_24_to_16(int bit_24, ushort *bit_16)
+{
+	ubyte *pixel = (ubyte*)&bit_24;
+	ubyte alpha = 1;
+
+	bm_set_components((ubyte*)bit_16, (ubyte*)&pixel[0], (ubyte*)&pixel[1], (ubyte*)&pixel[2], &alpha);	
+}
+
 // unpack a pixel given the passed index and the anim_instance's palette, return bytes stuffed
 int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bpp)
 {
@@ -828,7 +840,7 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 			memcpy(&bit_24, &ai->parent->palette[pix * 3], 3);
 
 			// convert to 16 bit
-			bm_24_to_16(bit_24, &bit_16);
+			convert_24_to_16(bit_24, &bit_16);
 		}
 	}
 
@@ -882,7 +894,7 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count, int
 			memcpy(&bit_24, &ai->parent->palette[pix * 3], 3);
 
 			// convert to 16 bit
-			bm_24_to_16(bit_24, &bit_16);
+			convert_24_to_16(bit_24, &bit_16);
 		}
 	}
 	

@@ -75,9 +75,6 @@ PIXELFORMAT			NonAlphaTextureFormat;
 D3DFORMAT default_non_alpha_tformat = D3DFMT_UNKNOWN;
 D3DFORMAT default_alpha_tformat		= D3DFMT_UNKNOWN;
 
-D3DFORMAT default_32_non_alpha_tformat;
-D3DFORMAT default_32_alpha_tformat;
-
 void d3d_clip_cursor(int active)
 {
 	ClipCursor(active ? &D3D_cursor_clip_rect : NULL);
@@ -650,9 +647,7 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 	const int num_non_alpha = 3;
 	const int num_alpha     = 4;
 
-	default_32_non_alpha_tformat = D3DFMT_UNKNOWN;
 	default_non_alpha_tformat	 = D3DFMT_UNKNOWN;
-	default_32_alpha_tformat	 = D3DFMT_UNKNOWN;
 	default_alpha_tformat		 = D3DFMT_UNKNOWN;
 
 	// Non alpha (listed from best to worst)
@@ -691,17 +686,6 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 		d3d_fill_pixel_format(&AlphaTextureFormat, default_alpha_tformat);
 	}
 
-	// Try to get 32 bit texture formats
-	if(D3D_32bit) {
-		if(d3d_texture_format_is_supported(D3DFMT_X8R8G8B8, adapter, mode)) {
-			default_32_non_alpha_tformat = D3DFMT_X8R8G8B8;
-		}
-
-		if(d3d_texture_format_is_supported(D3DFMT_A8R8G8B8, adapter, mode)) {
-			default_32_alpha_tformat = D3DFMT_A8R8G8B8;
-		}
-	}
-
 		// Go through the non alpha list and find a texture format of a valid depth
 	// and is supported in this adapter mode
 	for(i = 0; i < num_non_alpha; i++)
@@ -729,17 +713,8 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 		d3d_fill_pixel_format(&NonAlphaTextureFormat, default_non_alpha_tformat);
 	}
 
-
-	// If in 16 bit or 32 attempt failed fall back to 16 bit
-	if(default_32_non_alpha_tformat == D3DFMT_UNKNOWN) {
-		default_32_non_alpha_tformat = default_non_alpha_tformat;
-	}
-	
-	if(default_32_alpha_tformat == D3DFMT_UNKNOWN) {
-		default_32_alpha_tformat = default_alpha_tformat;    
-	}
-
-	mprintf(("default_32_alpha_tformat %d",default_32_alpha_tformat));
+	if(	d3d_get_mode_bit(mode->Format) < 32)
+		Cmdline_32bit_textures = 0;
 }
 
 /**
@@ -851,7 +826,6 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_bm_page_in_start           = bm_d3d_page_in_start;           
 	gr_screen.gf_bm_page_in_stop            = bm_d3d_page_in_stop;            
 	gr_screen.gf_bm_get_cache_slot          = bm_d3d_get_cache_slot;          
-	gr_screen.gf_bm_24_to_16                = bm_d3d_24_to_16;                
 	gr_screen.gf_bm_get_components          = bm_d3d_get_components;          
 	gr_screen.gf_bm_get_section_size        = bm_d3d_get_section_size;      
 	
@@ -936,10 +910,6 @@ bool d3d_init_device()
 {
 	D3DDISPLAYMODE mode;
 
-	//trying to use a higher bit depth in the back buffer, the deepest one posale -Bobboau
-	const int N_FORMATS = 3;
-	enum _D3DFORMAT format_type[N_FORMATS] = {D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D16};
-
 	int adapter_choice = D3DADAPTER_DEFAULT;
 
 	// Set up the common device	parameters
@@ -948,8 +918,8 @@ bool d3d_init_device()
 	GlobalD3DVars::d3dpp.BackBufferCount		 = 1;
 	GlobalD3DVars::d3dpp.SwapEffect             = D3DSWAPEFFECT_DISCARD;
     GlobalD3DVars::d3dpp.EnableAutoDepthStencil = TRUE;
-	//this right here used to be just D3DFMT_D16, but it's now part of the format_type array -Bobboau
-    GlobalD3DVars::d3dpp.AutoDepthStencilFormat = format_type[0];
+	// This gets changed later
+    GlobalD3DVars::d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
 
 	if(Cmdline_nohtl) {
 		// Only need this for software fog
@@ -1030,6 +1000,10 @@ bool d3d_init_device()
 	}
 
 	GlobalD3DVars::d3dpp.BackBufferFormat = mode.Format;
+
+	//trying to use a higher bit depth in the back buffer, the deepest one posale -Bobboau
+	const int N_FORMATS = 3;
+	enum _D3DFORMAT format_type[N_FORMATS] = {D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D16};
 		
 	// It trys to use the highest suported back buffer through trial and error, 
 	// I wraped the existing code in a for loop to cycle through the diferent formats -Bobboau
@@ -1083,7 +1057,10 @@ void d3d_init_vars_from_reg()
 
 	if ( tmp != 0xFFFF )	{
 		GlobalD3DVars::D3D_rendition_uvs = ( tmp ) ? 1 : 0;
-	} else {
+	} 
+	
+#if 0
+	else {
 		if(D3D_32bit){
 			d3d_detect_texture_origin_32();
 		} else {
@@ -1106,6 +1083,7 @@ void d3d_init_vars_from_reg()
 			d3d_detect_line_offset_16();
 		}
 	}
+#endif
 
 	// zbiasing?
 	if(os_config_read_uint(NULL, "DisableZbias", 0)){
