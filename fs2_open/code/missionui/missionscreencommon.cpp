@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-09-13 06:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.3.2.1 $
+ * $Date: 2003-09-19 00:58:49 $
+ * $Author: argv $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/13 06:02:06  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -1320,6 +1324,10 @@ void wss_direct_restore_loadout()
 	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
 		return;
 	}
+
+	// _argv[-1] - don't restore on scramble missions.
+	if (The_mission.scramble)
+		return;
 
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
 
