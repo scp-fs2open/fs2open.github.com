@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.6 $
- * $Date: 2005-01-31 10:34:38 $
+ * $Revision: 1.7 $
+ * $Date: 2005-02-23 05:11:13 $
  * $Author: taylor $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/01/31 10:34:38  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 1.5  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -58,6 +61,8 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 void gr_opengl_end_projection_matrix();
 void gr_opengl_set_view_matrix(vector *pos, matrix* orient);
 void gr_opengl_end_view_matrix();
+void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/);
+void gr_opengl_end_2d_matrix();
 void gr_opengl_push_scale_matrix(vector *scale_factor);
 void gr_opengl_pop_scale_matrix();
 

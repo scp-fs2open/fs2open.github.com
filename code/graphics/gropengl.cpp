@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.99 $
- * $Date: 2005-02-19 07:50:15 $
- * $Author: wmcoolmon $
+ * $Revision: 2.100 $
+ * $Date: 2005-02-23 05:11:13 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2005/02/19 07:50:15  wmcoolmon
+ * OpenGL gradient fix for nonstandard resolutions
+ *
  * Revision 2.98  2005/02/18 09:51:06  wmcoolmon
  * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
  *
@@ -738,14 +741,19 @@ static HGLRC rend_context = NULL;
 static PIXELFORMATDESCRIPTOR pfd;
 #endif
 
+static const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
+
 int VBO_ENABLED = 0;
 
 extern int Texture_compression_enabled;
 
-
+static int GL_dump_frames = 0;
+static ubyte *GL_dump_buffer = NULL;
+static int GL_dump_frame_number = 0;
+static int GL_dump_frame_count = 0;
+static int GL_dump_frame_count_max = 0;
+static int GL_dump_frame_size = 0;
                         
-#define NEBULA_COLORS 20
-
 volatile int GL_activate = 0;
 volatile int GL_deactivate = 0;
 
@@ -769,7 +777,6 @@ static const char* OGL_extensions;
 
 static float max_aniso=1.0f;			//max anisotropic filtering ratio
 
-void (*gr_opengl_tmapper_internal)( int nv, vertex ** verts, uint flags, int is_scaler ) = NULL;
 void (*gr_opengl_set_tex_src)(gr_texture_source ts);
 
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
@@ -972,7 +979,7 @@ void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
 void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
 {
 
-	gr_opengl_set_tex_state_combine_arb(ts);
+	gr_opengl_set_tex_src(ts);
 
 
 	switch (ab) {
@@ -1405,8 +1412,7 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy, bool 
 		//glColor3ub(255,255,255);
 	}
 
-	ubyte zero[]={0,0,0};
-	glSecondaryColor3ubvEXT(zero);
+	glSecondaryColor3ubvEXT(GL_zero_3ub);
 
 	glBegin (GL_QUADS);
 	  glTexCoord2f (u0, v1);
@@ -1614,7 +1620,6 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 		gr_resize_screen_pos(&x2, &y2);
 	}
 
-	ubyte zero[]={0,0,0};
 	int clipped = 0, swapped=0;
 
 	gr_opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
@@ -1630,36 +1635,17 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 	sy2 = i2fl(y2 + gr_screen.offset_y);
 	
 	if ( x1 == x2 && y1 == y2 ) {
-		if ( !Cmdline_nohtl ) {
-			glMatrixMode( GL_PROJECTION );
-			glPushMatrix();
-			glLoadIdentity();
-
-			// the top and bottom positions are reversed on purpose
-			glOrtho( 0, gr_screen.max_w, gr_screen.max_h, 0, 0, 1 );
-
-			glMatrixMode( GL_MODELVIEW );
-			glPushMatrix();
-			glLoadIdentity();
-
-			// the viewport needs to be the full screen size since glOrtho() is relative to it
-			glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
-		}
+		gr_opengl_set_2d_matrix();
 
 		glBegin (GL_POINTS);
 		  glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 		 
-		  glSecondaryColor3ubvEXT(zero);
+		  glSecondaryColor3ubvEXT(GL_zero_3ub);
 
 		  glVertex3f (sx1, sy1, -0.99f);
 		glEnd ();
 
-		if ( !Cmdline_nohtl ) {
-			glMatrixMode( GL_PROJECTION );
-			glPopMatrix();
-			glMatrixMode( GL_MODELVIEW );
-			glPopMatrix();
-		}
+		gr_opengl_end_2d_matrix();
 
 		return;
 	}
@@ -1678,37 +1664,18 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 		}
 	}
 
-	if ( !Cmdline_nohtl ) {
-		glMatrixMode( GL_PROJECTION );
-		glPushMatrix();
-		glLoadIdentity();
-
-		// the top and bottom positions are reversed on purpose
-		glOrtho( 0, gr_screen.max_w, gr_screen.max_h, 0, 0, 1 );
-
-		glMatrixMode( GL_MODELVIEW );
-		glPushMatrix();
-		glLoadIdentity();
-
-		// the viewport needs to be the full screen size since glOrtho() is relative to it
-		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
-	}
+	gr_opengl_set_2d_matrix();
 
 	glBegin (GL_LINES);
 		glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
-		glSecondaryColor3ubvEXT(zero);
+		glSecondaryColor3ubvEXT(GL_zero_3ub);
 
 		glVertex3f (sx2, sy2, -0.99f);
 		glVertex3f (sx1, sy1, -0.99f);
 	glEnd ();
 
-	if ( !Cmdline_nohtl ) {
-		glMatrixMode( GL_PROJECTION );
-		glPopMatrix();
-		glMatrixMode( GL_MODELVIEW );
-		glPopMatrix();
-	}
+	gr_opengl_end_2d_matrix();
 }
 
 void gr_opengl_aaline(vertex *v1, vertex *v2)
@@ -1719,8 +1686,7 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 		glBegin (GL_LINES);
 			glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 	  
-			ubyte zero[]={0,0,0};
-			glSecondaryColor3ubvEXT(zero);
+			glSecondaryColor3ubvEXT(GL_zero_3ub);
 
 			glVertex3f (v1->x, v1->y, v1->z);
 			glVertex3f (v2->x, v2->y, v2->z);
@@ -1782,8 +1748,7 @@ void gr_opengl_gradient(int x1,int y1,int x2,int y2)
 		}
 	}
 
-	ubyte zero[]={0,0,0};
-	glSecondaryColor3ubvEXT(zero);
+	glSecondaryColor3ubvEXT(GL_zero_3ub);
 	
 	glBegin (GL_LINES);
 	  glColor4ub ((ubyte)gr_screen.current_color.red, (ubyte)gr_screen.current_color.green, (ubyte)gr_screen.current_color.blue, (ubyte)ba);
@@ -2210,116 +2175,7 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 	gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
 }
 
-void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, int is_scaler )
-{
-	int i, stage = 0;
-	float u_scale = 1.0f, v_scale = 1.0f;
-	bool use_spec = false;
-
-	// Make nebula use the texture mapper... this blends the colors better.
-	if ( flags & TMAP_FLAG_NEBULA ){
-		Int3 ();
-	}
-
-	int alpha,tmap_type, r, g, b;
-
-	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
-
-	if ( flags & TMAP_FLAG_TEXTURED ) {
-		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
-			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			return;
-		}
-		stage++; // bump!
-
-		// cloakmap
-		if ( Interp_multitex_cloakmap > 0 ) {
-			SPECMAP = -1;	// don't add a spec map if we are cloaked
-			GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
-
-			if ( !gr_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
-				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-				return;
-			}
-			gr_opengl_set_additive_tex_env();
-			stage++; // bump
-		}
-
-		// glowmap
-		if ( (GLOWMAP > -1) && !Cmdline_noglow ) {
-			if ( !gr_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
-				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-				return;
-			}
-			gr_opengl_set_additive_tex_env();
-			stage++; // bump
-		}
-
-		if ( (lighting_is_enabled) && (SPECMAP > -1) && !Cmdline_nospec ) {
-			use_spec = true;
-			opengl_default_light_settings(1, 1, 0); // don't render with spec lighting here
-		} else {
-			// reset to defaults
-			opengl_default_light_settings();
-		}
-	}
-	
-	if (flags & TMAP_FLAG_PIXEL_FOG) {
-		int r, g, b;
-		int ra, ga, ba;
-		ra = ga = ba = 0;
-	
-		for (i=nv-1;i>=0 ;i--)	
-		{
-			vertex *va = verts[i];
-			float sx, sy;
-                
-			int x, y;
-			x = fl2i(va->sx*16.0f);
-			y = fl2i(va->sy*16.0f);
-
-			x += gr_screen.offset_x*16;
-			y += gr_screen.offset_y*16;
-
-			sx = i2fl(x) / 16.0f;
-			sy = i2fl(y) / 16.0f;
-
-			neb2_get_pixel((int)sx, (int)sy, &r, &g, &b);
-			
-			ra += r;
-			ga += g;
-			ba += b;
-		}
-		
-		ra /= nv;
-		ga /= nv;
-		ba /= nv;
-
-		gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
-	}
-
-	if (CLOAKMAP==gr_screen.current_bitmap)
-		glBlendFunc(GL_ONE, GL_ONE);
-
-	opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha);
-
-	//if we used arb1 for the cloakmap, return
-	if (ogl_maybe_pop_arb1)
-	{
-		gr_pop_texture_matrix(1);
-		ogl_maybe_pop_arb1=0;
-		return;
-	}
-
-	//maybe do a spec map
-	if ( use_spec ) {
-		opengl_set_spec_mapping(tmap_type, &u_scale, &v_scale);
-		opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, 1);
-		opengl_reset_spec_mapping();
-	}
-}
-
-void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, int is_scaler )
+void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_scaler )
 {
 	int i, stage = 0;
 	float u_scale = 1.0f, v_scale = 1.0f;
@@ -2332,6 +2188,8 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 
 	
 	int alpha,tmap_type, r, g, b;
+
+	gr_opengl_set_2d_matrix();
 
 	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
 
@@ -2425,6 +2283,8 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 		opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha, 1);
 		opengl_reset_spec_mapping();
 	}
+
+	gr_opengl_end_2d_matrix();
 }
 
 
@@ -2433,7 +2293,6 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 {
 	int i;
 	float u_scale = 1.0f, v_scale = 1.0f;
-	ubyte zero[3]={ 0, 0, 0 };
 
 	// Make nebula use the texture mapper... this blends the colors better.
 	if ( flags & TMAP_FLAG_NEBULA ){
@@ -2456,7 +2315,7 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
-	glSecondaryColor3ubvEXT(zero);
+	glSecondaryColor3ubvEXT(GL_zero_3ub);
 
 	vertex *va;
 	
@@ -3157,25 +3016,97 @@ void gr_opengl_free_screen(int bmp_id)
 	bm_release(bmp_id);
 }
 
+static void gr_opengl_flush_frame_dump()
+{
+	char filename[MAX_FILENAME_LEN];
+
+	Assert( GL_dump_buffer != NULL);
+
+	for (int i = 0; i < GL_dump_frame_count; i++) {
+		sprintf(filename, NOX("frm%04d.tga"), GL_dump_frame_number );
+		GL_dump_frame_number++;
+
+		CFILE *f = cfopen(filename, "wb", CFILE_NORMAL, CF_TYPE_DATA);
+
+		// Write the TGA header
+		cfwrite_ubyte( 0, f );	//	IDLength;
+		cfwrite_ubyte( 0, f );	//	ColorMapType;
+		cfwrite_ubyte( 2, f );	//	ImageType;		// 2 = 24bpp, uncompressed, 10=24bpp rle compressed
+		cfwrite_ushort( 0, f );	// CMapStart;
+		cfwrite_ushort( 0, f );	//	CMapLength;
+		cfwrite_ubyte( 0, f );	// CMapDepth;
+		cfwrite_ushort( 0, f );	//	XOffset;
+		cfwrite_ushort( 0, f );	//	YOffset;
+		cfwrite_ushort( (ushort)gr_screen.max_w, f );	//	Width;
+		cfwrite_ushort( (ushort)gr_screen.max_h, f );	//	Height;
+		cfwrite_ubyte( 24, f );	//PixelDepth;
+		cfwrite_ubyte( 0, f );	//ImageDesc;
+
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGR_EXT, GL_UNSIGNED_BYTE, GL_dump_buffer);
+
+		// save the data out
+		cfwrite( GL_dump_buffer, GL_dump_frame_size, 1, f );
+
+		cfclose(f);
+
+	}
+
+	GL_dump_frame_count = 0;
+}
+
 void gr_opengl_dump_frame_start(int first_frame, int frames_between_dumps)
 {
-	STUB_FUNCTION;
+	if ( GL_dump_frames )	{
+		Int3();		//  We're already dumping frames.  See John.
+		return;
+	}
+
+	GL_dump_frames = 1;
+	GL_dump_frame_number = first_frame;
+	GL_dump_frame_count = 0;
+	GL_dump_frame_count_max = frames_between_dumps; // only works if it's 1
+	GL_dump_frame_size = gr_screen.max_w * gr_screen.max_h * 3;
+	
+	if ( !GL_dump_buffer ) {
+		int size = GL_dump_frame_count_max * GL_dump_frame_size;
+
+		GL_dump_buffer = (ubyte *)malloc(size);
+
+		if ( !GL_dump_buffer )	{
+			Error(LOCATION, "Unable to malloc %d bytes for dump buffer", size );
+		}
+	}
 }
 
 void gr_opengl_dump_frame_stop()
 {
-	STUB_FUNCTION;
+	if ( !GL_dump_frames )	{
+		Int3();		//  We're not dumping frames.  See John.
+		return;
+	}	
+
+	// dump any remaining frames
+	gr_opengl_flush_frame_dump();
+	
+	GL_dump_frames = 0;
+
+	if ( GL_dump_buffer )	{
+		free(GL_dump_buffer);
+		GL_dump_buffer = NULL;
+	}
 }
 
 void gr_opengl_dump_frame()
 {
-	STUB_FUNCTION;
+	GL_dump_frame_count++;
+
+	if ( GL_dump_frame_count == GL_dump_frame_count_max ) {
+		gr_opengl_flush_frame_dump();
+	}
 }
 
 uint gr_opengl_lock()
 {
-	STUB_FUNCTION;
-	
 	return 1;
 }
         
@@ -3650,7 +3581,6 @@ void gr_opengl_init(int reinit)
 
 	//shut these command line parameters down if they are in use
 	Cmdline_batch_3dunlit = 0;
-	Cmdline_2d_poof = 0;
 
 	// why bother
 	if (bpp != 32) {
@@ -4001,12 +3931,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		glEnable(GL_COLOR_SUM_EXT);
 
 	glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &GL_supported_texture_units);
-
-	if (GL_supported_texture_units > 2) {
-		gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_3multitex;
-	} else {
-		gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_2multitex;
-	}
 
 	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled) {
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_arb;
