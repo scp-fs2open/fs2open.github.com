@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-01-19 01:07:41 $
- * $Author: bobboau $
+ * $Revision: 2.12 $
+ * $Date: 2003-01-19 22:45:34 $
+ * $Author: Goober5000 $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/01/19 01:07:41  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.10  2003/01/18 19:49:45  phreak
  * texture mapper now supports DXTC compressed textures
  *
@@ -1333,7 +1336,9 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 {
 	int i;
 	float u_scale = 1.0f, v_scale = 1.0f;
+#ifndef NDEBUG
 	int bitmapidx=gr_screen.current_bitmap % MAX_BITMAPS;
+#endif
 	int do_glow=(GLOWMAP > 0);
 
 //	if (do_glow)
@@ -1420,7 +1425,9 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 	if ( flags & TMAP_FLAG_TEXTURED )       {
 		if (do_glow)
 		{
-			//mprintf(("rendering a glow texture %s\n", bm_get_filename(GLOWMAP[bitmapidx])));
+#ifndef NDEBUG
+			mprintf(("rendering a glow texture %s\n", bm_get_filename(GLOWMAP[bitmapidx])));
+#endif
 			glPushAttrib(GL_TEXTURE_BIT);
 			glActiveTextureARB(GL_TEXTURE0_ARB);		//texture is bound in gr_opengl_tcache_set
 			glEnable(GL_TEXTURE_2D);
@@ -2320,7 +2327,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 	//compression takes precedence
 	if (bitmap_type & TCACHE_TYPE_COMPRESSED)
 	{
-		GLenum ctype;
+		GLenum ctype(0);
 		switch (bm_is_compressed(texture_handle))
 		{
 			case 1:
