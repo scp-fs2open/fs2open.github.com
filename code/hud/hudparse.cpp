@@ -19,6 +19,7 @@ hud_info default_hud;
 hud_info ship_huds[MAX_SHIP_TYPES];
 extern int ships_inited; //Need this
 
+#ifndef NEW_HUD
 //Set coord_x or coord_y to -1 to not change that value
 //void resize_coords(int* values, float* factors);
 //void set_coords_if_clear(int* dest_coords, int coord_x, int coord_y = -1);
@@ -54,10 +55,50 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 //Number of gauges
 int Num_gauge_types = 16;
 int Num_custom_gauges = 0;
+#endif
 
 //Loads defaults for if a hud isn't specified in the table
 static void load_hud_defaults(hud_info *hud)
 {
+#ifdef NEW_HUD
+	gauge_data* cgp = NULL;
+
+	//Shield mini
+	gauge_data *cg = hud->add_gauge("Shield Mini", 497, 470);
+	cg->set_image("targhit1");
+
+	cg = hud->add_gauge("Afterburner Energy", 274, 424);
+	cg->set_image("2_energy2");
+	cg->update_func = hud_afterburner_energy;
+
+	cgp = cg = hud->add_gauge("Weapons Energy", 666, 424);
+	cg->set_image("2_energy2");
+	cg->update_func = hud_weapon_energy;
+
+	//The cgp assigns the parent
+	Assert(cgp != NULL);
+	Assert(cg != NULL);
+	cg = hud->add_gauge("Weapons Energy Text", 42, 85, cgp);
+	cg->update_func = hud_weapon_energy_text;
+
+	//Escort stuff
+/*	cgp = cg = hud->add_gauge("Escort List", 865, 330);
+	cg->set_image("escort1");
+	cg->update_func = hud_escort_ship;
+
+	cg = hud->add_gauge("Escort Header", 4, 1, cgp);
+	strcpy(cg->text, XSTR( "monitoring", 285));
+
+	cgp = hud->add_gauge("Escort Ships", 12, 13, cgp);
+
+	cgp = cg = hud->add_gauge("Escort Ship", 0, 11, cgp);
+	cg->set_image("escort2");
+
+	hud->add_gauge("Escort Ship Name", 4, 0, cgp);
+	hud->add_gauge("Escort Ship Integrity", 116, 0, cgp);
+	hud->add_gauge("Escort Ship Status", -11, 0, cgp);*/
+
+#else
 	//X values
 	if(gr_screen.max_w == 640)
 	{
@@ -114,8 +155,10 @@ static void load_hud_defaults(hud_info *hud)
 			HUD_INT(hud, cg->coord_dest)[1] = cg->defaulty_768;
 		}
 	}
+#endif
 }
 
+#ifndef NEW_HUD
 static void calculate_gauges(hud_info* dest_hud)
 {
 	//Put any post-loading calculation code after the beep. *BEEP*
@@ -134,6 +177,7 @@ static void calculate_gauges(hud_info* dest_hud)
 		}
 	}
 }
+#endif
 
 /****************************************************************************************************/
 /* You shouldn't have to modify anything past here to add gauges */
@@ -253,6 +297,7 @@ int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 	return 1;
 }
 
+#ifndef NEW_HUD
 static void parse_resolution(hud_info* dest_hud)
 {
 	//Parse it
@@ -298,6 +343,7 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 
 	dest_hud->loaded = true;
 }
+#endif
 
 /*
 void set_coords_if_clear(int* dest_coords, int coord_x, int coord_y)
@@ -383,6 +429,7 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 	return 0;
 }
 
+#ifndef NEW_HUD
 void parse_custom_gauge()
 {
 	if(Num_gauge_types < MAX_HUD_GAUGE_TYPES)
@@ -565,10 +612,12 @@ int parse_hud_gauges_tbl(char* longname)
 
 	return 1;
 }
+#endif
 
 void hud_positions_init()
 {
 	load_hud_defaults(&default_hud);
+#ifndef NEW_HUD
 
 	if(!parse_hud_gauges_tbl("hud_gauges.tbl"))
 	{
@@ -585,6 +634,7 @@ void hud_positions_init()
 		strcat(tbl_file_names[i], ".tbm");
 		parse_hud_gauges_tbl(tbl_file_names[i]);
 	}
+#endif
 
 	set_current_hud(-1);
 }
@@ -593,8 +643,16 @@ void hud_positions_init()
 //to a temporary hud_info struct and sets the current_hud pointer to it.
 //This enables ship-specific huds.
 //Note that this creates a temporary current hud, so changes aren't permanently saved.
+#ifdef NEW_HUD
+void set_current_hud(int player_ship_num, ship* owner)
+#else
 void set_current_hud(int player_ship_num)
+#endif
 {
+#ifdef NEW_HUD
+	current_hud = &default_hud;
+	current_hud->owner = owner;
+#else
 	static hud_info real_current_hud;
 
 	if(player_ship_num >= 0 && player_ship_num < MAX_SHIP_TYPES && ship_huds[player_ship_num].loaded)
@@ -607,27 +665,96 @@ void set_current_hud(int player_ship_num)
 	}
 
 	current_hud = &real_current_hud;
+#endif
 }
 
 hud_info::hud_info()
 {
-	//loaded = false;
+#ifdef NEW_HUD
+	resolution[0] = resolution[1] = 0;
+	num_gauges = 0;
+	loaded = false;
+#else
 	memset(this, 0, sizeof(hud_info));
+#endif
 }
+
+#ifdef NEW_HUD
+
+/*
+//Note: user range should be 50 to 150
+ubyte hud_info::get_preset_alpha(int preset_id)
+{
+	if(!flags & HI_CONTRAST)
+	{
+		switch(preset_id)
+		{
+			case HI_DIM:
+				return hud_color.alpha - 40;
+			case HI_NORMAL:
+				return hud_color.alpha;
+			case HI_BRIGHT:
+				return hud_color.alpha + 100;
+		}
+	}
+	else
+	{
+		switch(preset_id)
+		{
+			case HI_DIM:
+				return hud_color.alpha +10;
+			case HI_NORMAL:
+				return hud_color.alpha + 70;
+			case HI_BRIGHT:
+				return 255;
+		}
+	}
+}*/
+
+gauge_data *hud_info::add_gauge(char* name, int def_x_coord, int def_y_coord, gauge_data* new_gauge_parent)
+{
+	gauge_data *cg = NULL;
+	for(int i = 0; i < MAX_HUD_GAUGES; i++)
+	{
+		if(gauges[i].type == HG_UNUSED || i >= num_gauges)
+		{
+			cg = &gauges[i];
+			break;
+		}
+	}
+
+	Assert(new_gauge_parent > gauges || new_gauge_parent == NULL);
+
+	if(cg != NULL)
+	{
+		if(cg->set_up(name, def_x_coord, def_y_coord, new_gauge_parent))
+		{
+			num_gauges++;
+			return cg;
+		}
+	}
+
+	return NULL;
+}
+
+#endif
 
 gauge_info* hud_get_gauge(char* name)
 {
+#ifndef NEW_HUD
 	int id = hud_get_gauge_index(name);
 	if(id > -1)
 	{
 		return &gauges[id];
 	}
+#endif
 
 	return NULL;
 }
 
 int hud_get_gauge_index(char* name)
 {
+#ifndef NEW_HUD
 	for(int i = 0; i < Num_gauge_types; i++)
 	{
 		if(!strnicmp(gauges[i].fieldname + sizeof(char), name, strlen(gauges[i].fieldname) - 2))
@@ -635,6 +762,311 @@ int hud_get_gauge_index(char* name)
 			return i;
 		}
 	}
+#endif
 
 	return -1;
 }
+
+
+#ifdef NEW_HUD
+int gauge_data::set_up(char* gauge_name, int def_x, int def_y, gauge_data* gauge_parent)
+{
+	if(type != HG_UNUSED)
+	{
+		return 0;
+	}
+
+	//If a parent was given, set it
+	if(gauge_parent)
+	{
+		//This is the best that can easily be done to make sure the parent is valid
+		Assert((gauge_parent->type == HG_MAINGAUGE) || (gauge_parent->type == HG_CHILDGAUGE));
+
+		//Find an empty child spot
+		for(int i = 0; i < MAX_GAUGE_CHILDREN; i++)
+		{
+			if(gauge_parent->children[i] == NULL)
+			{
+				gauge_parent->children[i] = this;
+				break;
+			}
+		}
+		if(i >= MAX_GAUGE_CHILDREN)
+		{
+			//sux. No empty child spots, probably need to bump MAX_GAUGE_CHILDREN
+			return 0;
+		}
+		type = HG_CHILDGAUGE;
+	}
+	else
+	{
+		type = HG_MAINGAUGE;
+	}
+
+	Assert(strlen(gauge_name) < sizeof(name));
+
+	strcpy(name, gauge_name);
+	coords[0] = def_x;
+	coords[1] = def_y;
+	return 1;
+}
+
+int gauge_data::set_image(char* image_name, int newframe, int sizex, int sizey)
+{
+	//Make sure we aren't trying to reset an image
+	if(!stricmp(image_name, image))
+	{
+		return 1;
+	}
+
+	//Get the NEW model id
+	int new_image_id = bm_load_animation(image_name, &num_frames);
+	if(new_image_id == -1)
+	{
+		new_image_id = bm_load(image_name);
+		//Make sure the new one is valid
+		if(new_image_id == -1)
+		{
+			//Warning(("Warning","Could not load image %s for a HUD gauge", image_name));
+			return 0;
+		}
+		num_frames = 1;
+	}
+
+	strcpy(image, image_name);
+
+	//Give up the old one
+	if(image_id != -1)
+	{
+		bm_unload(image_id);	//maybe unload?
+	}
+
+	//Set image_id
+	image_id = new_image_id;
+	Assert(newframe < num_frames);
+	for(int i = 0; i < MAX_GAUGE_FRAMES; i++)
+	{
+		frame[i] = -1;
+	}
+	frame[0] = newframe;
+	bm_get_info(image_id, &image_size[0], &image_size[1]);
+
+	//Set size values
+	if(sizex)
+	{
+		image_size[0] = sizex;
+	}
+	if(sizey)
+	{
+		image_size[1] = sizey;
+	}
+
+	return 1;
+}
+
+int gauge_data::reset()
+{
+	draw_coords[0] = draw_coords[1] = 0;
+/*	if(image_id != -1)
+	{
+		bm_unload(image_id);
+	}*/
+
+	return 1;
+}
+int gauge_data::page_in()
+{
+	if(strlen(image))
+	{
+		if(image_id == -1)
+		{
+			image_id = bm_load_animation(image, &num_frames);
+			if(image_id == -1)
+			{
+				image_id = bm_load(image);
+				//Make sure the new one is valid
+				if(image_id != -1)
+				{
+					num_frames = 1;
+				}
+				else
+				{
+					num_frames = 0;
+				}
+			}
+		}
+		bm_page_in_aabitmap(image_id, num_frames);
+	}
+	return 1;
+}
+gauge_data::gauge_data()
+{
+	type = HG_UNUSED;
+	coords[0] = coords[1] = 0;
+
+	g_color.alpha = 0;
+	user_color.alpha = 0;
+
+	text[0] = '\0';
+
+	shape_id = -1;
+	image_id = -1;
+	num_frames = 0;
+	model_id = -1;
+
+	//By default, show HUD gauges only in cockpit
+	show_flags = 0;
+
+	for(int i = 0; i < MAX_GAUGE_FRAMES; i++)
+	{
+		frame[i] = -1;
+	}
+
+	update_func = NULL;
+}
+gauge_data::draw()
+{
+	int i;
+
+	//Color
+	if(g_color.alpha && (!user_color.alpha || data_flags & HG_PRIORITYCOLOR))
+	{
+		gr_set_color_fast(&g_color);
+	}
+	else if(user_color.alpha)
+	{
+		gr_set_color_fast(&user_color);
+	}
+	else
+	{
+		hud_set_default_color();
+	}
+
+	//Image
+	if(image_id != -1)
+	{
+		color framecolor;
+		for(i = 0; i < MAX_GAUGE_FRAMES; i++)
+		{
+			if(frame_info[i][4])
+			{
+				gr_init_alphacolor(&framecolor, g_color.red, g_color.green, g_color.blue, frame_info[i][4]);
+				gr_set_color_fast(&framecolor);
+			}
+			if(frame[i] != -1)
+			{
+				//clipping
+				//0 top
+				//1 left
+				//2 bottom 
+				//3 right
+				GR_AABITMAP_EX(image_id + frame[i],							//Image
+					draw_coords[0] + frame_info[i][1],						//X position
+					draw_coords[1] + frame_info[i][0],						//Y position
+					image_size[0] - frame_info[i][1] - frame_info[i][3],	//Width to show
+					image_size[1] - frame_info[i][0] - frame_info[i][2],	//Height to show
+					frame_info[i][1],										//Offset from left
+					frame_info[i][0]);										//Offset from top
+			}
+		}
+	}
+	//Model
+	//TODO
+
+	//Shape
+	//TODO
+
+	//Text
+	if(strlen(text))
+	{
+		gr_string(draw_coords[0], draw_coords[1], text);
+	}
+
+	return 1;
+}
+
+int gauge_data::update(ship* gauge_owner, gauge_data* cgp)
+{
+	//Don't execute if we can't see the gauge
+	if(!(Viewer_mode & show_flags) && Viewer_mode != 0)
+	{
+		return 1;
+	}
+
+
+	update_num = 0;
+	int rval = 0;
+
+	//Increment by parent coords, if it has a parent
+	if(cgp)
+	{
+		draw_coords[0] = cgp->coords[0];
+		draw_coords[1] = cgp->coords[1];
+	}
+
+	do
+	{
+		if(update_func != NULL)
+		{
+			rval = update_func(this, gauge_owner);
+		}
+		else
+		{
+			rval = 1;
+		}
+		//rval -1:Don't draw
+		//rval 0: update again
+		//rval 1: this is the last update
+		//all else: just draw the gauge
+		if(rval == -1)
+		{
+			return 0;
+		}
+
+		//If we aren't redrawing and starting the loop, set to 0
+		if(update_num == 0 && (rval == 1 || rval == 0))
+		{
+			if(cgp == NULL)
+			{
+				draw_coords[0] = draw_coords[0] = 0;
+			}
+			else
+			{
+				draw_coords[0] = cgp->coords[0];
+				draw_coords[1] = cgp->coords[1];
+			}
+
+		}
+
+		//If we aren't redrawing, set new draw coordinates
+		if(rval == 1 || rval == 0)
+		{
+			draw_coords[0] += coords[0];
+			draw_coords[1] += coords[1];
+		}
+
+		if(children[0] != NULL)
+		{
+			for(int j = 0; children[j] != NULL;j++)
+			{
+				//A minor guard against dumbness
+				if(children[j] != this)
+				{
+					children[j]->update(gauge_owner, cgp);
+				}
+			}
+		}
+
+		draw();
+
+		update_num++;
+	} while(rval == 0);
+
+	if(data_flags & HG_NEEDSUPDATE)
+	{
+		data_flags &= HG_NEEDSUPDATE;
+	}
+
+	return 1;
+}
+#endif
