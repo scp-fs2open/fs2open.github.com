@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-04-05 11:09:22 $
+ * $Revision: 2.7 $
+ * $Date: 2003-08-25 04:45:57 $
  * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/04/05 11:09:22  Goober5000
+ * fixed some fiddly bits with scrolling and ui stuff
+ * --Goober5000
+ *
  * Revision 2.5  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -1322,14 +1326,12 @@ void techroom_intel_init()
 				stuff_int(&temp);
 				if (temp)
 				{
+					// set default to align with what we read - Goober5000
 					Intel_info[Intel_info_size].flags |= IIF_IN_TECH_DATABASE;
+					Intel_info[Intel_info_size].flags |= IIF_DEFAULT_IN_TECH_DATABASE;
 				}
 				required_string("$Description:");
 				stuff_string(Intel_info[Intel_info_size].desc, F_MULTITEXT, NULL, TECH_INTEL_DESC_LEN);
-
-				// set default to align with what we read - Goober5000
-				if (Intel_info[Intel_info_size].flags & IIF_IN_TECH_DATABASE)
-					Intel_info[Intel_info_size].flags |= IIF_DEFAULT_IN_TECH_DATABASE;
 
 				Intel_info_size++;
 			}

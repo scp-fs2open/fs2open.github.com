@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.5 $
+ * $Revision: 2.6 $
  * $Author: Goober5000 $
- * $Date: 2003-08-22 07:01:57 $
+ * $Date: 2003-08-25 04:45:57 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/08/22 07:01:57  Goober5000
+ * implemented $callsign to add the player callsign in a briefing, message, or whatever
+ * --Goober5000
+ *
  * Revision 2.4  2003/01/17 07:59:08  Goober5000
  * fixed some really strange behavior with strings not being truncated at the
  * # symbol
@@ -291,6 +295,8 @@ extern jmp_buf parse_abort;
 #define	MULTITEXT_LENGTH		1024
 #define	FILESPEC_LENGTH		64
 #define	MESSAGE_LENGTH			512
+
+#define PARSE_BUF_SIZE			4096
 
 // 1K on the stack? seems to work...
 // JH: 1k isn't enough!  Command briefs can be 16k max, so changed this.
