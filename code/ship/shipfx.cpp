@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-12-16 20:55:13 $
- * $Author: phreak $
+ * $Revision: 2.23 $
+ * $Date: 2004-01-30 07:39:06 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/12/16 20:55:13  phreak
+ * disabled tertiary weapons support pending a rewrite of critical code
+ *
  * Revision 2.21  2003/09/26 14:37:16  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -1056,6 +1059,8 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 
 void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vector *warp_pos)
 {
+	Assert(objp);	// Goober5000
+
 	// If we're warping through the knossos, do something different.
 	if (Ships[objp->instance].special_warp_objnum >= 0) {
 		if (compute_special_warpout_stuff(objp, speed, warp_time, warp_pos) != -1) {

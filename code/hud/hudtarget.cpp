@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-12-16 21:06:21 $
- * $Author: phreak $
+ * $Revision: 2.24 $
+ * $Date: 2004-01-30 07:39:07 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/12/16 21:06:21  phreak
+ * disabled tertiary weapons support pending a rewrite of critical code
+ *
  * Revision 2.22  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -2817,7 +2820,6 @@ void hud_target_in_reticle_old()
 	vector	vec_to_target;
 
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
-
 		if ( !object_targetable_in_reticle(A) ) {
 			continue;
 		}
@@ -4078,8 +4080,8 @@ int hud_get_best_primary_bank(float *range)
 
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
-		Assert(bank_to_fire >= 0);
-		Assert(swp->primary_bank_weapons[bank_to_fire] >= 0);
+		Assert(bank_to_fire >= 0 && bank_to_fire < swp->num_primary_banks);
+		Assert(swp->primary_bank_weapons[bank_to_fire] >= 0 && swp->primary_bank_weapons[bank_to_fire] < MAX_WEAPON_TYPES);
 		wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
 		weapon_range = wip->max_speed * wip->lifetime;
 
@@ -4910,7 +4912,6 @@ void hud_show_weapon_energy_gauge()
 	{
 		return;
 	}
-
 
 	percent_left = Player_ship->weapon_energy/Ship_info[Player_ship->ship_info_index].max_weapon_reserve;
 	if ( percent_left > 1 )

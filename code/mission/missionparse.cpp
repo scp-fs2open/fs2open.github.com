@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.50 $
- * $Date: 2004-01-14 06:34:07 $
+ * $Revision: 2.51 $
+ * $Date: 2004-01-30 07:39:08 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2004/01/14 06:34:07  Goober5000
+ * made set-support-ship number align with general FS convention
+ * --Goober5000
+ *
  * Revision 2.49  2003/10/23 23:48:03  phreak
  * added code for the mission parser to recognize user defined skyboxes
  *
@@ -1754,8 +1758,8 @@ int parse_create_object(p_object *objp)
 	strcpy(Ships[shipnum].ship_name, objp->name);
 	Ships[shipnum].escort_priority = objp->escort_priority;
 	Ships[shipnum].special_exp_index = objp->special_exp_index;
+	// Goober5000
 	Ships[shipnum].special_hitpoint_index = objp->special_hitpoint_index;
-
 	Ships[shipnum].ship_initial_shield_strength = objp->ship_initial_shield_strength;
 	Ships[shipnum].ship_initial_hull_strength = objp->ship_initial_hull_strength;
 
@@ -2504,6 +2508,7 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		objp->ship_initial_shield_strength = Ship_info[objp->ship_class].initial_shield_strength;
 		objp->ship_initial_hull_strength = Ship_info[objp->ship_class].initial_hull_strength;
 	}
+	Assert(objp->ship_initial_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
 
 	// if the kamikaze flag is set, we should have the next flag
 	if ( optional_string("+Kamikaze Damage:") ) {
@@ -5559,7 +5564,7 @@ int allocate_subsys_status()
 	int i;
 	// set primary weapon ammunition here, but does it actually matter? - Goober5000
 
-	Assert(Subsys_index < MAX_SUBSYS_STATUS);
+	Assert(Subsys_index >= 0 && Subsys_index < MAX_SUBSYS_STATUS);
 	Subsys_status[Subsys_index].percent = 0.0f;
 
 	Subsys_status[Subsys_index].primary_banks[0] = SUBSYS_STATUS_NO_CHANGE;
@@ -6019,16 +6024,28 @@ void convertFSMtoFS2()
 	conv_fix_briefing_stuff();
 }
 
-// Goober5000
+// Goober5000 - replacement rules according to the Freespace Port
 void conv_replace_ship_classes()
 {
-	replace_all(Mission_text, "lass: Terran NavBuoy", "lass: GTNB Pharos", MISSION_TEXT_SIZE);
+	// only replace the Terran NavBuoy if it isn't found in the tables
+	// (even if we do replace it, it's still alt-named as a Terran NavBuoy... see below)
+	if (ship_info_lookup("Terran NavBuoy") < 0)
+	{
+		replace_all(Mission_text, "lass: Terran NavBuoy", "lass: GTNB Pharos", MISSION_TEXT_SIZE);
+	}
+
+	// only replace the Prometheus if it isn't found in the tables
+	if (weapon_info_lookup("Prometheus") < 0)
+	{
+		replace_all(Mission_text, "\"Prometheus\"", "\"Prometheus S\"", MISSION_TEXT_SIZE);
+	}
+
+	// change most Vasudan stuff from PV to GV
 	replace_all(Mission_text, "lass: PV", "lass: GV", MISSION_TEXT_SIZE);
 	replace_all(Mission_text, "GVF Anubis", "PVF Anubis", MISSION_TEXT_SIZE);
 	replace_all(Mission_text, "GVB Amun", "PVB Amun", MISSION_TEXT_SIZE);
 	replace_all(Mission_text, "GVFr Ma'at", "PVFr Ma'at", MISSION_TEXT_SIZE);
 	replace_all(Mission_text, "GVFr Bast", "PVFr Bast", MISSION_TEXT_SIZE);
-	replace_all(Mission_text, "\"Prometheus\"", "\"Prometheus S\"", MISSION_TEXT_SIZE);
 }
 
 // Goober5000
@@ -6122,8 +6139,9 @@ void conv_add_alt_names()
 // Goober5000
 void conv_fix_briefing_stuff()
 {
-	// replace " with '
+	// replace " with ''
 
+	// replace ; with ,
 
 	// fix the mismatched briefing icons
 }

@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-10-07 03:43:22 $
+ * $Revision: 2.7 $
+ * $Date: 2004-01-30 07:39:07 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/10/07 03:43:22  Goober5000
+ * fixed some warnings
+ * --Goober5000
+ *
  * Revision 2.5  2003/09/28 21:22:59  Goober5000
  * added the option to import FSM missions, added a replace function, spruced
  * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
@@ -795,9 +799,12 @@ void lcl_ext_close()
 // Goober5000 - replace stuff in the string, e.g. $callsign with player's callsign
 // now will also replace $rank with rank, e.g. "Lieutenant"
 // now will also replace $quote with double quotation marks
+// now will also replace $semicolon with semicolon mark
 #define LCL_NUM_REPLACEMENTS 4
 void lcl_replace_stuff(char *text, unsigned int max_len)
 {
+	Assert(text);	// Goober5000
+
 	if (Fred_running)
 		return;
 

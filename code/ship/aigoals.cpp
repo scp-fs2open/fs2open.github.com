@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-11-11 02:15:40 $
+ * $Revision: 2.9 $
+ * $Date: 2004-01-30 07:39:06 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/11/11 02:15:40  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.7  2003/09/05 04:25:27  Goober5000
  * well, let's see here...
  *
@@ -1257,6 +1262,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
 		aigp->ai_mode = AI_GOAL_CHASE_ANY;
 		break;
 
+	// Goober5000
 	case OP_AI_CHASE_ANY_EXCEPT:
 		aigp->priority = atoi( CTEXT(CDR(node)) );
 		aigp->ai_mode = AI_GOAL_CHASE_ANY_EXCEPT;
@@ -2222,6 +2228,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		ai_attack_object( objp, NULL, current_goal->priority, NULL );
 		break;
 
+	// Goober5000
 	case AI_GOAL_CHASE_ANY_EXCEPT:
 		aip->target_objnum = -1;	// force reacquisition of target in case we're attacking an exception
 		aip->enemy_wing = -1;		// same with any current enemy wing

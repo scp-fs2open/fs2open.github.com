@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.11 $
- * $Author: bobboau $
- * $Date: 2003-11-17 06:52:52 $
+ * $Revision: 2.12 $
+ * $Author: Goober5000 $
+ * $Date: 2004-01-30 07:39:09 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/17 06:52:52  bobboau
+ * got assert to work again
+ *
  * Revision 2.10  2003/09/30 04:05:09  Goober5000
  * updated FRED to import FS1 default weapons loadouts as well as missions
  * --Goober5000
@@ -1959,6 +1962,8 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 // Goober5000
 void end_string_at_first_hash_symbol(char *src)
 {
+	Assert(src);
+
 	char *p = get_pointer_to_first_hash_symbol(src);
 
 	if (p)
@@ -1970,6 +1975,9 @@ void end_string_at_first_hash_symbol(char *src)
 // Goober5000
 char *stristr(const char *str, const char *substr)
 {
+	Assert(str);
+	Assert(substr);
+
 	int pos;
 
 	// copy each string
@@ -2001,6 +2009,8 @@ char *stristr(const char *str, const char *substr)
 // Goober5000
 char *get_pointer_to_first_hash_symbol(char *src)
 {
+	Assert(src);
+
 	return strchr(src, '#');
 }
 

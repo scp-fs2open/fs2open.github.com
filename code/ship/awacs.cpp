@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-04-29 01:03:21 $
+ * $Revision: 2.7 $
+ * $Date: 2004-01-30 07:39:06 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/04/29 01:03:21  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.5  2003/01/18 09:25:40  Goober5000
  * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
  * than SF_ flags
@@ -268,7 +272,10 @@ void awacs_update_all_levels()
 // 0.0 - 1.0f	: marginally targetable
 // >= 1.0f			: fully targetable as normal
 float awacs_get_level(object *target, ship *viewer, int use_awacs)
-{		
+{
+	Assert(target);	// Goober5000
+	Assert(viewer);	// Goober5000
+
 	vector dist_vec, subsys_pos;
 	float closest = 0.0f;
 	float test;

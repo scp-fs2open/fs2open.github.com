@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.49 $
- * $Date: 2004-01-20 22:13:06 $
+ * $Revision: 2.50 $
+ * $Date: 2004-01-30 07:39:05 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2004/01/20 22:13:06  Goober5000
+ * er... corrected some inexplicable code... Bobboau, mind explaining?
+ * --Goober5000
+ *
  * Revision 2.48  2003/12/19 05:58:44  phreak
  * fixed a null pointer
  *
@@ -2586,6 +2590,11 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 					}
 
 					if (eno->trial_objp->flags & OF_PLAYER_SHIP){
+						// Goober5000: oh dear, it looks like this was originally meant to scale
+						// the distance according to skill, but as it is, the effect is negligible.
+						// I could fix it with parentheses, but we all know how quickly AI pilots
+						// die usually, so the overall effect would probably be worse.  So I left
+						// this unchanged.
 						dist *= 1.0f + (NUM_SKILL_LEVELS - Game_skill_level - 1)/NUM_SKILL_LEVELS;	//	Favor attacking non-players based on skill level.
 					}
 
@@ -5999,6 +6008,7 @@ void set_primary_weapon_linkage(object *objp)
 			}
 		}
 
+		Assert(total_ammo);	// Goober5000: div-0 check
 		ammo_pct = float (current_ammo) / float (total_ammo);
 
 		// link according to defined levels
@@ -15196,6 +15206,14 @@ float max_lethality = 0.0f;
 
 void ai_update_lethality(object *ship_obj, object *other_obj, float damage)
 {
+	// Goober5000 - stop any trickle-down errors from ship_do_damage
+	Assert(other_obj);
+	if (!other_obj)
+	{
+		return;
+	}
+
+	Assert(ship_obj);	// Goober5000
 	Assert(ship_obj->type == OBJ_SHIP);
 	Assert(other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_SHOCKWAVE);
 	int dont_count = FALSE;
@@ -15374,7 +15392,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vector *hitpos, int shield
 		}
 	}
 
-	if (objp_ship == Player_obj)
+	if ((objp_ship == Player_obj) && !Player_use_ai)	// Goober5000 - allow for exception
 		return;		//	We don't do AI for the player.
 
 	maybe_update_guard_object(objp_ship, objp_hitter);
