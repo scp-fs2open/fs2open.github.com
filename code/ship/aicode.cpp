@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.100 $
- * $Date: 2005-03-16 00:37:42 $
- * $Author: phreak $
+ * $Revision: 2.101 $
+ * $Date: 2005-03-24 23:29:32 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2005/03/16 00:37:42  phreak
+ * properly handle using the old method of selecting primary weapons.
+ * i forgot a return statement so the new method was used instead
+ *
  * Revision 2.99  2005/03/14 02:52:58  phreak
  * Got rid of the stealth check that only applied to cloaked ships.  This should
  * fix some errorneous behavior that caused the ai to target the player
@@ -4874,7 +4878,6 @@ int get_base_path_info(int path_cur, int goal_objnum, model_path **pmp, mp_vert 
 	ship *shipp = &Ships[Objects[goal_objnum].instance];
 //	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 	polymodel	*pm = model_get(shipp->modelnum);
-	static		int	debug_last_index = -1;
 	*pmpv = NULL;
 	*pmp = NULL;
 
@@ -4887,7 +4890,10 @@ int get_base_path_info(int path_cur, int goal_objnum, model_path **pmp, mp_vert 
 	} else
 		return 0;
 
-/*	if (debug_last_index != *pmpv-(*pmp)->verts) {
+/*
+	static int debug_last_index = -1;
+	
+	if (debug_last_index != *pmpv-(*pmp)->verts) {
 		debug_last_index = *pmpv-(*pmp)->verts;
 		nprintf(("AI", "Point %i has %i turrets: ", *pmpv-(*pmp)->verts, (*pmpv)->nturrets));
 		for (int i=0; i<(*pmpv)->nturrets; i++) {
