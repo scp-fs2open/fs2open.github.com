@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-02-13 08:41:25 $
- * $Author: wmcoolmon $
+ * $Revision: 2.34 $
+ * $Date: 2005-02-23 04:55:07 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/02/13 08:41:25  wmcoolmon
+ * 3D models in weapons selection screen and nonstandard resolution fixes for ship selection screen.
+ *
  * Revision 2.32  2005/02/04 10:12:31  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -2135,7 +2138,7 @@ void ship_select_close()
 	bm_unlock(ShipSelectMaskBitmap);
 
 	// unload the bitmaps
-	bm_unload(ShipSelectMaskBitmap);
+	bm_release(ShipSelectMaskBitmap);
 	help_overlay_unload(SS_OVERLAY);
 
 	// release the bitmpas that were previously extracted from anim files

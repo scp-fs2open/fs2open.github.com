@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-02-04 20:06:05 $
+ * $Revision: 2.34 $
+ * $Date: 2005-02-23 04:55:09 $
  * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/02/04 20:06:05  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.32  2004/07/26 20:47:43  Kazan
  * remove MCD complete
  *
@@ -893,6 +896,7 @@ void multi_unload_common_icons()
 	// unload all icons
 	for(idx=0; idx<MULTI_NUM_COMMON_ICONS; idx++){
 		if(Multi_common_icons[idx] != -1){
+			// don't bm_release() here, used in multiple places - taylor
 			bm_unload(Multi_common_icons[idx]);
 			Multi_common_icons[idx] = -1;
 		}

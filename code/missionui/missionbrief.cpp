@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-02-21 09:00:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.22 $
+ * $Date: 2005-02-23 04:55:07 $
+ * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/02/21 09:00:58  wmcoolmon
+ * Multi-res support
+ *
  * Revision 2.20  2005/02/14 23:56:51  taylor
  * fix mouse click issues in weapon/ship select screen
  * skip real VCR controls for Closeup check rather than using hardcoded values
@@ -2218,27 +2221,27 @@ void brief_do_frame(float frametime)
 void brief_unload_bitmaps()
 {	
 	if ( BriefingMaskBitmap != -1 ) {
-		bm_unload(BriefingMaskBitmap);
+		bm_release(BriefingMaskBitmap);
 		BriefingMaskBitmap = -1;
 	}
 
 	if ( Brief_text_bitmap != -1 ) {
-		bm_unload(Brief_text_bitmap);
+		bm_release(Brief_text_bitmap);
 		Brief_text_bitmap = -1;
 	}
 
 	if(Brief_grid_bitmap != -1){
-		bm_unload(Brief_grid_bitmap);
+		bm_release(Brief_grid_bitmap);
 		Brief_grid_bitmap = -1;
 	}
 
 	if ( Brief_multitext_bitmap != -1 ) {
-		bm_unload(Brief_multitext_bitmap);
+		bm_release(Brief_multitext_bitmap);
 		Brief_multitext_bitmap = -1;
 	}
 
 	if ( Brief_background_bitmap != -1 ) {
-		bm_unload(Brief_background_bitmap);
+		bm_release(Brief_background_bitmap);
 		Brief_background_bitmap = -1;
 	}
 

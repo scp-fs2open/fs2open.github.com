@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-02-21 09:00:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.17 $
+ * $Date: 2005-02-23 04:55:07 $
+ * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/02/21 09:00:17  wmcoolmon
+ * Multi-res support
+ *
  * Revision 2.15  2005/01/31 23:27:54  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -213,6 +216,8 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "mission/missionbriefcommon.h"
 #include "mission/missionparse.h"
@@ -731,6 +736,19 @@ void brief_init_icons()
 		gr_init_alphacolor( &IFF_colors[IFF_COLOR_FRIENDLY][0], 0x00, 0xff, 0x00, 15*16 );
 	}
 
+	int i, idx;
+
+	for (i=0; i<MAX_BRIEF_ICONS ; i++) {
+#if defined(MORE_SPECIES)
+		for(idx=0; idx<MAX_SPECIES_NAMES && idx<True_NumSpecies; idx++){
+#else
+		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
+#endif
+			Icon_bitmaps[i][idx].first_frame = -1;
+			Icon_bitmaps[i][idx].num_frames = 0;
+		}
+	}
+
 	// Load in the bitmaps for the icons from icons.tbl
 	brief_parse_icon_tbl();
 }
@@ -746,8 +764,11 @@ void brief_init_anims()
 #else
 		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
 #endif
-			Icon_highlight_anims[i][idx].num_frames=0;
-			Icon_fade_anims[i][idx].num_frames=0;
+			Icon_highlight_anims[i][idx].first_frame = -1;
+			Icon_highlight_anims[i][idx].num_frames = 0;
+
+			Icon_fade_anims[i][idx].first_frame = -1;
+			Icon_fade_anims[i][idx].num_frames = 0;
 		}
 	}
 }
@@ -759,7 +780,7 @@ void brief_init_anims()
 void brief_unload_icons()
 {
 	hud_frames		*ib;
-	int				i, j, idx;
+	int				i, idx;
 
 	for ( i = 0; i < MAX_BRIEF_ICONS; i++ ) {
 #if defined(MORE_SPECIES)
@@ -769,9 +790,12 @@ void brief_unload_icons()
 #endif
 			ib = &Icon_bitmaps[i][idx];
 
-			for ( j=0; j<ib->num_frames; j++ ) {
-				bm_unload(ib->first_frame+j);
-			}
+			if (ib->first_frame < 0)
+				continue;
+
+			bm_release(ib->first_frame);
+			ib->first_frame = -1;
+			ib->num_frames = 0;
 		}
 	}
 }

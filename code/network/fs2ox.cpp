@@ -9,13 +9,17 @@
 
 /*
  * $Logfile$
- * $Revision: 1.12 $
- * $Date: 2004-11-18 00:05:37 $
- * $Author: Goober5000 $
+ * $Revision: 1.13 $
+ * $Date: 2005-02-23 04:55:09 $
+ * $Author: taylor $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2004/11/18 00:05:37  Goober5000
+ * #pragma'd a bunch of warnings
+ * --Goober5000
+ *
  * Revision 1.11  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -333,10 +337,7 @@ void fs2ox_init()
 void fs2ox_close()
 {
 	// unload any bitmaps
-	if(!bm_unload(fs2ox_bitmap)){
-		nprintf(("General","WARNING : could not unload background bitmap %s\n",fs2ox_bitmap_fname[gr_screen.res]));
-	}
-
+	bm_release(fs2ox_bitmap);
 
 	// unload the help overlay
 	//help_overlay_unload(FS2OX_OVERLAY);	

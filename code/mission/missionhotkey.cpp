@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2005-02-23 04:55:07 $
+ * $Author: taylor $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1177,9 +1180,9 @@ void mission_hotkey_init()
 void mission_hotkey_close()
 {
 	if (Background_bitmap)
-		bm_unload(Background_bitmap);
+		bm_release(Background_bitmap);
 	if (Wing_bmp >= 0)
-		bm_unload(Wing_bmp);
+		bm_release(Wing_bmp);
 
 	// unload the overlay bitmap
 //	help_overlay_unload(HOTKEY_OVERLAY);

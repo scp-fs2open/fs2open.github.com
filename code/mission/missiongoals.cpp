@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.11 $
+ * $Date: 2005-02-23 04:55:07 $
+ * $Author: taylor $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.9  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -870,16 +873,16 @@ void mission_show_goals_init()
 void mission_show_goals_close()
 {
 	if (Goals_screen_bg_bitmap >= 0)
-		bm_unload(Goals_screen_bg_bitmap);
+		bm_release(Goals_screen_bg_bitmap);
 
 	if (Goal_complete_bitmap)
-		bm_unload(Goal_complete_bitmap);
+		bm_release(Goal_complete_bitmap);
 	
 	if (Goal_incomplete_bitmap)
-		bm_unload(Goal_incomplete_bitmap);
+		bm_release(Goal_incomplete_bitmap);
 	
 	if (Goal_failed_bitmap)
-		bm_unload(Goal_failed_bitmap);
+		bm_release(Goal_failed_bitmap);
 
 	Goals_screen_ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
@@ -1030,15 +1033,15 @@ int ML_objectives_init(int x, int y, int w, int h)
 void ML_objectives_close()
 {
 	if (Goal_complete_bitmap >= 0) {
-		bm_unload(Goal_complete_bitmap);
+		bm_release(Goal_complete_bitmap);
 	}
 	
 	if (Goal_incomplete_bitmap >= 0) {
-		bm_unload(Goal_incomplete_bitmap);
+		bm_release(Goal_incomplete_bitmap);
 	}
 	
 	if (Goal_failed_bitmap >= 0) {
-		bm_unload(Goal_failed_bitmap);
+		bm_release(Goal_failed_bitmap);
 	}
 }
 

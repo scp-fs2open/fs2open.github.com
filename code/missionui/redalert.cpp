@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-10-31 21:53:24 $
+ * $Revision: 2.11 $
+ * $Date: 2005-02-23 04:55:08 $
  * $Author: taylor $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/10/31 21:53:24  taylor
+ * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
+ *
  * Revision 2.9  2004/07/26 20:47:40  Kazan
  * remove MCD complete
  *
@@ -526,7 +529,7 @@ void red_alert_close()
 		red_alert_voice_unload();
 
 		if (Background_bitmap >= 0) {
-			bm_unload(Background_bitmap);
+			bm_release(Background_bitmap);
 		}
 		
 		Ui_window.destroy();

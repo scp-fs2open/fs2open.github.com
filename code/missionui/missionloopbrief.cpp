@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:40 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-23 04:55:07 $
+ * $Author: taylor $
  *
  * Campaign Loop briefing screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:40  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:55  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -313,7 +316,7 @@ void loop_brief_close()
 
 	// free the bitmap
 	if (Loop_brief_bitmap >= 0){
-		bm_unload(Loop_brief_bitmap);
+		bm_release(Loop_brief_bitmap);
 	}		
 	Loop_brief_bitmap = -1;
 

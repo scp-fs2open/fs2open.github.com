@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TrainingMenu.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-23 04:55:07 $
+ * $Author: taylor $
  *
  * C module that contains functions to drive the Training user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -195,8 +198,8 @@ void training_menu_close()
 		bm_unlock(trainingMenuMask);
 
 		// unload the bitmaps
-		bm_unload(trainingMenuBitmap);
-		bm_unload(trainingMenuMask);
+		bm_release(trainingMenuBitmap);
+		bm_release(trainingMenuMask);
 
 		training_menu_inited = 0;
 		snazzy_menu_close();

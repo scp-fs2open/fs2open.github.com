@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-02-18 21:14:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.29 $
+ * $Date: 2005-02-23 04:55:07 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/02/18 21:14:03  wmcoolmon
+ * Fixes for debriefing window in nonstandard res
+ *
  * Revision 2.27  2005/02/04 20:06:04  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -2728,31 +2731,31 @@ void debrief_close()
 
 	// unload bitmaps
 	if (Background_bitmap >= 0){
-		bm_unload(Background_bitmap);
+		bm_release(Background_bitmap);
 	}
 
 	if (Award_bg_bitmap >= 0){
-		bm_unload(Award_bg_bitmap);
+		bm_release(Award_bg_bitmap);
 	}
 
 	if (Rank_bitmap >= 0){
-		bm_unload(Rank_bitmap);
+		bm_release(Rank_bitmap);
 	}
 
 	if (Medal_bitmap >= 0){
-		bm_unload(Medal_bitmap);
+		bm_release(Medal_bitmap);
 	}
 
 	if (Badge_bitmap >= 0){
-		bm_unload(Badge_bitmap);
+		bm_release(Badge_bitmap);
 	}
 
 	if (Wings_bitmap >= 0) {
-		bm_unload(Wings_bitmap);
+		bm_release(Wings_bitmap);
 	}
 	
 	if (Crest_bitmap >= 0) {
-		bm_unload(Crest_bitmap);
+		bm_release(Crest_bitmap);
 	}
 
 	Debrief_ui_window.destroy();

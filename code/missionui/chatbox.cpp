@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/Chatbox.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-02-04 10:12:31 $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-23 04:55:07 $
  * $Author: taylor $
  *
  * C module to handle all code for multiplayer chat windows
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/02/04 10:12:31  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.4  2004/07/26 20:47:38  Kazan
  * remove MCD complete
  *
@@ -853,13 +856,13 @@ void chatbox_close()
 
 	// unload any bitmaps
 	if(Chatbox_small_bitmap != -1){
-		bm_unload(Chatbox_small_bitmap);
+		bm_release(Chatbox_small_bitmap);
 	}
 	if(Chatbox_big_bitmap != -1){
-		bm_unload(Chatbox_big_bitmap);
+		bm_release(Chatbox_big_bitmap);
 	}
 	if(Chatbox_mp_bitmap != -1){
-		bm_unload(Chatbox_mp_bitmap);
+		bm_release(Chatbox_mp_bitmap);
 	}	
 
 	// clear all the text lines in the

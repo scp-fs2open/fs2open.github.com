@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-02-14 23:56:51 $
+ * $Revision: 2.14 $
+ * $Date: 2005-02-23 04:55:07 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/02/14 23:56:51  taylor
+ * fix mouse click issues in weapon/ship select screen
+ * skip real VCR controls for Closeup check rather than using hardcoded values
+ *
  * Revision 2.12  2005/02/13 08:42:41  wmcoolmon
  * More explicit calculation handling
  *
@@ -651,7 +655,7 @@ void common_set_interface_palette(char *filename)
 
 	// unload the interface bitmap from memory
 	if (InterfacePaletteBitmap != -1) {
-		bm_unload(InterfacePaletteBitmap);
+		bm_release(InterfacePaletteBitmap);
 		InterfacePaletteBitmap = -1;
 	}
 
@@ -673,7 +677,7 @@ void common_free_interface_palette()
 {
 	// unload the interface bitmap from memory
 	if (InterfacePaletteBitmap != -1) {
-		bm_unload(InterfacePaletteBitmap);
+		bm_release(InterfacePaletteBitmap);
 		InterfacePaletteBitmap = -1;
 	}
 
