@@ -1,0 +1,27 @@
+This is still in pretty rough form.
+
+
+=== for people building fs2_open:
+
+Win32-MSVC:
+Use the Freespace2.dsw workspace and build within the IDE.
+
+
+Win32-MinGW:
+  make
+
+
+Linux and other unix variants (NOT YET COMPLETE)
+  ./configure [options]    (options tbd)
+  make -f makefile.linux
+
+
+
+=== for the project maintainers (people who need to 
+=== keep the makefiles up to date):
+
+aclocal
+autoconf
+automake
+./configure
+make
