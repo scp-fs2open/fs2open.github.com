@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-11-12 00:31:45 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2003-11-16 04:09:23 $
+ * $Author: Goober5000 $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/11/12 00:31:45  Kazan
+ * A few multi tweaks - fixed a couple warning-killing collisions between goober and me (kazan)
+ *
  * Revision 2.16  2003/11/11 03:56:11  bobboau
- * shit load of bug fixing, much of it in nebula and bitmap drawing
+ * lots of bug fixing, much of it in nebula and bitmap drawing
  *
  * Revision 2.15  2003/11/11 02:15:44  Goober5000
  * ubercommit - basically spelling and language fixes with some additional

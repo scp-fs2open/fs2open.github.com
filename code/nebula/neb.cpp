@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-11-11 03:56:12 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-16 04:09:21 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/11/11 03:56:12  bobboau
+ * lots of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.9  2003/11/11 02:15:46  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-11-11 03:56:10 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2003-11-16 04:09:19 $
+ * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/11/11 03:56:10  bobboau
+ * lots of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.6  2003/10/23 18:03:23  randomtiger
  * Bobs changes (take 2)
  *

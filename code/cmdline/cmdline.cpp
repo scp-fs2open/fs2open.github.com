@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.44 $
- * $Date: 2003-11-15 18:09:33 $
- * $Author: randomtiger $
+ * $Revision: 2.45 $
+ * $Date: 2003-11-16 04:09:26 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/11/15 18:09:33  randomtiger
+ * Put TGA and JPG stuff on -t32 flag
+ * Put 32 bit PCX stuff on -pcx32 (still has bugs)
+ * Added multisample checking on device initialisation
+ * Changed unrecognised parameter message (as requested) to be more user friendly
+ * Speech now chooses voice based on reg value set by launcher v3.1
+ *
  * Revision 2.43  2003/11/11 03:56:10  bobboau
- * shit load of bug fixing, much of it in nebula and bitmap drawing
+ * lots of bug fixing, much of it in nebula and bitmap drawing
  *
  * Revision 2.42  2003/11/09 06:31:38  Kazan
  * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.59 $
- * $Date: 2003-11-11 03:56:10 $
- * $Author: bobboau $
+ * $Revision: 2.60 $
+ * $Date: 2003-11-16 04:09:25 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2003/11/11 03:56:10  bobboau
+ * lots of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.58  2003/11/11 02:15:43  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled

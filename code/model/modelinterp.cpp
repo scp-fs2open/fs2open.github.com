@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.51 $
- * $Date: 2003-11-11 18:12:41 $
- * $Author: phreak $
+ * $Revision: 2.52 $
+ * $Date: 2003-11-16 04:09:22 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2003/11/11 18:12:41  phreak
+ * changed g3_done_instance() calls to take a parameter to pop the T&L matrices
+ *
  * Revision 2.50  2003/11/11 03:56:12  bobboau
- * shit load of bug fixing, much of it in nebula and bitmap drawing
+ * lots of bug fixing, much of it in nebula and bitmap drawing
  *
  * Revision 2.49  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional

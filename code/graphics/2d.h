@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.15 $
- * $Date: 2003-11-11 03:56:11 $
- * $Author: bobboau $
+ * $Revision: 2.16 $
+ * $Date: 2003-11-16 04:09:24 $
+ * $Author: Goober5000 $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/11/11 03:56:11  bobboau
+ * lots of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.14  2003/11/01 21:59:21  bobboau
  * new matrix handeling code, and fixed some problems with 3D lit verts,
  * several other small fixes

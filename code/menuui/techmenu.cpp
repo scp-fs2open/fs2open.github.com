@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-11-11 03:56:11 $
- * $Author: bobboau $
+ * $Revision: 2.14 $
+ * $Date: 2003-11-16 04:09:21 $
+ * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/11/11 03:56:11  bobboau
+ * lots of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.12  2003/11/11 02:15:43  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
