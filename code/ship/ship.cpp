@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.156 $
- * $Date: 2005-01-28 11:57:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.157 $
+ * $Date: 2005-01-29 08:11:41 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.156  2005/01/28 11:57:36  Goober5000
+ * fixed Bobboau's spelling of 'relative'
+ * --Goober5000
+ *
  * Revision 2.155  2005/01/28 11:06:23  Goober5000
  * changed a bunch of transpose-rotate sequences to use unrotate instead
  * --Goober5000
@@ -4077,12 +4081,14 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 	}
 }
 
+extern float View_zoom;
 void ship_render(object * obj)
 {
 	int num = obj->instance;
 	Assert( num >= 0);
 	ship *shipp = &Ships[num];
 	ship_info *si = &Ship_info[Ships[num].ship_info_index];
+	bool reset_proj_when_done = false;
 	
 
 #if 0
@@ -4139,6 +4145,10 @@ void ship_render(object * obj)
 		{
 			return;
 		}
+
+		//For in-ship cockpits. This is admittedly something of a hack
+		reset_proj_when_done = true;
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.05f, Max_draw_distance);
 	}
 
 	MONITOR_INC( NumShipsRend, 1 );	
@@ -4409,6 +4419,9 @@ void ship_render(object * obj)
 	}
 #endif
 //	mprintf(("ship rendered\n"));
+
+	if(reset_proj_when_done)
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 }
 
 void ship_subsystem_delete(ship *shipp)
