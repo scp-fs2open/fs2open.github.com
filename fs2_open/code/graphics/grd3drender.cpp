@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-09-07 18:14:53 $
- * $Author: randomtiger $
+ * $Revision: 2.19 $
+ * $Date: 2003-09-14 19:01:35 $
+ * $Author: wmcoolmon $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/09/07 18:14:53  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.17  2003/08/31 06:00:41  bobboau
  * an asortment of bugfixes, mostly with the specular code,
  * HUD flickering should be completly gone now
@@ -1482,7 +1490,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	}					
 
 	//BEGIN FINAL SETTINGS
-	if(cell && cell_enabled){
+	if(Cmdline_cell && cell_enabled){
 	
 		if(GLOWMAP < 0){
 			d3d_SetTexture(2, NULL);

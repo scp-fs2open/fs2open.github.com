@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.41 $
- * $Date: 2003-09-07 18:14:52 $
- * $Author: randomtiger $
+ * $Revision: 2.42 $
+ * $Date: 2003-09-14 19:01:16 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/09/07 18:14:52  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.40  2003/09/05 04:25:29  Goober5000
  * well, let's see here...
  *
@@ -2785,7 +2793,7 @@ void game_init()
 	// initialize alpha colors
 	alpha_colors_init();	
 
-	if(cell)cell_shaded_lightmap = bm_load("cellmap");
+	if(Cmdline_cell)cell_shaded_lightmap = bm_load("cellmap");
 	Viewer_mode = 0;
 //	Game_music_paused = 0;
 	Game_paused = 0;

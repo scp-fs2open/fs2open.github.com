@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.30 $
- * $Date: 2003-08-31 06:00:41 $
- * $Author: bobboau $
+ * $Revision: 2.31 $
+ * $Date: 2003-09-14 19:02:06 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/08/31 06:00:41  bobboau
+ * an asortment of bugfixes, mostly with the specular code,
+ * HUD flickering should be completly gone now
+ *
  * Revision 2.29  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -386,6 +390,7 @@
 #include "globalincs/alphacolors.h"
 //#include "weapon/beam.h" //I don't need this after all:\ -Bobboau
 #include "debugconsole/dbugfile.h"
+#include "cmdline/cmdline.h"
 
 // Some debug variables used externally for displaying stats
 #ifndef NDEBUG
@@ -884,7 +889,6 @@ void interp_compute_environment_mapping( vector *nrm, vertex * pnt)
 }
 
 extern int spec;
-extern int cell;
 extern bool cell_enabled;
 
 
@@ -928,7 +932,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 			} else {
 				Interp_list[i]->b = 191;
 			}
-		} else if(cell){
+		} else if(Cmdline_cell){
 			Interp_list[i]->r = 0;
 			Interp_list[i]->g = 0;
 			Interp_list[i]->b = 0;
@@ -1107,7 +1111,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
 					if ( D3D_enabled || OGL_inited )	{
 						light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-						if((Detail.lighting > 2) && (model_current_LOD < 2) && !cell )
+						if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell )
 							light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
 					//	interp_compute_environment_mapping(vp(p+8), Interp_list[i]);
 					} else {
@@ -1119,7 +1123,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 						if ( D3D_enabled || OGL_inited )	{
 							light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-							if((Detail.lighting > 2) && (model_current_LOD < 2) && !cell )
+							if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell )
 								light_apply_specular( &Interp_lighting->spec_r[norm], &Interp_lighting->spec_g[norm], &Interp_lighting->spec_b[norm], Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 						//	interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 
