@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.8 $
- * $Date: 2002-11-06 23:21:06 $
+ * $Revision: 2.9 $
+ * $Date: 2002-11-11 20:05:52 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/11/06 23:21:06  phreak
+ * Fighter flak code, it doesn't blow up in your face anymore!
+ *
  * Revision 2.7  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -6136,7 +6139,9 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	// if trying to fire a corkscrew missile, make sure being called from right place	
 	if ( (wip->wi_flags & WIF_CORKSCREW) && !allow_swarm ) {
-		shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)Corkscrew_num_missiles_fired);
+		//phreak 11-9-02 
+		//changed this from 4 to custom number defined in tables
+		shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);		
 		return 1;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
 	}	
 
