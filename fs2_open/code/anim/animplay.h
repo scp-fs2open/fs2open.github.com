@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.h $
- * $Revision: 2.2 $
- * $Date: 2003-11-11 02:15:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2003-12-08 22:30:02 $
+ * $Author: randomtiger $
  *
  * Header file for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/11/11 02:15:41  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -129,6 +134,13 @@ typedef struct {
 	int ping_pong;
 } anim_play_struct;
 
+enum
+{
+	PAGE_FROM_MEM		  = 0,
+	PAGE_FROM_DISK		  = 1,
+	PAGE_FROM_DISK_FORCED = 2,
+};
+
 extern int Anim_paused;
 
 void				anim_init();
@@ -143,7 +155,7 @@ int				anim_stop_playing(anim_instance* anim_instance);
 int				anim_show_next_frame(anim_instance *instance, float frametime);
 void				anim_release_all_instances(int screen_id = 0);
 void				anim_release_render_instance(anim_instance* instance);
-anim			  *anim_load(char *name, int file_mapped = 0);
+anim			  *anim_load(char *name, int file_mapped = PAGE_FROM_MEM);
 int				anim_free(anim *ptr);
 int				anim_playing(anim_instance *ai);
 int				anim_write_frames_out(char *filename);

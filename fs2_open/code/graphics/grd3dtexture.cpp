@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-12-05 18:17:06 $
+ * $Revision: 2.24 $
+ * $Date: 2003-12-08 22:30:02 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/12/05 18:17:06  randomtiger
+ * D3D now supports loading for DXT1-5 into the texture itself, defaults to on same as OGL.
+ * Fixed bug in old ship choice screen that stopped ani repeating.
+ * Changed all builds (demo, OEM) to use retail reg path, this means launcher can set all them up successfully.
+ *
  * Revision 2.22  2003/12/04 20:39:09  randomtiger
  * Added DDS image support for D3D
  * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
@@ -673,7 +678,7 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort 
 		d3d_free_texture(t);
 	}
 
-#if 0
+#if 1
 	if ( reload )	{
   		mprintf( ("Reloading '%s'\n", bm_get_filename(texture_handle)) );
 	} else {
@@ -737,6 +742,7 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort 
 			tex_w, tex_h,
 			use_mipmapping ? 0 : 1, 
 			use_experiemental_mode ? D3DUSAGE_DYNAMIC : 0,
+		   //	Cmdline_dxt ? default_compressed_format : 
 			d3d8_format, 
 			use_experiemental_mode ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, 
 			&t->d3d8_thandle)))
@@ -1448,24 +1454,21 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags)
 
 	D3DFORMAT use_format  = D3DFMT_UNKNOWN;
 
+	// User is requesting we use compressed textures then pretend that the source is compressed
+	// DX will workout that its not but it means it can use the same code as before
+	if(Cmdline_dxt)
+	{
+		source_desc.Format = default_compressed_format;
+	}	
+
 	// Determine the destination (texture) format to hold the image
 	switch(source_desc.Format)
 	{
-		case D3DFMT_DXT1:  
-		case D3DFMT_DXT2:  
-		case D3DFMT_DXT3:  
-		case D3DFMT_DXT4:  
-		case D3DFMT_DXT5: 
-		{
-			// If this format is supported
-			if(Supports_compression[source_desc.Format-D3DFMT_DXT1] == true)
-			{
-				// Use that format
-				use_format = source_desc.Format;
-				break;
-			}
-			// Otherwise fall over into default case
-		}
+		case D3DFMT_DXT1: if(Supports_compression[0]) {use_format = D3DFMT_DXT1; break;}
+		case D3DFMT_DXT2: if(Supports_compression[1]) {use_format = D3DFMT_DXT2; break;}
+		case D3DFMT_DXT3: if(Supports_compression[2]) {use_format = D3DFMT_DXT3; break;}
+		case D3DFMT_DXT4: if(Supports_compression[3]) {use_format = D3DFMT_DXT4; break;}
+		case D3DFMT_DXT5: if(Supports_compression[4]) {use_format = D3DFMT_DXT5; break;}
 		default:
 		{
 			bool use_alpha_format;
@@ -1488,6 +1491,11 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags)
 	  
 	bool use_mipmapping = Cmdline_d3dmipmap && (flags != TCACHE_TYPE_BITMAP_SECTION);
 
+	DWORD filter = D3DX_FILTER_LINEAR; // Linear, enough to smooth rescales but not too much blur
+
+	if(gr_screen.bits_per_pixel == 16 && ((type == BM_TYPE_TGA) || (type == BM_TYPE_JPG)))
+	  	filter |=D3DX_FILTER_DITHER;
+
 	IDirect3DTexture8 *ptexture = NULL;
 	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(
 		GlobalD3DVars::lpD3DDevice,
@@ -1499,7 +1507,7 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags)
 		0, 
 		use_format,
 		D3DPOOL_MANAGED, 
-		D3DX_FILTER_LINEAR, // Linear, enough to smooth rescales but not too much blur
+		filter,
 	 	D3DX_DEFAULT,
 		0, 
 		&source_desc, 

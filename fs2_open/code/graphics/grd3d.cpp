@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.46 $
- * $Date: 2003-11-29 10:52:09 $
+ * $Revision: 2.47 $
+ * $Date: 2003-12-08 22:30:02 $
  * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/11/29 10:52:09  randomtiger
+ * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Added stats command for ingame stats on memory usage.
+ * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
+ * Added fix for fonts wrapping round in non standard hi res modes.
+ * Changed D3D mipmapping to a good value to suit htl mode.
+ * Added new fog colour method which makes use of the bitmap, making this htl feature backcompatible again.
+ *
  * Revision 2.45  2003/11/19 20:37:24  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -2323,9 +2331,14 @@ void d3d_start_clip(){
 	D3DXPlaneFromPointNormal(&d3d_user_clip_plane, &point, &normal);
 
 	HRESULT hr = GlobalD3DVars::lpD3DDevice->SetClipPlane(0, d3d_user_clip_plane);
-	Assert(hr == D3D_OK);
+  //	Assert(SUCCEEDED(hr));
+	if(FAILED(hr))
+	{
+		mprintf(("Failed to set clip plane\n"));
+	}
+
 	hr = d3d_SetRenderState(D3DRS_CLIPPLANEENABLE , D3DCLIPPLANE0);
-	Assert(hr == D3D_OK);
+	Assert(SUCCEEDED(hr));
 }
 
 /**
