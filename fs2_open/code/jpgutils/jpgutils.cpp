@@ -9,12 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.1 $
- * $Date: 2004-04-26 01:58:17 $
+ * $Revision: 1.2 $
+ * $Date: 2004-04-26 12:39:49 $
  * $Author: taylor $
- *
+ * 
  * source for handling jpeg stuff
- *  
+ * 
+ * $Log: not supported by cvs2svn $
+ * 
  * $NoKeywords: $
  */
 
