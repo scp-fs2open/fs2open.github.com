@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.6 $
- * $Date: 2002-12-02 23:56:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-01-18 19:48:19 $
+ * $Author: phreak $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/12/02 23:56:12  Goober5000
+ * fixed misspelling
+ *
  * Revision 2.5  2002/12/02 20:49:14  Goober5000
  * fixed misspelling of "category" as "catagory"
  *
@@ -334,13 +337,22 @@ typedef struct vertex {
 	ubyte		pad[2];				// pad structure to be 4 byte aligned.
 } vertex;
 
-#define	BMP_AABITMAP			(1<<0)				// antialiased bitmap
+#define	BMP_AABITMAP		(1<<0)				// antialiased bitmap
 #define	BMP_TEX_XPARENT		(1<<1)				// transparent texture
 #define	BMP_TEX_NONDARK		(1<<2)				// nondarkening texture
-#define	BMP_TEX_OTHER			(1<<3)				// so we can identify all "normal" textures
+#define	BMP_TEX_OTHER		(1<<3)				// so we can identify all "normal" textures
+#define BMP_TEX_DXT1		(1<<4)				// dxt1 compressed 8r8g8b1a (24bit)
+#define BMP_TEX_DXT3		(1<<5)				// dxt3 compressed 8r8g8b4a (32bit)
+#define BMP_TEX_DXT5		(1<<6)				// dxt5 compressed 8r8g8b8a (32bit)
+
+//compressed texture types
+#define BMP_TEX_COMP			( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )
+
+//non compressed textures
+#define BMP_TEX_NONCOMP			( BMP_TEX_XPARENT | BMP_TEX_NONDARK | BMP_TEX_OTHER )
 
 // any texture type
-#define	BMP_TEX_ANY				( BMP_TEX_XPARENT | BMP_TEX_NONDARK | BMP_TEX_OTHER )
+#define	BMP_TEX_ANY				( BMP_TEX_COMP | BMP_TEX_NONCOMP )
 
 // max res == 1024x768. max texture size == 256
 #define MAX_BMAP_SECTIONS_X				4
@@ -389,12 +401,12 @@ extern void _cdecl Warning( char * filename, int line, char * format, ... );
 // or, 
 // Error( LOCATION, "Error opening %s", filename );
 
-#if defined(NDEBUG)
+//#if defined(NDEBUG)
 #define Assert(x) do {} while (0)
-#else
-void gr_activate(int);
-#define Assert(x) do { if (!(x)){ gr_activate(0); WinAssert(#x,__FILE__,__LINE__); gr_activate(1); } } while (0)
-#endif
+//#else
+//void gr_activate(int);
+//#define Assert(x) do { if (!(x)){ gr_activate(0); WinAssert(#x,__FILE__,__LINE__); gr_activate(1); } } while (0)
+//#endif
 
 //#define Int3() _asm { int 3 }
 
