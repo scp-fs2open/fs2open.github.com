@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.29 $
- * $Date: 2003-01-06 17:14:52 $
+ * $Revision: 2.30 $
+ * $Date: 2003-01-06 18:50:37 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/01/06 17:14:52  Goober5000
+ * added wing configurable squad logos - put +Squad Logo: filename.pcx as
+ * the last entry in each wing that you want (but the player's squad logo will
+ * still be the squad logo for the player's wing)
+ * --Goober5000
+ *
  * Revision 2.28  2003/01/05 23:41:51  bobboau
  * disabled decals (for now), removed the warp ray thingys,
  * made some better error mesages while parseing weapons and ships tbls,
@@ -2036,6 +2042,7 @@ void ship_level_init()
 	for (i = 0; i < MAX_WINGS; i++ )
 	{
 		Wings[i].num_waves = -1;
+		Wings[i].wing_squad_filename[0] = '\0';
 		Wings[i].wing_insignia_texture = -1;	// Goober5000 - default to no wing insignia
 												// don't worry about releasing textures because
 												// they are released automatically when the model
