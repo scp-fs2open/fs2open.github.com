@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.6 $
- * $Date: 2003-01-07 20:06:44 $
+ * $Revision: 2.7 $
+ * $Date: 2003-01-19 07:02:15 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/01/07 20:06:44  Goober5000
+ * added ai-chase-any-except sexp
+ * --Goober5000
+ *
  * Revision 2.5  2003/01/06 22:57:23  Goober5000
  * implemented keep-safe-distance
  * --Goober5000
@@ -419,6 +423,7 @@ typedef struct ai_class {
 #define	AIS_WARP_3				302
 #define	AIS_WARP_4				303
 #define	AIS_WARP_5				304
+#define AIS_DEPART_TO_BAY		305
 
 //	A node on a path.
 //	Contains global location of point.
