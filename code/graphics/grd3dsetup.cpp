@@ -22,6 +22,7 @@
 #include "graphics/grd3dbmpman.h"
 #include "graphics/grd3dlight.h"
 #include "graphics/grd3dbatch.h"
+#include "graphics/grd3dparticle.h"
 
 #include "debugconsole/timerbar.h"
 #include "debugconsole/dbugfile.h"
@@ -1382,7 +1383,19 @@ bool d3d_inspect_caps()
 	if ( not_good )	{
 		strcpy(Device_init_error, missing_features);
 	//	return false; I dont think it should fail on this - RT
-	}	
+	}  
+	
+	if(Cmdline_d3d_particle)
+	{
+		if(GlobalD3DVars::d3d_caps.MaxPointSize < rt_pointsize)
+		{
+			char buff[100];
+			sprintf(buff,"Your card does not support pointsprites large enough (%f), only up to %f",
+				rt_pointsize, GlobalD3DVars::d3d_caps.MaxPointSize);
+			MessageBox(NULL, buff, "Warning", MB_OK);
+			Cmdline_d3d_particle = 0;
+		}
+	}
 
 	return true;
 }

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.49 $
- * $Date: 2004-01-20 22:37:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2004-01-24 14:31:27 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2004/01/20 22:37:44  Goober5000
+ * First of all, this should be more readable, second of all, old_fog_color wasn't
+ * initialized and VC++ is complaining.  Someone want to fix this?
+ * --Goober5000
+ *
  * Revision 2.48  2003/12/17 23:25:10  phreak
  * added a MAX_BUFFERS_PER_SUBMODEL define so it can be easily changed if we ever want to change the 16 texture limit
  *
@@ -2060,15 +2065,14 @@ void gr_d3d_render_buffer(int idx)
 		int l = int(255.0f*gr_screen.current_alpha);
 		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(l,l,l,l));
 	}else{
-		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
+		d3d_SetRenderState(D3DRS_AMBIENT, ambient_light);
 	}
 	GlobalD3DVars::lpD3DDevice->SetMaterial(&material);
 
-	color old_fog_color;
+	color old_fog_color = gr_screen.current_fog_color;
 
 	if(gr_screen.current_fog_mode != GR_FOGMODE_NONE)//when fogging don't fog unlit things, but rather fade them in a fog like manner -Bobboau
 		if(!lighting_enabled){
-			old_fog_color = gr_screen.current_fog_color;
 			gr_d3d_fog_set(gr_screen.current_fog_mode, 0,0,0, gr_screen.fog_near, gr_screen.fog_far);
 		}
 

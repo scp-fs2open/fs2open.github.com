@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.43 $
- * $Date: 2003-12-08 22:30:02 $
+ * $Revision: 2.44 $
+ * $Date: 2004-01-24 14:31:27 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/12/08 22:30:02  randomtiger
+ * Put render state and other direct D3D calls repetition check back in, provides speed boost.
+ * Fixed bug that caused fullscreen only crash with DXT textures
+ * Put dithering back in for tgas and jpgs
+ *
  * Revision 2.42  2003/12/04 20:39:09  randomtiger
  * Added DDS image support for D3D
  * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
@@ -436,5 +441,6 @@ extern int Cmdline_noglow;
 extern int Cmdline_timerbar;
 extern int Cmdline_query_speech;
 extern int Cmdline_ship_choice_3d;
+extern int Cmdline_d3d_particle;
 
 #endif
