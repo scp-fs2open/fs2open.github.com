@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-01-17 01:48:50 $
+ * $Revision: 2.23 $
+ * $Date: 2003-01-17 04:57:17 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/01/17 01:48:50  Goober5000
+ * added capability to the $Texture replace code to substitute the textures
+ * without needing and extra model, however, this way you can't substitute
+ * transparent or animated textures
+ * --Goober5000
+ *
  * Revision 2.21  2003/01/15 08:57:23  Goober5000
  * assigning duplicate models to ships now works; committing so I have a base
  * to fall back to as I work on texture replacement
@@ -2340,30 +2346,8 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	{
 		char *p;
 
-		while ((Num_texture_replacements < MAX_TEXTURE_REPLACEMENTS) && (optional_string("+old:")))
+		while ((objp->num_texture_replacements < MAX_MODEL_TEXTURES) && (optional_string("+old:")))
 		{
-/*			strcpy(Texture_replace[Num_texture_replacements].ship_name, objp->name);
-			stuff_string(Texture_replace[Num_texture_replacements].old_texture, F_NAME, NULL);
-			required_string("+new:");
-			stuff_string(Texture_replace[Num_texture_replacements].new_texture, F_NAME, NULL);
-
-			// get rid of extensions
-			p = strchr( Texture_replace[Num_texture_replacements].old_texture, '.' );
-			if ( p )
-			{
-				mprintf(( "Extraneous extension found on replacement texture %s!\n", Texture_replace[Num_texture_replacements].old_texture));
-				*p = 0;
-			}
-			p = strchr( Texture_replace[Num_texture_replacements].new_texture, '.' );
-			if ( p )
-			{
-				mprintf(( "Extraneous extension found on replacement texture %s!\n", Texture_replace[Num_texture_replacements].new_texture));
-				*p = 0;
-			}
-
-			// increment
-			Num_texture_replacements++;
-*/
 			stuff_string(objp->replacement_textures[objp->num_texture_replacements].old_texture, F_NAME, NULL);
 			required_string("+new:");
 			stuff_string(objp->replacement_textures[objp->num_texture_replacements].new_texture, F_NAME, NULL);
@@ -2387,11 +2371,47 @@ int parse_object(mission *pm, int flag, p_object *objp)
 
 			if (objp->replacement_textures[objp->num_texture_replacements].new_texture_id < 0)
 			{
-				mprintf(("Could not load replacement texture %s\n", objp->replacement_textures[objp->num_texture_replacements].new_texture));
+				Warning(LOCATION, "Could not load replacement texture %s for ship %s\n", objp->replacement_textures[objp->num_texture_replacements].new_texture, objp->name);
 			}
 
 			// increment
 			objp->num_texture_replacements++;
+		}
+	}
+
+	// duplicate model texture replacement - Goober5000
+	if ( optional_string("$Duplicate Model Texture Replace:") )
+	{
+		if (objp->num_texture_replacements > 0)
+		{
+			Warning(LOCATION, "Warning: Both $Texture Replace and $Duplicate Model Texture Replace used on the same ship.\n");
+		}
+
+		char *p;
+
+		while ((Num_texture_replacements < MAX_TEXTURE_REPLACEMENTS) && (optional_string("+old:")))
+		{
+			strcpy(Texture_replace[Num_texture_replacements].ship_name, objp->name);
+			stuff_string(Texture_replace[Num_texture_replacements].old_texture, F_NAME, NULL);
+			required_string("+new:");
+			stuff_string(Texture_replace[Num_texture_replacements].new_texture, F_NAME, NULL);
+
+			// get rid of extensions
+			p = strchr( Texture_replace[Num_texture_replacements].old_texture, '.' );
+			if ( p )
+			{
+				mprintf(( "Extraneous extension found on duplicate model replacement texture %s!\n", Texture_replace[Num_texture_replacements].old_texture));
+				*p = 0;
+			}
+			p = strchr( Texture_replace[Num_texture_replacements].new_texture, '.' );
+			if ( p )
+			{
+				mprintf(( "Extraneous extension found on duplicate model replacement texture %s!\n", Texture_replace[Num_texture_replacements].new_texture));
+				*p = 0;
+			}
+
+			// increment
+			Num_texture_replacements++;
 		}
 
 		// if we ran out of texture replacement slots, don't read any more
@@ -2400,7 +2420,6 @@ int parse_object(mission *pm, int flag, p_object *objp)
 			skip_to_start_of_strings("#Wings", "$Name");
 		}
 	}
-
 
 	objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
 

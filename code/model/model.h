@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.16 $
- * $Date: 2003-01-17 01:48:49 $
+ * $Revision: 2.17 $
+ * $Date: 2003-01-17 04:57:17 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/01/17 01:48:49  Goober5000
+ * added capability to the $Texture replace code to substitute the textures
+ * without needing and extra model, however, this way you can't substitute
+ * transparent or animated textures
+ * --Goober5000
+ *
  * Revision 2.15  2003/01/16 06:49:11  Goober5000
  * yay! got texture replacement to work!!!
  * --Goober5000
@@ -806,7 +812,7 @@ typedef struct polymodel {
 
 // texture replacement info - Goober5000
 #define TEXTURE_NAME_LENGTH	128
-#define MAX_TEXTURE_REPLACEMENTS	20
+#define MAX_TEXTURE_REPLACEMENTS	50
 
 typedef struct texture_replace {
 	char ship_name[NAME_LENGTH];
