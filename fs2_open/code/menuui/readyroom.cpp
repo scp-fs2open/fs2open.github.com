@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-04-05 11:09:22 $
+ * $Revision: 2.6 $
+ * $Date: 2003-04-06 03:56:54 $
  * $Author: Goober5000 $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/04/05 11:09:22  Goober5000
+ * fixed some fiddly bits with scrolling and ui stuff
+ * --Goober5000
+ *
  * Revision 2.4  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -180,6 +184,11 @@ int Campaign_list_coords[GR_NUM_RESOLUTIONS][4] = {
 #define CUTSCENES_BUTTON		9
 #define CREDITS_BUTTON			10
 
+#define X_COORD		0
+#define Y_COORD		1
+#define W_COORD		2
+#define H_COORD		3
+
 #define CAMPAIGN_MISSION_HASH_SIZE 307
 
 struct sim_room_buttons {
@@ -242,6 +251,11 @@ char *Campaign_mask_filename[GR_NUM_RESOLUTIONS] = {
 	"2_Campaign-m"
 };
 
+char *Sim_room_slider_filename[GR_NUM_RESOLUTIONS] = {
+	"slider",
+	"2_slider"
+};
+
 // misc text. ("Mission" and "Filename"
 #define NUM_SIM_MISC_TEXT				2
 #define SIM_MISC_TEXT_MISSION			0
@@ -254,6 +268,15 @@ int Sim_misc_text_coords[GR_NUM_RESOLUTIONS][NUM_SIM_MISC_TEXT][2] = {
 	{ // GR_1024
 		{43, 155},
 		{491, 155}
+	}
+};
+
+int Sim_room_slider_coords[GR_NUM_RESOLUTIONS][4] = {
+	{ // GR_640
+		4, 131, 20, 245
+	},
+	{ // GR_1024
+		5, 209, 32, 392
 	}
 };
 
@@ -302,6 +325,9 @@ static int list_h;
 static int Background_bitmap;
 static UI_WINDOW Ui_window;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
+
+// slider stuff
+static UI_SLIDER2 Sim_room_slider;
 
 typedef struct hash_node {
 	hash_node *next;
@@ -656,7 +682,7 @@ int build_campaign_mission_list_do_frame()
 // First time through, it builds list, next time it uses precompiled list
 void sim_room_build_listing()
 {
-	int i, y;
+	int i, y, max_num_entries_viewable;
 	int font_height = gr_get_font_height();
 	char full_filename[256];
 
@@ -694,8 +720,8 @@ void sim_room_build_listing()
 		list_h -= font_height - 2;
 
 		if (!Campaign_mission_names_inited) {  // Is this the first time through
-			popup_till_condition(build_campaign_mission_list_do_frame, POPUP_CANCEL, XSTR("Loading campaign missions",992));
 			// builds list, adds sim room line and sets Campaign_mission_names_inited
+			popup_till_condition(build_campaign_mission_list_do_frame, POPUP_CANCEL, XSTR("Loading campaign missions",992));
 		} else {
 			for (i=0; i<Num_campaign_missions_with_info; i++) {
 				if (Campaign_mission_names[i]) {
@@ -709,11 +735,15 @@ void sim_room_build_listing()
 					}					
 
 					sim_room_line_add(READYROOM_LINE_CMISSION, Campaign_mission_names[i], Campaign.missions[i].name, list_x1 + C_SUBTEXT_X, y, flags);
-					y += font_height;
+					y += font_height + 2;	// Goober5000 - added +2 to conform with above
 				}
 			}
 		}
 	}
+
+	// set appropriate slider size
+	max_num_entries_viewable = list_h / (font_height + 2);
+	Sim_room_slider.set_numberItems((Num_lines > max_num_entries_viewable) ? (Num_lines - max_num_entries_viewable) : 0);
 }
 
 int sim_room_line_query_visible(int n)
@@ -737,6 +767,7 @@ void sim_room_scroll_screen_up()
 			Scroll_offset--;
 			gamesnd_play_iface(SND_SCROLL);
 
+			Sim_room_slider.forceUp();
 		} else
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 
@@ -747,7 +778,10 @@ void sim_room_scroll_screen_up()
 		Scroll_offset--;
 		Assert(Selected_line > Scroll_offset);
 		while (!sim_room_line_query_visible(Selected_line))
+		{
 			Selected_line--;
+			Sim_room_slider.forceUp();
+		}
 
 		gamesnd_play_iface(SND_SCROLL);
 
@@ -760,7 +794,10 @@ void sim_room_scroll_line_up()
 	if (Selected_line) {
 		Selected_line--;
 		if (Selected_line < Scroll_offset)
+		{
 			Scroll_offset = Selected_line;
+			Sim_room_slider.forceUp();
+		}
 
 		gamesnd_play_iface(SND_SCROLL);
 
@@ -775,6 +812,7 @@ void sim_room_scroll_screen_down()
 			Scroll_offset++;
 			gamesnd_play_iface(SND_SCROLL);
 
+			Sim_room_slider.forceDown();
 		} else
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 
@@ -786,6 +824,7 @@ void sim_room_scroll_screen_down()
 		while (!sim_room_line_query_visible(Selected_line)) {
 			Selected_line++;
 			Assert(Selected_line < Num_lines);
+			Sim_room_slider.forceDown();
 		}
 
 		gamesnd_play_iface(SND_SCROLL);
@@ -801,7 +840,10 @@ void sim_room_scroll_line_down()
 
 		Assert(Selected_line > Scroll_offset);
 		while (!sim_room_line_query_visible(Selected_line))
+		{
 			Scroll_offset++;
+			Sim_room_slider.forceDown();
+		}
 
 		gamesnd_play_iface(SND_SCROLL);
 
@@ -810,11 +852,11 @@ void sim_room_scroll_line_down()
 }
 
 /*  Goober5000 - why are there two nearly identical functions?
-	(campaign_room_reset_campaign and ready_room_reset_campaign)
+	(campaign_room_reset_campaign and sim_room_reset_campaign)
 	Looks like this function should be deprecated...
 
 // returns: 0 = success, !0 = aborted or failed
-int ready_room_reset_campaign()
+int sim_room_reset_campaign()
 {
 	int z, rval = 1;
 
@@ -972,10 +1014,12 @@ int sim_room_button_pressed(int n)
 	switch (n) {
 		case SCROLL_UP_BUTTON:
 			sim_room_scroll_screen_up();
+			Sim_room_slider.forceUp();
 			break;
 
 		case SCROLL_DOWN_BUTTON:
 			sim_room_scroll_screen_down();
+			Sim_room_slider.forceDown();
 			break;
 
 		case MISSION_TAB:
@@ -1029,6 +1073,11 @@ int sim_room_button_pressed(int n)
 	}
 
 	return 0;
+}
+
+// do nothing
+void sim_room_scroll_capture()
+{
 }
 
 // ---------------------------------------------------------------------
@@ -1135,6 +1184,9 @@ void sim_room_init()
 	strcpy(wild_card, NOX("*"));
 	strcat(wild_card, FS_MISSION_FILE_EXT);
 	Num_standalone_missions = cf_get_file_list(MAX_MISSIONS, Mission_filenames, CF_TYPE_MISSIONS, wild_card, CF_SORT_NAME);
+
+	// set up slider with 0 items to start
+	Sim_room_slider.create(&Ui_window, Sim_room_slider_coords[gr_screen.res][X_COORD], Sim_room_slider_coords[gr_screen.res][Y_COORD], Sim_room_slider_coords[gr_screen.res][W_COORD], Sim_room_slider_coords[gr_screen.res][H_COORD], 0, Sim_room_slider_filename[gr_screen.res], &sim_room_scroll_screen_up, &sim_room_scroll_screen_down, &sim_room_scroll_capture);
 
 	Num_campaign_missions_with_info = Num_standalone_missions_with_info = Standalone_mission_names_inited = Campaign_names_inited = Campaign_mission_names_inited = 0;
 	sim_room_build_listing();
