@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2004-11-21 11:27:31 $
+ * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2004/02/16 11:47:33  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -157,8 +160,8 @@
 
 extern int Gr_cursor;
 
-#define GR_SCREEN_PTR(type,x,y) ((type *)(uint(gr_screen.offscreen_buffer) + uint(((x)+gr_screen.offset_x)*sizeof(type)) + uint(((y)+gr_screen.offset_y)*gr_screen.rowsize)))
-#define GR_SCREEN_PTR_SIZE(bpp,x,y) ((uint)(uint(gr_screen.offscreen_buffer) + uint(((x)+gr_screen.offset_x)*(bpp)) + uint(((y)+gr_screen.offset_y)*gr_screen.rowsize)))
+#define GR_SCREEN_PTR(type,x,y) ((type *)(ptr_u(gr_screen.offscreen_buffer) + ptr_u(((x)+gr_screen.offset_x)*sizeof(type)) + ptr_u(((y)+gr_screen.offset_y)*gr_screen.rowsize)))
+#define GR_SCREEN_PTR_SIZE(bpp,x,y) ((ptr_u)(ptr_u(gr_screen.offscreen_buffer) + ptr_u(((x)+gr_screen.offset_x)*(bpp)) + ptr_u(((y)+gr_screen.offset_y)*gr_screen.rowsize)))
 
 extern ubyte Gr_original_palette[768];		// The palette 
 extern ubyte Gr_current_palette[768];
