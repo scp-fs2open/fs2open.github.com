@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.30 $
- * $Date: 2003-10-27 23:04:21 $
+ * $Revision: 2.31 $
+ * $Date: 2003-10-29 02:09:18 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/10/27 23:04:21  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.29  2003/10/26 00:31:58  randomtiger
  * Fixed hulls not drawing (with Phreaks advise).
  * Put my 32bit PCX loading under PCX_32 compile flag until its working.
@@ -1031,7 +1039,7 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 	// Some checks to make sure this function isnt used when it shouldnt be
 	Assert(flags & TMAP_HTL_3D_UNLIT);
 
-//	TIMERBAR_PUSH(TIMERBAR_3D_UNLIT);
+	TIMERBAR_PUSH(2);
 
 	float u_scale = 1.0f, v_scale = 1.0f;
 	int bw = 1, bh = 1;		
@@ -1214,7 +1222,7 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 	}
 
  	d3d_DrawPrimitive(D3DVT_LVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
-//	TIMERBAR_POP();
+	TIMERBAR_POP();
 
 }
 
@@ -1236,11 +1244,12 @@ bool cell_enabled = false;
 extern bool rendering_shockwave;
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
-
 	if(!Cmdline_nohtl && (flags & TMAP_HTL_3D_UNLIT)) {
 		gr_d3d_tmapper_internal_3d_unlit(nverts, verts, flags, is_scaler);
 		return;
 	}
+
+	TIMERBAR_PUSH(1);
 
 	int i;
 	float u_scale = 1.0f, v_scale = 1.0f;
@@ -1630,6 +1639,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 		}
 	}
+
+	TIMERBAR_POP();
 
 }
 
@@ -3067,11 +3078,17 @@ void gr_d3d_print_screen(char *filename)
 
 void d3d_render_timer_bar(int colour, float x, float y, float w, float h)
 {
-	static D3DCOLOR pre_set_colours[TIMERBAR_COLOUR_MAX] = 
+	static D3DCOLOR pre_set_colours[MAX_NUM_TIMERBARS] = 
 	{
 		0xffff0000, // red
 		0xff00ff00, // green
 		0xff0000ff, // blue
+
+		0xff0ffff0, 
+		0xfffff000, 
+		0xffff00ff,
+		0xffff0f0f,
+		0xffffffff
 	};
 
 	D3DTLVERTEX d3d_verts[4];

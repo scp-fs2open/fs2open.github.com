@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.41 $
- * $Date: 2003-10-25 03:26:39 $
- * $Author: phreak $
+ * $Revision: 2.42 $
+ * $Date: 2003-10-29 02:09:18 $
+ * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/10/25 03:26:39  phreak
+ * fixed some old bugs that reappeared after RT committed his texture code
+ *
  * Revision 2.40  2003/10/24 17:35:05  randomtiger
  * Implemented support for 32bit TGA and JPG for D3D
  * Also 32 bit PCX, but it still has some bugs to be worked out
@@ -482,6 +485,7 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #include "io/timer.h"
 #include "ddsutils/ddsutils.h"
 #include "model/model.h"
+#include "debugconsole/timerbar.h"
 
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")
@@ -1173,6 +1177,9 @@ void gr_opengl_flip()
 	} while (error != GL_NO_ERROR);
 
 #endif
+
+	TIMERBAR_END_FRAME();
+	TIMERBAR_START_FRAME();
 	
 	if(!SwapBuffers(dev_context))
 	{
@@ -2255,7 +2262,6 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 		opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha,1);
 		opengl_reset_spec_mapping();
 	}
-
 }
 
 
@@ -4367,6 +4373,45 @@ void gr_opengl_start_clip_plane()
 	glEnable(GL_CLIP_PLANE0);
 }
 
+void ogl_render_timer_bar(int colour, float x, float y, float w, float h)
+{
+	static float pre_set_colours[MAX_NUM_TIMERBARS][3] = 
+	{
+		1.0,0,
+		0,1.0,
+		0,0,1,
+
+		0.2f,1.0f,0.8f, 
+		1.0f,0.0f,8.0f, 
+		1.0f,0.0f,1.0f,
+		1.0f,0.2f,0.2f,
+		1.0f,1.0f,1.0f
+	};
+
+	static float max_fw = (float) gr_screen.max_w; 
+	static float max_fh = (float) gr_screen.max_h; 
+
+	x *= max_fw;
+	y *= max_fh;
+	w *= max_fw;
+	h *= max_fh;
+
+	y += 5;
+
+	gr_opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
+
+	glColor3f(
+		pre_set_colours[colour][0], 
+		pre_set_colours[colour][1], 
+		pre_set_colours[colour][2]);
+
+	glBegin(GL_QUADS);
+		glVertex2f(x,y);
+		glVertex2f(x,y+h);
+		glVertex2f(x+w,y+h);
+		glVertex2f(x+w,y);
+	glEnd();
+}
 
 extern char *Osreg_title;
 void gr_opengl_init(int reinit)
@@ -4805,7 +4850,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_ext;
 	else
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_no_combine;
-		
+
+	TIMERBAR_SET_DRAW_FUNC(ogl_render_timer_bar);	
 }
 
 DCF(min_ogl, "minimizes opengl")

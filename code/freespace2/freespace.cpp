@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.52 $
- * $Date: 2003-10-27 23:04:21 $
+ * $Revision: 2.53 $
+ * $Date: 2003-10-29 02:09:17 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2003/10/27 23:04:21  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.51  2003/10/26 00:31:58  randomtiger
  * Fixed hulls not drawing (with Phreaks advise).
  * Put my 32bit PCX loading under PCX_32 compile flag until its working.
@@ -4745,9 +4753,6 @@ void game_frame(int paused)
 
 	}
 
-	TIMERBAR_SWITCH_TYPE(TIMERBAR_D3DCODE);
-
-
 	if (!Pre_player_entry) {
 		if (! (Game_mode & GM_STANDALONE_SERVER)) {
 			clear_time1 = timer_get_fixed_seconds();
@@ -4877,8 +4882,6 @@ void game_frame(int paused)
 		demo_close();
 	}
 #endif
-
-	TIMERBAR_SWITCH_TYPE(TIMERBAR_DEFAULT);
 }
 
 #define	MAX_FRAMETIME	(F1_0/4)		// Frametime gets saturated at this.  Changed by MK on 11/1/97.

@@ -930,6 +930,12 @@ bool d3d_init_device()
 	extern int D3D_window;
 	GlobalD3DVars::D3D_window = Cmdline_window ? true : false;
 
+	// Get caps
+	bool got_caps = 
+		SUCCEEDED(
+			GlobalD3DVars::lpD3D->GetDeviceCaps(
+				adapter_choice, D3DDEVTYPE_HAL, &GlobalD3DVars::d3d_caps));
+
 	if (GlobalD3DVars::D3D_window) {	
 		// If we go windowed, then we need to adjust some other present parameters		
 		if (FAILED(GlobalD3DVars::lpD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode )))
@@ -995,7 +1001,11 @@ bool d3d_init_device()
 		}
 
 		GlobalD3DVars::d3dpp.FullScreen_RefreshRateInHz      = D3DPRESENT_RATE_DEFAULT;
-		GlobalD3DVars::d3dpp.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+		GlobalD3DVars::d3dpp.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
+
+		if(got_caps && GlobalD3DVars::d3d_caps.PresentationIntervals & D3DPRESENT_INTERVAL_IMMEDIATE) {
+			GlobalD3DVars::d3dpp.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+		}
 
 		GlobalD3DVars::d3dpp.Windowed		  = FALSE;
 	}
@@ -1014,13 +1024,8 @@ bool d3d_init_device()
 
 	// Use a pure device if we can, it really speeds things up
 	// However it means we cant use Get* functions (aside from GetFrontBuffer, GetCaps, etc)
-	if(SUCCEEDED(GlobalD3DVars::lpD3D->GetDeviceCaps(
-		adapter_choice, D3DDEVTYPE_HAL, &GlobalD3DVars::d3d_caps))) {
-
-		if(GlobalD3DVars::d3d_caps.DevCaps & D3DDEVCAPS_PUREDEVICE)
-		{
-	 		vptypes[0] |= D3DCREATE_PUREDEVICE;
-		}
+	if(got_caps && GlobalD3DVars::d3d_caps.DevCaps & D3DDEVCAPS_PUREDEVICE) {
+	 	vptypes[0] |= D3DCREATE_PUREDEVICE;
 	}
 
 	bool have_device = false;
