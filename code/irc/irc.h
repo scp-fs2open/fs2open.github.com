@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.7 $
- * $Date: 2005-02-04 20:06:04 $
- * $Author: taylor $
+ * $Revision: 1.8 $
+ * $Date: 2005-03-27 21:06:31 $
+ * $Author: mrduckman $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/02/04 20:06:04  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 1.6  2004/08/11 05:06:25  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -162,6 +165,7 @@ class irc_client
 		void Notice(std::string target, std::string message);
 		void Quit(std::string message="");
 		void Oper(std::string user, std::string pass);
+		void Kill(std::string nick, std::string message);
 		void UserHost(std::string target);
 
 

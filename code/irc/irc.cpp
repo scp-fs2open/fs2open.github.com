@@ -10,11 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-03-02 21:18:19 $
- * $Author: taylor $
+ * $Revision: 1.13 $
+ * $Date: 2005-03-27 21:06:31 $
+ * $Author: mrduckman $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/03/02 21:18:19  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 1.11  2005/02/04 20:06:04  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -456,9 +461,10 @@ void irc_client::ParseForCommand(std::string UserInput)
 		//NICK <nick>
 		Nick(parts[1]);
 	}
-	else if (StrIcmp(parts[0], "/Mode"))
+	else if (StrIcmp(parts[0], "/mode"))
 	{
 		//MODE <channel> <modes> [targets]
+		// May also be /MODE <NICK> <MODES> -- mrduckman
 		params = ExtractParams(parts[1], 3);
 		Mode(params[0], params[1], params[2]);
 		
@@ -486,22 +492,28 @@ void irc_client::ParseForCommand(std::string UserInput)
 		params = ExtractParams(parts[1], 2);
 		PrivateMessage(params[0], params[1]);
 	} 
-	else if (StrIcmp(parts[0], "/"))
+	else if (StrIcmp(parts[0], "/notice"))
 	{
 		//NOTICE <target> :<message>
 		params = ExtractParams(parts[1], 2);
 		Notice(params[0], params[1]);
 	} 
-	else if (StrIcmp(parts[0], "/"))
+	else if (StrIcmp(parts[0], "/quit"))
 	{
 		//QUIT :[message]
 		Quit(parts[1]);
 	} 
-	else if (StrIcmp(parts[0], "/"))
+	else if (StrIcmp(parts[0], "/oper"))
 	{
 		//OPER <user> <pass>
 		params = ExtractParams(parts[1], 2);
 		Oper(params[0], params[1]);
+	} 
+	else if (StrIcmp(parts[0], "/kill"))
+	{
+		//KILL <nick> <cause>
+		params = ExtractParams(parts[1], 2);
+		Kill(params[0], params[1]);
 	} 
 	else if (StrIcmp(parts[0], "/raw"))
 	{
@@ -651,6 +663,15 @@ void irc_client::Oper(std::string user, std::string pass)
 //OPER <user> <pass>
 {
 	std::string command = "OPER " + user + " " + pass;
+	PutRaw(command);
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+void irc_client::Kill(std::string nick, std::string message);
+//KILL <nick> <cause>
+{
+	std::string command = "KILL " + nick + " " + message;
 	PutRaw(command);
 }
 
