@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.139 $
- * $Date: 2005-03-14 23:34:59 $
+ * $Revision: 2.140 $
+ * $Date: 2005-03-15 07:26:52 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.139  2005/03/14 23:34:59  Goober5000
+ * properly fixed the out-of-bounds error, as well as a few other errors of the same kind
+ * --Goober5000
+ *
  * Revision 2.138  2005/03/14 23:33:22  Goober5000
  * rolled back Phreak's commit
  * --Goober5000
@@ -983,9 +987,11 @@ sexp_oper Operators[] = {
 	{ "or",								OP_OR,							2,	INT_MAX,	},
 	{ "not",								OP_NOT,							1, 1,			},
 	{ "=",								OP_EQUALS,						2,	INT_MAX,	},
-	{ ">",								OP_GREATER_THAN,				2,	2,			},
-	{ "<",								OP_LESS_THAN,					2,	2,			},
-	{ "is-iff",							OP_IS_IFF,						2, INT_MAX,	},
+	{ ">",								OP_GREATER_THAN,				2,	INT_MAX,	},
+	{ "<",								OP_LESS_THAN,					2,	INT_MAX,	},
+	{ "string-equals",						OP_STRING_EQUALS,				2,	INT_MAX,	},
+	{ "string-greater-than",				OP_STRING_GREATER_THAN,			2,	INT_MAX,	},
+	{ "string-less-than",					OP_STRING_LESS_THAN,			2,	INT_MAX,	},
 	{ "has-time-elapsed",			OP_HAS_TIME_ELAPSED,			1,	1,			},
 
 	{ "is-goal-true-delay",					OP_GOAL_TRUE_DELAY,				2, 2,	},
@@ -1038,6 +1044,7 @@ sexp_oper Operators[] = {
 	{ "is-friendly-stealth-visible",		OP_IS_FRIENDLY_STEALTH_VISIBLE,	1, 1, },
 	{ "is_tagged",								OP_IS_TAGGED,							1, 1			},
 	{ "has-been-tagged-delay",				OP_HAS_BEEN_TAGGED_DELAY,			2, INT_MAX,	},
+	{ "is-iff",							OP_IS_IFF,						2, INT_MAX,	},
 	{ "is-ai-class",					OP_IS_AI_CLASS,					2, INT_MAX,	},
 	{ "is-ship-type",					OP_IS_SHIP_TYPE,					2, INT_MAX,	},
 	{ "is-ship-class",					OP_IS_SHIP_CLASS,					2, INT_MAX,	},
@@ -3824,58 +3831,96 @@ int sexp_not( int n )
 	return !result;
 }
 
-int sexp_gt(int n)
+// Goober5000
+int sexp_number_compare(int n, int op)
 {
-	int exp1, exp2;
+	int first_node = n;
+	int current_node;
+	int first_number = eval_sexp(first_node);
+	int current_number;
 
-	exp1 = eval_sexp( n );
-	exp2 = eval_sexp( CDR(n) );
-	
-	// check for the NAN value
-	if ( ( Sexp_nodes[CAR(n)].value == SEXP_NAN ) || ( Sexp_nodes[CDR(n)].value == SEXP_NAN ) )
-		return 0;
-	else if ( ( Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER ) || ( Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER ) )
-		return SEXP_KNOWN_FALSE;
+	// bail on NANs
+	if (CAR(first_node) != -1)
+	{
+		if (Sexp_nodes[CAR(first_node)].value == SEXP_NAN) return SEXP_FALSE;
+		if (Sexp_nodes[CAR(first_node)].value == SEXP_NAN_FOREVER) return SEXP_KNOWN_FALSE;
+	}
+	if (CDR(first_node) != -1)
+	{
+		if (Sexp_nodes[CDR(first_node)].value == SEXP_NAN) return SEXP_FALSE;
+		if (Sexp_nodes[CDR(first_node)].value == SEXP_NAN_FOREVER) return SEXP_KNOWN_FALSE;
+	}
 
-	if ( exp1 > exp2 )
-		return 1;
-	return 0;
+	// compare first node with each of the others
+	for (current_node = CDR(first_node); current_node != -1; current_node = CDR(current_node))
+	{
+		// bail on NANs
+		if (CAR(current_node) != -1)
+		{
+			if (Sexp_nodes[CAR(current_node)].value == SEXP_NAN) return SEXP_FALSE;
+			if (Sexp_nodes[CAR(current_node)].value == SEXP_NAN_FOREVER) return SEXP_KNOWN_FALSE;
+		}
+		if (CDR(current_node) != -1)
+		{
+			if (Sexp_nodes[CDR(current_node)].value == SEXP_NAN) return SEXP_FALSE;
+			if (Sexp_nodes[CDR(current_node)].value == SEXP_NAN_FOREVER) return SEXP_KNOWN_FALSE;
+		}
+
+		current_number = eval_sexp(current_node);
+
+		// must satisfy our particular operator
+		switch(op)
+		{
+			case OP_EQUALS:
+				if (first_number != current_number) return SEXP_FALSE;
+				break;
+
+			case OP_GREATER_THAN:
+				if (first_number <= current_number) return SEXP_FALSE;
+				break;
+
+			case OP_LESS_THAN:
+				if (first_number >= current_number) return SEXP_FALSE;
+				break;
+		}
+	}
+
+	// it satisfies the operator for all the arguments
+	return SEXP_TRUE;
 }
 
-int sexp_lt(int n)
+// Goober5000
+int sexp_string_compare(int n, int op)
 {
-	int exp1, exp2;
+	int first_node = n;
+	int current_node;
+	int val;
+	char *first_string = CTEXT(first_node);
 
-	exp1 = eval_sexp( n );
-	exp2 = eval_sexp( CDR(n) );
+	// compare first node with each of the others
+	for (current_node = CDR(first_node); current_node != -1; current_node = CDR(current_node))
+	{
+		val = strcmp(first_string, CTEXT(current_node));
 
-		// check for the NAN value
-	if ( ( Sexp_nodes[CAR(n)].value == SEXP_NAN ) || ( Sexp_nodes[CDR(n)].value == SEXP_NAN ) )
-		return 0;
-	else if ( ( Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER ) || ( Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER ) )
-		return SEXP_KNOWN_FALSE;
+		// must satisfy our particular operator
+		switch(op)
+		{
+			case OP_STRING_EQUALS:
+				if (val != 0) return SEXP_FALSE;
+				break;
 
-	if ( exp1 < exp2 )
-		return 1;
-	return 0;
-}
+			case OP_STRING_GREATER_THAN:
+				if (val <= 0) return SEXP_FALSE;
+				break;
 
-int sexp_equal(int n)
-{
-	int exp1, exp2;
+			case OP_STRING_LESS_THAN:
+				if (val >= 0) return SEXP_FALSE;
+				break;
+		}
+	}
 
-	exp1 = eval_sexp( n );
-	exp2 = eval_sexp( CDR(n) );
-
-		// check for the NAN value
-	if ( ( Sexp_nodes[CAR(n)].value == SEXP_NAN ) || ( Sexp_nodes[CDR(n)].value == SEXP_NAN ) )
-		return 0;
-	else if ( ( Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER ) || ( Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER ) )
-		return SEXP_KNOWN_FALSE;
-
-	if ( exp1 == exp2 )
-		return 1;
-	return 0;
+	// it satisfies the operator for all the arguments
+	return SEXP_TRUE;
 }
 
 //return the number of ships of a given team in the area battle
@@ -12824,15 +12869,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_GREATER_THAN:
-				sexp_val = sexp_gt( node );
-				break;
-				
 			case OP_LESS_THAN:
-				sexp_val = sexp_lt( node );
+			case OP_EQUALS:
+				sexp_val = sexp_number_compare( node, op_num );
 				break;
 
-			case OP_EQUALS:
-				sexp_val = sexp_equal( node );
+			case OP_STRING_GREATER_THAN:
+			case OP_STRING_LESS_THAN:
+			case OP_STRING_EQUALS:
+				sexp_val = sexp_string_compare( node, op_num );
 				break;
 
 			case OP_IS_IFF:
@@ -14177,6 +14222,9 @@ int query_operator_return_type(int op)
 		case OP_EQUALS:
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
+		case OP_STRING_EQUALS:
+		case OP_STRING_GREATER_THAN:
+		case OP_STRING_LESS_THAN:
 		case OP_IS_DESTROYED:
 		case OP_IS_SUBSYSTEM_DESTROYED:
 		case OP_IS_DISABLED:
@@ -14578,6 +14626,11 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_MAX:
 		case OP_AVG:
 			return OPF_NUMBER;
+
+		case OP_STRING_EQUALS:
+		case OP_STRING_GREATER_THAN:
+		case OP_STRING_LESS_THAN:
+			return OPF_STRING;
 
 		case OP_HAS_TIME_ELAPSED:
 		case OP_SPEED:
