@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-03-20 23:20:46 $
+ * $Revision: 2.18 $
+ * $Date: 2003-03-29 09:42:05 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/03/20 23:20:46  Goober5000
+ * comments
+ * --Goober500
+ *
  * Revision 2.16  2003/03/02 17:19:45  Goober5000
  * commented an unneeded variable
  * -- Goober5000
@@ -2489,7 +2493,7 @@ int beam_collide_ship(obj_pair *pair)
 	if(widest > pair->b->radius * BEAM_AREA_PERCENT){
 		test_collide.radius = beam_get_widest(b) * 0.5f;
 		//if the shields have any juice check them otherwise check the model
-		if ( !(bwi->wi_flags2 & WIF2_PIERCE) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for beams wich have a positive sheild factor -Bobboau
+		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for beams wich have a positive sheild factor -Bobboau
 //			mprintf(("I think this ship has shields\n"));
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_SPHERELINE;	
 		}else{	
@@ -2497,7 +2501,7 @@ int beam_collide_ship(obj_pair *pair)
 			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 		}
 	} else {	
-		if ( !(bwi->wi_flags2 & WIF2_PIERCE) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for type c beams -Bobboau
+		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for type c beams -Bobboau
 //			mprintf(("there is a shield, isn't it\n"));
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_RAY;	
 		}else{	

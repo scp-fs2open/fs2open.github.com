@@ -20,6 +20,10 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/03/19 09:05:26  Goober5000
+ * more housecleaning, this time for debug warnings
+ * --Goober5000
+ *
  * Revision 2.18  2003/03/18 10:07:06  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -414,7 +418,8 @@
 #include "localization/localize.h"
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
-#include "debugconsole/dbugfile.h" 
+#include "debugconsole/dbugfile.h"
+#include "cmdline/cmdline.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -716,7 +721,7 @@ void parse_wi_flags(weapon_info *weaponp)
 				Assert(Num_spawn_types < MAX_SPAWN_WEAPONS);
 			} else
 				Warning(LOCATION, "Illegal to have two spawn types for one weapon.\n"
-										"Ignoring weapon %s", weapon_strings[i]);
+										"Ignoring weapon %s", weaponp->name);
 		} else if (!stricmp(NOX("Remote Detonate"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_REMOTE;
 		else if (!stricmp(NOX("Puncture"), weapon_strings[i]))
@@ -752,17 +757,30 @@ void parse_wi_flags(weapon_info *weaponp)
 		else if (!stricmp(NOX("lockarm"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_LOCKARM;		
 		else if (!stricmp(NOX("beam"), weapon_strings[i]))
+		{
 			weaponp->wi_flags |= WIF_BEAM;
+
+			// IMPORTANT: beams pierce shields by default :rolleyes: :p - Goober5000
+			weaponp->wi_flags2 |= WIF2_PIERCE_SHIELDS;
+		}
 		else if (!stricmp(NOX("stream"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_STREAM;
 		else if (!stricmp(NOX("supercap"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_SUPERCAP;
 		else if (!stricmp(NOX("ballistic"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_BALLISTIC;
-		else if (!stricmp(NOX("pierce"), weapon_strings[i]))
-			weaponp->wi_flags2 |= WIF2_PIERCE;
+		else if (!stricmp(NOX("pierce shields"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_PIERCE_SHIELDS;
+		else if (!stricmp(NOX("no pierce shields"), weapon_strings[i]))	// only for beams
+			weaponp->wi_flags2 &= ~WIF2_PIERCE_SHIELDS;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
+
+		// there might be a command line option to disable beam shield piercing
+		if (Cmdline_beams_no_pierce_shields)
+		{
+			weaponp->wi_flags2 &= ~WIF2_PIERCE_SHIELDS;
+		}
 	}	
 
 	// set default tech room status - Goober5000
