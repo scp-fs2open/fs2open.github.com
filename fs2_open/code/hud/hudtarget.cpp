@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.29 $
- * $Date: 2004-05-10 08:03:30 $
+ * $Revision: 2.30 $
+ * $Date: 2004-05-10 10:51:53 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/05/10 08:03:30  Goober5000
+ * fixored the handling of no lasers and no engines... the tests should check the ship,
+ * not the object
+ * --Goober5000
+ *
  * Revision 2.28  2004/05/07 19:06:45  Goober5000
  * added Righteous1's Y bug hack
  * --Goober5000
@@ -4120,7 +4125,7 @@ int hud_get_best_primary_bank(float *range)
 
 	for ( i = 0; i < num_to_test; i++ )
 	{	
-		bank_to_fire = (swp->current_primary_bank+i)%MAX_SUPPORTED_PRIMARY_BANKS;	//	Max supported banks is 2
+		bank_to_fire = (swp->current_primary_bank + i) % MAX_PLAYER_PRIMARY_BANKS;
 
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
@@ -5235,17 +5240,17 @@ void hud_show_weapons()
 	
 	emp_hud_string(Weapon_title_coords[ballistic_hud_index][gr_screen.res][0], Weapon_title_coords[ballistic_hud_index][gr_screen.res][1], EG_WEAPON_TITLE, XSTR( "weapons", 328));		
 
-	switch ( np ) {
-	case 0:		
+	if (np == 0)
+	{
 		// draw bottom of border		
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][1]);		
 
 		emp_hud_string(Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1], EG_WEAPON_P1, XSTR( "<none>", 329));		
 
 		np = 1;
-		break;
-
-	case 1:
+	}
+	else if (np == 1)
+	{
 		// draw bottom of border
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][1]);
 
@@ -5270,9 +5275,9 @@ void hud_show_weapons()
 		{
 			hud_show_primary_weapon_ammo(1, sw);
 		}
-		break;
-
-	case 2:
+	}
+	else if (np == 2)
+	{
 		// draw border to accomodate second primary weapon
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][1].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][1]);		
 
@@ -5318,33 +5323,31 @@ void hud_show_weapons()
 		{
 			hud_show_primary_weapon_ammo(2, sw);
 		}
-		
-		break;
-
-	default:
+	}
+	else	// Goober5000 - too many primary weapons on player ship
+	{
 		Int3();	// can't happen - get Alan
 		return;
-
-	} // end switch
+	}
 
 	hud_set_gauge_color(HUD_WEAPONS_GAUGE);
 
-	switch ( ns ) {
-	case 0:
+	if (ns == 0)
+	{
 		// draw the bottom of the secondary weapons
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][0][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][0][1] - 12*np - 1);		
 
 		emp_hud_string(Weapon_pname_coords[gr_screen.res][0][0], Weapon_secondary_y[gr_screen.res][0] - np*12, EG_WEAPON_S1, XSTR( "<none>", 329));		
-		break;
-
-	case 1:
+	}
+	else if (ns == 1)
+	{
 		// draw the bottom of the secondary weapons
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][1][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][1][1] - 12*np - 1);		
 
 		hud_show_secondary_weapon(1, sw, Player_ship->flags & SF_SECONDARY_DUAL_FIRE);
-		break;
-
-	case 2:
+	}
+	else if (ns == 2)
+	{
 		// draw the middle border, only present when there are 2 or more secondaries
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][3].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][2][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][2][1] - np*12);		
 
@@ -5352,9 +5355,9 @@ void hud_show_weapons()
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][3][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][3][1] - 12*np);		
 
 		hud_show_secondary_weapon(2, sw, Player_ship->flags & SF_SECONDARY_DUAL_FIRE);
-		break;
-
-	case 3:
+	}
+	else if (ns == 3)
+	{
 		// draw the middle border, only present when there are 2 or more secondaries
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][3].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][2][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][2][1] - np*12);		
 
@@ -5365,13 +5368,12 @@ void hud_show_weapons()
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][4][0], Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][4][1] - 12*np);		
 
 		hud_show_secondary_weapon(3, sw, Player_ship->flags & SF_SECONDARY_DUAL_FIRE);
-		break;
-
-	default:
+	}
+	else	// Goober5000 - too many player secondaries
+	{
 		Int3();	// can't happen - get Alan
 		return;
-
-	} // end switch
+	}
 }
 
 // check if targeting is possible based on sensors strength

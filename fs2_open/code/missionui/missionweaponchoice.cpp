@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-03-06 00:19:23 $
+ * $Revision: 2.22 $
+ * $Date: 2004-05-10 10:51:53 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/03/06 00:19:23  Goober5000
+ * weapons now display counts up to 9999, instead of just 999
+ * --Goober5000
+ *
  * Revision 2.20  2004/03/05 09:01:55  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -545,19 +549,19 @@
 #include "missionui/chatbox.h"
 #endif
 
-#define IS_BANK_PRIMARY(x)			(x <= MAX_SUPPORTED_PRIMARY_BANKS)
-#define IS_BANK_SECONDARY(x)		(x > MAX_SUPPORTED_PRIMARY_BANKS)
+#define IS_BANK_PRIMARY(x)			(x < MAX_WL_PRIMARY)
+#define IS_BANK_SECONDARY(x)		(x >= MAX_WL_PRIMARY)
 
 #define IS_LIST_PRIMARY(x)			(Weapon_info[x].subtype != WP_MISSILE)
 #define IS_LIST_SECONDARY(x)		(Weapon_info[x].subtype == WP_MISSILE)
 
 //XSTR:OFF
-#if (MAX_PRIMARY_BANKS > MAX_WL_PRIMARY)
-#error "Illegal: MAX_PRIMARY_BANKS greater than MAX_WL_PRIMARY"
+#if (MAX_SHIP_PRIMARY_BANKS > MAX_WL_PRIMARY)
+#error "Illegal: MAX_SHIP_PRIMARY_BANKS greater than MAX_WL_PRIMARY"
 #endif
 
-#if (MAX_SECONDARY_BANKS > MAX_WL_SECONDARY)
-#error "Illegal: MAX_SECONDARY_BANKS greater than MAX_WL_SECONDARY"
+#if (MAX_SHIP_SECONDARY_BANKS > MAX_WL_SECONDARY)
+#error "Illegal: MAX_SHIP_SECONDARY_BANKS greater than MAX_WL_SECONDARY"
 #endif
 //XSTR:ON
 
@@ -1915,19 +1919,19 @@ void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_co
 	ss = &Subsys_status[pilot_index];
 
 	if ( ss->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE ) {
-		for ( i=0; i < MAX_PRIMARY_BANKS; i++ ) {
+		for ( i=0; i < MAX_SHIP_PRIMARY_BANKS; i++ ) {
 			wep[i] = ss->primary_banks[i];		
 		} // end for
 	}
 
 	if ( ss->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE ) {
-		for ( i=0; i < MAX_SECONDARY_BANKS; i++ ) {
+		for ( i=0; i < MAX_SHIP_SECONDARY_BANKS; i++ ) {
 			wep[i+MAX_WL_PRIMARY] = ss->secondary_banks[i];	
 		} // end for
 	}
 
 	// ammo counts could still be modified
-	for ( i=0; i < MAX_SECONDARY_BANKS; i++ )
+	for ( i=0; i < MAX_SHIP_SECONDARY_BANKS; i++ )
 	{
 		if ( wep[i+MAX_WL_PRIMARY] >= 0 )
 		{
@@ -1950,7 +1954,7 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 		// possibly re-do flag according to whether it's restricted
 		if (i < MAX_WL_PRIMARY)
 		{
-			if (i < MAX_SUPPORTED_PRIMARY_BANKS)
+			if (i < MAX_SHIP_PRIMARY_BANKS)
 			{
 				if (eval_weapon_flag_for_game_type(Ship_info[ship_class].restricted_loadout_flag[i]))
 				{
@@ -1960,11 +1964,11 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 		}
 		else
 		{
-			if (i-MAX_WL_PRIMARY < MAX_SUPPORTED_SECONDARY_BANKS)
+			if (i-MAX_WL_PRIMARY < MAX_SHIP_SECONDARY_BANKS)
 			{
-				if (eval_weapon_flag_for_game_type(Ship_info[ship_class].restricted_loadout_flag[i-MAX_WL_PRIMARY+MAX_SUPPORTED_PRIMARY_BANKS]))
+				if (eval_weapon_flag_for_game_type(Ship_info[ship_class].restricted_loadout_flag[i-MAX_WL_PRIMARY+MAX_SHIP_PRIMARY_BANKS]))
 				{
-					check_flag = Ship_info[ship_class].allowed_bank_restricted_weapons[i-MAX_WL_PRIMARY+MAX_SUPPORTED_PRIMARY_BANKS][wep[i]];
+					check_flag = Ship_info[ship_class].allowed_bank_restricted_weapons[i-MAX_WL_PRIMARY+MAX_SHIP_PRIMARY_BANKS][wep[i]];
 				}
 			}
 		}
@@ -3481,11 +3485,11 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 						
 	ss = &Subsys_status[pilot_index];
 
-	for ( i = 0; i < MAX_PRIMARY_BANKS; i++ ) {
+	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ ) {
 		ss->primary_banks[i] = -1;		
 	}
 
-	for ( i = 0; i < MAX_SECONDARY_BANKS; i++ ) {
+	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ ) {
 		ss->secondary_banks[i] = -1;		
 	}
 
@@ -3627,11 +3631,11 @@ void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 {
 	int		i, j, sidx;
 	
-	for ( i = 0; i < MAX_PRIMARY_BANKS; i++ ) {
+	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ ) {
 		swp->primary_bank_weapons[i] = -1;		
 	}
 
-	for ( i = 0; i < MAX_SECONDARY_BANKS; i++ ) {
+	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ ) {
 		swp->secondary_bank_weapons[i] = -1;		
 	}
 
@@ -3757,21 +3761,21 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 		to_index = -1;
 
 		// calculate indices for ship_info
-		if (from_bank < MAX_SUPPORTED_PRIMARY_BANKS)
+		if (from_bank < MAX_SHIP_PRIMARY_BANKS)
 		{
 			from_index = from_bank;
 		}
-		if (to_bank < MAX_SUPPORTED_PRIMARY_BANKS)
+		if (to_bank < MAX_SHIP_PRIMARY_BANKS)
 		{
 			to_index = to_bank;
 		}
-		if (MAX_WL_PRIMARY <= from_bank && from_bank-MAX_WL_PRIMARY < MAX_SUPPORTED_SECONDARY_BANKS)
+		if (MAX_WL_PRIMARY <= from_bank && from_bank-MAX_WL_PRIMARY < MAX_SHIP_SECONDARY_BANKS)
 		{
-			from_index = from_bank - MAX_WL_PRIMARY + MAX_SUPPORTED_PRIMARY_BANKS;
+			from_index = from_bank - MAX_WL_PRIMARY + MAX_SHIP_PRIMARY_BANKS;
 		}
-		if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SUPPORTED_SECONDARY_BANKS)
+		if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SHIP_SECONDARY_BANKS)
 		{
-			to_index = to_bank - MAX_WL_PRIMARY + MAX_SUPPORTED_PRIMARY_BANKS;
+			to_index = to_bank - MAX_WL_PRIMARY + MAX_SHIP_PRIMARY_BANKS;
 		}
 
 		ship_info *sip = &Ship_info[slot->ship_class];
@@ -3934,13 +3938,13 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 	to_index = -1;
 
 	// calculate index for ship_info
-	if (to_bank < MAX_SUPPORTED_PRIMARY_BANKS)
+	if (to_bank < MAX_SHIP_PRIMARY_BANKS)
 	{
 		to_index = to_bank;
 	}
-	if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SUPPORTED_SECONDARY_BANKS)
+	if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SHIP_SECONDARY_BANKS)
 	{
-		to_index = to_bank - MAX_WL_PRIMARY + MAX_SUPPORTED_PRIMARY_BANKS;
+		to_index = to_bank - MAX_WL_PRIMARY + MAX_SHIP_PRIMARY_BANKS;
 	}
 
 	ship_info *sip = &Ship_info[slot->ship_class];
@@ -4016,13 +4020,13 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound)
 	to_index = -1;
 
 	// calculate index for ship_info
-	if (to_bank < MAX_SUPPORTED_PRIMARY_BANKS)
+	if (to_bank < MAX_SHIP_PRIMARY_BANKS)
 	{
 		to_index = to_bank;
 	}
-	if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SUPPORTED_SECONDARY_BANKS)
+	if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SHIP_SECONDARY_BANKS)
 	{
-		to_index = to_bank - MAX_WL_PRIMARY + MAX_SUPPORTED_PRIMARY_BANKS;
+		to_index = to_bank - MAX_WL_PRIMARY + MAX_SHIP_PRIMARY_BANKS;
 	}
 
 	ship_info *sip = &Ship_info[slot->ship_class];

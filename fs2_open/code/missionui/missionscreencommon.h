@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:55 $
+ * $Revision: 2.3 $
+ * $Date: 2004-05-10 10:51:53 $
  * $Author: Goober5000 $
  *
  * $NoKeywords: $
@@ -122,8 +122,8 @@ int common_scroll_up_pressed(int *start, int size, int max_show);
 // NEWSTUFF BEGIN
 //////////////////////////////////////////////////////////////////////////////////////
 
-#define MAX_WL_PRIMARY							3
-#define MAX_WL_SECONDARY						4
+#define MAX_WL_PRIMARY							MAX_SHIP_PRIMARY_BANKS
+#define MAX_WL_SECONDARY						MAX_SHIP_SECONDARY_BANKS
 #define MAX_WL_WEAPONS							(MAX_WL_PRIMARY+MAX_WL_SECONDARY)
 
 #define MAX_WING_SLOTS	4

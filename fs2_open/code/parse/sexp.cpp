@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.87 $
- * $Date: 2004-05-03 21:22:22 $
- * $Author: Kazan $
+ * $Revision: 2.88 $
+ * $Date: 2004-05-10 10:51:52 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2004/05/03 21:22:22  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.86  2004/03/17 04:07:31  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -871,6 +876,7 @@ sexp_oper Operators[] = {
 
 	{ "when",			OP_WHEN,	2, INT_MAX, },
 	{ "cond",			OP_COND, 1, INT_MAX, },
+	{ "every-time",		OP_EVERY_TIME,	2, INT_MAX, },	// Goober5000
 
 	{ "send-message-list",			OP_SEND_MESSAGE_LIST,			4, INT_MAX	},
 	{ "send-message",					OP_SEND_MESSAGE,					3, 3,			},
@@ -9202,7 +9208,7 @@ int sexp_primary_ammo_pct(int node)
 	ship *shipp;
 	int sindex;
 	int check, idx;
-	int ret_sum[MAX_SUPPORTED_PRIMARY_BANKS];
+	int ret_sum[MAX_SHIP_PRIMARY_BANKS];
 	int ret = 0;
 
 	// get the ship
@@ -9220,13 +9226,13 @@ int sexp_primary_ammo_pct(int node)
 	// bank to check
 	check = sexp_get_val(CDR(node));
 
-	// bogus check? (MAX_SUPPORTED_PRIMARY_BANKS == cumulative sum of all banks)
-	if((check != MAX_SUPPORTED_PRIMARY_BANKS) && (check > shipp->weapons.num_primary_banks)){
+	// bogus check? (MAX_SHIP_PRIMARY_BANKS == cumulative sum of all banks)
+	if((check != MAX_SHIP_PRIMARY_BANKS) && (check > shipp->weapons.num_primary_banks)){
 		return 0;
 	}
 
 	// cumulative sum?
-	if(check == MAX_SUPPORTED_PRIMARY_BANKS)
+	if(check == MAX_SHIP_PRIMARY_BANKS)
 	{
 		for(idx=0; idx<shipp->weapons.num_primary_banks; idx++)
 		{
@@ -9273,7 +9279,7 @@ int sexp_secondary_ammo_pct(int node)
 	ship *shipp;
 	int sindex;
 	int check, idx;
-	int ret_sum[MAX_SUPPORTED_SECONDARY_BANKS];
+	int ret_sum[MAX_SHIP_SECONDARY_BANKS];
 	int ret = 0;
 
 	// get the ship
@@ -9289,13 +9295,13 @@ int sexp_secondary_ammo_pct(int node)
 	// bank to check
 	check = sexp_get_val(CDR(node));
 
-	// bogus check? (MAX_SUPPORTED_SECONDARY_BANKS == cumulative sum of all banks)
-	if((check != MAX_SUPPORTED_SECONDARY_BANKS) && (check > shipp->weapons.num_secondary_banks)){
+	// bogus check? (MAX_SHIP_SECONDARY_BANKS == cumulative sum of all banks)
+	if((check != MAX_SHIP_SECONDARY_BANKS) && (check > shipp->weapons.num_secondary_banks)){
 		return 0;
 	}
 
 	// cumulative sum?
-	if(check == MAX_SUPPORTED_SECONDARY_BANKS){
+	if(check == MAX_SHIP_SECONDARY_BANKS){
 		for(idx=0; idx<shipp->weapons.num_secondary_banks; idx++){
 			ret_sum[idx] = (int)(((float)shipp->weapons.secondary_bank_ammo[idx] / (float)shipp->weapons.secondary_bank_start_ammo[idx]) * 100.0f);
 		}
@@ -11346,6 +11352,14 @@ int eval_sexp(int cur_node)
 				sexp_val = eval_cond( node );
 				break;
 
+			// Goober5000: special case; evaluate like when, but flush the sexp tree
+			// and return SEXP_NAN so this will always be re-evaluated
+			case OP_EVERY_TIME:
+				eval_when( node );
+				flush_sexp_tree( node );
+				sexp_val = SEXP_NAN;
+				break;
+
 			// sexpressions with side effects
 			case OP_CHANGE_IFF:
 				sexp_change_iff( node );
@@ -12349,6 +12363,7 @@ int query_operator_return_type(int op)
 
 		case OP_COND:
 		case OP_WHEN:
+		case OP_EVERY_TIME:
 		case OP_CHANGE_IFF:
 		case OP_CHANGE_AI_CLASS:
 		case OP_CLEAR_SHIP_GOALS:
@@ -12808,6 +12823,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_WHEN:
 		case OP_COND:
+		case OP_EVERY_TIME:
 			if (!argnum)
 				return OPF_BOOL;
 			else

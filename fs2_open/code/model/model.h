@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.39 $
- * $Date: 2004-03-20 21:17:13 $
- * $Author: bobboau $
+ * $Revision: 2.40 $
+ * $Date: 2004-05-10 10:51:52 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2004/03/20 21:17:13  bobboau
+ * fixed -spec comand line option,
+ * probly some other stuf
+ *
  * Revision 2.38  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -574,10 +578,10 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	float		awacs_intensity;						// awacs intensity of this subsystem
 	float		awacs_radius;							// radius of effect of the AWACS
 
-	int		primary_banks[MAX_PRIMARY_BANKS];					// default primary weapons -hoffoss
-	int		primary_bank_capacity[MAX_PRIMARY_BANKS];		// capacity of a bank - Goober5000
-	int		secondary_banks[MAX_SECONDARY_BANKS];				// default secondary weapons -hoffoss
-	int		secondary_bank_capacity[MAX_SECONDARY_BANKS];	// capacity of a bank -hoffoss
+	int		primary_banks[MAX_SHIP_PRIMARY_BANKS];					// default primary weapons -hoffoss
+	int		primary_bank_capacity[MAX_SHIP_PRIMARY_BANKS];		// capacity of a bank - Goober5000
+	int		secondary_banks[MAX_SHIP_SECONDARY_BANKS];				// default secondary weapons -hoffoss
+	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
 } model_subsystem;
 
