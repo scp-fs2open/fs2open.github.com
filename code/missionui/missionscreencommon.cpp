@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-01-15 05:53:18 $
+ * $Revision: 2.10 $
+ * $Date: 2005-01-29 08:09:47 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/01/15 05:53:18  wmcoolmon
+ * Current version of the new techroom code -C
+ *
  * Revision 2.8  2004/07/26 20:47:40  Kazan
  * remove MCD complete
  *
@@ -790,13 +793,12 @@ void common_select_init()
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED], 175, 175, 175, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
 	//init shaders
-	float mval = .01f;
-	gr_create_shader(&Icon_shaders[ICON_FRAME_NORMAL], mval*32, mval*128, mval*128, 0.05f);
-	gr_create_shader(&Icon_shaders[ICON_FRAME_HOT], mval*48, mval*160, mval*160, 0.05f);
-	gr_create_shader(&Icon_shaders[ICON_FRAME_SELECTED], mval*64, mval*192, mval*192, 0.05f);
-	gr_create_shader(&Icon_shaders[ICON_FRAME_PLAYER], mval*192, mval*128, mval*64, 0.05f);
-	gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED], mval*175, mval*175, mval*175, 0.05f);
-	gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED_HIGH], mval*100, mval*100, mval*100, 0.05f);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_NORMAL], 32, 128, 128, 255);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_HOT], 48, 160, 160, 255);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_SELECTED], 64, 192, 192, 255);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_PLAYER], 192, 128, 64, 255);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED], 175, 175, 175, 255);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
 }
 
 void common_reset_buttons()
@@ -1673,9 +1675,14 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	angles rot_angles = {0.0f,0.0f,0.0f};
 	float zoom = closeup_zoom * 2.5f;
 
-	if(sip->flags & SIF_SMALL_SHIP)
+	if(sip == NULL)
 	{
-		rot_angles.p = -(PI * 0.5f);
+		//Assume it's a weapon
+		rot_angles.h = -(PI/2);
+	}
+	else if(sip->flags & SIF_SMALL_SHIP)
+	{
+		rot_angles.p = -(PI/2);
 	}
 	else if((sip->max_speed <= 0.0f) && !(sip->flags & SIF_CARGO))
 	{
@@ -1691,9 +1698,47 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	
 	gr_set_clip(x, y, w, h);
 	g3_start_frame(1);
-	g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
+	if(sip != NULL)
+	{
+		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
+	}
+	else
+	{
+		polymodel *pm = model_get(model_id);
+		bsp_info *bs = NULL;	//tehe
+		for(int i = 0; i < pm->n_models; i++)
+		{
+			if(!pm->submodel[i].is_thruster)
+			{
+				bs = &pm->submodel[i];
+				break;
+			}
+		}
+
+		if(bs == NULL)
+		{
+			bs = &pm->submodel[0];
+		}
+
+		vector weap_closeup;
+		float y_closeup;
+
+		//Find the center of teh submodel
+		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
+		weap_closeup.xyz.y = bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f;
+		weap_closeup.xyz.z = (weap_closeup.xyz.x/tan(zoom / 2.0f));
+
+		y_closeup = -(weap_closeup.xyz.y/tan(zoom / 2.0f));
+		if(y_closeup < weap_closeup.xyz.z)
+		{
+			weap_closeup.xyz.z = y_closeup;
+		}
+//		weap_closeup.xyz.x = bs->min.xyz.x + (bs->max.xyz.x - bs->min.xyz.x)/2.0f;
+		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, zoom);
+	}
+
 	model_set_detail_level(0);
-	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	if(!(flags & MR_NO_LIGHTING))
