@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-01-15 05:53:18 $
+ * $Author: wmcoolmon $
  *
  * $NoKeywords: $
  *
@@ -30,6 +30,7 @@
 ///////////////////////////////////////////////////////
 // Common to briefing/ship selection/weapons loadout
 ///////////////////////////////////////////////////////
+#define REVOLUTION_RATE								5.2f
 
 #define COMMON_BRIEFING_REGION					0
 #define COMMON_SS_REGION							1
@@ -154,6 +155,10 @@ int common_scroll_up_pressed(int *start, int size, int max_show);
 #define ICON_FRAME_DISABLED			4
 #define ICON_FRAME_DISABLED_HIGH		5
 
+//Colors
+extern color Icon_colors[NUM_ICON_FRAMES];
+extern shader Icon_shaders[NUM_ICON_FRAMES];
+
 //////////////////////////////////////////////
 // Slots
 //////////////////////////////////////////////
@@ -203,6 +208,8 @@ int wss_get_mode(int from_slot, int from_list, int to_slot, int to_list, int wl_
 int store_wss_data(ubyte *block, int max_size, int sound,int player_index);
 int restore_wss_data(ubyte *block);
 
+struct ship_info;
+void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip);
 ///////////////////////////////////////////////////////////
 // NEWSTUFF END
 ///////////////////////////////////////////////////////////

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:40 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2005-01-15 05:53:18 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:40  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/17 18:46:08  taylor
  * various OGL and memory leak fixes
  *
@@ -328,6 +331,8 @@
 #include "ui/uidefs.h"
 #include "anim/animplay.h"
 #include "ship/ship.h"
+#include "render/3d.h"
+#include "lighting/lighting.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -369,6 +374,8 @@ int Flash_bright;								// state of button to flash
 int Current_screen;
 int Next_screen;
 static int InterfacePaletteBitmap = -1; // PCX file that holds the interface palette
+color Icon_colors[NUM_ICON_FRAMES];
+shader Icon_shaders[NUM_ICON_FRAMES];
 
 //////////////////////////////////////////////////////////////////
 // UI 
@@ -774,6 +781,22 @@ void common_select_init()
 	
 	Drop_icon_mflag = 0;
 	Drop_on_wing_mflag = 0;
+
+	//init colors
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_NORMAL], 32, 128, 128, 255);
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_HOT], 48, 160, 160, 255);
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_SELECTED], 64, 192, 192, 255);
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_PLAYER], 192, 128, 64, 255);
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED], 175, 175, 175, 255);
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
+	//init shaders
+	float mval = .01f;
+	gr_create_shader(&Icon_shaders[ICON_FRAME_NORMAL], mval*32, mval*128, mval*128, 0.05f);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_HOT], mval*48, mval*160, mval*160, 0.05f);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_SELECTED], mval*64, mval*192, mval*192, 0.05f);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_PLAYER], mval*192, mval*128, mval*64, 0.05f);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED], mval*175, mval*175, mval*175, 0.05f);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED_HIGH], mval*100, mval*100, mval*100, 0.05f);
 }
 
 void common_reset_buttons()
@@ -1641,6 +1664,62 @@ int restore_wss_data(ubyte *block)
 #endif
 
 	return offset;
+}
+
+extern float View_zoom;
+void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip)
+{
+	matrix	object_orient	= IDENTITY_MATRIX;
+	angles rot_angles = {0.0f,0.0f,0.0f};
+	float zoom = closeup_zoom * 2.5f;
+
+	if(sip->flags & SIF_SMALL_SHIP)
+	{
+		rot_angles.p = -(PI * 0.5f);
+	}
+	else if((sip->max_speed <= 0.0f) && !(sip->flags & SIF_CARGO))
+	{
+		//Probably an installation or Knossos
+		rot_angles.h = PI;
+	}
+	else
+	{
+		//Probably a capship
+		rot_angles.h = PI/2;
+	}
+	vm_angles_2_matrix(&object_orient, &rot_angles);
+	
+	gr_set_clip(x, y, w, h);
+	g3_start_frame(1);
+	g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
+	model_set_detail_level(0);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	if(!(flags & MR_NO_LIGHTING))
+	{
+		light_reset();
+		vector light_dir = vmd_zero_vector;
+		light_dir.xyz.x = -0.5;
+		light_dir.xyz.y = 2.0f;
+		light_dir.xyz.z = -2.0f;	
+		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+		// light_filter_reset();
+		light_rotate_all();
+		// lighting for techroom
+	}
+
+	model_clear_instance(model_id);
+	model_render(model_id, &object_orient, &vmd_zero_vector, flags, -1, -1);
+
+	if (!Cmdline_nohtl) 
+	{
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
+
+	g3_end_frame();
+	gr_reset_clip();
 }
 
 // NEWSTUFF END

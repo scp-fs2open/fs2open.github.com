@@ -9,17 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-12-14 14:46:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.28 $
+ * $Date: 2005-01-15 05:53:18 $
+ * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/12/14 14:46:13  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.26  2004/10/10 22:12:57  taylor
  * warp mouse to center screen on mission start
  *
- * Revision 2.25  2004/07/26 20:47:40  Kazan
+ * Revision 1.25  2004/07/26 20:47:40  Kazan
  * remove MCD complete
  *
  * Revision 2.24  2004/07/12 16:32:55  Kazan
@@ -504,6 +508,7 @@
 #include "lighting/lighting.h"
 #include "cmdline/cmdline.h"
 #include "cfile/cfile.h"
+#include "hud/hudbrackets.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -548,6 +553,7 @@ typedef struct ss_icon_info
 {
 	int				icon_bmaps[NUM_ICON_FRAMES];
 	int				current_icon_bitmap;
+	int				model_index;
 	anim			*anim;
 	anim_instance	*anim_instance;
 } ss_icon_info;
@@ -904,7 +910,7 @@ void ss_set_carried_icon(int from_slot, int ship_class)
 void clear_active_list()
 {
 	int i;
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) { //DTP singleplayer ship choice fix 
+	for ( i = 0; i < Num_ship_types; i++ ) { //DTP singleplayer ship choice fix 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { 
 		SS_active_items[i].flags = 0;
 		SS_active_items[i].ship_class = -1;
@@ -920,7 +926,7 @@ void clear_active_list()
 ss_active_item *get_free_active_list_node()
 {
 	int i;
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) { 
+	for ( i = 0; i < Num_ship_types; i++ ) { 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { //DTP, ONLY 12 SHIPS ???, as MAX_WSS_SLOTS will be 12.
 	if ( SS_active_items[i].flags == 0 ) {
 			SS_active_items[i].flags |= SS_ACTIVE_ITEM_USED;
@@ -1112,6 +1118,8 @@ void ship_select_button_do(int i)
 //
 void ship_select_init()
 {
+//	SS_active_items = new ss_active_item[Num_ship_types];
+
 	common_set_interface_palette("ShipPalette");
 	common_flash_button_init();
 
@@ -1461,9 +1469,14 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Type",740));
 	y_start += 10;
+	gr_set_color_fast(text);
 	if((sip->type_str != NULL) && strlen(sip->type_str)){
-		gr_set_color_fast(text);
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->type_str);
+	}
+	else
+	{
+		ship_get_type(str, sip);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
 	}
 	y_start+=10;
 
@@ -1471,6 +1484,7 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Length",741));
 	y_start += 10;
+	gr_set_color_fast(text);
 	if((sip->ship_length != NULL) && strlen(sip->ship_length)){
 		if (Lcl_gr) {
 			// in german, drop the s from Meters and make sure M is caps
@@ -1479,8 +1493,18 @@ void ship_select_blit_ship_info()
 				sp[5] = ' ';		// make the old s a space now
 			}
 		}
-		gr_set_color_fast(text);
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->ship_length);
+	}
+	else if(ShipSelectModelNum)
+	{
+		polymodel *pm = model_get(ShipSelectModelNum);
+		itoa(fl2i(pm->maxs.xyz.z - pm->mins.xyz.z), str, 10);
+		strcat(str, " M");
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
+	}
+	else
+	{
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, "Unknown");
 	}
 	y_start += 10;
 
@@ -1497,9 +1521,33 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Maneuverability",744));
 	y_start += 10;
+	gr_set_color_fast(text);
 	if((sip->maneuverability_str != NULL) && strlen(sip->maneuverability_str)){
-		gr_set_color_fast(text);
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->maneuverability_str);
+	}
+	else if(ShipSelectModelNum)
+	{
+		int sum = fl2i(sip->rotation_time.xyz.x + sip->rotation_time.xyz.y);
+		if(sum <= 6)
+			strcpy(str, "Excellent");
+		else if(sum < 7)
+			strcpy(str, "High");
+		else if(sum < 8)
+			strcpy(str, "Good");
+		else if(sum < 9)
+			strcpy(str, "Average");
+		else if(sum < 10)
+			strcpy(str, "Poor");
+		else if(sum < 15)
+			strcpy(str, "Very Poor");
+		else
+			strcpy(str, "Extremely Poor");
+
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
+	}
+	else
+	{
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, "Unknown");
 	}
 	y_start += 10;
 
@@ -1507,39 +1555,158 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Armor",745));
 	y_start += 10;
+	gr_set_color_fast(text);
 	if((sip->armor_str != NULL) && strlen(sip->armor_str)){
-		gr_set_color_fast(text);
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->armor_str);
+	}
+	else
+	{
+		int sum = fl2i(sip->initial_hull_strength + sip->initial_shield_strength);
+		if(sum <= 600)
+			strcpy(str, "Light");
+		else if(sum <= 700)
+			strcpy(str, "Average");
+		else if(sum <= 900)
+			strcpy(str, "Medium");
+		else if(sum <= 1100)
+			strcpy(str,	"Heavy");
+		else if(sum <= 1300)
+			strcpy(str, "Very Heavy");
+		else if(sum <= 2000)
+			strcpy(str, "Ultra Heavy");
+		else if(sum <= 30000)
+			strcpy(str, "Light Capital");
+		else if(sum <= 75000)
+			strcpy(str, "Medium Capital");
+		else if(sum <= 200000)
+			strcpy(str, "Heavy Capital");
+		else if(sum <= 800000)
+			strcpy(str, "Very Heavy Capital");
+		else
+			strcpy(str, "Ultra Heavy Capital");
+			
+
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,str);
 	}
 	y_start += 10;
 
 	// blit the gun mounts 
 	gr_set_color_fast(header);
-	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Gun Mounts",746));
-	y_start += 10;
-	if((sip->gun_mounts != NULL) && strlen(sip->gun_mounts)){
+	if((sip->gun_mounts != NULL) && strlen(sip->gun_mounts))
+	{
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Gun Mounts",746));
+		y_start += 10;
 		gr_set_color_fast(text);
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->gun_mounts);
 	}
+	else if(ShipSelectModelNum)
+	{
+		//Calculate the number of gun mounts
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Gun Mounts",746));
+		y_start += 10;
+		gr_set_color_fast(text);
+		int i;
+		int sum = 0;
+		polymodel *pm = model_get(ShipSelectModelNum);
+		for(i = 0; i < pm->n_guns; i++)
+		{
+			sum += pm->gun_banks[i].num_slots;
+		}
+		if(sum != 0)
+			itoa(sum, str, 10);
+		else
+			strcpy(str, "None");
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
+	}
+	else
+	{
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Gun Banks",-1));
+		y_start += 10;
+		gr_set_color_fast(text);
+		if(sip->num_primary_banks)
+		{
+			itoa(sip->num_primary_banks, str, 10);
+		}
+		else
+		{
+			strcpy(str, "None");
+		}
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
+	}
 	y_start += 10;
 
-	// blit the missile banke
+	// blit the missile banks
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Missile Banks",747));
 	y_start += 10;
+	gr_set_color_fast(text);
 	if((sip->missile_banks != NULL) && strlen(sip->missile_banks)){
-		gr_set_color_fast(text);
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->missile_banks);
 	}
+	else
+	{
+		if(sip->num_secondary_banks)
+		{
+			itoa(sip->num_secondary_banks, str, 10);
+		}
+		else
+		{
+			strcpy(str, "None");
+		}
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
+	}
 	y_start += 10;
+
+	if(ShipSelectModelNum)
+	{
+		int num_turrets = 0;
+		int x, y;
+		for(x = 0; x < sip->n_subsystems; x++)
+		{
+			for(y = 0; y < MAX_SHIP_PRIMARY_BANKS || y < MAX_SHIP_SECONDARY_BANKS; y++)
+			{
+				if(y < MAX_SHIP_PRIMARY_BANKS)
+				{
+					if(sip->subsystems[x].primary_banks[y] != -1)
+					{
+						num_turrets++;
+						break;
+					}
+				}
+				
+				if(y < MAX_SHIP_SECONDARY_BANKS)
+				{
+					if(sip->subsystems[x].secondary_banks[y] != -1)
+					{
+						num_turrets++;
+						break;
+					}
+				}
+			}
+		}
+		if(num_turrets)
+		{
+			gr_set_color_fast(header);
+			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Turrets",-1));
+			y_start += 10;
+			gr_set_color_fast(text);
+			itoa(num_turrets, str, 10);
+			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
+			y_start += 10;
+		}
+	}
 
 	// blit the manufacturer
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Manufacturer",748));
 	y_start += 10;
+	gr_set_color_fast(text);
 	if((sip->manufacturer_str != NULL) && strlen(sip->manufacturer_str)){
-		gr_set_color_fast(text);
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->manufacturer_str);
+	}
+	else
+	{
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,Species_names[sip->species]);
 	}
 	y_start += 10;
 
@@ -1738,7 +1905,7 @@ void ship_select_do(float frametime)
 
 	ss_maybe_drop_icon();
 
-	if(!Cmdline_ship_choice_3d)
+	if(!Cmdline_ship_choice_3d && Ss_icons[Selected_ss_class].anim != NULL)
 	{
 		if (Selected_ss_class >= 0)
 		{
@@ -1777,8 +1944,23 @@ void ship_select_do(float frametime)
 	if ( ss_icon_being_carried() ) {
 		int mouse_x, mouse_y;
 		mouse_get_pos( &mouse_x, &mouse_y );
-		gr_set_bitmap(Ss_icons[Carried_ss_icon.ship_class].icon_bmaps[ICON_FRAME_SELECTED]);
-		gr_bitmap(mouse_x + Ss_delta_x , mouse_y + Ss_delta_y);
+		if(Ss_icons[Carried_ss_icon.ship_class].model_index == -1)
+		{
+			gr_set_bitmap(Ss_icons[Carried_ss_icon.ship_class].icon_bmaps[ICON_FRAME_SELECTED]);
+			gr_bitmap(mouse_x + Ss_delta_x , mouse_y + Ss_delta_y);
+		}
+		else
+		{
+			ship_info *sip = &Ship_info[Carried_ss_icon.ship_class];
+			gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
+			//gr_set_shader(&Icon_shaders[ICON_FRAME_SELECTED]);
+			int x = mouse_x + Ss_delta_x;
+			int y = mouse_y + Ss_delta_y;
+
+			draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25, x, y, 32, 28, sip);
+			draw_brackets_square(x, y, x + 32, y + 28);
+			//gr_shade(mouse_x + Ss_delta_x, mouse_y + Ss_delta_y, 32, 28);
+		}
 	}
 
 	// draw out ship information
@@ -1803,7 +1985,7 @@ void ship_select_do(float frametime)
 	//////////////////////////////////
 	// Render and draw the 3D model //
 	//////////////////////////////////
-	if(Cmdline_ship_choice_3d)
+	if(Cmdline_ship_choice_3d || Ss_icons[Selected_ss_class].anim == NULL)
 	{
 	// check we have a valid ship class selected
 	if (Selected_ss_class >= 0 && ShipSelectModelNum >= 0)
@@ -1816,7 +1998,6 @@ void ship_select_do(float frametime)
 		ship_info *sip = &Ship_info[Selected_ss_class];
 	
 		// get correct revolution rate
-	#define REVOLUTION_RATE 5.2f		// Move this somewhere else later - UnknownPlayer
 	
 		rev_rate = REVOLUTION_RATE;
 		z = sip->flags;
@@ -1834,7 +2015,7 @@ void ship_select_do(float frametime)
 		}
 	
 		// turn off fogging
-		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+		//gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	
 		//	reorient ship
 	/*	if (Trackball_active) {
@@ -1883,7 +2064,7 @@ void ship_select_do(float frametime)
 	
 		model_clear_instance(ShipSelectModelNum);
 		model_set_detail_level(0);
-		model_render(ShipSelectModelNum, &ShipScreenOrient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
+		model_render(ShipSelectModelNum, &ShipScreenOrient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 	
 		if (!Cmdline_nohtl) 
 		{
@@ -1957,6 +2138,8 @@ void ship_select_close()
 									// select screen has been closed and memory freed.  This flag
 									// is needed so we can know if ship_select_close() needs to called if
 									// restoring a game from the Options screen invoked from ship select
+
+//	delete[] SS_active_items;
 }
 
 //	ss_unload_icons() frees the bitmaps used for ship icons 
@@ -2009,6 +2192,8 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 	char	buf[32];
 	int	num_x,num_y;
 	ss_icon_info *ss_icon;
+	color *color_to_draw;
+	//shader *shader_to_use;
 
 
 	Assert( screen_offset >= 0 && screen_offset <= 3 );
@@ -2019,19 +2204,32 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 	num_y = Ship_list_coords[gr_screen.res][screen_offset][3];
 	
 	// assume default bitmap is to be used
-	ss_icon->current_icon_bitmap = ss_icon->icon_bmaps[ICON_FRAME_NORMAL];
+	if(ss_icon->model_index == -1)
+		ss_icon->current_icon_bitmap = ss_icon->icon_bmaps[ICON_FRAME_NORMAL];
+	else
+		color_to_draw = &Icon_colors[ICON_FRAME_NORMAL];
 
 	// next check if ship has mouse over it
 	if ( Hot_ss_icon > -1 ) {
 		Assert(Hot_ss_icon <= 3);
 		if ( Hot_ss_icon == screen_offset )
-			ss_icon->current_icon_bitmap = ss_icon->icon_bmaps[ICON_FRAME_HOT];
+		{
+			if(ss_icon->model_index == -1)
+				ss_icon->current_icon_bitmap = ss_icon->icon_bmaps[ICON_FRAME_HOT];
+			else
+				color_to_draw = &Icon_colors[ICON_FRAME_HOT];
+		}
 	}
 
 	// highest precedence is if the ship is selected
 	if ( Selected_ss_class > -1 ) {
 		if ( Selected_ss_class == ship_class )
-			ss_icon->current_icon_bitmap = ss_icon->icon_bmaps[ICON_FRAME_SELECTED];
+		{
+			if(ss_icon->model_index == -1)
+				ss_icon->current_icon_bitmap = ss_icon->icon_bmaps[ICON_FRAME_SELECTED];
+			else
+				color_to_draw = &Icon_colors[ICON_FRAME_SELECTED];
+		}
 	}
 
 	if ( Ss_pool[ship_class] <= 0 ) {
@@ -2039,8 +2237,20 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 	}
 
 	// blit the icon
-	gr_set_bitmap(ss_icon->current_icon_bitmap);
-	gr_bitmap(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1]);
+	if(ss_icon->model_index == -1)
+	{
+		gr_set_bitmap(ss_icon->current_icon_bitmap);
+		gr_bitmap(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1]);
+	}
+	else
+	{
+		ship_info *sip = &Ship_info[ship_class];
+		gr_set_color_fast(color_to_draw);
+		//gr_set_shader(shader_to_use);
+		draw_model_icon(ss_icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip);
+		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28);
+		//gr_shade(Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28);
+	}
 
 	// blit the number
 	sprintf(buf, "%d", Ss_pool[ship_class] );
@@ -2062,8 +2272,11 @@ void stop_ship_animation()
 
 	ss_icon = &Ss_icons[Ship_anim_class];
 
-	anim_release_render_instance(ss_icon->anim_instance);
-	ss_icon->anim_instance = NULL;
+	if(ss_icon->anim_instance != NULL)
+	{
+		anim_release_render_instance(ss_icon->anim_instance);
+		ss_icon->anim_instance = NULL;
+	}
 
 	Ship_anim_class = -1;
 }
@@ -2125,58 +2338,62 @@ anim* ss_load_individual_animation(int ship_class)
 // in the tech room - UnknownPlayer
 void start_ship_animation(int ship_class, int play_sound)
 {
-	if(Cmdline_ship_choice_3d)
-	{
-	if (ship_class < 0)
-	{
-		mprintf(("No ship class passed in to start_ship_animation - why?"));
-		ShipSelectModelNum = -1;
-		return;
-	}
-	
 	ship_info* sip = &Ship_info[ship_class];
-	
-	// Load the necessary model file
-	ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-	
-	// page in ship textures properly (takes care of nondimming pixels)
-	model_page_in_textures(ShipSelectModelNum, ship_class);
-	
-	if (sip->modelnum < 0)
-	{
-		mprintf(("Couldn't load model file in missionshipchoice.cpp - tell UnknownPlayer"));
-	}
-	} else {
 
-	ss_icon_info	*ss_icon;
-	Assert( ship_class >= 0 );
-	
-	if ( Ship_anim_class == ship_class ) 
-		return;
-	
-	if ( Ship_anim_class >= 0 ) {
-		stop_ship_animation();
+	if(Cmdline_ship_choice_3d || !strlen(sip->anim_filename))
+	{
+		if (ship_class < 0)
+		{
+			mprintf(("No ship class passed in to start_ship_animation - why?"));
+			ShipSelectModelNum = -1;
+			return;
+		}
+		
+		
+		
+		// Load the necessary model file
+		ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		
+		// page in ship textures properly (takes care of nondimming pixels)
+		model_page_in_textures(ShipSelectModelNum, ship_class);
+		
+		if (sip->modelnum < 0)
+		{
+			mprintf(("Couldn't load model file in missionshipchoice.cpp - tell UnknownPlayer"));
+		}
 	}
-	
-	ss_icon = &Ss_icons[ship_class];
-	
-	// see if we need to load in the animation from disk
-	if ( ss_icon->anim == NULL ) {
-		ss_icon->anim = ss_load_individual_animation(ship_class);
-	}
-	
-	// see if we need to get an instance
-	if ( ss_icon->anim_instance == NULL ) {
-		anim_play_struct aps;
-	
-		anim_play_init(&aps, ss_icon->anim, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
-		aps.screen_id = ON_SHIP_SELECT;
-		aps.framerate_independent = 1;
-		aps.skip_frames = 0;
-		ss_icon->anim_instance = anim_play(&aps);
-	}
-	
-	Ship_anim_class = ship_class;
+	else
+	{
+
+		ss_icon_info	*ss_icon;
+		Assert( ship_class >= 0 );
+		
+		if ( Ship_anim_class == ship_class ) 
+			return;
+		
+		if ( Ship_anim_class >= 0) {
+			stop_ship_animation();
+		}
+		
+		ss_icon = &Ss_icons[ship_class];
+		
+		// see if we need to load in the animation from disk
+		if ( ss_icon->anim == NULL ) {
+			ss_icon->anim = ss_load_individual_animation(ship_class);
+		}
+		
+		// see if we need to get an instance
+		if ( ss_icon->anim_instance == NULL ) {
+			anim_play_struct aps;
+		
+			anim_play_init(&aps, ss_icon->anim, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
+			aps.screen_id = ON_SHIP_SELECT;
+			aps.framerate_independent = 1;
+			aps.skip_frames = 0;
+			ss_icon->anim_instance = anim_play(&aps);
+		}
+		
+		Ship_anim_class = ship_class;
 	}
 
 //	if ( play_sound ) {
@@ -2410,7 +2627,10 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 	ss_slot_info	*ws;
 	ss_icon_info	*icon;
 	wing				*wp;
-	int				i, bitmap_to_draw, w, h, sx, sy, slot_index;
+	int				i, w, h, sx, sy, slot_index;
+	int				bitmap_to_draw = -1;
+	color			*color_to_draw = NULL;
+	//shader			*shader_to_use = NULL;
 
 	Assert(wb_num >= 0 && wb_num < MAX_WING_BLOCKS);		
 	wb = &Ss_wings[wb_num];
@@ -2454,32 +2674,60 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 					}
 				}
 
-				if ( ws->status & WING_SLOT_LOCKED ) {					
-					bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED];
+				if ( ws->status & WING_SLOT_LOCKED ) {
+					if(icon->model_index == -1)
+						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED];
+					else
+						color_to_draw = &Icon_colors[ICON_FRAME_DISABLED];
 
 #ifndef NO_NETWORK
 					// in multiplayer, determine if this it the special case where the slot is disabled, and 
 					// it is also _my_ slot (ie, team capatains/host have not locked players yet)
 					if((Game_mode & GM_MULTIPLAYER) && multi_ts_disabled_high_slot(slot_index)){
-						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED_HIGH];
+						if(icon->model_index == -1)
+							bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED_HIGH];
+						else
+							color_to_draw = &Icon_colors[ICON_FRAME_DISABLED_HIGH];
 					}
 #endif
 					break;
 				}
 
-				bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_NORMAL];
-				if ( selected_slot == slot_index || class_select == Wss_slots[slot_index].ship_class) {
-					bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_SELECTED];
-				} else if ( hot_slot == slot_index ) {
-					if ( mouse_down(MOUSE_LEFT_BUTTON) ){
+				if(icon->model_index == -1)
+					bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_NORMAL];
+				else
+					color_to_draw = &Icon_colors[ICON_FRAME_NORMAL];
+				if ( selected_slot == slot_index || class_select == Wss_slots[slot_index].ship_class)
+				{
+					if(icon->model_index == -1)
 						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_SELECTED];
-					} else {
-						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_HOT];
+					else
+						color_to_draw = &Icon_colors[ICON_FRAME_SELECTED];
+				}
+				else if ( hot_slot == slot_index )
+				{
+					if ( mouse_down(MOUSE_LEFT_BUTTON) )
+					{
+						if(icon->model_index == -1)
+							bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_SELECTED];
+						else
+							color_to_draw = &Icon_colors[ICON_FRAME_SELECTED];
+					}
+					else
+					{
+						if(icon->model_index == -1)
+							bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_HOT];
+						else
+							color_to_draw = &Icon_colors[ICON_FRAME_HOT];
 					}
 				}
 
-				if ( ws->status & WING_SLOT_IS_PLAYER && (selected_slot != slot_index) ) {
-					bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_PLAYER];
+				if ( ws->status & WING_SLOT_IS_PLAYER && (selected_slot != slot_index) )
+				{
+					if(icon->model_index == -1)
+						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_PLAYER];
+					else
+						color_to_draw = &Icon_colors[ICON_FRAME_PLAYER];
 				}
 				break;
 
@@ -2491,7 +2739,10 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 			case WING_SLOT_DISABLED:
 			case WING_SLOT_IGNORE:
 				if ( icon ) {
-					bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED];
+					if(icon->model_index == -1)
+						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED];
+					else
+						color_to_draw = &Icon_colors[ICON_FRAME_DISABLED];
 				} else {
 					bitmap_to_draw = Wing_slot_disabled_bitmap;
 				}
@@ -2507,6 +2758,15 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 		if ( bitmap_to_draw != -1 ) {
 			gr_set_bitmap(bitmap_to_draw);
 			gr_bitmap(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1]);
+		}
+		else if(color_to_draw != NULL)
+		{
+			ship_info *sip = &Ship_info[Wss_slots[slot_index].ship_class];
+			gr_set_color_fast(color_to_draw);
+			//gr_set_shader(shader_to_use);
+			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip);
+			draw_brackets_square(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28);
+			//gr_shade(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28);
 		}
 	}
 }
@@ -2554,14 +2814,31 @@ void ss_make_slot_full(int slot_index)
 void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 {
 	// blit the bitmap in the correct location
-	if(ship_class == -1){
+	if(ship_class == -1)
+	{
 		gr_set_bitmap(Wing_slot_empty_bitmap);
-	} else {
-		ss_icon_info *icon = &Ss_icons[ship_class];
-		Assert(icon->icon_bmaps[bmap_num] != -1);	
-		gr_set_bitmap(icon->icon_bmaps[bmap_num]);		
+		gr_bitmap(x,y);
 	}
-	gr_bitmap(x,y);	
+	else
+	{
+		ss_icon_info *icon = &Ss_icons[ship_class];
+		if(icon->model_index == -1)
+		{
+			Assert(icon->icon_bmaps[bmap_num] != -1);	
+			gr_set_bitmap(icon->icon_bmaps[bmap_num]);
+			gr_bitmap(x,y);	
+		}
+		else
+		{
+			ship_info *sip = &Ship_info[ship_class];
+			gr_set_color_fast(&Icon_colors[bmap_num]);
+			//gr_set_shader(&Icon_shaders[bmap_num]);
+			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25, x, y, 32, 28, sip);
+			draw_brackets_square(x, y, x + 32, y + 28);
+			//gr_shade(x, y, 32, 28);
+		}
+	}
+	
 }
 
 // ------------------------------------------------------------------------
@@ -3060,22 +3337,29 @@ void ss_init_pool(team_data *pteam)
 void ss_load_icons(int ship_class)
 {
 	ss_icon_info	*icon;
-	int				first_frame, num_frames, i;
-
 	icon = &Ss_icons[ship_class];
+	ship_info *sip = &Ship_info[ship_class];
 
-	first_frame = bm_load_animation(Ship_info[ship_class].icon_filename, &num_frames);
-	if ( first_frame == -1 ) {
-		Int3();	// Could not load in icon frames.. get Alan
-		return;
+	if(!Cmdline_ship_choice_3d && strlen(sip->icon_filename))
+	{
+		int				first_frame, num_frames, i;
+		first_frame = bm_load_animation(sip->icon_filename, &num_frames);
+		if ( first_frame == -1 ) {
+			Int3();	// Could not load in icon frames.. get Alan
+			return;
+		}
+
+		for ( i = 0; i < num_frames; i++ ) {
+			icon->icon_bmaps[i] = first_frame+i;
+		}
+
+		// set the current bitmap for the ship icon
+		icon->current_icon_bitmap = icon->icon_bmaps[ICON_FRAME_NORMAL];
 	}
-
-	for ( i = 0; i < num_frames; i++ ) {
-		icon->icon_bmaps[i] = first_frame+i;
+	else
+	{
+		icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 	}
-
-	// set the current bitmap for the ship icon
-	icon->current_icon_bitmap = icon->icon_bmaps[ICON_FRAME_NORMAL];
 }
 
 // load all the icons for ships in the pool
@@ -3093,6 +3377,7 @@ void ss_load_all_icons()
 		for ( j = 0; j < NUM_ICON_FRAMES; j++ ) {
 			Ss_icons[i].icon_bmaps[j] = -1;
 		}
+		Ss_icons[i].model_index = -1;
 
 		if ( Ss_pool[i] >= 0 ) {
 			ss_load_icons(i);
