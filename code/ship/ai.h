@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.7 $
- * $Date: 2003-01-19 07:02:15 $
+ * $Revision: 2.8 $
+ * $Date: 2003-01-19 22:20:22 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/01/19 07:02:15  Goober5000
+ * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
+ * all ships, and all ships who have their departure anchor set to a capital ship
+ * should exit to that ship when told to depart
+ * --Goober5000
+ *
  * Revision 2.6  2003/01/07 20:06:44  Goober5000
  * added ai-chase-any-except sexp
  * --Goober5000
@@ -769,5 +775,8 @@ void ai_set_mode_warp_out(object *objp, ai_info *aip);
 
 // prototyped by Goober5000
 int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, int except = 0);
+
+// moved to header file by Goober5000
+void ai_announce_ship_dying(object *dying_objp);
 
 #endif

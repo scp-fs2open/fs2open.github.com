@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.30 $
- * $Date: 2003-01-19 09:14:05 $
+ * $Revision: 2.31 $
+ * $Date: 2003-01-19 22:20:23 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/01/19 09:14:05  Goober5000
+ * fixed fiddly code
+ * --Goober5000
+ *
  * Revision 2.29  2003/01/19 09:10:40  Goober5000
  * more tweaky bug fixes
  * --Goober5000
@@ -5067,6 +5071,7 @@ MONITOR(NumShipDepartures);
 int mission_do_departure( object *objp )
 {
 	ship *shipp;
+	int temp = -1;
 //	vector v;
 
 	Assert ( objp->type == OBJ_SHIP );
@@ -5079,35 +5084,23 @@ int mission_do_departure( object *objp )
 	// if ship has no subspace drive but is cued to warp out, find it somewhere to depart
 	if ((shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) && (shipp->departure_location != DEPART_AT_DOCK_BAY))
 	{
-		ship_obj	*so;
-		ship		*sp;
-		int parent_ship = -1;
-
 		// locate a capital ship on the same team:
-		so = GET_FIRST(&Ship_obj_list);
-		while(so != END_OF_LIST(&Ship_obj_list))
-		{
-			sp = &Ships[Objects[so->objnum].instance];
-			if ( (Ship_info[sp->ship_info_index].flags & (SIF_HUGE_SHIP)) && (sp->team == shipp->team) )
-			{
-				parent_ship = Objects[so->objnum].instance;
-				break;
-			}
-			so = GET_NEXT(so);
-		} 
-
-		if (parent_ship != -1)
+		if ((temp = ship_get_ship_with_dock_bay(shipp->team)) >= 0)
 		{
 			shipp->departure_location = DEPART_AT_DOCK_BAY;
-			shipp->departure_anchor = parent_ship;
+			shipp->departure_anchor = temp;
 		}
 		// if we couldn't find anybody, we're doomed! ;)
 		else
 		{
 			shipp->flags &= ~SF_DEPARTING;
-			aigp->ai_mode = AI_GOAL_NONE;
-			aigp->ai_submode = 0;
-			aip->mode = AIM_NONE;
+
+			// engage enemy
+			aip->target_objnum = -1;	// force reacquisition of target
+			aip->enemy_wing = -1;		// same with wing
+			aigp->ai_mode = AI_GOAL_CHASE_ANY;
+			aigp->ai_submode = SM_ATTACK;
+			ai_attack_object( objp, NULL, aigp->priority, NULL );
 			return 0;
 		}
 	}
@@ -5144,8 +5137,12 @@ int mission_do_departure( object *objp )
 			if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
 				goto do_departure_warp;
 
-		// if ship is not dying, we're good
-		if ( !(Ships[Objects[aip->goal_objnum].instance].flags & (SF_DYING | SF_DEPARTING)) && ( aip->goal_signature == Objects[aip->goal_objnum].signature) ) 
+//		if ( ( aip->goal_signature != Objects[aip->goal_objnum].signature) )
+//		{
+//		}
+
+		// make sure ship not dying or departing
+		if (!(Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING)))
 		{
 			if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1)
 			{
@@ -5159,9 +5156,13 @@ int mission_do_departure( object *objp )
 		if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
 		{
 			shipp->flags &= ~SF_DEPARTING;
-			aigp->ai_mode = AI_GOAL_NONE;
-			aigp->ai_submode = 0;
-			aip->mode = AIM_NONE;
+
+			// engage enemy
+			aip->target_objnum = -1;	// force reacquisition of target
+			aip->enemy_wing = -1;		// same with wing
+			aigp->ai_mode = AI_GOAL_CHASE_ANY;
+			aigp->ai_submode = SM_ATTACK;
+			ai_attack_object( objp, NULL, aigp->priority, NULL );
 			return 0;
 		}
 	}

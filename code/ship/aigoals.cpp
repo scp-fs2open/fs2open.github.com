@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-01-18 23:25:38 $
+ * $Revision: 2.6 $
+ * $Date: 2003-01-19 22:20:22 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/01/18 23:25:38  Goober5000
+ * made "no-subspace-drive" applicable to all ships and fixed a really *STUPID*
+ * bug that made FRED keep crashing (missing comma, bleagh!)
+ * --Goober5000
+ *
  * Revision 2.4  2003/01/18 09:25:40  Goober5000
  * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
  * than SF_ flags
@@ -1492,10 +1497,33 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	ai_info *aip;
 
 	//  these orders are always achievable.
-	if ( (aigp->ai_mode == AI_GOAL_KEEP_SAFE_DISTANCE) || (aigp->ai_mode == AI_GOAL_WARP)
+	if ( (aigp->ai_mode == AI_GOAL_KEEP_SAFE_DISTANCE)
 		|| (aigp->ai_mode == AI_GOAL_CHASE_ANY) || (aigp->ai_mode == AI_GOAL_STAY_STILL)
 		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) || (aigp->ai_mode == AI_GOAL_CHASE_ANY_EXCEPT) )
 		return AI_GOAL_ACHIEVABLE;
+
+	// warp (depart) only achievable if there's somewhere to depart to
+	if (aigp->ai_mode == AI_GOAL_WARP)
+	{
+		ship *shipp = &Ships[Objects[objnum].instance];
+
+		// always valid if has subspace drive
+		if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
+			return AI_GOAL_ACHIEVABLE;
+
+		// if subspace drive, only valid if there's somewhere to depart to
+
+		// locate a capital ship on the same team:
+		if (ship_get_ship_with_dock_bay(shipp->team) >= 0)
+		{
+			return AI_GOAL_ACHIEVABLE;
+		}
+		else
+		{
+			return AI_GOAL_NOT_ACHIEVABLE;
+		}
+	}
+
 
 	// form on my wing is always achievable, but need to set the override bit so that it
 	// always gets executed next

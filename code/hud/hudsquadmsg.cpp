@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-01-19 22:20:23 $
+ * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -1174,13 +1177,27 @@ void hud_squadmsg_repair_rearm_abort( int toggle_state, object *obj)
 		hud_squadmsg_toggle();						// take us out of message mode
 }
 
+// Goober5000 - redone and added a bit
 // returns 1 if an order is valid for a ship.  Applies to things like departure when engines are blown, etc.
 int hud_squadmsg_ship_order_valid( int shipnum, int order )
 {
-	// disabled ships can't depart.
-	if ( (order == DEPART_ITEM) && (Ships[shipnum].flags & SF_DISABLED) )
-		return 0;
+	switch ( order  )
+	{
+		case DEPART_ITEM:
+			// disabled ships can't depart.
+			if (Ships[shipnum].flags & SF_DISABLED)
+				return 0;
 
+			// Goober5000: also can't depart if no subspace drives and no capships in the area
+			if (Ships[shipnum].flags2 & SF2_NO_SUBSPACE_DRIVE)
+			{
+				// locate a capital ship on the same team:
+				if (ship_get_ship_with_dock_bay(Ships[shipnum].team) < 0)
+					return 0;
+			}
+
+			break;
+	}
 	return 1;
 }
 

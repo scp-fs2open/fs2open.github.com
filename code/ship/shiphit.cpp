@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-01-19 01:07:42 $
- * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2003-01-19 22:20:22 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/01/19 01:07:42  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.7  2003/01/15 23:23:30  Goober5000
  * NOW the model duplicates work! :p
  * still gotta do the textures, but it shouldn't be hard now
@@ -1625,8 +1628,6 @@ void player_died_start(object *killer_objp)
 #define	DEATHROLL_MASS_STANDARD			50				// approximate mass of lightest ship
 #define	DEATHROLL_VELOCITY_STANDARD	70				// deathroll rotvel is scaled according to ship velocity
 #define	DEATHROLL_ROTVEL_SCALE			4				// constant determines how quickly deathroll rotvel is ramped up  (smaller is faster)
-
-void ai_announce_ship_dying(object *dying_objp);
 
 void saturate_fabs(float *f, float max)
 {

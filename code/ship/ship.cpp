@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.43 $
- * $Date: 2003-01-19 08:37:52 $
+ * $Revision: 2.44 $
+ * $Date: 2003-01-19 22:20:22 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/01/19 08:37:52  Goober5000
+ * fixed two dumb bugs in the set-support-ship code
+ * --Goober5000
+ *
  * Revision 2.42  2003/01/19 07:02:15  Goober5000
  * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
  * all ships, and all ships who have their departure anchor set to a capital ship
@@ -10611,7 +10615,14 @@ int is_support_allowed(object *objp)
 		Assert(The_mission.support_ships.arrival_anchor != -1);
 
 		// ensure it's in-mission
-		if (ship_name_lookup(Parse_names[The_mission.support_ships.arrival_anchor]) < 0)
+		int temp = ship_name_lookup(Parse_names[The_mission.support_ships.arrival_anchor]);
+		if (temp < 0)
+		{
+			return 0;
+		}
+
+		// make sure it's not leaving or blowing up
+		if (Ships[temp].flags & (SF_DYING | SF_DEPARTING))
 		{
 			return 0;
 		}
@@ -11211,4 +11222,43 @@ void wing_load_squad_bitmap(wing *w)
 			bm_unlock(w->wing_insignia_texture);
 		}
 	}
+}
+
+// Goober5000 - needed by new hangar depart code
+// check whether this ship has a docking bay
+int ship_has_dock_bay(int shipnum)
+{
+	polymodel *pm;
+				
+	pm = model_get( Ships[shipnum].modelnum );
+	Assert( pm );
+
+	return ( pm->ship_bay && (pm->ship_bay->num_paths > 0) );
+}
+
+// Goober5000 - needed by new hangar depart code
+// get first ship in ship list with docking bay
+int ship_get_ship_with_dock_bay(int team)
+{
+	int ship_with_bay = -1;
+	ship_obj *so;
+
+	so = GET_FIRST(&Ship_obj_list);
+	while(so != END_OF_LIST(&Ship_obj_list))
+	{
+		if ( ship_has_dock_bay(Objects[so->objnum].instance) && (Ships[Objects[so->objnum].instance].team == team) )
+		{
+			ship_with_bay = Objects[so->objnum].instance;
+
+			if (Ships[ship_with_bay].flags & (SF_DYING | SF_DEPARTING))
+				ship_with_bay = -1;
+
+			if (ship_with_bay >= 0)
+				break;
+		}
+		so = GET_NEXT(so);
+	}
+
+	// return whatever we got
+	return ship_with_bay;
 }

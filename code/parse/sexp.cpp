@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.34 $
- * $Date: 2003-01-19 07:45:38 $
+ * $Revision: 2.35 $
+ * $Date: 2003-01-19 22:20:22 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/01/19 07:45:38  Goober5000
+ * actually added the set-support-ship sexp; much of the other commit was
+ * groundwork (data types and stuff)
+ * --Goober5000
+ *
  * Revision 2.33  2003/01/19 07:02:16  Goober5000
  * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
  * all ships, and all ships who have their departure anchor set to a capital ship
@@ -1762,21 +1767,9 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				// ship exists at this point
 
 				// now determine if this ship has a docking bay
+				if (!ship_has_dock_bay(ship_name_lookup_absolute(CTEXT(index))))
 				{
-					polymodel *pm;
-				
-					pm = model_get( Ships[ship_name_lookup_absolute(CTEXT(index))].modelnum );
-					Assert( pm );
-
-					if ( pm->ship_bay && (pm->ship_bay->num_paths > 0) )
-					{
-						// valid
-						break;
-					}
-					else
-					{
-						return SEXP_CHECK_INVALID_SHIP_WITH_BAY;
-					}
+					return SEXP_CHECK_INVALID_SHIP_WITH_BAY;
 				}
 				break;
 
@@ -8275,15 +8268,17 @@ void sexp_set_support_ship(int n)
 	// get arrival anchor
 	n = CDR(n);
 	temp_val = -1;
-	for (i=0; i<MAX_SHIPS+MAX_WINGS; i++)
+	for (i=0; i<Num_parse_names; i++)
 	{
 		if (!stricmp(CTEXT(n), Parse_names[i]))
 			temp_val = i;
 	}
+	// if not found, make a new entry
 	if (temp_val < 0)
 	{
-		Warning(LOCATION, "Support ship arrival anchor '%s' not found.\n", CTEXT(n));
-		return;
+		strcpy(Parse_names[Num_parse_names], CTEXT(n));
+		temp_val = Num_parse_names;
+		Num_parse_names++;
 	}
 	The_mission.support_ships.arrival_anchor = temp_val;
 
@@ -8305,15 +8300,17 @@ void sexp_set_support_ship(int n)
 	// get departure anchor
 	n = CDR(n);
 	temp_val = -1;
-	for (i=0; i<MAX_SHIPS+MAX_WINGS; i++)
+	for (i=0; i<Num_parse_names; i++)
 	{
 		if (!stricmp(CTEXT(n), Parse_names[i]))
 			temp_val = i;
 	}
+	// if not found, make a new entry
 	if (temp_val < 0)
 	{
-		Warning(LOCATION, "Support ship departure anchor '%s' not found.\n", CTEXT(n));
-		return;
+		strcpy(Parse_names[Num_parse_names], CTEXT(n));
+		temp_val = Num_parse_names;
+		Num_parse_names++;
 	}
 	The_mission.support_ships.departure_anchor = temp_val;
 
