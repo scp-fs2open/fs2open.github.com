@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-17 20:04:00 $
+ * $Author: wmcoolmon $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.5  2002/05/13 21:09:29  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -2439,8 +2442,16 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 				Ships[ship_obj->instance].time_first_tagged = Missiontime;
 			}
 			mprintf(("Level 2 TAGGED %s for %f seconds\n", Ships[ship_obj->instance].ship_name, Ships[ship_obj->instance].level2_tag_left));
-		} else {
-			Int3();	// unknown tag level
+		} else if (Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_level == 3) {
+			struct ssm_firing_info;
+			extern void ssm_create(vector *target, vector *start, int ssm_index, ssm_firing_info *override);
+
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Firing artillery", 1570));
+
+			vector temp;
+			vm_vec_unrotate(&temp, &ship_obj->pos, &Objects[other_obj->instance].orient);
+			//vm_vec_add2(&temp, &Objects[aip->artillery_objnum].pos);			
+			ssm_create(&temp, &Objects[ship_obj->instance].pos, 0, NULL);				
 		}
 	}
 
