@@ -246,7 +246,7 @@ bool turret_weapon_has_subtype(ship_weapon *swp, int subtype)
 weapon_info *get_turret_weapon_wip(ship_weapon *swp, int weapon_num)
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
-	Assert(weapon_num > 0);
+	Assert(weapon_num >= 0);
 
 	if(weapon_num >= MAX_SHIP_PRIMARY_BANKS)
 		return &Weapon_info[swp->secondary_bank_weapons[weapon_num - MAX_SHIP_PRIMARY_BANKS]];
