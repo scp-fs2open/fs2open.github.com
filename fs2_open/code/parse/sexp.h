@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.64 $
- * $Author: wmcoolmon $
- * $Date: 2004-06-15 21:04:18 $
+ * $Revision: 2.65 $
+ * $Author: Kazan $
+ * $Date: 2004-07-01 16:38:19 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2004/06/15 21:04:18  wmcoolmon
+ * Bumped MAX_SEXP_NODES to 3500
+ *
  * Revision 2.63  2004/06/15 20:49:22  wmcoolmon
  * Added hud-set-color and get-current-speed
  *
@@ -816,7 +819,7 @@ struct ship_subsys;
 #define OP_IS_SHIP_TYPE						(0x0026 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_SHIP_CLASS					(0x0027	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_NUM_SHIPS_IN_BATTLE				(0x0028 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
-#define OP_CURRENT_SPEED					(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
+#define OP_CURRENT_SPEED					(0x0031 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
 
 #if defined(ENABLE_AUTO_PILOT)
 //text: is-nav-visited
