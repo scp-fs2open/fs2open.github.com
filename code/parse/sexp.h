@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.70 $
+ * $Revision: 2.71 $
  * $Author: Goober5000 $
- * $Date: 2004-08-23 04:32:06 $
+ * $Date: 2004-09-17 00:18:18 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2004/08/23 04:32:06  Goober5000
+ * ship-tag and ship-untag sexps
+ * --Goober5000
+ *
  * Revision 2.69  2004/08/11 05:06:31  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -954,7 +958,7 @@ struct ship_subsys;
 #define OP_PLAY_SOUND_FROM_TABLE			(0x0082	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_PLAY_SOUND_FROM_FILE				(0x0083	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CLOSE_SOUND_FROM_FILE			(0x0084 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_TOGGLE_HUD						(0x0085	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_HUD_DISABLE						(0x0085	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_KAMIKAZE							(0x0086 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_NOT_KAMIKAZE						(0x0087 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_TURRET_TAGGED_SPECIFIC			(0x0088 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
@@ -971,8 +975,10 @@ struct ship_subsys;
 #define OP_HUD_SET_FRAME					(0x0092 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_COLOR					(0x0093 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_RADAR_SET_MAXRANGE				(0x0094 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //Kazan
-#define OP_SHIP_TAG					(0x0095 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) 	// Goober5000
-#define OP_SHIP_UNTAG					(0x0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) 	// Goober5000
+//
+#define OP_SHIP_TAG							(0x0095 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_SHIP_UNTAG						(0x0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_HUD_DISABLE_EXCEPT_MESSAGES		(0x0097 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
