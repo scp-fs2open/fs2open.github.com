@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-05-08 01:08:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2004-05-12 22:49:13 $
+ * $Author: phreak $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/05/08 01:08:48  Goober5000
+ * small fix
+ * --Goober5000
+ *
  * Revision 2.13  2004/03/17 04:07:29  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -185,7 +189,7 @@
 #include "Nebula/Neb.h"
 #include "globalincs/pstypes.h"
 
-extern int wm;
+extern int Warp_model;
 
 DCF(norm,"normalize a zero length vector")
 {
@@ -238,7 +242,7 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 	vector vecs[5];
 	vertex verts[5];
 
-	if(wm > -1 && !force_old && !(The_mission.flags & MISSION_FLAG_OLD_WARP_EFFECT)){
+	if(Warp_model > -1 && !force_old && !(The_mission.flags & MISSION_FLAG_OLD_WARP_EFFECT)){
 		float model_Interp_scale_x = radius /20;
 		float model_Interp_scale_y = radius /20;
 		float model_Interp_scale_z = radius /20;
@@ -249,7 +253,7 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 
 		model_set_detail_level((int)(dist / (radius * 10.0f)));
 		gr_set_cull(0);
-		model_render( wm, orient, pos, MR_NO_LIGHTING | MR_NORMAL);
+		model_render( Warp_model, orient, pos, MR_NO_LIGHTING | MR_NORMAL);
 		gr_set_cull(1);
 
 //	Warp_Map = -1;//un sets the warp map

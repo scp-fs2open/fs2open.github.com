@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.6 $
- * $Date: 2004-03-17 04:07:29 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2004-05-12 22:49:13 $
+ * $Author: phreak $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/17 04:07:29  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.5  2004/03/05 09:02:00  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -261,6 +268,6 @@ float fireball_lifeleft_percent( object *obj );
 extern void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int force_old = 0 );
 extern int Warp_glow_bitmap;			// Internal
 
-extern int wm;
+extern int Warp_model;
 
 #endif /* _FIREBALLS_H */
