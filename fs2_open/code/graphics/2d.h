@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.45 $
- * $Date: 2005-02-27 07:08:22 $
+ * $Revision: 2.46 $
+ * $Date: 2005-03-03 06:05:27 $
  * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/02/27 07:08:22  wmcoolmon
+ * More nonstandard res stuff
+ *
  * Revision 2.44  2005/02/18 09:51:06  wmcoolmon
  * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
  *
@@ -1196,6 +1199,7 @@ __inline int gr_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL
 
 // new bitmap functions
 void gr_bitmap(int x, int y, bool resize = true);
+void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.

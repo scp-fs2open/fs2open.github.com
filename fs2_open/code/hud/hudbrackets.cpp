@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-02-18 09:54:41 $
+ * $Revision: 2.16 $
+ * $Date: 2005-03-03 06:05:28 $
  * $Author: wmcoolmon $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/02/18 09:54:41  wmcoolmon
+ * Since the screen can be wider than 1200 px now, don't auto-cull brackets if they're that big.
+ *
  * Revision 2.14  2005/01/30 03:26:11  wmcoolmon
  * HUD updates
  *
@@ -886,7 +889,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				}
 				break;
 			case OBJ_JUMP_NODE:
-				tinfo_name = Jump_nodes[t_objp->instance].name;
+				tinfo_name = t_objp->jnp->get_name_ptr();
 				break;
 		}
 

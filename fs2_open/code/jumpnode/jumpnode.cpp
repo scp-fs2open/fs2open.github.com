@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-01-31 23:27:53 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-03 06:05:28 $
+ * $Author: wmcoolmon $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/31 23:27:53  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.5  2004/07/26 20:47:35  Kazan
  * remove MCD complete
  *
@@ -82,26 +85,48 @@ int Num_jump_nodes = 0;
 #include "jumpnode/jumpnode.h"
 #include "model/model.h"
 #include "hud/hud.h"
+#include "globalincs/linklist.h"
 
+linked_list Jump_nodes;
 
-
-jump_node_struct Jump_nodes[MAX_JUMP_NODES];
-
-void jumpnode_render(object *jumpnode_objp, vector *pos, vector *view_pos)
+void jumpnode_level_close()
 {
-	jump_node_struct	*node;
+	jump_node *jnp;
+	jump_node *next_node;
+
+	for ( jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = next_node ) {	
+		next_node = (jump_node *)jnp->get_next();
+		delete jnp;
+		Num_jump_nodes--;
+	}
+
+	//This could mean a memory leak
+	if(Num_jump_nodes!=0)Warning(LOCATION, "Num_jump_nodes should be 0, but is actually %d.", Num_jump_nodes);
+}
+
+void jump_node::render(vector *pos, vector *view_pos)
+{
+	if(m_flags & JN_HIDE)
+		return;
+
 	matrix				node_orient = IDENTITY_MATRIX;
 
-	node = &Jump_nodes[jumpnode_objp->instance];
+	int mr_flags = MR_NO_LIGHTING | MR_LOCK_DETAIL;
+	if(!(m_flags & JN_SHOW_POLYS)) {
+		mr_flags |= MR_NO_CULL | MR_NO_POLYS | MR_SHOW_OUTLINE_PRESET;
+	}
 
 	if ( Fred_running ) {
-		model_set_outline_color(0, 255, 0);		
-		model_render(node->modelnum, &node_orient, pos, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_POLYS | MR_SHOW_OUTLINE );
+		gr_set_color_fast(&m_display_color);		
+		model_render(m_modelnum, &node_orient, pos, mr_flags );
 	} else {
-		if ( view_pos ) {
+		if (m_flags & JN_USE_DISPLAY_COLOR) {
+			gr_set_color_fast(&m_display_color);
+		}
+		else if ( view_pos != NULL) {
 			int alpha_index = HUD_color_alpha;
 
-			// generate alpha index based on distance to jump node
+			// generate alpha index based on distance to jump this
 			float dist;
 
 			dist = vm_vec_dist_quick(view_pos, pos);
@@ -125,41 +150,119 @@ void jumpnode_render(object *jumpnode_objp, vector *pos, vector *view_pos)
 		} else {
 			gr_set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		}
-		model_render(node->modelnum, &node_orient, pos, MR_NO_CULL | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_POLYS | MR_SHOW_OUTLINE_PRESET );
+		model_render(m_modelnum, &node_orient, pos, mr_flags );
 	}
 
 }
 
-// create a jump node object and return index to it.
-int jumpnode_create(vector *pos, char* file_name)
+void jump_node::set_model(char *model_name, bool show_polys)
+{
+	//Try to load the new model; if we can't, then we can't set it
+	int new_model = model_load(model_name, 0, NULL);
+
+	if(new_model == -1)
+	{
+		Warning(LOCATION, "Couldn't load model file %s for jump node %s", model_name, m_name);
+		return;
+	}
+	
+	//If there's an old model, unload it
+	if(m_modelnum != -1)
+		model_unload(m_modelnum);
+
+	//Now actually set stuff
+	m_modelnum = new_model;
+
+	//Do we want to change poly showing?
+	if(show_polys)
+		m_flags &= ~JN_SHOW_POLYS;
+	else
+		m_flags |= JN_SHOW_POLYS;
+}
+
+void jump_node::set_alphacolor(int r, int g, int b, int alpha)
+{
+	m_flags |= JN_USE_DISPLAY_COLOR;
+	gr_init_alphacolor(&m_display_color, r, g, b, alpha);
+}
+
+// create a jump node object and return pointer to it.
+jump_node::jump_node(vector *pos)
 {
 	int obj;
 
-	Assert(Num_jump_nodes < MAX_JUMP_NODES);
+	//Set name
+	sprintf(m_name, XSTR( "Jump Node %d", 632), Num_jump_nodes);
 
-	Jump_nodes[Num_jump_nodes].modelnum = model_load(NOX("subspacenode.pof"), 0, NULL);
-	if ( Jump_nodes[Num_jump_nodes].modelnum < 0 ) {
-		Int3();
-		return -1;
+	//Set model
+	m_modelnum = model_load(NOX("subspacenode.pof"), 0, NULL);
+	if ( m_modelnum < 0 ) {
+		Warning(LOCATION, "Could not load default model for %s", m_name);
 	}
 
-	obj = obj_create(OBJ_JUMP_NODE, -1, Num_jump_nodes, NULL, pos, model_get_radius(Jump_nodes[Num_jump_nodes].modelnum), OF_RENDERS);
-	sprintf(Jump_nodes[Num_jump_nodes].name, XSTR( "Jump Node %d", 632), Num_jump_nodes);
-	if (obj >= 0) {
-		Jump_nodes[Num_jump_nodes].objnum = obj;
+	//Set default color
+	gr_init_alphacolor(&m_display_color, 0, 255, 0, 255);
+
+	//Set flags
+	m_flags = 0;
+
+	//Create the object
+	obj = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, pos, model_get_radius(m_modelnum), OF_RENDERS);
+
+	if (obj >= 0)
+	{
+		Objects[obj].jnp = this;
+		m_objnum = obj;
+
+		//Add it
+		Jump_nodes.append(this);
 		Num_jump_nodes++;
 	}
-	return obj;
+}
+
+jump_node::~jump_node()
+{
+	obj_delete(m_objnum);
+
+	//We now return you to your scheduled deletion
+	Jump_nodes.remove(this);
+	Num_jump_nodes--;
+}
+
+jump_node *jumpnode_get_by_name(char* name)
+{
+	jump_node *jnp;
+
+	for ( jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() ) {	
+		if(!stricmp(jnp->get_name_ptr(), name)) return jnp;
+	}
+
+	return NULL;
 }
 
 // only called by FRED
 void jumpnode_render_all()
 {
-	int		i;
-	object	*jumpnode_objp;
+	jump_node *jnp;
 
-	for ( i = 0; i < Num_jump_nodes; i++ ) {	
-		jumpnode_objp = &Objects[Jump_nodes[i].objnum];
-		jumpnode_render(jumpnode_objp, &jumpnode_objp->pos);
+	for ( jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() ) {	
+		jnp->render(&jnp->get_obj()->pos);
 	}
+}
+
+jump_node *jumpnode_get_which_in(object *objp)
+{
+	jump_node *jnp;
+	float radius, dist;
+
+	for ( jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() )
+	{	
+		radius = model_get_radius( jnp->get_modelnum() );
+		dist = vm_vec_dist( &objp->pos, &jnp->get_obj()->pos );
+		if ( dist <= radius ) {
+			return jnp;
+		}
+	}
+
+	return NULL;
 }

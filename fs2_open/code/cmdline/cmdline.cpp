@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.94 $
- * $Date: 2005-02-16 10:00:13 $
+ * $Revision: 2.95 $
+ * $Date: 2005-03-03 06:05:26 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2005/02/16 10:00:13  wmcoolmon
+ * "-ingame" command line option
+ *
  * Revision 2.93  2005/02/10 04:02:37  wmcoolmon
  * Addition of the -clipdist argument.
  *
@@ -737,7 +740,10 @@ Flag exe_params[] =
 	"-multilog",	  "",								false,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.multilog", 
 	"-clientdamage",  "",								false,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.clientdamage",	
 	"-mpnoreturn",	  "Disables flight deck option",	true,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-mpnoreturn",
-
+#ifdef WIN32
+	"-fixbugs",       "Fix bugs",						true,	0,					EASY_DEFAULT,		"Troubleshoot", "",
+	"-nocrash",       "Disable crashing",				true,	0,					EASY_DEFAULT,		"Troubleshoot", "",
+#endif
 	"-oldfire",		  "",								true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.oldfire", 
 	"-nohtl",		  "Software mode (very slow)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nohtl", 
 	"-no_set_gamma",  "Disable setting of gamma",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", 
@@ -845,6 +851,10 @@ cmdline_parm use_3dwarp("-3dwarp", NULL);
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL );
 cmdline_parm use_rlm("-rlm", NULL); // more realistic lighting model - taylor
 cmdline_parm smart_shields("-smart_shields", NULL);
+#ifdef WIN32
+cmdline_parm fix_bugs("-fixbugs", NULL);
+cmdline_parm disable_crashing("-nocrash", NULL);
+#endif
 
 //Experimental
 cmdline_parm load_only_used("-loadonlyused", NULL);
@@ -1628,6 +1638,7 @@ bool SetCmdlineParams()
 
 	if(get_flags_arg.found())
 	{
+		mprintf(("I got to get_flags_arg.found()!!\n"));
 		FILE *fp = fopen("flags.lch","w");
 
 		if(fp == NULL)
@@ -1717,7 +1728,49 @@ bool SetCmdlineParams()
 	{
 		Cmdline_smart_shields = 0;
 	}
+#ifdef WIN32
+	extern uint os_get_window();
+	if( fix_bugs.found() )
+	{
+		MessageBox((HWND)os_get_window(), "Could not get lock on RAID controller, driver may be too old. Auto-bugfixing is disabled", "FS2_Open Warning", MB_ICONWARNING);
+	}
 
+	if( disable_crashing.found())
+	{
+		if(IDRETRY == MessageBox((HWND)os_get_window(), "Error: A CTD bug occured before fs2_open could initialize the anti-crashing subsystem. FS2_Open will now crash. Press retry to try to initialize the subsystem again, or cancel to give up and crash", "FS2_Open Error", MB_ICONWARNING | MB_RETRYCANCEL))
+		{
+			MessageBox((HWND)os_get_window(), "Sorry, it didn't really work. FS2_Open still won't start, but it will close unexpectedly. Press OK to continue closing unexpectedly.", "FS2_Open Error", MB_ICONWARNING);
+		}
+		else
+		{
+			/*char Filepath[1024];
+			char* Filename;
+			GetModuleFileName(hInst, Filepath, sizeof(Filepath));
+			Filename = strrchr(Filepath, '\\');
+			if(Filename == NULL)
+			{
+				Filename = strrchr(Filepath, '/');
+				if(Filename == NULL)
+				{
+					Filename = strrchr(Filepath, ':');
+					if(Filename == NULL)
+					{
+						Filename = Filepath;
+					}
+				}
+			}
+			strcat(Filename, " - Application Error");*/
+			char Filename[128];
+			strcpy(Filename, "fs2_open.exe - Application Error");
+
+			if(IDCANCEL == MessageBox((HWND)os_get_window(), "The instruction at \"0x00001337\" referenced memory at \"0x00000000\". The memory could not be \"read\"\n\nClick on OK to terminate the program\nClick on CANCEL to debug the program", Filename, MB_ICONERROR | MB_OKCANCEL))
+			{
+				MessageBox((HWND)os_get_window(), "What!? Debug something yourself? No, what you want to do is send an error report to Microsoft.", "Error", MB_ICONERROR);
+			}
+		}
+		return false;
+	}
+#endif
 	return true; 
 }
 
@@ -1759,6 +1812,7 @@ int parse_cmdline(char *cmdline)
 int parse_cmdline(int argc, char *argv[])
 #endif
 {
+	mprintf(("I got to parse_cmdline!!\n"));
    #ifdef _WIN32
 		os_init_cmdline(cmdline);
    #else

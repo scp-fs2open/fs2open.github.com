@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:25 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-03-03 06:05:28 $
+ * $Author: wmcoolmon $
  *
  * Header file for managing keyboard/joystick/mouse button presses
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:25  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -65,6 +68,7 @@
 
 extern int Dead_key_set[];
 extern int Dead_key_set_size;
+extern bool Perspective_locked;
 
 typedef struct button_info
 {

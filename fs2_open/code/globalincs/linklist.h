@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/LinkList.h $
- * $Revision: 2.1 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.2 $
+ * $Date: 2005-03-03 06:05:27 $
+ * $Author: wmcoolmon $
  *
  * Macros to handle doubly linked lists
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -97,6 +100,27 @@ do {												\
 	(elem)->prev = NULL;						\
 } while(0)
 
+//Moves elem to be after destelem
+/*
+#define list_move_append(destelem, elem)		\
+do {												\
+	(elem)->prev->next = (elem)->next;				\
+	(elem)->next->prev = (elem)->prev;				\
+	(elem)->prev = (destelem);						\
+	(elem)->next = (destelem)->next;				\
+	(destelem)->next->prev = (elem);				\
+	(destelem)->next = (elem);						\
+} while (0)*/
+#define list_move_append(head, elem)		\
+do {												\
+	(elem)->prev->next = (elem)->next;				\
+	(elem)->next->prev = (elem)->prev;				\
+	(elem)->prev = (head)->prev;					\
+	(elem)->next = (head);							\
+	(head)->prev->next = (elem);					\
+	(head)->prev = (elem);							\
+} while (0)
+
 #define GET_FIRST(head)		((head)->next)
 #define GET_LAST(head)		((head)->prev)
 #define GET_NEXT(elem) 		((elem)->next)
@@ -104,5 +128,27 @@ do {												\
 #define END_OF_LIST(head)	(head)
 #define NOT_EMPTY(head)		((head)->next != (head))
 #define EMPTY(head)			((head)->next == (head))
+
+class linked_list
+{
+	class linked_list *m_next;
+	class linked_list *m_prev;
+public:
+	linked_list(){m_next=this;m_prev=this;}
+
+	//Getting
+	linked_list *get_first(){return m_next;}
+	
+	//Setting
+	void append(linked_list *ptr){ptr->m_prev=m_prev; ptr->m_next=this; m_prev->m_next=ptr; m_prev=ptr;}
+	void remove(linked_list *ptr){	ptr->m_prev->m_next=ptr->m_next;
+									ptr->m_next->m_prev=ptr->m_prev;
+									ptr->m_next = 0;		//These should both be 0
+									ptr->m_prev = 0;	}	//But stupid MSVC doesn't like a NULL here
+	class linked_list* get_next(){return m_next;}
+
+	//Querying
+	bool is_end(linked_list *ptr){return (ptr==this);}
+};
 
 #endif

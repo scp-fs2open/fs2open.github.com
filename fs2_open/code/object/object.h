@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.9 $
- * $Date: 2005-02-04 10:12:32 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-03 06:05:30 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/02/04 10:12:32  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.8  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -489,6 +492,9 @@ typedef struct object {
 	ushort			net_signature;
 	int				num_pairs;		// How many object pairs this is associated with.  When 0 then there are no more.
 
+	union {
+		class jump_node *jnp;		// WMC - Direct pointer to the object. Used only for jump nodes as of now
+	};
 	dock_instance	*dock_list;		// Goober5000 - objects this object is docked to
 } object;
 

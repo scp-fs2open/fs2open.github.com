@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-26 20:47:46 $
- * $Author: Kazan $
+ * $Revision: 2.13 $
+ * $Date: 2005-03-03 06:05:30 $
+ * $Author: wmcoolmon $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/26 20:47:46  Kazan
+ * remove MCD complete
+ *
  * Revision 2.11  2004/07/12 16:33:01  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1302,7 +1305,7 @@ void close_mono()
 		mono_driver = NULL;
 	}
 }
-
+#define NMONO
 void outwnd_init(int display_under_freespace_window)
 {
 #ifndef NMONO

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-02-04 10:12:30 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2005-03-03 06:05:28 $
+ * $Author: wmcoolmon $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.7  2004/07/26 20:47:33  Kazan
  * remove MCD complete
  *
@@ -171,7 +174,9 @@
 #include "graphics/2d.h"
 #include "osapi/osapi.h"
 
-
+#ifdef WIN32
+#define USE_DIRECTINPUT
+#endif
 
 #define MOUSE_MODE_DI	0
 #define MOUSE_MODE_WIN	1
@@ -194,8 +199,6 @@ LOCAL int Mouse_x;
 LOCAL int Mouse_y;
 
 CRITICAL_SECTION mouse_lock;
-
-// #define USE_DIRECTINPUT
 
 int mouse_flags;
 int mouse_left_pressed = 0;

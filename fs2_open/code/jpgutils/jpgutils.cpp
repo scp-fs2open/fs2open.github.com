@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.10 $
- * $Date: 2005-02-12 10:44:11 $
- * $Author: taylor $
+ * $Revision: 1.11 $
+ * $Date: 2005-03-03 06:05:28 $
+ * $Author: wmcoolmon $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/02/12 10:44:11  taylor
+ * fix possible crash in bm_get_section_size()
+ * get jpeg_read_header() working properly
+ * VBO fixes and minor optimizations
+ *
  * Revision 1.9  2005/02/07 08:33:14  taylor
  * should fix linker error in libjpeg
  *
@@ -49,7 +54,7 @@
 #include <setjmp.h>
 
 extern "C" {
-	#include <jpeglib.h>
+	#include <libjpeg/jpeglib.h>
 }
 
 #undef LOCAL // fix from a jpeg header, pstypes.h will define it again

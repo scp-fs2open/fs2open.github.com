@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.7 $
- * $Date: 2005-01-16 22:39:09 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-03 06:05:27 $
  * $Author: wmcoolmon $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/01/16 22:39:09  wmcoolmon
+ * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
+ *
  * Revision 2.6  2004/10/31 21:33:05  taylor
  * rename OGL_inited to OGL_enabled to match D3D version
  *
@@ -258,9 +261,29 @@
 #define	VM_PADLOCK_LEFT				(1 << 9)
 #define	VM_PADLOCK_RIGHT				(1 << 10)
 #define	VM_WARPIN_ANCHOR				(1 << 11)			// special warpin camera mode
-#define VM_TOPDOWN					(1 << 12)
+#define VM_TOPDOWN					(1 << 12)				//Camera is looking down on ship
+#define VM_FREECAMERA				(1 << 13)				//Camera is not attached to any particular object, probably under SEXP control
 
 #define	VM_PADLOCK_ANY (VM_PADLOCK_UP|VM_PADLOCK_REAR|VM_PADLOCK_LEFT|VM_PADLOCK_RIGHT)
+
+//-----Cutscene stuff
+//No bars
+#define CUB_NONE			0
+//List of types of bars
+#define CUB_CUTSCENE		(1<<0)
+//Styles to get to bars
+#define CUB_GRADUAL			(1<<15)
+extern float Cutscene_bars_progress, Cutscene_delta_time;
+extern int Cutscene_bar_flags;
+
+//-----Fadein stuff
+struct shader;
+extern shader Viewer_shader;
+#define FI_NONE					0
+#define FI_FADEIN				1
+#define FI_FADEOUT				2
+extern float Fade_delta_time;
+extern int Fade_type;
 
 
 typedef struct vei {

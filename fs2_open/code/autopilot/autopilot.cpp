@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.15 $
- * $Date: 2005-01-31 23:27:51 $
- * $Author: taylor $
+ * $Revision: 1.16 $
+ * $Date: 2005-03-03 06:05:26 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/01/31 23:27:51  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 1.14  2004/10/03 21:41:10  Kazan
  * Autopilot convergence collision fix for ai_fly_to_ship() and ai_waypoints() -- mathematically expensive, only usable by autopilot
  *
@@ -70,6 +73,7 @@
 #include "ship/ship.h"
 #include "object/object.h"
 #include "parse/sexp.h"
+#include "freespace2/freespace.h"
 
 
 
@@ -77,8 +81,6 @@
 extern int		Player_use_ai;
 extern int sexp_distance2(int obj1, char *subj);
 extern int ai_goal_find_empty_slot( ai_goal *goals );
-
-extern fix Game_time_compression;
 
 
 #if defined(ENABLE_AUTO_PILOT)
@@ -228,7 +230,7 @@ void StartAutopilot()
 	AutoPilotEngaged = true;
 
 	Player_use_ai = 1;
-	Game_time_compression = F1_0;
+	set_time_compression(1);
 
 	// determine speed cap
 	int i,j;
@@ -372,7 +374,7 @@ void EndAutoPilot()
 {
 	AutoPilotEngaged = false;
 
-	Game_time_compression = F1_0;
+	set_time_compression(1);
 	Player_use_ai = 0;
 	//Clear AI Goals
 
@@ -479,17 +481,17 @@ void NavSystem_Do()
 		{
 
 			if (dstfrm_start >= (3000*ramp_bias) && DistanceTo(CurrentNav) > 30000)
-				Game_time_compression = F1_0 * 64;
+				set_time_compression(64);
 			else if (dstfrm_start >= (2000*ramp_bias))
-				Game_time_compression = F1_0 * 32;
+				set_time_compression(32);
 			else if (dstfrm_start >= (1600*ramp_bias))
-				Game_time_compression = F1_0 * 16;
+				set_time_compression(16);
 			else if (dstfrm_start >= (1200*ramp_bias))
-				Game_time_compression = F1_0 * 8;
+				set_time_compression(8);
 			else if (dstfrm_start >= (800*ramp_bias))
-				Game_time_compression = F1_0 * 4;
+				set_time_compression(4);
 			else if (dstfrm_start >= (400*ramp_bias))
-				Game_time_compression = F1_0 * 2;
+				set_time_compression(2);
 		}
 
 		// Ramp DOWN time compression
@@ -497,15 +499,15 @@ void NavSystem_Do()
 		{
 			int dist = DistanceTo(CurrentNav);
 			if (dist >= (5000*ramp_bias))
-				Game_time_compression = F1_0 * 32;
+				set_time_compression(32);
 			else if (dist >= (4000*ramp_bias))
-				Game_time_compression = F1_0 * 16;
+				set_time_compression(16);
 			else if (dist >= (3000*ramp_bias))
-				Game_time_compression = F1_0 * 8;
+				set_time_compression(8);
 			else if (dist >= (2000*ramp_bias))
-				Game_time_compression = F1_0 * 4;
+				set_time_compression(4);
 			else if (dist >= (1000*ramp_bias))
-				Game_time_compression = F1_0 * 2;
+				set_time_compression(2);
 		}
 	}
 }

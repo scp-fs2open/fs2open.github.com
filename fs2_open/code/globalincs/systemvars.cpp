@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-04 10:12:29 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-03 06:05:27 $
+ * $Author: wmcoolmon $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/04 10:12:29  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.5  2004/10/31 21:33:05  taylor
  * rename OGL_inited to OGL_enabled to match D3D version
  *
@@ -214,6 +217,7 @@
 #include "globalincs/systemvars.h"
 #include "io/timer.h"
 #include "nebula/neb.h"
+#include "graphics/2d.h"
 
 
 fix Missiontime;
@@ -225,6 +229,19 @@ int Game_mode;
 int Game_restoring = 0;		// If set, this means we are restoring data from disk
 
 int	Viewer_mode;		//	Viewer's mode, see VM_xxxx flags.
+
+//CUTSCENE STUFF
+//Cutscene flags
+int Cutscene_bar_flags = CUB_NONE;
+//Time for gradual change in seconds
+float Cutscene_delta_time = 1.0f;
+//How far along a change is (0 to 1)
+float Cutscene_bars_progress = 1.0f;
+
+//FADEIN STUFF
+shader Viewer_shader;
+int Fade_type = FI_NONE;
+float Fade_delta_time = 1.0f;
 
 // The detail level.  Anything below zero draws simple models earlier than it
 // should.   Anything above zero draws higher detail models longer than it should.

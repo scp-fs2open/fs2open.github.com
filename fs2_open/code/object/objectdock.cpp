@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-02-10 04:05:42 $
+ * $Revision: 2.5 $
+ * $Date: 2005-03-03 06:05:30 $
  * $Author: wmcoolmon $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/02/10 04:05:42  wmcoolmon
+ * Got rid of a couple annoying compiler warnings
+ *
  * Revision 2.3  2005/01/30 09:27:40  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -63,8 +66,6 @@ bool dock_check_assume_hub();
 object *dock_get_hub(object *objp);
 
 void dock_add_instance(object *objp, int dockpoint, object *other_objp);
-void dock_remove_instance(object *objp, object *other_objp);
-dock_instance *dock_find_instance(object *objp, object *other_objp);
 dock_instance *dock_find_instance(object *objp, int dockpoint);
 int dock_count_instances(object *objp);
 

@@ -7,13 +7,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.h $
- * $Revision: 2.1 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.2 $
+ * $Date: 2005-03-03 06:05:30 $
+ * $Author: wmcoolmon $
  *
  * New docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 1.0  2004/12/30 16:35:00  Goober5000
  * Addition to CVS repository
  *
@@ -128,5 +133,11 @@ void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoi
 
 // remove objp1 and objp2 from each others' dock lists; currently only called by ai_do_objects_undocked_stuff
 void dock_undock_objects(object *objp1, object *objp2);
+
+//Removes other_objp from objp's docking list
+void dock_remove_instance(object *objp, object *other_objp);
+
+//Finds objp's dock instance to other_objp
+dock_instance *dock_find_instance(object *objp, object *other_objp);
 
 #endif	// _OBJECT_DOCK_H

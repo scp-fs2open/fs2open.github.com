@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:30 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-03 06:05:27 $
+ * $Author: wmcoolmon $
  *
  * File to control Game Sequencing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:30  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:47  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -360,6 +363,7 @@ char *GS_event_text[] =
 	"GS_EVENT_RED_ALERT",								
 	"GS_EVENT_SIMULATOR_ROOM",
 	"GS_EVENT_EMD_CAMPAIGN",	
+	"GS_EVENT_FRED_CONCEPT",
 };
 //XSTR:ON
 
@@ -426,6 +430,7 @@ char *GS_state_text[] =
 	"GS_STATE_CMD_BRIEF",
 	"GS_STATE_RED_ALERT",
 	"GS_STATE_END_OF_CAMPAIGN",
+	"GS_STATE_FRED_CONCEPT",
 };
 //XSTR:ON
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-02-23 04:51:56 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-03-03 06:05:29 $
+ * $Author: wmcoolmon $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/02/23 04:51:56  taylor
+ * some bm_unload() -> bm_release() changes to save bmpman slots
+ *
  * Revision 2.25  2005/01/29 08:08:24  wmcoolmon
  * Various updates; shader, assert, and clipping
  *
@@ -478,8 +481,9 @@ int Tech_slider_coords[GR_NUM_RESOLUTIONS][4] = {
 };
 
 // detail backup
+/*
 int Tech_detail_backup;
-int Tech_texture_backup;
+int Tech_texture_backup;*/
 
 #define MAX_TEXT_LINES		100
 #define MAX_TEXT_LINE_LEN	256
@@ -543,7 +547,7 @@ static UI_BUTTON View_window;
 //static int Background_bitmap;
 static int Tech_background_bitmap;
 //static int Intel_bg_bitmap;  // not used now - taylor
-static int Tab = 0;
+static int Tab = SHIPS_DATA_TAB;
 // static int List_size;
 static int List_offset;
 static int Select_tease_line;
@@ -754,6 +758,7 @@ void techroom_weapons_render2(float frametime)
 	tech_common_render();
 
 	// render the animation
+	if(Current_list[Cur_entry].animation != NULL)
 	{
 		// JAS: This code is hacked to allow the animation to use all 256 colors
 		extern int Palman_allow_any_color;
@@ -825,13 +830,12 @@ void techroom_ships_render(float frametime)
 	tech_common_render();
 
 	// now render the trackball ship, which is unique to the ships tab
-	float rev_rate;
+	float rev_rate = REVOLUTION_RATE;
 	angles rot_angles, view_angles;
 	int z;
 	ship_info *sip = &Ship_info[Cur_entry_index];
 
 	// get correct revolution rate
-	rev_rate = REVOLUTION_RATE;
 	z = sip->flags;
 	if (z & SIF_BIG_SHIP) {
 		rev_rate *= 1.7f;
@@ -847,7 +851,7 @@ void techroom_ships_render(float frametime)
 	}
 
 	// turn off fogging
-	gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+	//gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
 	//	reorient ship
 	if (Trackball_active) {
@@ -899,7 +903,7 @@ void techroom_ships_render(float frametime)
 
 		model_clear_instance(Techroom_ship_modelnum);
 		model_set_detail_level(0);
-		model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
+		model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 
 		g3_end_frame();
 	}
@@ -1041,6 +1045,8 @@ void tech_ship_scroll_capture()
 
 
 // this is obsolete - see techroom_weapons_render2(...)
+//If this is obsolete, why isn't it commented out? -WMC
+/*
 void techroom_weapons_render(float frametime)
 {
 	gr_set_color_fast(&Color_text_normal);
@@ -1059,7 +1065,7 @@ void techroom_weapons_render(float frametime)
 		gr_set_bitmap(Current_list[Cur_entry].bitmap);
 		gr_bitmap(Tech_ani_coords[gr_screen.res][0], Tech_ani_coords[gr_screen.res][1]);
 	}
-}
+}*/
 
 void techroom_intel_render(float frametime)
 {
@@ -1156,7 +1162,7 @@ void techroom_change_tab(int num)
 			// load ship info if necessary
 			if (Ships_loaded == 0) {
 				Ship_list = new tech_list_entry[Num_ship_types];
-				Assert( Ship_list != NULL );
+				if(Ship_list == NULL)Error(LOCATION, "Couldn't init ships list!");
 				Ship_list_size = 0;
 				for (i=0; i<Num_ship_types; i++) {
 					if (Ship_info[i].flags & mask) {
@@ -1519,12 +1525,12 @@ void techroom_init()
 {
 	int i, idx;
 	techroom_buttons *b;
-
+/*
 	gr_reset_clip();
 	gr_clear();
 	Mouse_hidden++;
 	gr_flip();
-	Mouse_hidden--;
+	Mouse_hidden--;*/
 
 	Ships_loaded = 0;
 	Weapons_loaded = 0;
@@ -1533,10 +1539,11 @@ void techroom_init()
 	// Tech_room_ask_for_cd = 1;
 
 	// backup and bash detail level stuff
-	Tech_detail_backup = Detail.detail_distance;
+	//I don't think we need this anymore
+	/*Tech_detail_backup = Detail.detail_distance;
 	Detail.detail_distance = MAX_DETAIL_LEVEL;
 	Tech_texture_backup = Detail.hardware_textures;
-	Detail.hardware_textures = MAX_DETAIL_LEVEL;
+	Detail.hardware_textures = MAX_DETAIL_LEVEL;*/
 
 	/*
 	Palette_bmp = bm_load("TechDataPalette");
@@ -1555,7 +1562,7 @@ void techroom_init()
 	Tech_background_bitmap = bm_load(Tech_background_filename[gr_screen.res]);
 	if (Tech_background_bitmap < 0) {
 		// failed to load bitmap, not a good thing
-		Int3();
+		Error(LOCATION,"Couldn't load techroom background bitmap");
 	}
 
 	for (i=0; i<NUM_BUTTONS; i++) {
@@ -1642,6 +1649,7 @@ void techroom_init()
 	}
 
 	Anim_playing_id = -1;
+	mprintf(("Techroom successfully initialized, now changing tab..."));
 	techroom_change_tab(Tab);
 }
 
@@ -1714,8 +1722,8 @@ void techroom_close()
 	}
 
 	// restore detail settings
-	Detail.detail_distance = Tech_detail_backup;
-	Detail.hardware_textures = Tech_texture_backup;
+	/*Detail.detail_distance = Tech_detail_backup;
+	Detail.hardware_textures = Tech_texture_backup;*/
 
 	if(Ship_list != NULL)
 	{

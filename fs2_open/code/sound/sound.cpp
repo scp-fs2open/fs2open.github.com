@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-02-02 10:36:23 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2005-03-03 06:05:32 $
+ * $Author: wmcoolmon $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/02/02 10:36:23  taylor
+ * merge with Linux/OSX tree - p0202
+ *
  * Revision 2.11  2005/01/08 09:59:10  wmcoolmon
  * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
  *
@@ -916,6 +919,7 @@ int snd_play_3d(game_snd *gs, vector *source_pos, vector *listen_pos, float radi
 	
 	// DirectSound3D will not cut off sounds, no matter how quite they become.. so manually
 	// prevent sounds from playing past the max distance.
+	//IMPORTANT THIS IS NOT WORKING RIGHT OMG WTF
 	distance = vm_vec_normalized_dir_quick( &vector_to_sound, source_pos, listen_pos );
 	max_volume = gs->default_volume * vol_scale;
 	if ( (distance > max_range) && !force){

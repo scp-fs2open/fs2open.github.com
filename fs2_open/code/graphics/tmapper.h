@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.10 $
- * $Date: 2005-03-03 02:39:14 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-03 06:05:27 $
+ * $Author: wmcoolmon $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/03 02:39:14  bobboau
+ * added trilist suport to the poly rendering functions
+ * and a gr_bitmap_list function that uses it
+ *
  * Revision 2.9  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -198,4 +202,13 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 #define TMAP_ADDRESS_WRAP		1
 #define TMAP_ADDRESS_MIRROR		2
 #define TMAP_ADDRESS_CLAMP		3
+
+//WMC - moved this here so it'd be in 2d.h and 3d.h
+struct bitmap_2d_list{
+	int x;
+	int y;
+	int w;
+	int h;
+};
+
 #endif
