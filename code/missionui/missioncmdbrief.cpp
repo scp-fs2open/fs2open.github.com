@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-04-05 08:46:51 $
+ * $Revision: 2.5 $
+ * $Date: 2003-04-05 08:51:04 $
  * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/04/05 08:46:51  Goober5000
+ * command briefing scroll buttons implemented :)
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/30 21:08:42  Goober5000
  * preliminary work on adding scroll buttons to command briefings
  * --Goober5000
@@ -917,7 +921,7 @@ void cmd_brief_do_frame(float frametime)
 	// maybe output the "more" indicator
 	if ( (Cmd_brief_text_max_lines[gr_screen.res] + Top_cmd_brief_text_line + 2) < Num_brief_text_lines[0] ) {
 		// can be scrolled down
-		int more_txt_x = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + (Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]/2);// - 10;
+		int more_txt_x = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + (Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]/2) - 10;
 		int more_txt_y = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD] - 2;				// located below brief text, centered
 		int w, h;
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
