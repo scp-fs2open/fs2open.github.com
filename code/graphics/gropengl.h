@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-03-07 00:15:45 $
+ * $Author: phreak $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -36,8 +39,8 @@
 #ifndef _GROPENGL_H
 #define _GROPENGL_H
 
-void gr_opengl_init();
-void gr_opengl_cleanup();
+void gr_opengl_init(int reinit=0);
+void gr_opengl_cleanup(int minimize=1);
 
 void gr_opengl_bitmap(int x, int y);
 void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy);

@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-02-16 18:43:13 $
+ * $Revision: 2.16 $
+ * $Date: 2003-03-07 00:15:45 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/02/16 18:43:13  phreak
+ * tweaked some more stuff
+ *
  * Revision 2.14  2003/02/01 02:57:42  phreak
  * started to finalize before 3.50 release.
  * added support for GL_EXT_texture_filter_ansiotropic
@@ -1843,7 +1846,7 @@ int gr_opengl_supports_res_interface(int res)
 }
 
 void opengl_tcache_cleanup ();
-void gr_opengl_cleanup()
+void gr_opengl_cleanup(int minimize)
 {	
 	HWND wnd=(HWND)os_get_window();
 	if ( !OGL_inited )	return;
@@ -1876,8 +1879,11 @@ void gr_opengl_cleanup()
 	}
 
 	opengl_minimize();
-	if (!Cmdline_window)
-		ChangeDisplaySettings(NULL, 0);
+	if (minimize)
+	{
+		if (!Cmdline_window)
+			ChangeDisplaySettings(NULL, 0);
+	}
 }
 
 void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
@@ -3212,7 +3218,7 @@ void gr_opengl_bitmap(int x, int y)
 }
 
 extern char *Osreg_title;
-void gr_opengl_init()
+void gr_opengl_init(int reinit)
 {
 	char *extlist;
 	char *curext;
@@ -3385,34 +3391,38 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	ver=(char*)glGetString(GL_VERSION);
 	OGL_inited = 1;
-	mprintf(("OPENGL INITED!\n"));
-	mprintf(("\n"));
-	mprintf(( "Vendor     : %s\n", glGetString( GL_VENDOR ) ));
-	mprintf(( "Renderer   : %s\n", glGetString( GL_RENDERER ) ));
-	mprintf(( "Version    : %s\n", ver ));
-	mprintf(( "Extensions : \n" ));
-
-	//print out extensions
-	OGL_extensions=(const char*)glGetString(GL_EXTENSIONS);
-
-	extlist=(char*)malloc(strlen(OGL_extensions));
-	memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
-	memcpy(curver, ver,3);
-
-	float version_float=(float)atof(curver);
-	if (version_float < REQUIRED_GL_VERSION)
+	if (!reinit)
 	{
-		Error(LOCATION,"Current GL Version of %f is less than required version of %f\nSwitch video modes or update drivers", version_float, REQUIRED_GL_VERSION);
-	}
+		mprintf(("OPENGL INITED!\n"));
+		mprintf(("\n"));
+		mprintf(( "Vendor     : %s\n", glGetString( GL_VENDOR ) ));
+		mprintf(( "Renderer   : %s\n", glGetString( GL_RENDERER ) ));
+		mprintf(( "Version    : %s\n", ver ));
+		mprintf(( "Extensions : \n" ));
+
+		//print out extensions
+		OGL_extensions=(const char*)glGetString(GL_EXTENSIONS);
+
+		extlist=(char*)malloc(strlen(OGL_extensions));
+		memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
+		memcpy(curver, ver,3);
+
+		float version_float=(float)atof(curver);
+		if (version_float < REQUIRED_GL_VERSION)
+		{
+			Error(LOCATION,"Current GL Version of %f is less than required version of %f\nSwitch video modes or update drivers", version_float, REQUIRED_GL_VERSION);
+		}
 	
-	curext=strtok(extlist, " ");
-	while (curext)
-	{
-		mprintf(( "%s\n", curext ));
-		curext=strtok(NULL, " ");
+		curext=strtok(extlist, " ");
+		while (curext)
+		{
+			mprintf(( "%s\n", curext ));
+			curext=strtok(NULL, " ");
+		}
+		free(extlist);
 	}
 
-	free(extlist);
+
 
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
@@ -3448,10 +3458,15 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	Gr_bitmap_poly = 1;
 	OGL_fogmode=1;
 	
-	//start extension
-	opengl_get_extensions();
 	
-	opengl_tcache_init (1);
+	if (!reinit)
+	{
+		//start extension
+		opengl_get_extensions();
+
+		opengl_tcache_init (1);
+	}
+
 	gr_opengl_clear();
 
 	Gr_current_red = &Gr_red;
