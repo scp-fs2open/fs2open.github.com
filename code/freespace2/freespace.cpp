@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.32 $
- * $Date: 2003-05-21 20:26:07 $
- * $Author: phreak $
+ * $Revision: 2.33 $
+ * $Date: 2003-07-06 00:19:24 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/05/21 20:26:07  phreak
+ * improved chase camera code.. you can now fight using this camera
+ *
  * Revision 2.31  2003/05/09 23:54:59  phreak
  * game_loading_callback_init() now displays a user-defined loading screen
  *
@@ -856,10 +859,7 @@ float Viewer_zoom = VIEWER_ZOOM_DEFAULT;
 
 #define EXE_FNAME			("fs2.exe")
 
-#if 0  // no launcher for fs2_open
-#define LAUNCHER_FNAME	("freespace2.exe")
-#endif
-
+#define LAUNCHER_FNAME	("Launcher.exe")
 
 // JAS: Code for warphole camera.
 // Needs to be cleaned up.
@@ -2406,12 +2406,21 @@ void game_init()
 // SOUND INIT END
 /////////////////////////////
 	
-	ptr = os_config_read_string(NULL, NOX("Videocard"), NULL);	
-	if (ptr == NULL) {
-#ifdef _WIN32
-		MessageBox((HWND)os_get_window(), XSTR("Please configure your system in the Launcher before running FS2.", 1446), XSTR("Attention!", 1447), MB_OK);
+	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
 
-#if 0 // no launcher in fs2_open
+	if (ptr == NULL || strstr(ptr, NOX("Direct 3D -") )) {
+#ifdef _WIN32
+		if(strstr(ptr, NOX("Direct 3D -")))
+		{
+			MessageBox((HWND)os_get_window(), 
+				"Direct3D5 not supported in this build, please use launcher to set D3D8 or OGL settings", 
+				XSTR("Attention!", 1447), MB_OK);
+
+		}
+		else
+		{
+			MessageBox((HWND)os_get_window(), XSTR("Please configure your system in the Launcher before running FS2.", 1446), XSTR("Attention!", 1447), MB_OK);
+		}
 
 		// fire up the UpdateLauncher executable
 		STARTUPINFO si;
@@ -2436,7 +2445,6 @@ void game_init()
 		if (!ret) {
 			MessageBox((HWND)os_get_window(), XSTR("The Launcher could not be restarted.", 1450), XSTR("Error", 1451), MB_OK);
 		}
-#endif
 
 		exit(1);
 
@@ -2501,7 +2509,7 @@ void game_init()
 			gr_init(GR_640, GR_GLIDE);
 		}
 
-	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("Direct 3D -") )))	{
+	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("D3D8-") )))	{
 		// regular or hi-res ?
 		if(has_sparky_hi && strstr(ptr, NOX("(1024x768)"))){
 			// Direct 3D

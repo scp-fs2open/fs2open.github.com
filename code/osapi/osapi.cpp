@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-03-18 10:07:05 $
- * $Author: unknownplayer $
+ * $Revision: 2.8 $
+ * $Date: 2003-07-06 00:19:25 $
+ * $Author: randomtiger $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/03/18 10:07:05  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.6  2003/03/02 06:01:55  penguin
  * Added #ifdef WIN32 and #ifdef MSC_VER
  *  - penguin
@@ -647,8 +650,8 @@ BOOL win32_create_window()
 {
 	int windowed = 0;
 	int hires = 0;
-	char *ptr = os_config_read_string(NULL, NOX("Videocard"), NULL);	
-	if(ptr && ( (strstr(ptr, NOX("Direct 3D -")) ) || (strstr(ptr, NOX("OpenGL -")))) && Cmdline_window){
+	char *ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);	
+	if(ptr && ( (strstr(ptr, NOX("D3D8-")) ) || (strstr(ptr, NOX("OpenGL -")))) && Cmdline_window){
 		windowed = 1;
 	}
 	if(ptr && strstr(ptr, NOX("1024")) && Cmdline_window){
