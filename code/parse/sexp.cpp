@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.4 $
- * $Date: 2002-11-19 02:15:50 $
- * $Author: sesquipedalian $
+ * $Revision: 2.5 $
+ * $Date: 2002-11-20 21:22:31 $
+ * $Author: DTP $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/11/19 02:15:50  sesquipedalian
+ * Adding in EdrickV's fix to the is-tagged sexp.
+ *
  * Revision 2.3  2002/10/29 22:41:48  sesquipedalian
  * no message
  *
@@ -6779,8 +6782,9 @@ int sexp_is_tagged(int node)
 		return 0;
 	}
 	object *caller = &Objects[Ships[sindex].objnum];
-	if(ship_is_tagged(caller)) // This line and the one above were added.
-	// if(Ships[sindex].tag_left > 0.0f) The broken code. Changed by EdrickV@HLP
+	if(ship_is_tagged(caller)) { // This line and the one above were added.
+	// if(Ships[sindex].tag_left> 0.0f) The broken code. Changed by EdrickV@HLP
+
 		return 1;
 	}
 
