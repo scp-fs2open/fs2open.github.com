@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.3 $
- * $Date: 2003-04-29 01:03:22 $
+ * $Revision: 2.4 $
+ * $Date: 2004-02-04 08:41:02 $
  * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/04/29 01:03:22  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/10 05:43:33  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -569,6 +573,11 @@ void obj_init_all_ships_physics();
 float get_shield_strength(object *objp);
 void set_shield_strength(object *objp, float strength);
 void add_shield_strength(object *objp, float delta);
+
+// Goober5000
+float get_hull_pct(object *objp);
+float get_shield_pct(object *objp);
+float get_max_shield_quad(object *objp);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
 void obj_get_average_ship_pos(vector *pos);

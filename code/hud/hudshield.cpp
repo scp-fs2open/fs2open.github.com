@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-09-13 08:27:29 $
+ * $Revision: 2.10 $
+ * $Date: 2004-02-04 08:41:04 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/09/13 08:27:29  Goober5000
+ * added some minor things, such as code cleanup and the following:
+ * --turrets will not fire at cargo
+ * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
+ * --supercaps have their own default message bitfields (distinguished from capships)
+ * --turrets are allowed on fighters
+ * --jump speed capped at 65m/s, to avoid ship travelling too far
+ * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
+ * ----Goober5000
+ *
  * Revision 2.8  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -456,7 +466,7 @@ void hud_shield_show(object *objp)
 	// draw the four quadrants
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = sp->ship_initial_shield_strength/(1.0f*MAX_SHIELD_SECTIONS);
+	max_shield = get_max_shield_quad(objp);
 
 	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 
@@ -612,16 +622,15 @@ void hud_shield_equalize(object *objp, player *pl)
 //
 void hud_augment_shield_quadrant(object *objp, int direction)
 {
-	float	full_shields, xfer_amount, energy_avail, percent_to_take, delta;
+	float	xfer_amount, energy_avail, percent_to_take, delta;
 	float	max_quadrant_val;
 	int	i;
 
 	Assert(direction >= 0 && direction < MAX_SHIELD_SECTIONS);
 	Assert(objp->type == OBJ_SHIP);
-	full_shields = Ships[objp->instance].ship_initial_shield_strength;
 	
-	xfer_amount = full_shields * SHIELD_TRANSFER_PERCENT;
-	max_quadrant_val = full_shields/(1.0f*MAX_SHIELD_SECTIONS);
+	xfer_amount = Ships[objp->instance].ship_initial_shield_strength * SHIELD_TRANSFER_PERCENT;
+	max_quadrant_val = get_max_shield_quad(objp);
 
 	if ( (objp->shield_quadrant[direction] + xfer_amount) > max_quadrant_val )
 		xfer_amount = max_quadrant_val - objp->shield_quadrant[direction];
@@ -736,8 +745,6 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	float			max_shield;
 	int			hud_color_index, range, frame_offset;
 	int			sx, sy, i;
-	ship			*sp;
-	ship_info	*sip;
 	shield_hit_info	*shi;
 
 	shi = &Shield_hit_data[SHIELD_HIT_TARGET];
@@ -745,9 +752,6 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	if ( objp->type != OBJ_SHIP ) {
 		return;
 	}
-
-	sp = &Ships[objp->instance];
-	sip = &Ship_info[sp->ship_info_index];
 
 	hud_set_gauge_color(HUD_TARGET_MINI_ICON);
 
@@ -763,7 +767,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = sp->ship_initial_shield_strength/(1.0f*MAX_SHIELD_SECTIONS);
+	max_shield = get_max_shield_quad(objp);
 
 	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.50 $
- * $Date: 2004-01-30 07:39:05 $
+ * $Revision: 2.51 $
+ * $Date: 2004-02-04 08:41:02 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2004/01/30 07:39:05  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.49  2004/01/20 22:13:06  Goober5000
  * er... corrected some inexplicable code... Bobboau, mind explaining?
  * --Goober5000
@@ -5774,14 +5780,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		// ##UnknownPlayer## - removed.
 	}
 
-	// Get the total possible strength of enemies shields here.
-	float enemytotalshield = 0.0f;
-	if (!(other_objp->flags & OF_NO_SHIELDS))
-	{
-		enemytotalshield += Ships[other_objp->instance].ship_initial_shield_strength;
-	}
-
-	float enemy_remaining_shield = (get_shield_strength(other_objp))/enemytotalshield;
+	float enemy_remaining_shield = get_shield_pct(other_objp);
 
 	// Is the target shielded by say only 5%?
 	if (enemy_remaining_shield <= 0.05f)	
@@ -6973,9 +6972,10 @@ float ai_endangered_by_weapon(ai_info *aip)
 }
 
 //	Return true if this ship is near full strength.
+// Goober5000: simplified and accounted for shields being 0
 int ai_near_full_strength(object *objp)
-{
-	return (objp->hull_strength/Ships[objp->instance].ship_initial_hull_strength > 0.9f) || (get_shield_strength(objp)/Ships[objp->instance].ship_initial_shield_strength > 0.8f);
+{	
+	return (get_hull_pct(objp) > 0.9f) || (get_shield_pct(objp) > 0.8f);
 }
 				
 //	Set acceleration while in attack mode.
@@ -8498,7 +8498,7 @@ void ai_chase()
 		//	See if attacking a subsystem.
 		if (aip->targeted_subsys != NULL) {
 			Assert(En_objp->type == OBJ_SHIP);
-			if (get_shield_strength(En_objp)/Ships[En_objp->instance].ship_initial_shield_strength < HULL_DAMAGE_THRESHOLD_PERCENT) {
+			if (get_shield_pct(En_objp) < HULL_DAMAGE_THRESHOLD_PERCENT) {
 				//int	rval;
 
 				if (aip->targeted_subsys != NULL) {
@@ -12717,7 +12717,7 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 	float	transfer_delta;
 	float	max_quadrant_strength;
 
-	max_quadrant_strength = Ships[objp->instance].ship_initial_shield_strength/MAX_SHIELD_SECTIONS;
+	max_quadrant_strength = get_max_shield_quad(objp);
 
 	transfer_amount = 0.0f;
 	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
@@ -15485,7 +15485,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vector *hitpos, int shield
 			maybe_set_dynamic_chase(aip, hitter_objnum);
 			maybe_afterburner_after_ship_hit(objp_ship, aip, &Objects[hitter_objnum]);
 		} else {
-			if ((aip->mode == AIM_CHASE) && ((objp_ship->hull_strength/shipp->ship_initial_hull_strength > 0.9f) || (get_shield_strength(objp_ship)/shipp->ship_initial_shield_strength > 0.8f))) {
+			if ((aip->mode == AIM_CHASE) && ai_near_full_strength(objp_ship)) {
 				switch (aip->submode) {
 				case SM_ATTACK:
 				case SM_SUPER_ATTACK:

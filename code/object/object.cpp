@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-11-11 02:15:42 $
+ * $Revision: 2.16 $
+ * $Date: 2004-02-04 08:41:02 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/11/11 02:15:42  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.14  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -684,7 +689,44 @@ int free_object_slots(int num_used)
 	return original_num_to_free - num_to_free;
 }
 
+// Goober5000
+float get_max_shield_quad(object *objp)
+{
+	Assert(objp);
+	Assert(objp->type == OBJ_SHIP);
 
+	return Ships[objp->instance].ship_initial_shield_strength / MAX_SHIELD_SECTIONS;
+}
+
+// Goober5000
+float get_hull_pct(object *objp)
+{
+	Assert(objp);
+	Assert(objp->type == OBJ_SHIP);
+
+	float total_strength = Ships[objp->instance].ship_initial_hull_strength;
+
+	Assert(total_strength > 0.0f);	// unlike shield, no ship can have 0 hull
+
+	if (total_strength == 0.0f)
+		return 0.0f;
+
+	return objp->hull_strength / total_strength;
+}
+
+// Goober5000
+float get_shield_pct(object *objp)
+{
+	Assert(objp);
+	Assert(objp->type == OBJ_SHIP);
+
+	float total_strength = Ships[objp->instance].ship_initial_shield_strength;
+
+	if (total_strength == 0.0f)
+		return 0.0f;
+
+	return get_shield_strength(objp) / total_strength;
+}
 
 float get_shield_strength(object *objp)
 {
@@ -725,7 +767,7 @@ void add_shield_strength(object *objp, float delta)
 	int	i;
 	float	section_max;
 
-	section_max = Ships[objp->instance].ship_initial_shield_strength/MAX_SHIELD_SECTIONS;
+	section_max = get_max_shield_quad(objp);
 
 	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
 		objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-01-30 07:39:06 $
+ * $Revision: 2.13 $
+ * $Date: 2004-02-04 08:41:02 $
  * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/01/30 07:39:06  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.11  2003/11/11 02:15:40  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -1241,7 +1247,7 @@ int ship_is_shield_up( object *obj, int quadrant )
 {
 	if ( (quadrant >= 0) && (quadrant < MAX_SHIELD_SECTIONS))	{
 		// Just check one quadrant
-		if (obj->shield_quadrant[quadrant] > max(2.0f, 0.1f * Ships[obj->instance].ship_initial_shield_strength/4.0f))	{
+		if (obj->shield_quadrant[quadrant] > max(2.0f, 0.1f * get_max_shield_quad(obj)))	{
 			return 1;
 		}
 	} else {
