@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-31 05:17:13 $
+ * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -372,6 +375,24 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 			// only process ships that can be seen by sensors
 			if ( (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS) ){
 				continue;
+			}
+
+			// don't process most stealth ships
+			if ( (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_STEALTH) )
+			{
+				if ( Ships[objp->instance].team == TEAM_FRIENDLY )
+				{
+					// friendly stealths are only not seen when explicitly specified
+					if ( Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_FRIENDLY_STEALTH_INVISIBLE )
+					{
+						continue;
+					}
+				}
+				// non-friendly stealths are never seen
+				else
+				{
+					continue;
+				}
 			}
 
 			// don't process ships that are dying, or objects that should be dead
