@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.21 $
- * $Author: bobboau $
- * $Date: 2005-03-01 06:55:43 $
+ * $Revision: 2.22 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-03-30 02:32:40 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/03/01 06:55:43  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.20  2005/02/04 20:06:06  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -415,6 +419,7 @@ extern void stuff_string_line(char *pstr, int len);
 char *stuff_and_malloc_string( int type, char *terminators, int len);
 extern void stuff_float(float *f);
 extern void stuff_int(int *i);
+extern void stuff_sound(int *dest);
 extern void stuff_byte(ubyte *i);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type);
