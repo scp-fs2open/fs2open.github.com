@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.16 $
- * $Date: 2002-12-21 13:39:25 $
- * $Author: DTP $
+ * $Revision: 2.17 $
+ * $Date: 2003-02-22 04:13:17 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2002/12/21 13:39:25  DTP
+ * did bit more house keeping. modfied Phreaks fps cmdline a bit, so that we dont have to specific build code.libs for fred, but can use the same code.lib for both fs2_open.exe and fred2_open.exe
+ *
  * Revision 2.15  2002/12/17 03:08:18  DTP
  * fix to Show_framerate. seems it will call an unresolved external error during fred builds. modified my ifndefs a bit, dsw modified to include preprocessor tag FRED.
  *
@@ -237,6 +240,7 @@ extern char *Cmdline_almission;	//DTP for autoload mission
 extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
 extern int Cmdline_allslev;
 extern int Cmdline_phreak;
+extern int Cmdline_dshowvid;	//WMC Toggles movie playing support
 extern char *Cmdline_mod; //DTP for mod support
 extern int Cmdline_show_fps;//DTP moved here because it is the correct place for it to be.
 

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.16 $
- * $Date: 2002-12-21 13:39:25 $
- * $Author: DTP $
+ * $Revision: 2.17 $
+ * $Date: 2003-02-22 04:13:17 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2002/12/21 13:39:25  DTP
+ * did bit more house keeping. modfied Phreaks fps cmdline a bit, so that we dont have to specific build code.libs for fred, but can use the same code.lib for both fs2_open.exe and fred2_open.exe
+ *
  * Revision 2.15  2002/12/17 03:08:18  DTP
  * fix to Show_framerate. seems it will call an unresolved external error during fred builds. modified my ifndefs a bit, dsw modified to include preprocessor tag FRED.
  *
@@ -294,6 +297,7 @@ cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
 cmdline_parm gf4fix_arg("-GF4FIX", NULL); //DTP for random tigers GF4fix
 cmdline_parm allslev_arg("-ALLSLEV", NULL); //Give access to all single player missions
 cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including new targetting code
+cmdline_parm dshowvid_arg("-dshowvid", NULL); // Allows video streaming
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
 cmdline_parm fps_arg("-fps", NULL);
 
@@ -327,6 +331,7 @@ int Cmdline_window = 0;
 int Cmdline_gf4fix = 0; // DTP for randomstigers GF4 fix.
 int Cmdline_allslev = 0;
 int Cmdline_phreak	= 0;
+int Cmdline_dshowvid = 0;
 int Cmdline_show_fps = 0;
 
 
@@ -704,6 +709,10 @@ int parse_cmdline(int argc, char *argv[])
 
 	if(phreak_arg.found() ) {
 		Cmdline_phreak = 1;
+	}
+
+	if(dshowvid_arg.found() ) {
+		Cmdline_dshowvid = 1;
 	}
 
 	if(mod_arg.found() ) {
