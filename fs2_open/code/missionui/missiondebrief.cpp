@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-09 08:37:31 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/20 23:50:53  DTP
  * Fixed multiplayer music. succes music on all Primary goals complete, fail music
  * if otherwise
@@ -2335,6 +2338,7 @@ void debrief_init()
 		common_music_init(SCORE_DEBRIEF_FAIL);
 	}
 	*/
+
 	/* 21-07-02 01:12 Commented out DTP, so we have the original source here 
 	// start up the appropriate music
 	if (Campaign.next_mission == Campaign.current_mission) {
@@ -2356,7 +2360,8 @@ void debrief_init()
 		Player->failures_this_session = 0;
 	}
 	*/ //commented out stop
-	// 21-07-02 01:12 DTP; New checks for setting debreifing music. at lot like the old.
+
+	// 21-07-02 01:12 DTP; New checks for setting debriefing music. at lot like the old.
 	// this is for single player
 	if (Campaign.next_mission == Campaign.current_mission && (Game_mode & GM_NORMAL)) {	//DTP
 		common_music_init(SCORE_DEBRIEF_FAIL);	//DTP
