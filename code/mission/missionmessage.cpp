@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-01-14 21:12:24 $
+ * $Revision: 2.7 $
+ * $Date: 2004-02-05 14:29:33 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/01/14 21:12:24  Goober5000
+ * I think this will fix the problem of the death head ani sometimes incorrectly playing
+ * --Goober5000
+ *
  * Revision 2.5  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -1251,21 +1255,26 @@ void message_play_anim( message_q *q )
 			strcpy( ani_name, COMMAND_HEAD_PREFIX );
 		}
 
-		if ( Personas[persona_index].flags & (PERSONA_FLAG_WINGMAN | PERSONA_FLAG_SUPPORT) ) {
-			// get a random head
-			if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
-				rand_index = MAX_WINGMAN_HEADS;		// [0,MAX) are regular heads; MAX is always death head
-				is_death_scream = 1;
-			} else {
-				rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
+		// Goober5000 - guard against negative array indexing; this way, if no persona was
+		// assigned, the logic will drop down below like it's supposed to
+		if (persona_index >= 0)
+		{
+			if ( Personas[persona_index].flags & (PERSONA_FLAG_WINGMAN | PERSONA_FLAG_SUPPORT) ) {
+				// get a random head
+				if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
+					rand_index = MAX_WINGMAN_HEADS;		// [0,MAX) are regular heads; MAX is always death head
+					is_death_scream = 1;
+				} else {
+					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
+				}
+				sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
+				subhead_selected = TRUE;
+			} else if ( Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE) ) {
+				// get a random head
+				rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
+				sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
+				subhead_selected = TRUE;
 			}
-			sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
-			subhead_selected = TRUE;
-		} else if ( Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE) ) {
-			// get a random head
-			rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
-			sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
-			subhead_selected = TRUE;
 		}
 
 		if (!subhead_selected) {
