@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.110 $
- * $Date: 2004-08-23 07:48:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.111 $
+ * $Date: 2004-10-31 21:31:34 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2004/08/23 07:48:08  Goober5000
+ * fix0red some warnings
+ * --Goober5000
+ *
  * Revision 2.109  2004/08/05 02:15:27  phreak
  * forgot to commit orb change
  *
@@ -2187,7 +2191,8 @@ void game_post_level_init()
 // of game_busy_callback(NULL), which I conveniently print out to the
 // debug output window with the '=== ENDING LOAD ==' stuff.   
 //#define COUNT_ESTIMATE 3706
-#define COUNT_ESTIMATE 1111
+//#define COUNT_ESTIMATE 1111
+#define COUNT_ESTIMATE 2311
 
 int Game_loading_callback_inited = 0;
 
@@ -6853,6 +6858,9 @@ void game_enter_state( int old_state, int new_state )
 			break;
  
 		case GS_STATE_GAME_PLAY:
+			// reset time compression to default level so it's right at the beginning of a mission - taylor
+			Game_time_compression = F1_0;
+
 			// coming from the gameplay state or the main menu, we might need to load the mission
 			if ( (Game_mode & GM_NORMAL) && ((old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_GAME_PLAY) || (old_state == GS_STATE_DEATH_BLEW_UP)) ) {
 				if ( !game_start_mission() )		// this should put us into a new state.
@@ -8006,6 +8014,7 @@ void game_shutdown(void)
 	// a player, Player will be NULL, in which case we shouldn't write the player file out!
 	if (!(Game_mode & GM_STANDALONE_SERVER) && (Player!=NULL) && !Is_standalone){
 		write_pilot_file();
+		mission_campaign_savefile_save();
 	}
 
 #ifndef NO_NETWORK
@@ -8609,6 +8618,12 @@ void Do_model_timings_test()
 void game_feature_not_in_demo_popup()
 {
 	popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 1, POPUP_OK, XSTR( "Sorry, this feature is available only in the retail version", 200));
+}
+
+// Call this function when you want to inform the player that a feature is disabled in this build
+void game_feature_disabled_popup()
+{
+	popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 1, POPUP_OK, XSTR( "Sorry, the requested feature is currently disabled in this build", -1));
 }
 
 // format the specified time (fixed point) into a nice string
