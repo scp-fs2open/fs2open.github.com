@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-01-12 03:26:41 $
- * $Author: wmcoolmon $
+ * $Revision: 2.6 $
+ * $Date: 2003-01-24 03:15:11 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/01/12 03:26:41  wmcoolmon
+ * Very slightly optimized code
+ *
  * Revision 2.4  2003/01/12 00:19:55  wmcoolmon
  * It turns out the version in the CVS did not toggle the ship trails with the flag...fixed this.
  *
@@ -152,9 +155,10 @@ void ct_ship_process(ship *shipp)
 	Assert(shipp->objnum >= 0);
 	
 	// if trails aren't enabled, return
-	if(The_mission.flags & MISSION_FLAG_SHIP_TRAILS){
+	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
 		return;
 	}
+
 	int idx;		
 	object *objp;
 	objp = &Objects[shipp->objnum];
@@ -223,10 +227,12 @@ void ct_update_contrails(ship *shipp)
 #ifdef MULTIPLAYER_BETA_BUILD
 	return;
 #else
+
 	// if no ship trails, return
 	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
 		return;
 	}
+
 	vector v1;
 	matrix m;
 	int idx;
@@ -269,6 +275,7 @@ void ct_create_contrails(ship *shipp)
 #ifdef MULTIPLAYER_BETA_BUILD
 	return;
 #else
+
 	// if no ship trails, return
 	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
 		return;
