@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-25 04:50:48 $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-26 03:11:24 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/25 04:50:48  wmcoolmon
+ * Added Bobboau's fighter-beam code.
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -1368,6 +1371,8 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
 	vector fvec, top1, bottom1, top2, bottom2;
 	float scale;	
+	float u_scale;	// beam tileing -Bobboau
+	float length;	// beam tileing -Bobboau
 
 	// bogus weapon info index
 	if(bwi == NULL){
@@ -1396,9 +1401,14 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 		P_VERTICES();						
 		STUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
 
+		length = vm_vec_dist(start, shot);					// beam tileing -Bobboau
+		u_scale = length / bwi->sections[s_idx].width /2;	// beam tileing, might make a tileing factor in beam index later -Bobboau
+		verts[1]->u = verts[1]->u * u_scale;				// beam tileing -Bobboau
+		verts[2]->u = verts[2]->u * u_scale;				// beam tileing -Bobboau
+
 		// set the right texture with additive alpha, and draw the poly
 		gr_set_bitmap(bwi->sections[s_idx].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
-		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);			
+		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			
 	}		
 	
 	// turn backface culling back on
