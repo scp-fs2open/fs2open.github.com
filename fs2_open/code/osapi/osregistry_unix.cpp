@@ -7,7 +7,6 @@
  *
 */
 
-#include <windows.h>
 #include <string.h>
 #include "pstypes.h"
 #include "osregistry.h"
