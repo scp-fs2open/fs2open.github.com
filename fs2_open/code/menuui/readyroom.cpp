@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 03:50:29 $
+ * $Author: randomtiger $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -102,6 +105,7 @@
 #include "cfile/cfilesystem.h"
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
+#include "cmdline/cmdline.h"
 
 #define MAX_MISSIONS	1024
 
@@ -592,7 +596,7 @@ int build_campaign_mission_list_do_frame()
 	Campaign_mission_flags[Num_campaign_missions_with_info] = 0;
 	
 	// Only allow missions already completed
-	if (Campaign.missions[Num_campaign_missions_with_info].completed) {
+	if (Campaign.missions[Num_campaign_missions_with_info].completed || Cmdline_allslev) {
 		if (!get_mission_info(Campaign.missions[Num_campaign_missions_with_info].name)) {
 			// add to list
 			Campaign_mission_names[Num_campaign_missions_with_info] = strdup(The_mission.name);
