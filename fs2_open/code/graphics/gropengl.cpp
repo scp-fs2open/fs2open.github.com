@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.88 $
- * $Date: 2004-12-02 11:18:15 $
- * $Author: taylor $
+ * $Revision: 2.89 $
+ * $Date: 2004-12-22 23:05:48 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2004/12/02 11:18:15  taylor
+ * make OGL use same gamma reg setting as D3D since it's the same ramp
+ * have OGL respect the -no_set_gamma cmdline option
+ * reset gamma to default on OGL exit to make sure the desktop doesn't stay wrong
+ *
  * Revision 2.87  2004/11/04 22:49:13  taylor
  * don't set gamma ramp while running FRED
  *
@@ -670,6 +675,9 @@
 #pragma comment (lib, "glu32")
 #endif
 
+#ifndef USE_DEVIL
+#pragma message("WARNING: You have not compiled DevIL into this build (use USE_DEVIL).")
+#endif
 
 #define REQUIRED_GL_VERSION '2'
 
