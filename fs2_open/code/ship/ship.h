@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.12 $
- * $Date: 2002-12-20 07:09:03 $
+ * $Revision: 2.13 $
+ * $Date: 2002-12-23 05:18:52 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2002/12/20 07:09:03  Goober5000
+ * added capability of storing time_subsys_cargo_revealed
+ * --Goober5000
+ *
  * Revision 2.11  2002/12/17 02:18:39  Goober5000
  * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
  * --Goober5000
@@ -843,6 +847,12 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SHIP_TYPE_CORVETTE					18
 #define SHIP_TYPE_KNOSSOS_DEVICE			19
 
+// Goober5000: stealth sexp flags
+#define SSF_FORCING_STEALTH_STATUS				(1 << 0)
+#define SSF_ORIGINALLY_STEALTHED				(1 << 1)
+#define SSF_ORIGINAL_STEALTH_STATUS_RECORDED	(1 << 2)
+#define SSF_DEFAULT_VALUE						0
+
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
 	char		name[NAME_LENGTH];				// name for the ship
@@ -879,7 +889,8 @@ typedef struct ship_info {
 	float		forward_decel;
 	float		slide_accel;
 	float		slide_decel;
-	uint		flags;								//	See SIF_xxxx - changed to uint by Goober5000
+	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
+	int		stealth_flags;						// See SSF_xxxx - added by Goober5000
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
 	float		shields;
 	float		max_speed, min_speed, max_accel;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-23 05:18:52 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -234,8 +237,9 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	float closest = 0.0f;
 	float test;
 	int closest_index = -1;
-	int idx;
-	ship *shipp;	
+	int idx, forced_invisible;
+	ship *shipp;
+	ship_info *sip;
 
 #ifndef NO_NETWORK
 	// if the viewer is me, and I'm a multiplayer observer, its always viewable
@@ -244,14 +248,20 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	}
 #endif
 
-	// ships on the same teamare always viewable
-	if((target->type == OBJ_SHIP) && (Ships[target->instance].team == viewer->team)){
+	// Goober5000
+	sip = &Ship_info[Ships[target->instance].ship_info_index];
+	forced_invisible = (sip->stealth_flags & SSF_FORCING_STEALTH_STATUS) && (sip->flags & SIF_STEALTH);
+			
+	// ships on the same team are always viewable
+	// not if we used the force-stealth sexp! :) -- Goober5000
+	if((target->type == OBJ_SHIP) && (Ships[target->instance].team == viewer->team) && (!forced_invisible))
+	{
 		return 1.5f;
 	}
 
-	int stealth_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (Ship_info[Ships[target->instance].ship_info_index].flags & SIF_STEALTH);
+	int stealth_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (sip->flags & SIF_STEALTH);
 	int nebula_mission = (The_mission.flags & MISSION_FLAG_FULLNEB);
-	int check_huge_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (Ship_info[Ships[target->instance].ship_info_index].flags & SIF_HUGE_SHIP);
+	int check_huge_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (sip->flags & SIF_HUGE_SHIP);
 
 	// only check for Awacs if stealth ship or Nebula mission
 	// determine the closest friendly awacs

@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.11 $
+ * $Revision: 2.12 $
  * $Author: Goober5000 $
- * $Date: 2002-12-22 21:12:22 $
+ * $Date: 2002-12-23 05:18:52 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2002/12/22 21:12:22  Goober5000
+ * added primaries-depleted and primary-ammo-pct sexps -- useful for ships with
+ * ballistic primaries
+ * --Goober5000
+ *
  * Revision 2.10  2002/12/22 17:22:47  Goober5000
  * Subcategories implemented. :) So far all that's been done is the Change menu, but other
  * subcategorizations are possible.  Here are the instructions from sexp.h...
@@ -521,6 +526,7 @@
 #define	OP_IS_SHIP_VISIBLE					(0x0019 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_TEAM_SCORE						(0x001a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define OP_PRIMARY_AMMO_PCT					(0x001b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+#define OP_IS_SHIP_STEALTHED				(0x001c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -595,7 +601,9 @@
 #define OP_END_MISSION					(0x0061 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //-Sesquipedalian. replaces end-mission-delay, which did nothing
 #define OP_SET_SCANNED					(0x0062 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_UNSCANNED				(0x0063	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-
+#define OP_SHIP_FORCE_STEALTH			(0x0064	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SHIP_FORCE_NOSTEALTH			(0x0065	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SHIP_REMOVE_STEALTH_FORCING	(0x0066	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)

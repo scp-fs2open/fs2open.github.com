@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-12-22 22:59:04 $
+ * $Revision: 2.8 $
+ * $Date: 2002-12-23 05:18:52 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/22 22:59:04  Goober5000
+ * hack: turn on ship trails if in nebula - restores backward compatibility
+ * --Goober5000
+ *
  * Revision 2.6  2002/12/13 08:13:29  Goober5000
  * small tweaks and bug fixes for the ballistic primary conversion
  * ~Goober5000~
@@ -1612,6 +1616,9 @@ int parse_create_object(p_object *objp)
 
 	if ( objp->flags & P_SF_HIDDEN_FROM_SENSORS )
 		Ships[shipnum].flags |= SF_HIDDEN_FROM_SENSORS;
+
+	if ( objp->flags & P_SSF_STEALTH )
+		Ship_info[Ships[shipnum].ship_info_index].flags |= SIF_STEALTH;
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
