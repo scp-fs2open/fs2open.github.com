@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.h $
- * $Revision: 2.2 $
- * $Date: 2004-07-01 01:51:54 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-02 22:43:03 $
  * $Author: phreak $
  *
  * Prototypes for radar code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/07/01 01:51:54  phreak
+ * function pointer radar update.
+ * will enable us to make different radar styles that we can switch between
+ *
  * Revision 2.1  2004/03/05 09:02:12  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -70,7 +74,7 @@ extern void radar_mission_init_std();
 extern void radar_frame_render_std(float frametime);
 
 // observer hud rendering code uses this function
-void radar_draw_blips_sorted_std(int distort=0);
+void radar_draw_blips_sorted_std(int distort);
 void radar_draw_range_std();
 void radar_blit_gauge_std();
 int radar_blip_color_std(object *objp);
