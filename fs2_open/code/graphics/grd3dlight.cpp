@@ -196,7 +196,6 @@ void gr_d3d_lighting(bool set, bool state)
 {
 	lighting_enabled = set;
 //	if(!the_lights_are_on && state)
-	d3d_SetRenderState(D3DRS_LIGHTING , state);
 
 
 	if((gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set){
@@ -210,12 +209,12 @@ void gr_d3d_lighting(bool set, bool state)
 		material.Diffuse = col;
 		material.Specular = col;
 		material.Emissive = col;
-		GlobalD3DVars::lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
+		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
 	//	D3D_vertex_type = -1;
 	//	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
 	//	d3d_SetTexture(1, NULL);
 	//	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-	GlobalD3DVars::lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
+	d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
 	for(int i = 0; i<8; i++){
 		if(currently_enabled[i] > -1)GlobalD3DVars::lpD3DDevice->LightEnable(currently_enabled[i],false);
 		currently_enabled[i] = -1;
@@ -229,8 +228,9 @@ void gr_d3d_lighting(bool set, bool state)
 		material.Specular = col;
 		col.r = 0.0;col.g = 0.0;col.b = 0.0;col.a = 0.0;
 		material.Emissive = col;
-		GlobalD3DVars::lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
+		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
 	}
 	GlobalD3DVars::lpD3DDevice->SetMaterial(&material);
+	d3d_SetRenderState(D3DRS_LIGHTING , state);
 
 }

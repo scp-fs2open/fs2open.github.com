@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:11 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-11-02 05:50:08 $
+ * $Author: bobboau $
  *
  * External defs for missile trail stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:11  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -49,7 +52,7 @@
 
 #include "globalincs/pstypes.h"
 
-#define NUM_TRAIL_SECTIONS 16
+#define NUM_TRAIL_SECTIONS 64
 
 // contrail info - similar to that for missile trails
 // place this inside of info structures instead of explicit structs (eg. ship_info instead of ship, or weapon_info instead of weapon)

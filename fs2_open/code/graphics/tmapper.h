@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.3 $
- * $Date: 2003-10-23 18:03:24 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2003-11-02 05:50:08 $
+ * $Author: bobboau $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.2  2003/10/16 00:17:14  randomtiger
  * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
  * As well as initialised in a different mode, bitmaps are stretched and for these modes
@@ -155,5 +158,7 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 #define TMAP_HTL_SUN  		(1<<17)
 #define TMAP_HTL_THRUSTPNT  (1<<18)
 
+//tristrips, for trails mostly, might find other uses eventualy
+#define TMAP_FLAG_TRISTRIP	(1<<20)
 
 #endif
