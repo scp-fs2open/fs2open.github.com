@@ -8,13 +8,16 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/speech.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-03-27 08:12:53 $
+ * $Revision: 1.18 $
+ * $Date: 2005-03-29 06:36:37 $
  * $Author: wmcoolmon $
  *
  * Platform specific text-to-speech functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/03/27 08:12:53  wmcoolmon
+ * Bizarre combo of fopen() and close()
+ *
  * Revision 1.16  2005/02/02 10:36:23  taylor
  * merge with Linux/OSX tree - p0202
  *
@@ -37,7 +40,7 @@
 
 #ifdef LAUNCHER
 #include "stdafx.h"
-#endif
+#endif	//LAUNCHER
 
 #ifdef _WIN32
 	#include <windows.h>
@@ -52,7 +55,7 @@
 	FILE *speech_dev = NULL;
 #else 
 	#pragma error( "ERROR: Unknown platform, speech (FS2_SPEECH) is not supported" )
-#endif
+#endif	//_WIN32
 
 #include "globalincs/pstypes.h"
 #include "speech.h"
@@ -152,7 +155,7 @@ bool speech_play(char *text)
 		return false;
 
 	return true;
-#endif
+#endif	//_WIN32
 }
 
 bool speech_pause()
