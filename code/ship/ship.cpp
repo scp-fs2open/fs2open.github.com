@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.117 $
- * $Date: 2004-04-30 22:20:27 $
+ * $Revision: 2.118 $
+ * $Date: 2004-05-02 03:05:23 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.117  2004/04/30 22:20:27  Goober5000
+ * extra insurance
+ * --Goober5000
+ *
  * Revision 2.116  2004/04/13 05:42:44  Goober5000
  * fixed the custom hitpoints subsystem bug
  * --Goober5000
@@ -4031,6 +4035,9 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 					continue;
 #endif
 				if ( (Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(Ships[Objects[so->objnum].instance].flags & (SF_DEPARTING|SF_DYING)) )
+					// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
+					// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
+					// Not sure how to fix this. -- Goober5000
 					Int3();
 			}
 #endif
