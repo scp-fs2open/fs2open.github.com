@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/11/11 02:15:41  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.24  2003/11/09 07:36:52  Goober5000
  * fixed spelling
  * --Goober5000
@@ -381,7 +386,11 @@
 #define BEAM_FAR_LENGTH				30000.0f
 
 // define moved to before includes so that we can have it available when ship.h is included below
+#ifdef INF_BUILD
+#define MAX_WEAPON_TYPES				300
+#else
 #define MAX_WEAPON_TYPES				200
+#endif
 
 // define to compile corkscrew missiles in
 
