@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.58 $
- * $Author: Goober5000 $
- * $Date: 2004-03-05 09:02:09 $
+ * $Revision: 2.59 $
+ * $Author: Kazan $
+ * $Date: 2004-05-03 21:22:23 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2004/03/05 09:02:09  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.57  2004/01/20 22:20:41  Goober5000
  * bumped MAX_SEXP_NODES to 3000
  * --Goober5000
@@ -607,6 +611,10 @@ struct ship_subsys;
 #define OPF_STRING				47		// Goober5000 - any old string
 #define OPF_ROTATING_SUBSYSTEM	48		// Goober5000 - a rotating subsystem
 
+#if defined(ENABLE_AUTO_PILOT)
+#define OPF_NAV_POINT			49		// Kazan	  - a Nav Point name
+#endif
+
 // Operand return types
 #define	OPR_NUMBER		1	// returns number
 #define	OPR_BOOL		2	// returns true/false value
@@ -643,6 +651,11 @@ struct ship_subsys;
 #define	OP_CATEGORY_AI			0x0b00  // used for AI goals
 #define	OP_CATEGORY_TRAINING	0x0c00
 #define	OP_CATEGORY_UNLISTED	0x0d00
+
+#if defined(ENABLE_AUTO_PILOT)
+#define OP_CATEGORY_NAVPOINTS	0x0e00
+#endif
+
 #define	OP_CATEGORY_GOAL_EVENT	0x0f00	// final category can't be higher than 0x0f00,
 										// to avoid overlap with flags above
 
@@ -783,6 +796,13 @@ struct ship_subsys;
 #define OP_IS_SHIP_CLASS					(0x0027	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_NUM_SHIPS_IN_BATTLE				(0x0028 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
 
+#if defined(ENABLE_AUTO_PILOT)
+//text: is-nav-visited
+#define OP_NAV_ISVISITED					(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Kazan
+//text: distance-to-nav
+#define OP_NAV_DISTANCE						(0x0030 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#endif
+
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
 
@@ -898,6 +918,9 @@ struct ship_subsys;
 #define OP_PLAYER_NOT_USE_AI				(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FORCE_JUMP						(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
+
+
+
 /* made obsolete by Goober5000
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
@@ -948,6 +971,39 @@ struct ship_subsys;
 #define OP_IS_CARGO_KNOWN						(0x001c | OP_CATEGORY_UNLISTED)
 #define OP_COND									(0x001e | OP_CATEGORY_UNLISTED)
 #define OP_END_OF_CAMPAIGN						(0x001f | OP_CATEGORY_UNLISTED)
+
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// Nav Points / Auto Nav sexps
+// Kazan
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#if defined(ENABLE_AUTO_PILOT)
+
+
+//text: add-nav-waypoint
+#define OP_NAV_ADD_WAYPOINT					(0x0001 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+//text: add-nav-ship
+#define OP_NAV_ADD_SHIP						(0x0002 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+//text: del-nav
+#define OP_NAV_DEL							(0x0003 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+//text: hide-nav
+#define OP_NAV_HIDE							(0x0004 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+//text: restrict-nav
+#define OP_NAV_RESTRICT						(0x0005 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+//text: unhide-nav
+#define OP_NAV_UNHIDE						(0x0006 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+//text: unrestrict-nav
+#define OP_NAV_UNRESTRICT					(0x0007 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+//text: set-nav-visited
+#define OP_NAV_SET_VISITED					(0x0008 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+//text: set-nav-carry
+#define OP_NAV_SET_CARRY					(0x0009 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+//text: unset-nav-carry
+#define OP_NAV_UNSET_CARRY					(0x0010 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+
+
+#endif
+
 
 #define OP_KEY_PRESSED							(0x0000 | OP_CATEGORY_TRAINING)
 #define OP_KEY_RESET								(0x0001 | OP_CATEGORY_TRAINING)

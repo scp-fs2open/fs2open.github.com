@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.86 $
- * $Date: 2004-03-17 04:07:31 $
- * $Author: bobboau $
+ * $Revision: 2.87 $
+ * $Date: 2004-05-03 21:22:22 $
+ * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2004/03/17 04:07:31  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.85  2004/03/05 09:02:08  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -736,6 +743,10 @@
 #include "hud/hudmessage.h"
 #endif
 
+#if defined(ENABLE_AUTO_PILOT)
+#include "autopilot/autopilot.h"
+#endif
+
 #define TRUE	1
 #define FALSE	0
 
@@ -867,17 +878,17 @@ sexp_oper Operators[] = {
 	{ "invalidate-goal",				OP_INVALIDATE_GOAL,				1, INT_MAX,	},
 	{ "validate-goal",				OP_VALIDATE_GOAL,					1, INT_MAX,	},
 
-	{ "add-goal",						OP_ADD_GOAL,						2, 2,			},
-	{ "add-ship-goal",				OP_ADD_SHIP_GOAL,					2, 2,			},
-	{ "add-wing-goal",				OP_ADD_WING_GOAL,					2, 2,			},
-	{ "clear-goals",					OP_CLEAR_GOALS,					1, INT_MAX,	},
-	{ "clear-ship-goals",			OP_CLEAR_SHIP_GOALS,				1, 1,			},
-	{ "clear-wing-goals",			OP_CLEAR_WING_GOALS,				1, 1,			},
-	{ "good-rearm-time",				OP_GOOD_REARM_TIME,				2,	2,			},
+	{ "add-goal",						OP_ADD_GOAL,				2, 2,			},
+	{ "add-ship-goal",				OP_ADD_SHIP_GOAL,				2, 2,			},
+	{ "add-wing-goal",				OP_ADD_WING_GOAL,				2, 2,			},
+	{ "clear-goals",					OP_CLEAR_GOALS,				1, INT_MAX,	},
+	{ "clear-ship-goals",			OP_CLEAR_SHIP_GOALS,			1, 1,			},
+	{ "clear-wing-goals",			OP_CLEAR_WING_GOALS,			1, 1,			},
+	{ "good-rearm-time",				OP_GOOD_REARM_TIME,			2,	2,			},
 	{ "good-secondary-time",		OP_GOOD_SECONDARY_TIME,			4, 4,			},
-	{ "change-iff",					OP_CHANGE_IFF,						2,	INT_MAX,	},
+	{ "change-iff",					OP_CHANGE_IFF,					2,	INT_MAX,	},
 	{ "change-ai-class",			OP_CHANGE_AI_CLASS,				2,	INT_MAX,	},
-	{ "protect-ship",				OP_PROTECT_SHIP,					1, INT_MAX,	},
+	{ "protect-ship",				OP_PROTECT_SHIP,				1, INT_MAX,	},
 	{ "unprotect-ship",				OP_UNPROTECT_SHIP,				1, INT_MAX,	},
 	{ "beam-protect-ship",			OP_BEAM_PROTECT_SHIP,			1, INT_MAX,	},
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
@@ -887,58 +898,77 @@ sexp_oper Operators[] = {
 	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
 
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
-	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,				3, 3,			},
-	{ "set-subsystem-strength",	OP_SET_SUBSYSTEM_STRNGTH,		3, 3,			},
+	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 3,			},
+	{ "set-subsystem-strength",	OP_SET_SUBSYSTEM_STRNGTH,			3, 3,			},
 	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
-	{ "self-destruct",				OP_SELF_DESTRUCT,					1, INT_MAX,	},
-	{ "transfer-cargo",				OP_TRANSFER_CARGO,				2, 2,			},
+	{ "self-destruct",				OP_SELF_DESTRUCT,				1, INT_MAX,	},
+	{ "transfer-cargo",				OP_TRANSFER_CARGO,				1, 2,			},
 	{ "exchange-cargo",				OP_EXCHANGE_CARGO,				2, 2,			},
 	{ "set-cargo",					OP_SET_CARGO,					2, 3,			},
 	{ "jettison-cargo-delay",		OP_JETTISON_CARGO,				2, 2			},
-	{ "cargo-no-deplete",			OP_CARGO_NO_DEPLETE,				1,	2			},
+	{ "cargo-no-deplete",			OP_CARGO_NO_DEPLETE,			1,	2			},
 	{ "set-scanned",				OP_SET_SCANNED,					1, 2 },
-	{ "set-unscanned",				OP_SET_UNSCANNED,					1, 2 },
-	{ "lock-rotating-subsystem",	OP_LOCK_ROTATING_SUBSYSTEM,	2, INT_MAX },	// Goober5000
-	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM, 2, INT_MAX },	// Goober5000
-	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,		0,	1},			//phreak
+	{ "set-unscanned",				OP_SET_UNSCANNED,				1, 2 },
+	{ "lock-rotating-subsystem",	OP_LOCK_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
+	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
+	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
+
+#if defined(ENABLE_AUTO_PILOT)
+	{ "is-nav-visited",				OP_NAV_ISVISITED,				1, 1 }, // Kazan
+	{ "distance-to-nav",			OP_NAV_DISTANCE,				1, 1 }, // Kazan
+#endif
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
-	{ "ship-vulnerable",				OP_SHIP_VULNERABLE,				1, INT_MAX	},
-	{ "ship-guardian",				OP_SHIP_GUARDIAN,					1, INT_MAX	},
-	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,				1, INT_MAX	},
+	{ "ship-vulnerable",				OP_SHIP_VULNERABLE,			1, INT_MAX	},
+	{ "ship-guardian",				OP_SHIP_GUARDIAN,				1, INT_MAX	},
+	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,			1, INT_MAX	},
 	{ "ship-invisible",				OP_SHIP_INVISIBLE,				1, INT_MAX	},
-	{ "ship-visible",				OP_SHIP_VISIBLE,					1, INT_MAX	},
-	{ "ship-stealthy",				OP_SHIP_STEALTHY,			1, INT_MAX },
-	{ "ship-unstealthy",			OP_SHIP_UNSTEALTHY,		1, INT_MAX },			// Goober5000
+	{ "ship-visible",				OP_SHIP_VISIBLE,				1, INT_MAX	},
+	{ "ship-stealthy",				OP_SHIP_STEALTHY,				1, INT_MAX },
+	{ "ship-unstealthy",			OP_SHIP_UNSTEALTHY,				1, INT_MAX },			// Goober5000
 	{ "friendly-stealth-invisible",	OP_FRIENDLY_STEALTH_INVISIBLE,	1, INT_MAX },	// Goober5000
 	{ "friendly-stealth-visible",	OP_FRIENDLY_STEALTH_VISIBLE,	1, INT_MAX },	// Goober5000
 	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },	// Goober5000
 	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },	// Goober5000
 	{ "break-warp",					OP_WARP_BROKEN,					1, INT_MAX,	},
-	{ "fix-warp",						OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
-	{ "never-warp",					OP_WARP_NEVER,						1, INT_MAX, },
-	{ "allow-warp",					OP_WARP_ALLOWED,					1, INT_MAX, },
+	{ "fix-warp",					OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
+	{ "never-warp",					OP_WARP_NEVER,					1, INT_MAX, },
+	{ "allow-warp",					OP_WARP_ALLOWED,				1, INT_MAX, },
 
-	{ "fire-beam",						OP_BEAM_FIRE,						3, 4			},
-	{ "beam-free",						OP_BEAM_FREE,						2, INT_MAX	},
-	{ "beam-free-all",				OP_BEAM_FREE_ALL,					1, 1			},
-	{ "beam-lock",						OP_BEAM_LOCK,						2, INT_MAX	},
-	{ "beam-lock-all",				OP_BEAM_LOCK_ALL,					1, 1			},
+	{ "fire-beam",						OP_BEAM_FIRE,					3, 4		},
+	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
+	{ "beam-free-all",					OP_BEAM_FREE_ALL,				1, 1		},
+	{ "beam-lock",						OP_BEAM_LOCK,					2, INT_MAX	},
+	{ "beam-lock-all",					OP_BEAM_LOCK_ALL,				1, 1		},
 	{ "turret-free",					OP_TURRET_FREE,					2, INT_MAX	},
-	{ "turret-free-all",				OP_TURRET_FREE_ALL,				1, 1			},
+	{ "turret-free-all",				OP_TURRET_FREE_ALL,				1, 1		},
 	{ "turret-lock",					OP_TURRET_LOCK,					2, INT_MAX	},
-	{ "turret-lock-all",				OP_TURRET_LOCK_ALL,				1, 1			},
-	{ "turret-tagged-only",			OP_TURRET_TAGGED_ONLY_ALL,		1,	1			},
-	{ "turret-tagged-clear",		OP_TURRET_TAGGED_CLEAR_ALL,	1,	1			},
-	{ "turret-tagged-specific",		OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
-	{ "turret-tagged-clear-specific", OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
+	{ "turret-lock-all",				OP_TURRET_LOCK_ALL,				1, 1		},
+	{ "turret-tagged-only",				OP_TURRET_TAGGED_ONLY_ALL,		1,	1		},
+	{ "turret-tagged-clear",			OP_TURRET_TAGGED_CLEAR_ALL,		1,	1		},
+	{ "turret-tagged-specific",			OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
+	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 
-	{ "red-alert",						OP_RED_ALERT,						0, 0			},
-	{ "end-mission",			OP_END_MISSION,			0, 0,			}, //-Sesquipedalian
-	{ "force-jump",				OP_FORCE_JUMP,			0, 0,			}, // Goober5000
-	{ "next-mission",					OP_NEXT_MISSION,					1, 1,			},
-	{ "end-campaign",					OP_END_CAMPAIGN,					0, 0,			},
-	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,				0, 0,			},
+	{ "red-alert",						OP_RED_ALERT,					0, 0 },
+	{ "end-mission",					OP_END_MISSION,					0, 0 }, //-Sesquipedalian
+	{ "force-jump",						OP_FORCE_JUMP,					0, 0 }, // Goober5000
+	{ "next-mission",					OP_NEXT_MISSION,				1, 1 },
+	{ "end-campaign",					OP_END_CAMPAIGN,				0, 0 },
+	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,				0, 0 },
+
+#if defined(ENABLE_AUTO_PILOT)
+	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,			3, 3 }, //kazan
+	{ "add-nav-ship",					OP_NAV_ADD_SHIP,				2, 2 }, //kazan
+	{ "del-nav",						OP_NAV_DEL,						1, 1 }, //kazan
+	{ "hide-nav",						OP_NAV_HIDE,					1, 1 }, //kazan
+	{ "restrict-nav",					OP_NAV_RESTRICT,				1, 1 }, //kazan
+	{ "unhide-nav",						OP_NAV_UNHIDE,					1, 1 }, //kazan
+	{ "unrestrict-nav",					OP_NAV_UNRESTRICT,				1, 1 }, //kazan
+	{ "set-nav-visited",				OP_NAV_SET_VISITED,				1, 1 }, //kazan
+	{ "set-nav-carry",					OP_NAV_SET_CARRY,				1, INT_MAX }, //kazan
+	{ "unset-nav-carry",				OP_NAV_UNSET_CARRY,				1, INT_MAX }, //kazan
+#endif
+
 	{ "grant-promotion",				OP_GRANT_PROMOTION,				0, 0,			},
 	{ "grant-medal",					OP_GRANT_MEDAL,					1, 1,			},
 	{ "allow-ship",					OP_ALLOW_SHIP,						1, 1,			},
@@ -1105,6 +1135,24 @@ char *HUD_gauge_text[NUM_HUD_GAUGES] =
 #endif
 };
 
+
+#if defined(ENABLE_AUTO_PILOT)
+// Defining these here.. just in case -- Kazan
+void add_nav_waypoint(int node);
+void add_nav_ship(int node);
+void del_nav(int node);
+void hide_nav(int node);
+void restrict_nav(int node);
+void unhide_nav(int node);
+void unrestrict_nav(int node);
+void set_nav_visited(int node);
+
+int is_nav_visited(int node);
+int distance_to_nav(int node);
+
+void set_nav_carry_status(int node);
+void unset_nav_carry_status(int node);
+#endif
 
 int	Directive_count;
 int	Sexp_useful_number;  // a variable to pass useful info in from external modules
@@ -1735,6 +1783,14 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 		}
 
 		switch (type) {
+#if defined(ENABLE_AUTO_PILOT)
+			case OPF_NAV_POINT:
+				if (type2 != SEXP_ATOM_STRING){
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+				break;
+#endif
+
 			case OPF_NUMBER:
 				if ((type2 != OPR_NUMBER) && (type2 != OPR_POSITIVE)){
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -10163,6 +10219,186 @@ void sexp_primitive_sensors_set_range(int n)
 	Ships[ship_num].primitive_sensor_range = range;
 }
 
+
+//*************************************************************************************************
+// Kazan
+// AutoNav/AutoPilot system SEXPS
+
+#if defined(ENABLE_AUTO_PILOT)
+//text: set-nav-carry
+//args: 1+, Ship/Wing name
+void set_nav_carry_status(int node)
+{
+	int n=node, i;
+	char *name;
+
+	while (n != -1)
+	{
+		name = CTEXT(n);
+
+		for (i = 0; i < MAX_WINGS; i++)
+		{
+			if (!stricmp(Wings[i].name, name))
+			{
+				Wings[i].flags |= WF_NAV_CARRY;
+
+				
+				// move to next ship/wing in list
+				n = CDR(n);
+				// short circuit to the start of the loop
+				continue;
+
+			}
+		}
+
+		for (i = 0; i < MAX_SHIPS; i++)
+		{
+			if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
+			{
+				Ships[i].flags2 |= SF2_NAVPOINT_CARRY;
+				break;
+			}
+		}
+
+		
+		// move to next ship/wing in list
+		n = CDR(n);
+	}
+}
+
+//text: unset-nav-carry
+//args: 1+, Ship/Wing name
+void unset_nav_carry_status(int node)
+{
+	int n=node, i;
+	char *name;
+
+	while (n != -1)
+	{
+		name = CTEXT(n);
+
+		for (i = 0; i < MAX_WINGS; i++)
+		{
+			if (!stricmp(Wings[i].name, name))
+			{
+				Wings[i].flags &= ~WF_NAV_CARRY;
+				
+				// move to next ship/wing in list
+				n = CDR(n);
+				// short circuit to the start of the loop
+				continue;
+
+			}
+		}
+
+		for (i = 0; i < MAX_SHIPS; i++)
+		{
+			if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
+			{
+				Ships[i].flags2 &= ~SF2_NAVPOINT_CARRY;
+				break;
+			}
+		}
+		
+		// move to next ship/wing in list
+		n = CDR(n);
+	}
+}
+
+//text: add-nav-waypoint
+//args: 3, Nav Name, Waypoint Path Name, Waypoint Path point
+void add_nav_waypoint(int node)
+{
+	char *nav_name = CTEXT(node);
+	char *way_name = CTEXT(CDR(node));
+	int  vert = sexp_get_val(CDR(CDR(node)));
+
+	AddNav_Waypoint(nav_name, way_name, vert, 0);
+}
+
+
+//text: add-nav-ship
+//args: 2, Nav Name, Ship Name
+void add_nav_ship(int node)
+{
+	char *nav_name = CTEXT(node);
+	char *ship_name = CTEXT(CDR(node));
+	AddNav_Ship(nav_name, ship_name, 0);
+}
+
+
+//text: del-nav
+//args: 1, Nav Name
+void del_nav(int node)
+{
+	char *nav_name = CTEXT(node);
+	DelNavPoint(nav_name);
+}
+
+//text: hide-nav
+//args: 1, Nav Name
+void hide_nav(int node)
+{
+	char *nav_name = CTEXT(node);
+	Nav_Set_Hidden(nav_name);
+}
+
+//text: restrict-nav
+//args: 1, nav name
+void restrict_nav(int node)
+{
+	char *nav_name = CTEXT(node);
+	Nav_Set_NoAccess(nav_name);
+}
+
+//text: unhide-nav
+//args: 1, Nav name
+void unhide_nav(int node)
+{
+	char *nav_name = CTEXT(node);
+	Nav_UnSet_Hidden(nav_name);
+}
+
+//text: unrestrict-nav
+//args: 1, nav name
+void unrestrict_nav(int node)
+{
+	char *nav_name = CTEXT(node);
+	Nav_UnSet_NoAccess(nav_name);
+
+}
+
+//text: set-nav-visited
+//args: 1, Nav Name
+void set_nav_visited(int node)
+{
+	char *nav_name = CTEXT(node);
+	Nav_Set_Visited(nav_name);
+}
+
+//text: is-nav-visited
+//args: 1, Nav Name
+//rets: true/false
+int is_nav_visited(int node)
+{
+	char *nav_name = CTEXT(node);
+	return IsVisited(nav_name);
+}
+
+//text: distance-to-nav
+//args: 1, Nav Name
+//rets: distance to nav
+int distance_to_nav(int node)
+{
+	char *nav_name = CTEXT(node);
+	return DistanceTo(nav_name);
+}
+
+#endif
+
+//*************************************************************************************************
+
+
 int sexp_is_tagged(int node)
 {
 	int sindex;
@@ -11784,6 +12020,66 @@ int eval_sexp(int cur_node)
 				sexp_val=sexp_num_ships_in_battle(node);
 				break;
 
+#if defined(ENABLE_AUTO_PILOT)
+			case OP_NAV_ISVISITED: //kazan
+				sexp_val = is_nav_visited(node);
+				break;
+
+			case OP_NAV_DISTANCE: //kazan
+				sexp_val = distance_to_nav(node);
+				break;
+
+			case OP_NAV_ADD_WAYPOINT: //kazan
+				sexp_val = 1;
+				add_nav_waypoint(node);
+				break;
+
+			case OP_NAV_ADD_SHIP: //kazan
+				sexp_val = 1;
+				add_nav_ship(node);
+				break;
+
+			case OP_NAV_DEL: //kazan
+				sexp_val = 1;
+				del_nav(node);
+				break;
+
+			case OP_NAV_HIDE: //kazan
+				sexp_val = 1;
+				hide_nav(node);
+				break;
+
+			case OP_NAV_RESTRICT: //kazan
+				sexp_val = 1;
+				restrict_nav(node);
+				break;
+
+			case OP_NAV_UNHIDE: //kazan
+				sexp_val = 1;
+				unhide_nav(node);
+				break;
+
+			case OP_NAV_UNRESTRICT: //kazan
+				sexp_val = 1;
+				unrestrict_nav(node);
+				break;
+
+			case OP_NAV_SET_VISITED: //kazan
+				sexp_val = 1;
+				set_nav_visited(node);
+				break;
+
+			case OP_NAV_SET_CARRY: //kazan
+				sexp_val = 1;
+				set_nav_carry_status(node);
+				break;
+
+			case OP_NAV_UNSET_CARRY: //kazan
+				sexp_val = 1;
+				unset_nav_carry_status(node);
+				break;
+#endif
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -11996,6 +12292,9 @@ int query_operator_return_type(int op)
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_IS_CARGO:
 		case OP_MISSILE_LOCKED:
+#if defined(ENABLE_AUTO_PILOT)
+		case OP_NAV_ISVISITED:	//Kazan
+#endif
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -12043,6 +12342,9 @@ int query_operator_return_type(int op)
 		case OP_IS_SHIP_VISIBLE:
 		case OP_TEAM_SCORE:
 		case OP_NUM_SHIPS_IN_BATTLE:
+#if defined(ENABLE_AUTO_PILOT)
+		case OP_NAV_DISTANCE:	//kazan
+#endif
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -12168,6 +12470,18 @@ int query_operator_return_type(int op)
 		case OP_FREE_ROTATING_SUBSYSTEM:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
+#if defined(ENABLE_AUTO_PILOT)
+		case OP_NAV_ADD_WAYPOINT:	//kazan
+		case OP_NAV_ADD_SHIP:		//kazan
+		case OP_NAV_DEL:			//kazan
+		case OP_NAV_HIDE:			//kazan
+		case OP_NAV_RESTRICT:		//kazan
+		case OP_NAV_UNHIDE:			//kazan
+		case OP_NAV_UNRESTRICT:		//kazan
+		case OP_NAV_SET_VISITED:	//kazan
+		case OP_NAV_SET_CARRY:		//kazan
+		case OP_NAV_UNSET_CARRY:	//kazan
+#endif
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -13063,6 +13377,38 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_NUM_SHIPS_IN_BATTLE:
 			return OPF_IFF;
+
+#if defined(ENABLE_AUTO_PILOT)
+		case OP_NAV_ISVISITED:		//Kazan
+		case OP_NAV_DISTANCE:		//kazan
+		case OP_NAV_DEL:			//kazan
+		case OP_NAV_HIDE:			//kazan
+		case OP_NAV_RESTRICT:		//kazan
+		case OP_NAV_UNHIDE:			//kazan
+		case OP_NAV_UNRESTRICT:		//kazan
+		case OP_NAV_SET_VISITED:	//kazan
+			return OPF_NAV_POINT;
+			
+		
+		case OP_NAV_SET_CARRY:		//kazan
+		case OP_NAV_UNSET_CARRY:	//kazan
+			return OPF_SHIP_WING;
+
+		case OP_NAV_ADD_WAYPOINT:	//kazan
+			if (argnum==0)
+				return OPF_NAV_POINT;
+			else if (argnum==1)
+				return OPF_WAYPOINT_PATH;
+			else
+				return OPF_POSITIVE;
+
+		case OP_NAV_ADD_SHIP:		//kazan
+			if (argnum==0)
+				return OPF_NAV_POINT;
+			else
+				return OPF_SHIP;
+#endif
+
 
 		default:
 			Int3();

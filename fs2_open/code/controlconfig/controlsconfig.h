@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.6 $
- * $Date: 2004-04-06 03:09:01 $
- * $Author: phreak $
+ * $Revision: 2.7 $
+ * $Date: 2004-05-03 21:22:19 $
+ * $Author: Kazan $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/04/06 03:09:01  phreak
+ * added a control config option for the wireframe hud targetbox i enabled ages ago
+ *
  * Revision 2.5  2003/11/11 02:15:43  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -473,8 +476,17 @@ typedef struct config_item {
 #define DOWN_SLIDE_THRUST								111
 #define HUD_TARGETBOX_TOGGLE_WIREFRAME					112
 
+#if defined(ENABLE_AUTO_PILOT)
+//AutoPilot - Kazan
+#define AUTO_PILOT_TOGGLE								113
+#define NAV_CYCLE										114
+
 // this should be the total number of control action defines above (or last define + 1)
+#define CCFG_MAX 115
+#else
 #define CCFG_MAX 113
+
+#endif
 
 extern int Failed_key_index;
 extern int Invert_heading;

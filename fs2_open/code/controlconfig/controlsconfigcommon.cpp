@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-04-06 03:09:01 $
- * $Author: phreak $
+ * $Revision: 2.6 $
+ * $Date: 2004-05-03 21:22:19 $
+ * $Author: Kazan $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/04/06 03:09:01  phreak
+ * added a control config option for the wireframe hud targetbox i enabled ages ago
+ *
  * Revision 2.4  2003/11/11 02:15:43  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -558,6 +561,12 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{				  KEY_SHIFTED | KEY_PADPLUS,	-1, SHIP_TAB, "Up Thrust", CC_TYPE_CONTINUOUS},
 	{				  KEY_SHIFTED | KEY_PADENTER,	-1, SHIP_TAB, "Down Thrust", CC_TYPE_CONTINUOUS},
 	{ KEY_ALTED |     KEY_SHIFTED | KEY_Q,			-1, COMPUTER_TAB, "Toggle HUD Wireframe Targetbox"},
+
+#if defined(ENABLE_AUTO_PILOT)
+	// Auto Navigation Systen
+	{ KEY_ALTED |					KEY_A,			-1, COMPUTER_TAB, "Toggle Auto Pilot"},
+	{ KEY_ALTED |					KEY_N,			-1, COMPUTER_TAB, "Cycle Nav Points"},
+#endif
 
 	{                           -1,					-1, -1,				"" }
 };

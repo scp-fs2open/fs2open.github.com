@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-04-25 06:31:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2004-05-03 21:22:21 $
+ * $Author: Kazan $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/04/25 06:31:52  Goober5000
+ * made time dilation only available in cheat mode; also fixed an obscure CTD
+ * --Goober5000
+ *
  * Revision 2.13  2004/04/24 15:44:21  Kazan
  * Fixed Lobby screen showing up while exiting from non-tracker games
  * Time dialiation up to 1/4
@@ -391,6 +395,11 @@
 #include "hud/hudtarget.h"
 #include "hud/hudtargetbox.h"
 #include "hud/hudwingmanstatus.h"
+
+#if defined(ENABLE_AUTO_PILOT)
+#include "hud/hudnavigation.h"	//kazan
+#endif
+
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "mission/missiongoals.h"
@@ -1340,6 +1349,7 @@ void HUD_render_3d(float frametime)
 	if (Viewer_mode & VM_SLEWED) {
 		HUD_render_forward_icon(Player_obj);
 	}
+
 }
 
 
@@ -1592,6 +1602,10 @@ void HUD_render_2d(float frametime)
 		// draw the reticle
 		hud_show_reticle();
 
+#if defined(ENABLE_AUTO_PILOT)
+		// Draw Navigation stuff
+		HUD_Draw_Navigation();
+#endif
 		/*
 		// why is this here twice?
 		// display Energy Transfer System gauges

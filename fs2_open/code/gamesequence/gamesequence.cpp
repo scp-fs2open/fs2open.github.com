@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-05-03 21:22:20 $
+ * $Author: Kazan $
  *
  * File to control Game Sequencing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -461,6 +465,12 @@ int gameseq_get_event()
 
 	return event;
 }	   
+
+// Is our state stack valid
+bool GameState_Stack_Valid()
+{
+	return (gs_current_stack != -1);
+}
 
 // returns one of the GS_STATE_ macros
 int gameseq_get_state(int depth)

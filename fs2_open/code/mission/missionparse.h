@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.38 $
- * $Author: Goober5000 $
- * $Date: 2004-03-05 09:02:06 $
+ * $Revision: 2.39 $
+ * $Author: Kazan $
+ * $Date: 2004-05-03 21:22:22 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.37  2004/01/30 07:39:08  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -705,10 +709,22 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	2
-
+// Dude, it was lame how you set this up.. now i have to have like 4 blank entries in the parse object flags array
 #define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE		(1<<1)
+
+#if defined(ENABLE_AUTO_PILOT)
+#define P2_SF2_NAV_CARRY_STATUS			(1<<2)
+
+#define MAX_PARSE_OBJECT_FLAGS_2	3
+
+#else
+#define MAX_PARSE_OBJECT_FLAGS_2	2
+#endif
+
+
+
+
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

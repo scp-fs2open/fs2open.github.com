@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-08 22:02:38 $
+ * $Revision: 2.4 $
+ * $Date: 2004-05-03 21:22:20 $
  * $Author: Kazan $
  *
  * Header file for Game Sequencing items
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/08 22:02:38  Kazan
+ * Lobby GUI screen restored
+ *
  * Revision 2.2  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -496,5 +499,8 @@ void game_process_event(int current_state, int event);
 void game_leave_state(int old_state,int new_state);
 void game_enter_state(int old_state,int new_state);
 void game_do_state(int current_state);
+
+// Kazan
+bool GameState_Stack_Valid();
 
 #endif /* __GAMESEQUENCE_H__ */
