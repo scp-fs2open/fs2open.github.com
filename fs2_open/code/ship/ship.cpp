@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.147 $
- * $Date: 2005-01-03 18:47:06 $
+ * $Revision: 2.148 $
+ * $Date: 2005-01-11 04:05:22 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.147  2005/01/03 18:47:06  taylor
+ * more -loadonlyused fixes
+ *
  * Revision 2.146  2005/01/01 07:18:48  wmcoolmon
  * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
  *
@@ -11740,12 +11743,14 @@ void ship_page_in()
 	int i,j,k;
 	int num_subsystems_needed = 0;
 
-	int ship_class_used[MAX_SHIP_TYPES];
+	int *ship_class_used = NULL;
+
+	ship_class_used = new int[Num_ship_types];
+
+	Verify( ship_class_used != NULL );
 
 	// Mark all ship classes as not used
-	for (i=0; i<MAX_SHIP_TYPES; i++ )	{
-		ship_class_used[i] = 0;
-	}
+	memset( ship_class_used, 0, Num_ship_types * sizeof(int) );
 
 	// Mark any support ship types as used
 	// 
@@ -11779,14 +11784,16 @@ void ship_page_in()
 				for (j = 0; j < swp->num_secondary_banks; j++)
 					weapon_mark_as_used(swp->secondary_bank_weapons[j]);
 
-				for (j = 0; j < Ships[i].n_subsystems; j++) {
-					model_subsystem *msp = &Ships[i].subsystems[j];
-
+				// get weapons for all capship subsystems (turrets)
+				ship_subsys *ptr = GET_FIRST(&Ships[i].subsys_list);
+				while (ptr != END_OF_LIST(&Ships[i].subsys_list)) {
 					for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
-						weapon_mark_as_used(msp->primary_banks[k]);
+						weapon_mark_as_used(ptr->weapons.primary_bank_weapons[j]);
 
 					for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
-						weapon_mark_as_used(msp->secondary_banks[k]);
+						weapon_mark_as_used(ptr->weapons.secondary_bank_weapons[j]);
+
+					ptr = GET_NEXT(ptr);
 				}
 			}
 
@@ -11800,6 +11807,23 @@ void ship_page_in()
 	for( p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp) )	{
 		nprintf(( "Paging","Found future arrival ship '%s'\n", p_objp->name ));
 		ship_class_used[p_objp->ship_class]++;
+
+		if (Cmdline_load_only_used) {
+			// This will go through Subsys_index[] and grab all weapons: primary, secondary, and turrets
+			for (i = p_objp->subsys_index; i < (p_objp->subsys_index + p_objp->subsys_count); i++) {
+				for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
+					if (Subsys_status[i].primary_banks[j] > -1) {
+						weapon_mark_as_used(Subsys_status[i].primary_banks[j]);
+					}
+				}
+
+				for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
+					if (Subsys_status[i].secondary_banks[j] > -1) {
+						weapon_mark_as_used(Subsys_status[i].secondary_banks[j]);
+					}
+				}
+			}
+		}
 
 		num_subsystems_needed += Ship_info[p_objp->ship_class].n_subsystems;
 	}
@@ -11887,8 +11911,8 @@ void ship_page_in()
 				nprintf(( "Paging", "Couldn't load model '%s'\n", sip->pof_file ));
 			}
 
-			// more weapon marking, the weapon info in Ships[] and Ship_info[]
-			// can be different and we need to catch both sets
+			// more weapon marking, the weapon info in Ship_info[] is the default
+			// loadout which isn't specified by missionparse unless it's different
 			if (Cmdline_load_only_used) {
 				for (j = 0; j < sip->num_primary_banks; j++)
 					weapon_mark_as_used(sip->primary_bank_weapons[j]);
@@ -11992,6 +12016,9 @@ void ship_page_in()
 		}
 	}
 
+	// should never be NULL, this entire function wouldn't work
+	delete[] ship_class_used;
+	ship_class_used = NULL;
 
 }
 
