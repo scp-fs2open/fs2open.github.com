@@ -200,6 +200,7 @@ class GUIObject : public LinkedList
 	friend class Tree;				//By, the way...THIS
 	friend class Checkbox;
 	friend class Button;
+	friend class ImageAnim;
 	friend class GUIScreen;
 	friend class GUISystem;
 private:
@@ -616,7 +617,7 @@ class ImageAnim : public GUIObject
 	std::string ImageAnimName;
 
 	IMG_HANDLE ImageHandle;
-	int NumFrames;
+	int TotalFrames;
 	int FPS;
 	bool IsSet; //Something of a hack, this is called so that
 				//SetImage overrides skin image
