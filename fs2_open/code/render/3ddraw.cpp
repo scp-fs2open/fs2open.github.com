@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-03-10 08:00:13 $
- * $Author: taylor $
+ * $Revision: 2.32 $
+ * $Date: 2005-03-10 15:35:21 $
+ * $Author: bobboau $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/03/10 08:00:13  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.30  2005/03/09 03:23:32  bobboau
  * added a new interface render funtion
  *
@@ -2438,8 +2447,8 @@ int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additiona
 	if(n_bm>bitmap_2d_poly_list_size){
 		if(bitmap_2d_poly_list)delete[]bitmap_2d_poly_list;
 		if(bitmap_2d_poly_vertlist)delete[]bitmap_2d_poly_vertlist;
-		vertex *bitmap_2d_poly_list = new vertex[6* n_bm];
-		vertex **bitmap_2d_poly_vertlist = new vertex*[6*n_bm];
+		bitmap_2d_poly_list = new vertex[6* n_bm];
+		bitmap_2d_poly_vertlist = new vertex*[6*n_bm];
 		for(int i = 0; i<6*n_bm; i++)bitmap_2d_poly_vertlist[i] = &bitmap_2d_poly_list[i];
 		memset(bitmap_2d_poly_list,0,sizeof(vertex)*6*n_bm);
 	}
@@ -2540,10 +2549,10 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 	if(n_bm>bitmap_2d_poly_list_size){
 		if(bitmap_2d_poly_list)delete[]bitmap_2d_poly_list;
 		if(bitmap_2d_poly_vertlist)delete[]bitmap_2d_poly_vertlist;
-		vertex *bitmap_2d_poly_list = new vertex[6* n_bm];
-		vertex **bitmap_2d_poly_vertlist = new vertex*[6*n_bm];
+		bitmap_2d_poly_list = new vertex[6* n_bm];
+		bitmap_2d_poly_vertlist = new vertex*[6*n_bm];
 		for(int i = 0; i<6*n_bm; i++)bitmap_2d_poly_vertlist[i] = &bitmap_2d_poly_list[i];
-		memset(bitmap_2d_poly_list,0,sizeof(vertex)*6*n_bm);
+	//	memset(bitmap_2d_poly_list,0,sizeof(vertex)*6*n_bm);
 	}
 
 	int bw, bh;
