@@ -2,13 +2,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.29 $
- * $Date: 2003-09-26 14:37:14 $
- * $Author: bobboau $
+ * $Revision: 2.30 $
+ * $Date: 2003-10-04 00:26:43 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/09/26 14:37:14  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.28  2003/08/21 15:07:45  phreak
  * added specular highlights. still needs shine mapping
  *
@@ -569,6 +579,8 @@ static vector tex_shift;
 void (*gr_opengl_tmapper_internal)( int nv, vertex ** verts, uint flags, int is_scaler ) = NULL;
 void (*gr_opengl_set_tex_src)(gr_texture_source ts);
 
+float *specular_color;
+
 inline static void opengl_switch_arb0(int state)
 {
 	if (state)
@@ -735,10 +747,80 @@ gr_alpha_blend		GL_current_alpha_blend=ALPHA_BLEND_NONE;
 gr_zbuffer_type		GL_current_ztype=ZBUFFER_TYPE_NONE;
 
 void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
-{}
+{
+	switch (ts) {
+		case TEXTURE_SOURCE_NONE:
+		
+			//glBindTexture(GL_TEXTURE_2D, 0);
+			opengl_switch_arb0(0);
+			opengl_switch_arb1(0);
+			opengl_switch_arb2(0);
+	
+			gr_tcache_set(-1, -1, NULL, NULL );
+			break;
+		
+		case TEXTURE_SOURCE_DECAL:
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
+			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
+			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
+				
+			//	opengl_set_max_anistropy();		
+		break;
+		
+		case TEXTURE_SOURCE_NO_FILTERING:
+			opengl_switch_arb0(1);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
+			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
+			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
+			break;
+		default:
+			return;
+	}
+}
 
 void gr_opengl_set_tex_state_combine_ext(gr_texture_source ts)
-{}
+{
+	switch (ts) {
+		case TEXTURE_SOURCE_NONE:
+		
+			//glBindTexture(GL_TEXTURE_2D, 0);
+			opengl_switch_arb0(0);
+			opengl_switch_arb1(0);
+			opengl_switch_arb2(0);
+	
+			gr_tcache_set(-1, -1, NULL, NULL );
+			break;
+		
+		case TEXTURE_SOURCE_DECAL:
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
+			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
+			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 1.0f);
+				
+			//	opengl_set_max_anistropy();		
+		break;
+		
+		case TEXTURE_SOURCE_NO_FILTERING:
+			opengl_switch_arb0(1);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
+			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
+			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 1.0f);
+			break;
+		default:
+			return;
+	}
+}
 
 
 void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
@@ -773,13 +855,42 @@ void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
 	GL_current_tex_src=ts;
 }
 
+void gr_opengl_set_additive_tex_env()
+{
+	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled)
+	{
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
+		glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_ADD);
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
+	}
+	else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled)
+	{
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
+		glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_ADD);
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 1.0f);
+	}
+	else
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+}
+
+void gr_opengl_set_tex_env_scale(float scale)
+{
+	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled)
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, scale);
+	else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled)
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, scale);
+	else
+	{}
+}
+
+
 
 void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
 {
 
 	if (ts != GL_current_tex_src)
 	{
-		gr_opengl_set_tex_state_no_combine(ts);
+		gr_opengl_set_tex_state_combine_arb(ts);
 	}
 
 	if (ab != GL_current_alpha_blend)
@@ -1604,6 +1715,112 @@ void gr_opengl_stuff_secondary_color(vertex *v, ubyte fr, ubyte fg, ubyte fb)
 
 static int ogl_maybe_pop_arb1=0;
 
+void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, float v_scale, int alpha, int override_primary=0)
+{
+	int r=255, g=255, b=255; 
+
+	glBegin(GL_TRIANGLE_FAN);
+		for (int i = nv-1; i >= 0; i--) {		
+		vertex * va = verts[i];
+		float sx, sy, sz;
+		float tu, tv;
+		float rhw;
+		int a;
+		
+		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) )      {
+			sz = float(1.0 - 1.0 / (1.0 + va->z / 32768.0 ));
+			
+			//if ( sz > 0.98f ) {
+		//		sz = 0.98f;
+		//	}
+		} else {
+			sz = 0.99f;
+		}
+
+		if ( flags & TMAP_FLAG_CORRECT )        {
+			rhw = va->sw;
+		} else {
+			rhw = 1.0f;
+		}
+		
+		if (flags & TMAP_FLAG_ALPHA) {
+			a = verts[i]->a;
+		} else {
+			a = alpha;
+		}
+
+		if (flags & TMAP_FLAG_NEBULA ) {
+			int pal = (verts[i]->b*(NEBULA_COLORS-1))/255;
+			r = gr_palette[pal*3+0];
+			g = gr_palette[pal*3+1];
+			b = gr_palette[pal*3+2];
+		} else if ( (flags & TMAP_FLAG_RAMP) && (flags & TMAP_FLAG_GOURAUD) )   {
+			r = Gr_gamma_lookup[verts[i]->b];
+			g = Gr_gamma_lookup[verts[i]->b];
+			b = Gr_gamma_lookup[verts[i]->b];
+		} else if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )   {
+			// Make 0.75 be 256.0f
+			r = Gr_gamma_lookup[verts[i]->r];
+			g = Gr_gamma_lookup[verts[i]->g];
+			b = Gr_gamma_lookup[verts[i]->b];
+		} else {
+			// use constant RGB values...
+		}
+
+		if (gr_screen.current_bitmap==CLOAKMAP)
+		{
+			r=g=b=Interp_cloakmap_alpha;
+			a=255;
+		}
+
+		ubyte sc[]={(ubyte)(va->spec_r >> 1), (ubyte)(va->spec_g >> 1), (ubyte)(va->spec_b >> 1)};
+
+		if (!override_primary)
+		{
+			glColor4ub ((ubyte)r,(ubyte)g,(ubyte)b,(ubyte)a);
+			glSecondaryColor3ubvEXT(sc);
+		}
+		else
+		{
+			glColor3ubv(sc);		
+			glSecondaryColor3ubvEXT(sc);
+		}
+		
+
+			
+		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 2)){
+		
+			// this is for GL_EXT_FOG_COORD 
+			gr_opengl_stuff_fog_coord(va);
+		}
+
+		int x, y;
+		x = fl2i(va->sx*16.0f);
+		y = fl2i(va->sy*16.0f);
+
+		x += gr_screen.offset_x*16;
+		y += gr_screen.offset_y*16;
+		
+		sx = i2fl(x) / 16.0f;
+		sy = i2fl(y) / 16.0f;
+
+		if ( flags & TMAP_FLAG_TEXTURED )       {
+			tu = va->u*u_scale;
+			tv = va->v*v_scale;
+
+			//use opengl hardware multitexturing
+			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,tu,tv);
+			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,tu,tv);
+			
+			if (max_multitex>2)			glMultiTexCoord2fARB(GL_TEXTURE2_ARB,tu,tv);
+			
+		}
+		
+		glVertex4f(sx/rhw, sy/rhw, -sz/rhw, 1.0f/rhw);
+	}
+	glEnd();
+}
+
 void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, int is_scaler )
 {
 	int i;
@@ -1749,104 +1966,8 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 
 	if (CLOAKMAP==gr_screen.current_bitmap)
 		glBlendFunc(GL_ONE, GL_ONE);
-	
-	glBegin(GL_TRIANGLE_FAN);
-	for (i = nv-1; i >= 0; i--) {		
-		vertex * va = verts[i];
-		float sx, sy, sz;
-		float tu, tv;
-		float rhw;
-		int a;
-		
-		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) )      {
-			sz = float(1.0 - 1.0 / (1.0 + va->z / (32768.0 / 256.0)));
-			
-			if ( sz > 0.98f ) {
-				sz = 0.98f;
-			}
-		} else {
-			sz = 0.99f;
-		}
 
-		if ( flags & TMAP_FLAG_CORRECT )        {
-			rhw = va->sw;
-		} else {
-			rhw = 1.0f;
-		}
-		
-		if (flags & TMAP_FLAG_ALPHA) {
-			a = verts[i]->a;
-		} else {
-			a = alpha;
-		}
-
-		if (flags & TMAP_FLAG_NEBULA ) {
-			int pal = (verts[i]->b*(NEBULA_COLORS-1))/255;
-			r = gr_palette[pal*3+0];
-			g = gr_palette[pal*3+1];
-			b = gr_palette[pal*3+2];
-		} else if ( (flags & TMAP_FLAG_RAMP) && (flags & TMAP_FLAG_GOURAUD) )   {
-			r = Gr_gamma_lookup[verts[i]->b];
-			g = Gr_gamma_lookup[verts[i]->b];
-			b = Gr_gamma_lookup[verts[i]->b];
-		} else if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )   {
-			// Make 0.75 be 256.0f
-			r = Gr_gamma_lookup[verts[i]->r];
-			g = Gr_gamma_lookup[verts[i]->g];
-			b = Gr_gamma_lookup[verts[i]->b];
-		} else {
-			// use constant RGB values...
-		}
-
-		if (gr_screen.current_bitmap==CLOAKMAP)
-		{
-			r=g=b=Interp_cloakmap_alpha;
-			a=255;
-		}
-		
-		glColor4ub ((ubyte)r,(ubyte)g,(ubyte)b,(ubyte)a);
-	
-		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 2)){
-		
-			// this is for GL_EXT_FOG_COORD 
-			gr_opengl_stuff_fog_coord(va);
-		}
-
-/*		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) ){
-		
-			// this is for GL_EXT_SECONDARY_COLOR
-			//doesn't matter if its there since the error checking code (it is on most gfx cards nowadays)
-			gr_opengl_stuff_secondary_color(va,gr_screen.current_fog_color.red,gr_screen.current_fog_color.green,gr_screen.current_fog_color.blue);
-		}
-		else
-		{
-			gr_opengl_stuff_secondary_color(va,0,0,0);
-		}
-*/
-		
-		int x, y;
-		x = fl2i(va->sx*16.0f);
-		y = fl2i(va->sy*16.0f);
-
-		x += gr_screen.offset_x*16;
-		y += gr_screen.offset_y*16;
-		
-		sx = i2fl(x) / 16.0f;
-		sy = i2fl(y) / 16.0f;
-
-		if ( flags & TMAP_FLAG_TEXTURED )       {
-			tu = va->u*u_scale;
-			tv = va->v*v_scale;
-
-			//use opengl hardware multitexturing
-			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,tu,tv);
-			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,tu,tv);
-			
-		}
-		
-		glVertex4f(sx/rhw, sy/rhw, -sz/rhw, 1.0f/rhw);
-	}
-	glEnd();
+	opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,alpha);
 
 	//if we used arb1 for the cloakmap, return
 	if (ogl_maybe_pop_arb1)
@@ -1856,127 +1977,62 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 		return;
 	}
 
-	if (Interp_multitex_cloakmap!=1)
-		return;
-	
-	GLOWMAP=-1;
-	//maybe draw a cloakmap, using a multipass technique
-	if ( !gr_tcache_set(CLOAKMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+	if (Interp_multitex_cloakmap==1)
 	{
-		mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-		return;
-	}
-
-	glActiveTextureARB(GL_TEXTURE0_ARB);
-	glMatrixMode(GL_TEXTURE);
-	glPushMatrix();
-	glTranslated(tex_shift.xyz.x,tex_shift.xyz.y, tex_shift.xyz.z);
-	glMatrixMode(GL_MODELVIEW);
-
-
-	glBlendFunc(GL_ZERO,GL_SRC_COLOR);
-	glDepthMask(GL_FALSE);
-	glDepthFunc(GL_EQUAL);
-
-	glBegin(GL_TRIANGLE_FAN);
-	for (i = nv-1; i >= 0; i--) {		
-		vertex * va = verts[i];
-		float sx, sy, sz;
-		float tu, tv;
-		float rhw;
-		int a;
-		
-		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) )      {
-			sz = float(1.0 - 1.0 / (1.0 + va->z / (32768.0 / 256.0)));
-			
-			if ( sz > 0.98f ) {
-				sz = 0.98f;
-			}
-		} else {
-			sz = 0.99f;
-		}
-
-		if ( flags & TMAP_FLAG_CORRECT )        {
-			rhw = va->sw;
-		} else {
-			rhw = 1.0f;
-		}
-		
-		if (flags & TMAP_FLAG_ALPHA) {
-			a = verts[i]->a;
-		} else {
-			a = alpha;
-		}
-
-		if (flags & TMAP_FLAG_NEBULA ) {
-			int pal = (verts[i]->b*(NEBULA_COLORS-1))/255;
-			r = gr_palette[pal*3+0];
-			g = gr_palette[pal*3+1];
-			b = gr_palette[pal*3+2];
-		} else if ( (flags & TMAP_FLAG_RAMP) && (flags & TMAP_FLAG_GOURAUD) )   {
-			r = Gr_gamma_lookup[verts[i]->b];
-			g = Gr_gamma_lookup[verts[i]->b];
-			b = Gr_gamma_lookup[verts[i]->b];
-		} else if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )   {
-			// Make 0.75 be 256.0f
-			r = Gr_gamma_lookup[verts[i]->r];
-			g = Gr_gamma_lookup[verts[i]->g];
-			b = Gr_gamma_lookup[verts[i]->b];
-		} else {
-			// use constant RGB values...
-		}
-		
-		glColor4ub ((ubyte)r,(ubyte)g,(ubyte)b,(ubyte)a);
 	
-		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 2)){
-		
-			// this is for GL_EXT_FOG_COORD 
-			gr_opengl_stuff_fog_coord(va);
-		}
+		GLOWMAP=-1;
 
-/*		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) ){
-		
-			// this is for GL_EXT_SECONDARY_COLOR
-			//doesn't matter if its there since the error checking code (it is on most gfx cards nowadays)
-			gr_opengl_stuff_secondary_color(va,gr_screen.current_fog_color.red,gr_screen.current_fog_color.green,gr_screen.current_fog_color.blue);
-		}
-		else
+		gr_screen.gf_set_bitmap(CLOAKMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+
+		//maybe draw a cloakmap, using a multipass technique
+		if ( !gr_tcache_set(CLOAKMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 		{
-			gr_opengl_stuff_secondary_color(va,0,0,0);
+			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
 		}
-*/
-		
-		int x, y;
-		x = fl2i(va->sx*16.0f);
-		y = fl2i(va->sy*16.0f);
 
-		x += gr_screen.offset_x*16;
-		y += gr_screen.offset_y*16;
-		
-		sx = i2fl(x) / 16.0f;
-		sy = i2fl(y) / 16.0f;
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+		glMatrixMode(GL_TEXTURE);
+		glPushMatrix();
+		glTranslated(tex_shift.xyz.x,tex_shift.xyz.y, tex_shift.xyz.z);
+		glMatrixMode(GL_MODELVIEW);
 
-		if ( flags & TMAP_FLAG_TEXTURED )       {
-			tu = va->u*u_scale;
-			tv = va->v*v_scale;
 
-			//use opengl hardware multitexturing
-			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,tu,tv);
-			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,tu,tv);
-			
-		}
-		
-		glVertex4f(sx/rhw, sy/rhw, -sz/rhw, 1.0f/rhw);
+		glBlendFunc(GL_ZERO,GL_SRC_COLOR);
+		glDepthMask(GL_FALSE);
+		glDepthFunc(GL_EQUAL);
+	
+		opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,alpha);
+
+
+		glMatrixMode(GL_TEXTURE);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glDepthMask(GL_TRUE);
+		glDepthFunc(GL_LESS);
 	}
-	glEnd();
 
-	glDepthMask(GL_TRUE);
-	glDepthFunc(GL_LESS);
+	//maybe do a spec map
+	if (SPECMAP > -1)
+	{
+			gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+			GLOWMAP=-1;
 
-	glMatrixMode(GL_TEXTURE);
-	glPopMatrix();
+			if ( !gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+			{
+				mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
 
+			glBlendFunc(GL_ONE,GL_ONE);
+			glDepthMask(GL_FALSE);
+			glDepthFunc(GL_EQUAL);
+			gr_opengl_set_tex_env_scale(4.0f);
+			opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,alpha,1);
+			
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	}
 }
 
 void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, int is_scaler )
@@ -2125,102 +2181,35 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 	if (CLOAKMAP==gr_screen.current_bitmap)
 		glBlendFunc(GL_ONE, GL_ONE);
 
-	glBegin(GL_TRIANGLE_FAN);
-	for (i = nv-1; i >= 0; i--) {		
-		vertex * va = verts[i];
-		float sx, sy, sz;
-		float tu, tv;
-		float rhw;
-		int a;
-		
-		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) )      {
-			sz = float(1.0 - 1.0 / (1.0 + va->z / 32768.0 ));
-			
-			//if ( sz > 0.98f ) {
-		//		sz = 0.98f;
-		//	}
-		} else {
-			sz = 0.99f;
-		}
+	opengl_draw_primitive(nv,verts,flags, u_scale, v_scale, alpha);
 
-		if ( flags & TMAP_FLAG_CORRECT )        {
-			rhw = va->sw;
-		} else {
-			rhw = 1.0f;
-		}
-		
-		if (flags & TMAP_FLAG_ALPHA) {
-			a = verts[i]->a;
-		} else {
-			a = alpha;
-		}
-
-		if (flags & TMAP_FLAG_NEBULA ) {
-			int pal = (verts[i]->b*(NEBULA_COLORS-1))/255;
-			r = gr_palette[pal*3+0];
-			g = gr_palette[pal*3+1];
-			b = gr_palette[pal*3+2];
-		} else if ( (flags & TMAP_FLAG_RAMP) && (flags & TMAP_FLAG_GOURAUD) )   {
-			r = Gr_gamma_lookup[verts[i]->b];
-			g = Gr_gamma_lookup[verts[i]->b];
-			b = Gr_gamma_lookup[verts[i]->b];
-		} else if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )   {
-			// Make 0.75 be 256.0f
-			r = Gr_gamma_lookup[verts[i]->r];
-			g = Gr_gamma_lookup[verts[i]->g];
-			b = Gr_gamma_lookup[verts[i]->b];
-		} else {
-			// use constant RGB values...
-		}
-
-		if (gr_screen.current_bitmap==CLOAKMAP)
-		{
-			r=g=b=Interp_cloakmap_alpha;
-			a=255;
-		}
-
-		glColor4ub ((ubyte)r,(ubyte)g,(ubyte)b,(ubyte)a);
-
-		ubyte sc[]={(ubyte)(va->spec_r >> 1), (ubyte)(va->spec_g >> 1), (ubyte)(va->spec_b >> 1)};
-		glSecondaryColor3ubvEXT(sc);
-
-			
-		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 2)){
-		
-			// this is for GL_EXT_FOG_COORD 
-			gr_opengl_stuff_fog_coord(va);
-		}
-
-		int x, y;
-		x = fl2i(va->sx*16.0f);
-		y = fl2i(va->sy*16.0f);
-
-		x += gr_screen.offset_x*16;
-		y += gr_screen.offset_y*16;
-		
-		sx = i2fl(x) / 16.0f;
-		sy = i2fl(y) / 16.0f;
-
-		if ( flags & TMAP_FLAG_TEXTURED )       {
-			tu = va->u*u_scale;
-			tv = va->v*v_scale;
-
-			//use opengl hardware multitexturing
-			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,tu,tv);
-			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,tu,tv);
-			glMultiTexCoord2fARB(GL_TEXTURE2_ARB,tu,tv);
-			
-		}
-		
-		glVertex4f(sx/rhw, sy/rhw, -sz/rhw, 1.0f/rhw);
-	}
-	glEnd();
-
-	
 	if (ogl_maybe_pop_arb1)
 	{
 		gr_pop_texture_matrix(1);
 		ogl_maybe_pop_arb1=0;
+	}
+
+	if (SPECMAP > -1)
+	{
+			gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+			GLOWMAP=-1;
+
+			if ( !gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+			{
+				mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
+
+			glBlendFunc(GL_ONE,GL_ONE);
+			glDepthMask(GL_FALSE);
+			glDepthFunc(GL_EQUAL);
+			gr_opengl_set_tex_env_scale(4.0f);
+			opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,alpha,1);
+			
+			glDepthMask(GL_TRUE);
+			glDepthFunc(GL_LESS);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	}
 
 }
@@ -3282,15 +3271,8 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 		return 1;
 	}
 
-	if (tex_unit)
-	{	glActiveTextureARB(GL_TEXTURE0_ARB+tex_unit);
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
-	}
-	else
-	{
-		glActiveTextureARB(GL_TEXTURE0_ARB);
-	}
-	
+
+	glActiveTextureARB(GL_TEXTURE0_ARB+tex_unit);
 
 	opengl_set_max_anistropy();
 
@@ -3374,7 +3356,7 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 //extern int bm_get_cache_slot( int bitmap_id, int separate_ani_frames );
 int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0)
 {
-	int r1,r2,r3;
+	int r1=0,r2=1,r3=1;
 
 	if (bitmap_id < 0)
 	{
@@ -3388,11 +3370,19 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 	if (GLOWMAP>-1)
 	{
 		opengl_switch_arb1(1);
+		
 		r1=gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0);
 		r2=gr_opengl_tcache_set_internal(GLOWMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 1);
+	
+		//set the glowmap stuff
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		gr_opengl_set_additive_tex_env();
+
 		if ((Interp_multitex_cloakmap>0) && (max_multitex > 2))
 		{
 			opengl_switch_arb2(1);
+			glActiveTextureARB(GL_TEXTURE2_ARB);
+			gr_opengl_set_additive_tex_env();
 			r3=gr_opengl_tcache_set_internal(CLOAKMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 2);
 		}
 		else 
@@ -3410,6 +3400,9 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 			ogl_maybe_pop_arb1=1;
 			gr_push_texture_matrix(1);
 			
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			gr_opengl_set_additive_tex_env();
+
 			if (max_multitex == 2)
 			{
 				gr_translate_texture_matrix(1,&tex_shift);
@@ -3426,14 +3419,6 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 				opengl_switch_arb2(0);
 			}
 			r2=gr_opengl_tcache_set_internal(CLOAKMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 1);
-		
-//	}
-//	else 
-//	{
-//		opengl_switch_arb1(0);
-//		opengl_switch_arb2(1);
-//		r2=gr_opengl_tcache_set_internal(CLOAKMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 2);
-//	}
 
 		}
 		else 
@@ -4408,6 +4393,13 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	if (max_multitex > 2)	gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_3multitex;
 	else					gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_2multitex;
 
+	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled)
+		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_arb;
+	else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled)
+		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_ext;
+	else
+		gr_opengl_set_tex_src = gr_opengl_set_tex_state_no_combine;
+		
 }
 
 DCF(min_ogl, "minimizes opengl")
