@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.54 $
- * $Date: 2003-11-25 15:04:46 $
- * $Author: fryday $
+ * $Revision: 2.55 $
+ * $Date: 2003-11-29 14:54:35 $
+ * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2003/11/25 15:04:46  fryday
+ * Got lasers to work in HT&L OpenGL
+ * Messed a bit with opengl_tmapper_internal3d, draw_laser functions, and added draw_laser_htl
+ *
  * Revision 2.53  2003/11/17 04:25:57  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -3484,7 +3488,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				zbuf_mode = GR_ZBUFF_NONE;
 			}
 			gr_zbuffer_set(zbuf_mode);
-			if(!Cmdline_nohtl) {
+			// When in htl mode render with htl method unless its a jump node
+			if(!Cmdline_nohtl && !(flags | MR_NO_POLYS)) {
 				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
 			}
 			else {
@@ -3527,12 +3532,12 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	// draw the hull of the ship
 	
-	if(!Cmdline_nohtl) {
+	// When in htl mode render with htl method unless its a jump node
+	if(!Cmdline_nohtl && !(flags | MR_NO_POLYS)) {
 		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
 //		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
 	}
 	else {
-		// Putting this in on Phreaks advise so we get hulls drawn again.
 		model_interp_subcall(pm,pm->detail[detail_level],detail_level);
 	}
 
