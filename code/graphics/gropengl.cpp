@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.103 $
- * $Date: 2005-03-03 16:16:55 $
+ * $Revision: 2.104 $
+ * $Date: 2005-03-05 19:11:07 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2005/03/03 16:16:55  taylor
+ * support for TMAP_FLAG_TRILIST
+ * extra check to make sure OGL closes down right under Windows
+ * increased depth buffer, it was too small to compare when 32bpp was used
+ *
  * Revision 2.102  2005/03/03 00:33:41  taylor
  * use the back buffer for screen saves, this didn't work on Windows at one
  *    point but I'm out of things to try and it may be ok after other fixes
@@ -3025,7 +3030,7 @@ void gr_opengl_restore_screen(int bmp_id)
 	}
 
 	gr_set_bitmap(bmp_id);
- 	gr_bitmap(0,0);
+	gr_bitmap(0,0,false);	// don't scale here since we already have real screen size
 }
 
 void gr_opengl_free_screen(int bmp_id)
