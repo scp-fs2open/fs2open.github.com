@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-10-19 19:29:27 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/10 18:42:14  wmcoolmon
  * Added  Bobboau's glow code; all comments include "-Bobboau"
  *
@@ -1660,6 +1663,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			}
 
 			case ID_GLOW:{					//start glowpoint reading -Bobboau
+				//
 				char props[MAX_PROP_LEN];
 				pm->n_glows = cfread_int(fp);
 				pm->glows = (glow_bank *)malloc(sizeof(glow_bank) * pm->n_glows);
@@ -1667,7 +1671,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				for (int q = 0; q < pm->n_glows; q++ ) {
 					glow_bank *bank = &pm->glows[q];
-
+					bank->type=1;
+					bank->is_on=1;
+					bank->glow_timestamp=0;
+					bank->disp_time=0;
+					bank->on_time=1000;
+					bank->off_time=0;
+					bank->LOD=0;
+					bank->submodel_parent=-1;
 					bank->num_slots = cfread_int(fp);
 	
 						cfread_string_len( props, MAX_PROP_LEN, fp );
@@ -1688,7 +1699,54 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						}
 					}
 					for (j = 0; j < bank->num_slots; j++) {
+						cfread_vector( &(bank->pnt[j]), fp );
+						cfread_vector( &(bank->norm[j]), fp );
+							bank->radius[j] = cfread_float( fp );
+							//mprintf(( "Rad = %.2f\n", rad ));
+					}
+					//mprintf(( "Num slots = %d\n", bank->num_slots ));
 
+				}
+				break;					
+			 }				//end glowpoint reading -Bobboau
+
+			case ID_GLOX:{	//experimental glowpoints, so I can test code for things I have to use a hex editor for -Bobboau
+				//
+				char props[MAX_PROP_LEN];
+				pm->n_glows = cfread_int(fp);
+				pm->glows = (glow_bank *)malloc(sizeof(glow_bank) * pm->n_glows);
+				Assert( pm->glows != NULL );
+
+				for (int q = 0; q < pm->n_glows; q++ ) {
+					glow_bank *bank = &pm->glows[q];
+					bank->type=1;
+					bank->is_on=1;
+					bank->glow_timestamp=0;
+					bank->disp_time = cfread_int(fp);
+					bank->on_time = cfread_int(fp);
+					bank->off_time = cfread_int(fp);
+					bank->LOD=0;
+					bank->submodel_parent=-1;
+					bank->num_slots = cfread_int(fp);
+	
+						cfread_string_len( props, MAX_PROP_LEN, fp );
+						// look for $glow_texture=xxx
+						int length = strlen(props);
+						if (length > 0) {
+							int base_length = strlen("$glow_texture=");
+							Assert( strstr( (const char *)&props, "$glow_texture=") != NULL );
+							Assert( length > base_length );
+								char *glow_texture_name = props + base_length;
+							if (glow_texture_name[0] == '$') {
+								glow_texture_name++;
+							}
+						bank->glow_bitmap = bm_load( glow_texture_name );
+						if (bank->glow_bitmap < 0)	{
+							Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
+						
+						}
+					}
+					for (j = 0; j < bank->num_slots; j++) {
 						cfread_vector( &(bank->pnt[j]), fp );
 						cfread_vector( &(bank->norm[j]), fp );
 							bank->radius[j] = cfread_float( fp );
@@ -1743,7 +1801,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 							if ( (bank->wash_info_index == -1) && (n_subsystems > 0) ) {
 								if (table_error) {
-									Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
+								//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
 								} else {
 									Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
 								}
@@ -1792,7 +1850,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 								n_slots = cfread_int( fp );
 								subsystemp->turret_gun_sobj = physical_parent;
-								Assert(n_slots < MAX_TFP);		// only MAX_TFP firing points per model_subsystem
+								Assert(n_slots <= MAX_TFP);		// only MAX_TFP firing points per model_subsystem
 								for (j = 0; j < n_slots; j++ )	{
 									cfread_vector( &subsystemp->turret_firing_point[j], fp );
 								}
@@ -1873,13 +1931,41 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					char tmp_name[256];
 					cfread_string_len(tmp_name,127,fp);
 
+					pm->transparent[i]=0;	//it's transparent
+					pm->ambient[i]=0;		//ambient glow
+					pm->is_ani[i]=0;		//animated textures
 					if ( strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") )	{
 						// Don't load textures for thruster animations or invisible textures
 						pm->textures[i] = -1;
 					} else {
+
+						if(strstr(tmp_name, "trans")){
+							pm->transparent[i]=1;
+							nprintf(("%s is transparent, oooow\n",tmp_name));
+						}
+						if(strstr(tmp_name, "amb")){
+							pm->ambient[i]=1;
+							nprintf(("%s is amient, aaaahhh\n",tmp_name));
+						}
+
 						pm->textures[i] = bm_load( tmp_name );
-						if (pm->textures[i]<0)	{
-							Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
+						if (pm->textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
+							
+							nprintf(("couldn't find %s.pcx",tmp_name));
+
+							pm->is_ani[i] = 1;	//this is an animated texture
+							pm->textures[i] = bm_load_animation(tmp_name,  &pm->numframes[i], &pm->fps[i], 1);
+							
+							if(pm->textures[i]<0){
+								Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
+								pm->textures[i] = -1;
+								pm->is_ani[i] = 0;	//this isn't an animated texture after all
+								nprintf((" or %s.ani\n",tmp_name));
+							}else{
+								mprintf(("but I did find %s.ani, ", tmp_name));
+								mprintf(("with %d frames, ", pm->numframes[i]));
+								mprintf(("and a rate of %d\n", pm->fps[i]));
+							}
 						}
 					}
 					pm->original_textures[i] = pm->textures[i];
@@ -2243,7 +2329,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems)
 
 		for (j=0; j<sm1->num_details; j++ )	{
 			if ( sm1->details[j] == -1 )	{
-				Warning( LOCATION, "Model '%s' could find all detail levels for submodel '%s'", pm->filename, sm1->name );
+			//	Warning( LOCATION, "Model '%s' could find all detail levels for submodel '%s'", pm->filename, sm1->name );
 				sm1->num_details = 0;
 			}
 		}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapons.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:11 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 19:29:29 $
+ * $Author: bobboau $
  *
  * Code to handle the weapon systems
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:11  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -1290,6 +1293,19 @@ int parse_weapon()
 			required_string("+Zadd:");
 			stuff_float(&i.z_add);
 
+			i.tile_type = 0;
+			i.tile_factor = 1.0f;
+			if( optional_string("+Tile Factor:")){ //beam texture tileing factor -Bobboau
+				stuff_float(&(i.tile_factor));
+				stuff_int(&(i.tile_type));
+			}
+
+			i.translation = 0.0f;
+			if( optional_string("+Translation:")){ //beam texture moveing stuff -Bobboau
+				stuff_float(&(i.translation));			
+			}
+
+
 			// maybe copy it
 			if(wip->b_info.beam_num_sections < MAX_BEAM_SECTIONS - 1){
 				wip->b_info.sections[wip->b_info.beam_num_sections++] = i;
@@ -1305,6 +1321,12 @@ int parse_weapon()
 		stuff_float(&wip->tag_time);		
 		wip->wi_flags |= WIF_TAG;
 	}	
+
+	wip->SSM_index =-1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
+	if( optional_string("$SSM:")){
+		stuff_int(&wip->SSM_index);
+	}								// SSM index -Bobboau
+
 
 	return 0;
 }
@@ -1563,7 +1585,12 @@ void weapon_render(object *obj)
 					if (ft > 1.0f)
 						ft = 1.0f;
 
-					model_set_thrust( wip->model_num, ft, wp->thruster_bitmap, wp->thruster_glow_bitmap, wp->thruster_glow_noise);
+					vector temp;
+					temp.xyz.x = ft;
+					temp.xyz.y = ft;
+					temp.xyz.z = ft;
+
+					model_set_thrust( wip->model_num, temp, wp->thruster_bitmap, wp->thruster_glow_bitmap, wp->thruster_glow_noise);
 					render_flags |= MR_SHOW_THRUSTERS;
 				}
 

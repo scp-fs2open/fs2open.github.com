@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-17 20:40:50 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2002-10-19 19:29:27 $
+ * $Author: bobboau $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/17 20:40:50  randomtiger
+ * Added ability to remove HUD ingame on keypress shift O
+ * So I've added a new key to the bind list and made use of already existing hud removal code.
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -541,6 +545,10 @@ config_item Control_config[CCFG_MAX + 1] = {
 
 	// Misc
 	{				  KEY_SHIFTED | KEY_O,			-1, COMPUTER_TAB, "Toggle HUD"},
+	{				  KEY_SHIFTED | KEY_3,			-1, SHIP_TAB, "Right Thrust", CC_TYPE_CONTINUOUS},
+	{				  KEY_SHIFTED | KEY_1,			-1, SHIP_TAB, "Left Thrust", CC_TYPE_CONTINUOUS},
+	{				  KEY_SHIFTED | KEY_PADPLUS,	-1, SHIP_TAB, "Up Thrust", CC_TYPE_CONTINUOUS},
+	{				  KEY_SHIFTED | KEY_PADENTER,	-1, SHIP_TAB, "Down Thrust", CC_TYPE_CONTINUOUS},
 
 	{                           -1,					-1, -1,				"" }
 };

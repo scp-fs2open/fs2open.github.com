@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-09-20 20:05:29 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2002-10-19 19:29:29 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/09/20 20:05:29  phreak
+ * glare parser stuff in stars_init()
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -1013,7 +1016,11 @@ void subspace_render()
 		Interp_subspace_offset_u = 1.0f - subspace_offset_u;
 		Interp_subspace_offset_v = 0.0f;
 
-		model_set_thrust( Subspace_model_inner, 1.0f, -1, Subspace_glow_bitmap, Noise[framenum] );
+		vector temp;
+		temp.xyz.x = 1.0f;
+		temp.xyz.y = 1.0f;
+		temp.xyz.z = 1.0f;
+		model_set_thrust( Subspace_model_inner, temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
 		model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
 
@@ -1025,7 +1032,12 @@ void subspace_render()
 		Interp_subspace_offset_u = 1.0f - subspace_offset_u;
 		Interp_subspace_offset_v = 0.0f;
 
-		model_set_thrust( Subspace_model_inner, 1.0f, -1, Subspace_glow_bitmap, Noise[framenum] );
+		vector temp;
+		temp.xyz.x = 1.0f;
+		temp.xyz.y = 1.0f;
+		temp.xyz.z = 1.0f;
+
+		model_set_thrust( Subspace_model_inner, temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
 		model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
 		
@@ -1039,7 +1051,12 @@ void subspace_render()
 
 		model_set_outline_color(255,255,255);
 
-		model_set_thrust( Subspace_model_inner, 1.0f, -1, Subspace_glow_bitmap, Noise[framenum] );
+//		vector temp;
+		temp.xyz.x = 1.0f;
+		temp.xyz.y = 1.0f;
+		temp.xyz.z = 1.0f;
+
+		model_set_thrust( Subspace_model_inner, temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
 
 		model_render( Subspace_model_inner, &tmp, &Eye_position, render_flags  );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-10-19 19:29:29 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/26 03:11:24  wmcoolmon
  * Added Bobboau's beam tiling code
  *
@@ -299,6 +302,8 @@
 #include "hud/hudmessage.h"
 #include "io/key.h"
 #include "lighting/lighting.h"
+#include "hud/hudshield.h"
+
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON DEFINES/VARS
@@ -751,7 +756,7 @@ int beam_fire(beam_fire_info *fire_info)
 // this allows it to work smoothly in multiplayer (detect "trigger down". every frame just create a targeting laser firing straight out of the
 // object. this way you get all the advantages of nice rendering and collisions).
 // NOTE : only references beam_info_index and shooter
-int beam_fire_targeting(beam_fire_info *fire_info)
+int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 {
 	beam *new_item;
 	weapon_info *wip;
@@ -823,6 +828,7 @@ int beam_fire_targeting(beam_fire_info *fire_info)
 	new_item->framecount = 0;
 	new_item->flags = 0;
 	new_item->shot_index = 0;
+	new_item->shrink = 1.0f;	
 	new_item->team = (char)firing_ship->team;
 
 	// type c is a very special weapon type - binfo has no meaning
@@ -1367,8 +1373,10 @@ void beam_move_all_post()
 #define R_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
 #define P_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 int poly_beam = 0;
+float U_offset =0.0f; // beam texture offset -Bobboau
 void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrink)
-{		
+{	
+	mprintf(("about to render a beam\n"));
 	int idx, s_idx;
 	vertex h1[4];				// halves of a beam section	
 	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
@@ -1404,10 +1412,20 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 		P_VERTICES();						
 		STUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
 
+		//U_offset = ( ( ((float)timestamp() * bwi->sections[s_idx].translation)/1000.0f) - (float)(timestamp() * (int)bwi->sections[s_idx].translation /1000));
+
 		length = vm_vec_dist(start, shot);					// beam tileing -Bobboau
-		u_scale = length / bwi->sections[s_idx].width /2;	// beam tileing, might make a tileing factor in beam index later -Bobboau
-		verts[1]->u = verts[1]->u * u_scale;				// beam tileing -Bobboau
-		verts[2]->u = verts[2]->u * u_scale;				// beam tileing -Bobboau
+		
+		if (bwi->sections[s_idx].tile_type == 1){
+		u_scale = length / (bwi->sections[s_idx].width /2) / bwi->sections[s_idx].tile_factor;	// beam tileing, might make a tileing factor in beam index later -Bobboau
+		}else{
+		u_scale = bwi->sections[s_idx].tile_factor;
+		}
+
+		verts[1]->u = (u_scale + (U_offset * bwi->sections[s_idx].translation));				// beam tileing -Bobboau
+		verts[2]->u = (u_scale + (U_offset * bwi->sections[s_idx].translation));				// beam tileing -Bobboau
+		verts[3]->u = (0 + (U_offset * bwi->sections[s_idx].translation));
+		verts[0]->u = (0 + (U_offset * bwi->sections[s_idx].translation));
 
 		// set the right texture with additive alpha, and draw the poly
 		gr_set_bitmap(bwi->sections[s_idx].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
@@ -1416,6 +1434,7 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 	
 	// turn backface culling back on
 	gr_set_cull(1);	
+	mprintf(("it should have rendered\n"));
 }
 
 // generate particles for the muzzle glow
@@ -1549,7 +1568,13 @@ void beam_render_muzzle_glow(beam *b)
 // render all beam weapons
 void beam_render_all()
 {
-	beam *moveup;		
+	beam *moveup;	
+	
+	U_offset = U_offset + flFrametime;	//moves the U value of texture coods in beams if desired-Bobboau
+	if(U_offset > 1.0f){
+		U_offset = U_offset - 1.0f;	//keeps it below 1.0-Bobboau
+	}
+
 
 	// traverse through all active beams
 	moveup = GET_FIRST(&Beam_used_list);
@@ -2268,12 +2293,14 @@ void beam_jitter_aim(beam *b, float aim)
 // collide a beam with a ship, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_ship(obj_pair *pair)
 {
+	mprintf(("about to do beam colision\n"));
 	beam *b;		
 	ship *shipp;
 	ship_info *sip;
 	mc_info test_collide;		
 	int model_num;	
 	float widest;
+	weapon_info *bwi;
 
 	// bogus
 	if(pair == NULL){
@@ -2319,14 +2346,15 @@ int beam_collide_ship(obj_pair *pair)
 	Beam_test_ship++;
 #endif
 
+	shipp = &Ships[pair->b->instance];
+	sip = &Ship_info[shipp->ship_info_index];
+
 	// bad
 	Assert(pair->b->type == OBJ_SHIP);
 	Assert(pair->b->instance >= 0);
-	if((pair->b->type != OBJ_SHIP) || (pair->b->instance < 0)){
+	if((pair->b->type != OBJ_SHIP) || ((pair->b->instance) < 0)){
 		return 1;
 	}
-	shipp = &Ships[pair->b->instance];
-	sip = &Ship_info[shipp->ship_info_index];
 
 	// get the widest portion of the beam
 	widest = beam_get_widest(b);
@@ -2339,29 +2367,44 @@ int beam_collide_ship(obj_pair *pair)
 	test_collide.p0 = &b->last_start;
 	test_collide.p1 = &b->last_shot;
 
-	weapon_info * bwi = &Weapon_info[b->weapon_info_index];
-
+	bwi = &Weapon_info[b->weapon_info_index];
+	
 	// maybe do a sphere line
 	if(widest > pair->b->radius * BEAM_AREA_PERCENT){
 		test_collide.radius = beam_get_widest(b) * 0.5f;
-		if ( get_shield_strength(&Objects[shipp->objnum]) && (bwi->b_info.beam_type == BEAM_TYPE_C) ){	//check shields for type c beams -Bobboau
-			//HUD_printf("BC shpere sheild");
+		//if the shields have any juce check them otherwise check the model
+		if ( (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for beams wich have a positive sheild factor -Bobboau
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_SPHERELINE;	
 		}else{		
-			//HUD_printf("BC shpere hull");
 			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 		}
 	} else {	
-		if ( get_shield_strength(&Objects[shipp->objnum]) && (bwi->b_info.beam_type == BEAM_TYPE_C) ){	//check shields for type c beams -Bobboau
-			//HUD_printf("BC ray sheild");
+		if ( (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for type c beams -Bobboau
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_RAY;	
 		}else{		
-			//HUD_printf("BC ray hull");
 			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
 		}
 	}
 
 	model_collide(&test_collide);
+	
+	if(test_collide.flags & MC_CHECK_SHIELD){	//if we're checking sheilds
+		int quad = get_quadrant(&test_collide.hit_point);//find wich quadrant we hit
+		if(Objects[shipp->objnum].shields[quad] < (bwi->damage * bwi->shield_factor * 2.0f)){	
+		//then if the beam does more damage than that quadrant can take
+		//if(!(ship_is_shield_up(&Objects[shipp->objnum], get_quadrant(&test_collide.hit_point)))){
+		//go through the shield and hit the hull -Bobboau
+			if(widest > pair->b->radius * BEAM_AREA_PERCENT){
+				test_collide.radius = beam_get_widest(b) * 0.5f;
+				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+			} else {	
+				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
+			}
+			model_collide(&test_collide);
+			Objects[shipp->objnum].shields[quad]=0.0f; //for good measure-Bobboau
+		}
+	}
+
 
 	// if we got a hit
 	if(test_collide.num_hits){
@@ -2377,6 +2420,7 @@ int beam_collide_ship(obj_pair *pair)
 		
 	return 0;
 }
+
 
 // collide a beam with an asteroid, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_asteroid(obj_pair *pair)
@@ -2622,15 +2666,15 @@ int beam_collide_early_out(object *a, object *b)
 		break;
 	case OBJ_ASTEROID:
 		// targeting lasers only hit ships
-		if(bwi->b_info.beam_type == BEAM_TYPE_C){
+/*		if(bwi->b_info.beam_type == BEAM_TYPE_C){
 			return 1;
-		}
+		}*/
 		break;
 	case OBJ_DEBRIS:
 		// targeting lasers only hit ships
-		if(bwi->b_info.beam_type == BEAM_TYPE_C){
+/*		if(bwi->b_info.beam_type == BEAM_TYPE_C){
 			return 1;
-		}
+		}*/
 		// don't ever collide with non hull pieces
 		if(!Debris[b->instance].is_hull){
 			return 1;
@@ -2638,9 +2682,9 @@ int beam_collide_early_out(object *a, object *b)
 		break;
 	case OBJ_WEAPON:
 		// targeting lasers only hit ships
-		if(bwi->b_info.beam_type == BEAM_TYPE_C){
+/*		if(bwi->b_info.beam_type == BEAM_TYPE_C){
 			return 1;
-		}
+		}*/
 		// don't ever collide against laser weapons - duh
 		if(Weapon_info[Weapons[b->instance].weapon_info_index].subtype == WP_LASER){
 			return 1;
@@ -2681,15 +2725,12 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 
 		if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam sheild hit code -Bobboau
 			quadrant_num = get_quadrant(&cinfo->hit_point);
-//			if (!(hit_object->flags & SF_DYING) && ship_is_shield_up(hit_object,quadrant_num) ) {
-				HUD_printf("you should see sheild hits");
-				add_shield_point(hit_object->instance, cinfo->shield_hit_tri, &cinfo->hit_point);
+			if (!(hit_object->flags & SF_DYING) ) {
+				add_shield_point(hit_object-Objects, cinfo->shield_hit_tri, &cinfo->hit_point);
 				bc->quadrant=quadrant_num;
-//				hud_shield_quadrant_hit(hit_object, quadrant_num);
-//				gr_printf(10, 50, "shield hit %f", quadrant_num);
-//			}
+				hud_shield_quadrant_hit(hit_object, quadrant_num);
+			}
 		}
-
 
 		// done
 		return;
@@ -2847,7 +2888,7 @@ void beam_handle_collisions(beam *b)
 			case OBJ_SHIP:				
 				// hit the ship - again, the innards of this code handle multiplayer cases
 				// maybe vaporize ship.
-				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), -1);
+				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), b->f_collisions[idx].quadrant);
 
 				// if this is the first hit on the player ship. whack him				
 				if((do_damage) && !(b->f_collisions[idx].quadrant)){ //I didn't want the beam wacking things if it's hitting just sheilds -Bobboau

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.4 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.5 $
+ * $Date: 2002-10-19 19:29:27 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.3  2002/07/29 08:31:52  DTP
  * Forgot to Bump MAX_MODEL_SUBSYSTEMS from 128 to 200
  *
@@ -518,7 +521,7 @@ typedef struct model_tmap_vert {
 // only be two slots for each docking bay
 
 #define MAX_SLOTS		25
-#define MAX_THRUSTER_SLOTS		10
+#define MAX_THRUSTER_SLOTS		30
 
 typedef struct w_bank {
 	int		num_slots;
@@ -538,11 +541,19 @@ typedef struct thruster_bank {
 } thruster_bank;
 	
 typedef struct glow_bank {  // glow bank struckture -Bobboau
-	int		num_slots;
-	vector	pnt[MAX_THRUSTER_SLOTS];
-	vector	norm[MAX_THRUSTER_SLOTS];
-	float		radius[MAX_THRUSTER_SLOTS];
-	int		glow_bitmap;
+	int		type;
+	int		glow_timestamp; 
+	int		on_time; 
+	int		off_time; 
+	int		disp_time; 
+	int		is_on; 
+	int		submodel_parent; 
+	int		LOD; 
+	int		num_slots; 
+	vector	pnt[MAX_THRUSTER_SLOTS]; 
+	vector	norm[MAX_THRUSTER_SLOTS]; 
+	float		radius[MAX_THRUSTER_SLOTS]; 
+	int		glow_bitmap; 
 } glow_bank;
 
 // defines for docking bay things.  The types are essentially flags since docking bays can probably
@@ -682,6 +693,12 @@ typedef struct polymodel {
 	int			n_textures;
 	int			original_textures[MAX_MODEL_TEXTURES];		// what gets read in from file
 	int			textures[MAX_MODEL_TEXTURES];					// what textures you draw with.  reset to original_textures by model_set_instance
+	int			numframes[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
+	int			fps[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
+	int			is_ani[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
+	int			ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
+	int			transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau
+
 
 	vector		autocenter;							// valid only if PM_FLAG_AUTOCEN is set
 	
@@ -1081,7 +1098,7 @@ int model_which_octant( vector *pnt, int model_num,matrix *model_orient, vector 
 
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
-void model_set_thrust(int model_num, float length, int bitmapnum, int glow_bitmapnum=-1, float glow_noise=1.0f);
+void model_set_thrust(int model_num, vector length, int bitmapnum, int glow_bitmapnum=-1, float glow_noise=1.0f);
 
 //=========================================================
 // model caching

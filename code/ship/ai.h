@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-19 19:29:28 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -697,7 +700,7 @@ extern void ai_find_path(object *pl_objp, int objnum, int path_num, int exit_fla
 extern float ai_path();
 extern void evade_weapon();
 extern int might_collide_with_ship(object *obj1, object *obj2, float dot_to_enemy, float dist_to_enemy, float duration);
-extern void ai_fire_primary_weapon(object *objp);
+extern int ai_fire_primary_weapon(object *objp);	//changed to return weather it fired-Bobboau
 extern int ai_fire_secondary_weapon(object *objp, int priority1 = -1, int priority2 = -1);
 extern float ai_get_weapon_dist(ship_weapon *swp);
 extern void turn_towards_point(object *objp, vector *point, vector *slide_vec, float bank_override);
