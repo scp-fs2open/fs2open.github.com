@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.36 $
- * $Date: 2004-10-18 17:13:36 $
+ * $Revision: 2.37 $
+ * $Date: 2004-10-31 21:48:42 $
  * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2004/10/18 17:13:36  taylor
+ * make sure all spec colors are set to 0 in hud_tri()
+ *
  * Revision 2.35  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -3098,17 +3101,17 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3)
 
 	vertex * vertlist[3];
 	vertex verts[3];
-	
+
+	// zero verts[] out, this is a faster way (nods to Kazan) to make sure that
+	// the specular colors are set to 0 to avoid rendering problems - taylor
+	memset(verts, 0, sizeof(vertex)*3);
+
 	for (i=0; i<3; i++ )	
 		vertlist[i] = &verts[i];
 
 	verts[0].sx = x1;	verts[0].sy = y1;
 	verts[1].sx = x2;	verts[1].sy = y2;
 	verts[2].sx = x3;	verts[2].sy = y3;
-
-	verts[0].spec_r = 0;	verts[0].spec_g = 0;	verts[0].spec_b = 0;
-	verts[1].spec_r = 0;	verts[1].spec_g = 0;	verts[1].spec_b = 0;
-	verts[2].spec_r = 0;	verts[2].spec_g = 0;	verts[2].spec_b = 0;
 
 	uint saved_mode = gr_zbuffer_get();
 	
@@ -4420,7 +4423,7 @@ void hud_show_lead_indicator(vector *target_world_pos)
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
-	
+/*
 	if(swp->current_secondary_bank>=0)
 	{
 		int bank=swp->current_secondary_bank;
@@ -4482,7 +4485,7 @@ void hud_show_lead_indicator(vector *target_world_pos)
 			}
 		}
 	}
-
+*/
 }
 
 // hud_cease_subsystem_targeting() will cease targeting the current targets subsystems
