@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-03-27 06:12:38 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2005-04-03 08:48:30 $
+ * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/03/27 06:12:38  taylor
+ * some pilot file fixing when going between multi and single (partial fix)
+ *
  * Revision 2.19  2005/03/13 23:07:35  taylor
  * enable 32-bit to 16-bit TGA conversion with -tga16 cmdline option (experimental)
  * fix crash when upgrading from original campaign stats file to current
@@ -1099,7 +1102,7 @@ int mission_campaign_savefile_save()
 		slot = &Player_loadout.unit_data[i];
 		cfwrite_int(slot->ship_class, fp);
 
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 			cfwrite_int(slot->wep[j], fp);
 			cfwrite_int(slot->wep_count[j], fp);
 		}
@@ -1605,7 +1608,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 				slot->ship_class = ship_info_lookup(s_name[shp_tmp]);
 			}
 
-			for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 				wep_tmp = cfread_int(fp);
 				// don't set this again and again (for WMC)
 				if (set_defaults) {

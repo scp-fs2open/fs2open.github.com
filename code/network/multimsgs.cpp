@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-03-27 12:28:34 $
+ * $Revision: 2.30 $
+ * $Date: 2005-04-03 08:48:31 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/03/27 12:28:34  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.28  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -6459,13 +6463,13 @@ void send_wss_slots_data_packet(int team_num,int final,net_player *p,int std_req
 		ADD_DATA(val);
 
 		// add the weapons
-		for(i = 0;i<MAX_WL_WEAPONS;i++){
+		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
 			val = (ubyte)Wss_slots_teams[team_num][idx].wep[i];
 			ADD_DATA(val);
 		}
 
 		// add the weapon counts
-		for(i = 0;i<MAX_WL_WEAPONS;i++){
+		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
 			val_short = (short)Wss_slots_teams[team_num][idx].wep_count[i];
 			ADD_SHORT(val_short);
 		}
@@ -6534,7 +6538,7 @@ void process_wss_slots_data_packet(ubyte *data, header *hinfo)
 		Wss_slots_teams[team_num][idx].ship_class = (int)val;
 
 		// get the weapons
-		for(i = 0;i<MAX_WL_WEAPONS;i++){
+		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
 			GET_DATA(val);
 			Wss_slots_teams[team_num][idx].wep[i] = (int)val;
 
@@ -6545,7 +6549,7 @@ void process_wss_slots_data_packet(ubyte *data, header *hinfo)
 		} 
 
 		// get the weapon counts
-		for(i = 0;i<MAX_WL_WEAPONS;i++){
+		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
 			GET_SHORT(val_short);
 			Wss_slots_teams[team_num][idx].wep_count[i] = (int)val_short;
 		}

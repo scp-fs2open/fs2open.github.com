@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.6 $
- * $Date: 2005-03-12 04:44:24 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-03 08:48:30 $
+ * $Author: Goober5000 $
  *
  * $NoKeywords: $
  *
@@ -124,10 +124,6 @@ int common_scroll_up_pressed(int *start, int size, int max_show);
 // NEWSTUFF BEGIN
 //////////////////////////////////////////////////////////////////////////////////////
 
-#define MAX_WL_PRIMARY							MAX_SHIP_PRIMARY_BANKS
-#define MAX_WL_SECONDARY						MAX_SHIP_SECONDARY_BANKS
-#define MAX_WL_WEAPONS							(MAX_WL_PRIMARY+MAX_WL_SECONDARY)
-
 #define MAX_WING_SLOTS	4
 #define MAX_WING_BLOCKS	3
 #define	MAX_WSS_SLOTS	(MAX_WING_BLOCKS*MAX_WING_SLOTS)
@@ -164,8 +160,8 @@ extern shader Icon_shaders[NUM_ICON_FRAMES];
 //////////////////////////////////////////////
 typedef struct wss_unit {
 	int	ship_class;
-	int	wep[MAX_WL_WEAPONS];
-	int	wep_count[MAX_WL_WEAPONS];
+	int	wep[MAX_SHIP_WEAPONS];
+	int	wep_count[MAX_SHIP_WEAPONS];
 } wss_unit;
 
 extern wss_unit Wss_slots_teams[MAX_TEAMS][MAX_WSS_SLOTS];
