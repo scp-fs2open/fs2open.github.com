@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-01 01:51:54 $
- * $Author: phreak $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-03 06:08:54 $
+ * $Author: wmcoolmon $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/01 01:51:54  phreak
+ * function pointer radar update.
+ * will enable us to make different radar styles that we can switch between
+ *
  * Revision 2.6  2004/03/05 09:02:12  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -879,7 +883,7 @@ void radar_frame_render_std(float frametime)
 				Radar_static_looping = snd_play_looping(&Snds[SND_STATIC]);
 			}
 		} else {
-			radar_draw_blips_sorted();
+			radar_draw_blips_sorted(0);
 			if ( Radar_static_looping != -1 ) {
 				snd_stop(Radar_static_looping);
 				Radar_static_looping = -1;

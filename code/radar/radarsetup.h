@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/radarsetup.h $
- * $Revision: 2.1 $
- * $Date: 2004-07-01 01:51:54 $
- * $Author: phreak $
+ * $Revision: 2.2 $
+ * $Date: 2004-07-03 06:08:54 $
+ * $Author: wmcoolmon $
  *
  * C module containg functions switch between radar modes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/07/01 01:51:54  phreak
+ * function pointer radar update.
+ * will enable us to make different radar styles that we can switch between
+ *
  *
  * $NoKeywords: $
  *
@@ -49,7 +53,7 @@ extern int  (*radar_blip_color)(object *objp);
 extern void (*radar_blip_draw_distorted)(blip *b);
 extern void (*radar_blip_draw_flicker)(blip *b);
 extern void (*radar_blit_gauge)();
-extern void (*radar_draw_blips_sorted)(int distort=0);
+extern void (*radar_draw_blips_sorted)(int distort);
 extern void (*radar_draw_circle)( int x, int y, int rad );
 extern void (*radar_draw_range)();
 extern void (*radar_frame_init)();
