@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.87 $
- * $Date: 2005-02-04 20:06:07 $
+ * $Revision: 2.88 $
+ * $Date: 2005-02-15 00:03:35 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2005/02/04 20:06:07  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.86  2005/01/28 11:06:22  Goober5000
  * changed a bunch of transpose-rotate sequences to use unrotate instead
  * --Goober5000
@@ -6512,7 +6515,10 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	// Debugging
 	if (other_objp==NULL)
 	{
-		Int3();
+		// this can be NULL in the case of a target death and attacker weapon
+		// change.  using notification message instead of a fault
+	//	Int3();
+		mprintf(("'other_objpp == NULL' in ai_select_primary_weapon(), line %i", __LINE__));
 		return -1;
 	}
 
@@ -9884,6 +9890,10 @@ void set_goal_dock_orient(matrix *dom, vector *docker_p0, vector *docker_p1, vec
 int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 {
 	int path_num, submodel;
+
+	// make sure we have a spline path to check against before going any further
+	if (pm->docking_bays[dock_index].num_spline_paths <= 0)
+		return -1;
 
 	// find a path for this dockpoint (c.f. ai_return_path_num_from_dockbay)
 	path_num = pm->docking_bays[dock_index].splines[0];
