@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-03-08 03:50:25 $
+ * $Revision: 2.19 $
+ * $Date: 2005-03-08 04:41:39 $
  * $Author: Goober5000 $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/03/08 03:50:25  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.17  2005/03/01 06:55:40  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -941,7 +945,7 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 		dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 		dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
 
-	stay_minimised = true;
+	stay_minimized = true;
 		val = MessageBox(NULL, dumpBuffer.buffer, "Assertion Failed!", MB_OKCANCEL|flags );
 	#else
 		val = MessageBox(NULL, AssertText1, "Assertion Failed!", MB_OKCANCEL|flags );

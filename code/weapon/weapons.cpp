@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2005/03/08 03:50:18  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.93  2005/03/03 16:40:29  taylor
  * animated beam muzzle glows
  *
@@ -3268,7 +3272,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		//	Cause aspect seeking weapon to home at target's predicted position.
 		//	But don't use predicted position if dot product small or negative.
-		//	If do this, with a ship headed towards missile, could choose a point behind missile.``1
+		//	If do this, with a ship headed towards missile, could choose a point behind missile.
 		float	dist_to_target, time_to_target;
 		
 		dist_to_target = vm_vec_normalized_dir(&vec_to_goal, &target_pos, &obj->pos);
