@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-01-31 23:27:54 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2005-02-21 09:00:17 $
+ * $Author: wmcoolmon $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.14  2004/07/31 08:53:46  et1
  * Make missing briefing icon message to tell the icon missing
  *
@@ -695,6 +698,8 @@ void brief_init_screen(int multiplayer_flag)
 	bscreen.map_x2			= Brief_grid_coords[gr_screen.res][0] + Brief_grid_coords[gr_screen.res][2];
 	bscreen.map_y1			= Brief_grid_coords[gr_screen.res][1];
 	bscreen.map_y2			= Brief_grid_coords[gr_screen.res][1] + Brief_grid_coords[gr_screen.res][3];
+	gr_resize_screen_pos(&bscreen.map_x1, &bscreen.map_y1);
+	gr_resize_screen_pos(&bscreen.map_x2, &bscreen.map_y2);
 	/*
 	bscreen.map_x1			= BRIEF_GRID3_X1;
 	bscreen.map_x2			= BRIEF_GRID0_X2;
@@ -1234,7 +1239,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				hud_anim_render(ha, frametime, 1, 0, 1);
+				hud_anim_render(ha, frametime, 1, 0, 1, 0, false);
 
 				if ( Brief_stage_highlight_sound_handle < 0 ) {
 					if ( !Fred_running) {
@@ -1253,7 +1258,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 //				hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1) == 0 ) {
+				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1,false) == 0 ) {
 					bi->flags &= ~BI_FADEIN;
 				}
 			} else {
@@ -1263,12 +1268,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-			gr_aabitmap(bx, by);
+			gr_aabitmap(bx, by, false);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {
 				gr_get_string_size(&w,&h,Players[Player_num].callsign);
-				gr_printf(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign);
+				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign,false);
 			}
 			else {
 				if (Lcl_gr) {
@@ -1276,10 +1281,10 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 					strcpy(buf, bi->label);
 					lcl_translate_brief_icon_name(buf);
 					gr_get_string_size(&w, &h, buf);
-					gr_printf(bc - fl2i(w/2.0f), by - h, buf);
+					gr_string(bc - fl2i(w/2.0f), by - h, buf,false);
 				} else {
 					gr_get_string_size(&w,&h,bi->label);
-					gr_printf(bc - fl2i(w/2.0f), by - h, bi->label);
+					gr_string(bc - fl2i(w/2.0f), by - h, bi->label,false);
 				}
 			}
 
@@ -1367,7 +1372,7 @@ void brief_render_map(int stage_num, float frametime)
 {
 	brief_stage *bs;
 
-	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2);
+	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, false);
 	
 	// REMOVED by neilk: removed gr_clear for FS2 because interface no longer calls for black background on grid
 	//	gr_clear();

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-02-14 23:56:51 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2005-02-21 09:00:58 $
+ * $Author: wmcoolmon $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/02/14 23:56:51  taylor
+ * fix mouse click issues in weapon/ship select screen
+ * skip real VCR controls for Closeup check rather than using hardcoded values
+ *
  * Revision 2.19  2005/01/31 23:27:54  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -1487,7 +1491,7 @@ void brief_render_closeup(int ship_class, float frametime)
 	}
 
 	int model_render_flags;
-	if ( Closeup_icon->type == ICON_JUMP_NODE ) {
+	if ( Closeup_icon->type == ICON_JUMP_NODE) {
 		model_set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);		
 		model_render_flags = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE;
 	} else {
@@ -1510,7 +1514,7 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	gr_set_color_fast(&Color_bright_white);
 
-	gr_printf(0x8000,2,Closeup_icon->closeup_label);
+	gr_string(0x8000,2,Closeup_icon->closeup_label,false);
 //	brief_render_closeup_text();
 
 	Closeup_close_button.enable();
