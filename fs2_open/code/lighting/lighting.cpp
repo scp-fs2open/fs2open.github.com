@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-09-09 21:26:23 $
- * $Author: fryday $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-14 19:00:36 $
+ * $Author: wmcoolmon $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/09/09 21:26:23  fryday
+ * Fixed specular for dynamic lights, optimized it a bit
+ *
  * Revision 2.5  2003/09/09 17:10:55  matt
  * Added -nospec cmd line param to disable specular -Sticks
  *
@@ -213,6 +216,7 @@
 #include "lighting/lighting.h"
 #include "io/timer.h"
 #include "globalincs/systemvars.h"
+#include "cmdline/cmdline.h"
 
 #define MAX_LIGHTS 256
 #define MAX_LIGHT_LEVELS 16
@@ -239,8 +243,6 @@ typedef struct light {
 
 light Lights[MAX_LIGHTS];
 int Num_lights=0;
-
-extern int nospec;
 
 light *Relevent_lights[MAX_LIGHTS][MAX_LIGHT_LEVELS];
 int Num_relevent_lights[MAX_LIGHT_LEVELS];
@@ -917,7 +919,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 	vm_vec_normalize(&nrml);
 	float rval = 0, gval = 0, bval = 0;
 
-	if ( nospec ) {
+	if ( Cmdline_nospec ) {
 		*param_r = 0;
 		*param_g = 0;
 		*param_b = 0;
