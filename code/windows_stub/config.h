@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:56:00 $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-22 01:06:04 $
  * $Author: penguin $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:56:00  penguin
+ * Back-port to MSVC
+ *
  * $NoKeywords: $
  */
 
@@ -279,7 +282,10 @@ extern "C" {
 #define WSAEINVAL       EINVAL
 #define WSAEWOULDBLOCK  EWOULDBLOCK
 #define WSAEISCONN      EISCONN
-
+#define WSAENOTSOCK     ENOTSOCK
+#define WSAECONNRESET   ECONNRESET
+#define WSAECONNABORTED ECONNABORTED
+#define WSAESHUTDOWN    ESHUTDOWN
 
 	void DeleteCriticalSection(CRITICAL_SECTION *);
 	void InitializeCriticalSection(CRITICAL_SECTION *);
