@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.45 $
- * $Date: 2003-11-07 20:55:15 $
+ * $Revision: 2.46 $
+ * $Date: 2003-11-11 18:05:02 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/11/07 20:55:15  phreak
+ * reenabled timerbar
+ *
  * Revision 2.44  2003/11/06 22:36:04  phreak
  * bob's stack functions implemented in opengl
  *
@@ -560,15 +563,15 @@ typedef struct ogl_extension
 
 
 //GL_ARB_vertex_buffer_object FUNCTIONS
-/*#define GL_ARB_VBO_BIND_BUFFER		15			
-#define GL_ARB_VBO_DEL_BUFFER			16
-#define GL_ARB_VBO_GEN_BUFFER			17
-#define GL_ARB_VBO_BUFFER_DATA			18
-#define GL_ARB_VBO_MAP_BUFFER			19
-#define GL_ARB_VBO_UNMAP_BUFFER			20*/
+#define GL_ARB_VBO_BIND_BUFFER			18			
+#define GL_ARB_VBO_DEL_BUFFER			19
+#define GL_ARB_VBO_GEN_BUFFER			20
+#define GL_ARB_VBO_BUFFER_DATA			21
+//#define GL_ARB_VBO_MAP_BUFFER			22
+//#define GL_ARB_VBO_UNMAP_BUFFER			23
 
 
-#define GL_NUM_EXTENSIONS				18
+#define GL_NUM_EXTENSIONS				22
 
 /*
 Assorted Functions for GL_ARB_vertex_buffer_object
@@ -612,7 +615,13 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 	{0, NULL, "glUnlockArraysEXT", "GL_EXT_compiled_vertex_array",0},
 	{0, NULL,"glLoadTransposeMatrixfARB","GL_ARB_transpose_matrix",	1},
 	{0, NULL, "glMultTransposeMatrixfARB", "GL_ARB_transpose_matrix",1},
-	{0, NULL, "glClientActiveTextureARB", "GL_ARB_multitexture",1}
+	{0, NULL, "glClientActiveTextureARB", "GL_ARB_multitexture",1},
+	{0, NULL, "glBindBufferARB", "GL_ARB_vertex_buffer_object",0},
+	{0, NULL, "glDeleteBuffersARB", "GL_ARB_vertex_buffer_object",0},
+	{0, NULL, "glGenBuffersARB", "GL_ARB_vertex_buffer_object",0},
+	{0, NULL, "glBufferDataARB", "GL_ARB_vertex_buffer_object",0}
+//	{0, NULL, "glMapBufferARB", "GL_ARB_vertex_buffer_object",0},
+//	{0, NULL, "glUnmapBufferARB", "GL_ARB_vertex_buffer_object",0}
 };
 
 #define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
@@ -641,6 +650,13 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 #define glMultTransposeMatrixfARB GLEXT_CALL(PFNGLMULTTRANSPOSEMATRIXFARBPROC, GL_MULT_TRANSPOSE)
 
 #define glClientActiveTextureARB GLEXT_CALL(PFNGLCLIENTACTIVETEXTUREARBPROC, GL_CLIENT_ACTIVE_TEX)
+
+#define glBindBufferARB GLEXT_CALL(PFNGLBINDBUFFERARBPROC, GL_ARB_VBO_BIND_BUFFER)
+#define glDeleteBuffersARB GLEXT_CALL(PFNGLDELETEBUFFERSARBPROC, GL_ARB_VBO_DEL_BUFFER)
+#define glGenBuffersARB GLEXT_CALL(PFNGLGENBUFFERSARBPROC, GL_ARB_VBO_GEN_BUFFER)
+#define glBufferDataARB GLEXT_CALL(PFNGLBUFFERDATAARBPROC, GL_ARB_VBO_BUFFER_DATA)
+
+static int VBO_ENABLED = 0;
 
 extern int Texture_compression_enabled;
 
@@ -706,7 +722,7 @@ float *specular_color;
 extern vector G3_user_clip_normal;
 extern vector G3_user_clip_point;
 
-int depth = 1;
+int depth = 0;
 
 //some globals
 extern matrix View_matrix;
@@ -1571,6 +1587,7 @@ void gr_opengl_aabitmap(int x, int y)
 
 void gr_opengl_string( int sx, int sy, char *s )
 {
+	TIMERBAR_PUSH(4);
 	int width, spacing, letter;
 	int x, y;
 
@@ -1640,6 +1657,8 @@ void gr_opengl_string( int sx, int sy, char *s )
 
 		gr_opengl_aabitmap_ex_internal( xc, yc, wc, hc, u+xd, v+yd );
 	}
+
+	TIMERBAR_POP();
 }
 
 void gr_opengl_line(int x1,int y1,int x2,int y2)
@@ -2289,14 +2308,12 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 		Int3 ();
 	}
 		
-	glPushMatrix();
 	glDisable(GL_CULL_FACE);
 	
 	int alpha,tmap_type, r, g, b;
 
 	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
 
-	
 	if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 	{
 		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
@@ -2316,16 +2333,15 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 	}
 	glEnd();
 
-	glPopMatrix();
 }
 
 
 void gr_opengl_tmapper( int nverts, vertex **verts, uint flags )
 {
-	if (!(flags &TMAP_HTL_3D_UNLIT))
-		gr_opengl_tmapper_internal( nverts, verts, flags, 0 );
+	if (flags & TMAP_HTL_3D_UNLIT)
+		gr_opengl_tmapper_internal3d( nverts, verts, flags, 0 );
 	else
-		gr_opengl_tmapper_internal3d(nverts,verts,flags,0);
+		gr_opengl_tmapper_internal(nverts,verts,flags,0);
 
 }
 
@@ -4049,6 +4065,11 @@ struct opengl_vertex_buffer
 	vector *normal_array;
 
 	int used;
+
+	uint vbo_vert;
+	uint vbo_norm;
+	uint vbo_tex;
+
 };
 
 #define MAX_SUBOBJECTS 64
@@ -4071,6 +4092,64 @@ int opengl_find_first_free_buffer()
 	}
 	
 	return -1;
+}
+
+int opengl_check_for_errors()
+{
+#ifdef _DEBUG
+	int error=0;
+	if ((error=glGetError()) != GL_NO_ERROR)
+	{
+		mprintf(("!!ERROR!!: %s\n", gluErrorString(error)));
+		return 1;
+	}
+#endif
+	return 0;
+}
+
+int opengl_mod_depth()
+{
+	int mv;
+	glGetIntegerv(GL_MODELVIEW_STACK_DEPTH, &mv);
+	return mv;
+}
+
+uint opengl_create_vbo(uint size, void** data)
+{
+	if (!data)
+		return 0;
+
+	if (!*data)
+		return 0;
+
+	if (size == 0)
+		return 0;
+
+
+	uint buffer_name;
+
+	glGenBuffersARB(1, &buffer_name);
+	
+	//make sure we have one
+	if (buffer_name)
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer_name);
+		glBufferDataARB(GL_ARRAY_BUFFER_ARB, size, *data, GL_STATIC_DRAW_ARB );
+				
+		//just in case
+		if (opengl_check_for_errors())
+		{
+			return 0;
+		}
+		else
+		{
+			free(*data);
+			*data = NULL;
+		//	mprintf(("VBO Created: %d\n", buffer_name));
+		}
+	}
+
+	return buffer_name;
 }
 
 int gr_opengl_make_buffer(poly_list *list)
@@ -4121,6 +4200,14 @@ int gr_opengl_make_buffer(poly_list *list)
 			}				
 		}
 
+		//maybe load it into a vertex buffer object
+		if (VBO_ENABLED)
+		{
+			vbp->vbo_vert=opengl_create_vbo(vbp->n_poly*9*sizeof(float),(void**)&vbp->vertex_array);
+			vbp->vbo_norm=opengl_create_vbo(vbp->n_poly*9*sizeof(float),(void**)&vbp->normal_array);
+			vbp->vbo_tex=opengl_create_vbo(vbp->n_poly*6*sizeof(float),(void**)&vbp->texcoord_array);
+		}
+
 	}
 	
 
@@ -4130,9 +4217,13 @@ int gr_opengl_make_buffer(poly_list *list)
 void gr_opengl_destroy_buffer(int idx)
 {
 	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
-	free(vbp->normal_array);
-	free(vbp->texcoord_array);
-	free(vbp->vertex_array);
+	if (vbp->normal_array)		free(vbp->normal_array);
+	if (vbp->texcoord_array)	free(vbp->texcoord_array);
+	if (vbp->vertex_array)		free(vbp->vertex_array);
+
+	if (vbp->vbo_norm)			glDeleteBuffersARB(1,&vbp->vbo_norm);
+	if (vbp->vbo_vert)			glDeleteBuffersARB(1,&vbp->vbo_vert);
+	if (vbp->vbo_tex)			glDeleteBuffersARB(1,&vbp->vbo_tex);
 
 	memset(vbp,0,sizeof(opengl_vertex_buffer));
 }
@@ -4141,6 +4232,7 @@ void gr_opengl_destroy_buffer(int idx)
 extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
 void gr_opengl_render_buffer(int idx)
 {
+	TIMERBAR_PUSH(2);
 	float u_scale,v_scale;
 
 	if (glIsEnabled(GL_CULL_FACE))	glFrontFace(GL_CW);
@@ -4150,27 +4242,71 @@ void gr_opengl_render_buffer(int idx)
 	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3,GL_FLOAT,0,vbp->vertex_array);
+	if (vbp->vbo_vert)
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_vert);
+		glVertexPointer(3,GL_FLOAT,0, (void*)NULL);
+	}
+	else
+	{
+		glVertexPointer(3,GL_FLOAT,0,vbp->vertex_array);
+	}
 
 	glEnableClientState(GL_NORMAL_ARRAY);
-	glNormalPointer(GL_FLOAT,0,vbp->normal_array);
+	if (vbp->vbo_norm)
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_norm);
+		glNormalPointer(GL_FLOAT,0, (void*)NULL);
+	}
+	else
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		glNormalPointer(GL_FLOAT,0,vbp->normal_array);
+	}
 
 	glClientActiveTextureARB(GL_TEXTURE0_ARB);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+	if (vbp->vbo_tex)
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
+		glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
+	}
+	else
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+	}
 
 	if (GLOWMAP > -1)
 	{
 		glClientActiveTextureARB(GL_TEXTURE1_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+		if (vbp->vbo_tex)
+		{
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
+			glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
+		}
+		else
+		{
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+		}
 	}
 
 	if ((Interp_multitex_cloakmap>0) && (max_multitex > 2))
 	{
 		glClientActiveTextureARB(GL_TEXTURE2_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+		if (vbp->vbo_tex)
+		{
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
+			glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
+		}
+		else
+		{
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+		}
 	}
 
 
@@ -4199,6 +4335,14 @@ void gr_opengl_render_buffer(int idx)
 		ogl_maybe_pop_arb1=0;
 	}
 
+	TIMERBAR_POP();
+
+	if (VBO_ENABLED)
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB,0);
+	}
+
+
 #if defined(DRAW_DEBUG_LINES) && defined(_DEBUG)
 	glBegin(GL_LINES);
 		glColor3ub(255,0,0);
@@ -4214,6 +4358,7 @@ void gr_opengl_render_buffer(int idx)
 		glVertex3d(0,0,20);
 	glEnd();
 #endif
+
 	
 }
 
@@ -4233,7 +4378,6 @@ void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
 	glTranslatef(offset->xyz.x,offset->xyz.y,offset->xyz.z);
 	glRotatef(fl_degrees(ang),axis.xyz.x,axis.xyz.y,axis.xyz.z);
 	depth++;
-
 }
 
 void gr_opengl_start_instance_angles(vector *pos, angles* rotation)
@@ -4271,8 +4415,9 @@ void gr_opengl_set_view_matrix(vector *pos, matrix* orient)
 {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	glViewport(gr_screen.offset_x,gr_screen.max_h-gr_screen.offset_y-gr_screen.clip_height,gr_screen.clip_width,gr_screen.clip_height);
 
+	glPushMatrix();
+	
 	vector fwd;
 	vector *uvec=&orient->vec.uvec;
 
@@ -4283,37 +4428,28 @@ void gr_opengl_set_view_matrix(vector *pos, matrix* orient)
 	uvec->xyz.x, uvec->xyz.y,-uvec->xyz.z);
 
 	glScalef(1,1,-1);
+	
+	depth=2;
 
 	glViewport(gr_screen.offset_x,gr_screen.max_h-gr_screen.offset_y-gr_screen.clip_height,gr_screen.clip_width,gr_screen.clip_height);
-	depth=0;
-
 }
 
 void gr_opengl_end_view_matrix()
 {
-	//make sure were at the top
-	int level;
-
 	glMatrixMode(GL_MODELVIEW);
-	
-	glGetIntegerv(GL_MODELVIEW_STACK_DEPTH, &level);
-	
-	for (int i=0; i < level; i++)
-	{
-		glPopMatrix();
-		depth--;
-	}
-
+	glPopMatrix();
 	glLoadIdentity();
+	depth=1;
 
-	glViewport(0,0,gr_screen.max_w,gr_screen.max_h);
-
+	glViewport(0,0,gr_screen.max_w, gr_screen.max_h);
+	
 }
 
 void gr_opengl_push_scale_matrix(vector *scale_factor)
 {
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
+	depth++;
 	glScalef(scale_factor->xyz.x,scale_factor->xyz.y,scale_factor->xyz.z);
 }
 
@@ -4321,6 +4457,7 @@ void gr_opengl_pop_scale_matrix()
 {
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
+	depth--;
 }
 
 int gr_opengl_make_light(light_data* light, int idx, int priority)
@@ -4376,7 +4513,7 @@ void gr_opengl_start_clip_plane()
 	glEnable(GL_CLIP_PLANE0);
 }
 
-void ogl_render_timer_bar(int colour, float x, float y, float w, float h)
+void opengl_render_timer_bar(int colour, float x, float y, float w, float h)
 {
 	static float pre_set_colours[MAX_NUM_TIMERBARS][3] = 
 	{
@@ -4846,6 +4983,10 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
 	}
 
+
+	//allow VBOs to be used
+	if ( (!Cmdline_nohtl) && (GL_Extensions[GL_ARB_VBO_BIND_BUFFER].enabled))
+		VBO_ENABLED = 1;
 	
 //	glTexParameteri(GL_TEXTURE_2D,GL_GENERATE_MIPMAP_SGIS,GL_TRUE);
 //	glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
@@ -4874,7 +5015,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	else
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_no_combine;
 
-	TIMERBAR_SET_DRAW_FUNC(ogl_render_timer_bar);	
+	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);	
 }
 
 DCF(min_ogl, "minimizes opengl")
