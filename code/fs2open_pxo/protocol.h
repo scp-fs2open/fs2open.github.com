@@ -5,12 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/protocol.h $
- * $Revision: 1.6 $
- * $Date: 2003-10-13 06:02:50 $
+ * $Revision: 1.7 $
+ * $Date: 2003-10-30 15:30:23 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2003/10/13 06:02:50  Kazan
+ * Added Log Comment Thingy to these files
+ *
  *
  *
  */
@@ -18,6 +21,7 @@
 #if !defined(__pxo_protocol_h_)
 #define __pxo_protocol_h_
 
+#pragma warning(disable:4663)
 
 #define PXO_PROTO_VER "1.1"
 // PUT the Protocol into TCP mode

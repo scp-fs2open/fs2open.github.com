@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-10-04 22:42:22 $
+ * $Revision: 2.15 $
+ * $Date: 2003-10-30 15:30:23 $
  * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/10/04 22:42:22  Kazan
+ * fs2netd now TCP
+ *
  * Revision 2.13  2003/09/26 15:34:26  Kazan
  * ##Kazan## Quick little update of fs2netd stuff to resolve a few issues
  *
@@ -1262,7 +1265,9 @@ void debrief_ui_init()
 		
 		cf_chksum_long(Netgame.mission_name, &CurrentMissionChsum);
 
-		int mValidStatus = CheckSingleMission(Netgame.mission_name, CurrentMissionChsum, FS2OpenPXO_Socket, PXO_Server, PXO_port);
+		int mValidStatus = 0;
+		if (Om_tracker_flag)
+			mValidStatus = CheckSingleMission(Netgame.mission_name, CurrentMissionChsum, FS2OpenPXO_Socket, PXO_Server, PXO_port);
 
 		//
 		// Netgame.mission_name
