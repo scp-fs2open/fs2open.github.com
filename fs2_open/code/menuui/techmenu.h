@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.h $
- * $Revision: 2.1 $
- * $Date: 2003-03-03 04:28:37 $
+ * $Revision: 2.2 $
+ * $Date: 2003-08-22 07:24:07 $
  * $Author: Goober5000 $
  *
  * Header file for code that controls the Tech Room menu
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/03/03 04:28:37  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -75,7 +79,7 @@
 #ifndef _TECHMENU_H
 #define _TECHMENU_H
 
-#define MAX_INTEL_ENTRIES			10
+#define MAX_INTEL_ENTRIES			30
 #define TECH_INTEL_DESC_LEN		5120
 
 typedef struct {
