@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.1 $
- * $Date: 2002-07-10 18:42:14 $
- * $Author: wmcoolmon $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-29 08:28:00 $
+ * $Author: DTP $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/10 18:42:14  wmcoolmon
+ * Added  Bobboau's glow code; all comments include "-Bobboau"
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -282,7 +285,7 @@ struct object;
 #define MAX_PRIMARY_BANKS		3
 #define MAX_SECONDARY_BANKS	4	//	Lowered from 5 to 4 by MK on 3/25/98.  This needs to be <= MAX_WL_SECONDARY or you'll get stack overwrites.
 
-#define MAX_POLYGON_MODELS	128
+#define MAX_POLYGON_MODELS	198 //DTP bumped from 128 to 198 MAX_SHIP_TYPES - 2 = 198
 #define MAX_DEBRIS_OBJECTS	32
 #define MAX_MODEL_TEXTURES	64
 #define FILENAME_LEN			64
