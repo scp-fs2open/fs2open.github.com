@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-04-29 01:03:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2003-06-11 02:59:47 $
+ * $Author: phreak $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.12  2003/01/17 07:59:09  Goober5000
  * fixed some really strange behavior with strings not being truncated at the
  * # symbol
@@ -1568,6 +1572,10 @@ void hud_target_common(int team, int next_flag)
 			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
 				continue;
 			}
+
+			if (Weapons[A->instance].lssm_stage==3){
+				continue;
+			}
 		}
 
 		if ( A->type == OBJ_SHIP ) {
@@ -1700,6 +1708,10 @@ void hud_target_missile(object *source_obj, int next_flag)
 
 		// only allow targeting of bombs
 		if ( !(wip->wi_flags & WIF_BOMB) ) {
+			continue;
+		}
+
+		if (wp->lssm_stage==3){
 			continue;
 		}
 
@@ -2159,9 +2171,14 @@ void hud_target_closest_locked_missile(object *locked_obj)
 			continue;
 		}
 
+		if (wp->lssm_stage==3){
+			continue;
+		}
+
 		if(hud_target_invalid_awacs(A)){
 			continue;
 		}
+		
 
 		if (wp->homing_object == locked_obj) {
 			dist = vm_vec_dist_quick(&A->pos, &locked_obj->pos);		// Find distance!
@@ -2691,7 +2708,11 @@ void hud_target_in_reticle_new()
 			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
 				continue;
 			}
+			if (Weapons[A->instance].lssm_stage==3){
+				continue;
+			}
 		}
+
 
 		if ( A->type == OBJ_SHIP ) {
 			if ( Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS ){
@@ -2774,6 +2795,10 @@ void hud_target_in_reticle_old()
 
 		if ( A->type == OBJ_WEAPON ) {
 			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
+				continue;
+			}
+
+			if (Weapons[A->instance].lssm_stage==3){
 				continue;
 			}
 		}

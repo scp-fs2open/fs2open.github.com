@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-06-11 02:59:48 $
+ * $Author: phreak $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -530,6 +533,10 @@ int hud_lock_world_pos_in_range(vector *target_world_pos, vector *vec_to_target)
 	// calculate the range of the weapon, and only display the lead target indicator when
 	// if the weapon can actually hit the target
 	weapon_range = wip->max_speed * wip->lifetime;
+
+	//local ssms are always in range :)
+	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
+		return 1;
 
 	// reduce firing range in nebula
 	if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
