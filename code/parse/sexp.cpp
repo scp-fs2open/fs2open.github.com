@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.108 $
- * $Date: 2004-09-22 08:32:05 $
+ * $Revision: 2.109 $
+ * $Date: 2004-09-22 21:52:22 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2004/09/22 08:32:05  Goober5000
+ * fixed some small problems in the framework - should be working nicely now;
+ * next step is the actual sexp implementation :-P
+ * --Goober5000
+ *
  * Revision 2.107  2004/09/22 06:56:44  Goober5000
  * checking in framework for when-argument special ubersexp
  * --Goober5000
@@ -13254,8 +13259,13 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ANY_OF:
 		case OP_EVERY_OF:
 		case OP_RANDOM_OF:
-		case OP_NUMBER_OF:
 			return OPF_ANYTHING;
+
+		case OP_NUMBER_OF:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else
+				return OPF_ANYTHING;
 
 		case OP_AI_DISABLE_SHIP:
 		case OP_AI_DISARM_SHIP:
