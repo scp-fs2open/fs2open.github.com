@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.31 $
+ * $Revision: 2.32 $
  * $Author: Goober5000 $
- * $Date: 2003-03-19 06:23:28 $
+ * $Date: 2003-03-20 04:27:10 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/03/19 06:23:28  Goober5000
+ * added warp-effect sexp
+ * --Goober5000
+ *
  * Revision 2.30  2003/03/18 08:44:05  Goober5000
  * added explosion-effect sexp and did some other minor housekeeping
  * --Goober5000
@@ -640,6 +644,9 @@
 #define OP_IS_SHIP_STEALTHY					(0x001c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_CARGO							(0x001d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_FRIENDLY_STEALTH_VISIBLE		(0x001e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_OBJECT_X						(0x001f	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_OBJECT_Y						(0x0020	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_OBJECT_Z						(0x0021	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -744,12 +751,7 @@
 #define OP_EMP_EFFECT						(0x007f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_SHIP_FACING					(0x0080 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_SHIP_FACING_OBJECT			(0x0081 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_GET_OBJECT_X						(0x0082	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_GET_OBJECT_Y						(0x0083	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_GET_OBJECT_Z						(0x0084	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SET_OBJECT_X						(0x0085	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SET_OBJECT_Y						(0x0086	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SET_OBJECT_Z						(0x0087	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_SHIP_POSITION				(0x0082	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // debugging sexpressions

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.46 $
- * $Date: 2003-03-20 00:08:08 $
+ * $Revision: 2.47 $
+ * $Date: 2003-03-20 04:27:10 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/03/20 00:08:08  Goober5000
+ * making sexps better
+ * --Goober5000
+ *
  * Revision 2.45  2003/03/19 06:23:27  Goober5000
  * added warp-effect sexp
  * --Goober5000
@@ -663,8 +667,11 @@ sexp_oper Operators[] = {
 	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 2, },
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
-	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
+	{ "get-object-x",				OP_GET_OBJECT_X,				1,	2	},	// Goober5000
+	{ "get-object-y",				OP_GET_OBJECT_Y,				1,	2	},	// Goober5000
+	{ "get-object-z",				OP_GET_OBJECT_Z,				1,	2	},	// Goober5000
+	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
 	{ "num-players",					OP_NUM_PLAYERS,				0, 0, },
 	{ "num_kills",								OP_NUM_KILLS,							1, 1			},
@@ -775,12 +782,7 @@ sexp_oper Operators[] = {
 	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINTS },	//-Bobboau
 	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINTS },	//-Bobboau
 
-	{ "get-object-x",				OP_GET_OBJECT_X,				1,	2	},	// Goober5000
-	{ "get-object-y",				OP_GET_OBJECT_Y,				1,	2	},	// Goober5000
-	{ "get-object-z",				OP_GET_OBJECT_Z,				1,	2	},	// Goober5000
-	{ "set-object-x",				OP_SET_OBJECT_X,				2,	2	},	// Goober5000
-	{ "set-object-y",				OP_SET_OBJECT_Y,				2,	2	},	// Goober5000
-	{ "set-object-z",				OP_SET_OBJECT_Z,				2,	2	},	// Goober5000
+	{ "set-ship-position",			OP_SET_SHIP_POSITION,			4,	4	},	// Goober5000
 	{ "set-ship-facing",			OP_SET_SHIP_FACING,				4,	4	},	// Goober5000
 	{ "set-ship-facing-object",		OP_SET_SHIP_FACING_OBJECT,		2,	2	},	// Goober5000
 
@@ -4393,70 +4395,121 @@ int sexp_distance_subsystem(int n)	// Goober5000
 }
 
 // Goober5000
-int sexp_deal_with_object_coordinates(int n, int get_coordinate, int index) 
+int sexp_vec_coordinate(vector *v, int index)
 {
-	vector *p_pos, pos;
-	int ship_num;
-	char *ship_name = CTEXT(n);
+	// return result:
+	switch(index)
+	{
+		case 0:
+			return (int)v->xyz.x;
+		case 1:
+			return (int)v->xyz.y;
+		case 2:
+			return (int)v->xyz.z;
+		default:
+			Int3();
+			return 0;
+		}
+}
+
+// Goober5000
+int sexp_get_object_coordinates(int n, int index) 
+{
+	ship_obj *so;
+	char *object_name = CTEXT(n);
+	n = CDR(n);
+	int team, obj;
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
 		return SEXP_NAN;
 
-	// get the ship num.  If we get a -1 for the number here, ship has yet to arrive, so return NAN.
-	ship_num = ship_name_lookup(ship_name, 1);
-	if (ship_num == -1)
+	// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL) ) 
 		return SEXP_NAN;
 
-	n = CDR(n);
-
-	// get position
-	p_pos = &Objects[Ships[ship_num].objnum].pos;
-
-	// get
-	if (get_coordinate)
+	team = sexp_determine_team(object_name);
+	if (team)	// we have a team type, so pick the first ship of that type
 	{
-		// might we have a subsys?
+		so = GET_FIRST(&Ship_obj_list);
+		while (so != END_OF_LIST(&Ship_obj_list))
+		{
+			if (Ships[Objects[so->objnum].instance].team == team)
+			{
+				return sexp_vec_coordinate(&Objects[so->objnum].pos, index);
+			}
+
+			so = GET_NEXT(so);
+		}
+
+		return SEXP_NAN;	// if no match
+	}
+
+	// at this point, we must have a wing, ship or point for a target
+	obj = ship_name_lookup(object_name);
+	if (obj >= 0)
+	{
+		// see if we have a subsys
 		if (n != -1)
 		{
-			sexp_get_subsystem_pos(ship_num, CTEXT(n), &pos);
-			p_pos = &pos;
+			vector subsys_pos = ZERO_VECTOR;	// to avoid warning :-/
+			sexp_get_subsystem_pos(obj, CTEXT(n), &subsys_pos);
+			return sexp_vec_coordinate(&subsys_pos, index);
 		}
 
-		// return result:
-		switch(index)
-		{
-			case 0:
-				return (int)p_pos->xyz.x;
-			case 1:
-				return (int)p_pos->xyz.y;
-			case 2:
-				return (int)p_pos->xyz.z;
-			default:
-				Int3();
-		}
+		return sexp_vec_coordinate(&Objects[Ships[obj].objnum].pos, index);
 	}
-	// set
-	else
+
+	// at this point, we must have a wing or point for a target
+	obj = waypoint_lookup(object_name);
+	if (obj >= 0)
 	{
-		// set pos:
-		switch(index)
-		{
-			case 0:
-				p_pos->xyz.x = (float)atoi(CTEXT(n));
-				break;
-			case 1:
-				p_pos->xyz.y = (float)atoi(CTEXT(n));
-				break;
-			case 2:
-				p_pos->xyz.z = (float)atoi(CTEXT(n));
-				break;
-			default:
-				Int3();
-		}
+		return sexp_vec_coordinate(&Objects[obj].pos, index);
 	}
+		
+	// at this point, we must have a wing for a target
+	obj = wing_name_lookup(object_name);
+	if (obj < 0)
+		return SEXP_NAN;  // we apparently don't have anything legal
 
-	return SEXP_TRUE;
+	// make sure at least one ship exists
+	if (!Wings[obj].current_count)
+		return SEXP_NAN;
+
+	// point to wing leader
+	return sexp_vec_coordinate(&Objects[Ships[Wings[obj].ship_index[0]].objnum].pos, index);
+}
+
+// Goober5000
+void sexp_set_ship_position(int n)
+{
+	char *ship_name;
+	int ship_num, x, y, z;
+	
+	ship_name = CTEXT(n);
+	n = CDR(n);
+
+	x = atoi(CTEXT(n));
+	n = CDR(n);
+	y = atoi(CTEXT(n));
+	n = CDR(n);
+	z = atoi(CTEXT(n));
+
+	// check to see if the ship was destroyed or departed.  If so, then make this node known false
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ) 
+		return;
+
+	// get ship number
+	ship_num = ship_name_lookup(ship_name);
+
+	// if the ship isn't in the mission, do nothing
+	if (ship_num < 0)
+		return;
+
+	// set position
+	Objects[Ships[ship_num].objnum].pos.xyz.x = (float)x;
+	Objects[Ships[ship_num].objnum].pos.xyz.y = (float)y;
+	Objects[Ships[ship_num].objnum].pos.xyz.z = (float)z;
 }
 
 // Goober5000
@@ -10381,10 +10434,12 @@ int eval_sexp(int cur_node)
 			case OP_GET_OBJECT_X:
 			case OP_GET_OBJECT_Y:
 			case OP_GET_OBJECT_Z:
-			case OP_SET_OBJECT_X:
-			case OP_SET_OBJECT_Y:
-			case OP_SET_OBJECT_Z:
-				sexp_val = sexp_deal_with_object_coordinates(node, (op_num==OP_GET_OBJECT_X||op_num==OP_GET_OBJECT_Y||op_num==OP_GET_OBJECT_Z), (op_num==OP_GET_OBJECT_X||op_num==OP_SET_OBJECT_X)?0:((op_num==OP_GET_OBJECT_Y||op_num==OP_SET_OBJECT_Y)?1:2));
+				sexp_val = sexp_get_object_coordinates(node, (op_num==OP_GET_OBJECT_X)?0:((op_num==OP_GET_OBJECT_Y)?1:2));
+				break;
+
+			case OP_SET_SHIP_POSITION:
+				sexp_set_ship_position(node);
+				sexp_val = 1;
 				break;
 
 			case OP_SET_SHIP_FACING:
@@ -10998,9 +11053,7 @@ int query_operator_return_type(int op)
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_EMP_EFFECT:
-		case OP_SET_OBJECT_X:
-		case OP_SET_OBJECT_Y:
-		case OP_SET_OBJECT_Z:
+		case OP_SET_SHIP_POSITION:
 		case OP_SET_SHIP_FACING:
 		case OP_SET_SHIP_FACING_OBJECT:
 			return OPR_NULL;
@@ -11199,13 +11252,11 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GET_OBJECT_Y:
 		case OP_GET_OBJECT_Z:
 			if (argnum==0)
-				return OPF_SHIP;
+				return OPF_SHIP_WING_POINT;
 			else
 				return OPF_SUBSYSTEM;
 
-		case OP_SET_OBJECT_X:
-		case OP_SET_OBJECT_Y:
-		case OP_SET_OBJECT_Z:
+		case OP_SET_SHIP_POSITION:
 			if (argnum==0)
 				return OPF_SHIP;
 			else
@@ -12699,12 +12750,7 @@ int get_subcategory(int sexp_id)
 		case OP_ACTIVATE_GLOW_POINT_BANK:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
-		case OP_GET_OBJECT_X:
-		case OP_GET_OBJECT_Y:
-		case OP_GET_OBJECT_Z:
-		case OP_SET_OBJECT_X:
-		case OP_SET_OBJECT_Y:
-		case OP_SET_OBJECT_Z:
+		case OP_SET_SHIP_POSITION:
 		case OP_SET_SHIP_FACING:
 		case OP_SET_SHIP_FACING_OBJECT:
 			return CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION;
