@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.138 $
- * $Date: 2005-03-14 23:33:22 $
+ * $Revision: 2.139 $
+ * $Date: 2005-03-14 23:34:59 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.138  2005/03/14 23:33:22  Goober5000
+ * rolled back Phreak's commit
+ * --Goober5000
+ *
  * Revision 2.136  2005/03/03 06:05:31  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -7103,7 +7107,7 @@ int sexp_is_ai_class( int n )
 		return SEXP_CANT_EVAL;
 
 	// subsys?
-	if (n != 1)
+	if (n != -1)
 	{
 		ship_subsys *ss;
 
@@ -7174,7 +7178,7 @@ void sexp_change_ai_class( int n )
 		return;
 
 	// subsys?
-	if (n != 1)
+	if (n != -1)
 	{
 		// loopity-loop
 		for ( ; n != -1; n = CDR(n) )
@@ -11393,7 +11397,7 @@ void sexp_damage_escort_list_all(int n)
 
 	// build list of priorities
 	num_priorities = 0;
-	for ( ; n != 1; n = CDR(n) )
+	for ( ; n != -1; n = CDR(n) )
 	{
 		priority[num_priorities] = eval_num(n);
 		num_priorities++;
@@ -12327,7 +12331,7 @@ void sexp_fade_out(int n)
 		delta_time = eval_num(n)/1000.0f;
 
 		n = CDR(n);
-		if(n != 1)
+		if(n != -1)
 		{
 			switch(eval_num(n))
 			{
