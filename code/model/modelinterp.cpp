@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.79 $
- * $Date: 2004-04-26 12:38:35 $
- * $Author: taylor $
+ * $Revision: 2.80 $
+ * $Date: 2004-05-01 17:37:09 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2004/04/26 12:38:35  taylor
+ * use d3_draw_rod() for lightning arcs (for OGL fix), fix debris making HUD in OGL disappear
+ *
  * Revision 2.78  2004/04/03 06:22:33  Goober5000
  * fixed some stub functions and a bunch of compile warnings
  * --Goober5000
@@ -4299,7 +4302,8 @@ static int submodel_get_points_internal(int model_num, int submodel_num, int max
 void submodel_get_two_random_points(int model_num, int submodel_num, vector *v1, vector *v2, vector *n1, vector *n2 )
 {
 	int nv = submodel_get_points_internal(model_num, submodel_num, MAX_POLYGON_VECS, Interp_verts, Interp_norms );
-	
+
+	Assert(nv > 0);	// Goober5000 - to avoid div-0 error
 	int vn1 = (myrand()>>5) % nv;
 	int vn2 = (myrand()>>5) % nv;
 
