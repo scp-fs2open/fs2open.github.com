@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2004/12/23 23:35:02  wmcoolmon
+ * Added +Hud Image: for weapons, which replaces the weapon name in the list with an image.
+ *
  * Revision 2.35  2004/11/21 11:38:17  taylor
  * support for animated beam sections
  * various weapon-only-used fixes
@@ -730,11 +733,12 @@ typedef struct weapon_info {
 
 	//electronics info - phreak 5/3/03
 	float elec_intensity;		//intensity detirmines how well it works on different ship classes
-	int elec_time;				//how long it lasts
+	int elec_time;				//how long it lasts, in milliseconds
 	float elec_eng_mult;		//multiplier on engine subsystem
 	float elec_weap_mult;		//multiplier on weapon subsystem and turrets
 	float elec_beam_mult;		//used instead of elec_weap_mult if turret is a beam turret
 	float elec_sensors_mult;	//multiplier on sensors and awacs
+	int elec_randomness;		//disruption time lasts + or - this value from whats calculated.  time in milliseconds
 
 	//local ssm info
 	int lssm_warpout_delay;			//delay between launch and warpout (ms)
