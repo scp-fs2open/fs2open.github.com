@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.76 $
- * $Date: 2004-12-30 08:07:52 $
+ * $Revision: 2.77 $
+ * $Date: 2004-12-31 03:13:08 $
  * $Author: argv $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2004/12/30 08:07:52  argv
+ * * For some reason, turret AI wasn't shooting at asteroids. It never has,
+ *   but it did in the retail game, and it should. The code to target asteroids
+ *   was apparently missing, so I reimplemented it, and turrets shoot at
+ *   asteroids again.
+ *
  * Revision 2.75  2004/12/14 14:46:11  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -3121,6 +3127,8 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	} // end ship section
 
 	// _argv[-1], 29 Dec 2004: Turret AI should shoot at asteroids, as it did in the retail game. This makes it shoot at them again.
+	// _argv[-1], 30 Dec 2004: I've been informed that turret AI in the retail game does NOT shoot at asteroids, so this is now disabled by default. I'll add this as a command-line option / ship flag / whatnot later.
+#ifdef TURRETS_SHOOT_ASTEROIDS
 	if (objp->type == OBJ_ASTEROID) {
 		dist *= 1.2f; // rocks are relatively unimportant.
 
@@ -3133,6 +3141,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			eeo->nearest_objnum = OBJ_INDEX(objp);
 		}
 	}
+#endif
 }
 
 // return 0 only if objnum is beam protected and turret is beam turret

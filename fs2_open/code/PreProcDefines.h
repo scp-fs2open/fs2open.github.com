@@ -5,12 +5,19 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.6 $
- * $Date: 2004-12-30 07:26:21 $
+ * $Revision: 1.7 $
+ * $Date: 2004-12-31 03:13:08 $
  * $Author: argv $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/12/30 07:26:21  argv
+ * Quick hack to remove the 50% rate-of-fire penalty when primary weapons are
+ * linked. "#define NO_LINKED_PRIMARY_PENALTY" to enable this change; it's
+ * disabled by default.
+ *
+ * -- _argv[-1]
+ *
  * Revision 1.5  2004/12/05 22:01:11  bobboau
  * sevral feature additions that WCS wanted,
  * and the foundations of a submodel animation system,
@@ -79,6 +86,13 @@
 /*
 #ifndef NO_LINKED_PRIMARY_PENALTY
 #define NO_LINKED_PRIMARY_PENALTY 1
+#endif
+*/
+
+// _argv[-1], 30 Dec 2004: I've been informed that turret AI in the retail game does NOT shoot at asteroids, so this is now disabled by default. I'll add this as a command-line option / ship flag / whatnot later.
+/*
+#ifndef TURRETS_SHOOT_ASTEROIDS
+#define TURRETS_SHOOT_ASTEROIDS 1
 #endif
 */
 
