@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.3 $
- * $Date: 2004-04-11 13:56:33 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2004-04-26 12:41:46 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  */
@@ -255,6 +255,8 @@ void gr_stub_init()
 	gr_screen.gf_tcache_set = gr_stub_tcache_set;
 
 	gr_screen.gf_set_clear_color = gr_stub_set_clear_color;
+
+	gr_screen.gf_preload = gr_stub_preload;
 
 	gr_screen.gf_push_texture_matrix = gr_stub_push_texture_matrix;
 	gr_screen.gf_pop_texture_matrix = gr_stub_pop_texture_matrix;

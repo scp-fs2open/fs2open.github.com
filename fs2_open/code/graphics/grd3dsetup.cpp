@@ -825,6 +825,9 @@ void d3d_setup_function_pointers()
 	// set clear color
 	gr_screen.gf_set_clear_color = gr_d3d_set_clear_color;
 
+	// preload a bitmap into texture memory
+	gr_screen.gf_preload = gr_d3d_preload;
+
 	// now for the bitmap functions
 	gr_screen.gf_bm_get_next_handle         = bm_d3d_get_next_handle;         
 	gr_screen.gf_bm_close                   = bm_d3d_close;                   
