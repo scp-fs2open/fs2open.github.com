@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-01-18 09:25:42 $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-24 03:48:11 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/18 09:25:42  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/07 01:37:42  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -398,7 +403,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 
 			if (vm_vec_dot(&vec_to_ship, &weapon_obj->orient.vec.fvec) < 0.0f) {
 				// check if we're colliding against "invisible" ship
-				if (!(shipp->flags & SF2_DONT_COLLIDE_INVIS)) {
+				if (!(shipp->flags2 & SF2_DONT_COLLIDE_INVIS)) {
 					wp->lifeleft = 0.001f;
 					if (ship_obj == Player_obj)
 						nprintf(("Jim", "Frame %i: Weapon %i set to detonate, dist = %7.3f.\n", Framecount, weapon_obj-Objects, dist));
