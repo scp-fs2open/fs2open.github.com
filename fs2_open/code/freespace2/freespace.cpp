@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.128 $
- * $Date: 2005-03-03 06:05:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.129 $
+ * $Date: 2005-03-03 12:58:25 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.128  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.127  2005/03/03 05:32:11  taylor
  * well that was good and wrong
  *
@@ -10199,7 +10202,7 @@ void verify_ships_tbl()
 	Game_ships_tbl_valid = 1;
 #else
 	// this is still needed for LAN play but skip it if we are using FS2NetD
-	if (Om_tracker_flag) {
+	if (!Om_tracker_flag) {
 		Game_ships_tbl_valid = 1;
 	} else {
 		uint file_checksum;		
@@ -10286,7 +10289,7 @@ void verify_weapons_tbl()
 	Game_weapons_tbl_valid = 1;
 #else
 	// this is still needed for LAN play but skip it if we are using FS2NetD
-	if (Om_tracker_flag) {
+	if (!Om_tracker_flag) { //!Om_tracker_flag means we're not playing on PXO
 		Game_weapons_tbl_valid = 1;
 	} else {
 		int idx;
