@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.36 $
- * $Date: 2003-12-17 23:24:24 $
+ * $Revision: 2.37 $
+ * $Date: 2004-01-21 17:37:48 $
  * $Author: phreak $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/12/17 23:24:24  phreak
+ * added a MAX_BUFFERS_PER_SUBMODEL define so it can be easily changed if we ever want to change the 16 texture limit
+ *
  * Revision 2.35  2003/11/17 04:25:57  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -437,7 +440,12 @@ struct object;
 #define MAX_PRIMARY_BANKS		3
 #define MAX_SECONDARY_BANKS	4	//	Lowered from 5 to 4 by MK on 3/25/98.  This needs to be <= MAX_WL_SECONDARY or you'll get stack overwrites.
 
-#define MAX_POLYGON_MODELS	128 //DTP reset from 198 to original value of 128
+#ifdef INF_BUILD
+#define MAX_POLYGON_MODELS  300
+#else
+#define MAX_POLYGON_MODELS  128 //DTP reset from 198 to original value of 128
+#endif
+
 #define MAX_DEBRIS_OBJECTS	32
 #define MAX_MODEL_TEXTURES	64
 #define FILENAME_LEN			64
