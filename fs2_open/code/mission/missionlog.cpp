@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/10 20:42:44  mharris
  * use "ifndef NO_NETWORK" all over the place
  *
@@ -187,24 +190,24 @@
  * 
 */
 
-#include "timer.h"
-#include "parselo.h"
-#include "fix.h"
-#include "gamesequence.h"
-#include "freespace.h"
-#include "missionlog.h"
-#include "key.h"
-#include "2d.h"
-#include "font.h"
-#include "missiongoals.h"
-#include "alphacolors.h"
-#include "localize.h"
-#include "missionparse.h"
+#include "io/timer.h"
+#include "parse/parselo.h"
+#include "math/fix.h"
+#include "gamesequence/gamesequence.h"
+#include "freespace2/freespace.h"
+#include "mission/missionlog.h"
+#include "io/key.h"
+#include "graphics/2d.h"
+#include "graphics/font.h"
+#include "mission/missiongoals.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
+#include "mission/missionparse.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiutil.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
 #endif
 
 #define MAX_LOG_ENTRIES		700

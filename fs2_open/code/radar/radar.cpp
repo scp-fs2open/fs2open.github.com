@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/13 21:09:28  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -150,33 +153,33 @@
  */
 
 
-#include "pstypes.h"
-#include "font.h"
-#include "floating.h"
-#include "2d.h"
-#include "3d.h"
-#include "vecmat.h"
-#include "palman.h"
-#include "bmpman.h"
-#include "object.h"
-#include "ship.h"
-#include "player.h"
-#include "weapon.h"
-#include "timer.h"
-#include "ai.h"
-#include "key.h"
-#include "hud.h"
-#include "hudtarget.h"
-#include "hudconfig.h"
-#include "subsysdamage.h"
-#include "gamesnd.h"
-#include "radar.h"
-#include "linklist.h"
-#include "multi.h"
-#include "emp.h"
-#include "freespace.h"
-#include "localize.h"
-#include "awacs.h"
+#include "globalincs/pstypes.h"
+#include "graphics/font.h"
+#include "math/floating.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "math/vecmat.h"
+#include "palman/palman.h"
+#include "bmpman/bmpman.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "playerman/player.h"
+#include "weapon/weapon.h"
+#include "io/timer.h"
+#include "ship/ai.h"
+#include "io/key.h"
+#include "hud/hud.h"
+#include "hud/hudtarget.h"
+#include "hud/hudconfig.h"
+#include "ship/subsysdamage.h"
+#include "gamesnd/gamesnd.h"
+#include "radar/radar.h"
+#include "globalincs/linklist.h"
+#include "network/multi.h"
+#include "weapon/emp.h"
+#include "freespace2/freespace.h"
+#include "localization/localize.h"
+#include "ship/awacs.h"
 
 int Radar_radius[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640

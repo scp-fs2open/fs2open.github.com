@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:11 $
  * $Author: penguin $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -86,15 +89,15 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "freespace.h"
-#include "weapon.h"
-#include "linklist.h"
-#include "3d.h" 
-#include "3dinternal.h" 
-#include "bmpman.h"
-#include "trails.h"
-#include "timer.h"
+#include "globalincs/pstypes.h"
+#include "freespace2/freespace.h"
+#include "weapon/weapon.h"
+#include "globalincs/linklist.h"
+#include "render/3d.h" 
+#include "render/3dinternal.h" 
+#include "bmpman/bmpman.h"
+#include "weapon/trails.h"
+#include "io/timer.h"
 
 #define MAX_TRAILS MAX_WEAPONS
 

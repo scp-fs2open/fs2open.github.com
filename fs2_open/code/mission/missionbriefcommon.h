@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -157,8 +160,8 @@
 #ifndef __MISSIONBRIEFCOMMON_H__
 #define __MISSIONBRIEFCOMMON_H__
 
-#include "packunpack.h"
-#include "hud.h"
+#include "anim/packunpack.h"
+#include "hud/hud.h"
 
 #define MAX_TEXT_STREAMS	2		// how many concurrent streams of text can be displayed
 

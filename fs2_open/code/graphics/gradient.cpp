@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Gradient.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-29 20:12:31 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Routines to draw rectangular gradients.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/29 20:12:31  penguin
+ * added #ifdef _WIN32 around windows-specific system headers
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -96,12 +99,12 @@
 #include <windowsx.h>
 #endif
 
-#include "2d.h"
-#include "grinternal.h"
-#include "gradient.h"
-#include "floating.h"
-#include "line.h"
-#include "palman.h"
+#include "graphics/2d.h"
+#include "graphics/grinternal.h"
+#include "graphics/gradient.h"
+#include "math/floating.h"
+#include "graphics/line.h"
+#include "palman/palman.h"
 		
 void gr8_gradient(int x1,int y1,int x2,int y2)
 {

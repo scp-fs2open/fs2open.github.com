@@ -34,11 +34,11 @@ Version	Date		Author	Comments
 #include <stdio.h>
 #include <stdlib.h>
 #include "mmsystem.h"
-#include "sw_force.h"		// SideWinder Force Feedback Header File
+#include "io/sw_force.h"		// SideWinder Force Feedback Header File
 
 #define INITGUIDS       // Make GUID available
 #include "sw_guid.hpp"
-#include "vdinput.h"
+#include "directx/vdinput.h"
 #undef INITGUIDS
 
 

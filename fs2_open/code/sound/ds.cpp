@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -310,15 +313,15 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
+#include "globalincs/pstypes.h"
 #include <windows.h>
-#include "cfile.h"
-#include "ds.h"
-#include "channel.h"
-#include "ds3d.h"
-#include "acm.h"
-#include "osapi.h"
-#include "dscap.h"
+#include "cfile/cfile.h"
+#include "sound/ds.h"
+#include "sound/channel.h"
+#include "sound/ds3d.h"
+#include "sound/acm.h"
+#include "osapi/osapi.h"
+#include "sound/dscap.h"
 
 #include <objbase.h>
 #include <initguid.h>

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Key.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-29 20:12:31 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/29 20:12:31  penguin
+ * added #ifdef _WIN32 around windows-specific system headers
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -142,12 +145,12 @@
 #include <windowsx.h>
 #endif
 
-#include "pstypes.h"
-#include "key.h"
-#include "fix.h"
-#include "timer.h"
-#include "osapi.h"
-#include "localize.h"
+#include "globalincs/pstypes.h"
+#include "io/key.h"
+#include "math/fix.h"
+#include "io/timer.h"
+#include "osapi/osapi.h"
+#include "localization/localize.h"
 
 #define KEY_BUFFER_SIZE 16
 
@@ -916,7 +919,7 @@ void key_clear_filter()
 //============================================================================
 
 
-#include "vdinput.h"
+#include "directx/vdinput.h"
 
 #define MAX_BUFFERED_KEYBOARD_EVENTS 10
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:09  mharris
  * got some stuff to compile
  *
@@ -334,38 +337,38 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "fix.h"
-#include "linklist.h"
-#include "object.h"
-#include "physics.h"
-#include "vecmat.h"
-#include "ship.h"
-#include "model.h"
-#include "2d.h"
-#include "3d.h"
-#include "ai.h"
-#include "aibig.h"
-#include "floating.h"
-#include "player.h"
-#include "freespace.h"
-#include "weapon.h"
-#include "missiongoals.h"
-#include "missionlog.h"
-#include "timer.h"
-#include "sound.h"
-#include "aigoals.h"
-#include "gamesnd.h"
-#include "hudmessage.h"
-#include "missionmessage.h"
-#include "cmeasure.h"
-#include "staticrand.h"
-#include "multimsgs.h"
-#include "afterburner.h"
-#include "hudets.h"
-#include "shipfx.h"
-#include "shiphit.h"
-#include "missionparse.h"
+#include "globalincs/pstypes.h"
+#include "math/fix.h"
+#include "globalincs/linklist.h"
+#include "object/object.h"
+#include "physics/physics.h"
+#include "math/vecmat.h"
+#include "ship/ship.h"
+#include "model/model.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "ship/ai.h"
+#include "ship/aibig.h"
+#include "math/floating.h"
+#include "playerman/player.h"
+#include "freespace2/freespace.h"
+#include "weapon/weapon.h"
+#include "mission/missiongoals.h"
+#include "mission/missionlog.h"
+#include "io/timer.h"
+#include "sound/sound.h"
+#include "ship/aigoals.h"
+#include "gamesnd/gamesnd.h"
+#include "hud/hudmessage.h"
+#include "mission/missionmessage.h"
+#include "cmeasure/cmeasure.h"
+#include "math/staticrand.h"
+#include "network/multimsgs.h"
+#include "ship/afterburner.h"
+#include "hud/hudets.h"
+#include "ship/shipfx.h"
+#include "ship/shiphit.h"
+#include "mission/missionparse.h"
 
 #pragma optimize("", off)
 #pragma auto_inline(off)

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Campaign Loop briefing screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/09 23:02:59  mharris
  * Not using default values for audiostream functions, since they may
  * be macros (if NO_SOUND is defined)
@@ -37,18 +40,18 @@
  * $NoKeywords: $
  */
 
-#include "missionloopbrief.h"
-#include "missionscreencommon.h"
-#include "2d.h"
-#include "bmpman.h"
-#include "gamesnd.h"
-#include "eventmusic.h"
-#include "audiostr.h"
-#include "key.h"
-#include "gamesequence.h"
-#include "missioncampaign.h"
-#include "animplay.h"
-#include "freespace.h"
+#include "missionui/missionloopbrief.h"
+#include "missionui/missionscreencommon.h"
+#include "graphics/2d.h"
+#include "bmpman/bmpman.h"
+#include "gamesnd/gamesnd.h"
+#include "gamesnd/eventmusic.h"
+#include "sound/audiostr.h"
+#include "io/key.h"
+#include "gamesequence/gamesequence.h"
+#include "mission/missioncampaign.h"
+#include "anim/animplay.h"
+#include "freespace2/freespace.h"
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // MISSION LOOP BRIEF DEFINES/VARS

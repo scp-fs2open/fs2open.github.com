@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Circle.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Code to draw circles.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -53,9 +56,9 @@
  * $NoKeywords: $
  */
 
-#include "2d.h"
-#include "pixel.h"
-#include "circle.h"
+#include "graphics/2d.h"
+#include "graphics/pixel.h"
+#include "graphics/circle.h"
 
 // THIS COULD BE OPTIMIZED BY MOVING THE GR_RECT CODE INTO HERE!!!!!!!!
 

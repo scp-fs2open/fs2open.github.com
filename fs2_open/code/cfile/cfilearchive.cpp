@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-29 19:17:21 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Low-level code for reading data out of large archive files or normal files.  All
  * reads/seeks come through here.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/29 19:17:21  penguin
+ * added #ifdef _WIN32 around windows-specific system headers
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -90,9 +93,9 @@
 #include <winbase.h>		/* needed for memory mapping of file functions */
 #endif
 
-#include "pstypes.h"
-#include "cfile.h"
-#include "cfilearchive.h"
+#include "globalincs/pstypes.h"
+#include "cfile/cfile.h"
+#include "cfile/cfilearchive.h"
 
 #define CHECK_POSITION
 

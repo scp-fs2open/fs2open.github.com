@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *  
@@ -75,21 +78,21 @@
  * $NoKeywords: $
  */
 
-#include "ui.h"
-#include "bmpman.h"
-#include "gamesnd.h"
-#include "freespace.h"
-#include "gamesequence.h"
-#include "key.h"
-#include "medals.h"
-#include "palman.h"
-#include "mouse.h"
-#include "multi.h"
-#include "multi_xfer.h"
-#include "multi_pinfo.h"
-#include "alphacolors.h"
-#include "localize.h"
-#include "3d.h"
+#include "ui/ui.h"
+#include "bmpman/bmpman.h"
+#include "gamesnd/gamesnd.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "io/key.h"
+#include "stats/medals.h"
+#include "palman/palman.h"
+#include "io/mouse.h"
+#include "network/multi.h"
+#include "network/multi_xfer.h"
+#include "network/multi_pinfo.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
+#include "render/3d.h"
 
 // ---------------------------------------------------------------------------------------
 // MULTI PLAYER INFO DEFINES/VARS

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -128,15 +131,15 @@
 #include <windowsx.h>
 
 #define D3D_OVERLOADS
-#include "vddraw.h"
+#include "directx/vddraw.h"
 
 // To remove an otherwise well-lodged compiler error
 // 4201 nonstandard extension used : nameless struct/union (happens a lot in Windows include headers)
 #pragma warning(disable: 4201)
 
-#include "vd3d.h"
-#include "2d.h"
-#include "grinternal.h"
+#include "directx/vd3d.h"
+#include "graphics/2d.h"
+#include "graphics/grinternal.h"
 
 
 extern LPDIRECTDRAW			lpDD1;

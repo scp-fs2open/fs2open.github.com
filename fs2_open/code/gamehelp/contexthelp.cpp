@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:08  mharris
  * got some stuff to compile
  *
@@ -107,21 +110,21 @@
 #include <string.h>
 #include <setjmp.h>
 
-#include "contexthelp.h"
-#include "gamesequence.h"
-#include "freespace.h"
-#include "mainhallmenu.h"
-#include "key.h"
-#include "bmpman.h"
-#include "2d.h"
-#include "timer.h"
+#include "gamehelp/contexthelp.h"
+#include "gamesequence/gamesequence.h"
+#include "freespace2/freespace.h"
+#include "menuui/mainhallmenu.h"
+#include "io/key.h"
+#include "bmpman/bmpman.h"
+#include "graphics/2d.h"
+#include "io/timer.h"
 #include "math.h"
-#include "mouse.h"
-#include "controlsconfig.h"
-#include "techmenu.h"
-#include "parselo.h"
-#include "localize.h"
-#include "alphacolors.h"
+#include "io/mouse.h"
+#include "controlconfig/controlsconfig.h"
+#include "menuui/techmenu.h"
+#include "parse/parselo.h"
+#include "localization/localize.h"
+#include "globalincs/alphacolors.h"
 
 
 ////////////////////////////////////////////////////////////////////

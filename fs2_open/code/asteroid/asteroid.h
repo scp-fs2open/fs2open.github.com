@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:08  mharris
  * got some stuff to compile
  *
@@ -122,8 +125,8 @@
 #ifndef __ASTEROID_H__
 #define __ASTEROID_H__
 
-#include "ship.h"
-#include "parselo.h"		// for NAME_LENGTH
+#include "ship/ship.h"
+#include "parse/parselo.h"		// for NAME_LENGTH
 
 struct object;
 struct polymodel;

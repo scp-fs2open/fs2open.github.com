@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-29 20:12:31 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/29 20:12:31  penguin
+ * added #ifdef _WIN32 around windows-specific system headers
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -140,9 +143,9 @@
 #include <windowsx.h>
 #endif
 
-#include "mouse.h"
-#include "2d.h"
-#include "osapi.h"
+#include "io/mouse.h"
+#include "graphics/2d.h"
+#include "osapi/osapi.h"
 
 #define MOUSE_MODE_DI	0
 #define MOUSE_MODE_WIN	1
@@ -469,7 +472,7 @@ void mouse_force_pos(int x, int y)
 	}
 }
 
-#include "gamesequence.h"
+#include "gamesequence/gamesequence.h"
 
 // change in mouse position since last call
 void mouse_eval_deltas()
@@ -519,7 +522,7 @@ void mouse_eval_deltas()
 }
 
 #ifdef USE_DIRECTINPUT
-#include "vdinput.h"
+#include "directx/vdinput.h"
 
 static LPDIRECTINPUT			Di_mouse_obj = NULL;
 static LPDIRECTINPUTDEVICE	Di_mouse = NULL;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -129,11 +132,11 @@
  * $NoKeywords: $
  */
 
-#include "2d.h"
-#include "3d.h"
-#include "3dinternal.h"
-#include "systemvars.h"
-#include "key.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "render/3dinternal.h"
+#include "globalincs/systemvars.h"
+#include "io/key.h"
 
 int Lasers = 1;
 DCF_BOOL( lasers, Lasers );

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -88,24 +91,24 @@
  */
 
 
-#include "object.h"
-#include "ship.h"
-#include "linklist.h"
-#include "2d.h"
-#include "hud.h"
-#include "hudtarget.h"
-#include "hudtargetbox.h"
-#include "gamesnd.h"
-#include "freespace.h"
-#include "bmpman.h"
-#include "font.h"
-#include "hudshield.h"
-#include "timer.h"
-#include "hudescort.h"
-#include "emp.h"
-#include "alphacolors.h"
-#include "multi.h"
-#include "multiutil.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "globalincs/linklist.h"
+#include "graphics/2d.h"
+#include "hud/hud.h"
+#include "hud/hudtarget.h"
+#include "hud/hudtargetbox.h"
+#include "gamesnd/gamesnd.h"
+#include "freespace2/freespace.h"
+#include "bmpman/bmpman.h"
+#include "graphics/font.h"
+#include "hud/hudshield.h"
+#include "io/timer.h"
+#include "hud/hudescort.h"
+#include "weapon/emp.h"
+#include "globalincs/alphacolors.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
 
 int Show_escort_view;
 

@@ -9,31 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDObserver.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * $NoKeywords: $
  *
  */
 
-#include "hud.h"
-#include "hudobserver.h"
-#include "freespace.h"
-#include "font.h"
-#include "missiongoals.h"
-#include "3d.h"
-#include "linklist.h"
-#include "debris.h"
-#include "hudtargetbox.h"
-#include "sound.h"
-#include "gamesnd.h"
-#include "radar.h"
-#include "hudconfig.h"
-#include "alphacolors.h"
+#include "hud/hud.h"
+#include "hud/hudobserver.h"
+#include "freespace2/freespace.h"
+#include "graphics/font.h"
+#include "mission/missiongoals.h"
+#include "render/3d.h"
+#include "globalincs/linklist.h"
+#include "debris/debris.h"
+#include "hud/hudtargetbox.h"
+#include "sound/sound.h"
+#include "gamesnd/gamesnd.h"
+#include "radar/radar.h"
+#include "hud/hudconfig.h"
+#include "globalincs/alphacolors.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
+#include "network/multi.h"
 #endif
 
 // use these to redirect Player_ship and Player_ai when switching into ai mode

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-29 20:12:31 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/29 20:12:31  penguin
+ * added #ifdef _WIN32 around windows-specific system headers
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -236,14 +239,14 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include "grinternal.h"
-#include "2d.h"
-#include "cfile.h"
-#include "font.h"
-#include "palman.h"
-#include "key.h"
-#include "bmpman.h"
-#include "localize.h"
+#include "graphics/grinternal.h"
+#include "graphics/2d.h"
+#include "cfile/cfile.h"
+#include "graphics/font.h"
+#include "palman/palman.h"
+#include "io/key.h"
+#include "bmpman/bmpman.h"
+#include "localization/localize.h"
 
 int Num_fonts = 0;
 font Fonts[MAX_FONTS];

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/13 21:09:28  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -200,31 +203,31 @@
  * $NoKeywords: $
  */
 
-#include "2d.h"
-#include "3d.h"
-#include "3dinternal.h"
-#include "object.h"
-#include "hud.h"
-#include "hudtarget.h"
-#include "hudbrackets.h"
-#include "hudets.h"
-#include "model.h"
-#include "missionparse.h"
-#include "debris.h"
-#include "weapon.h"
-#include "player.h"
-#include "gamesnd.h"
-#include "freespace.h"
-#include "bmpman.h"
-#include "timer.h"
-#include "subsysdamage.h"
-#include "hudtargetbox.h"
-#include "font.h"
-#include "asteroid.h"
-#include "jumpnode.h"
-#include "multi.h"
-#include "emp.h"
-#include "localize.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "render/3dinternal.h"
+#include "object/object.h"
+#include "hud/hud.h"
+#include "hud/hudtarget.h"
+#include "hud/hudbrackets.h"
+#include "hud/hudets.h"
+#include "model/model.h"
+#include "mission/missionparse.h"
+#include "debris/debris.h"
+#include "weapon/weapon.h"
+#include "playerman/player.h"
+#include "gamesnd/gamesnd.h"
+#include "freespace2/freespace.h"
+#include "bmpman/bmpman.h"
+#include "io/timer.h"
+#include "ship/subsysdamage.h"
+#include "hud/hudtargetbox.h"
+#include "graphics/font.h"
+#include "asteroid/asteroid.h"
+#include "jumpnode/jumpnode.h"
+#include "network/multi.h"
+#include "weapon/emp.h"
+#include "localization/localize.h"
 
 int Target_window_coords[GR_NUM_RESOLUTIONS][4] =
 {

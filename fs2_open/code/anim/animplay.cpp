@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -178,16 +181,16 @@
  * $NoKeywords: $
  */
 
-#include "animplay.h"
-#include "linklist.h"
-#include "timer.h"
-#include "bmpman.h"
-#include "2d.h"
-#include "3d.h"
-#include "grinternal.h"
-#include "pcxutils.h"
-#include "packunpack.h"
-#include "cfile.h"
+#include "anim/animplay.h"
+#include "globalincs/linklist.h"
+#include "io/timer.h"
+#include "bmpman/bmpman.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "graphics/grinternal.h"
+#include "pcxutils/pcxutils.h"
+#include "anim/packunpack.h"
+#include "cfile/cfile.h"
 
 static color Color_xparent;
 

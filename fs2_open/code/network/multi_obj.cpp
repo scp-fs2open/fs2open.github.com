@@ -7,21 +7,21 @@
  *
 */
 
-#include "freespace.h"
-#include "timer.h"
-#include "linklist.h"
-#include "weapon.h"
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "multi_obj.h"
-#include "multi_rate.h"
-#include "multi.h"
-#include "object.h"
-#include "key.h"
-#include "gamesnd.h"
-#include "spline.h"
-#include "alphacolors.h"
-#include "afterburner.h"
+#include "freespace2/freespace.h"
+#include "io/timer.h"
+#include "globalincs/linklist.h"
+#include "weapon/weapon.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "network/multi_obj.h"
+#include "network/multi_rate.h"
+#include "network/multi.h"
+#include "object/object.h"
+#include "io/key.h"
+#include "gamesnd/gamesnd.h"
+#include "math/spline.h"
+#include "globalincs/alphacolors.h"
+#include "ship/afterburner.h"
 
 // ---------------------------------------------------------------------------------------------------
 // OBJECT UPDATE DEFINES/VARS
@@ -1951,7 +1951,7 @@ void multi_oo_calc_interp_splines(int ship_index, vector *cur_pos, matrix *cur_o
 	// we'll modify our velocity to move along a blend of these splines.
 }
 
-#include "alphacolors.h"
+#include "globalincs/alphacolors.h"
 
 void oo_update_time()
 {	

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -249,10 +252,10 @@
 #ifndef __HUD_H__
 #define __HUD_H__
 
-#include "pstypes.h"
-#include "hudmessage.h"
-#include "hudgauges.h"
-#include "2d.h"
+#include "globalincs/pstypes.h"
+#include "hud/hudmessage.h"
+#include "hud/hudgauges.h"
+#include "graphics/2d.h"
 
 #define SCREEN_CENTER_X ((gr_screen.clip_left + gr_screen.clip_right)	/ 2.0f)
 #define SCREEN_CENTER_Y ((gr_screen.clip_top + gr_screen.clip_bottom)   / 2.0f)

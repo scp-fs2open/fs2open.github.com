@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.1 $
- * $Author: wmcoolmon $
- * $Date: 2002-07-13 09:16:18 $
+ * $Revision: 2.2 $
+ * $Author: penguin $
+ * $Date: 2002-08-01 01:41:09 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/13 09:16:18  wmcoolmon
+ * Added initial code for "ship-lights-on" and "ship-lights-off" SEXPs
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -289,8 +292,8 @@
 #ifndef _SEXP_H
 #define _SEXP_H
 
-#include "cfile.h"
-#include "ship.h"
+#include "cfile/cfile.h"
+#include "ship/ship.h"
 
 #define	OPERATOR_LENGTH	24  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
 #define	TOKEN_LENGTH		32

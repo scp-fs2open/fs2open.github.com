@@ -6,7 +6,7 @@
  *  Content:	Direct3D internal include file
  *@@BEGIN_MSINTERNAL
  * 
- *  $Id: vd3di.h,v 2.1 2002-07-07 19:55:58 penguin Exp $
+ *  $Id: vd3di.h,v 2.2 2002-08-01 01:41:04 penguin Exp $
  *
  *  History:
  *   Date	By	Reason
@@ -33,11 +33,11 @@
 #include "vddrawp.h"
 #if 0
 //@@END_MSINTERNAL
-#include "vddraw.h"
+#include "directx/vddraw.h"
 //@@BEGIN_MSINTERNAL
 #endif
 //@@END_MSINTERNAL
-#include "vd3d.h"
+#include "directx/vd3d.h"
 
 // @@BEGIN_MSINTERNAL
 #if !defined(BUILD_RLAPI) && !defined(BUILD_DDDDK)
@@ -45,7 +45,7 @@
 
 #include "rlreg.h"
 #include "lists.h"
-#include "object.h"
+#include "object/object.h"
 
 
 /*

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * Header file for all the Collide????.cpp modules
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -110,7 +113,7 @@
 #ifndef _COLLIDESTUFF_H
 #define _COLLIDESTUFF_H
 
-#include "pstypes.h"
+#include "globalincs/pstypes.h"
 
 struct object;
 struct CFILE;

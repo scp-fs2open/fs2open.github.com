@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-26 16:17:46 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/26 16:17:46  penguin
+ * renamed 'big' and 'small' (conflict w/ MS include file)
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -505,21 +508,21 @@
  * $NoKeywords: $
  */
 
-#include "objcollide.h"
-#include "object.h"
-#include "model.h"
-#include "ai.h"
-#include "ship.h"
-#include "multi.h"
-#include "freespace.h"
-#include "shiphit.h"
-#include "gamesnd.h"
-#include "3d.h"			// needed for View_position, which is used when playing 3d sound
-#include "gamesequence.h"
-#include "hudshield.h"
-#include "joy_ff.h"
-#include "timer.h"
-#include "asteroid.h"
+#include "object/objcollide.h"
+#include "object/object.h"
+#include "model/model.h"
+#include "ship/ai.h"
+#include "ship/ship.h"
+#include "network/multi.h"
+#include "freespace2/freespace.h"
+#include "ship/shiphit.h"
+#include "gamesnd/gamesnd.h"
+#include "render/3d.h"			// needed for View_position, which is used when playing 3d sound
+#include "gamesequence/gamesequence.h"
+#include "hud/hudshield.h"
+#include "io/joy_ff.h"
+#include "io/timer.h"
+#include "asteroid/asteroid.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)

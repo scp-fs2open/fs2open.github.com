@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -226,16 +229,16 @@
  * $NoKeywords: $
  */
 
-#include "grd3d.h"
-#include "grd3dinternal.h"
-#include "2d.h"
-#include "pstypes.h"
-#include "bmpman.h"
-#include "key.h"
-#include "systemvars.h"
-#include "osregistry.h"
+#include "graphics/grd3d.h"
+#include "graphics/grd3dinternal.h"
+#include "graphics/2d.h"
+#include "globalincs/pstypes.h"
+#include "bmpman/bmpman.h"
+#include "io/key.h"
+#include "globalincs/systemvars.h"
+#include "osapi/osregistry.h"
 
-#include "multi_log.h"
+#include "network/multi_log.h"
 
 typedef struct tcache_slot_d3d {
 	LPDIRECTDRAWSURFACE		vram_texture_surface;

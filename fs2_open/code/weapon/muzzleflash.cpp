@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:11 $
  * $Author: penguin $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -45,14 +48,14 @@
  * $NoKeywords: $
  */
 
-#include "object.h"
-#include "timer.h"
-#include "systemvars.h"
-#include "linklist.h"
-#include "parselo.h"
-#include "muzzleflash.h"
-#include "bmpman.h"
-#include "particle.h"
+#include "object/object.h"
+#include "io/timer.h"
+#include "globalincs/systemvars.h"
+#include "globalincs/linklist.h"
+#include "parse/parselo.h"
+#include "weapon/muzzleflash.h"
+#include "bmpman/bmpman.h"
+#include "particle/particle.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH DEFINES/VARS

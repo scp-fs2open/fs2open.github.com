@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Header file for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -122,8 +125,8 @@
 #ifndef __MISSION_WEAPON_CHOICE_H__
 #define __MISSION_WEAPON_CHOICE_H__
 
-#include "missionparse.h"
-#include "missionscreencommon.h"
+#include "mission/missionparse.h"
+#include "missionui/missionscreencommon.h"
 
 // mask regions for icons in the scrollable lists
 #define ICON_PRIMARY_0				28

@@ -3,21 +3,21 @@ TARGET  = fs2
 ifeq ($(USE_SOUND), 1)
 SOUND_DEF=
 SOUND_OBJS= \
- Gamesnd/eventmusic.o \
- Gamesnd/gamesnd.o \
- Object/objectsnd.o \
- Sound/acm.o \
- Sound/audiostr.o \
- Sound/ds.o \
- Sound/ds3d.o \
- Sound/dscap.o \
- Sound/midifile.o \
- Sound/rbaudio.o \
- Sound/rtvoice.o \
- Sound/sound.o \
- Sound/winmidi.o \
- Sound/winmidi_base.o \
- VCodec/codec1.o
+ gamesnd/eventmusic.o \
+ gamesnd/gamesnd.o \
+ object/objectsnd.o \
+ sound/acm.o \
+ sound/audiostr.o \
+ sound/ds.o \
+ sound/ds3d.o \
+ sound/dscap.o \
+ sound/midifile.o \
+ sound/rbaudio.o \
+ sound/rtvoice.o \
+ sound/sound.o \
+ sound/winmidi.o \
+ sound/winmidi_base.o \
+ vcodec/codec1.o
 else
 SOUND_DEF=-DNO_SOUND
 SOUND_OBJS=
@@ -27,9 +27,9 @@ endif # USE_SOUND
 ifeq ($(USE_JOYSTICK), 1)
 JOYSTICK_DEF=
 JOYSTICK_OBJS= \
- Io/joy.o \
- Io/joy_ff.o \
- Io/swff_lib.o
+ io/joy.o \
+ io/joy_ff.o \
+ io/swff_lib.o
 else
 JOYSTICK_DEF=-DNO_JOYSTICK
 JOYSTICK_OBJS=
@@ -40,35 +40,35 @@ ifeq ($(USE_NETWORK), 1)
 # no support for standalone server yet... (UI is Win32 specific)
 NETWORK_DEF=-DNO_STANDALONE
 NETWORK_OBJS= \
- Hud/hudobserver.o \
- Network/multi.o \
- Network/multimsgs.o \
- Network/multiteamselect.o \
- Network/multiui.o \
- Network/multiutil.o \
- Network/multi_campaign.o \
- Network/multi_data.o \
- Network/multi_dogfight.o \
- Network/multi_endgame.o \
- Network/multi_ingame.o \
- Network/multi_kick.o \
- Network/multi_log.o \
- Network/multi_obj.o \
- Network/multi_observer.o \
- Network/multi_options.o \
- Network/multi_pause.o \
- Network/multi_pinfo.o \
- Network/multi_ping.o \
- Network/multi_pmsg.o \
- Network/multi_rate.o \
- Network/multi_respawn.o \
- Network/multi_team.o \
- Network/multi_voice.o \
- Network/multi_xfer.o \
- Network/psnet.o \
- Network/psnet2.o \
- MenuUI/optionsmenumulti.o \
- MissionUI/chatbox.o
+ hud/hudobserver.o \
+ network/multi.o \
+ network/multimsgs.o \
+ network/multiteamselect.o \
+ network/multiui.o \
+ network/multiutil.o \
+ network/multi_campaign.o \
+ network/multi_data.o \
+ network/multi_dogfight.o \
+ network/multi_endgame.o \
+ network/multi_ingame.o \
+ network/multi_kick.o \
+ network/multi_log.o \
+ network/multi_obj.o \
+ network/multi_observer.o \
+ network/multi_options.o \
+ network/multi_pause.o \
+ network/multi_pinfo.o \
+ network/multi_ping.o \
+ network/multi_pmsg.o \
+ network/multi_rate.o \
+ network/multi_respawn.o \
+ network/multi_team.o \
+ network/multi_voice.o \
+ network/multi_xfer.o \
+ network/psnet.o \
+ network/psnet2.o \
+ menuui/optionsmenumulti.o \
+ missionui/chatbox.o
 #
 # Network/stand_gui.o
 #
@@ -91,370 +91,363 @@ LDLIBS = -L/usr/X11R6/lib -lSDL -lGL -lGLU -lpthread
 CXXFLAGS = \
  -g \
  -I/usr/local/include/SDL \
- -Iwindows_stub \
- -IAnim -IAsteroid -IBmpman -ICFile -ICmdline -ICMeasure -IControlConfig \
- -ICutscene -IDebris -IDebugConsole -IDirectX -IFireball -IGameHelp -IFREESPACE2 \
- -IGameSequence -IGamesnd -IGlide -IGlobalIncs -IGraphics -IHud -IIo -IJumpNode \
- -ILighting -IMath -IMenuUI -IMission -IMissionUI -IModel -INetwork -IObject \
- -IObserver -IOsApi -IPalman -IParse -IParticle -IPcxUtils -IPhysics -IPlayerman \
- -IPopup -IRadar -IRender -IShip -ISound -IStarfield -IStats -ITgaUtils -IUI -IVCodec \
+ -I. -Iwindows_stub \
  -fno-exceptions \
  -IWeapon -ILocalization -INebula -IDemo -IInetfile -IExceptionHandler \
  -D_DEBUG -DNO_CD_CHECK -UNDEBUG \
  -DNO_DIRECT3D $(SOUND_DEF) $(JOYSTICK_DEF) $(NETWORK_DEF) $(OPENGL_DEF)
 
 ANIM_OBJFILES = \
- Anim/animplay.o \
- Anim/packunpack.o
+ anim/animplay.o \
+ anim/packunpack.o
 
 ASTEROID_OBJFILES = \
- Asteroid/asteroid.o
+ asteroid/asteroid.o
 
 BMPMAN_OBJFILES = \
- Bmpman/bmpman.o
+ bmpman/bmpman.o
 
 CFILE_OBJFILES = \
- CFile/cfile.o \
- CFile/cfilearchive.o \
- CFile/cfilelist.o \
- CFile/cfilesystem.o
+ cfile/cfile.o \
+ cfile/cfilearchive.o \
+ cfile/cfilelist.o \
+ cfile/cfilesystem.o
 
 CMDLINE_OBJFILES = \
- Cmdline/cmdline.o
+ cmdline/cmdline.o
 
 CMEASURE_OBJFILES = \
- CMeasure/cmeasure.o
+ cmeasure/cmeasure.o
 
 CONTROLCONFIG_OBJFILES = \
- ControlConfig/controlsconfig.o \
- ControlConfig/controlsconfigcommon.o
+ controlconfig/controlsconfig.o \
+ controlconfig/controlsconfigcommon.o
 
 CUTSCENE_OBJFILES = \
- Cutscene/cutscenes.o
+ cutscene/cutscenes.o
 
 DEBRIS_OBJFILES = \
- Debris/debris.o
+ debris/debris.o
 
 DEBUGCONSOLE_OBJFILES = \
- DebugConsole/console.o
+ debugconsole/console.o
 
 DEMO_OBJFILES = \
- Demo/demo.o
+ demo/demo.o
 
 EXCEPTIONHANDLER_OBJFILES = \
- ExceptionHandler/exceptionhandler.o
+ exceptionhandler/exceptionhandler.o
 
 FIREBALL_OBJFILES = \
- Fireball/fireballs.o \
- Fireball/warpineffect.o
+ fireball/fireballs.o \
+ fireball/warpineffect.o
 
 GAMEHELP_OBJFILES = \
- GameHelp/contexthelp.o \
- GameHelp/gameplayhelp.o
+ gamehelp/contexthelp.o \
+ gamehelp/gameplayhelp.o
 
 GAMESEQUENCE_OBJFILES = \
- GameSequence/gamesequence.o
+ gamesequence/gamesequence.o
 
-# Gamesnd/eventmusic.o
-# Gamesnd/gamesnd.o
+# gamesnd/eventmusic.o
+# gamesnd/gamesnd.o
 GAMESND_OBJFILES =
 
+# glide/glide.o
 GLIDE_OBJFILES = 
-#GLIDE_OBJFILES = \
-# Glide/glide.o
 
-# GlobalIncs/windebug.o
+# globalincs/windebug.o
 GLOBALINCS_OBJFILES = \
- GlobalIncs/alphacolors.o \
- GlobalIncs/crypt.o \
- GlobalIncs/systemvars.o \
- GlobalIncs/version.o
+ globalincs/alphacolors.o \
+ globalincs/crypt.o \
+ globalincs/systemvars.o \
+ globalincs/version.o
 
-# Graphics/grd3d.o
-# Graphics/grd3drender.o
-# Graphics/grd3dtexture.o
-# Graphics/grdirectdraw.o
-# Graphics/grglide.o
-# Graphics/grglidetexture.o
-# Graphics/grsoft.o 
-# Graphics/scaler.o 
-# Graphics/tmapgenericscans.o 
-# Graphics/tmapscantiled128x128.o 
-# Graphics/tmapscantiled16x16.o 
-# Graphics/tmapscantiled256x256.o 
-# Graphics/tmapscantiled32x32.o 
-# Graphics/tmapscantiled64x64.o
-# Graphics/tmapscanline.o
-# Graphics/tmapper.o
+# graphics/grd3d.o
+# graphics/grd3drender.o
+# graphics/grd3dtexture.o
+# graphics/grdirectdraw.o
+# graphics/grglide.o
+# graphics/grglidetexture.o
+# graphics/grsoft.o 
+# graphics/scaler.o 
+# graphics/tmapgenericscans.o 
+# graphics/tmapscantiled128x128.o 
+# graphics/tmapscantiled16x16.o 
+# graphics/tmapscantiled256x256.o 
+# graphics/tmapscantiled32x32.o 
+# graphics/tmapscantiled64x64.o
+# graphics/tmapscanline.o
+# graphics/tmapper.o
 GRAPHICS_OBJFILES = \
- Graphics/2d.o \
- Graphics/aaline.o \
- Graphics/bitblt.o \
- Graphics/circle.o \
- Graphics/colors.o \
- Graphics/font.o \
- Graphics/gradient.o \
- Graphics/gropengl.o \
- Graphics/grzbuffer.o \
- Graphics/line.o \
- Graphics/pixel.o \
- Graphics/rect.o \
- Graphics/shade.o
+ graphics/2d.o \
+ graphics/aaline.o \
+ graphics/bitblt.o \
+ graphics/circle.o \
+ graphics/colors.o \
+ graphics/font.o \
+ graphics/gradient.o \
+ graphics/gropengl.o \
+ graphics/grzbuffer.o \
+ graphics/line.o \
+ graphics/pixel.o \
+ graphics/rect.o \
+ graphics/shade.o
 
-# Hud/hudobserver.o 
+# hud/hudobserver.o 
 HUD_OBJFILES = \
- Hud/hud.o \
- Hud/hudartillery.o \
- Hud/hudbrackets.o \
- Hud/hudconfig.o \
- Hud/hudescort.o \
- Hud/hudets.o \
- Hud/hudlock.o \
- Hud/hudmessage.o \
- Hud/hudreticle.o \
- Hud/hudshield.o \
- Hud/hudsquadmsg.o \
- Hud/hudtarget.o \
- Hud/hudtargetbox.o \
- Hud/hudwingmanstatus.o
+ hud/hud.o \
+ hud/hudartillery.o \
+ hud/hudbrackets.o \
+ hud/hudconfig.o \
+ hud/hudescort.o \
+ hud/hudets.o \
+ hud/hudlock.o \
+ hud/hudmessage.o \
+ hud/hudreticle.o \
+ hud/hudshield.o \
+ hud/hudsquadmsg.o \
+ hud/hudtarget.o \
+ hud/hudtargetbox.o \
+ hud/hudwingmanstatus.o
 
 INETFILE_OBJFILES = \
- Inetfile/cftp.o \
- Inetfile/chttpget.o \
- Inetfile/inetgetfile.o
+ inetfile/cftp.o \
+ inetfile/chttpget.o \
+ inetfile/inetgetfile.o
 
-# Io/joy.o
-# Io/joy_ff.o
-# Io/swff_lib.o
+# io/joy.o
+# io/joy_ff.o
+# io/swff_lib.o
 IO_OBJFILES = \
- Io/key.o \
- Io/keycontrol.o \
- Io/mouse.o \
- Io/timer.o \
- Io/xmouse.o
+ io/key.o \
+ io/keycontrol.o \
+ io/mouse.o \
+ io/timer.o \
+ io/xmouse.o
 
 JUMPNODE_OBJFILES = \
- JumpNode/jumpnode.o
+ jumpnode/jumpnode.o
 
 LIGHTING_OBJFILES = \
- Lighting/lighting.o
+ lighting/lighting.o
 
 LOCALIZATION_OBJFILES = \
- Localization/fhash.o \
- Localization/localize.o
+ localization/fhash.o \
+ localization/localize.o
 
 MATH_OBJFILES = \
- Math/fix.o \
- Math/floating.o \
- Math/fvi.o \
- Math/spline.o \
- Math/staticrand.o \
- Math/vecmat.o
+ math/fix.o \
+ math/floating.o \
+ math/fvi.o \
+ math/spline.o \
+ math/staticrand.o \
+ math/vecmat.o
 
-# MenuUI/optionsmenumulti.o 
+# menuui/optionsmenumulti.o 
 MENUUI_OBJFILES = \
- MenuUI/barracks.o \
- MenuUI/credits.o \
- MenuUI/fishtank.o \
- MenuUI/mainhallmenu.o \
- MenuUI/mainhalltemp.o \
- MenuUI/optionsmenu.o \
- MenuUI/playermenu.o \
- MenuUI/readyroom.o \
- MenuUI/snazzyui.o \
- MenuUI/techmenu.o \
- MenuUI/trainingmenu.o
+ menuui/barracks.o \
+ menuui/credits.o \
+ menuui/fishtank.o \
+ menuui/mainhallmenu.o \
+ menuui/mainhalltemp.o \
+ menuui/optionsmenu.o \
+ menuui/playermenu.o \
+ menuui/readyroom.o \
+ menuui/snazzyui.o \
+ menuui/techmenu.o \
+ menuui/trainingmenu.o
 
 MISSION_OBJFILES = \
- Mission/missionbriefcommon.o \
- Mission/missioncampaign.o \
- Mission/missiongoals.o \
- Mission/missiongrid.o \
- Mission/missionhotkey.o \
- Mission/missionload.o \
- Mission/missionlog.o \
- Mission/missionmessage.o \
- Mission/missionparse.o \
- Mission/missiontraining.o
+ mission/missionbriefcommon.o \
+ mission/missioncampaign.o \
+ mission/missiongoals.o \
+ mission/missiongrid.o \
+ mission/missionhotkey.o \
+ mission/missionload.o \
+ mission/missionlog.o \
+ mission/missionmessage.o \
+ mission/missionparse.o \
+ mission/missiontraining.o
 
-# MissionUI/chatbox.o
+# missionui/chatbox.o
 MISSIONUI_OBJFILES = \
- MissionUI/missionbrief.o \
- MissionUI/missioncmdbrief.o \
- MissionUI/missiondebrief.o \
- MissionUI/missionloopbrief.o \
- MissionUI/missionpause.o \
- MissionUI/missionrecommend.o \
- MissionUI/missionscreencommon.o \
- MissionUI/missionshipchoice.o \
- MissionUI/missionstats.o \
- MissionUI/missionweaponchoice.o \
- MissionUI/redalert.o
+ missionui/missionbrief.o \
+ missionui/missioncmdbrief.o \
+ missionui/missiondebrief.o \
+ missionui/missionloopbrief.o \
+ missionui/missionpause.o \
+ missionui/missionrecommend.o \
+ missionui/missionscreencommon.o \
+ missionui/missionshipchoice.o \
+ missionui/missionstats.o \
+ missionui/missionweaponchoice.o \
+ missionui/redalert.o
 
 MODEL_OBJFILES = \
- Model/modelcollide.o \
- Model/modelinterp.o \
- Model/modeloctant.o \
- Model/modelread.o
+ model/modelcollide.o \
+ model/modelinterp.o \
+ model/modeloctant.o \
+ model/modelread.o
 
 NEBULA_OBJFILES = \
- Nebula/neb.o \
- Nebula/neblightning.o
+ nebula/neb.o \
+ nebula/neblightning.o
 
-# Network/multi.o
-# Network/multi_campaign.o
-# Network/multi_data.o
-# Network/multi_dogfight.o
-# Network/multi_endgame.o
-# Network/multi_ingame.o
-# Network/multi_kick.o
-# Network/multi_log.o
-# Network/multimsgs.o
-# Network/multi_obj.o
-# Network/multi_observer.o
-# Network/multi_oo.o
-# Network/multi_options.o
-# Network/multi_pause.o
-# Network/multi_pinfo.o
-# Network/multi_ping.o
-# Network/multi_pmsg.o
-# Network/multi_rate.o
-# Network/multi_respawn.o
-# Network/multi_team.o
-# Network/multi_update.o
-# Network/multi_voice.o
-# Network/multi_xfer.o
-# Network/multilag.o
-# Network/multiteamselect.o
-# Network/multiui.o
-# Network/psnet.o
-# Network/psnet2.o
-# Network/stand_gui.o
+# network/multi.o
+# network/multi_campaign.o
+# network/multi_data.o
+# network/multi_dogfight.o
+# network/multi_endgame.o
+# network/multi_ingame.o
+# network/multi_kick.o
+# network/multi_log.o
+# network/multimsgs.o
+# network/multi_obj.o
+# network/multi_observer.o
+# network/multi_oo.o
+# network/multi_options.o
+# network/multi_pause.o
+# network/multi_pinfo.o
+# network/multi_ping.o
+# network/multi_pmsg.o
+# network/multi_rate.o
+# network/multi_respawn.o
+# network/multi_team.o
+# network/multi_update.o
+# network/multi_voice.o
+# network/multi_xfer.o
+# network/multilag.o
+# network/multiteamselect.o
+# network/multiui.o
+# network/psnet.o
+# network/psnet2.o
+# network/stand_gui.o
 NETWORK_OBJFILES = \
- Network/multiutil.o
+ network/multiutil.o
 
-# Object/objectsnd.o 
+# object/objectsnd.o 
 OBJECT_OBJFILES = \
- Object/collidedebrisship.o \
- Object/collidedebrisweapon.o \
- Object/collideshipship.o \
- Object/collideshipweapon.o \
- Object/collideweaponweapon.o \
- Object/objcollide.o \
- Object/object.o \
- Object/objectsort.o
+ object/collidedebrisship.o \
+ object/collidedebrisweapon.o \
+ object/collideshipship.o \
+ object/collideshipweapon.o \
+ object/collideweaponweapon.o \
+ object/objcollide.o \
+ object/object.o \
+ object/objectsort.o
 
 OBSERVER_OBJFILES = \
- Observer/observer.o
+ observer/observer.o
 
 OSAPI_OBJFILES = \
- OsApi/osapi_unix.o \
- OsApi/osregistry_unix.o \
- OsApi/outwnd_unix.o
+ osapi/osapi_unix.o \
+ osapi/osregistry_unix.o \
+ osapi/outwnd_unix.o
 
 PALMAN_OBJFILES = \
- Palman/palman.o
+ palman/palman.o
 
 PARSE_OBJFILES = \
- Parse/encrypt.o \
- Parse/parselo.o \
- Parse/sexp.o
+ parse/encrypt.o \
+ parse/parselo.o \
+ parse/sexp.o
 
 PARTICLE_OBJFILES = \
- Particle/particle.o
+ particle/particle.o
 
 PCXUTILS_OBJFILES = \
- PcxUtils/pcxutils.o
+ pcxutils/pcxutils.o
 
 PHYSICS_OBJFILES = \
- Physics/physics.o
+ physics/physics.o
 
 PLAYERMAN_OBJFILES = \
- Playerman/managepilot.o \
- Playerman/playercontrol.o
+ playerman/managepilot.o \
+ playerman/playercontrol.o
 
 POPUP_OBJFILES = \
- Popup/popup.o \
- Popup/popupdead.o
+ popup/popup.o \
+ popup/popupdead.o
 
 RADAR_OBJFILES = \
- Radar/radar.o
+ radar/radar.o
 
 RENDER_OBJFILES = \
- Render/3dclipper.o \
- Render/3ddraw.o \
- Render/3dlaser.o \
- Render/3dmath.o \
- Render/3dsetup.o
+ render/3dclipper.o \
+ render/3ddraw.o \
+ render/3dlaser.o \
+ render/3dmath.o \
+ render/3dsetup.o
 
 SHIP_OBJFILES = \
- Ship/afterburner.o \
- Ship/ai.o \
- Ship/aibig.o \
- Ship/aicode.o \
- Ship/aigoals.o \
- Ship/awacs.o \
- Ship/shield.o \
- Ship/ship.o \
- Ship/shipcontrails.o \
- Ship/shipfx.o \
- Ship/shiphit.o
+ ship/afterburner.o \
+ ship/ai.o \
+ ship/aibig.o \
+ ship/aicode.o \
+ ship/aigoals.o \
+ ship/awacs.o \
+ ship/shield.o \
+ ship/ship.o \
+ ship/shipcontrails.o \
+ ship/shipfx.o \
+ ship/shiphit.o
 
 SOUND_OBJFILES = \
- Sound/acm.o \
- Sound/audiostr.o \
- Sound/ds.o \
- Sound/ds3d.o \
- Sound/dscap.o \
- Sound/midifile.o \
- Sound/rbaudio.o \
- Sound/rtvoice.o \
- Sound/sound.o \
- Sound/winmidi.o \
- Sound/winmidi_base.o
+ sound/acm.o \
+ sound/audiostr.o \
+ sound/ds.o \
+ sound/ds3d.o \
+ sound/dscap.o \
+ sound/midifile.o \
+ sound/rbaudio.o \
+ sound/rtvoice.o \
+ sound/sound.o \
+ sound/winmidi.o \
+ sound/winmidi_base.o
 
 STARFIELD_OBJFILES = \
- Starfield/nebula.o \
- Starfield/starfield.o \
- Starfield/supernova.o
+ starfield/nebula.o \
+ starfield/starfield.o \
+ starfield/supernova.o
 
 STATS_OBJFILES = \
- Stats/medals.o \
- Stats/scoring.o \
- Stats/stats.o
+ stats/medals.o \
+ stats/scoring.o \
+ stats/stats.o
 
 TGAUTILS_OBJFILES = \
- TgaUtils/tgautils.o
+ tgautils/tgautils.o
 
 UI_OBJFILES = \
- UI/button.o \
- UI/checkbox.o \
- UI/gadget.o \
- UI/icon.o \
- UI/inputbox.o \
- UI/keytrap.o \
- UI/listbox.o \
- UI/radio.o \
- UI/scroll.o \
- UI/slider.o \
- UI/slider2.o \
- UI/uidraw.o \
- UI/uimouse.o \
- UI/window.o
+ ui/button.o \
+ ui/checkbox.o \
+ ui/gadget.o \
+ ui/icon.o \
+ ui/inputbox.o \
+ ui/keytrap.o \
+ ui/listbox.o \
+ ui/radio.o \
+ ui/scroll.o \
+ ui/slider.o \
+ ui/slider2.o \
+ ui/uidraw.o \
+ ui/uimouse.o \
+ ui/window.o
 
 VCODEC_OBJFILES = \
- VCodec/codec1.o
+ vcodec/codec1.o
 
 WEAPON_OBJFILES = \
- Weapon/beam.o \
- Weapon/corkscrew.o \
- Weapon/emp.o \
- Weapon/flak.o \
- Weapon/muzzleflash.o \
- Weapon/shockwave.o \
- Weapon/swarm.o \
- Weapon/trails.o \
- Weapon/weapons.o
+ weapon/beam.o \
+ weapon/corkscrew.o \
+ weapon/emp.o \
+ weapon/flak.o \
+ weapon/muzzleflash.o \
+ weapon/shockwave.o \
+ weapon/swarm.o \
+ weapon/trails.o \
+ weapon/weapons.o
 
 # SOUND_OBJFILES  
 # INETFILE_OBJFILES  
@@ -568,8 +561,8 @@ LIB_OBJFILES = \
  $(NETWORK_OBJS)
 
 FREESPACE2_OBJFILES = \
- FREESPACE2/freespace.o \
- FREESPACE2/levelpaging.o
+ freespace2/freespace.o \
+ freespace2/levelpaging.o
 
 STUB_OBJFILES = \
  windows_stub/stubs.o
@@ -652,7 +645,7 @@ fs2:	libcode.a $(FREESPACE2_OBJFILES) $(STUB_OBJFILES)
 
 
 # exceptions to the rule...
-FREESPACE2/freespace.o:	FREESPACE2/freespace.cpp
+freespace2/freespace.o:	freespace2/freespace.cpp
 	$(CXX) $(CXXFLAGS) -fexceptions -c -o $@ $<
 
 ANIM_OBJFILES:  $(ANIM_OBJFILES)

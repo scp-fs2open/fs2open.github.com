@@ -8,8 +8,8 @@
 */
 
 #include <string.h>
-#include "pstypes.h"
-#include "osregistry.h"
+#include "globalincs/pstypes.h"
+#include "osapi/osregistry.h"
 
 // NEVER ADD ANY OTHER INCLUDES HERE - YOU'LL LIKELY BREAK THE LAUNCHER!!!!!!!!!!!!!
 

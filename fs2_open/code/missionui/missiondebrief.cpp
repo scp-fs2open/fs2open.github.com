@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-20 23:50:53 $
- * $Author: DTP $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:07 $
+ * $Author: penguin $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/20 23:50:53  DTP
+ * Fixed multiplayer music. succes music on all Primary goals complete, fail music
+ * if otherwise
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -326,47 +330,47 @@
  * $NoKeywords: $
  */
 
-#include "missiondebrief.h"
-#include "missionbriefcommon.h"
-#include "missionscreencommon.h"
-#include "missiongoals.h"
-#include "missionpause.h"
-#include "freespace.h"
-#include "gamesequence.h"
-#include "key.h"
-#include "2d.h"
-#include "ui.h"
-#include "uidefs.h"
-#include "gamesnd.h"
-#include "sexp.h"
-#include "parselo.h"
-#include "audiostr.h"
-#include "timer.h"
-#include "bmpman.h"
-#include "contexthelp.h"
-#include "stats.h"
-#include "player.h"
-#include "mouse.h"
-#include "eventmusic.h"
-#include "font.h"
-#include "popup.h"
-#include "medals.h"
-#include "contexthelp.h"
-#include "alphacolors.h"
-#include "localize.h"
-#include "osapi.h"
+#include "missionui/missiondebrief.h"
+#include "mission/missionbriefcommon.h"
+#include "missionui/missionscreencommon.h"
+#include "mission/missiongoals.h"
+#include "missionui/missionpause.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "io/key.h"
+#include "graphics/2d.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
+#include "gamesnd/gamesnd.h"
+#include "parse/sexp.h"
+#include "parse/parselo.h"
+#include "sound/audiostr.h"
+#include "io/timer.h"
+#include "bmpman/bmpman.h"
+#include "gamehelp/contexthelp.h"
+#include "stats/stats.h"
+#include "playerman/player.h"
+#include "io/mouse.h"
+#include "gamesnd/eventmusic.h"
+#include "graphics/font.h"
+#include "popup/popup.h"
+#include "stats/medals.h"
+#include "gamehelp/contexthelp.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
+#include "osapi/osapi.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "multiteamselect.h"
-#include "multiui.h"
-#include "multi_pinfo.h"
-#include "multi_kick.h"
-#include "multi_campaign.h"
-#include "multi_endgame.h"
-#include "chatbox.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "network/multiteamselect.h"
+#include "network/multiui.h"
+#include "network/multi_pinfo.h"
+#include "network/multi_kick.h"
+#include "network/multi_campaign.h"
+#include "network/multi_endgame.h"
+#include "missionui/chatbox.h"
 #endif
 
 #define MAX_TOTAL_DEBRIEF_LINES	200

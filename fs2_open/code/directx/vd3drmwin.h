@@ -17,9 +17,9 @@
 #endif
 
 
-#include "vd3drm.h"
-#include "vddraw.h"
-#include "vd3d.h"
+#include "directx/vd3drm.h"
+#include "directx/vddraw.h"
+#include "directx/vd3d.h"
 
 /*
  * GUIDS used by Direct3DRM Windows interface

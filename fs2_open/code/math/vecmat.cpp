@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:08  mharris
  * got some stuff to compile
  *
@@ -232,8 +235,8 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "vecmat.h"
-#include "floating.h"
+#include "math/vecmat.h"
+#include "math/floating.h"
 
 #define	SMALL_NUM	1e-7
 #define	SMALLER_NUM	1e-20

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:11 $
  * $Author: penguin $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/13 21:09:29  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -69,22 +72,22 @@
  */
 
 #include <stdarg.h>
-#include "pstypes.h"
-#include "emp.h"
-#include "timer.h"
-#include "systemvars.h"
-#include "freespace.h"
-#include "linklist.h"
-#include "hudlock.h"
-#include "hudtarget.h"
-#include "hudgauges.h"
-#include "missiongoals.h"
-#include "hud.h"
+#include "globalincs/pstypes.h"
+#include "weapon/emp.h"
+#include "io/timer.h"
+#include "globalincs/systemvars.h"
+#include "freespace2/freespace.h"
+#include "globalincs/linklist.h"
+#include "hud/hudlock.h"
+#include "hud/hudtarget.h"
+#include "hud/hudgauges.h"
+#include "mission/missiongoals.h"
+#include "hud/hud.h"
 
 #ifndef NO_NETWORK
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "network/multi.h"
 #endif
 
 // ----------------------------------------------------------------------------------------------------

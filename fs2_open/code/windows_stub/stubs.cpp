@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <ctype.h>
 
-#include "pstypes.h"
+#include "globalincs/pstypes.h"
 
 
 int Gr_scaler_zbuffering;

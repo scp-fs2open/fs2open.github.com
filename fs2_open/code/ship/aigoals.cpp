@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/13 21:09:29  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -454,18 +457,18 @@
  * $NoKeywords: $
  */
 
-#include "aigoals.h"
-#include "freespace.h"
-#include "ai.h"
-#include "sexp.h"
-#include "missionlog.h"
-#include "missionparse.h"
-#include "model.h"				// for subsystem types
-#include "linklist.h"
-#include "timer.h"
-#include "player.h"
-#include "multimsgs.h"
-#include "multi.h"
+#include "ship/aigoals.h"
+#include "freespace2/freespace.h"
+#include "ship/ai.h"
+#include "parse/sexp.h"
+#include "mission/missionlog.h"
+#include "mission/missionparse.h"
+#include "model/model.h"				// for subsystem types
+#include "globalincs/linklist.h"
+#include "io/timer.h"
+#include "playerman/player.h"
+#include "network/multimsgs.h"
+#include "network/multi.h"
 
 // all ai goals dealt with in this code are goals that are specified through
 // sexpressions in the mission file.  They are either specified as part of a

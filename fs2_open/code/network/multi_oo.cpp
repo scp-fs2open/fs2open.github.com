@@ -8,17 +8,17 @@
 */
 
 // #include "vd3drm.h"
-#include "freespace.h"
-#include "timer.h"
-#include "linklist.h"
-#include "weapon.h"
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "multi_oo.h"
-#include "multi.h"
-#include "object.h"
-#include "key.h"
-#include "gamesnd.h"
+#include "freespace2/freespace.h"
+#include "io/timer.h"
+#include "globalincs/linklist.h"
+#include "weapon/weapon.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "network/multi_oo.h"
+#include "network/multi.h"
+#include "object/object.h"
+#include "io/key.h"
+#include "gamesnd/gamesnd.h"
 
 #ifndef OO_NEW
 

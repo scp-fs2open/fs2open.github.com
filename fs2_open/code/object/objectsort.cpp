@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -147,14 +150,14 @@
  */
 
 
-#include "pstypes.h"
-#include "object.h"
-#include "3d.h"
-#include "2d.h"
-#include "systemvars.h"
-#include "fireballs.h"
-#include "missionparse.h"
-#include "neb.h"
+#include "globalincs/pstypes.h"
+#include "object/object.h"
+#include "render/3d.h"
+#include "graphics/2d.h"
+#include "globalincs/systemvars.h"
+#include "fireball/fireballs.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
 
 typedef struct sorted_obj {
 	object			*obj;					// a pointer to the original object

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/09 23:02:59  mharris
  * Not using default values for audiostream functions, since they may
  * be macros (if NO_SOUND is defined)
@@ -219,24 +222,24 @@
  * $NoKeywords: $
  */
 
-#include "ui.h"
-#include "uidefs.h"
-#include "gamesnd.h"
-#include "gamesequence.h"
-#include "missionscreencommon.h"
-#include "key.h"
-#include "bmpman.h"
-#include "font.h"
-#include "missionbriefcommon.h"
-#include "missioncmdbrief.h"
-#include "redalert.h"
-#include "audiostr.h"
-#include "timer.h"
-#include "eventmusic.h"
-#include "player.h"
-#include "contexthelp.h"
-#include "alphacolors.h"
-#include "animplay.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
+#include "gamesnd/gamesnd.h"
+#include "gamesequence/gamesequence.h"
+#include "missionui/missionscreencommon.h"
+#include "io/key.h"
+#include "bmpman/bmpman.h"
+#include "graphics/font.h"
+#include "mission/missionbriefcommon.h"
+#include "missionui/missioncmdbrief.h"
+#include "missionui/redalert.h"
+#include "sound/audiostr.h"
+#include "io/timer.h"
+#include "gamesnd/eventmusic.h"
+#include "playerman/player.h"
+#include "gamehelp/contexthelp.h"
+#include "globalincs/alphacolors.h"
+#include "anim/animplay.h"
 
 char *Cmd_brief_fname[GR_NUM_RESOLUTIONS] = {
 	"CommandBrief",

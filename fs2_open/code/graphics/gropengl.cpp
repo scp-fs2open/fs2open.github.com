@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-16 14:39:16 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:05 $
+ * $Author: penguin $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/16 14:39:16  unknownplayer
+ * Updated to enable compilation under MSVC++ - all changes are marked
+ * with my name ##UnknownPlayer##
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -167,16 +171,16 @@
 #include <SDL_opengl.h>
 #endif
 
-#include "pstypes.h"
-#include "osapi.h"
-#include "2d.h"
-#include "bmpman.h"
-#include "floating.h"
-#include "palman.h"
-#include "grinternal.h"
-#include "gropengl.h"
-#include "line.h"
-#include "colors.h"
+#include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
+#include "graphics/2d.h"
+#include "bmpman/bmpman.h"
+#include "math/floating.h"
+#include "palman/palman.h"
+#include "graphics/grinternal.h"
+#include "graphics/gropengl.h"
+#include "graphics/line.h"
+#include "graphics/colors.h"
 
 SDL_Surface *opengl_screen = NULL;
 ubyte *opengl_bmp_buffer = NULL;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.5  2002/05/13 21:43:38  mharris
  * A little more network and sound cleanup
  *
@@ -210,36 +213,36 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "systemvars.h"
-#include "ship.h"
-#include "fireballs.h"
-#include "debris.h"
-#include "hudtarget.h"
-#include "shipfx.h"
-#include "gamesnd.h"
-#include "timer.h"
-#include "3d.h"			// needed for View_position, which is used when playing a 3D sound
-#include "hud.h"
-#include "fvi.h"
-#include "gamesequence.h"
-#include "lighting.h"
-#include "linklist.h"
-#include "particle.h"
-#include "bmpman.h"
-#include "freespace.h"
-#include "muzzleflash.h"
-#include "demo.h"
-#include "shiphit.h"
-#include "neblightning.h"
-#include "objectsnd.h"
-#include "player.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
+#include "ship/ship.h"
+#include "fireball/fireballs.h"
+#include "debris/debris.h"
+#include "hud/hudtarget.h"
+#include "ship/shipfx.h"
+#include "gamesnd/gamesnd.h"
+#include "io/timer.h"
+#include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
+#include "hud/hud.h"
+#include "math/fvi.h"
+#include "gamesequence/gamesequence.h"
+#include "lighting/lighting.h"
+#include "globalincs/linklist.h"
+#include "particle/particle.h"
+#include "bmpman/bmpman.h"
+#include "freespace2/freespace.h"
+#include "weapon/muzzleflash.h"
+#include "demo/demo.h"
+#include "ship/shiphit.h"
+#include "nebula/neblightning.h"
+#include "object/objectsnd.h"
+#include "playerman/player.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multiutil.h"
-#include "multimsgs.h"
-#include "multiutil.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
 #endif
 
 #ifndef NDEBUG

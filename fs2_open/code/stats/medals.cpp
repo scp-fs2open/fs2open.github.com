@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:56:00 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:56:00  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -141,23 +144,23 @@
  */
 
 
-#include "medals.h"
-#include "2d.h"
-#include "snazzyui.h"
-#include "bmpman.h"
-#include "gamesequence.h"
-#include "animplay.h"
-#include "mouse.h"
-#include "freespace.h"
-#include "scoring.h"
-#include "player.h"
-#include "palman.h"
-#include "ui.h"
-#include "key.h"
-#include "cmdline.h"
-#include "gamesnd.h"
-#include "alphacolors.h"
-#include "localize.h"
+#include "stats/medals.h"
+#include "graphics/2d.h"
+#include "menuui/snazzyui.h"
+#include "bmpman/bmpman.h"
+#include "gamesequence/gamesequence.h"
+#include "anim/animplay.h"
+#include "io/mouse.h"
+#include "freespace2/freespace.h"
+#include "stats/scoring.h"
+#include "playerman/player.h"
+#include "palman/palman.h"
+#include "ui/ui.h"
+#include "io/key.h"
+#include "cmdline/cmdline.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
 
 //#define MAX_MEDAL_TYPES 63 // the # of medals which exist so far
 

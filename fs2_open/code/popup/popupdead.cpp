@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/PopupDead.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * C module for the death popup
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/10 20:42:44  mharris
  * use "ifndef NO_NETWORK" all over the place
  *
@@ -117,21 +120,21 @@
 
 #define POPUPDEAD_NUM_CHOICES_MAX		4
 
-#include "ui.h"
-#include "key.h"
-#include "mouse.h"
-#include "freespace.h"
-#include "gamesnd.h"
-#include "keycontrol.h"
-#include "player.h"
-#include "popupdead.h"
-#include "alphacolors.h"
-#include "gamesequence.h"
-#include "popup.h"
+#include "ui/ui.h"
+#include "io/key.h"
+#include "io/mouse.h"
+#include "freespace2/freespace.h"
+#include "gamesnd/gamesnd.h"
+#include "io/keycontrol.h"
+#include "playerman/player.h"
+#include "popup/popupdead.h"
+#include "globalincs/alphacolors.h"
+#include "gamesequence/gamesequence.h"
+#include "popup/popup.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multiutil.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
 #endif
 
 UI_WINDOW	Popupdead_window;

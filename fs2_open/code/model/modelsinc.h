@@ -10,7 +10,7 @@
 #ifndef _MODELSINC_H
 #define _MODELSINC_H
 
-#include "model.h"
+#include "model/model.h"
 
 #ifndef MODEL_LIB 
 #error This should only be used internally by the model library.  See John if you think you need to include this elsewhere.

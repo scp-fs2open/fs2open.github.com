@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -175,37 +178,37 @@
  *
 */
 
-#include "missionload.h"
-#include "missiongoals.h"
-#include "missionparse.h"    
-#include "missionshipchoice.h"
-#include "missionlog.h"
-#include "missionmessage.h"
-#include "cfile.h"
-#include "osapi.h"
-#include "vecmat.h"
-#include "player.h"
-#include "object.h"
-#include "ship.h"
-#include "ailocal.h"
-#include "managepilot.h"
-#include "hud.h"
-#include "freespace.h"
-#include "key.h"
-#include "2d.h"
-#include "line.h"
-#include "timer.h"
+#include "mission/missionload.h"
+#include "mission/missiongoals.h"
+#include "mission/missionparse.h"    
+#include "missionui/missionshipchoice.h"
+#include "mission/missionlog.h"
+#include "mission/missionmessage.h"
+#include "cfile/cfile.h"
+#include "osapi/osapi.h"
+#include "math/vecmat.h"
+#include "playerman/player.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "ship/ailocal.h"
+#include "playerman/managepilot.h"
+#include "hud/hud.h"
+#include "freespace2/freespace.h"
+#include "io/key.h"
+#include "graphics/2d.h"
+#include "graphics/line.h"
+#include "io/timer.h"
 #include "math.h"
-#include "linklist.h"
-#include "mouse.h"
-#include "weapon.h"
-#include "gamesequence.h"
-#include "ui.h"
-#include "sexp.h"
-#include "missionhotkey.h"
-#include "missioncampaign.h"
-#include "cfilesystem.h"
-#include "alphacolors.h"
+#include "globalincs/linklist.h"
+#include "io/mouse.h"
+#include "weapon/weapon.h"
+#include "gamesequence/gamesequence.h"
+#include "ui/ui.h"
+#include "parse/sexp.h"
+#include "mission/missionhotkey.h"
+#include "mission/missioncampaign.h"
+#include "cfile/cfilesystem.h"
+#include "globalincs/alphacolors.h"
 
 
 extern mission The_mission;  // need to send this info to the briefing

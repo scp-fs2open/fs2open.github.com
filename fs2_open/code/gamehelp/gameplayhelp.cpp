@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/GameplayHelp.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Module for displaying in-game help
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -115,22 +118,22 @@
  * $NoKeywords: $
  */
 
-#include "contexthelp.h"
-#include "gamesequence.h"
-#include "freespace.h"
-#include "key.h"
-#include "bmpman.h"
-#include "2d.h"
-#include "timer.h"
+#include "gamehelp/contexthelp.h"
+#include "gamesequence/gamesequence.h"
+#include "freespace2/freespace.h"
+#include "io/key.h"
+#include "bmpman/bmpman.h"
+#include "graphics/2d.h"
+#include "io/timer.h"
 #include "math.h"
-#include "mouse.h"
-#include "controlsconfig.h"
-#include "ui.h"
-#include "gamesnd.h"
-#include "missionscreencommon.h"
-#include "alphacolors.h"
-#include "beam.h"
-#include "audiostr.h"
+#include "io/mouse.h"
+#include "controlconfig/controlsconfig.h"
+#include "ui/ui.h"
+#include "gamesnd/gamesnd.h"
+#include "missionui/missionscreencommon.h"
+#include "globalincs/alphacolors.h"
+#include "weapon/beam.h"
+#include "sound/audiostr.h"
 
 // text positioning constats
 #define TITLE_Y			35

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-22 01:22:25 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/22 01:22:25  penguin
+ * Linux port -- added NO_STANDALONE ifdefs
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -186,54 +189,54 @@
 
 #include <winsock.h>
 
-#include "pstypes.h"
-#include "multi.h"
-#include "multiutil.h"
-#include "multimsgs.h"
-#include "psnet.h"
-#include "linklist.h"
-#include "object.h"
-#include "ship.h"
-#include "hud.h"
-#include "timer.h"
-#include "player.h"
-#include "missionload.h"
-#include "missionparse.h"
-#include "missionshipchoice.h"
-#include "gamesequence.h"
-#include "freespace.h"
-#include "osapi.h"
+#include "globalincs/pstypes.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
+#include "network/psnet.h"
+#include "globalincs/linklist.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "hud/hud.h"
+#include "io/timer.h"
+#include "playerman/player.h"
+#include "mission/missionload.h"
+#include "mission/missionparse.h"
+#include "missionui/missionshipchoice.h"
+#include "gamesequence/gamesequence.h"
+#include "freespace2/freespace.h"
+#include "osapi/osapi.h"
 #include "math.h"
-#include "mouse.h"
-#include "stats.h"
-#include "stand_gui.h"
-#include "multi_xfer.h"
-#include "multiui.h"
-#include "key.h"
-#include "multilag.h"
-#include "multiutil.h"
-#include "multi_ingame.h"
-#include "bmpman.h"
-#include "popup.h"
-#include "cmdline.h"
-#include "chatbox.h"
-#include "multiteamselect.h"
-#include "multi_data.h"
-#include "multi_kick.h"
-#include "multi_campaign.h"
-#include "multi_voice.h"
-#include "multi_team.h"
-#include "multi_respawn.h"
-#include "multi_pmsg.h"
-#include "multi_endgame.h"
-#include "missiondebrief.h"
-#include "multi_pause.h"
-#include "multi_obj.h"
-#include "missiongoals.h"
-#include "multi_log.h"
-#include "multi_rate.h"
-#include "hudescort.h"
-#include "alphacolors.h"
+#include "io/mouse.h"
+#include "stats/stats.h"
+#include "network/stand_gui.h"
+#include "network/multi_xfer.h"
+#include "network/multiui.h"
+#include "io/key.h"
+#include "network/multilag.h"
+#include "network/multiutil.h"
+#include "network/multi_ingame.h"
+#include "bmpman/bmpman.h"
+#include "popup/popup.h"
+#include "cmdline/cmdline.h"
+#include "missionui/chatbox.h"
+#include "network/multiteamselect.h"
+#include "network/multi_data.h"
+#include "network/multi_kick.h"
+#include "network/multi_campaign.h"
+#include "network/multi_voice.h"
+#include "network/multi_team.h"
+#include "network/multi_respawn.h"
+#include "network/multi_pmsg.h"
+#include "network/multi_endgame.h"
+#include "missionui/missiondebrief.h"
+#include "network/multi_pause.h"
+#include "network/multi_obj.h"
+#include "mission/missiongoals.h"
+#include "network/multi_log.h"
+#include "network/multi_rate.h"
+#include "hud/hudescort.h"
+#include "globalincs/alphacolors.h"
 
 // ----------------------------------------------------------------------------------------
 // Basic module scope defines

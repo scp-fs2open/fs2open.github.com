@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pmsg.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-22 01:22:25 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/22 01:22:25  penguin
+ * Linux port -- added NO_STANDALONE ifdefs
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -127,19 +130,19 @@
  */
 
 #include <ctype.h>
-#include "pstypes.h"
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiutil.h"
-#include "multi_pmsg.h"
-#include "multi_kick.h"
-#include "gamesnd.h"
-#include "hud.h"
-#include "hudmessage.h"
-#include "hudsquadmsg.h"
-#include "key.h"
-#include "timer.h"
-#include "ship.h"
+#include "globalincs/pstypes.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "network/multi_pmsg.h"
+#include "network/multi_kick.h"
+#include "gamesnd/gamesnd.h"
+#include "hud/hud.h"
+#include "hud/hudmessage.h"
+#include "hud/hudsquadmsg.h"
+#include "io/key.h"
+#include "io/timer.h"
+#include "ship/ship.h"
 
 // ----------------------------------------------------------------------------------
 // MULTI MESSAGING DEFINES/VARS

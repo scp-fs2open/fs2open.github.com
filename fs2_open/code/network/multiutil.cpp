@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-22 01:22:26 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/22 01:22:26  penguin
+ * Linux port -- added NO_STANDALONE ifdefs
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -215,64 +218,64 @@
 #endif
 #include <ctype.h>
 
-#include "pstypes.h"
-#include "multiutil.h"
-#include "linklist.h"
-#include "gamesequence.h"
-#include "hudmessage.h"
-#include "freespace.h"
-#include "key.h"
-#include "2d.h"
-#include "weapon.h"
-#include "timer.h"
-#include "ship.h"
-#include "psnet.h"
-#include "player.h"
-#include "missionparse.h"
-#include "missionshipchoice.h"
-#include "missionscreencommon.h"
-#include "missionweaponchoice.h"
-#include "stand_gui.h"
-#include "shipfx.h"
-#include "object.h"
-#include "managepilot.h"
-#include "shiphit.h"
-#include "missiondebrief.h"
-#include "observer.h"
-#include "missionmessage.h"
-#include "popup.h"
-#include "popupdead.h"
-#include "hudconfig.h"
-#include "optionsmenu.h"
-#include "missionhotkey.h"
-#include "missiongoals.h"
-#include "afterburner.h"
-#include "chatbox.h"
-#include "osregistry.h"
-#include "hudescort.h"
+#include "globalincs/pstypes.h"
+#include "network/multiutil.h"
+#include "globalincs/linklist.h"
+#include "gamesequence/gamesequence.h"
+#include "hud/hudmessage.h"
+#include "freespace2/freespace.h"
+#include "io/key.h"
+#include "graphics/2d.h"
+#include "weapon/weapon.h"
+#include "io/timer.h"
+#include "ship/ship.h"
+#include "network/psnet.h"
+#include "playerman/player.h"
+#include "mission/missionparse.h"
+#include "missionui/missionshipchoice.h"
+#include "missionui/missionscreencommon.h"
+#include "missionui/missionweaponchoice.h"
+#include "network/stand_gui.h"
+#include "ship/shipfx.h"
+#include "object/object.h"
+#include "playerman/managepilot.h"
+#include "ship/shiphit.h"
+#include "missionui/missiondebrief.h"
+#include "observer/observer.h"
+#include "mission/missionmessage.h"
+#include "popup/popup.h"
+#include "popup/popupdead.h"
+#include "hud/hudconfig.h"
+#include "menuui/optionsmenu.h"
+#include "mission/missionhotkey.h"
+#include "mission/missiongoals.h"
+#include "ship/afterburner.h"
+#include "missionui/chatbox.h"
+#include "osapi/osregistry.h"
+#include "hud/hudescort.h"
 
-#include "multi.h"
+#include "network/multi.h"
 #ifndef NO_NETWORK
-#include "multimsgs.h"
-#include "multi_xfer.h"
-#include "multiteamselect.h"
-#include "multilag.h"
-#include "multiui.h"
-#include "multi_kick.h"
-#include "multi_data.h"
-#include "multi_voice.h"
-#include "multi_ping.h"
-#include "multi_team.h"
-#include "multi_respawn.h"
-#include "multi_ingame.h"
-#include "multi_observer.h"
-#include "multi_pinfo.h"
-#include "multi_endgame.h"
-#include "multi_pmsg.h"
-#include "multi_pause.h"
-#include "multi_obj.h"
-#include "multi_log.h"
-#include "multi_rate.h"
+#include "network/multimsgs.h"
+#include "network/multi_xfer.h"
+#include "network/multiteamselect.h"
+#include "network/multilag.h"
+#include "network/multiui.h"
+#include "network/multi_kick.h"
+#include "network/multi_data.h"
+#include "network/multi_voice.h"
+#include "network/multi_ping.h"
+#include "network/multi_team.h"
+#include "network/multi_respawn.h"
+#include "network/multi_ingame.h"
+#include "network/multi_observer.h"
+#include "network/multi_pinfo.h"
+#include "network/multi_endgame.h"
+#include "network/multi_pmsg.h"
+#include "network/multi_pause.h"
+#include "network/multi_obj.h"
+#include "network/multi_log.h"
+#include "network/multi_rate.h"
 #endif
 
 

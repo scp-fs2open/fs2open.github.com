@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.1 $
- * $Date: 2002-07-22 01:22:25 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/22 01:22:25  penguin
+ * Linux port -- added NO_STANDALONE ifdefs
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -284,11 +287,11 @@
 #ifndef _MULTI_H
 #define _MULTI_H
 
-#include "psnet.h"					// for PSNET_SOCKET		
-#include "player.h"
-#include "multi_ping.h"
-#include "missionparse.h"
-#include "multi_options.h"
+#include "network/psnet.h"					// for PSNET_SOCKET		
+#include "playerman/player.h"
+#include "network/multi_ping.h"
+#include "mission/missionparse.h"
+#include "network/multi_options.h"
 
 // ----------------------------------------------------------------------------------------
 // Basic defines

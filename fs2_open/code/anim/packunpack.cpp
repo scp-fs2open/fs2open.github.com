@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
@@ -18,6 +18,9 @@
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -149,12 +152,12 @@
  * $NoKeywords: $
  */
 
-#include "grinternal.h"
-#include "bmpman.h"
-#include "palman.h"
-#include "2d.h"
-#include "animplay.h"
-#include "packunpack.h"
+#include "graphics/grinternal.h"
+#include "bmpman/bmpman.h"
+#include "palman/palman.h"
+#include "graphics/2d.h"
+#include "anim/animplay.h"
+#include "anim/packunpack.h"
 
 int packer_code = PACKER_CODE;
 int transparent_code = 254;

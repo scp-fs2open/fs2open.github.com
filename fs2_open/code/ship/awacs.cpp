@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/13 21:09:29  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -67,13 +70,13 @@
  * $NoKeywords: $
  */
 
-#include "timer.h"
-#include "ship.h"
-#include "linklist.h"
-#include "neb.h"
-#include "awacs.h"
-#include "missionparse.h"
-#include "multi.h"
+#include "io/timer.h"
+#include "ship/ship.h"
+#include "globalincs/linklist.h"
+#include "nebula/neb.h"
+#include "ship/awacs.h"
+#include "mission/missionparse.h"
+#include "network/multi.h"
 
 // ----------------------------------------------------------------------------------------------------
 // AWACS DEFINES/VARS

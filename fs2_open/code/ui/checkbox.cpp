@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/CHECKBOX.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * Code to handle checkboxes.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -67,9 +70,9 @@
  * $NoKeywords: $
  */
 
-#include "uidefs.h"
-#include "ui.h"
-#include "alphacolors.h"
+#include "ui/uidefs.h"
+#include "ui/ui.h"
+#include "globalincs/alphacolors.h"
 
 void UI_CHECKBOX::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _state )
 {

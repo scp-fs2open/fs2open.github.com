@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/09 23:02:59  mharris
  * Not using default values for audiostream functions, since they may
  * be macros (if NO_SOUND is defined)
@@ -143,24 +146,24 @@
  * $NoKeywords: $
  */
 
-#include "ui.h"
-#include "gamesnd.h"
-#include "gamesequence.h"
-#include "missionscreencommon.h"
-#include "key.h"
-#include "bmpman.h"
-#include "font.h"
-#include "redalert.h"
-#include "hud.h"
-#include "missionbriefcommon.h"
-#include "timer.h"
-#include "missioncampaign.h"
-#include "missiongoals.h"
-#include "linklist.h"
-#include "hudwingmanstatus.h"
-#include "audiostr.h"
-#include "freespace.h"
-#include "alphacolors.h"
+#include "ui/ui.h"
+#include "gamesnd/gamesnd.h"
+#include "gamesequence/gamesequence.h"
+#include "missionui/missionscreencommon.h"
+#include "io/key.h"
+#include "bmpman/bmpman.h"
+#include "graphics/font.h"
+#include "missionui/redalert.h"
+#include "hud/hud.h"
+#include "mission/missionbriefcommon.h"
+#include "io/timer.h"
+#include "mission/missioncampaign.h"
+#include "mission/missiongoals.h"
+#include "globalincs/linklist.h"
+#include "hud/hudwingmanstatus.h"
+#include "sound/audiostr.h"
+#include "freespace2/freespace.h"
+#include "globalincs/alphacolors.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Red Alert Mission-Level

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.6  2002/05/26 14:12:03  mharris
  * Changed alphacolors from automatic to static
  *
@@ -311,52 +314,52 @@
  *
 */
 
-#include "pstypes.h"
-#include "freespace.h"
-#include "systemvars.h"
-#include "hud.h"
-#include "hudtarget.h"
-#include "hudreticle.h"
-#include "hudmessage.h"
-#include "sound.h"
-#include "player.h"
-#include "gamesnd.h"
-#include "hudsquadmsg.h"
-#include "timer.h"
-#include "eventmusic.h"
-#include "hudlock.h"
-#include "hudets.h"
-#include "2d.h"
-#include "3d.h"
-#include "ai.h"
-#include "aigoals.h"
-#include "hudescort.h"
-#include "hudshield.h"
-#include "linklist.h"
-#include "hudtargetbox.h"
-#include "missionmessage.h"
-#include "missiontraining.h"
-#include "bmpman.h"
-#include "radar.h"
-#include "hudobserver.h"
-#include "hudtargetbox.h"
-#include "hudconfig.h"
-#include "missiongoals.h"
-#include "asteroid.h"
-#include "starfield.h"
-#include "hudwingmanstatus.h"
-#include "redalert.h"
-#include "emp.h"
-#include "alphacolors.h"
-#include "localize.h"
-#include "supernova.h"
-#include "font.h"
+#include "globalincs/pstypes.h"
+#include "freespace2/freespace.h"
+#include "globalincs/systemvars.h"
+#include "hud/hud.h"
+#include "hud/hudtarget.h"
+#include "hud/hudreticle.h"
+#include "hud/hudmessage.h"
+#include "sound/sound.h"
+#include "playerman/player.h"
+#include "gamesnd/gamesnd.h"
+#include "hud/hudsquadmsg.h"
+#include "io/timer.h"
+#include "gamesnd/eventmusic.h"
+#include "hud/hudlock.h"
+#include "hud/hudets.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "ship/ai.h"
+#include "ship/aigoals.h"
+#include "hud/hudescort.h"
+#include "hud/hudshield.h"
+#include "globalincs/linklist.h"
+#include "hud/hudtargetbox.h"
+#include "mission/missionmessage.h"
+#include "mission/missiontraining.h"
+#include "bmpman/bmpman.h"
+#include "radar/radar.h"
+#include "hud/hudobserver.h"
+#include "hud/hudtargetbox.h"
+#include "hud/hudconfig.h"
+#include "mission/missiongoals.h"
+#include "asteroid/asteroid.h"
+#include "starfield/starfield.h"
+#include "hud/hudwingmanstatus.h"
+#include "missionui/redalert.h"
+#include "weapon/emp.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
+#include "starfield/supernova.h"
+#include "graphics/font.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multiutil.h"
-#include "multi_voice.h"
-#include "multi_pmsg.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "network/multi_voice.h"
+#include "network/multi_pmsg.h"
 #endif
 
 // new values for HUD alpha

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.5  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -267,53 +270,53 @@
  *
 */
 
-#include "freespace.h"
-#include "missionload.h"
-#include "missionscreencommon.h"
-#include "missionshipchoice.h"
-#include "missionparse.h"
-#include "missiongoals.h"
-#include "gamesequence.h"
-#include "ship.h"
-#include "key.h"
-#include "2d.h"
-#include "line.h"
-#include "3d.h"
-#include "model.h"
-#include "timer.h"
+#include "freespace2/freespace.h"
+#include "mission/missionload.h"
+#include "missionui/missionscreencommon.h"
+#include "missionui/missionshipchoice.h"
+#include "mission/missionparse.h"
+#include "mission/missiongoals.h"
+#include "gamesequence/gamesequence.h"
+#include "ship/ship.h"
+#include "io/key.h"
+#include "graphics/2d.h"
+#include "graphics/line.h"
+#include "render/3d.h"
+#include "model/model.h"
+#include "io/timer.h"
 #include "math.h"
-#include "linklist.h"
-#include "mouse.h"
-#include "hud.h"
-#include "ui.h"
-#include "osapi.h"
-#include "audiostr.h"
-#include "gamesnd.h"
-#include "eventmusic.h"
-#include "missioncampaign.h"
-#include "object.h"
-#include "snazzyui.h"
-#include "bmpman.h"
-#include "missionbrief.h"
-#include "missionbriefcommon.h"
-#include "missiongrid.h"
-#include "bmpman.h"
-#include "cmdline.h"
-#include "contexthelp.h"
-#include "asteroid.h"
-#include "popup.h"
-#include "sexp.h"
-#include "alphacolors.h"
-#include "font.h"
-#include "missionmessage.h"
-#include "player.h"
+#include "globalincs/linklist.h"
+#include "io/mouse.h"
+#include "hud/hud.h"
+#include "ui/ui.h"
+#include "osapi/osapi.h"
+#include "sound/audiostr.h"
+#include "gamesnd/gamesnd.h"
+#include "gamesnd/eventmusic.h"
+#include "mission/missioncampaign.h"
+#include "object/object.h"
+#include "menuui/snazzyui.h"
+#include "bmpman/bmpman.h"
+#include "missionui/missionbrief.h"
+#include "mission/missionbriefcommon.h"
+#include "mission/missiongrid.h"
+#include "bmpman/bmpman.h"
+#include "cmdline/cmdline.h"
+#include "gamehelp/contexthelp.h"
+#include "asteroid/asteroid.h"
+#include "popup/popup.h"
+#include "parse/sexp.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
+#include "mission/missionmessage.h"
+#include "playerman/player.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiteamselect.h"
-#include "multiui.h"
-#include "chatbox.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiteamselect.h"
+#include "network/multiui.h"
+#include "missionui/chatbox.h"
 #endif
 
 /*

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-29 07:56:10 $
- * $Author: DTP $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:06 $
+ * $Author: penguin $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/29 07:56:10  DTP
+ * FIX; Startgame arguement dont go ahead when a singleplayer pilot is selected
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -310,39 +313,39 @@
  *
  */
 
-#include "pstypes.h"
-#include "mainhallmenu.h"
-#include "palman.h"
-#include "bmpman.h"
-#include "2d.h"
-#include "gamesequence.h"
-#include "animplay.h"
-#include "key.h"
-#include "timer.h"
-#include "ui.h"
-#include "snazzyui.h"
-#include "player.h"
-#include "audiostr.h"
-#include "gamesnd.h"
-#include "eventmusic.h"
-#include "mouse.h"
-#include "contexthelp.h"
-#include "cmdline.h"
-#include "psnet.h"
-#include "popup.h"
-#include "rtvoice.h"
-#include "osapi.h"
-#include "playermenu.h"
-#include "freespace.h"
-#include "alphacolors.h"
-#include "demo.h"
-#include "fishtank.h"
+#include "globalincs/pstypes.h"
+#include "menuui/mainhallmenu.h"
+#include "palman/palman.h"
+#include "bmpman/bmpman.h"
+#include "graphics/2d.h"
+#include "gamesequence/gamesequence.h"
+#include "anim/animplay.h"
+#include "io/key.h"
+#include "io/timer.h"
+#include "ui/ui.h"
+#include "menuui/snazzyui.h"
+#include "playerman/player.h"
+#include "sound/audiostr.h"
+#include "gamesnd/gamesnd.h"
+#include "gamesnd/eventmusic.h"
+#include "io/mouse.h"
+#include "gamehelp/contexthelp.h"
+#include "cmdline/cmdline.h"
+#include "network/psnet.h"
+#include "popup/popup.h"
+#include "sound/rtvoice.h"
+#include "osapi/osapi.h"
+#include "menuui/playermenu.h"
+#include "freespace2/freespace.h"
+#include "globalincs/alphacolors.h"
+#include "demo/demo.h"
+#include "menuui/fishtank.h"
 
 #ifndef NO_NETWORK
-#include "multiui.h"
-#include "multiutil.h"
-#include "multi_voice.h"
-#include "multi.h"
+#include "network/multiui.h"
+#include "network/multiutil.h"
+#include "network/multi_voice.h"
+#include "network/multi.h"
 #endif
 
 // #include "movie.h"

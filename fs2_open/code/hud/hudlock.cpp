@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -274,26 +277,26 @@
  * $NoKeywords: $
  */
 
-#include "hud.h"
-#include "hudlock.h"
-#include "hudtarget.h"
-#include "hudreticle.h"
-#include "player.h"
-#include "ship.h"
-#include "weapon.h"
-#include "sound.h"
-#include "timer.h"
-#include "freespace.h"
-#include "gamesequence.h"
-#include "gamesnd.h"
-#include "ai.h"
-#include "bmpman.h"
-#include "3d.h"
-#include "linklist.h"
-#include "emp.h"
+#include "hud/hud.h"
+#include "hud/hudlock.h"
+#include "hud/hudtarget.h"
+#include "hud/hudreticle.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
+#include "sound/sound.h"
+#include "io/timer.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "ship/ai.h"
+#include "bmpman/bmpman.h"
+#include "render/3d.h"
+#include "globalincs/linklist.h"
+#include "weapon/emp.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
+#include "network/multi.h"
 #endif
 
 static float Lock_start_dist;

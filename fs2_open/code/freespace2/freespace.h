@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -147,9 +150,9 @@
 #define _FREESPACE_H
 #ifndef STAMPER_PROGRAM							// because of all the dependancies, I have to do this...yuck!!!  MWA 7/21/97
 
-#include "pstypes.h"
-#include "systemvars.h"
-#include "2d.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
+#include "graphics/2d.h"
 
 // --------------------------------------------------------------------------------------------------------
 // FREESPACE DEFINES/VARS

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -311,15 +314,15 @@
  * $NoKeywords: $
  */
 
-#include "grd3dinternal.h"
-#include "2d.h"
-#include "pstypes.h"
-#include "bmpman.h"
-#include "palman.h"
-#include "line.h"
-#include "cfile.h"
-#include "neb.h"
-#include "3d.h"
+#include "graphics/grd3dinternal.h"
+#include "graphics/2d.h"
+#include "globalincs/pstypes.h"
+#include "bmpman/bmpman.h"
+#include "palman/palman.h"
+#include "graphics/line.h"
+#include "cfile/cfile.h"
+#include "nebula/neb.h"
+#include "render/3d.h"
 
 typedef enum gr_texture_source {
 	TEXTURE_SOURCE_NONE,

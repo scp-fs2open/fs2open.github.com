@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Palman/PalMan.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Palette manager routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -195,14 +198,14 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "cfile.h"
-#include "palman.h"
-#include "bmpman.h"
-#include "2d.h"
-#include "pcxutils.h"
-#include "parselo.h"
-#include "grinternal.h"
+#include "globalincs/pstypes.h"
+#include "cfile/cfile.h"
+#include "palman/palman.h"
+#include "bmpman/bmpman.h"
+#include "graphics/2d.h"
+#include "pcxutils/pcxutils.h"
+#include "parse/parselo.h"
+#include "graphics/grinternal.h"
 
 #define	SQUARE(x) ((x)*(x))
 

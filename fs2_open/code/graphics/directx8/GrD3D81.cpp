@@ -24,24 +24,24 @@
 // Commented out includes are those awaiting rewriting
 #include <math.h>
 
-#include "grd3d81internal.h"	// Updated to point to the correct include file
+#include "graphics/directx8/grd3d81internal.h"	// Updated to point to the correct include file
 
-#include "osapi.h"
-#include "2d.h"
-#include "bmpman.h"
-#include "key.h"
-#include "floating.h"
-#include "palman.h"
-#include "osregistry.h"
+#include "osapi/osapi.h"
+#include "graphics/2d.h"
+#include "bmpman/bmpman.h"
+#include "io/key.h"
+#include "math/floating.h"
+#include "palman/palman.h"
+#include "osapi/osregistry.h"
 #include "grd3d81.h"		// Updated to point to the include for this file
-#include "line.h"
-#include "font.h"
-#include "grinternal.h"
-#include "mouse.h"
-#include "alphacolors.h"
-#include "systemvars.h"
-#include "cfile.h"
-#include "cmdline.h"
+#include "graphics/line.h"
+#include "graphics/font.h"
+#include "graphics/grinternal.h"
+#include "io/mouse.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/systemvars.h"
+#include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 
 void gr_d3d8_init()
 {

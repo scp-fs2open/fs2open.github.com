@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrZbuffer.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Code for the software renderer's zbuffer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/08 02:36:01  mharris
  * porting
  *
@@ -34,12 +37,12 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "osapi.h"
-#include "2d.h"
-#include "floating.h"
-#include "grsoft.h"
-#include "grinternal.h"
+#include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
+#include "graphics/2d.h"
+#include "math/floating.h"
+#include "graphics/grsoft.h"
+#include "graphics/grinternal.h"
 
 int gr_zcount=GR_Z_COUNT;
 int gr_zoffset=0;

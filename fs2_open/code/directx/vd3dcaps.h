@@ -13,7 +13,7 @@
 /* 
  *  Pull in DirectDraw include file automatically:
  */
-#include "vddraw.h"
+#include "directx/vddraw.h"
 
 #pragma pack(4)
 

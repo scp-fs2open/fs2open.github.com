@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_log.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * Header file to support multiplayer logging functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -63,11 +66,11 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include "pstypes.h"
-#include "multi_log.h"
-#include "multi_options.h"
-#include "cmdline.h"
-#include "cfile.h"
+#include "globalincs/pstypes.h"
+#include "network/multi_log.h"
+#include "network/multi_options.h"
+#include "cmdline/cmdline.h"
+#include "cfile/cfile.h"
 
 // ----------------------------------------------------------------------------------------------------
 // MULTI LOGFILE DEFINES/VARS

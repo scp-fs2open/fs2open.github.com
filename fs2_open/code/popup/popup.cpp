@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/Popup.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Code for displaying pop-up dialog boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -182,21 +185,21 @@
 
 #include <stdarg.h>
 #include <string.h>
-#include "freespace.h"
-#include "gamesequence.h"
-#include "key.h"
-#include "mouse.h"
-#include "ui.h"
-#include "parselo.h"
-#include "popup.h"
-#include "gamesnd.h"
-#include "animplay.h"
-#include "contexthelp.h"
-#include "keycontrol.h"
-#include "player.h"
-#include "font.h"
-#include "alphacolors.h"
-#include "osapi.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "io/key.h"
+#include "io/mouse.h"
+#include "ui/ui.h"
+#include "parse/parselo.h"
+#include "popup/popup.h"
+#include "gamesnd/gamesnd.h"
+#include "anim/animplay.h"
+#include "gamehelp/contexthelp.h"
+#include "io/keycontrol.h"
+#include "playerman/player.h"
+#include "graphics/font.h"
+#include "globalincs/alphacolors.h"
+#include "osapi/osapi.h"
 
 #define POPUP_MAX_CHOICES			3					// max number of buttons allowed on popup
 

@@ -9,24 +9,27 @@
 
 /*
  * $Logfile$
- * $Revision: 1.1 $
- * $Date: 2002-07-29 22:24:26 $
+ * $Revision: 1.2 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2002/07/29 22:24:26  penguin
+ * First attempt at "fs2_open exchange" (PXO substitute) screen
+ *
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "2d.h"
-#include "ui.h"
-#include "bmpman.h"
-#include "gamesnd.h"
-#include "key.h"
-#include "gamesequence.h"
-#include "fs2ox.h"
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
+#include "ui/ui.h"
+#include "bmpman/bmpman.h"
+#include "gamesnd/gamesnd.h"
+#include "io/key.h"
+#include "gamesequence/gamesequence.h"
+#include "network/fs2ox.h"
 
 // LOCAL function definitions
 void fs2ox_check_buttons();

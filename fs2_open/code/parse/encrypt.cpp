@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/Encrypt.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Module for encryption code common to FreeSpace and related tools
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -58,8 +61,8 @@
 
 #define	ENCRYPT_NEW													// new, better encryption scheme
 
-#include "pstypes.h"
-#include "encrypt.h"
+#include "globalincs/pstypes.h"
+#include "parse/encrypt.h"
 
 const uint Encrypt_new_signature			= 0x5c331a55;		// new encrpytion
 const uint Encrypt_signature				= 0xdeadbeef;		// full encryption

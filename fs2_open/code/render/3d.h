@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -110,8 +113,8 @@
 #ifndef _3D_H
 #define _3D_H
 
-#include "vecmat.h"
-#include "tmapper.h"
+#include "math/vecmat.h"
+#include "graphics/tmapper.h"
 
 //flags for point structure
 #define PF_PROJECTED 	 1	//has been projected, so sx,sy valid

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Swarm.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:11 $
  * $Author: penguin $
  *
  * C module for managing swarm missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -100,12 +103,12 @@
  * $NoKeywords: $
  */
 
-#include "swarm.h"
-#include "weapon.h"
-#include "ship.h"
-#include "timer.h"
-#include "freespace.h"	// for Missiontime
-#include "linklist.h"
+#include "weapon/swarm.h"
+#include "weapon/weapon.h"
+#include "ship/ship.h"
+#include "io/timer.h"
+#include "freespace2/freespace.h"	// for Missiontime
+#include "globalincs/linklist.h"
 
 #define SWARM_DIST_OFFSET			2.0		// distance swarm missile should vary from original path
 #define SWARM_CONE_LENGTH			10000.0f	// used to pick a target point far in the distance

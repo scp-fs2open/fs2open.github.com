@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.2 $
- * $Date: 2002-07-29 08:24:42 $
- * $Author: DTP $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:10 $
+ * $Author: penguin $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/29 08:24:42  DTP
+ * Bumped all MAX_SHIPS, and SHIP_LIMIT to 400.(let the mission designers decide what is good, and what is bad
+ *
  * Revision 2.1  2002/07/12 16:59:04  penguin
  * Added flags2 (ran out of bits in flags!) to ship struct; bit 0 will be used
  * to toggle Bobboau's lights.
@@ -230,14 +233,14 @@
 #ifndef _SHIP_H
 #define _SHIP_H
 
-#include "parselo.h"		// for defintions of token lengths -- maybe move this elsewhere later
-#include "model.h"
-#include "2d.h"			// for color def
-#include "trails.h"
-#include "palman.h"
+#include "parse/parselo.h"		// for defintions of token lengths -- maybe move this elsewhere later
+#include "model/model.h"
+#include "graphics/2d.h"			// for color def
+#include "weapon/trails.h"
+#include "palman/palman.h"
 
 #ifndef NO_NETWORK
-#include "multi_obj.h"
+#include "network/multi_obj.h"
 #endif
 
 struct object;
@@ -412,8 +415,8 @@ typedef struct ship_subsys_info {
 // reference an array to store the different IFF colors
 extern color IFF_colors[MAX_IFF_COLORS][2];
 	
-#include "ai.h"  // ship_subsys must be declared before we include this.
-#include "weapon.h"		// ship_subsys must be declared before we include this.
+#include "ship/ai.h"  // ship_subsys must be declared before we include this.
+#include "weapon/weapon.h"		// ship_subsys must be declared before we include this.
 
 //#define	MAX_SHIP_SUBOBJECTS		50
 

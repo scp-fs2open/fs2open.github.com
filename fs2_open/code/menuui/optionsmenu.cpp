@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.7  2002/05/17 03:05:08  mharris
  * more porting tweaks
  *
@@ -223,35 +226,35 @@
  *
 */
 
-#include "grinternal.h"
-#include "ui.h"
-#include "missionscreencommon.h"
-#include "bmpman.h"
-#include "gamesequence.h"
-#include "key.h"
-#include "managepilot.h"
-#include "freespace.h"
-#include "gamesnd.h"
-#include "sound.h"
-#include "eventmusic.h"
-#include "mainhallmenu.h"
-#include "audiostr.h"
-#include "psnet.h"
-#include "popup.h"
-#include "popupdead.h"
-#include "missionbriefcommon.h"
-#include "optionsmenu.h"
-#include "joy.h"
-#include "mouse.h"
-#include "osregistry.h"
-#include "alphacolors.h"
-#include "timer.h"
-#include "neb.h"
-#include "beam.h"
+#include "graphics/grinternal.h"
+#include "ui/ui.h"
+#include "missionui/missionscreencommon.h"
+#include "bmpman/bmpman.h"
+#include "gamesequence/gamesequence.h"
+#include "io/key.h"
+#include "playerman/managepilot.h"
+#include "freespace2/freespace.h"
+#include "gamesnd/gamesnd.h"
+#include "sound/sound.h"
+#include "gamesnd/eventmusic.h"
+#include "menuui/mainhallmenu.h"
+#include "sound/audiostr.h"
+#include "network/psnet.h"
+#include "popup/popup.h"
+#include "popup/popupdead.h"
+#include "mission/missionbriefcommon.h"
+#include "menuui/optionsmenu.h"
+#include "io/joy.h"
+#include "io/mouse.h"
+#include "osapi/osregistry.h"
+#include "globalincs/alphacolors.h"
+#include "io/timer.h"
+#include "nebula/neb.h"
+#include "weapon/beam.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "optionsmenumulti.h"
+#include "network/multi.h"
+#include "menuui/optionsmenumulti.h"
 #endif
 
 // will display a notification warning message

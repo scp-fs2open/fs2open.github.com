@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/13 21:43:37  mharris
  * A little more network and sound cleanup
  *
@@ -217,26 +220,26 @@
  * $NoKeywords: $
  */
 
-#include "3d.h"
-#include "bmpman.h"
-#include "object.h"
-#include "debris.h"
-#include "fireballs.h"
-#include "radar.h"
-#include "missionparse.h"		// For MAX_SPECIES_NAMES
-#include "gamesnd.h"
-#include "objectsnd.h"
-#include "linklist.h"
-#include "systemvars.h"
-#include "particle.h"
-#include "freespace.h"
-#include "objcollide.h"
-#include "timer.h"
+#include "render/3d.h"
+#include "bmpman/bmpman.h"
+#include "object/object.h"
+#include "debris/debris.h"
+#include "fireball/fireballs.h"
+#include "radar/radar.h"
+#include "mission/missionparse.h"		// For MAX_SPECIES_NAMES
+#include "gamesnd/gamesnd.h"
+#include "object/objectsnd.h"
+#include "globalincs/linklist.h"
+#include "globalincs/systemvars.h"
+#include "particle/particle.h"
+#include "freespace2/freespace.h"
+#include "object/objcollide.h"
+#include "io/timer.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multimsgs.h"
-#include "multiutil.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
 #endif
 
 #define MAX_LIFE									10.0f

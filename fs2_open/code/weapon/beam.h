@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.1 $
- * $Date: 2002-07-25 04:50:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:10 $
+ * $Author: penguin $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/25 04:50:48  wmcoolmon
+ * Added Bobboau's fighter-beam code.
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -105,7 +108,7 @@
 #ifndef __FS2_BEAM_WEAPON_HEADER_FILE
 #define __FS2_BEAM_WEAPON_HEADER_FILE
 
-#include "model.h"
+#include "model/model.h"
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON DEFINES/VARS

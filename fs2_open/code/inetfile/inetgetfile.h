@@ -9,13 +9,16 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/inetgetfile.h $
-* $Revision: 2.0 $
-* $Date: 2002-06-03 04:02:24 $
+* $Revision: 2.1 $
+* $Date: 2002-08-01 01:41:06 $
 * $Author: penguin $
 *
 * InternetGetFile Class header
 *
 * $Log: not supported by cvs2svn $
+* Revision 2.0  2002/06/03 04:02:24  penguin
+* Warpcore CVS sync
+*
 * Revision 1.1  2002/05/02 18:03:08  mharris
 * Initial checkin - converted filenames and includes to lower case
 *
@@ -35,8 +38,8 @@
 
 //At the end of this file is an example of usage
 
-#include "cftp.h"
-#include "chttpget.h"
+#include "inetfile/cftp.h"
+#include "inetfile/chttpget.h"
 
 #define INET_ERROR_NO_ERROR			0
 #define INET_ERROR_BADPARMS			1
@@ -80,7 +83,7 @@ protected:
 #include <conio.h>
 #include <time.h>
 
-#include "inetgetfile.h"
+#include "inetfile/inetgetfile.h"
 
 int main(int argc,char **argv)
 {

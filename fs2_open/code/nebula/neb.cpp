@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/09 13:49:30  mharris
  * Added ifndef NO_DIRECT3D
  *
@@ -80,27 +83,27 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "neb.h"
-#include "vecmat.h"
-#include "3d.h"
-#include "bmpman.h"
-#include "2d.h"
-#include "object.h"
-#include "glide.h"
-#include "timer.h"
-#include "multi.h"
-#include "freespace.h"
-#include "key.h"
-#include "nebula.h"
-#include "starfield.h"
-#include "parselo.h"
-#include "beam.h"
-#include "sound.h"
-#include "gamesnd.h"
-#include "grinternal.h"
+#include "globalincs/pstypes.h"
+#include "nebula/neb.h"
+#include "math/vecmat.h"
+#include "render/3d.h"
+#include "bmpman/bmpman.h"
+#include "graphics/2d.h"
+#include "object/object.h"
+#include "glide/glide.h"
+#include "io/timer.h"
+#include "network/multi.h"
+#include "freespace2/freespace.h"
+#include "io/key.h"
+#include "starfield/nebula.h"
+#include "starfield/starfield.h"
+#include "parse/parselo.h"
+#include "weapon/beam.h"
+#include "sound/sound.h"
+#include "gamesnd/gamesnd.h"
+#include "graphics/grinternal.h"
 
-#include "alphacolors.h"
+#include "globalincs/alphacolors.h"
 
 // --------------------------------------------------------------------------------------------------------
 // NEBULA DEFINES/VARS

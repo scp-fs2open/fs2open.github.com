@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TrainingMenu.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * C module that contains functions to drive the Training user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -118,15 +121,15 @@
  *
 */
 
-#include "gamesequence.h"
-#include "trainingmenu.h"
-#include "2d.h"
-#include "snazzyui.h"
-#include "managepilot.h"
-#include "missionload.h"
-#include "key.h"
-#include "bmpman.h"
-#include "mainhallmenu.h"
+#include "gamesequence/gamesequence.h"
+#include "menuui/trainingmenu.h"
+#include "graphics/2d.h"
+#include "menuui/snazzyui.h"
+#include "playerman/managepilot.h"
+#include "mission/missionload.h"
+#include "io/key.h"
+#include "bmpman/bmpman.h"
+#include "menuui/mainhallmenu.h"
 
 // global to this file
 static int trainingMenuBitmap;

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-30 14:29:15 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:04 $
+ * $Author: penguin $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/30 14:29:15  unknownplayer
+ *
+ * Started work on DX8.1 implementation. Updated the project files to encompass
+ * the new files. Disable the compiler tag to use old DX code (THERE IS NO
+ * NEW CODE YET!)
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -448,26 +454,26 @@
 #include <windowsx.h>
 #endif
 
-#include "pstypes.h"
-#include "osapi.h"
-#include "2d.h"
-#include "3d.h"
-#include "bmpman.h"
-#include "palman.h"
-#include "font.h"
-#include "grinternal.h"
-#include "systemvars.h"
-#include "cmdline.h"
+#include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "bmpman/bmpman.h"
+#include "palman/palman.h"
+#include "graphics/font.h"
+#include "graphics/grinternal.h"
+#include "globalincs/systemvars.h"
+#include "cmdline/cmdline.h"
 
 // 3dnow stuff
 // #include "amd3d.h"
 
 // Includes for different rendering systems
-#include "grsoft.h"
-#include "grd3d.h"
-#include "grglide.h"
-#include "gropengl.h"
-#include "grdirectdraw.h"
+#include "graphics/grsoft.h"
+#include "graphics/grd3d.h"
+#include "graphics/grglide.h"
+#include "graphics/gropengl.h"
+#include "graphics/grdirectdraw.h"
 
 screen gr_screen;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:56:00 $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:56:00  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -300,26 +303,26 @@
  * 
  * $NoKeywords: $
  */
-#include "pstypes.h"
+#include "globalincs/pstypes.h"
 
 #include <windows.h>
 #include <mmreg.h>
-#include "vdsound.h"
+#include "directx/vdsound.h"
 
-#include "3dinternal.h"
-#include "sound.h"
-#include "audiostr.h"
-#include "object.h"
-#include "cmdline.h"
-#include "osapi.h"
+#include "render/3dinternal.h"
+#include "sound/sound.h"
+#include "sound/audiostr.h"
+#include "object/object.h"
+#include "cmdline/cmdline.h"
+#include "osapi/osapi.h"
 
-#include "gamesnd.h"
-#include "alphacolors.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
 
-#include "ds.h"
-#include "ds3d.h"
-#include "acm.h"
-#include "dscap.h"
+#include "sound/ds.h"
+#include "sound/ds3d.h"
+#include "sound/acm.h"
+#include "sound/dscap.h"
 		
 #define SND_F_USED			(1<<0)		// Sounds[] element is used
 

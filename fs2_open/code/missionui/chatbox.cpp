@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/Chatbox.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * C module to handle all code for multiplayer chat windows
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -275,20 +278,20 @@
  * $NoKeywords: $
  */
 
-#include "ui.h"
-#include "mouse.h"
-#include "freespace.h"
-#include "chatbox.h"
-#include "missionscreencommon.h"
-#include "multimsgs.h"
-#include "gamesnd.h"
-#include "bmpman.h"
-#include "cmdline.h"
-#include "key.h"
-#include "multi.h"
-#include "multiui.h"
-#include "multi_pmsg.h"
-#include "alphacolors.h"
+#include "ui/ui.h"
+#include "io/mouse.h"
+#include "freespace2/freespace.h"
+#include "missionui/chatbox.h"
+#include "missionui/missionscreencommon.h"
+#include "network/multimsgs.h"
+#include "gamesnd/gamesnd.h"
+#include "bmpman/bmpman.h"
+#include "cmdline/cmdline.h"
+#include "io/key.h"
+#include "network/multi.h"
+#include "network/multiui.h"
+#include "network/multi_pmsg.h"
+#include "globalincs/alphacolors.h"
 
 ///////////////////////////////////////////////////////////
 // Chat window UI 

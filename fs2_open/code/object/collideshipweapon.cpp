@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:08 $
  * $Author: penguin $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -146,20 +149,20 @@
  * $NoKeywords: $
  */
 
-#include "objcollide.h"
-#include "model.h"
-#include "shiphit.h"
-#include "player.h"
-#include "hudshield.h"
-#include "hud.h"
-#include "hudwingmanstatus.h"
-#include "timer.h"
-#include "freespace.h"
+#include "object/objcollide.h"
+#include "model/model.h"
+#include "ship/shiphit.h"
+#include "playerman/player.h"
+#include "hud/hudshield.h"
+#include "hud/hud.h"
+#include "hud/hudwingmanstatus.h"
+#include "io/timer.h"
+#include "freespace2/freespace.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multiutil.h"
-#include "multimsgs.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
 #endif
 
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);

@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.1 $
- * $Author: DTP $
- * $Date: 2002-07-20 19:21:13 $
+ * $Revision: 2.2 $
+ * $Author: penguin $
+ * $Date: 2002-08-01 01:41:09 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/20 19:21:13  DTP
+ * bumped MAX_MISSION_TEXT to 1000000 in code/parse/parselo.h
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin		//DTP; 2003 :). should be 2002
  * Warpcore CVS sync
  *
@@ -237,7 +240,7 @@
 #define _PARSELO_H
 
 #include <setjmp.h>
-#include "cfile.h"
+#include "cfile/cfile.h"
 
 #define	MISSION_TEXT_SIZE	1000000
 

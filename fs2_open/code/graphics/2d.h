@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:05 $
  * $Author: penguin $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:07  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -322,8 +325,8 @@ gr_line(x1,y1,x2,y2)
  
 */
 
-#include "pstypes.h"
-#include "tmapper.h"
+#include "globalincs/pstypes.h"
+#include "graphics/tmapper.h"
 
 // This is a structure used by the shader to keep track
 // of the values you want to use in the shade primitive.

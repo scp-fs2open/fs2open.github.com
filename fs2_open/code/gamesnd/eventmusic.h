@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:04 $
  * $Author: penguin $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/10 06:08:08  mharris
  * Porting... added ifndef NO_SOUND
  *
@@ -124,7 +127,7 @@
 #ifndef __EVENT_MUSIC_H__
 #define __EVENT_MUSIC_H__
 
-#include "parselo.h"
+#include "parse/parselo.h"
 
 // Identifies songs in the Soundtrack_filenames[] structure.  The order matches up with
 // what is in music.tbl.  Do not modify without synching music.tbl.

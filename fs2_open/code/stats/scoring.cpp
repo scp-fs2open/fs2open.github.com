@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/13 15:11:03  mharris
  * More NO_NETWORK ifndefs added
  *
@@ -191,24 +194,24 @@
  * $NoKeywords: $
  */
 
-#include "freespace.h"
-#include "pstypes.h"
-#include "object.h"
-#include "ship.h"
-#include "scoring.h"
-#include "player.h"
-#include "parselo.h"
-#include "medals.h"
-#include "localize.h"
-#include "missionparse.h"
+#include "freespace2/freespace.h"
+#include "globalincs/pstypes.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "stats/scoring.h"
+#include "playerman/player.h"
+#include "parse/parselo.h"
+#include "stats/medals.h"
+#include "localization/localize.h"
+#include "mission/missionparse.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
-#include "multiutil.h"
-#include "multimsgs.h"
-#include "multi_team.h"
-#include "multi_dogfight.h"
-#include "multi_pmsg.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
+#include "network/multi_team.h"
+#include "network/multi_dogfight.h"
+#include "network/multi_pmsg.h"
 #endif
 
 // what percent of points of total damage to a ship a player has to have done to get an assist (or a kill) when it is killed

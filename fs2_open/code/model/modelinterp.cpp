@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-10 18:42:14 $
- * $Author: wmcoolmon $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:07 $
+ * $Author: penguin $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/10 18:42:14  wmcoolmon
+ * Added  Bobboau's glow code; all comments include "-Bobboau"
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -232,27 +235,27 @@
 
 #define MODEL_LIB
 
-#include "pstypes.h"
-#include "2d.h"
-#include "3d.h"
-#include "model.h"
-#include "tmapper.h"
-#include "floating.h"
-#include "fvi.h"
-#include "lighting.h"
-#include "modelsinc.h"
-#include "fireballs.h"
-#include "fix.h"
-#include "bmpman.h"
-#include "systemvars.h"
-#include "key.h"
-#include "3dinternal.h"
-#include "timer.h"
-#include "grinternal.h"
-#include "palman.h"
-#include "object.h"			// For MAX_OBJECTS
-#include "missionparse.h"
-#include "neb.h"
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
+#include "render/3d.h"
+#include "model/model.h"
+#include "graphics/tmapper.h"
+#include "math/floating.h"
+#include "math/fvi.h"
+#include "lighting/lighting.h"
+#include "model/modelsinc.h"
+#include "fireball/fireballs.h"
+#include "math/fix.h"
+#include "bmpman/bmpman.h"
+#include "globalincs/systemvars.h"
+#include "io/key.h"
+#include "render/3dinternal.h"
+#include "io/timer.h"
+#include "graphics/grinternal.h"
+#include "palman/palman.h"
+#include "object/object.h"			// For MAX_OBJECTS
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
 
 
 // Some debug variables used externally for displaying stats

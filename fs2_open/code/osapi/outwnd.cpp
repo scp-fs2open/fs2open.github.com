@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/09 13:52:26  mharris
  * Removed dead test code
  *
@@ -130,13 +133,13 @@
 #include <winioctl.h>
 #include <conio.h>
 
-#include "osapi.h"
-#include "outwnd.h"
-#include "cfile.h"
-#include "monopub.h"
-#include "2d.h"
-#include "freespaceresource.h"
-#include "systemvars.h"
+#include "osapi/osapi.h"
+#include "osapi/outwnd.h"
+#include "cfile/cfile.h"
+#include "osapi/monopub.h"
+#include "graphics/2d.h"
+#include "freespace2/freespaceresource.h"
+#include "globalincs/systemvars.h"
 
 #define MAX_FILTERS 48
 #define SCROLL_BUFFER_SIZE	512

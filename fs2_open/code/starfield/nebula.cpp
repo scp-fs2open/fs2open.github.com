@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:10 $
  * $Author: penguin $
  *
  * Code to load & display nebulas
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -123,23 +126,23 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "floating.h"
-#include "vecmat.h"
-#include "3d.h"
-#include "2d.h"
-#include "starfield.h"
-#include "bmpman.h"
-#include "key.h"
-#include "freespace.h"	
-#include "timer.h"
-#include "nebula.h"
-#include "palman.h"
-#include "cfile.h"
-#include "linklist.h"
-#include "2d.h"
-#include "missionparse.h"
-#include "neb.h"
+#include "globalincs/pstypes.h"
+#include "math/floating.h"
+#include "math/vecmat.h"
+#include "render/3d.h"
+#include "graphics/2d.h"
+#include "starfield/starfield.h"
+#include "bmpman/bmpman.h"
+#include "io/key.h"
+#include "freespace2/freespace.h"	
+#include "io/timer.h"
+#include "starfield/nebula.h"
+#include "palman/palman.h"
+#include "cfile/cfile.h"
+#include "globalincs/linklist.h"
+#include "graphics/2d.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
 
 #define MAX_TRIS 200
 #define MAX_POINTS 300

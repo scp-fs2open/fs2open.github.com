@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-29 06:35:15 $
- * $Author: DTP $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-01 01:41:04 $
+ * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/29 06:35:15  DTP
+ * added -almission commandline arguement, will autoload mission i.e fs2_open.exe -almission kickass will autoload kickass.fs2 which should be a multiplayer mission.
+ *
  * Revision 2.1  2002/07/07 19:55:58  penguin
  * Back-port to MSVC
  *
@@ -202,12 +205,12 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "pstypes.h"
-#include "cmdline.h"
-#include "linklist.h"
-#include "systemvars.h"
-#include "multi.h"
-#include "cfile.h"
+#include "globalincs/pstypes.h"
+#include "cmdline/cmdline.h"
+#include "globalincs/linklist.h"
+#include "globalincs/systemvars.h"
+#include "network/multi.h"
+#include "cfile/cfile.h"
 
 // variables
 class cmdline_parm {

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:07 $
  * $Author: penguin $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/13 21:09:28  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -258,29 +261,29 @@
  * $NoKeywords: $
  */
 
-#include "pstypes.h"
-#include "parselo.h"
-#include "cfile.h"
-#include "sound.h"
-#include "audiostr.h"
-#include "missionmessage.h"
-#include "missiongoals.h"
-#include "missionparse.h"
-#include "timer.h"
-#include "controlsconfig.h"
-#include "sexp.h"
-#include "2d.h"
-#include "hudtarget.h"
-#include "freespace.h"
-#include "hud.h"
-#include "bmpman.h"
-#include "hudconfig.h"
-#include	"player.h"
-#include "popup.h"
-#include "gamesequence.h"
-#include "emp.h"
-#include "alphacolors.h"
-#include "multi.h"
+#include "globalincs/pstypes.h"
+#include "parse/parselo.h"
+#include "cfile/cfile.h"
+#include "sound/sound.h"
+#include "sound/audiostr.h"
+#include "mission/missionmessage.h"
+#include "mission/missiongoals.h"
+#include "mission/missionparse.h"
+#include "io/timer.h"
+#include "controlconfig/controlsconfig.h"
+#include "parse/sexp.h"
+#include "graphics/2d.h"
+#include "hud/hudtarget.h"
+#include "freespace2/freespace.h"
+#include "hud/hud.h"
+#include "bmpman/bmpman.h"
+#include "hud/hudconfig.h"
+#include	"playerman/player.h"
+#include "popup/popup.h"
+#include "gamesequence/gamesequence.h"
+#include "weapon/emp.h"
+#include "globalincs/alphacolors.h"
+#include "network/multi.h"
 
 #define MAX_TRAINING_MSG_LINES		10
 //#define TRAINING_MSG_WINDOW_X			174

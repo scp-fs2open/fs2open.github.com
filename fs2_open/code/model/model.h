@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.3 $
- * $Date: 2002-07-29 08:31:52 $
- * $Author: DTP $
+ * $Revision: 2.4 $
+ * $Date: 2002-08-01 01:41:07 $
+ * $Author: penguin $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/07/29 08:31:52  DTP
+ * Forgot to Bump MAX_MODEL_SUBSYSTEMS from 128 to 200
+ *
  * Revision 2.2  2002/07/29 08:28:00  DTP
  * BUMPED MAX_POLYGON_MODELS TO 198 , MAX_SHIP_TYPES - 2 = 198
  *
@@ -281,7 +284,7 @@
 #ifndef _MODEL_H
 #define _MODEL_H
 
-#include "pstypes.h"
+#include "globalincs/pstypes.h"
 
 struct object;
 

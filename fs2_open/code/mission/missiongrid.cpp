@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGrid.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * C module for grid specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:09  mharris
  * got some stuff to compile
  *
@@ -53,13 +56,13 @@
  * $NoKeywords: $
  */
 
-#include "physics.h"
-#include "key.h"
-#include "missiongrid.h"
-#include "fvi.h"
+#include "physics/physics.h"
+#include "io/key.h"
+#include "mission/missiongrid.h"
+#include "math/fvi.h"
 #include "float.h"
-#include "3d.h"
-#include "2d.h"
+#include "render/3d.h"
+#include "graphics/2d.h"
 
 grid	Global_grid;
 grid	*The_grid;

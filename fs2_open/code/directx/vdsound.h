@@ -10,7 +10,7 @@
 #ifndef __DSOUND_INCLUDED__
 #define __DSOUND_INCLUDED__
 
-#include "vd3dtypes.h"
+#include "directx/vd3dtypes.h"
 
 #define COM_NO_WINDOWS_H
 #include <objbase.h>

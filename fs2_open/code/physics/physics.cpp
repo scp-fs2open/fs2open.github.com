@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:09 $
  * $Author: penguin $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:09  mharris
  * got some stuff to compile
  *
@@ -362,13 +365,13 @@
 #include <string.h>
 #include <math.h>
 
-#include "physics.h"
-#include "floating.h"
-#include "player.h"
-#include "freespace.h"
-#include "linklist.h"
-#include "timer.h"
-#include "key.h"
+#include "physics/physics.h"
+#include "math/floating.h"
+#include "playerman/player.h"
+#include "freespace2/freespace.h"
+#include "globalincs/linklist.h"
+#include "io/timer.h"
+#include "io/key.h"
 
 // defines for physics functions
 #define	MAX_TURN_LIMIT	0.2618f		// about 15 degrees

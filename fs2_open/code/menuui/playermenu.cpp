@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-01 01:41:06 $
  * $Author: penguin $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/10 20:42:44  mharris
  * use "ifndef NO_NETWORK" all over the place
  *
@@ -172,31 +175,31 @@
 
 #include <ctype.h>
 
-#include "playermenu.h"
-#include "2d.h"
-#include "ui.h"
-#include "gamesnd.h"
-#include "player.h"
-#include "cfile.h"
-#include "key.h"
-#include "managepilot.h"
-#include "missionscreencommon.h"
-#include "bmpman.h"
-#include "freespace.h"
-#include "parselo.h"
-#include "gamesequence.h"
-#include "timer.h"
-#include "cmdline.h"
-#include "osregistry.h"
-#include "palman.h"
-#include "mainhallmenu.h"
-#include "popup.h"
-#include "mouse.h"
-#include "alphacolors.h"
-#include "localize.h"
+#include "menuui/playermenu.h"
+#include "graphics/2d.h"
+#include "ui/ui.h"
+#include "gamesnd/gamesnd.h"
+#include "playerman/player.h"
+#include "cfile/cfile.h"
+#include "io/key.h"
+#include "playerman/managepilot.h"
+#include "missionui/missionscreencommon.h"
+#include "bmpman/bmpman.h"
+#include "freespace2/freespace.h"
+#include "parse/parselo.h"
+#include "gamesequence/gamesequence.h"
+#include "io/timer.h"
+#include "cmdline/cmdline.h"
+#include "osapi/osregistry.h"
+#include "palman/palman.h"
+#include "menuui/mainhallmenu.h"
+#include "popup/popup.h"
+#include "io/mouse.h"
+#include "globalincs/alphacolors.h"
+#include "localization/localize.h"
 
 #ifndef NO_NETWORK
-#include "multi.h"
+#include "network/multi.h"
 #endif
 
 // --------------------------------------------------------------------------------------------------------
