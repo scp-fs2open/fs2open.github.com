@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.71 $
- * $Date: 2003-09-05 04:48:03 $
+ * $Revision: 2.72 $
+ * $Date: 2003-09-05 05:06:32 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2003/09/05 04:48:03  Goober5000
+ * merge of Phreak's and my sexp.cpp
+ * --Goober5000
+ *
  * Revision 2.70  2003/09/05 02:15:34  phreak
  * fixed a small bug in num-ships-in-battle-team
  * added an option to loop sounds played by play-sound-from-file
@@ -843,8 +847,7 @@ sexp_oper Operators[] = {
 	{ "set-unscanned",				OP_SET_UNSCANNED,					1, 2 },
 	{ "lock-rotating-subsystem",	OP_LOCK_ROTATING_SUBSYSTEM,	2, INT_MAX },	// Goober5000
 	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM, 2, INT_MAX },	// Goober5000
-	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,		0,0},
-	{ "num-ships-in-battle-team",	OP_NUM_SHIPS_IN_BATTLE_TEAM, 1,1},
+	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,		0,	1},			//phreak
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",				OP_SHIP_VULNERABLE,				1, INT_MAX	},
@@ -3339,52 +3342,53 @@ int sexp_equal(int n)
 	return 0;
 }
 
-
-//return the number of ships of a given team in the area battle 
-int sexp_num_ships_in_battle_team(int n)
-{
-	char* c_team;
-	int team;
-	int count=0;
-	ship_obj	*so;
-	ship *shipp;
-	object* objp;
-
-	c_team = CTEXT(n);
-
-	if ( !stricmp(c_team, "friendly") )
-		team = TEAM_FRIENDLY;
-	else if ( !stricmp(c_team, "hostile") )
-		team = TEAM_HOSTILE;
-	else if ( !stricmp(c_team, "neutral") )
-		team = TEAM_NEUTRAL;
-	else if ( !stricmp(c_team, "unknown") )
-		team = TEAM_UNKNOWN;
-	else 
-		team=TEAM_FRIENDLY;
-
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		objp=&Objects[so->objnum];
-		shipp=&Ships[objp->instance];
-		if (shipp->team==team)
-			count++;
-	}
-
-	return count;
-}
-
+//return the number of ships of a given team in the area battle
 int sexp_num_ships_in_battle(int n)
 {
+	char* c_team;
+	int team=-1;
 	int count=0;
-	ship_obj* so;
+	ship_obj	*so;
+	ship		*shipp;
 
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		count++;
+	if (n != -1)
+	{
+		c_team = CTEXT(n);
+
+		if ( !stricmp(c_team, "friendly") )
+			team = TEAM_FRIENDLY;
+		else if ( !stricmp(c_team, "hostile") )
+			team = TEAM_HOSTILE;
+		else if ( !stricmp(c_team, "neutral") )
+			team = TEAM_NEUTRAL;
+		else if ( !stricmp(c_team, "unknown") )
+			team = TEAM_UNKNOWN;
+		else
+			team = TEAM_FRIENDLY;
+	}
+
+	// iterate through all ships
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
+	{
+		shipp=&Ships[Objects[so->objnum].instance];
+
+		// merging of team and non-team sexps
+		if (team != -1)
+		{
+			// oddly enough, ships can be on multiple teams
+			if (shipp->team & team)
+			{
+				count++;
+			}
+		}
+		else
+		{
+			count++;
+		}
 	}
 
 	return count;
 }
-
 
 // Evaluate if given ship is destroyed.
 //	Return true if the ship in the expression has been destroyed.
@@ -11635,10 +11639,6 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
-			case OP_NUM_SHIPS_IN_BATTLE_TEAM:
-				sexp_val=sexp_num_ships_in_battle_team(node);
-				break;
-
 			case OP_NUM_SHIPS_IN_BATTLE:
 				sexp_val=sexp_num_ships_in_battle(node);
 				break;
@@ -11896,7 +11896,6 @@ int query_operator_return_type(int op)
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_SHIP_VISIBLE:
 		case OP_TEAM_SCORE:
-		case OP_NUM_SHIPS_IN_BATTLE_TEAM:
 		case OP_NUM_SHIPS_IN_BATTLE:
 			return OPR_POSITIVE;
 
@@ -12913,12 +12912,8 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP;
 
-		case OP_NUM_SHIPS_IN_BATTLE_TEAM:
-			return OPF_IFF;
-		
 		case OP_NUM_SHIPS_IN_BATTLE:
-			return OPF_NONE;
-
+			return OPF_IFF;
 
 		default:
 			Int3();

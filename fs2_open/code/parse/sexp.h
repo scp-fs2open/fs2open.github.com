@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.50 $
+ * $Revision: 2.51 $
  * $Author: Goober5000 $
- * $Date: 2003-09-05 04:39:55 $
+ * $Date: 2003-09-05 05:06:32 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2003/09/05 04:39:55  Goober5000
+ * merge of Phreak's and my sexp.h
+ * --Goober5000
+ *
  * Revision 2.49  2003/08/30 21:59:48  phreak
  * added num-ships-in-battle and num-ships-in-battle-team sexp
  *
@@ -752,7 +756,6 @@
 #define OP_IS_SHIP_TYPE						(0x0026 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_SHIP_CLASS					(0x0027	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_NUM_SHIPS_IN_BATTLE				(0x0028 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
-#define OP_NUM_SHIPS_IN_BATTLE_TEAM			(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
