@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-01-19 01:07:41 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-02 05:43:48 $
+ * $Author: penguin $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/19 01:07:41  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -627,7 +630,7 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, in
 				g /= Gr_ta_green.scale;
 				b /= Gr_ta_blue.scale;
 				a /= Gr_ta_alpha.scale;
-				xlat[i] = unsigned short(((a<<Gr_ta_alpha.shift) | (r << Gr_ta_red.shift) | (g << Gr_ta_green.shift) | (b << Gr_ta_blue.shift)));
+				xlat[i] = (unsigned short)(((a<<Gr_ta_alpha.shift) | (r << Gr_ta_red.shift) | (g << Gr_ta_green.shift) | (b << Gr_ta_blue.shift)));
 			}			
 			
 			xlat[15] = xlat[1];			
