@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-11-14 04:18:17 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-02 06:04:00 $
+ * $Author: penguin $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/11/14 04:18:17  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * 
  * 6     6/03/99 6:37p Dave
  * More TNT fun. Made perspective bitmaps more flexible.
@@ -194,6 +199,30 @@ int Outwnd_no_filter_file = 0;		// 0 = .cfg file found, 1 = not found and warnin
 	FILE *Log_fp;
 	char *Freespace_logfilename = "fs.log";
 #endif
+
+
+#ifndef _MSC_VER
+inline void _outp(unsigned short port, unsigned char value)
+{
+	asm(
+		 "mov %0,%%al;"
+		 "mov %1,%%dx;"
+		 "out %%al,%%dx;"
+		 : : "g" (value), "g" (port) : "al", "dx");
+}
+
+inline unsigned char _inp(unsigned short port)
+{
+	unsigned char value;
+	asm(
+		 "mov %1,%%dx;"
+		 "in  %%dx,%%al;"
+		 "mov %%al,%0"
+		 : "=g"(value) : "g" (port) : "al", "dx");
+	return value;
+}
+#endif
+
 
 inline void text_hilight(HDC &hdc)
 {
