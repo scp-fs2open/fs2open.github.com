@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-04-03 18:11:20 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2004-05-01 21:53:39 $
+ * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/04/03 18:11:20  Kazan
+ * FRED fixes
+ *
  * Revision 2.7  2004/02/25 05:53:32  Goober5000
  * added DONT_SHOW_WARNINGS compile branch
  * --Goober5000
@@ -1497,6 +1500,10 @@ char *vm_strdup( const char *ptr )
 	#else
 		dst = (char *)vm_malloc( len+1 );
 	#endif
+
+	if (!dst)
+		return NULL;
+
 	strcpy( dst, ptr );
 	return dst;
 }
