@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.91 $
- * $Date: 2005-01-30 12:50:08 $
+ * $Revision: 2.92 $
+ * $Date: 2005-01-30 14:09:29 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2005/01/30 12:50:08  taylor
+ * merge with Linux/OSX tree - p0130
+ *
  * Revision 2.90  2005/01/29 16:30:47  phreak
  * smart shield command line stuff.  this will be changed in the future, but i want people to test it.
  * -phreak
@@ -718,7 +721,7 @@ Flag exe_params[] =
 	"-smart_shields", "Enable Smart Shields",			true,	0,					EASY_DEFAULT,		"Gameplay",		"",
 
 	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.snd_preload",
-	"-noaudio",		  "Disable sound and music",		false,	0,					EASY_DEFAULT,		"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nosound",
+	"-nosound",		  "Disable sound and music",		false,	0,					EASY_DEFAULT,		"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nosound",
 	"-nomusic",		  "Disable music",					false,	0,					EASY_DEFAULT,		"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nomusic",
 
 	"-standalone",	  "",								false,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.standalone", 
