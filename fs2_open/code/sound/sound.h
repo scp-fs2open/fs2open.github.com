@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-10-25 20:42:19 $
+ * $Author: phreak $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/24 15:38:55  mharris
  * Fixed boneheaded mistake in #defines for NO_JOYSTICK and NO_SOUND
  *
@@ -207,7 +210,11 @@
 #ifndef __SOUND_H__
 #define __SOUND_H__
 
+#ifdef INF_BUILD
+#define MAX_SOUNDS 400
+#else
 #define MAX_SOUNDS	256
+#endif
 
 // Used for keeping track which low-level sound library is being used
 #define SOUND_LIB_DIRECTSOUND		0
