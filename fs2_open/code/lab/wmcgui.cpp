@@ -783,9 +783,13 @@ void Window::CalculateSize()
 	ChildCoords[3] = Coords[3] - BorderSizes[3];
 
 	if(!(Style & GS_NOAUTORESIZEX))
-		Coords[2] = 0;
+	{
+		ChildCoords[2] = Coords[2] = 0;
+	}
 	if(!(Style & GS_NOAUTORESIZEY))
-		Coords[3] = 0;
+	{
+		ChildCoords[3] = Coords[3] = 0;
+	}
 
 	for(GUIObject *cgp = (GUIObject*)GET_FIRST(&Children); cgp != END_OF_LIST(&Children); cgp = (GUIObject*)GET_NEXT(cgp))
 	{
@@ -796,12 +800,12 @@ void Window::CalculateSize()
 			cgp->SetPosition(cgp->Coords[0], Coords[1] + BorderSizes[1]);
 
 		//Resize window to fit children
-		if(cgp->Coords[2] >= ChildCoords[2] && !(Style & GS_NOAUTORESIZEX))
+		if(cgp->Coords[2] > ChildCoords[2] && !(Style & GS_NOAUTORESIZEX))
 		{
 			ChildCoords[2] = cgp->Coords[2];
 			Coords[2] = cgp->Coords[2] + BorderSizes[2];
 		}
-		if(cgp->Coords[3] >= ChildCoords[3] && !(Style & GS_NOAUTORESIZEY))
+		if(cgp->Coords[3] > ChildCoords[3] && !(Style & GS_NOAUTORESIZEY))
 		{
 			ChildCoords[3] = cgp->Coords[3];
 			Coords[3] = cgp->Coords[3] + BorderSizes[3];
@@ -860,12 +864,18 @@ void Window::CalculateSize()
 	float num;
 	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM) != -1)
 	{
-		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM));
 		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), &w, &h);
 		num = (float)((Coords[2]-CornerWidths[3])-(Coords[0]+CornerWidths[2])) / (float)w;
 		BorderRectLists[CIE_HANDLE_BM].resize(1);
-		BorderRectLists[CIE_HANDLE_BM][0] = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[3]-h, fl2i(Coords[0]+CornerWidths[2]+w*num),h,0,0,num,1.0f);
+		BorderRectLists[CIE_HANDLE_BM][0] = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[3]-h, fl2i(w*num),h,0,0,num,1.0f);
 		//gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
+	}
+	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML) != -1)
+	{
+		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &w, &h);
+		num = (float)((Coords[3]-BorderSizes[3])-(Coords[1]+BorderSizes[1])) / (float)h;
+		BorderRectLists[CIE_HANDLE_ML].resize(1);
+		BorderRectLists[CIE_HANDLE_ML][0] = bitmap_rect_list(Coords[0], Coords[1] + BorderSizes[1], w,fl2i(h*num),0,0,1.0f,num);
 	}
 
 	if(Parent!=NULL)Parent->CalculateSize();
@@ -966,6 +976,18 @@ void Window::DoMove(int dx, int dy)
 	CaptionCoords[1] += dy;
 	CaptionCoords[2] += dx;
 	CaptionCoords[3] += dy;
+
+	//Handle moving the border around
+	uint j,size;
+	for(uint i = 0; i < 8; i++)
+	{
+		size=BorderRectLists[i].size();
+		for(j=0; j<size; j++)
+		{
+			BorderRectLists[i][j].screen_rect.x +=dx;
+			BorderRectLists[i][j].screen_rect.y += dy;
+		}
+	}
 }
 
 void draw_open_rect(int x1, int y1, int x2, int y2, bool resize = false)
@@ -1046,22 +1068,10 @@ void Window::DoDraw(float frametime)
 
 	if(!(Style & GS_HIDDEN))
 	{
-		if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML) != -1)
+		if(BorderRectLists[CIE_HANDLE_ML].size())
 		{
-			bmlist.clear();
 			gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML));
-			bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &w, &h);
-			num = ((Coords[3]-BorderSizes[3])-(Coords[1]+BorderSizes[1])) / h;
-			b2l.w = w;
-			b2l.h = h;
-			b2l.x = Coords[0];
-			for(i = 0; i < num; i++)
-			{
-				b2l.y = Coords[1] + BorderSizes[1] + h*i;
-				bmlist.push_back(b2l);
-			}
-			gr_bitmap_list(&bmlist[0], bmlist.size(), false);
-			//gr_bitmap(Coords[0], Coords[1] + BorderSizes[1]);
+		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_ML][0], BorderRectLists[CIE_HANDLE_ML].size(), false);
 		}
 		else
 		{
