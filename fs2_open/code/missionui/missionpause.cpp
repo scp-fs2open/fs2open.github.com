@@ -9,15 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-10-22 17:42:09 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-18 10:07:04 $
+ * $Author: unknownplayer $
  * 
- *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/22 17:42:09  randomtiger
+ * Fixed lighting bug that caused special pause to crash on debug build.
+ * Also added TAB functionality for special pause that toggles HUD. - RT
+ *
  * Revision 2.2  2002/10/19 03:50:29  randomtiger
  * Added special pause mode for easier action screenshots.
  * Added new command line parameter for accessing all single missions in tech room. - RT
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
@@ -60,6 +69,7 @@
 #include "globalincs/alphacolors.h"
 #include "weapon/beam.h"	
 #include "controlconfig/controlsconfig.h"
+#include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi_pause.h"

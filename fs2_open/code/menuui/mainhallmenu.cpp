@@ -9,15 +9,40 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-01-15 21:29:04 $
- * $Author: anonymous $
+ * $Revision: 2.7 $
+ * $Date: 2003-03-18 10:07:03 $
+ * $Author: unknownplayer $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/01/15 21:29:04  anonymous
+ * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
+ *
  * Revision 2.5  2002/08/27 13:38:58  penguin
  * Moved DirectX8 stuff to directx8 branch; reverted to previous
+ *
+ * Revision 2.3.2.4  2002/09/24 18:56:43  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+ * Revision 2.3.2.2  2002/08/28 12:39:36  randomtiger
+ * OK, this should be a commit to the DX branch or Im going to be in a lot of trouble.
+ * The movie and dx8show files have been cleaned up big time.
+ * My debug system is in but has NO EFFECT at all unless a compiler flag is turned on, check h file for details.
+ * Aside from that a few changes to help the movie code work properly.
+ * Works on most things including GF4 and Voodoo 3. However may not work properly on a voodoo 2.
+ * Im going to leave this as a bug for now, serves you right for buying voodoo!
+ *
+ * Revision 2.3.2.1  2002/08/27 13:22:11  penguin
+ * Moved to directx8 branch
+ *
+ * Revision 2.4  2002/08/18 19:48:29  randomtiger
+ * Added new lib files: strmiids and ddraw to get dshow working
+ * Added new command line parameter to active direct show movie play: -dshowvid
+ * Uncommented movie_play calls and includes
  *
  * Revision 2.3  2002/08/04 05:12:10  penguin
  * Change version display location
@@ -349,6 +374,8 @@
 #include "globalincs/alphacolors.h"
 #include "demo/demo.h"
 #include "menuui/fishtank.h"
+#include "cutscene/movie.h"
+#include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multiui.h"
@@ -356,8 +383,6 @@
 #include "network/multi_voice.h"
 #include "network/multi.h"
 #endif
-
-// #include "movie.h"
 
 // ----------------------------------------------------------------------------
 // MAIN HALL DATA DEFINES
@@ -1061,11 +1086,11 @@ void main_hall_do(float frametime)
 #ifndef NDEBUG	
 	case KEY_1:		
 		// no soup for you!
-		// movie_play("endprt2b.mve", 0);
+		movie_play("endprt2b.mve", 0);
 		break;
 	case KEY_2:		
 		// no soup for you!
-		// movie_play_two("endprt2a.mve", "endprt2b.mve", 0);
+		movie_play_two("endprt2a.mve", "endprt2b.mve", 0);
 		break;
 	case KEY_3:		
 		main_hall_campaign_cheat();	
@@ -1607,7 +1632,8 @@ void main_hall_render_door_anims(float frametime)
 	int idx;	
 
 	// render all door animations
-	for(idx=0;idx<MAX_DOOR_ANIMATIONS;idx++){		
+	for(idx=0;idx<MAX_DOOR_ANIMATIONS;idx++){  
+		
 		// render it
 		if(Main_hall_door_anim_instance[idx] != NULL){
 			anim_render_one(GS_STATE_MAIN_MENU,Main_hall_door_anim_instance[idx],frametime);

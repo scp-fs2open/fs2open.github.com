@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-01-14 04:00:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-18 10:07:03 $
+ * $Author: unknownplayer $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/14 04:00:15  Goober5000
+ * allowed for up to 256 main halls
+ * --Goober5000
+ *
+ * Revision 2.2.2.1  2002/09/24 18:56:43  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
  * Revision 2.2  2002/08/04 05:12:42  penguin
  * Display fs2_open version instead of "Freespace 2"
  *
@@ -203,6 +213,7 @@
 #include "io/mouse.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

@@ -9,15 +9,49 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-02 05:41:52 $
- * $Author: penguin $
+ * $Revision: 2.6 $
+ * $Date: 2003-03-18 10:07:02 $
+ * $Author: unknownplayer $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/02 05:41:52  penguin
+ * Added some #ifndef NO_SOFTWARE_RENDERING
+ *  - penguin
+ *
  * Revision 2.4  2002/11/18 21:32:11  phreak
  * added some ogl functionality - phreak
+ *
+ * Revision 2.3.2.9  2002/11/09 19:28:15  randomtiger
+ *
+ * Fixed small gfx initialisation bug that wasnt actually causing any problems.
+ * Tided DX code, shifted stuff around, removed some stuff and documented some stuff.
+ *
+ * Revision 2.3.2.8  2002/10/16 00:41:38  randomtiger
+ * Fixed small bug that was stopping unactive text from displaying greyed out
+ * Also added ability to run FS2 DX8 in 640x480, however I needed to make a small change to 2d.cpp
+ * which invloved calling the resolution processing code after initialising the device for D3D only.
+ * This is because D3D8 for the moment has its own internal launcher.
+ * Also I added a fair bit of documentation and tidied some stuff up. - RT
+ *
+ * Revision 2.3.2.7  2002/10/11 18:50:54  randomtiger
+ * Checked in fix for 16 bit problem, thanks to Righteous1
+ * Removed a fair bit of code that was used by the 16 bit code path which no longer exists.
+ * 32 bit and 16 bit should now work in exactly the same way. - RT
+ *
+ * Revision 2.3.2.6  2002/10/02 11:40:19  randomtiger
+ * Bmpmap has been reverted to an old non d3d8 version.
+ * All d3d8 code is now in the proper place.
+ * PCX code is now working to an extent. Problems with alpha though.
+ * Ani's work slowly with alpha problems.
+ * Also I have done a bit of tidying - RT
+ *
+ * Revision 2.3.2.5  2002/09/24 18:56:42  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.3  2002/08/01 01:41:04  penguin
  * The big include file move
@@ -470,6 +504,7 @@
 #include "graphics/grinternal.h"
 #include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
+#include "debugconsole/dbugfile.h"
 
 // 3dnow stuff
 // #include "amd3d.h"
@@ -878,22 +913,70 @@ void gr_detect_cpu(int *cpu, int *mmx, int *amd3d, int *katmai )
 
 // --------------------------------------------------------------------------
 
+// RT Created because D3D8 resolution is chosen in the D3D init function not from the launcher
+// Everything but D3D calls this before device initialisation
+void gr_init_res(int res, int mode, int fred_x, int fred_y)
+{
+	int max_w, max_h;
+
+	max_w = -1;
+	max_h = -1;
+	if(!Fred_running && !Pofview_running){
+		// set resolution based on the res type
+		switch(res){
+		case GR_640:
+			max_w = 640;
+			max_h = 480;
+			break;
+
+		case GR_1024:
+			max_w = 1024;
+			max_h = 768;
+			break;
+
+		default :
+			Int3();
+		}
+	} else {		
+		max_w = fred_x;
+		max_h = fred_y;
+
+		// Make w a multiple of 8
+		max_w = ( max_w / 8 )*8;
+		if ( max_w < 8 ) max_w = 8;
+		if ( max_h < 8 ) max_h = 8;
+	}
+
+	gr_screen.signature = Gr_signature++;
+	gr_screen.mode = mode;
+	gr_screen.res = res;	
+	gr_screen.max_w = max_w;
+	gr_screen.max_h = max_h;
+	gr_screen.aspect = 1.0f;			// Normal PC screen
+	gr_screen.offset_x = 0;
+	gr_screen.offset_y = 0;
+	gr_screen.clip_left = 0;
+	gr_screen.clip_top = 0;
+	gr_screen.clip_right = gr_screen.max_w - 1;
+	gr_screen.clip_bottom = gr_screen.max_h - 1;
+	gr_screen.clip_width = gr_screen.max_w;
+	gr_screen.clip_height = gr_screen.max_h;
+}
+
 int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 {
 	int first_time = 0;
-	int max_w, max_h;
 
 	gr_detect_cpu(&Gr_cpu, &Gr_mmx, &Gr_amd3d, &Gr_katmai );
 
 	mprintf(( "GR_CPU: Family %d, MMX=%s\n", Gr_cpu, (Gr_mmx?"Yes":"No") ));
 	
-//	gr_test();
-
 	if ( !Gr_inited )	
 		atexit(gr_close);
 
 	// If already inited, shutdown the previous graphics
 	if ( Gr_inited )	{
+		DBUGFILE_OUTPUT_0("Shutting dwon previous gfx system");
 		switch( gr_screen.mode )	{
 #ifdef _WIN32
 		case GR_DIRECTDRAW:
@@ -901,11 +984,7 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 			gr_directdraw_cleanup();
 			break;
 		case GR_DIRECT3D:
-#ifdef USE_DX81
-			// TODO: Add Dx8.1 clean up call here - unknownplayer
-#else
 			gr_d3d_cleanup();
-#endif	// USE_DX81 //
 			break;
 		case GR_GLIDE:
 			gr_glide_cleanup();
@@ -943,52 +1022,13 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 	D3D_enabled = 0;
 	Gr_inited = 1;
 
-	max_w = -1;
-	max_h = -1;
-	if(!Fred_running && !Pofview_running){
-		// set resolution based on the res type
-		switch(res){
-		case GR_640:
-			max_w = 640;
-			max_h = 480;
-			break;
-
-		case GR_1024:
-			max_w = 1024;
-			max_h = 768;
-			break;
-
-		default :
-			Int3();
-		}
-	} else {		
-		max_w = fred_x;
-		max_h = fred_y;
-	}
-
-	// Make w a multiple of 8
-	max_w = ( max_w / 8 )*8;
-	if ( max_w < 8 ) max_w = 8;
-	if ( max_h < 8 ) max_h = 8;
-
+	// Moved memset to out here so its not all scrubbed when D3D8 needs to call it again to revise 
+	// the mode selection through its own launcher
 	memset( &gr_screen, 0, sizeof(screen) );
+	gr_init_res(res, mode, fred_x, fred_y);
 
-	gr_screen.signature = Gr_signature++;
-	gr_screen.mode = mode;
-	gr_screen.res = res;	
-	gr_screen.max_w = max_w;
-	gr_screen.max_h = max_h;
-	gr_screen.aspect = 1.0f;			// Normal PC screen
-	gr_screen.offset_x = 0;
-	gr_screen.offset_y = 0;
-	gr_screen.clip_left = 0;
-	gr_screen.clip_top = 0;
-	gr_screen.clip_right = gr_screen.max_w - 1;
-	gr_screen.clip_bottom = gr_screen.max_h - 1;
-	gr_screen.clip_width = gr_screen.max_w;
-	gr_screen.clip_height = gr_screen.max_h;
-
-	switch( gr_screen.mode )	{
+	DBUGFILE_OUTPUT_1("About to init %d", mode);
+	switch( mode )	{
 #ifdef _WIN32
 		// directdraw, direct3d, 
 		case GR_DIRECTDRAW:
@@ -998,9 +1038,6 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 		case GR_DIRECT3D:
 // Check if we want to use the DX8.1 routines - unknownplayer
 // This is here so we can revert to the old ones if necessary
-#ifdef USE_DX81
-			// TODO: Insert new initialization for DX8.1 here - unknownplayer
-#else
 			// we only care about possible 32 bit stuff here
 			Cmdline_force_32bit = 0;
 			if(depth == 32)
@@ -1008,16 +1045,12 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 				Cmdline_force_32bit = 1;
 			} 
 
-			gr_d3d_init();
-
-			// bad startup - stupid D3D
-			extern int D3D_inited;
-			if(!D3D_inited)
+			if(gr_d3d_init() == false)
 			{
+				DBUGFILE_OUTPUT_0("Bad startup");
 				Gr_inited = 0;
 				return 1;
 			}
-#endif	// USE_DX81 //
 			break;
 		case GR_GLIDE:
 			// if we're in high-res. force polygon interface
@@ -1239,11 +1272,14 @@ void gr_bitmap(int x, int y)
 
 		// render all sections
 		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL, &sections);
+
 		y_line = 0;
 		section_y = 0;
+
 		for(idx=0; idx<sections->num_y; idx++){
 			x_line = 0;
 			for(s_idx=0; s_idx<sections->num_x; s_idx++){
+
 				// get the section as a texture in vram					
 				gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha, s_idx, idx);
 
@@ -1251,7 +1287,8 @@ void gr_bitmap(int x, int y)
 				bm_get_section_size(gr_screen.current_bitmap, s_idx, idx, &section_x, &section_y);
 
 				// draw as a poly
-				g3_draw_2d_poly_bitmap(x + x_line, y + y_line, section_x, section_y, TMAP_FLAG_BITMAP_SECTION);
+				// RT draws all hall interface stuff
+			   	g3_draw_2d_poly_bitmap(x + x_line, y + y_line, section_x, section_y, TMAP_FLAG_BITMAP_SECTION);
 				x_line += section_x;
 			}
 			y_line += section_y;
@@ -1268,10 +1305,6 @@ void gr_bitmap(int x, int y)
 		grx_bitmap(x, y);
 		break;
 
-	case GR_DIRECT3D:
-		gr_d3d_bitmap(x, y);
-		break;
-	
 	case GR_GLIDE:		
 		gr_glide_bitmap(x, y);		
 		break;
@@ -1298,10 +1331,6 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy)
 #ifdef _WIN32
 	case GR_DIRECTDRAW:
 		grx_bitmap_ex(x, y, w, h, sx, sy);
-		break;
-
-	case GR_DIRECT3D:
-		gr_d3d_bitmap_ex(x, y, w, h, sx, sy);
 		break;
 
 	case GR_GLIDE:

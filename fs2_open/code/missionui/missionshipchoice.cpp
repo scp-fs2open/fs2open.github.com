@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-05 09:17:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-18 10:07:04 $
+ * $Author: unknownplayer $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/05 09:17:14  Goober5000
+ * cleaned out Bobboau's buggy code - about to rewrite with new, bug-free code :)
+ * --Goober5000
+ *
  * Revision 2.3  2003/02/25 06:22:48  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -24,6 +28,12 @@
  *
  * Revision 2.2  2002/12/15 06:50:49  DTP
  * FIX; player can now have all ships set in FRED2 as allowed playerships in singleplayer
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
@@ -419,6 +429,7 @@
 #include "hud/hudwingmanstatus.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

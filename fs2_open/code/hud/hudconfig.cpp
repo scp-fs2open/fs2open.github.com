@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-01-15 21:29:04 $
- * $Author: anonymous $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-18 10:07:03 $
+ * $Author: unknownplayer $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/15 21:29:04  anonymous
+ * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
+ *
+ * Revision 2.2.2.1  2002/09/24 18:56:43  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
  * Revision 2.2  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -274,6 +283,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "popup/popup.h"
+#include "debugconsole/dbugfile.h"
 
 
 //////////////////////////////////////////////////////////////////////////////

@@ -9,13 +9,44 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-08-27 13:38:57 $
- * $Author: penguin $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-18 10:07:01 $
+ * $Author: unknownplayer $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-18 10:07:01 $
+ * $Author: unknownplayer $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/08/27 13:38:57  penguin
+ * Moved DirectX8 stuff to directx8 branch; reverted to previous
+ *
+ * Revision 2.2.2.4  2002/09/24 18:56:41  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+ * Revision 2.2.2.3  2002/08/28 21:47:02  randomtiger
+ * Tiny change to DX branch to keep movie code optional (default off)
+ *
+ * Revision 2.2.2.2  2002/08/28 12:39:35  randomtiger
+ * OK, this should be a commit to the DX branch or Im going to be in a lot of trouble.
+ * The movie and dx8show files have been cleaned up big time.
+ * My debug system is in but has NO EFFECT at all unless a compiler flag is turned on, check h file for details.
+ * Aside from that a few changes to help the movie code work properly.
+ * Works on most things including GF4 and Voodoo 3. However may not work properly on a voodoo 2.
+ * Im going to leave this as a bug for now, serves you right for buying voodoo!
+ *
+ * Revision 2.2.2.1  2002/08/27 13:19:26  penguin
+ * Moved to directx8 branch
+ *
+ * Revision 2.3  2002/08/18 19:48:29  randomtiger
+ * Added new lib files: strmiids and ddraw to get dshow working
+ * Added new command line parameter to active direct show movie play: -dshowvid
+ * Uncommented movie_play calls and includes
+ *
  * Revision 2.2  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -161,11 +192,12 @@
 #include "freespace2/freespace.h"
 #include "io/key.h"
 #include "bmpman/bmpman.h"
-// #include "movie.h"
+#include "movie.h"
 #include "popup/popup.h"
 #include "menuui/mainhallmenu.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "debugconsole/dbugfile.h"
 
 char *Cutscene_bitmap_name[GR_NUM_RESOLUTIONS] = {
 	"ViewFootage",
@@ -425,7 +457,7 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 		if ( num_attempts++ > 5 ) {
 			cd_present = 0;
 			break;
-		}
+		}													   
 #else
 		cd_present = 0;
 		break;
@@ -436,7 +468,7 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 	return cd_present;
 #else  // !WIN32
 	return 0;
-#endif // ifdef WIN32
+#endif // ifdef WIN32	    
 }
 
 void cutscenes_screen_play()
@@ -451,15 +483,17 @@ void cutscenes_screen_play()
 	full_name = cf_add_ext(name, NOX(".mve"));
 
 	// no soup for you!
-	/*
+	gr_activate(0);
 	int rval = movie_play(full_name);
+	gr_activate(1);
+
 	if ( !rval ) {
 		char str[256];
 
 		sprintf(str, XSTR( "Unable to play movie %s.", 204), Cutscenes[which_cutscene].name );
 		popup(0, 1, POPUP_OK, str );
 	}
-	*/
+	
 }
 
 void cutscenes_screen_scroll_line_up()

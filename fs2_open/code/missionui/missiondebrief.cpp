@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-01-27 00:51:46 $
- * $Author: DTP $
+ * $Revision: 2.7 $
+ * $Date: 2003-03-18 10:07:04 $
+ * $Author: unknownplayer $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/01/27 00:51:46  DTP
+ * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still cant join. narrowing it down.
+ *
  * Revision 2.5  2003/01/14 04:00:16  Goober5000
  * allowed for up to 256 main halls
  * --Goober5000
@@ -26,6 +29,12 @@
  *
  * Revision 2.3  2002/12/09 08:37:31  Goober5000
  * fixed misspelling
+ *
+ * Revision 2.2.2.1  2002/09/24 18:56:44  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.2  2002/08/01 01:41:07  penguin
  * The big include file move
@@ -373,6 +382,7 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "osapi/osapi.h"
+#include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

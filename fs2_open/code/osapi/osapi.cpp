@@ -9,13 +9,35 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-03-02 06:01:55 $
- * $Author: penguin $
+ * $Revision: 2.7 $
+ * $Date: 2003-03-18 10:07:05 $
+ * $Author: unknownplayer $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/03/02 06:01:55  penguin
+ * Added #ifdef WIN32 and #ifdef MSC_VER
+ *  - penguin
+ * Revision 2.2.2.2  2002/10/03 08:32:08  unknownplayer
+ *
+ * Hacked in a windowed mode so we can properly debug this without using
+ * monitors (although I drool at the concept of having that!)
+ *
+ * Revision 2.2.2.1  2002/08/28 12:39:36  randomtiger
+ * OK, this should be a commit to the DX branch or Im going to be in a lot of trouble.
+ * The movie and dx8show files have been cleaned up big time.
+ * My debug system is in but has NO EFFECT at all unless a compiler flag is turned on, check h file for details.
+ * Aside from that a few changes to help the movie code work properly.
+ * Works on most things including GF4 and Voodoo 3. However may not work properly on a voodoo 2.
+ * Im going to leave this as a bug for now, serves you right for buying voodoo!
+ *
+ * Revision 2.2  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.5  2003/02/22 04:14:21  wmcoolmon
  * Added "os_app_activate_set"
  *
@@ -380,7 +402,6 @@ BOOL __stdcall os_enum_windows( HWND hwnd, char * search_string )
 	return TRUE;	// continue enumeration
 }
 
-
 bool os_app_activate_hook_on = true;
 
 void os_app_activate_set(bool state)
@@ -508,20 +529,39 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 		break;
 
 	case WM_KILLFOCUS:
-		key_lost_focus();
+		{
+			key_lost_focus();
 
-		gr_activate(0);
-		break;
+			if(os_app_activate_hook_on == false)
+			{
+				break;
+			}
+
+			gr_activate(0);
+			break;
+		}
 
 	case WM_SETFOCUS:
-		key_got_focus();
+		{
+			key_got_focus();
+					
+			if(os_app_activate_hook_on == false)
+			{
+				break;
+			}
 
-		gr_activate(1);
-		break;
+			gr_activate(1);
+			break;
+		}
 
 	case WM_ACTIVATE:			//APP:	//
 	case WM_ACTIVATEAPP:
 		{
+			if(os_app_activate_hook_on == false)
+			{
+				break;
+			}
+
 			BOOL OldfAppActive = fAppActive;
 			
 			// The application z-ordering has changed. If we are now the
@@ -615,7 +655,7 @@ BOOL win32_create_window()
 		hires = 1;
 	}
 
-	WNDCLASSEX wclass;
+	WNDCLASSEX wclass;							// Huh?
 	HINSTANCE hInst = GetModuleHandle(NULL);
 
 	wclass.hInstance 		= hInst;
@@ -652,7 +692,8 @@ BOOL win32_create_window()
 
 	// Make a 32x32 window.  It never should get shown, because the graphics code
 	// will then size it.
-	if(windowed){
+	if(windowed)			// Let it here be known that I hate the coding style they use for {'s - UP
+	{
 		hwndApp = CreateWindow( szWinClass, szWinTitle,
 									style,   
 									CW_USEDEFAULT,
@@ -660,7 +701,9 @@ BOOL win32_create_window()
 									hires ? 1024 : 640 + x_add,
 									hires ? 768 : 480 + y_add,
 									NULL, (HMENU)NULL, hInst, (LPSTR)NULL);	
-	} else {
+	} 
+	else 
+	{
 		// Make a 32x32 window.  It never should get shown, because the graphics code
 		// will then size it.
 		hwndApp = CreateWindow( szWinClass, szWinTitle,

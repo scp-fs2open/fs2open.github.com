@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-18 10:07:00 $
+ * $Author: unknownplayer $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1.2.3  2002/11/04 21:24:59  randomtiger
+ *
+ * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
+ * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Cleaned up some more texture stuff enabled console debug for D3D.
+ *
+ * Revision 2.1.2.2  2002/09/28 22:13:42  randomtiger
+ * Sorted out some bits and pieces. The background nebula blends now which is nice. – RT
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:40  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -191,6 +209,8 @@
 #include "pcxutils/pcxutils.h"
 #include "anim/packunpack.h"
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
+#include "debugconsole/dbugfile.h"
 
 static color Color_xparent;
 
@@ -448,6 +468,7 @@ anim_instance *anim_play(anim_play_struct *aps)
 //	input:	instance		=>		pointer to animation instance
 //				frametime	=>		time elapsed since last call, in seconds
 //
+
 int anim_show_next_frame(anim_instance *instance, float frametime)
 {
 	int		bitmap_id, bitmap_flags=0, new_frame_num, frame_diff=0, i, n_frames=0,frame_save;
@@ -465,6 +486,7 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 		n_frames = instance->stop_at - instance->start_at + 1;
 	else if(instance->direction == ANIM_DIRECT_REVERSE)
 		n_frames = instance->start_at - instance->stop_at + 1;
+
 	time = n_frames / i2fl(instance->parent->fps);
 
 	percent_through = instance->time_elapsed / time;
@@ -891,7 +913,11 @@ anim *anim_load(char *real_filename, int file_mapped)
 	int			count,idx;
 	char name[_MAX_PATH];
 
-//	file_mapped = 0;
+	// Unless told otherwise in D3D everything is loaded for speed, lets make use of all that memory
+	// people have
+	if(gr_screen.mode == GR_DIRECT3D && Cmdline_d3dlowmem == 0) {
+		file_mapped = 0;
+	}
 
 	Assert ( real_filename != NULL );
 

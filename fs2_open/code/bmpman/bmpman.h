@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
- * $Revision: 2.3 $
- * $Date: 2003-01-19 01:07:41 $
- * $Author: bobboau $
+ *
+ * $Revision: 2.4 $
+ * $Date: 2003-03-18 10:07:00 $
+ * $Author: unknownplayer $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/19 01:07:41  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.2  2003/01/18 19:55:16  phreak
  * fixed around the bmpman system to now accept compressed textures
  *
@@ -23,6 +27,52 @@
  * disabled decals (for now), removed the warp ray thingys,
  * made some better error mesages while parseing weapons and ships tbls,
  * and... oh ya, added glow mapping
+ *
+ * Revision 2.0.2.10  2002/11/04 21:24:59  randomtiger
+ *
+ * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
+ * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Cleaned up some more texture stuff enabled console debug for D3D.
+ *
+ * Revision 2.0.2.9  2002/11/04 16:04:20  randomtiger
+ *
+ * Tided up some bumpman stuff and added a few function points to gr_screen. - RT
+ *
+ * Revision 2.0.2.8  2002/11/04 03:02:28  randomtiger
+ *
+ * I have made some fairly drastic changes to the bumpman system. Now functionality can be engine dependant.
+ * This is so D3D8 can call its own loading code that will allow good efficient loading and use of textures that it desparately needs without
+ * turning bumpman.cpp into a total hook infested nightmare. Note the new bumpman code is still relying on a few of the of the old functions and all of the old bumpman arrays.
+ *
+ * I have done this by adding to the gr_screen list of function pointers that are set up by the engines init functions.
+ * I have named the define calls the same name as the original 'bm_' functions so that I havent had to change names all through the code.
+ *
+ * Rolled back to an old version of bumpman and made a few changes.
+ * Added new files: grd3dbumpman.cpp and .h
+ * Moved the bitmap init function to after the 3D engine is initialised
+ * Added includes where needed
+ * Disabled (for now) the D3D8 TGA loading - RT
+ *
+ * Revision 2.0.2.7  2002/10/26 01:24:22  randomtiger
+ * Fixed debug bitmap compiling bug.
+ * Fixed tga bug. - RT
+ *
+ * Revision 2.0.2.6  2002/10/22 17:46:17  randomtiger
+ * Fixed new TGA code texturing bug. - RT
+ *
+ * Revision 2.0.2.5  2002/10/21 16:33:40  randomtiger
+ * Added D3D only 32 bit TGA functionality. Will load a texture as big as your graphics card allows. Code not finished yet and will forge the beginnings of the new texture system. - RT
+ *
+ * Revision 2.0.2.4  2002/10/19 23:56:39  randomtiger
+ * Changed generic bitmap code to allow maximum dimensions to be determined by 3D's engines maximum texture size query.
+ * Defaults to 256 as it was before. Also added base code for reworking the texture code to be more efficient. - RT
+ *
+ * Revision 2.0.2.3  2002/10/02 11:40:19  randomtiger
+ * Bmpmap has been reverted to an old non d3d8 version.
+ * All d3d8 code is now in the proper place.
+ * PCX code is now working to an extent. Problems with alpha though.
+ * Ani's work slowly with alpha problems.
+ * Also I have done a bit of tidying - RT
  *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
@@ -165,16 +215,81 @@
 #ifndef _BMPMAN_H
 #define _BMPMAN_H
 
-#ifdef FS2_DEMO
-	#define MAX_BITMAPS 3500
-#else
-	#define MAX_BITMAPS 3500			// How many bitmaps the game can handle
+#ifndef NDEBUG
+#define BMPMAN_NDEBUG
 #endif
+
+#define MAX_BITMAPS 3500			// How many bitmaps the game can handle
 
 // 16 bit pixel formats
 #define BM_PIXEL_FORMAT_ARGB				0						// for glide - can assume certain things, like 1555 LFB writes, whee!
 #define BM_PIXEL_FORMAT_D3D				1						// d3d - card dependant. booo!
 #define BM_PIXEL_FORMAT_ARGB_D3D			2						// this card has nice 1555 textures like Glide - ahhhhh!
+
+#define	BM_TYPE_NONE		0
+#define	BM_TYPE_PCX			1
+#define	BM_TYPE_USER		2
+#define	BM_TYPE_ANI			3		// in-house ANI format
+#define	BM_TYPE_TGA			4		// 16 bit targa
+
+/// Moved from cpp file ///////////////////
+// Consider these 'protected' structures and functions that should only be used by special bitmap functions
+
+typedef union bm_extra_info	{
+	struct {
+		// Stuff needed for animations
+		int		first_frame;								// used for animations -- points to index of first frame
+		ubyte		num_frames;									// used for animation -- number of frames in the animation
+		ubyte		fps;											// used for animation -- frames per second
+	} ani;
+	struct {
+		// Stuff needed for user bitmaps
+		void		*data;									// For user bitmaps, this is where the data comes from
+		ubyte		bpp;									// For user bitmaps, this is what format the data is
+		ubyte		flags;									// Flags passed to bm_create
+	} user;
+} bm_extra_info;
+
+typedef struct bitmap_entry	{
+	// identification
+	char		filename[MAX_FILENAME_LEN];			// filename for this bitmap
+
+	uint		signature;									// a unique signature identifying the data
+	uint		palette_checksum;							// checksum used to be sure bitmap is in current palette
+	int		handle;										// Handle = id*MAX_BITMAPS + bitmapnum
+	int		last_used;									// When this bitmap was last used
+
+	ubyte		type;											// PCX, USER, ANI, etc
+	signed char	ref_count;								// Number of locks on bitmap.  Can't unload unless ref_count is 0.
+
+	// compressed bitmap stuff (.dds) - RT please take a look at this and tell me if we really need it
+	int		mem_taken;									// How much memory does this bitmap use? - UnknownPlayer
+
+	// Stuff to keep track of usage
+	ubyte		preloaded;									// If set, then this was loaded from the lst file
+	ubyte		used_flags;									// What flags it was accessed thru
+
+	// Bitmap info
+	bitmap	bm;
+
+	// Data for animations and user bitmaps
+	bm_extra_info	info;		
+
+#ifdef BMPMAN_NDEBUG
+	// bookeeping
+	ubyte		used_last_frame;							// If set, then it was used last frame
+	ubyte		used_this_frame;							// If set, then it was used this frame
+	int		data_size;									// How much data this bitmap uses
+	int		used_count;									// How many times it was accessed
+#endif
+
+} bitmap_entry;
+
+void bm_gfx_init();
+void bm_gfx_close();
+int bm_gfx_get_cache_slot( int bitmap_id, int separate_ani_frames );
+
+int bm_gfx_get_next_handle();
 
 // 16 bit pixel formats
 extern int Bm_pixel_format;
@@ -188,12 +303,12 @@ extern int bm_texture_ram;
 // It returns a negative number if it couldn't load
 // the bitmap.   On success, it returns the bitmap
 // number.
-int bm_load(char * filename);
+int bm_gfx_load(char * filename);
 
 // special load function. basically allows you to load a bitmap which already exists (by filename). 
 // this is useful because in some cases we need to have a bitmap which is locked in screen format
 // _and_ texture format, such as pilot pics and squad logos
-int bm_load_duplicate(char *filename);
+int bm_gfx_load_duplicate(char *filename);
 
 // Creates a bitmap that exists in RAM somewhere, instead
 // of coming from a disk file.  You pass in a pointer to a
@@ -203,29 +318,29 @@ int bm_load_duplicate(char *filename);
 // On success, it returns the bitmap number.  You cannot 
 // free that RAM until bm_release is called on that bitmap.  
 // See example at bottom of this file
-int bm_create( int bpp, int w, int h, void * data, int flags = 0);
+int bm_gfx_create( int bpp, int w, int h, void * data, int flags = 0);
 
 // Frees up a bitmap's data, but bitmap number 'n' can
 // still be used, it will just have to be paged in next
 // time it is locked.
-int bm_unload( int n );
+int bm_gfx_unload( int n );
 
 // Frees up a bitmap's data, and it's slot, so bitmap 
 // number 'n' cannot be used anymore, and bm_load or
 // bm_create might reuse the slot.
-void bm_release(int n);
+void bm_gfx_release(int n);
 
 // This loads a bitmap sequence so we can draw with it later.
 // It returns a negative number if it couldn't load
 // the bitmap.   On success, it returns the bitmap
 // number of the first frame and nframes is set.
-extern int bm_load_animation( char * filename, int * nframes, int *fps = NULL, int can_drop_frames = 0 );
+extern int bm_gfx_load_animation( char * filename, int * nframes, int *fps = NULL, int can_drop_frames = 0 );
 
 // This locks down a bitmap and returns a pointer to a bitmap
 // that can be accessed until you call bm_unlock.   Only lock
 // a bitmap when you need it!  This will convert it into the 
 // appropriate format also.
-extern bitmap * bm_lock( int bitmapnum, ubyte bpp, ubyte flags );
+extern bitmap * bm_gfx_lock( int bitmapnum, ubyte bpp, ubyte flags );
 
 // The signature is a field that gets filled in with 
 // a unique signature for each bitmap.  The signature for each bitmap
@@ -233,32 +348,32 @@ extern bitmap * bm_lock( int bitmapnum, ubyte bpp, ubyte flags );
 extern uint bm_get_signature( int bitmapnum);
 
 // Unlocks a bitmap
-extern void bm_unlock( int bitmapnum );
+extern void bm_gfx_unlock( int bitmapnum );
 
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.
-extern void bm_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL, bitmap_section_info **sections = NULL );
+extern void bm_gfx_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL, bitmap_section_info **sections = NULL );
 
 // get filename
-extern void bm_get_filename(int bitmapnum, char *filename);
+extern void bm_get_filename(int bitmapnum, char *filename);	 
 
 // resyncs all the bitmap palette
 extern void bm_update();
 
 // call to load all data for all bitmaps that have been requested to be loaded
-extern void bm_load_all();
-extern void bm_unload_all();
+extern void bm_gfx_load_all();
+extern void bm_gfx_unload_all();
 
 // call to get the palette for a bitmap
-extern void bm_get_palette(int n, ubyte *pal, char *name);
+void bm_gfx_get_palette(int n, ubyte *pal, char *name);
 
 // Hacked function to get a pixel from a bitmap.
 // Only works good in 8bpp mode.
-void bm_get_pixel( int bitmap, float u, float v, ubyte *r, ubyte *g, ubyte *b );
+void bm_gfx_get_pixel( int bitmap, float u, float v, ubyte *r, ubyte *g, ubyte *b );
 
 // Returns number of bytes of bitmaps locked this frame
 // ntotal = number of bytes of bitmaps locked this frame
 // nnew = number of bytes of bitmaps locked this frame that weren't locked last frame
-void bm_get_frame_usage(int *ntotal, int *nnew);
+void bm_gfx_get_frame_usage(int *ntotal, int *nnew);
 
 /* 
  * Example on using bm_create
@@ -305,28 +420,28 @@ void bm_get_frame_usage(int *ntotal, int *nnew);
 // Paging stuff
 //============================================================================
 
-void bm_page_in_start();
-void bm_page_in_stop();
+void bm_gfx_page_in_start();
+void bm_gfx_page_in_stop();
 
 // Paging code in a library should call these functions
 // in its page in function.
 
 // Marks a texture as being used for this level
 // If num_frames is passed, assume this is an animation
-void bm_page_in_texture( int bitmapnum, int num_frames=1 );
+void bm_gfx_page_in_texture( int bitmapnum, int num_frames=1 );
 
 // Marks a texture as being used for this level
 // If num_frames is passed, assume this is an animation
-void bm_page_in_nondarkening_texture( int bitmap, int num_frames=1 );
+void bm_gfx_page_in_nondarkening_texture( int bitmap, int num_frames=1 );
 
 // marks a texture as being a transparent textyre used for this level
 // Marks a texture as being used for this level
 // If num_frames is passed, assume this is an animation
-void bm_page_in_xparent_texture( int bitmapnum, int num_frames=1 );
+void bm_gfx_page_in_xparent_texture( int bitmapnum, int num_frames=1 );
 
 // Marks an aabitmap as being used for this level
 // If num_frames is passed, assume this is an animation
-void bm_page_in_aabitmap( int bitmapnum, int num_frames=1 );
+void bm_gfx_page_in_aabitmap( int bitmapnum, int num_frames=1 );
 
 // 
 // Mode: 0 = High memory
@@ -341,7 +456,7 @@ void BM_SELECT_TEX_FORMAT();
 void BM_SELECT_ALPHA_TEX_FORMAT();
 
 // convert a 24 bit value to a 16 bit value
-void bm_24_to_16(int bit_24, ushort *bit_16);
+void bm_gfx_24_to_16(int bit_24, ushort *bit_16);
 
 // set the rgba components of a pixel, any of the parameters can be NULL
 extern void (*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
@@ -353,14 +468,14 @@ void bm_set_components_argb_d3d_16_tex(ubyte *pixel, ubyte *r, ubyte *g, ubyte *
 void bm_set_components_argb_d3d_32_tex(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
 // get the rgba components of a pixel, any of the parameters can be NULL
-void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
+void bm_gfx_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
 //============================================================================
 // section info stuff
 //============================================================================
 
 // given a bitmap and a section, return the size (w, h)
-void bm_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h);
+void bm_gfx_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h);
 
 extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of it's index -Bobboau
 

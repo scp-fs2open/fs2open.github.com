@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.56 $
- * $Date: 2003-03-18 01:44:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.57 $
+ * $Date: 2003-03-18 10:07:05 $
+ * $Author: unknownplayer $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2003/03/18 01:44:30  Goober5000
+ * fixed some misspellings
+ * --Goober5000
+ *
  * Revision 2.55  2003/03/06 09:13:43  Goober5000
  * fixed what should be the last bug with bank-specific loadouts
  * --Goober5000
@@ -250,6 +254,14 @@
  * Revision 2.7  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
+=======
+ * Revision 2.6.2.1  2002/09/24 18:56:45  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+>>>>>>> 2.6.2.1
  * Revision 2.6  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -3063,7 +3075,6 @@ void ship_render(object * obj)
 #endif
 
 
-//	if (Ships[num].subtype == SHIP_PLAYER ) return;	
 	if ( obj == Viewer_obj ) {
 		if (ship_show_velocity_dot && (obj==Player_obj) )	{
 			vector p0,v;

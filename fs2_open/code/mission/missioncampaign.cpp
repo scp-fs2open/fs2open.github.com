@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-03-03 04:28:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2003-03-18 10:07:03 $
+ * $Author: unknownplayer $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/03/03 04:28:36  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.7  2003/02/23 03:13:03  wmcoolmon
  * Uncommented the sections of code that actually played a movie for a given mission. (Removed when daveb cleaned out the movie code for the release)
  *
@@ -25,6 +29,28 @@
  *
  * Revision 2.5  2002/08/27 13:38:58  penguin
  * Moved DirectX8 stuff to directx8 branch; reverted to previous
+ *
+ * Revision 2.3.2.3  2002/09/24 18:56:43  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+ * Revision 2.3.2.2  2002/08/28 12:39:36  randomtiger
+ * OK, this should be a commit to the DX branch or Im going to be in a lot of trouble.
+ * The movie and dx8show files have been cleaned up big time.
+ * My debug system is in but has NO EFFECT at all unless a compiler flag is turned on, check h file for details.
+ * Aside from that a few changes to help the movie code work properly.
+ * Works on most things including GF4 and Voodoo 3. However may not work properly on a voodoo 2.
+ * Im going to leave this as a bug for now, serves you right for buying voodoo!
+ *
+ * Revision 2.3.2.1  2002/08/27 13:22:28  penguin
+ * Moved to directx8 branch
+ *
+ * Revision 2.4  2002/08/18 19:48:29  randomtiger
+ * Added new lib files: strmiids and ddraw to get dshow working
+ * Added new command line parameter to active direct show movie play: -dshowvid
+ * Uncommented movie_play calls and includes
  *
  * Revision 2.3  2002/08/01 01:41:06  penguin
  * The big include file move
@@ -227,6 +253,7 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "starfield/supernova.h"
+#include "graphics/2d.h"
 
 // mission disk stuff
 #define CAMPAIGN_SAVEFILE_MAX_SHIPS_OLD						75
@@ -1858,12 +1885,13 @@ void mission_campaign_end_do()
 
 	// eventually we'll want to play one of two options (good ending or bad ending)
 	// did the supernova blow?
-	if(Supernova_status == SUPERNOVA_HIT){
+	if(Supernova_status == SUPERNOVA_HIT)
+	{
 		// no soup for you!
-		// movie_play_two("endpart1.mve", "endprt2b.mve");			// good ending
+		movie_play_two("endpart1.mve", "endprt2b.mve");			// good ending
 	} else {
 		// no soup for you!
-		// movie_play_two("endpart1.mve", "endprt2a.mve");			// good ending
+		movie_play_two("endpart1.mve", "endprt2a.mve");			// good ending
 	}	
 
 #ifdef FS2_DEMO

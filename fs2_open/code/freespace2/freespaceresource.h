@@ -17,6 +17,7 @@
 #define IDB_GOAL_FAIL                   122
 #define IDI_APP_ICON                    124
 #define IDD_GEN                         127
+#define IDD_RT_VSELECT                  128
 #define IDC_LIST_DEBUG                  1000
 #define IDC_DEBUG_TEXT1                 1001
 #define IDC_DEBUG_TEXT2                 1002
@@ -73,6 +74,11 @@
 #define IDC_FIELD2                      1065
 #define IDC_FIELD3                      1066
 #define IDC_PXO_REFRESH                 1067
+#define IDC_COMBO_VCARD                 1069
+#define IDC_COMBO_VMODE                 1070
+#define IDC_COMBO_AATYPE                1071
+#define ID_CANCEL                       1072
+#define ID_OK                           1073
 #define IDC_CON_COUNT                   2000
 #define IDC_FRAMECAP_STATIC             2001
 #define IDC_GODSTUFF_FPS                2002
@@ -85,9 +91,9 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        128
+#define _APS_NEXT_RESOURCE_VALUE        129
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1068
+#define _APS_NEXT_CONTROL_VALUE         1074
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

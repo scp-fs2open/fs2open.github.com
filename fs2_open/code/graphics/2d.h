@@ -9,13 +9,52 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-18 10:07:02 $
+ * $Author: unknownplayer $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1.2.5  2002/11/09 19:28:15  randomtiger
+ *
+ * Fixed small gfx initialisation bug that wasnt actually causing any problems.
+ * Tided DX code, shifted stuff around, removed some stuff and documented some stuff.
+ *
+ * Revision 2.1.2.4  2002/11/04 16:04:20  randomtiger
+ *
+ * Tided up some bumpman stuff and added a few function points to gr_screen. - RT
+ *
+ * Revision 2.1.2.3  2002/11/04 03:02:28  randomtiger
+ *
+ * I have made some fairly drastic changes to the bumpman system. Now functionality can be engine dependant.
+ * This is so D3D8 can call its own loading code that will allow good efficient loading and use of textures that it desparately needs without
+ * turning bumpman.cpp into a total hook infested nightmare. Note the new bumpman code is still relying on a few of the of the old functions and all of the old bumpman arrays.
+ *
+ * I have done this by adding to the gr_screen list of function pointers that are set up by the engines init functions.
+ * I have named the define calls the same name as the original 'bm_' functions so that I havent had to change names all through the code.
+ *
+ * Rolled back to an old version of bumpman and made a few changes.
+ * Added new files: grd3dbumpman.cpp and .h
+ * Moved the bitmap init function to after the 3D engine is initialised
+ * Added includes where needed
+ * Disabled (for now) the D3D8 TGA loading - RT
+ *
+ * Revision 2.1.2.2  2002/10/16 00:41:38  randomtiger
+ * Fixed small bug that was stopping unactive text from displaying greyed out
+ * Also added ability to run FS2 DX8 in 640x480, however I needed to make a small change to 2d.cpp
+ * which invloved calling the resolution processing code after initialising the device for D3D only.
+ * This is because D3D8 for the moment has its own internal launcher.
+ * Also I added a fair bit of documentation and tidied some stuff up. - RT
+ *
+ * Revision 2.1.2.1  2002/10/11 18:50:54  randomtiger
+ * Checked in fix for 16 bit problem, thanks to Righteous1
+ * Removed a fair bit of code that was used by the 16 bit code path which no longer exists.
+ * 32 bit and 16 bit should now work in exactly the same way. - RT
+ *
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -556,6 +595,36 @@ typedef struct screen {
 
 	// set the color to be used when clearing the background
 	void (*gf_set_clear_color)(int r, int g, int b);
+
+	// Here be the bitmap functions
+	void (*gf_bm_set_max_bitmap_size)(int size);
+	int (*gf_bm_get_next_handle)();
+	void (*gf_bm_close)();
+	void (*gf_bm_init)();
+	void (*gf_bm_get_frame_usage)(int *ntotal, int *nnew);
+	int (*gf_bm_create)( int bpp, int w, int h, void * data, int flags = 0);
+	int (*gf_bm_load)( char * real_filename );
+	int (*gf_bm_load_duplicate)(char *filename);
+	int (*gf_bm_load_animation)( char *real_filename, int *nframes, int *fps = NULL, int can_drop_frames = 0);
+	void (*gf_bm_get_info)( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL, bitmap_section_info **sections = NULL);
+	bitmap * (*gf_bm_lock)( int handle, ubyte bpp, ubyte flags );
+	void (*gf_bm_unlock)( int handle );
+	void (*gf_bm_get_palette)(int handle, ubyte *pal, char *name);
+	void (*gf_bm_release)(int handle);
+	int (*gf_bm_unload)( int handle );
+	void (*gf_bm_unload_all)();
+	void (*gf_bm_page_in_texture)( int bitmapnum, int nframes = 1);
+	void (*gf_bm_page_in_start)();
+	void (*gf_bm_page_in_stop)();
+	int (*gf_bm_get_cache_slot)( int bitmap_id, int separate_ani_frames );
+	void (*gf_bm_24_to_16)(int bit_24, ushort *bit_16);
+	void (*gf_bm_get_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
+	void (*gf_bm_get_section_size)(int bitmapnum, int sx, int sy, int *w, int *h);
+
+	void (*gf_bm_page_in_nondarkening_texture)( int bitmapnum, int nframes = 1);
+	void (*gf_bm_page_in_xparent_texture)( int bitmapnum, int nframes = 1);
+	void (*gf_bm_page_in_aabitmap)( int bitmapnum, int nframes = 1);
+
 } screen;
 
 // cpu types
@@ -629,6 +698,9 @@ extern int Web_cursor_bitmap;
 // Called by OS when application gets/looses focus
 extern void gr_activate(int active);
 
+// Sets up resolution
+void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
+
 #define GR_CALL(x)			(*x)
 
 // These macros make the function indirection look like the
@@ -654,8 +726,6 @@ extern void gr_activate(int active);
 #define gr_create_shader	GR_CALL(gr_screen.gf_create_shader)
 #define gr_set_shader		GR_CALL(gr_screen.gf_set_shader)
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
-// #define gr_bitmap				GR_CALL(gr_screen.gf_bitmap)
-// #define gr_bitmap_ex			GR_CALL(gr_screen.gf_bitmap_ex)
 #define gr_aabitmap			GR_CALL(gr_screen.gf_aabitmap)
 #define gr_aabitmap_ex		GR_CALL(gr_screen.gf_aabitmap_ex)
 #define gr_rect				GR_CALL(gr_screen.gf_rect)
@@ -711,7 +781,37 @@ extern void gr_activate(int active);
 
 #define gr_set_clear_color	GR_CALL(gr_screen.gf_set_clear_color)
 
-// new bitmap functions
+
+// Here be the bitmap functions
+#define bm_set_max_bitmap_size     GR_CALL(*gr_screen.gf_bm_set_max_bitmap_size)
+#define bm_get_next_handle         GR_CALL(*gr_screen.gf_bm_get_next_handle)
+#define bm_close                   GR_CALL(*gr_screen.gf_bm_close)
+#define bm_init                    GR_CALL(*gr_screen.gf_bm_init)
+#define bm_get_frame_usage         GR_CALL(*gr_screen.gf_bm_get_frame_usage)
+#define bm_create                  GR_CALL(*gr_screen.gf_bm_create)
+#define bm_load                    GR_CALL(*gr_screen.gf_bm_load)
+#define bm_load_duplicate          GR_CALL(*gr_screen.gf_bm_load_duplicate)
+#define bm_load_animation          GR_CALL(*gr_screen.gf_bm_load_animation)
+#define bm_get_info                GR_CALL(*gr_screen.gf_bm_get_info)
+#define bm_lock                    GR_CALL(*gr_screen.gf_bm_lock)
+#define bm_unlock                  GR_CALL(*gr_screen.gf_bm_unlock)
+#define bm_get_palette             GR_CALL(*gr_screen.gf_bm_get_palette)
+#define bm_release                 GR_CALL(*gr_screen.gf_bm_release)
+#define bm_unload                  GR_CALL(*gr_screen.gf_bm_unload)
+#define bm_unload_all              GR_CALL(*gr_screen.gf_bm_unload_all)
+#define bm_page_in_texture         GR_CALL(*gr_screen.gf_bm_page_in_texture)
+#define bm_page_in_start           GR_CALL(*gr_screen.gf_bm_page_in_start)
+#define bm_page_in_stop            GR_CALL(*gr_screen.gf_bm_page_in_stop)
+#define bm_get_cache_slot          GR_CALL(*gr_screen.gf_bm_get_cache_slot)
+#define bm_24_to_16                GR_CALL(*gr_screen.gf_bm_24_to_16)
+#define bm_get_components          GR_CALL(*gr_screen.gf_bm_get_components)
+#define bm_get_section_size        GR_CALL(*gr_screen.gf_bm_get_section_size)
+
+#define bm_page_in_nondarkening_texture  GR_CALL(*gr_screen.gf_bm_page_in_nondarkening_texture)
+#define bm_page_in_xparent_texture 		 GR_CALL(*gr_screen.gf_bm_page_in_xparent_texture)     
+#define bm_page_in_aabitmap				 GR_CALL(*gr_screen.gf_bm_page_in_aabitmap)            
+
+ // new bitmap functions
 extern int Gr_bitmap_poly;
 void gr_bitmap(int x, int y);
 void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy);

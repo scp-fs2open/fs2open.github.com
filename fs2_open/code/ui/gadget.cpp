@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/GADGET.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-18 10:07:06 $
+ * $Author: unknownplayer $
  *
  * Functions for the base gadget class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1.2.1  2002/09/24 18:56:45  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -241,14 +250,9 @@ int UI_GADGET::set_bmaps(char *ani_fname, int nframes, int start_frame)
 		// try and load the bitmap				
 		bmap_ids[idx] = bm_load(full_name);	
 		if(bmap_ids[idx] != -1){		
-			// bm_lock(bmap_ids[idx], 16, 0);
-			// bm_unlock(bmap_ids[idx]);
 			
 			its_all_good = 1;
-		} else {
-			// mprintf(("Skipping %s\n", full_name));
-			// its_all_good = 0;
-		}
+		} 
 	}
 
 	// done

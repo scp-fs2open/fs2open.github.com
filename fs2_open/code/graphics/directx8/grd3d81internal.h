@@ -10,8 +10,8 @@
 #include <windows.h>
 #include <windowsx.h>
 
-#include <d3d8.h>
-#include <d3dx8.h>			// This is the Dx8.1 utility library. Automates some functions and
+#include "d3d8.h"
+#include "d3dx8.h"			// This is the Dx8.1 utility library. Automates some functions and
 							// provides the D3D_OVERLOADS functionality
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
@@ -38,9 +38,11 @@ extern LPD3DDEVICEDESC lpDevDesc;
 extern DDCAPS DD_driver_caps;
 extern DDCAPS DD_hel_caps;
 */
-extern int D3D8_texture_divider;
 
-extern int D3D8_32bit;
+extern LPDIRECT3D8			lpd3d;
+extern LPDIRECT3DDEVICE8	lpd3ddevice;
+
+extern int D3D_32bit;
 
 extern char* d3d8_error_string(HRESULT error);
 

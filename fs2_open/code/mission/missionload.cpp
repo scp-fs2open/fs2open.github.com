@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-02 23:53:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-18 10:07:03 $
+ * $Author: unknownplayer $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/02 23:53:49  Goober5000
+ * fixed misspelling
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -212,6 +221,7 @@
 #include "mission/missioncampaign.h"
 #include "cfile/cfilesystem.h"
 #include "globalincs/alphacolors.h"
+#include "debugconsole/dbugfile.h"
 
 
 extern mission The_mission;  // need to send this info to the briefing

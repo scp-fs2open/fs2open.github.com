@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-03 04:28:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-18 10:07:03 $
+ * $Author: unknownplayer $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/03 04:28:37  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/07 01:37:42  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -24,6 +28,12 @@
  *
  * Revision 2.2  2002/11/27 01:20:51  sesquipedalian
  * Added Phreak's fix for the weapons room bug.  Can now view a modified weapons.tbl in the tech room without crashing
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
@@ -263,6 +273,7 @@
 #include "anim/animplay.h"
 #include "localization/localize.h"
 #include "lighting/lighting.h"
+#include "debugconsole/dbugfile.h"
 
 #define REVOLUTION_RATE	5.2f
 

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-18 10:07:05 $
+ * $Author: unknownplayer $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2.2.1  2002/11/04 21:25:00  randomtiger
+ *
+ * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
+ * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Cleaned up some more texture stuff enabled console debug for D3D.
+ *
+ * Revision 2.2  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/29 20:12:02  penguin
  * removed bogus #include windows.h
  *
@@ -376,7 +385,7 @@ void outwnd_print(char *id, char *tmp)
 	outwnd_filter_struct *temp;
 
   	if (!outwnd_inited) {
-//  		fputs("outwnd not initialized yet...  ", stdout);
+  		fputs("outwnd not initialized yet...  ", stdout);
 		fputs(tmp, stdout);
 		fflush(stdout);
   		return;

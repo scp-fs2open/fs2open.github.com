@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/Popup.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-18 10:07:05 $
+ * $Author: unknownplayer $
  *
  * Code for displaying pop-up dialog boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1.2.1  2002/09/24 18:56:45  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -200,6 +209,7 @@
 #include "graphics/font.h"
 #include "globalincs/alphacolors.h"
 #include "osapi/osapi.h"
+#include "debugconsole/dbugfile.h"
 
 #define POPUP_MAX_CHOICES			3					// max number of buttons allowed on popup
 

@@ -9,13 +9,36 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-02 06:04:00 $
- * $Author: penguin $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-18 10:07:05 $
+ * $Author: unknownplayer $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/02 06:04:00  penguin
+ * Added versions of _outp() and _inp() for gcc.
+ * Revision 2.1.2.3  2002/11/09 19:28:15  randomtiger
+ *
+ * Fixed small gfx initialisation bug that wasnt actually causing any problems.
+ * Tided DX code, shifted stuff around, removed some stuff and documented some stuff.
+ *
+ * Revision 2.1.2.2  2002/11/04 21:25:00  randomtiger
+ *
+ * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
+ * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Cleaned up some more texture stuff enabled console debug for D3D.
+ *
+ * Revision 2.1.2.1  2002/10/08 14:33:27  randomtiger
+ * OK, I've fixed the z-buffer problem.
+ * However I have abandoned using w-buffer for now because of problems.
+ * I think I know how to solve it but Im not sure it would make much difference given the way FS2 engine works.
+ * I have left code in there of use if anyone wants to turn their hand to it. However for now
+ * we just need to crack of the alpha problem then we will have FS2 fully wokring in DX8 on GF4 in 32 bit.
+ *
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.3  2002/11/14 04:18:17  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -356,6 +379,8 @@ void save_filter_info(void)
 	}
 }
 
+#include "debugconsole/dbugfile.h"
+
 void outwnd_printf2(char *format, ...)
 {
 	char tmp[MAX_LINE_WIDTH*4];
@@ -365,6 +390,8 @@ void outwnd_printf2(char *format, ...)
 	vsprintf(tmp, format, args);
 	va_end(args);
 	outwnd_print("General", tmp);
+
+// 	DBUGFILE_OUTPUT_0(tmp);
 }
 
 
@@ -583,7 +610,7 @@ void outwnd_print(char *id, char *tmp)
 	} 
 
 	if(gr_screen.mode == GR_DIRECT3D){
-		return;
+	  //	return;
 	}
 //	if ( D3D_enabled )	{
 //		return;		// Direct3D seems to hang sometimes printing to window

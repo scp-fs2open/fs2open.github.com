@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-11-10 16:29:53 $
- * $Author: DTP $
+ * $Revision: 2.8 $
+ * $Date: 2003-03-18 10:07:00 $
+ * $Author: unknownplayer $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/11/10 16:29:53  DTP
+ * -DTP reworked mod support,
+ *
  * Revision 2.6  2002/11/04 08:32:38  DTP
  * Made sure, that VP and Plain files dont get added twice to the search order. Side-effect of Mod support.
  *
@@ -25,6 +28,12 @@
  * Revision 2.4  2002/10/27 23:59:28  DTP
  * DTP; started basic implementation of mod-support
  * plain files only for now. fs2_open.exe -mod X will look for files in fs2/ X /all-legal-subdirectories. no checking/creating dirs yet. directories must be there.
+ *
+ * Revision 2.3.2.1  2002/09/24 18:56:41  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.3  2002/08/01 01:41:04  penguin
  * The big include file move
@@ -777,16 +786,6 @@ extern int game_cd_changed();
 CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize)
 {
 	char longname[_MAX_PATH];
-
-//	nprintf(("CFILE", "CFILE -- trying to open %s\n", file_path ));
-// #if !defined(MULTIPLAYER_BETA_BUILD) && !defined(FS2_DEMO)
-
-// we no longer need to do this, and on machines with crappy-ass drivers it can slow things down horribly.
-#if 0	
-	if ( game_cd_changed() ) {
-		cfile_refresh();
-	}
-#endif
 
 	//================================================
 	// Check that all the parameters make sense

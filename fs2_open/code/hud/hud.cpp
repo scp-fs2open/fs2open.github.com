@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-19 07:02:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-18 10:07:03 $
+ * $Author: unknownplayer $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/19 07:02:15  Goober5000
+ * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
+ * all ships, and all ships who have their departure anchor set to a capital ship
+ * should exit to that ship when told to depart
+ * --Goober5000
+ *
  * Revision 2.3  2003/01/17 07:59:09  Goober5000
  * fixed some really strange behavior with strings not being truncated at the
  * # symbol
@@ -24,6 +30,11 @@
  * Revision 2.2  2002/10/17 20:40:50  randomtiger
  * Added ability to remove HUD ingame on keypress shift O
  * So I've added a new key to the bind list and made use of already existing hud removal code.
+ *
+ * Revision 2.1.2.1  2002/11/09 19:28:15  randomtiger
+ *
+ * Fixed small gfx initialisation bug that wasnt actually causing any problems.
+ * Tided DX code, shifted stuff around, removed some stuff and documented some stuff.
  *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
@@ -1244,6 +1255,7 @@ void hud_show_target_model()
 	}
 
 	// display the miniature model of the target in the target box and shade
+	// RT Might be faster to use full detail model
 	if ( Game_detail_flags & DETAIL_FLAG_HUD )	{
 		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
 			hud_render_target_model();

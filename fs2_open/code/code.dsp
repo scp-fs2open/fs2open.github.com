@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "..\Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENGL" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /D "_WINDOWS" /D "WIN32" /D "WIN32" /D "NDEBUG" /D "DBUGFILE_ACTIVE" /U "_DEBUG" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "..\Debug\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W4 /Gm /Gi /GX /ZI /Od /I "." /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "USE_OPENGL" /U "NDEBUG" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /G5 /MTd /W4 /Gm /Gi /GX /ZI /Od /I "." /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "DBUGFILE_ACTIVE" /U "NDEBUG" /FR /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -156,18 +156,6 @@ SOURCE=.\CFile\CfileSystem.cpp
 SOURCE=.\CFile\CfileSystem.h
 # End Source File
 # End Group
-# Begin Group "Cmdline"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\Cmdline\cmdline.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Cmdline\cmdline.h
-# End Source File
-# End Group
 # Begin Group "CMeasure"
 
 # PROP Default_Filter ""
@@ -251,6 +239,7 @@ SOURCE=.\debugconsole\timerbar.cpp
 
 SOURCE=.\debugconsole\timerbar.h
 # End Source File
+
 # End Group
 # Begin Group "DirectX"
 
@@ -269,19 +258,7 @@ SOURCE=.\DirectX\vasync.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\DirectX\vD3d.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\DirectX\vD3dcaps.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\DirectX\vd3di.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\DirectX\vd3drm.h
 # End Source File
 # Begin Source File
 
@@ -294,10 +271,6 @@ SOURCE=.\DirectX\vd3drmobj.h
 # Begin Source File
 
 SOURCE=.\DirectX\vd3drmwin.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\DirectX\vD3dtypes.h
 # End Source File
 # Begin Source File
 
@@ -345,11 +318,11 @@ SOURCE=.\directx\ddraw.lib
 # End Source File
 # Begin Source File
 
-SOURCE=.\directx\dxguid.lib
+SOURCE=.\directx\strmiids.lib
 # End Source File
 # Begin Source File
 
-SOURCE=.\directx\strmiids.lib
+SOURCE=.\directx\dxguid.lib
 # End Source File
 # End Group
 # Begin Group "Fireball"
@@ -511,18 +484,9 @@ SOURCE=.\GlobalIncs\WinDebug.cpp
 # Begin Group "Graphics"
 
 # PROP Default_Filter ""
-# Begin Source File
+# Begin Group "SoftwareGr"
 
-SOURCE=.\Graphics\2d.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\2d.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\aaline.cpp
-# End Source File
+# PROP Default_Filter ""
 # Begin Source File
 
 SOURCE=.\Graphics\Bitblt.cpp
@@ -562,62 +526,6 @@ SOURCE=.\Graphics\Gradient.cpp
 # Begin Source File
 
 SOURCE=.\Graphics\Gradient.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrD3D.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrD3D.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrD3DInternal.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrD3DRender.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrD3DTexture.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrDirectDraw.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrDirectDraw.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrGlide.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrGlide.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrGlideInternal.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrGlideTexture.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrInternal.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrOpenGL.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Graphics\GrOpenGL.h
 # End Source File
 # Begin Source File
 
@@ -677,10 +585,6 @@ SOURCE=.\Graphics\Shade.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\Graphics\TmapGenericScans.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\Graphics\Tmapper.cpp
 # End Source File
 # Begin Source File
@@ -714,6 +618,107 @@ SOURCE=.\Graphics\TmapScanTiled32x32.cpp
 # Begin Source File
 
 SOURCE=.\Graphics\TmapScanTiled64x64.cpp
+# End Source File
+# End Group
+# Begin Group "GlideGr"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\Graphics\GrGlide.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\GrGlide.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\GrGlideInternal.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\GrGlideTexture.cpp
+# End Source File
+# End Group
+# Begin Group "D3D8Gr"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\Graphics\GrD3D.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\GrD3D.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrD3DBmpman.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrD3DBmpman.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrD3DCalls.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\GrD3DInternal.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\GrD3DRender.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\GrD3DTexture.cpp
+# End Source File
+# End Group
+# Begin Group "DDrawGr"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\Graphics\GrDirectDraw.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\GrDirectDraw.h
+# End Source File
+# End Group
+# Begin Group "OpenGLGr"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\Graphics\GrOpenGL.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\GrOpenGL.h
+# End Source File
+# End Group
+# Begin Source File
+
+SOURCE=.\Graphics\2d.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\2d.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\aaline.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\GrInternal.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\Graphics\TmapGenericScans.cpp
 # End Source File
 # End Group
 # Begin Group "Hud"
@@ -2511,6 +2516,7 @@ SOURCE=.\Network\stand_gui.cpp
 SOURCE=.\Network\stand_gui.h
 # End Source File
 # End Group
+
 # Begin Group "Decals"
 
 # PROP Default_Filter ""
@@ -2533,6 +2539,19 @@ SOURCE=.\ddsutils\ddsutils.cpp
 # Begin Source File
 
 SOURCE=.\ddsutils\ddsutils.h
+# End Source File
+# End Group
+
+# Begin Group "Cmdline"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\Cmdline\cmdline.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Cmdline\cmdline.h
 # End Source File
 # End Group
 # End Target

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-03-02 05:23:34 $
- * $Author: penguin $
+ * $Revision: 2.28 $
+ * $Date: 2003-03-18 10:07:01 $
+ * $Author: unknownplayer $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/03/02 05:23:34  penguin
+ * 1. Renamed or, og, ob vars to o_r, o_g, o_b  ("or" caused gcc to choke).
+ * 2. Added #ifndef NO_SOFTWARE_RENDERING around software rendering code
+ * 3. Added #ifdef _MSC_VER around MSVC-specific exception handing code
+ *  - penguin
+ *
  * Revision 2.26  2003/02/23 20:55:57  wmcoolmon
  * Refixed the splash screen loading code so that it still works with the demo VPs (Loading "2_PreLoad" and "PreLoad") and put logo support back in. Logo support does nothing unless "PreLoadLogo" and/or"2_PreLoadLogo" exist within the search path.
  *
@@ -78,7 +84,6 @@
  * Revision 2.10  2002/09/20 20:09:01  phreak
  * did glare stuff in game_sunspot_process()
  *
-<<<<<<< freespace.cpp
  *
  *
  * Revision 2.51 2002/08/04 2`:08:55 PhReAk
@@ -87,7 +92,6 @@
  * Revision 2.51 2002/08/04 20:04:35 PhReAk
  * Draw FPS when running debug build
  *
-=======
  * Revision 2.9  2002/08/28 10:51:04  randomtiger
  * Woh! I sure as hell didnt modify all these files it says I did.
  * I will put this down to the branch! Note: I did start from a fresh checkout!
@@ -95,11 +99,53 @@
  * Revision 2.8  2002/08/27 13:38:57  penguin
  * Moved DirectX8 stuff to directx8 branch; reverted to previous
  *
+ * Revision 2.6.2.6  2002/11/04 03:02:28  randomtiger
+ *
+ * I have made some fairly drastic changes to the bumpman system. Now functionality can be engine dependant.
+ * This is so D3D8 can call its own loading code that will allow good efficient loading and use of textures that it desparately needs without
+ * turning bumpman.cpp into a total hook infested nightmare. Note the new bumpman code is still relying on a few of the of the old functions and all of the old bumpman arrays.
+ *
+ * I have done this by adding to the gr_screen list of function pointers that are set up by the engines init functions.
+ * I have named the define calls the same name as the original 'bm_' functions so that I havent had to change names all through the code.
+ *
+ * Rolled back to an old version of bumpman and made a few changes.
+ * Added new files: grd3dbumpman.cpp and .h
+ * Moved the bitmap init function to after the 3D engine is initialised
+ * Added includes where needed
+ * Disabled (for now) the D3D8 TGA loading - RT
+ *
+ * Revision 2.6.2.5  2002/10/26 09:55:41  unknownplayer
+ *
+ * Fixed the nebula flicker bug. Check the NO_DIRECT3D conditional compile
+ * sections in the future for bits of code which may cause problems due to hacks
+ * correcting for DirectX5 that no longer apply.
+ *
+ * Revision 2.6.2.4  2002/09/24 18:56:42  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+ * Revision 2.6.2.2  2002/08/28 12:39:36  randomtiger
+ * OK, this should be a commit to the DX branch or Im going to be in a lot of trouble.
+ * The movie and dx8show files have been cleaned up big time.
+ * My debug system is in but has NO EFFECT at all unless a compiler flag is turned on, check h file for details.
+ * Aside from that a few changes to help the movie code work properly.
+ * Works on most things including GF4 and Voodoo 3. However may not work properly on a voodoo 2.
+ * Im going to leave this as a bug for now, serves you right for buying voodoo!
+ *
+ * Revision 2.6.2.1  2002/08/27 13:21:45  penguin
+ * Moved to directx8 branch
+ *
+ * Revision 2.7  2002/08/18 19:48:29  randomtiger
+ * Added new lib files: strmiids and ddraw to get dshow working
+ * Added new command line parameter to active direct show movie play: -dshowvid
+ * Uncommented movie_play calls and includes
+ *
  * Revision 2.6  2002/08/13 03:34:00  penguin
  * 1. Disable CD checking
  * 2. Add CVS tag to version string
  *
->>>>>>> 2.9
  * Revision 2.5  2002/08/04 05:11:05  penguin
  * Don't write version to registry; change way version string is formatted
  *
@@ -701,7 +747,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "freespace2/levelpaging.h"
 #include "observer/observer.h"
 #include "cutscene/cutscenes.h"
-// #include "movie.h"
+#include "cutscene/movie.h"
 #include "weapon/emp.h"
 #include "localization/localize.h"
 #include "osapi/osregistry.h"
@@ -729,6 +775,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "missionui/missionloopbrief.h"
 #include "debugconsole/dbugfile.h"
 #include "debugconsole/timerbar.h"
+
 
 #ifdef NDEBUG
 #ifdef FRED
@@ -1766,6 +1813,10 @@ void game_post_level_init()
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
 
 	stars_level_init();	
+
+	// While trying to track down the nebula bug I encountered a cool effect -
+	// comment this out to fly a mission in a void. Maybe we should develop this
+	// into a full effect or something, because it is seriously cool.
 	neb2_level_init();		
 
 #ifndef NDEBUG
@@ -2238,9 +2289,6 @@ void game_init()
 	load_filter_info();
 	#endif
 
-	extern void bm_init();
-	bm_init();
-
 	// encrypt stuff
 	encrypt_init();
 
@@ -2294,10 +2342,6 @@ void game_init()
 	//   we probably need our own registry key (and a launcher to write them)
 
 //  	// Output version numbers to registry for auto patching purposes
-//  	os_config_write_uint(NOX("Version"), NOX("Major"), FS_VERSION_MAJOR);
-//  	os_config_write_uint(NOX("Version"), NOX("Minor"), FS_VERSION_MINOR);
-//  	os_config_write_uint(NOX("Version"), NOX("Build"), FS_VERSION_BUILD);
-
 	Use_joy_mouse = 0;		//os_config_read_uint( NULL, NOX("JoystickMovesCursor"), 1 );
 	//Use_palette_flash = os_config_read_uint( NULL, NOX("PaletteFlash"), 0 );
 	Use_low_mem = os_config_read_uint( NULL, NOX("LowMem"), 0 );
@@ -2308,6 +2352,12 @@ void game_init()
 
 #ifndef FS2_DEMO
 	Asteroids_enabled = 1;		
+#endif
+
+#ifdef _WIN32
+	movie_play( NOX("intro.mve"));
+	movie_set_shutdown_fgx(true);
+
 #endif
 
 /////////////////////////////
@@ -2493,6 +2543,8 @@ void game_init()
 #error unknown operating system
 #endif // ifdef WIN32
 
+	bm_init();
+
 	// Set the gamma
 	ptr = os_config_read_string(NULL,NOX("Gamma"),NOX("1.80"));
 	Freespace_gamma = (float)atof(ptr);
@@ -2570,6 +2622,7 @@ void game_init()
 	gamesnd_parse_soundstbl();
 	radar_init();
 	gameseq_init();
+
 #ifndef NO_NETWORK
 	multi_init();	
 #endif  // ifndef NO_NETWORK
@@ -2582,9 +2635,7 @@ void game_init()
 	player_controls_init();
 	model_init();	
 
-	//if(!Is_standalone){
-		event_music_init();
-	//}	
+	event_music_init();
 
 	obj_init();	
 	mflash_game_init();	
@@ -2594,9 +2645,9 @@ void game_init()
 	player_init();	
 	mission_campaign_init();		// load in the default campaign	
 	anim_init();
-//	navmap_init();						// init the navigation map system
 	context_help_init();			
-	techroom_intel_init();			// parse species.tbl, load intel info	
+	techroom_intel_init();			// parse species.tbl, load intel info  
+	
 #ifndef NO_NETWORK
 	// initialize psnet
 	psnet_init( Multi_options_g.protocol, Multi_options_g.port );						// initialize the networking code		
@@ -2710,7 +2761,6 @@ void game_show_framerate()
 	control_check_indicate();
 
 //	int bitmaps_used_this_frame, bitmaps_new_this_frame;
-//	bm_get_frame_usage(&bitmaps_used_this_frame,&bitmaps_new_this_frame);
 //	MONITOR_INC(BmpUsed, bitmaps_used_this_frame);
 // MONITOR_INC(BmpNew, bitmaps_new_this_frame);
 
@@ -3802,14 +3852,14 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	nebl_render_all();
 
 	// render local player nebula
-	neb2_render_player();	
+	neb2_render_player();
 
 #ifndef NDEBUG
 	ai_debug_render_stuff();
 #endif
 
 #ifndef RELEASE_REAL
-	// game_framerate_check();
+//	game_framerate_check();
 #endif
 
 #ifndef NDEBUG
@@ -7130,7 +7180,6 @@ int WinMainSub(int argc, char *argv[])
    parse_cmdline(argc, argv);
 #endif
 
-
 #ifndef NO_NETWORK
 #ifdef STANDALONE_ONLY_BUILD
 	Is_standalone = 1;
@@ -7157,6 +7206,12 @@ int WinMainSub(int argc, char *argv[])
 		return 1;
 	}
 
+
+// Windows code now plays the intro movie in game_init
+#ifndef _WIN32
+
+// Intro playing code has been moved above before graphics are set up to
+// avoid switching and other glitches
 	// non-demo, non-standalone, play the intro movie
 	if(!Is_standalone){
 #ifndef DEMO
@@ -7182,13 +7237,13 @@ int WinMainSub(int argc, char *argv[])
 
 		// in RELEASE_REAL builds make the user stick in CD2 if there are no pilots on disk so that we guarantee he plays the movie
 		// no soup for you!
-		// movie_play( NOX("intro.mve"), 0 );
+		movie_play( NOX("intro.mve"), 0 );
 
 		// debug version, movie will only play with -showmovies
 		#elif !defined(NDEBUG)
 		
 		// no soup for you!
-		// movie_play( NOX("intro.mve"), 0);
+		movie_play( NOX("intro.mve"), 0);
 /*
 #ifndef NDEBUG
 		if ( Cmdline_show_movies )
@@ -7199,6 +7254,7 @@ int WinMainSub(int argc, char *argv[])
 	}
 
 #endif // ifndef DEMO
+#endif
 
 	if (Is_standalone){
 		gameseq_post_event(GS_EVENT_STANDALONE_MAIN);
@@ -7249,23 +7305,25 @@ int main(int argc, char *argv[])
 		result = WinMainSub(hInst, hPrev, szCmdLine, nCmdShow);
 #if defined(_MSC_VER)
 	}	__except(RecordExceptionInfo(GetExceptionInformation(), "Freespace 2 Main Thread"))	{
+
 		// Do nothing here - RecordExceptionInfo() has already done
 		// everything that is needed. Actually this code won't even
 		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
 		// the __except clause.
 	}
 #endif
+
 #else
 	try {
 		result = WinMainSub(argc, argv);
 	} catch ( ... ) {
 		fprintf(stderr, "Caught exception in main\n");
-//		RecordExceptionInfo(GetExceptionInformation(), "Freespace 2 Main Thread");
 		result = 1;
 	}
 #endif
 
 	DBUGFILE_DEINIT()
+	
 	return result;
 }
 
@@ -7854,7 +7912,6 @@ void Time_model( int modelnum )
 	fix t2 = timer_get_fixed_seconds();
 
 	bm_get_frame_usage(&bitmaps_used_this_frame,&bitmaps_new_this_frame);
-	//bitmaps_used_this_frame /= framecount;
 
 	modelstats_num_polys /= framecount;
 	modelstats_num_verts /= framecount;
@@ -7864,10 +7921,6 @@ void Time_model( int modelnum )
 
 	mprintf(( "'%s' is %.2f FPS\n", pof_file, i2fl(framecount)/f2fl(t2-t1) ));
 	fprintf( Time_fp, "\"%s\"\t%.0f\t%d\t%d\t%d\t%d\n", pof_file, i2fl(framecount)/f2fl(t2-t1), bitmaps_used_this_frame, modelstats_num_polys, modelstats_num_verts, Tmap_npixels );
-//	fprintf( Time_fp, "%.0f\t%d\t%d\t%d\t%d\n", i2fl(framecount)/f2fl(t2-t1), bitmaps_used_this_frame, modelstats_num_polys, modelstats_num_verts, Tmap_npixels );
-
-		
-//	key_getch();
 }
 
 int Time_models = 0;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-12-03 22:14:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2003-03-18 10:07:03 $
+ * $Author: unknownplayer $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/03 22:14:06  Goober5000
+ * added myself to the credits list :)
+ * ~Goober5000
+ *
  * Revision 2.6  2002/11/02 22:25:26  inquisitor
  * Cleaned up the presentation a little, added HLP and VW, and, no offense to Kazan, removed Kazan.
  *
@@ -30,6 +34,12 @@
  * Added timer bar code, by default its not compiled in.
  * Use TIMEBAR_ACTIVE in project and dependancy code settings to activate.
  * Added the new timebar files with the new code.
+ *
+ * Revision 2.2.2.1  2002/09/24 18:56:43  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
  *
  * Revision 2.2  2002/08/01 01:41:06  penguin
  * The big include file move
@@ -189,6 +199,7 @@
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "debugconsole/dbugfile.h"
 
 // This is the fs2_open credit list, please only add yourself if you have actually contributed code// Rules!
 char *fs2_open_credit_text = 

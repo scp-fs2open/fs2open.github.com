@@ -9,13 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-18 10:07:05 $
+ * $Author: unknownplayer $
  *
  * code to deal with pcx files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1.2.2  2002/10/02 11:40:19  randomtiger
+ * Bmpmap has been reverted to an old non d3d8 version.
+ * All d3d8 code is now in the proper place.
+ * PCX code is now working to an extent. Problems with alpha though.
+ * Ani's work slowly with alpha problems.
+ * Also I have done a bit of tidying - RT
+ *
+ * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
+ * DX8 branch commit
+ *
+ * This is the scub of UP's previous code with the more up to date RT code.
+ * For full details check previous dev e-mails
+ *
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -103,6 +119,9 @@
 #include "pcxutils/pcxutils.h"
 #include "palman/palman.h"
 #include "bmpman/bmpman.h"
+#include "debugconsole/dbugfile.h" 
+
+
 
 /* PCX Header data type */
 typedef struct	{
@@ -214,7 +233,6 @@ int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette 
 	buffer_size = 1024;
 	buffer_pos = 0;
 	
-//	Assert( buffer_size == 1024 );	// AL: removed to avoid optimized warning 'unreachable code'
 	buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
 
 	count = 0;
@@ -253,6 +271,7 @@ int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette 
 
 int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 {
+	
 	PCXHeader header;
 	CFILE * PCXfile;
 	int row, col, count, xsize, ysize;
@@ -265,28 +284,34 @@ int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 	ushort bit_16;	
 	ubyte r, g, b, al;
 		
+	
 	strcpy( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
 	strcat( filename, ".pcx" );
 
+	
 	PCXfile = cfopen( filename , "rb" );
 	if ( !PCXfile ){
+	
 		return PCX_ERROR_OPENING;
 	}
 
 	// read 128 char PCX header
 	if (cfread( &header, sizeof(PCXHeader), 1, PCXfile )!=1)	{
 		cfclose( PCXfile );
+	
 		return PCX_ERROR_NO_HEADER;
 	}
 
 	// Is it a 256 color PCX file?
 	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{
 		cfclose( PCXfile );
+	
 		return PCX_ERROR_WRONG_VERSION;
 	}
 
+	
 	// Find the size of the image
 	xsize = header.Xmax - header.Xmin + 1;
 	ysize = header.Ymax - header.Ymin + 1;
@@ -302,11 +327,14 @@ int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 	buffer_pos = 0;
 	
 //	Assert( buffer_size == 1024 );	// AL: removed to avoid optimized warning 'unreachable code'
+	
 	buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
+	
 
 	count = 0;	
 
 	for (row=0; row<ysize;row++)      {
+	
 		pixdata = org_data;
 		for (col=0; col<header.BytesPerLine;col++)     {
 			if ( count == 0 )	{
@@ -347,7 +375,9 @@ int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 				} 
 
 				// stuff the color
+	
 				bm_set_components((ubyte*)&bit_16, &r, &g, &b, &al);				
+	
 				
 				// stuff the pixel
 				*((ushort*)pixdata) = bit_16;				
@@ -358,7 +388,9 @@ int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 
 		org_data += (xsize * 2);
 	}
+	
 	cfclose(PCXfile);
+	
 	return PCX_ERROR_NONE;
 }
 
@@ -548,6 +580,7 @@ int pcx_read_bitmap_16bpp_nondark( char * real_filename, ubyte *org_data )
 
 				// set the pixel
 				bit_16 = 0;
+
 				bm_set_components((ubyte*)&bit_16, &r, &g, &b, &al);					
 				
 				// stuff the pixel
@@ -597,7 +630,7 @@ int pcx_encode_line(ubyte *inBuff, int inLen, FILE * fp)
 
 	for (srcIndex = 1; srcIndex < inLen; srcIndex++) {
 		this_ptr = *(++inBuff);
-		if (this_ptr == last)	{
+ 		if (this_ptr == last)	{
 			runCount++;			// it encodes
 			if (runCount == 63)	{
 				i = pcx_encode_byte(last, runCount, fp);

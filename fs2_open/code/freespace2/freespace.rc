@@ -1,6 +1,6 @@
 //Microsoft Developer Studio generated resource script.
 //
-#include "freespaceresource.h"
+#include "FreespaceResource.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -360,6 +360,65 @@ IDB_GOAL_FAIL           BITMAP  DISCARDABLE     "goal_fail.bmp"
 // remains consistent on all systems.
 IDI_APP_ICON            ICON    DISCARDABLE     "app_icon.ico"
 #endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.K.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_RT_VSELECT DIALOG DISCARDABLE  0, 0, 348, 134
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION
+CAPTION "Please select a video mode"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",ID_OK,283,17,50,14
+    PUSHBUTTON      "Cancel",ID_CANCEL,283,35,50,14
+    COMBOBOX        IDC_COMBO_VCARD,17,31,243,96,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_VMODE,17,59,243,59,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Select Video Mode",IDC_STATIC,7,7,334,120
+    LTEXT           "If you wish to use glide please cancel and use Volition Setup program instead. This is for D3D8 only.",
+                    IDC_STATIC,13,110,314,8
+    LTEXT           "Video Card",IDC_STATIC,16,22,36,8
+    LTEXT           "Video Mode",IDC_STATIC,17,49,39,8
+    COMBOBOX        IDC_COMBO_AATYPE,17,87,243,59,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Antialiasing",IDC_STATIC,17,76,39,8
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_RT_VSELECT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 341
+        VERTGUIDE, 17
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 127
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.K.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

@@ -42,7 +42,6 @@ bool movie_play(char *name, int unknown_value)
 		gr_activate(0);
 	}
 
-
 #ifdef _WIN32
 
 	if (gr_screen.mode==GR_OPENGL)
@@ -50,7 +49,7 @@ bool movie_play(char *name, int unknown_value)
 		gr_opengl_cleanup(0);
 	}
 
-	 os_app_activate_set(false);
+	os_app_activate_set(false);
 
 	dx8show_set_hwnd((void *) os_get_window());
 
@@ -63,6 +62,7 @@ bool movie_play(char *name, int unknown_value)
  //		ShowWindow((HWND) os_get_window(),SW_SHOW);
 
 	os_app_activate_set(true);
+
 
 	/*
 	// Comment this back in if the freespace window isnt coming back after the movie ends
@@ -82,7 +82,6 @@ bool movie_play(char *name, int unknown_value)
 		gr_opengl_init(1);
 	}
 #endif // _WIN32
-
 
 	if(movie_shutdown_fgx == true)
 	{

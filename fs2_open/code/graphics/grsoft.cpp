@@ -9,13 +9,36 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrSoft.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-02 05:43:49 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-18 10:07:02 $
+ * $Author: unknownplayer $
  *
  * Code for our software renderer using standard Win32 functions.  (Dibsections, etc)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/02 05:43:49  penguin
+ * ANSI C++ - fixed non-compliant casts to unsigned short and unsigned char
+ *  - penguin
+ *
+ * Revision 2.2.2.2  2002/11/04 16:04:21  randomtiger
+ *
+ * Tided up some bumpman stuff and added a few function points to gr_screen. - RT
+ *
+ * Revision 2.2.2.1  2002/11/04 03:02:29  randomtiger
+ *
+ * I have made some fairly drastic changes to the bumpman system. Now functionality can be engine dependant.
+ * This is so D3D8 can call its own loading code that will allow good efficient loading and use of textures that it desparately needs without
+ * turning bumpman.cpp into a total hook infested nightmare. Note the new bumpman code is still relying on a few of the of the old functions and all of the old bumpman arrays.
+ *
+ * I have done this by adding to the gr_screen list of function pointers that are set up by the engines init functions.
+ * I have named the define calls the same name as the original 'bm_' functions so that I havent had to change names all through the code.
+ *
+ * Rolled back to an old version of bumpman and made a few changes.
+ * Added new files: grd3dbumpman.cpp and .h
+ * Moved the bitmap init function to after the 3D engine is initialised
+ * Added includes where needed
+ * Disabled (for now) the D3D8 TGA loading - RT
+ *
  * Revision 2.2  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -395,6 +418,7 @@
 #include "io/timer.h"
 #include "graphics/colors.h"
 #include "graphics/bitblt.h"
+#include "bmpman/bmpman.h"
 
 #ifdef _WIN32
  // Windows specific
@@ -1686,6 +1710,34 @@ void gr_soft_init()
 
 	// set clear color
 	gr_screen.gf_set_clear_color = gr_soft_set_clear_color;
+
+	// now for the bitmap functions
+	gr_screen.gf_bm_get_next_handle         = bm_gfx_get_next_handle;         
+	gr_screen.gf_bm_close                   = bm_gfx_close;                   
+	gr_screen.gf_bm_init                    = bm_gfx_init;                    
+	gr_screen.gf_bm_get_frame_usage         = bm_gfx_get_frame_usage;         
+	gr_screen.gf_bm_create                  = bm_gfx_create;                  
+	gr_screen.gf_bm_load                    = bm_gfx_load;                   
+	gr_screen.gf_bm_load_duplicate          = bm_gfx_load_duplicate;          
+	gr_screen.gf_bm_load_animation          = bm_gfx_load_animation;          
+	gr_screen.gf_bm_get_info                = bm_gfx_get_info;                
+	gr_screen.gf_bm_lock                    = bm_gfx_lock;                    
+	gr_screen.gf_bm_unlock                  = bm_gfx_unlock;                  
+	gr_screen.gf_bm_get_palette             = bm_gfx_get_palette;             
+	gr_screen.gf_bm_release                 = bm_gfx_release;                 
+	gr_screen.gf_bm_unload                  = bm_gfx_unload;                  
+	gr_screen.gf_bm_unload_all              = bm_gfx_unload_all;              
+	gr_screen.gf_bm_page_in_texture         = bm_gfx_page_in_texture;         
+	gr_screen.gf_bm_page_in_start           = bm_gfx_page_in_start;           
+	gr_screen.gf_bm_page_in_stop            = bm_gfx_page_in_stop;            
+	gr_screen.gf_bm_get_cache_slot          = bm_gfx_get_cache_slot;          
+	gr_screen.gf_bm_24_to_16                = bm_gfx_24_to_16;                
+	gr_screen.gf_bm_get_components          = bm_gfx_get_components;          
+	gr_screen.gf_bm_get_section_size        = bm_gfx_get_section_size;
+
+	gr_screen.gf_bm_page_in_nondarkening_texture = bm_gfx_page_in_nondarkening_texture; 
+	gr_screen.gf_bm_page_in_xparent_texture		 = bm_gfx_page_in_xparent_texture;		 
+	gr_screen.gf_bm_page_in_aabitmap			 = bm_gfx_page_in_aabitmap;
 
 	gr_reset_clip();
 	gr_clear();
