@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-07 18:14:54 $
- * $Author: randomtiger $
+ * $Revision: 2.8 $
+ * $Date: 2003-11-16 04:08:47 $
+ * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/07 18:14:54  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.6  2003/04/05 11:09:22  Goober5000
  * fixed some fiddly bits with scrolling and ui stuff
  * --Goober5000
@@ -341,7 +349,7 @@ int Cmd_image_wnd_coords[GR_NUM_RESOLUTIONS][4] = {
 
 int Top_cmd_brief_text_line;
 int Cmd_brief_text_max_lines[GR_NUM_RESOLUTIONS] = {
-	8, 15
+	10, 17
 };
 
 #define MAX_CMD_BRIEF_BUTTONS	10
@@ -937,7 +945,7 @@ void cmd_brief_do_frame(float frametime)
 	}
 
 	// maybe output the "more" indicator
-	if ( (Cmd_brief_text_max_lines[gr_screen.res] + Top_cmd_brief_text_line + 2) < Num_brief_text_lines[0] ) {
+	if ( (Cmd_brief_text_max_lines[gr_screen.res] + Top_cmd_brief_text_line) < Num_brief_text_lines[0] ) {
 		// can be scrolled down
 		int more_txt_x = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + (Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]/2) - 10;
 		int more_txt_y = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD] - 2;				// located below brief text, centered
