@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.28 $
+ * $Revision: 2.29 $
  * $Author: wmcoolmon $
- * $Date: 2003-09-06 19:09:24 $
+ * $Date: 2003-09-06 20:41:52 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/09/06 19:09:24  wmcoolmon
+ * Added optional mission parameter "+Support Repair Ceiling", which sets what percentage a support ship can repair a ship's hull to.
+ *
  * Revision 2.27  2003/05/09 23:51:04  phreak
  * added fields to the "mission" struct to allow for user-specified loading screens
  *
@@ -369,10 +372,11 @@ typedef struct support_ship_info {
 	int		arrival_anchor;					// arrival anchor
 	int		departure_location;				// departure location
 	int		departure_anchor;				// departure anchor
+	float	max_hull_repair_val;			// % of a ship's hull that can be repaired -C
+	float	max_subsys_repair_val;			// same thing, except for subsystems -C
 	int		max_support_ships;				// max number of support ships
 	int		ship_class;						// ship class of support ship
 	int		tally;							// number of support ships so far
-	float	max_hull_repair_val;			// % of a ship's hull that can be repaired -C
 } support_ship_info;
 
 typedef struct mission {
