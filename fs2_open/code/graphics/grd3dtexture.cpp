@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-10-26 00:31:58 $
+ * $Revision: 2.13 $
+ * $Date: 2003-10-27 23:04:21 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/10/26 00:31:58  randomtiger
+ * Fixed hulls not drawing (with Phreaks advise).
+ * Put my 32bit PCX loading under PCX_32 compile flag until its working.
+ * Fixed a bug with res 640x480 I introduced with my non standard mode code.
+ * Changed JPG and TGA loading command line param to "-t32"
+ *
  * Revision 2.11  2003/10/24 17:35:05  randomtiger
  * Implemented support for 32bit TGA and JPG for D3D
  * Also 32 bit PCX, but it still has some bugs to be worked out
@@ -1348,8 +1354,7 @@ void *d3d_lock_32_pcx(char *real_filename, float *u, float *v)
 	CFILE * PCXfile;
 	int row, col, count;
 	ubyte data=0;
-	int buffer_size, buffer_pos;
-	ubyte buffer[1024];
+	int buffer_pos;
 	char filename[MAX_FILENAME_LEN];
 	ubyte palette[768];	
 	ubyte r, g, b, al;
@@ -1409,14 +1414,12 @@ void *d3d_lock_32_pcx(char *real_filename, float *u, float *v)
 	cfread( palette, 3, 256, PCXfile );
 	cfseek( PCXfile, sizeof(PCXHeader), CF_SEEK_SET );
 	
-	buffer_size = 1024;
+	int buffer_size = 1024;
+	ubyte buffer[1024];
 	buffer_pos = 0;
-	
-//	Assert( buffer_size == 1024 );	// AL: removed to avoid optimized warning 'unreachable code'
 	
 	buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
 	
-
 	IDirect3DTexture8 *p_texture = NULL;
 	// OK, we are ready to go, lets get some D3D texture space
 	if(FAILED(GlobalD3DVars::lpD3DDevice->CreateTexture(
@@ -1567,9 +1570,8 @@ void *d3d_lock_d3dx_types(char *file, int type, int bitmapnum, ubyte flags )
 		0, 
 		use_format,
 		D3DPOOL_MANAGED, 
-		D3DX_FILTER_LINEAR, 
+		D3DX_FILTER_LINEAR, // Linear, enough to smooth rescales but not too much blur
 	 	D3DX_DEFAULT,
-	  //	D3DX_FILTER_NONE,
 		0, 
 		&source_desc, 
 		NULL, &ptexture);

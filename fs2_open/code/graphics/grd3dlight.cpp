@@ -124,19 +124,6 @@ void shift_active_lights(int pos)
 //Stub
 }
 
-int find_first_empty_hardware_slot()
-{
-	int light_in_use;
-	for(unsigned int i = 0; i < GlobalD3DVars::d3d_caps.MaxActiveLights; i++){
-		GlobalD3DVars::lpD3DDevice->GetLightEnable(i,&light_in_use);
-		if(!light_in_use) {
-			return i;
-		}
-	}
-	return -1;
-}
-
-
 int	gr_d3d_make_light(light_data* light, int idx, int priority)
 {
 //Stub

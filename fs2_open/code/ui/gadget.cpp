@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/GADGET.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:06 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2003-10-27 23:04:23 $
+ * $Author: randomtiger $
  *
  * Functions for the base gadget class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:06  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/09/24 18:56:45  randomtiger
  * DX8 branch commit
  *
@@ -511,6 +514,14 @@ int UI_GADGET::is_mouse_on()
 	ubyte *mask_data;
 	int mask_w, mask_h;
 
+	int mouse_x = ui_mouse.x;
+	int mouse_y = ui_mouse.y;
+	// This keeps mouse position detection correct for non standard modes
+	{
+		extern bool gr_d3d_unsize_screen_pos(int *x, int *y);
+		gr_d3d_unsize_screen_pos(&mouse_x, &mouse_y);
+	}
+
 	// if linked to a hotspot, use the mask for determination
 	if (linked_to_hotspot) {
 		mask_data = (ubyte*)my_wnd->get_mask_data(&mask_w, &mask_h);
@@ -522,12 +533,12 @@ int UI_GADGET::is_mouse_on()
 
 		// if the mouse values are out of range of the bitmap
 		// NOTE : this happens when using smaller mask bitmaps than the screen resolution (during development)
-		if((ui_mouse.x >= mask_w) || (ui_mouse.y >= mask_h)){
+		if((mouse_x >= mask_w) || (mouse_y >= mask_h)){
 			return 0;
 		}
 
 		// check the pixel value under the mouse
-		offset = ui_mouse.y * mask_w + ui_mouse.x;
+		offset = mouse_y * mask_w + mouse_x;
 		pixel_val = *(mask_data + offset);
 		if (pixel_val == hotspot_num){
 			return 1;
@@ -536,7 +547,7 @@ int UI_GADGET::is_mouse_on()
 		}
 	// otherwise, we just check the bounding box area
 	} else {
-		if ((ui_mouse.x >= x) && (ui_mouse.x < x + w) && (ui_mouse.y >= y) && (ui_mouse.y < y + h) ){
+		if ((mouse_x >= x) && (mouse_x < x + w) && (mouse_y >= y) && (mouse_y < y + h) ){
 			return 1;
 		} else {
 			return 0;

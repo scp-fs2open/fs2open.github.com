@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-08-20 08:11:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.6 $
+ * $Date: 2003-10-27 23:04:22 $
+ * $Author: randomtiger $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/08/20 08:11:00  wmcoolmon
+ * Added error screens to the barracks and start screens when a pilot file can't be deleted
+ *
  * Revision 2.4  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -1382,6 +1385,7 @@ void player_select_display_copyright()
 	gr_get_string_size(&w, NULL, Copyright_msg2);
 	sx = fl2i((gr_screen.max_w / 2) - w/2.0f + 0.5f);
 	sy = (gr_screen.max_h - 2) - gr_get_font_height();
+
 	gr_string(sx, sy, Copyright_msg2);
 }
 

@@ -9,14 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.37 $
- * $Date: 2003-10-26 00:31:58 $
+ * $Revision: 2.38 $
+ * $Date: 2003-10-27 23:04:20 $
  * $Author: randomtiger $
- * $Revision: 2.37 $
- * $Date: 2003-10-26 00:31:58 $
+ * $Revision: 2.38 $
+ * $Date: 2003-10-27 23:04:20 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/10/26 00:31:58  randomtiger
+ * Fixed hulls not drawing (with Phreaks advise).
+ * Put my 32bit PCX loading under PCX_32 compile flag until its working.
+ * Fixed a bug with res 640x480 I introduced with my non standard mode code.
+ * Changed JPG and TGA loading command line param to "-t32"
+ *
  * Revision 2.36  2003/10/24 17:35:04  randomtiger
  * Implemented support for 32bit TGA and JPG for D3D
  * Also 32 bit PCX, but it still has some bugs to be worked out
@@ -435,6 +441,7 @@ cmdline_parm TableCRCs("-tablecrcs", NULL);
 cmdline_parm nohtl_arg("-htl", NULL); //Use software HT&L	  
 cmdline_parm cell_arg("-cell", NULL);
 cmdline_parm textures_32bit("-t32",NULL);
+cmdline_parm no_set_gamma("-no_set_gamma",NULL);
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -458,7 +465,6 @@ int Cmdline_multi_log = 0;
 int Cmdline_server_firing = 0;
 int Cmdline_client_dodamage = 0;
 int Cmdline_spew_pof_info = 0;
-int Cmdline_force_32bit = 0;
 int Cmdline_mouse_coords = 0;
 int Cmdline_timeout = -1;
 int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
@@ -479,6 +485,8 @@ int Cmdline_d3dmipmap = 0;
 // Lets keep a convention here
 int Cmdline_nohtl = 0;
 int Cmdline_32bit_textures = 0;
+int Cmdline_no_set_gamma = 0;
+
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 
@@ -806,11 +814,6 @@ void SetCmdlineParams()
 		Cmdline_spew_pof_info = 1;
 	}
 
-	// 32 bit
-	if(d3d_32bit.found()){
-		Cmdline_force_32bit = 1;
-	}
-
 	// mouse coords
 	if(mouse_coords.found()){
 		Cmdline_mouse_coords = 1;
@@ -913,8 +916,13 @@ void SetCmdlineParams()
 	}
 
 	if( textures_32bit.found() )
-	{
+	{	  
 		Cmdline_32bit_textures = 1;
+	}
+
+	if( no_set_gamma.found() )
+	{
+		Cmdline_no_set_gamma = 1;
 	}
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.12 $
- * $Date: 2003-10-25 03:26:39 $
- * $Author: phreak $
+ * $Revision: 2.13 $
+ * $Date: 2003-10-27 23:04:21 $
+ * $Author: randomtiger $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/10/25 03:26:39  phreak
+ * fixed some old bugs that reappeared after RT committed his texture code
+ *
  * Revision 2.11  2003/10/24 17:35:05  randomtiger
  * Implemented support for 32bit TGA and JPG for D3D
  * Also 32 bit PCX, but it still has some bugs to be worked out
@@ -929,7 +932,7 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 
 // new bitmap functions
 extern int Gr_bitmap_poly;
-void gr_bitmap(int x, int y);
+void gr_bitmap(int x, int y, bool resize = true);
 void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy);
 
 // special function for drawing polylines. this function is specifically intended for

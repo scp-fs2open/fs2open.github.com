@@ -75,9 +75,9 @@ PIXELFORMAT			NonAlphaTextureFormat;
 D3DFORMAT default_non_alpha_tformat = D3DFMT_UNKNOWN;
 D3DFORMAT default_alpha_tformat		= D3DFMT_UNKNOWN;
 
-void d3d_clip_cursor(int active)
+void d3d_clip_cursor()
 {
-	ClipCursor(active ? &D3D_cursor_clip_rect : NULL);
+ 	ClipCursor(&D3D_cursor_clip_rect);
 }
 
 // Outputs a format to debug console
@@ -111,7 +111,7 @@ void gr_d3d_activate(int active)
 		GlobalD3DVars::D3D_activate = 1;
 
 		if ( hwnd )	{
-			ClipCursor(&D3D_cursor_clip_rect);
+			d3d_clip_cursor();
 			ShowWindow(hwnd,SW_RESTORE);
 		}
 
@@ -248,7 +248,7 @@ bool d3d_init_win32(int screen_width, int screen_height)
 	SetActiveWindow(hwnd);
 	SetForegroundWindow(hwnd);
 
-	d3d_clip_cursor(1);
+	d3d_clip_cursor();
 	return true;
 }
 
@@ -1003,44 +1003,53 @@ bool d3d_init_device()
 	GlobalD3DVars::d3dpp.BackBufferFormat = mode.Format;
 
 	//trying to use a higher bit depth in the back buffer, the deepest one posale -Bobboau
-	const int N_FORMATS = 3;
-	enum _D3DFORMAT format_type[N_FORMATS] = {D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D16};
+	const int NUM_FORMATS = 3;
+	enum _D3DFORMAT format_type[NUM_FORMATS] = {D3DFMT_D24X8, D3DFMT_D32, D3DFMT_D16};
+
+	const int NUM_VPTYPES = 3;
+	DWORD vptypes[NUM_VPTYPES] = {
+		D3DCREATE_HARDWARE_VERTEXPROCESSING, 
+			D3DCREATE_MIXED_VERTEXPROCESSING, 
+			D3DCREATE_SOFTWARE_VERTEXPROCESSING};
+
+	// Use a pure device if we can, it really speeds things up
+	// However it means we cant use Get* functions (aside from GetFrontBuffer, GetCaps, etc)
+	if(SUCCEEDED(GlobalD3DVars::lpD3D->GetDeviceCaps(
+		adapter_choice, D3DDEVTYPE_HAL, &GlobalD3DVars::d3d_caps))) {
+
+		if(GlobalD3DVars::d3d_caps.DevCaps & D3DDEVCAPS_PUREDEVICE)
+		{
+	 		vptypes[0] |= D3DCREATE_PUREDEVICE;
+		}
+	}
+
+	bool have_device = false;
+	for(int vp = 0;	vp < NUM_VPTYPES; vp++)					 
+	{
+		// It trys to use the highest suported back buffer through trial and error, 
+		// I wraped the existing code in a for loop to cycle through the diferent formats -Bobboau
+		for(int t = 0; t < NUM_FORMATS; t++){
 		
-	// It trys to use the highest suported back buffer through trial and error, 
-	// I wraped the existing code in a for loop to cycle through the diferent formats -Bobboau
-	for(int t = 0; t < N_FORMATS; t++){
-
-		GlobalD3DVars::d3dpp.AutoDepthStencilFormat = format_type[t];
-
-		if( FAILED( GlobalD3DVars::lpD3D->CreateDevice(
-								adapter_choice, 
-								D3DDEVTYPE_HAL, 
-								(HWND) os_get_window(),
-                                D3DCREATE_HARDWARE_VERTEXPROCESSING,
-                                &GlobalD3DVars::d3dpp, 
-								&GlobalD3DVars::lpD3DDevice) ) ) {
-
-			mprintf(("Failed to create hardware vertex processing device, trying software"));
-
-			if( FAILED( GlobalD3DVars::lpD3D->CreateDevice(
+			GlobalD3DVars::d3dpp.AutoDepthStencilFormat = format_type[t];
+		
+			if( SUCCEEDED( GlobalD3DVars::lpD3D->CreateDevice(
 									adapter_choice, 
 									D3DDEVTYPE_HAL, 
 									(HWND) os_get_window(),
-					                D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-						            &GlobalD3DVars::d3dpp, 
+									vptypes[vp],
+		                            &GlobalD3DVars::d3dpp, 
 									&GlobalD3DVars::lpD3DDevice) ) ) {
-
-				mprintf(("Failed to create software vertex processing device"));
-			} else {
+				have_device = true;
 				break;
 			}
-		} else {
-			mprintf(("Using hardware vertex processing"));
+		}
+
+		if(have_device == true) {
 			break;
 		}
 	}
 
-	if (t == N_FORMATS) {
+	if (have_device == false) {
 		sprintf(Device_init_error, "Failed to get init mode");
 		return false;
 	} 

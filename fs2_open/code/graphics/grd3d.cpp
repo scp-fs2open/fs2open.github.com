@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.33 $
- * $Date: 2003-10-25 06:56:05 $
- * $Author: bobboau $
+ * $Revision: 2.34 $
+ * $Date: 2003-10-27 23:04:21 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/10/25 06:56:05  bobboau
+ * adding FOF stuff,
+ * and fixed a small error in the matrix code,
+ * I told you it was indeed suposed to be gr_start_instance_matrix
+ * in g3_done_instance,
+ * g3_start_instance_angles needs to have an gr_ API abstraction version of it made
+ *
  * Revision 2.32  2003/10/25 03:26:39  phreak
  * fixed some old bugs that reappeared after RT committed his texture code
  *
@@ -608,9 +615,6 @@ int n_active_lights = 0;
 
 D3DXPLANE d3d_user_clip_plane;
 
-// Marco
-#define VEC2DVEC(v) D3DXVECTOR3(v.xyz.x,v.xyz.y,v.xyz.z)
-
 // Function declarations
 void shift_active_lights(int pos);
 void pre_render_lights_init();
@@ -621,8 +625,8 @@ const char *d3d_error_string(HRESULT error);
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
  * lengths in order to keep the correctly scaled to nonstandard resolutions
  *
- * @param int *x - x value (width to be sacled), can be NULL
- * @param int *y - y value (height to be sacled), can be NULL
+ * @param int *x - x value (width to be scaled), can be NULL
+ * @param int *y - y value (height to be scaled), can be NULL
  * @return always true
  */
 bool gr_d3d_resize_screen_pos(int *x, int *y)
@@ -644,6 +648,33 @@ bool gr_d3d_resize_screen_pos(int *x, int *y)
 
 	return true;
 }
+
+/**
+ *
+ * @param int *x - x value (width to be unsacled), can be NULL
+ * @param int *y - y value (height to be unsacled), can be NULL
+ * @return always true
+ */
+bool gr_d3d_unsize_screen_pos(int *x, int *y)
+{
+	if(GlobalD3DVars::D3D_custom_size < 0)	return false;
+
+	int mult_by_x = (GlobalD3DVars::D3D_custom_size == GR_1024) ? 1024 : 640;
+	int mult_by_y = (GlobalD3DVars::D3D_custom_size == GR_1024) ?  768 : 480;
+			
+	if(x) {
+		(*x) *= mult_by_x;
+		(*x) /= GlobalD3DVars::d3dpp.BackBufferWidth;
+	}
+
+	if(y) {
+		(*y) *= mult_by_y;
+		(*y) /= GlobalD3DVars::d3dpp.BackBufferHeight;
+	}
+
+	return true;
+}
+
 
 void d3d_fill_pixel_format(PIXELFORMAT *pixelf, D3DFORMAT tformat);
 
@@ -1224,7 +1255,7 @@ void gr_d3d_flip()
 			#endif
 		} else {	
 			gr_set_bitmap(Gr_cursor);				
-			gr_bitmap( mx, my );
+			gr_bitmap( mx, my, false);
 		}		
 	} 	
 
@@ -1608,6 +1639,8 @@ inline ushort d3d_ramp_val(UINT i, float recip_gamma, int scale = 65535)
  */
 void gr_d3d_set_gamma(float gamma)
 {
+	if(Cmdline_no_set_gamma) return;
+
 	Gr_gamma = gamma;
 	D3DGAMMARAMP gramp;
 
@@ -1618,27 +1651,6 @@ void gr_d3d_set_gamma(float gamma)
 
    	GlobalD3DVars::lpD3DDevice->SetGammaRamp(D3DSGR_CALIBRATE, &gramp);
 }
-
-#if 0
-void gr_d3d_set_gamma(float gamma)
-{
-	Gr_gamma = gamma;
-	Gr_gamma_int = int(Gr_gamma*100);
-
-	// Create the Gamma lookup table
-	for (int i = 0; i < 256; i++ )	{
-		int v = fl2i( pow(i2fl(i) / 255.0f, 1.0f/ Gr_gamma) * 255.0f);
-
-		if ( v > 255 ) {
-			v = 255;
-		} else if ( v < 0 )	{
-			v = 0;
-		}
-
-		Gr_gamma_lookup[i] = v;
-	}
-}
-#endif
 
 /**
  * Toggle polygon culling mode Counter-clockwise or none
@@ -1652,7 +1664,7 @@ void gr_d3d_set_cull(int cull)
 }
 
 /**
- * Cross fade
+ * Cross fade, actually works now
  *
  * @param int bmap1 
  * @param int bmap2 
@@ -1660,18 +1672,16 @@ void gr_d3d_set_cull(int cull)
  * @param int y1 
  * @param int x2 
  * @param int y2 
- * @param float pct
+ * @param float pct	- Fade value, between 0.0 - 1.0
  * @return void
  */
 void gr_d3d_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct)
 {
-	if ( pct <= 50 )	{
-		gr_set_bitmap(bmap1);
-		gr_bitmap(x1, y1);
-	} else {
-		gr_set_bitmap(bmap2);
-		gr_bitmap(x2, y2);
-	}	
+	gr_set_bitmap(bmap1, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f - pct );
+	gr_bitmap(x1, y1);
+
+	gr_set_bitmap(bmap2, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, pct );
+	gr_bitmap(x2, y2);
 }
 
 /**
@@ -1925,7 +1935,7 @@ void gr_d3d_render_buffer(int idx)
 void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
 	D3DXMATRIX mat, scale;
 
-	D3DXMatrixPerspectiveFovLH(&mat, (4.0/9.0)*(D3DX_PI)*View_zoom, Canv_w2/Canv_h2, 0.2f, 30000);
+	D3DXMatrixPerspectiveFovLH(&mat, (4.0f/9.0f)*(D3DX_PI)*View_zoom, Canv_w2/Canv_h2, 0.2f, 30000.0f);
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_PROJECTION, &mat);
 
 	D3DXMATRIX world(
@@ -1957,9 +1967,6 @@ void gr_d3d_end_instance_matrix()
 		the_lights_are_on = false;
 	}
 
-	extern int D3D_vertex_type;
-   //	D3D_vertex_type = -1;
-
 	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
 	d3d_SetTexture(1, NULL);
 	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
@@ -1973,9 +1980,6 @@ void gr_d3d_end_instance_matrix()
  * @return void
  */
 void d3d_start_clip(){
-
-	// Lets be safe instead, see 'Compiler Warning (level 4) C4238'- RT 
-	// D3DXPlaneFromPointNormal(&d3d_user_clip_plane, &VEC2DVEC(G3_user_clip_point), &VEC2DVEC(G3_user_clip_normal));
 
 	D3DXVECTOR3 point(G3_user_clip_point.xyz.x,G3_user_clip_point.xyz.y,G3_user_clip_point.xyz.z); 
 	D3DXVECTOR3	normal(G3_user_clip_normal.xyz.x,G3_user_clip_normal.xyz.y,G3_user_clip_normal.xyz.z);

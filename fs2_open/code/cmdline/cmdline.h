@@ -10,11 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.32 $
- * $Date: 2003-10-24 17:35:04 $
+ * $Revision: 2.33 $
+ * $Date: 2003-10-27 23:04:20 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/10/24 17:35:04  randomtiger
+ * Implemented support for 32bit TGA and JPG for D3D
+ * Also 32 bit PCX, but it still has some bugs to be worked out
+ * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
+ *
  * Revision 2.31  2003/10/17 17:18:42  randomtiger
  * Big restructure for D3D and new modules grd3dlight and grd3dsetup
  *
@@ -322,7 +327,6 @@ extern int Cmdline_multi_log;
 extern int Cmdline_server_firing;
 extern int Cmdline_client_dodamage;
 extern int Cmdline_spew_pof_info;
-extern int Cmdline_force_32bit;
 extern int Cmdline_mouse_coords;
 extern int Cmdline_timeout;
 extern int Cmdline_SpewMission_CRCs;
@@ -353,5 +357,6 @@ extern double specular_exponent_value;
 extern int Cmdline_cell;
 extern int Cmdline_nohtl;
 extern int Cmdline_32bit_textures;
+extern int Cmdline_no_set_gamma;
 
 #endif

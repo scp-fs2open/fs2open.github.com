@@ -849,14 +849,16 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 #endif
 	int valid_other = bm_bitmaps[bitmapnum].type == BM_TYPE_TGA || bm_bitmaps[bitmapnum].type == BM_TYPE_JPG;
 
-
 	if(valid_pcx || valid_other)	
 	{
 		// There is no internal texture
 		bm_d3d_lock(handle, bpp, flags );
 		bm_unlock(handle);	
+	}
 
-		if(bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32)
+	if(bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32 || valid_other)
+	{
+		if(!valid_other)
 		{
 		  	if(u_scale) *u_scale = d3d_bitmap_entry[bitmapnum].uscale;
 	   	  	if(v_scale) *v_scale = d3d_bitmap_entry[bitmapnum].vscale;
@@ -866,10 +868,8 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 	 		if(u_scale) *u_scale = 1.0;
 	 		if(v_scale) *v_scale = 1.0;
 		}
-	}
 
-	if(bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32 || valid_other)
-	{
+
 		d3d_SetTexture(stage, d3d_bitmap_entry[bitmapnum].tinterface);
 		return true;
 	}
@@ -912,7 +912,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 	if(be->type == BM_TYPE_PCX && bpp != 8 && Cmdline_32bit_textures)
 	{
 #ifdef PCX_32
-   	 	be->type = BM_TYPE_PCX_32;
+   	 	be->type = BM_TYPE_PCX_32; 
 #endif
 	}
 
