@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-03-09 17:59:01 $
+ * $Revision: 2.24 $
+ * $Date: 2004-03-10 20:51:16 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/03/09 17:59:01  Kazan
+ * Disabled multithreaded TCP_Socket in favor of safer single threaded
+ * FS2NetD doesn't kill the game on connection failure now - just gives warning message and effectively dsiables itself until they try to connect again
+ *
  * Revision 2.22  2004/03/09 00:02:16  Kazan
  * more fs2netd stuff
  *
@@ -2978,7 +2982,9 @@ int Msg_rank_list_coords[GR_NUM_RESOLUTIONS][4] = {
 
 
 // button defs
-#define MULTI_SG_NUM_BUTTONS	12
+#define MULTI_SG_NUM_BUTTONS	10
+//#define MULTI_SG_NUM_BUTTONS	12
+
 #define MSG_OPEN_GAME			0
 #define MSG_CLOSED_GAME			1
 #define MSG_RESTRICTED_GAME		2
@@ -3001,8 +3007,8 @@ int Multi_sg_bitmap;														// the background bitmap
 ui_button_info Multi_sg_buttons[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_BUTTONS] = {
 	{ // GR_640
 		ui_button_info("MSG_00",	1,		184,	34,	191,	2),		// open
-		ui_button_info("MSG_01",	1,		159,	34,	166,	1),		// closed
-		ui_button_info("MSG_02",	1,		184,	34,	191,	2),		// restricted
+//******ui_button_info("MSG_01",	1,		159,	34,	166,	1),		// closed
+//******ui_button_info("MSG_02",	1,		184,	34,	191,	2),		// restricted
 		ui_button_info("MSG_03",	1,		209,	34,	218,	3),		// password
 		ui_button_info("MSG_04",	1,		257,	34,	266,	4),		// rank set
 		ui_button_info("MSG_05",	1,		282,	-1,	-1,	5),		// rank scroll up
@@ -3015,8 +3021,8 @@ ui_button_info Multi_sg_buttons[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_BUTTONS] = {
 	},
 	{ // GR_1024
 		ui_button_info("2_MSG_00",	2,		295,	51,	307,	2),		// open
-		ui_button_info("2_MSG_01",	2,		254,	51,	267,	1),		// closed
-		ui_button_info("2_MSG_02",	2,		295,	51,	307,	2),		// restricted
+//******ui_button_info("2_MSG_01",	2,		254,	51,	267,	1),		// closed
+//******ui_button_info("2_MSG_02",	2,		295,	51,	307,	2),		// restricted
 		ui_button_info("2_MSG_03",	2,		335,	51,	350,	3),		// password
 		ui_button_info("2_MSG_04",	2,		412,	51,	426,	4),		// rank set
 		ui_button_info("2_MSG_05",	2,		452,	-1,	-1,	5),		// rank scroll up
@@ -3029,12 +3035,13 @@ ui_button_info Multi_sg_buttons[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_BUTTONS] = {
 	},
 };
 
-#define MULTI_SG_NUM_TEXT			13
+//#define MULTI_SG_NUM_TEXT			13
+#define MULTI_SG_NUM_TEXT			11
 UI_XSTR Multi_sg_text[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_TEXT] = {
 	{ // GR_640
 		{"Open",					1322,		34,	191,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_OPEN_GAME].button},
-		{"Closed",				1323,		34,	166,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_CLOSED_GAME].button},
-		{"Restricted",			1324,		34,	191,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_RESTRICTED_GAME].button},
+//******{"Closed",				1323,		34,	166,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_CLOSED_GAME].button},
+//******{"Restricted",			1324,		34,	191,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_RESTRICTED_GAME].button},
 		{"Password Protected",	1325,	34,	218,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_PASSWD_GAME].button},
 		{"Allow Rank",			1326,		34,	266,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_RANK_SET_GAME].button},
 		{"Above",				1327,		210,	290,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[0][MSG_RANK_ABOVE].button},
@@ -3048,8 +3055,8 @@ UI_XSTR Multi_sg_text[GR_NUM_RESOLUTIONS][MULTI_SG_NUM_TEXT] = {
 	},
 	{ // GR_1024
 		{"Open",					1322,		51,	307,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_OPEN_GAME].button},
-		{"Closed",				1323,		51,	267,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_CLOSED_GAME].button},
-		{"Restricted",			1324,		51,	307,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_RESTRICTED_GAME].button},
+//******{"Closed",				1323,		51,	267,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_CLOSED_GAME].button},
+//******{"Restricted",			1324,		51,	307,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_RESTRICTED_GAME].button},
 		{"Password Protected",	1325,	51,	350,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_PASSWD_GAME].button},
 		{"Allow Rank",			1326,		51,	426,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_RANK_SET_GAME].button},
 		{"Above",				1327,		335,	465,	UI_XSTR_COLOR_GREEN,	-1,	&Multi_sg_buttons[1][MSG_RANK_ABOVE].button},

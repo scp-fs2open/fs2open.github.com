@@ -9,13 +9,16 @@
 
 /*
  * $Logfile$
- * $Revision: 1.5 $
- * $Date: 2004-03-10 18:45:09 $
+ * $Revision: 1.6 $
+ * $Date: 2004-03-10 20:51:16 $
  * $Author: Kazan $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/03/10 18:45:09  Kazan
+ * partially complete IRC - so i can work on it on my laptop
+ *
  * Revision 1.4  2004/03/08 22:02:39  Kazan
  * Lobby GUI screen restored
  *
@@ -34,6 +37,8 @@
 
 
 #pragma warning(disable:4786)
+#pragma warning(disable:4710)
+
 #include "globalincs/pstypes.h"
 #include "ui/ui.h"
 #include "bmpman/bmpman.h"

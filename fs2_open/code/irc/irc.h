@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.1 $
- * $Date: 2004-03-10 19:11:40 $
+ * $Revision: 1.2 $
+ * $Date: 2004-03-10 20:51:16 $
  * $Author: Kazan $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/03/10 19:11:40  Kazan
+ * generally it helps if i actually add and commit the files i want to modify on a different system
+ *
  *
  *
  */
@@ -30,7 +33,7 @@
 #include <vector>
 #include <fstream.h>
 
-class irc_user
+struct irc_user
 {
 	std::string user;
 	std::string pass;
@@ -60,7 +63,13 @@ class irc_channel
 };
 
 
-
+// used for incoming commands from the server
+struct irc_command
+{
+	std::string source;
+	std::string command;
+	std::string params;
+};
 
 class irc_client
 {
@@ -88,8 +97,12 @@ class irc_client
 		void Notice(std::string target, std::string message);
 		void Quit(std::string message="");
 		void Oper(std::string user, std::string pass);
+		void UserHost(std::string target);
 
-		// Get Commands
+
+
+		// Network Interface Commands
+		void Interpret_Commands_Do();
 		std::vector<std::string> Maybe_GetRawLines();
 
 	private:
@@ -103,6 +116,10 @@ class irc_client
 		void PutRaw(std::string command);
 		std::vector<std::string> ExtractParams(std::string UserInput, int params);
 		std::vector<std::string> BreakLines(std::string HostInput);
+		std::vector<std::string> SplitOnStr(std::string haystack, std::string divide);
+
+		void Interpret_Command(std::string command);
+		bool StrIcmp(std::string one, std::string two);
 		
 };
 
