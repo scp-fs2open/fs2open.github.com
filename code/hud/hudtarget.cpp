@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-09-12 00:34:05 $
- * $Author: argv $
+ * $Revision: 2.21 $
+ * $Date: 2003-09-12 01:38:13 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/09/12 00:34:05  argv
+ * Minor cosmetic fix.
+ *
  * Revision 2.19  2003/09/09 05:51:14  Goober5000
  * if player has primitive sensors, hud will not display shield icons or message sender brackets
  * --Goober5000
@@ -4429,12 +4432,15 @@ void hud_cease_targeting()
 {
 	set_target_objnum( Player_ai, -1 );
 	// _argv[-1] - allow 'target nothing' command to not disable auto targeting.
-	if (!Argv_options.no_implicit_disable_auto_target || !(Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING)) {
+	if ((Argv_options.no_implicit_disable_auto_target) && (Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING))
+	{
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Selecting new target", -1));
+	}
+	else
+	{
 		Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Deactivating targeting system", 325));
 	}
-	else
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Selecting new target");
 	hud_cease_subsystem_targeting(0);
 	hud_lock_reset();
 }
