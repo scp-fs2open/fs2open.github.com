@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.46 $
- * $Date: 2004-12-05 22:01:11 $
- * $Author: bobboau $
+ * $Revision: 2.47 $
+ * $Date: 2005-01-01 19:45:32 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2004/12/05 22:01:11  bobboau
+ * sevral feature additions that WCS wanted,
+ * and the foundations of a submodel animation system,
+ * the calls to the animation triggering code (exept the procesing code,
+ * wich shouldn't do anything without the triggering code)
+ * have been commented out.
+ *
  * Revision 2.45  2004/10/09 17:45:08  taylor
  * da simple IBX code
  *
@@ -1127,7 +1134,8 @@ void model_set_detail_level(int n);
 #define MR_FORCE_TEXTURE			(1<<23)		// force a given texture to always be used
 #define MR_FORCE_LOWER_DETAIL		(1<<24)		// force the model to draw 1 LOD lower, if possible
 #define MR_EDGE_ALPHA		(1<<25)		// makes norms that are faceing away from you render more transparent -Bobboau
-#define MR_CENTER_ALPHA		(1<<27)		// oposite of above -Bobboau
+#define MR_CENTER_ALPHA		(1<<26)		// oposite of above -Bobboau
+#define MR_NO_FOGGING				(1<<27)		// Don't fog - taylor
 
 // Renders a model and all it's submodels.
 // See MR_? defines for values for flags
