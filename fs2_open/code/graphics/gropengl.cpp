@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.110 $
- * $Date: 2005-03-20 18:05:04 $
- * $Author: phreak $
+ * $Revision: 2.111 $
+ * $Date: 2005-03-22 00:36:48 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2005/03/20 18:05:04  phreak
+ * lol forgot to commit the function pointer stuff
+ *
  * Revision 2.109  2005/03/20 00:09:07  phreak
  * Added gr_draw_htl_line and gr_draw_htl sphere
  * There still needs to be D3D versions implemented, but OGL is done.
@@ -763,10 +766,11 @@
 #endif
 
 
+#define REQUIRED_GL_MAJOR_VERSION	1
 #ifdef GL_NO_HTL
-#define REQUIRED_GL_VERSION '1'
+#define REQUIRED_GL_MINOR_VERSION	1
 #else
-#define REQUIRED_GL_VERSION '2'
+#define REQUIRED_GL_MINOR_VERSION	2
 #endif
 
 extern int Cmdline_nohtl;
@@ -3642,6 +3646,7 @@ void gr_opengl_init(int reinit)
 	char *extlist;
 	char *curext;
 	char *ver;
+	int major = 0, minor = 0;
 	int bpp = gr_screen.bits_per_pixel;
 
 	if(!Cmdline_nohtl) {
@@ -3867,10 +3872,12 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	HWND wnd = 0;
 #endif
 
-	ver=(char*)glGetString(GL_VERSION);
+	// version check
+	ver = (char *)glGetString(GL_VERSION);
+	sscanf(ver, "%d.%d", &major, &minor);
 
-	if (*(ver+2) < REQUIRED_GL_VERSION) {
-		Error(LOCATION,"Current GL Version of 1.%c is less than required version of 1.%c\nSwitch video modes or update drivers", *(ver+2), REQUIRED_GL_VERSION);
+	if ( (major <= REQUIRED_GL_MAJOR_VERSION) && (minor < REQUIRED_GL_MINOR_VERSION) ) {
+		Error(LOCATION,"Current GL Version of %i.%i is less than required version of %i.%i\nSwitch video modes or update drivers", major, minor, REQUIRED_GL_MAJOR_VERSION, REQUIRED_GL_MINOR_VERSION);
 	}
 
 	OGL_enabled = 1;
@@ -3895,7 +3902,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 			while (curext)
 			{
-				mprintf(( "%s\n", curext ));
+				mprintf(( "    %s\n", curext ));
 				curext=strtok(NULL, " ");
 			}
 
