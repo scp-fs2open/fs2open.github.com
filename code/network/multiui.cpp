@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:25 $
  * $Author: penguin $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -428,8 +431,13 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <io.h>
 #include <winsock.h>	// for inet_addr()
+#else
+#include <arpa/inet.h>
+#endif
+
 #include "multi.h"
 #include "multiui.h"
 #include "multiutil.h"
@@ -1350,7 +1358,7 @@ void multi_join_game_init()
 		port_num = DEFAULT_GAME_PORT;
 		p = strrchr(Cmdline_connect_addr, ':');
 		if ( p ) {
-			*p = NULL;
+			*p = '\0';
 			p++;
 			port_num = (short)atoi(p);
 		}
@@ -4726,11 +4734,13 @@ void multi_create_list_load_missions()
 	file_count = cf_get_file_list_preallocated(MULTI_CREATE_MAX_LIST_ITEMS, Multi_create_files_array, NULL, CF_TYPE_MISSIONS, wild_card);
 	Multi_create_mission_count = 0;
 
+#ifndef NO_STANDALONE
 	// maybe create a standalone dialog
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_create_gen_dialog("Loading missions");
 		std_gen_set_text("Mission:", 1);
 	}
+#endif
 
 	for(idx = 0; idx < file_count; idx++){
 		int flags,max_players;
@@ -4753,9 +4763,11 @@ void multi_create_list_load_missions()
 		}
 #endif
 
+#ifndef NO_STANDALONE
 		if(Game_mode & GM_STANDALONE_SERVER){			
 			std_gen_set_text(filename, 2);
 		}
+#endif
 
 		flags = mission_parse_is_multi(filename, mission_name);		
 
@@ -4786,10 +4798,12 @@ void multi_create_list_load_missions()
 
 	Multi_create_slider.set_numberItems(Multi_create_mission_count > Multi_create_list_max_display[gr_screen.res] ? Multi_create_mission_count-Multi_create_list_max_display[gr_screen.res] : 0);
 
+#ifndef NO_STANDALONE
 	// maybe create a standalone dialog
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_destroy_gen_dialog();		
 	}
+#endif
 }
 
 void multi_create_list_load_campaigns()
@@ -4800,11 +4814,13 @@ void multi_create_list_load_campaigns()
 	char title[255];
 	char wild_card[256];
 
+#ifndef NO_STANDALONE
 	// maybe create a standalone dialog
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_create_gen_dialog("Loading campaigns");
 		std_gen_set_text("Campaign:", 1);
 	}
+#endif
 
 	Multi_create_campaign_count = 0;
 	memset(wild_card, 0, 256);
@@ -4831,9 +4847,11 @@ void multi_create_list_load_campaigns()
 		}
 #endif
 
+#ifndef NO_STANDALONE
 		if(Game_mode & GM_STANDALONE_SERVER){			
 			std_gen_set_text(filename, 2);
 		}
+#endif
 
 		// if the campaign is a multiplayer campaign, then add the data to the campaign list items
 		flags = mission_campaign_parse_is_multi( filename, name );
@@ -4870,10 +4888,12 @@ void multi_create_list_load_campaigns()
 		}
 	}	
 	
+#ifndef NO_STANDALONE
 	// maybe create a standalone dialog
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_destroy_gen_dialog();		
 	}
+#endif
 }
 
 void multi_create_list_do()
@@ -8107,10 +8127,12 @@ void multi_sync_pre_init()
 		// setup some of my own data
 		Net_player->flags |= NETINFO_FLAG_MISSION_OK;		
 
+#ifndef NO_STANDALONE
 		// do any output stuff
 		if(Game_mode & GM_STANDALONE_SERVER){
 			std_debug_set_standalone_state_string("Mission Sync");			
 		}		
+#endif
 
 		// do this here to insure we have the most up to date file checksum info
 		multi_get_mission_checksum(Game_current_mission_filename);

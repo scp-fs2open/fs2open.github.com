@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_endgame.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:25 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -556,10 +559,13 @@ void multi_endgame_cleanup()
 		gameseq_pop_state();
 	}
 
+#ifndef NO_STANDALONE
 	if(Game_mode & GM_STANDALONE_SERVER){
 		// multi_standalone_quit_game();		
 		multi_standalone_reset_all();
-	} else {		
+	} else 
+#endif
+        {		
 		Player->flags |= PLAYER_FLAGS_IS_MULTI;		
 
 		// if we're in Parallax Online mode, log back in there	

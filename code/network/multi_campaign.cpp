@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:25 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -230,6 +233,7 @@ void multi_campaign_start(char *filename)
 		strcpy(Netgame.campaign_name,filename);
 		strcpy(Game_current_mission_filename,Netgame.mission_name);
 
+#ifndef NO_STANDALONE
 		// if we're the standalone server, set the mission and campaign names
 		if(Game_mode & GM_STANDALONE_SERVER){
 			memset(str,0,255);
@@ -241,6 +245,7 @@ void multi_campaign_start(char *filename)
 			// set the control on the stand_gui
 			std_multi_set_standalone_mission_name(str);
 		}
+#endif
 
 		// maybe override the Netgame.respawn setting
 		max_players = mission_parse_get_multi_mission_info( Netgame.mission_name );				
@@ -278,6 +283,7 @@ void multi_campaign_next_mission()
 		strncpy(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN);
 		strcpy(Netgame.mission_name,Game_current_mission_filename);			
 
+#ifndef NO_STANDALONE
 		// if we're the standalone server, set the mission and campaign names
 		if(Game_mode & GM_STANDALONE_SERVER){
 			memset(str,0,255);
@@ -289,7 +295,7 @@ void multi_campaign_next_mission()
 			// set the control on the stand_gui
 			std_multi_set_standalone_mission_name(str);
 		}
-
+#endif
 	}
 }
 

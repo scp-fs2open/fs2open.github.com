@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-22 01:22:26 $
  * $Author: penguin $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -204,7 +207,14 @@
  * $NoKeywords: $
  */
 
+#if defined _WIN32
 #include <winsock.h>
+#elif defined unix
+#include <arpa/inet.h>
+#include <errno.h>
+#endif
+#include <ctype.h>
+
 #include "pstypes.h"
 #include "multiutil.h"
 #include "linklist.h"
@@ -984,11 +994,13 @@ int multi_create_player( int net_player_num, player *pl, char* name, net_addr* a
 	pl->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 	pl->objnum = -1;
 
+#ifndef NO_STANDALONE
 	// if we're the standalone server and this is the first guy to join, mark him as the host
 	// and give him all host priveleges
 	if((Game_mode & GM_STANDALONE_SERVER) && (current_player_count == 0)){
 		Net_players[net_player_num].flags |= NETINFO_FLAG_GAME_HOST;
 	}
+#endif
 	
 	Net_players[net_player_num].player_id = id;
 
@@ -1068,6 +1080,7 @@ void delete_player(int player_num,int kicked_reason)
 	
 		// am I the server
 		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+#ifndef NO_STANDALONE
 			// are we a standalone server and in a mission?
 			if((Game_mode & GM_STANDALONE_SERVER) && MULTI_IN_MISSION){			
 				// choose a new host			
@@ -1088,7 +1101,9 @@ void delete_player(int player_num,int kicked_reason)
 				if(!found_new_host){
 					multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_HOST_LEFT);
 				}			 
-			} else {
+			} else 
+#endif // #ifndef NO_STANDALONE
+                        {
 				multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_HOST_LEFT);
 			}
 		} 
@@ -1152,11 +1167,13 @@ void delete_player(int player_num,int kicked_reason)
 		multi_display_chat_msg(notify_string,0,0);
 	}
 	
+#ifndef NO_STANDALONE
 	// standalone gui type stuff
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_remove_player(&Net_players[player_num]);
 		std_connect_set_connect_count();
 	}
+#endif
 
 	// blast this memory clean
 	memset(&Net_players[player_num], 0, sizeof(net_player));
@@ -2128,6 +2145,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 		return JOIN_DENY_JR_STATE;
 	}
 	
+#ifndef NO_STANDALONE
 	// the standalone has some oddball situations which we must handle seperately
 	if(Game_mode & GM_STANDALONE_SERVER){		
 		// if this is the first connection, he will be the host so we must always accept him
@@ -2153,6 +2171,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 			}
 		}		
 	}
+#endif  // #ifndef NO_STANDALONE
 
 	// first off check to see if we're violating any of our max players/observers/connections boundaries	
 		// if we've already got the full 16 (MAX_PLAYERS) connections - yow
@@ -2208,10 +2227,12 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 		return JOIN_DENY_JR_TYPE;
 	}	
 
+#ifndef NO_STANDALONE
 	// if the player was banned by the standalone
 	if((Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign)){
 		return JOIN_DENY_JR_BANNED;
 	}
+#endif
 
 	// if the game is in-mission, make sure there are ships available
 	if(MULTI_IN_MISSION && !(jr->flags & JOIN_FLAG_AS_OBSERVER)){
@@ -2350,10 +2371,12 @@ void multi_handle_end_mission_request()
 		Netgame.game_state = NETGAME_STATE_ENDGAME;		
 		send_netgame_update_packet();					
 		
+#ifndef NO_STANDALONE
 		if(Game_mode & GM_STANDALONE_SERVER){					
 			// move to the standalone postgame (which is where we'll handle stats packets, etc)
 			gameseq_post_event(GS_EVENT_STANDALONE_POSTGAME);
 		}
+#endif
 
 		// begin the warpout process for all players and myself
 		multi_warpout_all_players();
@@ -2675,12 +2698,15 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 	// copy in his options
 	memcpy(&Net_players[net_player_num].p_info.options, &jr->player_options, sizeof(multi_local_options));
 
+#ifndef NO_STANDALONE
 	// if on the standalone, then do any necessary gui updating
 	if(Game_mode & GM_STANDALONE_SERVER) {		
 		std_add_player(&Net_players[net_player_num]);
 		std_connect_set_connect_count();
 		std_connect_set_host_connect_status();
-	} else {
+	} else 
+#endif
+   {
 		// let the create game screen know someone has joined
 		if(gameseq_get_state() == GS_STATE_MULTI_HOST_SETUP){
 			multi_create_handle_join(&Net_players[net_player_num]);
@@ -2914,10 +2940,12 @@ void multi_flush_mission_stuff()
 
 	multi_xfer_reset();
 
+#ifndef NO_STANDALONE
 	// standalone servers should clear their goal trees now
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_multi_setup_goal_tree();
 	}
+#endif
 	
 	// object signatures
 	// this will eventually get reset to Netgame.security the next time an object gets its signature assigned.
@@ -2983,11 +3011,13 @@ int multi_kill_limit_reached()
 // display a chat message (write to the correct spot - hud, standalone gui, chatbox, etc)
 void multi_display_chat_msg(char *msg, int player_index, int add_id)
 {
+#ifndef NO_STANDALONE
 	// if i'm a standalone, always add to the gui
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_add_chat_text(msg,player_index,add_id);
 		return;
 	}
+#endif
 	
 	// in gameplay
 	if(Game_mode & GM_IN_MISSION){					
@@ -3089,7 +3119,8 @@ int multi_get_connection_speed()
 {
 	int cspeed;
 	char *connection_speed;
-	
+
+#ifdef _WIN32	
 	connection_speed = os_config_read_string(NULL, "ConnectionSpeed", "");	
 
 	if ( !stricmp(connection_speed, NOX("Slow")) ) {
@@ -3105,6 +3136,10 @@ int multi_get_connection_speed()
 	} else {
 		cspeed = CONNECTION_SPEED_NONE;
 	}
+#else
+	// mua ha ha
+	cspeed = CONNECTION_SPEED_T1;
+#endif
 
 	return cspeed;
 }
@@ -3127,11 +3162,13 @@ void multi_update_valid_missions()
 	int idx, file_index;	
 	int was_cancelled;
 
+#ifndef NO_STANDALONE
 	// if we're a standalone, show a dialog saying "validating missions"
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_create_gen_dialog("Validating missions");
 		std_gen_set_text("Querying:",1);
 	}
+#endif
 
 	// mark all missions on our list as being MVALID_STATUS_UNKNOWN
 	for(idx=0; idx<Multi_create_mission_count; idx++){
@@ -3190,10 +3227,12 @@ void multi_update_valid_missions()
 
 	// if the operation was cancelled, don't write anything new
 	if(was_cancelled){
+#ifndef NO_STANDALONE
 		// if we're a standalone, kill the validate dialog
 		if(Game_mode & GM_STANDALONE_SERVER){
 			std_destroy_gen_dialog();
 		}
+#endif
 
 		return;
 	}
@@ -3201,10 +3240,12 @@ void multi_update_valid_missions()
 	// now rewrite the outfile with the new mission info
 	in = cfopen(MULTI_VALID_MISSION_FILE, "wt", CFILE_NORMAL, CF_TYPE_DATA);
 	if(in == NULL){
+#ifndef NO_STANDALONE
 		// if we're a standalone, kill the validate dialog
 		if(Game_mode & GM_STANDALONE_SERVER){
 			std_destroy_gen_dialog();
 		}
+#endif
 
 		return;
 	}
@@ -3228,10 +3269,12 @@ void multi_update_valid_missions()
 	cfclose(in);
 	in = NULL;
 
+#ifndef NO_STANDALONE
 	// if we're a standalone, kill the validate dialog
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_destroy_gen_dialog();
 	}
+#endif
 }
 
 // get a new id# for a player

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:25 $
  * $Author: penguin $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/13 21:09:28  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -1458,10 +1461,12 @@ void multi_do_frame()
 	// process any player messaging details
 	multi_msg_process();		
 	
+#ifndef NO_STANDALONE
 	// if on the standalone, do any gui stuff
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_do_gui_frame();
 	}	
+#endif
 
 	// dogfight nonstandalone players should recalc the escort list every frame
 	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
@@ -1558,12 +1563,18 @@ void multi_pause_do_frame()
 		multi_oo_process();
 	}
 
+#ifndef NO_STANDALONE
 	// if on the standalone, do any gui stuff
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_do_gui_frame();
 	}
+#endif
 }
 
+
+
+
+#ifndef NO_STANDALONE
 
 // --------------------------------------------------------------------------------
 // standalone_main_init()  the standalone equivalent of the main menu
@@ -1583,17 +1594,18 @@ void standalone_main_init()
 
 	// read in config file
 	// multi_options_read_config();   
-
-	// if we failed to startup on our desired protocol, fail	
-	if((Multi_options_g.protocol == NET_IPX) && !Ipx_active){						
+#ifdef _WIN32
+	// if we failed to startup on our desired protocol, fail
+	if((Multi_options_g.protocol == NET_IPX) && !Ipx_active){
 		MessageBox((HWND)os_get_window(), XSTR( "You have selected IPX for multiplayer Freespace, but the IPX protocol was not detected on your machine.", 1402), "Error", MB_OK);
 		exit(1);
-	} 
-	if((Multi_options_g.protocol == NET_TCP) && !Tcp_active){		
+	}
+	if((Multi_options_g.protocol == NET_TCP) && !Tcp_active){
 		MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer Freespace, but the TCP/IP protocol was not detected on your machine.", 362), "Error", MB_OK);
 		exit(1);
 	}
-	
+#endif // WIN32
+
 	// set the protocol
 #ifdef MULTIPLAYER_BETA_BUILD
 	Multi_options_g.protocol = NET_TCP;
@@ -1884,6 +1896,10 @@ void multi_standalone_postgame_close()
 {
 }
 
+#endif // ifndef NO_STANDALONE
+
+
+
 void multi_reset_timestamps()
 {
 	int i;
@@ -1907,8 +1923,10 @@ void multi_reset_timestamps()
 		Net_players[i].s_info.voice_token_timestamp = -1;
 	}
 
+#ifndef NO_STANDALONE
 	// reset standalone gui timestamps (these are not game critical, so there is not much danger)
 	std_reset_timestamps();
+#endif
 
 	// initialize all object update timestamps
 	multi_oo_gameplay_init();

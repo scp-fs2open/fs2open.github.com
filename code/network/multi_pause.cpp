@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pause.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:25 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *  
@@ -127,6 +130,7 @@
 #include "multi.h"
 #include "alphacolors.h"
 #include "timer.h"
+#include "osapi.h"
 
 // ----------------------------------------------------------------------------------
 // PAUSE DEFINES/VARS
@@ -390,12 +394,15 @@ void multi_pause_init(UI_WINDOW *Ui_window)
 {
 	int i;	
 
+#ifndef NO_STANDALONE
 	// standalone shouldn't be doing any freespace interface stuff
 	if (Game_mode & GM_STANDALONE_SERVER){
 		std_debug_set_standalone_state_string("Multi paused do");
 	} 
 	// everyone else should be doing UI stuff
-	else {
+	else 
+#endif
+	{
 		// switch off the text messaging system if it is active
 		multi_msg_text_flush();				
 
@@ -484,7 +491,9 @@ void multi_pause_close()
 {
 	// set the standalonest
 	if (Game_mode & GM_STANDALONE_SERVER) {
+#ifndef NO_STANDALONE
 		std_debug_set_standalone_state_string("Game play");
+#endif
 	} else {
 		// free the screen up
 		gr_free_screen(Multi_paused_screen_id);

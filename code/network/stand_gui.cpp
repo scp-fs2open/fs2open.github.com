@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-22 01:22:26 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -314,11 +317,13 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
-#include <stdio.h>
 #include <io.h>
+#endif
+#include <stdio.h>
 #include <fcntl.h>
 #include <stdarg.h>
 
