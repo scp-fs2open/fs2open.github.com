@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-12-24 05:07:05 $
+ * $Revision: 2.19 $
+ * $Date: 2004-12-25 17:02:18 $
  * $Author: wmcoolmon $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/12/24 05:07:05  wmcoolmon
+ * NEW_HUD compiles now. :)
+ *
  * Revision 2.17  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -761,7 +764,7 @@ void hud_escort_show_icon_dogfight(int x, int y, int index)
 // draw the shield icon and integrity for the escort ship
 void hud_escort_show_icon(int x, int y, int index)
 {
-#ifdef NEW_HUD
+#ifndef NEW_HUD
 #ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && index <= 2)
 	{
