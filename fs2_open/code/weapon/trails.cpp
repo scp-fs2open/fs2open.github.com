@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-02-20 07:39:14 $
+ * $Revision: 2.23 $
+ * $Date: 2005-02-20 08:24:19 $
  * $Author: wmcoolmon $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/02/20 07:39:14  wmcoolmon
+ * Trails update: Better, faster, stronger, but not much more reliable
+ *
  * Revision 2.21  2005/02/19 07:54:33  wmcoolmon
  * Removed trails limit
  *
@@ -220,7 +223,7 @@ void trail_level_close()
 		nextp = trailp->next;
 
 		//Now we can delete it
-		free(trailp);
+		delete trailp;
 	}
 
 	Num_trails=0;
@@ -250,7 +253,7 @@ trail *trail_create(trail_info *info)
 	}*/
 
 	// Make a new trail
-	trailp = (trail*)malloc(sizeof(trail));
+	trailp = new trail;
 
 	// increment counter
 	Num_trails++;
@@ -290,6 +293,9 @@ void trail_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos,
 // trail is on ship
 int trail_is_on_ship(trail *trailp, ship *shipp)
 {
+	if(trailp == NULL)
+		return 0;
+
 	int idx;
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
@@ -653,8 +659,8 @@ void trail_move_all(float frametime)
 	
 		if ( (num_alive_segments < 1) && trailp->object_died)
 		{
-			prev_trail->next = trailp;
-			free(trailp);
+			prev_trail->next = trailp->next;
+			delete trailp;
 
 			// decrement counter
 			Num_trails--;
@@ -673,7 +679,6 @@ void trail_object_died( trail *trailp )
 
 void trail_render_all()
 {
-
 	if ( !Detail.weapon_extras )	{
 		// No trails at slot 0
 		return;
