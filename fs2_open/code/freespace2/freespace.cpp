@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.56 $
- * $Date: 2003-11-09 06:31:39 $
- * $Author: Kazan $
+ * $Revision: 2.57 $
+ * $Date: 2003-11-10 02:44:36 $
+ * $Author: matt $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2003/11/09 06:31:39  Kazan
+ * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
+ * conflicts in cmdline and timerbar.h log entries
+ * cvs stopped acting like it was on crack obviously
+ *
  * Revision 2.55  2003/11/07 18:31:02  randomtiger
  * Fixed a nohtl call to htl funcs (crash with NULL pointer)
  * Fixed a bug with 32bit PCX code.
@@ -4080,7 +4085,7 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 		stars_draw(1,1,1,0);
 	}
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, Canv_w2/Canv_h2, 0.1f,30000);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( Viewer_zoom, 1.0f/gr_screen.aspect, 0.2f,30000);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	obj_render_all(obj_render);
