@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.39 $
- * $Date: 2005-03-01 06:55:40 $
+ * $Revision: 2.40 $
+ * $Date: 2005-03-04 03:24:44 $
  * $Author: bobboau $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/03/01 06:55:40  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.38  2005/02/27 10:38:06  wmcoolmon
  * Nonstandard res stuff
  *
@@ -612,5 +616,29 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 
 extern D3DCOLOR ambient_light;
 extern VertexTypeInfo vertex_types[];
+
+struct dynamic_buffer{
+	dynamic_buffer():size(0),buffer(NULL){}
+	~dynamic_buffer(){if(buffer)buffer->Release();}
+
+	void allocate(int n_verts, int type);
+
+	void lock(ubyte**v, int v_type){
+		vtype = v_type;
+		buffer->Lock(0, 0, v, D3DLOCK_DISCARD);
+	}
+	void unlock();
+	void lost(){
+		if(buffer)buffer->Release();
+		size = 0;
+		buffer = NULL;
+	}
+	void draw(_D3DPRIMITIVETYPE TYPE, int num);
+	int vtype;
+	int size;
+	IDirect3DVertexBuffer8 *buffer;
+};
+
+extern dynamic_buffer render_buffer;
 
 #endif //_GRD3DINTERNAL_H
