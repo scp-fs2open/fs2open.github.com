@@ -9,13 +9,20 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.34 $
+ * $Revision: 2.35 $
  * $Author: Goober5000 $
- * $Date: 2003-03-21 04:51:33 $
+ * $Date: 2003-03-22 06:11:51 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/03/21 04:51:33  Goober5000
+ * added get-relative-object-*, where * = x, y, and z; these sexps return the
+ * world coordinates of a set of relative coordinates to an object; also, fixed many
+ * places in sexp.cpp so that now sexps can accept other sexps as parameters,
+ * wherease before they weren't able to
+ * --Goober5000
+ *
  * Revision 2.33  2003/03/20 09:17:16  Goober5000
  * implemented EMP as part of weapon-effect sexp
  * --Goober5000
@@ -507,15 +514,16 @@
 #define	OPF_VARIABLE_NAME		35		// variable name
 #define	OPF_AMBIGUOUS			36		// type used with variable
 #define	OPF_AWACS_SUBSYSTEM		37		// an awacs subsystem
-#define OPF_CARGO				38		// a cargo string (currently used for set-cargo and is-cargo); added by Goober5000
-#define OPF_AI_CLASS			39		// an AI class; added by Goober5000
-#define OPF_SUPPORT_SHIP_CLASS	40		// Goober5000
-#define OPF_ARRIVAL_LOCATION	41		// Goober5000
-#define OPF_ARRIVAL_ANCHOR_ALL	42		// Goober5000
-#define OPF_DEPARTURE_LOCATION	43		// Goober5000
-#define OPF_SHIP_WITH_BAY		44		// Goober5000
-#define OPF_SOUNDTRACK_NAME		45		// Goober5000
-#define OPF_INTEL_NAME			46		// Goober5000
+#define OPF_CARGO				38		// Goober5000 - a cargo string (currently used for set-cargo and is-cargo)
+#define OPF_AI_CLASS			39		// Goober5000 - an AI class
+#define OPF_SUPPORT_SHIP_CLASS	40		// Goober5000 - a support ship class
+#define OPF_ARRIVAL_LOCATION	41		// Goober5000 - a ship arrival location
+#define OPF_ARRIVAL_ANCHOR_ALL	42		// Goober5000 - all of a ship's possible arrival anchors
+#define OPF_DEPARTURE_LOCATION	43		// Goober5000 - a ship departure location
+#define OPF_SHIP_WITH_BAY		44		// Goober5000 - a ship with a fighter bay
+#define OPF_SOUNDTRACK_NAME		45		// Goober5000 - the name of a music soundtrack
+#define OPF_INTEL_NAME			46		// Goober5000 - the name of an intel entry in species.tbl
+#define OPF_STRING				47		// Goober5000 - any old string
 
 // Operand return types
 #define	OPR_NUMBER		1	// returns number
@@ -762,7 +770,9 @@
 #define OP_SET_SHIP_FACING					(0x007f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_SHIP_FACING_OBJECT			(0x0080 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_SHIP_POSITION				(0x0081	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-
+#define OP_PLAY_SOUND_FROM_TABLE			(0x0082	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PLAY_SOUND_FROM_FILE				(0x0083	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_CLOSE_SOUND_FROM_FILE			(0x0084 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
@@ -1081,6 +1091,7 @@ void sexp_variable_block_free(const char *ship_name, int start_index, int block_
 // menu and category stuff
 extern int get_subcategory(int sexp_id);
 
-void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vector *subsys_world_pos);
+// Goober5000
+extern void sexp_music_close();
 
 #endif
