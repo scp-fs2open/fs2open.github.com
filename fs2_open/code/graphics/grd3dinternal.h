@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.35 $
- * $Date: 2005-02-10 04:01:42 $
+ * $Revision: 2.36 $
+ * $Date: 2005-02-18 09:51:06 $
  * $Author: wmcoolmon $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/02/10 04:01:42  wmcoolmon
+ * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
+ *
  * Revision 2.34  2005/02/04 23:29:31  taylor
  * merge with Linux/OSX tree - p0204-3
  *
@@ -569,14 +572,14 @@ void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, fl
 void gr_d3d_bitmap(int x, int y);
 void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy);
 void gr_d3d_aabitmap(int x, int y);
-void gr_d3d_rect(int x,int y,int w,int h);
+void gr_d3d_rect(int x,int y,int w,int h,bool resize);
 void gr_d3d_create_shader(shader * shade, float r, float g, float b, float c );
 void gr_d3d_set_shader( shader * shade );
 void gr_d3d_shade(int x,int y,int w,int h);
 void gr_d3d_create_font_bitmap();
 void gr_d3d_char(int x,int y,int letter);
-void gr_d3d_string( int sx, int sy, char *s );
-void gr_d3d_circle( int xc, int yc, int d );
+void gr_d3d_string( int sx, int sy, char *s, bool resize = true );
+void gr_d3d_circle( int xc, int yc, int d, bool resize = true );
 void gr_d3d_curve( int xc, int yc, int r, int direction );
 void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize = false);
 void gr_d3d_aaline(vertex *v1, vertex *v2);

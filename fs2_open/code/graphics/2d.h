@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.43 $
- * $Date: 2005-02-10 04:01:42 $
+ * $Revision: 2.44 $
+ * $Date: 2005-02-18 09:51:06 $
  * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/02/10 04:01:42  wmcoolmon
+ * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
+ *
  * Revision 2.42  2005/02/04 20:06:04  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -747,14 +750,14 @@ typedef struct screen {
 	void (*gf_aabitmap)(int x, int y);
 	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy);
 
-	void (*gf_rect)(int x, int y, int w, int h);
+	void (*gf_rect)(int x, int y, int w, int h,bool resize);
 	void (*gf_shade)(int x, int y, int w, int h);
-	void (*gf_string)(int x, int y, char * text);
+	void (*gf_string)(int x, int y, char * text,bool resize);
 
 	// Draw a gradient line... x1,y1 is bright, x2,y2 is transparent.
 	void (*gf_gradient)(int x1, int y1, int x2, int y2);
  
-	void (*gf_circle)(int x, int y, int r);
+	void (*gf_circle)(int x, int y, int r, bool resize);
 	void (*gf_curve)(int x, int y, int r, int direction);
 
 	// Integer line. Used to draw a fast but pixely line.  
@@ -1037,11 +1040,24 @@ __inline void gr_set_bitmap( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, 
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
 #define gr_aabitmap			GR_CALL(gr_screen.gf_aabitmap)
 #define gr_aabitmap_ex		GR_CALL(gr_screen.gf_aabitmap_ex)
-#define gr_rect				GR_CALL(gr_screen.gf_rect)
+//#define gr_rect				GR_CALL(gr_screen.gf_rect)
+__inline void gr_rect(int x, int y, int w, int h, bool resize = true)
+{
+	//As of yet, resize does nothing
+	(*gr_screen.gf_rect)(x,y,w,h,resize);
+}
 #define gr_shade				GR_CALL(gr_screen.gf_shade)
-#define gr_string				GR_CALL(gr_screen.gf_string)
+//#define gr_string				GR_CALL(gr_screen.gf_string)
+__inline void gr_string(int x, int y, char* string, bool resize = true)
+{
+	(*gr_screen.gf_string)(x,y,string,resize);
+}
 
-#define gr_circle				GR_CALL(gr_screen.gf_circle)
+//#define gr_circle				GR_CALL(gr_screen.gf_circle)
+__inline void gr_circle(int xc, int yc, int d, bool resize = true)
+{
+	(*gr_screen.gf_circle)(xc,yc,d,resize);
+}
 #define gr_curve				GR_CALL(gr_screen.gf_curve)
 
 //#define gr_line				GR_CALL(gr_screen.gf_line)

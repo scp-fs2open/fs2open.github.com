@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.77 $
- * $Date: 2005-02-18 08:05:16 $
+ * $Revision: 2.78 $
+ * $Date: 2005-02-18 09:51:06 $
  * $Author: wmcoolmon $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2005/02/18 08:05:16  wmcoolmon
+ * If a vertex buffer fails to be made, don't crash.
+ *
  * Revision 2.76  2005/02/15 00:06:27  taylor
  * clean up some model related globals
  * code to disable individual thruster glows
@@ -2140,7 +2143,7 @@ int gr_d3d_make_buffer(poly_list *list, uint flags){
 //		d3d_CreateVertexBuffer(D3DVT_VERTEX, (list->n_verts), NULL, (void**)buffer);
 		
 		k = GlobalD3DVars::lpD3DDevice->CreateVertexBuffer(	
-			vertex_buffer[idx].size * list->n_verts, 
+			vertex_buffer[idx].size * (list->n_verts ? list->n_verts : 1), 
 			D3DUSAGE_WRITEONLY, 
 			vertex_buffer[idx].FVF,
 			D3DPOOL_MANAGED,

@@ -12,6 +12,6 @@ void *d3d_batch_lock_vbuffer(int batch_id, int num_to_lock, BatchInfo &batch_inf
 void d3d_batch_unlock_vbuffer(int batch_id);
 bool d3d_batch_draw_vbuffer(int batch_id);
 void d3d_batch_end_frame();
-void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, float v_scale, uint color);
+void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, float v_scale, uint color, bool resize);
 
 #endif

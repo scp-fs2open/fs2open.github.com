@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.97 $
- * $Date: 2005-02-10 04:01:43 $
+ * $Revision: 2.98 $
+ * $Date: 2005-02-18 09:51:06 $
  * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2005/02/10 04:01:43  wmcoolmon
+ * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
+ *
  * Revision 2.96  2005/02/05 00:30:49  taylor
  * fix a few things post merge
  *
@@ -1301,7 +1304,7 @@ void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, in
 	gr_set_cull(1);	
 }
 
-void gr_opengl_rect(int x,int y,int w,int h)
+void gr_opengl_rect(int x,int y,int w,int h,bool resize)
 {
 	gr_opengl_rect_internal(x, y, w, h, gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 }
@@ -1335,7 +1338,7 @@ void gr_opengl_shade(int x,int y,int w,int h)
        gr_opengl_rect_internal(x, y, w, h, r, g, b, a);	
 }
 
-void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
+void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy, bool resize = true)
 {
 //	mprintf(("gr_opengl_aabitmap_ex_internal: at (%3d,%3d) size (%3d,%3d) name %s\n", 
   //				x, y, w, h, 
@@ -1379,8 +1382,11 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 		int nw = x+w+gr_screen.offset_x;
 		int nh = y+h+gr_screen.offset_y;
 
-		gr_resize_screen_pos(&nx, &ny);
-		gr_resize_screen_pos(&nw, &nh);
+		if(resize)
+		{
+			gr_resize_screen_pos(&nx, &ny);
+			gr_resize_screen_pos(&nw, &nh);
+		}
 
 		x1 = i2fl(nx);
 		y1 = i2fl(ny);
@@ -1520,7 +1526,7 @@ void gr_opengl_aabitmap(int x, int y)
 }
 
 
-void gr_opengl_string( int sx, int sy, char *s )
+void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 {
 	TIMERBAR_PUSH(4);
 
@@ -1591,7 +1597,7 @@ void gr_opengl_string( int sx, int sy, char *s )
 		int u = Current_font->bm_u[letter];
 		int v = Current_font->bm_v[letter];
 
-		gr_opengl_aabitmap_ex_internal( xc, yc, wc, hc, u+xd, v+yd );
+		gr_opengl_aabitmap_ex_internal( xc, yc, wc, hc, u+xd, v+yd, resize );
 	}
 
 	TIMERBAR_POP();
@@ -1784,11 +1790,12 @@ void gr_opengl_gradient(int x1,int y1,int x2,int y2)
 	glEnd ();	
 }
 
-void gr_opengl_circle( int xc, int yc, int d )
+void gr_opengl_circle( int xc, int yc, int d, bool resize )
 {
 	int p,x, y, r;
 
-	gr_resize_screen_pos(&xc, &yc);
+	if(resize)
+		gr_resize_screen_pos(&xc, &yc);
 
 	r = d/2;
 	p=3-d;
