@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/version.h $
- * $Revision: 2.9 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2004-12-22 21:47:37 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.8  2004/05/09 23:32:40  phreak
  * bumped to 3.6!!!!
  *
@@ -152,7 +155,7 @@
 
 #define FS_VERSION_MAJOR 3					// major version
 #define FS_VERSION_MINOR 6					// increase by 1 for minor revs
-#define FS_VERSION_BUILD 0					// bugfix release
+#define FS_VERSION_BUILD 5					// bugfix release
 
 #define VERSION_LOC_FNAME			"version.nfo"
 #define MOTD_LOC_FNAME				"motd.txt"
