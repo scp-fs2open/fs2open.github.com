@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.12 $
- * $Date: 2004-04-01 15:31:20 $
+ * $Revision: 2.13 $
+ * $Date: 2004-05-06 22:35:26 $
  * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/04/01 15:31:20  taylor
+ * don't use interface anis as ship textures
+ *
  * Revision 2.11  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -339,6 +342,7 @@ typedef struct bitmap_entry	{
 
 	// compressed bitmap stuff (.dds) - RT please take a look at this and tell me if we really need it
 	int		mem_taken;									// How much memory does this bitmap use? - UnknownPlayer
+	int		num_mipmaps;								// number of mipmap levels, we need to read all of them
 
 	// Stuff to keep track of usage
 	ubyte		preloaded;									// If set, then this was loaded from the lst file
@@ -555,5 +559,6 @@ extern int ENVMAP;	//this holds a reference to a map that is for environment map
 
 int bm_is_compressed(int num);
 int bm_get_size(int num);
+int bm_get_num_mipmaps(int num);
 
 #endif

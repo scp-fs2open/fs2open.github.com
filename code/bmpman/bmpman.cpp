@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.28 $
- * $Date: 2004-04-26 15:51:26 $
+ * $Revision: 2.29 $
+ * $Date: 2004-05-06 22:35:25 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/04/26 15:51:26  taylor
+ * forgot to remove some safety checks that aren't needed anymore
+ *
  * Revision 2.27  2004/04/26 12:44:54  taylor
  * 32-bit targa and jpeg loaders, bug fixes, some preload stuff
  *
@@ -1025,7 +1028,7 @@ int bm_load_sub(char *real_filename, char *ext, int *handle)
 int bm_gfx_load( char * real_filename )
 {
 	int i, n, first_slot = MAX_BITMAPS;
-	int w, h, bpp;
+	int w, h, bpp, lvls = 0;
 	char filename[MAX_FILENAME_LEN];
 	int tga = 0;
 	int dds = 0;
@@ -1041,7 +1044,7 @@ int bm_gfx_load( char * real_filename )
 		strcpy(filename,"test128");
 	}
 
-	// if no file was passed the get out now
+	// if no file was passed then get out now
 	if (strlen(real_filename) <= 0) {
 		return -1;
 	}
@@ -1173,7 +1176,7 @@ int bm_gfx_load( char * real_filename )
 	if (dds)
 	{
 		int ct;
-		int dds_error=dds_read_header ( filename, &w,  &h, &bpp, &ct);
+		int dds_error=dds_read_header ( filename, &w,  &h, &bpp, &ct, &lvls);
 		if (dds_error != DDS_ERROR_NONE)
 		{
 			mprintf(("dds: Couldn't open '%s -- error description %s\n", filename, dds_error_string(dds_error)));
@@ -1262,6 +1265,7 @@ int bm_gfx_load( char * real_filename )
 	bm_bitmaps[n].bm.flags = 0;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
+	bm_bitmaps[n].num_mipmaps = lvls;
 
 	bm_bitmaps[n].palette_checksum = 0;
 	bm_bitmaps[n].handle = bm_get_next_handle()*MAX_BITMAPS + n;
@@ -2607,7 +2611,7 @@ void bm_gfx_page_in_stop()
 				} else {
 					bm_lock( bm_bitmaps[i].handle, 16, bm_bitmaps[i].used_flags );
 				}
-				bm_unlock( bm_bitmaps[i].handle );
+			//	bm_unlock( bm_bitmaps[i].handle ); // this really isn't needed
 
 				n++;
 				#ifdef BMPMAN_NDEBUG
@@ -3075,4 +3079,13 @@ int bm_get_size(int num)
 	Assert(num==bm_bitmaps[n].handle);
 
 	return bm_bitmaps[n].mem_taken;
+}
+
+int bm_get_num_mipmaps(int num)
+{
+	int n = num % MAX_BITMAPS;
+
+	Assert( num == bm_bitmaps[n].handle);
+
+	return bm_bitmaps[n].num_mipmaps;
 }
