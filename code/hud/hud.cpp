@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-01-12 00:17:09 $
- * $Author: phreak $
+ * $Revision: 2.35 $
+ * $Date: 2005-01-17 06:35:35 $
+ * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/01/12 00:17:09  phreak
+ * fixed hud offsets bug
+ *
  * Revision 2.33  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -2134,6 +2137,12 @@ void hud_show_damage_popup()
 				Pl_hud_subsys_info[psub->type].flash_duration_timestamp = timestamp(SUBSYS_DAMAGE_FLASH_DURATION);
 			}
 			Pl_hud_subsys_info[psub->type].last_str = strength;
+
+			//Don't display more than 12 damaged subsystems.
+			if(num >= SUBSYSTEM_MAX)
+			{
+				break;
+			}
 		}
 	}
 
