@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-29 19:17:21 $
  * $Author: penguin $
  *
  * Low-level code for reading data out of large archive files or normal files.  All
  * reads/seeks come through here.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -79,16 +82,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+#ifdef _WIN32
 #include <io.h>
 #include <direct.h>
 #include <windows.h>
 #include <winbase.h>		/* needed for memory mapping of file functions */
+#endif
 
 #include "pstypes.h"
 #include "cfile.h"
-//#include "outwnd.h"
-//#include "vecmat.h"
-//#include "timer.h"
 #include "cfilearchive.h"
 
 #define CHECK_POSITION
