@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:59 $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-22 01:04:37 $
  * $Author: penguin $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:59  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -200,9 +203,9 @@
 // #define DVD_MESSAGE_HACK
 
 
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(E3_BUILD) || defined(RELEASE_REAL)
-	#define GAME_CD_CHECK
-#endif
+//  #if defined(MULTIPLAYER_BETA_BUILD) || defined(E3_BUILD) || defined(RELEASE_REAL)
+//  	#define GAME_CD_CHECK
+//  #endif
 
 // 4127 is constant conditional (assert)
 // 4100 is unreferenced formal parameters,
