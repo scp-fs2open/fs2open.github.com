@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.142 $
- * $Date: 2005-03-27 12:28:34 $
+ * $Revision: 2.143 $
+ * $Date: 2005-03-27 13:00:40 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.142  2005/03/27 12:28:34  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.141  2005/03/25 06:57:37  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -1165,6 +1169,8 @@ sexp_oper Operators[] = {
 	{ "ship-vulnerable",				OP_SHIP_VULNERABLE,			1, INT_MAX	},
 	{ "ship-guardian",				OP_SHIP_GUARDIAN,				1, INT_MAX	},
 	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,			1, INT_MAX	},
+	{ "ship-guardian-threshold",	OP_SHIP_GUARDIAN_THRESHOLD,				2, INT_MAX	},
+	{ "ship-subsys-guardian-threshold",	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	3, INT_MAX	},
 	{ "ship-invisible",				OP_SHIP_INVISIBLE,				1, INT_MAX	},
 	{ "ship-visible",				OP_SHIP_VISIBLE,				1, INT_MAX	},
 	{ "ship-stealthy",				OP_SHIP_STEALTHY,				1, INT_MAX },
@@ -9722,13 +9728,78 @@ void sexp_ships_invulnerable( int n, int invulnerable )
 	}
 }
 
+// Goober5000
+void sexp_ship_guardian_threshold(int n)
+{
+	char *ship_name;
+	int ship_num, threshold;
+
+	threshold = eval_num(n);
+	n = CDR(n);
+
+	// for all ships
+	for ( ; n != -1; n = CDR(n) )
+	{
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		ship_name = CTEXT(n);
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+			continue;
+
+		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.
+		ship_num = ship_name_lookup(ship_name);
+		if ( ship_num != -1 )
+		{
+			Ships[ship_num].ship_guardian_threshold = threshold;
+		}
+	}
+}
+
+// Goober5000
+void sexp_ship_subsys_guardian_threshold(int n)
+{
+	char *ship_name;
+	int ship_num, threshold;
+	ship_subsys *ss;
+
+	threshold = eval_num(n);
+	n = CDR(n);
+
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	ship_name = CTEXT(n);
+	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+		return;
+
+	// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.
+	ship_num = ship_name_lookup(ship_name);
+	if ( ship_num == -1 )
+		return;
+
+	n = CDR(n);
+
+	// for all subsystems
+	for ( ; n != -1; n = CDR(n) )
+	{
+		// check for HULL
+		if (!strcmp(CTEXT(n), SEXP_HULL_STRING))
+		{
+			Ships[ship_num].ship_guardian_threshold = threshold;
+		}
+		else
+		{
+			ss = ship_get_subsys(&Ships[ship_num], CTEXT(n));
+			ss->subsys_guardian_threshold = threshold;
+		}
+	}
+}
+
 // sexpression to toggle KEEP ALIVE flag of ship object
 void sexp_ships_guardian( int n, int guardian )
 {
 	char *ship_name;
 	int num;
 
-	for ( ; n != -1; n = CDR(n) ) {
+	for ( ; n != -1; n = CDR(n) )
+	{
 		ship_name = CTEXT(n);
 
 		// check to see if ship destroyed or departed.  In either case, do nothing.
@@ -13295,6 +13366,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = 1;
 				break;
 
+			case OP_SHIP_GUARDIAN_THRESHOLD:
+				sexp_ship_guardian_threshold(node);
+				sexp_val = 1;
+				break;
+
+			case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
+				sexp_ship_subsys_guardian_threshold(node);
+				sexp_val = 1;
+				break;
+
 			case OP_SHIP_VANISH:
 				sexp_ship_vanish( node );
 				sexp_val = 1;
@@ -14426,8 +14507,10 @@ int query_operator_return_type(int op)
 		case OP_SHIP_VULNERABLE:
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_GUARDIAN:
-		case OP_SHIP_VANISH:
 		case OP_SHIP_NO_GUARDIAN:
+		case OP_SHIP_GUARDIAN_THRESHOLD:
+		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
+		case OP_SHIP_VANISH:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_SHIP_STEALTHY:
@@ -14695,6 +14778,20 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_SHIP_STEALTHY:
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 			return OPF_SHIP;
+
+		case OP_SHIP_GUARDIAN_THRESHOLD:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else
+				return OPF_SHIP;
+
+		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else if (argnum == 1)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM;
 
 		case OP_IS_DESTROYED:
 		case OP_HAS_ARRIVED:
@@ -16581,6 +16678,8 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_VULNERABLE:
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_NO_GUARDIAN:
+		case OP_SHIP_GUARDIAN_THRESHOLD:
+		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_SHIP_INVISIBLE:
 		case OP_SHIP_VISIBLE:
 		case OP_SHIP_STEALTHY:
