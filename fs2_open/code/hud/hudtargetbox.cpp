@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.29 $
- * $Date: 2004-02-06 23:17:43 $
+ * $Revision: 2.30 $
+ * $Date: 2004-02-07 05:11:08 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/02/06 23:17:43  Goober5000
+ * tweakage
+ * --Goober5000
+ *
  * Revision 2.28  2004/02/04 09:02:45  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -1143,9 +1147,13 @@ void hud_render_target_ship_info(object *target_objp)
 			}
 		}
 
-		if ( screen_integrity <= 0 ){
-			hud_targetbox_start_flash(TBOX_FLASH_SUBSYS);	// need to flash 0% continuously
-			hud_targetbox_maybe_flash(TBOX_FLASH_SUBSYS);
+		// Goober5000 - don't flash if this subsystem can't be destroyed
+		if ( ship_subsys_takes_damage(Player_ai->targeted_subsys) )
+		{
+			if ( screen_integrity <= 0 ){
+				hud_targetbox_start_flash(TBOX_FLASH_SUBSYS);	// need to flash 0% continuously
+				hud_targetbox_maybe_flash(TBOX_FLASH_SUBSYS);
+			}
 		}
 
 		// PRINT SUBSYS NAME
