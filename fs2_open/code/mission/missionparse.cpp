@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-01-19 07:45:38 $
+ * $Revision: 2.28 $
+ * $Date: 2003-01-19 08:37:52 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/01/19 07:45:38  Goober5000
+ * actually added the set-support-ship sexp; much of the other commit was
+ * groundwork (data types and stuff)
+ * --Goober5000
+ *
  * Revision 2.26  2003/01/19 07:02:16  Goober5000
  * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
  * all ships, and all ships who have their departure anchor set to a capital ship
@@ -934,7 +939,7 @@ void parse_mission_info(mission *pm)
 		int temp;
 		stuff_int(&temp);
 
-		pm->support_ships.max_support_ships = -1;
+		pm->support_ships.max_support_ships = (temp > 0) ? -1 : 0;
 	}
 
 	if (optional_string("+All Teams Attack")){
