@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.170 $
- * $Date: 2005-03-10 08:00:15 $
- * $Author: taylor $
+ * $Revision: 2.171 $
+ * $Date: 2005-03-16 00:18:31 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.170  2005/03/10 08:00:15  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.169  2005/03/08 02:31:51  bobboau
  * minor change to high level render target code
  *
@@ -14001,4 +14010,14 @@ int ship_tvt_wing_lookup(char *wing_name)
 	}
 
 	return -1;
+}
+
+bool turret_weapon_has_subtype(model_subsystem* tp, int subtype)
+{
+	return (Weapon_info[tp->turret_weapon_type].subtype == subtype);
+}
+
+bool turret_weapon_has_flags(model_subsystem* tp, int flags)
+{
+	return ((Weapon_info[tp->turret_weapon_type].wi_flags & flags) != 0);
 }
