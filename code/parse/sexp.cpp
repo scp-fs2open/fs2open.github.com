@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.72 $
- * $Date: 2003-09-05 05:06:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.73 $
+ * $Date: 2003-09-11 19:18:13 $
+ * $Author: argv $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2003/09/05 05:06:32  Goober5000
+ * merged num-ships-in-battle and num-ships-in-battle-team, making the
+ * team argument optional
+ * --Goober5000
+ *
  * Revision 2.71  2003/09/05 04:48:03  Goober5000
  * merge of Phreak's and my sexp.cpp
  * --Goober5000
@@ -785,6 +790,13 @@ sexp_oper Operators[] = {
 	{ "get-object-relative-x",		OP_GET_OBJECT_RELATIVE_X,			4,	5	},	// Goober5000
 	{ "get-object-relative-y",		OP_GET_OBJECT_RELATIVE_Y,			4,	5	},	// Goober5000
 	{ "get-object-relative-z",		OP_GET_OBJECT_RELATIVE_Z,			4,	5	},	// Goober5000
+	{ "power-drain",				OP_POWER_DRAIN,						1,	1	},	// _argv[-1], args: ship-name
+	{ "power-drain-pct",			OP_POWER_DRAIN_PCT,					1,	1	},	// _argv[-1], args: ship-name
+	{ "power-drain-effective",		OP_POWER_DRAIN_EFF,					1,	1	},	// _argv[-1], args: ship-name
+	{ "power-drain-effective-pct",	OP_POWER_DRAIN_EFF_PCT,				1,	1	},	// _argv[-1], args: ship-name
+	{ "power-output",				OP_POWER_OUTPUT,					1,	2	},	// _argv[-1], args: ship-name [subsys]
+	{ "power-output-pct",			OP_POWER_OUTPUT_PCT,				1,	2	},	// _argv[-1], args: ship-name [subsys]
+	{ "max-speed",					OP_MAX_SPEED,						1,	INT_MAX }, // _argv[-1], args: ship-name...
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
 	{ "num-players",					OP_NUM_PLAYERS,				0, 0, },
@@ -931,6 +943,12 @@ sexp_oper Operators[] = {
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "toggle-hud",					OP_TOGGLE_HUD,					0, 0 },		// Goober5000
+	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
+	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
+	{ "turret-tagged-specific",		OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
+	{ "turret-tagged-clear-specific", OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
+	{ "add-power-drain",			OP_ADD_POWER_DRAIN,				2,	INT_MAX	}, // _argv[-1], args: amount, ship-name...
+	{ "add-power-drain-pct",		OP_ADD_POWER_DRAIN_PCT,			2,	INT_MAX }, // _argv[-1], args: amount, ship-name...
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -4846,6 +4864,155 @@ int sexp_get_object_coordinates(int n, int index)
 	return sexp_vec_coordinate(&Objects[Ships[Wings[obj].ship_index[0]].objnum].pos, index);
 }
 
+// _argv[-1]
+int sexp_max_speed(int n) {
+	float speed = -1.0f;
+
+	do {
+		char *object_name = CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
+			continue;
+
+		int obj = ship_name_lookup(object_name);
+
+		if (obj == -1)
+			continue;
+
+		ship *sp = &Ships[obj];
+
+		if (speed == -1.0f || speed > sp->current_max_speed)
+			speed = sp->current_max_speed;
+	} while ((n = CDR(n)) != -1);
+
+	if (speed == -1.0f)
+		return SEXP_NAN;
+	else
+		return (int) speed;
+}
+
+// _argv[-1]
+int sexp_power_drain(int n, int op) {
+	char *object_name = CTEXT(n);
+
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
+		return SEXP_NAN_FOREVER;
+
+	int obj;
+
+	obj = ship_name_lookup(object_name);
+
+	if (obj == -1)
+		return SEXP_NAN;
+
+	ship *sp = &Ships[obj];
+	float pd;
+
+	if (op == OP_POWER_DRAIN || op == OP_POWER_DRAIN_PCT)
+		pd = sp->power_drain;
+	else if (op == OP_POWER_DRAIN_EFF || op == OP_POWER_DRAIN_EFF_PCT)
+		pd = sp->effective_power_drain;
+	else {
+		Int3();
+		return 0;
+	}
+
+	if (op == OP_POWER_DRAIN_PCT || op == OP_POWER_DRAIN_EFF_PCT)
+		pd = 100.0f * (pd / Ship_info[sp->ship_info_index].full_power_output);
+
+	return (int) pd;
+}
+
+// _argv[-1]
+int sexp_power_output(int n, int op) {
+	char *object_name = CTEXT(n);
+
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
+		return SEXP_NAN_FOREVER;
+
+	int obj;
+
+	obj = ship_name_lookup(object_name);
+
+	if (obj == -1)
+		return SEXP_NAN;
+
+	ship *sp = &Ships[obj];
+
+	// see if we got a subsystem, too.
+	n = CDR(n);
+	ship_subsys *ss = NULL;
+	bool hull = false;
+	
+	if (n != -1) {
+		char *subsys_name = CTEXT(n);
+
+		if (!stricmp(subsys_name, SEXP_HULL_STRING))
+			hull = true;
+		else {
+			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss))
+				if (!stricmp(subsys_name, ss->system_info->subobj_name))
+					break;
+
+			if (ss == END_OF_LIST(&sp->subsys_list))
+				ss = NULL; // invalid subsys name. ignore.
+		}
+	}
+
+	if (hull && op == OP_POWER_OUTPUT_PCT)
+		return 100; // easy out
+
+	float po;
+
+	if (hull)
+		po = Ship_info[sp->ship_info_index].power_output;
+	else if (ss != NULL)
+		po = ss->power_output;
+	else
+		po = sp->power_output;
+
+	if (op == OP_POWER_OUTPUT_PCT) {
+		if (ss != NULL)
+			po = 100.0f * (po / ss->system_info->power_output);
+		else
+			po = 100.0f * (po / Ship_info[sp->ship_info_index].full_power_output);
+	}
+
+	return (int) po;
+}
+
+// _argv[-1]
+void sexp_add_power_drain(int n, int op) {
+	float amount;
+
+	if (CAR(n) != -1)
+		amount = (float) eval_sexp(CAR(n));
+	else
+		amount = (float) atoi(CTEXT(n));
+
+	while ((n = CDR(n)) != -1) {
+		char *object_name = CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
+			continue;
+
+		int obj;
+
+		obj = ship_name_lookup(object_name);
+
+		if (obj == -1)
+			continue;
+
+		ship *sp = &Ships[obj];
+
+		sp->power_drain += (op == OP_ADD_POWER_DRAIN_PCT ? (amount / 100) * Ship_info[sp->ship_info_index].full_power_output : amount);
+	}
+}
+
 // Goober5000
 void sexp_set_ship_position(int n)
 {
@@ -7343,7 +7510,8 @@ void sexp_cap_waypont_speed(int n)
 	shipnum = ship_name_lookup(shipname);
 
 	if (shipnum == -1) {
-		Int3();	// trying to set waypoint speed of ship not already in game
+		// _argv[-1] - be more forgiving about this. This is needed because one might have an indefinitely repeating event consisting of ( cap-waypoint-speed "ship 1" ( max-speed "ship 1" "ship 2" ) ) etc, and having to do ( not ( destroyed-or-departed-delay ) ) for each cap-waypoint-speed is incredibly stupid.
+		//Int3();	// trying to set waypoint speed of ship not already in game
 		return;
 	}
 
@@ -8994,13 +9162,14 @@ int sexp_shield_quad_low(int node)
 	if(!(sip->flags & SIF_SMALL_SHIP)){
 		return 0;
 	}
-	max_quad = Ships[sindex].ship_initial_shield_strength / (float)MAX_SHIELD_SECTIONS;	
+	// _argv[-1] - singular shield.
+	max_quad = Ships[sindex].ship_initial_shield_strength / (float) (sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1 : MAX_SHIELD_SECTIONS);	
 
 	// shield pct
 	check = (float)sexp_get_val(CDR(node));
 
 	// check his quadrants
-	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
+	for(idx=0; idx<(sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1 : MAX_SHIELD_SECTIONS); idx++){
 		if( ((objp->shield_quadrant[idx] / max_quad) * 100.0f) <= check ){
 			return 1;
 		}
@@ -10386,15 +10555,18 @@ int sexp_is_primary_selected(int node)
 //	Return SEXP_TRUE if quadrant quadnum is near max.
 int shield_quad_near_max(int quadnum)
 {
+	// _argv[-1] - singular shield.
 	float	remaining = 0.0f;
-	for (int i=0; i<MAX_SHIELD_SECTIONS; i++) {
-		if (i == quadnum){
-			continue;
+	if (!(Ship_info[Player_ship->ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)) {
+		for (int i=0; i<MAX_SHIELD_SECTIONS; i++) {
+			if (i == quadnum){
+				continue;
+			}
+			remaining += Player_obj->shield_quadrant[i];
 		}
-		remaining += Player_obj->shield_quadrant[i];
 	}
 
-	if ((remaining < 2.0f) || (Player_obj->shield_quadrant[quadnum] > Player_ship->ship_initial_shield_strength/MAX_SHIELD_SECTIONS - 5.0f)) {
+	if ((Ship_info[Player_ship->ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS ? 1 : remaining < 2.0f) || (Player_obj->shield_quadrant[Ship_info[Player_ship->ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS ? 0 : quadnum] > Player_ship->ship_initial_shield_strength / (Ship_info[Player_ship->ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS ? 1 : MAX_SHIELD_SECTIONS) - 5.0f)) {
 		return SEXP_TRUE;
 	} else {
 		return SEXP_FALSE;
@@ -11068,7 +11240,6 @@ int eval_sexp(int cur_node)
 				sexp_val=1;
 				break;
 
-
 			case OP_SET_CARGO:
 				sexp_set_cargo(node);
 				sexp_val = 1;
@@ -11332,6 +11503,25 @@ int eval_sexp(int cur_node)
 			case OP_GET_OBJECT_RELATIVE_Y:
 			case OP_GET_OBJECT_RELATIVE_Z:
 				sexp_val = sexp_get_object_relative_coordinates(node, (op_num==OP_GET_OBJECT_RELATIVE_X)?0:((op_num==OP_GET_OBJECT_RELATIVE_Y)?1:2));
+				break;
+
+			// _argv[-1]
+			case OP_POWER_DRAIN:
+			case OP_POWER_DRAIN_PCT:
+			case OP_POWER_DRAIN_EFF:
+			case OP_POWER_DRAIN_EFF_PCT:
+				sexp_val = sexp_power_drain(node, op_num);
+				break;
+
+			// _argv[-1]
+			case OP_POWER_OUTPUT:
+			case OP_POWER_OUTPUT_PCT:
+				sexp_val = sexp_power_output(node, op_num);
+				break;
+
+			// _argv[-1]
+			case OP_MAX_SPEED:
+				sexp_val = sexp_max_speed(node);
 				break;
 
 			case OP_SET_SHIP_POSITION:
@@ -11633,6 +11823,13 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			// _argv[-1]
+			case OP_ADD_POWER_DRAIN:
+			case OP_ADD_POWER_DRAIN_PCT:
+				sexp_add_power_drain(node, op_num);
+				sexp_val = 1;
+				break;
+
 			case OP_LOCK_ROTATING_SUBSYSTEM:
 			case OP_FREE_ROTATING_SUBSYSTEM:
 				sexp_set_subsys_rotation(node, op_num == OP_LOCK_ROTATING_SUBSYSTEM);
@@ -11867,6 +12064,11 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_RELATIVE_X:
 		case OP_GET_OBJECT_RELATIVE_Y:
 		case OP_GET_OBJECT_RELATIVE_Z:
+		case OP_POWER_DRAIN:
+		case OP_POWER_DRAIN_PCT:
+		case OP_POWER_DRAIN_EFF:
+		case OP_POWER_DRAIN_EFF_PCT:
+		case OP_MAX_SPEED:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -11896,6 +12098,8 @@ int query_operator_return_type(int op)
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_SHIP_VISIBLE:
 		case OP_TEAM_SCORE:
+		case OP_POWER_OUTPUT:
+		case OP_POWER_OUTPUT_PCT:
 		case OP_NUM_SHIPS_IN_BATTLE:
 			return OPR_POSITIVE;
 
@@ -12018,6 +12222,8 @@ int query_operator_return_type(int op)
 		case OP_NOT_KAMIKAZE:
 		case OP_TURRET_TAGGED_SPECIFIC:
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
+		case OP_ADD_POWER_DRAIN:
+		case OP_ADD_POWER_DRAIN_PCT:
 		case OP_LOCK_ROTATING_SUBSYSTEM:
 		case OP_FREE_ROTATING_SUBSYSTEM:
 		case OP_PLAYER_USE_AI:
@@ -12909,6 +13115,28 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_KAMIKAZE:
 			if (argnum==0)
 				return OPF_POSITIVE;
+			else
+				return OPF_SHIP;
+
+		// _argv[-1]
+		case OP_POWER_DRAIN:
+		case OP_POWER_DRAIN_PCT:
+		case OP_POWER_DRAIN_EFF:
+		case OP_POWER_DRAIN_EFF_PCT:
+		case OP_MAX_SPEED:
+			return OPF_SHIP;
+
+		case OP_POWER_OUTPUT:
+		case OP_POWER_OUTPUT_PCT:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM;
+
+		case OP_ADD_POWER_DRAIN:
+		case OP_ADD_POWER_DRAIN_PCT:
+			if (argnum == 0)
+				return OPF_NUMBER;
 			else
 				return OPF_SHIP;
 
