@@ -9,13 +9,18 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-03-31 05:42:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2004-04-07 03:32:45 $
+ * $Author: righteous1 $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/03/31 05:42:28  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.17  2004/03/05 09:02:08  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -501,6 +506,10 @@ void change_window_active_state()
 			if (Mouse_hidden)	{
 				Mouse_hidden=0;
 			}
+
+			// Pause sounds and put up pause screen if necessary
+
+			alt_tab_pause();
 
 #ifdef THREADED
 			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
