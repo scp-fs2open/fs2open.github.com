@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.4 $
- * $Date: 2003-03-18 10:07:00 $
- * $Author: unknownplayer $
+ * $Revision: 2.5 $
+ * $Date: 2003-08-12 03:18:32 $
+ * $Author: bobboau $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/18 10:07:00  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.3  2003/01/19 01:07:41  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -478,6 +481,7 @@ void bm_gfx_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 void bm_gfx_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h);
 
 extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of it's index -Bobboau
+extern int SPECMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
 
 int bm_is_compressed(int num);
 int bm_get_size(int num);

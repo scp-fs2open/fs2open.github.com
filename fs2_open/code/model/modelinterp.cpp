@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.26 $
- * $Date: 2003-08-06 17:24:57 $
- * $Author: phreak $
+ * $Revision: 2.27 $
+ * $Date: 2003-08-12 03:18:33 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/08/06 17:24:57  phreak
+ * optimized the way cloaking is handled
+ *
  * Revision 2.25  2003/07/15 16:09:46  phreak
  * lighting in the render functions now work for opengl as they do in d3d
  *
@@ -820,8 +823,8 @@ matrix *Interp_orient;
 vector *Interp_pos;
 vector Interp_offset;
 
-/*
-void interp_compute_environment_mapping( vector *nrm, vertex * pnt, vector *vert)
+
+void interp_compute_environment_mapping( vector *nrm, vertex * pnt)
 {
 	vector R;
 	float a;
@@ -836,11 +839,11 @@ void interp_compute_environment_mapping( vector *nrm, vertex * pnt, vector *vert
 	R.xyz.z = a * R.xyz.z;
 	vm_vec_normalize(&R);
 	a = (float)fl_sqrt( 1.0f - R.xyz.y * R.xyz.y);
-	pnt->u = (float)atan2( R.xyz.x, -R.xyz.z) / (2.0f * 3.14159f);
-	if (pnt->u < 0.0) pnt->u += 1.0f;
-	pnt->v = 1.0f - (float)atan2( a, R.xyz.y) / 3.14159f;
+	pnt->env_u = (float)atan2( R.xyz.x, -R.xyz.z) / (2.0f * 3.14159f);
+	if (pnt->env_u < 0.0) pnt->env_u += 1.0f;
+	pnt->env_v = 1.0f - (float)atan2( a, R.xyz.y) / 3.14159f;
 }
-*/
+
 
 
 // Flat Poly
@@ -959,6 +962,7 @@ float Interp_subspace_offset_v = 0.0f;
 ubyte Interp_subspace_r = 255;
 ubyte Interp_subspace_g = 255;
 ubyte Interp_subspace_b = 255;
+extern int spec;
 
 void model_interp_tmappoly(ubyte * p,polymodel * pm)
 {
@@ -1018,22 +1022,26 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	//		}
 
 	//		Assert( verts[i].normnum == verts[i].vertnum );
-
 			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->ambient[w(p+40)]))	{	//gets the ambient glow to work
 				if ( D3D_enabled || OGL_inited )	{
 					Interp_list[i]->r = 191;
 					Interp_list[i]->g = 191;
 					Interp_list[i]->b = 191;
+
 				} else {
 					Interp_list[i]->b = 191;
 				}
 			} else {
+
 				int vertnum = verts[i].vertnum;
 				int norm = verts[i].normnum;
 		
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
 					if ( D3D_enabled || OGL_inited )	{
 						light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
+						if(Detail.lighting > 2 && Interp_detail_level < 3)
+							light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
+						//interp_compute_environment_mapping(vp(p+8), &Interp_list[i]);
 					} else {
 						Interp_list[i]->b = light_apply( Interp_verts[vertnum], vp(p+8), Interp_light );
 					}
@@ -1043,6 +1051,9 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 						if ( D3D_enabled || OGL_inited )	{
 							light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], Interp_norms[norm], Interp_light );
+							if(Detail.lighting > 2 && Interp_detail_level < 3)
+								light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
+							//interp_compute_environment_mapping(Interp_verts[vertnum], &Interp_list[i]);
 
 						} else {
 							int li;
@@ -1074,6 +1085,10 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 
 						Interp_light_applied[norm] = 1;
+					}else if(Interp_light_applied[norm]){
+						if(Detail.lighting > 2 && Interp_detail_level < 3)
+							light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
+					//	interp_compute_environment_mapping(Interp_verts[vertnum], &Interp_list[i]);
 					}
 
 					if ( D3D_enabled || OGL_inited )	{
@@ -1089,12 +1104,12 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 //		Assert(verts[i].u >= 0.0f );
 //		Assert(verts[i].v >= 0.0f );
+
 	}
 
 	#ifndef NDEBUG
 	modelstats_num_polys_drawn++;
 	#endif
-
 
 	if (!(Interp_flags & MR_NO_POLYS) )		{
 		if ( is_invisible )	{
@@ -1138,6 +1153,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 							texture = pm->textures[w(p+40)];//here is were it picks the texture to render for normal-Bobboau
 						}
 
+						if(Detail.lighting > 2  && Interp_detail_level < 2)SPECMAP = pm->specular_textures[w(p+40)];
+
 						if(glow_maps_active)
 						{
 							if (pm->glow_is_ani[w(p+40)])
@@ -1179,6 +1196,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			}
 
 			GLOWMAP = -1;
+			SPECMAP = -1;
 		}
 	}
 

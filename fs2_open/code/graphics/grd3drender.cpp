@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-08-05 23:45:18 $
+ * $Revision: 2.14 $
+ * $Date: 2003-08-12 03:18:33 $
  * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/08/05 23:45:18  bobboau
+ * glow maps, for some reason they wern't in here, they should be now,
+ * also there is some debug code for changeing the FOV in game,
+ * and I have some changes to the init code to try and get a 32 or 24 bit back buffer
+ * if posable, this may cause problems for people
+ * the changes were all marked and if needed can be undone
+ *
  * Revision 2.12  2003/07/04 02:27:48  phreak
  * added support for cloaking.
  * i will need to contact someone who knows d3d to get this to work
@@ -1177,6 +1184,8 @@ void gr_d3d_tmapper_internal_3d( int nverts, vertex **verts, uint flags, int is_
  *
  * @return void
  */
+
+extern int spec;
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
 	int i;
@@ -1453,9 +1462,60 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		if(flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 	}
 */
+	//a bit of optomiseation, if there is no specular highlights don't bother waisting the recorses on trying to render them
+	bool has_spec = false;
+	for (i=0; i<nverts; i++ )	{
+		if((verts[i]->spec_r > 0) || (verts[i]->spec_g > 0) || (verts[i]->spec_b > 0)){
+			has_spec = true;
+			break;
+		}
+	}
+
+	if((SPECMAP > 0) && has_spec)d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	//LOD 1
+	if((SPECMAP < 0) && has_spec){
+		d3d_SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_SPECULAR);
+		d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_ADD);
+		for (i=0; i<nverts; i++ )	{
+			d3d_verts[i].specular = D3DCOLOR_RGBA(verts[i]->spec_r/2, verts[i]->spec_g/2, verts[i]->spec_b/2, *(((ubyte*)&d3d_verts[i].specular)+3));
+		}
+	}
+	//d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+
 	// Draws just about everything except stars and lines
  	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 
+	if((SPECMAP < 0) && has_spec){
+		d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	}
+
+	if((SPECMAP > 0) && has_spec){
+	//new specular code,yay!!!-Bobboau
+		
+		gr_screen.gf_set_bitmap(SPECMAP, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0);
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
+			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
+		}
+
+		d3d_zbias(1);
+		for (i=0; i<nverts; i++ )	{
+			d3d_verts[i].specular = D3DCOLOR_RGBA(verts[i]->spec_r, verts[i]->spec_g, verts[i]->spec_b, *(((ubyte*)&d3d_verts[i].specular)+3));
+		}
+
+		d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_SPECULAR);
+		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE4X);
+
+		gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, zbuffer_type );
+
+		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
+			
+ 		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+
+		d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+		d3d_zbias(0);
+	}
 }
 
 /**

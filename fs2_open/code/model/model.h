@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.25 $
- * $Date: 2003-07-15 02:36:54 $
- * $Author: phreak $
+ * $Revision: 2.26 $
+ * $Date: 2003-08-12 03:18:33 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/07/15 02:36:54  phreak
+ * changed the model_setup_cloak() function to allow an alpha value
+ *
  * Revision 2.24  2003/07/04 02:28:37  phreak
  * changes for cloaking implemented
  *
@@ -797,6 +800,9 @@ typedef struct polymodel {
 	int			glow_numframes[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			glow_fps[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			glow_is_ani[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
+
+	int			specular_original_textures[MAX_MODEL_TEXTURES];	//map modulated with the specular -Bobboau
+	int			specular_textures[MAX_MODEL_TEXTURES];
 
 	int			ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
 	int			transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.35 $
- * $Date: 2003-08-09 06:07:23 $
+ * $Revision: 2.36 $
+ * $Date: 2003-08-12 03:18:33 $
  * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/08/09 06:07:23  bobboau
+ * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
+ *
  * Revision 2.34  2003/08/06 17:42:47  phreak
  * since the launcher has a space between 1024 and 768 for the videocard string, i changed the detection to reflect this
  * also changed intro.mve to intro.avi since we can't use MVEs
@@ -2428,6 +2431,8 @@ void game_init()
 /////////////////////////////
 	
 	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
+
+	if (ptr == NULL )Error( LOCATION, "error reading registry, registry string 'VideocardFs2open' not present, this is why you are crashing, be sure to use the NEW launcher to set up you're registry" );
 
 	if (ptr == NULL || strstr(ptr, NOX("Direct 3D -") )) {
 #ifdef _WIN32

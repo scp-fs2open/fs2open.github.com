@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-08-12 03:18:33 $
+ * $Author: bobboau $
  *
  * Include file for lighting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -116,6 +119,8 @@ void light_filter_pop();
 // have been called.  It only uses 'vert' to fill in it's light
 // fields.  'pos' is position of point, 'norm' is the norm.
 ubyte light_apply( vector *pos, vector * norm, float static_light_val );
+
+void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pos, vector * norm, vector * cam);
 
 // Same as above only does RGB.
 void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pos, vector * norm, float static_light_val );

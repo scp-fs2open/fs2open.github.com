@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-03-02 05:56:56 $
- * $Author: penguin $
+ * $Revision: 2.19 $
+ * $Date: 2003-08-12 03:18:34 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/03/02 05:56:56  penguin
+ * Added #ifdef WIN32 around non-standard header file io.h
+ *  - penguin
+ *
  * Revision 2.17  2003/02/25 16:46:01  bobboau
  * fixing my bug fix for the warp model, and not being able to find it
  *
@@ -2265,6 +2269,19 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		}
 	}
 	pm->glow_original_textures[i] = pm->glow_textures[i];
+
+	strcpy(tmp_name, file);
+	strcat( tmp_name, "-shine");
+	pm->specular_textures[i] = bm_load( tmp_name );
+	if (pm->specular_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
+							
+		nprintf(("couldn't find %s.pcx",tmp_name));
+		pm->specular_textures[i] = pm->textures[i];
+
+	}
+	pm->specular_original_textures[i] = pm->specular_textures[i];
+
+
 }
 
 //returns the number of this model

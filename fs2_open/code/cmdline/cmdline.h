@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.20 $
- * $Date: 2003-08-09 06:07:23 $
+ * $Revision: 2.21 $
+ * $Date: 2003-08-12 03:18:33 $
  * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/08/09 06:07:23  bobboau
+ * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
+ *
  * Revision 2.19  2003/03/29 09:42:05  Goober5000
  * made beams default shield piercing again
  * also added a beam no pierce command line flag
@@ -289,5 +292,11 @@ extern int Cmdline_d3dmipmap;
 
 extern int Cmdline_beams_no_pierce_shields;	// Goober5000
 extern float Cmdline_fov;
+
+extern float static_light_factor;
+extern float static_tube_factor;
+extern float static_point_factor;
+extern double specular_exponent_value;
+
 
 #endif

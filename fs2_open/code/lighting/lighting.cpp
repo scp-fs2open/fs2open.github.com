@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-08-12 03:18:33 $
+ * $Author: bobboau $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -827,6 +830,186 @@ ubyte light_apply( vector *pos, vector * norm, float static_light_level )
 	return ubyte(fl2i(lval*255.0f));
 }
 
+int spec = 0;
+float static_light_factor = 1.0f;
+float static_tube_factor = 1.0f;
+float static_point_factor = 1.0f;
+double specular_exponent_value = 16.0;
+
+void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pos, vector * norm, vector * cam){
+
+	light *l;
+	float rval = 0, gval = 0, bval = 0;
+
+	if (Detail.lighting==0) {
+		*param_r = 0;
+		*param_g = 0;
+		*param_b = 0;
+		return;
+	}
+
+	if ( Lighting_off ) {
+		*param_r = 0;
+		*param_g = 0;
+		*param_b = 0;
+		return;
+	}
+
+	// Factor in light from sun if there is one
+		// apply all sun lights
+		for(int idx=0; idx<Static_light_count; idx++){			
+			float ltmp;
+
+			// sanity
+			if(Static_light[idx] == NULL){
+				continue;
+			}
+
+			vector V, R, n;
+			vm_vec_sub(&V, cam,pos);
+			vm_vec_normalize(&V);
+			vm_vec_sub(&R,&V, &Static_light[idx]->local_vec);
+			vm_vec_normalize(&R);
+			n = *norm;
+			vm_vec_normalize(&n);
+
+			ltmp = (float)pow((double)vm_vec_dot(&R, &n ), specular_exponent_value) * Static_light[idx]->intensity * static_light_factor;		// reflective light
+
+			switch(Lighting_mode)	{
+			case LM_BRIGHTEN:
+				if ( ltmp > 0.0f )	{
+					rval += Static_light[idx]->r * ltmp * Static_light[idx]->r;
+					gval += Static_light[idx]->g * ltmp * Static_light[idx]->g;
+					bval += Static_light[idx]->b * ltmp * Static_light[idx]->b;
+				}
+				break;
+			case LM_DARKEN:
+				if ( ltmp > 0.0f )	{
+					rval -= ltmp; if ( rval < 0.0f ) rval = 0.0f;
+					gval -= ltmp; if ( gval < 0.0f ) gval = 0.0f;
+					bval -= ltmp; if ( bval < 0.0f ) bval = 0.0f; 
+				}
+				break;
+			}
+		}
+
+
+	if ( rval < 0.0f ) {
+		rval = 0.0f;
+	} else if ( rval > 0.75f ) {
+		rval = 0.75f;
+	}
+	if ( gval < 0.0f ) {
+		gval = 0.0f;
+	} else if ( gval > 0.75f ) {
+		gval = 0.75f;
+	}
+	if ( bval < 0.0f ) {
+		bval = 0.0f;
+	} else if ( bval > 0.75f ) {
+		bval = 0.75f;
+	}
+
+	//dynamic lights
+
+	int n = Num_light_levels-1;
+
+	l_num_lights += Num_relevent_lights[n];
+	l_num_points++;
+
+	vector to_light;
+	float dot, dist;
+	vector temp;
+	float factor = 1.0f;
+	for ( int i=0; i<Num_relevent_lights[n]; i++ )	{
+		l = Relevent_lights[i][n];
+
+		dist = -1.0f;
+		switch(l->type){
+		// point lights
+		case LT_POINT:			
+			vm_vec_sub( &to_light, &l->local_vec, pos );
+			factor = static_point_factor;
+			break;
+
+		// tube lights
+		case LT_TUBE:						
+			if(vm_vec_dist_to_line(pos, &l->local_vec, &l->local_vec2, &temp, &dist) != 0){
+				continue;
+			}
+			factor = static_tube_factor;
+			vm_vec_sub(&to_light, &temp, pos);
+			dist *= dist;	// since we use radius squared
+			break;
+
+		// others. BAD
+		default:
+			Int3();
+		}
+
+		vector V, R, n;
+		vm_vec_sub(&V, cam,pos);
+		vm_vec_normalize(&V);
+		vm_vec_sub(&R,&V, &l->local_vec);
+		vm_vec_normalize(&R);
+		n = *norm;
+		vm_vec_normalize(&n);
+
+		dot = (float)pow((double)vm_vec_dot(&R, &n ), specular_exponent_value) * Static_light[idx]->intensity * factor;		// reflective light
+		
+		dot = vm_vec_dot(&to_light, norm);
+	//		dot = 1.0f;
+		if ( dot > 0.0f )	{
+			// indicating that we already calculated the distance (vm_vec_dist_to_line(...) does this for us)
+			if(dist < 0.0f){
+				dist = vm_vec_mag_squared(&to_light);
+			}
+			if ( dist < l->rad1_squared )	{
+				float ratio;
+				ratio = l->intensity*dot;
+				ratio *= 0.25f;
+				rval += l->r*ratio;
+				gval += l->g*ratio;
+				bval += l->b*ratio;
+			} else if ( dist < l->rad2_squared )	{
+				float ratio;
+				// dist from 0 to 
+				float n = dist - l->rad1_squared;
+				float d = l->rad2_squared - l->rad1_squared;
+				ratio = (1.0f - n / d)*dot*l->intensity;
+				ratio *= 0.25f;
+				rval += l->r*ratio;
+				gval += l->g*ratio;
+				bval += l->b*ratio;
+			}
+		}
+	}
+/*
+	float tr=rval*rval, tg=gval*gval, tb=bval*bval;
+	rval*=tr*tr*tr*tr;
+	gval*=tg*tg*tg*tg;
+	bval*=tb*tb*tb*tb;
+*/
+	if ( rval < 0.0f ) {
+		rval = 0.0f;
+	} else if ( rval > 1.0f ) {
+		rval = 1.0f;
+	}
+	if ( gval < 0.0f ) {
+		gval = 0.0f;
+	} else if ( gval > 1.0f ) {
+		gval = 1.0f;
+	}
+	if ( bval < 0.0f ) {
+		bval = 0.0f;
+	} else if ( bval > 1.0f ) {
+		bval = 1.0f;
+	}
+
+	*param_r = ubyte(fl2i(rval*254.0f));
+	*param_g = ubyte(fl2i(gval*254.0f));
+	*param_b = ubyte(fl2i(bval*254.0f));
+}
 
 void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pos, vector * norm, float static_light_level )
 {

@@ -9,16 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.10 $
- * $Date: 2003-06-08 17:38:21 $
- * $Author: phreak $
- * $Revision: 2.10 $
- * $Date: 2003-06-08 17:38:21 $
- * $Author: phreak $
+ * $Revision: 2.11 $
+ * $Date: 2003-08-12 03:18:33 $
+ * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2003-08-12 03:18:33 $
+ * $Author: bobboau $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/06/08 17:38:21  phreak
+ * added a vector in the vertex struct that stores the real world position
+ * the x,y,z variables do not accurately reflect the real position
+ * this is for opengl fogging
+ *
  * Revision 2.9  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -355,11 +360,15 @@ typedef struct vertex {
 	float		sx, sy, sw;			// screen space position (sw == 1/z)
 	float		u, v;					// texture position
 	vector		real_pos;			// _real_ world position
+	ubyte spec_r, spec_b, spec_g;	//specular highlights -Bobboau
+	float		env_u, env_v;
 	ubyte		r, g, b, a;			// color.  Use b for darkening;
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
 	ubyte		flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.
 	ubyte		pad[2];				// pad structure to be 4 byte aligned.
 } vertex;
+
+extern int spec;
 
 #define	BMP_AABITMAP		(1<<0)				// antialiased bitmap
 #define	BMP_TEX_XPARENT		(1<<1)				// transparent texture

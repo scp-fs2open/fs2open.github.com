@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dClipper.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-06 01:49:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-08-12 03:18:34 $
+ * $Author: bobboau $
  *
  * Polygon clipping functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/06 01:49:08  penguin
+ * Renamed ccode members to cc_or and cc_and
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -198,20 +201,36 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 			tmp->b = ubyte(fl2i(on_b + (off_b-on_b) * ratio));
 		}
 		if (flags & TMAP_FLAG_RGB) {
-			float on_r, on_b, on_g;
-			float off_r, off_b, off_g;
+			float on_r, on_b, on_g, onspec_r, onspec_g, onspec_b;
+			float off_r, off_b, off_g, offspec_r, offspec_g, offspec_b;
 
 			on_r = i2fl(on_pnt->r);
 			off_r = i2fl(off_pnt->r);
+
 			on_g = i2fl(on_pnt->g);
 			off_g = i2fl(off_pnt->g);
 
 			on_b = i2fl(on_pnt->b);
 			off_b = i2fl(off_pnt->b);
 
+
+			onspec_r = i2fl(on_pnt->spec_r);
+			offspec_r = i2fl(off_pnt->spec_r);
+
+			onspec_g = i2fl(on_pnt->spec_g);
+			offspec_g = i2fl(off_pnt->spec_g);
+
+			onspec_b = i2fl(on_pnt->spec_b);
+			offspec_b = i2fl(off_pnt->spec_b);
+
+
 			tmp->r = ubyte(fl2i(on_r + (off_r-on_r) * ratio));
 			tmp->g = ubyte(fl2i(on_g + (off_g-on_g) * ratio));
 			tmp->b = ubyte(fl2i(on_b + (off_b-on_b) * ratio));
+
+			tmp->spec_r = ubyte(fl2i(onspec_r + (offspec_r-onspec_r) * ratio));
+			tmp->spec_g = ubyte(fl2i(onspec_g + (offspec_g-onspec_g) * ratio));
+			tmp->spec_b = ubyte(fl2i(onspec_b + (offspec_b-onspec_b) * ratio));
 		}
 	}
 

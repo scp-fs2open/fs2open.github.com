@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-08-09 06:07:24 $
+ * $Revision: 2.16 $
+ * $Date: 2003-08-12 03:18:33 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/08/09 06:07:24  bobboau
+ * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
+ *
  * Revision 2.14  2003/08/05 23:45:18  bobboau
  * glow maps, for some reason they wern't in here, they should be now,
  * also there is some debug code for changeing the FOV in game,
@@ -888,6 +891,8 @@ void d3d_set_initial_render_state()
 {
 	d3d_SetRenderState(D3DRS_DITHERENABLE, TRUE );
 
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+
 	d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
 	d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
 
@@ -908,6 +913,8 @@ void d3d_set_initial_render_state()
 
 	d3d_SetTextureStageState(1, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
 	d3d_SetTextureStageState(1, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
+
+
 }
 
 
