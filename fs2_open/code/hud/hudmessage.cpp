@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-03-02 21:24:44 $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-05 18:59:28 $
  * $Author: taylor $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.8  2005/02/23 04:51:56  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots
  *
@@ -1039,7 +1042,7 @@ void hud_sourced_print(int source, char *msg)
 	str = msg;
 
 	//Because functions to get font size don't compensate for *actual* screen size
-	int pretend_width = gr_screen.res == 0 ? 780 : 1004;
+	int pretend_width = (gr_screen.res == GR_640) ? 620 : 1004;
 
 	while ((ptr = split_str_once(str, pretend_width - x - 7)) != NULL) {		// the 7 is a fudge hack
 		HUD_printf_line(str, source, t, x);
