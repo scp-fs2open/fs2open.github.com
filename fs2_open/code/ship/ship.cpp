@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.20 $
- * $Date: 2002-12-27 02:57:50 $
+ * $Revision: 2.21 $
+ * $Date: 2002-12-30 06:16:09 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2002/12/27 02:57:50  Goober5000
+ * removed the existing stealth sexps and replaced them with the following...
+ * ship-stealthy
+ * ship-unstealthy
+ * is-ship-stealthy
+ * friendly-stealth-invisible
+ * friendly-stealth-visible
+ * is-friendly-stealth-visible
+ * --Goober5000
+ *
  * Revision 2.19  2002/12/24 07:42:28  Goober5000
  * added change-ai-class and is-ai-class, and I think I may also have nailed the
  * is-iff bug; did some other bug hunting as well
@@ -5683,7 +5693,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		polymodel *po = model_get( Ship_info[shipp->ship_info_index].modelnum );
 		
-		if (winfo_p->wi_flags & WIF_BEAM){
+		if (winfo_p->wi_flags & WIF_BEAM){	// beam weapon?
 			if ( obj == Player_obj ) {//beam sounds for the player
 				sound_played = winfo_p->launch_snd;
 				if ( winfo_p->launch_snd != -1 ) {
@@ -5698,9 +5708,18 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					}
 	
 					swp = &Player_ship->weapons;
-					if (swp->current_primary_bank >= 0) {
+					if (swp->current_primary_bank >= 0)
+					{
 						wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
-						joy_ff_play_primary_shoot((int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000);
+						int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
+
+						// modify force feedback for ballistics: make it stronger...
+						// will we ever have a ballistic beam? probably not, but just in case
+						if (wip->wi_flags2 & WIF2_BALLISTIC)
+							joy_ff_play_primary_shoot(force_level * 2);
+						// no ballistics
+						else
+							joy_ff_play_primary_shoot(force_level);
 					}
 				}
 			}else{//beam sounds for other fighters
@@ -5993,7 +6012,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		// avoid playing the same sound multiple times when banks are linked with the
 		// same weapon.
 
-		if (!(winfo_p->wi_flags & WIF_BEAM)){
+		if (!(winfo_p->wi_flags & WIF_BEAM)){	// not a beam weapon?
 			if ( sound_played != winfo_p->launch_snd ) {
 				sound_played = winfo_p->launch_snd;
 				if ( obj == Player_obj ) {
@@ -6010,9 +6029,17 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		//				snd_play( &Snds[winfo_p->launch_snd] );
 	
 						swp = &Player_ship->weapons;
-						if (swp->current_primary_bank >= 0) {
+						if (swp->current_primary_bank >= 0)
+						{
 							wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
-							joy_ff_play_primary_shoot((int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000);
+							int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
+
+							// modify force feedback for ballistics: make it stronger
+							if (wip->wi_flags2 & WIF2_BALLISTIC)
+								joy_ff_play_primary_shoot(force_level * 2);
+							// no ballistics
+							else
+								joy_ff_play_primary_shoot(force_level);
 						}
 					}
 				}else {
@@ -8422,7 +8449,7 @@ int ship_docking_valid(int docker, int dockee)
 		}
 	}
 
-	// docket == freighter
+	// docker == freighter
 	if (docker_type == SHIP_TYPE_FREIGHTER) {
 		if ( (dockee_type == SHIP_TYPE_CARGO) || (dockee_type == SHIP_TYPE_CRUISER) || (dockee_type == SHIP_TYPE_CAPITAL) || (dockee_type == SHIP_TYPE_SUPERCAP) || (dockee_type == SHIP_TYPE_DRYDOCK) || (dockee_type == SHIP_TYPE_CORVETTE) || (dockee_type == SHIP_TYPE_GAS_MINER) || (dockee_type == SHIP_TYPE_AWACS)){
 			return 1;
