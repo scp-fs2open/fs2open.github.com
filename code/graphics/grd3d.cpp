@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.29 $
- * $Date: 2003-10-17 17:18:42 $
- * $Author: randomtiger $
+ * $Revision: 2.30 $
+ * $Date: 2003-10-18 02:45:39 $
+ * $Author: phreak $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/10/17 17:18:42  randomtiger
+ * Big restructure for D3D and new modules grd3dlight and grd3dsetup
+ *
  * Revision 2.28  2003/10/16 17:36:29  randomtiger
  * D3D now has its own gamma system (stored in GammaD3D reg entry) that effects everything.
  * Put in Bobs specular fog fix.
@@ -1897,7 +1900,7 @@ void gr_d3d_render_buffer(int idx)
 
 }
 
-void gr_d3d_start_instance_matrix(){
+void gr_d3d_start_instance_matrix(vector *offset, matrix *rotation){
 	D3DXMATRIX mat, scale;
 
 /*	lpD3DDevice->GetTransform(D3DTS_PROJECTION, &old_p);

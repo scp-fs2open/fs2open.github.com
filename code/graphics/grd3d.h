@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.2 $
- * $Date: 2003-10-17 17:18:42 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2003-10-18 02:45:39 $
+ * $Author: phreak $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/10/17 17:18:42  randomtiger
+ * Big restructure for D3D and new modules grd3dlight and grd3dsetup
+ *
  * Revision 2.1  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -128,7 +131,7 @@ void gr_d3d_get_region(int front, int w, int h, ubyte *data);
 int gr_d3d_make_buffer(poly_list *list);
 void gr_d3d_destroy_buffer(int idx);
 void gr_d3d_render_buffer(int idx);
-void gr_d3d_start_instance_matrix();
+void gr_d3d_start_instance_matrix(vector *, matrix*);
 void gr_d3d_end_instance_matrix();
 void d3d_start_clip();
 void d3d_end_clip();
