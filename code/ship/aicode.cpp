@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.95 $
- * $Date: 2005-03-06 16:43:40 $
- * $Author: taylor $
+ * $Revision: 2.96 $
+ * $Date: 2005-03-07 20:12:36 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2005/03/06 16:43:40  taylor
+ * don't Assert() when repair_objp is NULL (support ship object is invalid until it's done with warpin)
+ *
  * Revision 2.94  2005/03/03 06:41:40  Goober5000
  * removed the "error" in the new docking code
  * --Goober5000
@@ -11079,6 +11082,9 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 	ai_info *aip, *repair_aip;
 	int		stamp = -1;
 
+	// repaired_objp should not be null, but repair_objp will be null when a support ship is just warping in
+	Assert(repaired_objp != NULL);
+
 	Assert( repaired_objp->type == OBJ_SHIP);
 	aip = &Ai_info[Ships[repaired_objp->instance].ai_index];
 
@@ -11151,14 +11157,9 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 
 	case REPAIR_INFO_ABORT:
 		// undock if necessary (we may be just waiting for a repair in which case we aren't docked)
-		// repair_objp will be NULL as a support ship is just warping in when we get here - taylor
-		Assert(repaired_objp != NULL);
-		if (repair_objp != NULL)
+		if ((repair_objp != NULL) && dock_check_find_direct_docked_object(repair_objp, repaired_objp))
 		{
-			if (dock_check_find_direct_docked_object(repair_objp, repaired_objp))
-			{
-				ai_do_objects_undocked_stuff(repair_objp, repaired_objp);
-			}
+			ai_do_objects_undocked_stuff(repair_objp, repaired_objp);
 		}
 		// fall through
 
@@ -16844,7 +16845,7 @@ void ai_ship_destroy(int shipnum, int method)
 				} else {
 					abort_reason = REPAIR_INFO_KILLED;
 				}
-				ai_do_objects_repairing_stuff( other_objp, &Objects[objnum], abort_reason );
+				ai_do_objects_repairing_stuff( other_objp, NULL, abort_reason );
 			}
 		}
 */
