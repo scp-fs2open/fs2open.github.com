@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.10 $
- * $Date: 2005-03-27 06:17:54 $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-27 08:51:25 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/27 06:17:54  taylor
+ * fill in some stuff for timer and mmio calls, not 100% but it works ok
+ *
  * Revision 2.9  2005/03/24 23:22:59  taylor
  * make sure we will get the right error message
  *
@@ -226,7 +229,7 @@ MMRESULT mmioClose(HMMIO hmmio, uint wFlags)
 }
 
 // slightly different options and return than the Windows version
-SDL_TimerID timeSetEvent(DWORD uDelay, uint uResolution, DWORD *lpTimeProc,  DWORD *dwUser, uint fuEvent)
+SDL_TimerID timeSetEvent(DWORD uDelay, uint uResolution, ptr_u lpTimeProc,  DWORD *dwUser, uint fuEvent)
 {
 	return SDL_AddTimer( uDelay, (SDL_NewTimerCallback)lpTimeProc, (void *) dwUser );
 }
