@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-07-12 03:19:16 $
- * $Author: Kazan $
+ * $Revision: 2.20 $
+ * $Date: 2004-07-12 03:34:55 $
+ * $Author: wmcoolmon $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/07/12 03:19:16  Kazan
+ * removed a couple pointless useless messages from the debug console
+ *
  * Revision 2.18  2004/05/10 10:51:52  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -1167,7 +1170,7 @@ void process_join_packet(ubyte* data, header* hinfo)
 	int offset;
 	int ret_code;
 	int host_restr_mode;
-	// int team0_avail,team1_avail;
+	int team0_avail,team1_avail;
 	char join_string[255];
 	net_addr addr;	
 
@@ -1192,66 +1195,68 @@ void process_join_packet(ubyte* data, header* hinfo)
 	ret_code = multi_eval_join_request(&jr,&addr);
 
 	// evaluate the return code
-	switch(ret_code){
-	// he should be accepted
-	case -1 :
-		break;
+	switch(ret_code)
+	{
+		// he should be accepted
+		case -1 :
+			break;
+			
+		// we have to query the host because this is a restricted game
+		case JOIN_QUERY_RESTRICTED :		
+			if(!(Game_mode & GM_STANDALONE_SERVER)){			
+				// notify the host of the event
+				snd_play(&Snds[SND_CUE_VOICE]);
+			}
+
+			// set the query timestamp
+			Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
+			Netgame.flags |= NG_FLAG_INGAME_JOINING;
+
+			// determine what mode we're in
+			host_restr_mode = -1;
+			memset(join_string,0,255);
+			if((Netgame.type_flags & NG_TYPE_TEAM) && Netgame.mode == NG_MODE_RESTRICTED){
+				multi_player_ships_available(&team0_avail,&team1_avail);
+
+				if(team0_avail && team1_avail){
+					host_restr_mode = MULTI_JOIN_RESTR_MODE_4;
+					sprintf(join_string,"Player %s has tried to join. Accept on team 1 or 2 ?",jr.callsign);
+				} else if(team0_avail && !team1_avail){
+					host_restr_mode = MULTI_JOIN_RESTR_MODE_2;
+					sprintf(join_string,"Player %s has tried to join team 0, accept y/n ? ?",jr.callsign);
+				} else if(!team0_avail && team1_avail){
+					host_restr_mode = MULTI_JOIN_RESTR_MODE_3;
+					sprintf(join_string,"Player %s has tried to join team 1, accept y/n ?",jr.callsign);
+				}
+			} else if(Netgame.mode == NG_MODE_RESTRICTED){
+				host_restr_mode = MULTI_JOIN_RESTR_MODE_1;
+				sprintf(join_string,XSTR("Player %s has tried to join, accept y/n ?",715),jr.callsign);
+			}
+			Assert(host_restr_mode != -1);
+
+			// store the request info
+			memcpy(&Multi_restr_join_request,&jr,sizeof(join_request));
+			memcpy(&Multi_restr_addr,&addr,sizeof(net_addr));
+			Multi_join_restr_mode = host_restr_mode;
+
+			// if i'm the standalone server, I need to send a query to the host
+			if(Game_mode & GM_STANDALONE_SERVER){
+				send_host_restr_packet(jr.callsign,0,Multi_join_restr_mode);
+			} else {
+				HUD_printf(join_string);
+			}
+
+			// NETLOG
+			ml_printf(NOX("Receive restricted join request from %s"), jr.callsign);
+
+			return;
 		
-	// we have to query the host because this is a restricted game
-	case JOIN_QUERY_RESTRICTED :		
-		if(!(Game_mode & GM_STANDALONE_SERVER)){			
-			// notify the host of the event
-			snd_play(&Snds[SND_CUE_VOICE]);
-		}
-
-		// set the query timestamp
-		Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
-		Netgame.flags |= NG_FLAG_INGAME_JOINING;
-
-		// determine what mode we're in
-		host_restr_mode = -1;
-		memset(join_string,0,255);
-//		if(Netgame.type == NG_TYPE_TEAM){
-//			multi_player_ships_available(&team0_avail,&team1_avail);
-//
-//			if(team0_avail && team1_avail){
-//				host_restr_mode = MULTI_JOIN_RESTR_MODE_4;
-//				sprintf(join_string,"Player %s has tried to join. Accept on team 1 or 2 ?",jr.callsign);
-//			} else if(team0_avail && !team1_avail){
-//				host_restr_mode = MULTI_JOIN_RESTR_MODE_2;
-//				sprintf(join_string,"Player %s has tried to join team 0, accept y/n ? ?",jr.callsign);
-//			} else if(!team0_avail && team1_avail){
-//				host_restr_mode = MULTI_JOIN_RESTR_MODE_3;
-//				sprintf(join_string,"Player %s has tried to join team 1, accept y/n ?",jr.callsign);
-//			}
-//		} else if(Netgame.mode == NG_MODE_RESTRICTED){
-			host_restr_mode = MULTI_JOIN_RESTR_MODE_1;
-			sprintf(join_string,XSTR("Player %s has tried to join, accept y/n ?",715),jr.callsign);
-//		}
-		Assert(host_restr_mode != -1);
-
-		// store the request info
-		memcpy(&Multi_restr_join_request,&jr,sizeof(join_request));
-		memcpy(&Multi_restr_addr,&addr,sizeof(net_addr));
-		Multi_join_restr_mode = host_restr_mode;
-
-		// if i'm the standalone server, I need to send a query to the host
-		if(Game_mode & GM_STANDALONE_SERVER){
-			send_host_restr_packet(jr.callsign,0,Multi_join_restr_mode);
-		} else {
-			HUD_printf(join_string);
-		}
-
-		// NETLOG
-		ml_printf(NOX("Receive restricted join request from %s"), jr.callsign);
-
-		return;
-	
-	// he'e being denied for some reason
-	default :	
-		// send him the reason he is being denied
-		send_deny_packet(&addr,ret_code);
-		return;
+		// he'e being denied for some reason
+		default :	
+			// send him the reason he is being denied
+			send_deny_packet(&addr,ret_code);
+			Netgame.flags &= ~(NG_FLAG_INGAME_JOINING);
+			return;
 	} 
 
 	// process the rest of the request
@@ -1775,9 +1780,7 @@ void process_accept_packet(ubyte* data, header* hinfo)
 	// stuff_netplayer_info( Net_player, &Psnet_my_addr, Ships[Objects[Player->objnum].instance].ship_info_index, Player );	
 	stuff_netplayer_info( Net_player, &Psnet_my_addr, 0, Player );	
 	multi_options_local_load(&Net_player->p_info.options, Net_player);
-	if(val){
-		Net_player->p_info.team = team;
-	}	
+	Net_player->p_info.team = team;	
 
 	// determine if I have a CD
 	if(Multi_has_cd){
@@ -2728,11 +2731,11 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 		Game_mode |= GM_DEAD_DIED;
 	}
 
-	nprintf(("Network", "Killing off %s\n", Ships[sobjp->instance].ship_name));
+	mprintf(("Network Killing off %s\n", Ships[sobjp->instance].ship_name));
 
 	// do the normal thing when not ingame joining.  When ingame joining, simply kill off the ship.
 	if ( !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ) {
-		ship_hit_kill( sobjp, oobjp, percent_killed, sd );
+//		ship_hit_kill( sobjp, oobjp, percent_killed, sd );
 	} else {
 		extern void ship_destroyed( int shipnum );
 		ship_destroyed( sobjp->instance );
@@ -6838,38 +6841,39 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// do code specific operations
-	switch(code){
-	// query to the host from standalone
-	case 0:		
-		Assert((Net_player->flags & NETINFO_FLAG_GAME_HOST) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER));
+	switch(code)
+	{
+		// query to the host from standalone
+		case 0:		
+			Assert((Net_player->flags & NETINFO_FLAG_GAME_HOST) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER));
 
-		// set the join mode
-		Multi_join_restr_mode = mode;
+			// set the join mode
+			Multi_join_restr_mode = mode;
 
-		// set the timestamp
-		Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
+			// set the timestamp
+			Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
 
-		// notify the host of the event
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
-		HUD_printf(XSTR("Player %s has tried to join - allow (y/n) ?",736),callsign);
-		break;
-		
-	// affirmative reply from the host to the standalone
-	case 1:
-		Assert(Game_mode & GM_STANDALONE_SERVER);		
+			// notify the host of the event
+			gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+			HUD_printf(XSTR("Player %s has tried to join - allow (y/n) ?",736),callsign);
+			break;
+			
+		// affirmative reply from the host to the standalone
+		case 1:
+			Assert(Game_mode & GM_STANDALONE_SERVER);		
 
-		// let the player join if the timestamp has not already elapsed on the server
-		if(Multi_restr_query_timestamp != -1){
-			multi_process_valid_join_request(&Multi_restr_join_request,&Multi_restr_addr,(int)mode);
-		}
-		break;	
+			// let the player join if the timestamp has not already elapsed on the server
+			if(Multi_restr_query_timestamp != -1){
+				multi_process_valid_join_request(&Multi_restr_join_request,&Multi_restr_addr,(int)mode);
+			}
+			break;	
 
-	// negative reply
-	case 2 :
-		Assert(Game_mode & GM_STANDALONE_SERVER);
-		Netgame.flags &= ~(NG_FLAG_INGAME_JOINING);
-		Multi_restr_query_timestamp = -1;
-		break;
+		// negative reply
+		case 2 :
+			Assert(Game_mode & GM_STANDALONE_SERVER);
+			Netgame.flags &= ~(NG_FLAG_INGAME_JOINING);
+			Multi_restr_query_timestamp = -1;
+			break;
 	}
 }
 
