@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.39 $
- * $Author: Kazan $
- * $Date: 2004-05-03 21:22:22 $
+ * $Revision: 2.40 $
+ * $Author: Goober5000 $
+ * $Date: 2004-05-10 08:03:30 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2004/05/03 21:22:22  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.38  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -690,8 +695,6 @@ typedef struct p_object {
 
 // these flags do not appear in the array; we may want to add them
 // in the future though
-#define P_OF_NO_LASERS					(1<<20)
-#define P_OF_NO_ENGINES					(1<<21)
 #define P_SF_VAPORIZE					(1<<22)
 #define P_SF2_STEALTH					(1<<23)
 #define P_SF2_FRIENDLY_STEALTH_INVIS	(1<<24)
@@ -709,22 +712,17 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-// Dude, it was lame how you set this up.. now i have to have like 4 blank entries in the parse object flags array
-#define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
-#define P2_SF2_NO_SUBSPACE_DRIVE		(1<<1)
-
 #if defined(ENABLE_AUTO_PILOT)
-#define P2_SF2_NAV_CARRY_STATUS			(1<<2)
-
-#define MAX_PARSE_OBJECT_FLAGS_2	3
-
+	#define MAX_PARSE_OBJECT_FLAGS_2	3
 #else
-#define MAX_PARSE_OBJECT_FLAGS_2	2
+	#define MAX_PARSE_OBJECT_FLAGS_2	2
 #endif
 
-
-
-
+#define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
+#define P2_SF2_NO_SUBSPACE_DRIVE		(1<<1)
+#if defined(ENABLE_AUTO_PILOT)
+	#define P2_SF2_NAV_CARRY_STATUS			(1<<2)
+#endif
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

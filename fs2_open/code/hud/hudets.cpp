@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-05 09:02:03 $
+ * $Revision: 2.10 $
+ * $Date: 2004-05-10 08:03:30 $
  * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.8  2004/02/04 08:41:04  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -468,10 +472,6 @@ void ai_manage_ets(object* obj)
 	if ( !ship_p->ship_initial_shield_strength || !ship_info_p->max_speed || !ship_info_p->max_weapon_reserve)
 		return;
 
-	// Goober5000: also check flags
-	if (obj->flags & (OF_NO_SHIELDS | OF_NO_ENGINES | OF_NO_LASERS) || !(ship_info_p->flags & SIF_AFTERBURNER))
-		return;
-
 	float shield_left_percent = get_shield_pct(obj);
 	float weapon_left_percent = ship_p->weapon_energy/ship_info_p->max_weapon_reserve;
 
@@ -545,9 +545,9 @@ void hud_show_ets()
 
 	// if at least two gauges are not shown, don't show any
 	i = 0;
-	if (Player_obj->flags & OF_NO_LASERS) i++;
+	if (!ship_has_energy_weapons(ship_p)) i++;
 	if (Player_obj->flags & OF_NO_SHIELDS) i++;
-	if (Player_obj->flags & OF_NO_ENGINES) i++;
+	if (!ship_has_engine_power(ship_p)) i++;
 	if (i >= 2) return;
 
 	hud_set_gauge_color(HUD_ETS_GAUGE);
@@ -556,7 +556,7 @@ void hud_show_ets()
 	i = 0;
 	for ( j = 0; j < 3; j++ )
 	{
-		if (j == 0 && Player_obj->flags & OF_NO_LASERS)
+		if (j == 0 && !ship_has_energy_weapons(ship_p))
 		{
 			continue;
 		}
@@ -564,7 +564,7 @@ void hud_show_ets()
 		{
 			continue;
 		}
-		if (j == 2 && Player_obj->flags & OF_NO_ENGINES)
+		if (j == 2 && !ship_has_engine_power(ship_p))
 		{
 			continue;
 		}
@@ -580,7 +580,7 @@ void hud_show_ets()
 		switch (j) {
 		case 0:
 			index = ship_p->weapon_recharge_index;
-			if ( Player_obj->flags & OF_NO_LASERS )
+			if ( !ship_has_energy_weapons(ship_p) )
 			{
 				continue;
 			}
@@ -594,7 +594,7 @@ void hud_show_ets()
 			break;
 		case 2:
 			index = ship_p->engine_recharge_index;
-			if ( Player_obj->flags & OF_NO_ENGINES )
+			if ( !ship_has_engine_power(ship_p) )
 			{
 				continue;
 			}
@@ -676,13 +676,13 @@ void set_default_recharge_rates(object* obj)
 		return;
 
 	ship_properties = 0;	
-	if (!(obj->flags & OF_NO_LASERS))
+	if (ship_has_energy_weapons(ship_p))
 		ship_properties |= HAS_WEAPONS;
 	
 	if (!(obj->flags & OF_NO_SHIELDS))
 		ship_properties |= HAS_SHIELDS;
 
-	if (!(obj->flags & OF_NO_ENGINES))
+	if (ship_has_engine_power(ship_p))
 		ship_properties |= HAS_ENGINES;
 
 	// the default charge rate depends on what systems are on each ship
@@ -747,7 +747,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 
 	switch ( ship_system ) {
 		case WEAPONS:
-			if ( obj->flags & OF_NO_LASERS )
+			if ( !ship_has_energy_weapons(ship_p) )
 				return;
 
 			gain_index = &ship_p->weapon_recharge_index;
@@ -757,7 +757,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 			else
 				lose_index1 = &ship_p->shield_recharge_index;
 
-			if ( obj->flags & OF_NO_ENGINES )
+			if ( !ship_has_engine_power(ship_p) )
 				lose_index2 = NULL;
 			else
 				lose_index2 = &ship_p->engine_recharge_index;
@@ -770,12 +770,12 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 
 			gain_index = &ship_p->shield_recharge_index;
 
-			if ( obj->flags & OF_NO_LASERS )
+			if ( !ship_has_energy_weapons(ship_p) )
 				lose_index1 = NULL;
 			else
 				lose_index1 = &ship_p->weapon_recharge_index;
 
-			if ( obj->flags & OF_NO_ENGINES )
+			if ( !ship_has_engine_power(ship_p) )
 				lose_index2 = NULL;
 			else
 				lose_index2 = &ship_p->engine_recharge_index;
@@ -783,12 +783,12 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 			break;
 
 		case ENGINES:
-			if ( obj->flags & OF_NO_ENGINES )
+			if ( !ship_has_engine_power(ship_p) )
 				return;
 
 			gain_index = &ship_p->engine_recharge_index;
 
-			if ( obj->flags & OF_NO_LASERS )
+			if ( !ship_has_energy_weapons(ship_p) )
 				lose_index1 = NULL;
 			else
 				lose_index1 = &ship_p->weapon_recharge_index;
@@ -868,7 +868,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 
 	switch ( ship_system ) {
 		case WEAPONS:
-			if ( obj->flags & OF_NO_LASERS )
+			if ( !ship_has_energy_weapons(ship_p) )
 				return;
 
 			lose_index = &ship_p->weapon_recharge_index;
@@ -878,7 +878,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 			else
 				gain_index1 = &ship_p->shield_recharge_index;
 
-			if ( obj->flags & OF_NO_ENGINES )
+			if ( !ship_has_engine_power(ship_p) )
 				gain_index2 = NULL;
 			else
 				gain_index2 = &ship_p->engine_recharge_index;
@@ -891,12 +891,12 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 
 			lose_index = &ship_p->shield_recharge_index;
 
-			if ( obj->flags & OF_NO_LASERS )
+			if ( !ship_has_energy_weapons(ship_p) )
 				gain_index1 = NULL;
 			else
 				gain_index1 = &ship_p->weapon_recharge_index;
 
-			if ( obj->flags & OF_NO_ENGINES )
+			if ( !ship_has_engine_power(ship_p) )
 				gain_index2 = NULL;
 			else
 				gain_index2 = &ship_p->engine_recharge_index;
@@ -904,12 +904,12 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 			break;
 
 		case ENGINES:
-			if ( obj->flags & OF_NO_ENGINES )
+			if ( !ship_has_engine_power(ship_p) )
 				return;
 
 			lose_index = &ship_p->engine_recharge_index;
 
-			if ( obj->flags & OF_NO_LASERS )
+			if ( !ship_has_energy_weapons(ship_p) )
 				gain_index1 = NULL;
 			else
 				gain_index1 = &ship_p->weapon_recharge_index;
@@ -1005,7 +1005,7 @@ void transfer_energy_to_shields(object* obj)
 	if (ship_p->flags & SF_DYING)
 		return;
 
-	if ( obj->flags & OF_NO_LASERS || obj->flags & OF_NO_SHIELDS )
+	if ( !ship_has_energy_weapons(ship_p) || obj->flags & OF_NO_SHIELDS )
 	{
 		return;
 	}
@@ -1024,7 +1024,7 @@ void transfer_energy_to_weapons(object* obj)
 	if (ship_p->flags & SF_DYING)
 		return;
 
-	if ( obj->flags & OF_NO_LASERS || obj->flags & OF_NO_SHIELDS )
+	if ( !ship_has_energy_weapons(ship_p) || obj->flags & OF_NO_SHIELDS )
 	{
 		return;
 	}
