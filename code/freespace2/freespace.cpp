@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-08-01 01:41:04 $
+ * $Revision: 2.5 $
+ * $Date: 2002-08-04 05:11:05 $
  * $Author: penguin $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.3  2002/07/29 20:12:31  penguin
  * added #ifdef _WIN32 around windows-specific system headers
  *
@@ -2176,10 +2179,14 @@ void game_init()
 	// verify that he has a valid weapons.tbl
 	verify_weapons_tbl();
 
-	// Output version numbers to registry for auto patching purposes
-	os_config_write_uint(NOX("Version"), NOX("Major"), FS_VERSION_MAJOR);
-	os_config_write_uint(NOX("Version"), NOX("Minor"), FS_VERSION_MINOR);
-	os_config_write_uint(NOX("Version"), NOX("Build"), FS_VERSION_BUILD);
+	// commented out by penguin --
+	//   we don't want to cause problems w/ retail version...
+	//   we probably need our own registry key (and a launcher to write them)
+
+//  	// Output version numbers to registry for auto patching purposes
+//  	os_config_write_uint(NOX("Version"), NOX("Major"), FS_VERSION_MAJOR);
+//  	os_config_write_uint(NOX("Version"), NOX("Minor"), FS_VERSION_MINOR);
+//  	os_config_write_uint(NOX("Version"), NOX("Build"), FS_VERSION_BUILD);
 
 	Use_joy_mouse = 0;		//os_config_read_uint( NULL, NOX("JoystickMovesCursor"), 1 );
 	//Use_palette_flash = os_config_read_uint( NULL, NOX("PaletteFlash"), 0 );
@@ -7819,15 +7826,13 @@ void get_version_string(char *str)
 {
 //XSTR:OFF
 if ( FS_VERSION_BUILD == 0 ) {
-	sprintf(str,"v%d.%02d",FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	sprintf(str,"fs2_open %d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 } else {
-	sprintf(str,"v%d.%02d.%02d",FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
+	sprintf(str,"fs2_open %d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
 }
 
-#if defined (FS2_DEMO)
-	strcat(str, " D");
-#elif defined (OEM_BUILD)
-	strcat(str, " (OEM)");
+#ifdef _DEBUG
+	strcat(str, " Dbg");
 #endif
 //XSTR:ON
 	/*
@@ -7862,7 +7867,7 @@ if ( FS_VERSION_BUILD == 0 ) {
 
 void get_version_string_short(char *str)
 {
-	sprintf(str,"v%d.%02d",FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	sprintf(str,"v%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 }
 
 // ----------------------------------------------------------------
