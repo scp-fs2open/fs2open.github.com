@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.11 $
- * $Date: 2002-11-10 16:32:42 $
- * $Author: DTP $
+ * $Revision: 2.12 $
+ * $Date: 2002-12-14 17:09:08 $
+ * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2002/11/10 16:32:42  DTP
+ * -DTP reworked mod support,
+ *
  * Revision 2.10  2002/11/10 16:30:53  DTP
  * -DTP reworked mod support,
  *
@@ -279,6 +282,7 @@ cmdline_parm gf4fix_arg("-GF4FIX", NULL); //DTP for random tigers GF4fix
 cmdline_parm allslev_arg("-ALLSLEV", NULL); //Give access to all single player missions
 cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including new targetting code
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
+cmdline_parm fps_arg("-fps", NULL);
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -690,6 +694,12 @@ int parse_cmdline(int argc, char *argv[])
 
 	if(mod_arg.found() ) {
 		Cmdline_mod = mod_arg.str();
+	}
+
+	if (fps_arg.found())
+	{
+		extern int Show_framerate;
+		Show_framerate=1;
 	}
 
 	return 1;
