@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.18 $
+ * $Revision: 2.19 $
  * $Author: Goober5000 $
- * $Date: 2002-12-31 07:26:40 $
+ * $Date: 2003-01-01 23:33:33 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2002/12/31 07:26:40  Goober5000
+ * added damaged-escort-priority-all sexp
+ * --Goober5000
+ *
  * Revision 2.17  2002/12/27 20:16:18  phreak
  * added damage-escort-list as a new sexp
  *
@@ -655,6 +659,8 @@
 #define OP_FRIENDLY_STEALTH_VISIBLE		(0x0069	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_DAMAGED_ESCORT_LIST			(0x006a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
 #define OP_DAMAGED_ESCORT_LIST_ALL		(0x006b	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SHIP_VAPORIZE				(0x006c	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SHIP_NO_VAPORIZE				(0x006d	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // debugging sexpressions

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.21 $
- * $Date: 2002-12-31 18:59:43 $
+ * $Revision: 2.22 $
+ * $Date: 2003-01-01 23:33:33 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2002/12/31 18:59:43  Goober5000
+ * if it ain't broke, don't fix it
+ * --Goober5000
+ *
  * Revision 2.20  2002/12/31 07:26:40  Goober5000
  * added damaged-escort-priority-all sexp
  * --Goober5000
@@ -612,6 +616,8 @@ sexp_oper Operators[] = {
 	{ "ship-unstealthy",			OP_SHIP_UNSTEALTHY,		1, INT_MAX },
 	{ "friendly-stealth-invisible",	OP_FRIENDLY_STEALTH_INVISIBLE,	1, INT_MAX },
 	{ "friendly-stealth-visible",	OP_FRIENDLY_STEALTH_VISIBLE,	1, INT_MAX },
+	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },
+	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },
 	{ "break-warp",					OP_WARP_BROKEN,					1, INT_MAX,	},
 	{ "fix-warp",						OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
 	{ "never-warp",					OP_WARP_NEVER,						1, INT_MAX, },
@@ -6578,6 +6584,58 @@ void sexp_beam_protect_ships( int n, int flag )
 	}
 }
 
+// sets the vaporize flag on a list of ships - Goober5000
+void sexp_ships_vaporize( int n, int vaporize )
+{
+	char *ship_name;
+	int num;
+
+	for ( ; n != -1; n = CDR(n) )
+	{
+		ship_name = CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+			continue;
+
+		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
+		// in a list until created
+		num = ship_name_lookup(ship_name);
+		if ( num != -1 )
+		{
+			if ( vaporize )
+			{
+				Ships[num].flags |= SF_VAPORIZE;
+			}
+			else
+			{
+				Ships[num].flags &= ~SF_VAPORIZE;
+			}
+
+		}
+		else
+		{
+			p_object *parse_obj;
+
+			parse_obj = mission_parse_get_arrival_ship( ship_name );
+			if ( parse_obj )
+			{
+				if ( vaporize )
+					parse_obj->flags |= P_SF_VAPORIZE;
+				else
+					parse_obj->flags &= ~P_SF_VAPORIZE;
+
+	#ifndef NDEBUG
+			}
+			else
+			{
+				Int3();	// could be a potential problem here
+	#endif
+			}
+		}
+	}
+}
+
 // sexpression to make ships "visible" and "invisible" to sensors.  The visible parameter is true
 // when making ships visible, false otherwise
 void sexp_ships_visible( int n, int visible )
@@ -9090,6 +9148,12 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_SHIP_VAPORIZE:
+			case OP_SHIP_NO_VAPORIZE:
+				sexp_ships_vaporize( node, (op_num == OP_SHIP_VAPORIZE) );
+				sexp_val = 1;
+				break;
+
 			case OP_WARP_BROKEN:
 			case OP_WARP_NOT_BROKEN:
 				sexp_deal_with_warp( node, 0, op_num==OP_WARP_BROKEN?1:0 );
@@ -9672,6 +9736,8 @@ int query_operator_return_type(int op)
 		case OP_SUBSYS_SET_RANDOM:
 		case OP_SUPERNOVA_START:
 		case OP_SET_SPECIAL_WARPOUT_NAME:
+		case OP_SHIP_VAPORIZE:
+		case OP_SHIP_NO_VAPORIZE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -10200,6 +10266,10 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ALLOW_WEAPON:
 		case OP_TECH_ADD_WEAPON:
 			return OPF_WEAPON_NAME;
+
+		case OP_SHIP_VAPORIZE:
+		case OP_SHIP_NO_VAPORIZE:
+			return OPF_SHIP;
 
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
@@ -11198,6 +11268,8 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_UNSTEALTHY:
 		case OP_FRIENDLY_STEALTH_INVISIBLE:
 		case OP_FRIENDLY_STEALTH_VISIBLE:
+		case OP_SHIP_VAPORIZE:
+		case OP_SHIP_NO_VAPORIZE:
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:

@@ -9,13 +9,23 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.11 $
+ * $Revision: 2.12 $
  * $Author: Goober5000 $
- * $Date: 2002-12-27 02:57:51 $
+ * $Date: 2003-01-01 23:33:33 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2002/12/27 02:57:51  Goober5000
+ * removed the existing stealth sexps and replaced them with the following...
+ * ship-stealthy
+ * ship-unstealthy
+ * is-ship-stealthy
+ * friendly-stealth-invisible
+ * friendly-stealth-visible
+ * is-friendly-stealth-visible
+ * --Goober5000
+ *
  * Revision 2.10  2002/12/24 07:38:59  Goober5000
  * added a wee cautionary note
  * --Goober5000
@@ -499,6 +509,7 @@ typedef struct p_object {
 #define P_OF_NO_ENGINES				(1<<21)
 #define P_SIF_STEALTH				(1<<22)
 #define P_SIF2_FRIENDLY_STEALTH_INVISIBLE	(1<<23)
+#define P_SF_VAPORIZE				(1<<24)
 
 // the following parse object flags are used internally by Freespace
 #define P_SF_USE_UNIQUE_ORDERS		(1<<26)	// tells a newly created ship to use the default orders for that ship
