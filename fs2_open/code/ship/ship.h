@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.46 $
- * $Date: 2003-09-11 19:34:29 $
+ * $Revision: 2.47 $
+ * $Date: 2003-09-12 01:02:50 $
  * $Author: argv $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/09/11 19:34:29  argv
+ * New energy system, ship table flag big guns in front, increase max ship types to 400.
+ *
  * Revision 2.45  2003/08/28 20:42:18  Goober5000
  * implemented rotating barrels for firing primary weapons
  * --Goober5000
@@ -1238,12 +1241,13 @@ extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 // DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
 // TALK TO DAVE B FIRST
 // ****************************************************************
-#ifdef INF_BUILD
+//#ifdef INF_BUILD
 // _argv[-1] - bumped from 250 to 400. I *need* this increased!
+// _argv[-1] - and just what is this INF_BUILD bs?
 #define MAX_SHIP_TYPES		400		//DTP bumped from 130 to 200
-#else
-#define MAX_SHIP_TYPES		130		//DTP bumped from 130 to 200
-#endif
+//#else
+//#define MAX_SHIP_TYPES		130		//DTP bumped from 130 to 200
+//#endif
 
 #define MAX_SHIPS_PER_WING	6
 
