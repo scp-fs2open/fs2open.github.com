@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.66 $
- * $Date: 2003-08-27 01:38:00 $
+ * $Revision: 2.67 $
+ * $Date: 2003-08-27 02:04:54 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2003/08/27 01:38:00  Goober5000
+ * added is-ship-type, is-ship-class, lock-rotating-subsystem, and free-rotating-subsystem;
+ * also fixed the argument and return values for various sexps so that they work
+ * properly for negative numbers
+ * --Goober5000
+ *
  * Revision 2.65  2003/08/21 09:00:19  Goober5000
  * fixed set-support-ship sexp
  * --Goober5000
@@ -722,6 +728,8 @@ sexp_oper Operators[] = {
 	{ "are-waypoints-done-delay",			OP_WAYPOINTS_DONE_DELAY,			3, 3,			},
 	{ "ship-type-destroyed",				OP_SHIP_TYPE_DESTROYED,				2, 2,			},
 	{ "percent-ships-destroyed",			OP_PERCENT_SHIPS_DESTROYED,		2, INT_MAX,	},
+	{ "percent-ships-disabled",			OP_PERCENT_SHIPS_DISABLED,			2, INT_MAX,	},
+	{ "percent-ships-disarmed",			OP_PERCENT_SHIPS_DISARMED,			2, INT_MAX,	},
 	{ "percent-ships-departed",			OP_PERCENT_SHIPS_DEPARTED,			2, INT_MAX,	},
 	{ "depart-node-delay",					OP_DEPART_NODE_DELAY,				3, INT_MAX, },	
 	{ "destroyed-or-departed-delay",		OP_DESTROYED_DEPARTED_DELAY,		2, INT_MAX, },	
@@ -5026,7 +5034,8 @@ int sexp_was_medal_granted(int n)
 
 // function which returns true if the percentage of ships (and ships in wings) departed is at
 // least the percentage given.  what determine if we should check destroyed or departed status
-int sexp_percent_ships_depart_destroy(int n, int what)
+// Goober5000 - added disarm and disable
+int sexp_percent_ships_depart_destroy_disarm_disable(int n, int what)
 {
 	int percent;
 	int total, count;
@@ -5063,6 +5072,12 @@ int sexp_percent_ships_depart_destroy(int n, int what)
 			} else if ( what == OP_PERCENT_SHIPS_DESTROYED ) {
 				if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) )
 					count++;
+			} else if ( what == OP_PERCENT_SHIPS_DISABLED ) {
+				if ( mission_log_get_time(LOG_SHIP_DISABLED, name, NULL, NULL) )
+					count++;
+			} else if ( what == OP_PERCENT_SHIPS_DISARMED ) {
+				if ( mission_log_get_time(LOG_SHIP_DISARMED, name, NULL, NULL) )
+					count++;
 			} else
 				Int3();			// this would be very bogus as well.
 
@@ -5073,7 +5088,7 @@ int sexp_percent_ships_depart_destroy(int n, int what)
 	if ( ((count * 100) / total) >= percent )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 // function to tell is a list of ships has departed from within a radius of a given jump node.
@@ -10768,7 +10783,9 @@ int eval_sexp(int cur_node)
 
 			case OP_PERCENT_SHIPS_DEPARTED:
 			case OP_PERCENT_SHIPS_DESTROYED:
-				sexp_val = sexp_percent_ships_depart_destroy(node, op_num);
+			case OP_PERCENT_SHIPS_DISARMED:
+			case OP_PERCENT_SHIPS_DISABLED:
+				sexp_val = sexp_percent_ships_depart_destroy_disarm_disable(node, op_num);
 				break;
 
 			case OP_DEPART_NODE_DELAY:
@@ -11620,6 +11637,8 @@ int query_operator_return_type(int op)
 		case OP_WAS_MEDAL_GRANTED:
 		case OP_PERCENT_SHIPS_DEPARTED:
 		case OP_PERCENT_SHIPS_DESTROYED:
+		case OP_PERCENT_SHIPS_DISARMED:
+		case OP_PERCENT_SHIPS_DISABLED:
 		case OP_DEPART_NODE_DELAY:
 		case OP_DESTROYED_DEPARTED_DELAY:
 		case OP_SPECIAL_CHECK:
@@ -12461,6 +12480,15 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			} else {
 				return OPF_SHIP_WING;
+			}
+			break;
+
+		case OP_PERCENT_SHIPS_DISARMED:
+		case OP_PERCENT_SHIPS_DISABLED:
+			if ( argnum == 0 ){
+				return OPF_POSITIVE;
+			} else {
+				return OPF_SHIP;
 			}
 			break;
 
