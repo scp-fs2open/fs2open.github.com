@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.57 $
- * $Date: 2003-11-10 02:44:36 $
- * $Author: matt $
+ * $Revision: 2.58 $
+ * $Date: 2003-11-11 02:15:43 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2003/11/10 02:44:36  matt
+ * Fixed the projection matrix issues -Sticks
+ *
  * Revision 2.56  2003/11/09 06:31:39  Kazan
  * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
  * conflicts in cmdline and timerbar.h log entries
@@ -270,7 +273,7 @@
  * Draw FPS when running debug build
  *
  * Revision 2.9  2002/08/28 10:51:04  randomtiger
- * Woh! I sure as hell didnt modify all these files it says I did.
+ * Woh! I sure didnt modify all these files it says I did.
  * I will put this down to the branch! Note: I did start from a fresh checkout!
  *
  * Revision 2.8  2002/08/27 13:38:57  penguin

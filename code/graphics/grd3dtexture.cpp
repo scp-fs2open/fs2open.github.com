@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-11-07 18:31:02 $
- * $Author: randomtiger $
+ * $Revision: 2.15 $
+ * $Date: 2003-11-11 02:15:44 $
+ * $Author: Goober5000 $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/11/07 18:31:02  randomtiger
+ * Fixed a nohtl call to htl funcs (crash with NULL pointer)
+ * Fixed a bug with 32bit PCX code.
+ * Fixed a bug in the d3d_string batch system that was messing up screen shaking.
+ * Added a couple of checks to try and stop timerbar push and pop overloads, check returns missing pops if you use the system.
+ * Put in a higher res icon until we get something better sorted out.
+ *
  * Revision 2.13  2003/10/27 23:04:21  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -973,7 +980,7 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 		return 0;
 	}
 
-	if(d3d_lock_and_set_internal_texture(stage, bitmap_id, 16, bitmap_type, u_scale, v_scale) == true) 
+	if(d3d_lock_and_set_internal_texture(stage, bitmap_id, (ubyte) 16, (ubyte) bitmap_type, u_scale, v_scale) == true) 
 	{
 	 	D3D_last_section_x = -1;
 		D3D_last_section_y = -1;

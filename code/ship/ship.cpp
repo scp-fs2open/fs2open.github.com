@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.89 $
- * $Date: 2003-11-09 04:09:17 $
+ * $Revision: 2.90 $
+ * $Date: 2003-11-11 02:15:40 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2003/11/09 04:09:17  Goober5000
+ * edited for language
+ * --Goober5000
+ *
  * Revision 2.88  2003/11/01 21:59:22  bobboau
  * new matrix handeling code, and fixed some problems with 3D lit verts,
  * several other small fixes
@@ -383,16 +387,14 @@
  * Fighter flak code, it doesn't blow up in your face anymore!
  *
  * Revision 2.7  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
-=======
  * Revision 2.6.2.1  2002/09/24 18:56:45  randomtiger
  * DX8 branch commit
  *
  * This is the scub of UP's previous code with the more up to date RT code.
  * For full details check previous dev e-mails
  *
->>>>>>> 2.6.2.1
  * Revision 2.6  2002/08/01 01:41:10  penguin
  * The big include file move
  *

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-10-19 19:29:27 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-11-11 02:15:43 $
+ * $Author: Goober5000 $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/19 19:29:27  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.2  2002/10/17 20:40:50  randomtiger
  * Added ability to remove HUD ingame on keypress shift O
  * So I've added a new key to the bind list and made use of already existing hud removal code.
@@ -37,7 +40,7 @@
  * minor key name change in german
  * 
  * 12    10/29/99 6:10p Jefff
- * squashed the damned y/z german issues once and for all
+ * squashed the y/z german issues once and for all
  * 
  * 11    10/28/99 11:16p Jefff
  * Changed some german key names.  Made key translations always use the

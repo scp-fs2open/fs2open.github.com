@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.34 $
- * $Date: 2003-11-06 21:10:26 $
- * $Author: randomtiger $
+ * $Revision: 2.35 $
+ * $Date: 2003-11-11 02:15:44 $
+ * $Author: Goober5000 $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/11/06 21:10:26  randomtiger
+ * Added my batching solution for more efficient d3d_string.
+ * Its part of the new grd3dbatch module, most of this isnt in use but it might help out later so I've left it in.
+ *
  * Revision 2.33  2003/11/02 05:50:08  bobboau
  * modified trails to render with tristrips now rather than with stinky old trifans,
  * MUCH faster now, at least one order of magnatude.
@@ -629,7 +633,7 @@ int D3d_last_state = -1;
 
 
 /**
- * This function should be used to control blending texture, the z buffer and howthe textures
+ * This function should be used to control blending texture, the z buffer and how the textures
  * are filtered
  *
  * @param gr_texture_source ts

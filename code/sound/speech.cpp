@@ -83,6 +83,10 @@ bool speech_play(char *text)
 	return speech_play(Conversion_buffer);
 }
 
+#pragma warning(push)
+#ifndef FS2_SPEECH
+#pragma warning(disable:4100)
+#endif
 bool speech_play(unsigned short *text)
 {
 #ifndef FS2_SPEECH
@@ -95,6 +99,7 @@ bool speech_play(unsigned short *text)
   	return SUCCEEDED(Voice_device->Speak(text, SPF_ASYNC, NULL));
 #endif
 }
+#pragma warning(pop)
 
 bool speech_pause()
 {
@@ -126,6 +131,10 @@ bool speech_stop()
 #endif
 }
 
+#pragma warning(push)
+#ifndef FS2_SPEECH
+#pragma warning(disable:4100)
+#endif
 bool speech_set_volume(int volume)
 {
 #ifndef FS2_SPEECH
@@ -134,7 +143,12 @@ bool speech_set_volume(int volume)
     return SUCCEEDED(Voice_device->SetVolume(volume));
 #endif
 }
+#pragma warning(pop)
 
+#pragma warning(push)
+#ifndef FS2_SPEECH
+#pragma warning(disable:4100)
+#endif
 bool speech_set_voice(void *new_voice)
 {
 #ifdef FS2_SPEECH
@@ -142,3 +156,4 @@ bool speech_set_voice(void *new_voice)
 #endif
 	return false;
 }
+#pragma warning(pop)

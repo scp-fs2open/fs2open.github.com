@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-10-16 16:38:16 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2003-11-11 02:15:45 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/10/16 16:38:16  Kazan
+ * couple more types in species_defs.cpp, also finished up "Da Species Upgrade"
+ *
  * Revision 2.3  2003/09/07 18:14:53  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -265,7 +268,7 @@
  * Supporting builtin messages for rearm and repair requests
  * 
  * 95    3/25/98 8:43p Hoffoss
- * Changed anim_play() to not be so damn complex when you try and call it.
+ * Changed anim_play() to not be so complex when you try and call it.
  * 
  * 94    3/24/98 12:46p Allender
  * save shipnum before killing currently playing message in preparation

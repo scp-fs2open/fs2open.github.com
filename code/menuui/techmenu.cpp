@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-09 06:31:40 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2003-11-11 02:15:43 $
+ * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/09 06:31:40  Kazan
+ * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
+ * conflicts in cmdline and timerbar.h log entries
+ * cvs stopped acting like it was on crack obviously
+ *
  * Revision 2.10  2003/11/06 22:46:26  phreak
  * added gr_start_**_matrix() and gr_end_**_matrix() around where ships are rendered
  *
@@ -954,7 +959,7 @@ void tech_scroll_list_down()
 	}
 }
 
-// this doesnt do a damn thing...
+// this doesnt do a thing...
 void tech_ship_scroll_capture()
 {
 	techroom_select_new_entry();

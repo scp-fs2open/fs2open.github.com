@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-05 04:25:27 $
+ * $Revision: 2.8 $
+ * $Date: 2003-11-11 02:15:40 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/05 04:25:27  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.6  2003/01/19 22:20:22  Goober5000
  * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
  * and departure into hangars should now all work properly
@@ -2125,7 +2137,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		} else {
 			mprintf(("Warning: Ship %s told to guard itself.  Goal ignored.\n", Ships[objp->instance].ship_name));
 		}
-		// -- What the hell is this doing here?? -- MK, 7/30/97 -- ai_do_default_behavior( objp );
+		// -- What is this doing here?? -- MK, 7/30/97 -- ai_do_default_behavior( objp );
 		break;
 
 	case AI_GOAL_GUARD_WING:

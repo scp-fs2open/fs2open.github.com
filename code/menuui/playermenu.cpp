@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-10-27 23:04:22 $
- * $Author: randomtiger $
+ * $Revision: 2.7 $
+ * $Date: 2003-11-11 02:15:43 $
+ * $Author: Goober5000 $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/10/27 23:04:22  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.5  2003/08/20 08:11:00  wmcoolmon
  * Added error screens to the barracks and start screens when a pilot file can't be deleted
  *
@@ -835,7 +843,7 @@ void player_select_button_pressed(int n)
 			}				
 
 			// clear the player out
-			// JH: What the hell?  How do you clone a pilot if you clear out the source you are copying
+			// JH: How do you clone a pilot if you clear out the source you are copying
 			// from?  These next 2 lines are pure stupidity, so I commented them out!
 //			memset(Player,0,sizeof(player));
 //			Player = NULL;

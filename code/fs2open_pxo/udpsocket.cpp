@@ -5,12 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.cpp $
- * $Revision: 1.2 $
- * $Date: 2003-10-13 06:02:50 $
- * $Author: Kazan $
+ * $Revision: 1.3 $
+ * $Date: 2003-11-11 02:15:42 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2003/10/13 06:02:50  Kazan
+ * Added Log Comment Thingy to these files
+ *
  *
  *
  */
@@ -42,13 +45,13 @@ bool UDP_Socket::InitSocket()
 
 	memset(&adr_inet, 0, sizeof(adr_inet));
 	adr_inet.sin_family = AF_INET;
-	adr_inet.sin_port = htons(port);
+	adr_inet.sin_port = htons((unsigned short) port);
 	adr_inet.sin_addr.s_addr = INADDR_ANY;
 
 #if defined(WIN32)
 
 	// Windows Version
-	int rc=startWinsock();
+	int rc = startWinsock();
 	if(rc != 0)
 		return false;
 
@@ -94,6 +97,8 @@ int UDP_Socket::GetPacket(char *buffer, int blen, std::string &from)
 		return false;
 
 	sockaddr_in from_addr;
+	memset(&from_addr, 0, sizeof(from_addr));
+
 	int recvbytes = -1;
 	int from_size = sizeof(from_addr);
 
@@ -130,7 +135,7 @@ int UDP_Socket::SendPacket(char *buffer, int plen, std::string &to, int toport)
 	int to_size = sizeof(to_addr);
 	
 	to_addr.sin_family	=	AF_INET;
-	to_addr.sin_port	=	htons(toport);
+	to_addr.sin_port	=	htons((unsigned short) toport);
 #if !defined(WIN32)
 	to_addr.sin_addr.s_addr	=	inet_addr(to.c_str());
 #else

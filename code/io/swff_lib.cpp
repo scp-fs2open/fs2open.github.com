@@ -365,12 +365,15 @@ HRESULT SWFF_DestroyAllEffects(
 	return hResult;
 }
 
+#pragma warning(push)
+#pragma warning(disable:4100)
 BOOL CALLBACK DIEnumAndDestroyCreatedEffectsProc(LPDIRECTINPUTEFFECT pDIEffect, LPVOID lpvRef)
 {
 	pDIEffect->Release();
 
 	return DIENUM_CONTINUE;
 }
+#pragma warning(pop)
 
 // ----------------------------------------------------------------------------
 // Function: 	SWFF_SetGain

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-10-23 18:03:25 $
- * $Author: randomtiger $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-11 02:15:40 $
+ * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/10/23 18:03:25  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.9  2003/10/15 22:03:26  Kazan
  * Da Species Update :D
  *
@@ -281,10 +284,10 @@ shield_hit	Shield_hits[MAX_SHIELD_HITS];
 
 
 #if defined(MORE_SPECIES)
-shield_ani Sheild_ani[MAX_SHIELD_ANIMS];
+shield_ani Shield_ani[MAX_SHIELD_ANIMS];
 
 /*
-shield_ani Sheild_ani[MAX_SHIELD_ANIMS] = {
+shield_ani Shield_ani[MAX_SHIELD_ANIMS] = {
 	{ "shieldhit01a", -1, -1 },
 	{ "shieldhit01a", -1, -1 },
 	{ "shieldhit01a", -1, -1 },
@@ -296,7 +299,7 @@ shield_ani Sheild_ani[MAX_SHIELD_ANIMS] = {
 };*/
 
 #else
-shield_ani Sheild_ani[MAX_SHIELD_ANIMS] = {
+shield_ani Shield_ani[MAX_SHIELD_ANIMS] = {
 	{ "shieldhit01a", -1, -1 },
 	{ "shieldhit01a", -1, -1 },
 	{ "shieldhit01a", -1, -1 },
@@ -323,8 +326,8 @@ void load_shield_hit_bitmap()
 	Shield_bitmaps_loaded = 1;
 
 	for (i=0; i<MAX_SHIELD_ANIMS && i<True_NumSpecies; i++ )	{
-		Sheild_ani[i].first_frame = bm_load_animation(Sheild_ani[i].filename, &Sheild_ani[i].nframes,NULL, 1);
-		if ( Sheild_ani[i].first_frame < 0 )
+		Shield_ani[i].first_frame = bm_load_animation(Shield_ani[i].filename, &Shield_ani[i].nframes,NULL, 1);
+		if ( Shield_ani[i].first_frame < 0 )
 			Int3();
 	}
 
@@ -340,7 +343,7 @@ void shield_hit_page_in()
 	}
 
 	for (i=0; i<MAX_SHIELD_ANIMS; i++ )	{
-		bm_page_in_xparent_texture( Sheild_ani[i].first_frame, Sheild_ani[i].nframes );
+		bm_page_in_xparent_texture( Shield_ani[i].first_frame, Shield_ani[i].nframes );
 	}
 }
 
@@ -676,14 +679,14 @@ void render_shield(int shield_num) //, matrix *orient, vector *centerp)
 	Assert( (n >=0) && (n<MAX_SPECIES_NAMES));
 	Assert( (n >=0) && (n<MAX_SHIELD_ANIMS));
 
-	frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) * Sheild_ani[n].nframes);
-	if ( frame_num >= Sheild_ani[n].nframes )	{
-		frame_num = Sheild_ani[n].nframes - 1;
+	frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) * Shield_ani[n].nframes);
+	if ( frame_num >= Shield_ani[n].nframes )	{
+		frame_num = Shield_ani[n].nframes - 1;
 	} else if ( frame_num < 0 )	{
 		mprintf(( "HEY! Missiontime went backwards! (Shield.cpp)\n" ));
 		frame_num = 0;
 	}
-	bitmap_id = Sheild_ani[n].first_frame + frame_num;
+	bitmap_id = Shield_ani[n].first_frame + frame_num;
 
 	float alpha = 0.9999f;
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){

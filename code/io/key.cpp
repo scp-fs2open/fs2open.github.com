@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Key.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2003-11-11 02:15:44 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/29 20:12:31  penguin
  * added #ifdef _WIN32 around windows-specific system headers
  *
@@ -33,7 +36,7 @@
  *
  * 
  * 6     10/29/99 6:10p Jefff
- * squashed the damned y/z german issues once and for all
+ * squashed the y/z german issues once and for all
  * 
  * 5     6/07/99 1:21p Dave
  * Fixed debug console scrolling problem. Thread related.

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-05-04 20:51:14 $
- * $Author: phreak $
+ * $Revision: 2.8 $
+ * $Date: 2003-11-11 02:15:41 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/05/04 20:51:14  phreak
+ * ABtrails are only processed if they are using a bitmap.
+ *
+ * this should be the end of the "missiles without trails" bug
+ *
  * Revision 2.6  2003/01/24 03:15:11  Goober5000
  * fixed a small nebula ship trail bug
  * --Goober5000
@@ -27,7 +32,7 @@
  * It turns out the version in the CVS did not toggle the ship trails with the flag...fixed this.
  *
  * Revision 2.3  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * 
  * 5     4/25/99 3:02p Dave
