@@ -9,13 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-03 19:42:17 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-07 00:45:25 $
+ * $Author: DTP $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/03 19:42:17  randomtiger
+ * Fixed Geforce 4 bug that caused font and hall video distortion.
+ * Very small change in 'gr_d3d_aabitmap_ex_internal'
+ *
+ * Tested and works on the following systems
+ *
+ * OUTSIDER Voodoo 3 win98
+ * OUTSIDER Geforce 2 win2000
+ * Me Geforce 4 PNY 4600 XP
+ * JBX-Phoenix Geforce 4 PNY XP
+ * Mehrunes GeForce 3 XP
+ * WMCoolmon nVidia TNT2 M64 win2000
+ * Orange GeForce 4 4200 XP
+ * ShadowWolf_IH Monster2 win98
+ * ShadowWolf_IH voodoo 2 win98
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -326,6 +342,7 @@
 #include "cfile/cfile.h"
 #include "nebula/neb.h"
 #include "render/3d.h"
+#include "cmdline/cmdline.h"	//DTP for random tigers GF4fix, and the commandline switch.
 
 typedef enum gr_texture_source {
 	TEXTURE_SOURCE_NONE,
@@ -1489,19 +1506,30 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 
 	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
 
-	// Rendition
+	// Rendition 
 	if ( D3d_rendition_uvs )	{
 		u0 = u_scale*(i2fl(sx)+0.5f)/i2fl(bw);
 		v0 = v_scale*(i2fl(sy)+0.5f)/i2fl(bh);
 
 		u1 = u_scale*(i2fl(sx+w)+0.5f)/i2fl(bw);
 		v1 = v_scale*(i2fl(sy+h)+0.5f)/i2fl(bh);
-	} else {
-		u0 = u_scale*i2fl((sx)-0.5f)/i2fl(bw);
-		v0 = v_scale*i2fl((sy)-0.5f)/i2fl(bh);
+	//} else { //DTP; commented out, for easy re-editing
+	//	u0 = u_scale*i2fl((sx)-0.5f)/i2fl(bw);
+	//	v0 = v_scale*i2fl((sy)-0.5f)/i2fl(bh);
 
-		u1 = u_scale*i2fl((sx+w)-0.5f)/i2fl(bw);
-		v1 = v_scale*i2fl((sy+h)-0.5f)/i2fl(bh);
+	//	u1 = u_scale*i2fl((sx+w)-0.5f)/i2fl(bw);
+	//	v1 = v_scale*i2fl((sy+h)-0.5f)/i2fl(bh);
+	//}
+	} else if (!Cmdline_gf4fix) { //DTP if not set at commandline do the original code
+		u0 = u_scale*i2fl(sx)/i2fl(bw);
+		v0 = v_scale*i2fl(sy)/i2fl(bh);
+		u1 = u_scale*i2fl(sx+w)/i2fl(bw);
+		v1 = v_scale*i2fl(sy+h)/i2fl(bh);
+	} else {	//DTP; these next 4 lines is random tigers Fix. activated by setting -GF4FIX in the commandline.
+		u0 = u_scale*(i2fl(sx)-0.5f)/i2fl(bw);
+		v0 = v_scale*(i2fl(sy)-0.5f)/i2fl(bh);
+		u1 = u_scale*(i2fl(sx+w)-0.5f)/i2fl(bw);
+		v1 = v_scale*(i2fl(sy+h)-0.5f)/i2fl(bh);
 	}
 
 	x1 = i2fl(x+gr_screen.offset_x);
