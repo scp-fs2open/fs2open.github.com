@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.59 $
- * $Date: 2004-08-01 02:31:18 $
+ * $Revision: 2.60 $
+ * $Date: 2004-08-02 22:40:59 $
  * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2004/08/01 02:31:18  phreak
+ * -phreak command line changed to -dualscanlines
+ *
  * Revision 2.58  2004/07/25 18:46:28  Kazan
  * -fred_no_warn has become -no_warn and applies to both fred and fs2
  * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
@@ -484,6 +487,7 @@ extern int Cmdline_show_fps;//DTP moved here because it is the correct place for
 extern int Cmdline_show_stats;
 extern int Cmdline_safeloading;
 extern int Cmdline_nospec;
+extern int Cmdline_orb_radar;
 
 extern int Cmdline_cache_ani;
 extern int Cmdline_d3dmipmap;
