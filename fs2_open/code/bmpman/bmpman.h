@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.14 $
- * $Date: 2004-08-11 05:06:18 $
+ * $Revision: 2.15 $
+ * $Date: 2004-10-06 22:02:54 $
  * $Author: Kazan $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/08/11 05:06:18  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.13  2004/05/06 22:35:26  taylor
  * DDS mipmap reading, remove unneeded bm_unlock() during page in
  *
@@ -294,7 +297,9 @@
 #define BMPMAN_NDEBUG
 #endif
 
-#define MAX_BITMAPS 3500			// How many bitmaps the game can handle
+// this is causing problems - let's DOUBLE IT -- Kazan
+//#define MAX_BITMAPS 3500			// How many bitmaps the game can handle
+#define MAX_BITMAPS 7000
 
 // 16 bit pixel formats
 #define BM_PIXEL_FORMAT_ARGB				0						// for glide - can assume certain things, like 1555 LFB writes, whee!

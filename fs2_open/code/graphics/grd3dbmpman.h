@@ -17,7 +17,7 @@
 
 #include "cfile/cfile.h"
 
-#define MAX_BITMAPS 3500			// How many bitmaps the game can handle
+//#define MAX_BITMAPS 3500			// How many bitmaps the game can handle
 
 typedef struct {
 
