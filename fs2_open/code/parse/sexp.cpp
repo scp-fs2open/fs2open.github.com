@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.39 $
- * $Date: 2003-01-25 04:54:36 $
+ * $Revision: 2.40 $
+ * $Date: 2003-01-26 18:37:19 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/01/25 04:54:36  Goober5000
+ * added preloader to change-ship-model and change-ship-class so that the game
+ * doesn't hesitate when switching models in the middle of missions
+ * --Goober5000
+ *
  * Revision 2.38  2003/01/25 04:17:39  Goober5000
  * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
  * --Ian Warfield
@@ -532,7 +537,7 @@
 #include "math/fvi.h"
 #include "ship/awacs.h"
 #include "hud/hudsquadmsg.h"	// for the order sexp
-#include "gamesnd/eventmusic.h"	// for change-music
+#include "gamesnd/eventmusic.h"	// for change-soundtrack
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -754,7 +759,7 @@ sexp_oper Operators[] = {
 	{ "ship-lights-off",					OP_SHIP_LIGHTS_OFF,					1, 1			}, //-WMCoolmon
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
-	{ "change-music",				OP_CHANGE_MUSIC,				1, 1 },		// Goober5000	
+	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -1776,10 +1781,13 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				break;
 
-			case OPF_MUSIC_SELECTION:
+			case OPF_SOUNDTRACK_NAME:
 				if (type2 != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
+
+				if (!stricmp(CTEXT(index), "<No Music>"))
+					break;
 
 				for (i=0; i<Num_soundtracks; i++)
 				{
@@ -1790,7 +1798,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				}
 
 				if (i == Num_soundtracks)
-					return SEXP_CHECK_INVALID_MUSIC_SELECTION;
+					return SEXP_CHECK_INVALID_SOUNDTRACK_NAME;
 
 				break;
 
@@ -9616,7 +9624,7 @@ int eval_sexp(int cur_node)
 				sexp_val = sexp_is_ai_class(node);
 				break;
 				
-			case OP_CHANGE_MUSIC:
+			case OP_CHANGE_SOUNDTRACK:
 				sexp_change_music(node);
 				sexp_val = 1;
 				break;
@@ -10383,7 +10391,7 @@ int query_operator_return_type(int op)
 		case OP_DEACTIVATE_GLOW_POINT_BANK:
 		case OP_ACTIVATE_GLOW_POINT_BANK:
 		case OP_SET_SUPPORT_SHIP:
-		case OP_CHANGE_MUSIC:
+		case OP_CHANGE_SOUNDTRACK:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -10729,8 +10737,8 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SUBSYSTEM;
 
-		case OP_CHANGE_MUSIC:
-			return OPF_MUSIC_SELECTION;
+		case OP_CHANGE_SOUNDTRACK:
+			return OPF_SOUNDTRACK_NAME;
 
 		case OP_SEND_MESSAGE:
 		case OP_SEND_RANDOM_MESSAGE:
@@ -11579,8 +11587,8 @@ char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_ARRIVAL_ANCHOR_ALL:
 			return "Invalid universal arrival anchor";
 
-		case SEXP_CHECK_INVALID_MUSIC_SELECTION:
-			return "Invalid music selection";
+		case SEXP_CHECK_INVALID_SOUNDTRACK_NAME:
+			return "Invalid soundtrack name";
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -12029,7 +12037,7 @@ int get_subcategory(int sexp_id)
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
-		case OP_CHANGE_MUSIC:
+		case OP_CHANGE_SOUNDTRACK:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_DONT_COLLIDE_INVISIBLE:
