@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.41 $
- * $Date: 2003-07-04 02:30:54 $
+ * $Revision: 2.42 $
+ * $Date: 2003-07-15 02:52:40 $
  * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/07/04 02:30:54  phreak
+ * support for cloaking added.  needs a cloakmap.pcx
+ * to cloak the players ship, activate cheats and press tilde + x
+ * some more work can be done to smooth out the animation.
+ *
  * Revision 2.40  2003/04/29 01:03:21  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -924,6 +929,7 @@ typedef struct ship {
 	vector current_translation;
 	int cloak_stage;
 	fix time_until_full_cloak;
+	int cloak_alpha;
 
 } ship;
 
