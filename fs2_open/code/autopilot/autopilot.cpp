@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.4 $
- * $Date: 2004-07-25 00:31:27 $
+ * $Revision: 1.5 $
+ * $Date: 2004-07-25 18:46:28 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/07/25 00:31:27  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 1.3  2004/07/12 16:32:42  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -185,6 +188,9 @@ void StartAutopilot()
 		}
 	}
 
+
+	// damp speed_cap to 90% of actual -- to make sure ships stay in formation
+	speed_cap = 0.90f * speed_cap;
 
 	// assign ship goals
 	// when assigning goals to individual ships only do so if Ships[shipnum].wingnum != -1 

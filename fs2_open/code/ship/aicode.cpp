@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.61 $
- * $Date: 2004-07-25 00:31:30 $
+ * $Revision: 2.62 $
+ * $Date: 2004-07-25 18:46:29 $
  * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2004/07/25 00:31:30  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.60  2004/07/12 16:33:04  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -14973,6 +14976,13 @@ void ai_process( object * obj, int ai_index, float frametime )
 //		if (aip->submode == AIS_NONE_FORMATION)
 //			rfc = 0;
 //		break;
+		// Kazan -- disable afterburning during thses
+	case AIM_WAYPOINTS:
+	case AIM_FLY_TO_SHIP:
+		AI_ci.afterburner_stop = 1;
+		break;
+
+
 	default:
 		break;
 	}

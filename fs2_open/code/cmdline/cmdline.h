@@ -11,11 +11,17 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.57 $
- * $Date: 2004-07-05 05:09:15 $
- * $Author: bobboau $
+ * $Revision: 2.58 $
+ * $Date: 2004-07-25 18:46:28 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2004/07/05 05:09:15  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.56  2004/06/19 22:15:48  wmcoolmon
  * Added -nomotion debris command line option; also re-ordered categories.
  *
@@ -511,7 +517,7 @@ extern int Cmdline_batch_3dunlit;
 extern int Cmdline_2d_poof;
 
 extern int Cmdline_FRED2_htl;
-extern int CmdLine_FRED2_NoWarn;
+extern int CmdLine_NoWarn;
 
 extern int Cmdline_novbo;
 extern int Cmdline_snd_preload;

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.76 $
- * $Date: 2004-07-12 16:32:42 $
+ * $Revision: 2.77 $
+ * $Date: 2004-07-25 18:46:28 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2004/07/12 16:32:42  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.75  2004/07/05 05:09:15  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -755,7 +758,7 @@ cmdline_parm get_flags_arg("-get_flags",NULL);
 cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys",NULL);
 cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
 cmdline_parm fred2_htl_arg("-fredhtl",NULL);
-cmdline_parm fred2_nowarn_arg("-fred_no_warn", NULL);
+cmdline_parm nowarn_arg("-no_warn", NULL);
 cmdline_parm max_subdivide_arg("-max_subdivide", NULL);	// comand line maximum level of tesleation for n-patches -Bobboau
 cmdline_parm env("-env", NULL);	
 cmdline_parm alpha_env("-alpha_env", NULL);	
@@ -836,7 +839,7 @@ int Cmdline_d3d_lesstmem = 0;
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
-int CmdLine_FRED2_NoWarn = 0; // turn warnings off in FRED
+int CmdLine_NoWarn = 0; // turn warnings off in FRED
 
 //Experimental
 int Cmdline_load_only_used;
@@ -1095,12 +1098,13 @@ bool SetCmdlineParams()
 
 	if (Radar_Range_Clamp.found())
 	{
-		Radar_ranges[RR_MAX_RANGES-1] = Radar_Range_Clamp.get_float();
+		if (Radar_Range_Clamp.get_float() > 0.0f)
+			Radar_ranges[RR_MAX_RANGES-1] = Radar_Range_Clamp.get_float();
 	}
 
-	if (fred2_nowarn_arg.found())
+	if (nowarn_arg.found())
 	{
-		CmdLine_FRED2_NoWarn = 1;
+		CmdLine_NoWarn = 1;
 	}
 
 	if (fred2_htl_arg.found())

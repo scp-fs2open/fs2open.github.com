@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-07-12 16:33:05 $
+ * $Revision: 2.29 $
+ * $Date: 2004-07-25 18:46:30 $
  * $Author: Kazan $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/07/12 16:33:05  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.27  2004/03/20 21:17:13  bobboau
  * fixed -spec comand line option,
  * probly some other stuf
@@ -1260,7 +1263,7 @@ void shipfx_warpout_start( object *objp )
 	// This should actually be an AI that flies from the current
 	// position through 'shipp->warp_effect_pos' in 'warp_time'
 	// and keeps going 
-	if ( objp != Player_obj && !Player_use_ai )	{
+	if ( objp != Player_obj || Player_use_ai )	{
 		vector vel;
 		vel = objp->orient.vec.fvec;
 		vm_vec_scale( &vel, speed );
