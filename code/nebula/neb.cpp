@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-11-18 21:32:48 $
+ * $Author: phreak $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -426,6 +429,11 @@ void neb2_level_init()
 		Neb_backg_fog_near = NEB_BACKG_FOG_NEAR_D3D;
 		Neb_backg_fog_far = NEB_BACKG_FOG_FAR_D3D;					
 		break;
+	case GR_OPENGL:
+		Neb_backg_fog_near = NEB_BACKG_FOG_NEAR_D3D;
+		Neb_backg_fog_far = NEB_BACKG_FOG_FAR_D3D;
+		break;
+
 	case GR_SOFTWARE:
 		Assert(Fred_running);
 		break;
@@ -1139,6 +1147,11 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 		break;
 
 	case GR_DIRECT3D:
+		*fnear = Neb_ship_fog_vals_d3d[fog_index][0];
+		*ffar = Neb_ship_fog_vals_d3d[fog_index][1];
+		break;
+
+	case GR_OPENGL:
 		*fnear = Neb_ship_fog_vals_d3d[fog_index][0];
 		*ffar = Neb_ship_fog_vals_d3d[fog_index][1];
 		break;
