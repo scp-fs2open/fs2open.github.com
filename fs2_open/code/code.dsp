@@ -2567,5 +2567,29 @@ SOURCE=.\Cmdline\cmdline.cpp
 SOURCE=.\Cmdline\cmdline.h
 # End Source File
 # End Group
+# Begin Group "fs2open_pxo"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\fs2open_pxo\Client.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\fs2open_pxo\Client.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\fs2open_pxo\protocol.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\fs2open_pxo\udpsocket.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\fs2open_pxo\udpsocket.h
+# End Source File
+# End Group
 # End Target
 # End Project

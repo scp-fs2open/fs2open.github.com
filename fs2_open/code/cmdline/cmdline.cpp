@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.29 $
- * $Date: 2003-09-14 19:00:02 $
- * $Author: wmcoolmon $
- * $Revision: 2.29 $
- * $Date: 2003-09-14 19:00:02 $
- * $Author: wmcoolmon $
+ * $Revision: 2.30 $
+ * $Date: 2003-09-23 02:42:52 $
+ * $Author: Kazan $
+ * $Revision: 2.30 $
+ * $Date: 2003-09-23 02:42:52 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/09/14 19:00:02  wmcoolmon
+ * Changed "nospec" and "cell" to "Cmdline_nospec" and "Cmdline_cell"
+ *
  * Revision 2.28  2003/09/14 18:32:24  wmcoolmon
  * Added "-safeloading" command line parameter, which uses old fs2_retail-style loading code -C
  *
@@ -394,6 +397,7 @@ cmdline_parm spec_static_arg("-spec_static", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_tube_arg("-spec_tube", NULL);	// comand line FOV -Bobboau
 cmdline_parm safeloading_arg("-safeloading", NULL); //Uses old loading method -C
 cmdline_parm nospec_arg("-nospec", NULL); // skip specular highlighting -Sticks
+cmdline_parm MissionCRCs("-missioncrcs", NULL);
 
 cmdline_parm cell_arg("-cell", NULL);
 
@@ -422,7 +426,8 @@ int Cmdline_spew_pof_info = 0;
 int Cmdline_force_32bit = 0;
 int Cmdline_mouse_coords = 0;
 int Cmdline_timeout = -1;
-
+int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
+ 
 int Cmdline_window = 0;
 int Cmdline_gf4fix = 0; // DTP for randomstigers GF4 fix.
 int Cmdline_allslev = 0;
@@ -689,6 +694,10 @@ int parse_cmdline(int argc, char *argv[])
 		os_init_cmdline("");
 	}
    #endif
+
+	if (MissionCRCs.found()) {
+		Cmdline_SpewMission_CRCs = 1;
+	}
 
 	// is this a standalone server??
 	if (standalone_arg.found()) {

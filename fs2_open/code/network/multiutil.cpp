@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2003-09-23 02:42:54 $
+ * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/22 01:22:26  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -255,6 +258,8 @@
 #include "hud/hudescort.h"
 
 #include "network/multi.h"
+#include "fs2open_pxo/Client.h"
+
 #ifndef NO_NETWORK
 #include "network/multimsgs.h"
 #include "network/multi_xfer.h"
@@ -278,6 +283,9 @@
 #include "network/multi_rate.h"
 #endif
 
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
+#include "gamesnd/gamesnd.h"
 
 extern int MSG_WINDOW_X_START;	// used to position multiplayer text messages
 extern int MSG_WINDOW_Y_START;
@@ -285,6 +293,8 @@ extern int MSG_WINDOW_HEIGHT;
 
 extern int ascii_table[];
 extern int shifted_ascii_table[];
+extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+
 
 // network object management
 ushort Next_ship_signature;										// next permanent network signature to assign to an object
@@ -3150,134 +3160,199 @@ int multi_get_connection_speed()
 // return a MVALID_STATUS_* define based upon the passed string
 int multi_string_to_status(char *valid_string)
 {
+	if (strstr(valid_string, "invalid"))
+		return MVALID_STATUS_INVALID;
+
+	if (strstr(valid_string, "valid"))
+		return MVALID_STATUS_VALID;
+
+
 	return MVALID_STATUS_UNKNOWN;	
 }
 
 // if we're in tracker mode, do a validation update on all known missions
+// **************************************** Changed for FS2NetD ***********************************
+// Origional code for this function just became _BOGUS_
+
+
+// ulgy hacking here..
+extern char *Multi_create_loading_fname[];
+extern int Multi_create_bitmap;
+extern int Please_wait_coords[GR_NUM_RESOLUTIONS][4];
+#define MC_X_COORD 0
+#define MC_Y_COORD 1
+
+void multi_update_validate_missions_DrawString(char *str)
+{
+	gamesnd_play_iface(SND_SCROLL);
+
+	  // --------- ripped from [V]'s "LOADING" screen code
+	int loading_bitmap;
+
+	loading_bitmap = bm_load(Multi_create_loading_fname[gr_screen.res]);
+
+	// draw the background, etc
+	gr_reset_clip();
+
+	GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
+
+	if(Multi_create_bitmap != -1){
+		gr_set_bitmap(Multi_create_bitmap);
+		gr_bitmap(0, 0);
+	}
+	chatbox_render();
+
+	if ( loading_bitmap > -1 ){
+		gr_set_bitmap(loading_bitmap);
+	}
+	gr_bitmap( Please_wait_coords[gr_screen.res][MC_X_COORD], Please_wait_coords[gr_screen.res][MC_Y_COORD] );
+
+	// draw str on it
+
+	int str_w, str_h;
+
+	gr_set_color_fast(&Color_normal);
+	gr_set_font(FONT2);
+	gr_get_string_size(&str_w, &str_h, str);
+	gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, str);
+	gr_set_font(FONT1);
+
+	gr_flip();
+
+}
+
 void multi_update_valid_missions()
 {
-	char next_filename[MAX_FILENAME_LEN+1];	
-	char next_line[512];
-	char status_string[50];
-	char temp[256];
-	char *tok;
-	CFILE *in;
-	int idx, file_index;	
-	int was_cancelled;
+
+	static char Server[32];
+	static int port = -1;
+
+	if (port == -1)
+	{
+		CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
+		if(file == NULL){
+			ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
+			return;
+		}
+			
+
+		char Port[32];
+		if (cfgets(Server, 32, file) == NULL)
+		{
+			ml_printf("Network", "No Masterserver definition!\n");
+			return;
+		}
+
+		if (cfgets(Port, 32, file) != NULL)
+			port = atoi(Port);
+		else
+			port = 12000;
+	}
 
 #ifndef NO_STANDALONE
 	// if we're a standalone, show a dialog saying "validating missions"
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_create_gen_dialog("Validating missions");
-		std_gen_set_text("Querying:",1);
+		std_gen_set_text("Querying FS2NetD:",1);
 	}
 #endif
 
-	// mark all missions on our list as being MVALID_STATUS_UNKNOWN
-	for(idx=0; idx<Multi_create_mission_count; idx++){
-		Multi_create_mission_list[idx].valid_status = MVALID_STATUS_UNKNOWN;
+	multi_update_validate_missions_DrawString("Asking PXO Server for Mission CRCs");
+
+	// ----------- Get the CRCs from the server -------------
+	//FS2OpenPXO_Socket
+	int numFrecs; 
+	file_record *frecs = GetMissionsList(numFrecs, Server, FS2OpenPXO_Socket, port);
+
+
+
+#ifndef NO_STANDALONE
+	// if we're a standalone, show a dialog saying "validating missions"
+	if(Game_mode & GM_STANDALONE_SERVER){
+		std_gen_set_text("Got FS2NetD Reply:",1);
 	}
+#endif
+
+
+	// this is a shameless splicing of [V]'s code from the pxo spew below and my code.
+	char **file_names;
+	char full_name[MAX_FILENAME_LEN+1];
+	char wild_card[256];
+	int count, idx, i;
+	bool Found;
+	uint checksum;
+	FILE *out;
+
+	// allocate filename space	
+	file_names = (char**)malloc(sizeof(char*) * 1024); // 1024 files should be safe!
+	if(file_names != NULL){
+		memset(wild_card, 0, 256);
+		strcpy(wild_card, NOX("*"));
+		strcat(wild_card, FS_MISSION_FILE_EXT);
+		count = cf_get_file_list(1024, file_names, CF_TYPE_MISSIONS, wild_card);	
 	
-	// attempt to open the valid mission config file
-	in = cfopen(MULTI_VALID_MISSION_FILE, "rt", CFILE_NORMAL, CF_TYPE_DATA);
-	if(in != NULL){		
-		// read in all listed missions
-		while(!cfeof(in)){
-			// read in a line
-			memset(next_line, 0, 512);
-			cfgets(next_line, 512, in);
-			drop_trailing_white_space(next_line);
-			drop_leading_white_space(next_line);
+		// open the outfile
+		CFILE *mvalid_cfg = cfopen("mvalid.cfg", "wt", CFILE_NORMAL, CF_TYPE_DATA);
 
-			// read in a filename
-			memset(next_filename, 0, MAX_FILENAME_LEN+1);
-			memset(temp, 0, 256);
-			tok = strtok(next_line, " ");
-			if(tok == NULL){
-				continue;
-			}			
-			strcpy(temp, tok);
-			drop_trailing_white_space(temp);
-			drop_leading_white_space(temp);
-			strcpy(next_filename, temp);
+		
+		// do all the checksums
+		for(idx=0; idx<count; idx++){
+			memset(full_name, 0, MAX_FILENAME_LEN+1);			
+			strcpy(full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT));
+
+#ifndef NO_STANDALONE
+			std::string temp = "Validating ";
+			temp = temp + full_name;
+			// if we're a standalone, show a dialog saying "validating missions"
+			if(Game_mode & GM_STANDALONE_SERVER)
+			{
+				
+				std_gen_set_text((char *) temp.c_str(),1);
+			}
+			else
+#endif
+				multi_update_validate_missions_DrawString((char *) temp.c_str());
+			cf_chksum_long(full_name, &checksum);
 			
-			// read in the status string
-			memset(status_string, 0, 50);
-			memset(temp, 0, 256);
-			tok = strtok(NULL," \n");
-			if(tok == NULL){
-				continue;
+			Found = false;
+
+			cfputs(full_name, mvalid_cfg);
+
+			for (i = 0; i < numFrecs; i++)
+			{
+				if (!strcmp(full_name, frecs[i].name))
+				{
+					// Found now becomes a valid/invalid specifier
+					if (checksum == frecs[i].crc32)
+					{
+						cfputs("   valid\n", mvalid_cfg);
+						Found = true;
+					}
+
+					break;
+				}
 			}
-			strcpy(temp, tok);
-			drop_trailing_white_space(temp);
-			drop_leading_white_space(temp);
-			strcpy(status_string, temp);
 
-			// try and find the file
-			file_index = multi_create_lookup_mission(next_filename);
-			if(file_index >= 0){
-				Multi_create_mission_list[file_index].valid_status = (char)multi_string_to_status(status_string);
+			if (!Found)
+			{
+				cfputs("   invalid\n", mvalid_cfg);
 			}
+			
 		}
 
-		// close the infile
-		cfclose(in);
-		in = NULL;	
-	}	
-
-	// now poll for all unknown missions
-	was_cancelled = 0;
-
-	// if the operation was cancelled, don't write anything new
-	if(was_cancelled){
-#ifndef NO_STANDALONE
-		// if we're a standalone, kill the validate dialog
-		if(Game_mode & GM_STANDALONE_SERVER){
-			std_destroy_gen_dialog();
-		}
-#endif
-
-		return;
+		cfclose(mvalid_cfg);
+		free(file_names);
+	
 	}
 
-	// now rewrite the outfile with the new mission info
-	in = cfopen(MULTI_VALID_MISSION_FILE, "wt", CFILE_NORMAL, CF_TYPE_DATA);
-	if(in == NULL){
-#ifndef NO_STANDALONE
-		// if we're a standalone, kill the validate dialog
-		if(Game_mode & GM_STANDALONE_SERVER){
-			std_destroy_gen_dialog();
-		}
-#endif
-
-		return;
-	}
-	for(idx=0; idx<Multi_create_mission_count; idx++){
-		switch(Multi_create_mission_list[idx].valid_status){
-		case MVALID_STATUS_VALID:
-			cfputs(Multi_create_mission_list[idx].filename, in);
-			cfputs(NOX("   valid"), in);
-			cfputs(NOX("\n"), in);
-			break;
-
-		case MVALID_STATUS_INVALID:
-			cfputs(Multi_create_mission_list[idx].filename, in);
-			cfputs(NOX("   invalid"), in);
-			cfputs(NOX("\n"), in);
-			break;
-		}
-	}
-
-	// close the outfile
-	cfclose(in);
-	in = NULL;
+	delete[] frecs;
 
 #ifndef NO_STANDALONE
 	// if we're a standalone, kill the validate dialog
 	if(Game_mode & GM_STANDALONE_SERVER){
 		std_destroy_gen_dialog();
 	}
-#endif
+#endif 
 }
 
 // get a new id# for a player
@@ -3359,7 +3434,7 @@ DCF(multi,"changes multiplayer settings")
 //XSTR:ON
 
 // PXO crc checking stuff
-#ifndef NDEBUG
+
 
 void multi_spew_pxo_checksums(int max_files, char *outfile)
 {
@@ -3390,7 +3465,8 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 			strcpy(full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT));
 
 			if(cf_chksum_long(full_name, &checksum)){
-				fprintf(out, "%s	:	%d\n", full_name, (int)checksum);
+				fprintf(out, "# %s	:	%u\n", full_name, (unsigned int)checksum);
+				fprintf(out, "INSERT INTO Missions SET FileName=\"%s\", CRC32=\"%u\";\n\n", full_name, (unsigned int)checksum);
 			}
 		}
 
@@ -3414,7 +3490,7 @@ DCF(pxospew,"spew PXO 32 bit checksums for all visible mission files")
 	}
 }
 
-#endif
+
 
 // make a bunch of fake players - don't rely on this to be very safe - its mostly used for interface testing
 #ifndef NDEBUG

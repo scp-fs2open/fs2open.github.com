@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.6 $
+ * $Date: 2003-09-23 02:42:54 $
+ * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.4.2.1  2002/09/24 18:56:44  randomtiger
  * DX8 branch commit
  *
@@ -456,6 +459,8 @@
 #include <arpa/inet.h>
 #endif
 
+#include "fs2open_pxo/Client.h"
+
 #include "network/multi.h"
 #include "network/multiui.h"
 #include "network/multiutil.h"
@@ -509,6 +514,10 @@
 #include "missionui/missionpause.h"
 #include "debugconsole/dbugfile.h"
 
+
+extern int Om_tracker_flag; // needed to know whether or not to use FS2OpenPXO
+
+UDP_Socket FS2OpenPXO_Socket(FS2OPEN_CLIENT_PORT);
 // -------------------------------------------------------------------------------------------------------------
 // 
 // MULTIPLAYER COMMON interface controls
@@ -1315,6 +1324,20 @@ void multi_join_game_init()
 		multi_join_load_tcp_addrs();		
 	}	
 
+	
+	char textbuffer[17];
+	memset(textbuffer, 0, 17);
+	ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
+	active_game *Cur = Active_game_head;
+	if (Cur != NULL)
+	{
+		do {
+			ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n",  psnet_addr_to_string(textbuffer, &Cur->server_addr));
+			send_server_query(&Cur->server_addr);
+			Cur = Cur->next;
+		} while (Cur != Active_game_head);
+	}
+
 	// initialize any and all timestamps	
 	Multi_join_glr_stamp = -1;
 	Multi_join_ping_stamp = -1;
@@ -1588,6 +1611,9 @@ void multi_join_check_buttons()
 
 void multi_join_button_pressed(int n)
 {
+	active_game *Cur;
+	char textbuffer[17];
+
 	switch(n){
 	case MJ_CANCEL :
 		// if we're player PXO, go back there	
@@ -1668,7 +1694,20 @@ void multi_join_button_pressed(int n)
 	// refresh the game/server list
 	case MJ_REFRESH:		
 		gamesnd_play_iface(SND_USER_SELECT);
-		broadcast_game_query();		
+		broadcast_game_query();	
+		
+		
+		memset(textbuffer, 0, 17);
+		ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
+		if (Active_game_head != NULL)
+			{
+			Cur = Active_game_head;
+			do {
+				ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n", psnet_addr_to_string(textbuffer, &Cur->server_addr));
+				send_server_query(&Cur->server_addr);
+				Cur = Cur->next;
+			} while (Cur != Active_game_head);
+		}
 		break;
 
 	// join a game as an observer
@@ -1868,68 +1907,176 @@ void multi_join_blit_game_status(active_game *game, int y)
 	gr_string(Mj_status_coords[gr_screen.res][MJ_X_COORD] + ((Mj_status_coords[gr_screen.res][MJ_W_COORD] - str_w)/2),y,status_text);
 }
 
+
 // load in a list of active games from our tcp.cfg file
 void multi_join_load_tcp_addrs()
 {
 	char line[MAX_IP_STRING];
 	net_addr addr;	
 	server_item *item;
+	active_game *aitem;
 	CFILE *file = NULL;
-
-	// attempt to open the ip list file
-	file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);	
-	if(file == NULL){
-		nprintf(("Network","Error loading tcp.cfg file!\n"));
-		return;
-	}
-
-	// free up any existing server list
-	multi_free_server_list();
-
-	// read in all the strings in the file
-	while(!cfeof(file)){
-		line[0] = '\0';
-		cfgets(line,MAX_IP_STRING,file);
-
-		// strip off any newline character
-		if(line[strlen(line) - 1] == '\n'){
-			line[strlen(line) - 1] = '\0';
-		}
-		
-		// empty lines don't get processed
-		if( (line[0] == '\0') || (line[0] == '\n') ){
-			continue;
+	static char Server[32];
+	static int port = -1;
+	
+	//if (On_FS2Open_PXO)
+	if (Om_tracker_flag) // official straight from the config! ooh.. coolness :D
+	{
+		//FS2OpenPXO code
+		if (!FS2OpenPXO_Socket.isInitialized())
+		{
+				if (!FS2OpenPXO_Socket.InitSocket())
+				{
+					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+				}
 		}
 
-		if ( !psnet_is_valid_ip_string(line) ) {
-			nprintf(("Network","Invalid ip string (%s)\n",line));
-		} else {			 
-			// copy the server ip address
-			memset(&addr,0,sizeof(net_addr));
-			addr.type = NET_TCP;
-			psnet_string_to_addr(&addr,line);
-			if ( addr.port == 0 ){
-				addr.port = DEFAULT_GAME_PORT;
+		if (port == -1)
+		{
+			ml_printf("Network (FS2OpenPXO): Attempting to load config file\n");
+			// load the multi.cfg file
+			file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
+			if(file == NULL){
+				ml_printf("Network (FS2OpenPXO): Error loading fs2open_pxo.cfg file!\n");
+				return;
+			}
+			
+			char Port[32];
+
+			if (cfgets(Server, 32, file) == NULL)
+			{
+				ml_printf("Network (FS2OpenPXO): No Masterserver definition!\n");
+				return;
 			}
 
-			// create a new server item on the list
-			item = multi_new_server_item();
-			if(item != NULL){
-				memcpy(&item->server_addr,&addr,sizeof(net_addr));
-			}			
-		}
-	}
+			if (cfgets(Port, 32, file) != NULL)
+				port = atoi(Port);
+			else
+				port = 12000;
 
-	cfclose(file);	
+		    cfclose(file);
+		}
+
+
+		// free up any existing server list
+		multi_free_server_list();
+
+
+		net_server *servers;
+		int numServersFound;
+		
+		ml_printf("Network (FS2OpenPXO): Requesting server list\n");
+		servers = GetServerList(Server, numServersFound, FS2OpenPXO_Socket, port);
+
+		
+		ml_printf("Network (FS2OpenPXO): Got %d servers.\n", numServersFound);
+
+		for (int i = 0; i < numServersFound; i++)
+		{
+				// copy the server ip address
+
+				memset(&addr,0,sizeof(net_addr));
+				addr.type = NET_TCP;
+				
+				ml_printf("Network (FS2OpenPXO): Server %d ip is %s\n", i, servers[i].ip);
+				psnet_string_to_addr(&addr,servers[i].ip);
+
+				if ( addr.port == 0 ){
+					addr.port = DEFAULT_GAME_PORT;
+				}
+
+				// create a new server item on the list
+				//item = multi_new_server_item();
+				aitem = multi_new_active_game();
+
+				if(aitem != NULL){
+					
+					ml_printf("Network (FS2OpenPXO): Memcpy'ing Server %d into position\n", i);
+					memcpy(&aitem->server_addr,&addr,sizeof(net_addr));
+					memcpy(&aitem->name, servers[i].servername, MAX_GAMENAME_LEN);
+					aitem->num_players = servers[i].players;
+					
+				}
+		}
+		delete servers;
+
+		Multi_join_list_start_item = Active_game_head;
+		
+		ml_printf("Network (FS2OpenPXO): Finished adding servers - exiting multi_join_load_tcp_addrs()\n", i);
+	}
+	else
+	{
+	// --------------- Origional Code Provided by Volition -----------------
+	// attempt to open the ip list file
+		file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);	
+		if(file == NULL){
+			nprintf(("Network","Error loading tcp.cfg file!\n"));
+			return;
+		}
+
+		// free up any existing server list
+		multi_free_server_list();
+
+		// read in all the strings in the file
+		while(!cfeof(file)){
+			line[0] = '\0';
+			cfgets(line,MAX_IP_STRING,file);
+
+			// strip off any newline character
+			if(line[strlen(line) - 1] == '\n'){
+				line[strlen(line) - 1] = '\0';
+			}
+			
+			// empty lines don't get processed
+			if( (line[0] == '\0') || (line[0] == '\n') ){
+				continue;
+			}
+
+			if ( !psnet_is_valid_ip_string(line) ) {
+				nprintf(("Network","Invalid ip string (%s)\n",line));
+			} else {			 
+				// copy the server ip address
+				memset(&addr,0,sizeof(net_addr));
+				addr.type = NET_TCP;
+				psnet_string_to_addr(&addr,line);
+				if ( addr.port == 0 ){
+					addr.port = DEFAULT_GAME_PORT;
+				}
+
+				// create a new server item on the list
+				item = multi_new_server_item();
+				if(item != NULL){
+					memcpy(&item->server_addr,&addr,sizeof(net_addr));
+				}			
+			}
+		}
+
+		cfclose(file);	
+	// --------------- end Origional Code Provided by Volition -----------------
+	}
 }
 
 // do stuff like pinging servers, sending out requests, etc
 void multi_join_do_netstuff()
 {
+	char textbuffer[17];
+	active_game *Cur;
+
 	// handle game query stuff
 	if(Multi_join_glr_stamp == -1){
 		broadcast_game_query();
-		
+
+		memset(textbuffer, 0, 17);
+		ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
+		if (Active_game_head != NULL)
+			{
+			Cur = Active_game_head;
+			do {
+				ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n", psnet_addr_to_string(textbuffer, &Cur->server_addr));
+				send_server_query(&Cur->server_addr);
+				Cur = Cur->next;
+			} while (Cur != Active_game_head);
+		}
 		if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
 			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME_LOCAL);
 		} else {
@@ -1939,6 +2086,18 @@ void multi_join_do_netstuff()
 	// otherwise send out game query and restamp
 	else if(timestamp_elapsed(Multi_join_glr_stamp)){			
 		broadcast_game_query();
+
+		memset(textbuffer, 0, 17);
+		ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
+		if (Active_game_head != NULL)
+			{
+			Cur = Active_game_head;
+			do {
+				ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n", psnet_addr_to_string(textbuffer, &Cur->server_addr));
+				send_server_query(&Cur->server_addr);
+				Cur = Cur->next;
+			} while (Cur != Active_game_head);
+		}
 
 		if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
 			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME_LOCAL);
@@ -1989,13 +2148,14 @@ void multi_join_eval_pong(net_addr *addr, fix pong_time)
 	}	
 
 	// update the game's ping
-	/*
+	/* 
+	
 	if(found && (moveup->ping_end > moveup->ping_start)){		
 		moveup->ping_time = f2fl(moveup->ping_end - moveup->ping_start);
 		moveup->ping_start = -1;
 		moveup->ping_end = -1;
-	}
-	*/
+
+	 }	*/
 }
 
 // ping all the server on the list
@@ -2005,13 +2165,15 @@ void multi_join_ping_all()
 	
 	if(moveup != NULL){
 		do {
-			/*
+			/* 
 			moveup->ping_start = timer_get_fixed_seconds();
 			moveup->ping_end = -1;
 			send_ping(&moveup->server_addr);
 			*/
+
+			send_server_query(&moveup->server_addr);
 			multi_ping_send(&moveup->server_addr,&moveup->ping);
-	
+			
 			moveup = moveup->next;
 		} while(moveup != Active_game_head);
 	}
@@ -3979,6 +4141,7 @@ void multi_create_game_init()
 	// initialize the list mode, and load in a list
 	memset(Multi_create_mission_list, 0, sizeof(multi_create_info) * MULTI_CREATE_MAX_LIST_ITEMS);
 	memset(Multi_create_campaign_list, 0, sizeof(multi_create_info) * MULTI_CREATE_MAX_LIST_ITEMS);
+
 	for(idx=0; idx<MULTI_CREATE_MAX_LIST_ITEMS; idx++){
 		Multi_create_mission_list[idx].valid_status = MVALID_STATUS_UNKNOWN;
 		Multi_create_campaign_list[idx].valid_status = MVALID_STATUS_UNKNOWN;
@@ -4509,6 +4672,59 @@ void multi_create_button_pressed(int n)
 // do stuff like pinging servers, sending out requests, etc
 void multi_create_do_netstuff()
 {
+
+	// send Heartbeat to the FS2OpenPXO master server
+
+
+
+	static int LastSend = -1;
+	static char Server[32];
+	static int NetSpeed;
+	static int port;
+	if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
+	{
+		NetSpeed = multi_get_connection_speed();
+		if (LastSend == -1)
+		{
+			CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
+			if(file == NULL){
+				ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
+				return;
+			}
+				
+
+			char Port[32];
+			if (cfgets(Server, 32, file) == NULL)
+			{
+				ml_printf("Network", "No Masterserver definition!\n");
+				return;
+			}
+
+			if (cfgets(Port, 32, file) != NULL)
+				port = atoi(Port);
+			else
+				port = 12000;
+		}
+
+		//FS2OpenPXO code
+		if (!FS2OpenPXO_Socket.isInitialized())
+		{
+				if (!FS2OpenPXO_Socket.InitSocket())
+				{
+					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+				}
+		}
+
+		if ((clock() - LastSend) >= 60000 || LastSend == -1)
+		{
+			LastSend = clock();
+
+			// finish implementation!
+			//void SendHeartBeat(const char* masterserver, int targetport, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
+
+			SendHeartBeat(Server, port, FS2OpenPXO_Socket, Netgame.name, NetSpeed, Netgame.game_state, Netgame.type_flags, Netgame.max_players);
+		}
+	}
 }
 
 // if not on a standalone
@@ -4838,6 +5054,13 @@ void multi_create_list_load_missions()
 #endif
 
 		flags = mission_parse_is_multi(filename, mission_name);		
+	
+		
+		CFILE *mvalid_cfg = cfopen("mvalid.cfg", "rt", CFILE_NORMAL, CF_TYPE_DATA);
+		char *mvalid_cfg_buffer = new char[cfilelength(mvalid_cfg)];
+		cfread(mvalid_cfg_buffer, 1, cfilelength(mvalid_cfg), mvalid_cfg);
+		
+		std::string v_string;
 
 		// if the mission is a multiplayer mission, then add it to the mission list
 		if ( flags ) {
@@ -4853,6 +5076,11 @@ void multi_create_list_load_missions()
 				mcip->flags = flags;
 				mcip->respawn = m_respawn;
 				mcip->max_players = (ubyte)max_players;
+				
+				v_string = mcip->filename;
+				v_string = v_string + "   valid";
+
+				!strstr(mvalid_cfg_buffer, v_string.c_str()) ? mcip->valid_status = 1: mcip->valid_status = 0;
 
 				// get any additional information for possibly builtin missions
 				fs_builtin_mission *fb = game_find_builtin_mission(filename);
@@ -4862,6 +5090,9 @@ void multi_create_list_load_missions()
 				Multi_create_mission_count++;
 			}
 		}
+
+		delete[] mvalid_cfg_buffer;
+		cfclose(mvalid_cfg);
 	}
 
 	Multi_create_slider.set_numberItems(Multi_create_mission_count > Multi_create_list_max_display[gr_screen.res] ? Multi_create_mission_count-Multi_create_list_max_display[gr_screen.res] : 0);
@@ -5621,13 +5852,13 @@ int multi_create_ok_to_commit()
 	
 	// if we're playing on the tracker
 	if(MULTI_IS_TRACKER_GAME){
-#ifdef PXO_CHECK_VALID_MISSIONS		
+//#ifdef PXO_CHECK_VALID_MISSIONS		
 		if((Multi_create_file_list == Multi_create_mission_list) && (Multi_create_file_list[abs_index].valid_status != MVALID_STATUS_VALID)){
 			if(popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, XSTR("&Back", 995), XSTR("&Continue", 780), XSTR("You have selected a mission which is either invalid or unknown to PXO. Your stats will not be saved if you continue",996)) <= 0){
 				return 0;
 			}
 		}		
-#endif
+//#endif
 
 		// non-squad war
 		if(!(Netgame.type_flags & NG_TYPE_SW)){
@@ -5707,6 +5938,7 @@ int multi_create_lookup_campaign(char *fname)
 	// couldn't find the campaign
 	return -1;
 }
+
 
 void multi_create_refresh_pxo()
 {

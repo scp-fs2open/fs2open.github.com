@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-09-14 19:01:35 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2003-09-23 02:42:53 $
+ * $Author: Kazan $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/09/14 19:01:35  wmcoolmon
+ * Changed "cell" to "Cmdline_cell" -C
+ *
  * Revision 2.18  2003/09/07 18:14:53  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -2927,10 +2930,10 @@ void gr_d3d_print_screen(char *filename)
 	strcpy(pic_name, filename);
 	strcat(pic_name, ".bmp");
 	
-	if(FAILED(D3DXSaveSurfaceToFile(pic_name, D3DXIFF_BMP, pDestSurface, NULL, NULL)))
+	/*if(FAILED(D3DXSaveSurfaceToFile(pic_name, D3DXIFF_BMP, pDestSurface, NULL, NULL)))
 	{
 		mprintf(("Failed to save file %s", pic_name));
-	}
+	}*/
 
 	pDestSurface->Release();
 }

@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.4 $
- * $Date: 2002-12-24 07:42:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-23 02:42:54 $
+ * $Author: Kazan $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/12/24 07:42:29  Goober5000
+ * added change-ai-class and is-ai-class, and I think I may also have nailed the
+ * is-iff bug; did some other bug hunting as well
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/17 02:18:40  Goober5000
  * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
  * --Goober5000
@@ -421,7 +426,8 @@ struct CFILE;
 #define MULTI_PERM_OBSERVER(np)	((np.flags & NETINFO_FLAG_OBSERVER) && !(np.flags & NETINFO_FLAG_OBS_PLAYER))
 
 // are we playing on a master tracker registered server
-#define MULTI_IS_TRACKER_GAME    (0)
+extern int Om_tracker_flag;
+#define MULTI_IS_TRACKER_GAME    (Om_tracker_flag)
 // ----------------------------------------------------------------------------------------
 
 

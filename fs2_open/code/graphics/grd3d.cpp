@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-09-07 18:14:53 $
- * $Author: randomtiger $
+ * $Revision: 2.22 $
+ * $Date: 2003-09-23 02:42:53 $
+ * $Author: Kazan $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/09/07 18:14:53  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.20  2003/08/31 06:00:41  bobboau
  * an asortment of bugfixes, mostly with the specular code,
  * HUD flickering should be completly gone now
@@ -2188,7 +2196,7 @@ int d3d_get_mode_bit(D3DFORMAT type)
 	{
 		case D3DFMT_X8R8G8B8: 
 		case D3DFMT_A8R8G8B8:		
-		case D3DFMT_A2B10G10R10:	
+		//case D3DFMT_A2B10G10R10:	
 			return 32;
 			
 		case D3DFMT_R8G8B8:
@@ -2314,7 +2322,7 @@ void d3d_fill_pixel_format(DDPIXELFORMAT *pixelf, D3DFORMAT tformat)
 			pixelf->dwFlags			   = DDPF_ALPHAPIXELS;
 			DBUGFILE_OUTPUT_0("Using: D3DFMT_A8R3G3B2");
 			break;
-		case D3DFMT_A2B10G10R10:
+		/*case D3DFMT_A2B10G10R10:
 			pixelf->dwRGBBitCount      = 32;   
 			pixelf->dwRBitMask         = 0x3ff00000;      
 			pixelf->dwGBitMask         = 0xffc00;      
@@ -2322,7 +2330,7 @@ void d3d_fill_pixel_format(DDPIXELFORMAT *pixelf, D3DFORMAT tformat)
 			pixelf->dwRGBAlphaBitMask  = 0xc0000000;
 			pixelf->dwFlags			   = DDPF_ALPHAPIXELS;
 			DBUGFILE_OUTPUT_0("Using: D3DFMT_A2B10G10R10");
-			break;
+			break;*/
 	}
 }
 

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_options.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-09-23 02:42:54 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -112,6 +115,7 @@ typedef struct multi_global_options {
 	ushort	port;															// port we're running on - for allowing multiple servers on one machine
 	int		log;															// use a logfile	
 	int		datarate_cap;												// datarate cap for OBJ_UPDATE_HIGH
+
 	char		user_tracker_ip[MULTI_OPTIONS_STRING_LEN];		// ip address of user tracker
 	char		game_tracker_ip[MULTI_OPTIONS_STRING_LEN];		// ip address of game tracker	
 	char		pxo_ip[MULTI_OPTIONS_STRING_LEN];					// ip address of pxo chat server
