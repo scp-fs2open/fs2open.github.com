@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "..\Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /D "_WINDOWS" /D "WIN32" /D "WIN32" /D "NDEBUG" /D "DBUGFILE_ACTIVE" /U "_DEBUG" /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W4 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "." /D "_WINDOWS" /D "WIN32" /D "NDEBUG" /D "DBUGFILE_ACTIVE" /D "USE_OPENGL" /U "_DEBUG" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "..\Debug\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W4 /Gm /Gi /GX /ZI /Od /I "." /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "DBUGFILE_ACTIVE" /U "NDEBUG" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /G5 /MTd /W4 /Gm /Gi /GX /ZI /Od /I "." /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "DBUGFILE_ACTIVE" /D "USE_OPENGL" /U "NDEBUG" /FR /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -239,7 +239,6 @@ SOURCE=.\debugconsole\timerbar.cpp
 
 SOURCE=.\debugconsole\timerbar.h
 # End Source File
-
 # End Group
 # Begin Group "DirectX"
 
@@ -2516,7 +2515,6 @@ SOURCE=.\Network\stand_gui.cpp
 SOURCE=.\Network\stand_gui.h
 # End Source File
 # End Group
-
 # Begin Group "Decals"
 
 # PROP Default_Filter ""
@@ -2541,7 +2539,6 @@ SOURCE=.\ddsutils\ddsutils.cpp
 SOURCE=.\ddsutils\ddsutils.h
 # End Source File
 # End Group
-
 # Begin Group "Cmdline"
 
 # PROP Default_Filter ""
