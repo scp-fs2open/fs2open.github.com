@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.7 $
- * $Date: 2002-12-12 08:01:57 $
+ * $Revision: 2.8 $
+ * $Date: 2002-12-17 03:25:30 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/12 08:01:57  Goober5000
+ * added distance-ship-subsystem sexp
+ * ~Goober5000~
+ *
  * Revision 2.6  2002/11/28 00:00:37  sesquipedalian
  * end-mission sexp added
  *
@@ -317,7 +321,7 @@
 //	It uses a very baggy format, allocating 16 characters per token, regardless
 //	of how many are used.
 
-#include	<stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -428,8 +432,8 @@ sexp_oper Operators[] = {
 	{ "is-cargo-known",						OP_IS_CARGO_KNOWN,					1, INT_MAX,	},
 	{ "was-promotion-granted",				OP_WAS_PROMOTION_GRANTED,			0, 1,			},
 	{ "was-medal-granted",					OP_WAS_MEDAL_GRANTED,				0, 1,			},
-	{ "percent-ships-departed",			OP_PERCENT_SHIPS_DEPARTED,			2, INT_MAX	},
-	{ "percent-ships-destroyed",			OP_PERCENT_SHIPS_DESTROYED,		2, INT_MAX	},
+	{ "percent-ships-departed",			OP_PERCENT_SHIPS_DEPARTED,			2, INT_MAX,	},
+	{ "percent-ships-destroyed",			OP_PERCENT_SHIPS_DESTROYED,		2, INT_MAX,	},
 	{ "is-cargo-known-delay",				OP_CARGO_KNOWN_DELAY,				2, INT_MAX,	},
 	{ "cap-subsys-cargo-known-delay",	OP_CAP_SUBSYS_CARGO_KNOWN_DELAY,	3, INT_MAX,	},
 	{ "has-been-tagged-delay",				OP_HAS_BEEN_TAGGED_DELAY,			2, INT_MAX,	},
@@ -543,6 +547,8 @@ sexp_oper Operators[] = {
 	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
 	{ "cargo-no-deplete",			OP_CARGO_NO_DEPLETE,				1,	2			},
+	{ "set-scanned",				OP_SET_SCANNED,					1, 2 },
+	{ "set-unscanned",				OP_SET_UNSCANNED,					1, 2 },
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -4158,8 +4164,28 @@ int sexp_special_warpout_name( int node )
 	return 0;
 }
 
+// Goober5000: return the ship index of the ship with name *name, without regard to whether
+// the ship is in the mission or not
+int ship_name_lookup_absolute(char *name)
+{
+	int	i;
 
-// function which determines if N seconds have elpased since all discovery of all cargo
+	// bogus
+	if(name == NULL){
+		return -1;
+	}
+
+	for (i=0; i<MAX_SHIPS; i++)
+	{
+		if (!stricmp(name, Ships[i].ship_name))
+			return i;
+	}
+	
+	// couldn't find it
+	return -1;
+}
+
+// function which determines if N seconds have elapsed since all discovery of all cargo
 // of given ships
 int sexp_is_cargo_known( int n, int check_delay )
 {
@@ -4214,80 +4240,6 @@ int sexp_is_cargo_known( int n, int check_delay )
 				if ( shipnum != -1 ) {
 					if ( Ships[shipnum].flags & SF_CARGO_REVEALED ) {
 						time_known = Missiontime - Ships[shipnum].time_cargo_revealed;
-						if ( f2i(time_known) >= delay )
-							is_known = 1;
-					}
-				}
-			}
-		}
-
-		// if cargo is known, mark our variable and this sexpression.
-		if ( is_known ) {
-			num_known++;
-			Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
-		}
-
-		n = CDR(n);
-	}
-
-	Directive_count += count - num_known;
-	if ( count == num_known )
-		return SEXP_KNOWN_TRUE;
-	else
-		return 0;
-}
-
-int sexp_has_been_tagged_delay(int n)
-{
-	int count, shipnum, num_known, delay;
-	char *name;
-
-	Assert ( n >= 0 );
-
-	count = 0;
-	num_known = 0;
-
-	// get the delay value
-	delay = atoi(CTEXT(n) );
-
-	n = CDR(n);
-
-	while ( n != -1 ) {
-		fix time_known;
-		int is_known;
-
-		is_known = 0;
-
-		count++;
-
-		// see if we have already checked this entry
-		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE ) {
-			num_known++;
-		} else {
-			int exited_index;
-
-			name = CTEXT(n);
-
-			// see if the ship has already exited the mission (either through departure or destruction).  If so,
-			// grab the status of whether the cargo is known from this list
-			exited_index = ship_find_exited_ship_by_name( name );
-			if (exited_index != -1 ) {
-				if ( !(Ships_exited[exited_index].flags & SEF_BEEN_TAGGED) )
-					return SEXP_KNOWN_FALSE;
-
-				// check the delay of when we found out.  We use the ship died time which isn't entirely accurate
-				// but won't cause huge delays.
-				time_known = Missiontime - Ships_exited[exited_index].time;
-				if ( f2i(time_known) >= delay )
-					is_known = 1;
-			} else {
-
-				// otherwise, ship should still be in the mission.  If ship_name_lookup returns -1, then ship
-				// is yet to arrive.
-				shipnum = ship_name_lookup( name );
-				if ( shipnum != -1 ) {
-					if ( Ships[shipnum].time_first_tagged != 0 ) {
-						time_known = Missiontime - Ships[shipnum].time_first_tagged;
 						if ( f2i(time_known) >= delay )
 							is_known = 1;
 					}
@@ -4373,6 +4325,149 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 		return 0;
 }
 
+// Goober5000
+void sexp_set_scanned_unscanned(int n, int flag)
+{
+	char *ship_name, *subsys_name;
+	int shipnum, subsys_set;
+	ship_subsys *ss;
+
+	// get ship name
+	ship_name = CTEXT(n);
+
+	// check to see the ship was destroyed or departed - if so, do nothing
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) )
+	{
+		return;
+	}
+
+	// get ship number
+	shipnum = ship_name_lookup(ship_name);
+	Assert(shipnum >= 0);
+
+	// check for possible next optional argument: subsystem
+	n = CDR(n);
+
+	// if no subsystem specified, just do it for the ship and exit
+	if (n == -1)
+	{
+		if (flag)
+			ship_do_cargo_revealed(&Ships[shipnum]);
+		else
+			ship_do_cargo_hidden(&Ships[shipnum]);
+
+		return;
+	}
+
+	// iterate through all subsystems
+	while (n != -1)
+	{
+		subsys_name = CTEXT(n);
+		subsys_set = 0;
+
+		// find the ship subsystem by searching ship's subsys_list
+		ss = GET_FIRST( &Ships[shipnum].subsys_list );
+		while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) )
+		{
+			// if we found the subsystem
+			if ( !stricmp(ss->system_info->subobj_name, subsys_name))
+			{
+				// do it for the subsystem
+				if (flag)
+					ship_do_cap_subsys_cargo_revealed(&Ships[shipnum], ss);
+				else
+					ship_do_cap_subsys_cargo_hidden(&Ships[shipnum], ss);
+
+				subsys_set = 1;
+			}
+
+			ss = GET_NEXT( ss );
+		}
+
+		// if we didn't find the subsystem -- bad
+		if (!subsys_set)
+		{
+			Int3();
+		}
+
+		// but if it did, loop again
+		n = CDR(n);
+	}
+}
+
+int sexp_has_been_tagged_delay(int n)
+{
+	int count, shipnum, num_known, delay;
+	char *name;
+
+	Assert ( n >= 0 );
+
+	count = 0;
+	num_known = 0;
+
+	// get the delay value
+	delay = atoi(CTEXT(n) );
+
+	n = CDR(n);
+
+	while ( n != -1 ) {
+		fix time_known;
+		int is_known;
+
+		is_known = 0;
+
+		count++;
+
+		// see if we have already checked this entry
+		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE ) {
+			num_known++;
+		} else {
+			int exited_index;
+
+			name = CTEXT(n);
+
+			// see if the ship has already exited the mission (either through departure or destruction).  If so,
+			// grab the status of whether the cargo is known from this list
+			exited_index = ship_find_exited_ship_by_name( name );
+			if (exited_index != -1 ) {
+				if ( !(Ships_exited[exited_index].flags & SEF_BEEN_TAGGED) )
+					return SEXP_KNOWN_FALSE;
+
+				// check the delay of when we found out.  We use the ship died time which isn't entirely accurate
+				// but won't cause huge delays.
+				time_known = Missiontime - Ships_exited[exited_index].time;
+				if ( f2i(time_known) >= delay )
+					is_known = 1;
+			} else {
+
+				// otherwise, ship should still be in the mission.  If ship_name_lookup returns -1, then ship
+				// is yet to arrive.
+				shipnum = ship_name_lookup( name );
+				if ( shipnum != -1 ) {
+					if ( Ships[shipnum].time_first_tagged != 0 ) {
+						time_known = Missiontime - Ships[shipnum].time_first_tagged;
+						if ( f2i(time_known) >= delay )
+							is_known = 1;
+					}
+				}
+			}
+		}
+
+		// if cargo is known, mark our variable and this sexpression.
+		if ( is_known ) {
+			num_known++;
+			Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
+		}
+
+		n = CDR(n);
+	}
+
+	Directive_count += count - num_known;
+	if ( count == num_known )
+		return SEXP_KNOWN_TRUE;
+	else
+		return 0;
+}
 
 // return object index of waypoint or -1 if no such waypoint
 int waypoint_lookup(char *name)
@@ -7957,6 +8052,12 @@ int eval_sexp(int cur_node)
 					sexp_val = 1;
 					break;
 
+			case OP_SET_SCANNED:	// Goober5000
+			case OP_SET_UNSCANNED:
+				sexp_set_scanned_unscanned(node, op_num == OP_SET_SCANNED);
+				sexp_val = 1;
+				break;
+
 			case OP_SET_SPECIAL_WARPOUT_NAME:
 				sexp_special_warpout_name( node );
 				sexp_val = 1;
@@ -8482,6 +8583,8 @@ int query_operator_return_type(int op)
 		case OP_EXCHANGE_CARGO:
 		case OP_JETTISON_CARGO:
 		case OP_CARGO_NO_DEPLETE:
+		case OP_SET_SCANNED:
+		case OP_SET_UNSCANNED:
 		case OP_KEY_RESET:
 		case OP_TRAINING_MSG:
 		case OP_SET_TRAINING_CONTEXT_FLY_PATH:
@@ -8735,6 +8838,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CLEAR_WING_GOALS:
 			return OPF_WING;
 
+		case OP_SET_SCANNED:
+		case OP_SET_UNSCANNED:
 		case OP_IS_SUBSYSTEM_DESTROYED:
 		case OP_HITS_LEFT_SUBSYSTEM:
 			if (!argnum)
@@ -9962,4 +10067,3 @@ int num_eval(int node)
 		return atoi(CTEXT(node));
 	}
 }
-
