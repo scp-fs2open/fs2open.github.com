@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-02-04 20:06:05 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2005-02-16 10:00:40 $
+ * $Author: wmcoolmon $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/02/04 20:06:05  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.26  2004/12/14 14:46:13  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -2251,7 +2254,8 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}
 
 	// check to make sure we are otherwise in a state to accept
-	if(Netgame.game_state != NETGAME_STATE_FORMING && (Netgame.game_state != NETGAME_STATE_IN_MISSION && !Cmdline_rt)){
+	if((Netgame.game_state != NETGAME_STATE_FORMING && !Cmdline_ingamejoin)
+		|| (Netgame.game_state != NETGAME_STATE_IN_MISSION || Netgame.game_state != NETGAME_STATE_FORMING)){
 		return JOIN_DENY_JR_STATE;
 	}
 	

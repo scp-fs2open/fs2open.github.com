@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.93 $
- * $Date: 2005-02-10 04:02:37 $
+ * $Revision: 2.94 $
+ * $Date: 2005-02-16 10:00:13 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2005/02/10 04:02:37  wmcoolmon
+ * Addition of the -clipdist argument.
+ *
  * Revision 2.92  2005/01/30 14:09:29  taylor
  * it's -nosound not -noaudio
  *
@@ -748,6 +751,7 @@ Flag exe_params[] =
 	"-alpha_env",	  "uses uses alpha for env maping",	true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.alpha_env", 
 	"-decals",		  "impact decals",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.decals",
 	"-loadonlyused",  "Loads only used weapons",		true,	0,					EASY_DEFAULT,		"Experimental",	"",
+	"-ingame",        "Allows ingame joining",			true,	0,					EASY_DEFAULT,		"Experimental", "",
 
 	"-fps",			  "Show frames per seconds",		false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.fps", 
 	"-pos",			  "Show position of camera",		false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pos",
@@ -823,6 +827,7 @@ cmdline_parm dxt_arg("-dxt",NULL);
 cmdline_parm d3d_particle_arg("-d3d_particle",NULL);
 cmdline_parm show_mem_usage_arg("-show_mem_usage",NULL);
 cmdline_parm rt_arg("-rt",NULL);
+cmdline_parm ingamejoin_arg("-ingame", NULL);
 cmdline_parm start_mission_arg("-start_mission",NULL);
 cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
 cmdline_parm get_flags_arg("-get_flags",NULL);
@@ -903,6 +908,7 @@ int Cmdline_dxt = 0;
 int Cmdline_cache_ani = 0;
 int Cmdline_d3dmipmap = 0;
 int Cmdline_rt = 0;
+int Cmdline_ingamejoin = 0;
 char *Cmdline_start_mission = NULL;
 int Cmdline_ambient_factor  = 128;
 int Cmdline_2d_poof			= 0;
@@ -1590,6 +1596,11 @@ bool SetCmdlineParams()
 	if(rt_arg.found())
 	{
 		Cmdline_rt = 1;
+	}
+
+	if(ingamejoin_arg.found())
+	{
+		Cmdline_ingamejoin = 1;
 	}
 
 	if(start_mission_arg.found())

@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.67 $
- * $Date: 2005-01-30 12:50:08 $
- * $Author: taylor $
+ * $Revision: 2.68 $
+ * $Date: 2005-02-16 10:00:13 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2005/01/30 12:50:08  taylor
+ * merge with Linux/OSX tree - p0130
+ *
  * Revision 2.66  2005/01/29 16:30:46  phreak
  * smart shield command line stuff.  this will be changed in the future, but i want people to test it.
  * -phreak
@@ -548,6 +551,7 @@ extern int Cmdline_d3d_particle;
 extern int Cmdline_ambient_factor;
 extern int Cmdline_show_mem_usage;
 extern int Cmdline_rt;
+extern int Cmdline_ingamejoin;
 extern char *Cmdline_start_mission;
 
 extern int Cmdline_d3d_lesstmem;
