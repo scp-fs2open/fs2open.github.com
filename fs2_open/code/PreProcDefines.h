@@ -5,12 +5,17 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.10 $
- * $Date: 2005-03-02 21:18:18 $
- * $Author: taylor $
+ * $Revision: 1.11 $
+ * $Date: 2005-03-25 06:57:32 $
+ * $Author: wmcoolmon $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/03/02 21:18:18  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 1.9  2005/02/04 10:12:29  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -86,11 +91,9 @@
 #define _REPORT_MEM_LEAKS	1
 #endif
 
-/*
 #ifndef FS2_SPEECH
 #define FS2_SPEECH			1
 #endif
-*/
 
 // _argv[-1], 27 Dec 2004: Turns off the 50% rate-of-fire penalty
 // when primary banks are linked. This is, arguably, stupid. So we

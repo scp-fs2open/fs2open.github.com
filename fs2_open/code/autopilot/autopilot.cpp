@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-03-03 06:05:26 $
+ * $Revision: 1.17 $
+ * $Date: 2005-03-25 06:57:32 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/03/03 06:05:26  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 1.15  2005/01/31 23:27:51  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -68,8 +71,8 @@
 
 
 #include "autopilot/autopilot.h"
-#include "ship/ai.h"
-#include "ship/aigoals.h"
+#include "ai/ai.h"
+#include "ai/aigoals.h"
 #include "ship/ship.h"
 #include "object/object.h"
 #include "parse/sexp.h"

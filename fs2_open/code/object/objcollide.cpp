@@ -9,14 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-10 08:00:11 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-25 06:57:36 $
+ * $Author: wmcoolmon $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/10 08:00:11  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.6  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -621,8 +630,10 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 MONITOR(NumPairs);
 MONITOR(NumPairsChecked);
 
+extern int Cmdline_dis_collisions;
 void obj_check_all_collisions()
 {
+	if( Cmdline_dis_collisions) return;
 	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )	return;
 
 	obj_pair *parent, *tmp;	

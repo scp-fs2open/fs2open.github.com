@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.34 $
+ * $Revision: 2.35 $
  * $Author: wmcoolmon $
- * $Date: 2005-03-12 03:09:22 $
+ * $Date: 2005-03-25 06:57:37 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/03/12 03:09:22  wmcoolmon
+ * New commandline option "-noparseerrors"
+ *
  * Revision 2.33  2005/03/10 08:00:12  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -672,7 +675,7 @@ int required_string_ex(char *pstr)
 }
 
 // similar to optional_string, but just checks if next token is a match.
-// It doesn't advance Mp.
+// It doesn't advance Mp except to skip past white space.
 //
 int check_for_string(char *pstr)
 {

@@ -1,9 +1,24 @@
 #include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
 #include "io/mouse.h"
 #include <string>
 #include <vector>
-
-extern color Color_dark_blue;
+//*****************************Low-level abstraction*******************************
+//Lame attempt to keep things from being exceedingly difficult when switching to ferrium
+#ifndef FERRIUM
+#define IMG_HANDLE					int
+#define IMG_HANDLE_SET_INVALID(h)	h = -1
+#define IMG_HANDLE_IS_INVALID(h)	(h==-1)
+#define IMG_HANDLE_IS_VALID(h)		(h!=-1)
+#define IMG_HANDLE_SET_FRAME(dh,h,f)(dh = h + f)
+#define IMG_LOAD(f)					bm_load(f)
+#define IMG_LOAD_ANIM(f,n,fps)		bm_load_animation(f,n,fps)
+#define IMG_UNLOAD(a)				bm_unload(a)
+#define IMG_SET(h)					gr_set_bitmap(h)
+#define IMG_SET_FRAME(h, f)			gr_set_bitmap(h + f);
+#define IMG_DRAW(x,y)				gr_bitmap(x,y,false)
+#define IMG_INFO(ha,w,h)			bm_get_info(ha,w,h)
+#endif
 
 //*****************************LinkedList*******************************
 struct LinkedList
@@ -13,7 +28,7 @@ struct LinkedList
 	friend class Tree;
 	friend struct TreeItem;
 	friend class Window;
-protected:
+public:
 	struct LinkedList *next, *prev;
 
 	LinkedList(){next=this;prev=this;}
@@ -46,7 +61,7 @@ protected:
 #define CIE_COORDS			3
 #define CIE_TEXT			4
 
-//NMCAD Handles
+//NMCSD Handles
 #define CIE_HANDLE_N	0
 #define CIE_HANDLE_M	1
 #define CIE_HANDLE_C	3
@@ -73,19 +88,22 @@ protected:
 #define CIE_GC_NONE_SET	0
 #define CIE_GC_X_SET	(1<<0)
 #define CIE_GC_Y_SET	(1<<1)
+#define CIE_GC_W_SET	(1<<2)
+#define CIE_GC_H_SET	(1<<3)
 
 //Global stuff
-#define CIE_NUM_HANDLES	8
+#define CIE_NUM_HANDLES	8	//We need 8 for border
 union Handle
 {
 	ubyte Colors[4];
-	int Image;
+	IMG_HANDLE Image;
 };
+
+//Individual info
 class ClassInfoEntry
 {
-	int Type;
-
-	Handle Handles[CIE_NUM_HANDLES];	//We need 8 for border
+	int CIEType;
+	Handle Handles[CIE_NUM_HANDLES];
 	int Coords[2];
 
 public:
@@ -97,10 +115,44 @@ public:
 	void Parse(char* tag, int in_type);
 
 	//--GET FUNCTIONS
-	int GetImageHandle(int ID=CIE_HANDLE_N){if(this==NULL){return-1;}else{return Handles[ID].Image;}}
+	int GetImageHandle(int ID=CIE_HANDLE_N){return Handles[ID].Image;}
 	ubyte GetColorHandle(int ColorID, int ID=CIE_HANDLE_N){if(this==NULL){return 0;}else{return Handles[ID].Colors[ColorID];}}
 	//Copies the coordinates to the given location if coordinates are set.
 	int GetCoords(int *x, int *y);
+};
+
+//Entries for an object, ie a window or button
+class ObjectClassInfoEntry
+{
+	friend class GUIScreen;
+private:
+	int Object;
+	std::string Name;	//Do we want this to only apply to a specific object?
+						//If so, set name
+	int Coords[4];
+
+	std::vector<ObjectClassInfoEntry> Subentries;
+	std::vector<ClassInfoEntry> Entries;
+public:
+	ObjectClassInfoEntry(){Object=-1;Coords[0]=Coords[1]=Coords[2]=Coords[3]=INT_MAX;}
+	bool Parse();
+	int GetImageHandle(int id, int handle_num){return Entries[id].GetImageHandle(handle_num);}
+	int GetCoords(int id, int *x, int *y){return Entries[id].GetCoords(x,y);}
+	
+	int GetObjectCoords(int *x, int *y, int *w, int *h);
+};
+
+//Entries for a screen.
+class ScreenClassInfoEntry : public LinkedList
+{
+	friend class GUIScreen;
+private:
+	std::string Name;
+	std::vector<ObjectClassInfoEntry> Entries;
+public:
+	bool Parse();
+
+	std::string GetName(){return Name;}
 };
 
 //*****************************GUIObject*******************************
@@ -147,35 +199,46 @@ class GUIObject : public LinkedList
 	friend class Tree;				//By, the way...THIS
 	friend class Checkbox;
 	friend class Button;
+	friend class GUIScreen;
 	friend class GUISystem;
 private:
-	class GUISystem*	Globals;			//What system this object is associated with
 	int Type;
-	int Coords[4];					//Upper left corner (x, y) and lower right corner (x, y)
-	int	ChildCoords[4];				//Coordinates where children may frolick
+	std::string Name;
+	
 	int LastStatus;
 	int Status;
 	int Style;
 
-	class ClassInfoEntry* InfoEntry;
+	class ObjectClassInfoEntry* InfoEntry;
 
 	void (*CloseFunction)(GUIObject *caller);
 
 	class GUIObject* Parent;
 	LinkedList Children;
 
+	int GetOIECoords(int *x1, int *y1, int *x2, int *y2);
 	void DeleteChildren(GUIObject* exception = NULL);
 protected:
+	class GUISystem		*OwnerSystem;			//What system this object is associated with
+	class GUIScreen		*OwnerScreen;
+
+	int Coords[4];					//Upper left corner (x, y) and lower right corner (x, y)
+	int	ChildCoords[4];				//Coordinates where children may frolick
+
 	//ON FUNCTIONS
 	//These handle the calling of do functions, mostly.
 	void OnDraw(float frametime);
 	int OnFrame(float frametime, int *unused_queue);
 	void OnMove(int dx, int dy);
+	void OnRefreshSize(){if(DoRefreshSize() != OF_FALSE && Parent!=NULL)Parent->OnRefreshSize();}
+	void OnRefreshSkin(){SetCIPointer(); DoRefreshSkin();}
 
 	//DO FUNCTIONS
 	//Used by individual objects to define actions when that event happens
 	virtual void DoDraw(float frametime){}
 	virtual int DoFrame(float frametime){return OF_FALSE;}
+	virtual int DoRefreshSize(){return OF_FALSE;}
+	virtual void DoRefreshSkin(){}
 	virtual void DoMove(int dx, int dy){}
 	virtual int DoMouseOver(float frametime){return OF_FALSE;}
  	virtual int DoMouseDown(float frametime){return OF_FALSE;} 
@@ -186,17 +249,16 @@ protected:
 
 	//CALCULATESIZE
 	//Sort of an on and do function; if you define your own, the following MUST be included at the end:
-	//"if(Parent!=NULL)Parent->CalculateSize();"
-	virtual void CalculateSize(){if(Parent!=NULL)Parent->CalculateSize();}
+	//"if(Parent!=NULL)Parent->OnRefreshSize();"
 
-	//PRIVATE CIE FUNCTIONS
-	int GetCIEImageHandle(int id, int handleid=0){if(InfoEntry!=NULL){return InfoEntry[id].GetImageHandle(handleid);}else{return -1;}}
+	//PRIVATE ClassInfo FUNCTIONS
+	void SetCIPointer();
+	int GetCIEImageHandle(int id, int handleid=0){if(InfoEntry!=NULL){return InfoEntry->GetImageHandle(id, handleid);}else{return -1;}}
 	int GetCIECoords(int id, int *x, int *y);
-	void SetCIEHandle();
 public:
 	//CONSTRUCTION/DESTRUCTION
 	//Derive your class's constructer from the GUIObject one
-	GUIObject(int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
+	GUIObject(std::string in_Name="", int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
 	~GUIObject();
 
 	//CHILD FUNCTIONS
@@ -212,12 +274,41 @@ public:
 	int GetHeight(){return Coords[3]-Coords[1];}
 };
 
+//*****************************GUIScreen*******************************
+#define GSOF_NOTHINGPRESSED			-1
+#define GSOF_SOMETHINGPRESSED		-2
+class GUIScreen : public LinkedList
+{
+	friend class GUISystem;
+private:
+	std::string Name;
+
+	GUISystem* OwnerSystem;
+
+	bool Active;	//Is this screen active?
+
+	ScreenClassInfoEntry* ScreenClassInfo;
+	GUIObject Guiobjects;
+public:
+	GUIScreen(std::string in_Name="");
+	~GUIScreen();
+
+	ObjectClassInfoEntry *GetObjectClassInfo(GUIObject *cgp);
+
+	//Set funcs
+	GUIObject *Add(GUIObject* cgp);
+
+	//On funcs
+	int OnFrame(float frametime, bool doevents);
+};
+
 //*****************************GUISystem*******************************
-#define GSDF_NOTHINGPRESSED			-1
-#define GSDF_SOMETHINGPRESSED		-2
 class GUISystem
 {
-	GUIObject Guiobjects;
+	friend class GUIScreen;	//I didn't want to do this, but it's the easiest way
+							//to keep it from being confusing about how to remove GUIScreens
+private:
+	GUIScreen Screens;
 	GUIObject* ActiveObject;
 
 	//Moving stuff
@@ -225,8 +316,9 @@ class GUISystem
 	int GraspingButton;	//Button flag for button used to grasp the object
 	int GraspedDiff[2];	//Diff between initial mouse position and object corner
 
-	//Class info (ie skinning)
-	class ClassInfoEntry *ClassInfo[GT_NUM_TYPES];
+	//Linked list of screen class info
+	bool ClassInfoParsed;
+	ScreenClassInfoEntry ScreenClassInfo;
 
 	//Mouse/status
 	int MouseX;
@@ -241,11 +333,13 @@ public:
 	~GUISystem();
 
 	//-----
-	ClassInfoEntry *GetClassInfo(int in_class){return ClassInfo[in_class];}
+	GUIScreen* PushScreen(GUIScreen *csp);
+	void PullScreen(GUIScreen *in_screen);
+	ScreenClassInfoEntry *GetClassInfo(){return &ScreenClassInfo;}
+	ScreenClassInfoEntry *GetScreenClassInfo(const std::string & screen_name);
 	//-----
 
 	//Set stuff
-	GUIObject *Add(GUIObject* cgp);
 	void SetActiveObject(GUIObject *cgp);
 	void SetGraspedObject(GUIObject *cgp, int button);
 
@@ -274,7 +368,8 @@ public:
 #define WCI_BODY				3
 #define WCI_HIDE				4
 #define WCI_CLOSE				5
-#define WCI_NUM_ENTRIES			6
+#define WCI_COORDS				6
+#define WCI_NUM_ENTRIES			7
 
 class Window : public GUIObject
 {
@@ -295,21 +390,19 @@ class Window : public GUIObject
 	int UnhiddenHeight;
 
 	//Skinning stuff
-	//Top left, top right, bottom left, bottom right
-	int CornerWidths[4];
 	//Left width, top height, right width, bottom height
 	int BorderSizes[4];
-	std::vector<bitmap_rect_list> BorderRectLists[8];
+	bitmap_rect_list BorderRectLists[8];
+	bitmap_rect_list CaptionRectList;
 
-	//Functions
-	void CalculateSize();
 protected:
+	void DoDraw(float frametime);
+	void DoMove(int dx, int dy);
+	int DoRefreshSize();
 	int DoMouseOver(float frametime);
 	int DoMouseDown(float frametime);
 	int DoMouseUp(float frametime);
 	int DoMouseOut(float frametime);
-	void DoMove(int dx, int dy);
-	void DoDraw(float frametime);
 public:
 	Window(std::string in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0);
 	void SetCaption(std::string in_caption){Caption = in_caption;}
@@ -323,6 +416,10 @@ public:
 
 #define BS_STICKY			(1<<31)	//Button stays pressed
 
+#define BCI_COORDS			0
+#define BCI_BUTTON			1
+#define BCI_NUM_ENTRIES		2
+
 class Button : public GUIObject
 {
 	std::string Caption;
@@ -330,9 +427,9 @@ class Button : public GUIObject
 
 	bool IsDown;	//Does it look pressed?
 
-	void CalculateSize();
 protected:
 	void DoDraw(float frametime);
+	int DoRefreshSize();
 	int DoMouseDown(float frametime);
 	int DoMouseUp(float frametime);
 	int DoMouseOut(float frametime);
@@ -342,7 +439,7 @@ public:
 	void SetPressed(bool in_isdown){IsDown = in_isdown;}
 };
 
-//*****************************Menu*******************************
+//*****************************Tree*******************************
 
 //In pixels
 #define TI_BORDER_WIDTH					1
@@ -379,7 +476,6 @@ class Tree : public GUIObject
 	TreeItem *SelectedItem;
 	TreeItem *HighlightedItem;
 
-	void CalculateSize();
 	TreeItem* HitTest(TreeItem *items);
 
 	void MoveTreeItems(int dx, int dy, TreeItem *items);
@@ -387,12 +483,13 @@ class Tree : public GUIObject
 	void DrawItems(TreeItem *items);
 protected:
 	void DoDraw(float frametime);
+	void DoMove(int dx, int dy);
+	int DoRefreshSize();
 	int DoMouseOver(float frametime);
 	int DoMouseDown(float frametime);
 	int DoMouseUp(float frametime);
-	void DoMove(int dx, int dy);
 public:
-	Tree(int x_coord, int y_coord, void* in_associateditem = NULL, int x_width = -1, int y_width = -1, int in_style = 0);
+	Tree(std::string in_name, int x_coord, int y_coord, void* in_associateditem = NULL, int x_width = -1, int y_width = -1, int in_style = 0);
 
 	//void LoadItemList(TreeItem *in_list, unsigned int count);
 	TreeItem* AddItem(TreeItem *parent, std::string in_name, void *in_data = NULL, bool in_delete_data = true, void (*in_function)(Tree *caller) = NULL);
@@ -443,13 +540,13 @@ class Text : public GUIObject
 	union{int SaveMax;float flSaveMax;uint uSaveMax;};
 	union{int SaveMin;float flSaveMin;uint uSaveMin;};
 
-	void CalculateSize();
 protected:
+	void DoDraw(float frametime);
+	int DoRefreshSize();
 	int DoMouseDown(float frametime);
 	int DoKeyPress(float frametime);
-	void DoDraw(float frametime);
 public:
-	Text(std::string in_content, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
+	Text(std::string in_name, std::string in_content, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
 
 	//Set
 	void SetText(std::string in_content);
@@ -483,10 +580,10 @@ class Checkbox : public GUIObject
 	bool IsChecked;	//Is it checked?
 	int HighlightStatus;
 
-	void CalculateSize();
 protected:
-	void DoMove(int dx, int dy);
 	void DoDraw(float frametime);
+	void DoMove(int dx, int dy);
+	int DoRefreshSize();
 	int DoMouseOver(float frametime);
 	int DoMouseDown(float frametime);
 	int DoMouseUp(float frametime);
@@ -501,3 +598,45 @@ public:
 	void SetFlag(int* in_flag_ptr, int in_flag){FlagPtr = in_flag_ptr;Flag = in_flag;if(FlagPtr != NULL && (*FlagPtr & Flag))IsChecked=true;}
 	void SetFlag(uint* in_flag_ptr, int in_flag){SetFlag((int*)in_flag_ptr, in_flag);}
 };
+
+//*****************************ImageAnim*******************************
+#define PT_STOPPED			0
+#define PT_PLAYING			1
+#define PT_PLAYING_REVERSE	2
+#define PT_STOPPED_REVERSE	3
+
+#define IF_NONE				0
+#define IF_BOUNCE			1
+#define IF_REPEAT			2
+#define IF_REVERSED			3
+
+class ImageAnim : public GUIObject
+{
+	std::string ImageAnimName;
+
+	IMG_HANDLE ImageHandle;
+	int NumFrames;
+	int FPS;
+	bool IsSet; //Something of a hack, this is called so that
+				//SetImage overrides skin image
+
+	float Progress;
+	float ElapsedTime;
+	float TotalTime;
+
+	int PlayType;
+	int ImageFlags;
+protected:
+	void DoDraw(float frametime);
+	int DoRefreshSize();
+public:
+	ImageAnim(std::string in_name, std::string in_imagename, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
+
+	void SetImage(std::string in_imagename);
+	void Play(bool in_isreversed);
+	void Pause();
+	void Stop();
+};
+
+//GLOBALS
+extern GUISystem *GUI_system;

@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-03-19 18:02:33 $
- * $Author: bobboau $
+ * $Revision: 2.25 $
+ * $Date: 2005-03-25 06:57:33 $
+ * $Author: wmcoolmon $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/03/19 18:02:33  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.23  2005/01/01 19:47:26  taylor
  * make use of MR_NO_FOGGING to render models without fog
  *
@@ -448,9 +452,9 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 			g3_start_instance_matrix(pos,orient, true);
 		gr_set_bitmap(Warp_ball_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
 		float adg = (2.0f*life_percent) - 1.0f;
-		float pct= (pow(adg,4.0)-pow(adg,128.0))*4.0f;
+		float pct= (pow(adg,4.0f)-pow(adg,128.0f))*4.0f;
 		if(pct > 0.00001f)
-		warp_ball.render(max_radius*pct/2.0f,adg*adg,adg*adg*6.0);
+		warp_ball.render(max_radius*pct/2.0f,adg*adg,adg*adg*6.0f);
 			g3_done_instance(true);
 	}
 	gr_zbuffer_set( saved_gr_zbuffering );

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.8 $
- * $Date: 2005-03-20 21:07:10 $
- * $Author: phreak $
+ * $Revision: 2.9 $
+ * $Date: 2005-03-25 06:57:34 $
+ * $Author: wmcoolmon $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/20 21:07:10  phreak
+ * Add a function to check whether any duplicate jumpnode names exist
+ *
  * Revision 2.7  2005/03/11 01:28:23  wmcoolmon
  * Oops, gotta remember to commit main codebase stuff when fixing FRED
  *
@@ -80,7 +83,7 @@ struct object;
 #define JN_SHOW_POLYS				(1<<1)		//Display model normally, rather than as wireframe
 #define JN_HIDE						(1<<2)		//Hides a jump node
 
-class jump_node : public linked_list
+class jump_node : public linked_list<jump_node>
 {
 	char m_name[NAME_LENGTH];
 
@@ -111,8 +114,8 @@ public:
 };
 
 //-----Globals------
-extern int Num_jump_nodes;
-extern linked_list Jump_nodes;
+//extern int Num_jump_nodes;
+//extern linked_list Jump_nodes;
 
 //-----Functions-----
 //Given a name, returns pointer to the jump node object

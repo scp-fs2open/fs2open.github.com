@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.55 $
- * $Author: taylor $
- * $Date: 2005-01-21 08:56:50 $
+ * $Revision: 2.56 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-03-25 06:57:35 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/01/21 08:56:50  taylor
+ * make Subsys_status dynamic but allocate in blocks for speed and to help prevent memory fragmentation
+ *
  * Revision 2.54  2005/01/16 22:39:09  wmcoolmon
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
  *
@@ -409,7 +412,7 @@
 #define _PARSE_H
 
 #include <setjmp.h>
-#include "ship/ai.h"
+#include "ai/ai.h"
 #include "model/model.h"
 #include "object/object.h"
 #include "graphics/2d.h"

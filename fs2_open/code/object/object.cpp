@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-03-03 06:05:30 $
+ * $Revision: 2.35 $
+ * $Date: 2005-03-25 06:57:36 $
  * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/03/03 06:05:30  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.33  2005/03/02 21:24:46  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -2058,6 +2061,7 @@ MONITOR( NumObjectsRend );
 
 // -----------------------------------------------------------------------------
 //	Render an object.  Calls one of several routines based on type
+extern int Cmdline_dis_weapons;
 void obj_render(object *obj)
 {
 	if ( obj->flags & OF_SHOULD_BE_DEAD ) return;
@@ -2073,6 +2077,7 @@ void obj_render(object *obj)
 		#endif
 		break;
 	case OBJ_WEAPON:
+		if(Cmdline_dis_weapons) return;
 		weapon_render(obj);
 		break;
 	case OBJ_SHIP:

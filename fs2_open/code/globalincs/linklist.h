@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/LinkList.h $
- * $Revision: 2.2 $
- * $Date: 2005-03-03 06:05:27 $
+ * $Revision: 2.3 $
+ * $Date: 2005-03-25 06:57:33 $
  * $Author: wmcoolmon $
  *
  * Macros to handle doubly linked lists
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.1  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -129,26 +132,27 @@ do {												\
 #define NOT_EMPTY(head)		((head)->next != (head))
 #define EMPTY(head)			((head)->next == (head))
 
-class linked_list
+template <class StoreType> class linked_list
 {
-	class linked_list *m_next;
-	class linked_list *m_prev;
+	StoreType *m_next;
+	StoreType *m_prev;
 public:
-	linked_list(){m_next=this;m_prev=this;}
+	linked_list(){m_next=(StoreType*)this;m_prev=(StoreType*)this;}
+	~linked_list(){}
 
 	//Getting
-	linked_list *get_first(){return m_next;}
+	StoreType *get_first(){return m_next;}
 	
 	//Setting
-	void append(linked_list *ptr){ptr->m_prev=m_prev; ptr->m_next=this; m_prev->m_next=ptr; m_prev=ptr;}
-	void remove(linked_list *ptr){	ptr->m_prev->m_next=ptr->m_next;
+	void append(StoreType *ptr){ptr->m_prev=m_prev; ptr->m_next=(StoreType*)this; m_prev->m_next=ptr; m_prev=ptr;}
+	void remove(StoreType *ptr){	ptr->m_prev->m_next=ptr->m_next;
 									ptr->m_next->m_prev=ptr->m_prev;
 									ptr->m_next = 0;		//These should both be 0
 									ptr->m_prev = 0;	}	//But stupid MSVC doesn't like a NULL here
-	class linked_list* get_next(){return m_next;}
+	StoreType *get_next(){return m_next;}
 
 	//Querying
-	bool is_end(linked_list *ptr){return (ptr==this);}
+	bool is_end(StoreType *ptr){return (ptr==this);}
 };
 
 #endif

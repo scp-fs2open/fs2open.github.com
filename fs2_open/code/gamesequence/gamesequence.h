@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.h $
- * $Revision: 2.6 $
- * $Date: 2005-03-03 06:05:27 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-25 06:57:33 $
  * $Author: wmcoolmon $
  *
  * Header file for Game Sequencing items
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.5  2004/08/11 05:06:23  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -421,6 +424,7 @@
 #define GS_EVENT_CAMPAIGN_CHEAT					62		// skip to a mission in a campaign
 #define GS_EVENT_NET_CHAT						63		// #Kazan# - Go to net chat for Fs2NetD
 #define GS_EVENT_LAB							64		// WMC - I-FRED concept
+#define GS_EVENT_STORYBOOK						65		// WMC - the storybook
 
 // IMPORTANT:  When you add a new event, update the initialization for GS_event_text[]
 //             which is done in GameSequence.cpp
@@ -482,6 +486,7 @@ extern char *GS_event_text[];		// text description for the GS_EVENT_* #defines a
 #define GS_STATE_LOOP_BRIEF						49
 #define GS_STATE_NET_CHAT						50			// #Kazan# - state for the pxo chat readded by penguin
 #define GS_STATE_LAB							51
+#define GS_STATE_STORYBOOK						52
 
 // IMPORTANT:  When you add a new state, update the initialization for GS_state_text[]
 //             which is done in GameSequence.cpp

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-01-30 09:27:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-03-25 06:57:36 $
+ * $Author: wmcoolmon $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/01/30 09:27:40  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 2.7  2004/10/03 21:41:10  Kazan
  * Autopilot convergence collision fix for ai_fly_to_ship() and ai_waypoints() -- mathematically expensive, only usable by autopilot
  *
@@ -1054,18 +1058,28 @@ int model_collide(mc_info * mc_info)
 
 	}
 
-	if ( Mc->flags & MC_SUBMODEL )	{
-		// Check only one subobject
-		mc_check_subobj( Mc->submodel_num );
-		// Check submodel and any children
-	} else if (Mc->flags & MC_SUBMODEL_INSTANCE) {
-		mc_check_subobj(Mc->submodel_num);
-	} else {
-		// Check all the the highest detail model polygons and subobjects for intersections
+	//moved this here from check_subobj to help increase speed
+	//Ok, so this breaks collisions...maybe not -WMC
+	/*
+	if (!mc_ray_boundingbox( &Mc_pm->mins, &Mc_pm->maxs, &Mc_p0, &Mc_direction, NULL))
+		return 0;*/
 
-		// Don't check it or its children if it is destroyed
-		if (!Mc_pm->submodel[Mc_pm->detail[0]].blown_off)	{	
-			mc_check_subobj( Mc_pm->detail[0] );
+	// Check shield if we're supposed to
+	if ((Mc->flags & MC_CHECK_SHIELD) && (Mc_pm->shield.ntris > 0 ))
+		mc_check_shield();
+
+	if(!Mc->num_hits)
+	{
+		if ( Mc->flags & MC_SUBMODEL || Mc->flags & MC_SUBMODEL_INSTANCE)	{
+			// Check submodel and any children
+			mc_check_subobj(Mc->submodel_num);
+		} else {
+			// Check all the the highest detail model polygons and subobjects for intersections
+
+			// Don't check it or its children if it is destroyed
+			if (!Mc_pm->submodel[Mc_pm->detail[0]].blown_off)	{	
+				mc_check_subobj( Mc_pm->detail[0] );
+			}
 		}
 	}
 

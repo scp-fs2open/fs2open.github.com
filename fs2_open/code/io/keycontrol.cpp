@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-03-03 06:05:28 $
+ * $Revision: 2.45 $
+ * $Date: 2005-03-25 06:57:34 $
  * $Author: wmcoolmon $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/03/03 06:05:28  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.43  2005/03/02 21:24:41  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -988,6 +991,32 @@ extern void g3_set_view_matrix(vector *view_pos,matrix *view_matrix,float zoom);
 
 extern int Show_cpu;
 
+int get_prev_weapon_looped(int current_weapon, int subtype)
+{
+	for(int i = current_weapon; i >= 0; i--)
+	{
+		if(Weapon_info[i].subtype == subtype)
+		{
+			return i;
+		}
+	}
+	
+	return get_prev_weapon_looped(Num_weapon_types, subtype);
+}
+
+int get_next_weapon_looped(int current_weapon, int subtype)
+{
+	for(int i = current_weapon; i < Num_weapon_types; i++)
+	{
+		if(Weapon_info[i].subtype == subtype)
+		{
+			return i;
+		}
+	}
+	
+	return get_next_weapon_looped(0, subtype);
+}
+
 void process_debug_keys(int k)
 {
 #ifdef INTERPLAYQA
@@ -1319,9 +1348,7 @@ void process_debug_keys(int k)
 			ship* shipp;
 
 			shipp = &Ships[Player_obj->instance];
-			shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]++;
-			if ( shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] >= Num_weapon_types )
-				shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] = First_secondary_index;
+			shipp->weapons.current_secondary_bank = get_next_weapon_looped(shipp->weapons.current_secondary_bank, WP_MISSILE);
 
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name);
 			break;
@@ -1333,9 +1360,7 @@ void process_debug_keys(int k)
 			ship* shipp;
 
 			shipp = &Ships[Player_obj->instance];
-			shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]--;
-			if ( shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] < First_secondary_index)
-				shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] = Num_weapon_types - 1;
+			shipp->weapons.current_secondary_bank = get_prev_weapon_looped(shipp->weapons.current_secondary_bank, WP_MISSILE);
 
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name);
 			break;
@@ -1364,9 +1389,7 @@ void process_debug_keys(int k)
 			ship* shipp;
 
 			shipp = &Ships[Player_obj->instance];
-			shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]++;
-			if ( shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] >= First_secondary_index )
-				shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] = 0;
+			shipp->weapons.current_primary_bank = get_next_weapon_looped(shipp->weapons.current_secondary_bank, WP_LASER);
 
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name);
 			break;
@@ -1377,9 +1400,7 @@ void process_debug_keys(int k)
 			ship* shipp;
 
 			shipp = &Ships[Player_obj->instance];
-			shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]--;
-			if ( shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] < 0)
-				shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] = First_secondary_index-1 ;
+			shipp->weapons.current_primary_bank = get_prev_weapon_looped(shipp->weapons.current_secondary_bank, WP_LASER);
 
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name);
 			break;

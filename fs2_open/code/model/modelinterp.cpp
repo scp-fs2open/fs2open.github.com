@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.111 $
- * $Date: 2005-03-25 01:10:51 $
- * $Author: taylor $
+ * $Revision: 2.112 $
+ * $Date: 2005-03-25 06:57:36 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2005/03/25 01:10:51  taylor
+ * I think I deserve a medal or something for that one :)
+ *
  * Revision 2.110  2005/03/24 23:36:13  taylor
  * fix compiler warnings with mismatched types and unused variables
  * cleanup some debug messages so they can be turned off if needed
@@ -2214,10 +2217,19 @@ typedef struct model_path {
 } model_path;
 */
 
-
-void interp_render_arc_segment( vector *v1, vector *v2, int depth, color *outside_color )
+void interp_render_arc_segment( vector *v1, vector *v2, int depth, color *outside_color, bool init_halfway )
 {
+	static color halfway_color;
 	float d = vm_vec_dist_quick( v1, v2 );
+
+	if(init_halfway)
+	{
+		gr_init_alphacolor(&halfway_color,
+							outside_color->red + (255 - outside_color->red)/2,
+							outside_color->green + (255-outside_color->green)/2,
+							outside_color->blue + (255-outside_color->blue)/2,
+							255);
+	}
 
 	if ( d < 0.30f || (depth>4) )	{
 		vertex p1, p2;
@@ -2227,6 +2239,8 @@ void interp_render_arc_segment( vector *v1, vector *v2, int depth, color *outsid
 		//g3_draw_rod( v1, 0.2f, v2, 0.2f, NULL, 0);
 		gr_set_color_fast(outside_color);
 		g3_draw_rod( v1, 0.6f, v2, 0.6f, NULL, TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
+		gr_set_color_fast(&halfway_color);
+		g3_draw_rod( v1, 0.45f, v2, 0.45f, NULL, TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
 		gr_set_color(255,255,255);
 		g3_draw_rod( v1, 0.3f, v2, 0.3f, NULL, TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
 	//	g3_draw_line( &p1, &p2 );
@@ -2240,8 +2254,8 @@ void interp_render_arc_segment( vector *v1, vector *v2, int depth, color *outsid
 		tmp.xyz.y += (frand()-0.5f)*d*scaler;
 		tmp.xyz.z += (frand()-0.5f)*d*scaler;
 		
-		interp_render_arc_segment( v1, &tmp, depth+1, outside_color );
-		interp_render_arc_segment( &tmp, v2, depth+1, outside_color );
+		interp_render_arc_segment( v1, &tmp, depth+1, outside_color, false );
+		interp_render_arc_segment( &tmp, v2, depth+1, outside_color, false );
 	}
 }
 
@@ -2297,7 +2311,7 @@ void interp_render_lightning( polymodel *pm, bsp_info * sm )
 		}
 
 		// render the actual arc segment
-		interp_render_arc_segment( &sm->arc_pts[i][0], &sm->arc_pts[i][1], 0, &outside_arc_color );
+		interp_render_arc_segment( &sm->arc_pts[i][0], &sm->arc_pts[i][1], 0, &outside_arc_color, true );
 	}
 }
 

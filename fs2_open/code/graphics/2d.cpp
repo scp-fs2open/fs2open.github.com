@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-03-19 18:02:33 $
- * $Author: bobboau $
+ * $Revision: 2.41 $
+ * $Date: 2005-03-25 06:57:34 $
+ * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/03/19 18:02:33  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.39  2005/03/16 01:35:58  bobboau
  * added a geometry batcher and implemented it in sevral places
  * namely: lasers, thrusters, and particles,
@@ -1473,7 +1477,7 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 		gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
 
 		// I will tidy this up later - RT
-		if(allow_scaling || gr_screen.rendering_to_texture != -1)
+		if(allow_scaling && gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&x, &y);
 			gr_resize_screen_pos(&w, &h);
@@ -1554,7 +1558,7 @@ void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL, NULL);
 		// I will tidy this up later - RT
 		//I doubt it, seeing as you've been gone for nearly half a year :)
-		if(allow_scaling  || gr_screen.rendering_to_texture != -1)
+		if(allow_scaling && gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&l->x, &l->y);
 			gr_resize_screen_pos(&l->w, &l->h);
@@ -1583,14 +1587,14 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
 		//I doubt it, seeing as you've been gone for nearly half a year :)
 
 		//resize for diferent screen resolutions if needed.
-		if(allow_scaling  || gr_screen.rendering_to_texture != -1)
+		if(allow_scaling && gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&l->x, &l->y);
 			gr_resize_screen_pos(&l->w, &l->h);
 		}
 
 	}
-	g3_draw_2d_poly_bitmap_rect_list(list, n_bm, 0);
+	g3_draw_2d_poly_bitmap_rect_list(list, n_bm, TMAP_FLAG_BITMAP_SECTION);
 
 	//screw bm sections, screw them all to hell, I realy doubt anyone will have any problems with this
 }

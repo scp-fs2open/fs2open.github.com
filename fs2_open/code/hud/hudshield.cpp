@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-03-10 08:00:06 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-03-25 06:57:34 $
+ * $Author: wmcoolmon $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/03/10 08:00:06  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.25  2005/03/08 03:50:21  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -473,7 +482,7 @@ void hud_shield_show(object *objp)
 	int			sx, sy, i;
 	ship			*sp;
 	ship_info	*sip;
-	hud_frames	*sgp;
+	hud_frames	*sgp=NULL;
 
 	if ( objp->type != OBJ_SHIP )
 		return;

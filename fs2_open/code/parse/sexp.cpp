@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.140 $
- * $Date: 2005-03-15 07:26:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.141 $
+ * $Date: 2005-03-25 06:57:37 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2005/03/15 07:26:52  Goober5000
+ * *fixed some sexp declaration formatting
+ * *implemented string comparison sexps
+ * *simplified numeric comparison sexps
+ * *fixed numeric comparison (especially equals) sexps to actually work on all their arguments like they were designed to
+ * --Goober5000
+ *
  * Revision 2.139  2005/03/14 23:34:59  Goober5000
  * properly fixed the out-of-bounds error, as well as a few other errors of the same kind
  * --Goober5000
@@ -908,7 +915,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "globalincs/linklist.h"
-#include "ship/aigoals.h"
+#include "ai/aigoals.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"

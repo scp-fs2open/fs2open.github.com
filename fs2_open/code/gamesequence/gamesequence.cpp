@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-03-03 06:05:27 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-25 06:57:33 $
  * $Author: wmcoolmon $
  *
  * File to control Game Sequencing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.5  2004/07/26 20:47:30  Kazan
  * remove MCD complete
  *
@@ -363,7 +366,8 @@ char *GS_event_text[] =
 	"GS_EVENT_RED_ALERT",								
 	"GS_EVENT_SIMULATOR_ROOM",
 	"GS_EVENT_EMD_CAMPAIGN",	
-	"GS_EVENT_FRED_CONCEPT",
+	"GS_EVENT_LAB",
+	"GS_EVENT_STORYBOOK",								//75
 };
 //XSTR:ON
 
@@ -431,6 +435,7 @@ char *GS_state_text[] =
 	"GS_STATE_RED_ALERT",
 	"GS_STATE_END_OF_CAMPAIGN",
 	"GS_STATE_FRED_CONCEPT",
+	"GS_STATE_STORYBOOK",
 };
 //XSTR:ON
 

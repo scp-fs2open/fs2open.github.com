@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:45 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-25 06:57:36 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:45  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:59  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -177,8 +180,9 @@ int collide_weapon_weapon( obj_pair * pair )
 				Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 			}
 		}
-
+#ifndef NDEBUG
 		float dist = 0.0f;
+
 		if (Weapons[A->instance].lifeleft == 0.01f) {
 			dist = vm_vec_dist_quick(&A->pos, &wpA->homing_pos);
 			nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipA->name, dist, wipA->inner_radius, wipA->outer_radius));
@@ -187,6 +191,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			dist = vm_vec_dist_quick(&A->pos, &wpB->homing_pos);
 			nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipB->name, dist, wipB->inner_radius, wipB->outer_radius));
 		}
+#endif
 		return 1;
 	}
 

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-03-02 21:24:45 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-25 06:57:36 $
+ * $Author: wmcoolmon $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.9  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -150,7 +153,6 @@ int Pause_saved_screen = -1;
 int Pause_external_view_mode = 0;
 
 // externs
-extern int Player_attacking_enabled;
 extern int Ai_render_debug_flag;
 extern int Ai_firing_enabled;
 extern int physics_paused;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.135 $
- * $Date: 2005-03-24 23:31:45 $
- * $Author: taylor $
+ * $Revision: 2.136 $
+ * $Date: 2005-03-25 06:57:33 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2005/03/24 23:31:45  taylor
+ * make sounds.tbl dynamic
+ * "filename" will never be larger than 33 chars so having it 260 is a waste (freespace.cpp)
+ *
  * Revision 2.134  2005/03/16 01:35:58  bobboau
  * added a geometry batcher and implemented it in sevral places
  * namely: lasers, thrusters, and particles,
@@ -1163,6 +1167,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "menuui/snazzyui.h"
 #include "menuui/techmenu.h"
 #include "menuui/trainingmenu.h"
+#include "menuui/storybook.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
@@ -1221,6 +1226,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "radar/radarsetup.h"
 #include "camera/camera.h"
 #include "lab/lab.h"
+#include "lab/wmcgui.h"	//So that GUI_System can be initialized
 
 #if defined(ENABLE_AUTO_PILOT)
 #include "autopilot/autopilot.h"
@@ -3256,6 +3262,12 @@ void game_init()
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
 
+	//WMC - Initialize my new GUI system
+	//This may seem scary, but it should take up 0 processing time and very little memory
+	//as long as it's not being used.
+	//Otherwise, it just keeps the parsed interface.tbl in memory.
+	GUI_system = new GUISystem("interface.tbl");
+
 	// load non-darkening pixel defs
 	palman_load_pixels();
 
@@ -4788,30 +4800,50 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	if((!cube_map_drawen || Game_subspace_effect) && Cmdline_env){
 		setup_environment_mapping(eye_pos, eye_orient);
 		cube_map_drawen = true;
-	} 
-	
+	}
+#ifndef DYN_CLIP_DIST
 	if (!Cmdline_nohtl) {
 		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
+#endif
+	
+	bool draw_viewer_last;
+	obj_render_all(obj_render, &draw_viewer_last);
 
-	obj_render_all(obj_render);
-
-	beam_render_all();						// render all beam weapons
-	particle_render_all();					// render particles after everything else.
-	trail_render_all();						// render missilie trails after everything else.	
 	mflash_render_all();						// render all muzzle flashes	
-
 	//	Why do we not show the shield effect in these modes?  Seems ok.
 	//if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW))) {
 	render_shields();
 	//}
+	particle_render_all();					// render particles after everything else.
+#ifdef DYN_CLIP_DIST
+	if(!Cmdline_nohtl)
+	{
+		gr_end_proj_matrix();
+		gr_end_view_matrix();
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
+#endif
+
+	beam_render_all();						// render all beam weapons
+	trail_render_all();						// render missilie trails after everything else.	
 
 	// render nebula lightning
 	nebl_render_all();
 
 	// render local player nebula
 	neb2_render_player();
+
+	//Draw the viewer 'cause we didn't before.
+	//This is so we can change the minimum clipping distance without messing everything up.
+	if(draw_viewer_last && Viewer_obj)
+	{
+		gr_zbuffer_clear(TRUE);
+		ship_render(Viewer_obj);
+	}
+
 
 #ifndef NDEBUG
 	ai_debug_render_stuff();
@@ -6670,6 +6702,10 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state(GS_STATE_RED_ALERT);
 			break;
 
+		case GS_EVENT_STORYBOOK:
+			gameseq_set_state(GS_STATE_STORYBOOK);
+			break;
+
 		case GS_EVENT_CREDITS:
 			gameseq_set_state( GS_STATE_CREDITS );
 			break;
@@ -6968,6 +7004,10 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_RED_ALERT:
 			red_alert_close();
+			break;
+
+		case GS_STATE_STORYBOOK:
+			storybook_close();
 			break;
 
 		case GS_STATE_SHIP_SELECT:
@@ -7358,6 +7398,10 @@ void game_enter_state( int old_state, int new_state )
 			set_time_compression(1.0f);
 			mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
 			red_alert_init();
+			break;
+
+		case GS_STATE_STORYBOOK:
+			storybook_init();
 			break;
 
 		case GS_STATE_CMD_BRIEF: {
@@ -7968,6 +8012,11 @@ void game_do_state(int state)
 		case GS_STATE_CMD_BRIEF:
 			game_set_frametime(GS_STATE_CMD_BRIEF);
 			cmd_brief_do_frame(flFrametime);
+			break;
+
+		case GS_STATE_STORYBOOK:
+			game_set_frametime(GS_STATE_STORYBOOK);
+			storybook_do_frame(flFrametime);
 			break;
 
 		case GS_STATE_CREDITS:

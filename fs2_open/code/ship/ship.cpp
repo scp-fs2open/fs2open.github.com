@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.173 $
- * $Date: 2005-03-24 23:27:26 $
- * $Author: taylor $
+ * $Revision: 2.174 $
+ * $Date: 2005-03-25 06:57:37 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.173  2005/03/24 23:27:26  taylor
+ * make sounds.tbl dynamic
+ * have snd_time_remaining() be less stupid
+ * some OpenAL error fixerage
+ * be able to turn off some typically useless debug messages
+ *
  * Revision 2.172  2005/03/19 18:02:34  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -1422,7 +1428,7 @@
 #include "hud/hudets.h"
 #include "hud/hudshield.h"
 #include "hud/hudmessage.h"
-#include "ship/aigoals.h"
+#include "ai/aigoals.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesnd/eventmusic.h"
 #include "ship/shipfx.h"
@@ -2976,10 +2982,12 @@ strcpy(parse_error_text, temp_error);
 				sip->flags |= SIF_HAS_AWACS;
 			}
 
+			/* Go away -WMC
 			sp->turret_weapon_type = sp->primary_banks[0];  // temporary, will be obsolete later.
 			if ( sp->turret_weapon_type < 0 ) {
 				sp->turret_weapon_type = sp->secondary_banks[0];
 			}
+			*/
 
 			if(optional_string("+non-targetable"))
 				sp->targetable = 0;
@@ -4155,6 +4163,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->current_hits = 0.0f;				// Jason wants this to be 0 in Fred.
 		}
 		ship_system->turret_next_fire_stamp = timestamp(0);
+
 		ship_system->turret_next_enemy_check_stamp = timestamp(0);
 		ship_system->turret_enemy_objnum = -1;
 		ship_system->turret_next_fire_stamp = timestamp((int) frand_range(1.0f, 500.0f));	// next time this turret can fire
@@ -4370,7 +4379,7 @@ void ship_render(object * obj)
 #endif
 
 
-	if ( obj == Viewer_obj && !(Viewer_mode & VM_TOPDOWN))
+	if ( obj == Viewer_obj)
 	{
 		if (ship_show_velocity_dot && (obj==Player_obj) )
 		{
@@ -6206,6 +6215,8 @@ void lethality_decay(ai_info *aip)
 		if (Framecount % 10 == 0) {
 			int num_turrets = 0;
 			if ((aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP)) {
+				//TODO: put this where it belongs, this would involve recompiling *everything* right now
+				//-WMC
 				int num_turrets_attacking(object *turret_parent, int target_objnum);
 				num_turrets = num_turrets_attacking(&Objects[aip->target_objnum], Ships[aip->shipnum].objnum);
 			}
@@ -6402,8 +6413,20 @@ void ship_process_post(object * obj, float frametime)
 
 		//rotate player subobjects since its processed by the ai functions
 		// AL 2-19-98: Fire turret for player if it exists
-		if ( obj->flags & OF_PLAYER_SHIP ) {
-
+		//WMC - changed this to call process_subobjects
+		if ( obj->flags & OF_PLAYER_SHIP && !Player_use_ai)
+		{
+			ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
+			if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED))
+			{
+				if (aip->support_ship_objnum >= 0)
+				{
+					if (vm_vec_dist_quick(&obj->pos, &Objects[aip->support_ship_objnum].pos) < (obj->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
+						return;
+				}
+			}
+			process_subobjects(OBJ_INDEX(obj));
+			/*
 			model_subsystem	*psub;
 			ship_subsys	*pss;
 			
@@ -6415,7 +6438,8 @@ void ship_process_post(object * obj, float frametime)
 				ship_do_submodel_rotation(shipp, psub, pss);
 			}
 
-			player_maybe_fire_turret(obj);
+			
+			player_maybe_fire_turret(obj);*/
 		}
 
 		// if single player, check player object is not too far from starting location
@@ -8578,7 +8602,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= MAX_WEAPON_TYPES)){
 		return 0;
 	}
-	wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
+	wip = &Weapon_info[weapon];
 
 	have_timeout = 0;			// used to help tell whether or not we have a timeout
 #ifndef NO_NETWORK
@@ -14046,14 +14070,4 @@ int ship_tvt_wing_lookup(char *wing_name)
 	}
 
 	return -1;
-}
-
-bool turret_weapon_has_subtype(model_subsystem* tp, int subtype)
-{
-	return (Weapon_info[tp->turret_weapon_type].subtype == subtype);
-}
-
-bool turret_weapon_has_flags(model_subsystem* tp, int flags)
-{
-	return ((Weapon_info[tp->turret_weapon_type].wi_flags & flags) != 0);
 }

@@ -7,35 +7,174 @@
 #include "freespace2/freespace.h"
 #include "localization/localize.h"
 
-//#include "Ship/ship.h"
+//Gobals
+GUISystem *GUI_system = NULL;
 
-//Colors
-color Color_dark_blue;
-
-//Globals
 //*****************************ClassInfoEntry*******************************
 ClassInfoEntry::ClassInfoEntry()
 {
-	Type = CIE_NONE;
-	Coords[0] = Coords[1] = INT_MAX;
+	CIEType = CIE_NONE;
+	
 	for(uint i = 0; i < CIE_NUM_HANDLES; i++)
 	{
-		Handles[i].Image = -1;
+		IMG_HANDLE_SET_INVALID(Handles[i].Image);
 	}
+
+	Coords[0] = Coords[1] = INT_MAX;
 }
 ClassInfoEntry::~ClassInfoEntry()
 {
 	//Unload image handles
-	if(Type == CIE_IMAGE_NMCSD || Type == CIE_IMAGE || Type == CIE_IMAGE_BORDER)
+	if(CIEType == CIE_IMAGE_NMCSD || CIEType == CIE_IMAGE || CIEType == CIE_IMAGE_BORDER)
 	{
 		int i = 0;
 		int num = sizeof(Handle)/sizeof(int);
 		for(; i < num; i++)
 		{
-			if(Handles[i].Image != -1)
-				bm_unload(Handles[i].Image);
+			if(IMG_HANDLE_IS_VALID(Handles[i].Image))
+				IMG_UNLOAD(Handles[i].Image);
 		}
 	}
+}
+
+bool ObjectClassInfoEntry::Parse()
+{
+	//Do we actually have a tag?
+	//This is hackish, but it should get the job done
+	if(check_for_string("<") && !check_for_string("</"))
+	{
+		char buf[NAME_LENGTH];
+		char buf2[NAME_LENGTH+3];	//for the end tag and name buffer
+
+		//Find the name of the thing we're parsing
+		parse_advance(1);
+		stuff_string(buf, F_NAME, ">", sizeof(buf)/sizeof(char));
+		parse_advance(1);	//skip the end ">"
+
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+
+		//This is where you add specific classes to parse.
+		//Follow the current classes' example, this basically involves
+		//a !stricmp(), a resize() (to the number of entries) and multiple Entries[ID].Parse()
+
+		if(optional_string("+Name:"))
+		{
+			stuff_string(buf2, F_NAME, NULL, NAME_LENGTH);
+			Name = buf2;
+		}
+		if(optional_string("+Coords:"))
+		{
+			stuff_int_list(Coords, 2, RAW_INTEGER_TYPE);
+		}
+		if(optional_string("+Size:"))
+		{
+			stuff_int_list(&Coords[2], 2, RAW_INTEGER_TYPE);
+		}
+
+		if(!stricmp(buf, "Window"))
+		{
+			Object = GT_WINDOW;
+			Entries.resize(WCI_NUM_ENTRIES);
+
+			//Fill it out
+			Entries[WCI_CAPTION].Parse("Caption", CIE_IMAGE_NMCSD);
+			Entries[WCI_HIDE].Parse("Hider", CIE_IMAGE_NMCSD);
+			Entries[WCI_CLOSE].Parse("Closer", CIE_IMAGE_NMCSD);
+			Entries[WCI_BODY].Parse("Body", CIE_IMAGE);
+			Entries[WCI_BORDER].Parse("Border", CIE_IMAGE_BORDER);
+		}
+		else if(!stricmp(buf, "Button"))
+		{
+			Object = GT_BUTTON;
+			Entries.resize(BCI_NUM_ENTRIES);
+
+			//Fill it out
+			Entries[BCI_BUTTON].Parse("Button", CIE_IMAGE_NMCSD);
+		}
+
+		//Make sure that the next token isn't an end tag, but
+		//is a tag
+		ObjectClassInfoEntry temp_ocie;
+		while(temp_ocie.Parse())
+		{
+			Subentries.push_back(temp_ocie);
+			temp_ocie = ObjectClassInfoEntry();
+		}
+
+		//We MUST have the end tag
+		strcpy(buf2, "</");
+		strcat(buf2, buf);
+		strcat(buf2, ">");
+
+		required_string(buf2);
+		return true;
+	}
+
+	return false;
+}
+
+bool ScreenClassInfoEntry::Parse()
+{
+	if(check_for_string("#") && !check_for_string("#End"))
+	{
+		char buf[NAME_LENGTH];
+
+		//Find the name of the thing we're parsing
+		parse_advance(1);
+		stuff_string(buf, F_NAME, NULL, sizeof(buf)/sizeof(char));
+
+		Name = buf;
+
+		//Parse all objects for this screen
+		ObjectClassInfoEntry temp_ocie;
+		while(temp_ocie.Parse())
+		{
+			Entries.push_back(temp_ocie);
+			temp_ocie = ObjectClassInfoEntry();
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+void GUISystem::ParseClassInfo(char* filename)
+{
+	if(ClassInfoParsed)
+	{
+		Warning(LOCATION, "Class info is being parsed twice");
+		DestroyClassInfo();
+	}
+
+	lcl_ext_open();
+	if(setjmp(parse_abort) != 0)
+	{
+		nprintf(("Warning", "Unable to parse %s!", filename));
+		lcl_ext_close();
+		return;
+	}
+	read_file_text(filename);
+	reset_parse();
+	ScreenClassInfo.Parse();
+	
+	bool rval;
+	do
+	{
+		ScreenClassInfoEntry* sciep = new ScreenClassInfoEntry;
+		rval = sciep->Parse();
+		if(rval)
+			list_append(&ScreenClassInfo, sciep);
+
+	} while(rval);
+
+	lcl_ext_close();
+	ClassInfoParsed = true;
 }
 
 void ClassInfoEntry::Parse(char* tag, int in_type)
@@ -48,32 +187,48 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 
 	if(optional_string(buf))
 	{
+		CIEType = in_type;
 		if(in_type == CIE_IMAGE || in_type == CIE_IMAGE_NMCSD)
 		{
-			Type = in_type;
+			int num_frames;
 			stuff_string(buf, F_NAME, NULL, sizeof(buf));
-			Handles[CIE_HANDLE_N].Image = bm_load(buf);
+			Handles[CIE_HANDLE_N].Image = IMG_LOAD_ANIM(buf, &num_frames, NULL);
+			if(IMG_HANDLE_IS_VALID(Handles[CIE_HANDLE_N].Image) && num_frames)
+			{
+				if(num_frames > 1)
+					IMG_HANDLE_SET_FRAME(Handles[CIE_HANDLE_N].Image, Handles[CIE_HANDLE_M].Image, 1);
+				if(num_frames > 2)
+					IMG_HANDLE_SET_FRAME(Handles[CIE_HANDLE_N].Image, Handles[CIE_HANDLE_C].Image, 2);
+				if(num_frames > 3)
+					IMG_HANDLE_SET_FRAME(Handles[CIE_HANDLE_N].Image, Handles[CIE_HANDLE_S].Image, 3);
+				if(num_frames > 4)
+					IMG_HANDLE_SET_FRAME(Handles[CIE_HANDLE_N].Image, Handles[CIE_HANDLE_D].Image, 4);
+				
+				IMG_HANDLE_SET_FRAME(Handles[CIE_HANDLE_N].Image, Handles[CIE_HANDLE_N].Image, 0);
+			}
+			else
+				Handles[CIE_HANDLE_N].Image = IMG_LOAD(buf);
 			if(in_type == CIE_IMAGE_NMCSD)
 			{
 				if(optional_string("+Mouseover:"))
 				{
 					stuff_string(buf, F_NAME, NULL, sizeof(buf));
-					Handles[CIE_HANDLE_M].Image = bm_load(buf);
+					Handles[CIE_HANDLE_M].Image = IMG_LOAD(buf);
 				}
 				if(optional_string("+Clicked:"))
 				{
 					stuff_string(buf, F_NAME, NULL, sizeof(buf));
-					Handles[CIE_HANDLE_C].Image = bm_load(buf);
+					Handles[CIE_HANDLE_C].Image = IMG_LOAD(buf);
 				}
 				if(optional_string("+Selected:"))
 				{
 					stuff_string(buf, F_NAME, NULL, sizeof(buf));
-					Handles[CIE_HANDLE_S].Image = bm_load(buf);
+					Handles[CIE_HANDLE_S].Image = IMG_LOAD(buf);
 				}
 				if(optional_string("+Disabled:"))
 				{
 					stuff_string(buf, F_NAME, NULL, sizeof(buf));
-					Handles[CIE_HANDLE_D].Image = bm_load(buf);
+					Handles[CIE_HANDLE_D].Image = IMG_LOAD(buf);
 				}
 			}
 			if(optional_string("+Coords:"))
@@ -84,61 +239,62 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 			if(optional_string("+Top Left:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handles[CIE_HANDLE_TL].Image = bm_load(buf);
+				Handles[CIE_HANDLE_TL].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Top Mid:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handles[CIE_HANDLE_TM].Image = bm_load(buf);
+				Handles[CIE_HANDLE_TM].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Top Right:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handles[CIE_HANDLE_TR].Image = bm_load(buf);
+				Handles[CIE_HANDLE_TR].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Mid Left:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handles[CIE_HANDLE_ML].Image = bm_load(buf);
+				Handles[CIE_HANDLE_ML].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Mid Right:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handles[CIE_HANDLE_MR].Image = bm_load(buf);
+				Handles[CIE_HANDLE_MR].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Bottom left:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handles[CIE_HANDLE_BL].Image = bm_load(buf);
+				Handles[CIE_HANDLE_BL].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Bottom Mid:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handles[CIE_HANDLE_BM].Image = bm_load(buf);
+				Handles[CIE_HANDLE_BM].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Bottom Right:"))
 			{
 				stuff_string(buf, F_NAME, NULL, sizeof(buf));
-				Handles[CIE_HANDLE_BR].Image = bm_load(buf);
+				Handles[CIE_HANDLE_BR].Image = IMG_LOAD(buf);
 			}
 		}
-		else if(in_type == CIE_TEXT)
+		else if(in_type == CIE_COORDS)
 		{
+			stuff_int_list(Coords, 2, RAW_INTEGER_TYPE);
 		}
 	}
 
 #ifndef NDEBUG
 	//Do a little extra checking in debug mode
 	//This makes sure the skinnger knows if they did something bad
-	if(Type == CIE_IMAGE || Type == CIE_IMAGE_NMCSD)
+	if(CIEType == CIE_IMAGE || CIEType == CIE_IMAGE_NMCSD)
 	{
 		int w,h,cw,ch;
-		bm_get_info(Handles[0].Image, &w, &h);
+		IMG_INFO(Handles[0].Image, &w, &h);
 		for(uint i = 1; i < CIE_NUM_HANDLES; i++)
 		{
-			if(Handles[i].Image != -1)
+			if(IMG_HANDLE_IS_VALID(Handles[i].Image))
 			{
-				bm_get_info(Handles[i].Image, &cw, &ch);
+				IMG_INFO(Handles[i].Image, &cw, &ch);
 				if(cw != w || ch != h)
 				{
 					Warning(LOCATION, "Grouped image size unequal; Handle number %d under $%s: has a different size than base image type", i, tag);
@@ -166,31 +322,57 @@ int ClassInfoEntry::GetCoords(int *x, int *y)
 	return rval;
 }
 
-//*****************************GUISystem*******************************
-GUISystem::GUISystem(char *section)
+int ObjectClassInfoEntry::GetObjectCoords(int *x, int *y, int *w, int *h)
 {
-	GraspedGuiobject=ActiveObject=NULL;
-	Guiobjects.Globals=this;
-	Status=LastStatus=0;
-
-	//Fill out Guiobjects with some handy info
-	Guiobjects.Coords[0] = 0;
-	Guiobjects.Coords[1] = 0;
-	Guiobjects.Coords[2] = gr_screen.clip_width;
-	Guiobjects.Coords[3] = gr_screen.clip_height;
-	Guiobjects.ChildCoords[0] = gr_screen.clip_left;
-	Guiobjects.ChildCoords[1] = gr_screen.clip_top;
-	Guiobjects.ChildCoords[2] = gr_screen.clip_right;
-	Guiobjects.ChildCoords[3] = gr_screen.clip_bottom;
-
-	//Make ClassInfo all NULL
-	for(uint i = 0; i < GT_NUM_TYPES; i++)
+	int rval = CIE_GC_NONE_SET;
+	if(Coords[0] != INT_MAX && x != NULL)
 	{
-		ClassInfo[i] = NULL;
+		*x = Coords[0];
+		rval |= CIE_GC_X_SET;
 	}
-	ParseClassInfo(section);
+	if(Coords[1] != INT_MAX && y != NULL)
+	{
+		*y = Coords[1];
+		rval |= CIE_GC_Y_SET;
+	}
+	if(Coords[2] != INT_MAX && w != NULL)
+	{
+		*w = Coords[2];
+		rval |= CIE_GC_W_SET;
+	}
+	if(Coords[3] != INT_MAX && h != NULL)
+	{
+		*h = Coords[3];
+		rval |= CIE_GC_H_SET;
+	}
+
+	return rval;
 }
-GUISystem::~GUISystem()
+//*****************************GUIScreen*******************************
+GUIScreen::GUIScreen(std::string in_Name)
+{
+	//Set the name
+	Name = in_Name;
+
+	//Setup the parent system
+	//This can actually be null; but you must attach a screen to a
+	//system for it to be functional.
+	//this may allow for saving of screens in the future. Incredibly useful for HUDs.
+	OwnerSystem = NULL;
+
+	//Get class info
+	if(OwnerSystem != NULL)
+	{
+		OwnerSystem->PushScreen(this);
+		ScreenClassInfo = OwnerSystem->GetScreenClassInfo(Name);
+	}
+	else
+	{
+		ScreenClassInfo = NULL;
+	}
+}
+
+GUIScreen::~GUIScreen()
 {
 	GUIObject* cgp = (GUIObject*)GET_FIRST(&Guiobjects);
 	GUIObject* cgp_next;
@@ -199,70 +381,124 @@ GUISystem::~GUISystem()
 		cgp_next = (GUIObject*)GET_NEXT(cgp);
 		delete cgp;
 	}
+
+	//Get it out of the system
+	// nm; I just realized the linked list class should do this -WMC
+	/*
+	if(OwnerSystem != NULL && NOT_EMPTY(&OwnerSystem->Screens))
+	{
+		GUIScreen *csp_next;
+		for(GUIScreen *csp = (GUIScreen*)GET_FIRST(&OwnerSystem->Screens); csp != END_OF_LIST(&OwnerSystem->Screens); csp = csp_next)
+		{
+			csp_next = (GUIScreen*)GET_NEXT(csp);
+			if(csp == this)
+				list_remove(&OwnerSystem->Screens, csp);
+		}
+	}
+	*/
 }
 
-int GUISystem::OnFrame(float frametime, bool doevents, bool clearandflip)
+ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
 {
-	//Set the global status variables for this frame
-	LastStatus = Status;
-	Status = GST_MOUSE_OVER;
+	size_t len;
+	uint i;
+	ObjectClassInfoEntry *ociep;
 
+	if(cgp->Parent != NULL && cgp->Parent->InfoEntry != NULL)
+	{
+		ociep = &cgp->Parent->InfoEntry->Subentries[0];
+		len = cgp->Parent->InfoEntry->Subentries.size();
+
+		for(i = 0; i < len; i++)
+		{
+			if(ociep[i].Name == cgp->Name)
+				return &ociep[i];
+		}
+
+		for(i = 0; i < len; i++)
+		{
+			if(ociep[i].Name.size() == 0 && ociep[i].Object == cgp->Type)
+				return &ociep[i];
+		}
+	}
+	else if(cgp->Parent == NULL && ScreenClassInfo != NULL)
+	{
+		ociep = &ScreenClassInfo->Entries[0];
+		len = ScreenClassInfo->Entries.size();
+		for(i = 0; i < len; i++)
+		{
+			if(ociep[i].Name == cgp->Name)
+				return &ociep[i];
+		}
+
+		for(i = 0; i < len; i++)
+		{
+			if(ociep[i].Name.size() == 0 && ociep[i].Object == cgp->Type)
+				return &ociep[i];
+		}
+	}
+
+	//Generic templates - ie if you want every single OK button to look the same,
+	//or every single window to look the same.
+	if(OwnerSystem != NULL)
+	{
+		ociep = &OwnerSystem->GetClassInfo()->Entries[0];
+		len = OwnerSystem->GetClassInfo()->Entries.size();
+
+		for(i = 0; i < len; i++)
+		{
+			if(ociep[i].Name == cgp->Name)
+				return &ociep[i];
+		}
+
+		for(i = 0; i < len; i++)
+		{
+			if(ociep[i].Name.size() == 0 && ociep[i].Object == cgp->Type)
+				return &ociep[i];
+		}
+	}
+
+	return NULL;
+}
+
+GUIObject* GUIScreen::Add(GUIObject* cgp)
+{
+	if(cgp == NULL)
+		return NULL;
+
+	Assert(this != NULL);
+
+	//Add to the end of the list
+	list_append(&Guiobjects, cgp);
+	cgp->OwnerSystem = OwnerSystem;
+	cgp->OwnerScreen = this;
+
+	//For skinning
+	cgp->SetCIPointer();
+	//Set position and stuff
+	cgp->GetOIECoords(&cgp->Coords[0], &cgp->Coords[1], &cgp->Coords[2], &cgp->Coords[3]);
+	//In case we need to resize
+	cgp->OnRefreshSize();
+
+	return cgp;
+}
+
+int GUIScreen::OnFrame(float frametime, bool doevents)
+{
 	GUIObject* cgp;
 	GUIObject* cgp_prev;
 	bool SomethingPressed = false;
-	int unused_queue;
-	if(clearandflip)
-		gr_clear();
 
 	if(NOT_EMPTY(&Guiobjects) && doevents)
 	{
-		GUIObject* cgp = (GUIObject*)GET_LAST(&Guiobjects);
-		
-		KeyPressed = game_check_key();
-
-		//Add keyboard event stuff
-		if(KeyPressed)
-		{
-			Status |= GST_KEYBOARD_KEYPRESS;
-
-			if(KeyPressed & KEY_CTRLED)
-				Status |= GST_KEYBOARD_CTRL;
-			if(KeyPressed & KEY_ALTED)
-				Status |= GST_KEYBOARD_ALT;
-			if(KeyPressed & KEY_SHIFTED)
-				Status |= GST_KEYBOARD_SHIFT;
-		}
-
-		//Add mouse event stuff
-		if(mouse_down(MOUSE_LEFT_BUTTON))
-			Status |= GST_MOUSE_LEFT_BUTTON;
-		else if(mouse_down(MOUSE_MIDDLE_BUTTON))
-			Status |= GST_MOUSE_MIDDLE_BUTTON;
-		else if(mouse_down(MOUSE_RIGHT_BUTTON))
-			Status |= GST_MOUSE_RIGHT_BUTTON;
-
-		//Now that we are done setting status, add all that stuff to the unused queue
-		//Children will be changing this function as they do stuff with statuses
-		unused_queue = Status;
-
-		mouse_get_pos(&MouseX, &MouseY);
-
-		//Handle any grasped object (we are in the process of moving this)
-		if(GraspedGuiobject != NULL)
-		{
-			if(Status & GraspingButton)
-			{
-				SomethingPressed = true;
-				GraspedGuiobject->SetPosition(MouseX - GraspedDiff[0], MouseY - GraspedDiff[1]);
-			}
-			else
-			{
-				GraspedGuiobject = NULL;
-			}
-		}
+		//Note that children WILL be changing this variable as they go along,
+		//as they use up statuses.
+		int status = OwnerSystem->GetStatus();
 
 		//Pass the status on
-		for(cgp = (GUIObject*)GET_LAST(&Guiobjects); cgp != END_OF_LIST(&Guiobjects); cgp = cgp_prev)
+		GUIObject* cgp = (GUIObject*)GET_LAST(&Guiobjects);
+		cgp->Status |= (status & GST_KEYBOARD_STATUS);
+		for(; cgp != END_OF_LIST(&Guiobjects); cgp = cgp_prev)
 		{
 			//In case an object deletes itself
 			cgp_prev = (GUIObject*)GET_PREV(cgp);
@@ -270,31 +506,22 @@ int GUISystem::OnFrame(float frametime, bool doevents, bool clearandflip)
 			cgp->Status = 0;
 
 			//If we are moving something, nothing else can get click events
-			if(GraspedGuiobject == NULL)
+			if(OwnerSystem->GetGraspedObject() == NULL)
 			{
-				if(GetMouseX() >= cgp->Coords[0]
-					&& GetMouseX() <= cgp->Coords[2]
-					&& GetMouseY() >= cgp->Coords[1]
-					&& GetMouseY() <= cgp->Coords[3])
+				if(OwnerSystem->GetMouseX() >= cgp->Coords[0]
+					&& OwnerSystem->GetMouseX() <= cgp->Coords[2]
+					&& OwnerSystem->GetMouseY() >= cgp->Coords[1]
+					&& OwnerSystem->GetMouseY() <= cgp->Coords[3])
 				{
-					cgp->Status |= (Status & GST_MOUSE_STATUS);
-					if((Status & GST_MOUSE_LEFT_BUTTON) || (Status & GST_MOUSE_RIGHT_BUTTON) || (Status & GST_MOUSE_MIDDLE_BUTTON))
+					cgp->Status |= (status & GST_MOUSE_STATUS);
+					if(status & GST_MOUSE_PRESS)
 					{
 						SomethingPressed = true;
 					}
 				}
 			}
-			else if(cgp == GraspedGuiobject)
-			{
-				GraspedGuiobject->Status = (Status & GST_MOUSE_STATUS);
-			}
 
-			if(cgp == GET_LAST(&Guiobjects))
-			{
-				cgp->Status |= (Status & GST_KEYBOARD_STATUS);
-			}
-
-			cgp->OnFrame(frametime, &unused_queue);
+			cgp->OnFrame(frametime, &status);
 		}
 	}
 
@@ -306,32 +533,171 @@ int GUISystem::OnFrame(float frametime, bool doevents, bool clearandflip)
 		cgp->OnDraw(frametime);
 	}
 
+	if(SomethingPressed)
+		return GSOF_SOMETHINGPRESSED;
+	else
+		return GSOF_NOTHINGPRESSED;
+}
+
+//*****************************GUISystem*******************************
+GUISystem::GUISystem(char *info_filename)
+{
+	GraspedGuiobject=ActiveObject=NULL;
+	Status=LastStatus=0;
+
+	//Fill out Guiobjects with some handy info
+	//On 2nd thought, don't. This is hackish.
+	/*
+	Guiobjects.OwnerSystem=this;
+	Guiobjects.Coords[0] = 0;
+	Guiobjects.Coords[1] = 0;
+	Guiobjects.Coords[2] = gr_screen.clip_width;
+	Guiobjects.Coords[3] = gr_screen.clip_height;
+	Guiobjects.ChildCoords[0] = gr_screen.clip_left;
+	Guiobjects.ChildCoords[1] = gr_screen.clip_top;
+	Guiobjects.ChildCoords[2] = gr_screen.clip_right;
+	Guiobjects.ChildCoords[3] = gr_screen.clip_bottom;*/
+
+	//Make ClassInfo all NULL
+	/*
+	for(uint i = 0; i < GT_NUM_TYPES; i++)
+	{
+		ClassInfo[i] = NULL;
+	}*/
+	ClassInfoParsed = false;
+	ParseClassInfo(info_filename);
+}
+GUISystem::~GUISystem()
+{
+	GUIScreen* csp = (GUIScreen*)GET_FIRST(&Screens);
+	GUIScreen* csp_next;
+	for(; csp != END_OF_LIST(&Screens); csp = csp_next)
+	{
+		csp_next = (GUIScreen*)GET_NEXT(csp);
+		delete csp;
+	}
+	DestroyClassInfo();
+}
+
+GUIScreen *GUISystem::PushScreen(GUIScreen *csp)
+{
+	Assert(csp != NULL);
+
+	list_append(&Screens, csp);
+	csp->OwnerSystem = this;
+	csp->ScreenClassInfo = GetScreenClassInfo(csp->Name);
+
+	return csp;
+}
+
+//Removes a screen from a GUISystem
+//Handy if you want to save window movements and such;
+//just call this and it'll take care of everything
+void GUISystem::PullScreen(GUIScreen *in_screen)
+{
+	GUIScreen *csp_next;
+	for(GUIScreen *csp = (GUIScreen*)GET_FIRST(&Screens); csp != END_OF_LIST(&Screens); csp = csp_next)
+	{
+		csp_next = (GUIScreen*)GET_NEXT(csp);
+		if(csp == in_screen)
+		{
+			csp->prev->next = csp->next;
+			csp->next->prev = csp->prev;
+			csp->next = csp;
+			csp->prev = csp;
+			csp->OwnerSystem = NULL;
+		}
+	}
+}
+
+ScreenClassInfoEntry *GUISystem::GetScreenClassInfo(const std::string & screen_name)
+{
+	ScreenClassInfoEntry *sciep;
+	for(sciep = (ScreenClassInfoEntry*)GET_FIRST(&ScreenClassInfo); sciep != END_OF_LIST(&ScreenClassInfo); sciep = (ScreenClassInfoEntry*)GET_NEXT(sciep))
+	{
+		if(sciep->GetName() == screen_name)
+			return sciep;
+	}
+
+	return NULL;
+}
+
+int GUISystem::OnFrame(float frametime, bool doevents, bool clearandflip)
+{
+	//Set the global status variables for this frame
+	LastStatus = Status;
+	Status = GST_MOUSE_OVER;
+
+	bool something_pressed = false;
+	int unused_queue;
+	if(clearandflip)
+		gr_clear();
+
+	if(NOT_EMPTY(&Screens))
+	{
+		if(doevents)
+		{
+			KeyPressed = game_check_key();
+
+			//Add keyboard event stuff
+			if(KeyPressed)
+			{
+				Status |= GST_KEYBOARD_KEYPRESS;
+
+				if(KeyPressed & KEY_CTRLED)
+					Status |= GST_KEYBOARD_CTRL;
+				if(KeyPressed & KEY_ALTED)
+					Status |= GST_KEYBOARD_ALT;
+				if(KeyPressed & KEY_SHIFTED)
+					Status |= GST_KEYBOARD_SHIFT;
+			}
+
+			//Add mouse event stuff
+			if(mouse_down(MOUSE_LEFT_BUTTON))
+				Status |= GST_MOUSE_LEFT_BUTTON;
+			else if(mouse_down(MOUSE_MIDDLE_BUTTON))
+				Status |= GST_MOUSE_MIDDLE_BUTTON;
+			else if(mouse_down(MOUSE_RIGHT_BUTTON))
+				Status |= GST_MOUSE_RIGHT_BUTTON;
+
+			//Now that we are done setting status, add all that stuff to the unused queue
+			//Children will be changing this function as they do stuff with statuses
+			unused_queue = Status;
+
+			mouse_get_pos(&MouseX, &MouseY);
+
+			//Handle any grasped object (we are in the process of moving this)
+			if(GraspedGuiobject != NULL)
+			{
+				if(Status & GraspingButton)
+				{
+					something_pressed = true;
+					GraspedGuiobject->SetPosition(MouseX - GraspedDiff[0], MouseY - GraspedDiff[1]);
+					GraspedGuiobject->Status = (Status & GST_MOUSE_STATUS);
+				}
+				else
+				{
+					GraspedGuiobject = NULL;
+				}
+			}
+		}
+
+		GUIScreen *csp_prev;	//so screens can delete themselves
+		for(GUIScreen* csp = (GUIScreen*)GET_LAST(&Screens); csp != END_OF_LIST(&Screens); csp = csp_prev)
+		{
+			csp_prev = (GUIScreen*)GET_PREV(csp);
+			if(csp->OnFrame(frametime, doevents) == GSOF_SOMETHINGPRESSED)
+				something_pressed = true;
+		}
+	}
+
 	if(clearandflip)
 		gr_flip();
 
-	if(SomethingPressed)
-		return GSDF_SOMETHINGPRESSED;
+	if(something_pressed)
+		return GSOF_SOMETHINGPRESSED;
 	else
-		return GSDF_NOTHINGPRESSED;
-}
-
-GUIObject* GUISystem::Add(GUIObject* cgp)
-{
-	if(cgp == NULL)
-		return NULL;
-
-	Assert(this != NULL);
-
-	//Add to the end of the list
-	list_append(&Guiobjects, cgp);
-	cgp->Globals = this;
-
-	//For skinning
-	cgp->SetCIEHandle();
-	//In case we need to resize
-	cgp->CalculateSize();
-
-	return cgp;
+		return GSOF_NOTHINGPRESSED;
 }
 
 void GUISystem::SetActiveObject(GUIObject *cgp)
@@ -348,7 +714,7 @@ void GUISystem::SetActiveObject(GUIObject *cgp)
 		}
 
 		//Eventually, we make this last guy the last object in Guiobjects
-		list_move_append(&Guiobjects, cgp);
+		list_move_append(&cgp->OwnerScreen->Guiobjects, cgp);
 	}
 }
 
@@ -364,79 +730,37 @@ void GUISystem::SetGraspedObject(GUIObject *cgp, int button)
 	GraspedDiff[1] = MouseY - cgp->Coords[1];
 }
 
-void GUISystem::ParseClassInfo(char* section)
-{
-	ClassInfoEntry *cie;
-	unsigned int i;
-	for(i = 0; i < GT_NUM_TYPES; i++)
-	{
-		if(ClassInfo[i] != NULL)
-		{
-			Warning(LOCATION, "Class info is being parsed twice");
-			delete[] ClassInfo[i];
-			ClassInfo[i] = NULL;
-		}
-	}
-
-	lcl_ext_open();
-	if(setjmp(parse_abort) != 0)
-	{
-		nprintf(("Warning", "Unable to parse %s!", section));
-		lcl_ext_close();
-		return;
-	}
-	read_file_text("interface.tbl");
-	reset_parse();
-
-	//Read the lab section
-	char *buf = new char[strlen(section) + 2];
-	strcpy(buf, "#");
-	strcat(buf, section);
-	skip_to_string(buf);
-	delete[] buf;
-	if(optional_string("$Window"))
-	{
-		//Create this class section
-		ClassInfo[GT_WINDOW] = new ClassInfoEntry[WCI_NUM_ENTRIES];
-		cie = ClassInfo[GT_WINDOW];
-
-		//Fill it out
-		cie[WCI_CAPTION].Parse("Caption", CIE_IMAGE_NMCSD);
-		cie[WCI_HIDE].Parse("Hider", CIE_IMAGE_NMCSD);
-		cie[WCI_CLOSE].Parse("Closer", CIE_IMAGE_NMCSD);
-		cie[WCI_BODY].Parse("Body", CIE_IMAGE);
-		cie[WCI_BORDER].Parse("Border", CIE_IMAGE_BORDER);
-	}
-	required_string("#End");
-
-	lcl_ext_close();
-}
-
 void GUISystem::DestroyClassInfo()
 {
-	for(uint i = 0; i < GT_NUM_TYPES; i++)
+	ScreenClassInfoEntry *sciep, *next_sciep;
+	for(sciep = (ScreenClassInfoEntry*)GET_FIRST(&ScreenClassInfo); sciep != END_OF_LIST(&ScreenClassInfo); sciep = next_sciep)
 	{
-		if(ClassInfo[i] != NULL)
-		{
-			delete[] ClassInfo[i];
-			ClassInfo[i] = NULL;
-		}
+		next_sciep = (ScreenClassInfoEntry*)GET_NEXT(sciep);
+		delete sciep;
 	}
+	ClassInfoParsed = false;
 }
 
 //*****************************GUIObject*******************************
-GUIObject::GUIObject(int x_coord, int y_coord, int x_width, int y_height, int in_style)
+GUIObject::GUIObject(std::string in_Name, int x_coord, int y_coord, int x_width, int y_height, int in_style)
 {
+	//General stuff
 	next = prev = this;
 	LastStatus = Status = 0;
+	OwnerSystem = NULL;
+	OwnerScreen = NULL;
 	Parent = NULL;
-	//Globals = NULL;
 	CloseFunction = NULL;
 
 	//These would make no sense
 	if(x_coord < 0 || y_coord < 0 || x_width == 0 || y_height == 0)
 		return;
+	
+	//No! Bad!
+	if(in_Name.length() < 1)
+		return;
 
+	Name = in_Name;
 	Coords[0] = x_coord;
 	Coords[1] = y_coord;
 	Coords[2] = x_coord + x_width;
@@ -473,23 +797,6 @@ void GUIObject::DeleteChildren(GUIObject* exception)
 		delete cgp;
 	}
 }
-/*
-GUIObject* GUIObject::Add(GUIObject* cgp)
-{
-	if(cgp == NULL)
-		return NULL;
-
-	Assert(this != NULL);
-
-	//Add to the end of the list
-	list_append(&(Globals->Guiobjects), cgp);
-	cgp->Globals = Globals;	//Because the head element has its "Globals" variable set, we can get away with this
-
-	//In case we need to resize
-	cgp->CalculateSize();
-
-	return cgp;
-}*/
 
 GUIObject* GUIObject::AddChild(GUIObject* cgp)
 {
@@ -500,7 +807,8 @@ GUIObject* GUIObject::AddChild(GUIObject* cgp)
 	list_append(&Children, cgp);
 
 	cgp->Parent = this;
-	cgp->Globals = Globals;
+	cgp->OwnerSystem = OwnerSystem;
+	cgp->OwnerScreen = OwnerScreen;
 
 	//Update coordinates (Should be relative x/y and width/height) to absolute coordinates
 	cgp->Coords[0] += ChildCoords[0];
@@ -509,9 +817,11 @@ GUIObject* GUIObject::AddChild(GUIObject* cgp)
 	cgp->Coords[3] += ChildCoords[1];
 
 	//For skinning
-	cgp->SetCIEHandle();
+	cgp->SetCIPointer();
+	//Check position
+	cgp->GetOIECoords(&cgp->Coords[0], &cgp->Coords[1], &cgp->Coords[2], &cgp->Coords[3]);
 	//In case we need to resize
-	cgp->CalculateSize();
+	cgp->OnRefreshSize();
 	
 	return cgp;
 }
@@ -543,10 +853,10 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 
 		if(Status & GST_MOUSE_OVER)
 		{
-			if(Globals->GetMouseX() >= cgp->Coords[0]
-				&& Globals->GetMouseX() <= cgp->Coords[2]
-				&& Globals->GetMouseY() >= cgp->Coords[1]
-				&& Globals->GetMouseY() <= cgp->Coords[3])
+			if(OwnerSystem->GetMouseX() >= cgp->Coords[0]
+				&& OwnerSystem->GetMouseX() <= cgp->Coords[2]
+				&& OwnerSystem->GetMouseY() >= cgp->Coords[1]
+				&& OwnerSystem->GetMouseY() <= cgp->Coords[3])
 			{
 				cgp->Status |= (Status & GST_MOUSE_STATUS);
 			}
@@ -583,7 +893,7 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 		}
 
 		//MOUSE UP
-		if((LastStatus & GST_MOUSE_PRESS) && !(Globals->GetStatus() & GST_MOUSE_PRESS))
+		if((LastStatus & GST_MOUSE_PRESS) && !(OwnerSystem->GetStatus() & GST_MOUSE_PRESS))
 		{
 			rval = DoMouseUp(frametime);
 
@@ -625,7 +935,7 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 		return OF_DESTROYED;
 
 	/*if(!child_keypress && (Status & GST_KEY_PRESSED))
-		rval = DoKeyPress(Globals->CurrentKeyChar,frametime);*/
+		rval = DoKeyPress(OwnerSystem->CurrentKeyChar,frametime);*/
 
 	return DoFrame(frametime);
 }
@@ -653,7 +963,7 @@ int GUIObject::GetCIECoords(int id, int *x, int *y)
 {
 	if(InfoEntry!=NULL)
 	{
-		int rv = InfoEntry[id].GetCoords(x,y);
+		int rv = InfoEntry->GetCoords(id, x, y);
 		if(rv & CIE_GC_X_SET)
 		{
 			if(*x < 0)
@@ -675,10 +985,67 @@ int GUIObject::GetCIECoords(int id, int *x, int *y)
 	return CIE_GC_NONE_SET;
 }
 
-//Call this after an object's type is set to enable the GUIObject CIE functions
-void GUIObject::SetCIEHandle()
+int GUIObject::GetOIECoords(int *x1, int *y1, int *x2, int *y2)
 {
-	InfoEntry=Globals->GetClassInfo(Type);
+	if(InfoEntry != NULL)
+	{
+		int rv = InfoEntry->GetObjectCoords(x1, y1, x2, y2);
+		if(Parent != NULL)
+		{
+			if(rv & CIE_GC_X_SET)
+			{
+				if(*x1 < 0)
+					*x1 += Parent->ChildCoords[2];
+				else
+					*x1 += Parent->ChildCoords[0];
+			}
+			if(rv & CIE_GC_Y_SET)
+			{
+				if(*y1 < 0)
+					*y1 += Parent->ChildCoords[3];
+				else
+					*y1 += Parent->ChildCoords[1];
+			}
+		}
+		else
+		{
+			if(rv & CIE_GC_X_SET)
+			{
+				if(*x1 < 0)
+					*x1 += gr_screen.clip_right;
+				else
+					*x1 += gr_screen.clip_left;
+			}
+			if(rv & CIE_GC_Y_SET)
+			{
+				if(*y1 < 0)
+					*y1 += gr_screen.clip_bottom;
+				else
+					*y1 += gr_screen.clip_top;
+			}
+		}
+		if(rv & CIE_GC_W_SET)
+		{
+			*x2 = *x1 + *x2;
+			Style |= GS_NOAUTORESIZEX;
+		}
+		if(rv & CIE_GC_H_SET)
+		{
+			*y2 = *y1 + *y2;
+			Style |= GS_NOAUTORESIZEY;
+		}
+
+		return rv;
+	}
+
+	return CIE_GC_NONE_SET;
+}
+
+//Call this after an object's type is set to enable the GUIObject CIE functions
+void GUIObject::SetCIPointer()
+{
+	if(OwnerScreen)
+		InfoEntry=OwnerScreen->GetObjectClassInfo(this);
 }
 
 void GUIObject::SetPosition(int x, int y)
@@ -709,31 +1076,33 @@ void GUIObject::SetPosition(int x, int y)
 }
 
 //*****************************Window*******************************
-void Window::CalculateSize()
+int Window::DoRefreshSize()
 {
+	float num;
 	int w, h;
-
+	//Top left, top right, bottom left, bottom right
+	int CornerWidths[4];
 
 	//Determine left border's width
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &BorderSizes[0], NULL);
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &BorderSizes[0], NULL);
 	else
 		BorderSizes[0] = W_BORDERHEIGHT;
 
 	//Determine right border's width
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR), &BorderSizes[2], NULL);
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR), &BorderSizes[2], NULL);
 	else
 		BorderSizes[2] = W_BORDERWIDTH;
 
 	//Determine top border height
 	bool custom_top = true;
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL), NULL, &BorderSizes[1]);
-	else if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), NULL, &BorderSizes[1]);
-	else if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM), NULL,  &BorderSizes[1]);
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL), NULL, &BorderSizes[1]);
+	else if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), NULL, &BorderSizes[1]);
+	else if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM), NULL,  &BorderSizes[1]);
 	else
 	{
 		custom_top = false;
@@ -741,34 +1110,34 @@ void Window::CalculateSize()
 	}
 
 	//Determine bottom border height
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), NULL, &BorderSizes[3]);
-	else if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR), NULL, &BorderSizes[3]);
-	else if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), NULL,  &BorderSizes[3]);
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), NULL, &BorderSizes[3]);
+	else if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR), NULL, &BorderSizes[3]);
+	else if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), NULL,  &BorderSizes[3]);
 	else
 		BorderSizes[3] = W_BORDERHEIGHT;
 
 
 	//Determine corner sizes
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[0], NULL);
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[0], NULL);
 	else
 		CornerWidths[0] = BorderSizes[0];
 
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), &CornerWidths[1], NULL);
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), &CornerWidths[1], NULL);
 	else
 		CornerWidths[1] = BorderSizes[2];
 
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[2], NULL);
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[2], NULL);
 	else
 		CornerWidths[2] = BorderSizes[0];
 
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR) != -1)
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[3], NULL);
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR)))
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[3], NULL);
 	else
 		CornerWidths[3] = BorderSizes[2];
 
@@ -815,29 +1184,36 @@ void Window::CalculateSize()
 	//Find caption coordinates
 	if(!(Style & WS_NOTITLEBAR))
 	{
-		gr_get_string_size(&w, &h, (char *)Caption.c_str());
-		if(GetCIEImageHandle(WCI_CAPTION) != -1)
-			bm_get_info(GetCIEImageHandle(WCI_CAPTION), &w, &h);
-		else
-			h += 5;
+		if(Caption.size() > 0)
+		{
+			gr_get_string_size(&w, &h, (char *)Caption.c_str());
 
-		if(GetCIEImageHandle(WCI_CAPTION) != -1)
-		{
-			CaptionCoords[0] = Coords[0] + BorderSizes[0];
-			CaptionCoords[1] = Coords[1] + BorderSizes[1];
-			GetCIECoords(WCI_CAPTION, &CaptionCoords[0], &CaptionCoords[1]);
+			if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CAPTION)))
+			{
+				int cw, ch;
+				CaptionCoords[0] = Coords[0] + BorderSizes[0];
+				CaptionCoords[1] = Coords[1] + BorderSizes[1];
+				GetCIECoords(WCI_CAPTION, &CaptionCoords[0], &CaptionCoords[1]);
+
+				//do the image
+				IMG_INFO(GetCIEImageHandle(WCI_CAPTION), &cw, &ch);
+				num = (float) w / cw;
+				CaptionRectList = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[1], w, ch, 0, 0, 1.0f, 1.0f);
+				h = ch;
+			}
+			else
+			{
+				h += 5;
+				CaptionCoords[0] = Coords[0] +(((Coords[2]-Coords[0]) - w) / 2);
+				CaptionCoords[1] = Coords[1] + BorderSizes[1];
+			}
+			CaptionCoords[2] = CaptionCoords[0] + w;
+			CaptionCoords[3] = CaptionCoords[1] + h;
 		}
-		else
-		{
-			CaptionCoords[0] = Coords[0] +(((Coords[2]-Coords[0]) - w) / 2);
-			CaptionCoords[1] = Coords[1] + BorderSizes[1];
-		}
-		CaptionCoords[2] = CaptionCoords[0] + w;
-		CaptionCoords[3] = CaptionCoords[1] + h;
 
 		//Find close coordinates now
-		if(GetCIEImageHandle(WCI_CLOSE) != -1)
-			bm_get_info(GetCIEImageHandle(WCI_CLOSE), &w, &h);
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE)))
+			IMG_INFO(GetCIEImageHandle(WCI_CLOSE), &w, &h);
 		else
 			gr_get_string_size(&w, &h, "X");
 
@@ -848,8 +1224,8 @@ void Window::CalculateSize()
 		CloseCoords[3] = CloseCoords[1] + h;
 
 		//Find hide coordinates now
-		if(GetCIEImageHandle(WCI_HIDE) != -1)
-			bm_get_info(GetCIEImageHandle(WCI_HIDE), &w, &h);
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE)))
+			IMG_INFO(GetCIEImageHandle(WCI_HIDE), &w, &h);
 		else
 			gr_get_string_size(&w, &h, "-");
 
@@ -861,42 +1237,52 @@ void Window::CalculateSize()
 	}
 
 	//Do bitmap stuff
-	float num;
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM) != -1)
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM)))
 	{
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), &w, &h);
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM), &w, &h);
 		num = (float)((Coords[2]-CornerWidths[3])-(Coords[0]+CornerWidths[2])) / (float)w;
-		BorderRectLists[CIE_HANDLE_BM].resize(1);
-		BorderRectLists[CIE_HANDLE_BM][0] = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[3]-h, fl2i(w*num),h,0,0,num,1.0f);
+		BorderRectLists[CIE_HANDLE_TM] = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[1], fl2i(w*num),h,0,0,num,1.0f);
 		//gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
 	}
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML) != -1)
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM)))
 	{
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &w, &h);
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), &w, &h);
+		num = (float)((Coords[2]-CornerWidths[3])-(Coords[0]+CornerWidths[2])) / (float)w;
+		BorderRectLists[CIE_HANDLE_BM] = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[3]-h, fl2i(w*num),h,0,0,num,1.0f);
+		//gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
+	}
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML)))
+	{
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &w, &h);
 		num = (float)((Coords[3]-BorderSizes[3])-(Coords[1]+BorderSizes[1])) / (float)h;
-		BorderRectLists[CIE_HANDLE_ML].resize(1);
-		BorderRectLists[CIE_HANDLE_ML][0] = bitmap_rect_list(Coords[0], Coords[1] + BorderSizes[1], w,fl2i(h*num),0,0,1.0f,num);
+		BorderRectLists[CIE_HANDLE_ML] = bitmap_rect_list(Coords[0], Coords[1] + BorderSizes[1], w,fl2i(h*num),0,0,1.0f,num);
+	}
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR)))
+	{
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR), &w, &h);
+		num = (float)((Coords[3]-BorderSizes[3])-(Coords[1]+BorderSizes[1])) / (float)h;
+		BorderRectLists[CIE_HANDLE_MR] = bitmap_rect_list(Coords[2]-w, Coords[1] + BorderSizes[1], w,fl2i(h*num),0,0,1.0f,num);
 	}
 
-	if(Parent!=NULL)Parent->CalculateSize();
+	return OF_TRUE;
 }
 
 int Window::DoMouseOver(float frametime)
 {
-	if(Globals->GetMouseX() >= HideCoords[0]
-		&& Globals->GetMouseX() <= HideCoords[2]
-		&& Globals->GetMouseY() >= HideCoords[1]
-		&& Globals->GetMouseY() <= HideCoords[3])
+	if(OwnerSystem->GetMouseX() >= HideCoords[0]
+		&& OwnerSystem->GetMouseX() <= HideCoords[2]
+		&& OwnerSystem->GetMouseY() >= HideCoords[1]
+		&& OwnerSystem->GetMouseY() <= HideCoords[3])
 	{
 		HideHighlight = true;
 	}
 	else
 		HideHighlight = false;
 
-	if(Globals->GetMouseX() >= CloseCoords[0]
-		&& Globals->GetMouseX() <= CloseCoords[2]
-		&& Globals->GetMouseY() >= CloseCoords[1]
-		&& Globals->GetMouseY() <= CloseCoords[3])
+	if(OwnerSystem->GetMouseX() >= CloseCoords[0]
+		&& OwnerSystem->GetMouseX() <= CloseCoords[2]
+		&& OwnerSystem->GetMouseY() >= CloseCoords[1]
+		&& OwnerSystem->GetMouseY() <= CloseCoords[3])
 	{
 		CloseHighlight = true;
 	}
@@ -908,19 +1294,19 @@ int Window::DoMouseOver(float frametime)
 
 int Window::DoMouseDown(float frametime)
 {
-	Globals->SetActiveObject(this);
+	OwnerSystem->SetActiveObject(this);
 
 	if(Style & WS_NONMOVEABLE)
 		return OF_TRUE;
 
-	if((Globals->GetGraspedObject() == NULL)
+	if((OwnerSystem->GetGraspedObject() == NULL)
 		&& (Status & GST_MOUSE_LEFT_BUTTON)
-		&& Globals->GetMouseX() >= CaptionCoords[0]
-		&& ((Globals->GetMouseX() < CaptionCoords[2]) || ((Style & WS_NOTITLEBAR) && Globals->GetMouseX() <= Coords[2]))
-		&& Globals->GetMouseY() >= CaptionCoords[1]
-		&& ((Globals->GetMouseY() <= CaptionCoords[3]) || ((Style & WS_NOTITLEBAR) && Globals->GetMouseY() <= Coords[2])))
+		&& OwnerSystem->GetMouseX() >= CaptionCoords[0]
+		&& ((OwnerSystem->GetMouseX() < CaptionCoords[2]) || ((Style & WS_NOTITLEBAR) && OwnerSystem->GetMouseX() <= Coords[2]))
+		&& OwnerSystem->GetMouseY() >= CaptionCoords[1]
+		&& ((OwnerSystem->GetMouseY() <= CaptionCoords[3]) || ((Style & WS_NOTITLEBAR) && OwnerSystem->GetMouseY() <= Coords[2])))
 		{
-			Globals->SetGraspedObject(this, GST_MOUSE_LEFT_BUTTON);
+			OwnerSystem->SetGraspedObject(this, GST_MOUSE_LEFT_BUTTON);
 		}
 
 		//All further movement of grasped objects is handled by GUISystem
@@ -946,8 +1332,15 @@ int Window::DoMouseUp(float frametime)
 		else
 		{
 			UnhiddenHeight = Coords[3];
-			Coords[3] = Coords[0] + BorderSizes[1] + BorderSizes[3];
+			Coords[3] = Coords[1] + BorderSizes[1] + BorderSizes[3];
 			Style |= GS_HIDDEN;
+		}
+
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM)))
+		{
+			int h;
+			IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), NULL, &h);
+			BorderRectLists[CIE_HANDLE_BM].screen_rect.y = Coords[3] - h;
 		}
 	}
 	return OF_TRUE;
@@ -978,16 +1371,16 @@ void Window::DoMove(int dx, int dy)
 	CaptionCoords[3] += dy;
 
 	//Handle moving the border around
-	uint j,size;
-	for(uint i = 0; i < 8; i++)
+	uint i;
+	for(i = 0; i < 8; i++)
 	{
-		size=BorderRectLists[i].size();
-		for(j=0; j<size; j++)
-		{
-			BorderRectLists[i][j].screen_rect.x +=dx;
-			BorderRectLists[i][j].screen_rect.y += dy;
-		}
+		BorderRectLists[i].screen_rect.x += dx;
+		BorderRectLists[i].screen_rect.y += dy;
 	}
+
+	//now the caption
+	CaptionRectList.screen_rect.x += dx;
+	CaptionRectList.screen_rect.y += dy;
 }
 
 void draw_open_rect(int x1, int y1, int x2, int y2, bool resize = false)
@@ -1002,98 +1395,71 @@ void Window::DoDraw(float frametime)
 {
 	gr_set_color_fast(&Color_text_normal);
 	int w, h;
-	std::vector<bitmap_2d_list> bmlist;
-	bitmap_2d_list b2l;
-	unsigned int num;
-	unsigned int i;
 	
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL) != -1)
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL)))
 	{
-		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL));
-		gr_bitmap(Coords[0], Coords[1], false);
+		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL));
+		IMG_DRAW(Coords[0], Coords[1]);
 	}
 
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR) != -1)
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR)))
 	{
-		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR));
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), &w, NULL);
-		gr_bitmap(Coords[2] - w, Coords[1], false);
+		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR));
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), &w, NULL);
+		IMG_DRAW(Coords[2] - w, Coords[1]);
 	}
 
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL) != -1)
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL)))
 	{
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), NULL, &h);
-		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL));
-		gr_bitmap(Coords[0], Coords[3] - h, false);
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), NULL, &h);
+		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL));
+		IMG_DRAW(Coords[0], Coords[3] - h);
 	}
 
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR) != -1)
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR)))
 	{
-		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR));
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR), &w, &h);
-		//gr_bitmap(Coords[2] - w, Coords[3] - h, false);
-		gr_bitmap(Coords[2]-w, Coords[3] - h, false);
+		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR));
+		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR), &w, &h);
+		//IMG_DRAW(Coords[2] - w, Coords[3] - h, false);
+		IMG_DRAW(Coords[2]-w, Coords[3] - h);
 	}
 
-	if(BorderRectLists[CIE_HANDLE_BM].size())
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM)))
 	{
-		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM));
-		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM][0], BorderRectLists[CIE_HANDLE_BM].size(), false);
-	}
-	else
-	{
-		gr_line(Coords[0] + BorderSizes[0], Coords[3], Coords[2] - BorderSizes[2], Coords[3]);
-	}
-
-	if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM) != -1)
-	{
-		bmlist.clear();
-		gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM));
-		bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM), &w, &h);
-		num = ((Coords[2]-CornerWidths[1])-(Coords[0]+CornerWidths[0])) / w;
-		b2l.w = w;
-		b2l.h = h;
-		b2l.y = Coords[1];
-		for(i = 0; i < num; i++)
-		{
-			b2l.x = Coords[0] + CornerWidths[0] + w*i;
-			bmlist.push_back(b2l);
-		}
-		gr_bitmap_list(&bmlist[0], bmlist.size(), false);
+		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM));
+		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_TM], 1, false);
 	}
 	else
 	{
 		gr_line(Coords[0] + BorderSizes[0], Coords[1], Coords[2] - BorderSizes[2], Coords[1]);
 	}
 
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM)))
+	{
+		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM));
+		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
+	}
+	else
+	{
+		gr_line(Coords[0] + BorderSizes[0], Coords[3], Coords[2] - BorderSizes[2], Coords[3]);
+	}
+
 	if(!(Style & GS_HIDDEN))
 	{
-		if(BorderRectLists[CIE_HANDLE_ML].size())
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML)))
 		{
-			gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML));
-		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_ML][0], BorderRectLists[CIE_HANDLE_ML].size(), false);
+			IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML));
+			gr_bitmap_list(&BorderRectLists[CIE_HANDLE_ML], 1, false);
 		}
 		else
 		{
 			gr_line(Coords[0], Coords[1] + BorderSizes[1], Coords[0], Coords[3] - BorderSizes[3]);
 		}
 
-		if(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR) != -1)
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR)))
 		{
-			bmlist.clear();
-			gr_set_bitmap(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR));
-			bm_get_info(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR), &w, &h);
-			num = ((Coords[3]-BorderSizes[3])-(Coords[1]+BorderSizes[1])) / h;
-			b2l.w = w;
-			b2l.h = h;
-			b2l.x = Coords[2]-w;
-			for(i = 0; i < num; i++)
-			{
-				b2l.y = Coords[1] + BorderSizes[1] + h*i;
-				bmlist.push_back(b2l);
-			}
-			gr_bitmap_list(&bmlist[0], bmlist.size(), false);
-			//gr_bitmap(Coords[2] - w, Coords[1] + BorderSizes[1], false);
+			IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR));
+			gr_bitmap_list(&BorderRectLists[CIE_HANDLE_MR], 1, false);
 		}
 		else
 		{
@@ -1104,10 +1470,10 @@ void Window::DoDraw(float frametime)
 	if(!(Style & WS_NOTITLEBAR))
 	{
 		//Draw the caption background
-		if(GetCIEImageHandle(WCI_CAPTION) != -1)
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CAPTION)))
 		{
-			gr_set_bitmap(GetCIEImageHandle(WCI_CAPTION));
-			gr_bitmap(CaptionCoords[0], CaptionCoords[1], false);
+			IMG_SET(GetCIEImageHandle(WCI_CAPTION));
+			gr_bitmap_list(&CaptionRectList, 1, false);
 		}
 		else
 		{
@@ -1115,14 +1481,14 @@ void Window::DoDraw(float frametime)
 		}
 
 		//Close button
-		if(GetCIEImageHandle(WCI_CLOSE) != -1)
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE)))
 		{
-			if(CloseHighlight && GetCIEImageHandle(WCI_CLOSE, CIE_HANDLE_M) != -1)
-				gr_set_bitmap(GetCIEImageHandle(WCI_CLOSE, CIE_HANDLE_M));
+			if(CloseHighlight && IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE, CIE_HANDLE_M)))
+				IMG_SET(GetCIEImageHandle(WCI_CLOSE, CIE_HANDLE_M));
 			else
-				gr_set_bitmap(GetCIEImageHandle(WCI_CLOSE));
+				IMG_SET(GetCIEImageHandle(WCI_CLOSE));
 
-			gr_bitmap(CloseCoords[0], CloseCoords[1], false);
+			IMG_DRAW(CloseCoords[0], CloseCoords[1]);
 		}
 		else
 		{
@@ -1136,13 +1502,13 @@ void Window::DoDraw(float frametime)
 		
 
 		//Hide button
-		if(GetCIEImageHandle(WCI_HIDE) != -1)
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE)))
 		{
-			if(HideHighlight && GetCIEImageHandle(WCI_HIDE, CIE_HANDLE_M) != -1)
-				gr_set_bitmap(GetCIEImageHandle(WCI_HIDE, CIE_HANDLE_M));
+			if(HideHighlight && IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE, CIE_HANDLE_M)))
+				IMG_SET(GetCIEImageHandle(WCI_HIDE, CIE_HANDLE_M));
 			else
-				gr_set_bitmap(GetCIEImageHandle(WCI_HIDE));
-			gr_bitmap(HideCoords[0], HideCoords[1],false);
+				IMG_SET(GetCIEImageHandle(WCI_HIDE));
+			IMG_DRAW(HideCoords[0], HideCoords[1]);
 		}
 		else
 		{
@@ -1162,7 +1528,7 @@ void Window::DoDraw(float frametime)
 }
 
 Window::Window(std::string in_caption, int x_coord, int y_coord, int x_width, int y_width, int in_style)
-:GUIObject(x_coord,y_coord,x_width,y_width,in_style)
+:GUIObject(in_caption, x_coord,y_coord,x_width,y_width,in_style)
 {
 	Caption = in_caption;
 
@@ -1176,7 +1542,7 @@ Window::Window(std::string in_caption, int x_coord, int y_coord, int x_width, in
 //*****************************Button*******************************
 
 Button::Button(std::string in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller), int x_width, int y_height, int in_style)
-:GUIObject(x_coord, y_coord, x_width, y_height, in_style)
+:GUIObject(in_caption, x_coord, y_coord, x_width, y_height, in_style)
 {
 	Caption = in_caption;
 
@@ -1188,45 +1554,76 @@ Button::Button(std::string in_caption, int x_coord, int y_coord, void (*in_funct
 	Type = GT_BUTTON;
 }
 
-void Button::CalculateSize()
+int Button::DoRefreshSize()
 {
 	int w, h;
-	gr_get_string_size(&w, &h, (char *)Caption.c_str());
-	if(!(Style & GS_NOAUTORESIZEX))
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON)))
 	{
-		Coords[2] = Coords[0] + w;
+		IMG_INFO(GetCIEImageHandle(BCI_BUTTON), &w, &h);
+		if(!(Style & GS_NOAUTORESIZEX))
+		{
+			Coords[2] = Coords[0] + w;
+		}
+		if(!(Style & GS_NOAUTORESIZEY))
+		{
+			Coords[3] = Coords[1] + h;
+		}
 	}
-	if(!(Style & GS_NOAUTORESIZEY))
+	else
 	{
-		Coords[3] = Coords[1] + h;
+		gr_get_string_size(&w, &h, (char *)Caption.c_str());
+		if(!(Style & GS_NOAUTORESIZEX))
+		{
+			Coords[2] = Coords[0] + w;
+		}
+		if(!(Style & GS_NOAUTORESIZEY))
+		{
+			Coords[3] = Coords[1] + h;
+		}
 	}
 
-	if(Parent!=NULL)Parent->CalculateSize();
+	return OF_TRUE;
 }
 
 void Button::DoDraw(float frametime)
 {
-	if(Status == 0)
-		gr_set_color_fast(&Color_text_normal);
-	else if(Status & GST_MOUSE_OVER)
-		gr_set_color_fast(&Color_text_active);
-	else
-		gr_set_color_fast(&Color_text_selected);
-	draw_open_rect(Coords[0], Coords[1], Coords[2], Coords[3], false);
+	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON)))
+	{
+		IMG_SET(GetCIEImageHandle(BCI_BUTTON));
 
-	int half_x, half_y;
-	gr_get_string_size(&half_x, &half_y, (char *)Caption.c_str());
-	half_x = Coords[0] +(((Coords[2]-Coords[0]) - half_x) / 2);
-	half_y = Coords[1] +(((Coords[3]-Coords[1]) - half_y) / 2);
-	gr_string(half_x, half_y, (char *)Caption.c_str(), false);
-	gr_set_color_fast(&Color_red);
+		if((Status & GST_MOUSE_OVER) && IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_M)))
+			IMG_SET(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_M));
+		else if((Status & GST_MOUSE_LEFT_BUTTON) && IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_C)))
+			IMG_SET(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_C));
+		else if((Style & BS_STICKY) && IsDown && IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_S)))
+			IMG_SET(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_S));
+
+		IMG_DRAW(Coords[0], Coords[1]);
+	}
+	else
+	{
+		if(Status == 0)
+			gr_set_color_fast(&Color_text_normal);
+		else if(Status & GST_MOUSE_OVER)
+			gr_set_color_fast(&Color_text_active);
+		else
+			gr_set_color_fast(&Color_text_selected);
+		draw_open_rect(Coords[0], Coords[1], Coords[2], Coords[3], false);
+
+		int half_x, half_y;
+		gr_get_string_size(&half_x, &half_y, (char *)Caption.c_str());
+		half_x = Coords[0] +(((Coords[2]-Coords[0]) - half_x) / 2);
+		half_y = Coords[1] +(((Coords[3]-Coords[1]) - half_y) / 2);
+		gr_string(half_x, half_y, (char *)Caption.c_str(), false);
+	}
 }
 
 int Button::DoMouseDown(float frametime)
 {
-	Globals->SetActiveObject(this);
+	OwnerSystem->SetActiveObject(this);
 
-	IsDown = !IsDown;
+	if(!(Style & BS_STICKY))
+		IsDown = true;
 	return OF_TRUE;
 }
 
@@ -1238,6 +1635,8 @@ int Button::DoMouseUp(float frametime)
 	}
 	if(!(Style & BS_STICKY))
 		IsDown = false;
+	else
+		IsDown = !IsDown;
 
 	return OF_TRUE;
 }
@@ -1302,8 +1701,8 @@ void Tree::CalcItemsSize(TreeItem *items, int DrawData[4])
 			//Or at least this should be called from that
 			if(((DrawData[2] + h) > Coords[3] && (Style & GS_NOAUTORESIZEY))
 				|| (temp_largest > Coords[2] && (Style & GS_NOAUTORESIZEX))
-				//|| ((Coords[0] + w) > Globals->Guiobjects.Coords[2])
-				//|| ((Coords[1] + h) > Globals->Guiobjects.Coords[3])
+				//|| ((Coords[0] + w) > OwnerSystem->Guiobjects.Coords[2])
+				//|| ((Coords[1] + h) > OwnerSystem->Guiobjects.Coords[3])
 				)
 			{
 				DrawData[3] = 1;
@@ -1343,7 +1742,7 @@ void Tree::CalcItemsSize(TreeItem *items, int DrawData[4])
 	}
 }
 
-void Tree::CalculateSize()
+int Tree::DoRefreshSize()
 {
 	//DrawData
 	//0 - indent
@@ -1375,11 +1774,11 @@ void Tree::CalculateSize()
 		Coords[2] = Coords[0] + DrawData[1];
 	}
 
-	if(Parent!=NULL)Parent->CalculateSize();
+	return OF_TRUE;
 }
 
-Tree::Tree(int x_coord, int y_coord, void* in_associateditem, int x_width, int y_height, int in_style)
-:GUIObject(x_coord, y_coord, x_width, y_height, in_style)
+Tree::Tree(std::string in_name, int x_coord, int y_coord, void* in_associateditem, int x_width, int y_height, int in_style)
+:GUIObject(in_name, x_coord, y_coord, x_width, y_height, in_style)
 {
 
 	AssociatedItem = in_associateditem;
@@ -1429,10 +1828,10 @@ TreeItem* Tree::HitTest(TreeItem *items)
 
 	for(TreeItem *tip = (TreeItem*)GET_FIRST(items);tip != END_OF_LIST(items); tip = (TreeItem*)GET_NEXT(tip))
 	{
-		if(Globals->GetMouseX() >= tip->Coords[0]
-			&& Globals->GetMouseX() <= tip->Coords[2]
-			&& Globals->GetMouseY() >= tip->Coords[1]
-			&& Globals->GetMouseY() <= tip->Coords[3])
+		if(OwnerSystem->GetMouseX() >= tip->Coords[0]
+			&& OwnerSystem->GetMouseX() <= tip->Coords[2]
+			&& OwnerSystem->GetMouseY() >= tip->Coords[1]
+			&& OwnerSystem->GetMouseY() <= tip->Coords[3])
 			{
 				hti = tip;
 			}
@@ -1458,23 +1857,26 @@ int Tree::DoMouseOver(float frametime)
 
 int Tree::DoMouseDown(float frametime)
 {
-	Globals->SetActiveObject(this);
+	OwnerSystem->SetActiveObject(this);
 	return OF_TRUE;
 }
 
 int Tree::DoMouseUp(float frametime)
 {
-	Globals->SetActiveObject(this);
+	OwnerSystem->SetActiveObject(this);
 
 	if(HighlightedItem != NULL)
 	{
 		SelectedItem = HighlightedItem;
 		SelectedItem->ShowChildren = !SelectedItem->ShowChildren;
+		if(NOT_EMPTY(&SelectedItem->Children))
+		{
+			OnRefreshSize();	//Unfortunately
+		}
 		if(SelectedItem->Function != NULL)
 		{
 			SelectedItem->Function(this);
 		}
-		CalculateSize();	//Unfortunately
 	}
 
 	return OF_TRUE;
@@ -1516,7 +1918,7 @@ TreeItem* Tree::AddItem(TreeItem *parent, std::string in_name, void *in_data, bo
 	else
 		list_append(&Items, ni);
 
-	CalculateSize();
+	OnRefreshSize();
 	return ni;
 }
 /*
@@ -1530,7 +1932,7 @@ void Tree::LoadItemList(MenuItem *in_list, unsigned int count)
 }*/
 
 //*****************************Text*******************************
-void Text::CalculateSize()
+int Text::DoRefreshSize()
 {
 	int width;
 	if(Style & GS_NOAUTORESIZEX)
@@ -1557,7 +1959,10 @@ void Text::CalculateSize()
 	//Resize along the Y axis
 	if(Style & GS_NOAUTORESIZEY)
 	{
-		NumLines = (Coords[3] - Coords[1]) / gr_get_font_height();
+		int new_height = (Coords[3] - Coords[1]) / gr_get_font_height();
+
+		if(new_height < NumLines)
+			NumLines = new_height;
 	}
 	else
 	{
@@ -1593,7 +1998,7 @@ void Text::CalculateSize()
 	}
 
 	//Tell the parent to recalculate its size too
-	if(Parent!=NULL)Parent->CalculateSize();
+	return OF_TRUE;
 }
 
 int Text::DoMouseDown(float frametime)
@@ -1601,7 +2006,7 @@ int Text::DoMouseDown(float frametime)
 	//Make this the active object
 	if(Style & T_EDITTABLE)
 	{
-		Globals->SetActiveObject(this);
+		OwnerSystem->SetActiveObject(this);
 
 		return OF_TRUE;
 	}
@@ -1613,7 +2018,7 @@ int Text::DoMouseDown(float frametime)
 
 void Text::DoDraw(float frametime)
 {
-	if(Globals->GetActiveObject() != this)
+	if(OwnerSystem->GetActiveObject() != this)
 		gr_set_color_fast(&Color_text_normal);
 	else
 		gr_set_color_fast(&Color_text_active);
@@ -1642,7 +2047,7 @@ int Text::DoKeyPress(float frametime)
 	if(!(Style & T_EDITTABLE))
 		return OF_FALSE;
 
-	switch(Globals->GetKeyPressed())
+	switch(OwnerSystem->GetKeyPressed())
 	{
 		case KEY_BACKSP:
 			Content = Content.substr(0, Content.length() - 1);
@@ -1651,21 +2056,21 @@ int Text::DoKeyPress(float frametime)
 			if(SaveType & T_ST_ONENTER)
 			{
 				if(Save())
-					Globals->SetActiveObject(Parent);
+					OwnerSystem->SetActiveObject(Parent);
 				else
 					Load();
 			}
 			break;
 		case KEY_ESC:
 			Load();
-			Globals->SetActiveObject(Parent);
+			OwnerSystem->SetActiveObject(Parent);
 			break;
 		default:
 			{
 				//Figure out what key, exactly, we have
-				int symbol = keypad_to_ascii(Globals->GetKeyPressed());
+				int symbol = keypad_to_ascii(OwnerSystem->GetKeyPressed());
 				if(symbol == -1)
-					symbol = key_to_ascii(Globals->GetKeyPressed());
+					symbol = key_to_ascii(OwnerSystem->GetKeyPressed());
 				//Is it ok with us?
 				if(iscntrl(symbol))
 				{
@@ -1700,12 +2105,12 @@ int Text::DoKeyPress(float frametime)
 				}
 			}
 	}
-	CalculateSize();
+	OnRefreshSize();
 	return OF_TRUE;
 }
 
-Text::Text(std::string in_content, int x_coord, int y_coord, int x_width, int y_height, int in_style)
-:GUIObject(x_coord, y_coord, x_width, y_height, in_style)
+Text::Text(std::string in_name, std::string in_content, int x_coord, int y_coord, int x_width, int y_height, int in_style)
+:GUIObject(in_name, x_coord, y_coord, x_width, y_height, in_style)
 {
 	Content = in_content;
 
@@ -1721,7 +2126,7 @@ void Text::SetText(std::string in_content)
 {
 	Content = in_content;
 
-	CalculateSize();
+	OnRefreshSize();
 }
 
 void Text::SetText(int the_int)
@@ -1730,7 +2135,7 @@ void Text::SetText(int the_int)
 	itoa(the_int, buf, 10);
 	Content = buf;
 
-	CalculateSize();
+	OnRefreshSize();
 }
 
 void Text::SetText(float the_float)
@@ -1739,14 +2144,14 @@ void Text::SetText(float the_float)
 	sprintf(buf, "%f", the_float);
 	Content = buf;
 
-	CalculateSize();
+	OnRefreshSize();
 }
 
 void Text::AddLine(std::string in_line)
 {
 	Content += in_line;
 
-	CalculateSize();
+	OnRefreshSize();
 }
 
 void Text::SetSaveLoc(int *int_ptr, int save_method, int max_value, int min_value)
@@ -1935,7 +2340,7 @@ void Text::Load()
 //*****************************Checkbox*******************************
 
 Checkbox::Checkbox(std::string in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller), int x_width, int y_height, int in_style)
-:GUIObject(x_coord, y_coord, x_width, y_height, in_style)
+:GUIObject(in_label, x_coord, y_coord, x_width, y_height, in_style)
 {
 	Label = in_label;
 
@@ -1949,7 +2354,7 @@ Checkbox::Checkbox(std::string in_label, int x_coord, int y_coord, void (*in_fun
 	Type = GT_CHECKBOX;
 }
 
-void Checkbox::CalculateSize()
+int Checkbox::DoRefreshSize()
 {
 	int w, h,tw,th;
 	gr_get_string_size(&w, &h, (char *)Label.c_str());
@@ -1974,7 +2379,7 @@ void Checkbox::CalculateSize()
 		Coords[3] = Coords[1] + th;
 	}
 
-	if(Parent!=NULL)Parent->CalculateSize();
+	return OF_TRUE;
 }
 
 void Checkbox::DoMove(int dx, int dy)
@@ -2004,32 +2409,32 @@ void Checkbox::DoDraw(float frametime)
 
 int Checkbox::DoMouseOver(float frametime)
 {
-	if(Globals->GetMouseX() >= CheckCoords[0]
-	&& Globals->GetMouseX() <= CheckCoords[2]
-	&& Globals->GetMouseY() >= CheckCoords[1]
-	&& Globals->GetMouseY() <= CheckCoords[3])
+	if(OwnerSystem->GetMouseX() >= CheckCoords[0]
+	&& OwnerSystem->GetMouseX() <= CheckCoords[2]
+	&& OwnerSystem->GetMouseY() >= CheckCoords[1]
+	&& OwnerSystem->GetMouseY() <= CheckCoords[3])
 		HighlightStatus = 1;
 	return OF_TRUE;
 }
 
 int Checkbox::DoMouseDown(float frametime)
 {
-	Globals->SetActiveObject(this);
+	OwnerSystem->SetActiveObject(this);
 
-	if(Globals->GetMouseX() >= CheckCoords[0]
-	&& Globals->GetMouseX() <= CheckCoords[2]
-	&& Globals->GetMouseY() >= CheckCoords[1]
-	&& Globals->GetMouseY() <= CheckCoords[3])
+	if(OwnerSystem->GetMouseX() >= CheckCoords[0]
+	&& OwnerSystem->GetMouseX() <= CheckCoords[2]
+	&& OwnerSystem->GetMouseY() >= CheckCoords[1]
+	&& OwnerSystem->GetMouseY() <= CheckCoords[3])
 		HighlightStatus = 2;
 	return OF_TRUE;
 }
 
 int Checkbox::DoMouseUp(float frametime)
 {
-	if(Globals->GetMouseX() >= CheckCoords[0]
-	&& Globals->GetMouseX() <= CheckCoords[2]
-	&& Globals->GetMouseY() >= CheckCoords[1]
-	&& Globals->GetMouseY() <= CheckCoords[3])
+	if(OwnerSystem->GetMouseX() >= CheckCoords[0]
+	&& OwnerSystem->GetMouseX() <= CheckCoords[2]
+	&& OwnerSystem->GetMouseY() >= CheckCoords[1]
+	&& OwnerSystem->GetMouseY() <= CheckCoords[3])
 	{
 		HighlightStatus = 1;
 		if(function != NULL)
@@ -2063,4 +2468,129 @@ int Checkbox::DoMouseOut(float frametime)
 	HighlightStatus = 0;
 
 	return OF_TRUE;
+}
+
+//*****************************ImageAnim*******************************
+ImageAnim::ImageAnim(std::string in_name, std::string in_imagename, int x_coord, int y_coord, int x_width, int y_width, int in_style)
+:GUIObject(in_name, x_coord, y_coord, x_width, y_width, in_style)
+{
+	//Load the image
+	IsSet = false;
+}
+
+void ImageAnim::DoDraw(float frametime)
+{
+	if(PlayType != PT_STOPPED)
+	{
+		if(PlayType == PT_PLAYING)
+			ElapsedTime += frametime;
+		else if(PlayType == PT_PLAYING_REVERSE)
+			ElapsedTime -= frametime;
+
+		Progress = ElapsedTime/TotalTime;
+	}
+
+	int CurrentFrame = fl2i(Progress * NumFrames);
+	if(Progress > 1.0f)
+	{
+		if(ImageFlags & IF_BOUNCE)
+		{
+			Progress = 1.0f;
+			CurrentFrame = NumFrames;
+			PlayType = PT_PLAYING_REVERSE;
+		}
+		else if(ImageFlags & IF_REPEAT)
+		{
+			Progress = 0.0f;
+			CurrentFrame = 0;
+			PlayType = PT_PLAYING;
+		}
+		else
+		{
+			Progress = 1.0f;
+			CurrentFrame = NumFrames;
+			PlayType = PT_STOPPED;
+		}
+	}
+	else if(Progress < 1.0f)
+	{
+		if(ImageFlags & IF_BOUNCE)
+		{
+			Progress = 0.0f;
+			CurrentFrame = 0;
+			PlayType = PT_PLAYING;
+		}
+		else if(ImageFlags & IF_REPEAT && ImageFlags & (IF_REVERSED))
+		{
+			Progress = 1.0f;
+			CurrentFrame = NumFrames;
+			PlayType = PT_PLAYING_REVERSE;
+		}
+		else
+		{
+			Progress = 0.0f;
+			CurrentFrame = 0;
+			PlayType = PT_STOPPED;
+		}
+	}
+
+	IMG_SET_FRAME(ImageHandle, CurrentFrame);
+	IMG_DRAW(Coords[0], Coords[1]);
+}
+
+int ImageAnim::DoRefreshSize()
+{
+	//TODO: Fill this in
+	return OF_FALSE;
+}
+
+void ImageAnim::SetImage(std::string in_imagename)
+{
+	if(in_imagename.size())
+	{
+		ImageHandle = IMG_LOAD_ANIM((char*)in_imagename.c_str(), &NumFrames, &FPS);
+		TotalTime = (float) (NumFrames/FPS);
+		if(IMG_HANDLE_IS_INVALID(ImageHandle))
+		{
+			ImageHandle = IMG_LOAD((char*)in_imagename.c_str());
+			if(IMG_HANDLE_IS_VALID(ImageHandle))
+				NumFrames = 1;
+			else
+				NumFrames = 0;
+			FPS = 0;
+			TotalTime = 0.0f;
+		}
+	}
+
+	//This takes care of setting up the play-flags
+	Stop();
+
+	IsSet = true;
+	OnRefreshSize();
+}
+
+void ImageAnim::Play(bool in_isreversed)
+{
+	if(ImageFlags & IF_REVERSED)
+		PlayType = PT_PLAYING;
+
+}
+
+void ImageAnim::Pause()
+{
+	if(PlayType == PT_PLAYING)
+		PlayType = PT_STOPPED;
+	else
+		PlayType = PT_STOPPED_REVERSE;
+}
+
+void ImageAnim::Stop()
+{
+	if(ImageFlags & IF_REVERSED)
+		PlayType = PT_STOPPED_REVERSE;
+	else
+		PlayType = PT_STOPPED;
+
+	Progress = 0.0f;
+	ElapsedTime = 0.0f;
 }
