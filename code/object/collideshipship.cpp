@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-01-11 21:38:49 $
+ * $Revision: 2.10 $
+ * $Date: 2005-01-26 05:42:37 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.8  2004/07/26 20:47:45  Kazan
  * remove MCD complete
  *
@@ -601,7 +606,7 @@ int ships_are_docking(object *objp1, object *objp2)
 	}
 	*/
 
-	if (dock_check_find_docked_object(objp1, objp2)) {
+	if (dock_check_find_direct_docked_object(objp1, objp2)) {
 		return 1;
 	}
 
