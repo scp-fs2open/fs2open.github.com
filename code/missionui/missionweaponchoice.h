@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.h $
- * $Revision: 2.6 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-27 14:09:27 $
+ * $Author: Goober5000 $
  *
  * Header file for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/08/11 05:06:28  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.5  2004/07/17 18:46:08  taylor
  * various OGL and memory leak fixes
  *
@@ -168,14 +171,6 @@ struct ship_weapon;
 #define ICON_SHIP_SECONDARY_2		37
 #define ICON_SHIP_SECONDARY_3		38
 
-// mask region for weapon loadout specific buttons
-#define PRIMARY_SCROLL_UP					27	
-#define PRIMARY_SCROLL_DOWN				26
-#define SECONDARY_SCROLL_UP				9
-#define SECONDARY_SCROLL_DOWN				8
-#define WL_RESET_BUTTON_MASK				39
-
-#define NUM_WEAPON_REGIONS		(NUM_COMMON_REGIONS + 32)
 
 void weapon_select_init();
 void weapon_select_common_init();

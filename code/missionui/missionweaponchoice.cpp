@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-02-18 09:03:34 $
+ * $Revision: 2.38 $
+ * $Date: 2005-02-27 14:09:27 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/02/18 09:03:34  Goober5000
+ * really fixed the build warning
+ * --Goober5000
+ *
  * Revision 2.36  2005/02/18 05:24:26  wmcoolmon
  * Attempt to get rid of compiler warnings
  *
@@ -658,55 +662,22 @@ typedef struct wl_bitmap_group
 #define WEAPON_ICON_FRAME_SELECTED			2
 #define WEAPON_ICON_FRAME_DISABLED			3
 
+
+#define NUM_WEAPON_SETTINGS	2
+
+#define MAX_WEAPON_BUTTONS	8
+#define MIN_WEAPON_BUTTONS	7
+#define NUM_WEAPON_BUTTONS	(Uses_apply_all_button ? MAX_WEAPON_BUTTONS : MIN_WEAPON_BUTTONS)
+
 // Weapn loadout specific buttons
-#define NUM_WEAPON_BUTTONS						7
 #define WL_BUTTON_SCROLL_PRIMARY_UP			0
 #define WL_BUTTON_SCROLL_PRIMARY_DOWN		1
 #define WL_BUTTON_SCROLL_SECONDARY_UP		2
-#define WL_BUTTON_SCROLL_SECONDARY_DOWN	3
-#define WL_BUTTON_RESET							4
-#define WL_BUTTON_DUMMY							5
-#define WL_BUTTON_MULTI_LOCK					6
-UI_WINDOW	Weapon_ui_window;
-//UI_BUTTON	Weapon_buttons[NUM_WEAPON_BUTTONS];
-
-static char *Wl_mask_single[GR_NUM_RESOLUTIONS] = {
-	"weaponloadout-m",
-	"2_weaponloadout-m"
-};
-
-static char *Wl_mask_multi[GR_NUM_RESOLUTIONS] = {
-	"weaponloadoutmulti-m",
-	"2_weaponloadoutmulti-m"
-};
-
-static char *Wl_loadout_select_mask[GR_NUM_RESOLUTIONS] = {
-	"weaponloadout-m",
-	"2_weaponloadout-m"
-};
-
-
-static char *Weapon_select_background_fname[GR_NUM_RESOLUTIONS] = {
-	"WeaponLoadout",
-	"2_WeaponLoadout"
-};
-
-static char *Weapon_select_multi_background_fname[GR_NUM_RESOLUTIONS] = {
-	"WeaponLoadoutMulti",
-	"2_WeaponLoadoutMulti"
-};
-
-int Weapon_select_background_bitmap;	// bitmap for weapon select brackground
-
-static MENU_REGION	Weapon_select_region[NUM_WEAPON_REGIONS];
-static int				Num_weapon_select_regions;
-
-// Mask bitmap pointer and Mask bitmap_id
-static bitmap*	WeaponSelectMaskPtr;		// bitmap pointer to the weapon select mask bitmap
-static ubyte*	WeaponSelectMaskData;	// pointer to actual bitmap data
-static int		Weaponselect_mask_w, Weaponselect_mask_h;
-static int		WeaponSelectMaskBitmap;	// bitmap id of the weapon select mask bitmap
-static int		Weapon_slot_bitmap;
+#define WL_BUTTON_SCROLL_SECONDARY_DOWN		3
+#define WL_BUTTON_RESET						4
+#define WL_BUTTON_DUMMY						5
+#define WL_BUTTON_MULTI_LOCK				6
+#define WL_BUTTON_APPLY_ALL					7
 
 
 // convenient struct for handling all button controls
@@ -719,30 +690,107 @@ struct wl_buttons {
 	wl_buttons(char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
 };
 
-static wl_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_WEAPON_BUTTONS] = {
+static wl_buttons Buttons[GR_NUM_RESOLUTIONS][MAX_WEAPON_BUTTONS] = {
 	{
-		wl_buttons("WLB_26",		24,	125,		-1,		-1,	26),
-		wl_buttons("WLB_27",		24,	276,		-1,		-1,	27),
-		wl_buttons("WLB_08",		24,	303,		-1,		-1,	8),
-		wl_buttons("WLB_09",		24,	454,		-1,		-1,	9),
-		wl_buttons("ssb_39",		571,	347,		-1,		-1,	39),
-		wl_buttons("ssb_39",		0,		0,			-1,		-1,	99),
-		wl_buttons("TSB_34",		603,	374,		-1,		-1,	34)
+		wl_buttons("WLB_26",		24,		125,	-1,		-1,		26),	// WL_BUTTON_SCROLL_PRIMARY_UP
+		wl_buttons("WLB_27",		24,		276,	-1,		-1,		27),	// WL_BUTTON_SCROLL_PRIMARY_DOWN
+		wl_buttons("WLB_08",		24,		303,	-1,		-1,		8),		// WL_BUTTON_SCROLL_SECONDARY_UP
+		wl_buttons("WLB_09",		24,		454,	-1,		-1,		9),		// WL_BUTTON_SCROLL_SECONDARY_UP
+		wl_buttons("ssb_39",		571,	347,	-1,		-1,		39),	// WL_BUTTON_RESET
+		wl_buttons("ssb_39",		0,		0,		-1,		-1,		99),	// WL_BUTTON_DUMMY
+		wl_buttons("TSB_34",		603,	374,	-1,		-1,		34),	// WL_BUTTON_MULTI_LOCK
+		wl_buttons("WLB_40",		0,		90,		-1,		-1,		40)		// WL_BUTTON_APPLY_ALL
 	},
 	{
-		wl_buttons("2_WLB_26",	39,	200,		-1,		-1,	26),
-		wl_buttons("2_WLB_27",	39,	442,		-1,		-1,	27),
-		wl_buttons("2_WLB_08",	39,	485,		-1,		-1,	8),
-		wl_buttons("2_WLB_09",	39,	727,		-1,		-1,	9),
-		wl_buttons("2_ssb_39",	913,	556,		-1,		-1,	39),
-		wl_buttons("2_ssb_39",	0,		0,			-1,		-1,	99),
-		wl_buttons("2_TSB_34",	966,	599,		-1,		-1,	34)
+		wl_buttons("2_WLB_26",		39,		200,	-1,		-1,		26),
+		wl_buttons("2_WLB_27",		39,		442,	-1,		-1,		27),
+		wl_buttons("2_WLB_08",		39,		485,	-1,		-1,		8),
+		wl_buttons("2_WLB_09",		39,		727,	-1,		-1,		9),
+		wl_buttons("2_ssb_39",		913,	556,	-1,		-1,		39),
+		wl_buttons("2_ssb_39",		0,		0,		-1,		-1,		99),
+		wl_buttons("2_TSB_34",		966,	599,	-1,		-1,		34),
+		wl_buttons("2_WLB_40",		0,		138,	-1,		-1,		40)
 	}
 };
 
-//static wl_bitmap_group wl_button_bitmaps[NUM_WEAPON_BUTTONS];
 
-static int Weapon_button_scrollable[NUM_WEAPON_BUTTONS] = {0, 0, 0, 0, 0, 0, 0};
+static char *Wl_mask_single[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+	{
+		"weaponloadout-m",
+		"2_weaponloadout-m"
+	},
+	{
+		"weaponloadout-mb",
+		"2_weaponloadout-mb"
+	}
+};
+
+static char *Wl_mask_multi[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+	{
+		"weaponloadoutmulti-m",
+		"2_weaponloadoutmulti-m"
+	},
+
+	{
+		"weaponloadoutmulti-mb",
+		"2_weaponloadoutmulti-mb"
+	}
+};
+
+static char *Wl_loadout_select_mask[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+	{
+		"weaponloadout-m",
+		"2_weaponloadout-m"
+	},
+	{
+		"weaponloadout-mb",
+		"2_weaponloadout-mb"
+	}
+};
+
+
+static char *Weapon_select_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+	{
+		"WeaponLoadout",
+		"2_WeaponLoadout"
+	},
+	{
+		"WeaponLoadoutb",
+		"2_WeaponLoadoutb"
+	}
+};
+
+static char *Weapon_select_multi_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+	{
+		"WeaponLoadoutMulti",
+		"2_WeaponLoadoutMulti"
+	},
+	{
+		"WeaponLoadoutMultib",
+		"2_WeaponLoadoutMultib"
+	}
+};
+
+static int Uses_apply_all_button = 0;
+
+int Weapon_select_background_bitmap;	// bitmap for weapon select brackground
+
+static MENU_REGION	Weapon_select_region[NUM_COMMON_REGIONS + 27];	// see initialization
+static int				Num_weapon_select_regions;
+
+// Mask bitmap pointer and Mask bitmap_id
+static bitmap*	WeaponSelectMaskPtr;		// bitmap pointer to the weapon select mask bitmap
+static ubyte*	WeaponSelectMaskData;	// pointer to actual bitmap data
+static int		Weaponselect_mask_w, Weaponselect_mask_h;
+static int		WeaponSelectMaskBitmap;	// bitmap id of the weapon select mask bitmap
+static int		Weapon_slot_bitmap;
+
+UI_WINDOW	Weapon_ui_window;
+//UI_BUTTON	Weapon_buttons[MAX_WEAPON_BUTTONS];
+
+//static wl_bitmap_group wl_button_bitmaps[MAX_WEAPON_BUTTONS];
+
+static int Weapon_button_scrollable[MAX_WEAPON_BUTTONS] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 #define MAX_WEAPON_ICONS_ON_SCREEN 8
 
@@ -1134,7 +1182,7 @@ void wl_unpause_anim()
 void weapon_button_do(int i)
 {
 	switch ( i ) {
-			case PRIMARY_SCROLL_UP:
+			case WL_BUTTON_SCROLL_PRIMARY_UP:
 				if ( common_scroll_up_pressed(&Plist_start, Plist_size, 4) ) {
 					gamesnd_play_iface(SND_SCROLL);
 				} else {
@@ -1142,7 +1190,7 @@ void weapon_button_do(int i)
 				}
 			break;
 
-			case PRIMARY_SCROLL_DOWN:
+			case WL_BUTTON_SCROLL_PRIMARY_DOWN:
 				if ( common_scroll_down_pressed(&Plist_start, Plist_size, 4) ) {
 					gamesnd_play_iface(SND_SCROLL);
 				} else {
@@ -1150,7 +1198,7 @@ void weapon_button_do(int i)
 				}
 			break;
 
-			case SECONDARY_SCROLL_UP:
+			case WL_BUTTON_SCROLL_SECONDARY_UP:
 				if ( common_scroll_up_pressed(&Slist_start, Slist_size, 4) ) {
 					gamesnd_play_iface(SND_SCROLL);
 				} else {
@@ -1158,7 +1206,7 @@ void weapon_button_do(int i)
 				}
 			break;
 
-			case SECONDARY_SCROLL_DOWN:
+			case WL_BUTTON_SCROLL_SECONDARY_DOWN:
 				if ( common_scroll_down_pressed(&Slist_start, Slist_size, 4) ) {
 					gamesnd_play_iface(SND_SCROLL);
 				} else {
@@ -1166,7 +1214,7 @@ void weapon_button_do(int i)
 				}
 			break;
 
-			case WL_RESET_BUTTON_MASK:
+			case WL_BUTTON_RESET:
 				wl_reset_to_defaults();
 				break;
 
@@ -1184,7 +1232,8 @@ void weapon_button_do(int i)
 #endif
 
 			default:
-			break;
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "Button %d is not yet implemented", i);
+				break;
 	}
 }
 
@@ -1203,11 +1252,7 @@ void weapon_check_buttons()
 		b = &Buttons[gr_screen.res][i];
 		
 		if ( b->button.pressed() ) {
-			if(i == WL_BUTTON_MULTI_LOCK){
-				weapon_button_do(i);
-			} else {
-				weapon_button_do(b->hotspot);
-			}
+			weapon_button_do(i);
 		}
 	}
 }
@@ -2605,8 +2650,20 @@ void weapon_select_init()
 
 	nprintf(("Alan","entering weapon_select_init()\n"));
 	common_select_init();
-	
-	WeaponSelectMaskBitmap = bm_load(Wl_loadout_select_mask[gr_screen.res]);
+
+
+	// Goober5000
+	// first determine which layout to use
+	Uses_apply_all_button = 1;	// assume true
+	Weapon_select_background_bitmap = bm_load((Game_mode & GM_MULTIPLAYER) ? Weapon_select_multi_background_fname[Uses_apply_all_button][gr_screen.res] : Weapon_select_background_fname[Uses_apply_all_button][gr_screen.res]);
+	if (Weapon_select_background_bitmap < 0)	// failed to load
+	{
+		Uses_apply_all_button = 0;	// nope, sorry
+		Weapon_select_background_bitmap = bm_load((Game_mode & GM_MULTIPLAYER) ? Weapon_select_multi_background_fname[Uses_apply_all_button][gr_screen.res] : Weapon_select_background_fname[Uses_apply_all_button][gr_screen.res]);
+	}
+
+
+	WeaponSelectMaskBitmap = bm_load(Wl_loadout_select_mask[Uses_apply_all_button][gr_screen.res]);
 	if (WeaponSelectMaskBitmap < 0) {
 		if (gr_screen.res == GR_640) {
 			Error(LOCATION,"Could not load in 'weaponloadout-m'!");
@@ -2672,16 +2729,9 @@ void weapon_select_init()
 	Weapon_ui_window.create( 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );
 
 	if(Game_mode & GM_MULTIPLAYER){
-		Weapon_ui_window.set_mask_bmap(Wl_mask_multi[gr_screen.res]);
+		Weapon_ui_window.set_mask_bmap(Wl_mask_multi[Uses_apply_all_button][gr_screen.res]);
 	} else {
-		Weapon_ui_window.set_mask_bmap(Wl_mask_single[gr_screen.res]);
-	}
-
-	// initialize background bitmap
-	if(Game_mode & GM_MULTIPLAYER) {
-		Weapon_select_background_bitmap = bm_load(Weapon_select_multi_background_fname[gr_screen.res]);
-	} else {
-		Weapon_select_background_bitmap = bm_load(Weapon_select_background_fname[gr_screen.res]);
+		Weapon_ui_window.set_mask_bmap(Wl_mask_single[Uses_apply_all_button][gr_screen.res]);
 	}
 
 	Weapon_ui_window.tooltip_handler = wl_tooltip_handler;
