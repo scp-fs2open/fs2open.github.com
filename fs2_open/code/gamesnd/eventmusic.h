@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.3 $
- * $Date: 2003-03-22 06:06:22 $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-29 05:18:17 $
  * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/22 06:06:22  Goober5000
+ * changed event_sexp_change_music to event_change_sexp_soundtrack
+ * --Goober5000
+ *
  * Revision 2.2  2003/01/25 04:17:39  Goober5000
  * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
  * --Ian Warfield
@@ -180,7 +184,7 @@ typedef struct menu_music {
 	char filename[MAX_FILENAME_LEN];	// name music is stored on disk as
 } menu_music;
 
-#define MAX_SPOOLED_MUSIC	20
+#define MAX_SPOOLED_MUSIC	30			// max number of briefing/mainhall/credits tracks
 
 extern menu_music Spooled_music[MAX_SPOOLED_MUSIC];
 extern int Num_music_files;
@@ -192,7 +196,7 @@ typedef struct tagSOUNDTRACK_INFO {
 	char	pattern_fnames[MAX_PATTERNS][MAX_FILENAME_LEN];
 } SOUNDTRACK_INFO;
 
-#define MAX_SOUNDTRACKS	25
+#define MAX_SOUNDTRACKS		30			// max number of battle tracks
 
 extern SOUNDTRACK_INFO Soundtracks[MAX_SOUNDTRACKS];
 extern int Num_soundtracks;
