@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.137 $
- * $Date: 2004-10-15 09:21:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.138 $
+ * $Date: 2004-10-31 22:04:33 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.137  2004/10/15 09:21:55  Goober5000
+ * cleaned up some sexp stuff and added wing capability to kamikaze sexp
+ * --Goober5000
+ *
  * Revision 2.136  2004/08/20 05:13:08  Kazan
  * wakka wakka - fix minor booboo
  *
@@ -2507,6 +2511,7 @@ strcpy(parse_error_text, temp_error);
 	sip->thruster_glow2a = -1;
 	sip->thruster_glow3 = -1;
 	sip->thruster_glow3a = -1;
+	sip->splodeing_texture = -1;
 //	sip->thruster_particle_bitmap01 = -1;
 
 //	strcpy(sip->thruster_particle_bitmap01_name,"thrusterparticle");
@@ -11884,7 +11889,7 @@ void ship_page_in()
 // Goober5000 - called from ship_page_in()
 void ship_page_in_model_textures(int modelnum)
 {
-	int i;
+	int i, j;
 	polymodel *pm = model_get(modelnum);
 				
 	for (i=0; i<pm->n_textures; i++ )
@@ -11921,8 +11926,8 @@ void ship_page_in_model_textures(int modelnum)
 		}
 
 		if(pm->n_glows)
-			for(int i = 0; i<pm->n_glows; i++){
-				glow_bank *bank = &pm->glows[i];
+			for(j = 0; j<pm->n_glows; j++){
+				glow_bank *bank = &pm->glows[j];
 				if(bank->glow_bitmap >-1)
 					bm_page_in_texture( bank->glow_bitmap);
 				if(bank->glow_neb_bitmap >-1)
