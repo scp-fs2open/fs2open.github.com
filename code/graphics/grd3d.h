@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.13 $
- * $Date: 2004-07-01 01:12:31 $
+ * $Revision: 2.14 $
+ * $Date: 2004-07-05 05:09:19 $
  * $Author: bobboau $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/01 01:12:31  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.12  2004/06/28 02:13:07  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -146,19 +150,37 @@ struct line_list;
 
 void gr_d3d_exb_flush(int end_of_frame);
 
+extern DWORD 
+inital_state_block, 
+defuse_state_block, 
+glow_mapped_defuse_state_block, 
+nonmapped_specular_state_block, 
+glow_mapped_nonmapped_specular_state_block, 
+mapped_specular_state_block,
+cell_state_block, 
+glow_mapped_cell_state_block, 
+additive_glow_mapping_state_block, 
+//single_pass_specmapping_state_block, 
+//single_pass_glow_spec_mapping_state_block, 
+background_fog_state_block, 
+env_state_block, 
+cloak_state_block;
+
 void d3d_start_frame();
 void d3d_stop_frame();
-void d3d_set_initial_render_state()	;
-void set_stage_for_cell_shaded();
-void set_stage_for_cell_glowmapped_shaded();
-void set_stage_for_additive_glowmapped();
-void set_stage_for_defuse();
-void set_stage_for_glow_mapped_defuse();
-void set_stage_for_defuse_and_non_mapped_spec();
-void set_stage_for_glow_mapped_defuse_and_non_mapped_spec();
-bool set_stage_for_spec_mapped();
-bool set_stage_for_spec_glow_mapped();
-void set_stage_for_mapped_environment_mapping();
+void d3d_set_initial_render_state(bool set = true)	;
+void set_stage_for_defuse(bool set = true);
+void set_stage_for_glow_mapped_defuse(bool set = true);
+void set_stage_for_defuse_and_non_mapped_spec(bool set = true);
+void set_stage_for_glow_mapped_defuse_and_non_mapped_spec(bool set = true);
+bool set_stage_for_spec_mapped(bool set = true);
+void set_stage_for_cell_shaded(bool set = true);
+void set_stage_for_cell_glowmapped_shaded(bool set = true);
+void set_stage_for_additive_glowmapped(bool set = true);
+void set_stage_for_background_fog(bool set = true);
+bool set_stage_for_env_mapped(bool set = true);
+//void set_stage_for_single_pass_specmapping(int SAME, bool set = true);
+//void set_stage_for_single_pass_glow_specmapping(int SAME, bool set = true);
 
 void gr_d3d_flip();
 void gr_d3d_flip_cleanup();
@@ -181,7 +203,7 @@ void gr_d3d_filter_set(int filter);
 void gr_d3d_set_clear_color(int r, int g, int b);
 void gr_d3d_get_region(int front, int w, int h, ubyte *data);
 
-int gr_d3d_make_buffer(poly_list *list);
+int gr_d3d_make_buffer(poly_list *list, uint flags);
 void gr_d3d_destroy_buffer(int idx);
 void gr_d3d_render_buffer(int start, int n_prim, short* index_list);
 void gr_d3d_set_buffer(int idx);
@@ -211,3 +233,4 @@ void gr_d3d_set_texture_addressing(int);
 
 void gr_d3d_setup_background_fog(bool);
 #endif
+

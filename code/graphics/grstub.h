@@ -2,8 +2,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.5 $
- * $Date: 2004-06-28 02:13:07 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-05 05:09:19 $
  * $Author: bobboau $
  *
  * $NoKeywords: $
@@ -107,7 +107,7 @@ int stub_find_first_free_buffer() {return 0;}
 int stub_check_for_errors() {return 0;}
 int stub_mod_depth() {return 0;}
 uint stub_create_vbo(uint size, void** data) {return 0;}
-int gr_stub_make_buffer(poly_list *list) {return 0;}
+int gr_stub_make_buffer(poly_list *list, uint flags) {return 0;}
 void gr_stub_destroy_buffer(int idx) {}
 void gr_stub_render_buffer(int start, int n_prim, short* index_list) {}
 void gr_stub_set_buffer(int idx) {}

@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.2 $
- * $Date: 2004-06-28 02:13:07 $
+ * $Revision: 1.3 $
+ * $Date: 2004-07-05 05:09:19 $
  * $Author: bobboau $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/06/28 02:13:07  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 1.1  2004/05/24 07:25:32  taylor
  * filename case change
  *
@@ -48,7 +52,7 @@ void gr_opengl_start_clip_plane();
 void gr_opengl_end_clip_plane();
 
 void opengl_init_vertex_buffers();
-int gr_opengl_make_buffer(poly_list *list);
+int gr_opengl_make_buffer(poly_list *list, uint flags);
 void gr_opengl_destroy_buffer(int idx);
 void gr_opengl_set_buffer(int idx);
 void gr_opengl_render_buffer(int start, int n_prim, short* index_list);

@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.56 $
- * $Date: 2004-06-19 22:15:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.57 $
+ * $Date: 2004-07-05 05:09:15 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2004/06/19 22:15:48  wmcoolmon
+ * Added -nomotion debris command line option; also re-ordered categories.
+ *
  * Revision 2.55  2004/06/06 12:25:19  randomtiger
  * Added new compression option -pcx32dds, build posted in RSB forum.
  * Changed flag because of launcher bug, have fixed launcher bug, will distribute later.
@@ -513,6 +516,12 @@ extern int CmdLine_FRED2_NoWarn;
 extern int Cmdline_novbo;
 extern int Cmdline_snd_preload;
 extern int Cmdline_NoFPSCap;
+
+extern float Cmdline_max_subdivide;
+
+extern int Cmdline_alpha_env;
+extern int Cmdline_env;
+extern int Cmdline_decals;
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.49 $
- * $Date: 2004-05-25 00:37:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.50 $
+ * $Date: 2004-07-05 05:09:19 $
+ * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2004/05/25 00:37:26  wmcoolmon
+ * Updated function calls for VC7 use
+ *
  * Revision 2.48  2004/04/11 13:56:33  randomtiger
  * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
  *
@@ -2089,8 +2092,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	}
 
 	if(GLOWMAP < 0 || Cmdline_noglow){
-		d3d_SetTexture(1, NULL);
-		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	//	d3d_SetTexture(1, NULL);
+	//	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	}else{
 		gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
 		d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);

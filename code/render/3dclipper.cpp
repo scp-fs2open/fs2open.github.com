@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dClipper.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-08-30 14:49:01 $
- * $Author: phreak $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-05 05:09:21 $
+ * $Author: bobboau $
  *
  * Polygon clipping functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/08/30 14:49:01  phreak
+ * fixed some random specular lighting bugs
+ *
  * Revision 2.4  2003/08/16 03:52:24  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -216,8 +219,8 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 		tmp->u = on_pnt->u + (off_pnt->u-on_pnt->u) * ratio;
 		tmp->v = on_pnt->v + (off_pnt->v-on_pnt->v) * ratio;
 
-		tmp->env_u = on_pnt->env_u + (off_pnt->env_u-on_pnt->env_u) * ratio;
-		tmp->env_v = on_pnt->env_v + (off_pnt->env_v-on_pnt->env_v) * ratio;
+		tmp->u2 = on_pnt->u2 + (off_pnt->u2-on_pnt->u2) * ratio;
+		tmp->v2 = on_pnt->v2 + (off_pnt->v2-on_pnt->v2) * ratio;
 	}
 
 	if (flags & TMAP_FLAG_GOURAUD ) {

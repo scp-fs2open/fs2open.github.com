@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-05-12 22:49:13 $
- * $Author: phreak $
+ * $Revision: 2.16 $
+ * $Date: 2004-07-05 05:09:18 $
+ * $Author: bobboau $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/05/12 22:49:13  phreak
+ * renamed the warp model variable from 'wm' to 'Warp_model'
+ *
  * Revision 2.14  2004/05/08 01:08:48  Goober5000
  * small fix
  * --Goober5000
@@ -242,6 +245,55 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 	vector vecs[5];
 	vertex verts[5];
 
+	vecs[4] = center;		//this is for the warp glow-Bobboau
+	verts[4].u = 0.5f; verts[4].v = 0.5f; 
+	g3_rotate_vertex( &verts[4], &vecs[4] );
+
+	if ( Warp_glow_bitmap != -1 )	{
+		gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (The_mission.flags & MISSION_FLAG_FULLNEB)?(1.0f - neb2_get_fog_intensity(obj)):1.0f );
+
+		float r = radius;
+
+		int render_it;
+		
+		#define OUT_PERCENT1 0.80f
+		#define OUT_PERCENT2 0.90f
+
+		#define IN_PERCENT1 0.10f
+		#define IN_PERCENT2 0.20f
+
+		if ( life_percent < IN_PERCENT1 )	{
+			// do nothing
+			render_it = 0;
+		} else if ( life_percent < IN_PERCENT2 )	{
+			r *= ( life_percent-IN_PERCENT1 ) / (IN_PERCENT2-IN_PERCENT1); 
+			render_it = 1;
+		} else if ( life_percent < OUT_PERCENT1 )	{
+			// do nothing
+			render_it = 1;
+		} else if ( life_percent < OUT_PERCENT2 )	{
+			r *= (OUT_PERCENT2 - life_percent) / (OUT_PERCENT2-OUT_PERCENT1);
+			render_it = 1;
+		} else {
+			// do nothing
+			render_it = 0;
+		}
+
+		if (render_it)	{
+			int saved_gr_zbuffering = gr_zbuffer_get();
+			gr_zbuffer_set(GR_ZBUFF_READ);
+
+			// Add in noise 
+			//float Noise[NOISE_NUM_FRAMES] = { 
+			int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
+
+			r *= (0.40f + Noise[noise_frame]*0.30f);
+						
+			g3_draw_bitmap( &verts[4], 0,r, TMAP_FLAG_TEXTURED );
+			gr_zbuffer_set(saved_gr_zbuffering);
+		}
+	}
+
 	if(Warp_model > -1 && !force_old && !(The_mission.flags & MISSION_FLAG_OLD_WARP_EFFECT)){
 		float model_Interp_scale_x = radius /20;
 		float model_Interp_scale_y = radius /20;
@@ -303,9 +355,6 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 		gr_set_cull(1);
 */
 
-		vecs[4] = center;		//this is for the warp glow-Bobboau
-		verts[4].u = 0.5f; verts[4].v = 0.5f; 
-		g3_rotate_vertex( &verts[4], &vecs[4] );
 
 	}else{
 		gr_set_bitmap( texture_bitmap_num, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );	
@@ -344,51 +393,6 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 		draw_face( &verts[4], &verts[3], &verts[2] );
 		draw_face( &verts[0], &verts[3], &verts[4] );
 	}
-	if ( Warp_glow_bitmap != -1 )	{
-		gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (The_mission.flags & MISSION_FLAG_FULLNEB)?(1.0f - neb2_get_fog_intensity(obj)):1.0f );
-
-		float r = radius;
-
-		int render_it;
-		
-		#define OUT_PERCENT1 0.80f
-		#define OUT_PERCENT2 0.90f
-
-		#define IN_PERCENT1 0.10f
-		#define IN_PERCENT2 0.20f
-
-		if ( life_percent < IN_PERCENT1 )	{
-			// do nothing
-			render_it = 0;
-		} else if ( life_percent < IN_PERCENT2 )	{
-			r *= ( life_percent-IN_PERCENT1 ) / (IN_PERCENT2-IN_PERCENT1); 
-			render_it = 1;
-		} else if ( life_percent < OUT_PERCENT1 )	{
-			// do nothing
-			render_it = 1;
-		} else if ( life_percent < OUT_PERCENT2 )	{
-			r *= (OUT_PERCENT2 - life_percent) / (OUT_PERCENT2-OUT_PERCENT1);
-			render_it = 1;
-		} else {
-			// do nothing
-			render_it = 0;
-		}
-
-		if (render_it)	{
-			int saved_gr_zbuffering = gr_zbuffer_get();
-			gr_zbuffer_set(GR_ZBUFF_READ);
-
-			// Add in noise 
-			//float Noise[NOISE_NUM_FRAMES] = { 
-			int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
-
-			r *= (0.40f + Noise[noise_frame]*0.30f);
-						
-			g3_draw_bitmap( &verts[4], 0,r, TMAP_FLAG_TEXTURED );
-			gr_zbuffer_set(saved_gr_zbuffering);
-		}
-	}
-
 	gr_zbuffer_set( saved_gr_zbuffering );
 }
 

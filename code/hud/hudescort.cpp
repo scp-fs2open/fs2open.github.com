@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-06-28 02:13:07 $
+ * $Revision: 2.10 $
+ * $Date: 2004-07-05 05:09:19 $
  * $Author: bobboau $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/06/28 02:13:07  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.8  2004/06/27 01:47:16  wmcoolmon
  * Unneccessary warning removed, small change for VC6.
  *
@@ -802,11 +806,13 @@ void hud_display_escort()
 	int x = current_hud->Escort_coords[0] + current_hud->Escort_list[0];
 	int y = current_hud->Escort_coords[1] + current_hud->Escort_list[1];
 
+//	if(Num_escort_ships > 1)
+	{
+	//This is temporary
+	Num_escort_ships--;
+
 	if(Num_escort_ships > 1)
 	{
-		//This is temporary
-		Num_escort_ships--;
-
 		for(i = 0; i < Num_escort_ships; i++)
 		{
 			if(i != 0)
@@ -819,15 +825,16 @@ void hud_display_escort()
 			//Now we just show the ships info
 			hud_escort_show_icon(x, y, i);
 		}
+	}
 
-		//Back to right #
-		Num_escort_ships++;
+	//Back to right #
+	Num_escort_ships++;
 
-		//Last one
-		x += current_hud->Escort_entry_last[0];
-		y += current_hud->Escort_entry_last[1];
-		GR_AABITMAP(Escort_gauges[2].first_frame, x, y);
-		hud_escort_show_icon(x, y, i);
+	//Last one
+	x += current_hud->Escort_entry_last[0];
+	y += current_hud->Escort_entry_last[1];
+	GR_AABITMAP(Escort_gauges[2].first_frame, x, y);
+	hud_escort_show_icon(x, y, i);
 	}
 
 /*

@@ -223,7 +223,7 @@ void gr_d3d_reset_lighting()
 
 extern D3DMATERIAL8 material;
 extern bool the_lights_are_on;
-void		d3d_set_initial_render_state();
+void		d3d_set_initial_render_state(bool set = true);
 
 void gr_d3d_lighting(bool set, bool state)
 {

@@ -1360,6 +1360,123 @@ bool d3d_inspect_caps()
 }
 
 
+/*
+enum stage_state{
+	NONE = -1, 
+	INITAL = 0, 
+	DEFUSE = 1, 
+	GLOW_MAPPED_DEFUSE = 2, 
+	NONMAPPED_SPECULAR = 3, 
+	GLOWMAPPED_NONMAPPED_SPECULAR = 4, 
+	MAPPED_SPECULAR = 5, 
+	CELL = 6, 
+	GLOWMAPPED_CELL = 7, 
+	ADDITIVE_GLOWMAPPING = 8, 
+	SINGLE_PASS_SPECMAPPING = 9, 
+	SINGLE_PASS_GLOW_SPEC_MAPPING = 10,
+	BACKGROUND_FOG = 11,
+	ENV = 12
+	};
+*/
+/*
+void d3d_set_initial_render_state(bool set = true)	;
+void set_stage_for_defuse(bool set = true);
+void set_stage_for_glow_mapped_defuse(bool set = true);
+void set_stage_for_defuse_and_non_mapped_spec(bool set = true);
+void set_stage_for_glow_mapped_defuse_and_non_mapped_spec(bool set = true);
+bool set_stage_for_spec_mapped(bool set = true);
+void set_stage_for_cell_shaded(bool set = true);
+void set_stage_for_cell_glowmapped_shaded(bool set = true);
+void set_stage_for_additive_glowmapped(bool set = true);
+void set_stage_for_background_fog(bool set = true);
+bool set_stage_for_env_mapped(bool set = true);
+void set_stage_for_single_pass_specmapping(int SAME, bool set = true);
+void set_stage_for_single_pass_glow_specmapping(int SAME, bool set = true);
+*/
+
+DWORD 
+inital_state_block, 
+defuse_state_block, 
+glow_mapped_defuse_state_block, 
+nonmapped_specular_state_block, 
+glow_mapped_nonmapped_specular_state_block, 
+mapped_specular_state_block,
+cell_state_block, 
+glow_mapped_cell_state_block, 
+additive_glow_mapping_state_block, 
+//single_pass_specmapping_state_block, 
+//single_pass_glow_spec_mapping_state_block, 
+background_fog_state_block, 
+env_state_block, 
+cloak_state_block;
+
+void d3d_generate_state_blocks(){
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &inital_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &defuse_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &glow_mapped_defuse_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &nonmapped_specular_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &glow_mapped_nonmapped_specular_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &mapped_specular_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &cell_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &glow_mapped_cell_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &additive_glow_mapping_state_block);
+//	CreateStateBlock(D3DSBT_PIXELSTATE, &single_pass_specmapping_state_block);
+//	CreateStateBlock(D3DSBT_PIXELSTATE, &single_pass_glow_spec_mapping_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &background_fog_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &env_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &cloak_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	d3d_set_initial_render_state(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&inital_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_defuse(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&defuse_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_glow_mapped_defuse(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&glow_mapped_defuse_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_defuse_and_non_mapped_spec(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&nonmapped_specular_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_glow_mapped_defuse_and_non_mapped_spec(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&glow_mapped_nonmapped_specular_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_spec_mapped(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&mapped_specular_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_cell_shaded(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&glow_mapped_cell_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_cell_glowmapped_shaded(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&glow_mapped_cell_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_additive_glowmapped(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&additive_glow_mapping_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_background_fog(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&background_fog_state_block);
+
+	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_env_mapped(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&env_state_block);
+
+/*	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
+	set_stage_for_cloaked(true);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&cloak_state_block);
+*/
+}
+
+
 bool gr_d3d_init()
 {
 	GlobalD3DVars::lpD3D = Direct3DCreate8( D3D_SDK_VERSION );
