@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.109 $
- * $Date: 2005-03-20 20:01:15 $
- * $Author: phreak $
+ * $Revision: 2.110 $
+ * $Date: 2005-03-24 23:36:13 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.109  2005/03/20 20:01:15  phreak
+ * draw paths and docking points using HTL
+ *
  * Revision 2.108  2005/03/16 01:35:58  bobboau
  * added a geometry batcher and implemented it in sevral places
  * namely: lasers, thrusters, and particles,
@@ -4142,10 +4145,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				//		if(Cmdline_nohtl)g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
 				//		else g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w*0.325f );
 
-						pt.r = 255*d;
-						pt.g = 255*d;
-						pt.b = 255*d;
-						pt.a = 255*d;
+						pt.r = (ubyte)(255.0f * d);
+						pt.g = (ubyte)(255.0f * d);
+						pt.b = (ubyte)(255.0f * d);
+						pt.a = (ubyte)(255.0f * d);
 						primary_thruster_batcher.draw_bitmap(&pt,w*0.5f*Interp_thrust_glow_rad_factor, w*0.325f);
 
 						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
@@ -4162,10 +4165,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				//	if(Cmdline_nohtl)g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED); 
 				//	else g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, -(D>0)?D:-D);
 
-					pt.r = 255*fog_int;
-					pt.g = 255*fog_int;
-					pt.b = 255*fog_int;
-					pt.a = 255*fog_int;
+					pt.r = (ubyte)(255.0f * fog_int);
+					pt.g = (ubyte)(255.0f * fog_int);
+					pt.b = (ubyte)(255.0f * fog_int);
+					pt.a = (ubyte)(255.0f * fog_int);
 					tertiary_thruster_batcher.draw_bitmap(&pt, w*0.6f, magnitude*4*Interp_tertiary_thrust_glow_rad_factor, -(D>0)?D:-D);
 				}
 				
@@ -4180,9 +4183,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 				scale = magnitude*(MAX_SCALE-(MIN_SCALE/2))+(MIN_SCALE/2);
 																				    
-				vertex h1[4];				// halves of a beam section	
-				vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
-				vector fvec, top1, bottom1, top2, bottom2, norm2;
++			//	vertex h1[4];				// halves of a beam section	
++			//	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
++				vector fvec, norm2;
++			//	vector top1, bottom1, top2, bottom2;
 
 				d = vm_vec_dot(&tempv,&norm);
 				d += 0.75f;
@@ -4887,20 +4891,20 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 			bm_lock(pm->specular_original_textures[idx], 16, BMP_TEX_OTHER);
 			bm_unlock(pm->specular_original_textures[idx]);
 		}
+	}
 
-		if (pm->n_glows) {
-			for (i=0; i<pm->n_glows; i++) {
-				glow_bank *bank = &pm->glows[i];
+	if (pm->n_glows) {
+		for (i=0; i<pm->n_glows; i++) {
+			glow_bank *bank = &pm->glows[i];
 
-				if (bank->glow_bitmap > -1) {
-					bm_lock(bank->glow_bitmap, 16, BMP_TEX_OTHER);
-					bm_unlock(bank->glow_bitmap);
-				}
+			if (bank->glow_bitmap > -1) {
+				bm_lock(bank->glow_bitmap, 16, BMP_TEX_OTHER);
+				bm_unlock(bank->glow_bitmap);
+			}
 
-				if (bank->glow_neb_bitmap > -1) {
-					bm_lock(bank->glow_neb_bitmap, 16, BMP_TEX_OTHER);
-					bm_unlock(bank->glow_neb_bitmap);
-				}
+			if (bank->glow_neb_bitmap > -1) {
+				bm_lock(bank->glow_neb_bitmap, 16, BMP_TEX_OTHER);
+				bm_unlock(bank->glow_neb_bitmap);
 			}
 		}
 	}
@@ -4931,18 +4935,18 @@ void model_page_out_textures(int model_num)
 		if ( pm->specular_original_textures[i] > -1 ) {
 			bm_unload( pm->specular_original_textures[i] );
 		}
+	}
 
-		if (pm->n_glows) {
-			for (j=0; j<pm->n_glows; j++) {
-				glow_bank *bank = &pm->glows[j];
+	if (pm->n_glows) {
+		for (j=0; j<pm->n_glows; j++) {
+			glow_bank *bank = &pm->glows[j];
 
-				if (bank->glow_bitmap > -1) {
-					bm_unload( bank->glow_bitmap );
-				}
+			if (bank->glow_bitmap > -1) {
+				bm_unload( bank->glow_bitmap );
+			}
 
-				if (bank->glow_neb_bitmap > -1) {
-					bm_unload( bank->glow_neb_bitmap );
-				}
+			if (bank->glow_neb_bitmap > -1) {
+				bm_unload( bank->glow_neb_bitmap );
 			}
 		}
 	}

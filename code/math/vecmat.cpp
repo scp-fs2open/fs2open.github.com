@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-03-19 18:02:34 $
- * $Author: bobboau $
+ * $Revision: 2.21 $
+ * $Date: 2005-03-24 23:36:13 $
+ * $Author: taylor $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/03/19 18:02:34  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.19  2005/03/08 03:50:25  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -1001,7 +1005,7 @@ float vm_vec_delta_ang_norm(vector *v0,vector *v1,vector *fvec)
 	float a;
 	vector t;
 
-	a = (float)acos(vm_vec_dot(v0,v1));
+	a = acosf(vm_vec_dot(v0,v1));
 
 	if (fvec) {
 		vm_vec_cross(&t,v0,v1);
@@ -1047,9 +1051,9 @@ matrix *vm_angles_2_matrix(matrix *m,angles *a)
 	matrix * t;
 	float sinp,cosp,sinb,cosb,sinh,cosh;
 
-	sinp = (float)sin(a->p); cosp = (float)cos(a->p);
-	sinb = (float)sin(a->b); cosb = (float)cos(a->b);
-	sinh = (float)sin(a->h); cosh = (float)cos(a->h);
+	sinp = sinf(a->p); cosp = cosf(a->p);
+	sinb = sinf(a->b); cosb = cosf(a->b);
+	sinh = sinf(a->h); cosh = cosf(a->h);
 
 	t = sincos_2_matrix(m,sinp,cosp,sinb,cosb,sinh,cosh);
 
@@ -1063,19 +1067,19 @@ matrix *vm_angle_2_matrix(matrix *m, float a, int angle_index)
 	matrix * t;
 	float sinp,cosp,sinb,cosb,sinh,cosh;
 
-	sinp = (float)sin(0.0f);	cosp = (float)cos(0.0f);
-	sinb = (float)sin(0.0f);	cosb = (float)cos(0.0f);
-	sinh = (float)sin(0.0f);	cosh = (float)cos(0.0f);
+	sinp = sinf(0.0f);	cosp = cosf(0.0f);
+	sinb = sinf(0.0f);	cosb = cosf(0.0f);
+	sinh = sinf(0.0f);	cosh = cosf(0.0f);
 
 	switch (angle_index) {
 	case 0:
-		sinp = (float)sin(a); cosp = (float)cos(a);
+		sinp = sinf(a); cosp = cosf(a);
 		break;
 	case 1:
-		sinb = (float)sin(a); cosb = (float)cos(a);
+		sinb = sinf(a); cosb = cosf(a);
 		break;
 	case 2:
-		sinh = (float)sin(a); cosh = (float)cos(a);
+		sinh = sinf(a); cosh = cosf(a);
 		break;
 	}
 
@@ -1091,10 +1095,10 @@ matrix *vm_vec_ang_2_matrix(matrix *m,vector *v,float a)
 	matrix * t;
 	float sinb,cosb,sinp,cosp,sinh,cosh;
 
-	sinb = (float)sin(a); cosb = (float)cos(a);
+	sinb = sinf(a); cosb = cosf(a);
 
 	sinp = -v->xyz.y;
-	cosp = fl_sqrt(1.0 - sinp*sinp);
+	cosp = fl_sqrt(1.0f - sinp*sinp);
 
 	sinh = v->xyz.x / cosp;
 	cosh = v->xyz.z / cosp;
@@ -1118,7 +1122,7 @@ matrix *vm_vector_2_matrix(matrix *m,vector *fvec,vector *uvec,vector *rvec)
 	Assert(fvec != NULL);
 
 	//	This had been commented out, but that's bogus.  Code below relies on a valid zvec.
-	if (vm_vec_copy_normalize(zvec,fvec) == 0.0) {
+	if (vm_vec_copy_normalize(zvec,fvec) == 0.0f) {
 		Assert(0);
 		return m;
 	}
@@ -1130,17 +1134,17 @@ matrix *vm_vector_2_matrix(matrix *m,vector *fvec,vector *uvec,vector *rvec)
 bad_vector2:
 	;
 
-			if ((zvec->xyz.x==0.0) && (zvec->xyz.z==0.0)) {		//forward vec is straight up or down
+			if ((zvec->xyz.x==0.0f) && (zvec->xyz.z==0.0f)) {		//forward vec is straight up or down
 
-				m->vec.rvec.xyz.x = (float)1.0;
-				m->vec.uvec.xyz.z = (zvec->xyz.y<0.0)?(float)1.0:(float)-1.0;
+				m->vec.rvec.xyz.x = 1.0f;
+				m->vec.uvec.xyz.z = (zvec->xyz.y<0.0)?1.0f:-1.0f;
 
-				m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = (float)0.0;
+				m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = 0.0f;
 			}
 			else { 		//not straight up or down
 
 				xvec->xyz.x = zvec->xyz.z;
-				xvec->xyz.y = (float)0.0;
+				xvec->xyz.y = 0.0f;
 				xvec->xyz.z = -zvec->xyz.x;
 
 				vm_vec_normalize(xvec);
@@ -1152,13 +1156,13 @@ bad_vector2:
 		}
 		else {						//use right vec
 
-			if (vm_vec_copy_normalize(xvec,rvec) == 0.0)
+			if (vm_vec_copy_normalize(xvec,rvec) == 0.0f)
 				goto bad_vector2;
 
 			vm_vec_crossprod(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
-			if (vm_vec_normalize(yvec) == 0.0)
+			if (vm_vec_normalize(yvec) == 0.0f)
 				goto bad_vector2;
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
@@ -1174,7 +1178,7 @@ bad_vector2:
 		vm_vec_crossprod(xvec,yvec,zvec);
 		
 		//normalize new perpendicular vector
-		if (vm_vec_normalize(xvec) == 0.0)
+		if (vm_vec_normalize(xvec) == 0.0f)
 			goto bad_vector2;
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
@@ -1201,17 +1205,17 @@ matrix *vm_vector_2_matrix_norm(matrix *m,vector *fvec,vector *uvec,vector *rvec
 bad_vector2:
 	;
 
-			if ((zvec->xyz.x==0.0) && (zvec->xyz.z==0.0)) {		//forward vec is straight up or down
+			if ((zvec->xyz.x==0.0f) && (zvec->xyz.z==0.0f)) {		//forward vec is straight up or down
 
-				m->vec.rvec.xyz.x = (float)1.0;
-				m->vec.uvec.xyz.z = (zvec->xyz.y<0.0)?(float)1.0:(float)-1.0;
+				m->vec.rvec.xyz.x = 1.0f;
+				m->vec.uvec.xyz.z = (zvec->xyz.y<0.0f)?1.0f:-1.0f;
 
-				m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = (float)0.0;
+				m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = 0.0f;
 			}
 			else { 		//not straight up or down
 
 				xvec->xyz.x = zvec->xyz.z;
-				xvec->xyz.y = (float)0.0;
+				xvec->xyz.y = 0.0f;
 				xvec->xyz.z = -zvec->xyz.x;
 
 				vm_vec_normalize(xvec);
@@ -1226,7 +1230,7 @@ bad_vector2:
 			vm_vec_crossprod(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
-			if (vm_vec_normalize(yvec) == 0.0)
+			if (vm_vec_normalize(yvec) == 0.0f)
 				goto bad_vector2;
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
@@ -1239,7 +1243,7 @@ bad_vector2:
 		vm_vec_crossprod(xvec,yvec,zvec);
 		
 		//normalize new perpendicular vector
-		if (vm_vec_normalize(xvec) == 0.0)
+		if (vm_vec_normalize(xvec) == 0.0f)
 			goto bad_vector2;
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
@@ -1354,29 +1358,29 @@ angles *vm_extract_angles_matrix(angles *a,matrix *m)
 {
 	float sinh,cosh,cosp;
 
-	if (m->vec.fvec.xyz.x==0.0 && m->vec.fvec.xyz.z==0.0)		//zero head
-		a->h = (float)0.0;
+	if (m->vec.fvec.xyz.x==0.0f && m->vec.fvec.xyz.z==0.0f)		//zero head
+		a->h = 0.0f;
 	else
 		// a->h = (float)atan2(m->vec.fvec.xyz.z,m->vec.fvec.xyz.x);
-		a->h = (float)atan2_safe(m->vec.fvec.xyz.x,m->vec.fvec.xyz.z);
+		a->h = atan2_safe(m->vec.fvec.xyz.x,m->vec.fvec.xyz.z);
 
-	sinh = (float)sin(a->h); cosh = (float)cos(a->h);
+	sinh = sinf(a->h); cosh = cosf(a->h);
 
 	if (fl_abs(sinh) > fl_abs(cosh))				//sine is larger, so use it
 		cosp = m->vec.fvec.xyz.x*sinh;
 	else											//cosine is larger, so use it
 		cosp = m->vec.fvec.xyz.z*cosh;
 
-	if (cosp==0.0 && m->vec.fvec.xyz.y==0.0)
-		a->p = (float)0.0;
+	if (cosp==0.0f && m->vec.fvec.xyz.y==0.0f)
+		a->p = 0.0f;
 	else
 		// a->p = (float)atan2(cosp,-m->vec.fvec.xyz.y);
-		a->p = (float)atan2_safe(-m->vec.fvec.xyz.y, cosp);
+		a->p = atan2_safe(-m->vec.fvec.xyz.y, cosp);
 
 
-	if (cosp == 0.0)	//the cosine of pitch is zero.  we're pitched straight up. say no bank
+	if (cosp == 0.0f)	//the cosine of pitch is zero.  we're pitched straight up. say no bank
 
-		a->b = (float)0.0;
+		a->b = 0.0f;
 
 	else {
 		float sinb,cosb;
@@ -1384,11 +1388,11 @@ angles *vm_extract_angles_matrix(angles *a,matrix *m)
 		sinb = m->vec.rvec.xyz.y/cosp;
 		cosb = m->vec.uvec.xyz.y/cosp;
 
-		if (sinb==0.0 && cosb==0.0)
-			a->b = (float)0.0;
+		if (sinb==0.0f && cosb==0.0f)
+			a->b = 0.0f;
 		else
 			// a->b = (float)atan2(cosb,sinb);
-			a->b = (float)atan2_safe(sinb,cosb);
+			a->b = atan2_safe(sinb,cosb);
 	}
 
 
@@ -1402,12 +1406,12 @@ angles *vm_extract_angles_vector_normalized(angles *a,vector *v)
 
 	a->b = 0.0f;		//always zero bank
 
-	a->p = (float)asin(-v->xyz.y);
+	a->p = asinf(-v->xyz.y);
 
 	if (v->xyz.x==0.0f && v->xyz.z==0.0f)
-		a->h = (float)0.0;
+		a->h = 0.0f;
 	else
-		a->h = (float)atan2_safe(v->xyz.z,v->xyz.x);
+		a->h = atan2_safe(v->xyz.z,v->xyz.x);
 
 	return a;
 }
@@ -1417,7 +1421,7 @@ angles *vm_extract_angles_vector(angles *a,vector *v)
 {
 	vector t;
 
-	if (vm_vec_copy_normalize(&t,v) != 0.0)
+	if (vm_vec_copy_normalize(&t,v) != 0.0f)
 		vm_extract_angles_vector_normalized(a,&t);
 
 	return a;
@@ -1733,9 +1737,9 @@ int vm_vec_cmp( vector * a, vector * b )
 int vm_matrix_cmp( matrix * a, matrix * b )
 {
 	float tmp1,tmp2,tmp3;
-	tmp1 = (float)fl_abs(vm_vec_dot( &a->vec.uvec, &b->vec.uvec ) - 1.0f);
-	tmp2 = (float)fl_abs(vm_vec_dot( &a->vec.fvec, &b->vec.fvec ) - 1.0f);
-	tmp3 = (float)fl_abs(vm_vec_dot( &a->vec.rvec, &b->vec.rvec ) - 1.0f);
+	tmp1 = fl_abs(vm_vec_dot( &a->vec.uvec, &b->vec.uvec ) - 1.0f);
+	tmp2 = fl_abs(vm_vec_dot( &a->vec.fvec, &b->vec.fvec ) - 1.0f);
+	tmp3 = fl_abs(vm_vec_dot( &a->vec.rvec, &b->vec.rvec ) - 1.0f);
 //	mprintf(( "Mat=%.16f, %.16f, %.16f\n", tmp1, tmp2, tmp3 ));
 	 
 	if ( tmp1 > 0.0000005f ) return 1;
@@ -1823,10 +1827,10 @@ void vm_quaternion_rotate(matrix *M, float theta, vector *u)
 
 	float a,b,c, s;
 
-	a = (float) (u->xyz.x * sin(theta * 0.5f));
-	b = (float) (u->xyz.y * sin(theta * 0.5f));
-	c = (float) (u->xyz.z * sin(theta * 0.5f));
-	s = (float) cos(theta/2.0);
+	a = (u->xyz.x * sinf(theta * 0.5f));
+	b = (u->xyz.y * sinf(theta * 0.5f));
+	c = (u->xyz.z * sinf(theta * 0.5f));
+	s = cosf(theta/2.0f);
 
 // 1st ROW vector
 	M->vec.rvec.xyz.x = 1.0f - 2.0f*b*b - 2.0f*c*c;
@@ -1851,8 +1855,8 @@ void vm_quaternion_rotate(matrix *M, float theta, vector *u)
 //
 void rotate_z ( matrix *m, float theta )
 {
-	m->vec.rvec.xyz.x = (float) cos (theta);
-	m->vec.rvec.xyz.y = (float) sin (theta);
+	m->vec.rvec.xyz.x = cosf (theta);
+	m->vec.rvec.xyz.y = sinf (theta);
 	m->vec.rvec.xyz.z = 0.0f;
 
 	m->vec.uvec.xyz.x = -m->vec.rvec.xyz.y;
@@ -1885,8 +1889,8 @@ void vm_matrix_to_rot_axis_and_angle(matrix *m, float *theta, vector *rot_axis)
 
 		vm_vec_make(rot_axis, 1.0f, 0.0f, 0.0f);
 	} else if (cos_theta > -0.999999875f) { // angle is within limits between 0 and PI
-		*theta = float(acos(cos_theta));
-		Assert(!_isnan(*theta));
+		*theta = acosf(cos_theta);
+		Assert( !fl_is_nan(*theta) );
 
 		rot_axis->xyz.x = (m->vec.uvec.xyz.z - m->vec.fvec.xyz.y);
 		rot_axis->xyz.y = (m->vec.fvec.xyz.x - m->vec.rvec.xyz.z);
@@ -1913,7 +1917,6 @@ void vm_matrix_to_rot_axis_and_angle(matrix *m, float *theta, vector *rot_axis)
 			ix = 1.0f / rot_axis->xyz.x;
 			rot_axis->xyz.y = m->a2d[0][1] * ix;
 			rot_axis->xyz.z = m->a2d[0][2] * ix;
-			vm_vec_normalize(rot_axis);
 			break;
 
 		case 1:
@@ -1923,7 +1926,6 @@ void vm_matrix_to_rot_axis_and_angle(matrix *m, float *theta, vector *rot_axis)
 			iy = 1.0f / rot_axis->xyz.y;
 			rot_axis->xyz.x = m->a2d[1][0] * iy;
 			rot_axis->xyz.z = m->a2d[1][2] * iy;
-			vm_vec_normalize(rot_axis);
 			break;
 
 		case 2:
@@ -2294,9 +2296,9 @@ void get_camera_limits(matrix *start_camera, matrix *end_camera, float time, vec
 
 		// find acceleration limit using  (theta/2) takes (time/2)
 		// and using const accel  theta = 1/2 acc * time^2
-		acc_max->xyz.x = 4.0f * (float)fl_abs(angle.xyz.x) / (time * time);
-		acc_max->xyz.y = 4.0f * (float)fl_abs(angle.xyz.y) / (time * time);
-		acc_max->xyz.z = 4.0f * (float)fl_abs(angle.xyz.z) / (time * time);
+		acc_max->xyz.x = 4.0f * fl_abs(angle.xyz.x) / (time * time);
+		acc_max->xyz.y = 4.0f * fl_abs(angle.xyz.y) / (time * time);
+		acc_max->xyz.z = 4.0f * fl_abs(angle.xyz.z) / (time * time);
 
 		// find angular velocity limits
 		// w_max = acc_max * time / 2
@@ -2358,7 +2360,7 @@ void vm_fvec_matrix_interpolate(matrix *goal_orient, matrix *orient, vector *w_i
 			rot_axis = orient->vec.rvec;
 		}
 	} else {
-		theta = (float) asin ( t );
+		theta = asinf ( t );
 		vm_vec_scale ( &rot_axis, 1/t );
 		if ( z_dotprod < 0.0f )
 			theta = PI - theta;
@@ -2480,7 +2482,7 @@ void vm_fvec_matrix_interpolate(matrix *goal_orient, matrix *orient, vector *w_i
 				rot_axis = orient->vec.fvec;
 			}
 		} else {
-			theta = (float) asin ( t );
+			theta = asinf ( t );
 			vm_vec_scale ( &rot_axis, 1/t );
 			if ( z_dotprod < 0.0f )
 				theta = PI - theta;
@@ -2592,7 +2594,7 @@ void vm_forward_interpolate(vector *goal_f, matrix *orient, vector *w_in, float 
 			rot_axis = orient->vec.rvec;
 		}
 	} else {
-		theta = (float) asin( t );
+		theta = asinf( t );
 		vm_vec_scale ( &rot_axis, 1/t );
 		if ( z_dotprod < 0.0f )
 			theta = PI - theta;
@@ -2907,7 +2909,7 @@ void vm_vec_interp_constant(vector *out, vector *v0, vector *v1, float t)
 	vm_vec_normalize(&cross);
 
 	// get the total angle between the 2 vectors
-	total_ang = -(float)acos(vm_vec_dot(v0, v1));
+	total_ang = -(acosf(vm_vec_dot(v0, v1)));
 
 	// rotate around the cross product vector by the appropriate angle
 	vm_rot_point_around_line(out, v0, t * total_ang, &vmd_zero_vector, &cross);
