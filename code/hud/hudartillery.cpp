@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-08-23 04:00:15 $
+ * $Revision: 2.7 $
+ * $Date: 2004-09-17 07:11:02 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/08/23 04:00:15  Goober5000
+ * ship-tag and ship-untag
+ * --Goober5000
+ *
  * Revision 2.5  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -66,23 +70,22 @@
  */
 
 #include "hud/hudartillery.h"
-#include "ship/ai.h"
-#include "globalincs/alphacolors.h"
 #include "parse/parselo.h"
 #include "weapon/weapon.h"
+#include "math/vecmat.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "network/multi.h"
 #include "fireball/fireballs.h"
 #include "object/object.h"
-#include "math/vecmat.h"
-
+#include "ship/ai.h"
+#include "globalincs/alphacolors.h"
 
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS
 //
-
+// Goober5000 - moved to hudartillery.h
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY FUNCTIONS
@@ -90,38 +93,15 @@
 
 // test code for subspace missile strike -------------------------------------------
 
-#define MAX_SSM_TYPES			10
-
-// global ssm types
-typedef struct ssm_info {
-	char			name[NAME_LENGTH+1];				// strike name
-	int			count;								// # of missiles in this type of strike
-	int			weapon_info_index;				// missile type
-	float			warp_radius;						// radius of associated warp effect	
-	float			warp_time;							// how long the warp effect lasts
-	float			radius;								// radius around the shooting ship	
-	float			offset;								// offset in front of the shooting ship
-} ssm_info;
-
+// ssm_info, like ship_info etc.
 int Ssm_info_count = 0;
 ssm_info Ssm_info[MAX_SSM_TYPES];
 
-// the strike itself
-typedef struct ssm_strike {
-	int			fireballs[MAX_SSM_COUNT];		// warpin effect fireballs
-	int			done_flags[MAX_SSM_COUNT];		// when we've fired off the individual missiles
-	
-	// this is the info that controls how the strike behaves (just like for beam weapons)
-	ssm_firing_info		sinfo;
-
-	ssm_strike	*next, *prev;						// for list
-} ssm_strike;
-
 // list of active/free strikes
+int Num_ssm_strikes = 0;
 ssm_strike Ssm_strikes[MAX_SSM_STRIKES];
 ssm_strike Ssm_free_list;
 ssm_strike Ssm_used_list;
-int Num_ssm_strikes = 0;
 
 // Goober5000
 int ssm_info_lookup(char *name)
