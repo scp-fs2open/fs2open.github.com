@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.54 $
- * $Date: 2003-03-05 12:38:01 $
+ * $Revision: 2.55 $
+ * $Date: 2003-03-06 09:13:43 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2003/03/05 12:38:01  Goober5000
+ * rewrote the restricted bank loadout code; it should work now
+ * --Goober5000
+ *
  * Revision 2.53  2003/03/05 09:17:15  Goober5000
  * cleaned out Bobboau's buggy code - about to rewrite with new, bug-free code :)
  * --Goober5000
@@ -1532,7 +1536,7 @@ strcpy(temp_error, parse_error_text);
 			bank++;
 
 			// make sure we don't specify more than we have banks for
-			if (bank > UPPER_BOUND_PRIMARY_BANK)
+			if (bank > UPPER_BOUND_SUPPORTED_PRIMARY_BANK)
 			{
 				Warning(LOCATION, "$Allowed PBanks bank-specific loadout exceeds permissible number of primary banks.  Ignoring the rest...");
 				bank--;
@@ -1573,7 +1577,7 @@ strcpy(parse_error_text, temp_error);
 			bank++;
 
 			// make sure we don't specify more than we have banks for
-			if (bank > UPPER_BOUND_PRIMARY_BANK)
+			if (bank > UPPER_BOUND_SUPPORTED_PRIMARY_BANK)
 			{
 				Warning(LOCATION, "$Allowed Dogfight PBanks bank-specific loadout exceeds permissible number of primary banks.  Ignoring the rest...");
 				bank--;
@@ -1652,7 +1656,7 @@ strcpy(parse_error_text, temp_error);
 			bank++;
 
 			// make sure we don't specify more than we have banks for
-			if (bank > UPPER_BOUND_SECONDARY_BANK)
+			if (bank > UPPER_BOUND_SUPPORTED_SECONDARY_BANK)
 			{
 				Warning(LOCATION, "$Allowed SBanks bank-specific loadout exceeds permissible number of secondary banks.  Ignoring the rest...");
 				bank--;
@@ -1693,7 +1697,7 @@ strcpy(parse_error_text, temp_error);
 			bank++;
 
 			// make sure we don't specify more than we have banks for
-			if (bank > UPPER_BOUND_SECONDARY_BANK)
+			if (bank > UPPER_BOUND_SUPPORTED_SECONDARY_BANK)
 			{
 				Warning(LOCATION, "$Allowed Dogfight SBanks bank-specific loadout exceeds permissible number of secondary banks.  Ignoring the rest...");
 				bank--;
@@ -7321,7 +7325,7 @@ int ship_select_next_primary(object *objp, int direction)
 			}
 			else
 			{
-				swp->current_primary_bank = UPPER_BOUND_PRIMARY_BANK;
+				swp->current_primary_bank = UPPER_BOUND_SUPPORTED_PRIMARY_BANK;
 			}
 		}
 		// now handle when not linked: cycle and constrain
@@ -7329,7 +7333,7 @@ int ship_select_next_primary(object *objp, int direction)
 		{
 			if ( direction == CYCLE_PRIMARY_NEXT )
 			{
-				if ( swp->current_primary_bank < UPPER_BOUND_PRIMARY_BANK )
+				if ( swp->current_primary_bank < UPPER_BOUND_SUPPORTED_PRIMARY_BANK )
 				{
 					swp->current_primary_bank++;
 				}
@@ -7370,7 +7374,7 @@ int ship_select_next_primary(object *objp, int direction)
 					}
 					else
 					{
-						swp->current_primary_bank = UPPER_BOUND_PRIMARY_BANK;
+						swp->current_primary_bank = UPPER_BOUND_SUPPORTED_PRIMARY_BANK;
 					}
 					break;
 				}
