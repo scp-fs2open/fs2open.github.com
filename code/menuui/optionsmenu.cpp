@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-10-31 21:53:23 $
+ * $Revision: 2.10 $
+ * $Date: 2004-12-02 11:18:15 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/10/31 21:53:23  taylor
+ * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
+ *
  * Revision 2.8  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -991,8 +994,11 @@ void options_change_gamma(float delta)
 	gr_set_gamma(Freespace_gamma);
 	sprintf(tmp_gamma_string, NOX("%.2f"), Freespace_gamma);
 
-	os_config_write_string(NULL, 
-		(gr_screen.mode == GR_DIRECT3D) ? NOX("GammaD3D") : NOX("Gamma"), tmp_gamma_string);
+	if ( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) ) {
+		os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
+	} else {
+		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
+	}
 }
 
 void options_button_pressed(int n)

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.112 $
- * $Date: 2004-11-26 08:41:11 $
+ * $Revision: 2.113 $
+ * $Date: 2004-12-02 11:18:14 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2004/11/26 08:41:11  taylor
+ * couple of LAN game vs. FS2NetD fixes
+ *
  * Revision 2.111  2004/10/31 21:31:34  taylor
  * bump COUNT_ESTIMATE, reset time compression at the start of a mission, new pilot file support, add feature_disabled popup
  *
@@ -2950,7 +2953,7 @@ void game_init()
 //	ENVMAP = bm_load("environment");
 
 	// Set the gamma
-	if(gr_screen.mode == GR_DIRECT3D)
+	if( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) )
 	{
 		// D3D's gamma system now works differently. 1.0 is the default value
 		ptr = os_config_read_string(NULL, NOX("GammaD3D"), NOX("1.0"));
