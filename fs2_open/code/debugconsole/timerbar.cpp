@@ -79,7 +79,7 @@ void timerbar_end_frame()
 		int xsize = (int) profiles[i].frame_total.QuadPart / 60;
 
 		// break condition in else
-		while(1)
+		for (;;)
 		{
 			// if bar runs over
 			if(last_xpos + xsize > WIDTH)

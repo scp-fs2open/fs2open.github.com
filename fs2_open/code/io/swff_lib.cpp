@@ -778,8 +778,8 @@ BOOL SWFF_WriteRegString(
 
 	// close the key
 	RegCloseKey(hKey);
-	if(lRet != ERROR_SUCCESS)
-		return FALSE;
+/*	if(lRet != ERROR_SUCCESS)	// eh, this is unreachable code
+		return FALSE;*/
 
 	// if we have reached this point, then it was a success
 	return TRUE;
