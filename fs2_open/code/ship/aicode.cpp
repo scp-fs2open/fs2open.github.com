@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.46 $
- * $Date: 2003-12-15 21:32:59 $
+ * $Revision: 2.47 $
+ * $Date: 2003-12-17 16:42:20 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/12/15 21:32:59  phreak
+ * made turrets use bob's $shots code
+ *
  * Revision 2.45  2003/11/11 02:15:40  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -751,6 +754,7 @@ typedef struct eval_enemy_obj_struct {
 	int			enemy_team_mask;
 	int			weapon_system_ok;					// is the weapon subsystem of turret ship ok
 	int			big_only_flag;						// turret fires only at big and huge ships
+	int			small_only_flag;					// turret fires only at small ships
 	vector		*tpos;
 	vector		*tvec;
 	ship_subsys *turret_subsys;
@@ -2888,6 +2892,12 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			}
 		}
 
+		if (eeo->small_only_flag)
+		{
+			if (Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))
+				return;
+		}
+
 		// check if	turret flagged to only target tagged ships
 		if ( (eeo->turret_subsys->weapons.flags & SW_FLAG_TAGGED_ONLY) && !ship_is_tagged(objp) ) {
 			return;
@@ -3025,13 +3035,14 @@ int is_target_beam_valid(ship_subsys *turret_subsys, int objnum)
 //				tpos						=> position of turret (world coords)
 //				tvec						=> forward vector of turret (world coords)
 //				current_enemy			=>	objnum of current turret target
-int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vector *tpos, vector *tvec, int current_enemy, int big_only_flag)
+int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vector *tpos, vector *tvec, int current_enemy, int big_only_flag, int small_only_flag)
 {
 	float					weapon_travel_dist;
 	int					weapon_system_ok;
 	object				*objp;
 	model_subsystem	*tp;
 	eval_enemy_obj_struct eeo;
+	weapon_info *wip=&Weapon_info[tp->turret_weapon_type];
 
 	// list of stuff to go thru
 	ship_obj		*so;
@@ -3054,6 +3065,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	eeo.weapon_system_ok = weapon_system_ok;
 	eeo.weapon_travel_dist = weapon_travel_dist;
 	eeo.big_only_flag = big_only_flag;
+	eeo.small_only_flag = small_only_flag;
 	eeo.enemy_team_mask = enemy_team_mask;
 	eeo.current_enemy = current_enemy;
 	eeo.tpos = tpos;
@@ -3073,7 +3085,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	eeo.nearest_objnum = -1;
 
 	//don't fire anti capital ship turrets at bombs.
-	if (!(Weapon_info[tp->turret_weapon_type].wi_flags & WIF_HUGE))
+	if (!(wip->wi_flags & WIF_HUGE))
 	{
 		// Missile_obj_list
 		for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
@@ -3173,7 +3185,7 @@ DCF_BOOL(use_parent_target, Use_parent_target)
 //				tpos				=> position of turret (world coords)
 //				tvec				=> forward vector of turret (world coords)
 //				current_enemy	=>	objnum of current turret target
-int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vector *tpos, vector *tvec, int current_enemy, float fov, int big_only_flag = 0)
+int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vector *tpos, vector *tvec, int current_enemy, float fov, int big_only_flag = 0, int small_only_flag = 0)
 {
 	int					enemy_team_mask, enemy_objnum;
 	model_subsystem	*tp;
@@ -3238,7 +3250,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vector *tpos, vect
 		}
 	}
 
-	enemy_objnum = get_nearest_turret_objnum(objnum, turret_subsys, enemy_team_mask, tpos, tvec, current_enemy, big_only_flag);
+	enemy_objnum = get_nearest_turret_objnum(objnum, turret_subsys, enemy_team_mask, tpos, tvec, current_enemy, big_only_flag, small_only_flag);
 	if ( enemy_objnum >= 0 ) {
 		Assert( !((Objects[enemy_objnum].flags & OF_BEAM_PROTECTED) && (Weapon_info[tp->turret_weapon_type].wi_flags & WIF_BEAM)) );
 		if ( Objects[enemy_objnum].flags & OF_PROTECTED ) {
@@ -11500,7 +11512,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	//	Maybe pick a new enemy.
 	if ( turret_should_pick_new_target(ss) ) {
 		Num_find_turret_enemy++;
-		int objnum = find_turret_enemy(ss, parent_objnum, &gpos, &gvec, ss->turret_enemy_objnum, tp->turret_fov, Weapon_info[turret_weapon_class].wi_flags & WIF_HUGE);
+		int objnum = find_turret_enemy(ss, parent_objnum, &gpos, &gvec, ss->turret_enemy_objnum, tp->turret_fov, Weapon_info[turret_weapon_class].wi_flags & WIF_HUGE, Weapon_info[turret_weapon_class].wi_flags2 & WIF2_SMALL_ONLY);
 		Assert(objnum < 0 || is_target_beam_valid(ss, objnum));
 
 		if (objnum != -1) {
