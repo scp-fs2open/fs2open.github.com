@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.4 $
- * $Date: 2003-08-31 06:00:41 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-10 11:38:31 $
+ * $Author: fryday $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/08/31 06:00:41  bobboau
+ * an asortment of bugfixes, mostly with the specular code,
+ * HUD flickering should be completly gone now
+ *
  * Revision 2.3  2003/08/16 03:52:24  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -139,13 +143,23 @@
 #define MAX_STARFIELD_BITMAPS			60
 #define MAX_ASTEROID_FIELDS			4
 
+
+#define MAX_FLARE_COUNT 10
+#define MAX_FLARE_BMP 6
 // nice low polygon background
 #define BACKGROUND_MODEL_FILENAME					"spherec.pof"
+
+typedef struct flare_info {
+	float pos;
+	float scale;
+	int tex_num;
+} flare_info;
 
 // global info (not individual instances)
 typedef struct starfield_bitmap {
 	char filename[MAX_FILENAME_LEN+1];				// bitmap filename
-	char glow_filename[MAX_FILENAME_LEN+1];		// only for suns	
+	char glow_filename[MAX_FILENAME_LEN+1];		// only for suns
+	char flare_filenames[MAX_FLARE_BMP][MAX_FILENAME_LEN+1]; //only for suns
 	int bitmap;												// bitmap handle
 	int n_frames;
 	int fps;
@@ -155,6 +169,11 @@ typedef struct starfield_bitmap {
 	int xparent;	
 	float r, g, b, i, spec_r, spec_g, spec_b;										// only for suns
 	int glare;												// only for suns
+	int flare;												// Is there a lens-flare for this sun?
+	int flare_bitmaps[MAX_FLARE_BMP];							// bitmaps for different lens flares (can be re-used)
+	flare_info flare_infos[MAX_FLARE_COUNT];						// each flare can use a texture in flare_bmp, with different scale
+	int flare_n_flares;										// number of flares actually used
+	int flare_n_tex;
 } starfield_bitmap;
 
 // starfield bitmap instance
