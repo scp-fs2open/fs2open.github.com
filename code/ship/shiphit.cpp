@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-18 03:25:10 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2002-07-29 08:19:41 $
+ * $Author: DTP $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/18 03:25:10  unknownplayer
+ * no message
+ *
  * Revision 2.1  2002/07/17 20:04:00  wmcoolmon
  * Added SSM code for Tag C from Bobboau. Note that strings.tbl may need to be updated.
  *
@@ -772,7 +775,7 @@ void create_vaporize_debris(object *ship_obj, vector *hitpos)
 	}
 }
 
-#define	MAX_SUBSYS_LIST	32
+#define	MAX_SUBSYS_LIST	200 //DTP MAX SUBSYS LIST BUMPED FROM 32 to 200, ahmm 32???
 
 typedef struct {
 	float	dist;
