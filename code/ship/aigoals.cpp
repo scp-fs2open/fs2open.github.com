@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-25 00:31:31 $
+ * $Revision: 2.14 $
+ * $Date: 2004-07-25 18:46:30 $
  * $Author: Kazan $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/25 00:31:31  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.12  2004/07/12 16:33:05  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -796,7 +799,9 @@ void ai_clear_ship_goals( ai_info *aip )
 	// next line moved here on 8/5/97 by MWA
 	// Dont reset player ai (and hence target)
 	// Goober5000 - account for player ai
-	if ( !((Player_ship != NULL) && (&Ships[aip->shipnum] == Player_ship)) || Player_use_ai ) {
+	//if ( !((Player_ship != NULL) && (&Ships[aip->shipnum] == Player_ship)) || Player_use_ai ) {
+	if ( Player_ship == NULL || Player_use_ai || &Ships[aip->shipnum] != Player_ship)
+	{
 		ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );
 	}
 }
@@ -2128,9 +2133,13 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	// Goober5000 - we may want to use AI for the player
 	// AL 3-7-98: If this is a player ship, and the goal is not a formation goal, then do a quick out
-	if ( !(Player_use_ai) && (objp->flags & OF_PLAYER_SHIP) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) ) {
+	//if ( !(Player_use_ai) && (objp->flags & OF_PLAYER_SHIP) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) ) {
+	if ( !Player_use_ai && objp->flags & OF_PLAYER_SHIP)
+	{
 		return;
 	}	
+
+
 
 	switch ( current_goal->ai_mode ) {
 

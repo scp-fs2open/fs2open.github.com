@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-07-25 00:31:30 $
+ * $Revision: 2.16 $
+ * $Date: 2004-07-25 18:46:29 $
  * $Author: Kazan $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/07/25 00:31:30  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.14  2004/07/12 16:33:03  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1266,8 +1269,9 @@ void read_player_controls(object *objp, float frametime)
 	if(objp->type != OBJ_OBSERVER){
 		objp->phys_info.max_vel.xyz.z = Ships[objp->instance].current_max_speed;
 	} 
-	if(Player_obj->type == OBJ_SHIP){	
+	if(Player_obj->type == OBJ_SHIP && !Player_use_ai){	
 		// only read player control info if player ship is not dead
+		// or if Player_use_ai is disabed
 		if ( !(Ships[Player_obj->instance].flags & SF_DYING) ) {
 			vector wash_rot;
 			if ((Ships[objp->instance].wash_intensity > 0) && !((Player->control_mode == PCM_WARPOUT_STAGE1) || (Player->control_mode == PCM_WARPOUT_STAGE2) || (Player->control_mode == PCM_WARPOUT_STAGE3)) ) {
