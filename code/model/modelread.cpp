@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-01-09 05:52:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2003-01-09 21:22:36 $
+ * $Author: phreak $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/01/09 05:52:25  Goober5000
+ * snagged a potential bug
+ * --Goober5000
+ *
  * Revision 2.7  2003/01/05 23:41:51  bobboau
  * disabled decals (for now), removed the warp ray thingys,
  * made some better error mesages while parseing weapons and ships tbls,
@@ -1986,11 +1990,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					//a quick hack for glow mapping-Bobboau
 					strcat( tmp_name, "-glow");
 					mprintf(("looking for glow map %s\n", tmp_name));
-					GLOWMAP[pm->textures[i]]=bm_load( tmp_name ); //see if there is one 
-					if(GLOWMAP[pm->textures[i]]!=-1){//then fill it into the array
-						mprintf(("texture '%s' has a glow map, %d, assosiated with it, isn't that nice\n", tmp_name, GLOWMAP[pm->textures[i]]));
-						bm_lock((GLOWMAP[pm->textures[i]]), 8, BMP_AABITMAP);
-						bm_unlock((GLOWMAP[pm->textures[i]]));
+					int glow_idx=pm->textures[i] % MAX_BITMAPS;
+					GLOWMAP[glow_idx]=bm_load( tmp_name ); //see if there is one 
+					if(GLOWMAP[glow_idx]!=-1){//then fill it into the array
+						mprintf(("texture '%s' has a glow map, %d, assosiated with it, isn't that nice\n", tmp_name, GLOWMAP[glow_idx]));
+						bm_lock((GLOWMAP[glow_idx]), 8, BMP_AABITMAP);
+						bm_unlock((GLOWMAP[glow_idx]));
 
 					}
 
