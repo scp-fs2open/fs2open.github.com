@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.20 $
- * $Date: 2005-01-28 09:01:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2005-02-20 23:13:00 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/01/28 09:01:04  Goober5000
+ * finished implementing docking to a rotating submodel
+ * --Goober5000
+ *
  * Revision 2.19  2005/01/27 11:26:23  Goober5000
  * dock points on rotating submodels is *almost* working
  * --Goober5000
@@ -836,5 +840,10 @@ void ai_announce_ship_dying(object *dying_objp);
 // added by kazan
 void ai_start_fly_to_ship(object *objp, char *target_obj);
 void ai_fly_to_ship();
+
+//From aicode.cpp
+// Goober5000
+//	Move to a position relative to a dock bay using thrusters.
+extern float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, vector *docker_point_param = NULL, vector *dockee_point_param = NULL, float *rotating_submodel_tangential_velocity = NULL);
 
 #endif

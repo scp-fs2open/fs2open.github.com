@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.88 $
- * $Date: 2005-02-15 00:03:35 $
- * $Author: taylor $
+ * $Revision: 2.89 $
+ * $Date: 2005-02-20 23:13:00 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2005/02/15 00:03:35  taylor
+ * don't try and draw starfield bitmaps if they aren't valid
+ * make AB thruster stuff in ship_create() a little less weird
+ * replace an Int3() with debug warning and fix crash in docking code
+ * make D3D Textures[] allocate on use like OGL does, can only use one anyway
+ *
  * Revision 2.87  2005/02/04 20:06:07  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -1112,10 +1118,6 @@ void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int co
 void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int count, int path_num, pnode *pnp, int randomize_pnt=-1);
 void ai_cleanup_rearm_mode(object *objp);
 void ai_cleanup_dock_mode(object *dying_objp);
-
-// Goober5000
-//	Move to a position relative to a dock bay using thrusters.
-float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, vector *docker_point_param = NULL, vector *dockee_point_param = NULL, float *rotating_submodel_tangential_velocity = NULL);
 
 // ai_set_rearm_status takes a team (friendly, hostile, neutral) and a time.  This function
 // sets the timestamp used to tell is it is a good time for this team to rearm.  Once the timestamp

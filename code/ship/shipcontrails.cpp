@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-02-20 08:22:48 $
+ * $Revision: 2.20 $
+ * $Date: 2005-02-20 23:13:01 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/02/20 08:22:48  wmcoolmon
+ * Smartified shipcontrails
+ *
  * Revision 2.18  2005/02/20 07:39:34  wmcoolmon
  * Trails update: Better, faster, stronger, but not much more reliable
  *
@@ -224,9 +227,8 @@ void ct_ship_process(ship *shipp)
 		// kill any active trails he has
 		for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 			if(shipp->trail_ptr[idx] != NULL){
-			//lets make sure it only erases nebula trails in nebula missions
-					trail_object_died(shipp->trail_ptr[idx]);
-					shipp->trail_ptr[idx] = NULL;
+				trail_object_died(shipp->trail_ptr[idx]);
+				shipp->trail_ptr[idx] = NULL;
 			}
 		}
 	}
@@ -340,8 +342,8 @@ void ct_create_contrails(ship *shipp)
 
 	for(idx=0; idx<sip->ct_count; idx++)
 	{
-			//if (this is a neb mision and this is a neb trail) or an ABtrail -Bobboau
-			shipp->trail_ptr[idx] = trail_create(&sip->ct_info[idx]);	
+		//if (this is a neb mision and this is a neb trail) or an ABtrail -Bobboau
+		shipp->trail_ptr[idx] = trail_create(&sip->ct_info[idx]);	
 	
 		if(shipp->trail_ptr[idx] != NULL)
 		{
@@ -389,6 +391,9 @@ void ct_ship_process_ABtrails(ship *shipp)
 			trail_object_died(shipp->ABtrail_ptr[idx]);
 			shipp->ABtrail_ptr[idx] = NULL;
 		}
+
+		//No more abtrails
+		return;
 	}
 
 	// if the object already has ABtrails
