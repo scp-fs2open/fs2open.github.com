@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-01-17 07:59:09 $
+ * $Revision: 2.13 $
+ * $Date: 2003-01-27 07:46:33 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/01/17 07:59:09  Goober5000
+ * fixed some really strange behavior with strings not being truncated at the
+ * # symbol
+ * --Goober5000
+ *
  * Revision 2.11  2003/01/17 01:48:50  Goober5000
  * added capability to the $Texture replace code to substitute the textures
  * without needing and extra model, however, this way you can't substitute
@@ -1092,8 +1097,9 @@ void hud_render_target_ship_info(object *target_objp)
 
 		// AL 23-3-98: Fighter bays are a special case.  Player cannot destroy them, so don't
 		//					show the subsystem strength
-		// Goober5000: display fighterbay damage if mission flag set
-		if ( strnicmp(NOX("fighter"), Player_ai->targeted_subsys->system_info->name, 7) || Player_ai->targeted_subsys->system_info->max_hits > FIGHTERBAY_DAMAGE_THRESHOLD )
+		// Goober5000: don't display any strength if we can't destroy this subsystem - but sometimes
+		// fighterbays can be destroyed
+		if ( ship_subsys_takes_damage(Player_ai->targeted_subsys) )
 		{
 			sprintf(outstr,XSTR( "%d%%", 341),screen_integrity);
 			gr_get_string_size(&w,&h,outstr);

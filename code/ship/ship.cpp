@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.45 $
- * $Date: 2003-01-20 05:40:50 $
- * $Author: bobboau $
+ * $Revision: 2.46 $
+ * $Date: 2003-01-27 07:46:32 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/01/20 05:40:50  bobboau
+ * added several sExps for turning glow points and glow maps on and off
+ *
  * Revision 2.44  2003/01/19 22:20:22  Goober5000
  * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
  * and departure into hangars should now all work properly
@@ -10635,6 +10638,12 @@ int is_support_allowed(object *objp)
 		{
 			return 0;
 		}
+
+		// also make sure that parent ship's fighterbay hasn't been destroyed
+		if (ship_fighterbays_all_destroyed(&Ships[temp]))
+		{
+			return 0;
+		}
 	}
 
 	if ( Game_mode & GM_NORMAL ) {
@@ -11259,7 +11268,12 @@ int ship_get_ship_with_dock_bay(int team)
 		{
 			ship_with_bay = Objects[so->objnum].instance;
 
+			// make sure not dying or departing
 			if (Ships[ship_with_bay].flags & (SF_DYING | SF_DEPARTING))
+				ship_with_bay = -1;
+
+			// also make sure that the bays are not all destroyed
+			if (ship_fighterbays_all_destroyed(&Ships[ship_with_bay]))
 				ship_with_bay = -1;
 
 			if (ship_with_bay >= 0)
@@ -11270,4 +11284,54 @@ int ship_get_ship_with_dock_bay(int team)
 
 	// return whatever we got
 	return ship_with_bay;
+}
+
+// Goober5000 - check if all fighterbays on a ship have been destroyed
+int ship_fighterbays_all_destroyed(ship *shipp)
+{
+	Assert(shipp);
+	ship_subsys *subsys;
+
+	// check all fighterbay systems
+	subsys = GET_FIRST(&shipp->subsys_list);
+	while(subsys != END_OF_LIST(&shipp->subsys_list))
+	{
+		// look for fighterbays
+		if (ship_subsys_is_fighterbay(subsys))
+		{
+			// if fighterbay doesn't take damage, we're good
+			if (!ship_subsys_takes_damage(subsys))
+				return 0;
+
+			// if fighterbay isn't destroyed, we're good
+			if (subsys->current_hits > 0)
+				return 0;
+		}
+
+		// next item
+		subsys = GET_NEXT(subsys);
+	}
+
+	// must be all destroyed, if we got this far
+	return 1;
+}
+
+// moved here by Goober5000
+int ship_subsys_is_fighterbay(ship_subsys *ss)
+{
+	Assert(ss);
+
+	if ( !strnicmp(NOX("fighter"), ss->system_info->name, 7) ) {
+		return 1;
+	}
+
+	return 0;
+}
+
+// Goober5000
+int ship_subsys_takes_damage(ship_subsys *ss)
+{
+	Assert(ss);
+
+	return (ss->system_info->max_hits > SUBSYS_MAX_HITS_THRESHOLD);
 }
