@@ -52,7 +52,7 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 };
 
 //Number of gauges
-int Num_gauge_types = sizeof(gauges)/sizeof(gauge_info);
+int Num_gauge_types = 16;
 int Num_custom_gauges = 0;
 
 //Loads defaults for if a hud isn't specified in the table
@@ -429,6 +429,10 @@ void parse_custom_gauge()
 
 		Num_gauge_types++;
 		Num_custom_gauges++;
+	}
+	else
+	{
+		skip_to_start_of_strings("$Name:", "#End");
 	}
 }
 
