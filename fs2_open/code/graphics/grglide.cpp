@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrGlide.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2003-07-04 02:27:48 $
+ * $Author: phreak $
  *
  * Code that uses 3DFX's Glide graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2  2003/03/02 05:43:49  penguin
  * ANSI C++ - fixed non-compliant casts to unsigned short and unsigned char
  *  - penguin
@@ -3559,6 +3562,13 @@ void gr_glide_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, f
 
 GrHwConfiguration hwconfig;
 
+void gr_glide_push_texture_matrix(int unit)
+{}
+void gr_glide_pop_texture_matrix(int unit)
+{}
+void gr_glide_translate_texture_matrix(int unit, vector *shift)
+{}
+
 void gr_glide_init()
 {
 	D3D_enabled = 1;
@@ -3809,6 +3819,11 @@ void gr_glide_init()
 	gr_screen.gf_bm_page_in_nondarkening_texture = bm_gfx_page_in_nondarkening_texture; 
 	gr_screen.gf_bm_page_in_xparent_texture		 = bm_gfx_page_in_xparent_texture;		 
 	gr_screen.gf_bm_page_in_aabitmap			 = bm_gfx_page_in_aabitmap;
+
+	gr_screen.gf_push_texture_matrix = gr_glide_push_texture_matrix;
+	gr_screen.gf_pop_texture_matrix = gr_glide_pop_texture_matrix;
+	gr_screen.gf_translate_texture_matrix = gr_glide_translate_texture_matrix;
+
 
 	Glide_running=1;
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-03-19 23:06:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2003-07-04 02:27:48 $
+ * $Author: phreak $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/03/19 23:06:39  Goober5000
+ * bit o' housecleaning
+ * --Goober5000
+ *
  * Revision 2.10  2003/03/19 12:29:02  unknownplayer
  * Woohoo! Killed two birds with one stone!
  * Fixed the 'black screen around dialog boxes' problem and also the much more serious freezing problem experienced by Goober5000. It wasn't a crash, just an infinite loop. DX8 merge is GO! once again :)
@@ -2628,7 +2632,12 @@ void d3d_setup_function_pointers()
 	
 	gr_screen.gf_bm_page_in_nondarkening_texture = bm_d3d_page_in_nondarkening_texture; 
 	gr_screen.gf_bm_page_in_xparent_texture		 = bm_d3d_page_in_xparent_texture;		 
-	gr_screen.gf_bm_page_in_aabitmap			 = bm_d3d_page_in_aabitmap;	  
+	gr_screen.gf_bm_page_in_aabitmap			 = bm_d3d_page_in_aabitmap;	 
+	
+	gr_screen.gf_push_texture_matrix = gr_d3d_push_texture_matrix;
+	gr_screen.gf_pop_texture_matrix = gr_d3d_pop_texture_matrix;
+	gr_screen.gf_translate_texture_matrix = gr_d3d_translate_texture_matrix;
+
 }
 
 /**

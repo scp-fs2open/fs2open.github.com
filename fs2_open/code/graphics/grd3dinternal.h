@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2003-07-04 02:27:48 $
+ * $Author: phreak $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2  2002/10/05 16:46:09  randomtiger
  * Added us fs2_open people to the credits. Worth looking at just for that.
  * Added timer bar code, by default its not compiled in.
@@ -252,6 +255,9 @@ void gr_d3d_gradient(int x1,int y1,int x2,int y2);
 void gr_d3d_set_palette(ubyte *new_palette, int restrict_alphacolor);
 void gr_d3d_diamond(int x, int y, int width, int height);
 void gr_d3d_print_screen(char *filename);
+void gr_d3d_push_texture_matrix(int unit);
+void gr_d3d_pop_texture_matrix(int unit);
+void gr_d3d_translate_texture_matrix(int unit, vector *shift);
 
 void d3d_render_timer_bar(int colour, float x, float y, float w, float h);
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2003-07-04 02:27:48 $
+ * $Author: phreak $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.5  2002/11/09 19:28:15  randomtiger
  *
  * Fixed small gfx initialisation bug that wasnt actually causing any problems.
@@ -625,6 +628,11 @@ typedef struct screen {
 	void (*gf_bm_page_in_xparent_texture)( int bitmapnum, int nframes = 1);
 	void (*gf_bm_page_in_aabitmap)( int bitmapnum, int nframes = 1);
 
+	void (*gf_translate_texture_matrix)(int unit, vector *shift);
+	void (*gf_push_texture_matrix)(int unit);
+	void (*gf_pop_texture_matrix)(int unit);
+
+
 } screen;
 
 // cpu types
@@ -780,6 +788,10 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define gr_tcache_set		GR_CALL(gr_screen.gf_tcache_set)
 
 #define gr_set_clear_color	GR_CALL(gr_screen.gf_set_clear_color)
+
+#define gr_translate_texture_matrix		GR_CALL(gr_screen.gf_translate_texture_matrix)
+#define gr_push_texture_matrix			GR_CALL(gr_screen.gf_push_texture_matrix)
+#define gr_pop_texture_matrix			GR_CALL(gr_screen.gf_pop_texture_matrix)
 
 
 // Here be the bitmap functions
