@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.31 $
- * $Date: 2003-10-23 18:03:24 $
- * $Author: randomtiger $
+ * $Revision: 2.32 $
+ * $Date: 2003-10-25 03:26:39 $
+ * $Author: phreak $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.30  2003/10/18 02:45:39  phreak
  * edited gr_d3d_start_instance_matrix to make it take a vector* and a matrix*, but it doesn't do anything yet
  *
@@ -1916,7 +1919,7 @@ void gr_d3d_render_buffer(int idx)
 
 }
 
-void gr_d3d_start_instance_matrix(){
+void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
 	D3DXMATRIX mat, scale;
 
 	D3DXMatrixPerspectiveFovLH(&mat, (4.0/9.0)*(D3DX_PI)*View_zoom, Canv_w2/Canv_h2, 0.2f, 30000);

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.11 $
- * $Date: 2003-10-24 17:35:05 $
- * $Author: randomtiger $
+ * $Revision: 2.12 $
+ * $Date: 2003-10-25 03:26:39 $
+ * $Author: phreak $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/10/24 17:35:05  randomtiger
+ * Implemented support for 32bit TGA and JPG for D3D
+ * Also 32 bit PCX, but it still has some bugs to be worked out
+ * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
+ *
  * Revision 2.10  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -703,7 +708,7 @@ typedef struct screen {
 	void (*gf_destroy_buffer)(int);
 	void (*gf_render_buffer)(int);
 
- 	void (*gf_start_instance_matrix)();
+ 	void (*gf_start_instance_matrix)(vector *, matrix*);
 	void (*gf_end_instance_matrix)();
 
 	int	 (*gf_make_light)(light_data*, int, int );
@@ -921,7 +926,6 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 
 #define	gr_start_clip GR_CALL			(*gr_screen.start_clip_plane)
 #define	gr_end_clip GR_CALL				(*gr_screen.end_clip_plane)
-
 
 // new bitmap functions
 extern int Gr_bitmap_poly;

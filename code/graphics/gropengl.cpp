@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.40 $
- * $Date: 2003-10-24 17:35:05 $
- * $Author: randomtiger $
+ * $Revision: 2.41 $
+ * $Date: 2003-10-25 03:26:39 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/10/24 17:35:05  randomtiger
+ * Implemented support for 32bit TGA and JPG for D3D
+ * Also 32 bit PCX, but it still has some bugs to be worked out
+ * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
+ *
  * Revision 2.39  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -681,6 +686,26 @@ void (*gr_opengl_tmapper_internal)( int nv, vertex ** verts, uint flags, int is_
 void (*gr_opengl_set_tex_src)(gr_texture_source ts);
 
 float *specular_color;
+
+extern vector G3_user_clip_normal;
+extern vector G3_user_clip_point;
+
+int depth = 0;
+const double ZFAR=100000.0;
+const double ZNEAR=0.1;
+//set camera and shiz
+
+//some globals
+extern matrix View_matrix;
+extern vector View_position;
+extern matrix Eye_matrix;
+extern vector Eye_position;
+extern vector Object_position;
+extern matrix Object_matrix;
+extern float	Canv_w2;				// Canvas_width / 2
+extern float	Canv_h2;				// Canvas_height / 2
+extern float	View_zoom;
+static int n_active_lights = 0;
 
 inline static void opengl_switch_arb0(int state)
 {
@@ -2234,9 +2259,88 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 }
 
 
+//ok we're making some assumptions for now.  mainly it must not be multitextured, lit or fogged.
+void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_scaler )
+{
+	int i;
+	float u_scale = 1.0f, v_scale = 1.0f;
+
+	// Make nebula use the texture mapper... this blends the colors better.
+	if ( flags & TMAP_FLAG_NEBULA ){
+		Int3 ();
+	}
+
+	if (depth==0)
+	{
+		//change the projection matrix
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
+
+		//fov, aspect ratio, z_near, z_far
+		//gluPerspective(fl_degrees(View_zoom), (float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1, z_far);
+		gluPerspective( fl_degrees( (4.0f/9.0f)*3.14159*View_zoom ), Canv_w2/Canv_h2, ZNEAR, ZFAR);
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glViewport(gr_screen.offset_x,gr_screen.max_h-gr_screen.offset_y-gr_screen.clip_height,gr_screen.clip_width,gr_screen.clip_height);
+
+		vector fwd;
+		vector *uvec=&Eye_matrix.vec.uvec;
+		vm_vec_scale_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec,(float)ZFAR);
+		gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,-Eye_position.xyz.z,
+		fwd.xyz.x,fwd.xyz.y,-fwd.xyz.z,
+		uvec->xyz.x, uvec->xyz.y,-uvec->xyz.z);
+		glScalef(1,1,-1);
+	}
+		
+	glPushMatrix();
+	glDisable(GL_CULL_FACE);
+	
+	int alpha,tmap_type, r, g, b;
+
+	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
+
+	
+	if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+	{
+		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+		return;
+	}
+	
+	glColor3ub(191,191,191);	//its unlit
+
+	vertex *va;
+	glBegin(GL_TRIANGLE_FAN);
+	for (i=0; i < nv; i++)
+	{
+		va=verts[i];
+		glTexCoord2f(va->u, va->v);
+		glVertex3f(va->x,va->y,va->z);
+	}
+	glEnd();
+
+	glPopMatrix();
+
+	if (depth==0)
+	{
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glViewport(0,0,gr_screen.max_w,gr_screen.max_h);
+	}
+
+}
+
+
 void gr_opengl_tmapper( int nverts, vertex **verts, uint flags )
 {
-	gr_opengl_tmapper_internal( nverts, verts, flags, 0 );
+	if (!(flags &TMAP_HTL_3D_UNLIT))
+		gr_opengl_tmapper_internal( nverts, verts, flags, 0 );
+	else
+		gr_opengl_tmapper_internal3d(nverts,verts,flags,0);
+
 }
 
 #define FIND_SCALED_NUM(x,x0,x1,y0,y1) (((((x)-(x0))*((y1)-(y0)))/((x1)-(x0)))+(y0))
@@ -3951,11 +4055,6 @@ void gr_opengl_translate_texture_matrix(int unit, vector *shift)
 }
 
 
-struct uv_pad
-{
-	float u,v,pad;
-};
-
 struct opengl_vertex_buffer
 {
 	int n_poly;
@@ -4053,14 +4152,19 @@ void gr_opengl_destroy_buffer(int idx)
 }
 
 //#define DRAW_DEBUG_LINES
-	
+extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
 void gr_opengl_render_buffer(int idx)
 {
 	float u_scale,v_scale;
 
-	glFrontFace(GL_CW);
+
+//	glFrontFace(GL_CW);
+	glDisable(GL_CULL_FACE);
 	glColor3ub(191,191,191);
 		
+	glPushMatrix();
+	glScalef(Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z);
+
 	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
 
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -4113,6 +4217,7 @@ void gr_opengl_render_buffer(int idx)
 		ogl_maybe_pop_arb1=0;
 	}
 
+	glPopMatrix();
 #if defined(DRAW_DEBUG_LINES) && defined(_DEBUG)
 	glBegin(GL_LINES);
 		glColor3ub(255,0,0);
@@ -4131,77 +4236,51 @@ void gr_opengl_render_buffer(int idx)
 	
 }
 
-
-extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
-extern vector G3_user_clip_normal;
-extern vector G3_user_clip_point;
-
-int depth = 0;
-const double ZFAR=100000.0;
-const double ZNEAR=0.1;
-//set camera and shiz
-
-//some globals
-extern matrix View_matrix;
-extern vector View_position;
-extern matrix Eye_matrix;
-extern vector Eye_position;
-extern vector Object_position;
-extern matrix Object_matrix;
-extern float	Canv_w2;				// Canvas_width / 2
-extern float	Canv_h2;				// Canvas_height / 2
-extern float	View_zoom;
-static int n_active_lights = 0;
-void gr_opengl_start_instance_matrix()
+void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
 {
-	if (depth==0){
-		//change the viewport
+	if (!offset)
+		offset = &vmd_zero_vector;
+	if (!rotation)
+		rotation = &vmd_identity_matrix;
+
+
+	if (depth == 0)
+	{
+		//change the projection matrix
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
 		glLoadIdentity();
 
 		//fov, aspect ratio, z_near, z_far
-		gluPerspective(45.0, (float)gr_screen.max_w/(float)gr_screen.max_h, 0.1, 100000.0);
+		//gluPerspective(fl_degrees(View_zoom), (float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1, z_far);
+		gluPerspective( fl_degrees( (4.0f/9.0f)*3.14159*View_zoom ), Canv_w2/Canv_h2, ZNEAR, ZFAR);
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
+		glViewport(gr_screen.offset_x,gr_screen.max_h-gr_screen.offset_y-gr_screen.clip_height,gr_screen.clip_width,gr_screen.clip_height);
+
+		vector fwd;
+		vector *uvec=&Eye_matrix.vec.uvec;
+
+		vm_vec_scale_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec,(float)ZFAR);
+
+		gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,-Eye_position.xyz.z,
+		fwd.xyz.x,fwd.xyz.y,-fwd.xyz.z,
+		uvec->xyz.x, uvec->xyz.y,-uvec->xyz.z);
+
+		glScalef(1,1,-1);
 
 	}
 	
+
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
-	glLoadIdentity();
-
-	vector fwd;
-	vector *uvec=&Eye_matrix.vec.uvec;
-
-	vm_vec_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec);
-
-	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,Eye_position.xyz.z,
-			fwd.xyz.x,fwd.xyz.y,fwd.xyz.z,
-			uvec->xyz.x, uvec->xyz.y,uvec->xyz.z);
-
-	glTranslatef(Object_position.xyz.x,Object_position.xyz.y,Object_position.xyz.z);
 
 	vector axis;
 	float ang;
-
-	vm_matrix_to_rot_axis_and_angle(&Object_matrix,&ang,&axis);
-
-	glRotatef(fl_degrees(ang),axis.xyz.x,-axis.xyz.y,-axis.xyz.z);
-
-	glScalef(-Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z);
-
-/*	vector fwd;
-	vector *uvec=&Eye_matrix.vec.uvec;
-
-	vm_vec_scale_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec,30000);
-
-	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,Eye_position.xyz.z,
-			fwd.xyz.x,fwd.xyz.y,fwd.xyz.z,
-			uvec->xyz.x, uvec->xyz.y,uvec->xyz.z);
-*/
-
+	vm_matrix_to_rot_axis_and_angle(rotation,&ang,&axis);
+	glTranslatef(offset->xyz.x,offset->xyz.y,offset->xyz.z);
+	glRotatef(fl_degrees(ang),axis.xyz.x,axis.xyz.y,axis.xyz.z);
 
 	depth++;
 
@@ -4274,14 +4353,11 @@ void gr_opengl_start_clip_plane()
 	vector n;
 	vector p;
 
-	n=G3_user_clip_normal;
-//	n.xyz.z*=-1;
-	
+	n=G3_user_clip_normal;	
 	p=G3_user_clip_point;
-//	p.xyz.z*=-1;
 
 	if (depth==0)
-		gr_opengl_start_instance_matrix();
+		gr_opengl_start_instance_matrix(NULL,NULL);
 
 	clip_equation[0]=n.xyz.x;
 	clip_equation[1]=n.xyz.y;
@@ -4290,8 +4366,6 @@ void gr_opengl_start_clip_plane()
 	glClipPlane(GL_CLIP_PLANE0, clip_equation);
 	glEnable(GL_CLIP_PLANE0);
 }
-
-
 
 
 extern char *Osreg_title;
@@ -4683,6 +4757,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_screen.end_clip_plane = gr_opengl_end_clip_plane;
 
 		gr_screen.gf_lighting = gr_opengl_set_lighting;
+
 
 		glEnable(GL_NORMALIZE);
 	}
