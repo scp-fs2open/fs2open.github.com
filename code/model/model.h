@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.18 $
- * $Date: 2003-01-19 01:07:41 $
- * $Author: bobboau $
+ * $Revision: 2.19 $
+ * $Date: 2003-01-19 06:44:39 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/01/19 01:07:41  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.17  2003/01/17 04:57:17  Goober5000
  * Allowed selection of either $Texture Replace, which keeps track of individual
  * replacement textures for a ship, or $Duplicate Model Texture Replace, which
@@ -771,8 +774,6 @@ typedef struct polymodel {
 	int			glow_numframes[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			glow_fps[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			glow_is_ani[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
-
-	int			nameplate[MAX_MODEL_TEXTURES];				// use the nameplate texture-Bobboau
 
 	int			ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
 	int			transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau
