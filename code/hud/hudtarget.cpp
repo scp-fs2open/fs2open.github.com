@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.46 $
- * $Date: 2004-12-26 22:45:58 $
- * $Author: taylor $
+ * $Revision: 2.47 $
+ * $Date: 2005-01-07 23:15:44 $
+ * $Author: phreak $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2004/12/26 22:45:58  taylor
+ * fix some hud stuff getting drawn multiple times, don't show target data if HUD_disabled_except_messages is set
+ *
  * Revision 2.45  2004/12/25 19:17:23  wmcoolmon
  * Fixed text not displaying for single-weapon sips.
  *
@@ -3033,7 +3036,10 @@ void hud_target_subsystem_in_reticle()
 	int shipnum = targetp->instance;
 
 	for (subsys = GET_FIRST(&Ships[shipnum].subsys_list); subsys != END_OF_LIST(&Ships[shipnum].subsys_list)  ; subsys = GET_NEXT( subsys ) ) {
-		if(!(subsys->system_info->targetable == 0))continue;
+		
+		//if the subsystem isn't targetable, skip it
+		if(!subsys->system_info->targetable)
+			continue;
 
 		get_subsystem_world_pos(targetp, subsys, &subobj_pos);
 
