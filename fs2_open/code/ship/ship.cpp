@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.107 $
- * $Date: 2004-02-16 11:47:34 $
- * $Author: randomtiger $
+ * $Revision: 2.108 $
+ * $Date: 2004-02-20 04:29:56 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.107  2004/02/16 11:47:34  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.106  2004/02/14 00:18:35  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -12402,5 +12409,20 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 		submodel_stepped_rotate(psub, &pss->submodel_info_1);
 	} else {
 		submodel_rotate(psub, &pss->submodel_info_1 );
+	}
+}
+
+
+void ship_info_close(){
+	for(int i = 0; i<MAX_SHIP_TYPES; i++){
+		safe_kill(Ship_info[i].type_str);
+		safe_kill(Ship_info[i].maneuverability_str);
+		safe_kill(Ship_info[i].armor_str);
+		safe_kill(Ship_info[i].manufacturer_str);
+		safe_kill(Ship_info[i].desc);
+		safe_kill(Ship_info[i].tech_desc);
+		safe_kill(Ship_info[i].ship_length);
+		safe_kill(Ship_info[i].gun_mounts);
+		safe_kill(Ship_info[i].missile_banks);
 	}
 }

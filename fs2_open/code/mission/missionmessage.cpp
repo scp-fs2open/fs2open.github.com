@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-02-13 04:17:13 $
- * $Author: randomtiger $
+ * $Revision: 2.10 $
+ * $Date: 2004-02-20 04:29:55 $
+ * $Author: bobboau $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/02/13 04:17:13  randomtiger
+ * Turned off fog in OGL for Fred.
+ * Simulated speech doesnt say tags marked by $ now.
+ * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
+ * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
+ * Error now given on missing briefing icon and bad ship normal data.
+ * Solved more species divide by zero error.
+ * Fixed neb cube crash.
+ *
  * Revision 2.8  2004/02/06 21:26:07  Goober5000
  * fixed a small compatibility bug
  * --Goober5000
@@ -826,7 +835,7 @@ void parse_msgtbl()
 // this is called at the start of each level
 void messages_init()
 {
-	int rval, i;
+	int rval, i, j;
 	static int table_read = 0;
 
 	if ( !table_read ) {
@@ -887,6 +896,17 @@ void messages_init()
 	Next_mute_time = 1;
 
 	memset(Message_times, 0, sizeof(int)*MAX_MISSION_MESSAGES);
+
+	//Taylor from icculus found and fixed this -Bobboau
+    // free up remaining anim data 
+    for (i=0; i<Num_message_avis; i++) { 
+            if (Message_avis[i].anim_data != NULL) { 
+                    for (j=0; j<Message_avis[i].anim_data->ref_count; j++) { 
+                            anim_free(Message_avis[i].anim_data); 
+                    } 
+            } 
+            Message_avis[i].anim_data = NULL; 
+    } 
 }
 
 // called to do cleanup when leaving a mission
@@ -1303,6 +1323,12 @@ void message_play_anim( message_q *q )
 	// check to see if the avi has been loaded.  If not, then load the AVI.  On an error loading
 	// the avi, set the top level index to -1 to avoid multiple tries at loading the flick.
 	if ( hud_gauge_active(HUD_TALKING_HEAD) ) {
+ 
+ 	//Taylor from icculus found and fixed this -Bobboau
+           // if there is something already here that's not this same file then go ahead a let go of it 
+           if ( (anim_info->anim_data != NULL) && stricmp(ani_name, anim_info->anim_data->name) ) 
+                   anim_free(anim_info->anim_data); 
+
 		anim_info->anim_data = anim_load( ani_name, 0 );
 	} else {
 		return;

@@ -9,16 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-01-24 15:52:25 $
- * $Author: randomtiger $
- * $Revision: 2.8 $
- * $Date: 2004-01-24 15:52:25 $
- * $Author: randomtiger $
+ * $Revision: 2.9 $
+ * $Date: 2004-02-20 04:29:53 $
+ * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2004-02-20 04:29:53 $
+ * $Author: bobboau $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/01/24 15:52:25  randomtiger
+ * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
+ * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
+ *
  * Revision 2.7  2003/08/21 20:54:38  randomtiger
  * Fixed switching - RT
  *
@@ -223,10 +227,15 @@ int Description_index;
 cutscene_info Cutscenes[MAX_CUTSCENES];
 
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
+void cutsceen_close(){
+	for(int i = 0; i<MAX_CUTSCENES; i++)
+	if(Cutscenes[i].description)free(Cutscenes[i].description);
+}
 
 // initialization stuff for cutscenes
 void cutscene_init()
 {
+	atexit(cutsceen_close);
 	char buf[MULTITEXT_LENGTH];
 	int rval;
 

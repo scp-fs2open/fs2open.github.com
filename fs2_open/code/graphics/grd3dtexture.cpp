@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.30 $
- * $Date: 2004-02-16 11:47:33 $
- * $Author: randomtiger $
+ * $Revision: 2.31 $
+ * $Date: 2004-02-20 04:29:54 $
+ * $Author: bobboau $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/02/16 11:47:33  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.29  2004/02/15 06:02:31  bobboau
  * fixed sevral asorted matrix errors,
  * OGL people make sure I didn't break anything,
@@ -1489,7 +1496,7 @@ bool d3d_read_header_d3dx(char *file, int type, int *w, int *h)
 	}		
 
 	int size = cfilelength(targa_file);
-	void *tga_data = malloc(size);
+	void *tga_data = malloc(size);//I freed this - Bobboau
 
 	if(tga_data == NULL) {
 		return false;
@@ -1502,12 +1509,14 @@ bool d3d_read_header_d3dx(char *file, int type, int *w, int *h)
 
 	D3DXIMAGE_INFO source_desc;
 	if(FAILED(D3DXGetImageInfoFromFileInMemory(tga_data, size,	&source_desc))) {
+		free(tga_data);//right here -Bobboau
 		return false;
 	} 
 
 	if(w) *w = source_desc.Width;
 	if(h) *h = source_desc.Height;
 	
+	free(tga_data);//and right here -Bobboau
 	return true;
 }
 

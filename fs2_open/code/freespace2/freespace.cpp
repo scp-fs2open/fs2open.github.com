@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.71 $
- * $Date: 2004-02-16 21:22:15 $
- * $Author: randomtiger $
+ * $Revision: 2.72 $
+ * $Date: 2004-02-20 04:29:53 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2004/02/16 21:22:15  randomtiger
+ * Use _REPORT_MEM_LEAKS compile flag in code.lib to get a report of memory leaks from malloc calls.
+ *
  * Revision 2.70  2004/02/16 11:47:32  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -2871,6 +2874,8 @@ void game_init()
 	parse_rank_tbl();
 #ifndef FS2_DEMO
 	parse_medal_tbl();
+	void medal_close();
+	atexit(medal_close);
 #endif
 	cutscene_init();
 	key_init();
@@ -2898,6 +2903,8 @@ void game_init()
 	weapon_init();	
 	ai_init();		
 	ship_init();						// read in ships.tbl	
+		void ship_info_close();
+		atexit(ship_info_close);
 	player_init();	
 	mission_campaign_init();		// load in the default campaign	
 	anim_init();
@@ -7429,6 +7436,12 @@ int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCm
 int WinMainSub(int argc, char *argv[])
 #endif
 {
+
+#ifdef _DEBUG
+	void memblockinfo_output_memleak();
+	atexit(memblockinfo_output_memleak);
+#endif
+
 	int state;		
 
 #ifdef _WIN32
@@ -7658,10 +7671,6 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
 	_CrtDumpMemoryLeaks();
 
-#ifdef _DEBUG
-	void memblockinfo_output_memleak();
-	memblockinfo_output_memleak();
-#endif
 
 #endif
 	
