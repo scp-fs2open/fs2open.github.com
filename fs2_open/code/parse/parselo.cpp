@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.5 $
- * $Author: phreak $
- * $Date: 2003-01-30 23:19:33 $
+ * $Revision: 2.6 $
+ * $Author: penguin $
+ * $Date: 2003-03-02 06:10:58 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/01/30 23:19:33  phreak
+ * cleaned up debug output
+ *
  * Revision 2.4  2003/01/19 01:07:42  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -1159,7 +1162,7 @@ void read_file_text(char *filename, int mode)
 	strcpy(Current_filename, filename);
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL) {
-		nprintf(("Error", "Wokka!  Error opening mission.txt (%s)!\n", filename));
+		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
 		longjmp(parse_abort, 5);
 	}
 
