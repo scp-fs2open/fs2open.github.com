@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-03-16 01:35:58 $
+ * $Revision: 2.40 $
+ * $Date: 2005-03-19 18:02:33 $
  * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/03/16 01:35:58  bobboau
+ * added a geometry batcher and implemented it in sevral places
+ * namely: lasers, thrusters, and particles,
+ * these have been the primary botle necks for some time,
+ * and this seems to have smoothed them out quite a bit.
+ *
  * Revision 2.38  2005/03/09 03:23:31  bobboau
  * added a new interface render funtion
  *
@@ -1248,6 +1254,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	gr_screen.bits_per_pixel = depth;
 	gr_screen.bytes_per_pixel= depth / 8;
 	gr_screen.rendering_to_texture = -1;
+	gr_screen.recording_state_block = false;
 
 	switch( mode )	{
 #ifdef _WIN32

@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2005/03/16 01:35:59  bobboau
+ * added a geometry batcher and implemented it in sevral places
+ * namely: lasers, thrusters, and particles,
+ * these have been the primary botle necks for some time,
+ * and this seems to have smoothed them out quite a bit.
+ *
  * Revision 2.97  2005/03/12 21:08:01  phreak
  * doubled default spawn angle from 180 to 360 since it seems to track better
  *
@@ -3840,7 +3846,7 @@ int weapon_create( vector * pos, matrix * porient, int weapon_id, int parent_obj
 	orient = &morient;
 	if(wip->field_of_fire){
 		vector f;
-		vm_vec_random_cone(&f, &orient->vec.fvec, wip->field_of_fire, NULL);
+		vm_vec_random_cone(&f, &orient->vec.fvec, wip->field_of_fire);
 		vm_vec_normalize(&f);
 		vm_vector_2_matrix( orient, &f, NULL, NULL);
 	}

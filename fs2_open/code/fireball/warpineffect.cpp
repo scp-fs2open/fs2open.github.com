@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-01-01 19:47:26 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2005-03-19 18:02:33 $
+ * $Author: bobboau $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/01/01 19:47:26  taylor
+ * make use of MR_NO_FOGGING to render models without fog
+ *
  * Revision 2.22  2004/11/23 19:29:13  taylor
  * fix 2d warp in D3D, add cmdline option for 3d warp
  *
@@ -224,6 +227,7 @@ extern int Warp_model;
 extern int Cmdline_nohtl;
 extern int Cmdline_3dwarp;
 
+
 DCF(norm,"normalize a zero length vector")
 {
 	if ( Dc_command )	{
@@ -258,6 +262,8 @@ void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 
 void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
 {
+	static flash_ball warp_ball(20, .1f,.25f, &vmd_z_vector, &vmd_zero_vector, 4.0f, 0.5f);
+
 	int i;
 
 	int saved_gr_zbuffering = gr_zbuffer_get();
@@ -299,7 +305,7 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 
 		if ( life_percent < IN_PERCENT1 )	{
 			// do nothing
-			render_it = 0;
+			render_it = 1;
 		} else if ( life_percent < IN_PERCENT2 )	{
 			r *= ( life_percent-IN_PERCENT1 ) / (IN_PERCENT2-IN_PERCENT1); 
 			render_it = 1;
@@ -311,7 +317,7 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 			render_it = 1;
 		} else {
 			// do nothing
-			render_it = 0;
+			render_it = 1;
 		}
 
 		if (render_it)	{
@@ -323,8 +329,10 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 			int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
 
 			r *= (0.40f + Noise[noise_frame]*0.30f);
+			float adg = pow((2.0f*life_percent) - 1.0f,24.0f)*max_radius*2.0f;
+
 						
-			g3_draw_bitmap( &verts[4], 0,r, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+			g3_draw_bitmap( &verts[4], 0,r+adg, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 			gr_zbuffer_set(saved_gr_zbuffering);
 		}
 	}
@@ -434,6 +442,16 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 		draw_face( &verts[4], &verts[3], &verts[2] );
 		draw_face( &verts[0], &verts[3], &verts[4] );
 		gr_set_cull(1);
+	}
+
+	if ( Warp_ball_bitmap > -1 ){
+			g3_start_instance_matrix(pos,orient, true);
+		gr_set_bitmap(Warp_ball_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
+		float adg = (2.0f*life_percent) - 1.0f;
+		float pct= (pow(adg,4.0)-pow(adg,128.0))*4.0f;
+		if(pct > 0.00001f)
+		warp_ball.render(max_radius*pct/2.0f,adg*adg,adg*adg*6.0);
+			g3_done_instance(true);
 	}
 	gr_zbuffer_set( saved_gr_zbuffering );
 }

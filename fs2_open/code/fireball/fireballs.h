@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.11 $
- * $Date: 2004-10-31 02:04:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2005-03-19 18:02:33 $
+ * $Author: bobboau $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/10/31 02:04:33  Goober5000
+ * added Knossos_warp_ani_used flag for taylor
+ * --Goober5000
+ *
  * Revision 2.10  2004/09/17 07:12:22  Goober5000
  * changed around the logic for the 3D warp effect
  * --Goober5000
@@ -282,6 +286,7 @@ float fireball_lifeleft_percent( object *obj );
 // internal function to draw warp grid.
 extern void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d = 0 );
 extern int Warp_glow_bitmap;			// Internal
+extern int Warp_ball_bitmap;			// Internal
 
 extern int Warp_model;
 

@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.7 $
- * $Date: 2005-02-23 05:11:13 $
- * $Author: taylor $
+ * $Revision: 1.8 $
+ * $Date: 2005-03-19 18:02:34 $
+ * $Author: bobboau $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/02/23 05:11:13  taylor
+ * more consolidation of various graphics variables
+ * some header cleaning
+ * only one tmapper_internal for OGL, don't use more than two tex/pass now
+ * seperate out 2d matrix mode to allow -2d_poof in OGL and maybe fix missing
+ *    interface when set 3d matrix stuff doesn't have corresponding end
+ * add dump_frame stuff for OGL, mostly useless but allows trailer recording
+ *
  * Revision 1.6  2005/01/31 10:34:38  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -75,5 +83,9 @@ void gr_opengl_destroy_buffer(int idx);
 void gr_opengl_set_buffer(int idx);
 void gr_opengl_render_buffer(int start, int n_prim, short* index_list);
 void gr_opengl_render_to_env(int FACE);
+
+void gr_opengl_start_state_block();
+int gr_opengl_end_state_block();
+void gr_opengl_set_state_block(int);
 
 #endif //_GROPENGLTNL_H

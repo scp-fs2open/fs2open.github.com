@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-03-16 01:35:59 $
+ * $Revision: 2.35 $
+ * $Date: 2005-03-19 18:02:34 $
  * $Author: bobboau $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/03/16 01:35:59  bobboau
+ * added a geometry batcher and implemented it in sevral places
+ * namely: lasers, thrusters, and particles,
+ * these have been the primary botle necks for some time,
+ * and this seems to have smoothed them out quite a bit.
+ *
  * Revision 2.33  2005/03/13 08:38:05  wmcoolmon
  * Commented out unneeded variables
  *
@@ -2645,3 +2651,211 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 
 	return ret;
 }
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//flash ball stuff
+
+void flash_ball::initalise(int number, float min_ray_width, float max_ray_width, vector* dir, vector*pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b){
+	if(number < 1)return;
+
+	center = *pcenter;
+
+	if(n_rays < number){
+		if(ray)free(ray);
+		ray = (flash_beam*)malloc(sizeof(flash_beam)*number);
+		n_rays = number;
+	}
+
+	int i;
+	for(i = 0; i<n_rays; i++){
+	//colors
+		if(min_r != 255){
+			ray[i].start.r = (rand()%(max_r-min_r))+min_r;
+		}else{
+			ray[i].start.r = 255;
+		}
+		if(min_g != 255){
+			ray[i].start.g = (rand()%(max_g-min_g))+min_g;
+		}else{
+			ray[i].start.g = 255;
+		}
+		if(min_b != 255){
+			ray[i].start.b = (rand()%(max_b-min_b))+min_b;
+		}else{
+			ray[i].start.b = 255;
+		}
+
+	//rays
+		if(dir == &vmd_zero_vector || outer >= PI2){
+			//random sphere
+			vector start, end;
+
+			vm_vec_rand_vec_quick(&start);
+			vm_vec_rand_vec_quick(&end);
+
+			ray[i].start = start;
+			ray[i].end = end;
+		}else{
+			//random cones
+			vector start, end;
+
+			vm_vec_random_cone(&start, dir, outer, inner);
+			vm_vec_random_cone(&end, dir, outer, inner);
+
+			ray[i].start = start;
+			ray[i].end = end;
+		}
+		if(max_ray_width == 0.0f)ray[i].width=min_ray_width;
+		else ray[i].width = frand_range(min_ray_width, max_ray_width);
+	}
+
+
+}
+
+#define uw(p)	(*((uint *) (p)))
+#define w(p)	(*((int *) (p)))
+#define wp(p)	((int *) (p))
+#define vp(p)	((vector *) (p))
+#define fl(p)	(*((float *) (p)))
+
+void flash_ball::defpoint(int off, ubyte *bsp_data){
+
+	int i, n;
+//	off+=4;
+	int nverts = w(off+bsp_data+8);	
+	int offset = w(off+bsp_data+16);
+	int next_norm = 0;
+
+	ubyte * normcount = off+bsp_data+20;
+	vector *src = vp(off+bsp_data+offset);
+
+
+	if(n_rays < nverts){
+		if(ray)free(ray);
+		ray = (flash_beam*)malloc(sizeof(flash_beam)*nverts);
+		n_rays = nverts;
+	}
+
+	{
+
+
+		vector temp;
+		for (n=0; n<nverts; n++ )	{
+
+			temp = *src;
+			vm_vec_sub2(&temp, &center);
+			vm_vec_normalize(&temp);
+			ray[n].start = temp;
+		
+			src++;		// move to normal
+
+			src+=normcount[n];
+		}
+	}
+
+
+
+}
+#define OP_EOF 			0
+#define OP_DEFPOINTS 	1
+#define OP_FLATPOLY		2
+#define OP_TMAPPOLY		3
+#define OP_SORTNORM		4
+#define OP_BOUNDBOX		5
+
+
+void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
+	int ID, SIZE;
+
+	memcpy(&ID, &bsp_data[offset], sizeof(int));
+	memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+
+	while(ID!=0){
+		switch(ID){
+		case OP_EOF:	
+			return;
+			break;
+		case OP_DEFPOINTS:	defpoint(offset, bsp_data);
+			break;
+		case OP_SORTNORM:
+			break;
+		case OP_FLATPOLY:
+			break;
+		case OP_TMAPPOLY:
+			break;
+		case OP_BOUNDBOX:
+			break;
+		default:
+			return;
+		}
+			offset += SIZE;
+		memcpy(&ID, &bsp_data[offset], sizeof(int));
+		memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+
+		if(SIZE < 1)ID=OP_EOF;
+	}
+}
+
+
+void flash_ball::initalise(ubyte *bsp_data, float min_ray_width, float max_ray_width, vector* dir , vector*pcenter , float outer , float inner , ubyte max_r , ubyte max_g , ubyte max_b , ubyte min_r , ubyte min_g , ubyte min_b ){
+	center = *pcenter;
+	vm_vec_negate(&center);
+	parse_bsp(0,bsp_data);
+	center = vmd_zero_vector;
+
+	int i;
+	for(i = 0; i<n_rays; i++){
+	//colors
+		if(min_r != 255){
+			ray[i].start.r = (rand()%(max_r-min_r))+min_r;
+		}else{
+			ray[i].start.r = 255;
+		}
+		if(min_g != 255){
+			ray[i].start.g = (rand()%(max_g-min_g))+min_g;
+		}else{
+			ray[i].start.g = 255;
+		}
+		if(min_b != 255){
+			ray[i].start.b = (rand()%(max_b-min_b))+min_b;
+		}else{
+			ray[i].start.b = 255;
+		}
+
+	//rays
+		if(dir == &vmd_zero_vector || outer >= PI2){
+			//random sphere
+			vector end;
+
+			vm_vec_rand_vec_quick(&end);
+
+			ray[i].end = end;
+		}else{
+			//random cones
+			vector end;
+
+			vm_vec_random_cone(&end, dir, outer, inner);
+
+			ray[i].end = end;
+		}
+		if(max_ray_width == 0.0f)ray[i].width=min_ray_width;
+		else ray[i].width = frand_range(min_ray_width, max_ray_width);
+	}
+}
+
+//rad		how wide the ball should be
+//intinsity	how visable it should be
+//life		how far along from start to end should it be
+void flash_ball::render(float rad, float intinsity, float life){
+	flash_ball::batcher.allocate(n_rays);
+	for(int i = 0; i<n_rays; i++){
+		vector end;
+		vm_vec_interp_constant(&end, (vector*)&ray[i].start.x,  (vector*)&ray[i].end.x, life);
+		vm_vec_scale(&end, rad);
+		vm_vec_add2(&end, &center);
+		flash_ball::batcher.draw_beam(&center, &end, ray[i].width*rad, intinsity);
+	}
+	flash_ball::batcher.render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+}
+
+geometry_batcher flash_ball::batcher;

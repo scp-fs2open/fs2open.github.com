@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.106 $
- * $Date: 2005-03-08 03:50:20 $
- * $Author: Goober5000 $
+ * $Revision: 2.107 $
+ * $Date: 2005-03-19 18:02:33 $
+ * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.106  2005/03/08 03:50:20  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.105  2005/03/07 13:10:21  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -3607,6 +3611,9 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_render_target = gr_ogl_set_render_target;
 
 
+	gr_screen.gf_start_state_block = gr_opengl_start_state_block;
+	gr_screen.gf_end_state_block = gr_opengl_end_state_block;
+	gr_screen.gf_set_state_block = gr_opengl_set_state_block;
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 	// *****************************************************************************

@@ -53,10 +53,10 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo /o"Release\Profile\Freespace2.bsc" "Release\Profile\*.sbr"
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 Quartz.lib Dxerr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib code.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"C:\games\freespace2\fs2_open_r.exe" /libpath:"release" /libpath:"c:\mssdk\lib" /libpath:"c:\dxsdk\lib" /libpath:"c:\speech_api\lib" /libpath:"..\..\..\oggvorbis-sdk\lib"
+# ADD LINK32 Quartz.lib Dxerr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib code.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"I:\games\freespace2\fs2_open_r.exe" /libpath:"release" /libpath:"c:\mssdk\lib" /libpath:"c:\dxsdk\lib" /libpath:"c:\speech_api\lib" /libpath:"..\..\..\oggvorbis-sdk\lib"
 # SUBTRACT LINK32 /pdb:none
 # Begin Custom Build - Copying build...
-InputPath=C:\games\freespace2\fs2_open_r.exe
+InputPath=\games\freespace2\fs2_open_r.exe
 SOURCE="$(InputPath)"
 
 "c:\games\freespace2\fs2_open_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -88,10 +88,10 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo /o"Debug\Profile\Freespace2.bsc" "Debug\Profile\*.sbr"
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib libjpeg_d.lib code.lib /nologo /subsystem:windows /map /debug /debugtype:both /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"C:\games\freespace2\fs2_open_d.exe" /libpath:"debug" /libpath:"c:\mssdk\lib" /libpath:"c:\dxsdk\lib" /libpath:"c:\speech_api\lib" /libpath:"..\..\..\oggvorbis-sdk\lib"
+# ADD LINK32 Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib libjpeg_d.lib code.lib /nologo /subsystem:windows /map /debug /debugtype:both /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"I:\games\freespace2\fs2_open_d.exe" /libpath:"debug" /libpath:"c:\mssdk\lib" /libpath:"c:\dxsdk\lib" /libpath:"c:\speech_api\lib" /libpath:"..\..\..\oggvorbis-sdk\lib"
 # SUBTRACT LINK32 /pdb:none /incremental:no
 # Begin Custom Build - Copying build...
-InputPath=C:\games\freespace2\fs2_open_d.exe
+InputPath=\games\freespace2\fs2_open_d.exe
 SOURCE="$(InputPath)"
 
 "c:\games\freespace2\fs2_open_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
