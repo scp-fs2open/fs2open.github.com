@@ -3,7 +3,7 @@
 
 int Texture_compression_enabled=0;
 
-static int dds_read_header_internal(LPDDSURFACEDESC2 lpddsd, char *filename, int *width, int *height, int *bpp, int *compression_type)
+static int dds_read_header_internal(LPDDSURFACEDESC2 lpddsd, char *filename, int *width, int *height, int *bpp, int *compression_type, int *levels)
 {
 	char code[5];
 	CFILE *ddsfile;
@@ -46,9 +46,15 @@ static int dds_read_header_internal(LPDDSURFACEDESC2 lpddsd, char *filename, int
 	cfread(lpddsd,sizeof(DDSURFACEDESC2),1,ddsfile);
 
 	//stuff important info
-	if (width) *width=lpddsd->dwWidth;
-	if (height) *height=lpddsd->dwHeight;
-	
+	if (width)
+		*width = lpddsd->dwWidth;
+
+	if (height)
+		*height = lpddsd->dwHeight;
+
+	if (levels)
+		*levels = lpddsd->dwMipMapCount;
+
 	switch(lpddsd->ddpfPixelFormat.dwFourCC)
 	{
 		case FOURCC_DXT1:
@@ -88,10 +94,10 @@ static int dds_read_header_internal(LPDDSURFACEDESC2 lpddsd, char *filename, int
 	return retval;
 }
 
-int dds_read_header(char *filename, int *width, int *height, int *bpp, int *compression_type)
+int dds_read_header(char *filename, int *width, int *height, int *bpp, int *compression_type, int *levels)
 {
 	DDSURFACEDESC2 ddsd;
-	return dds_read_header_internal(&ddsd, filename, width, height, bpp, compression_type);
+	return dds_read_header_internal(&ddsd, filename, width, height, bpp, compression_type, levels);
 }
 
 //reads pixel info from a dds file
