@@ -5,12 +5,20 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.7 $
- * $Date: 2004-12-31 03:13:08 $
+ * $Revision: 1.8 $
+ * $Date: 2005-01-01 13:14:19 $
  * $Author: argv $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/12/31 03:13:08  argv
+ * I've just been informed that turrets do not shoot asteroids in the retail
+ * game, and that this implementation causes them to shoot at the parent ship,
+ * too. I'll deal with this later; in the mean time, use
+ * "#define TURRETS_SHOOT_ASTEROIDS" to cause turrets to shoot asteroids.
+ *
+ * -- _argv[-1]
+ *
  * Revision 1.6  2004/12/30 07:26:21  argv
  * Quick hack to remove the 50% rate-of-fire penalty when primary weapons are
  * linked. "#define NO_LINKED_PRIMARY_PENALTY" to enable this change; it's
@@ -86,13 +94,6 @@
 /*
 #ifndef NO_LINKED_PRIMARY_PENALTY
 #define NO_LINKED_PRIMARY_PENALTY 1
-#endif
-*/
-
-// _argv[-1], 30 Dec 2004: I've been informed that turret AI in the retail game does NOT shoot at asteroids, so this is now disabled by default. I'll add this as a command-line option / ship flag / whatnot later.
-/*
-#ifndef TURRETS_SHOOT_ASTEROIDS
-#define TURRETS_SHOOT_ASTEROIDS 1
 #endif
 */
 
