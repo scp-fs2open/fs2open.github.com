@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-09 08:26:24 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/22 01:22:25  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -2916,7 +2919,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	ADD_DATA( Objects[shipp->objnum].net_signature );
 	ADD_DATA( starting_sig );
 	
-	// add a couple of bits for swarm missiles and dual fire secondary weaspons
+	// add a couple of bits for swarm missiles and dual fire secondary weapons
 	sinfo = 0;
 
 	sinfo = current_bank;
@@ -7311,7 +7314,7 @@ void send_NEW_primary_fired_packet(ship *shipp, int banks_fired)
 	}
 
 	// build up the standard weapon fired packet.  This packet will get sent to all players if an AI
-	// ship fired the primary weapons.  If a player fired the weaspon, then this packet will get sent
+	// ship fired the primary weapons.  If a player fired the weapon, then this packet will get sent
 	// to every player but the guy who actullly fired the weapon.  This method is used to help keep client
 	// and server in sync w.r.t. weapon energy for player ship
 	BUILD_HEADER( PRIMARY_FIRED_NEW );
