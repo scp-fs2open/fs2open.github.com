@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.126 $
- * $Date: 2005-03-02 21:24:43 $
+ * $Revision: 2.127 $
+ * $Date: 2005-03-03 05:32:11 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.126  2005/03/02 21:24:43  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.125  2005/03/01 06:55:40  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -9960,7 +9963,7 @@ void verify_ships_tbl()
 #else
 	// this is still needed for LAN play but skip it if we are using FS2NetD
 	if (Om_tracker_flag) {
-		Game_weapons_tbl_valid = 1;
+		Game_ships_tbl_valid = 1;
 	} else {
 		uint file_checksum;		
 		int idx;
