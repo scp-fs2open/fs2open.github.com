@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.40 $
- * $Date: 2005-01-14 05:28:57 $
+ * $Revision: 2.41 $
+ * $Date: 2005-01-29 08:04:15 $
  * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/01/14 05:28:57  wmcoolmon
+ * gr_curve
+ *
  * Revision 2.39  2005/01/01 11:24:22  taylor
  * good OpenGL spec mapping
  * fix VBO crash with multitexture using same uv coord data
@@ -544,8 +547,10 @@ gr_line(x1,y1,x2,y2)
 
 //MAX_POLYGON_NORMS
 #define MAX_POLYGON_TRI_POINTS 15000
-#define MAX_DRAW_DISTANCE 1e10
-#define MIN_DRAW_DISTANCE 1.0f
+extern const float Default_min_draw_distance;
+extern const float Default_max_draw_distance;
+extern float Min_draw_distance;
+extern float Max_draw_distance;
 
 // This is a structure used by the shader to keep track
 // of the values you want to use in the shade primitive.

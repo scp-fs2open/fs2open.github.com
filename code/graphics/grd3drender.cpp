@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-01-14 05:28:57 $
+ * $Revision: 2.55 $
+ * $Date: 2005-01-29 08:04:15 $
  * $Author: wmcoolmon $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/01/14 05:28:57  wmcoolmon
+ * gr_curve
+ *
  * Revision 2.53  2004/07/29 03:41:46  taylor
  * plug memory leaks
  *
@@ -3043,7 +3046,7 @@ void gr_d3d_set_shader( shader *shade )
 void gr_d3d_shade(int x,int y,int w,int h)
 {	
 	int r,g,b,a;
-
+/*
 	float shade1 = 1.0f;
 	float shade2 = 6.0f;
 
@@ -3054,6 +3057,14 @@ void gr_d3d_shade(int x,int y,int w,int h)
 	b = fl2i(gr_screen.current_shader.b*255.0f*shade1);
 	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
 	a = fl2i(gr_screen.current_shader.c*255.0f*shade2);
+	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;*/
+	r = fl2i(gr_screen.current_shader.r);
+	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
+	g = fl2i(gr_screen.current_shader.g);
+	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
+	b = fl2i(gr_screen.current_shader.b);
+	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
+	a = fl2i(gr_screen.current_shader.c);
 	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
 
 	gr_d3d_rect_internal(x, y, w, h, r, g, b, a);	
@@ -3231,11 +3242,12 @@ void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize)
 		// Matrox MGA-G200 doesn't support alpha-blended lines.
 		gr_d3d_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE );
 
-		int r = (gr_screen.current_color.red*gr_screen.current_color.alpha)/255;
-		int g = (gr_screen.current_color.green*gr_screen.current_color.alpha)/255;
-		int b = (gr_screen.current_color.blue*gr_screen.current_color.alpha)/255;
+		float alpha_val = gr_screen.current_color.alpha/255.0f;
 		
-		color = D3DCOLOR_ARGB(255,r,g,b);
+		color = D3DCOLOR_ARGB(255,
+								fl2i(gr_screen.current_color.red*alpha_val),
+								fl2i(gr_screen.current_color.green*alpha_val),
+								fl2i(gr_screen.current_color.blue*alpha_val));
 	}
 
 	INT_CLIPLINE(x1,y1,x2,y2,gr_screen.clip_left,gr_screen.clip_top,gr_screen.clip_right,gr_screen.clip_bottom,return,clipped=1,swapped=1);

@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.93 $
- * $Date: 2005-01-21 08:25:14 $
- * $Author: taylor $
+ * $Revision: 2.94 $
+ * $Date: 2005-01-29 08:04:15 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2005/01/21 08:25:14  taylor
+ * fill in gr_opengl_set_texture_addressing()
+ * add support for non-power-of-two textures for cards that have it
+ * temporary crash fix from multiple mipmap levels in uncompressed formats
+ *
  * Revision 2.92  2005/01/14 05:28:58  wmcoolmon
  * gr_curve
  *
@@ -1269,6 +1274,7 @@ void gr_opengl_shade(int x,int y,int w,int h)
 {
 	int r,g,b,a;
 	
+	/*
 	float shade1 = 1.0f;
 	float shade2 = 6.0f;
 
@@ -1279,9 +1285,18 @@ void gr_opengl_shade(int x,int y,int w,int h)
 	b = fl2i(gr_screen.current_shader.b*255.0f*shade1);
 	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
 	a = fl2i(gr_screen.current_shader.c*255.0f*shade2);
+	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;*/
+
+	r = fl2i(gr_screen.current_shader.r);
+	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
+	g = fl2i(gr_screen.current_shader.g);
+	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
+	b = fl2i(gr_screen.current_shader.b);
+	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
+	a = fl2i(gr_screen.current_shader.c);
 	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
 
-        gr_opengl_rect_internal(x, y, w, h, r, g, b, a);	
+       gr_opengl_rect_internal(x, y, w, h, r, g, b, a);	
 }
 
 void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)

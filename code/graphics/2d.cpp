@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.30 $
- * $Date: 2004-11-27 10:45:35 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2005-01-29 08:04:15 $
+ * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/11/27 10:45:35  taylor
+ * some fixes for position problems on the HUD in non-standard resolutions
+ * few compiler warning fixes
+ *
  * Revision 2.29  2004/10/31 21:35:53  taylor
  * OGL_enabled, s/fisrt/first/g
  *
@@ -660,6 +664,12 @@ uint Gr_signature = 0;
 float Gr_gamma = 1.8f;
 int Gr_gamma_int = 180;
 int Gr_gamma_lookup[256];
+
+//Default clipping distances
+const float Default_min_draw_distance = 1.0f;
+const float Default_Max_draw_distance = 1e10;
+float Min_draw_distance = Default_min_draw_distance;
+float Max_draw_distance = Default_Max_draw_distance;
 
 /**
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
