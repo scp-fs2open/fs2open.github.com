@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-10-23 18:03:24 $
+ * $Revision: 2.7 $
+ * $Date: 2003-10-29 18:18:52 $
  * $Author: randomtiger $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.5  2003/08/30 14:49:01  phreak
  * fixed some random specular lighting bugs
  *
@@ -349,6 +352,12 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 	cc.cc_and = 0xff;
 
 	bufptr = Vbuf0;
+
+	if(tmap_flags & TMAP_HTL_3D_UNLIT && !Cmdline_nohtl) {
+	 	gr_tmapper( nv, pointlist, tmap_flags );
+	 	return 0;
+	}
+
 
 	for (i=0;i<nv;i++) {
 		vertex *p;
