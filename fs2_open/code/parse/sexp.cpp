@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.68 $
- * $Date: 2003-08-28 06:17:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.69 $
+ * $Date: 2003-08-30 21:59:48 $
+ * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2003/08/28 06:17:29  Goober5000
+ * trying to commit
+ * --Goober5000
+ *
  * Revision 2.67  2003/08/27 02:04:54  Goober5000
  * added percent-ships-disarmed and percent-ships-disabled
  * --Goober5000
@@ -830,6 +834,8 @@ sexp_oper Operators[] = {
 	{ "set-unscanned",				OP_SET_UNSCANNED,					1, 2 },
 	{ "lock-rotating-subsystem",	OP_LOCK_ROTATING_SUBSYSTEM,	2, INT_MAX },	// Goober5000
 	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM, 2, INT_MAX },	// Goober5000
+	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,		0,0},
+	{ "num-ships-in-battle-team",	OP_NUM_SHIPS_IN_BATTLE_TEAM, 1,1},
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",				OP_SHIP_VULNERABLE,				1, INT_MAX	},
@@ -3269,6 +3275,39 @@ int sexp_equal(int n)
 		return 1;
 	return 0;
 }
+
+
+//return the number of ships of a given team in the area battle 
+int sexp_num_ships_in_battle_team(int n)
+{
+	int team=sexp_get_val(n);
+	int count=0;
+	ship_obj	*so;
+	ship *shipp;
+	object* objp;
+
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		objp=&Objects[so->objnum];
+		shipp=&Ships[objp->instance];
+		if (shipp->team==team)
+			count++;
+	}
+
+	return count;
+}
+
+int sexp_num_ships_in_battle(int n)
+{
+	int count=0;
+	ship_obj* so;
+
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		count++;
+	}
+
+	return count;
+}
+
 
 // Evaluate if given ship is destroyed.
 //	Return true if the ship in the expression has been destroyed.
@@ -11478,6 +11517,14 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_NUM_SHIPS_IN_BATTLE_TEAM:
+				sexp_val=sexp_num_ships_in_battle_team(node);
+				break;
+
+			case OP_NUM_SHIPS_IN_BATTLE:
+				sexp_val=sexp_num_ships_in_battle(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -11712,6 +11759,8 @@ int query_operator_return_type(int op)
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_SHIP_VISIBLE:
 		case OP_TEAM_SCORE:
+		case OP_NUM_SHIPS_IN_BATTLE_TEAM:
+		case OP_NUM_SHIPS_IN_BATTLE:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -12715,6 +12764,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else
 				return OPF_SHIP;
+
+		case OP_NUM_SHIPS_IN_BATTLE_TEAM:
+			return OPF_IFF;
+		
+		case OP_NUM_SHIPS_IN_BATTLE:
+			return OPF_NONE;
+
 
 		default:
 			Int3();

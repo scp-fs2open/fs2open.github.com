@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.48 $
- * $Author: Goober5000 $
- * $Date: 2003-08-28 05:46:52 $
+ * $Revision: 2.49 $
+ * $Author: phreak $
+ * $Date: 2003-08-30 21:59:48 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2003/08/28 05:46:52  Goober5000
+ * trying to commit
+ * --Goober5000
+ *
  * Revision 2.47  2003/08/27 02:04:54  Goober5000
  * added percent-ships-disarmed and percent-ships-disabled
  * --Goober5000
@@ -744,6 +748,8 @@
 #define OP_IS_AI_CLASS						(0x0025 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_SHIP_TYPE						(0x0026 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_SHIP_CLASS					(0x0027	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_NUM_SHIPS_IN_BATTLE				(0x0028 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
+#define OP_NUM_SHIPS_IN_BATTLE_TEAM			(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
