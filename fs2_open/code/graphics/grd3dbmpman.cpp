@@ -67,7 +67,12 @@ static void bm_d3d_free_data(int n)
 	bitmap			*bmp = &be->bm;
 
 	if(d3d_bitmap_entry[n].tinterface != NULL) {
-	   	d3d_bitmap_entry[n].tinterface->Release();
+		int m = 1;
+
+		while ( m > 0 ) {
+			m = d3d_bitmap_entry[n].tinterface->Release();
+		}
+
 		d3d_bitmap_entry[n].tinterface = NULL;
 	}
 

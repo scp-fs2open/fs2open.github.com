@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.52 $
- * $Date: 2004-07-26 20:47:31 $
- * $Author: Kazan $
+ * $Revision: 2.53 $
+ * $Date: 2004-07-29 03:41:46 $
+ * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2004/07/26 20:47:31  Kazan
+ * remove MCD complete
+ *
  * Revision 2.51  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -3537,6 +3540,9 @@ void gr_d3d_print_screen(char *filename)
     D3DLOCKED_RECT LockedRect;
     if (FAILED(pDestSurface->LockRect(&LockedRect, NULL, D3DLOCK_READONLY)))
     {
+		if (Bits)
+			delete[] Bits;
+
         return;
     }
 
