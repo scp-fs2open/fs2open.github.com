@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:58 $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-29 19:52:48 $
  * $Author: penguin $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:58  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -103,11 +106,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
+
+#ifdef _WIN32
 #include <io.h>
 #include <direct.h>
 #include <windows.h>
 #include <winbase.h>		/* needed for memory mapping of file functions */
-#include <errno.h>
+#endif
 
 #ifdef unix
 #include <glob.h>
@@ -115,9 +121,6 @@
 #endif
 
 #include "pstypes.h"
-//#include "outwnd.h"
-//#include "vecmat.h"
-//#include "timer.h"
 #include "cfile.h"
 #include "cfilesystem.h"
 #include "localize.h"
