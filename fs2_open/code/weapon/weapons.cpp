@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2004/01/30 07:39:09  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.49  2004/01/20 22:10:01  Goober5000
  * heat-seekers now home in on hidden ships
  * --Goober5000
@@ -4549,7 +4555,9 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	float hull_pct;
 	int is_big_damage_ship = 0;
 
-	Assert(wip && wep && target);	// Goober5000 - additional sanity
+	// Goober5000 - additional sanity (target can be NULL)
+	Assert(wip);
+	Assert(wep);
 
 	// sanity
 	if((wip == NULL) || (wep == NULL) || (target == NULL)){

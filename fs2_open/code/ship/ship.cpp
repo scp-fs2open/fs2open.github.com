@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.101 $
- * $Date: 2004-01-31 04:06:29 $
- * $Author: phreak $
+ * $Revision: 2.102 $
+ * $Date: 2004-02-04 04:28:15 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2004/01/31 04:06:29  phreak
+ * commented out decal references
+ *
  * Revision 2.100  2004/01/30 07:39:06  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -2478,10 +2481,6 @@ strcpy(parse_error_text, temp_error);
 			stuff_string(sp->subobj_name, F_NAME, ",");
 			Mp++;
 			stuff_float(&percentage_of_hits);
-			if (percentage_of_hits == 0.0f)
-			{
-				Warning(LOCATION, "Subsystem %s on ship %s has 0 hitpoints.\n", sp->subobj_name, sp->name);
-			}
 			stuff_float(&turning_rate);
 			hull_percentage_of_hits -= percentage_of_hits;
 			sp->max_subsys_strength = sip->initial_hull_strength * (percentage_of_hits / 100.0f);
