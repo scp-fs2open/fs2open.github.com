@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-11-19 20:37:24 $
+ * $Revision: 2.21 $
+ * $Date: 2003-12-03 19:27:00 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/11/19 20:37:24  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 2.19  2003/11/17 06:52:52  bobboau
  * got assert to work again
  *
@@ -699,15 +711,19 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort 
 		t->v_scale = 1.0f;
 	}
 
+	// I wouldnt advise using this - RT
+	const bool use_experiemental_mode = false;
+
 	if(!reload) {
 
 		DBUGFILE_INC_COUNTER(0);
 		if(FAILED(GlobalD3DVars::lpD3DDevice->CreateTexture(
 			tex_w, tex_h,
 			use_mipmapping ? 0 : 1, 
-			0,
+			use_experiemental_mode ? D3DUSAGE_DYNAMIC : 0,
 			d3d8_format, 
-			D3DPOOL_MANAGED, &t->d3d8_thandle)))
+			use_experiemental_mode ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, 
+			&t->d3d8_thandle)))
 		{
 			Assert(0);
 			return 0;
@@ -717,7 +733,7 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort 
 	// lock texture here
 
 	D3DLOCKED_RECT locked_rect;
-	if(FAILED(t->d3d8_thandle->LockRect(0, &locked_rect, NULL, 0)))
+	if(FAILED(t->d3d8_thandle->LockRect(0, &locked_rect, NULL, use_experiemental_mode ? D3DLOCK_DISCARD : 0)))
 	{
 		Assert(0);
 		return 0;
@@ -1416,7 +1432,7 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags, i
 
 	D3DFORMAT use_format;
 
-	bool d3dx_format  = ((type == BM_TYPE_TGA) || (type == BM_TYPE_JPG)) && Cmdline_32bit_textures;
+	bool d3dx_format  = ((type == BM_TYPE_TGA) || (type == BM_TYPE_JPG)) && Cmdline_jpgtga;
 
 	if(d3dx_format) {
 		use_format = use_alpha_format ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8;

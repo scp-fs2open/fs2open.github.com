@@ -325,7 +325,7 @@ int bm_d3d_load( char * real_filename )
 		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".pcx"};
 		
 		// Only load TGA and JPG if given flag
-		int i = Cmdline_32bit_textures ? 0 : BM_TYPE_PCX;
+		int i = Cmdline_jpgtga ? 0 : BM_TYPE_PCX;
 
 		for(; i < NUM_TYPES; i++) {
 		

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.63 $
- * $Date: 2003-11-29 10:52:09 $
+ * $Revision: 2.64 $
+ * $Date: 2003-12-03 19:27:00 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2003/11/29 10:52:09  randomtiger
+ * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Added stats command for ingame stats on memory usage.
+ * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
+ * Added fix for fonts wrapping round in non standard hi res modes.
+ * Changed D3D mipmapping to a good value to suit htl mode.
+ * Added new fog colour method which makes use of the bitmap, making this htl feature backcompatible again.
+ *
  * Revision 2.62  2003/11/19 20:37:23  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -2609,28 +2617,46 @@ void game_init()
 
 	if(fsspeech_init() == false) {
 		mprintf(("Failed to init speech\n"));
-	} 
+
+		if(Cmdline_query_speech)
+		{
+			if(!fsspeech_was_compiled()) 
+				MessageBox((HWND)os_get_window(), "Speech is not compiled in this build in code.lib", "FS2_Open Warning", MB_ICONWARNING);
+			else
+				MessageBox((HWND)os_get_window(), "Speech is compiled, but failed to init", "FS2_Open Warning", MB_ICONWARNING);	
+		}
+	} else if(Cmdline_query_speech) {
+		// Its bad practice to use a negative type, this is an exceptional case
+		fsspeech_play(-1,"Welcome to FS2 open");
+		MessageBox((HWND)os_get_window(), "Speech is compiled and initialised and should be working", "FS2_Open Info", MB_OK);
+	}
+ 
 
 /////////////////////////////
 // SOUND INIT END
 /////////////////////////////
 	
+	// We cannot continue without this, quit, but try to help the user out first
 	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
 
-	if (ptr == NULL )Error( LOCATION, "error reading registry, registry string 'VideocardFs2open' not present,\n this is why you are crashing,\n be sure to use the NEW launcher to set up you're registry,\n" );
-
 	if (ptr == NULL || strstr(ptr, NOX("Direct 3D -") )) {
+
+		// This problem is fatal so lets allow the user to see the cursor for message box interation
+		ShowCursor(TRUE);
+
 #ifdef _WIN32
-		if(strstr(ptr, NOX("Direct 3D -")))
+		if(ptr == NULL)
+		{
+			MessageBox((HWND)os_get_window(), 
+				"Please configure your system in the Launcher (v2.0 or better) before running fs2_open. "
+				"If you have it the Launcher will now automatically load.", 
+				"FS2_Open Startup Error", MB_OK | MB_ICONERROR);
+		}
+		else if(strstr(ptr, NOX("Direct 3D -")))
 		{
 			MessageBox((HWND)os_get_window(), 
 				"Direct3D5 not supported in this build, please use launcher to set D3D8 or OGL settings", 
-				XSTR("Attention!", 1447), MB_OK);
-
-		}
-		else
-		{
-			MessageBox((HWND)os_get_window(), XSTR("Please configure your system in the Launcher before running FS2.", 1446), XSTR("Attention!", 1447), MB_OK);
+				"FS2_Open Startup Error", MB_OK | MB_ICONERROR);
 		}
 
 		// fire up the UpdateLauncher executable
@@ -2640,7 +2666,7 @@ void game_init()
 		memset( &si, 0, sizeof(STARTUPINFO) );
 		si.cb = sizeof(si);
 
-		BOOL ret = CreateProcess(	LAUNCHER_FNAME,	// pointer to name of executable module 
+		BOOL launcher_ran = CreateProcess(	LAUNCHER_FNAME,	// pointer to name of executable module 
 									NULL,							// pointer to command line string
 									NULL,							// pointer to process security attributes 
 									NULL,							// pointer to thread security attributes 
@@ -2652,9 +2678,19 @@ void game_init()
 									&pi 	// pointer to PROCESS_INFORMATION  
 								);			
 
-		// If the Launcher could not be started up, let the user know
-		if (!ret) {
-			MessageBox((HWND)os_get_window(), XSTR("The Launcher could not be restarted.", 1450), XSTR("Error", 1451), MB_OK);
+		// If the Launcher could not be started up, let the user know and give them the option of downloading it
+		if (!launcher_ran) 
+		{
+			int download = MessageBox((HWND)os_get_window(), 
+				"The Launcher could not be started, you cant run fs2_open without it. "
+				"Would you like to download it?", "FS2_Open Startup Error", MB_YESNO | MB_ICONQUESTION);
+
+			if(download == IDYES)
+			{
+				// Someone should change this to the offical link
+				WinExec("explorer.exe \"http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher.rar\"",SW_SHOW);
+
+			}
 		}
 
 		exit(1);

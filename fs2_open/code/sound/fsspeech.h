@@ -27,4 +27,6 @@ void fsspeech_start_buffer();
 void fsspeech_stuff_buffer(char *text);
 void fsspeech_play_buffer(int type);
 
+bool fsspeech_was_compiled();
+
 #endif

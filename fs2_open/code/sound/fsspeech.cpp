@@ -31,6 +31,15 @@ char *FSSpeech_play_id[FSSPEECH_FROM_MAX] =
 char Speech_buffer[MAX_SPEECH_BUFFER_LEN] = "";
 int  Speech_buffer_len;
 
+bool fsspeech_was_compiled()
+{
+#if FS2_SPEECH
+	return true;
+#else
+	return false;
+#endif
+}
+
 bool fsspeech_init()
 {
 	if(speech_init() == false) {
@@ -60,7 +69,8 @@ void fsspeech_deinit()
 void fsspeech_play(int type, char *text)
 {
 	if(type >= FSSPEECH_FROM_MAX) return;
-	if(FSSpeech_play_from[type] == false) return;
+
+	if(type >= 0 && FSSpeech_play_from[type] == false) return;
 
 	speech_play(text);
 }
