@@ -19,6 +19,11 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/11/11 02:15:41  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.43  2003/11/09 07:36:51  Goober5000
  * fixed spelling
  * --Goober5000
@@ -2191,9 +2196,9 @@ void weapon_render(object *obj)
 				if(wip->laser_bitmap_nframes > 1){//set the proper bitmap
 //					wp->gframe += ((timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes);
 					wp->gframe = (int)(wp->gframe + ((int)(flFrametime * 1000) / wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
-					gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, gr_screen.mode == GR_DIRECT3D ? weapon_glow_alpha_d3d : weapon_glow_alpha_glide);
+					gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, ((gr_screen.mode == GR_DIRECT3D)||(gr_screen.mode == GR_OPENGL)) ? weapon_glow_alpha_d3d : weapon_glow_alpha_glide);
 				}else{
-					gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, gr_screen.mode == GR_DIRECT3D ? weapon_glow_alpha_d3d : weapon_glow_alpha_glide);
+					gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, ((gr_screen.mode == GR_DIRECT3D)||(gr_screen.mode == GR_OPENGL)) ? weapon_glow_alpha_d3d : weapon_glow_alpha_glide);
 				}
 				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &obj->pos, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue);
 			}						

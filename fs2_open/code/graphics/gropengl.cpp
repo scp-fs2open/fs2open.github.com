@@ -2,13 +2,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.48 $
- * $Date: 2003-11-17 04:25:56 $
- * $Author: bobboau $
+ * $Revision: 2.49 $
+ * $Date: 2003-11-22 10:36:32 $
+ * $Author: fryday $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2003/11/17 04:25:56  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.47  2003/11/12 00:44:52  Kazan
  * (Kazan) /me slaps forehead... make sure things compile before committing.. sorry guys
  *
@@ -742,7 +748,232 @@ extern float	Canv_w2;				// Canvas_width / 2
 extern float	Canv_h2;				// Canvas_height / 2
 extern float	View_zoom;
 static int n_active_lights = 0;
+const int MAX_OPENGL_LIGHTS = 8; //temporary - will change to dynamic allocation and get rid of this later -Fry_Day
 
+enum
+{
+	LT_DIRECTIONAL,		// A light like a sun
+	LT_POINT,			// A point light, like an explosion
+	LT_TUBE,			// A tube light, like a fluorescent light
+};
+
+// Structures
+struct opengl_light{
+	opengl_light():occupied(false), priority(1){};
+	struct {
+		float r,g,b,a;
+	} Diffuse, Specular, Ambient;
+	struct {
+		float x,y,z,w;
+	} Position;
+	float ConstantAtten, LinearAtten, QuadraticAtten;
+	bool occupied;
+	int priority;
+};
+
+// Variables
+
+opengl_light opengl_lights[MAX_LIGHTS];
+bool active_light_list[MAX_LIGHTS];
+int currently_enabled_lights[MAX_OPENGL_LIGHTS] = {-1};
+
+bool lighting_is_enabled = true;
+extern float static_point_factor;
+extern float static_light_factor;
+extern float static_tube_factor;
+
+int max_gl_lights;
+
+void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
+
+	GLLight->Diffuse.r = FSLight->r * FSLight->intensity;
+	GLLight->Diffuse.g = FSLight->g * FSLight->intensity;
+	GLLight->Diffuse.b = FSLight->b * FSLight->intensity;
+	GLLight->Specular.r = FSLight->spec_r * FSLight->intensity;
+	GLLight->Specular.g = FSLight->spec_g * FSLight->intensity;
+	GLLight->Specular.b = FSLight->spec_b * FSLight->intensity;
+	GLLight->Ambient.r = 0.0f;
+	GLLight->Ambient.g = 0.0f;
+	GLLight->Ambient.b = 0.0f;
+	GLLight->Ambient.a = 1.0f;
+	GLLight->Specular.a = 1.0f;
+	GLLight->Diffuse.a = 1.0f;
+
+
+	//If the light is a directional light
+	if(FSLight->type == LT_DIRECTIONAL) {
+		GLLight->Position.x = FSLight->vec.xyz.x;
+		GLLight->Position.y = FSLight->vec.xyz.y;
+		GLLight->Position.z = FSLight->vec.xyz.z;
+		GLLight->Position.w = 0.0f; //Directional lights in OpenGL have w set to 0 and the direction vector in the position field
+
+		GLLight->Specular.r *= static_light_factor;
+		GLLight->Specular.g *= static_light_factor;
+		GLLight->Specular.b *= static_light_factor;
+	}
+
+	//If the light is a point or tube type
+	if((FSLight->type == LT_POINT) || (FSLight->type == LT_TUBE)) {
+
+		if(FSLight->type == LT_POINT){
+			GLLight->Specular.r *= static_point_factor;
+			GLLight->Specular.g *= static_point_factor;
+			GLLight->Specular.b *= static_point_factor;
+		}else{
+			GLLight->Specular.r *= static_tube_factor;
+			GLLight->Specular.g *= static_tube_factor;
+			GLLight->Specular.b *= static_tube_factor;
+		}
+
+		GLLight->Position.x = FSLight->vec.xyz.x;
+		GLLight->Position.y = FSLight->vec.xyz.y;
+		GLLight->Position.z = FSLight->vec.xyz.z; //flipped axis for FS2
+		GLLight->Position.w = 1.0f;		
+
+		//They also have almost no radius...
+//		GLLight->Range = FSLight->radb +FSLight->rada; //No range function in OpenGL that I'm aware of
+		GLLight->ConstantAtten = 0.0f;
+		GLLight->LinearAtten = 0.01f;
+		GLLight->QuadraticAtten = 0.0f; 
+	}
+
+}
+
+void set_opengl_light(int light_num, opengl_light *light)
+{
+	Assert(light_num < max_gl_lights);
+	glLightfv(GL_LIGHT0+light_num, GL_POSITION, &light->Position.x);
+	glLightfv(GL_LIGHT0+light_num, GL_AMBIENT, &light->Ambient.r);
+	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, &light->Diffuse.r);
+	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, &light->Specular.r);
+	glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, light->ConstantAtten);
+	glLightf(GL_LIGHT0+light_num, GL_LINEAR_ATTENUATION, light->LinearAtten);
+	glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, light->QuadraticAtten);
+}
+//finds the first unocupyed light
+
+void pre_render_init_lights(){
+	for(int i = 0; i<max_gl_lights; i++){
+		if(currently_enabled_lights[i] > -1) glDisable(GL_LIGHT0+i);
+		currently_enabled_lights[i] = -1;
+	}
+}
+
+
+void change_active_lights(int pos){
+	int k = 0;
+	int l = 0;
+	if(!lighting_is_enabled)return;
+	bool move = false;
+	glMatrixMode(GL_MODELVIEW); 
+	glPushMatrix();				
+	glLoadIdentity();
+
+//straight cut'n'paste out of gr_opengl_set_view_matrix, but I couldn't use that, since it messes up with the stack depth var
+	vector fwd;
+	vector *uvec=&Eye_matrix.vec.uvec;
+
+	vm_vec_add(&fwd, &Eye_position, &Eye_matrix.vec.fvec);
+
+	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,-Eye_position.xyz.z,
+	fwd.xyz.x,fwd.xyz.y,-fwd.xyz.z,
+	uvec->xyz.x, uvec->xyz.y,-uvec->xyz.z);
+
+	glScalef(1,1,-1);
+	
+	for(int i = 0; (i < max_gl_lights) && ((pos * max_gl_lights)+i < n_active_lights); i++){
+		glDisable(GL_LIGHT0+i);
+		move = false;
+		for(k; k<MAX_LIGHTS && !move; k++){
+			int slot = (pos * max_gl_lights)+l;
+			if(active_light_list[slot]){
+				if(opengl_lights[slot].occupied){
+					set_opengl_light(i,&opengl_lights[slot]);
+					glEnable(GL_LIGHT0+i);
+					currently_enabled_lights[i] = slot;
+					move = true;
+					l++;
+				}
+			}
+		}
+	}
+	
+
+	glPopMatrix();
+
+}
+
+int	gr_opengl_make_light(light_data* light, int idx, int priority)
+{
+//Stub
+	return idx;
+}
+
+void gr_opengl_modify_light(light_data* light, int idx, int priority)
+{
+//Stub
+}
+
+void gr_opengl_destroy_light(int idx)
+{
+//Stub
+}
+
+void gr_opengl_set_light(light_data *light)
+{
+	//Init the light
+	FSLight2GLLight(&opengl_lights[n_active_lights],light);
+	opengl_lights[n_active_lights].occupied = true;
+	active_light_list[n_active_lights++] = true;
+}
+
+void gr_opengl_reset_lighting()
+{
+	for(int i = 0; i<MAX_LIGHTS; i++){
+		opengl_lights[i].occupied = false;
+	}
+	for(i=0; i<max_gl_lights; i++){
+		glDisable(GL_LIGHT0+i);
+		active_light_list[i] = false;
+	}
+	n_active_lights =0;
+}
+
+
+void gr_opengl_set_lighting(bool set, bool state)
+{
+	struct {
+			float r,g,b,a;
+	} ambient, col;
+
+	lighting_is_enabled = set;
+
+	col.r = col.g = col.b = col.a = 1.0f;
+	glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE, &col.r); //changed to GL_FRONT_AND_BACK, just to make sure
+	glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,specular_exponent_value);
+	if((gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set){
+		ambient.r = ambient.g = ambient.b = ambient.a = gr_screen.current_alpha;
+		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &ambient.r);
+	}else{
+		ambient.r = ambient.g = ambient.b = 0.125; // 1/16th of the max value, just like D3D
+		ambient.a = 1.0f;
+		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &ambient.r);
+	}
+
+	for(int i = 0; i<max_gl_lights; i++){
+		if(currently_enabled_lights[i] > -1)glDisable(GL_LIGHT0+i);
+		currently_enabled_lights[i] = -1;
+	}
+
+	if(state) {
+		glEnable(GL_LIGHTING);
+	}
+	else {
+		glDisable(GL_LIGHTING);
+	}
+
+}
+//End of lighting stuff
 inline static void opengl_switch_arb0(int state)
 {
 	if (state)
@@ -1021,18 +1252,25 @@ void gr_opengl_set_additive_tex_env()
 {
 	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled)
 	{
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
 		glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_ADD);
 		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
 	}
 	else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled)
 	{
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
 		glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_ADD);
 		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 1.0f);
 	}
-	else
+	else {
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+	}
 }
 
 void gr_opengl_set_tex_env_scale(float scale)
@@ -2320,13 +2558,15 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 	int alpha,tmap_type, r, g, b;
 
 	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
-
+	
 	if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 	{
 		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 		return;
 	}
-	
+
+
+
 	glColor3ub(191,191,191);	//its unlit
 
 	vertex *va;
@@ -4187,9 +4427,9 @@ int gr_opengl_make_buffer(poly_list *list)
 		vector *n=vbp->normal_array;
 		vector *v=vbp->vertex_array;
 		uv_pair *t=vbp->texcoord_array;
-
+	
 		vertex *vl;
-		
+
 		memcpy(n,list->norm,list->n_poly*sizeof(vector));
 				
 
@@ -4201,7 +4441,7 @@ int gr_opengl_make_buffer(poly_list *list)
 				v->xyz.y=vl->y;
 				v->xyz.z=vl->z;
 				v++;
-
+				
 				t->u=vl->u;
 				t->v=vl->v;
 				t++;
@@ -4244,7 +4484,7 @@ void gr_opengl_render_buffer(int idx)
 
 	if (glIsEnabled(GL_CULL_FACE))	glFrontFace(GL_CW);
 	
-	glColor3ub(191,191,191);
+//	glColor3ub(191,191,191);
 	
 	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
 
@@ -4331,10 +4571,25 @@ void gr_opengl_render_buffer(int idx)
 	gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
 	
 	glLockArraysEXT(0,vbp->n_poly*3);
+	
+	pre_render_init_lights();
+	change_active_lights(0);
 
 	glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3);
 
+	if((lighting_is_enabled)&&((n_active_lights-1)/max_gl_lights > 0)) {
+		gr_opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+		opengl_switch_arb1(0);
+		opengl_switch_arb2(0);
+		for(int i=1; i< (n_active_lights-1)/max_gl_lights; i++)
+		{
+			change_active_lights(i);
+			glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3); 
+		}
+	}
+
 	glUnlockArraysEXT();
+
 
 	if (ogl_maybe_pop_arb1)
 	{
@@ -4466,7 +4721,7 @@ void gr_opengl_pop_scale_matrix()
 	glPopMatrix();
 	depth--;
 }
-
+/*
 int gr_opengl_make_light(light_data* light, int idx, int priority)
 {
 	//stubb
@@ -4497,7 +4752,7 @@ void gr_opengl_reset_lighting()
 {
 
 }
-
+*/
 void gr_opengl_end_clip_plane()
 {
 	glDisable(GL_CLIP_PLANE0);
@@ -4766,7 +5021,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	}
 
 
-
+	glGetIntegerv(GL_MAX_LIGHTS, &max_gl_lights); //Get the max number of lights supported
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
 	if (!Cmdline_window)
@@ -5021,6 +5276,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_ext;
 	else
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_no_combine;
+
+	glDisable(GL_LIGHTING); //making sure of it
 
 	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);	
 }
