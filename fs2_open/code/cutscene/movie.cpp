@@ -18,22 +18,27 @@ void movie_set_shutdown_fgx(bool state)
 bool movie_play(char *name, int unknown_value)
 {
 	// This should not be uncommented
- 	if(!Cmdline_dshowvid)
+ 	if(Cmdline_dnoshowvid)
 	{
   		return true;
 	}
+
+	char full_name[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, full_name);
+	strcat(full_name, "\\");
+	strcat(full_name, name);
 
 	/*
 	** Check file exists
 	*/
 	// Ok - this should be replaced with FS2 cfopen or something - UP
-	FILE *fp = fopen(name,"rb");
-	DBUGFILE_OUTPUT_1("About to play: %s",name);
+	FILE *fp = fopen(full_name,"rb");
+	DBUGFILE_OUTPUT_1("About to play: %s",full_name);
 		
 	if(fp == NULL)
 	{
-		DBUGFILE_OUTPUT_0("MOVIE ERROR: Cant open movie file");
-		return true;
+		DBUGFILE_OUTPUT_1("MOVIE ERROR: Cant open movie file %s",full_name);
+		return false;
 	}
 
 	fclose(fp);
@@ -97,7 +102,7 @@ bool movie_play_two(char *name1, char *name2, int unknown_value)
 	bool result = true;
 
 	// This should not be uncommented
- 	if(!Cmdline_dshowvid)
+ 	if(Cmdline_dnoshowvid)
 	{
   		return true;
 	}

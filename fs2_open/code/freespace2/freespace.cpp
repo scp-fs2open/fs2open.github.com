@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.37 $
- * $Date: 2003-08-16 03:52:23 $
- * $Author: bobboau $
+ * $Revision: 2.38 $
+ * $Date: 2003-08-21 20:54:38 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/08/16 03:52:23  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.36  2003/08/12 03:18:33  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -7392,6 +7401,8 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 int main(int argc, char *argv[])
 #endif
 {
+	::CoInitialize(NULL);
+
 	DBUGFILE_INIT();
 	int result = -1;
 
@@ -7420,6 +7431,8 @@ int main(int argc, char *argv[])
 #endif
 
 	DBUGFILE_DEINIT()
+
+	::CoUninitialize();
 	
 	return result;
 }

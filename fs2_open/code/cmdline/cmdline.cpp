@@ -9,14 +9,32 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-08-12 03:18:33 $
- * $Author: bobboau $
- * $Revision: 2.22 $
- * $Date: 2003-08-12 03:18:33 $
- * $Author: bobboau $
+ * $Revision: 2.23 $
+ * $Date: 2003-08-21 20:54:37 $
+ * $Author: randomtiger $
+ * $Revision: 2.23 $
+ * $Date: 2003-08-21 20:54:37 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/08/12 03:18:33  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.21  2003/08/09 06:07:23  bobboau
  * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
  *
@@ -345,12 +363,10 @@ cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
 cmdline_parm gf4fix_arg("-gf4fix", NULL); //DTP for random tigers GF4fix
 cmdline_parm allslev_arg("-allslev", NULL); //Give access to all single player missions
 cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including new targetting code
-cmdline_parm dshowvid_arg("-dshowvid", NULL); // Allows video streaming
+cmdline_parm dnoshowvid_arg("-dnoshowvid", NULL); // Allows video streaming
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
 cmdline_parm fps_arg("-fps", NULL);
-//cmdline_parm dshowvid_arg("-dshowvid", NULL); // Allows video streaming - redefinition
 cmdline_parm d3dlowmem_arg("-d3dlowmem", NULL); //DTP for random tigers GF4fix
-cmdline_parm d3dlauncher_arg("-d3dlauncher", NULL);
 cmdline_parm d3dmipmap_arg("-d3dmipmap", NULL);
 cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// beams do not pierce shields - Goober5000
 cmdline_parm fov_arg("-fov", NULL);	// comand line FOV -Bobboau
@@ -389,12 +405,10 @@ int Cmdline_window = 0;
 int Cmdline_gf4fix = 0; // DTP for randomstigers GF4 fix.
 int Cmdline_allslev = 0;
 int Cmdline_phreak	= 0;
-int Cmdline_dshowvid = 0;
+int Cmdline_dnoshowvid = 0;
 int Cmdline_show_fps = 0;
 
-//int Cmdline_dshowvid = 0;	// multiple initialization
 int Cmdline_d3dlowmem = 0;
-int Cmdline_d3dlauncher = 0;
 int Cmdline_d3dmipmap = 0;
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
@@ -776,9 +790,8 @@ int parse_cmdline(int argc, char *argv[])
 		Cmdline_phreak = 1;
 	}
 
-	if(dshowvid_arg.found() ) {
-		Cmdline_dshowvid = 1;
-		Cmdline_gf4fix = 1;
+	if(dnoshowvid_arg.found() ) {
+		Cmdline_dnoshowvid = 1;
 	}
 
 	if(mod_arg.found() ) {
@@ -791,16 +804,8 @@ int parse_cmdline(int argc, char *argv[])
 		Cmdline_show_fps = 1;
 	}
 
-	if(dshowvid_arg.found() ) {
-		Cmdline_dshowvid = 1;
-	}
-
 	if( d3dlowmem_arg.found() ) {
 		Cmdline_d3dlowmem = 1;
-	}
-
-	if( d3dlauncher_arg.found() ) {
-		Cmdline_d3dlauncher = 1;
 	}
 
 	if( d3dmipmap_arg.found() ) {

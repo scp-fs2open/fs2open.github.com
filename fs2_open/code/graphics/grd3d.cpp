@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-08-16 03:52:23 $
- * $Author: bobboau $
+ * $Revision: 2.18 $
+ * $Date: 2003-08-21 20:54:38 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/08/16 03:52:23  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.16  2003/08/12 03:18:33  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -507,9 +516,7 @@ const D3DMULTISAMPLE_TYPE multisample_types[multisample_max] =
 	D3DMULTISAMPLE_16_SAMPLES
 };
 
-volatile int D3D_running = 0;
-volatile int D3D_activate = 0;
-volatile int D3D_deactivate = 0;
+int D3D_activate = 0;
 
 // -1 == no fog, bad bad bad
 // 0 == vertex fog
@@ -787,25 +794,21 @@ HRESULT d3d_DrawPrimitive( D3DPRIMITIVETYPE dptPrimitiveType, D3DVERTEXTYPE dvtV
 */
 void gr_d3d_activate(int active)
 {
-	if ( !D3D_running )	{
-		return;
-	}
 	mprintf(( "Direct3D activate: %d\n", active ));
 
 	HWND hwnd = (HWND)os_get_window();
 	
 	if ( active  )	{
-		D3D_activate++;
+		D3D_activate = 1;
 
 		if ( hwnd )	{
 			ClipCursor(&D3D_cursor_clip_rect);
 			ShowWindow(hwnd,SW_RESTORE);
 		}
 
-		d3d_lost_device();
-
 	} else {
-		D3D_deactivate++;
+
+		D3D_activate = 0;
 
 		if ( hwnd )	{
 			ClipCursor(NULL);
@@ -817,6 +820,8 @@ void gr_d3d_activate(int active)
 // No objects should be rendered before this frame
 void d3d_start_frame()
 {
+	if(!D3D_activate) return;
+
 	HRESULT ddrval;
 
 	if (!D3D_inited) return;
@@ -842,6 +847,7 @@ void d3d_start_frame()
 void d3d_stop_frame()
 {
 	if (!D3D_inited) return;
+	if(!D3D_activate) return;
 
 	if ( In_frame < 0 || In_frame > 1 )	{
 		mprintf(( "Stop frame error! (%d)\n", In_frame ));
@@ -1234,6 +1240,7 @@ bool d3d_init_device(int screen_width, int screen_height)
 
 void gr_d3d_flip()
 {
+	if(!D3D_activate) return;
 	int mx, my;	
 	
 	// Attempt to allow D3D8 to recover from task switching
@@ -1264,21 +1271,7 @@ void gr_d3d_flip()
 
 	d3d_stop_frame();
 
-
 	d3d_tcache_frame();
-
-	int cnt = D3D_activate;
-	if ( cnt )	{
-		D3D_activate-=cnt;
-		d3d_tcache_flush();
-		d3d_clip_cursor(1);
-	}
-
-	cnt = D3D_deactivate; 
-	if ( cnt )	{
-		D3D_deactivate-=cnt;
-		d3d_clip_cursor(0);
-	}
 
 	d3d_start_frame();
 
@@ -1327,6 +1320,7 @@ IDirect3DSurface8 *Gr_saved_surface = NULL;
 // This needs to be updated to DX8
 int gr_d3d_save_screen()
 {
+	if(!D3D_activate) return -1;
 	gr_reset_clip();
 
 	// Lets not bother with this if its a window or it causes a debug DX8 error
@@ -2673,7 +2667,6 @@ bool gr_d3d_init()
 
 	// Tell Freespace code that we're using Direct3D.
 	D3D_enabled = 1;		
-	D3D_running = 0;	
 
 	if(d3dpp.BackBufferWidth == 1024) {
 		gr_init_res(GR_1024, GR_DIRECT3D);
@@ -2762,8 +2755,6 @@ bool gr_d3d_init()
 			d3d_detect_line_offset_16();
 		}
 	}
-
-	D3D_running = 1;	
 
 	Mouse_hidden++;
 	gr_reset_clip();
