@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.52 $
- * $Date: 2004-02-23 07:45:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.53 $
+ * $Date: 2004-02-27 04:09:56 $
+ * $Author: bobboau $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2004/02/23 07:45:38  Goober5000
+ * removed an old function
+ * --Goober5000
+ *
  * Revision 2.51  2004/02/04 08:41:02  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -11642,6 +11646,45 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				ok_to_fire = 1;
 			}
 		}
+
+
+		//start testing if your going to hit yourself-Bobboau
+		{
+			polymodel *pm = model_get(shipp->modelnum);		
+			mc_info test_collide;
+			matrix or;
+			vm_vector_2_matrix(&or, &v2e, NULL, NULL);
+			vector start, end;
+
+			float r;
+			if(Weapon_info[tp->turret_weapon_type].model_num != -1)
+				r = model_get_radius(Weapon_info[tp->turret_weapon_type].model_num);
+			else
+				r = Weapon_info[tp->turret_weapon_type].laser_head_radius;
+
+
+			vm_vec_scale_add(&start,&gpos, &gvec, r*4);
+			vm_vec_scale_add(&end,&gpos, &gvec, model_get_radius(shipp->modelnum));
+	
+			test_collide.model_num = shipp->modelnum;
+			test_collide.submodel_num = pm->detail[0];
+			test_collide.orient = &objp->orient;
+			test_collide.pos = &objp->pos;
+			test_collide.p0 = &gpos;
+			test_collide.p1 = &end;
+			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
+
+		//	static int blocked = 0;
+		//	static int notblocked = 0;
+			if(model_collide(&test_collide)){
+				ok_to_fire = 0;
+			//	blocked++;
+			//	mprintf(( "blocked on ship class %s, turret %s ", Ship_info[shipp->ship_info_index].name, ss->system_info->name ));
+			}//else notblocked++;
+		}
+		//end testing if your going to hit yourself
+
+//		mprintf(( "blocked:%d, not blocked:,%d,\n", blocked, notblocked ));
 
 		if ( ok_to_fire ) {
 			Num_turrets_fired++;

@@ -11,11 +11,18 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.46 $
- * $Date: 2004-02-16 11:47:31 $
- * $Author: randomtiger $
+ * $Revision: 2.47 $
+ * $Date: 2004-02-27 04:09:55 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2004/02/16 11:47:31  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.45  2004/01/29 01:34:00  randomtiger
  * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
  * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
@@ -458,5 +465,7 @@ extern int Cmdline_ambient_factor;
 extern int Cmdline_show_mem_usage;
 extern int Cmdline_rt;
 extern char *Cmdline_start_mission;
+
+//extern float global_scaleing_factor;
 
 #endif
