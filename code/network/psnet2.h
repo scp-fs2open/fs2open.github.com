@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.h $
- * $Revision: 2.2 $
- * $Date: 2002-07-22 01:22:26 $
+ * $Revision: 2.3 $
+ * $Date: 2002-07-26 16:12:05 $
  * $Author: penguin $
  *
  * Header file for the application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/22 01:22:26  penguin
+ * Linux port -- added NO_STANDALONE ifdefs
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -62,6 +65,10 @@
 
 #include "pstypes.h"
 
+#ifdef _WIN32
+#include <winsock.h>
+#endif
+
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 DEFINES/VARS
 //
@@ -87,8 +94,16 @@ typedef struct net_addr	{
 } net_addr;
 
 // define these in such a manner that a call to psnet_send_reliable is exactly the same and the new code in unobtrusive
+#ifdef _WIN32
 typedef uint PSNET_SOCKET;
 typedef uint PSNET_SOCKET_RELIABLE;
+typedef int socklen_t;
+#else
+typedef int SOCKET;
+typedef int PSNET_SOCKET;
+typedef int PSNET_SOCKET_RELIABLE;
+#endif
+
 #undef INVALID_SOCKET
 #define INVALID_SOCKET (PSNET_SOCKET)(~0)
 
