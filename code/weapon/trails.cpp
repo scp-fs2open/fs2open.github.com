@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-11-16 04:09:20 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2003-11-17 04:25:58 $
+ * $Author: bobboau $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/11/16 04:09:20  Goober5000
+ * language
+ *
  * Revision 2.8  2003/11/11 03:56:13  bobboau
  * lots of bug fixing, much of it in nebula and bitmap drawing
  *
@@ -542,11 +545,12 @@ void trail_render( trail * trailp )
 	if(!nv)return;
 	if(nv<3)Error( LOCATION, "too few verts in trail render\n" );
 	if(nv>MAX_TRAIL_POLYS-1)Error( LOCATION, "too many verts in trail render\n" );
+	if(nv%2 != 1)Error( LOCATION, "even number of verts verts in trail render\n" );//there should always be three virts in the last section and 2 everyware else, therefore there should always be an odd number of verts
 
 	gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 	if ( D3D_enabled || OGL_inited )	{
-		if(Cmdline_nohtl)g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TRISTRIP );
-		else g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
+		if(Cmdline_nohtl)	g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TRISTRIP );
+		else				g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
 	} else {
 		if(Cmdline_nohtl)g3_draw_poly( nv, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TRISTRIP);
 		else g3_draw_poly( nv, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP);

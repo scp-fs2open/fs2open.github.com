@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-11-16 04:09:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2003-11-17 04:25:57 $
+ * $Author: bobboau $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/11/16 04:09:27  Goober5000
+ * language
+ *
  * Revision 2.8  2003/11/11 03:56:12  bobboau
  * lots of bug fixing, much of it in nebula and bitmap drawing
  *
@@ -354,16 +357,39 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 
 	Assert( G3_count == 1 );
 
+	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
+		gr_tmapper( nv, pointlist, tmap_flags );
+		return 0;
+	}
+	if(Cmdline_nohtl && (tmap_flags & TMAP_FLAG_TRISTRIP)){
+		bool starting = true;
+		int offset = 0;
+		for (i=0;i<nv;i++){
+			if (!(pointlist[i]->flags&PF_PROJECTED))g3_project_vertex(pointlist[i]);
+			if (pointlist[i]->flags&PF_OVERFLOW){
+				if(starting)
+					offset++;
+				nv--;
+			}else
+				starting = false;
+			if(nv<3)return 1;
+		}
+		if(nv<3)return 1;
+		pointlist += offset;
+		gr_tmapper( nv, pointlist, tmap_flags );
+		return 0;
+	}
+
 	cc.cc_or = 0;
 	cc.cc_and = 0xff;
 
 	bufptr = Vbuf0;
 
-	if(tmap_flags & TMAP_HTL_3D_UNLIT && !Cmdline_nohtl) {
+/*	if(tmap_flags & TMAP_HTL_3D_UNLIT && !Cmdline_nohtl) {
 	 	gr_tmapper( nv, pointlist, tmap_flags );
 	 	return 0;
 	}
-
+*/
 	for (i=0;i<nv;i++) {
 		vertex *p;
 
@@ -442,6 +468,18 @@ int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float co
 
 	Assert( G3_count == 1 );
 
+	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
+		gr_tmapper( nv, pointlist, tmap_flags );
+		return 0;
+	}
+	if(tmap_flags & TMAP_FLAG_TRISTRIP){
+		for (i=0;i<nv;i++){
+			if (!(pointlist[i]->flags&PF_PROJECTED))g3_project_vertex(pointlist[i]);
+		}
+		gr_tmapper( nv, pointlist, tmap_flags );
+		return 0;
+	}
+
 	cc.cc_or = 0; cc.cc_and = 0xff;
 
 	bufptr = Vbuf0;
@@ -458,10 +496,6 @@ int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float co
 	if (cc.cc_and)
 		return 1;	//all points off screen
 
-	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
-		gr_tmapper( nv, bufptr, tmap_flags );
-		return 0;
-	}
 
 	if (cc.cc_or)	{
 		Assert( G3_count == 1 );

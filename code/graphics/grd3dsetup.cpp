@@ -852,6 +852,8 @@ void d3d_setup_function_pointers()
 		gr_screen.gf_make_buffer = gr_d3d_make_buffer;
 		gr_screen.gf_destroy_buffer = gr_d3d_destroy_buffer;
 		gr_screen.gf_render_buffer = gr_d3d_render_buffer;
+		gr_screen.gf_make_flat_buffer = gr_d3d_make_flat_buffer;
+		gr_screen.gf_make_line_buffer = gr_d3d_make_line_buffer;
 
 		gr_screen.gf_set_proj_matrix				= gr_d3d_set_proj_matrix;
 		gr_screen.gf_end_proj_matrix				= gr_d3d_end_proj_matrix;

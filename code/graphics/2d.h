@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.16 $
- * $Date: 2003-11-16 04:09:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2003-11-17 04:25:55 $
+ * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/11/16 04:09:24  Goober5000
+ * language
+ *
  * Revision 2.15  2003/11/11 03:56:11  bobboau
  * lots of bug fixing, much of it in nebula and bitmap drawing
  *
@@ -470,9 +473,16 @@ typedef struct color {
 //a list of triangles and there assosiated normals
 
 struct poly_list{
+	poly_list():n_poly(0),vert(NULL),norm(NULL){};
+	~poly_list(){if(vert!=NULL)delete[] vert; if(norm!=NULL)delete[] norm;};
 	int n_poly;
-	vertex vert[MAX_POLYGON_TRI_POINTS][3];
-	vector norm[MAX_POLYGON_TRI_POINTS][3];
+	vertex *vert;
+	vector *norm;
+};
+
+struct line_list{
+	int n_line;
+	vertex *vert;
 };
 
 //exactly the same as the light structure from light.cpp, 
@@ -730,6 +740,9 @@ typedef struct screen {
 	int	 (*gf_make_buffer)(poly_list*);
 	void (*gf_destroy_buffer)(int);
 	void (*gf_render_buffer)(int);
+	int	 (*gf_make_flat_buffer)(poly_list*);
+	int	 (*gf_make_line_buffer)(line_list*);
+	
 
 	//the projection matrix; fov, aspect ratio, near, far
  	void (*gf_set_proj_matrix)(float, float, float, float);
@@ -951,6 +964,8 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define gr_make_buffer					 GR_CALL(*gr_screen.gf_make_buffer)            
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)            
 #define gr_render_buffer				 GR_CALL(*gr_screen.gf_render_buffer)            
+#define gr_make_flat_buffer					 GR_CALL(*gr_screen.gf_make_flat_buffer)            
+#define gr_make_line_buffer					 GR_CALL(*gr_screen.gf_make_line_buffer)            
 
 #define gr_set_proj_matrix				 GR_CALL(*gr_screen.gf_set_proj_matrix)            
 #define gr_end_proj_matrix				 GR_CALL(*gr_screen.gf_end_proj_matrix)            

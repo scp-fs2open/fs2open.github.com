@@ -76,6 +76,7 @@ void FSLight2DXLight(D3DLIGHT8 *DXLight,light_data *FSLight) {
 	//If the light is a point or tube type
 	if((FSLight->type == LT_POINT) || (FSLight->type == LT_TUBE)) {
 
+		float r = 2.0f;
 		if(FSLight->type == LT_POINT){
 			DXLight->Specular.r *= static_point_factor;
 			DXLight->Specular.g *= static_point_factor;
@@ -84,6 +85,7 @@ void FSLight2DXLight(D3DLIGHT8 *DXLight,light_data *FSLight) {
 			DXLight->Specular.r *= static_tube_factor;
 			DXLight->Specular.g *= static_tube_factor;
 			DXLight->Specular.b *= static_tube_factor;
+			r = 10.0f;
 		}
 
 		DXLight->Type = D3DLIGHT_POINT;
@@ -100,7 +102,7 @@ void FSLight2DXLight(D3DLIGHT8 *DXLight,light_data *FSLight) {
 		DXLight->Specular.b *= 2;
 
 		//They also have almost no radius...
-		DXLight->Range = FSLight->radb +FSLight->rada;
+		DXLight->Range = FSLight->radb +FSLight->rada * r;
 		DXLight->Attenuation0 = 0.0f;
 		DXLight->Attenuation1 = 1.0f;
 		DXLight->Attenuation2 = 0.0f;
@@ -120,8 +122,8 @@ int find_first_empty_light()
 }
 
 void pre_render_lights_init(){
-//	if(lighting_enabled)	GlobalD3DVars::lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
-//	else 	GlobalD3DVars::lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
+//	if(lighting_enabled)	d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
+//	else 	d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
 	for(int i = 0; i<8; i++){
 		if(currently_enabled[i] > -1)GlobalD3DVars::lpD3DDevice->LightEnable(currently_enabled[i],false);
 		currently_enabled[i] = -1;

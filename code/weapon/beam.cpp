@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.32 $
- * $Date: 2003-11-16 04:09:20 $
- * $Author: Goober5000 $
+ * $Revision: 2.33 $
+ * $Date: 2003-11-17 04:25:58 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/11/16 04:09:20  Goober5000
+ * language
+ *
  * Revision 2.31  2003/11/11 03:56:13  bobboau
  * lots of bug fixing, much of it in nebula and bitmap drawing
  *
@@ -1735,19 +1738,22 @@ void beam_render_muzzle_glow(beam *b)
 	g3_rotate_vertex(&v, &b->last_start);
 	if(!Cmdline_nohtl)g3_transfer_vertex(&pt, &b->last_start);
 	else pt = v;
+
+	float rad = wip->b_info.beam_muzzle_radius * pct * rand_val;
+
 	gr_set_bitmap( bwi->beam_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);	
 	// draw 1 bitmap
-	g3_draw_bitmap(&pt, 0, wip->b_info.beam_muzzle_radius * pct * rand_val, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
+	g3_draw_bitmap(&pt, 0, rad, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
 	
 	// maybe draw more
 	if(pct > 0.3f){
-		g3_draw_bitmap(&pt, 0, wip->b_info.beam_muzzle_radius * pct * 0.75f * rand_val, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
+		g3_draw_bitmap(&pt, 0, rad * 0.75f, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT, rad * 0.25f);
 	}
 	if(pct > 0.5f){
-		g3_draw_bitmap(&pt, 0, wip->b_info.beam_muzzle_radius * pct * 0.45f * rand_val, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
+		g3_draw_bitmap(&pt, 0, rad * 0.45f, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT, rad * 0.55f);
 	}
 	if(pct > 0.7f){
-		g3_draw_bitmap(&pt, 0, wip->b_info.beam_muzzle_radius * pct * 0.25f * rand_val, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
+		g3_draw_bitmap(&pt, 0, rad * 0.25f, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT, rad * 0.75f);
 	}
 }
 

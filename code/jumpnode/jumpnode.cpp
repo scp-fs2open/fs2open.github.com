@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-11-17 04:25:56 $
+ * $Author: bobboau $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -104,7 +107,7 @@ void jumpnode_render(object *jumpnode_objp, vector *pos, vector *view_pos)
 		} else {
 			gr_set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		}
-		model_render(node->modelnum, &node_orient, pos, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_POLYS | MR_SHOW_OUTLINE_PRESET );
+		model_render(node->modelnum, &node_orient, pos, MR_NO_CULL | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_POLYS | MR_SHOW_OUTLINE_PRESET );
 	}
 
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.42 $
- * $Date: 2003-11-16 04:09:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.43 $
+ * $Date: 2003-11-17 04:25:55 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/11/16 04:09:24  Goober5000
+ * language
+ *
  * Revision 2.41  2003/11/11 03:56:11  bobboau
  * lots of bug fixing, much of it in nebula and bitmap drawing
  *
@@ -587,11 +590,13 @@
 #include "model/model.h"
 #include "cmdline/cmdline.h"   
 
+enum vertex_buffer_type{TRILIST_,LINELIST_,FLAT_};
 // Structures and enums
 struct Vertex_buffer{
 	Vertex_buffer(): ocupied(false), n_prim(0){};
 	bool ocupied;
 	int n_prim;
+	vertex_buffer_type type;
 	IDirect3DVertexBuffer8 *buffer;
 };
 
@@ -1142,7 +1147,7 @@ void set_stage_for_single_pass_specmapping(int SAME){
 
 		same = SAME;
 	}else{
-	//	GlobalD3DVars::lpD3DDevice->SetRenderState(D3DRS_TEXTUREFACTOR, D3DCOLOR_ARGB(255,64,64,64));
+	//	d3d_SetRenderState(D3DRS_TEXTUREFACTOR, D3DCOLOR_ARGB(255,64,64,64));
 		
 		d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_SPECULAR);
 		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
@@ -1811,11 +1816,10 @@ int gr_d3d_make_buffer(poly_list *list){
 		vector *N;
 
 		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
-		for(int k = 0; k<list->n_poly; k++){
-			for(int j = 0; j < 3; j++){
-				V = &v[(k*3)+j];
-				L = &list->vert[k][j];
-				N = &list->norm[k][j];
+		for(int k = 0; k<list->n_poly*3; k++){
+				V = &v[k];
+				L = &list->vert[k];
+				N = &list->norm[k];
 
 				V->sx = L->x;
 				V->sy = L->y;
@@ -1829,15 +1833,99 @@ int gr_d3d_make_buffer(poly_list *list){
 				V->nx = N->xyz.x;
 				V->ny = N->xyz.y;
 				V->nz = N->xyz.z;
-			}
 		}
 
 		vertex_buffer[idx].buffer->Unlock();
 
 		vertex_buffer[idx].ocupied = true;
 		vertex_buffer[idx].n_prim  = list->n_poly;
+		vertex_buffer[idx].type = TRILIST_;
 	}
 	return idx;
+}
+//makes the vertex buffer, returns an index to it
+int gr_d3d_make_flat_buffer(poly_list *list){
+	int idx = find_first_empty_buffer();
+
+	if(idx > -1){
+		IDirect3DVertexBuffer8 **buffer = &vertex_buffer[idx].buffer;
+
+		d3d_CreateVertexBuffer(D3DVT_LVERTEX, (list->n_poly*3), NULL, (void**)buffer);
+
+		D3DLVERTEX *v, *V;
+		vertex *L;
+//		vector *N;
+
+		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
+		for(int k = 0; k<list->n_poly*3; k++){
+				V = &v[k];
+				L = &list->vert[k];
+			//	N = &list->norm[k]; //these don't have normals :\
+
+				V->sx = L->x;
+				V->sy = L->y;
+				V->sz = L->z;
+
+				V->tu = L->u;
+				V->tv = L->v;
+
+				V->color = D3DCOLOR_ARGB(255,L->r,L->g,L->b);
+		}
+
+		vertex_buffer[idx].buffer->Unlock();
+
+		vertex_buffer[idx].ocupied = true;
+		vertex_buffer[idx].n_prim  = list->n_poly;
+		vertex_buffer[idx].type = FLAT_;
+	}
+	return idx;
+}
+
+
+//makes line buffer, returns index
+int gr_d3d_make_line_buffer(line_list *list){
+/*
+	int idx = find_first_empty_buffer();
+
+	if(idx > -1){
+		IDirect3DVertexBuffer8 **buffer = &vertex_buffer[idx].buffer;
+
+		d3d_CreateVertexBuffer(D3DVT_LVERTEX, (list->n_line*2), NULL, (void**)buffer);
+
+		D3DLVERTEX *v, *V;
+		vertex *L;
+//		vector *N;
+		int c = 0;
+
+		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
+		for(int k = 0; k<list->n_line; k++){
+			for(int j = 0; j < 2; j++){
+				V = &v[(k*2)+j];
+				L = &list->vert[k][j];
+
+				V->sx = L->x;
+				V->sy = L->y;
+				V->sz = L->z;
+
+				V->tu = L->u;
+				V->tv = L->v;
+
+				V->color = D3DCOLOR_ARGB(255,L->r,L->g,L->b);
+				c++;
+			}
+		}
+
+		vertex_buffer[idx].buffer->Unlock();
+
+		vertex_buffer[idx].ocupied = true;
+		vertex_buffer[idx].n_prim  = list->n_line;
+		vertex_buffer[idx].type = LINELIST_;
+	}
+//	return-1;
+	return idx;
+	*/
+	return-1;
+
 }
 	
 //kills buffers dead!
@@ -1846,11 +1934,30 @@ void gr_d3d_destroy_buffer(int idx){
 	vertex_buffer[idx].ocupied = false;
 }
 
+//enum vertex_buffer_type{TRILIST_,LINELIST_,FLAT_};
+
+void gr_d3d_render_line_buffer(int idx){
+	if(idx<0)return;
+	if(!vertex_buffer[idx].ocupied)return;
+	d3d_SetVertexShader(D3DVT_LVERTEX);
+
+	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DLVERTEX));
+	
+	gr_d3d_fog_set(GR_FOGMODE_NONE, 0,0,0, gr_screen.fog_near, gr_screen.fog_far);		//it's a HUD item, should never be fogged
+
+	gr_d3d_set_cull(0);
+	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
+	GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_LINELIST , 0, vertex_buffer[idx].n_prim);
+	d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
+	gr_d3d_set_cull(1);
+}
+
 bool the_lights_are_on;
 extern bool lighting_enabled;
 void gr_d3d_render_buffer(int idx)
 {
 	TIMERBAR_PUSH(3);
+//	GlobalD3DVars::d3d_caps.MaxActiveLights = 1;
 
 //	if(!the_lights_are_on){
 //		d3d_SetVertexShader(D3DVT_VERTEX);
@@ -1890,6 +1997,7 @@ void gr_d3d_render_buffer(int idx)
 
 
 	if(!vertex_buffer[idx].ocupied)return;
+	if(vertex_buffer[idx].type == LINELIST_){gr_d3d_render_line_buffer(idx); TIMERBAR_POP(); return;}
 	float u_scale = 1.0f, v_scale = 1.0f;
 
 	gr_alpha_blend ab = ALPHA_BLEND_NONE;
@@ -1958,7 +2066,9 @@ void gr_d3d_render_buffer(int idx)
 //	if(single_pass_spec)set_stage_for_single_pass_specmapping(same);
 //	else set_stage_for_defuse();
 	set_stage_for_defuse();
-	for(int i = 1; i<passes+1; i++){
+
+
+	for(int i = 1; i<passes; i++){
 		shift_active_lights(i);
 		GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
 	}
@@ -1978,7 +2088,7 @@ void gr_d3d_render_buffer(int idx)
 		if(set_stage_for_spec_mapped()){
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 			GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
-			for(int i = 1; i<passes+1; i++){
+			for(int i = 1; i<passes; i++){
 				shift_active_lights(i);
 				GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
 			}
@@ -2060,7 +2170,7 @@ void gr_d3d_end_view_matrix(){
 	//object position and orientation
 void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
 
-	D3DXMATRIX *old_world = world_matrix_stack->GetTop();
+	D3DXMATRIX *old_world = world_matrix_stack->GetTop(), scale_m;
 	world_matrix_stack->Push();
 
 	D3DXMATRIX world(
@@ -2070,13 +2180,17 @@ void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
 		offset->xyz.x, offset->xyz.y, offset->xyz.z, 1);
 
 	D3DXMatrixMultiply(&world, old_world, &world);
+
+//	D3DXMatrixScaling(&scale_m, 3.0f, 3.0f, 3.0f);
+//	D3DXMatrixMultiply(&world, &scale_m, &world);
+
 	world_matrix_stack->LoadMatrix(&world);
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
 }
 
 void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient){
 
-	D3DXMATRIX current = *world_matrix_stack->GetTop();
+	D3DXMATRIX current = *world_matrix_stack->GetTop(), scale_m;
 	world_matrix_stack->Push();
 
 	D3DXMATRIX mat;
@@ -2088,6 +2202,8 @@ void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient){
 		offset->xyz.x, offset->xyz.y, offset->xyz.z, 1);
 	D3DXMatrixMultiply(&mat, &mat, &world);
 	D3DXMatrixMultiply(&mat, &mat, &current);
+
+//	D3DXMatrixScaling(&scale_m, 3.0f, 3.0f, 3.0f);
 
 	world_matrix_stack->LoadMatrix(&mat);
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
