@@ -9,14 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-03-17 04:07:32 $
- * $Author: bobboau $
+ * $Revision: 2.29 $
+ * $Date: 2004-04-01 15:28:42 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/03/17 04:07:32  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.27  2004/03/08 21:55:20  phreak
  * split the star and space debris rendering loops into their own separate functions
  * this makes it easier to edit them if we ever need to and it also increases readability
@@ -1621,13 +1628,18 @@ void stars_page_in()
 	bm_page_in_xparent_texture(Subspace_glow_bitmap);
 
 	// page in starfield bitmaps
-	int idx;
+	int idx, t;
 	idx = 0;
 	while((idx < MAX_STARFIELD_BITMAPS) && (Starfield_bitmaps[idx].bitmap != -1)){	
-		if(Starfield_bitmaps[idx].xparent){
-			bm_page_in_xparent_texture(Starfield_bitmaps[idx].bitmap);
-		} else { 
-			bm_page_in_texture(Starfield_bitmaps[idx].bitmap);
+		// make sure it's used in this mission before loading - taylor
+		for (t=0; t<Num_starfield_bitmaps; t++) {
+			if (!stricmp(Starfield_bitmaps[idx].filename, Starfield_bitmap_instance[t].filename)) {
+				if(Starfield_bitmaps[idx].xparent){
+					bm_page_in_xparent_texture(Starfield_bitmaps[idx].bitmap);
+				} else { 
+					bm_page_in_texture(Starfield_bitmaps[idx].bitmap);
+				}
+			}
 		}
 
 		// next;
@@ -1637,8 +1649,13 @@ void stars_page_in()
 	// sun bitmaps and glows
 	idx = 0;
 	while((idx < MAX_STARFIELD_BITMAPS) && (Sun_bitmaps[idx].bitmap != -1) && (Sun_bitmaps[idx].glow_bitmap != -1)){
-		bm_page_in_texture(Sun_bitmaps[idx].bitmap);
-		bm_page_in_texture(Sun_bitmaps[idx].glow_bitmap);
+		// make sure it's used in this mission before loading - taylor
+		for (t=0; t<Num_suns; t++) {
+			if (!stricmp(Sun_bitmaps[idx].filename, Suns[t].filename)) {
+				bm_page_in_texture(Sun_bitmaps[idx].bitmap);
+				bm_page_in_texture(Sun_bitmaps[idx].glow_bitmap);
+			}
+		}
 
 		// next 
 		idx++;
