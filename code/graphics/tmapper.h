@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.11 $
- * $Date: 2005-03-03 06:05:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-03-09 03:23:31 $
+ * $Author: bobboau $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.10  2005/03/03 02:39:14  bobboau
  * added trilist suport to the poly rendering functions
  * and a gr_bitmap_list function that uses it
@@ -204,11 +207,37 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 #define TMAP_ADDRESS_CLAMP		3
 
 //WMC - moved this here so it'd be in 2d.h and 3d.h
+//bitmap_2d_list, 
+//x and y: the 2d position of the upper left hand corner
+//w and h: the hidth and hight of the bitmap (some functions 
+//will overide these, others will only overide if givein an invalid size like 0 or -1)
 struct bitmap_2d_list{
+	bitmap_2d_list(int X=0, int Y=0, int W=-1, int H=-1):x(X),y(Y),w(W),h(H){}
 	int x;
 	int y;
 	int w;
 	int h;
 };
 
+//texture_rect
+//defines a rectangular reagon within a texture
+//similar to the above structure only all values are relitive 
+//from 0,0 in the upper left to 1,1 in the lowwer right
+//out of range values are valid
+struct texture_rect{
+	texture_rect(float X=0, float Y=0, float W=1.0f, float H=1.0f):x(X),y(Y),w(W),h(H){}
+	float x;
+	float y;
+	float w;
+	float h;
+};
+
+struct bitmap_rect_list{
+	bitmap_rect_list(float X, float Y, float W, float H):texture_rect(X,Y,W,H){}
+	bitmap_rect_list(int X=0, int Y=0, int W=-1, int H=-1, float TX=0.0f, float TY=0.0f, float TW=1.0f, float TH=1.0f):screen_rect(X,Y,W,H),texture_rect(TX,TY,TW,TH){}
+	bitmap_2d_list screen_rect;
+	texture_rect texture_rect;
+};
+
 #endif
+

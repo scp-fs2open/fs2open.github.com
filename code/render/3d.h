@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.10 $
- * $Date: 2005-03-03 06:05:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-09 03:23:32 $
+ * $Author: bobboau $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/03 06:05:31  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.9  2005/03/03 02:39:14  bobboau
  * added trilist suport to the poly rendering functions
  * and a gr_bitmap_list function that uses it
@@ -375,5 +378,5 @@ void g3_stop_user_clip_plane();
 ubyte g3_transfer_vertex(vertex *dest, vector *src);
 
 int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additional_tmap_flags);
-
+int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint additional_tmap_flags);
 #endif
