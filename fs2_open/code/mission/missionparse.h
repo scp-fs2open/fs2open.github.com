@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.29 $
- * $Author: wmcoolmon $
- * $Date: 2003-09-06 20:41:52 $
+ * $Revision: 2.30 $
+ * $Author: argv $
+ * $Date: 2003-09-11 19:10:33 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/09/06 20:41:52  wmcoolmon
+ * Added "+Subsystem Repair Ceiling:" after "+Hull Repair Ceiling:" (formerly "+Support Repair Ceiling:"
+ *
  * Revision 2.28  2003/09/06 19:09:24  wmcoolmon
  * Added optional mission parameter "+Support Repair Ceiling", which sets what percentage a support ship can repair a ship's hull to.
  *
@@ -585,7 +588,7 @@ typedef struct p_object {
 // circumstances for those ships.  This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS	22
+#define MAX_PARSE_OBJECT_FLAGS	20 // _argv[-1] - reduced from 22, to avoid crash.
 
 #define P_OF_CARGO_KNOWN			(1<<0)
 #define P_SF_IGNORE_COUNT			(1<<1)
@@ -629,10 +632,11 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	5
+#define MAX_PARSE_OBJECT_FLAGS_2	3 // _argv[-1] - reduced from 5, to avoid crash.
 
 #define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE		(1<<1)
+#define P2_SF2_BEAM_FREE_ALL			(1<<2) // _argv[-1] - implicit beam-free-all for this ship.
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
