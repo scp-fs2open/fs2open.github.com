@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-11-27 10:45:36 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-02-13 08:36:51 $
+ * $Author: wmcoolmon $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/11/27 10:45:36  taylor
+ * some fixes for position problems on the HUD in non-standard resolutions
+ * few compiler warning fixes
+ *
  * Revision 2.8  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -475,11 +479,13 @@ void hud_show_lock_indicator(float frametime)
 	if (Player_ai->current_target_is_locked) {
 		sx = Player->current_target_sx;
 		sy = Player->current_target_sy;
+		gr_unsize_screen_pos(&sx, &sy);
 		// show the rotating triangles if target is locked
 		hud_draw_lock_triangles(sx, sy, frametime);
 	} else {
 		sx = Players[Player_num].lock_indicator_x;
 		sy = Players[Player_num].lock_indicator_y;
+		gr_unsize_screen_pos(&sx, &sy);
 	}
 
 	// show locked indicator
