@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-09-26 14:37:15 $
- * $Author: bobboau $
+ * $Revision: 2.10 $
+ * $Date: 2003-11-06 22:46:26 $
+ * $Author: phreak $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/09/26 14:37:15  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.8  2003/09/07 18:14:53  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -555,7 +565,9 @@ void tech_scroll_list_up();
 void tech_scroll_list_down();
 
 
-
+//stuff for ht&l, vars and such
+extern float View_zoom, Canv_h2, Canv_w2;
+extern int Cmdline_nohtl;
 
 ////////////////////////////////////////////////////
 // like, functions and stuff
@@ -811,8 +823,10 @@ void techroom_ships_render(float frametime)
 	}
 #else
 	g3_start_frame(1);
-
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
+
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, Canv_w2/Canv_h2, 0.1f,30000);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	// lighting for techroom
 	light_reset();
@@ -826,6 +840,9 @@ void techroom_ships_render(float frametime)
 	model_set_detail_level(0);
 	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
 
+	if (!Cmdline_nohtl)gr_end_view_matrix();
+	if (!Cmdline_nohtl)gr_end_proj_matrix();
+	
 	g3_end_frame();
 #endif
 

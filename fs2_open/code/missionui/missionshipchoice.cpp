@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-09-16 13:30:16 $
- * $Author: unknownplayer $
+ * $Revision: 2.9 $
+ * $Date: 2003-11-06 22:45:55 $
+ * $Author: phreak $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/09/16 13:30:16  unknownplayer
+ * Minor bugfix to the 3D ship code. There still may be some cases where it will
+ * fail to load the model file it needs, but I'm at present mystified as to why.
+ *
  * Revision 2.7  2003/09/16 11:56:46  unknownplayer
  * Changed the ship selection window to load the 3D FS2 ship models instead
  * of the custom *.ani files. It just does a techroom rotation for now, but I'll add
@@ -698,6 +702,10 @@ static int		ShipSelectMaskBitmap;	// bitmap id of the ship select mask bitmap
 
 static MENU_REGION	Region[NUM_SHIP_SELECT_REGIONS];
 static int				Num_mask_regions;
+
+//stuff for ht&l. vars and such
+extern float View_zoom, Canv_h2, Canv_w2;
+extern int Cmdline_nohtl;
 
 //////////////////////////////////////////////////////
 // Drag and Drop variables
@@ -1780,8 +1788,8 @@ void ship_select_do(float frametime)
 
 		// render the ship
 		g3_start_frame(1);
-
 		g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
+		if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, Canv_w2/Canv_h2, 0.1f,30000);
 
 		// lighting for techroom
 		light_reset();
@@ -1795,6 +1803,9 @@ void ship_select_do(float frametime)
 		model_clear_instance(ShipSelectModelNum);
 		model_set_detail_level(0);
 		model_render(ShipSelectModelNum, &ShipScreenOrient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
+
+		if (!Cmdline_nohtl) gr_end_view_matrix();
+		if (!Cmdline_nohtl) gr_end_proj_matrix();
 
 		g3_end_frame();
 

@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-09-13 08:27:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2003-11-06 22:47:02 $
+ * $Author: phreak $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/09/13 08:27:29  Goober5000
+ * added some minor things, such as code cleanup and the following:
+ * --turrets will not fire at cargo
+ * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
+ * --supercaps have their own default message bitfields (distinguished from capships)
+ * --turrets are allowed on fighters
+ * --jump speed capped at 65m/s, to avoid ship travelling too far
+ * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
+ * ----Goober5000
+ *
  * Revision 2.18  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -681,6 +691,9 @@ void hud_render_target_setup(vector *camera_eye, matrix *camera_orient, float zo
 	g3_set_view_matrix( camera_eye, camera_orient, zoom);	
 	model_set_detail_level(1);		// use medium detail level
 
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, Canv_w2/Canv_h2, 0.1f,30000.f);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
 	HUD_set_clip(Target_window_coords[gr_screen.res][0],Target_window_coords[gr_screen.res][1],Target_window_coords[gr_screen.res][2],Target_window_coords[gr_screen.res][3]);
 
 }
@@ -692,6 +705,8 @@ void hud_render_target_setup(vector *camera_eye, matrix *camera_orient, float zo
 //
 void hud_render_target_close()
 {
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 	g3_end_frame();
 	hud_save_restore_camera_data(0);
 }
