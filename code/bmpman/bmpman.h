@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.16 $
- * $Date: 2004-10-31 21:26:27 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2004-11-21 15:59:45 $
+ * $Author: Kazan $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/10/31 21:26:27  taylor
+ * bmpman merge, EFF animation support, better page in stuff, dozen or so smaller fixes and cleanup
+ *
  * Revision 2.15  2004/10/06 22:02:54  Kazan
  * interface corruption fix - thanks taylor (MAX_BITMAPS upped to 7000)
  *
@@ -300,8 +303,12 @@
 #define BMPMAN_NDEBUG
 #endif
 
+
+// this is causing problems - let's UP IT -- Kazan
 // bumped from 3500 to 4500 2004/09/21 - taylor
+//#define MAX_BITMAPS 3500			// How many bitmaps the game can handle
 #define MAX_BITMAPS 4500			// How many bitmaps the game can handle
+
 
 // 16 bit pixel formats
 #define BM_PIXEL_FORMAT_ARGB				0						// for glide - can assume certain things, like 1555 LFB writes, whee!
