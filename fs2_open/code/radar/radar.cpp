@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-01-03 21:58:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2003-06-11 03:01:27 $
+ * $Author: phreak $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/03 21:58:07  Goober5000
+ * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
+ * has primitive sensors it can't target anything and objects don't appear
+ * on radar if they're outside a certain range.  This range can be modified
+ * via the sexp primitive-sensors-set-range.
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -461,6 +468,10 @@ void radar_plot_object( object *objp )
 		if ( (obj_team(objp) == Player_ship->team) && (Player_ship->team != TEAM_TRAITOR) ) {
 			return;
 		}
+
+		//if a local ssm is in subspace, return
+		if (Weapons[objp->instance].lssm_stage==3)
+			return;
 		break;
 	}
 
