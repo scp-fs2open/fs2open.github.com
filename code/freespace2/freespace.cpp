@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.30 $
- * $Date: 2003-03-29 08:52:59 $
- * $Author: sesquipedalian $
+ * $Revision: 2.31 $
+ * $Date: 2003-05-09 23:54:59 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/03/29 08:52:59  sesquipedalian
+ * Added is-missile-locked sexp
+ *
  * Revision 2.29  2003/03/22 06:11:51  Goober5000
  * added play-sound-from-table, play-sound-from-file, and close-sound-from-file
  * --Goober5000
@@ -1888,7 +1891,7 @@ void game_loading_callback(int count)
 		Game_loading_frame++;
 		cbitmap = anim_get_next_frame(Game_loading_ani_instance);
 	}
-
+	
 
 	if ( cbitmap > -1 )	{
 		if ( Game_loading_background > -1 )	{
@@ -1910,7 +1913,12 @@ void game_loading_callback_init()
 {
 	Assert( Game_loading_callback_inited==0 );
 
-	Game_loading_background = bm_load(Game_loading_bground_fname[gr_screen.res]);
+	Game_loading_background = bm_load(The_mission.loading_screen[gr_screen.res]);
+	
+	if (Game_loading_background < 0)
+	{
+		Game_loading_background = bm_load(Game_loading_bground_fname[gr_screen.res]);
+	}
 	//common_set_interface_palette("InterfacePalette");  // set the interface palette
 
 
