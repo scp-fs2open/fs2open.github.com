@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-10-15 22:03:25 $
- * $Author: Kazan $
+ * $Revision: 2.19 $
+ * $Date: 2004-01-14 06:38:41 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/10/15 22:03:25  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.17  2003/09/26 14:37:14  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -1229,7 +1232,7 @@ void process_debug_keys(int k)
 
 			shipp = &Ships[Player_obj->instance];
 			shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]--;
-			if ( shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] < 0)
+			if ( shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] < First_secondary_index)
 				shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] = Num_weapon_types - 1;
 
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name);
