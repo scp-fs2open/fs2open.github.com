@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.47 $
- * $Date: 2003-12-17 16:42:20 $
+ * $Revision: 2.48 $
+ * $Date: 2003-12-19 05:58:44 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/12/17 16:42:20  phreak
+ * added ai code for "small only" weapons.  works for turrets at the moment
+ *
  * Revision 2.46  2003/12/15 21:32:59  phreak
  * made turrets use bob's $shots code
  *
@@ -3042,17 +3045,18 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	object				*objp;
 	model_subsystem	*tp;
 	eval_enemy_obj_struct eeo;
-	weapon_info *wip=&Weapon_info[tp->turret_weapon_type];
+	weapon_info *wip;
 
 	// list of stuff to go thru
 	ship_obj		*so;
 	missile_obj *mo;
 
 	tp = turret_subsys->system_info;
-	weapon_travel_dist = min(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
+	wip=&Weapon_info[tp->turret_weapon_type];
+	weapon_travel_dist = min(wip->lifetime * wip->max_speed, wip->weapon_range);
 
-	if (Weapon_info[tp->turret_weapon_type].wi_flags2 & WIF2_LOCAL_SSM)
-		weapon_travel_dist=Weapon_info[tp->turret_weapon_type].lssm_lock_range;
+	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
+		weapon_travel_dist=wip->lssm_lock_range;
 
 	// Set flag based on strength of weapons subsystem.  If weapons subsystem is destroyed, don't let turrets fire at bombs
 	weapon_system_ok = 0;
