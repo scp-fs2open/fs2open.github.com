@@ -10,12 +10,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 2.2 $
- * $Date: 2004-04-06 01:37:21 $
+ * $Revision: 2.3 $
+ * $Date: 2004-04-13 01:55:41 $
  * $Author: phreak $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
+ * $Log: not supported by cvs2svn $
  *
  * $NoKeywords: $
  */
