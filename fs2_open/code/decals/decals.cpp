@@ -57,7 +57,8 @@ static int back_faceing;
 int decal_find_next(object *obj){
 	ship *shipp = &Ships[obj->instance];
 	int oldest = shipp->decals[0].timestamp;
-	for(int i = 0; i < MAX_SHIP_DECALS; i++){
+	int i;
+	for(i = 0; i < MAX_SHIP_DECALS; i++){
 		if(shipp->decals[i].is_valid != 1){			//use up all the unused decals first
 			return i%MAX_SHIP_DECALS;
 		}
@@ -475,7 +476,8 @@ void decal_create_tmappoly(ubyte * p)
 	}
 
 //this is for faster testing, I'm not sure if it's realy makeing it faster or not
-	for(int k = 0; k<6; k++){
+	int k;
+	for(k = 0; k<6; k++){
 		int first_good = -1;
 		for(i = 0; ((i< nv) && (first_good == -1)); i++){
 			if(fvi_point_dist_plane(&decal_cube_plane[k][0], &decal_cube_plane[k][1], decal_point_list[decal_poly[i]]) > 0){
