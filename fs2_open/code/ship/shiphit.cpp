@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-03-02 06:20:16 $
- * $Author: penguin $
+ * $Revision: 2.14 $
+ * $Date: 2003-03-18 08:44:05 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/03/02 06:20:16  penguin
+ * Tweaked for gcc
+ *  - penguin
+ *
  * Revision 2.12  2003/02/26 02:56:55  bobboau
  * fixed the bug with fighter beams not giveing you kills
  *
@@ -770,7 +774,7 @@ float subsys_get_range(object *other_obj, ship_subsys *subsys)
 {
 	float	range;
 
-	if (other_obj->type == OBJ_SHOCKWAVE) {
+	if ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE)) {
 		range = Shockwaves[other_obj->instance].outer_radius * 0.75f;	//	Shockwaves were too lethal to subsystems.
 	} else if ( subsys->system_info->type == SUBSYSTEM_TURRET ) {
 		range = subsys->system_info->radius*3;
@@ -881,7 +885,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 	}
 
 	//	Shockwave damage is applied like weapon damage.  It gets consumed.
-	if (other_obj->type == OBJ_SHOCKWAVE) {
+	if ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE)) {
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		if ( Ship_info[ship_p->ship_info_index].flags & (SIF_SMALL_SHIP))
 			return damage;
@@ -897,7 +901,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);
-	if ((other_obj->type == OBJ_WEAPON) && ( weapon_info_index >= 0 )) {
+	if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON)) {
 		damage_left *= Weapon_info[weapon_info_index].subsystem_factor;
 	}
 
@@ -988,7 +992,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 		//	miss their target.  There is code dating to FS1 in the collision code to detect that a bomb or
 		//	missile has somehow missed its target.  It gets its lifeleft set to 0.1 and then it detonates.
 		//	Unfortunately, the shockwave damage was cut by 4 above.  So boost it back up here.
-		if ((dist < 10.0f) && (other_obj->type == OBJ_SHOCKWAVE)) {
+		if ((dist < 10.0f) && ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE))) {
 			damage_left *= 4.0f * Weapon_info[weapon_info_index].subsystem_factor;;
 		}
 
@@ -2102,6 +2106,11 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 	shockwave *sw;
 
 	Assert(ship_obj->type == OBJ_SHIP);
+
+	if (!other_obj) {
+		return 0;
+	}
+
 	if (other_obj->type != OBJ_SHOCKWAVE) {
 		return 0;
 	}
@@ -2156,6 +2165,8 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 //				damage		=>		damage to apply to the ship
 //				shield_quadrant => which part of shield takes damage, -1 if not shield hit
 //				wash_damage	=>		1 if damage is done by engine wash
+// Goober5000 - sanity checked this whole function in the case that other_obj is null, which
+// will happen with the explosion-effect sexp
 void ai_update_lethality(object *ship_obj, object *weapon_obj, float damage);
 static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int shield_quadrant, int wash_damage=0)
 {
@@ -2213,6 +2224,11 @@ mprintf(("skill balencing done\n"));
 
 	// if this is not a laser, or i'm not a multiplayer client
 	// apply pain to me
+
+	// Goober5000: make sure other_obj doesn't cause a read violation!
+	if (other_obj)
+	{
+
 #ifndef NO_NETWORK
 
 if(other_obj->type == OBJ_BEAM){
@@ -2245,6 +2261,9 @@ mprintf(("sending pain\n"));
 	}
 }
 #endif
+
+	}	// read violation sanity check
+
 mprintf(("pain sent\n"));
 
 	// If the ship is invulnerable, do nothing
@@ -2353,32 +2372,36 @@ mprintf(("aplying damage to hull\n"));
 				//return;
 			//}		
 
-			switch (other_obj->type) {
-			case OBJ_SHOCKWAVE:
-				scoring_add_damage(ship_obj,other_obj,damage);
-				break;
-			case OBJ_ASTEROID:
-				// don't call scoring for asteroids
-				break;
-			case OBJ_WEAPON:
-				if((other_obj->parent < 0) || (other_obj->parent >= MAX_OBJECTS)){
-					scoring_add_damage(ship_obj, NULL, damage);
-				} else {
-					scoring_add_damage(ship_obj, &Objects[other_obj->parent], damage);
+			if (other_obj)
+			{
+				switch (other_obj->type)
+				{
+					case OBJ_SHOCKWAVE:
+						scoring_add_damage(ship_obj,other_obj,damage);
+						break;
+					case OBJ_ASTEROID:
+						// don't call scoring for asteroids
+						break;
+					case OBJ_WEAPON:
+						if((other_obj->parent < 0) || (other_obj->parent >= MAX_OBJECTS)){
+							scoring_add_damage(ship_obj, NULL, damage);
+						} else {
+							scoring_add_damage(ship_obj, &Objects[other_obj->parent], damage);
+						}
+						break;
+					case OBJ_BEAM://give kills for fighter beams-Bobboau
+					  {
+//						object beam_obj = Objects[beam_get_parent(other_obj)];
+						if((other_obj->parent < 0) || (other_obj->parent >= MAX_OBJECTS)){
+							scoring_add_damage(ship_obj, NULL, damage);
+						} else {
+							scoring_add_damage(ship_obj, &Objects[other_obj->parent], damage);
+						}
+						break;
+					  }
+					default:
+						break;
 				}
-				break;
-			case OBJ_BEAM://give kills for fighter beams-Bobboau
-			  {
-//				object beam_obj = Objects[beam_get_parent(other_obj)];
-				if((other_obj->parent < 0) || (other_obj->parent >= MAX_OBJECTS)){
-					scoring_add_damage(ship_obj, NULL, damage);
-				} else {
-					scoring_add_damage(ship_obj, &Objects[other_obj->parent], damage);
-				}
-				break;
-			  }
-			default:
-				break;
 			}
 //mprintf(("\n"));
 			if (ship_obj->hull_strength <= 0.0f) {
@@ -2397,7 +2420,7 @@ mprintf(("doing vaporizeing stuff\n"));
 					if ( !(shipp->flags & SF_VAPORIZE) ) {
 						// Only small ships can be vaporized
 						if (sip->flags & (SIF_SMALL_SHIP)) {
-							if (other_obj->type == OBJ_BEAM) {
+							if ((other_obj != NULL) && (other_obj->type == OBJ_BEAM)) {
 								int beam_weapon_info_index = beam_get_weapon_info_index(other_obj);
 								if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_HUGE)) ) {								
 									// Flag as vaporized
@@ -2430,7 +2453,8 @@ mprintf(("doing vaporizeing stuff\n"));
 	}
 mprintf(("fun stuff with weapons\n"));
 	// if the hitting object is a weapon, maybe do some fun stuff here
-	if(other_obj->type == OBJ_WEAPON){
+	if((other_obj != NULL) && (other_obj->type == OBJ_WEAPON))
+	{
 		weapon_info *wip;
 		Assert(other_obj->instance >= 0);
 		if(other_obj->instance < 0){
@@ -2624,7 +2648,8 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force
 		shield_quad = get_quadrant(&local_hitpos);
 
 		// world_hitpos use force_center for shockwave
-		if (other_obj->type == OBJ_SHOCKWAVE && Ship_info[Ships[ship_obj->instance].ship_info_index].flags & SIF_HUGE_SHIP) {
+		if ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE) && (Ship_info[Ships[ship_obj->instance].ship_info_index].flags & SIF_HUGE_SHIP))
+		{
 			world_hitpos = *force_center;
 		}
 

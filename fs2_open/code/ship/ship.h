@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.37 $
- * $Date: 2003-03-06 09:13:43 $
+ * $Revision: 2.38 $
+ * $Date: 2003-03-18 08:44:05 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/03/06 09:13:43  Goober5000
+ * fixed what should be the last bug with bank-specific loadouts
+ * --Goober5000
+ *
  * Revision 2.36  2003/03/05 12:38:01  Goober5000
  * rewrote the restricted bank loadout code; it should work now
  * --Goober5000
@@ -1513,6 +1517,9 @@ int ship_get_exp_propagates(ship *sp);
 
 // get outer radius of damage, takes into account mods for individual ship
 float ship_get_exp_outer_rad(object *ship_objp);
+
+// externed by Goober5000
+extern int ship_explode_area_calc_damage( vector *pos1, vector *pos2, float inner_rad, float outer_rad, float max_damage, float max_blast, float *damage, float *blast );
 
 // returns whether subsys is allowed to have cargo
 int valid_cap_subsys_cargo_list(char *subsys_name);
