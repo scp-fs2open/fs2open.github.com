@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.73 $
+ * $Revision: 2.74 $
  * $Author: Goober5000 $
- * $Date: 2004-09-22 06:56:45 $
+ * $Date: 2004-09-23 05:53:00 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2004/09/22 06:56:45  Goober5000
+ * checking in framework for when-argument special ubersexp
+ * --Goober5000
+ *
  * Revision 2.72  2004/09/17 00:28:32  Goober5000
  * removed player-not-use-ai and changed player-use-ai to take an argument
  * --Goober5000
@@ -588,6 +592,7 @@
  */
 
 #include "PreProcDefines.h"
+#include "globalincs/pstypes.h"	// for NULL
 #ifndef _SEXP_H
 #define _SEXP_H
 
@@ -1286,6 +1291,21 @@ typedef struct sexp_variable {
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
 
+// Goober5000 - adapted from sexp_list_item in Sexp_tree.h
+class arg_item
+{
+	public:
+		char *text;
+		arg_item *next;
+
+		arg_item() : next(NULL) {}
+		void set_data(char *str);
+		void add_data(char *str);
+		void add_list(arg_item *list);
+		void destroy();
+};
+
+
 // next define used to eventually mark a directive as satisfied even though there may be more
 // waves for a wing.  bascially a hack for the directives display.
 #define DIRECTIVE_WING_ZERO		-999
@@ -1331,7 +1351,7 @@ extern int query_sexp_args_count(int index);
 extern int check_sexp_syntax(int index, int return_type = OPR_BOOL, int recursive = 0, int *bindex = 0 /*NULL*/, int mode = 0);
 extern int get_sexp_main(void);	//	Returns start node
 extern int stuff_sexp_variable_list();
-extern int eval_sexp(int index);
+extern int eval_sexp(int index, int index2 = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(char *old_name, char *new_name);
@@ -1344,6 +1364,10 @@ extern int build_sexp_string(int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
 extern char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
+
+// Goober5000
+void do_action_for_each_special_argument(int index);
+int special_argument_appears_in_sexp_tree(int node);
 
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );
