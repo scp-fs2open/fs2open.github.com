@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.3 $
- * $Date: 2003-11-01 21:59:22 $
+ * $Revision: 2.4 $
+ * $Date: 2003-11-11 03:56:12 $
  * $Author: bobboau $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/11/01 21:59:22  bobboau
+ * new matrix handeling code, and fixed some problems with 3D lit verts,
+ * several other small fixes
+ *
  * Revision 2.2  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -165,6 +169,8 @@ extern vector		Light_base;			// Used to rotate world points into current local c
 extern matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
 extern vector		Eye_position;		// Where the viewer's eye is at in World coordinates
 
+extern vector Object_position;
+extern matrix	Object_matrix;			// Where the opject is pointing in World coordinates
 
 //end the frame
 void g3_end_frame(void);

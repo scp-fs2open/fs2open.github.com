@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.58 $
- * $Date: 2003-11-11 02:15:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.59 $
+ * $Date: 2003-11-11 03:56:10 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2003/11/11 02:15:43  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.57  2003/11/10 02:44:36  matt
  * Fixed the projection matrix issues -Sticks
  *
@@ -4088,7 +4093,7 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 		stars_draw(1,1,1,0);
 	}
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( Viewer_zoom, 1.0f/gr_screen.aspect, 0.2f,30000);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f,30000);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	obj_render_all(obj_render);

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.49 $
- * $Date: 2003-11-11 02:15:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2003-11-11 03:56:12 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2003/11/11 02:15:45  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.48  2003/11/07 18:31:02  randomtiger
  * Fixed a nohtl call to htl funcs (crash with NULL pointer)
  * Fixed a bug with 32bit PCX code.
@@ -3333,7 +3338,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	if (!(Game_detail_flags & DETAIL_FLAG_MODELS) )	{
 		gr_set_color(0,128,0);
 		g3_draw_sphere_ez( pos, pm->rad );
-		gr_set_lighting(false,false);
+	//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
 		return;
 	}
 
@@ -3516,10 +3521,10 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		model_interp_subcall(pm,pm->detail[detail_level],detail_level);
 	}
 
-	if(!Cmdline_nohtl) {
+/*	if(!Cmdline_nohtl){
 		gr_reset_lighting();
 		gr_set_lighting(false,false);
-	}
+	}*/
 
 	if (Interp_flags & MR_SHOW_PIVOTS )	{
 		model_draw_debug_points( pm, NULL );
@@ -3640,7 +3645,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 								}
 					
 								// disable fogging
-								gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+								//if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_FOG, 0, 0, 0);
+								if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 		
 								g3_rotate_vertex( &p, &pnt );
 								
@@ -3734,12 +3740,12 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			int j;
 
 			for ( j=0; j<bank->num_slots; j++ )	{
-				float d;
+				float d, D;
 				vector tempv;
 				vm_vec_sub(&tempv,&View_position,&bank->pnt[j]);
 				vm_vec_normalize(&tempv);
 
-				d = vm_vec_dot(&tempv,&bank->norm[j]);
+				D = d = vm_vec_dot(&tempv,&bank->norm[j]);
 
 					//ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
 					#define NOISE_SCALE 0.5f
@@ -3802,7 +3808,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					//getting thruster glows to grow baised on witch direction they are pointing -Bobboau
 */
 				// disable fogging
-				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+				//gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
 				vertex p;					
 				if ( d > 0.0f)	{
@@ -3811,12 +3817,18 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					d *= 3.0f;
 					if ( d > 1.0f ) d = 1.0f;
 				}
+				vector npnt;
 				// fade them in the nebula as well
 				if(The_mission.flags & MISSION_FLAG_FULLNEB){
-					vector npnt;
+				//	vector npnt;
 					vm_vec_add(&npnt, &bank->pnt[j], pos);
 					d *= (1.0f - neb2_get_fog_intensity(&npnt));
 				}
+
+					
+				// disable fogging
+				//if(The_mission.flags & MISSION_FLAG_FULLNEB)gr_fog_set(GR_FOGMODE_FOG, 0, 0, 0);
+				if(The_mission.flags & MISSION_FLAG_FULLNEB)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
 // this is the original scaling code - Goober5000
 //					scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
@@ -3845,13 +3857,13 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				if(Interp_tertiary_thrust_glow_bitmap > -1){
 					//tertiary thruster glows, suposet to be a complement to the secondary thruster glows, it simulates the effect of an ion wake or something, 
 					//thus is imostly for haveing a glow that is visable from the front
-					gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0 );
+					gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (The_mission.flags & MISSION_FLAG_FULLNEB)?(1.0f - neb2_get_fog_intensity(&npnt)):1.0f );
 					
 					Gr_scaler_zbuffering = 1;
 					p.sw -= w;
 					//g3_draw_bitmap(&p,0,w, TMAP_FLAG_TEXTURED );
 					if(Cmdline_nohtl)g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED); 
-					else g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, -0.375f*w);
+					else g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, -0.375f*(D>0)?D:-D);
  					Gr_scaler_zbuffering = 0;
 				}
 				
@@ -4052,6 +4064,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		g3_done_instance();
 	}
 
+//	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+
 	g3_done_instance();
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
@@ -4142,6 +4156,8 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
+
+//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
 
 }
 
@@ -4792,7 +4808,7 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 			if(Interp_flags & MR_NO_ZBUFFER){
 				zbuf_mode = GR_ZBUFF_NONE;
 			} else {
-				zbuf_mode = GR_ZBUFF_FULL;		// read only
+				zbuf_mode = GR_ZBUFF_READ;		// read only
 			}
 
 			gr_zbuffer_set(zbuf_mode);
@@ -4868,17 +4884,21 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 			if((Interp_thrust_bitmap>-1) && (Interp_thrust_scale > 0.0f)) {
 				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f);
 			}
+			gr_zbuffer_set(GR_ZBUFF_READ);
 			
-		} else if(pm->transparent[model->buffer[i].texture] ){	//trying to get transperent textures-Bobboau
-			if(Warp_Alpha!=-1.0)gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
-			else gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
-
 		}else if(Warp_Map > -1){	//trying to get transperent textures-Bobboau
 			gr_set_cull(0);
 			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
+			gr_zbuffer_set(GR_ZBUFF_READ);
+		} else if(pm->transparent[model->buffer[i].texture] ){	//trying to get transperent textures-Bobboau
+			if(Warp_Alpha!=-1.0)gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
+			else gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
+			gr_zbuffer_set(GR_ZBUFF_READ);
+
 		}else{
-//	gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
+		//	gr_set_state(TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
 			gr_set_bitmap( texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 1.0 );
+			gr_zbuffer_set(GR_ZBUFF_FULL);
 		}
 
 		gr_render_buffer(model->buffer[i].vertex_buffer);		
@@ -4887,5 +4907,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 	SPECMAP = -1;
 
 	gr_pop_scale_matrix();
+
+	gr_set_lighting(false,false);
 
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.14 $
- * $Date: 2003-11-01 21:59:21 $
+ * $Revision: 2.15 $
+ * $Date: 2003-11-11 03:56:11 $
  * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/11/01 21:59:21  bobboau
+ * new matrix handeling code, and fixed some problems with 3D lit verts,
+ * several other small fixes
+ *
  * Revision 2.13  2003/10/27 23:04:21  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -427,7 +431,7 @@ gr_line(x1,y1,x2,y2)
 
 
 //MAX_POLYGON_NORMS
-#define MAX_POLYGON_TRI_POINTS 5500
+#define MAX_POLYGON_TRI_POINTS 15000
 
 // This is a structure used by the shader to keep track
 // of the values you want to use in the shade primitive.
@@ -749,6 +753,11 @@ typedef struct screen {
 	void (*start_clip_plane)();
 	void (*end_clip_plane)();
 
+/*	void (*gf_begin_sprites)();//does prep work for sprites
+	void (*gf_draw_sprite)(vector*);//draws a sprite
+	void (*gf_display_sprites))();//actualy darws the drawen sprites
+	void (*gf_end_sprites)();//clears the lists and stuff
+*/
 } screen;
 
 // cpu types
@@ -960,6 +969,14 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 
 #define	gr_start_clip GR_CALL			(*gr_screen.start_clip_plane)
 #define	gr_end_clip GR_CALL				(*gr_screen.end_clip_plane)
+
+/*
+#define	gr_begin_sprites GR_CALL		(*gr_screen.gf_begin_sprites)
+#define	gr_draw_sprites GR_CALL			(*gr_screen.gf_draw_sprites)
+#define	gr_end sprites GR_CALL			(*gr_screen.gf_end_sprites)
+#define	gr_display_sprites GR_CALL		(*gr_screen.gf_display_sprites)
+*/
+
 
 // new bitmap functions
 extern int Gr_bitmap_poly;

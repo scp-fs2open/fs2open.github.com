@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-11-06 22:49:22 $
- * $Author: phreak $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-11 03:56:12 $
+ * $Author: bobboau $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/11/06 22:49:22  phreak
+ * fixed up some of the matrix functions that were causing problems
+ * bob: i there is an important change here. i don't know if its going to cause any d3d problems
+ *
  * Revision 2.9  2003/11/01 21:59:22  bobboau
  * new matrix handeling code, and fixed some problems with 3D lit verts,
  * several other small fixes
@@ -170,7 +174,7 @@ float			Canv_w2;				// Canvas_width / 2
 float			Canv_h2;				// Canvas_height / 2
 
 vector Object_position;
-matrix	Object_matrix;			// Where the viewer's eye is pointing in World coordinates
+matrix	Object_matrix;			// Where the opject is pointing in World coordinates
 
 //vertex buffers for polygon drawing and clipping
 vertex * Vbuf0[TMAP_MAX_VERTS];

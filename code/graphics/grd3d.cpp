@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.40 $
- * $Date: 2003-11-11 02:15:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2003-11-11 03:56:11 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/11/11 02:15:44  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.39  2003/11/06 21:10:26  randomtiger
  * Added my batching solution for more efficient d3d_string.
  * Its part of the new grd3dbatch module, most of this isnt in use but it might help out later so I've left it in.
@@ -1844,11 +1849,11 @@ void gr_d3d_render_buffer(int idx)
 {
 	TIMERBAR_PUSH(3);
 
-	if(!the_lights_are_on){
+//	if(!the_lights_are_on){
 //		d3d_SetVertexShader(D3DVT_VERTEX);
 //		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
 //		the_lights_are_on = true;
-	}												  
+//	}												  
 
 	extern D3DMATERIAL8 material;
 	// Sets the current alpha of the object
@@ -1857,13 +1862,28 @@ void gr_d3d_render_buffer(int idx)
 		material.Diffuse.a = gr_screen.current_alpha;
 		material.Specular.a = gr_screen.current_alpha;
 		material.Emissive.a = gr_screen.current_alpha;
+		
 	}else{
 		material.Ambient.a = 1.0;
 		material.Diffuse.a = 1.0;
 		material.Specular.a = 1.0;
 		material.Emissive.a = 1.0f;
 	}
+	if(!lighting_enabled){
+		int l = int(255.0f*gr_screen.current_alpha);
+		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(l,l,l,l));
+	}else{
+		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
+	}
 	GlobalD3DVars::lpD3DDevice->SetMaterial(&material);
+
+	color old_fog_color;
+
+	if(gr_screen.current_fog_mode != GR_FOGMODE_NONE)//when fogging don't fog unlit things, but rather fade them in a fog like manner -Bobboau
+		if(!lighting_enabled){
+			old_fog_color = gr_screen.current_fog_color;
+			gr_d3d_fog_set(gr_screen.current_fog_mode, 0,0,0, gr_screen.fog_near, gr_screen.fog_far);
+		}
 
 
 	if(!vertex_buffer[idx].ocupied)return;
@@ -1876,11 +1896,12 @@ void gr_d3d_render_buffer(int idx)
 //	int same = (gr_screen.current_bitmap != SPECMAP)?0:1;
 //	if(!same)d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0);
 	d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0);
-	if(!gr_zbuffering_mode)
-		gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_NONE);
-	else if(gr_zbuffering_mode == GR_ZBUFF_READ)
+//	if(!gr_zbuffering_mode)
+//		gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_NONE);
+	if(gr_zbuffering_mode == GR_ZBUFF_READ){
 			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_READ);
-		else
+			d3d_SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
+	}else
 			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
 
 	pre_render_lights_init();
@@ -1926,8 +1947,10 @@ void gr_d3d_render_buffer(int idx)
 		gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_NONE );
 		
 
-	color old_fog_color = gr_screen.current_fog_color;
-	gr_d3d_fog_set(gr_screen.current_fog_mode, 0,0,0, gr_screen.fog_near, gr_screen.fog_far);
+	if(gr_screen.current_fog_mode != GR_FOGMODE_NONE){
+		old_fog_color = gr_screen.current_fog_color;
+		gr_d3d_fog_set(gr_screen.current_fog_mode, 0,0,0, gr_screen.fog_near, gr_screen.fog_far);
+	}
 
 //	if(single_pass_spec)set_stage_for_single_pass_specmapping(same);
 //	else set_stage_for_defuse();
@@ -1961,7 +1984,7 @@ void gr_d3d_render_buffer(int idx)
 	}
 
 	// Revert back to old fog state
-	gr_d3d_fog_set(gr_screen.current_fog_mode, old_fog_color.red,old_fog_color.green,old_fog_color.blue, gr_screen.fog_near, gr_screen.fog_far);
+	if(gr_screen.current_fog_mode != GR_FOGMODE_NONE)gr_d3d_fog_set(gr_screen.current_fog_mode, old_fog_color.red,old_fog_color.green,old_fog_color.blue, gr_screen.fog_near, gr_screen.fog_far);
 
 	TIMERBAR_POP();
 }
@@ -2034,6 +2057,7 @@ void gr_d3d_end_view_matrix(){
 	//object position and orientation
 void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
 
+	D3DXMATRIX *old_world = world_matrix_stack->GetTop();
 	world_matrix_stack->Push();
 
 	D3DXMATRIX world(
@@ -2042,6 +2066,7 @@ void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
 		orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, orient->vec.fvec.xyz.z, 0,
 		offset->xyz.x, offset->xyz.y, offset->xyz.z, 1);
 
+	D3DXMatrixMultiply(&world, old_world, &world);
 	world_matrix_stack->LoadMatrix(&world);
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-10-23 18:03:23 $
- * $Author: randomtiger $
+ * $Revision: 2.7 $
+ * $Date: 2003-11-11 03:56:10 $
+ * $Author: bobboau $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/10/23 18:03:23  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.5  2003/03/19 06:23:27  Goober5000
  * added warp-effect sexp
  * --Goober5000
@@ -558,6 +561,8 @@ MONITOR( NumFireballsRend );
 
 void fireball_render(object * obj)
 {
+//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
+
 	int		num;
 	vertex	p;
 	fireball	*fb;

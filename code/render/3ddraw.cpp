@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-10-29 18:18:52 $
- * $Author: randomtiger $
+ * $Revision: 2.8 $
+ * $Date: 2003-11-11 03:56:12 $
+ * $Author: bobboau $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/10/29 18:18:52  randomtiger
+ * D3D particle flicker fix, also fixes explosions and thruster glows
+ *
  * Revision 2.6  2003/10/23 18:03:24  randomtiger
  * Bobs changes (take 2)
  *
@@ -358,7 +361,6 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 	 	return 0;
 	}
 
-
 	for (i=0;i<nv;i++) {
 		vertex *p;
 
@@ -580,45 +582,56 @@ int g3_draw_sphere_ez(vector *pnt,float rad)
 	return 0;
 }
 
-
+//ID3DXSprite 
+// creates a quad centered around the given point, pointed at the camera
+/*
+0----1
+|\   |
+|  \ |
+3----2
+1.41421356
+*/
 int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth){
-
+//return 0;
+//	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 	vector PNT;
 	vm_vert2vec(pnt, &PNT);
-
-	vector s;
-	vm_vec_sub(&s, &View_position, &PNT);
-	vm_vec_normalize(&s);
-	vm_vec_scale(&s,depth);
-
 	vector p[4];
 	vertex P[4];
-	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
-	vector u = View_matrix.vec.uvec, r = View_matrix.vec.rvec;
-	vm_vec_scale(&u,rad);
-	vm_vec_scale(&r,rad);
-	vector nu = u, nr = r;
-	vm_vec_negate(&nu);
-	vm_vec_negate(&nr);
-	vm_vec_add2(&PNT, &s);
-	vm_vec_add(&p[0], &PNT, &u);
-	p[1]=p[0];
-	vm_vec_add(&p[2], &PNT, &nu);
-	p[3]=p[2];
-	vm_vec_add(&p[0], &p[0], &r);
-	vm_vec_add(&p[1], &p[1], &nr);
-	vm_vec_add(&p[2], &p[2], &nr);
-	vm_vec_add(&p[3], &p[3], &r);
-	g3_transfer_vertex(&P[0], &p[0]);
-	g3_transfer_vertex(&P[1], &p[1]);
-	g3_transfer_vertex(&P[2], &p[2]);
-	g3_transfer_vertex(&P[3], &p[3]);
-	P[0].u = 0.0f;	P[0].v = 0.0f;
-	P[1].u = 0.0f;	P[1].v = 1.0f;
-	P[2].u = 1.0f;	P[2].v = 1.0f;
-	P[3].u = 1.0f;	P[3].v = 0.0f;
+	matrix m;
+	vm_set_identity(&m);
 
+	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
+	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
+
+	p[0].xyz.x = rad * aspect;	p[0].xyz.y = rad;	p[0].xyz.z = -depth;
+	p[1].xyz.x = -rad * aspect;	p[1].xyz.y = rad;	p[1].xyz.z = -depth;
+	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
+	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
+
+	matrix te = View_matrix;
+	vm_transpose_matrix(&te);
+	for(int i = 0; i<4; i++){
+		vector t = p[i];
+		vm_vec_rotate(&p[i],&t,&te);//point it at the eye
+		vm_vec_add2(&p[i],&PNT);//move it
+	}
+
+	//move all the data from the vecs into the verts
+	g3_transfer_vertex(&P[0], &p[3]);
+	g3_transfer_vertex(&P[1], &p[2]);
+	g3_transfer_vertex(&P[2], &p[1]);
+	g3_transfer_vertex(&P[3], &p[0]);
+
+	//set up the UV coords
+	P[0].u = 0.0f;	P[0].v = 0.0f;
+	P[1].u = 1.0f;	P[1].v = 0.0f;
+	P[2].u = 1.0f;	P[2].v = 1.0f;
+	P[3].u = 0.0f;	P[3].v = 1.0f;
+
+	gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags);
+	gr_set_cull(1);
 
 	return 0;
 }
@@ -631,6 +644,7 @@ int g3_draw_bitmap(vertex *pnt,int orient, float rad,uint tmap_flags, float dept
 	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
 		return g3_draw_bitmap_3d(pnt, orient, rad, tmap_flags, depth);
 	}
+//	return 0;
 
 	vertex va, vb;
 	float t,w,h;
@@ -760,53 +774,60 @@ int g3_get_bitmap_dims(int bitmap, vertex *pnt, float rad, int *x, int *y, int *
 }
 
 int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags, float depth){
+
+	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+
 	angle+=Physics_viewer_bank;
 	if ( angle < 0.0f )
 		angle += PI2;
 	else if ( angle > PI2 )
 		angle -= PI2;
+	float sa = (float)sin(angle);
+	float ca = (float)cos(angle);
 
 	vector PNT;
 	vm_vert2vec(pnt, &PNT);
-
-	vector s;
-	vm_vec_sub(&s, &View_position, &PNT);
-	vm_vec_normalize(&s);
-	vector S = s;
-	vm_vec_scale(&s,depth);
-
 	vector p[4];
 	vertex P[4];
-	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
-	vector u = View_matrix.vec.uvec, r = View_matrix.vec.rvec;
-	vm_vec_scale(&u,rad);
-	vm_vec_scale(&r,rad);
-	vector nu = u, nr = r;
-	vm_vec_negate(&nu);
-	vm_vec_negate(&nr);
-	vm_vec_add2(&PNT, &s);
-	vm_vec_add(&p[0], &PNT, &u);
-	p[1]=p[0];
-	vm_vec_add(&p[2], &PNT, &nu);
-	p[3]=p[2];
-	vm_vec_add(&p[0], &p[0], &r);
-	vm_vec_add(&p[1], &p[1], &nr);
-	vm_vec_add(&p[2], &p[2], &nr);
-	vm_vec_add(&p[3], &p[3], &r);
-	vm_rot_point_around_line(&p[0], &p[0], angle, &PNT, &S);
-	vm_rot_point_around_line(&p[1], &p[1], angle, &PNT, &S);
-	vm_rot_point_around_line(&p[2], &p[2], angle, &PNT, &S);
-	vm_rot_point_around_line(&p[3], &p[3], angle, &PNT, &S);
-	g3_transfer_vertex(&P[0], &p[0]);
-	g3_transfer_vertex(&P[1], &p[1]);
-	g3_transfer_vertex(&P[2], &p[2]);
-	g3_transfer_vertex(&P[3], &p[3]);
-	P[0].u = 0.0f;	P[0].v = 0.0f;
-	P[1].u = 0.0f;	P[1].v = 1.0f;
-	P[2].u = 1.0f;	P[2].v = 1.0f;
-	P[3].u = 1.0f;	P[3].v = 0.0f;
+	matrix m;
+	vm_set_identity(&m);
 
+	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
+	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
+
+	p[0].xyz.x = (-rad*ca + rad*sa) * aspect;	p[0].xyz.y = (-rad*sa - rad*ca);	p[0].xyz.z = -depth;
+	p[1].xyz.x = (rad*ca + rad*sa) * aspect;		p[1].xyz.y = (rad*sa - rad*ca);	p[1].xyz.z = -depth;
+	p[2].xyz.x = (rad*ca - rad*sa) * aspect;		p[2].xyz.y = (rad*sa + rad*ca);	p[2].xyz.z = -depth;
+	p[3].xyz.x = (-rad*ca - rad*sa) * aspect;	p[3].xyz.y = (-rad*sa + rad*ca);	p[3].xyz.z = -depth;
+
+	matrix te = View_matrix;
+	vm_transpose_matrix(&te);
+	for(int i = 0; i<4; i++){
+		vector t = p[i];
+		vm_vec_rotate(&p[i],&t,&te);//point it at the eye
+		vm_vec_add2(&p[i],&PNT);//move it
+	}
+
+	//move all the data from the vecs into the verts
+	g3_transfer_vertex(&P[0], &p[3]);
+	g3_transfer_vertex(&P[1], &p[2]);
+	g3_transfer_vertex(&P[2], &p[1]);
+	g3_transfer_vertex(&P[3], &p[0]);
+
+	//set up the UV coords
+	P[0].u = 0.0f;	P[0].v = 0.0f;
+	P[1].u = 1.0f;	P[1].v = 0.0f;
+	P[2].u = 1.0f;	P[2].v = 1.0f;
+	P[3].u = 0.0f;	P[3].v = 1.0f;
+
+/*	P[0].spec_r = 0;	P[0].spec_g = 0;	P[0].spec_b = 0;
+	P[1].spec_r = 0;	P[1].spec_g = 0;	P[1].spec_b = 0;
+	P[2].spec_r = 0;	P[2].spec_g = 0;	P[2].spec_b = 0;
+	P[3].spec_r = 0;	P[3].spec_g = 0;	P[3].spec_b = 0;
+*/
+	gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags);
+	gr_set_cull(1);
 
 	return 0;
 }

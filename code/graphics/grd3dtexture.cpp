@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-11-11 02:15:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2003-11-11 03:56:11 $
+ * $Author: bobboau $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/11/11 02:15:44  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.14  2003/11/07 18:31:02  randomtiger
  * Fixed a nohtl call to htl funcs (crash with NULL pointer)
  * Fixed a bug with 32bit PCX code.
@@ -980,7 +985,7 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 		return 0;
 	}
 
-	if(d3d_lock_and_set_internal_texture(stage, bitmap_id, (ubyte) 16, (ubyte) bitmap_type, u_scale, v_scale) == true) 
+	if(d3d_lock_and_set_internal_texture(stage, bitmap_id, 16, (ubyte)bitmap_type, u_scale, v_scale) == true) 
 	{
 	 	D3D_last_section_x = -1;
 		D3D_last_section_y = -1;

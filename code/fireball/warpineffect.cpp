@@ -9,13 +9,23 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-09-26 14:37:13 $
+ * $Revision: 2.10 $
+ * $Date: 2003-11-11 03:56:10 $
  * $Author: bobboau $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/09/26 14:37:13  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.8  2003/08/31 06:00:41  bobboau
  * an asortment of bugfixes, mostly with the specular code,
  * HUD flickering should be completly gone now
@@ -170,6 +180,7 @@
 #include "io/timer.h"
 #include "weapon/beam.h"
 #include "mission/missionparse.h"
+#include "Nebula/Neb.h"
 
 extern int wm;
 
@@ -324,7 +335,7 @@ void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float ra
 		draw_face( &verts[0], &verts[3], &verts[4] );
 	}
 	if ( Warp_glow_bitmap != -1 )	{
-		gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
+		gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (The_mission.flags & MISSION_FLAG_FULLNEB)?(1.0f - neb2_get_fog_intensity(pos)):1.0f );
 
 		float r = radius;
 

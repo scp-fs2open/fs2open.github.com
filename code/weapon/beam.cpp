@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.30 $
- * $Date: 2003-11-11 02:15:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2003-11-11 03:56:13 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/11/11 02:15:41  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.29  2003/11/09 07:36:52  Goober5000
  * fixed spelling
  * --Goober5000
@@ -1729,7 +1734,7 @@ void beam_render_muzzle_glow(beam *b)
 	else pt = v;
 	gr_set_bitmap( bwi->beam_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);	
 	// draw 1 bitmap
-	g3_draw_bitmap(&pt, 0, wip->b_info.beam_muzzle_radius * pct * rand_val, (!Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
+	g3_draw_bitmap(&pt, 0, wip->b_info.beam_muzzle_radius * pct * rand_val, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
 	
 	// maybe draw more
 	if(pct > 0.3f){
