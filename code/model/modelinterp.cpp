@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.78 $
- * $Date: 2004-04-03 06:22:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.79 $
+ * $Date: 2004-04-26 12:38:35 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2004/04/03 06:22:33  Goober5000
+ * fixed some stub functions and a bunch of compile warnings
+ * --Goober5000
+ *
  * Revision 2.77  2004/03/20 21:17:13  bobboau
  * fixed -spec comand line option,
  * probly some other stuf
@@ -1993,7 +1997,8 @@ void interp_render_arc_segment( vector *v1, vector *v2, int depth )
 		g3_rotate_vertex( &p2, v2 );
 
 		//g3_draw_rod( v1, 0.2f, v2, 0.2f, NULL, 0);
-		g3_draw_line( &p1, &p2 );
+		g3_draw_rod( v1, 0.6f, v2, 0.6f, NULL, TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
+	//	g3_draw_line( &p1, &p2 );
 	} else {
 		// divide in half
 		vector tmp;
@@ -4185,6 +4190,9 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 		light_rotate_all();
 	}
 
+	// fixes disappearing HUD in OGL - taylor
+	gr_set_cull(1);
+
 	if(!Cmdline_nohtl) {
 
 		// RT - Put this here to fog debris
@@ -4202,6 +4210,9 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 	} else {
 		model_interp_sub( pm->submodel[submodel_num].bsp_data, pm, &pm->submodel[submodel_num], 0 );
 	}
+
+	gr_set_cull(0);
+
 	if ( pm->submodel[submodel_num].num_arcs )	{
 		interp_render_lightning( pm, &pm->submodel[submodel_num]);
 	}
