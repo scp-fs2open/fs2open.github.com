@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.36 $
- * $Date: 2003-07-02 03:31:27 $
+ * $Revision: 2.37 $
+ * $Date: 2003-07-15 02:41:41 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/07/02 03:31:27  phreak
+ * ai now properly fires bomber+ missiles at capital ships.
+ *
  * Revision 2.35  2003/06/25 03:16:32  phreak
  * changed around ai code to take into account a limited lock range for local ssms
  *
@@ -2126,6 +2129,11 @@ int object_is_targetable(object *target, ship *viewer)
 	if (target->type == OBJ_SHIP)
 	{
 		stealth_ship = (Ships[target->instance].flags2 & SF2_STEALTH);
+
+		if (shipfx_calc_visibility(target, &Objects[viewer->objnum].pos) > 0.3f)
+		{
+			return 1;
+		}	
 		if ( ship_is_visible_by_team_new(target, viewer) == 1)
 		{
 			return 1;
@@ -11156,6 +11164,13 @@ void turret_fire_weapon(ship_subsys *turret, int parent_objnum, vector *turret_p
 
 			// fire a beam weapon
 			beam_fire(&fire_info);
+
+			if ((parent_ship->cloak_stage > 0) && (parent_ship->cloak_stage < 3))
+			{
+				beam_weapon_info *bip=&Weapon_info[turret_weapon_class].b_info;
+				shipfx_start_cloak(parent_ship,bip->beam_warmup + bip->beam_warmdown + bip->beam_life + 1000);
+			}
+
 		} else {
 
 			// don't fire swarm, but set up swarm info
@@ -11206,6 +11221,10 @@ void turret_fire_weapon(ship_subsys *turret, int parent_objnum, vector *turret_p
 					}
 				}
 #endif
+				if ((parent_ship->cloak_stage > 0) && (parent_ship->cloak_stage < 3))
+				{
+					shipfx_start_cloak(parent_ship,500);
+				}
 			}
 		}
 	} else {
