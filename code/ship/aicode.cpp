@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-01-06 22:57:23 $
+ * $Revision: 2.14 $
+ * $Date: 2003-01-07 20:06:44 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/01/06 22:57:23  Goober5000
+ * implemented keep-safe-distance
+ * --Goober5000
+ *
  * Revision 2.12  2003/01/03 21:58:07  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -2315,6 +2319,7 @@ int get_nearest_bbox_point(object *ship_obj, vector *start, vector *box_pt)
 
 typedef struct eval_nearest_objnum {
 	int	objnum;
+	int except_flag;
 	object *trial_objp;
 	int	enemy_team_mask;
 	int	enemy_wing;
@@ -2362,6 +2367,32 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 
 			if (sip->flags & (SIF_NO_SHIP_TYPE | SIF_NAVBUOY))
 				return;
+
+			// Goober5000: don't evaluate the exceptions
+			if (eno->except_flag)
+			{
+				int i, test_num;
+				ai_goal *aigp = &aip->goals[aip->active_goal];
+
+				for (i = 0; i < aigp->num_special_objects; i++)
+				{
+					// a wing?
+					if (aigp->special_object_flags & (1<<i))
+					{
+						test_num = Ships[eno->trial_objp->instance].wingnum;
+						
+					}
+					// a ship
+					else
+					{
+						test_num = eno->trial_objp->instance;
+					}
+
+					// if this is an exception, don't evaluate it
+					if (aigp->special_object_num[i] == test_num)
+						return;
+				}
+			}
 
 			if (Ships[eno->trial_objp->instance].team & eno->enemy_team_mask) {
 				float	dist;
@@ -2426,7 +2457,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 //	with OF_PROTECTED bit set.
 //	Ship must be within range "range".
 //	Don't attack a ship that already has at least max_attackers attacking it.
-int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers)
+int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, int except)
 {
 	object	*danger_weapon_objp;
 	ai_info	*aip;
@@ -2438,6 +2469,7 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 	eno.enemy_wing = enemy_wing;
 	eno.max_attackers = max_attackers;
 	eno.objnum = objnum;
+	eno.except_flag = except;
 	eno.range = range;
 	eno.nearest_dist = range;
 	eno.nearest_objnum = -1;
@@ -2447,7 +2479,6 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		eno.trial_objp = &Objects[so->objnum];
 		evaluate_object_as_nearest_objnum(&eno);
-
 	}
 
 	// check if danger_weapon_objnum has will show a stealth ship
@@ -2478,7 +2509,7 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 	//	If only looking for target in certain wing and couldn't find anything in
 	//	that wing, look for any object.
 	if ((eno.nearest_objnum == -1) && (enemy_wing != -1)) {
-		return get_nearest_objnum(objnum, enemy_team_mask, -1, range, max_attackers);
+		return get_nearest_objnum(objnum, enemy_team_mask, -1, range, max_attackers, except);
 	}
 
 	return eno.nearest_objnum;
@@ -2938,7 +2969,7 @@ int get_enemy_timestamp()
 // -------------------------------------------------------------------
 //	Return objnum if enemy found, else return -1;
 //	Don't attack a ship that already has at least max_attackers attacking it.
-int find_enemy(int objnum, float range, int max_attackers)
+int find_enemy(int objnum, float range, int max_attackers, int except)
 {
 	int	enemy_team_mask;
 
@@ -2965,7 +2996,8 @@ int find_enemy(int objnum, float range, int max_attackers)
 				aip->target_signature = -1;
 			}
 		}
-		return get_nearest_objnum(objnum, enemy_team_mask, aip->enemy_wing, range, max_attackers);
+
+		return get_nearest_objnum(objnum, enemy_team_mask, aip->enemy_wing, range, max_attackers, except);
 	} else {
 		aip->target_objnum = -1;
 		aip->target_signature = -1;
@@ -3091,7 +3123,7 @@ void force_avoid_player_check(object *objp, ai_info *aip)
 //	Set *attacked as object to attack for object *attacker
 //	If attacked == NULL, then attack any enemy object.
 //	Attack point *rel_pos on object.  This is for supporting attacking subsystems.
-void ai_attack_object(object *attacker, object *attacked, int priority, ship_subsys *ssp)
+void ai_attack_object(object *attacker, object *attacked, int priority, ship_subsys *ssp, int except)
 {
 	ai_info	*aip;
 
@@ -3125,7 +3157,7 @@ void ai_attack_object(object *attacker, object *attacked, int priority, ship_sub
 	if (attacked == NULL) {
 		aip->choose_enemy_timestamp = timestamp(0);
 		// nebula safe
-		set_target_objnum(aip, find_enemy(attacker-Objects, 99999.9f, 4));
+		set_target_objnum(aip, find_enemy(attacker-Objects, 99999.9f, 4, except));
 	} else {
 		// check if we can see atacked in nebula
 		if (aip->target_objnum != attacked - Objects) {
