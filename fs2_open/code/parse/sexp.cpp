@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.123 $
- * $Date: 2004-11-17 22:23:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.124 $
+ * $Date: 2004-12-23 15:57:42 $
+ * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2004/11/17 22:23:13  Goober5000
+ * added two new sexps
+ * --Goober5000
+ *
  * Revision 2.122  2004/10/31 02:04:34  Goober5000
  * added Knossos_warp_ani_used flag for taylor
  * --Goober5000
@@ -1024,11 +1028,13 @@ sexp_oper Operators[] = {
 	{ "number-of",				OP_NUMBER_OF,			2, INT_MAX, },	// Goober5000
 	{ "invalidate-argument",	OP_INVALIDATE_ARGUMENT,	1, INT_MAX, },	// Goober5000
 
-	{ "send-message-list",			OP_SEND_MESSAGE_LIST,			4, INT_MAX	},
-	{ "send-message",					OP_SEND_MESSAGE,					3, 3,			},
-	{ "send-random-message",		OP_SEND_RANDOM_MESSAGE,			3, INT_MAX,	},
-	{ "invalidate-goal",				OP_INVALIDATE_GOAL,				1, INT_MAX,	},
-	{ "validate-goal",				OP_VALIDATE_GOAL,					1, INT_MAX,	},
+	{ "send-message-list",			OP_SEND_MESSAGE_LIST,		4,	INT_MAX	},
+	{ "send-message",				OP_SEND_MESSAGE,			3,	3,		},
+	{ "send-random-message",		OP_SEND_RANDOM_MESSAGE,		3,	INT_MAX,},
+	{ "invalidate-goal",			OP_INVALIDATE_GOAL,			1,	INT_MAX,},
+	{ "validate-goal",				OP_VALIDATE_GOAL,			1,	INT_MAX,},
+	{ "scramble-messages",			OP_SCRAMBLE_MESSAGES,		0,	0,},
+	{ "unscramble-messages",		OP_UNSCRAMBLE_MESSAGES,		0,	0,},
 
 	{ "add-goal",						OP_ADD_GOAL,				2, 2,			},
 	{ "add-ship-goal",				OP_ADD_SHIP_GOAL,				2, 2,			},
@@ -11995,6 +12001,13 @@ void sexp_set_training_context_speed(int node)
 	Training_context_speed_set = 0;
 }
 
+bool Sexp_Messages_Scrambled = false;
+void sexp_scramble_messages(bool scramble)
+{
+	Sexp_Messages_Scrambled = scramble;
+}
+
+
 // high-level sexpression evaluator
 int eval_sexp(int cur_node, int referenced_node)
 {
@@ -13214,7 +13227,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = 1;
 				unset_nav_carry_status(node);
 				break;
+
 #endif
+			case OP_SCRAMBLE_MESSAGES:
+			case OP_UNSCRAMBLE_MESSAGES:
+				sexp_scramble_messages(op_num == OP_SCRAMBLE_MESSAGES );
+				break;
 
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
@@ -13636,6 +13654,8 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_COLOR:		//WMC
 		case OP_RADAR_SET_MAXRANGE: //Kazan
 		case OP_SHIP_CHANGE_ALT_NAME:
+		case OP_SCRAMBLE_MESSAGES:
+		case OP_UNSCRAMBLE_MESSAGES:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -14641,6 +14661,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 #endif
 
+		case OP_SCRAMBLE_MESSAGES:
+		case OP_UNSCRAMBLE_MESSAGES:
+			return OPF_NONE;
 
 		default:
 			Int3();
@@ -15498,6 +15521,8 @@ int get_subcategory(int sexp_id)
 		case OP_SEND_RANDOM_MESSAGE:
 		case OP_INVALIDATE_GOAL:
 		case OP_VALIDATE_GOAL:
+		case OP_SCRAMBLE_MESSAGES:
+		case OP_UNSCRAMBLE_MESSAGES:
 			return CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS;
 			
 		case OP_ADD_GOAL:

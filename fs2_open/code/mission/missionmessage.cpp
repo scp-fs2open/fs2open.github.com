@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-12-17 06:43:01 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2004-12-23 15:58:55 $
+ * $Author: phreak $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/12/17 06:43:01  taylor
+ * fix crash from dynamically allocated Personas
+ *
  * Revision 2.22  2004/12/14 14:46:13  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -2294,7 +2297,7 @@ int message_persona_name_lookup( char *name )
 	return -1;
 }
 
-
+extern bool Sexp_Messages_Scrambled;
 // Blank out portions of the audio playback for the sound identified by Message_wave
 // This works by using the same Distort_pattern[][] that was used to distort the associated text
 void message_maybe_distort()
@@ -2318,7 +2321,7 @@ void message_maybe_distort()
 
 		// added check to see if EMP effect was active
 		// 8/24/98 - DB
-		if ( (hud_communications_state(Player_ship) != COMM_OK) || emp_active_local() ) {
+		if ( (hud_communications_state(Player_ship) != COMM_OK) || emp_active_local() || Sexp_Messages_Scrambled ) {
 			was_muted = Message_wave_muted;
 			if ( timestamp_elapsed(Next_mute_time) ) {
 				Next_mute_time = fl2i(Distort_patterns[Distort_num][Distort_next++] * Message_wave_duration);
@@ -2353,7 +2356,7 @@ void message_maybe_distort_text(char *text)
 {
 	int i, j, len, run, curr_offset, voice_duration, next_distort;
 
-	if ( (hud_communications_state(Player_ship) == COMM_OK) && !emp_active_local() ) { 
+	if ( (hud_communications_state(Player_ship) == COMM_OK) && !emp_active_local() && !Sexp_Messages_Scrambled ) { 
 		return;
 	}
 
