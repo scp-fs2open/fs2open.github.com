@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.85 $
- * $Date: 2004-09-24 22:40:23 $
+ * $Revision: 2.86 $
+ * $Date: 2004-10-31 21:42:31 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2004/09/24 22:40:23  taylor
+ * proper OGL line drawing in HTL... hopefully
+ *
  * Revision 2.84  2004/07/29 09:35:29  taylor
  * fix NULL pointer and try to prevent in future, remove excess commands in opengl_cleanup()
  *
@@ -621,16 +624,13 @@
  *
  * $NoKeywords: $
  */
+
 #ifdef WIN32
-
-#define STUB_FUNCTION 0
-
 #include <windows.h>
 #include <windowsx.h>
+#endif
 
-#include "gl/gl.h"
-#include "gl/glu.h"
-#include "gl/glext.h"
+#include "PreProcDefines.h"
 
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
@@ -652,20 +652,21 @@
 #include "model/model.h"
 #include "debugconsole/timerbar.h"
 #include "debugconsole/dbugfile.h"
+#include "graphics/gropenglbmpman.h"
 #include "graphics/gropengllight.h"
 #include "graphics/gropengltexture.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengltnl.h"
 
 
-
+#if defined(_WIN32) && !defined(__GNUC__)
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")
+#endif
 
 
 #define REQUIRED_GL_VERSION '2'
 
-extern int OGL_inited;
 extern int Cmdline_nohtl;
 
 int vram_full = 0;			// UnknownPlayer
@@ -676,10 +677,11 @@ int vram_full = 0;			// UnknownPlayer
 //3==NV Radial
 static int OGL_fogmode=0;
 
+#ifdef _WIN32
 static HDC dev_context = NULL;
 static HGLRC rend_context = NULL;
 static PIXELFORMATDESCRIPTOR pfd;
-
+#endif
 
 int VBO_ENABLED = 0;
 
@@ -732,12 +734,13 @@ extern float	View_zoom;
 
 void opengl_go_fullscreen(HWND wnd)
 {
-	DEVMODE dm;
-
 	if (Cmdline_window)
 		return;
 
 	mprintf(("opengl_go_fullscreen\n"));
+
+#ifdef _WIN32
+	DEVMODE dm;
 
 	os_suspend();
 	SetWindowLong( wnd, GWL_EXSTYLE, 0 );
@@ -755,17 +758,31 @@ void opengl_go_fullscreen(HWND wnd)
 	dm.dmFields=DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 	ChangeDisplaySettings(&dm,CDS_FULLSCREEN);
 	os_resume();  
+#else
+	if ( (os_config_read_uint(NULL, NOX("Fullscreen"), 1) == 1) && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) ) {
+		os_suspend();
+		SDL_WM_ToggleFullScreen( SDL_GetVideoSurface() );
+		os_resume();
+	}
+#endif
 }
 
 void opengl_minimize()
 {
-	HWND wnd=(HWND)os_get_window();
 	mprintf(("opengl_minimize\n"));
 	
+#ifdef _WIN32
+	HWND wnd=(HWND)os_get_window();
+
 	os_suspend();
 	ShowWindow(wnd, SW_MINIMIZE);
 	ChangeDisplaySettings(NULL,0);
 	os_resume();
+#else
+	os_suspend();
+	SDL_WM_IconifyWindow();
+	os_resume();
+#endif
 }
 /*
 static inline void opengl_set_max_anistropy()
@@ -805,7 +822,7 @@ void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
 			opengl_switch_arb(0,1);
 			if(gr_screen.custom_size < 0) {
 				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			} else {
 				// If we are using a non standard mode we will need this because textures are being stretched
  				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -848,7 +865,7 @@ void gr_opengl_set_tex_state_combine_ext(gr_texture_source ts)
 		case TEXTURE_SOURCE_NO_FILTERING:
 			opengl_switch_arb(0,1);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
 			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
@@ -883,7 +900,7 @@ void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
 		case TEXTURE_SOURCE_NO_FILTERING:
 			opengl_switch_arb(0,1);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			break;
 		default:
@@ -978,7 +995,7 @@ void opengl_tcache_frame ();
 void gr_opengl_flip()
 {
 	int swap_error=0;
-	if (!OGL_inited) return;
+	if (!OGL_enabled) return;
 
 	gr_reset_clip();
 
@@ -1143,9 +1160,9 @@ void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, in
 	saved_zbuf = gr_zbuffer_get();
 	
 	// start the frame, no zbuffering, no culling
-#ifndef FRED
-	g3_start_frame(1);	
-#endif
+	if (!Fred_running)
+		g3_start_frame(1);
+
 	gr_zbuffer_set(GR_ZBUFF_NONE);		
 	gr_set_cull(0);		
 
@@ -1201,9 +1218,9 @@ void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, in
 	// draw the polys
 	g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_ALPHA, 0.1f);		
 
-#ifndef FRED
- 	g3_end_frame();
-#endif
+	if (!Fred_running)
+		g3_end_frame();
+
 
 	// restore zbuffer and culling
 	gr_zbuffer_set(saved_zbuf);
@@ -1620,7 +1637,15 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 	}
 #endif
 
+// -- AA OpenGL lines.  Looks good but they are kinda slow so this is disabled until an option is implemented - taylor
+//	gr_opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+//	glEnable( GL_LINE_SMOOTH );
+//	glHint( GL_LINE_SMOOTH_HINT, GL_FASTEST );
+//	glLineWidth( 1.0 );
+
 	gr_opengl_line( fl2i(v1->sx), fl2i(v1->sy), fl2i(v2->sx), fl2i(v2->sy) );
+
+//	glDisable( GL_LINE_SMOOTH );
 }
 
 void gr_opengl_gradient(int x1,int y1,int x2,int y2)
@@ -2172,6 +2197,7 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 {
 	int i;
 	float u_scale = 1.0f, v_scale = 1.0f;
+	ubyte zero[3]={ 0, 0, 0 };
 
 	// Make nebula use the texture mapper... this blends the colors better.
 	if ( flags & TMAP_FLAG_NEBULA ){
@@ -2192,10 +2218,11 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 		}
 	}
 
+//	glColor3ub(191,191,191);	//its unlit
 
-
-	glColor3ub(191,191,191);	//its unlit
-	ubyte zero[]={0,0,0}; glSecondaryColor3ubvEXT(zero);
+	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
+	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+	glSecondaryColor3ubvEXT(zero);
 
 	vertex *va;
 	if (flags & TMAP_FLAG_TRISTRIP) glBegin(GL_TRIANGLE_STRIP);
@@ -2462,7 +2489,7 @@ void gr_opengl_cleanup(int minimize)
 {	
 	HWND wnd=(HWND)os_get_window();
 
-	if ( !OGL_inited )
+	if ( !OGL_enabled )
 		return;
 
 	if ( !Fred_running ) {
@@ -2471,7 +2498,7 @@ void gr_opengl_cleanup(int minimize)
 		gr_flip();
 	}
 
-	OGL_inited = 0;
+	OGL_enabled = 0;
 
 	DBUGFILE_OUTPUT_0("");
 	if (rend_context)
@@ -2656,13 +2683,22 @@ void gr_opengl_zbuffer_clear(int mode)
 	}
 }
 
+// copied out of grd3d.cpp
+inline WORD ogl_ramp_val(uint i, float recip_gamma, int scale = 65535)
+{
+    return static_cast<WORD>(scale*pow(i/255.0f, recip_gamma));
+}
+
 void gr_opengl_set_gamma(float gamma)
 {
+	int i;
+	WORD g, gamma_ramp[3][256];
+
 	Gr_gamma = gamma;
 	Gr_gamma_int = int (Gr_gamma*10);
 
+	// old way - not sure if this is still needed but keep it for now
 	// Create the Gamma lookup table
-	int i;
 	for (i=0;i<256; i++) {
 		int v = fl2i(pow(i2fl(i)/255.0f, 1.0f/Gr_gamma)*255.0f);
 		if ( v > 255 ) {
@@ -2672,6 +2708,21 @@ void gr_opengl_set_gamma(float gamma)
 		}
 		Gr_gamma_lookup[i] = v;
 	}
+
+	// new way
+	// Create the Gamma lookup table
+	for (i = 0; i < 256; i++) {
+		g = ogl_ramp_val(i, gamma);
+	  	gamma_ramp[0][i] = gamma_ramp[1][i] = gamma_ramp[2][i] = g;
+	}
+
+#ifdef _WIN32
+	HDC hdc = GetDC( (HWND)os_get_window() );
+
+	SetDeviceGammaRamp( hdc, gamma_ramp );
+#else
+	SDL_SetGammaRamp( gamma_ramp[0], gamma_ramp[1], gamma_ramp[2] );
+#endif
 
 	// Flush any existing textures
 	opengl_tcache_flush();
@@ -3193,6 +3244,144 @@ void gr_opengl_setup_background_fog(bool set)
 
 }
 
+void opengl_setup_function_pointers()
+{
+	// *****************************************************************************
+	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
+	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
+
+	gr_screen.gf_flip = gr_opengl_flip;
+	gr_screen.gf_flip_window = gr_opengl_flip_window;
+	gr_screen.gf_set_clip = gr_opengl_set_clip;
+	gr_screen.gf_reset_clip = gr_opengl_reset_clip;
+	gr_screen.gf_set_font = grx_set_font;
+	
+	gr_screen.gf_set_color = gr_opengl_set_color;
+	gr_screen.gf_set_bitmap = gr_opengl_set_bitmap;
+	gr_screen.gf_create_shader = gr_opengl_create_shader;
+	gr_screen.gf_set_shader = gr_opengl_set_shader;
+	gr_screen.gf_clear = gr_opengl_clear;
+//	gr_screen.gf_bitmap = gr_opengl_bitmap;
+//	gr_screen.gf_bitmap_ex = gr_opengl_bitmap_ex;
+	gr_screen.gf_aabitmap = gr_opengl_aabitmap;
+	gr_screen.gf_aabitmap_ex = gr_opengl_aabitmap_ex;
+	
+	gr_screen.gf_rect = gr_opengl_rect;
+	gr_screen.gf_shade = gr_opengl_shade;
+	gr_screen.gf_string = gr_opengl_string;
+	gr_screen.gf_circle = gr_opengl_circle;
+
+	gr_screen.gf_line = gr_opengl_line;
+	gr_screen.gf_aaline = gr_opengl_aaline;
+	gr_screen.gf_pixel = gr_opengl_pixel;
+	gr_screen.gf_scaler = gr_opengl_scaler;
+	gr_screen.gf_tmapper = gr_opengl_tmapper;
+	gr_screen.gf_tmapper_batch_3d_unlit = gr_opengl_tmapper_batch_3d_unlit;
+
+	gr_screen.gf_gradient = gr_opengl_gradient;
+
+	gr_screen.gf_set_palette = gr_opengl_set_palette;
+	gr_screen.gf_get_color = gr_opengl_get_color;
+	gr_screen.gf_init_color = gr_opengl_init_color;
+	gr_screen.gf_init_alphacolor = gr_opengl_init_alphacolor;
+	gr_screen.gf_set_color_fast = gr_opengl_set_color_fast;
+	gr_screen.gf_print_screen = gr_opengl_print_screen;
+
+	gr_screen.gf_fade_in = gr_opengl_fade_in;
+	gr_screen.gf_fade_out = gr_opengl_fade_out;
+	gr_screen.gf_flash = gr_opengl_flash;
+	
+	gr_screen.gf_zbuffer_get = gr_opengl_zbuffer_get;
+	gr_screen.gf_zbuffer_set = gr_opengl_zbuffer_set;
+	gr_screen.gf_zbuffer_clear = gr_opengl_zbuffer_clear;
+	
+	gr_screen.gf_save_screen = gr_opengl_save_screen;
+	gr_screen.gf_restore_screen = gr_opengl_restore_screen;
+	gr_screen.gf_free_screen = gr_opengl_free_screen;
+	
+	gr_screen.gf_dump_frame_start = gr_opengl_dump_frame_start;
+	gr_screen.gf_dump_frame_stop = gr_opengl_dump_frame_stop;
+	gr_screen.gf_dump_frame = gr_opengl_dump_frame;
+	
+	gr_screen.gf_set_gamma = gr_opengl_set_gamma;
+	
+	gr_screen.gf_lock = gr_opengl_lock;
+	gr_screen.gf_unlock = gr_opengl_unlock;
+	
+	gr_screen.gf_fog_set = gr_opengl_fog_set;	
+
+	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
+	gr_screen.gf_get_region = gr_opengl_get_region;
+
+	// now for the bitmap functions
+	gr_screen.gf_bm_free_data				= gr_opengl_bm_free_data;
+	gr_screen.gf_bm_create					= gr_opengl_bm_create;
+	gr_screen.gf_bm_init					= gr_opengl_bm_init;
+	gr_screen.gf_bm_load					= gr_opengl_bm_load;
+	gr_screen.gf_bm_page_in_start			= gr_opengl_bm_page_in_start;
+	gr_screen.gf_bm_lock					= gr_opengl_bm_lock;
+
+	gr_screen.gf_get_pixel = gr_opengl_get_pixel;
+
+	gr_screen.gf_set_cull = gr_opengl_set_cull;
+
+	gr_screen.gf_cross_fade = gr_opengl_cross_fade;
+
+	gr_screen.gf_filter_set = gr_opengl_filter_set;
+
+	gr_screen.gf_tcache_set = gr_opengl_tcache_set;
+
+	gr_screen.gf_set_clear_color = gr_opengl_set_clear_color;
+
+	gr_screen.gf_preload = gr_opengl_preload;
+
+	gr_screen.gf_push_texture_matrix = gr_opengl_push_texture_matrix;
+	gr_screen.gf_pop_texture_matrix = gr_opengl_pop_texture_matrix;
+	gr_screen.gf_translate_texture_matrix = gr_opengl_translate_texture_matrix;
+
+	gr_screen.gf_set_texture_addressing = gr_opengl_set_texture_addressing;
+	gr_screen.gf_zbias = gr_opengl_zbias_stub;
+	gr_screen.gf_set_fill_mode = gr_opengl_set_fill_mode;
+	gr_screen.gf_set_texture_panning = gr_opengl_set_texture_panning;
+
+	gr_screen.gf_make_buffer = gr_opengl_make_buffer;
+	gr_screen.gf_destroy_buffer = gr_opengl_destroy_buffer;
+	gr_screen.gf_render_buffer = gr_opengl_render_buffer;
+	gr_screen.gf_set_buffer = gr_opengl_set_buffer;
+
+	gr_screen.gf_start_instance_matrix = gr_opengl_start_instance_matrix;
+	gr_screen.gf_end_instance_matrix = gr_opengl_end_instance_matrix;
+	gr_screen.gf_start_angles_instance_matrix = gr_opengl_start_instance_angles;
+
+	gr_screen.gf_make_light = gr_opengl_make_light;
+	gr_screen.gf_modify_light = gr_opengl_modify_light;
+	gr_screen.gf_destroy_light = gr_opengl_destroy_light;
+	gr_screen.gf_set_light = gr_opengl_set_light;
+	gr_screen.gf_reset_lighting = gr_opengl_reset_lighting;
+
+	gr_screen.gf_start_clip_plane = gr_opengl_start_clip_plane;
+	gr_screen.gf_end_clip_plane = gr_opengl_end_clip_plane;
+
+	gr_screen.gf_lighting = gr_opengl_set_lighting;
+
+	gr_screen.gf_set_proj_matrix=gr_opengl_set_projection_matrix;
+	gr_screen.gf_end_proj_matrix=gr_opengl_end_projection_matrix;
+
+	gr_screen.gf_set_view_matrix=gr_opengl_set_view_matrix;
+	gr_screen.gf_end_view_matrix=gr_opengl_end_view_matrix;
+
+	gr_screen.gf_push_scale_matrix = gr_opengl_push_scale_matrix;
+	gr_screen.gf_pop_scale_matrix = gr_opengl_pop_scale_matrix;
+	gr_screen.gf_center_alpha = gr_opengl_center_alpha;
+
+	gr_screen.gf_setup_background_fog = gr_opengl_setup_background_fog;
+	gr_screen.gf_set_environment_mapping = gr_opengl_render_to_env;;
+
+	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
+	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
+	// *****************************************************************************
+}
+
 void gr_opengl_render_to_env(int FACE);
 
 extern char *Osreg_title;
@@ -3220,8 +3409,6 @@ void gr_opengl_init(int reinit)
 	// turn off jpgtga if DevIL isn't used
 	Cmdline_jpgtga = 0;
 #endif
-
-	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
 
 	switch( bpp )	{
 	case 16:
@@ -3324,12 +3511,15 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	Gr_ta_alpha.shift = 12;
 	Gr_ta_alpha.scale = 17;
 
-	if ( OGL_inited )	{
+	if ( OGL_enabled )	{
 		gr_opengl_cleanup();
-		OGL_inited = 0;
+		OGL_enabled = 0;
 	}
 
 	mprintf(( "Initializing opengl graphics device...\nRes:%dx%dx%d\n",gr_screen.max_w,gr_screen.max_h,gr_screen.bits_per_pixel ));
+
+#ifdef _WIN32
+	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
 
 	pfd.nSize=sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion=1;
@@ -3383,9 +3573,48 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		MessageBox(wnd, "Unable to make current thread for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		exit(1);
 	}
+#else
+	if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0) {
+		fprintf (stderr, "Couldn't init SDL: %s", SDL_GetError());
+		exit (1);
+	}
+
+	int flags = SDL_OPENGL;
+
+	// grab mouse/key unless told otherwise, ignore when we are going fullscreen
+	if ( (Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
+		SDL_WM_GrabInput(SDL_GRAB_ON);
+	}
+
+	if (SDL_SetVideoMode (gr_screen.max_w, gr_screen.max_h, gr_screen.bits_per_pixel, flags) == NULL) {
+		fprintf (stderr, "Couldn't set video mode: %s", SDL_GetError ());
+		exit (1);
+	}
+
+	int tmp_red = 0;
+	int tmp_green = 0;
+	int tmp_blue = 0;
+	int tmp_depth = 0;
+	int tmp_db = 0;
+
+	SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &tmp_red);
+	SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &tmp_green);
+	SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &tmp_blue);
+	SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &tmp_depth);
+	SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &tmp_db);
+	
+	mprintf(("Actual SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", tmp_red, tmp_green, tmp_blue, tmp_depth, tmp_db));
+
+	SDL_ShowCursor(0);
+
+	/* might as well put this here */
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+
+	HWND wnd = 0;
+#endif
 
 	ver=(char*)glGetString(GL_VERSION);
-	OGL_inited = 1;
+	OGL_enabled = 1;
 	if (!reinit)
 	{
 		mprintf(("OPENGL INITED!\n"));
@@ -3470,160 +3699,11 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	Gr_current_blue = &Gr_blue;
 	Gr_current_green = &Gr_green;
 	Gr_current_alpha = &Gr_alpha;
-                                
-	gr_screen.gf_flip = gr_opengl_flip;
-	gr_screen.gf_flip_window = gr_opengl_flip_window;
-	gr_screen.gf_set_clip = gr_opengl_set_clip;
-	gr_screen.gf_reset_clip = gr_opengl_reset_clip;
-	gr_screen.gf_set_font = grx_set_font;
-	
-	gr_screen.gf_set_color = gr_opengl_set_color;
-	gr_screen.gf_set_bitmap = gr_opengl_set_bitmap;
-	gr_screen.gf_create_shader = gr_opengl_create_shader;
-	gr_screen.gf_set_shader = gr_opengl_set_shader;
-	gr_screen.gf_clear = gr_opengl_clear;
-//	gr_screen.gf_bitmap = gr_opengl_bitmap;
-//	gr_screen.gf_bitmap_ex = gr_opengl_bitmap_ex;
-	gr_screen.gf_aabitmap = gr_opengl_aabitmap;
-	gr_screen.gf_aabitmap_ex = gr_opengl_aabitmap_ex;
-	
-	gr_screen.gf_rect = gr_opengl_rect;
-	gr_screen.gf_shade = gr_opengl_shade;
-	gr_screen.gf_string = gr_opengl_string;
-	gr_screen.gf_circle = gr_opengl_circle;
-
-	gr_screen.gf_line = gr_opengl_line;
-	gr_screen.gf_aaline = gr_opengl_aaline;
-	gr_screen.gf_pixel = gr_opengl_pixel;
-	gr_screen.gf_scaler = gr_opengl_scaler;
-	gr_screen.gf_tmapper = gr_opengl_tmapper;
-	gr_screen.gf_tmapper_batch_3d_unlit = gr_opengl_tmapper_batch_3d_unlit;
-
-	gr_screen.gf_gradient = gr_opengl_gradient;
-
-	gr_screen.gf_set_palette = gr_opengl_set_palette;
-	gr_screen.gf_get_color = gr_opengl_get_color;
-	gr_screen.gf_init_color = gr_opengl_init_color;
-	gr_screen.gf_init_alphacolor = gr_opengl_init_alphacolor;
-	gr_screen.gf_set_color_fast = gr_opengl_set_color_fast;
-	gr_screen.gf_print_screen = gr_opengl_print_screen;
-
-	gr_screen.gf_fade_in = gr_opengl_fade_in;
-	gr_screen.gf_fade_out = gr_opengl_fade_out;
-	gr_screen.gf_flash = gr_opengl_flash;
-	
-	gr_screen.gf_zbuffer_get = gr_opengl_zbuffer_get;
-	gr_screen.gf_zbuffer_set = gr_opengl_zbuffer_set;
-	gr_screen.gf_zbuffer_clear = gr_opengl_zbuffer_clear;
-	
-	gr_screen.gf_save_screen = gr_opengl_save_screen;
-	gr_screen.gf_restore_screen = gr_opengl_restore_screen;
-	gr_screen.gf_free_screen = gr_opengl_free_screen;
-	
-	gr_screen.gf_dump_frame_start = gr_opengl_dump_frame_start;
-	gr_screen.gf_dump_frame_stop = gr_opengl_dump_frame_stop;
-	gr_screen.gf_dump_frame = gr_opengl_dump_frame;
-	
-	gr_screen.gf_set_gamma = gr_opengl_set_gamma;
-	
-	gr_screen.gf_lock = gr_opengl_lock;
-	gr_screen.gf_unlock = gr_opengl_unlock;
-	
-	gr_screen.gf_fog_set = gr_opengl_fog_set;	
-
-	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
-	gr_screen.gf_get_region = gr_opengl_get_region;
-
-	// now for the bitmap functions
-	gr_screen.gf_bm_get_next_handle         = bm_gfx_get_next_handle;         
-	gr_screen.gf_bm_close                   = bm_gfx_close;                   
-	gr_screen.gf_bm_init                    = bm_gfx_init;                    
-	gr_screen.gf_bm_get_frame_usage         = bm_gfx_get_frame_usage;         
-	gr_screen.gf_bm_create                  = bm_gfx_create;                  
-	gr_screen.gf_bm_load                    = bm_gfx_load;                   
-	gr_screen.gf_bm_load_duplicate          = bm_gfx_load_duplicate;          
-	gr_screen.gf_bm_load_animation          = bm_gfx_load_animation;          
-	gr_screen.gf_bm_get_info                = bm_gfx_get_info;                
-	gr_screen.gf_bm_lock                    = bm_gfx_lock;                    
-	gr_screen.gf_bm_unlock                  = bm_gfx_unlock;                  
-	gr_screen.gf_bm_get_palette             = bm_gfx_get_palette;             
-	gr_screen.gf_bm_release                 = bm_gfx_release;                 
-	gr_screen.gf_bm_unload                  = bm_gfx_unload;                  
-	gr_screen.gf_bm_unload_all              = bm_gfx_unload_all;              
-	gr_screen.gf_bm_page_in_texture         = bm_gfx_page_in_texture;         
-	gr_screen.gf_bm_page_in_start           = bm_gfx_page_in_start;           
-	gr_screen.gf_bm_page_in_stop            = bm_gfx_page_in_stop;            
-	gr_screen.gf_bm_get_cache_slot          = bm_gfx_get_cache_slot;          
-	gr_screen.gf_bm_get_components          = bm_gfx_get_components;          
-	gr_screen.gf_bm_get_section_size        = bm_gfx_get_section_size;
-
-	gr_screen.gf_bm_page_in_nondarkening_texture = bm_gfx_page_in_nondarkening_texture; 
-	gr_screen.gf_bm_page_in_xparent_texture		 = bm_gfx_page_in_xparent_texture;		 
-	gr_screen.gf_bm_page_in_aabitmap			 = bm_gfx_page_in_aabitmap;
 
 //	RunGLTest( 0, NULL, 0, 0, 0, 0.0, 0 );
 
-	gr_screen.gf_get_pixel = gr_opengl_get_pixel;
+	opengl_setup_function_pointers();
 
-	gr_screen.gf_set_cull = gr_opengl_set_cull;
-
-	gr_screen.gf_cross_fade = gr_opengl_cross_fade;
-
-	gr_screen.gf_filter_set = gr_opengl_filter_set;
-
-	gr_screen.gf_tcache_set = gr_opengl_tcache_set;
-
-	gr_screen.gf_set_clear_color = gr_opengl_set_clear_color;
-
-	gr_screen.gf_preload = gr_opengl_preload;
-
-	gr_screen.gf_push_texture_matrix = gr_opengl_push_texture_matrix;
-	gr_screen.gf_pop_texture_matrix = gr_opengl_pop_texture_matrix;
-	gr_screen.gf_translate_texture_matrix = gr_opengl_translate_texture_matrix;
-
-	gr_screen.gf_set_texture_addressing = gr_opengl_set_texture_addressing;
-	gr_screen.gf_zbias = gr_opengl_zbias_stub;
-	gr_screen.gf_set_fill_mode = gr_opengl_set_fill_mode;
-	gr_screen.gf_set_texture_panning = gr_opengl_set_texture_panning;
-
-	gr_screen.gf_make_buffer = gr_opengl_make_buffer;
-	gr_screen.gf_destroy_buffer = gr_opengl_destroy_buffer;
-	gr_screen.gf_render_buffer = gr_opengl_render_buffer;
-	gr_screen.gf_set_buffer = gr_opengl_set_buffer;
-
-	gr_screen.gf_start_instance_matrix = gr_opengl_start_instance_matrix;
-	gr_screen.gf_end_instance_matrix = gr_opengl_end_instance_matrix;
-	gr_screen.gf_start_angles_instance_matrix = gr_opengl_start_instance_angles;
-
-	gr_screen.gf_make_light = gr_opengl_make_light;
-	gr_screen.gf_modify_light = gr_opengl_modify_light;
-	gr_screen.gf_destroy_light = gr_opengl_destroy_light;
-	gr_screen.gf_set_light = gr_opengl_set_light;
-	gr_screen.gf_reset_lighting = gr_opengl_reset_lighting;
-
-	gr_screen.gf_start_clip_plane = gr_opengl_start_clip_plane;
-	gr_screen.gf_end_clip_plane = gr_opengl_end_clip_plane;
-
-	gr_screen.gf_lighting = gr_opengl_set_lighting;
-
-	gr_screen.gf_set_proj_matrix=gr_opengl_set_projection_matrix;
-	gr_screen.gf_end_proj_matrix=gr_opengl_end_projection_matrix;
-
-	gr_screen.gf_set_view_matrix=gr_opengl_set_view_matrix;
-	gr_screen.gf_end_view_matrix=gr_opengl_end_view_matrix;
-
-	gr_screen.gf_push_scale_matrix = gr_opengl_push_scale_matrix;
-	gr_screen.gf_pop_scale_matrix = gr_opengl_pop_scale_matrix;
-	gr_screen.gf_center_alpha = gr_opengl_center_alpha;
-
-	gr_screen.gf_setup_background_fog = gr_opengl_setup_background_fog;
-	gr_screen.gf_set_environment_mapping = gr_opengl_render_to_env;;
-		
-	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
-	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
-	// *****************************************************************************
-
-	
 	Mouse_hidden++;
 	gr_reset_clip();
 	gr_clear();
@@ -3708,6 +3788,5 @@ DCF(aniso, "toggles anisotropic filtering")
 	if (Dc_help) dc_printf("toggles anisotropic filtering");
 }
 
-#endif
 
 

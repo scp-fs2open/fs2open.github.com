@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2004-10-31 21:42:31 $
+ * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/04/03 20:27:57  phreak
  * OpenGL files spilt up to make developing and finding bugs much easier
  *
@@ -46,7 +49,29 @@
 #ifndef _GROPENGL_H
 #define _GROPENGL_H
 
-#include <windows.h>
+#ifdef _WIN32
+	#include <windows.h>
+
+	#include "graphics/gl/gl.h"
+	#include "graphics/gl/glu.h"
+	#include "graphics/gl/glext.h"
+
+	#define STUB_FUNCTION 0
+#elif defined(SCP_UNIX)
+	#define GL_GLEXT_PROTOTYPES
+
+	#include "SDL.h"
+
+#if ( SDL_VERSION_ATLEAST(1, 2, 7) )
+	// this will include all needed GL headers for Win32, Unix & OSX
+	#include "SDL_opengl.h"
+#else
+	#include <GL/gl.h>
+	#include <GL/glu.h>
+	#include <GL/glext.h>
+#endif // SDL_VERSION check
+#endif
+
 #include "globalincs/pstypes.h"
 
 typedef enum gr_texture_source {
