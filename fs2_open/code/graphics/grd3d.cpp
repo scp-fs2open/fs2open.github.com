@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.71 $
- * $Date: 2004-09-26 16:24:51 $
+ * $Revision: 2.72 $
+ * $Date: 2004-10-31 21:38:25 $
  * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2004/09/26 16:24:51  taylor
+ * handle lost devices better, fix movie crash
+ *
  * Revision 2.70  2004/07/26 20:47:31  Kazan
  * remove MCD complete
  *
@@ -1443,7 +1446,7 @@ void set_stage_for_mapped_environment_mapping(){
 	state = INITAL;*/
 }
 
-
+extern bool d3d_init_device();
 void gr_d3d_flip()
 {
 	if(!GlobalD3DVars::D3D_activate) return;
@@ -1451,8 +1454,11 @@ void gr_d3d_flip()
 
 	// Attempt to allow D3D8 to recover from task switching
 	// this can't work if it's NULL, check reversed - taylor
-	if ( GlobalD3DVars::lpD3DDevice == NULL )
-		return;
+	if ( GlobalD3DVars::lpD3DDevice == NULL ) {
+		// we really lost the device, try a reinit
+		if ( !d3d_init_device() )
+			Assert( 0 );
+	}
 
 	// if the device is not going to be available then just loop around until we get it back
 	// Returns:
