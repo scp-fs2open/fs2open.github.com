@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-01-06 00:39:34 $
+ * $Revision: 2.16 $
+ * $Date: 2005-01-27 05:26:07 $
  * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/01/06 00:39:34  Goober5000
+ * gah
+ * --Goober5000
+ *
  * Revision 2.14  2005/01/06 00:37:32  Goober5000
  * changed argument from dist to dist_squared
  * --Goober5000
@@ -1237,6 +1241,9 @@ bad_vector2:
 
 //rotates a vector through a matrix. returns ptr to dest vector
 //dest CANNOT equal source
+//
+// Goober5000: FYI, the result of rotating a normalized vector through a rotation matrix will
+// also be a normalized vector.  It took me awhile to verify online that this was true. ;)
 vector *vm_vec_rotate(vector *dest,vector *src,matrix *m)
 {
 	dest->xyz.x = (src->xyz.x*m->vec.rvec.xyz.x)+(src->xyz.y*m->vec.rvec.xyz.y)+(src->xyz.z*m->vec.rvec.xyz.z);
@@ -1258,7 +1265,9 @@ vector *vm_vec_rotate(vector *dest,vector *src,matrix *m)
 // THIS DOES NOT ACTUALLY TRANSPOSE THE SOURCE MATRIX!!! So if
 // you need it transposed later on, you should use the 
 // vm_vec_transpose() / vm_vec_rotate() technique.
-
+//
+// Goober5000: FYI, the result of rotating a normalized vector through a rotation matrix will
+// also be a normalized vector.  It took me awhile to verify online that this was true. ;)
 vector *vm_vec_unrotate(vector *dest,vector *src,matrix *m)
 {
 	dest->xyz.x = (src->xyz.x*m->vec.rvec.xyz.x)+(src->xyz.y*m->vec.uvec.xyz.x)+(src->xyz.z*m->vec.fvec.xyz.x);
