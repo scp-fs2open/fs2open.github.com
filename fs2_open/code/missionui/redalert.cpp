@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-03-27 12:28:34 $
+ * $Revision: 2.14 $
+ * $Date: 2005-04-03 08:48:30 $
  * $Author: Goober5000 $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/03/27 12:28:34  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.12  2005/03/24 23:29:33  taylor
  * (re)move some uneeded variables to fix compiler warnings
  *
@@ -252,8 +256,8 @@ typedef struct red_alert_ship_status
 	int	ship_class;
 	float	subsys_current_hits[MAX_RED_ALERT_SUBSYSTEMS];
 	float subsys_aggregate_current_hits[SUBSYSTEM_MAX];
-	int	wep[MAX_WL_WEAPONS];
-	int	wep_count[MAX_WL_WEAPONS];
+	int	wep[MAX_SHIP_WEAPONS];
+	int	wep_count[MAX_SHIP_WEAPONS];
 } red_alert_ship_status;
 
 static red_alert_ship_status Red_alert_wingman_status[MAX_RED_ALERT_SLOTS];
@@ -622,7 +626,7 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	}
 
 	// edited to accommodate ballistics - Goober5000
-	for ( i = 0; i < MAX_WL_PRIMARY; i++ )
+	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ )
 	{
 		wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
@@ -647,8 +651,8 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 		}
 	}
 
-	for ( i = 0; i < MAX_WL_SECONDARY; i++ ) {
-		sidx = i+MAX_WL_PRIMARY;
+	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ ) {
+		sidx = i+MAX_SHIP_PRIMARY_BANKS;
 		ras->wep[sidx] = swp->secondary_bank_weapons[i];
 		if ( ras->wep[sidx] >= 0 )
 		{
@@ -673,7 +677,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 
 	// modified to accommodate ballistics - Goober5000
 	j = 0;
-	for ( i = 0; i < MAX_WL_PRIMARY; i++ )
+	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ )
 	{
 		if ( (ras->wep_count[i] > 0) && (ras->wep[i] >= 0) )
 		{
@@ -695,9 +699,9 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 
 
 	j = 0;
-	for ( i = 0; i < MAX_WL_SECONDARY; i++ )
+	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ )
 	{
-		sidx = i+MAX_WL_PRIMARY;
+		sidx = i+MAX_SHIP_PRIMARY_BANKS;
 		if ( ras->wep[sidx] >= 0 )
 		{
 			swp->secondary_bank_weapons[j] = ras->wep[sidx];
@@ -948,7 +952,7 @@ void red_alert_write_wingman_status(CFILE *fp)
 			cfwrite_float(ras->subsys_aggregate_current_hits[j], fp);
 		}
 
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 			cfwrite_string_len( Weapon_info[ras->wep[j]].name, fp);
 			cfwrite_int( ras->wep_count[j], fp );
 		}
@@ -984,7 +988,7 @@ void red_alert_write_wingman_status_campaign(CFILE *fp)
 			cfwrite_float(ras->subsys_aggregate_current_hits[j], fp);
 		}
 
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 			cfwrite_int( ras->wep[j], fp ) ;
 			cfwrite_int( ras->wep_count[j], fp );
 		}
@@ -1025,7 +1029,7 @@ void red_alert_read_wingman_status(CFILE *fp, int version)
 			ras->subsys_aggregate_current_hits[j] = cfread_float(fp);
 		}
 
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 			if (version >= 142) {
 				cfread_string_len( tname, NAME_LENGTH, fp );
 				ras->wep[j] = weapon_info_lookup(tname);
@@ -1073,7 +1077,7 @@ void red_alert_read_wingman_status_campaign(CFILE *fp, char ships[][NAME_LENGTH]
 			ras->subsys_aggregate_current_hits[j] = cfread_float(fp);
 		}
 
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 			ras_tmp = cfread_int(fp) ;
 			ras->wep[j] = weapon_info_lookup( weapons[ras_tmp] );
 			ras->wep_count[j] = cfread_int(fp);

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-03-02 21:18:20 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-04-03 08:48:31 $
+ * $Author: Goober5000 $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/03/02 21:18:20  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.8  2005/02/04 20:06:05  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -2895,7 +2900,7 @@ int multi_ts_ok_to_commit()
 			primary_ok = 0;
 			secondary_ok = 0;
 			// go through all weapons in the list
-			for(s_idx=0;s_idx<MAX_WL_WEAPONS;s_idx++){
+			for(s_idx=0;s_idx<MAX_SHIP_WEAPONS;s_idx++){
 				// if this slot has a weapon with a greater than 0 count, check
 				if((Wss_slots_teams[Net_player->p_info.team][idx].wep[s_idx] >= 0) && (Wss_slots_teams[Net_player->p_info.team][idx].wep_count[s_idx] > 0)){
 					switch(Weapon_info[Wss_slots_teams[Net_player->p_info.team][idx].wep[s_idx]].subtype){				

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-03-02 21:24:46 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-04-03 08:48:30 $
+ * $Author: Goober5000 $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/03/02 21:24:46  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.15  2005/02/23 04:57:28  taylor
  * even more bm_unload() -> bm_release() changes
  *
@@ -691,7 +694,7 @@ void pilot_write_loadout(CFILE *file, int multi)
 		cfwrite_int(slot->ship_class, file);
 		cfwrite_string_len(Ship_info[slot->ship_class].name, file);
 
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 			cfwrite_int(slot->wep[j], file);
 			cfwrite_int(slot->wep_count[j], file);
 			cfwrite_string_len(Weapon_info[slot->wep[j]].name, file);
@@ -754,7 +757,7 @@ void pilot_read_loadout(CFILE *file, int pfile_version)
 				slot->ship_class = ship_info_lookup(sw_name);
 			}
 
-			for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 				slot->wep[j] = cfread_int(file);
 				slot->wep_count[j] = cfread_int(file);
 

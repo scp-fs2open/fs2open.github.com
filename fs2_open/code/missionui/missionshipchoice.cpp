@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-03-31 11:11:56 $
+ * $Revision: 2.42 $
+ * $Date: 2005-04-03 08:48:30 $
  * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/03/31 11:11:56  Goober5000
+ * changed a bunch of literal constants to their #define'd keywords
+ * --Goober5000
+ *
  * Revision 2.40  2005/03/27 12:28:33  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -3822,7 +3826,7 @@ int ss_swap_slot_slot(int from_slot, int to_slot, int *sound)
 	Wss_slots[to_slot].ship_class = tmp;
 
 	// swap weapons
-	for ( i = 0; i < MAX_WL_WEAPONS; i++ ) {
+	for ( i = 0; i < MAX_SHIP_WEAPONS; i++ ) {
 		tmp = Wss_slots[from_slot].wep[i];
 		Wss_slots[from_slot].wep[i] = Wss_slots[to_slot].wep[i];
 		Wss_slots[to_slot].wep[i] = tmp;
@@ -3858,7 +3862,7 @@ int ss_dump_to_list(int from_slot, int to_list, int *sound)
 	slot->ship_class = -1;	// remove from slot
 
 	// put weapons back in list
-	for ( i = 0; i < MAX_WL_WEAPONS; i++ ) {
+	for ( i = 0; i < MAX_SHIP_WEAPONS; i++ ) {
 		if ( (slot->wep[i] >= 0) && (slot->wep_count[i] > 0) ) {
 			Wl_pool[slot->wep[i]] += slot->wep_count[i];
 			slot->wep[i] = -1;
@@ -3874,7 +3878,7 @@ int ss_dump_to_list(int from_slot, int to_list, int *sound)
 int ss_grab_from_list(int from_list, int to_slot, int *sound)
 {
 	wss_unit        *slot;
-	int i, wep[MAX_WL_WEAPONS], wep_count[MAX_WL_WEAPONS];
+	int i, wep[MAX_SHIP_WEAPONS], wep_count[MAX_SHIP_WEAPONS];
 
 	slot = &Wss_slots[to_slot];
 
@@ -3894,7 +3898,7 @@ int ss_grab_from_list(int from_list, int to_slot, int *sound)
 	// take weapons from list->slot
 	wl_get_default_weapons(from_list, to_slot, wep, wep_count);
 	wl_remove_weps_from_pool(wep, wep_count, slot->ship_class);
-	for ( i = 0; i < MAX_WL_WEAPONS; i++ )
+	for ( i = 0; i < MAX_SHIP_WEAPONS; i++ )
 	{
 		slot->wep[i] = wep[i];
 		slot->wep_count[i] = wep_count[i];
@@ -3907,7 +3911,7 @@ int ss_grab_from_list(int from_list, int to_slot, int *sound)
 // exit: data changed flag
 int ss_swap_list_slot(int from_list, int to_slot, int *sound)
 {
-	int i, wep[MAX_WL_WEAPONS], wep_count[MAX_WL_WEAPONS];
+	int i, wep[MAX_SHIP_WEAPONS], wep_count[MAX_SHIP_WEAPONS];
 	wss_unit        *slot;
 
 	// ensure that pool has ship
@@ -3924,7 +3928,7 @@ int ss_swap_list_slot(int from_list, int to_slot, int *sound)
 	Ss_pool[Wss_slots[to_slot].ship_class]++;
 
 	// put weapons from slot->list
-	for ( i = 0; i < MAX_WL_WEAPONS; i++ )
+	for ( i = 0; i < MAX_SHIP_WEAPONS; i++ )
 	{
 		if ( (slot->wep[i] >= 0) && (slot->wep_count[i] > 0) )
 		{
@@ -3941,7 +3945,7 @@ int ss_swap_list_slot(int from_list, int to_slot, int *sound)
 	// take weapons from list->slot
 	wl_get_default_weapons(from_list, to_slot, wep, wep_count);
 	wl_remove_weps_from_pool(wep, wep_count, slot->ship_class);
-	for ( i = 0; i < MAX_WL_WEAPONS; i++ )
+	for ( i = 0; i < MAX_SHIP_WEAPONS; i++ )
 	{
 		slot->wep[i] = wep[i];
 		slot->wep_count[i] = wep_count[i];

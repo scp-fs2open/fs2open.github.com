@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-03-31 11:11:56 $
+ * $Revision: 2.19 $
+ * $Date: 2005-04-03 08:48:30 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/03/31 11:11:56  Goober5000
+ * changed a bunch of literal constants to their #define'd keywords
+ * --Goober5000
+ *
  * Revision 2.17  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -1351,7 +1355,7 @@ void wss_save_loadout()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		Player_loadout.unit_data[i].ship_class = Wss_slots[i].ship_class;
 
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 			Player_loadout.unit_data[i].wep[j] = Wss_slots[i].wep[j];
 			Player_loadout.unit_data[i].wep_count[j] = Wss_slots[i].wep_count[j];
 		}
@@ -1384,7 +1388,7 @@ void wss_restore_loadout()
 		slot = &Player_loadout.unit_data[i];
 		Wss_slots[i].ship_class = slot->ship_class;
 
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 			Wss_slots[i].wep[j]= slot->wep[j];
 			Wss_slots[i].wep_count[j] = slot->wep_count[j];
 		}
@@ -1560,7 +1564,7 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 		} else {
 			block[offset++] = (ubyte)(Wss_slots[i].ship_class);
 		}
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 			// take care of sign issues
 			Assert( Wss_slots[i].wep[j] < UCHAR_MAX );			
 			if(Wss_slots[i].wep[j] == -1){
@@ -1659,7 +1663,7 @@ int restore_wss_data(ubyte *block)
 			Wss_slots[i].ship_class = block[offset];
 		}
 		offset++;		
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
 			// take care of sign issues
 			if(block[offset] == 0xff){
 				Wss_slots[i].wep[j] = -1;

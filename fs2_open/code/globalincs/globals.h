@@ -7,13 +7,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.8 $
- * $Date: 2005-02-15 00:06:26 $
- * $Author: taylor $
+ * $Revision: 1.9 $
+ * $Date: 2005-04-03 08:48:31 $
+ * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/02/15 00:06:26  taylor
+ * clean up some model related globals
+ * code to disable individual thruster glows
+ * fix issue where 1 extra OGL light pass didn't render
+ *
  * Revision 1.7  2005/01/31 23:27:52  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -112,24 +117,16 @@
 // from ship.h
 #define MAX_PLAYER_PRIMARY_BANKS	2
 #define MAX_PLAYER_SECONDARY_BANKS	3
-#define MAX_PLAYER_WEAPONS			5
+#define MAX_PLAYER_WEAPONS			(MAX_PLAYER_PRIMARY_BANKS+MAX_PLAYER_SECONDARY_BANKS)
 
 
 // from model.h
 #define MAX_SHIP_PRIMARY_BANKS		3
-#define MAX_SHIP_SECONDARY_BANKS	4	//	Lowered from 5 to 4 by MK on 3/25/98.  This needs to be <= MAX_WL_SECONDARY or you'll get stack overwrites.
-#define MAX_SHIP_WEAPONS			7
+#define MAX_SHIP_SECONDARY_BANKS	4
+#define MAX_SHIP_WEAPONS			(MAX_SHIP_PRIMARY_BANKS+MAX_SHIP_SECONDARY_BANKS)
 
 
 // limit checks - Goober5000
-
-#if (MAX_PLAYER_PRIMARY_BANKS+MAX_PLAYER_SECONDARY_BANKS != MAX_PLAYER_WEAPONS)
-	#error MAX_PLAYER_PRIMARY_BANKS + MAX_PLAYER_SECONDARY_BANKS must equal MAX_PLAYER_WEAPONS
-#endif
-
-#if (MAX_SHIP_PRIMARY_BANKS+MAX_SHIP_SECONDARY_BANKS != MAX_SHIP_WEAPONS)
-	#error MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS must equal MAX_SHIP_WEAPONS
-#endif
 
 #if (MAX_PLAYER_PRIMARY_BANKS > MAX_SHIP_PRIMARY_BANKS)
 	#error MAX_PLAYER_PRIMARY_BANKS must be less than or equal to MAX_SHIP_PRIMARY_BANKS
