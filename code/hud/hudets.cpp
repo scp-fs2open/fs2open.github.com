@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-09-13 06:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-12-16 21:01:54 $
+ * $Author: phreak $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.4  2003/08/06 17:50:01  phreak
  * added code to take into account a tertiary reactor pod
  *
@@ -331,14 +335,14 @@ void update_ets(object* objp, float fl_frametime)
 		return;
 	}
 
-	if (ship_p->tertiary_weapon_info_idx >=0)
+	/*if (ship_p->tertiary_weapon_info_idx >=0)
 	{
 		if (Tertiary_weapon_info[ship_p->tertiary_weapon_info_idx].type == TWT_EXTRA_REACTOR)
 		{
 			max_g+=Tertiary_weapon_info[ship_p->tertiary_weapon_info_idx].reactor_add_weap_pwr;
 			max_s+=Tertiary_weapon_info[ship_p->tertiary_weapon_info_idx].reactor_add_shield_pwr;
 		}
-	}
+	}*/
 
 //	new_energy = fl_frametime * sinfo_p->power_output;
 
