@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.7 $
- * $Date: 2002-10-19 19:29:29 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2002-11-06 23:21:06 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/10/19 19:29:29  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.6  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -749,6 +752,8 @@
 #include "math/staticrand.h"
 #include "missionui/missionshipchoice.h"
 #include "hud/hudartillery.h"
+
+#include "weapon/flak.h"								//phreak addded 11/05/02 for flak primaries
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -5252,7 +5257,9 @@ int ship_stop_fire_primary(object * obj){	//stuff to do when the ship has stoped
 float Ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS] =  {4.0f, 2.5f, 1.75f, 1.25f, 1.0f};
 float Ship_fire_delay_scale_friendly[NUM_SKILL_LEVELS] = {2.0f, 1.4f, 1.25f, 1.1f, 1.0f};
 
-int tracers[MAX_SHIPS][4][4];	
+int tracers[MAX_SHIPS][4][4];
+
+float ship_get_subsystem_strength( ship *shipp, int type );
 
 // fires a primary weapon for the given object.  It also handles multiplayer cases.
 // in multiplayer, the starting network signature, and number of banks fired are sent
@@ -5596,7 +5603,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 //mprintf(("I have fired a fighter beam, type %d\n", winfo_p->b_info.beam_type));
 
-			}else{ //if this insn't a fighter beam, do it normaly -Bobboau
+			}
+			else{ //if this insn't a fighter beam, do it normaly -Bobboau
 //Assert (!(winfo_p->wi_flags & WIF_BEAM))
 				// fail unless we're forcing (energy based primaries)
 				if ( (shipp->weapon_energy < num_slots*winfo_p->energy_consumed) && !force) {
@@ -5626,6 +5634,34 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					weapon_objnum = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj),0, new_group_id );
 					weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
 
+					if (winfo_p->wi_flags & WIF_FLAK)
+					{
+						object* target=&Objects[aip->target_objnum];
+						vector predicted_pos;
+						float flak_range=(winfo_p->lifetime)*(winfo_p->max_speed);
+						float range_to_target;
+						float wepstr=ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
+												
+						set_predicted_enemy_pos(&predicted_pos,obj,target,aip);
+						
+						range_to_target=vm_vec_dist(&predicted_pos, &obj->pos);
+
+						//if we have a target and its in range
+						if ((target) && (range_to_target < flak_range))
+						{
+							//set flak range to range of ship
+							flak_pick_range(&Objects[weapon_objnum],&predicted_pos,wepstr);
+						}
+						else
+						{
+							flak_set_range(&Objects[weapon_objnum],&firing_pos,flak_range-20);
+						}
+
+						if ((winfo_p->muzzle_flash>=0) && (((shipp==Player_ship) && (vm_vec_mag(&Player_obj->phys_info.vel)>=45)) || (shipp!=Player_ship)))
+						{
+							flak_muzzle_flash(&firing_pos,&obj->orient.vec.fvec, swp->primary_bank_weapons[bank_to_fire]);
+						}
+					}
 					// create the muzzle flash effect
 					shipfx_flash_create( obj, shipp, &pnt, &obj->orient.vec.fvec, 1, weapon );
 	
