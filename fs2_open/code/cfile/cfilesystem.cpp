@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-12 16:32:42 $
- * $Author: Kazan $
+ * $Revision: 2.21 $
+ * $Date: 2004-07-17 09:26:00 $
+ * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/12 16:32:42  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.19  2004/05/26 22:02:36  wmcoolmon
  * Fixed cf_matches_spec; small bug was introduced.
  *
@@ -1308,9 +1311,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 		for (i=0; i<max; i++)	{
 			list[i] = arr[i];
 		}
-	}
-	else if(!list && sort != CF_SORT_REVERSE)
-	{
+	} else {
 		sort = CF_SORT_NONE;  // sorting of array directly not supported.  Sorting done on list only
 	}
 
@@ -1439,27 +1440,9 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 		}
 	}
 
-	if (sort == CF_SORT_NAME) {
+	if (sort != CF_SORT_NONE) {
 		Assert(list);
 		cf_sort_filenames( num_files, list, sort, info );
-	}
-	else if(sort == CF_SORT_REVERSE)
-	{
-		int num_loops = num_files / 2;
-		char* back_str;
-		char buffer[MAX_FILENAME_LEN];
-
-		for(i = 0; i < num_loops; i++)
-		{
-			back_str = arr[num_files - 1 - i];
-
-			if(arr[i] != back_str)
-			{
-				strcpy(buffer, arr[i]);
-				strcpy(arr[i], back_str);
-				strcpy(back_str, buffer);
-			}
-		}
 	}
 
 	if (own_flag)	{

@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2004/07/14 01:27:01  wmcoolmon
+ * Better -load_only_used handling; added mark_weapon_used(weapon ID), which does check for IDs of -1.
+ *
  * Revision 2.70  2004/07/12 16:33:09  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -2296,19 +2299,21 @@ void weapon_init()
 {
 	atexit(weapons_info_close);
 	int rval;
+	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+	char *tbl_file_names[MAX_TBL_PARTS];
 
 	if ( !Weapons_inited ) {
 #ifndef FS2_DEMO
 		// parse weapon_exp.tbl
 		Num_weapon_expl = 0;
 		parse_weapon_expl_tbl("weapon_expl.tbl");
-		char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-		int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-wxp.tbm", CF_SORT_REVERSE);
+
+		int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-wxp.tbm", CF_SORT_REVERSE);
 		for(int i = 0; i < num_files; i++)
 		{
 			//HACK HACK HACK
-			strcat(tbl_files[i], ".tbm");
-			parse_weapon_expl_tbl(tbl_files[i]);
+			strcat(tbl_file_names[i], ".tbm");
+			parse_weapon_expl_tbl(tbl_file_names[i]);
 		}
 
 #endif
@@ -2325,13 +2330,12 @@ void weapon_init()
 			Num_spawn_types = 0;
 			parse_weaponstbl("weapons.tbl", false);
 
-			char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-wep.tbm", CF_SORT_REVERSE);
+			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-wep.tbm", CF_SORT_REVERSE);
 			for(int i = 0; i < num_files; i++)
 			{
 				//HACK HACK HACK
-				strcat(tbl_files[i], ".tbm");
-				parse_weaponstbl(tbl_files[i], true);
+				strcat(tbl_file_names[i], ".tbm");
+				parse_weaponstbl(tbl_file_names[i], true);
 			}
 			create_weapon_names();
 			Weapons_inited = 1;

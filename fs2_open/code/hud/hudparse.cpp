@@ -569,13 +569,16 @@ void hud_positions_init()
 	{
 		calculate_gauges(&default_hud);
 	}
-	char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-hdg.tbm", CF_SORT_REVERSE);
+
+	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+	char *tbl_file_names[MAX_TBL_PARTS];
+
+	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-hdg.tbm", CF_SORT_REVERSE);
 	for(int i = 0; i < num_files; i++)
 	{
 		//HACK HACK HACK
-		strcat(tbl_files[i], ".tbm");
-		parse_hud_gauges_tbl(tbl_files[i]);
+		strcat(tbl_file_names[i], ".tbm");
+		parse_hud_gauges_tbl(tbl_file_names[i]);
 	}
 
 	set_current_hud(-1);

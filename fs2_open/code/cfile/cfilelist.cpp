@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileList.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:42 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-17 09:26:00 $
+ * $Author: taylor $
  *
  * Code for doing directory lists and sorts
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:32:42  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -146,6 +149,22 @@ void cf_sort_filenames( int n, char **list, int sort, file_list_info *info )
 			}
 
 			incr /= 2;
+		}
+
+		return;
+
+	} else if (sort == CF_SORT_REVERSE) {
+		incr = n / 2;
+		char buffer[MAX_FILENAME_LEN];
+
+		for (i = 0; i < incr; i++) {
+			t = list[n - 1 - i];
+
+			if ( stricmp(list[i], t) > 0 ) {
+				strcpy(buffer, list[i]);
+				strcpy(list[i], t);
+				strcpy(t, buffer);
+			}
 		}
 
 		return;
