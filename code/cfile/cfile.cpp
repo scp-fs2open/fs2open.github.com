@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-10-27 23:59:28 $
+ * $Revision: 2.5 $
+ * $Date: 2002-10-30 06:31:05 $
  * $Author: DTP $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/10/27 23:59:28  DTP
+ * DTP; started basic implementation of mod-support
+ * plain files only for now. fs2_open.exe -mod X will look for files in fs2/ X /all-legal-subdirectories. no checking/creating dirs yet. directories must be there.
+ *
  * Revision 2.3  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -209,7 +213,7 @@
 #include <sys/mman.h>
 #endif
 
-#include "Cmdline/Cmdline.h"
+#include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 #include "parse/encrypt.h"
