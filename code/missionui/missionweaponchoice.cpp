@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-02-25 06:22:48 $
+ * $Revision: 2.8 $
+ * $Date: 2003-03-03 10:21:08 $
  * $Author: bobboau $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/02/25 06:22:48  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.6  2003/01/15 21:29:05  anonymous
  * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
  *
@@ -3681,14 +3687,16 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 	if ( slot->wep_count[to_bank] < 0 ) {
 		return 0;
 	}
-
+	int tobank = to_bank, frombank = from_bank;
+	if(IS_BANK_SECONDARY(tobank))tobank -= 3;
+	if(IS_BANK_SECONDARY(frombank))frombank -=3;
 	//ensure that the two banks are both compatable types-Bobboau
-	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[Carried_wl_icon.weapon_class][to_bank])){
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, to_bank+1);
+	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[slot->wep[from_bank]][tobank])){
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[slot->wep[from_bank]].name, tobank+1);
 		return 0;
 	}
-	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[slot->wep[to_bank]][from_bank])){
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, from_bank+1);
+	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[slot->wep[to_bank]][frombank])){
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[slot->wep[to_bank]].name, frombank+1);
 		return 0;
 	}
 //Warning(LOCATION,"slot slot");
@@ -3811,9 +3819,11 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 		return 0;
 	}
 
+	int tobank = to_bank;
+	if(IS_BANK_SECONDARY(tobank))tobank -= 3;
 	//ensure that this bank can have this weapon-Bobboau
-	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[Carried_wl_icon.weapon_class][to_bank])){
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, to_bank+1);
+	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[Carried_wl_icon.weapon_class][tobank])){
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, tobank+1);
 		return 0;
 	}
 //Warning(LOCATION,"list");
@@ -3872,8 +3882,10 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound)
 	}
 
 	//ensure that this bank can have this weapon-Bobboau
-	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[Carried_wl_icon.weapon_class][to_bank])){
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, to_bank+1);
+	int tobank = to_bank;
+	if(IS_BANK_SECONDARY(tobank))tobank -= 3;
+	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[Carried_wl_icon.weapon_class][tobank])){
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, tobank+1);
 		return 0;
 	}
 //Warning(LOCATION,"list slot");
