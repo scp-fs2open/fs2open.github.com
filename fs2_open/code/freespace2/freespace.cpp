@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.34 $
- * $Date: 2003-08-06 17:42:47 $
- * $Author: phreak $
+ * $Revision: 2.35 $
+ * $Date: 2003-08-09 06:07:23 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/08/06 17:42:47  phreak
+ * since the launcher has a space between 1024 and 768 for the videocard string, i changed the detection to reflect this
+ * also changed intro.mve to intro.avi since we can't use MVEs
+ *
  * Revision 2.33  2003/07/06 00:19:24  randomtiger
  * Random Tiger 6/7/2003
  *
@@ -871,7 +875,7 @@ typedef struct big_expl_flash {
 #define DEFAULT_SKILL_LEVEL	1
 int	Game_skill_level = DEFAULT_SKILL_LEVEL;
 
-#define	VIEWER_ZOOM_DEFAULT 0.75f			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
+float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
 float Viewer_zoom = VIEWER_ZOOM_DEFAULT;
 
 #define EXE_FNAME			("fs2.exe")

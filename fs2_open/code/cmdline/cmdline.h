@@ -10,11 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.19 $
- * $Date: 2003-03-29 09:42:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2003-08-09 06:07:23 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/03/29 09:42:05  Goober5000
+ * made beams default shield piercing again
+ * also added a beam no pierce command line flag
+ * and fixed something else which I forgot :P
+ * --Goober5000
+ *
  * Revision 2.18  2003/03/18 10:07:00  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -282,5 +288,6 @@ extern int Cmdline_d3dlauncher;
 extern int Cmdline_d3dmipmap;
 
 extern int Cmdline_beams_no_pierce_shields;	// Goober5000
+extern float Cmdline_fov;
 
 #endif

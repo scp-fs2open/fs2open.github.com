@@ -9,14 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-03-29 09:42:05 $
- * $Author: Goober5000 $
- * $Revision: 2.20 $
- * $Date: 2003-03-29 09:42:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2003-08-09 06:07:23 $
+ * $Author: bobboau $
+ * $Revision: 2.21 $
+ * $Date: 2003-08-09 06:07:23 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/03/29 09:42:05  Goober5000
+ * made beams default shield piercing again
+ * also added a beam no pierce command line flag
+ * and fixed something else which I forgot :P
+ * --Goober5000
+ *
  * Revision 2.19  2003/03/20 08:24:45  unknownplayer
  * Modified the command line options so they are all in lower-case characters.
  * Made a slight AI adjustment to how ships choose to attack turrets (they now have a 25% chance of attacking a beam turret which has fired at them from another ship)
@@ -344,6 +350,7 @@ cmdline_parm d3dlowmem_arg("-d3dlowmem", NULL); //DTP for random tigers GF4fix
 cmdline_parm d3dlauncher_arg("-d3dlauncher", NULL);
 cmdline_parm d3dmipmap_arg("-d3dmipmap", NULL);
 cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// beams do not pierce shields - Goober5000
+cmdline_parm fov_arg("-fov", NULL);	// comand line FOV -Bobboau
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -388,6 +395,9 @@ int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
 
+float Cmdline_fov = 0.75f;
+extern float VIEWER_ZOOM_DEFAULT;
+extern float Viewer_zoom;
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -792,6 +802,10 @@ int parse_cmdline(int argc, char *argv[])
 
 	if ( beams_no_pierce_shields_arg.found() ) {
 		Cmdline_beams_no_pierce_shields = 1;
+	}
+
+	if ( fov_arg.found() ) {
+		Viewer_zoom = VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
 	}
 
 	return 1;
