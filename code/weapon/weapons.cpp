@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2004/07/12 16:33:09  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.69  2004/07/11 03:22:54  bobboau
  * added the working decal code
  *
@@ -4421,16 +4424,29 @@ int weapon_create_group_id()
 
 extern int Cmdline_load_only_used;
 unsigned int used_weapons[MAX_WEAPON_TYPES] = {0};
+
+//Call before weapons_page_in to mark a weapon as used
+void mark_weapon_used(int weapon_id)
+{
+	if(weapon_id != -1)
+	{
+		used_weapons[weapon_id]++;
+	}
+}
+
 void weapons_page_in()
 {
 	int i, j, idx;
 
 	// Bitmaps for weapons in weaponry pool
-	for(i = 0; i < Num_teams; i++)
+	if(Cmdline_load_only_used)
 	{
-		for(j = 0; j < Num_weapon_types; j++)
+		for(i = 0; i < Num_teams; i++)
 		{
-			used_weapons[j] += Team_data[i].weaponry_pool[j];
+			for(j = 0; j < Num_weapon_types; j++)
+			{
+				used_weapons[j] += Team_data[i].weaponry_pool[j];
+			}
 		}
 	}
 
