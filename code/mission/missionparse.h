@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.31 $
+ * $Revision: 2.32 $
  * $Author: Goober5000 $
- * $Date: 2003-09-13 06:02:06 $
+ * $Date: 2003-09-13 08:27:28 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/09/13 06:02:06  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.29  2003/09/06 20:41:52  wmcoolmon
  * Added "+Subsystem Repair Ceiling:" after "+Hull Repair Ceiling:" (formerly "+Support Repair Ceiling:"
  *
@@ -588,7 +592,7 @@ typedef struct p_object {
 // circumstances for those ships.  This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS	22
+#define MAX_PARSE_OBJECT_FLAGS	20
 
 #define P_OF_CARGO_KNOWN			(1<<0)
 #define P_SF_IGNORE_COUNT			(1<<1)
@@ -632,7 +636,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	5
+#define MAX_PARSE_OBJECT_FLAGS_2	2
 
 #define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE		(1<<1)

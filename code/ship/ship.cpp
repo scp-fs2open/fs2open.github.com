@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.79 $
- * $Date: 2003-09-13 06:02:03 $
+ * $Revision: 2.80 $
+ * $Date: 2003-09-13 08:27:28 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2003/09/13 06:02:03  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.75  2003/09/06 20:40:01  wmcoolmon
  * Added ability to limit subsystem repairs
  *
@@ -2598,6 +2602,8 @@ int ship_get_default_orders_accepted( ship_info *sip )
 		return FREIGHTER_MESSAGES;
 	else if ( ship_info_flag & SIF_CAPITAL )
 		return CAPITAL_MESSAGES;
+	else if ( ship_info_flag & SIF_SUPERCAP )
+		return SUPERCAP_MESSAGES;
 	else if ( ship_info_flag & SIF_TRANSPORT )
 		return TRANSPORT_MESSAGES;
 	else if ( ship_info_flag & SIF_SUPPORT )
@@ -6242,7 +6248,8 @@ int ship_stop_fire_primary(object * obj){	//stuff to do when the ship has stoped
 	}
 
 	for ( int i = 0; i < num_primary_banks; i++ ) {	
-		bank_to_stop = (swp->current_primary_bank+i)%2;
+		// Goober5000 - allow more than two banks
+		bank_to_stop = (swp->current_primary_bank+i) % swp->num_primary_banks;
 		//only stop if it was fireing last frame
 		if(shipp->was_firing_last_frame[bank_to_stop] ){
 			ship_stop_fire_primary_bank(obj, bank_to_stop);
@@ -6354,7 +6361,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	}
 
 	for ( i = 0; i < num_primary_banks; i++ ) {		
-		bank_to_fire = (swp->current_primary_bank+i)%2;	// Max supported banks is 2
+		// Goober5000 - allow more than two banks
+		bank_to_fire = (swp->current_primary_bank+i) % swp->num_primary_banks;
 		
 		weapon = swp->primary_bank_weapons[bank_to_fire];
 		Assert( weapon >= 0 && weapon < MAX_WEAPONS );		
@@ -8554,7 +8562,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 //	Comments removed by PhReAk; Note that this is toggled on/off with a mission flag
 
 	//Figure out how much of the ship's hull we can repair
-	max_hull_repair = shipp->ship_initial_hull_strength * (The_mission.support_ships.max_hull_repair_val * .01);
+	max_hull_repair = shipp->ship_initial_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	
 	if(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
 	{
@@ -8575,7 +8583,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	ssp = GET_FIRST(&shipp->subsys_list);
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 		//Figure out how much we *can* repair the current subsystem -C
-		max_subsys_repair = ssp->max_hits * (The_mission.support_ships.max_subsys_repair_val * .01);
+		max_subsys_repair = ssp->max_hits * (The_mission.support_ships.max_subsys_repair_val * 0.01f);
 
 		if ( ssp->current_hits < max_subsys_repair && repair_allocated > 0 ) {
 			subsys_all_ok = 0;

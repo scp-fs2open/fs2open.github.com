@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-09-13 06:02:05 $
+ * $Revision: 2.9 $
+ * $Date: 2003-09-13 08:27:29 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.5  2003/09/09 05:51:14  Goober5000
  * if player has primitive sensors, hud will not display shield icons or message sender brackets
  * --Goober5000
@@ -304,7 +308,7 @@ hud_frames Shield_mini_gauge;
 static shield_hit_info	Shield_hit_data[2];
 
 // translate between clockwise-from-top shield quadrant ordering to way quadrants are numbered in the game
-ubyte Quadrant_xlate[4] = {1,0,2,3};
+ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS] = {1,0,2,3};
 
 void hud_shield_game_init()
 {
@@ -452,9 +456,9 @@ void hud_shield_show(object *objp)
 	// draw the four quadrants
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = sp->ship_initial_shield_strength/4.0f;
+	max_shield = sp->ship_initial_shield_strength/(1.0f*MAX_SHIELD_SECTIONS);
 
-	for ( i = 0; i < 4; i++ ) {
+	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 
 		if ( objp->flags & OF_NO_SHIELDS ) {
 			break;
@@ -612,12 +616,12 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	float	max_quadrant_val;
 	int	i;
 
-	Assert(direction >= 0 && direction < 4);
+	Assert(direction >= 0 && direction < MAX_SHIELD_SECTIONS);
 	Assert(objp->type == OBJ_SHIP);
 	full_shields = Ships[objp->instance].ship_initial_shield_strength;
 	
 	xfer_amount = full_shields * SHIELD_TRANSFER_PERCENT;
-	max_quadrant_val = full_shields/4.0f;
+	max_quadrant_val = full_shields/(1.0f*MAX_SHIELD_SECTIONS);
 
 	if ( (objp->shield_quadrant[direction] + xfer_amount) > max_quadrant_val )
 		xfer_amount = max_quadrant_val - objp->shield_quadrant[direction];
@@ -759,9 +763,9 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = sp->ship_initial_shield_strength/4.0f;
+	max_shield = sp->ship_initial_shield_strength/(1.0f*MAX_SHIELD_SECTIONS);
 
-	for ( i = 0; i < 4; i++ ) {
+	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 
 		if ( objp->flags & OF_NO_SHIELDS ) {
 			break;
@@ -772,7 +776,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 		}
 
 		if ( hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, i) ) {
-			frame_offset = i+4;
+			frame_offset = i+MAX_SHIELD_SECTIONS;
 		} else {
 			frame_offset = i;
 		}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-09-13 06:02:07 $
+ * $Revision: 2.10 $
+ * $Date: 2003-09-13 08:27:28 $
  * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/09/13 06:02:07  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.6  2003/09/05 04:25:28  Goober5000
  * well, let's see here...
  *
@@ -2016,12 +2020,12 @@ void player_maybe_fire_turret(object *objp)
 
 	ship			*shipp = &Ships[objp->instance];
 	ai_info			*aip = &Ai_info[shipp->ai_index];
-	ship_info		*sip = &Ship_info[shipp->ship_info_index];
 
 	// do a quick out if this isn't a bomber
-	if ( !(sip->flags & SIF_BOMBER) ) {
+	/* Goober5000 - removed this restriction
+	if ( !(Ship_info[shipp->ship_info_index].flags & SIF_BOMBER) ) {
 		return;
-	}
+	}*/
 
 	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED)) {
 		if (aip->dock_objnum > -1) {

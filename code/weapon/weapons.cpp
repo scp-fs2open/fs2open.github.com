@@ -20,6 +20,10 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/09/13 06:02:04  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.35  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -558,8 +562,14 @@ int		Weapon_impact_timer;			// timer, initalized at start of each mission
 #define ESUCK_DEFAULT_WEAPON_REDUCE				(10.0f)
 #define ESUCK_DEFAULT_AFTERBURNER_REDUCE		(10.0f)
 
+// Goober5000 - as a rule of thumb, it looks like these are just the complement of the cutoff
+// (i.e. supercap used to be cut off at 75% but now uses the existing scale of 25%)
+
 // scale factor for supercaps taking damage from weapons which are not "supercap" weapons
 #define SUPERCAP_DAMAGE_SCALE			0.25f
+
+// scale factor for capital ships - added by Goober5000 to accompany SUPERCAP_DAMAGE_SCALE
+#define CAPITAL_DAMAGE_SCALE			0.90f
 
 // scale factor for big ships getting hit by flak
 #define FLAK_DAMAGE_SCALE				0.05f
@@ -4489,12 +4499,15 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 
 		// if it has hit a supercap ship and is not a supercap class weapon
 		if((sip->flags & SIF_SUPERCAP) && !(wip->wi_flags & WIF_SUPERCAP)){
-			// if the supercap is around 3/4 damage, apply nothing
+			// Goober5000 - now weapons scale universally
+			total_scale *= hull_pct * SUPERCAP_DAMAGE_SCALE;
+
+			/*// if the supercap is around 3/4 damage, apply nothing
 			if(hull_pct <= 0.75f){
 				return 0.0f;
 			} else {
 				total_scale *= SUPERCAP_DAMAGE_SCALE;
-			}
+			}*/
 		}
 
 		// determine if this is a big damage ship
@@ -4505,24 +4518,27 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 			total_scale *= FLAK_DAMAGE_SCALE;
 		}
 		
+		/* Goober5000 - commented this, since it's kinds redundant with the next thingy
 		// if the player is firing small weapons at a big ship
-		if( from_player && is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) ){
-
+		if( from_player && is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) )
+		{
 			// if its a laser weapon
 			if(wip->subtype == WP_LASER){
 				total_scale *= 0.01f;
 			} else {
 				total_scale *= 0.05f;
 			}
-		}
+		}*/
 
 		// if the weapon is a small weapon being fired at a big ship
 		if( is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) ){
-			if(hull_pct > 0.1f){
+			// Goober5000 - now weapons scale universally
+			total_scale *= hull_pct * CAPITAL_DAMAGE_SCALE;
+			/*if(hull_pct > 0.1f){
 				total_scale *= hull_pct;
 			} else {
 				return 0.0f;
-			}
+			}*/
 		}
 	}
 	
