@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.114 $
- * $Date: 2004-12-10 17:21:00 $
- * $Author: taylor $
+ * $Revision: 2.115 $
+ * $Date: 2004-12-25 09:24:54 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.114  2004/12/10 17:21:00  taylor
+ * dymanic allocation of Personas
+ *
  * Revision 2.113  2004/12/02 11:18:14  taylor
  * make OGL use same gamma reg setting as D3D since it's the same ramp
  * have OGL respect the -no_set_gamma cmdline option
@@ -6915,7 +6918,7 @@ void game_enter_state( int old_state, int new_state )
 			player_restore_target_and_weapon_link_prefs();
 
 			//Set the current hud
-			set_current_hud(Player_ship->ship_info_index);
+			set_current_hud(Player_ship);
 
 			Game_mode |= GM_IN_MISSION;
 
@@ -9800,12 +9803,19 @@ DCF(wepspew, "display the checksum for the current weapons.tbl")
 
 // if the game is running using hacked data
 void multi_update_valid_tables(); // in multiutil.obj
+extern bool modular_tables_loaded;
 
 int game_hacked_data()
 {
 	int retval = 0;
 
 #ifndef NO_NETWORK
+	//omfg modular tables
+	if(modular_tables_loaded)
+	{
+		return 1;
+	}
+
 	// LAN game, only check if weapon and ship are valid since we can't or don't
 	// won't to validate against PXO server
 	if (!Om_tracker_flag) {

@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2004/12/23 23:35:02  wmcoolmon
+ * Added +Hud Image: for weapons, which replaces the weapon name in the list with an image.
+ *
  * Revision 2.77  2004/11/21 11:38:17  taylor
  * support for animated beam sections
  * various weapon-only-used fixes
@@ -2397,6 +2400,7 @@ void weapon_init()
 		for(int i = 0; i < num_files; i++)
 		{
 			//HACK HACK HACK
+			modular_tables_loaded = true;
 			strcat(tbl_file_names[i], ".tbm");
 			parse_weapon_expl_tbl(tbl_file_names[i]);
 		}
@@ -2419,6 +2423,7 @@ void weapon_init()
 			for(int i = 0; i < num_files; i++)
 			{
 				//HACK HACK HACK
+				modular_tables_loaded = true;
 				strcat(tbl_file_names[i], ".tbm");
 				parse_weaponstbl(tbl_file_names[i], true);
 			}

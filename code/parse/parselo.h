@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.16 $
- * $Author: Kazan $
- * $Date: 2004-08-11 05:06:31 $
+ * $Revision: 2.17 $
+ * $Author: wmcoolmon $
+ * $Date: 2004-12-25 09:25:18 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/08/11 05:06:31  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.15  2004/05/31 08:32:25  wmcoolmon
  * Custom HUD support, better loading, etc etc.
  *
@@ -332,6 +335,7 @@ extern jmp_buf parse_abort;
 
 //For modular TBL files -C
 #define MAX_TBL_PARTS 32
+extern bool modular_tables_loaded;
 
 // 1K on the stack? seems to work...
 // JH: 1k isn't enough!  Command briefs can be 16k max, so changed this.
