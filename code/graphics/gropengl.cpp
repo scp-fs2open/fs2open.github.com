@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-05-04 20:49:18 $
+ * $Revision: 2.19 $
+ * $Date: 2003-05-04 23:52:40 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/05/04 20:49:18  phreak
+ * minor fix in gr_opengl_flip()
+ *
+ * should be end of the "unable to swap buffer" error
+ *
  * Revision 2.17  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -743,6 +748,7 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h);
 void opengl_tcache_frame ();
 void gr_opengl_flip()
 {
+	int swap_error=0;
 	if (!OGL_inited) return;
 
 	gr_reset_clip();
@@ -782,7 +788,8 @@ void gr_opengl_flip()
 	
 	if(!SwapBuffers(dev_context))
 	{
-		MessageBox((HWND)os_get_window(), "unable to swap buffers", "error", MB_OK);
+		swap_error=GetLastError();
+		Error(LOCATION,"Unable to swap buffers\nError code: %d",swap_error);
 		exit(2);
 	}
 
