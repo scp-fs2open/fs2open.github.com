@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.42 $
- * $Author: Goober5000 $
- * $Date: 2004-05-11 02:52:12 $
+ * $Revision: 2.43 $
+ * $Author: bobboau $
+ * $Date: 2004-06-28 02:13:08 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2004/05/11 02:52:12  Goober5000
+ * completed the FRED import conversion stuff that I started ages ago
+ * --Goober5000
+ *
  * Revision 2.41  2004/05/10 10:51:53  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -537,7 +541,7 @@ extern int Mission_alt_type_count;
 #ifdef FS2_DEMO
 	#define MAX_SUBSYS_STATUS		125
 #else
-	#define MAX_SUBSYS_STATUS		250
+	#define MAX_SUBSYS_STATUS		300
 #endif
 
 #define MAX_SPECIAL_ARRIVAL_ANCHORS	6

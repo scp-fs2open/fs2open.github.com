@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-04-26 13:00:56 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2004-06-28 02:13:07 $
+ * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/04/26 13:00:56  taylor
+ * DevIL stuff
+ *
  * Revision 2.21  2004/03/20 14:47:13  randomtiger
  * Added base for a general dynamic batching solution.
  * Fixed NO_DSHOW_CODE code path bug.
@@ -1512,5 +1515,20 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 
 	// restore culling
 	gr_set_cull(1);		
+}
+
+void poly_list::allocate(int virts){
+		if(virts <= currently_allocated)return;
+		if(vert!=NULL){delete[] vert; vert = NULL;}
+		if(norm!=NULL){delete[] norm; norm = NULL;}
+		if(virts)vert = new vertex[virts];
+		if(virts)norm = new vector[virts];
+		n_verts = 0;
+		currently_allocated = virts;
+}
+
+poly_list::~poly_list(){
+	if(vert!=NULL)delete[] vert; 
+	if(norm!=NULL)delete[] norm;
 }
 

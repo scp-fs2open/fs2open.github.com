@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.77 $
- * $Date: 2004-05-25 00:37:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.78 $
+ * $Date: 2004-06-28 02:13:07 $
+ * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2004/05/25 00:37:26  wmcoolmon
+ * Updated function calls for VC7 use
+ *
  * Revision 2.76  2004/05/11 16:48:19  phreak
  * fixed the white boxes appearing on unlit bitmaps
  *
@@ -2846,6 +2849,12 @@ void gr_opengl_zbias_stub(int bias)
 {
 }
 
+//fill mode, solid/wire frame
+void gr_opengl_set_fill_mode(int mode)
+{
+}
+
+
 void opengl_zbias(int bias)
 {
 	if (bias) {
@@ -3506,11 +3515,13 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	gr_screen.gf_set_texture_addressing = gr_opengl_set_texture_addressing;
 	gr_screen.gf_zbias = gr_opengl_zbias_stub;
+	gr_screen.gf_set_fill_mode = gr_opengl_set_fill_mode;
 
 	if(!Cmdline_nohtl) {
 		gr_screen.gf_make_buffer = gr_opengl_make_buffer;
 		gr_screen.gf_destroy_buffer = gr_opengl_destroy_buffer;
 		gr_screen.gf_render_buffer = gr_opengl_render_buffer;
+		gr_screen.gf_set_buffer = gr_opengl_set_buffer;
 
 		gr_screen.gf_start_instance_matrix = gr_opengl_start_instance_matrix;
 		gr_screen.gf_end_instance_matrix = gr_opengl_end_instance_matrix;

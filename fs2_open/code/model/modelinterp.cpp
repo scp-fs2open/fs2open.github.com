@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.81 $
- * $Date: 2004-05-12 22:50:31 $
- * $Author: phreak $
+ * $Revision: 2.82 $
+ * $Date: 2004-06-28 02:13:08 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2004/05/12 22:50:31  phreak
+ * don't fog the warp model if its being rendered
+ *
  * Revision 2.80  2004/05/01 17:37:09  Goober5000
  * added an assert
  * --Goober5000
@@ -3414,6 +3417,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	bool is_outlines_only = !Cmdline_nohtl && (flags & MR_NO_POLYS) && ((flags & MR_SHOW_OUTLINE_PRESET) || (flags & MR_SHOW_OUTLINE));  
 	bool use_api = (!is_outlines_only || (gr_screen.mode == GR_DIRECT3D)) || (gr_screen.mode == GR_OPENGL);
 
+
 	g3_start_instance_matrix(pos,orient, use_api);
 
 	if ( Interp_flags & MR_SHOW_RADIUS )	{
@@ -3531,6 +3535,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// Draw the subobjects	
 	i = pm->submodel[pm->detail[detail_level]].first_child;
 
+	gr_set_fill_mode((is_outlines_only == true)?GR_FILL_MODE_WIRE:GR_FILL_MODE_SOLID);
 	while( i>-1 )	{
 		if (!pm->submodel[i].is_thruster )	{
 			zbuf_mode = GR_ZBUFF_FULL;
@@ -3542,7 +3547,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			}
 			gr_zbuffer_set(zbuf_mode);
 			// When in htl mode render with htl method unless its a jump node
-			if(!Cmdline_nohtl && !(is_outlines_only)){
+			if(!Cmdline_nohtl ){
 				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
 			}
 			else {
@@ -3580,13 +3585,14 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	//*************************** draw the hull of the ship *********************************************
 
 	// When in htl mode render with htl method unless its a jump node
-	if(!Cmdline_nohtl && !(is_outlines_only)){
+	if(!Cmdline_nohtl){
 		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
 //		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
 	}
 	else {
 		model_interp_subcall(pm,pm->detail[detail_level],detail_level);
 	}
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	if(!Cmdline_nohtl){
 		gr_reset_lighting();
@@ -4100,6 +4106,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	gr_set_cull(0);	
 
 	// Draw the thruster subobjects	
+	gr_set_fill_mode((is_outlines_only == true)?GR_FILL_MODE_WIRE:GR_FILL_MODE_SOLID);
 	i = pm->submodel[pm->detail[detail_level]].first_child;
 	while( i>-1 )	{
 		if (pm->submodel[i].is_thruster )	{
@@ -4112,7 +4119,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 			gr_zbuffer_set(zbuf_mode);
 
-			if(!Cmdline_nohtl && !is_outlines_only) {
+			if(!Cmdline_nohtl) {
 				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
 			} else {
 				model_interp_subcall( pm, i, detail_level );
@@ -4120,6 +4127,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		}
 		i = pm->submodel[i].next_sibling;
 	}	
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	gr_set_cull(1);	
 
@@ -4754,8 +4762,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 	int problem_count = 0;
 
 	for(int i = 1; i<n_vert-1; i++){
-		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)];
-		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)];
+		V = &list[pof_tex].vert[(list[pof_tex].n_verts)];
+		N = &list[pof_tex].norm[(list[pof_tex].n_verts)];
 		v = htl_verts[(int)tverts[0].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
@@ -4770,8 +4778,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		vm_vec_normalize(N);
 //		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
-		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+1];
-		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)+1];
+		V = &list[pof_tex].vert[(list[pof_tex].n_verts)+1];
+		N = &list[pof_tex].norm[(list[pof_tex].n_verts)+1];
 		v = htl_verts[(int)tverts[i].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
@@ -4786,8 +4794,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		vm_vec_normalize(N);
 //		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
-		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+2];
-		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)+2];
+		V = &list[pof_tex].vert[(list[pof_tex].n_verts)+2];
+		N = &list[pof_tex].norm[(list[pof_tex].n_verts)+2];
 		v = htl_verts[(int)tverts[i+1].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
@@ -4802,7 +4810,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		vm_vec_normalize(N);
 //		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
-		list[pof_tex].n_poly++;
+		list[pof_tex].n_verts += 3;
+		list[pof_tex].n_prim++;
 	
 	}
 
@@ -4968,8 +4977,8 @@ vector *htl_norms;
 */
 
 void dealc_model_loadstuf(){
-	delete[] htl_verts;
-	delete[] htl_norms;
+	free(htl_verts);
+	free(htl_norms);
 }
 
  int alocate_poly_list_nvert = 0;
@@ -4977,19 +4986,16 @@ void dealc_model_loadstuf(){
  bool alocate_poly_list_a = true;
 void alocate_poly_list(){
 	for(int i = 0; i<MAX_MODEL_TEXTURES; i++){
-		if(list[i].vert!=NULL){delete[] list[i].vert; list[i].vert = NULL;}
-		if(list[i].norm!=NULL){delete[] list[i].norm; list[i].norm = NULL;}
-		if(tri_count[i])list[i].vert = new vertex[tri_count[i]*3];
-		if(tri_count[i])list[i].norm = new vector[tri_count[i]*3];
+		list[i].allocate(tri_count[i]*3);
 	}
 	if(htl_nverts > alocate_poly_list_nvert){
-		if(htl_verts)delete[] htl_verts;
-		htl_verts = new vector*[htl_nverts];
+		if(htl_verts)free(htl_verts);
+		htl_verts = (vector**)malloc(sizeof(vector*)*htl_nverts);
 		alocate_poly_list_nvert = htl_nverts;
 	}
 	if(htl_nnorms > alocate_poly_list_nnorm){
-		if(htl_nnorms)delete[] htl_norms;
-		htl_norms = new vector*[htl_nnorms];
+		if(htl_nnorms)free(htl_norms);
+		htl_norms = (vector**)malloc(sizeof(vector*)*htl_nnorms);
 		alocate_poly_list_nnorm = htl_nnorms;
 	}
 
@@ -4999,9 +5005,15 @@ void alocate_poly_list(){
 	}
 }
 
+void model_make_index_buffer(poly_list *plist);
+short find_fisrt_index_vb(poly_list *list, int idx, poly_list *v);
+short find_fisrt_index(poly_list *plist, int idx);
+bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2);
+poly_list model_list;
 void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 	for(int i =0; i<MAX_MODEL_TEXTURES; i++){
-		list[i].n_poly=0;
+		list[i].n_prim=0;
+		list[i].n_verts=0;
 		tri_count[i]=0;
 	}
 
@@ -5009,22 +5021,54 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 	flat_line_list.n_line = 0;
 
 	find_tri_counts(0, model->bsp_data);
+	int total_verts = 0;
+
+	for(i = 0; i<MAX_MODEL_TEXTURES; i++){
+		total_verts += tri_count[i];
+	}
+	if(total_verts < 1){
+		model->indexed_vertex_buffer = -1;
+		return;
+	}
+
 	alocate_poly_list();
 
 	parse_bsp(0, model->bsp_data);
 	model->n_buffers = 0;
+
+	total_verts = 0;
+	for(i=0; i<MAX_MODEL_TEXTURES; i++){
+		total_verts += list[i].n_verts;
+	}
+	model_list.allocate(total_verts);
+	model_list.n_verts = 0;
+	model_list.n_prim = 0;
+
+	for(i=0; i<MAX_MODEL_TEXTURES; i++){
+		if(!list[i].n_verts)continue;
+		memcpy( (model_list.vert) + model_list.n_verts, list[i].vert, sizeof(vertex) * list[i].n_verts);
+		memcpy( (model_list.norm) + model_list.n_verts, list[i].norm, sizeof(vector) * list[i].n_verts);
+		model_list.n_verts += list[i].n_verts;
+	}
+
+	model_make_index_buffer(&model_list);
+
+	model->indexed_vertex_buffer = gr_make_buffer(&model_list);
+
 	for(i=0; i<MAX_MODEL_TEXTURES; i++){
 		if(model->n_buffers>=MAX_MODEL_TEXTURES)Error(LOCATION, "BSP buffer generation overflow, there are %d buffers",model->n_buffers);
-		if(!list[i].n_poly)continue;
-		model->buffer[model->n_buffers].vertex_buffer = gr_make_buffer(&list[i]);
+		if(!list[i].n_verts)continue;
+		model->buffer[model->n_buffers].allocate_index_buffer(list[i].n_verts);
+		for(int j = 0; j < list[i].n_verts; j++){
+			model->buffer[model->n_buffers].index_buffer[j] = find_fisrt_index_vb(&list[i], j, &model_list);
+			Assert(model->buffer[model->n_buffers].index_buffer[j] != -1);
+			Assert(same_vert(&model_list.vert[model->buffer[model->n_buffers].index_buffer[j]], &list[i].vert[j], &model_list.norm[model->buffer[model->n_buffers].index_buffer[j]], &list[i].norm[j]));
+		//	Assert(find_fisrt_index_vb(&model_list, j, &list[i]) == j);//there should never ever be any redundant verts
+		}
+		model->buffer[model->n_buffers].n_prim = tri_count[i];
 		model->buffer[model->n_buffers].texture = i;
 		model->n_buffers++;
 	}
-//	model->flat_buffer = -1;
-	model->flat_line_buffer = -1;
-//	if(flat_list.n_poly)model->flat_buffer = gr_make_flat_buffer(&flat_list);
-	//we don't need this
-	if(flat_line_list.n_line)model->flat_line_buffer = gr_make_line_buffer(&flat_line_list);
 }
 
 
@@ -5139,13 +5183,6 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 	Assert( mn >= 0 );
 	Assert( mn < pm->n_models );
 
-//	mprintf(( "Name = '%s'\n", pm->submodel[mn].name ));
-//	char * p = pm->submodel[mn].name;
-
-
-
-//	mprintf(("model =%s, submodel=%s, interp offset=%f %f %f\n",pm->filename, pm->submodel[mn].name,Interp_offset.xyz.x,
-//															Interp_offset.xyz.y,Interp_offset.xyz.z));
 	
 	if (pm->submodel[mn].blown_off){
 		return;
@@ -5204,6 +5241,9 @@ extern vector Object_position;
 extern matrix Object_matrix;
 
 void model_render_buffers(bsp_info* model, polymodel * pm){
+	
+	if(model->indexed_vertex_buffer == -1)return;
+
 	// RT Added second conditional parameter, seems to not distrupt anything in either API
 	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING), !(Interp_flags & MR_NO_LIGHTING) );
 
@@ -5227,6 +5267,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 
 	gr_push_scale_matrix(&scale);
 
+	gr_set_buffer(model->indexed_vertex_buffer);
 	for(int i = 0; i<model->n_buffers; i++){
 		int texture = -1;
 
@@ -5291,18 +5332,96 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 		else if((Interp_flags & MR_CENTER_ALPHA))gr_center_alpha(1);
 		else gr_center_alpha(0);
 		
-
-		gr_render_buffer(model->buffer[i].vertex_buffer);		
+		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer);		
 	}
 	GLOWMAP = -1;
 	SPECMAP = -1;
 
 //	if(model->flat_buffer != -1)gr_render_buffer(model->flat_buffer);
 	//we don't need this
-	if(model->flat_line_buffer != -1)gr_render_buffer(model->flat_line_buffer);
+//	if(model->flat_line_buffer != -1)gr_render_buffer(model->flat_line_buffer);
 
 	gr_pop_scale_matrix();
 
 	gr_set_lighting(false,false);
 
+}
+
+
+bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2){
+	return(
+		(v1->x == v2->x) &&
+		(v1->y == v2->y) &&
+		(v1->z == v2->z) &&
+		(v1->u == v2->u) &&
+		(v1->v == v2->v) &&
+		(n1->xyz.x == n2->xyz.x) &&
+		(n1->xyz.y == n2->xyz.y) &&
+		(n1->xyz.z == n2->xyz.z) 
+		);
+}
+
+//finds the first occorence of a vertex within a poly list
+short find_fisrt_index(poly_list *plist, int idx){
+	vector norm = plist->norm[idx];
+	vertex vert = plist->vert[idx];
+	int missed = 0;
+	for(short i = 0; i<plist->n_verts; i++){
+		if(same_vert(&plist->vert[i+ missed], &vert, &plist->norm[i+missed], &norm)){
+			return i;
+		}
+	}
+	return -1;
+}
+//index_buffer[j] = find_fisrt_index_vb(&list[i], j, &model_list);
+
+//given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
+short find_fisrt_index_vb(poly_list *plist, int idx, poly_list *v){
+	int missed = 0;
+	for(short i = 0; i<v->n_verts; i++){
+		if(same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx])){
+			return i;
+		}
+	}
+	return -1;
+}
+
+
+poly_list model_index_bufer_internal_list;
+
+void model_make_index_buffer(poly_list *plist){
+
+
+		int n_verts = 0;
+		int missed = 0;
+		int first = 0;
+		for( int j = 0; j<plist->n_verts; j++){
+			if((find_fisrt_index(plist, j)) == j)n_verts++;
+		}
+
+		vertex *L;
+		vector *N;
+
+		model_index_bufer_internal_list.n_verts = 0;
+		int z = 0, a = 0;
+		model_index_bufer_internal_list.allocate(n_verts);
+		for(int k = 0; k<plist->n_verts; k++){
+			if(find_fisrt_index(plist, k) != k){
+				continue;
+			}
+			model_index_bufer_internal_list.vert[z] = plist->vert[k];
+			model_index_bufer_internal_list.norm[z] = plist->norm[k];
+			model_index_bufer_internal_list.n_verts++;
+			Assert(find_fisrt_index(&model_index_bufer_internal_list, z) == z);
+			z++;
+		}
+		Assert(n_verts == model_index_bufer_internal_list.n_verts);
+
+		memcpy(plist->norm, model_index_bufer_internal_list.norm, sizeof(vector) * model_index_bufer_internal_list.n_verts);
+		memcpy(plist->vert, model_index_bufer_internal_list.vert, sizeof(vertex) * model_index_bufer_internal_list.n_verts);
+		plist->n_verts = model_index_bufer_internal_list.n_verts;
+
+		for(k = 0; k<plist->n_verts; k++){
+			Assert(find_fisrt_index(&model_index_bufer_internal_list, k) == k);
+		}
 }
