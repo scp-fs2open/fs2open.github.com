@@ -50,7 +50,13 @@ int timerbar_current_stack_layer = 0;
  */
 void timerbar_push(int value)
 {
-	Assert((timerbar_current_stack_layer + 1) < MAX_TB_STACK_SIZE);
+	if(timerbar_current_stack_layer >= MAX_TB_STACK_SIZE)
+	{
+		// To many pushs, this must be a bug
+		// Someone is letting code miss the pops, check for early retuns
+		Assert(!(timerbar_current_stack_layer >= MAX_TB_STACK_SIZE));
+		return;
+	}
 
 	timerbar_stack[timerbar_current_stack_layer] = timerbar_current_profile;
 	timerbar_current_stack_layer++;
@@ -66,7 +72,12 @@ void timerbar_push(int value)
 void timerbar_pop()
 {
 	timerbar_current_stack_layer--;
-	Assert(timerbar_current_stack_layer >= 0);
+	if(timerbar_current_stack_layer < 0)
+	{
+		Assert(!(timerbar_current_stack_layer < 0));
+		timerbar_current_stack_layer = 0;
+		return;
+	}
 
 	timerbar_switch_type(timerbar_stack[timerbar_current_stack_layer]);
 }

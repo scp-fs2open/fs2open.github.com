@@ -843,7 +843,7 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 	// Turn off 32bit PCX for now, its still buggy
 	int valid_pcx	= 
 #ifdef PCX_32
-		bm_bitmaps[bitmapnum].type == BM_TYPE_PCX && Cmdline_32bit_textures;
+		(bm_bitmaps[bitmapnum].type == BM_TYPE_PCX || bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32) && Cmdline_32bit_textures;
 #else
 	0;
 #endif
@@ -908,7 +908,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 	bmp = &be->bm;
 
 	// Give pcx control to D3D if we are expected to load it into 32 bit
-	// 8 bit images are likcy to be masks, data needs to be passed back
+	// 8 bit images are likely to be masks, data needs to be passed back
 	if(be->type == BM_TYPE_PCX && bpp != 8 && Cmdline_32bit_textures)
 	{
 #ifdef PCX_32
@@ -930,7 +930,35 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 
 	// if bitmap hasn't been loaded yet, then load it from disk
 	// reread the bitmap from disk under certain conditions
-	if ( (bmp->data == 0) || (bpp != bmp->bpp)) {
+	if(be->type > BM_TYPE_32_BIT_FORMATS)
+	{
+		if(d3d_bitmap_entry[bitmapnum].tinterface == NULL)
+		{
+			switch ( be->type ) {
+			case BM_TYPE_PCX_32:
+			{
+				d3d_bitmap_entry[bitmapnum].tinterface = 
+					(IDirect3DBaseTexture8 *) d3d_lock_32_pcx(be->filename, 
+						&d3d_bitmap_entry[bitmapnum].uscale, 
+						&d3d_bitmap_entry[bitmapnum].vscale);
+				break;
+			}
+		
+			// We'll let D3DX handle this
+			case BM_TYPE_JPG:
+			case BM_TYPE_TGA:
+			{
+				d3d_bitmap_entry[bitmapnum].tinterface = 
+					(IDirect3DBaseTexture8 *) d3d_lock_d3dx_types(be->filename, be->type, flags );			
+				break;
+			}
+			default:
+				Warning(LOCATION, "Unsupported type in bm_lock -- %d\n", be->type );
+				return NULL;
+			} 
+		}
+	}
+	else if ( (bmp->data == 0) || (bpp != bmp->bpp)) {
 		Assert(be->ref_count == 1);
 
 		if ( be->type != BM_TYPE_USER ) {
@@ -961,31 +989,6 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 
 		case BM_TYPE_USER:	
 			bm_d3d_lock_user( handle, bitmapnum, be, bmp, bpp, flags );
-			break;
-
-		case BM_TYPE_PCX_32:
-			{
-			if(d3d_bitmap_entry[bitmapnum].tinterface) return bmp;
-
-			d3d_bitmap_entry[bitmapnum].tinterface = 
-				(IDirect3DBaseTexture8 *) d3d_lock_32_pcx(be->filename, 
-					&d3d_bitmap_entry[bitmapnum].uscale, 
-					&d3d_bitmap_entry[bitmapnum].vscale);
-			}
-			break;
-
-
-		// We'll let D3DX handle this
-		case BM_TYPE_JPG:
-		case BM_TYPE_TGA:
-			{
-			if(d3d_bitmap_entry[bitmapnum].tinterface) return bmp;
-
-			bm_d3d_free_data( bitmapnum );
-			d3d_bitmap_entry[bitmapnum].tinterface = 
-				(IDirect3DBaseTexture8 *) d3d_lock_d3dx_types(be->filename, be->type, bitmapnum, flags );
-
-			}
 			break;
 		default:
 			Warning(LOCATION, "Unsupported type in bm_lock -- %d\n", be->type );
@@ -1147,6 +1150,11 @@ int bm_d3d_unload( int handle )
 	}
 
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE!
+
+	if(stricmp("2_Credits.jpg", be->filename) == 0)
+	{
+		mprintf(("unloading 2_Credits.jpg\n"));
+	}
 
 	// If it is locked, cannot free it.
 	if (be->ref_count != 0) {

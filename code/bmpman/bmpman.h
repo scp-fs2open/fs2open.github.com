@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.7 $
- * $Date: 2003-10-24 17:35:04 $
+ * $Revision: 2.8 $
+ * $Date: 2003-11-07 18:31:01 $
  * $Author: randomtiger $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/10/24 17:35:04  randomtiger
+ * Implemented support for 32bit TGA and JPG for D3D
+ * Also 32 bit PCX, but it still has some bugs to be worked out
+ * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
+ *
  * Revision 2.6  2003/08/16 03:52:22  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -259,11 +264,13 @@
 enum
 {
 	BM_TYPE_NONE,		
-	BM_TYPE_PCX,			
-	BM_TYPE_USER,		
-	BM_TYPE_ANI,				// in-house ANI format
-	BM_TYPE_TGA,				// 32 bit only supported by D3D current
-	BM_TYPE_JPG,					// supported by D3D current
+	BM_TYPE_PCX,	// 16 bit PCX		
+	BM_TYPE_USER,	// Data created at run time	
+	BM_TYPE_ANI,	// In-house ANI format
+	// Only list 32 bit formats after this flag plese
+	BM_TYPE_32_BIT_FORMATS,
+	BM_TYPE_TGA,				
+	BM_TYPE_JPG,					
 	BM_TYPE_PCX_32,			
 };
 

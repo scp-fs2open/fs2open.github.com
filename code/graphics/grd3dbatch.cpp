@@ -65,6 +65,8 @@ typedef struct
 	int x,y, len;
 	int char_count;
 	uint color;
+	int offsetx;
+	int offsety;
 
 	IDirect3DVertexBuffer8 *vbuffer;
 } StringBatch; 
@@ -535,6 +537,8 @@ int find_string(int len, int magic_num, int sx, int sy, uint color, bool long_st
 	for(int i = 0; i < loop_len; i++) {
 		if(array[i].magic_number == magic_num &&
 			array[i].len == len &&
+			array[i].offsetx == gr_screen.offset_x && 
+			array[i].offsety == gr_screen.offset_y && 
 			array[i].x == sx &&
 			array[i].y == sy &&
 			array[i].color == color) {
@@ -606,7 +610,8 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 
 	if(len == 0) return;
 
-
+	// Set to 0 to turn off batching to gfx card memory
+#if 1
 	// Check the string is of a valid size
 	if(len > MIN_STRING_LEN && len < MAX_LG_STR_LEN)
 	{
@@ -639,6 +644,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 			new_id = find_free_slot(long_str);
 		}
 	}
+#endif
 
 	IDirect3DVertexBuffer8 *vbuffer = NULL;	
 	FONT_VERTEX *locked_buffer = NULL;
@@ -722,10 +728,11 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 		}
 
 	// Change the color this way to see which strings are being cached
-	 //	uint color2 = (new_id == -1) ? color : 0xffff0000;
+	  //	uint color2 = (new_id == -1) ? color : 0xff00ff00;
 
+		// Marks the end of a batch blue
 	  //	if(char_count > (MAX_STRING_LEN - 10)) 
-		//	color2 = 0xff0000ff;
+	  //		color2 = 0xff0000ff;
 
 	 	d3d_stuff_char(src_v, xc, yc, wc, hc, u+xd, v+yd, bw, bh, u_scale, v_scale, color);
 
@@ -759,6 +766,8 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 		array[new_id].magic_number = magic_num;
 		array[new_id].x			   = sx;
 		array[new_id].y			   = sy;
+		array[new_id].offsetx      = gr_screen.offset_x; 
+		array[new_id].offsety      = gr_screen.offset_y; 
 
 		array[new_id].used_this_frame = true;
 

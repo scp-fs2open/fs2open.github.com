@@ -56,7 +56,7 @@ LINK32=link.exe
 # ADD LINK32 Dxerr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"C:\Games\FreeSpace2\fs2_open_r.exe" /libpath:"release" /libpath:"c:\mssdk\lib"
 # SUBTRACT LINK32 /pdb:none
 # Begin Custom Build - Copying $(InputPath) to D:\games\freespace2
-InputPath=\Games\FreeSpace2\fs2_open_r.exe
+InputPath=C:\Games\FreeSpace2\fs2_open_r.exe
 SOURCE="$(InputPath)"
 
 "D:\games\freespace2\fs2_open.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -91,7 +91,7 @@ LINK32=link.exe
 # ADD LINK32 d3d8.lib d3dx8.lib DxErr8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib Dxerr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib Dxerr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib Dxerr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib /nologo /subsystem:windows /debug /debugtype:both /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"C:\games\Freespace2\fs2_open_d.exe" /libpath:"debug" /libpath:"c:\mssdk\lib"
 # SUBTRACT LINK32 /pdb:none /incremental:no /map
 # Begin Custom Build - Copying $(InputPath) to D:\games\freespace2
-InputPath=\games\Freespace2\fs2_open_d.exe
+InputPath=C:\games\Freespace2\fs2_open_d.exe
 SOURCE="$(InputPath)"
 
 "D:\games\freespace2\fs2_open_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -105,10 +105,6 @@ SOURCE="$(InputPath)"
 
 # Name "Freespace2 - Win32 Release"
 # Name "Freespace2 - Win32 Debug"
-# Begin Source File
-
-SOURCE=.\code\ship\aicode.cpp
-# End Source File
 # Begin Source File
 
 SOURCE=.\code\FREESPACE2\app_icon.ico

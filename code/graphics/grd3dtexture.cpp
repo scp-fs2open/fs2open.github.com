@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-10-27 23:04:21 $
+ * $Revision: 2.14 $
+ * $Date: 2003-11-07 18:31:02 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/10/27 23:04:21  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.12  2003/10/26 00:31:58  randomtiger
  * Fixed hulls not drawing (with Phreaks advise).
  * Put my 32bit PCX loading under PCX_32 compile flag until its working.
@@ -1382,7 +1390,6 @@ void *d3d_lock_32_pcx(char *real_filename, float *u, float *v)
 	// Is it a 256 color PCX file?
 	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{
 		cfclose( PCXfile );
-	
 		return NULL;
 	}
 
@@ -1396,6 +1403,7 @@ void *d3d_lock_32_pcx(char *real_filename, float *u, float *v)
 
 	// To big to fit into texture memory
 	if(dst_xsize == -1 && dst_ysize == -1) {
+		cfclose(PCXfile);
 		return NULL;
 	}
 
@@ -1429,6 +1437,7 @@ void *d3d_lock_32_pcx(char *real_filename, float *u, float *v)
 			D3DFMT_A8R8G8B8, 
 			D3DPOOL_MANAGED, &p_texture)))
 	{
+		cfclose(PCXfile);
 		return NULL;
 	}
 
@@ -1438,6 +1447,7 @@ void *d3d_lock_32_pcx(char *real_filename, float *u, float *v)
 	if(FAILED(p_texture->LockRect(0, &locked_rect, NULL, 0)))
 	{
 		p_texture->Release();
+		cfclose(PCXfile);
 		return NULL;
 	}
 
@@ -1509,7 +1519,7 @@ void *d3d_lock_32_pcx(char *real_filename, float *u, float *v)
 	return p_texture;
 }
 
-void *d3d_lock_d3dx_types(char *file, int type, int bitmapnum, ubyte flags )
+void *d3d_lock_d3dx_types(char *file, int type, ubyte flags )
 {
 	char filename[MAX_FILENAME_LEN];
 
