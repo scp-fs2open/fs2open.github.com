@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.45 $
- * $Date: 2003-11-11 02:15:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.46 $
+ * $Date: 2003-12-15 21:32:59 $
+ * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/11/11 02:15:40  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.44  2003/09/13 08:27:28  Goober5000
  * added some minor things, such as code cleanup and the following:
  * --turrets will not fire at cargo
@@ -11183,10 +11188,14 @@ void turret_fire_weapon(ship_subsys *turret, int parent_objnum, vector *turret_p
 	ship		*parent_ship;
 	beam_fire_info fire_info;
 	float flak_range = 0.0f;
+	weapon_info *wip;
+	weapon *wp;
+	object *objp;
 
 	parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
 	parent_ship = &Ships[Objects[parent_objnum].instance];
 	turret_weapon_class = turret->system_info->turret_weapon_type;
+	wip=&Weapon_info[turret_weapon_class];
 
 	if (check_ok_to_fire(parent_objnum, turret->turret_enemy_objnum, &Weapon_info[turret_weapon_class])) {
 		vm_vector_2_matrix(&turret_orient, turret_fvec, NULL, NULL);
@@ -11196,7 +11205,7 @@ void turret_fire_weapon(ship_subsys *turret, int parent_objnum, vector *turret_p
 		turret_set_next_fire_timestamp(turret, parent_aip);
 
 		// if this weapon is a beam weapon, handle it specially
-		if(Weapon_info[turret_weapon_class].wi_flags & WIF_BEAM){
+		if(wip->wi_flags & WIF_BEAM){
 			// if this beam isn't free to fire
 			if (!(turret->weapons.flags & SW_FLAG_BEAM_FREE)) {
 				Int3();	// should never get this far
@@ -11219,60 +11228,65 @@ void turret_fire_weapon(ship_subsys *turret, int parent_objnum, vector *turret_p
 
 			if (parent_ship->cloak_stage == 2)
 			{
-				beam_weapon_info *bip=&Weapon_info[turret_weapon_class].b_info;
+				beam_weapon_info *bip=&wip->b_info;
 				shipfx_start_cloak(parent_ship,bip->beam_warmup + bip->beam_warmdown + (int)(bip->beam_life*1000.0f) + 1000);
 			}
 
 		} else {
 
 			// don't fire swarm, but set up swarm info
-			if (Weapon_info[turret_weapon_class].wi_flags & WIF_SWARM) {
+			if (wip->wi_flags & WIF_SWARM) {
 				turret_swarm_set_up_info(parent_objnum, turret, turret_weapon_class);
 				return;
-			} else {
+			}
+			
+			for (int i=0; i < wip->shots; i++)
+			{		
 				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, 0, -1, 1);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
-			}
+			
 
-			//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
-			if (weapon_objnum != -1) {
-				Weapons[Objects[weapon_objnum].instance].target_num = turret->turret_enemy_objnum;
-				// AL 1-6-97: Store pointer to turret subsystem
-				Weapons[Objects[weapon_objnum].instance].turret_subsys = turret;
+				objp=&Objects[weapon_objnum];
+				wp=&Weapons[objp->instance];
+				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
+				if (weapon_objnum != -1) {
+					wp->target_num = turret->turret_enemy_objnum;
+					// AL 1-6-97: Store pointer to turret subsystem
+					wp->turret_subsys = turret;	
 
-				if ( Weapon_info[turret_weapon_class].launch_snd != -1 ) {
-					// Don't play turret firing sound if turret sits on player ship... it gets annoying.
-					if ( parent_objnum != OBJ_INDEX(Player_obj) ) {						
-						snd_play_3d( &Snds[Weapon_info[turret_weapon_class].launch_snd], turret_pos, &View_position );						
+					// if the gun is a flak gun
+					if(wip->wi_flags & WIF_FLAK){			
+						// show a muzzle flash
+						flak_muzzle_flash(turret_pos, turret_fvec, turret_weapon_class);
+
+						// pick a firing range so that it detonates properly			
+						flak_pick_range(objp, predicted_pos, ship_get_subsystem_strength(parent_ship, SUBSYSTEM_WEAPONS));
+
+						// determine what that range was
+						flak_range = flak_get_range(objp);
 					}
-				}		
-
-				// if the gun is a flak gun
-				if(Weapon_info[turret_weapon_class].wi_flags & WIF_FLAK){			
-					// show a muzzle flash
-					flak_muzzle_flash(turret_pos, turret_fvec, turret_weapon_class);
-
-					// pick a firing range so that it detonates properly			
-					flak_pick_range(&Objects[weapon_objnum], predicted_pos, ship_get_subsystem_strength(parent_ship, SUBSYSTEM_WEAPONS));
-
-					// determine what that range was
-					flak_range = flak_get_range(&Objects[weapon_objnum]);
-				}
 
 #ifndef NO_NETWORK
-				// in multiplayer (and the master), then send a turret fired packet.
-				if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
-					int subsys_index;
+					// in multiplayer (and the master), then send a turret fired packet.
+					if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
+						int subsys_index;
 
-					subsys_index = ship_get_index_from_subsys(turret, parent_objnum );
-					Assert( subsys_index != -1 );
-					if(Weapon_info[turret_weapon_class].wi_flags & WIF_FLAK){			
-						send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range );
-					} else {
-						send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum );
+						subsys_index = ship_get_index_from_subsys(turret, parent_objnum );
+						Assert( subsys_index != -1 );
+						if(wip->wi_flags & WIF_FLAK){			
+							send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range );
+						} else {
+							send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum );
+						}
+					}
+#endif				
+					if ( wip->launch_snd != -1 ) {
+						if ( parent_objnum != OBJ_INDEX(Player_obj) ) {						
+							snd_play_3d( &Snds[wip->launch_snd], turret_pos, &View_position );						
+						}
 					}
 				}
-#endif
+
 				if ((parent_ship->cloak_stage > 0) && (parent_ship->cloak_stage < 3))
 				{
 					shipfx_start_cloak(parent_ship,500);
