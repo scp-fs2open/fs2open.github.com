@@ -1,5 +1,5 @@
 #include "cfile/cfile.h"
-#include "ogg.h"
+#include "sound/ogg/ogg.h"
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -31,7 +31,6 @@ long ogg_cftell(void* cfile)
 	return cftell((CFILE*) cfile);
 }
 
-#ifdef WIN32
 size_t ogg_mmio_read(void *buf, size_t elsize, size_t elnem, void* mmfp)
 {
 	return mmioRead((HMMIO) mmfp, (HPSTR) buf, elsize * elnem);
@@ -53,7 +52,7 @@ long ogg_mmio_tell(void* mmfp)
 	//return mmioSeek((HMMIO) mmfp, 0, SEEK_CUR);
 	return -1;
 }
-#endif
+
 int OGG_init()
 {
 	//Setup the cfile_callbacks stucts
@@ -62,12 +61,10 @@ int OGG_init()
 	cfile_callbacks.close_func = ogg_cfclose;
 	cfile_callbacks.tell_func = ogg_cftell;
 
-#ifdef WIN32
 	mmio_callbacks.read_func = ogg_mmio_read;
 	mmio_callbacks.seek_func = ogg_mmio_seek;
 	mmio_callbacks.close_func= ogg_mmio_close;
 	mmio_callbacks.tell_func = ogg_mmio_tell;
-#endif
 
 	return 0;
 }
