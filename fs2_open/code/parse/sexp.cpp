@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.43 $
- * $Date: 2003-03-18 08:44:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.44 $
+ * $Date: 2003-03-18 13:38:07 $
+ * $Author: unknownplayer $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/03/18 08:44:04  Goober5000
+ * added explosion-effect sexp and did some other minor housekeeping
+ * --Goober5000
+ *
  * Revision 2.42  2003/03/03 04:28:37  Goober5000
  * fixed the tech room bug!  yay!
  * --Goober5000
@@ -10612,7 +10616,7 @@ int query_operator_return_type(int op)
 		case OP_MUL:
 		case OP_DIV:
 		case OP_RAND:
-			return OPR_NUMBER;
+//			return OPR_NUMBER;
 
 		case OP_TIME_SHIP_DESTROYED:
 		case OP_TIME_SHIP_ARRIVED:
@@ -10842,7 +10846,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_EQUALS:
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
-			return OPF_NUMBER;
+//			return OPF_NUMBER;
 
 		case OP_RAND:
 		case OP_HAS_TIME_ELAPSED:
