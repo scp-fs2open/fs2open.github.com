@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.48 $
- * $Date: 2003-12-17 23:25:10 $
- * $Author: phreak $
+ * $Revision: 2.49 $
+ * $Date: 2004-01-20 22:37:44 $
+ * $Author: Goober5000 $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2003/12/17 23:25:10  phreak
+ * added a MAX_BUFFERS_PER_SUBMODEL define so it can be easily changed if we ever want to change the 16 texture limit
+ *
  * Revision 2.47  2003/12/08 22:30:02  randomtiger
  * Put render state and other direct D3D calls repetition check back in, provides speed boost.
  * Fixed bug that caused fullscreen only crash with DXT textures
@@ -2184,7 +2187,8 @@ void gr_d3d_render_buffer(int idx)
 	}
 
 	// Revert back to old fog state
-	if(gr_screen.current_fog_mode != GR_FOGMODE_NONE)gr_d3d_fog_set(gr_screen.current_fog_mode, old_fog_color.red,old_fog_color.green,old_fog_color.blue, gr_screen.fog_near, gr_screen.fog_far);
+	if(gr_screen.current_fog_mode != GR_FOGMODE_NONE)
+		gr_d3d_fog_set(gr_screen.current_fog_mode, old_fog_color.red,old_fog_color.green,old_fog_color.blue, gr_screen.fog_near, gr_screen.fog_far);
 
 	TIMERBAR_POP();
 }
