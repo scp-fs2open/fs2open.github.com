@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.110 $
- * $Date: 2004-03-05 23:41:04 $
+ * $Revision: 2.111 $
+ * $Date: 2004-03-05 23:54:48 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2004/03/05 23:41:04  Goober5000
+ * made awacs only ask for help in the main fs2 campaign
+ * --Goober5000
+ *
  * Revision 2.109  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1212,6 +1216,7 @@
 #include "hud/hudartillery.h"
 #include "species_defs/species_defs.h"
 #include "weapon/flak.h"								//phreak addded 11/05/02 for flak primaries
+#include "mission/missioncampaign.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
