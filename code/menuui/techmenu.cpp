@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-07 01:37:42 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-03 04:28:37 $
+ * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/07 01:37:42  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.2  2002/11/27 01:20:51  sesquipedalian
  * Added Phreak's fix for the weapons room bug.  Can now view a modified weapons.tbl in the tech room without crashing
  *
@@ -1099,7 +1105,7 @@ void techroom_change_tab(int num)
 				Intel_list_size = 0;
 				for (i=0; i<Intel_info_size; i++) {
 
-					if (Intel_info[i].in_tech_db != 0) {
+					if (Intel_info[i].flags & IIF_IN_TECH_DATABASE) {
 						// leave option for no animation if string == "none"
 						if (!strcmp(Intel_info[i].anim_filename, "none")) {
 							Intel_list[Intel_list_size].has_anim = 0;
@@ -1270,7 +1276,7 @@ int techroom_load_ani(anim **animpp, char *name)
 
 void techroom_intel_init()
 {
-	int rval;
+	int rval, temp;
 	static int inited = 0;
 
 	// open localization
@@ -1292,15 +1298,24 @@ void techroom_intel_init()
 				Assert(Intel_info_size < MAX_INTEL_ENTRIES);
 				if (Intel_info_size >= MAX_INTEL_ENTRIES) break;
 
+				Intel_info[Intel_info_size].flags = IIF_DEFAULT_VALUE;
+
 				required_string("$Name:");
 				stuff_string(Intel_info[Intel_info_size].name, F_NAME, NULL, 32);
 				required_string("$Anim:");
 				stuff_string(Intel_info[Intel_info_size].anim_filename, F_NAME, NULL, 32);
 				required_string("$AlwaysInTechRoom:");
-				stuff_int(&Intel_info[Intel_info_size].in_tech_db);
+				stuff_int(&temp);
+				if (temp)
+				{
+					Intel_info[Intel_info_size].flags |= IIF_IN_TECH_DATABASE;
+				}
 				required_string("$Description:");
 				stuff_string(Intel_info[Intel_info_size].desc, F_MULTITEXT, NULL, TECH_INTEL_DESC_LEN);
 
+				// set default to align with what we read - Goober5000
+				if (Intel_info[Intel_info_size].flags & IIF_IN_TECH_DATABASE)
+					Intel_info[Intel_info_size].flags |= IIF_DEFAULT_IN_TECH_DATABASE;
 
 				Intel_info_size++;
 			}
@@ -1684,4 +1699,57 @@ void techroom_do_frame(float frametime)
 	help_overlay_maybe_blit(TECH_ROOM_OVERLAY);
 
 	gr_flip();
+}
+
+int intel_info_lookup(char *name)
+{
+	int	i;
+
+	// bogus
+	if (!name)
+		return -1;
+
+	for (i=0; i<Intel_info_size; i++)
+		if (!stricmp(name, Intel_info[i].name))
+			return i;
+
+	return -1;
+}
+
+// Goober5000
+void tech_reset_to_default()
+{
+	int i;
+
+	// ships
+	for (i=0; i<Num_ship_types; i++)
+	{
+		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE)
+			Ship_info[i].flags |= SIF_IN_TECH_DATABASE;
+		else
+			Ship_info[i].flags &= ~SIF_IN_TECH_DATABASE;
+
+		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE_M)
+			Ship_info[i].flags |= SIF_IN_TECH_DATABASE_M;
+		else
+			Ship_info[i].flags &= ~SIF_IN_TECH_DATABASE_M;
+	}
+
+	// weapons
+	for (i=0; i<Num_weapon_types; i++)
+	{
+		if (Weapon_info[i].wi_flags2 & WIF2_DEFAULT_IN_TECH_DATABASE)
+			Weapon_info[i].wi_flags |= WIF_IN_TECH_DATABASE;
+		else
+			Weapon_info[i].wi_flags &= ~WIF_IN_TECH_DATABASE;
+	}
+
+	// intelligence
+	for (i=0; i<Intel_info_size; i++)
+	{
+		if (Intel_info[i].flags & IIF_DEFAULT_IN_TECH_DATABASE)
+			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
+		else
+			Intel_info[i].flags &= ~IIF_IN_TECH_DATABASE;
+	}
 }

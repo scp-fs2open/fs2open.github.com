@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.41 $
- * $Date: 2003-03-01 01:15:38 $
+ * $Revision: 2.42 $
+ * $Date: 2003-03-03 04:28:37 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/03/01 01:15:38  Goober5000
+ * fixed the initial status bug
+ *
  * Revision 2.40  2003/01/26 18:37:19  Goober5000
  * changed change-music to change-soundtrack
  * --Goober5000
@@ -542,6 +545,7 @@
 #include "ship/awacs.h"
 #include "hud/hudsquadmsg.h"	// for the order sexp
 #include "gamesnd/eventmusic.h"	// for change-soundtrack
+#include "menuui/techmenu.h"	// for intel stuff
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -736,6 +740,8 @@ sexp_oper Operators[] = {
 	{ "allow-weapon",					OP_ALLOW_WEAPON,					1, 1,			},
 	{ "tech-add-ships",				OP_TECH_ADD_SHIP,					1, INT_MAX	},
 	{ "tech-add-weapons",			OP_TECH_ADD_WEAPON,				1, INT_MAX	},
+	{ "tech-add-intel",				OP_TECH_ADD_INTEL,				1, INT_MAX	},	// Goober5000
+	{ "tech-reset-to-default",		OP_TECH_RESET_TO_DEFAULT,		0, 0 },	// Goober5000
 
 	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
 	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
@@ -2233,6 +2239,20 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 						return SEXP_CHECK_INVALID_WEAPON_NAME;
 				}
 
+				break;
+
+			case OPF_INTEL_NAME:
+				if ( type2 != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				for (i = 0; i < Intel_info_size; i++ ) {
+					if ( !stricmp(CTEXT(index), Intel_info[i].name) )
+						break;
+				}
+
+				if ( i == Intel_info_size )
+					return SEXP_CHECK_INVALID_INTEL_NAME;
+				
 				break;
 	
 			case OPF_SHIP_CLASS_NAME:
@@ -6359,10 +6379,38 @@ void sexp_tech_add_weapon(int node)
 		if (i >= 0)
 			Weapon_info[i].wi_flags |= WIF_IN_TECH_DATABASE;
 		else
-			Error(LOCATION, "Ship class \"%s\" invalid", name);
+			Error(LOCATION, "Weapon class \"%s\" invalid", name);
 
 		node = CDR(node);
 	}
+}
+
+void sexp_tech_add_intel(int node)
+{
+	int i;
+	char *name;
+
+	Assert(node >= 0);
+	// this function doesn't mean anything when not in campaign mode
+	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
+		return;
+
+	while (node >= 0) {
+		name = CTEXT(node);
+		i = intel_info_lookup(name);
+		if (i >= 0)
+			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
+		else
+			Error(LOCATION, "Intel name \"%s\" invalid", name);
+
+		node = CDR(node);
+	}
+}
+
+// Goober5000 - reset all the tech entries to their default states
+void sexp_tech_reset_to_default()
+{
+	tech_reset_to_default();
 }
 
 // function to set variables needed to grant a new ship/weapon to the player during the course
@@ -9793,6 +9841,16 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_TECH_ADD_INTEL:
+				sexp_tech_add_intel(node);
+				sexp_val = 1;
+				break;
+
+			case OP_TECH_RESET_TO_DEFAULT:
+				sexp_tech_reset_to_default();
+				sexp_val = 1;
+				break;
+
 				// in the case of a red_alert mission, simply call the red alert function to close
 				// the current campaign's mission and move forward to the next mission
 			case OP_RED_ALERT:
@@ -10338,6 +10396,8 @@ int query_operator_return_type(int op)
 		case OP_ALLOW_WEAPON:
 		case OP_TECH_ADD_SHIP:
 		case OP_TECH_ADD_WEAPON:
+		case OP_TECH_ADD_INTEL:
+		case OP_TECH_RESET_TO_DEFAULT:
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
@@ -10934,6 +10994,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ALLOW_WEAPON:
 		case OP_TECH_ADD_WEAPON:
 			return OPF_WEAPON_NAME;
+
+		case OP_TECH_ADD_INTEL:
+			return OPF_INTEL_NAME;
+
+		case OP_TECH_RESET_TO_DEFAULT:
+			return OPF_NONE;
 
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
@@ -11564,6 +11630,9 @@ char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_WEAPON_NAME:
 			return "Invalid weapon name";
 
+		case SEXP_CHECK_INVALID_INTEL_NAME:
+			return "Invalid intel name";
+
 		case SEXP_CHECK_INVALID_SHIP_CLASS_NAME:
 			return "Invalid ship class name";
 
@@ -12022,6 +12091,8 @@ int get_subcategory(int sexp_id)
 		case OP_ALLOW_WEAPON:
 		case OP_TECH_ADD_SHIP:
 		case OP_TECH_ADD_WEAPON:
+		case OP_TECH_ADD_INTEL:
+		case OP_TECH_RESET_TO_DEFAULT:
 			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
 
 		case OP_MODIFY_VARIABLE:

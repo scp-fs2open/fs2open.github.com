@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-03-03 04:28:37 $
+ * $Author: Goober5000 $
  *
  * Header file for code that controls the Tech Room menu
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -79,9 +82,13 @@ typedef struct {
 	char name[32];
 	char desc[TECH_INTEL_DESC_LEN];
 	char anim_filename[32];
-	int  in_tech_db;							// determines if visible in tech db or not
+	int  flags;
 } intel_data;
 
+// flags by Goober5000
+#define IIF_DEFAULT_VALUE				0
+#define IIF_IN_TECH_DATABASE			(1 << 0)	// in tech database? - Goober5000
+#define IIF_DEFAULT_IN_TECH_DATABASE	(1 << 1)	// in tech database by default? - Goober5000
 
 extern intel_data Intel_info[MAX_INTEL_ENTRIES];
 extern int Intel_info_size;
@@ -93,5 +100,7 @@ void techroom_close();
 void techroom_do_frame(float frametime);
 int techroom_on_ships_tab();
 void techroom_intel_init();			// called on startup so campaigns can manipulate tech room visibility
+int intel_info_lookup(char *name);
+extern void tech_reset_to_default();
 
 #endif

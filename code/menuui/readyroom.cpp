@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 03:50:29 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-03 04:28:37 $
+ * $Author: Goober5000 $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 03:50:29  randomtiger
+ * Added special pause mode for easier action screenshots.
+ * Added new command line parameter for accessing all single missions in tech room. - RT
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -106,6 +110,7 @@
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
 #include "cmdline/cmdline.h"
+#include "menuui/techmenu.h"	// for tech menu reset stuff
 
 #define MAX_MISSIONS	1024
 
@@ -781,6 +786,10 @@ void sim_room_scroll_line_down()
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 }
 
+/*  Goober5000 - why are there two nearly identical functions?
+	(campaign_room_reset_campaign and ready_room_reset_campaign)
+	Looks like this function should be deprecated...
+
 // returns: 0 = success, !0 = aborted or failed
 int ready_room_reset_campaign()
 {
@@ -791,11 +800,13 @@ int ready_room_reset_campaign()
 	if (z) {
 		mission_campaign_savefile_delete(Campaign.filename);
 		mission_campaign_load(Campaign.filename);
+
 		rval = 0;
 	}
 
 	return rval;
 }
+*/
 
 // Decide if we should offer choice to resume this savegame
 int sim_room_can_resume_savegame(char *savegame_filename)
@@ -1545,6 +1556,7 @@ int campaign_room_reset_campaign(int n)
 		mission_campaign_savefile_delete(filename);
 		mission_campaign_load(filename);
 		mission_campaign_next_mission();
+
 		return 0;
 	}
 
@@ -1567,6 +1579,13 @@ void campaign_room_commit()
 		mission_campaign_savefile_delete(Campaign_file_names[Selected_campaign_index]);
 		mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
 		strcpy(Player->current_campaign, Campaign.filename);  // track new campaign for player
+
+		// Goober5000 - reinitialize tech database if needed
+		if ( (Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2") )
+		{
+			// reset tech database to what's in the tables
+			tech_reset_to_default();
+		}
 	}
 
 	if (mission_campaign_next_mission()) {  // is campaign and next mission valid?
@@ -1619,7 +1638,16 @@ int campaign_room_button_pressed(int n)
 			else if (campaign_room_reset_campaign(Active_campaign_index))
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 			else
+			{
 				gamesnd_play_iface(SND_USER_SELECT);
+
+				// Goober5000 - reinitialize tech database if needed
+				if ( (Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2") )
+				{
+					// reset tech database to what's in the tables
+					tech_reset_to_default();
+				}
+			}
 
 			break;
 	}

@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.28 $
+ * $Revision: 2.29 $
  * $Author: Goober5000 $
- * $Date: 2003-01-26 18:37:19 $
+ * $Date: 2003-03-03 04:28:37 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/01/26 18:37:19  Goober5000
+ * changed change-music to change-soundtrack
+ * --Goober5000
+ *
  * Revision 2.27  2003/01/25 04:17:39  Goober5000
  * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
  * --Ian Warfield
@@ -491,7 +495,7 @@
 #define OPF_DEPARTURE_LOCATION	43		// Goober5000
 #define OPF_SHIP_WITH_BAY		44		// Goober5000
 #define OPF_SOUNDTRACK_NAME		45		// Goober5000
-
+#define OPF_INTEL_NAME			46		// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER		1	// returns number
@@ -724,6 +728,8 @@
 #define OP_DEACTIVATE_GLOW_POINT_BANK		(0x0078	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
 #define OP_ACTIVATE_GLOW_POINT_BANK			(0x0079	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
 #define OP_CHANGE_SOUNDTRACK				(0x007a	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_TECH_ADD_INTEL					(0x007b	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_TECH_RESET_TO_DEFAULT			(0x007c	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // debugging sexpressions
@@ -927,6 +933,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_DEPARTURE_LOCATION	-134
 #define SEXP_CHECK_INVALID_ARRIVAL_ANCHOR_ALL	-135
 #define SEXP_CHECK_INVALID_SOUNDTRACK_NAME		-136
+#define SEXP_CHECK_INVALID_INTEL_NAME			-137
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
