@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-10-19 19:29:29 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-06 19:33:21 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/19 19:29:29  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.2  2002/09/20 20:05:29  phreak
  * glare parser stuff in stars_init()
  *
@@ -1020,7 +1023,7 @@ void subspace_render()
 		temp.xyz.x = 1.0f;
 		temp.xyz.y = 1.0f;
 		temp.xyz.z = 1.0f;
-		model_set_thrust( Subspace_model_inner, temp, -1, Subspace_glow_bitmap, Noise[framenum] );
+		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
 		model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
 
@@ -1037,7 +1040,7 @@ void subspace_render()
 		temp.xyz.y = 1.0f;
 		temp.xyz.z = 1.0f;
 
-		model_set_thrust( Subspace_model_inner, temp, -1, Subspace_glow_bitmap, Noise[framenum] );
+		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
 		model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
 		
@@ -1056,7 +1059,7 @@ void subspace_render()
 		temp.xyz.y = 1.0f;
 		temp.xyz.z = 1.0f;
 
-		model_set_thrust( Subspace_model_inner, temp, -1, Subspace_glow_bitmap, Noise[framenum] );
+		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
 		render_flags |= MR_SHOW_THRUSTERS;
 
 		model_render( Subspace_model_inner, &tmp, &Eye_position, render_flags  );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 

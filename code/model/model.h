@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.11 $
- * $Date: 2002-12-10 05:43:34 $
+ * $Revision: 2.12 $
+ * $Date: 2003-01-06 19:33:22 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2002/12/10 05:43:34  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
  * Revision 2.10  2002/12/07 01:37:42  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -1133,7 +1136,7 @@ int model_which_octant( vector *pnt, int model_num,matrix *model_orient, vector 
 
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
-void model_set_thrust(int model_num, vector length, int bitmapnum, int glow_bitmapnum=-1, float glow_noise=1.0f);
+void model_set_thrust(int model_num, vector *length, int bitmapnum, int glow_bitmapnum=-1, float glow_noise=1.0f);
 
 //=========================================================
 // model caching

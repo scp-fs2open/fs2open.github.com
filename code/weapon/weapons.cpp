@@ -1816,7 +1816,7 @@ void weapon_render(object *obj)
 					temp.xyz.y = ft;
 					temp.xyz.z = ft;
 
-					model_set_thrust( wip->model_num, temp, wp->thruster_bitmap, wp->thruster_glow_bitmap, wp->thruster_glow_noise);
+					model_set_thrust( wip->model_num, &temp, wp->thruster_bitmap, wp->thruster_glow_bitmap, wp->thruster_glow_noise);
 					render_flags |= MR_SHOW_THRUSTERS;
 				}
 
