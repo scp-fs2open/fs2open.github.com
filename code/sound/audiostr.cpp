@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:52 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2004-12-25 00:23:46 $
+ * $Author: wmcoolmon $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:52  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:33:06  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -198,6 +201,7 @@
 #include "sound/sound.h"		/* for Snd_sram */
 #include "sound/acm.h"
 #include "sound/ds.h"
+#include "sound/ogg/ogg.h"
 
 
 
@@ -279,6 +283,7 @@ public:
 	UINT	m_bits_per_sample_uncompressed;
 
 protected:
+	//These two aren't needed for OGG
 	UINT m_data_offset;						// number of bytes to actual wave data
 	int  m_data_bytes_left;
 	HMMIO	cfp;
@@ -289,6 +294,7 @@ protected:
 	UINT m_nDataSize;							// size of data chunk
 	UINT m_nBytesPlayed;						// offset into data chunk
 	BOOL m_abort_next_read;
+	OggVorbis_File m_ogg_info;
 
 	HACMSTREAM		m_hStream;
 	int				m_hStream_open;
@@ -1177,7 +1183,14 @@ void WaveFile::Close(void)
 	// Close file
 	if (cfp) {
 		//cfclose(cfp);
-		mmioClose( cfp, 0 );
+		if(m_wave_format == OGG_FORMAT_VORBIS)
+		{
+			ov_clear(&m_ogg_info);
+		}
+		else
+		{
+			mmioClose( cfp, 0 );
+		}
 		cfp = NULL;
 	}
 }
@@ -1206,101 +1219,128 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 		goto OPEN_ERROR;
 	}
 
-	// Skip the "RIFF" tag and file size (8 bytes)
-	// Skip the "WAVE" tag (4 bytes)
-	mmioSeek( cfp, 12+FileOffset, SEEK_SET );
-
-	// Now read RIFF tags until the end of file
-	uint tag, size, next_chunk;
-
-	while(done == FALSE)	{
-		if ( mmioRead(cfp, (char *)&tag, sizeof(uint)) != sizeof(uint) )
-			break;
-
-		if ( mmioRead(cfp, (char *)&size, sizeof(uint)) != sizeof(uint) )
-			break;
-
-		next_chunk = mmioSeek( cfp, 0, SEEK_CUR );
-		next_chunk += size;
-
-		switch( tag )	{
-		case 0x20746d66:		// The 'fmt ' tag
-			mmioRead( cfp, (char *)&pcmwf, sizeof(PCMWAVEFORMAT) );
-			if ( pcmwf.wf.wFormatTag != WAVE_FORMAT_PCM ) {
-				mmioRead( cfp, (char *)&cbExtra, sizeof(short) );
-			}
-
-			// Allocate memory for WAVEFORMATEX structure + extra bytes
-			if ( (m_pwfmt_original = (WAVEFORMATEX *) malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ){
-				Assert(m_pwfmt_original != NULL);
-				// Copy bytes from temporary format structure
-				memcpy (m_pwfmt_original, &pcmwf, sizeof(pcmwf));
-				m_pwfmt_original->cbSize = cbExtra;
-
-				// Read those extra bytes, append to WAVEFORMATEX structure
-				if (cbExtra != 0) {
-					mmioRead( cfp, (char *)((ubyte *)(m_pwfmt_original) + sizeof(WAVEFORMATEX)), cbExtra );
-				}
-			}
-			else {
-				Int3();		// malloc failed
-				goto OPEN_ERROR;
-			}	
-			break;
-
-		case 0x61746164:		// the 'data' tag
-			m_nDataSize = size;	// This is size of data chunk.  Compressed if ADPCM.
-			m_data_bytes_left = size;
-			m_data_offset = mmioSeek( cfp, 0, SEEK_CUR);
-			done = TRUE;
-			break;
-
-		default:	// unknown, skip it
-			break;
-		}	// end switch
-
-		mmioSeek( cfp, next_chunk, SEEK_SET );
+	if(!strnicmp(pszFilename + strlen(pszFilename) - 3, "ogg", 3))
+	{
+		Assert(true);
 	}
 
-  	// At this stage, examine source format, and set up WAVEFORATEX structure for DirectSound.
-	// Since DirectSound only supports PCM, force this structure to be PCM compliant.  We will
-	// need to convert data on the fly later if our souce is not PCM
-	switch ( m_pwfmt_original->wFormatTag ) {
-		case WAVE_FORMAT_PCM:
-			m_wave_format = WAVE_FORMAT_PCM;
-			m_wfmt.wBitsPerSample = m_pwfmt_original->wBitsPerSample;
-			break;
+	//Try to open the OGG
+	if(!ov_open_callbacks(cfp, &m_ogg_info, NULL, 0, mmio_callbacks))
+	{
+		//It's an OGG
+		ov_info(&m_ogg_info, -1);
+		m_wave_format = OGG_FORMAT_VORBIS;
 
-		case WAVE_FORMAT_ADPCM:
-			m_wave_format = WAVE_FORMAT_ADPCM;
-			m_wfmt.wBitsPerSample = 16;
-			break;
+		m_wfmt.wFormatTag = WAVE_FORMAT_PCM;
+		m_wfmt.nChannels = m_ogg_info.vi->channels;
+		m_wfmt.nSamplesPerSec = m_ogg_info.vi->rate;
+		m_wfmt.cbSize = 0;
+		m_wfmt.wBitsPerSample = 16;					//OGGs always decoded at 16 bits here
+		m_wfmt.nBlockAlign = (unsigned short)(( m_wfmt.nChannels * m_wfmt.wBitsPerSample ) / 8);
+		m_wfmt.nAvgBytesPerSec = m_wfmt.nSamplesPerSec * m_wfmt.nBlockAlign;
+		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
+		m_nBlockAlign = m_wfmt.nBlockAlign;
+		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
+		goto OPEN_DONE;
+	}
+	else
+	{
+		// Skip the "RIFF" tag and file size (8 bytes)
+		// Skip the "WAVE" tag (4 bytes)
+		mmioSeek( cfp, 12+FileOffset, SEEK_SET );
 
-		default:
-			nprintf(("SOUND", "SOUND => Not supporting %d format for playing wave files\n"));
-			//Int3();
-			goto OPEN_ERROR;
-			break;
+		// Now read RIFF tags until the end of file
+		uint tag, size, next_chunk;
 
-	} // end switch
-            
-	// Set up the WAVEFORMATEX structure to have the right PCM characteristics
-	m_wfmt.wFormatTag = WAVE_FORMAT_PCM;
-	m_wfmt.nChannels = m_pwfmt_original->nChannels;
-	m_wfmt.nSamplesPerSec = m_pwfmt_original->nSamplesPerSec;
-	m_wfmt.cbSize = 0;
-	m_wfmt.nBlockAlign = (unsigned short)(( m_wfmt.nChannels * m_wfmt.wBitsPerSample ) / 8);
-	m_wfmt.nAvgBytesPerSec = m_wfmt.nBlockAlign * m_wfmt.nSamplesPerSec;
+		while(done == FALSE)	{
+			if ( mmioRead(cfp, (char *)&tag, sizeof(uint)) != sizeof(uint) )
+				break;
 
-	// Init some member data from format chunk
-	m_nBlockAlign = m_pwfmt_original->nBlockAlign;
-	m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
+			if ( mmioRead(cfp, (char *)&size, sizeof(uint)) != sizeof(uint) )
+				break;
 
-	// Cue for streaming
-	Cue ();
- 
-	// Successful open
-	goto OPEN_DONE;
+			next_chunk = mmioSeek( cfp, 0, SEEK_CUR );
+			next_chunk += size;
+
+			switch( tag )	{
+			case 0x20746d66:		// The 'fmt ' tag
+				mmioRead( cfp, (char *)&pcmwf, sizeof(PCMWAVEFORMAT) );
+				if ( pcmwf.wf.wFormatTag != WAVE_FORMAT_PCM ) {
+					mmioRead( cfp, (char *)&cbExtra, sizeof(short) );
+				}
+
+				// Allocate memory for WAVEFORMATEX structure + extra bytes
+				if ( (m_pwfmt_original = (WAVEFORMATEX *) malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ){
+					Assert(m_pwfmt_original != NULL);
+					// Copy bytes from temporary format structure
+					memcpy (m_pwfmt_original, &pcmwf, sizeof(pcmwf));
+					m_pwfmt_original->cbSize = cbExtra;
+
+					// Read those extra bytes, append to WAVEFORMATEX structure
+					if (cbExtra != 0) {
+						mmioRead( cfp, (char *)((ubyte *)(m_pwfmt_original) + sizeof(WAVEFORMATEX)), cbExtra );
+					}
+				}
+				else {
+					Int3();		// malloc failed
+					goto OPEN_ERROR;
+				}	
+				break;
+
+			case 0x61746164:		// the 'data' tag
+				m_nDataSize = size;	// This is size of data chunk.  Compressed if ADPCM.
+				m_data_bytes_left = size;
+				m_data_offset = mmioSeek( cfp, 0, SEEK_CUR);
+				done = TRUE;
+				break;
+
+			default:	// unknown, skip it
+				break;
+			}	// end switch
+
+			mmioSeek( cfp, next_chunk, SEEK_SET );
+		}
+
+  		// At this stage, examine source format, and set up WAVEFORATEX structure for DirectSound.
+		// Since DirectSound only supports PCM, force this structure to be PCM compliant.  We will
+		// need to convert data on the fly later if our souce is not PCM
+		switch ( m_pwfmt_original->wFormatTag ) {
+			case WAVE_FORMAT_PCM:
+				m_wave_format = WAVE_FORMAT_PCM;
+				m_wfmt.wBitsPerSample = m_pwfmt_original->wBitsPerSample;
+				break;
+
+			case WAVE_FORMAT_ADPCM:
+				m_wave_format = WAVE_FORMAT_ADPCM;
+				m_wfmt.wBitsPerSample = 16;
+				break;
+
+			default:
+				nprintf(("SOUND", "SOUND => Not supporting %d format for playing wave files\n"));
+				//Int3();
+				goto OPEN_ERROR;
+				break;
+
+		} // end switch
+	            
+		// Set up the WAVEFORMATEX structure to have the right PCM characteristics
+		m_wfmt.wFormatTag = WAVE_FORMAT_PCM;
+		m_wfmt.nChannels = m_pwfmt_original->nChannels;
+		m_wfmt.nSamplesPerSec = m_pwfmt_original->nSamplesPerSec;
+		m_wfmt.cbSize = 0;
+		m_wfmt.nBlockAlign = (unsigned short)(( m_wfmt.nChannels * m_wfmt.wBitsPerSample ) / 8);
+		m_wfmt.nAvgBytesPerSec = m_wfmt.nBlockAlign * m_wfmt.nSamplesPerSec;
+
+		// Init some member data from format chunk
+		m_nBlockAlign = m_pwfmt_original->nBlockAlign;
+		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
+
+		// Cue for streaming
+		Cue ();
+	 
+		// Successful open
+		goto OPEN_DONE;
+	}
     
 OPEN_ERROR:
 	// Handle all errors here
@@ -1330,6 +1370,12 @@ OPEN_DONE:
 BOOL WaveFile::Cue (void)
 {
 	BOOL fRtn = SUCCESS;    // assume success
+
+	//Ogg does its file I/O itself
+	if(m_wave_format == OGG_FORMAT_VORBIS)
+	{
+		return fRtn;
+	}
 	int rval;
 
 	m_total_uncompressed_bytes_read = 0;
@@ -1401,14 +1447,48 @@ int WaveFile::Read(BYTE *pbDest, UINT cbSize, int service)
 			}
 			break;
 
+		case OGG_FORMAT_VORBIS:
+			num_bytes_desired = cbSize;
+			dest_buf = pbDest;
+			break;
+
 		default:
 			nprintf(("SOUND", "SOUND => Not supporting %d format for playing wave files\n"));
 			Int3();
 			break;
 
 	} // end switch
-                
-	num_bytes_read = 0;
+
+	uncompressed_bytes_written = 0;
+	if(m_wave_format == OGG_FORMAT_VORBIS)
+	{
+		int garbage;
+		while(uncompressed_bytes_written < (int) num_bytes_desired)
+		{
+			//Assume little endian for now
+			//Ignores frequency changes, I think we're screwed if that happens anyway.
+			rc = ov_read(&m_ogg_info, (char *) pbDest + uncompressed_bytes_written, num_bytes_desired - uncompressed_bytes_written, 0, m_wfmt.wBitsPerSample / 8, 1, &garbage);
+			if(rc == OV_EBADLINK)
+			{
+				goto READ_ERROR;
+			}
+			else if(rc == 0)
+			{
+				if(uncompressed_bytes_written == 0)
+				{
+					uncompressed_bytes_written = -1;
+				}
+				goto READ_DONE;
+			}
+			else
+			{
+				uncompressed_bytes_written += rc;
+			}
+		}
+
+		goto READ_DONE;
+	}
+    num_bytes_read = 0;
 	convert_len = 0;
 	src_bytes_used = 0;
 
