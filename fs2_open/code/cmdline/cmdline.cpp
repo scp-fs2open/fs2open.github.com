@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.92 $
- * $Date: 2005-01-30 14:09:29 $
- * $Author: taylor $
+ * $Revision: 2.93 $
+ * $Date: 2005-02-10 04:02:37 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2005/01/30 14:09:29  taylor
+ * it's -nosound not -noaudio
+ *
  * Revision 2.91  2005/01/30 12:50:08  taylor
  * merge with Linux/OSX tree - p0130
  *
@@ -747,6 +750,7 @@ Flag exe_params[] =
 	"-loadonlyused",  "Loads only used weapons",		true,	0,					EASY_DEFAULT,		"Experimental",	"",
 
 	"-fps",			  "Show frames per seconds",		false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.fps", 
+	"-pos",			  "Show position of camera",		false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pos",
 	"-window",		  "Run in window",					true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.window", 
 	"-timerbar",	  "",								true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.timerbar", 
 	"-stats",		  "Show statistics",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.stats", 
@@ -785,10 +789,12 @@ cmdline_parm targetinfo_arg("-targetinfo", NULL);	//Adds ship name/class to righ
 cmdline_parm dnoshowvid_arg("-dnoshowvid", NULL); // Allows video streaming
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
 cmdline_parm fps_arg("-fps", NULL);
+cmdline_parm pos_arg("-pos", NULL);
 cmdline_parm cache_ani_arg("-cache_ani", NULL);  
 cmdline_parm d3dmipmap_arg("-d3dmipmap", NULL);
 cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// beams do not pierce shields - Goober5000
 cmdline_parm fov_arg("-fov", NULL);	// comand line FOV -Bobboau
+cmdline_parm clip_dist_arg("-clipdist", NULL);
 cmdline_parm spec_exp_arg("-spec_exp", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_point_arg("-spec_point", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_static_arg("-spec_static", NULL);	// comand line FOV -Bobboau
@@ -888,6 +894,7 @@ int Cmdline_dualscanlines	= 0;
 int Cmdline_targetinfo = 0;
 int Cmdline_dnoshowvid = 0;
 int Cmdline_show_fps = 0;
+int Cmdline_show_pos = 0;
 int Cmdline_safeloading = 0;
 int Cmdline_nospec = 0;
 int Cmdline_noglow = 0;
@@ -939,6 +946,7 @@ static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
 
 float Cmdline_fov = 0.75f;
+float Cmdline_clip_dist = Default_min_draw_distance;
 extern float VIEWER_ZOOM_DEFAULT;
 extern float Viewer_zoom;
 
@@ -1422,6 +1430,11 @@ bool SetCmdlineParams()
 		Cmdline_show_fps = 1;
 	}
 
+	if(pos_arg.found())
+	{
+		Cmdline_show_pos = 1;
+	}
+
 	if ( safeloading_arg.found() ) {
 		Cmdline_safeloading = 1;
 	}
@@ -1448,6 +1461,10 @@ bool SetCmdlineParams()
 
 	if ( fov_arg.found() ) {
 		Viewer_zoom = VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
+	}
+
+	if( clip_dist_arg.found() ) {
+		Min_draw_distance = Cmdline_clip_dist = clip_dist_arg.get_float();
 	}
 
 	if (orb_radar.found())
