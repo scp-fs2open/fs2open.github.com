@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.76 $
- * $Date: 2005-02-15 00:06:27 $
- * $Author: taylor $
+ * $Revision: 2.77 $
+ * $Date: 2005-02-18 08:05:16 $
+ * $Author: wmcoolmon $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2005/02/15 00:06:27  taylor
+ * clean up some model related globals
+ * code to disable individual thruster glows
+ * fix issue where 1 extra OGL light pass didn't render
+ *
  * Revision 2.75  2005/02/10 04:01:42  wmcoolmon
  * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
  *
@@ -2265,7 +2270,8 @@ int gr_d3d_make_line_buffer(line_list *list){
 //kills buffers dead!
 void gr_d3d_destroy_buffer(int idx){
 	if(idx < 0)return;
-	vertex_buffer[idx].buffer->Release();
+	if(vertex_buffer[idx].buffer != NULL)
+		vertex_buffer[idx].buffer->Release();
 	vertex_buffer[idx].ocupied = false;
 	vertex_buffer[idx].FVF = 0;
 	vertex_buffer[idx].n_verts = 0;
