@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-02-05 04:15:35 $
+ * $Revision: 2.55 $
+ * $Date: 2005-02-08 23:49:59 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/02/05 04:15:35  taylor
+ * more post merge happiness
+ *
  * Revision 2.53  2005/02/04 23:29:32  taylor
  * merge with Linux/OSX tree - p0204-3
  *
@@ -988,10 +991,8 @@ static int Model_signature = 0;
 void generate_vertex_buffers(bsp_info*, polymodel*);
 
 // Free up a model, getting rid of all its memory
-// Can't be called from outside of model code because more
-// than one person might be using this model so we can't free 
-// it.
-static void model_unload(int modelnum, int force = 0)
+// With the basic page in system this can be called from outside of modelread.cpp
+void model_unload(int modelnum, int force)
 {
 	int i,j;
 
@@ -1118,6 +1119,7 @@ void model_free_all()
 	mprintf(( "Freeing all existing models...\n" ));
 
 	for (i=0;i<MAX_POLYGON_MODELS;i++) {
+		// forcefully unload all loaded models (be careful with this)
 		model_unload(i, 1);		
 	}
 

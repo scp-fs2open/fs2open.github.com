@@ -1,6 +1,7 @@
 Makefile
 Makefile.in
 configure
+FS2_Open.prj
 FS2_Open.prj.bak
 FS2_Open.pws
 .tm_project.cache
@@ -15,6 +16,8 @@ missing
 mkinstalldirs
 autom4te*
 aclocal.m4
+Freespace2.dsp
+Freespace2.dsw
 Freespace2.ncb
 Freespace2.opt
 Freespace2.plg
