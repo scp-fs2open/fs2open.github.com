@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.5 $
- * $Date: 2002-11-20 21:22:31 $
- * $Author: DTP $
+ * $Revision: 2.6 $
+ * $Date: 2002-11-28 00:00:37 $
+ * $Author: sesquipedalian $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/11/20 21:22:31  DTP
+ * DTP; fix at line 6785 in parse/SEXP.cpp, a forgotten "{", when the is tagged thing was Fixed
+ *
  * Revision 2.4  2002/11/19 02:15:50  sesquipedalian
  * Adding in EdrickV's fix to the is-tagged sexp.
  *
@@ -492,7 +495,7 @@ sexp_oper Operators[] = {
 	{ "send-random-message",		OP_SEND_RANDOM_MESSAGE,			3, INT_MAX,	},
 	{ "transfer-cargo",				OP_TRANSFER_CARGO,				2, 2,			},
 	{ "exchange-cargo",				OP_EXCHANGE_CARGO,				2, 2,			},
-	{ "end-misison-delay",			OP_END_MISSION_DELAY,			1, 1,			},
+	{ "end-mission",			OP_END_MISSION,			0, 0,			}, //-Sesquipedalian
 	{ "good-rearm-time",				OP_GOOD_REARM_TIME,				2,	2,			},
 	{ "grant-promotion",				OP_GRANT_PROMOTION,				0, 0,			},
 	{ "grant-medal",					OP_GRANT_MEDAL,					1, 1,			},
@@ -5109,14 +5112,17 @@ void sexp_cargo_no_deplete( int n )
 
 }
 
-// sexpression to end the mission after N seconds!
-void sexp_end_mission_delay( int n )
+// sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
+void sexp_end_mission( int n )
 {
-	//int delay;
-
-	//delay = atoi(CTEXT(n));
-	//mission_parse_set_end_time( delay );
-	mprintf(("Not ending mission -- end-mission sexpression no longer works!\n"));
+		// we have a special debriefing screen for multiplayer furballs
+	if((Game_mode & GM_MULTIPLAYER) && (The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)){
+		gameseq_post_event( GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
+	}
+	// do the normal debriefing for all other situations
+	else {
+		gameseq_post_event(GS_EVENT_DEBRIEF);
+	}
 }
 
 // funciton to toggle the status bit for the AI code which tells the AI if it is a good time
@@ -7806,9 +7812,10 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
-			case OP_END_MISSION_DELAY:
-				sexp_end_mission_delay( node );
-				sexp_val = 1;
+			//-Sesquipedalian
+			case OP_END_MISSION: 
+                        sexp_end_mission( node );
+                        sexp_val = 1;
 				break;
 
 				// sexpressions for setting flag for good/bad time for someone to reasm
@@ -8328,7 +8335,7 @@ int query_operator_return_type(int op)
 		case OP_TRAINING_MSG:
 		case OP_SET_TRAINING_CONTEXT_FLY_PATH:
 		case OP_SET_TRAINING_CONTEXT_SPEED:
-		case OP_END_MISSION_DELAY:
+		case OP_END_MISSION:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_GOOD_REARM_TIME:
 		case OP_GRANT_PROMOTION:
@@ -8438,6 +8445,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GRANT_PROMOTION:
 		case OP_WAS_PROMOTION_GRANTED:
 		case OP_RED_ALERT:
+		case OP_END_MISSION:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -8458,7 +8466,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_HAS_TIME_ELAPSED:
 		case OP_SPEED:
 		case OP_SET_TRAINING_CONTEXT_SPEED:
-		case OP_END_MISSION_DELAY:
 		case OP_SPECIAL_CHECK:
 		case OP_AI_WARP_OUT:
 		case OP_TEAM_SCORE:

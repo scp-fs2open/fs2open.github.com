@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.3 $
+ * $Revision: 2.4 $
  * $Author: sesquipedalian $
- * $Date: 2002-10-29 22:41:48 $
+ * $Date: 2002-11-28 00:00:37 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/29 22:41:48  sesquipedalian
+ * no message
+ *
  * Revision 2.2  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -537,6 +540,7 @@
 #define OP_SHIELDS_ON					(0x0058 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_SHIELDS_OFF					(0x0059 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_CHANGE_AI_LEVEL					(0x0060 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
+#define OP_END_MISSION					(0x0061 | OP_CATAGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //-Sesquipedalian. replaces end-mission-delay, which did nothing
 
 
 // debugging sexpressions
@@ -583,7 +587,6 @@
 #define OP_PREVIOUS_GOAL_INCOMPLETE			(0x0014 | OP_CATAGORY_UNLISTED)
 #define OP_PREVIOUS_EVENT_INCOMPLETE		(0x0015 | OP_CATAGORY_UNLISTED)
 #define OP_AI_WARP								(0x0016 | OP_CATAGORY_UNLISTED)
-#define OP_END_MISSION_DELAY					(0x0017 | OP_CATAGORY_UNLISTED)
 #define OP_IS_CARGO_KNOWN						(0x001c | OP_CATAGORY_UNLISTED)
 #define OP_COND									(0x001e | OP_CATAGORY_UNLISTED)
 #define OP_END_OF_CAMPAIGN						(0x001f | OP_CATAGORY_UNLISTED)
