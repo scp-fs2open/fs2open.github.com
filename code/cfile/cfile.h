@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.3 $
- * $Date: 2002-10-27 23:59:28 $
+ * $Revision: 2.4 $
+ * $Date: 2002-11-02 23:04:46 $
  * $Author: DTP $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/27 23:59:28  DTP
+ * DTP; started basic implementation of mod-support
+ * plain files only for now. fs2_open.exe -mod X will look for files in fs2/ X /all-legal-subdirectories. no checking/creating dirs yet. directories must be there.
+ *
  * Revision 2.2  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -453,15 +457,15 @@ typedef struct {
 #define CF_TYPE_MOD_CACHE					61
 #define CF_TYPE_MOD_PLAYERS					62
 #define CF_TYPE_MOD_SINGLE_PLAYERS		63
-#define CF_TYPE_MOD_MULTI_PLAYERS			65
-#define CF_TYPE_MOD_MULTI_CACHE			66
-#define CF_TYPE_MOD_CONFIG					66
-#define CF_TYPE_MOD_SQUAD_IMAGES_MAIN	67
-#define CF_TYPE_MOD_DEMOS					68
-#define CF_TYPE_MOD_CBANIMS					69
-#define CF_TYPE_MOD_INTEL_ANIMS			70
+#define CF_TYPE_MOD_MULTI_PLAYERS			64
+#define CF_TYPE_MOD_MULTI_CACHE			65
+#define CF_TYPE_MOD_CONFIG					67
+#define CF_TYPE_MOD_SQUAD_IMAGES_MAIN	68
+#define CF_TYPE_MOD_DEMOS					69
+#define CF_TYPE_MOD_CBANIMS					70
+#define CF_TYPE_MOD_INTEL_ANIMS			71
 
-#define CF_MAX_PATH_TYPES				71			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
+#define CF_MAX_PATH_TYPES				72			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
 
 
 // TRUE if type is specified and valid
