@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.20 $
+ * $Date: 2005-01-09 22:27:38 $
+ * $Author: wmcoolmon $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.18  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -562,7 +565,7 @@ typedef struct {
 	int	has_anim;	// flag to indicate the presence of an animation for this item
 } tech_list_entry;
 
-static tech_list_entry Ship_list[MAX_SHIP_TYPES];
+static tech_list_entry *Ship_list = NULL;
 static int Ship_list_size = 0;
 static tech_list_entry Weapon_list[MAX_WEAPON_TYPES];
 static int Weapon_list_size = 0;
@@ -1082,6 +1085,13 @@ void techroom_start_anim()
 void techroom_change_tab(int num)
 {
 	int i, multi = 0, mask, font_height, max_num_entries_viewable;	
+
+	if(Ship_list != NULL)
+	{
+		delete[] Ship_list;
+	}
+
+	Ship_list = new tech_list_entry[Num_ship_types];
 
 	Tab = num;
 	// Assert(Current_list_size >= 0);
@@ -1609,6 +1619,11 @@ void techroom_close()
 	// restore detail settings
 	Detail.detail_distance = Tech_detail_backup;
 	Detail.hardware_textures = Tech_texture_backup;
+
+	if(Ship_list != NULL)
+	{
+		delete[] Ship_list;
+	}
 }
 
 void techroom_do_frame(float frametime)
