@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2004-03-08 15:06:24 $
+ * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.12  2003/11/13 03:59:54  Kazan
  * PXO_SID changed from unsigned to signed
  *
@@ -439,7 +443,8 @@ void multi_init()
 	multi_log_init();
 
 	// load up common multiplayer icons
-	multi_load_common_icons();	
+	if (!Is_standalone)
+		multi_load_common_icons();	
 }
 
 // this is an important function which re-initializes any variables required in multiplayer games. 
@@ -1350,63 +1355,72 @@ void multi_do_frame()
 {	
 	/* FS2NetD Heartbeat Continue */
 
-	if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
+
+	static int LastSend = -1;
+	if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
 	{
-
-		static int LastSend = -1;
-		if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
+		// full initialization of datadata
+		if (PXO_port == -1)
 		{
-			// full initialization of datadata
-			if (PXO_port == -1)
+			CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
+			if(file == NULL){
+				ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
+				return;
+			}
+				
+
+			char Port[32];
+			if (cfgets(PXO_Server, 32, file) == NULL)
 			{
-				CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
-				if(file == NULL){
-					ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
-					return;
-				}
-					
-
-				char Port[32];
-				if (cfgets(PXO_Server, 32, file) == NULL)
-				{
-					ml_printf("Network", "No Masterserver definition!\n");
-					return;
-				}
-
-				if (strstr(PXO_Server, "\n"))
-					*strstr(PXO_Server, "\n") = '\0';
-
-				if (cfgets(Port, 32, file) != NULL)
-					PXO_port = atoi(Port);
-				else
-					PXO_port = 12000;
+				ml_printf("Network", "No Masterserver definition!\n");
+				return;
 			}
 
-			//FS2OpenPXO code
-			if (!FS2OpenPXO_Socket.isInitialized())
-			{
+			if (strstr(PXO_Server, "\n"))
+				*strstr(PXO_Server, "\n") = '\0';
+
+			if (cfgets(Port, 32, file) != NULL)
+				PXO_port = atoi(Port);
+			else
+				PXO_port = 12000;
+		}
+
+		//FS2OpenPXO code
+		if (!FS2OpenPXO_Socket.isInitialized())
+		{
 #if !defined(PXO_TCP)
-					if (!FS2OpenPXO_Socket.InitSocket())
+				if (!FS2OpenPXO_Socket.InitSocket())
 #else
-					if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
+				if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
 #endif
-					{
-						ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
-					}
-			}
+				{
+					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+				}
+		}
 
-			// -------------------- send
+		// -------------------- send
 
 
-			if ((clock() - LastSend) >= 60000 || LastSend == -1)
+		if ((clock() - LastSend) >= 60000 || LastSend == -1)
+		{
+			LastSend = clock();
+
+			// finish implementation!
+			//void SendHeartBeat(const char* masterserver, int targetport, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
+			if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
 			{
-				LastSend = clock();
-
-				// finish implementation!
-				//void SendHeartBeat(const char* masterserver, int targetport, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
-
-				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, multi_get_connection_speed(), Netgame.game_state, Netgame.type_flags, Netgame.max_players, Netgame.server_addr.port);
+	
+				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, Netgame.mission_name, Netgame.title, Netgame.flags, Netgame.server_addr.port, Netgame.max_players);
 			}
+
+			if (FS2OpenPXO_Socket.DataReady())
+			{
+
+				ml_printf("Network", "FS2netD received PONG: Time diff %d\n", GetPingReply(FS2OpenPXO_Socket));
+			}
+
+			Ping(PXO_Server, FS2OpenPXO_Socket);
+
 		}
 	}
 

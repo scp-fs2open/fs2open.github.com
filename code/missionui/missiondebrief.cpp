@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-03-05 09:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2004-03-08 15:06:24 $
+ * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.17  2003/11/13 03:59:54  Kazan
  * PXO_SID changed from unsigned to signed
  *
@@ -1266,6 +1270,7 @@ void debrief_ui_init()
 		List_region.create(&Debrief_ui_window, "", Debrief_list_coords[gr_screen.res][0], Debrief_list_coords[gr_screen.res][1], Debrief_list_coords[gr_screen.res][2], Debrief_list_coords[gr_screen.res][3], 0, 1);
 		List_region.hide();
 
+		// ***** FS2NetD Debrief ****
 		unsigned int CurrentMissionChsum;
 
 		
