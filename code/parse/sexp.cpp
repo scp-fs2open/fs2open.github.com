@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.101 $
- * $Date: 2004-08-23 04:32:05 $
+ * $Revision: 2.102 $
+ * $Date: 2004-09-02 04:02:44 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2004/08/23 04:32:05  Goober5000
+ * ship-tag and ship-untag sexps
+ * --Goober5000
+ *
  * Revision 2.100  2004/08/23 04:00:15  Goober5000
  * ship-tag and ship-untag
  * --Goober5000
@@ -8643,7 +8647,7 @@ void sexp_ships_visible( int n, int visible )
 // Goober5000
 void sexp_ship_tag( int n, int tag )
 {
-	int ship_num, tag_level, tag_time, ssm_index;
+	int ship_num, tag_level, tag_time, ssm_index(0);
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
 	if ( mission_log_get_time(LOG_SHIP_DEPART, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, CTEXT(n), NULL, NULL) )
