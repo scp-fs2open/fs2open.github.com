@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.19 $
- * $Date: 2002-12-27 20:16:18 $
- * $Author: phreak $
+ * $Revision: 2.20 $
+ * $Date: 2002-12-31 07:26:40 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2002/12/27 20:16:18  phreak
+ * added damage-escort-list as a new sexp
+ *
  * Revision 2.18  2002/12/27 02:57:51  Goober5000
  * removed the existing stealth sexps and replaced them with the following...
  * ship-stealthy
@@ -636,7 +639,8 @@ sexp_oper Operators[] = {
 
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
-	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,		3,INT_MAX},					//phreak
+	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,		3, INT_MAX },					//phreak
+	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
@@ -6644,7 +6648,7 @@ void sexp_ships_stealthy(int n, int stealthy)
 			{
 				Ship_info[Ships[num].ship_info_index].flags &= ~SIF_STEALTH;
 
-				// (what is this all about? -- Goober5000)
+				// add to escort list because we became visible
 				if (Ships[num].flags & SF_ESCORT)
 				{
 					// SEND add escort request
@@ -6703,6 +6707,13 @@ void sexp_friendly_stealth_invisible(int n, int invisible)
 			else
 			{
 				Ship_info[Ships[num].ship_info_index].flags2 &= ~SIF2_FRIENDLY_STEALTH_INVISIBLE;
+
+				// add to escort list because we became visible
+				if (Ships[num].flags & SF_ESCORT)
+				{
+					// SEND add escort request
+					hud_add_ship_to_escort(Ships[num].objnum, 1);
+				}
 			}
 		}
 		else
@@ -7010,10 +7021,6 @@ int sexp_primaries_depleted(int node)
 	if (shipp->objnum < 0) {
 		return 0;
 	}
-
-	// see if ship has ballistic primary weapons
-	if (!(Ship_info[shipp->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES))
-		return 0;
 
 	// get num primary banks
 	num_banks = shipp->weapons.num_primary_banks;
@@ -7820,24 +7827,20 @@ void sexp_damage_escort_list(int node)
 	n=CDR(CDR(node));
 	
 	//loop through the ships
-	while (n!=-1)
+	for ( ; n != -1; n = CDR(n) )
 	{
 		shipnum=ship_name_lookup(CTEXT(n));
 		
 		//it may be dead
 		if (shipnum < 0)
-		{
-			n=CDR(n);
 			continue;
-		}
+
 		if (Ships[shipnum].objnum < 0)
-		{
-			n=CDR(n);
 			continue;
-		}
+
+		shipp=&Ships[shipnum];
 
 		//calc hull integrity and compare
-		shipp=&Ships[shipnum];
 		current_hull_pct=Objects[shipp->objnum].hull_strength/Ship_info[shipp->ship_info_index].initial_hull_strength;
 
 		if (current_hull_pct < smallest_hull_pct)
@@ -7855,10 +7858,89 @@ void sexp_damage_escort_list(int node)
 			shipp->escort_priority=priority2;
 			hud_add_ship_to_escort(Ships[shipnum].objnum,1);
 		}
-
-		//go to next node
-		n=CDR(n);
 	}
+}
+
+// Goober5000
+// set *all* the escort priorities of ships in escort list as follows: most damaged ship gets
+// first priority in the argument list, next damaged gets next priority, etc.; if there are more
+// ships than priorities, all remaining ships get the final priority on the list
+// -- As indicated in the argument specification, there must be at least one argument but no more
+// than MAX_COMPLETE_ESCORT_LIST arguments
+void sexp_damage_escort_list_all(int n)
+{
+	typedef struct my_escort_ship
+	{
+		int index;
+		float hull;
+	} my_escort_ship;
+
+	int priority[MAX_COMPLETE_ESCORT_LIST];
+	my_escort_ship escort_ship[MAX_COMPLETE_ESCORT_LIST];
+	int i, j, num_escort_ships, num_priorities, temp_i;
+	float temp_f;
+	ship *shipp;
+
+	// build list of priorities
+	num_priorities = 0;
+	for ( ; n != 1; n = CDR(n) )
+	{
+		priority[num_priorities] = atoi(CTEXT(n));
+		num_priorities++;
+	}
+
+	// build custom list of escort ships
+	num_escort_ships = 0;
+	for (i = 0; i < MAX_SHIPS; i++)
+	{
+		shipp = &Ships[i];
+
+		// make sure it exists
+		if ( shipp->objnum < 0 )
+			continue;
+
+		// make sure it's on the escort list
+		if ( !(shipp->flags & SF_ESCORT) )
+			continue;
+
+		// set index
+		escort_ship[num_escort_ships].index = i;
+
+		// calc and set hull integrity
+		escort_ship[num_escort_ships].hull = Objects[shipp->objnum].hull_strength / Ship_info[shipp->ship_info_index].initial_hull_strength;
+
+		num_escort_ships++;
+	}
+
+	// sort it bubbly, lowest hull to highest hull
+	for (i = 0; i < num_escort_ships; i++)
+	{
+		for (j = 0; j < i; j++)
+		{
+			if (escort_ship[i].hull < escort_ship[j].hull)
+			{
+				// swap
+				temp_i = escort_ship[i].index;
+				temp_f = escort_ship[i].hull;
+				escort_ship[i].index = escort_ship[j].index;
+				escort_ship[i].hull = escort_ship[j].hull;
+				escort_ship[j].index = temp_i;
+				escort_ship[j].hull = temp_f;
+			}
+		}
+	}
+
+	// loop through and assign priorities
+	for (i = 0; i < num_escort_ships; i++)
+	{
+		if (i >= num_priorities)
+			Ships[escort_ship[i].index].escort_priority = priority[num_priorities - 1];
+		else
+			Ships[escort_ship[i].index].escort_priority = priority[i];
+	}
+
+	// redo the escort list
+	hud_setup_escort_list();
 }
 
 void sexp_awacs_set_radius(int node)
@@ -9199,8 +9281,13 @@ int eval_sexp(int cur_node)
 				break;
 			
 			case OP_DAMAGED_ESCORT_LIST:
-				sexp_val=1;
+				sexp_val = 1;
 				sexp_damage_escort_list(node);
+				break;
+
+			case OP_DAMAGED_ESCORT_LIST_ALL:
+				sexp_val = 1;
+				sexp_damage_escort_list_all(node);
 				break;
 
 			case OP_AWACS_SET_RADIUS:
@@ -9568,6 +9655,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_LOCK_ALL:
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_DAMAGED_ESCORT_LIST:
+		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_AWACS_SET_RADIUS:
 		case OP_SEND_MESSAGE_LIST:
 		case OP_CAP_WAYPOINT_SPEED:
@@ -10285,6 +10373,10 @@ int query_operator_argument_type(int op, int argnum)
 			{
 				return OPF_SHIP;
 			}
+
+		case OP_DAMAGED_ESCORT_LIST_ALL:
+			return OPF_POSITIVE;
+
 		default:
 			Int3();
 	}
@@ -11050,6 +11142,7 @@ int num_eval(int node)
 	}
 }
 
+// Goober5000 - for FRED2 menu subcategories
 int get_subcategory(int sexp_id)
 {
 	switch(sexp_id)
@@ -11139,6 +11232,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_DAMAGED_ESCORT_LIST:
+		case OP_DAMAGED_ESCORT_LIST_ALL:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 		
 		default:
