@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.29 $
- * $Date: 2004-04-26 12:41:46 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2004-05-25 00:37:26 $
+ * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
@@ -616,7 +616,7 @@ typedef struct screen {
 	void (*gf_flip_window)(uint _hdc, int x, int y, int w, int h );
 
 	// Sets the current palette
-	void (*gf_set_palette)(ubyte * new_pal, int restrict_alphacolor = 0);
+	void (*gf_set_palette)(ubyte * new_pal, int restrict_alphacolor);
 
 	// Fade the screen in/out
 	void (*gf_fade_in)(int instantaneous);
@@ -635,13 +635,13 @@ typedef struct screen {
 	void (*gf_get_color)( int * r, int * g, int * b );
 	void (*gf_init_color)( color * dst, int r, int g, int b );
 
-	void (*gf_init_alphacolor)( color * dst, int r, int g, int b, int alpha, int type=AC_TYPE_HUD );
+	void (*gf_init_alphacolor)( color * dst, int r, int g, int b, int alpha, int type );
 	void (*gf_set_color_fast)( color * dst );
 
 	void (*gf_set_font)(int fontnum);
 
 	// Sets the current bitmap
-	void (*gf_set_bitmap)( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, int bitbltmode=GR_BITBLT_MODE_NORMAL, float alpha=1.0f, int sx = -1, int sy = -1 );
+	void (*gf_set_bitmap)( int bitmap_num, int alphablend, int bitbltmode, float alpha, int sx, int sy);
 
 	// Call this to create a shader.   
 	// This function takes a while, so don't call it once a frame!
@@ -680,7 +680,7 @@ typedef struct screen {
 	void (*gf_circle)(int x, int y, int r);
 
 	// Integer line. Used to draw a fast but pixely line.  
-	void (*gf_line)(int x1, int y1, int x2, int y2, bool resize = false);
+	void (*gf_line)(int x1, int y1, int x2, int y2, bool resize);
 
 	// Draws an antialiased line is the current color is an 
 	// alphacolor, otherwise just draws a fast line.  This
@@ -751,7 +751,7 @@ typedef struct screen {
 	void (*gf_get_region)(int front, int w, int h, ubyte *data);
 
 	// set fog attributes
-	void (*gf_fog_set)(int fog_mode, int r, int g, int b, float fog_near = -1.0f, float fog_far = -1.0f);	
+	void (*gf_fog_set)(int fog_mode, int r, int g, int b, float fog_near, float fog_far);	
 
 	// get the current pixel color in the framebuffer 
 	void (*gf_get_pixel)(int x, int y, int *r, int *g, int *b);
@@ -766,40 +766,40 @@ typedef struct screen {
 	void (*gf_filter_set)(int filter);
 
 	// set a texture into cache. for sectioned bitmaps, pass in sx and sy to set that particular section of the bitmap
-	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0);	
-
-	// set the color to be used when clearing the background
-	void (*gf_set_clear_color)(int r, int g, int b);
+	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force);	
 
 	// preload a bitmap into texture memory
 	int (*gf_preload)(int bitmap_num, int is_aabitmap);
+
+	// set the color to be used when clearing the background
+	void (*gf_set_clear_color)(int r, int g, int b);
 
 	// Here be the bitmap functions
 	int (*gf_bm_get_next_handle)();
 	void (*gf_bm_close)();
 	void (*gf_bm_init)();
 	void (*gf_bm_get_frame_usage)(int *ntotal, int *nnew);
-	int (*gf_bm_create)( int bpp, int w, int h, void * data, int flags = 0);
+	int (*gf_bm_create)( int bpp, int w, int h, void * data, int flags );
 	int (*gf_bm_load)( char * real_filename );
 	int (*gf_bm_load_duplicate)(char *filename);
-	int (*gf_bm_load_animation)( char *real_filename, int *nframes, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
-	void (*gf_bm_get_info)( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL, bitmap_section_info **sections = NULL);
+	int (*gf_bm_load_animation)( char *real_filename, int *nframes, int *fps, int can_drop_frames, int dir_type);
+	void (*gf_bm_get_info)( int bitmapnum, int *w, int * h, ubyte * flags, int *nframes, int *fps, bitmap_section_info **sections);
 	bitmap * (*gf_bm_lock)( int handle, ubyte bpp, ubyte flags );
 	void (*gf_bm_unlock)( int handle );
 	void (*gf_bm_get_palette)(int handle, ubyte *pal, char *name);
 	void (*gf_bm_release)(int handle);
 	int (*gf_bm_unload)( int handle );
 	void (*gf_bm_unload_all)();
-	void (*gf_bm_page_in_texture)( int bitmapnum, int nframes = 1);
+	void (*gf_bm_page_in_texture)( int bitmapnum, int nframes);
 	void (*gf_bm_page_in_start)();
 	void (*gf_bm_page_in_stop)();
 	int (*gf_bm_get_cache_slot)( int bitmap_id, int separate_ani_frames );
 	void (*gf_bm_get_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 	void (*gf_bm_get_section_size)(int bitmapnum, int sx, int sy, int *w, int *h);
 
-	void (*gf_bm_page_in_nondarkening_texture)( int bitmapnum, int nframes = 1);
-	void (*gf_bm_page_in_xparent_texture)( int bitmapnum, int nframes = 1);
-	void (*gf_bm_page_in_aabitmap)( int bitmapnum, int nframes = 1);
+	void (*gf_bm_page_in_nondarkening_texture)( int bitmapnum, int nframes);
+	void (*gf_bm_page_in_xparent_texture)( int bitmapnum, int nframes);
+	void (*gf_bm_page_in_aabitmap)( int bitmapnum, int nframes);
 
 	void (*gf_translate_texture_matrix)(int unit, vector *shift);
 	void (*gf_push_texture_matrix)(int unit);
@@ -857,7 +857,7 @@ extern int Gr_cpu;
 extern int Gr_mmx;
 
 // handy macro
-#define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(0);
+#define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(0);
 
 //Window's interface to set up graphics:
 //--------------------------------------
@@ -942,12 +942,21 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define gr_set_font			GR_CALL(gr_screen.gf_set_font)
 
 #define gr_init_color		GR_CALL(gr_screen.gf_init_color)
-#define gr_init_alphacolor	GR_CALL(gr_screen.gf_init_alphacolor)
+//#define gr_init_alphacolor	GR_CALL(gr_screen.gf_init_alphacolor)
+__inline void gr_init_alphacolor( color * dst, int r, int g, int b, int alpha, int type=AC_TYPE_HUD )
+{
+	(*gr_screen.gf_init_alphacolor)(dst, r, g, b, alpha,type );
+}
+
 #define gr_set_color			GR_CALL(gr_screen.gf_set_color)
 #define gr_get_color			GR_CALL(gr_screen.gf_get_color)
 #define gr_set_color_fast	GR_CALL(gr_screen.gf_set_color_fast)
 
-#define gr_set_bitmap		GR_CALL(gr_screen.gf_set_bitmap)
+//#define gr_set_bitmap			GR_CALL(gr_screen.gf_set_bitmap)
+__inline void gr_set_bitmap( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, int bitbltmode=GR_BITBLT_MODE_NORMAL, float alpha=1.0f, int sx = -1, int sy = -1 )
+{
+	(*gr_screen.gf_set_bitmap)(bitmap_num, alphablend, bitbltmode, alpha, sx, sy);
+}
 
 #define gr_create_shader	GR_CALL(gr_screen.gf_create_shader)
 #define gr_set_shader		GR_CALL(gr_screen.gf_set_shader)
@@ -960,7 +969,11 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 
 #define gr_circle				GR_CALL(gr_screen.gf_circle)
 
-#define gr_line				GR_CALL(gr_screen.gf_line)
+//#define gr_line				GR_CALL(gr_screen.gf_line)
+__inline void gr_line(int x1, int y1, int x2, int y2, bool resize = false)
+{
+	(*gr_screen.gf_line)(x1, y1, x2, y2, resize);
+}
 #define gr_aaline				GR_CALL(gr_screen.gf_aaline)
 #define gr_pixel				GR_CALL(gr_screen.gf_pixel)
 #define gr_scaler				GR_CALL(gr_screen.gf_scaler)
@@ -994,7 +1007,11 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 
 #define gr_get_region		GR_CALL(gr_screen.gf_get_region)
 
-#define gr_fog_set			GR_CALL(gr_screen.gf_fog_set)
+//#define gr_fog_set			GR_CALL(gr_screen.gf_fog_set)
+__inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.0f, float fog_far = -1.0f)
+{
+	(*gr_screen.gf_fog_set)(fog_mode, r, g, b, fog_near, fog_far);
+}
 
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
 
@@ -1002,11 +1019,15 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 
 #define gr_filter_set		GR_CALL(gr_screen.gf_filter_set)
 
-#define gr_tcache_set		GR_CALL(gr_screen.gf_tcache_set)
-
-#define gr_set_clear_color	GR_CALL(gr_screen.gf_set_clear_color)
+//#define gr_tcache_set		GR_CALL(gr_screen.gf_tcache_set)
+__inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0)
+{
+	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force);
+}
 
 #define gr_preload			GR_CALL(gr_screen.gf_preload)
+
+#define gr_set_clear_color	GR_CALL(gr_screen.gf_set_clear_color)
 
 #define gr_translate_texture_matrix		GR_CALL(gr_screen.gf_translate_texture_matrix)
 #define gr_push_texture_matrix			GR_CALL(gr_screen.gf_push_texture_matrix)
@@ -1021,15 +1042,27 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define bm_create                  GR_CALL(*gr_screen.gf_bm_create)
 #define bm_load                    GR_CALL(*gr_screen.gf_bm_load)
 #define bm_load_duplicate          GR_CALL(*gr_screen.gf_bm_load_duplicate)
-#define bm_load_animation          GR_CALL(*gr_screen.gf_bm_load_animation)
-#define bm_get_info                GR_CALL(*gr_screen.gf_bm_get_info)
+//#define bm_load_animation          GR_CALL(*gr_screen.gf_bm_load_animation)
+__inline int bm_load_animation( char *real_filename, int *nframes, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY)
+{
+	return (*gr_screen.gf_bm_load_animation)(real_filename, nframes, fps, can_drop_frames, dir_type);
+}
+//#define bm_get_info                GR_CALL(*gr_screen.gf_bm_get_info)
+__inline void bm_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL, bitmap_section_info **sections = NULL)
+{
+	(*gr_screen.gf_bm_get_info)( bitmapnum, w, h, flags, nframes, fps, sections);
+}
 #define bm_lock                    GR_CALL(*gr_screen.gf_bm_lock)
 #define bm_unlock                  GR_CALL(*gr_screen.gf_bm_unlock)
 #define bm_get_palette             GR_CALL(*gr_screen.gf_bm_get_palette)
 #define bm_release                 GR_CALL(*gr_screen.gf_bm_release)
 #define bm_unload                  GR_CALL(*gr_screen.gf_bm_unload)
 #define bm_unload_all              GR_CALL(*gr_screen.gf_bm_unload_all)
-#define bm_page_in_texture         GR_CALL(*gr_screen.gf_bm_page_in_texture)
+//#define bm_page_in_texture         GR_CALL(*gr_screen.gf_bm_page_in_texture)
+__inline void bm_page_in_texture( int bitmapnum, int nframes = 1)
+{
+	(*gr_screen.gf_bm_page_in_texture)(bitmapnum, nframes);
+}
 #define bm_page_in_start           GR_CALL(*gr_screen.gf_bm_page_in_start)
 #define bm_page_in_stop            GR_CALL(*gr_screen.gf_bm_page_in_stop)
 #define bm_get_cache_slot          GR_CALL(*gr_screen.gf_bm_get_cache_slot)
@@ -1037,7 +1070,11 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define bm_get_section_size        GR_CALL(*gr_screen.gf_bm_get_section_size)
 
 #define bm_page_in_nondarkening_texture  GR_CALL(*gr_screen.gf_bm_page_in_nondarkening_texture)
-#define bm_page_in_xparent_texture 		 GR_CALL(*gr_screen.gf_bm_page_in_xparent_texture)     
+//#define bm_page_in_xparent_texture 		 GR_CALL(*gr_screen.gf_bm_page_in_xparent_texture)     
+__inline void bm_page_in_xparent_texture( int bitmapnum, int nframes = 1)
+{
+	(*gr_screen.gf_bm_page_in_xparent_texture)(bitmapnum, nframes);
+}
 #define bm_page_in_aabitmap				 GR_CALL(*gr_screen.gf_bm_page_in_aabitmap)            
 
 #define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            

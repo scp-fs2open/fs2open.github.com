@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.76 $
- * $Date: 2004-05-11 16:48:19 $
- * $Author: phreak $
+ * $Revision: 2.77 $
+ * $Date: 2004-05-25 00:37:26 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2004/05/11 16:48:19  phreak
+ * fixed the white boxes appearing on unlit bitmaps
+ *
  * Revision 2.75  2004/05/02 16:01:38  taylor
  * don't use HTL line fix with Fred
  *
@@ -1844,7 +1847,7 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale )
 {
-	gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+	gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
 	GLOWMAP=-1;
 
 	if ( !gr_tcache_set(SPECMAP, tmap_type, u_scale, v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
@@ -2027,7 +2030,7 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 	//maybe do a spec map
 	if ( (SPECMAP > -1) && !Cmdline_nospec && (flags & TMAP_FLAG_TEXTURED) )
 	{
-		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
 		GLOWMAP=-1;
 
 		if ( !gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
@@ -2863,9 +2866,8 @@ void gr_opengl_bitmap_internal(int x,int y,int w,int h,int sx,int sy)
 	int size;
 
 
-	int htemp=(int)pow(2,ceil(log10(h)/log10(2)));
-	int wtemp=(int)pow(2,ceil(log10(w)/log10(2)));
-
+	int htemp=(int)pow((double)2,ceil(log10((double)h)/log10((double)2)));
+	int wtemp=(int)pow((double)2,ceil(log10((double)w)/log10((double)2)));
 	//gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
 
 	glGenTextures(1, &tex);

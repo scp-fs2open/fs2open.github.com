@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2004-05-25 00:37:49 $
+ * $Author: wmcoolmon $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.10  2004/02/04 08:41:04  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -538,7 +542,7 @@ void hud_ship_icon_page_in(ship_info *sip)
 
 	int i;
 	for (i=0; i<sgp->num_frames; i++ )	{
-		bm_page_in_aabitmap(sgp->first_frame+i);
+		bm_page_in_aabitmap(sgp->first_frame+i, 1);
 	}
 
 }
