@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.36 $
- * $Date: 2003-10-14 17:39:15 $
- * $Author: randomtiger $
+ * $Revision: 2.37 $
+ * $Date: 2003-10-18 01:59:02 $
+ * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/10/14 17:39:15  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.35  2003/10/13 05:57:48  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
  * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
@@ -3260,7 +3270,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		return;
 	}
 
-	g3_start_instance_matrix(pos,orient);	
+	g3_start_instance_matrix(pos,orient);
+	if (!Cmdline_nohtl)	gr_start_instance_matrix(pos,orient);
 
 	if ( Interp_flags & MR_SHOW_RADIUS )	{
 		if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
@@ -3933,6 +3944,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		g3_done_instance();
 	}
 
+	gr_end_instance_matrix();
 	g3_done_instance();
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
@@ -4646,7 +4658,11 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 
 	vm_vec_add2(&Interp_offset,&pm->submodel[mn].offset);
 
+	matrix m;
+	vm_angles_2_matrix(&m, &pm->submodel[mn].angs);
+	
 	g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
+	gr_start_instance_matrix(&pm->submodel[mn].offset, &m);
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_rotate_all();
 	}
@@ -4678,12 +4694,11 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 
 	vm_vec_sub2(&Interp_offset,&pm->submodel[mn].offset);
 
-
+	gr_end_instance_matrix();
 	g3_done_instance();
 }
 
 void model_render_buffers(bsp_info* model, polymodel * pm){
-	gr_start_instance_matrix();
 	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING) );
 	gr_set_cull(1);
 
@@ -4740,7 +4755,6 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 	}
 	GLOWMAP = -1;
 	SPECMAP = -1;
-	gr_end_instance_matrix();
 	gr_set_lighting( false );
 
 }
