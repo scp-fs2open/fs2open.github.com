@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.29 $
- * $Date: 2004-07-07 21:00:08 $
+ * $Revision: 2.30 $
+ * $Date: 2004-07-10 03:18:23 $
  * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/07/07 21:00:08  Kazan
+ * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
+ *
  * Revision 2.28  2004/04/30 18:32:51  Kazan
  * Lobby screen only shows when PXO_LOBBY is defined
  *
@@ -9429,7 +9432,9 @@ int Multi_debrief_reported_tvt = 0;
 // -1 == no decision yet
 // 1 == accepted
 // 0 == tossed
-int Multi_debrief_stats_accept_code = -1;
+
+// kazan - for internal purposes stats are always accepted by default
+int Multi_debrief_stats_accept_code = 1;
 
 int Multi_debrief_server_framecount = 0;
 
@@ -9703,13 +9708,14 @@ void multi_debrief_stats_toss()
 	Multi_debrief_stats_accept_code = 0;
 
 	// if we're the host, and we're on a standalone, tell everyone to "toss" stats
+	// Kazan - or how about we don't - we tell them we stored them
 	if((Net_player->flags & NETINFO_FLAG_GAME_HOST) || (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 		// send a packet to the players telling them to store their stats
-		send_store_stats_packet(0);
+		send_store_stats_packet(1);
 	} 
 
 	// add a chat line saying "stats have been accepted"
-	multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
+	//multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
 
 	// NETLOG
 	ml_string(NOX("Stats tossed"));
