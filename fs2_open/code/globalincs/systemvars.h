@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-15 04:41:17 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-05 16:46:09 $
+ * $Author: randomtiger $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/15 04:41:17  penguin
+ * Added #include, needed for FRED
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -349,5 +352,11 @@ int current_detail_level();
 // Memory stuff from WinDebug.cpp
 extern int TotalRam;
 void windebug_memwatch_init();
+
+enum
+{
+	TIMERBAR_DEFAULT,
+	TIMERBAR_D3DCODE,
+};
 
 #endif

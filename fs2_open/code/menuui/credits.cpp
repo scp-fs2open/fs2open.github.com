@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-10-05 16:46:10 $
+ * $Author: randomtiger $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -171,6 +174,34 @@
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+
+// This is the fs2_open credit list, please only add yourself if you have actually contributed code// Rules!
+char *fs2_open_credit_text = 
+	"FS2_OPEN STAFF:\n"
+	"\n"
+	"\n"
+	"Project leader:\n"
+	"Edward \"Inquisitor\" Gardner\n"
+	"\n"
+	"Programmers:\n"
+	"\n"
+	"Bobboau\n"
+	"Joe \"Righteous1\" Dowd\n"
+	"Kazan\n"
+	"Mike \"penguin\" Harris\n"
+	"Mysterial\n"
+	"PhReAk\n"
+	"Thomas \"Random Tiger\" Whittaker\n"
+	"Will \"Unknown PLayer\" Rousnel\n"
+
+	"\nSpecial thanks to:\n"
+	"\n"
+	"Volition for making FS2 such a great game\n"
+	"Dave Baranec for giving us the code\n"
+	"\n\n\n\n";
+
+char *unmodified_credits = "ORIGINAL VOLITION STAFF:\n\n\n";
+char *mod_check = "Design:";
 
 #define CREDITS_MUSIC_DELAY	2000
 #define CREDITS_SCROLL_RATE	15.0f
@@ -374,7 +405,7 @@ void credits_init()
 	if(fp != NULL){
 		int size;
 		size = cfilelength(fp);
-		Credit_text = (char *) malloc(size + 200);
+		Credit_text = (char *) malloc(size + 200 + strlen(fs2_open_credit_text) + strlen(unmodified_credits));
 		cfclose(fp);
 
 		// open localization and parse
@@ -383,9 +414,25 @@ void credits_init()
 		reset_parse();
 
 		// keep reading everything in
-		strcpy(Credit_text,"");		
-		while(!check_for_string_raw("#end")){			
+		strcpy(Credit_text,fs2_open_credit_text); 
+	   
+		bool first_run = true;
+		while(!check_for_string_raw("#end")){ 
+			
 			stuff_string_line(line, 511);
+
+			// This is a bit odd but it means if a total conversion uses different credits the 
+			// Volition credit wont happen
+			if(first_run == true)
+			{
+				if(strcmp(line, mod_check) == 0)
+				{
+					strcat(Credit_text,	unmodified_credits);	
+				}
+
+				first_run = false;
+			}
+
 			linep1 = line;
 
 			do {

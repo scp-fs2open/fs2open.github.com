@@ -235,6 +235,14 @@ SOURCE=.\debugconsole\dbugfile.cpp
 
 SOURCE=.\debugconsole\dbugfile.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\debugconsole\timerbar.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\debugconsole\timerbar.h
+# End Source File
 # End Group
 # Begin Group "DirectX"
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.10 $
- * $Date: 2002-09-20 20:09:01 $
- * $Author: phreak $
+ * $Revision: 2.11 $
+ * $Date: 2002-10-05 16:46:09 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2002/09/20 20:09:01  phreak
+ * did glare stuff in game_sunspot_process()
+ *
 <<<<<<< freespace.cpp
  *
  *
@@ -666,6 +669,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "ship/shiphit.h"
 #include "missionui/missionloopbrief.h"
 #include "debugconsole/dbugfile.h"
+#include "debugconsole/timerbar.h"
 
 #ifdef NDEBUG
 #ifdef FRED
@@ -4374,7 +4378,9 @@ void game_frame()
 	}
 #endif  // ifndef NO_NETWORK
 	
-	game_simulation_frame();	
+	game_simulation_frame();  
+	
+	TIMERBAR_SWITCH_TYPE(TIMERBAR_D3DCODE);
 
 	// if not actually in a game play state, then return.  This condition could only be true in 
 	// a multiplayer game.
@@ -4512,6 +4518,8 @@ void game_frame()
 		demo_close();
 	}
 #endif
+
+	TIMERBAR_SWITCH_TYPE(TIMERBAR_DEFAULT);
 }
 
 #define	MAX_FRAMETIME	(F1_0/4)		// Frametime gets saturated at this.  Changed by MK on 11/1/97.

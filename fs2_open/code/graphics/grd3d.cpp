@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-10-05 16:46:09 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/30 14:29:15  unknownplayer
  *
  * Started work on DX8.1 implementation. Updated the project files to encompass
@@ -209,6 +212,7 @@
 #include "globalincs/systemvars.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
+#include "debugconsole/timerbar.h"
 
 
 LPDIRECTDRAW			lpDD1 = NULL;
@@ -791,7 +795,10 @@ void d3d_stop_frame()
 
 	In_frame--;
 	
+	TIMERBAR_END_FRAME();
 	ddrval = lpD3DDevice->EndScene();
+	TIMERBAR_START_FRAME();
+
 	if (ddrval != D3D_OK )	{
 		//mprintf(( "Failed to end scene!\n%s\n", d3d_error_string(ddrval) ));
 		return;
@@ -2818,6 +2825,8 @@ void gr_d3d_init()
 	gr_clear();
 	gr_flip();
 	Mouse_hidden--;
+
+	TIMERBAR_SET_DRAW_FUNC(d3d_render_timer_bar);
 }
 
 char* d3d_error_string(HRESULT error)
