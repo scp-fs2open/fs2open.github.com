@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.25 $
- * $Date: 2004-04-09 20:07:56 $
+ * $Revision: 2.26 $
+ * $Date: 2004-04-09 20:32:31 $
  * $Author: phreak $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/04/09 20:07:56  phreak
+ * fixed DDS not working in OpenGL.  there was a misplaced Assert()
+ *
  * Revision 2.24  2004/04/01 15:31:20  taylor
  * don't use interface anis as ship textures
  *
@@ -1851,9 +1854,9 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	bmp->data=data;
 	bmp->flags =0;
 	be->mem_taken=size;
-	be->data_size=size;
-		
+
 	#ifdef BMPMAN_NDEBUG
+	be->data_size=size;
 	Assert( be->data_size > 0 );
 	#endif
 
