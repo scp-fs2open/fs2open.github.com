@@ -1,3 +1,5 @@
+#ifndef WIN32	// Goober5000
+
 #include "globalincs/pstypes.h"
 #include "network/stand_gui.h"
 
@@ -129,3 +131,5 @@ void std_update_player_ping(net_player *p)
 {
 	STUB_FUNCTION;
 }
+
+#endif		// Goober5000 - #ifndef WIN32
