@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-20 07:15:37 $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-30 21:16:21 $
  * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/20 07:15:37  Goober5000
+ * implemented mission flags for no briefing or no debriefing - yay!
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/18 10:07:04  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -373,7 +377,7 @@ int	Briefing_music_begin_timestamp = 0;
 // Module scope globals
 // --------------------------------------------------------------------------------------
 
-static MENU_REGION	Briefing_select_region[NUM_BREIFING_REGIONS];
+static MENU_REGION	Briefing_select_region[NUM_BRIEFING_REGIONS];
 static int				Num_briefing_regions;
 
 // For closeup display 
