@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-20 23:49:46 $
+ * $Author: DTP $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.6  2002/05/16 00:43:32  mharris
  * More ifndef NO_NETWORK
  *
@@ -5920,18 +5923,38 @@ done_secondary:
 	}
 
 	// AL 3-7-98: Move to next valid secondary bank if out of ammo
+	//
+
+	//21-07-02 01:24 DTP; COMMENTED OUT some of the mistakes
+	//this bug was made by AL, when he assumed he had to take the next fire_wait time remaining and add 250 ms of delay to it, 
+	//and put it in the next valid bank. for the player to have a 250 ms of penalty
+	//
+	//what that caused was that the next valid bank inherited the current valid banks FULL fire delay. since he used the Weapon_info struct that has
+	// no information / member that stores the next valids banks remaning fire_wait delay.
+	//
+	//what he should have done was to check of the next valid bank had any fire delay that had elapsed, if it had elapsed, 
+	//then it would have no firedelay. and then add 250 ms of delay. in effect, this way there is no penalty if there is any firedelay remaning in
+	//the next valid bank. the delay is there to prevent things like Trible/Quad Fire Trebuchets.
+	//
 	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[bank] <= 0) ) {
-		int fire_wait = (int)(Weapon_info[weapon].fire_wait * 1000.0f);
-		if ( ship_select_next_valid_secondary_bank(swp) ) {
-			swp->next_secondary_fire_stamp[swp->current_secondary_bank] = max(timestamp(250),timestamp(fire_wait));	//	1/4 second delay until can fire
+		//int fire_wait = (int)(Weapon_info[weapon].fire_wait * 1000.0f);	//DTP commented out, mistake, takes our current firewait time for our current weapon, it should have been our next valid weapon, but the weapon_info contains no Var for NEXT valid bank
+		if ( ship_select_next_valid_secondary_bank(swp) ) {			//DTP here we switch to the next valid bank, but we cant call weapon_info on next fire_wait
+			//swp->next_secondary_fire_stamp[swp->current_secondary_bank] = max(timestamp(250),timestamp(fire_wait));	//	1/4 second delay until can fire	//DTP, Commented out mistake, here AL put the wroung firewait into the correct next_firestamp
+			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
+				shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(250);	//DTP, the magical 1/4 second delay or we fire things like Quad Trebuchets, or every other weapon that do not have the "no dumbfire" flag.
+			}
+						
 			if ( obj == Player_obj ) {
-				snd_play( &Snds[SND_SECONDARY_CYCLE] );
+				snd_play( &Snds[SND_SECONDARY_CYCLE] );		
 			}
 		}
 	}	
 
 	return num_fired;
 }
+
+
+
 
 // ------------------------------------------------------------------------------
 // ship_select_next_primary()
