@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.131 $
- * $Date: 2005-01-26 01:52:21 $
+ * $Revision: 2.132 $
+ * $Date: 2005-01-26 06:49:50 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.131  2005/01/26 01:52:21  Goober5000
+ * Bah - I am a moron. :) I see the reason why rand shouldn't work
+ * multiple times.  It's been fixed thus.
+ *
+ * I also added a rand-multiple sexp for any times when people do
+ * want multiple random numbers.
+ *
+ * --Goober5000
+ *
  * Revision 2.130  2005/01/18 06:15:33  Goober5000
  * fixed a crazy error
  * --Goober5000
@@ -15644,6 +15653,8 @@ void sexp_variable_block_free(const char *ship_name, int start_index, int block_
 
 	if (block_type & SEXP_VARIABLE_BLOCK_EXP) {
 		num_blocks = BLOCK_EXP_SIZE;
+	} else if (block_type & SEXP_VARIABLE_BLOCK_HIT) {
+		num_blocks = BLOCK_HIT_SIZE;
 	} else {
 		Int3();  // new type of block
 		return;
