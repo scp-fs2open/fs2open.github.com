@@ -9,14 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-03-10 08:00:17 $
+ * $Revision: 2.47 $
+ * $Date: 2005-03-10 21:16:16 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/03/10 08:00:17  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.45  2005/03/07 13:10:22  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -2011,6 +2020,7 @@ void stars_draw_stars()
 				gr_aaline(&p1,&p2);
 			
 		} else {
+			gr_set_color_fast( &sp->col );
 
 			if ( Star_flags & STAR_FLAG_TAIL )	{
 				gr_line(fl2i(p1.sx),fl2i(p1.sy),fl2i(p2.sx),fl2i(p2.sy));
