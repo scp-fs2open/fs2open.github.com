@@ -924,7 +924,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 
 		switch ( be->type ) {
 		case BM_TYPE_PCX:
-			bm_d3d_lock_pcx( handle, bitmapnum, be, bmp, bpp, flags );
+		  	bm_d3d_lock_pcx( handle, bitmapnum, be, bmp, bpp, flags );
 			break;
 
 		case BM_TYPE_ANI: 

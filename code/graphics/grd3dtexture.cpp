@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.33 $
- * $Date: 2004-03-19 11:44:04 $
+ * $Revision: 2.34 $
+ * $Date: 2004-03-19 12:35:58 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2004/03/19 11:44:04  randomtiger
+ * Removed -d3d_notmanaged param.
+ * Tided D3D texture code. Merged remaining section code into the rest of the system.
+ * Prepared for removal of code causing waste of memory for secondry store of textures.
+ *
  * Revision 2.32  2004/02/28 14:14:56  randomtiger
  * Removed a few uneeded if DIRECT3D's.
  * Set laser function to only render the effect one sided.
@@ -587,8 +592,6 @@ int D3D_textures_in_frame = 0;
 int D3D_last_bitmap_id = -1;
 int D3D_last_detail = -1;
 int D3D_last_bitmap_type = -1;
-int D3D_last_section_x = -1;
-int D3D_last_section_y = -1;
 
 /**
  *
@@ -683,7 +686,7 @@ void d3d_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h
 	*h_out = tex_h;
 }
 
-void *d3d_vimage_to_texture(int bitmap_type, int bpp, ushort *data, int src_w, int src_h, int *tex_w, int *tex_h, tcache_slot_d3d *t, int reload)
+void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *data, int src_w, int src_h, int *tex_w, int *tex_h, float *u_scale, float *v_scale, int reload)
 {
 	// Dont prepare
 	bool use_mipmapping = (bitmap_type != TCACHE_TYPE_BITMAP_SECTION);
@@ -717,13 +720,14 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, ushort *data, int src_w, i
 
 	if ( bitmap_type == TCACHE_TYPE_AABITMAP || bitmap_type == TCACHE_TYPE_BITMAP_SECTION) 
 	{
-		t->u_scale = (float)src_w / (float)*tex_w;
-		t->v_scale = (float)src_h / (float)*tex_h;
+		*u_scale = (float)src_w / (float)*tex_w;
+		*v_scale = (float)src_h / (float)*tex_h;
 	} else {
-		t->u_scale = 1.0f;
-		t->v_scale = 1.0f;
+		*u_scale = 1.0f;
+		*v_scale = 1.0f;
 	}
 
+	IDirect3DTexture8 *texture_handle = (IDirect3DTexture8 *) thandle; 
 	if(!reload) {
 
 		DBUGFILE_INC_COUNTER(0);
@@ -733,7 +737,7 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, ushort *data, int src_w, i
 			0,
 			d3d8_format, 
 			D3DPOOL_MANAGED, 
-			&t->d3d8_thandle)))
+			&texture_handle)))
 		{
 			Assert(0);
 			return NULL;
@@ -743,8 +747,7 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, ushort *data, int src_w, i
 	// lock texture here
 
 	D3DLOCKED_RECT locked_rect;
-	if(FAILED(t->d3d8_thandle->LockRect(0, &locked_rect, NULL, 
-		0)))
+	if(FAILED(texture_handle->LockRect(0, &locked_rect, NULL, 0)))
 	{
 		Assert(0);
 		return NULL;
@@ -891,18 +894,17 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, ushort *data, int src_w, i
 	}
 
 	// Unlock the texture 
-	if(FAILED(t->d3d8_thandle->UnlockRect(0)))
+	if(FAILED(texture_handle->UnlockRect(0)))
 	{
 		Assert(0);
 		return NULL;
 	}
 
 	if( use_mipmapping ) {
-		D3DXFilterTexture( t->d3d8_thandle, NULL, 0, D3DX_DEFAULT);
+		D3DXFilterTexture( texture_handle, NULL, 0, D3DX_DEFAULT);
 	}
 
-	Assert(t->d3d8_thandle);
-	return t->d3d8_thandle;
+	return texture_handle;
 }
 
 // data == start of bitmap data
@@ -935,18 +937,21 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort 
 #endif
 
 	t->d3d8_thandle = (IDirect3DTexture8 *) d3d_vimage_to_texture(
-		bitmap_type, bpp, data, 
+		bitmap_type, bpp, t->d3d8_thandle, data, 
 		src_w, src_h, 
-		&tex_w, &tex_h, 
-		t, reload);
+		&tex_w, &tex_h,
+		&t->u_scale, &t->v_scale,
+		reload);
 	
 	if(t->d3d8_thandle == NULL)
 	{
 		return 0;
 	}
 
-	extern int D3d_tuse;
-	D3d_tuse += tex_w * tex_h * bpp / 8;
+	if(reload) {
+		extern int D3d_tuse;
+		D3d_tuse += tex_w * tex_h * bpp / 8;
+	}
 
 	t->bitmap_id = texture_handle;
 	t->time_created = D3D_frame_count;
@@ -992,7 +997,6 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 	bmp = bm_lock(bitmap_handle, bpp, flags);
 	if ( bmp == NULL ) {
 		mprintf(("Couldn't lock bitmap %d.\n", bitmap_handle ));
-		DBUGFILE_OUTPUT_0("Couldnt lock bitmap");
 		return 0;
 	}
 
@@ -1025,50 +1029,6 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 	return ret_val;
 }
 
-/*
-int d3d_create_texture_sectioned(int bitmap_handle, tcache_slot_d3d *tslot, int fail_on_full)
-{
-	ubyte flags;
-	bitmap *bmp;
-	int final_w, final_h;
-	int reload = 0;
-
-	int bitmap_type = TCACHE_TYPE_BITMAP_SECTION;
-   
-	flags = BMP_TEX_XPARENT;   
-	
-	// lock the bitmap in the proper format
-	bmp = bm_lock(bitmap_handle, 16, flags);	
-	if ( bmp == NULL ) {
-		mprintf(("Couldn't lock bitmap %d.\n", bitmap_handle ));
-		return 0;
-	}	
-
-	// determine the width and height of this section
-	int max_w, max_h;
-	bm_get_info(bitmap_handle, &max_w, &max_h, NULL, NULL, NULL, NULL);
-
-	// get final texture size as it will be allocated as a DD surface
-	d3d_tcache_get_adjusted_texture_size(max_w, max_h, &final_w, &final_h);
-
-	// if this tcache slot has no bitmap
-	if ( tslot->bitmap_id < 0) {
-		reload = 0;
-	}
-	// different bitmap altogether - determine if the new one can use the old one's slot
-	else if(tslot->bitmap_id != bitmap_handle) {
-		reload = (final_w == tslot->w) && (final_h == tslot->h);
-	}
-
-	int ret_val = d3d_create_texture_sub(bitmap_type, bitmap_handle, bmp->bpp, (ushort*)bmp->data, max_w, max_h, bmp->w, bmp->h, max_w, max_h, tslot, reload, fail_on_full);
-
-	// unlock the bitmap
-	bm_unlock(bitmap_handle);
-
-	return ret_val;
-}
-*/
-
 bool d3d_preload_texture_func(int bitmap_id)
 {
 	return 1;
@@ -1079,19 +1039,14 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage )
 {
 	bitmap *bmp = NULL;
-	int ret_val = 1;
 
 	if ( bitmap_id < 0 )	{
 		D3D_last_bitmap_id  = -1;
 		return 0;
 	}
 
-	// Kazan (and someone else.. collision)- ubyte casts added to make VC shut up about conversion crap
 	if(d3d_lock_and_set_internal_texture(stage, bitmap_id, (ubyte) 16, (ubyte) bitmap_type, u_scale, v_scale) == true) 
 	{
-	 	D3D_last_section_x = -1;
-		D3D_last_section_y = -1;
-
 	 	D3D_last_bitmap_id = -1;
 	 	return 1;
 	}
@@ -1106,7 +1061,7 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 	tcache_slot_d3d * t = &Textures[n];		
 	
 	// If rendering exactly the same texture section as before
-	if ( (D3D_last_bitmap_id == bitmap_id) && (D3D_last_bitmap_type==bitmap_type) && (t->bitmap_id == bitmap_id) && (D3D_last_section_x == sx) && (D3D_last_section_y == sy))	{
+	if ( (D3D_last_bitmap_id == bitmap_id) && (D3D_last_bitmap_type==bitmap_type) && (t->bitmap_id == bitmap_id))	{
 		t->used_this_frame++;
 		
 		*u_scale = t->u_scale;
@@ -1114,43 +1069,14 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 		return 1;
 	}	
 
-	// if this is a sectioned bitmap
-	if(bitmap_type == TCACHE_TYPE_BITMAP_SECTION){	 
-
-		ret_val = 1;
-
-		// if the texture sections haven't been created yet
-		if((t->bitmap_id < 0) || (t->bitmap_id != bitmap_id)){						
-			// lock the bitmap in the proper format
-
-			bmp = bm_lock(bitmap_id, 16, BMP_TEX_XPARENT);	
-			bm_unlock(bitmap_id);		
-			
-			if(!d3d_create_texture(bitmap_id, TCACHE_TYPE_BITMAP_SECTION, t, fail_on_full)){
-				ret_val = 0;
-			}
-
-			// not used this frame
-			t->used_this_frame = 0;
-
-			// zero out pretty much everything in the parent struct since he's just the root
-			t->bitmap_id = bitmap_id;			
-			t->used_this_frame = 0;
-		}  
-
-		if(!ret_val) {
-			d3d_free_texture(t);
+	// if the texture sections haven't been created yet
+	if((t->bitmap_id < 0) || (t->bitmap_id != bitmap_id))
+	{	
+		if(d3d_create_texture( bitmap_id, bitmap_type, t, fail_on_full ) == 0) 
+		{
+ 			d3d_free_texture(t);
+	 		return 0;
 		}
-	}
-	// all other "normal" textures
-	else if((bitmap_id < 0) || (bitmap_id != t->bitmap_id)) 
-	{	  
-	 	ret_val = d3d_create_texture( bitmap_id, bitmap_type, t, fail_on_full );  
-
-	}
-
-	if(!ret_val) {
-	 	return 0;
 	}
 	
 	*u_scale = t->u_scale;
@@ -1160,8 +1086,6 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 	
 	D3D_last_bitmap_id = t->bitmap_id;
 	D3D_last_bitmap_type = bitmap_type;
-	D3D_last_section_x = sx;
-	D3D_last_section_y = sy;
 
 	t->used_this_frame++;		
 	return 1;
@@ -1243,9 +1167,6 @@ void d3d_tcache_init()
 	D3D_last_bitmap_id = -1;
 	D3D_last_bitmap_type = -1;
 
-	D3D_last_section_x = -1;
-	D3D_last_section_y = -1;
-
 	D3D_textures_in = 0;
 	D3D_textures_in_frame = 0;
 }
@@ -1263,8 +1184,6 @@ void d3d_tcache_flush()
 	}
 
 	D3D_last_bitmap_id = -1;
-	D3D_last_section_x = -1;
-	D3D_last_section_y = -1;
 }
 
 void d3d_tcache_cleanup()
