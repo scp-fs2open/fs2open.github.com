@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.34 $
- * $Date: 2004-03-17 04:07:30 $
- * $Author: bobboau $
+ * $Revision: 2.35 $
+ * $Date: 2004-04-06 03:09:53 $
+ * $Author: phreak $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2004/03/17 04:07:30  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.33  2004/03/05 09:02:04  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -588,6 +595,17 @@ char *hud_targetbox_truncate_subsys_name(char *outstr)
 	}
 
 	return outstr;
+}
+
+//swich through the valid targetbox modes
+void hud_targetbox_switch_wireframe_mode()
+{
+	//0==standard
+	//1==wireframe only
+	//2==wireframe with textures
+	Targetbox_wire++;
+		if (Targetbox_wire==3)
+			Targetbox_wire=0;
 }
 
 // init a specific targetbox timer
