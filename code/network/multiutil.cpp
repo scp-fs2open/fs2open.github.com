@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-09-25 21:12:24 $
+ * $Revision: 2.7 $
+ * $Date: 2003-10-04 22:42:23 $
  * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/09/25 21:12:24  Kazan
+ * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
+ * Also D3D8 Screenshots work now.
+ *
  * Revision 2.5  2003/09/24 19:35:59  Kazan
  * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
  *
@@ -300,7 +304,12 @@ extern int MSG_WINDOW_HEIGHT;
 
 extern int ascii_table[];
 extern int shifted_ascii_table[];
+
+#if !defined(PXO_TCP)
 extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+#else
+extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+#endif
 
 
 // network object management
@@ -3241,13 +3250,7 @@ void multi_update_valid_missions()
 
 	if (port == -1)
 	{
-		if (!FS2OpenPXO_Socket.isInitialized())
-		{
-				if (!FS2OpenPXO_Socket.InitSocket())
-				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
-				}
-		}
+
 
 
 		CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
@@ -3271,6 +3274,18 @@ void multi_update_valid_missions()
 			port = atoi(Port);
 		else
 			port = 12000;
+		
+		if (!FS2OpenPXO_Socket.isInitialized())
+		{
+#if !defined(PXO_TCP)
+				if (!FS2OpenPXO_Socket.InitSocket())
+#else
+				if (!FS2OpenPXO_Socket.InitSocket(Server, port))
+#endif
+				{
+					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+				}
+		}
 	}
 
 #ifndef NO_STANDALONE
@@ -3425,13 +3440,7 @@ void multi_update_valid_tables()
 
 	if (port == -1)
 	{
-		if (!FS2OpenPXO_Socket.isInitialized())
-		{
-				if (!FS2OpenPXO_Socket.InitSocket())
-				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
-				}
-		}
+
 
 
 		CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
@@ -3455,6 +3464,18 @@ void multi_update_valid_tables()
 			port = atoi(Port);
 		else
 			port = 12000;
+
+		if (!FS2OpenPXO_Socket.isInitialized())
+		{
+#if !defined(PXO_TCP)
+					if (!FS2OpenPXO_Socket.InitSocket())
+#else
+					if (!FS2OpenPXO_Socket.InitSocket(Server, port))
+#endif
+				{
+					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+				}
+		}
 	}
 
 #ifndef NO_STANDALONE
@@ -3655,7 +3676,14 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 	int count, idx;
 	uint checksum;
 	FILE *out;
+	char modname[128];
+	memset(modname, 0, 128);
 
+	if (Cmdline_mod[strlen(Cmdline_mod)-1] == '/' || Cmdline_mod[strlen(Cmdline_mod)-1] == '\\')
+		strncpy(modname, Cmdline_mod, strlen(Cmdline_mod)-1);
+	else
+		strcpy(modname, Cmdline_mod);
+		
 	// allocate filename space	
 	file_names = (char**)malloc(sizeof(char*) * max_files);
 	if(file_names != NULL){
@@ -3677,7 +3705,7 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 
 			if(cf_chksum_long(full_name, &checksum)){
 				fprintf(out, "# %s	:	%u\n", full_name, (unsigned int)checksum);
-				fprintf(out, "INSERT INTO Missions SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%\";\n\n", full_name, (unsigned int)checksum, Cmdline_mod);
+				fprintf(out, "INSERT INTO Missions SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%s\";\n\n", full_name, (unsigned int)checksum, modname);
 			}
 		}
 
@@ -3695,6 +3723,14 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 	int count, idx;
 	uint checksum;
 	FILE *out;
+	char modname[128];
+	memset(modname, 0, 128);
+
+	if (Cmdline_mod[strlen(Cmdline_mod)-1] == '/' || Cmdline_mod[strlen(Cmdline_mod)-1] == '\\')
+		strncpy(modname, Cmdline_mod, strlen(Cmdline_mod)-1);
+	else
+		strcpy(modname, Cmdline_mod);
+		
 
 	// allocate filename space	
 	file_names = (char**)malloc(sizeof(char*) * max_files);
@@ -3717,7 +3753,7 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 
 			if(cf_chksum_long(full_name, &checksum)){
 				fprintf(out, "# %s	:	%u\n", full_name, (unsigned int)checksum);
-				fprintf(out, "INSERT INTO fstables SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%\";\n\n", full_name, (unsigned int)checksum, Cmdline_mod);
+				fprintf(out, "INSERT INTO fstables SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%s\";\n\n", full_name, (unsigned int)checksum, modname);
 			}
 		}
 

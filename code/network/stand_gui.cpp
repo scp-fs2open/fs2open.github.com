@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-09-24 19:35:59 $
+ * $Revision: 2.5 $
+ * $Date: 2003-10-04 22:42:23 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/09/24 19:35:59  Kazan
+ * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
+ *
  * Revision 2.3  2002/08/04 05:13:00  penguin
  * Change version display
  *
@@ -373,7 +376,12 @@
 #include "globalincs/version.h"
 #include "fs2open_pxo/Client.h"
 
-extern UDP_Socket FS2OpenPXO_Socket;
+
+#if !defined(PXO_TCP)
+extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+#else
+extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+#endif
 HANDLE Standalone_thread;
 DWORD Standalone_thread_id;
 static HWND Standalone_hwnd = NULL;
@@ -2018,7 +2026,12 @@ void std_do_gui_frame()
 		//FS2OpenPXO code
 		if (!FS2OpenPXO_Socket.isInitialized())
 		{
-				if (!FS2OpenPXO_Socket.InitSocket())
+#if !defined(PXO_TCP)
+					if (!FS2OpenPXO_Socket.InitSocket())
+#else
+					if (!FS2OpenPXO_Socket.InitSocket(PXOServer, PXO_port))
+#endif
+					{
 				{
 					std_notify_tracker_login_fail();
 				}

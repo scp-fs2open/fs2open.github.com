@@ -389,7 +389,7 @@ int Fs2OpenPXO_Login(const char* username, const char* password, UDP_Socket &Soc
 //**************************************************************************************************************************************************
 
 
-void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers)
+void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers, int myPort)
 {
 	// ---------- Prepair and send packet ------------	
 	serverlist_hb_packet hbpack;
@@ -401,6 +401,7 @@ void SendHeartBeat(const char* masterserver, int targetport, UDP_Socket &Socket,
 	hbpack.status = myStatus; // forming
 	hbpack.type = myType; // cooperative
 	hbpack.players = numPlayers;
+	hbpack.port = myPort;
 
 
 	Socket.SendPacket((char *) &hbpack, sizeof(serverlist_hb_packet), std::string(masterserver), targetport);
@@ -448,6 +449,7 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, UDP_So
 			templist[numServersFound].status = NewServer.status;
 			templist[numServersFound].players = NewServer.players;
 			templist[numServersFound].type = NewServer.type;
+			templist[numServersFound].port = NewServer.port;
 			strncpy(templist[numServersFound].ip, NewServer.ip, 16);
 
 			numServersFound++;

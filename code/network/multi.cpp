@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-09-25 21:12:24 $
+ * $Revision: 2.9 $
+ * $Date: 2003-10-04 22:42:22 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/09/25 21:12:24  Kazan
+ * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
+ * Also D3D8 Screenshots work now.
+ *
  * Revision 2.7  2003/09/24 19:35:58  Kazan
  * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
  *
@@ -271,7 +275,11 @@
 
 
 #include "fs2open_pxo/Client.h"
+#if !defined(PXO_TCP)
 extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+#else
+extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
+#endif
 extern unsigned int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[];
 extern int PXO_port;
@@ -1371,7 +1379,11 @@ void multi_do_frame()
 			//FS2OpenPXO code
 			if (!FS2OpenPXO_Socket.isInitialized())
 			{
+#if !defined(PXO_TCP)
 					if (!FS2OpenPXO_Socket.InitSocket())
+#else
+					if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
+#endif
 					{
 						ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
 					}
@@ -1387,7 +1399,7 @@ void multi_do_frame()
 				// finish implementation!
 				//void SendHeartBeat(const char* masterserver, int targetport, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
 
-				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, multi_get_connection_speed(), Netgame.game_state, Netgame.type_flags, Netgame.max_players);
+				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, multi_get_connection_speed(), Netgame.game_state, Netgame.type_flags, Netgame.max_players, Netgame.server_addr.port);
 			}
 		}
 	}

@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.32 $
- * $Date: 2003-09-26 14:37:15 $
- * $Author: bobboau $
+ * $Revision: 2.33 $
+ * $Date: 2003-10-04 22:42:22 $
+ * $Author: Kazan $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/09/26 14:37:15  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.31  2003/09/14 19:02:06  wmcoolmon
  * Changed "cell" to "Cmdline_cell" -C
  *
@@ -924,6 +934,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 
 		for (n=0; n<nverts; n++ )	{	
 
+#ifdef HTL
 			if(GEOMETRY_NOISE!=0.0f){
 				GEOMETRY_NOISE = model_radius / 50;
 
@@ -937,7 +948,34 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 				Interp_verts[n] = src;	
 				g3_rotate_vertex(dest, src);
 			}
-		
+#else
+	
+			Interp_verts[n] = src; 	 
+             /* 	                                 
+             vector tmp = *src; 	 
+             // TEST 	                                 ;
+             if(Interp_thrust_twist > 0.0f){ 	                                 
+                     float theta; 	                                 
+                     float st, ct; 	                                 
+
+                     // determine theta for this vertex 	                                 
+                     theta = fl_radian(20.0f + Interp_thrust_twist2); 	                         
+                     st = sin(theta); 	                                 
+                     ct = cos(theta); 	                                 
+  	             }
+                     // twist 	 
+                     tmp.xyz.z = (src->xyz.z * ct) - (src->xyz.y * st); 	 
+                     tmp.xyz.y = (src->xyz.z * st) + (src->xyz.y * ct); 	 
+
+                     // scale the z a bit 	 
+                     tmp.xyz.z += Interp_thrust_twist; 	 
+             } 	 
+
+             g3_rotate_vertex(dest, &tmp); 	 
+             */ 	 
+
+             g3_rotate_vertex(dest, src);
+#endif
 			src++;		// move to normal
 
 			for (i=0; i<normcount[n]; i++ )	{
@@ -1153,7 +1191,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	if ( nv < 0 ) return;
 
 	verts = (model_tmap_vert *)(p+44);
-
+#ifdef HTL
 	if((Warp_Map < 0)){
 		if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)){
 			if(Cmdline_cell){
@@ -1194,6 +1232,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 		gr_set_cull(1);
 		return;
 	}
+#endif
 
 	for (i=0;i<nv;i++)	{
 		Interp_list[i] = &Interp_points[verts[i].vertnum];
@@ -3560,7 +3599,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	// Draw the thruster glow
 	if ( (Interp_thrust_glow_bitmap != -1) && (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
-
 		//this is used for the secondary thruster glows 
 		//it only needs to be calculated once so I'm doing it here -Bobboau
 				vector norm /*= bank->norm[j]*/;
@@ -3662,7 +3700,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					d *= (1.0f - neb2_get_fog_intensity(&npnt));
 				}
 
-
 // this is the original scaling code - Goober5000
 //					scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
@@ -3673,8 +3710,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				if ( d > 0.0f){
 					gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
 					{
-						//primary thruster glows, sort of a lens flare/engine wash thing
-						Gr_scaler_zbuffering = 1;
+						//primary thruster glows, sort of a lens flare/engine wash thing						Gr_scaler_zbuffering = 1;
+
 						g3_draw_bitmap(&p,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
 						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
 						Gr_scaler_zbuffering = 0;

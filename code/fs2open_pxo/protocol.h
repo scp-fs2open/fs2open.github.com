@@ -6,6 +6,10 @@
 #if !defined(__pxo_protocol_h_)
 #define __pxo_protocol_h_
 
+
+// PUT the Protocol into TCP mode
+#define PXO_TCP
+
 // Packet IDs
 #define PCKT_SLIST_REQUEST	0x1
 #define PCKT_SLIST_REPLY	0x2
@@ -58,6 +62,7 @@ struct serverlist_reply_packet
       short players;
       int type; // binary bitmask for type and dedicated server
 	  char  ip[16]; // "255.255.255.255"
+	  int port;
 };
 
 //a server sends this UDP packet to the server every 60 seconds has a "Heartbeat" telling the server it's here -
@@ -70,6 +75,7 @@ struct serverlist_hb_packet
       int status;
       short players;
       int type; // binary bitmask for type and dedicated server
+	  int port;
 };
 
 
