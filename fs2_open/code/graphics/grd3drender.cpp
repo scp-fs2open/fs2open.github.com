@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-01-05 23:41:50 $
- * $Author: bobboau $
+ * $Revision: 2.6 $
+ * $Date: 2003-01-09 21:20:21 $
+ * $Author: phreak $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/01/05 23:41:50  bobboau
+ * disabled decals (for now), removed the warp ray thingys,
+ * made some better error mesages while parseing weapons and ships tbls,
+ * and... oh ya, added glow mapping
+ *
  * Revision 2.4  2002/10/05 16:46:09  randomtiger
  * Added us fs2_open people to the credits. Worth looking at just for that.
  * Added timer bar code, by default its not compiled in.
@@ -1006,9 +1011,9 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 
 	//this is my hack to get some sort of luminence mapping-Bobboau
-	if(GLOWMAP[gr_screen.current_bitmap] > 0){
+	if(GLOWMAP[gr_screen.current_bitmap % MAX_BITMAPS] > 0){
 
-		gr_screen.gf_set_bitmap(GLOWMAP[gr_screen.current_bitmap], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0f);
+		gr_screen.gf_set_bitmap(GLOWMAP[gr_screen.current_bitmap  % MAX_BITMAPS], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0f);
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
 			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
