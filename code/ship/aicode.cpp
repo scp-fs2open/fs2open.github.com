@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.67 $
- * $Date: 2004-07-31 08:54:38 $
- * $Author: et1 $
+ * $Revision: 2.68 $
+ * $Date: 2004-09-01 01:26:20 $
+ * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2004/07/31 08:54:38  et1
+ * Fixed inaccuracy problems with non-homing swarmers
+ *
  * Revision 2.66  2004/07/29 23:41:22  Kazan
  * bugfixes
  *
@@ -6001,6 +6004,74 @@ void show_firing_diag()
 }
 */
 
+//old version of this fuction, this will be useful for playing old missions and not having the new primary
+//selection code throw off the balance of the mission.
+int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
+{
+	ship	*shipp = &Ships[objp->instance];
+	ship_weapon *swp = &shipp->weapons;
+	ship_info *sip;
+
+	//Assert( other_objp != NULL );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
+
+	sip = &Ship_info[shipp->ship_info_index];
+
+	if (flags & WIF_PUNCTURE) {
+		if (swp->current_primary_bank >= 0) {
+			int	bank_index;
+
+			bank_index = swp->current_primary_bank;
+
+			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags & WIF_PUNCTURE) {
+				//nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[bank_index]].name));
+				return swp->current_primary_bank;
+			}
+		}
+		for (int i=0; i<swp->num_primary_banks; i++) {
+			int	weapon_info_index;
+
+			weapon_info_index = swp->primary_bank_weapons[i];
+
+			if (weapon_info_index > -1){
+				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) {
+					swp->current_primary_bank = i;
+					//nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
+					return i;
+				}
+			}
+		}
+		
+		// AL 26-3-98: If we couldn't find a puncture weapon, pick first available weapon if one isn't active
+		if ( swp->current_primary_bank < 0 ) {
+			if ( swp->num_primary_banks > 0 ) {
+				swp->current_primary_bank = 0;
+			}
+		}
+
+	} else {		//	Don't need to be using a puncture weapon.
+		if (swp->current_primary_bank >= 0) {
+			if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags & WIF_PUNCTURE)){
+				return swp->current_primary_bank;
+			}
+		}
+		for (int i=0; i<swp->num_primary_banks; i++) {
+			if (swp->primary_bank_weapons[i] > -1) {
+				if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_PUNCTURE)) {
+					swp->current_primary_bank = i;
+					nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
+					return i;
+				}
+			}
+		}
+		//	Wasn't able to find a non-puncture weapon.  Stick with what we have.
+	}
+
+	Assert( swp->current_primary_bank != -1 );		// get Alan or Allender
+
+	return swp->current_primary_bank;
+}
+
 //	If:
 //		flags & WIF_PUNCTURE
 //	Then Select a Puncture weapon.
@@ -6028,6 +6099,12 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	{
 		Int3();
 		return -1;
+	}
+
+	//not using the new AI, use the old version of this function instead.
+	if (!(The_mission.flags & MISSION_FLAG_USE_NEW_AI))
+	{
+		ai_select_primary_weapon_OLD(objp, other_objp, flags);
 	}
 
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
@@ -6566,7 +6643,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 	
 	//rapid dumbfire? let it rip!
-	if ( (!(wip->wi_flags & WIF_HOMING)) && (wip->fire_wait < .5f))
+	if ( (!(wip->wi_flags & WIF_HOMING)) && (wip->fire_wait < .5f) && (The_mission.flags & MISSION_FLAG_USE_NEW_AI))
 	{	
 		aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
 	}
@@ -8306,19 +8383,35 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 			is_big_ship=0;
 		}
 
-		if (is_big_ship) {
+		if (is_big_ship)
+		{
 			priority1 = WIF_HUGE;
-			priority2 = WIF_BOMBER_PLUS;
-		} else if ( (esip != NULL) && (esip->flags & SIF_BOMBER) ) {
+			if (The_mission.flags & MISSION_FLAG_USE_NEW_AI)
+			{
+				priority2 = WIF_BOMBER_PLUS;
+			}
+			else
+			{
+				priority2 = WIF_HOMING;
+			}
+		} 
+		else if ( (esip != NULL) && (esip->flags & SIF_BOMBER) )
+		{
 			priority1 = WIF_BOMBER_PLUS;
 			priority2 = WIF_HOMING;
-		} else if (subsystem_strength > 100.0f) {
+		} 
+		else if (subsystem_strength > 100.0f)
+		{
 			priority1 = WIF_PUNCTURE;
 			priority2 = WIF_HOMING;
-		} else if ((en_objp->type == OBJ_ASTEROID))	{	//prefer dumbfires if its an asteroid	
+		}
+		else if ((en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
+		{	
 			priority1 = 0;								
 			priority2 = 0;
-		} else {
+		} 
+		else
+		{
 			priority1 = WIF_HOMING;
 			priority2 = 0;
 		}
