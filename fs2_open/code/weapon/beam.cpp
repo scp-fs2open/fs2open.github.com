@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-03-02 21:24:48 $
+ * $Revision: 2.47 $
+ * $Date: 2005-03-03 16:40:28 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/03/02 21:24:48  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.45  2005/01/17 23:35:45  argv
  * Surface shields.
  *
@@ -1832,7 +1835,12 @@ void beam_render_muzzle_glow(beam *b)
 
 	float rad = wip->b_info.beam_muzzle_radius * pct * rand_val;
 
-	gr_set_bitmap( bwi->beam_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);	
+	if (bwi->beam_glow_nframes > 1) {
+		int frame = (timestamp() / (int)(bwi->beam_glow_fps)) % bwi->beam_glow_nframes;
+		gr_set_bitmap(bwi->beam_glow_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);
+	} else {
+		gr_set_bitmap( bwi->beam_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);	
+	}
 	// draw 1 bitmap
 	g3_draw_bitmap(&pt, 0, rad, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
 	
