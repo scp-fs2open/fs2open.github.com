@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-01-18 19:49:45 $
- * $Author: phreak $
+ * $Revision: 2.11 $
+ * $Date: 2003-01-19 01:07:41 $
+ * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/01/18 19:49:45  phreak
+ * texture mapper now supports DXTC compressed textures
+ *
  * Revision 2.9  2003/01/09 21:19:54  phreak
  * glowmaps in OpenGL, yay!
  *
@@ -1331,7 +1334,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 	int i;
 	float u_scale = 1.0f, v_scale = 1.0f;
 	int bitmapidx=gr_screen.current_bitmap % MAX_BITMAPS;
-	int do_glow=(GLOWMAP[bitmapidx] > 0);
+	int do_glow=(GLOWMAP > 0);
 
 //	if (do_glow)
 //		Int3();
@@ -1433,7 +1436,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		if (do_glow)
 		{
 			gr_opengl_set_state(texture_source, alpha_blend, zbuffer_type);
-			gr_set_bitmap(GLOWMAP[bitmapidx], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0f);
+			gr_set_bitmap(GLOWMAP, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0f);
 			glActiveTextureARB(GL_TEXTURE1_ARB);
 			glEnable(GL_TEXTURE_2D);
 			texture_source=TEXTURE_SOURCE_ADD;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-01-18 19:55:16 $
- * $Author: phreak $
+ * $Revision: 2.11 $
+ * $Date: 2003-01-19 01:07:41 $
+ * $Author: bobboau $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/01/18 19:55:16  phreak
+ * fixed around the bmpman system to now accept compressed textures
+ *
  * Revision 2.9  2003/01/09 22:23:38  inquisitor
  * Rollback to 2.7 to fix glow code issue that phreak noticed.
  * -Quiz
@@ -525,7 +528,7 @@
 
 extern int Texture_compression_enabled;
 
-int GLOWMAP[MAX_BITMAPS] = {-1};
+int GLOWMAP = -1;
 
 
 // keep this defined to use per-ship nondarkening pixels
@@ -787,8 +790,6 @@ void bm_init()
 		#endif
 		bm_free_data(i);  	// clears flags, bbp, data, etc
 	}
-
-		GLOWMAP[i]=-1;
 }
 
 #ifdef BMPMAN_NDEBUG
@@ -997,7 +998,6 @@ int bm_load( char * real_filename )
 		// found as pre-existing
 		case 1:
 			found = 1;
-			GLOWMAP[handle] = -1;
 			return handle;		
 		}
 	}
@@ -1017,11 +1017,11 @@ int bm_load( char * real_filename )
 			strcat(filename, ".pcx");
 			break;
 
-		// found as pre-existing
-		case 1:
-			found = 1;
-			GLOWMAP[handle] = -1;
-			return handle;		
+
+			// found as pre-existing
+	case 1:
+		found = 1;
+		return handle;		
 		}
 	}
 
@@ -1041,7 +1041,6 @@ int bm_load( char * real_filename )
 
 		// found as pre-existing
 		case 1:						
-			GLOWMAP[handle] = -1;
 			return handle;					
 		}
 	}
@@ -1137,8 +1136,6 @@ int bm_load( char * real_filename )
 
 	// fill in section info
 	bm_calc_sections(&bm_bitmaps[n].bm);
-
-	GLOWMAP[n] = -1;//make sure to load a glow map after you have loaded a texture
 
 	return bm_bitmaps[n].handle;
 }
@@ -2426,7 +2423,10 @@ int bm_get_cache_slot( int bitmap_id, int separate_ani_frames )
 {
 	int n = bitmap_id % MAX_BITMAPS;
 
-	Assert( bm_bitmaps[n].handle == bitmap_id );		// INVALID BITMAP HANDLE
+	if( bm_bitmaps[n].handle != bitmap_id ){//this should rightfully squash the invalid bitmap handel bug for the glow mapping
+		mprintf(("bitmap handel %d is not equil to bitmap id %d",bm_bitmaps[n].handle,bitmap_id));
+		return -1;		// INVALID BITMAP HANDLE
+	}
 
 	bitmap_entry	*be = &bm_bitmaps[n];
 

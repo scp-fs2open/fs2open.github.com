@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-01-15 21:26:35 $
- * $Author: anonymous $
+ * $Revision: 2.19 $
+ * $Date: 2003-01-19 01:07:41 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/01/15 21:26:35  anonymous
+ * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
+ *
  * Revision 2.17  2003/01/14 04:00:16  Goober5000
  * allowed for up to 256 main halls
  * --Goober5000
@@ -4167,7 +4170,8 @@ void game_simulation_frame()
 			game_start_subspace_ambient_sound();
 		}
 #endif
-	}		
+	}
+	mprintf(("frame rendered\n"));
 }
 
 // Maybe render and process the dead-popup

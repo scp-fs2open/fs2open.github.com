@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-01-13 23:20:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2003-01-19 01:07:43 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/01/13 23:20:01  Goober5000
+ * bug hunting; fixed the beam whack effect bug
+ * --Goober5000
+ *
  * Revision 2.8  2002/12/27 17:58:11  Goober5000
  * the insidious beam bug is now squashed AND committed!
  * --Goober5000
@@ -743,9 +747,9 @@ int beam_fire(beam_fire_info *fire_info)
 	// create the associated object
 	objnum = obj_create(OBJ_BEAM, -1, new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
 	if(objnum < 0){
-		Int3();
 		beam_delete(new_item);
 		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
+		Int3();
 		return -1;
 	}
 	new_item->objnum = objnum;
@@ -858,9 +862,9 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	// create the associated object
 	objnum = obj_create(OBJ_BEAM, -1, new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
 	if(objnum < 0){
-		Int3();
 		beam_delete(new_item);
 		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
+		Int3();
 		return -1;
 	}
 	new_item->objnum = objnum;	
@@ -873,6 +877,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 		return -1;
 	}
 
+//	Objects[objnum].instance = objnum
 	
 	return objnum;
 }
@@ -920,6 +925,8 @@ int beam_get_weapon_info_index(object *bm)
 	if (bm->instance < 0) {
 		return -1;
 	}
+//make sure it's returning a valid info index
+	Assert((Beams[bm->instance].weapon_info_index > -1) && (Beams[bm->instance].weapon_info_index < Num_weapon_types));
 
 	// return weapon_info_index
 	return Beams[bm->instance].weapon_info_index;
@@ -1248,6 +1255,8 @@ void beam_move_all_post()
 	while(moveup != END_OF_LIST(&Beam_used_list)){				
 		 bwi = &Weapon_info[moveup->weapon_info_index].b_info;
 
+mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_index));
+
 		 // check the status of the beam
 		bf_status = beam_ok_to_fire(moveup);
 
@@ -1257,12 +1266,14 @@ void beam_move_all_post()
 
 			// should we be stopping?
 			if(bf_status < 0){
+				mprintf(("killing beam becase it isn't ok to be fireing\n"));
 				beam_delete(moveup);
 			} else {
 				// if the warming up timestamp has expired, start firing
 				if(timestamp_elapsed(moveup->warmup_stamp)){							
 					// start firing
 					if(!beam_start_firing(moveup)){
+						mprintf(("killing beam becase it shouldn't have started fireing yet\n"));
 						beam_delete(moveup);												
 					} 			
 					
@@ -1272,6 +1283,7 @@ void beam_move_all_post()
 			}
 
 			// next
+			mprintf(("beam is warming up, moveing to next\n"));
 			moveup = next_one;
 			continue;
 		} 
@@ -1281,19 +1293,22 @@ void beam_move_all_post()
 
 			// should we be stopping?
 			if(bf_status < 0){
+				mprintf(("killing beam becase it isn't ok to fire\n"));
 				beam_delete(moveup);
 			} else {
 				// if we're done warming down, the beam is finished
-				if(timestamp_elapsed(moveup->warmdown_stamp)){				
+				if(timestamp_elapsed(moveup->warmdown_stamp)){	
+					mprintf(("euthaniseing beam\n"));
 					beam_delete(moveup);				
 				}			
 			}
 
 			// next
+			mprintf(("beam is warming down, moveing to next\n"));
 			moveup = next_one;
 			continue;
 		}
-		
+		mprintf(("beam is fireing\n"));
 		// otherwise, we're firing away.........		
 
 		// add a muzzle light for the shooter
@@ -1322,7 +1337,8 @@ void beam_move_all_post()
 			next_one = GET_NEXT(moveup);
 
 			// if beam should abruptly stop
-			if(bf_status == -1){				
+			if(bf_status == -1){
+				mprintf(("beam stoping abruptly\n"));
 				beam_delete(moveup);							
 			}
 			// if the beam should just power down
@@ -1332,18 +1348,19 @@ void beam_move_all_post()
 			
 			// next beam
 			moveup = next_one;
+			mprintf(("beam stopping\n"));
 			continue;
 		}				
 
 		// increment framecount
 		moveup->framecount++;		
-		
+		mprintf(("frame %d\n", moveup->framecount));
 		// type c weapons live for one frame only
 		if(moveup->type == BEAM_TYPE_C){
 			if(moveup->framecount > 1){
 				next_one = GET_NEXT(moveup);
-			
 				beam_delete(moveup);							
+			mprintf(("type c beams only live for one frame\n"));
 				moveup = next_one;
 				continue;
 			}
@@ -1353,22 +1370,27 @@ void beam_move_all_post()
 			if((moveup->life_left <= 0.0f) && (moveup->warmdown_stamp == -1)){
 				beam_start_warmdown(moveup);
 				
-				moveup = GET_NEXT(moveup);			
+				moveup = GET_NEXT(moveup);	
+				mprintf(("warming beam down\n"));
 				continue;
 			}				
-		}		
+		}	
+		mprintf(("starting collisions\n"));
 
 		// handle any collisions which occured collision (will take care of applying damage to all objects which got hit)
 		beam_handle_collisions(moveup);						
 
+		mprintf(("recalcing sounds\n"));
 		// recalculate beam sounds
 		beam_recalc_sounds(moveup);
 
 		// next item
 		moveup = GET_NEXT(moveup);
+		mprintf(("moved, getting next\n"));
 	}
 
 	// apply all beam lighting
+	mprintf(("applying light\n"));
 	beam_apply_lighting();
 
 	// process beam culling info
@@ -1395,6 +1417,7 @@ void beam_move_all_post()
 	}
 	*/
 #endif
+	mprintf(("done beam_move_all_post\n"));
 }
 
 // -----------------------------===========================------------------------------
@@ -2401,20 +2424,26 @@ int beam_collide_ship(obj_pair *pair)
 	test_collide.p1 = &b->last_shot;
 
 	bwi = &Weapon_info[b->weapon_info_index];
+
+	polymodel *pm = model_get(model_num);
 	
 	// maybe do a sphere line
 	if(widest > pair->b->radius * BEAM_AREA_PERCENT){
 		test_collide.radius = beam_get_widest(b) * 0.5f;
 		//if the shields have any juice check them otherwise check the model
-		if ( (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for beams wich have a positive sheild factor -Bobboau
+		if ( (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for beams wich have a positive sheild factor -Bobboau
+			mprintf(("I think this ship has shields\n"));
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_SPHERELINE;	
-		}else{		
+		}else{	
+			mprintf(("I'm checking the model\n"));
 			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 		}
 	} else {	
 		if ( (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) ){	//check shields for type c beams -Bobboau
+			mprintf(("there is a shield, isn't it\n"));
 			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_RAY;	
-		}else{		
+		}else{	
+			mprintf(("the model is being checked\n"));
 			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
 		}
 	}
@@ -2425,7 +2454,7 @@ int beam_collide_ship(obj_pair *pair)
 	if(test_collide.flags & MC_CHECK_SHIELD)	//if we're checking shields
 	{
 		quad = get_quadrant(&test_collide.hit_point);//find which quadrant we hit
-
+mprintf(("the thing I hit was hit in quadrant %d\n", quad));
 		//then if the beam does more damage than that quadrant can take
 		if(Objects[shipp->objnum].shields[quad] < (bwi->damage * bwi->shield_factor * 2.0f))
 		//if(!(ship_is_shield_up(&Objects[shipp->objnum], get_quadrant(&test_collide.hit_point))))
@@ -2882,16 +2911,16 @@ void beam_handle_collisions(beam *b)
 		if((target < 0) || (target >= MAX_OBJECTS)){
 			continue;
 		}
-
+mprintf(("object valid\n"));
 		// try and get a model to deal with		
 		model_num = beam_get_model(&Objects[target]);
 		if(model_num < 0){
 			continue;
 		}
-
+mprintf(("got a model\n"));
 		// add lighting
 		beam_add_light(b, target, 2, &b->f_collisions[idx].cinfo.hit_point_world);
-
+mprintf(("adding a light\n"));
 		// add to the recent collision list
 		r_coll[r_coll_count].c_objnum = target;
 		r_coll[r_coll_count].c_sig = Objects[target].signature;
@@ -2909,18 +2938,18 @@ void beam_handle_collisions(beam *b)
 				first_hit = 0;
 			}
 		}
-				
+mprintf(("de\n"));				
 		// if the damage timestamp has expired or is not set yet, apply damage
 		if((r_coll[r_coll_count].c_stamp == -1) || timestamp_elapsed(r_coll[r_coll_count].c_stamp)){
 			do_damage = 1;
 			r_coll[r_coll_count].c_stamp = timestamp(BEAM_DAMAGE_TIME);
 		}
-
+mprintf(("ts elapsed\n"));
 		// if no damage - don't even indicate it has been hit
 		if(wi->damage <= 0){
 			do_damage = 0;
 		}
-
+mprintf(("do nothing\n"));
 		// increment collision count
 		r_coll_count++;		
 
@@ -2928,9 +2957,10 @@ void beam_handle_collisions(beam *b)
 		if(first_hit){
 			snd_play_3d( &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
-		
+mprintf(("play the sound\n"));		
 		// do damage
-		if(do_damage && !physics_paused){		
+		if(do_damage && !physics_paused){
+			mprintf(("doing damage "));
 			// maybe draw an explosion
 			if(wi->impact_weapon_expl_index >= 0){
 				int ani_handle = weapon_get_expl_handle(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
@@ -2939,11 +2969,13 @@ void beam_handle_collisions(beam *b)
 
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
+				mprintf(("beams hitting debris\n"));
 				// hit the debris - the debris hit code takes care of checking for MULTIPLAYER_CLIENT, etc
 				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, Weapon_info[b->weapon_info_index].damage);
 				break;
 
 			case OBJ_WEAPON:
+				mprintf(("beams hitting a weapon\n"));
 				// detonate the missile
 				Assert(Weapon_info[Weapons[Objects[target].instance].weapon_info_index].subtype == WP_MISSILE);
 #ifndef NO_NETWORK
@@ -2955,6 +2987,7 @@ void beam_handle_collisions(beam *b)
 				break;
 
 			case OBJ_ASTEROID:
+				mprintf(("beam hitting a asteroid\n"));
 				// hit the asteroid
 #ifndef NO_NETWORK
 				if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER)
@@ -2963,21 +2996,25 @@ void beam_handle_collisions(beam *b)
 					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, Weapon_info[b->weapon_info_index].damage);
 				}
 				break;
-
-			case OBJ_SHIP:				
+			case OBJ_SHIP:	
+				mprintf(("beam hitting a ship %s, shield quadrant %d\n", Ships[Objects[target].instance].ship_name, b->f_collisions[idx].quadrant));
 				// hit the ship - again, the innards of this code handle multiplayer cases
 				// maybe vaporize ship.
 				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), b->f_collisions[idx].quadrant);
 
+
 				// GAH!! Bobboau, the shields are almost always up!  Anyway, some people complained.
+				//fine :\... -Bobboau
 				// if this is the first hit on the player ship. whack him
 				if(do_damage)	// && !(b->f_collisions[idx].quadrant)) //I didn't want the beam wacking things if it's hitting just sheilds -Bobboau
 				{
+
 					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
 				}
 				break;
 			}									
 		}				
+mprintf(("out of handeling colisions\n"));
 
 		// if the radius of the target is somewhat close to the radius of the beam, "stop" the beam here
 		// for now : if its smaller than about 1/3 the radius of the ship
@@ -2990,7 +3027,7 @@ void beam_handle_collisions(beam *b)
 			break;
 		}
 	}
-
+mprintf(("beam stopped\n"));
 	// store the new recent collisions
 	for(idx=0; idx<r_coll_count; idx++){
 		b->r_collisions[idx] = r_coll[idx];

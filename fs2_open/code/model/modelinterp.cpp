@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-01-17 01:48:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2003-01-19 01:07:41 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/01/17 01:48:49  Goober5000
+ * added capability to the $Texture replace code to substitute the textures
+ * without needing and extra model, however, this way you can't substitute
+ * transparent or animated textures
+ * --Goober5000
+ *
  * Revision 2.12  2003/01/16 06:49:11  Goober5000
  * yay! got texture replacement to work!!!
  * --Goober5000
@@ -913,7 +919,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	//		Assert( verts[i].normnum == verts[i].vertnum );
 
-			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->is_ambient[w(p+40)]))	{	//gets the ambient glow to work
+			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->ambient[w(p+40)]))	{	//gets the ambient glow to work
 				if ( D3D_enabled )	{
 					Interp_list[i]->r = 191;
 					Interp_list[i]->g = 191;
@@ -1028,8 +1034,10 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					} else {
 						if (pm->is_ani[w(p+40)]){
 							texture = pm->textures[w(p+40)] + ((timestamp() / (int)(pm->fps[w(p+40)])) % pm->num_frames[w(p+40)]);//here is were it picks the texture to render for ani-Bobboau
+							GLOWMAP = pm->glow_textures[w(p+40)] + ((timestamp() / (int)(pm->glow_fps[w(p+40)])) % pm->glow_numframes[w(p+40)]);
 						}else{
 							texture = pm->textures[w(p+40)];//here is were it picks the texture to render for normal-Bobboau
+							GLOWMAP = pm->glow_textures[w(p+40)];
 						}
 					}
 
@@ -1037,7 +1045,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					if(Interp_flags & MR_ALL_XPARENT){
 						gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_xparent_alpha );
 					} else {
-						if(pm->is_transparent[w(p+40)]){	//trying to get transperent textures-Bobboau
+						if(pm->transparent[w(p+40)]){	//trying to get transperent textures-Bobboau
 							gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
 						}else{
 							gr_set_bitmap( texture );
@@ -1059,6 +1067,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					g3_draw_poly( nv, Interp_list, Interp_tmap_flags|TMAP_FLAG_NONDARKENING );		
 				}
 			}
+			GLOWMAP = -1;
 		}
 	}
 
@@ -2765,6 +2774,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		Interp_tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
+
 
 	if ( !(Interp_flags & MR_NO_TEXTURING) )	{
 		Interp_tmap_flags |= TMAP_FLAG_TEXTURED;

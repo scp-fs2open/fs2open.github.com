@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-01-17 01:48:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2003-01-19 01:07:41 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/01/17 01:48:49  Goober5000
+ * added capability to the $Texture replace code to substitute the textures
+ * without needing and extra model, however, this way you can't substitute
+ * transparent or animated textures
+ * --Goober5000
+ *
  * Revision 2.13  2003/01/16 06:49:11  Goober5000
  * yay! got texture replacement to work!!!
  * --Goober5000
@@ -1192,14 +1198,17 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 #ifdef _WIN32
 		char bname[_MAX_FNAME];
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
-		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, bname);
+//		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, bname);
+		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, bname));
 #else
-		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\n", model_filename);
+//		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\n", model_filename);
+		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, bname));
 #endif  // ifdef WIN32
 		ss_warning_shown = 1;
 	} else
 #endif
-	nprintf(("warning", "Subsystem %s in ships.tbl not found in model!\n", subobj_name));
+	mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, model_filename));
+//	nprintf(("warning", "Subsystem %s in ships.tbl not found in model!\n", subobj_name));
 #ifndef NDEBUG
 	if ( ss_fp )	{
 		char tmp_buffer[128];
@@ -1300,9 +1309,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 #endif
 
 	fp = cfopen(filename,"rb");
-	if (!(fp) && (ferror == 1)){
-		Error( LOCATION, "Can't open file <%s>",filename);
-		return 0;
+	if (!fp){
+		if(ferror == 1)Error( LOCATION, "Can't open file <%s>",filename);
+		return -1;
 	}		
 
 	// code to get a filename to write out subsystem information for each model that
@@ -1966,7 +1975,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					cfread_string_len(tmp_name,127,fp);
 
 					model_load_texture(pm, i, tmp_name);
-
 					//mprintf(0,"<%s>\n",name_buf);
 				}
 
@@ -2168,8 +2176,8 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	char tmp_name[256];
 	strcpy(tmp_name, file);
 
-	pm->is_transparent[i]=0;	//it's transparent
-	pm->is_ambient[i]=0;		//ambient glow
+	pm->transparent[i]=0;	//it's transparent
+	pm->ambient[i]=0;		//ambient glow
 	pm->is_ani[i]=0;		//animated textures
 	pm->num_frames[i]=1;	// number of frames - default 1 (no animation)
 
@@ -2183,13 +2191,13 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	{
 		if(strstr(tmp_name, "-trans"))
 		{
-			pm->is_transparent[i]=1;
+			pm->transparent[i]=1;
 			nprintf(("%s is transparent, oooow\n",tmp_name));
 		}
 
 		if(strstr(tmp_name, "-amb"))
 		{
-			pm->is_ambient[i]=1;
+			pm->ambient[i]=1;
 			nprintf(("%s is ambient, aaaahhh\n",tmp_name));
 		}
 
@@ -2219,16 +2227,29 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	pm->original_textures[i] = pm->textures[i];
 	//a quick hack for glow mapping-Bobboau
+	//redid the way glowmaps are handeled
+
 	strcat( tmp_name, "-glow");
-	mprintf(("looking for glow map %s\n", tmp_name));
-	int glow_idx=pm->textures[i] % MAX_BITMAPS;
-	GLOWMAP[glow_idx]=bm_load( tmp_name ); //see if there is one 
-	if(GLOWMAP[glow_idx]!=-1)	//then fill it into the array
-	{
-		mprintf(("texture '%s' has a glow map, %d, assosiated with it, isn't that nice\n", tmp_name, GLOWMAP[glow_idx]));
-		bm_lock((GLOWMAP[glow_idx]), 8, BMP_AABITMAP);
-		bm_unlock((GLOWMAP[glow_idx]));
+	pm->glow_textures[i] = bm_load( tmp_name );
+	if (pm->glow_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
+							
+		nprintf(("couldn't find %s.pcx",tmp_name));
+
+		pm->glow_is_ani[i] = 1;	//this is an animated texture
+		pm->glow_textures[i] = bm_load_animation(tmp_name,  &pm->glow_numframes[i], &pm->glow_fps[i], 1);
+						
+		if(pm->glow_textures[i]<0){
+		//	Warning( LOCATION, "Couldn't open glow_texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
+			pm->glow_textures[i] = -1;
+			pm->glow_is_ani[i] = 0;	//this isn't an animated texture after all
+			nprintf((" or %s.ani\n",tmp_name));
+		}else{
+			mprintf(("but I did find %s.ani, ", tmp_name));
+			mprintf(("with %d frames, ", pm->glow_numframes[i]));
+			mprintf(("and a rate of %d\n", pm->glow_fps[i]));
+		}
 	}
+	pm->glow_original_textures[i] = pm->glow_textures[i];
 }
 
 //returns the number of this model

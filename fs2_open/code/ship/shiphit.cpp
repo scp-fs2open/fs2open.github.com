@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-01-15 23:23:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2003-01-19 01:07:42 $
+ * $Author: bobboau $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/01/15 23:23:30  Goober5000
+ * NOW the model duplicates work! :p
+ * still gotta do the textures, but it shouldn't be hard now
+ * --Goober5000
+ *
  * Revision 2.6  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -2135,6 +2140,8 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 void ai_update_lethality(object *ship_obj, object *weapon_obj, float damage);
 static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int shield_quadrant, int wash_damage=0)
 {
+	mprintf(("doing damage\n"));
+
 	ship *shipp;	
 	float subsystem_damage = damage;			// damage to be applied to subsystems
 
@@ -2152,6 +2159,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 	if (update_lethality) {
 		ai_update_lethality(ship_obj, other_obj, damage);
 	}
+mprintf(("lethality updated\n"));
 
 	// if this is a weapon
 	if((other_obj != NULL) && (other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS)){
@@ -2182,31 +2190,61 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 			}		
 		}
 	}
+mprintf(("skill balencing done\n"));
 
 	// if this is not a laser, or i'm not a multiplayer client
 	// apply pain to me
 #ifndef NO_NETWORK
-	if((other_obj != NULL) && ((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (ship_obj == Player_obj)){
-#else
-	if((other_obj != NULL) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) && (Player_obj != NULL) && (ship_obj == Player_obj)){
-#endif
+
+if(other_obj->type == OBJ_BEAM){
+Assert((beam_get_weapon_info_index(other_obj) > -1) && (beam_get_weapon_info_index(other_obj) < Num_weapon_types));
+	if((other_obj != NULL) && ((Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (ship_obj == Player_obj)){
+mprintf(("sending pain\n"));
 		ship_hit_pain(damage);
 	}	
+}
+if(other_obj->type == OBJ_WEAPON){
+Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < Num_weapon_types));
+	if((other_obj != NULL) && ((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (ship_obj == Player_obj)){
+mprintf(("sending pain\n"));
+		ship_hit_pain(damage);
+	}
+}
+#else
+if(other_obj->type == OBJ_BEAM){
+Assert((beam_get_weapon_info_index(other_obj) > -1) && (beam_get_weapon_info_index(other_obj) < Num_weapon_types));
+	if((other_obj != NULL) && (Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) && (Player_obj != NULL) && (ship_obj == Player_obj)){
+mprintf(("sending pain\n"));
+		ship_hit_pain(damage);
+	}	
+}
+if(other_obj->type == OBJ_WEAPON){
+Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < Num_weapons));
+	if((other_obj != NULL) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) && (Player_obj != NULL) && (ship_obj == Player_obj)){
+mprintf(("sending pain\n"));
+		ship_hit_pain(damage);
+	}
+}
+#endif
+mprintf(("pain sent\n"));
 
 	// If the ship is invulnerable, do nothing
 	if (ship_obj->flags & OF_INVULNERABLE)	{
 		return;
 	}
+mprintf(("not invulnerable\n"));
 
 	//	if ship is already dying, shorten deathroll.
 	if (shipp->flags & SF_DYING) {
 		shiphit_hit_after_death(ship_obj, damage);
 		return;
 	}
+mprintf(("hitting a dead ship\n"));
 	
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.
 	if ( shield_quadrant > -1 && !(ship_obj->flags & OF_NO_SHIELDS) )	{
+		mprintf(("applying damage ge to shield\n"));
 		float shield_factor = -1.0f;
 		int	weapon_info_index;		
 
@@ -2243,7 +2281,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 	// Apply leftover damage to the ship's subsystem and hull.
 	if ( (damage > 0.0f) || (subsystem_damage > 0.0f) )	{
 		int	weapon_info_index;		
-
+mprintf(("aplying damage to hull\n"));
 		float pre_subsys = subsystem_damage;
 		subsystem_damage = do_subobj_hit_stuff(ship_obj, other_obj, hitpos, subsystem_damage);
 		if(subsystem_damage > 0.0f){
@@ -2310,12 +2348,20 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 					scoring_add_damage(ship_obj, &Objects[other_obj->parent], damage);
 				}
 				break;
+			case OBJ_BEAM://give kills for fighter beams
+				object beam_obj = Objects[beam_get_parent(other_obj)];
+				if((beam_obj.instance < 0) || (beam_obj.instance >= MAX_OBJECTS)){
+					scoring_add_damage(ship_obj, NULL, damage);
+				} else {
+					scoring_add_damage(ship_obj, &Objects[other_obj->parent], damage);
+				}
+				break;
 			default:
 				break;
 			}
-
+//mprintf(("\n"));
 			if (ship_obj->hull_strength <= 0.0f) {
-
+mprintf(("doing vaporizeing stuff\n"));
 				MONITOR_INC( ShipNumDied, 1 );
 
 				ship_info	*sip = &Ship_info[shipp->ship_info_index];
@@ -2361,7 +2407,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 			}
 		}
 	}
-
+mprintf(("fun stuff with weapons\n"));
 	// if the hitting object is a weapon, maybe do some fun stuff here
 	if(other_obj->type == OBJ_WEAPON){
 		weapon_info *wip;
@@ -2423,7 +2469,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 			}
 		}
 	}
-
+mprintf(("not a weapon\n"));
 	// only want to check the following in single player or if I am the multiplayer game server
 #ifndef NO_NETWORK
 	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK) && ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_WEAPON)) ){
@@ -2432,6 +2478,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 #endif
 		ai_ship_hit(ship_obj, other_obj, hitpos, shield_quadrant, hit_normal);
 	}
+mprintf(("ai hit stuff\n"));
 
 	//	Cut damage done on the player by 4x in training missions, but do full accredidation
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ){
@@ -2439,6 +2486,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 			damage /= 4.0f;
 		}
 	}	
+mprintf(("cutting damage done stuff\n"));
 
 	// send a packet in multiplayer -- but don't sent it if the ship is already dying.  Clients can
 	// take care of dealing with ship hits after a ship is already dead.
@@ -2456,6 +2504,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 #else
 	if((other_obj->type == OBJ_WEAPON) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags & WIF_TAG)) {
 #endif
+mprintf(("doing TAG stuff\n"));
 		if (Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_level == 1) {
 			Ships[ship_obj->instance].tag_left = Weapon_info[Weapons[other_obj->instance].weapon_info_index].tag_time;
 			Ships[ship_obj->instance].tag_total = Ships[ship_obj->instance].tag_left;
@@ -2508,8 +2557,10 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 
 	// evaluate any possible player stats implications
 	scoring_eval_hit(ship_obj,other_obj);
+mprintf(("stats evaluated\n"));
 
 	ship_do_damage(ship_obj, other_obj, hitpos, damage, shield_quadrant );
+mprintf(("damage done\n"));
 
 	// DA 5/5/98: move ship_hit_create_sparks() after do_damage() since number of sparks depends on hull strength
 	// doesn't hit shield and we want sparks
@@ -2520,6 +2571,8 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 		}
 		//fireball_create( hitpos, FIREBALL_SHIP_EXPLODE1, OBJ_INDEX(ship_obj), 0.25f );
 	}
+mprintf(("totaly done\n"));
+
 }
 
 

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.17 $
- * $Date: 2003-01-17 04:57:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2003-01-19 01:07:41 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/01/17 04:57:17  Goober5000
+ * Allowed selection of either $Texture Replace, which keeps track of individual
+ * replacement textures for a ship, or $Duplicate Model Texture Replace, which
+ * duplicates a model and reskins it.  Use $Duplicate Model Texture Replace
+ * if you want to substitute an animated texture or a transparent texture.
+ * --Goober5000
+ *
  * Revision 2.16  2003/01/17 01:48:49  Goober5000
  * added capability to the $Texture replace code to substitute the textures
  * without needing and extra model, however, this way you can't substitute
@@ -758,9 +765,17 @@ typedef struct polymodel {
 	int			num_frames[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			fps[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 	int			is_ani[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
-	int			is_ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
-	int			is_transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau
 
+	int			glow_original_textures[MAX_MODEL_TEXTURES];		// what gets read in from file
+	int			glow_textures[MAX_MODEL_TEXTURES];					// what textures you draw with.  reset to original_textures by model_set_instance
+	int			glow_numframes[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
+	int			glow_fps[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
+	int			glow_is_ani[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
+
+	int			nameplate[MAX_MODEL_TEXTURES];				// use the nameplate texture-Bobboau
+
+	int			ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
+	int			transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau
 
 	vector		autocenter;							// valid only if PM_FLAG_AUTOCEN is set
 	
