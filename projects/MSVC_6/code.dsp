@@ -81,6 +81,8 @@ LIB32=link.exe -lib
 # Name "code - Win32 Release"
 # Name "code - Win32 Debug"
 # Begin Group "AI"
+
+# PROP Default_Filter ""
 # Begin Source File
 
 SOURCE=..\..\code\ai\ai.cpp
@@ -1115,6 +1117,14 @@ SOURCE=..\..\code\MenuUI\SnazzyUI.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\menuui\storybook.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\menuui\storybook.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\MenuUI\TechMenu.cpp
 # End Source File
 # Begin Source File
@@ -1743,10 +1753,6 @@ SOURCE=..\..\code\ship\Afterburner.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\ship\AWACS.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\ship\AWACS.cpp
 
 !IF  "$(CFG)" == "code - Win32 Release"
@@ -1757,6 +1763,10 @@ SOURCE=..\..\code\ship\AWACS.cpp
 
 !ENDIF 
 
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\AWACS.h
 # End Source File
 # Begin Source File
 
