@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.45 $
- * $Date: 2003-08-28 20:42:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.46 $
+ * $Date: 2003-09-11 19:34:29 $
+ * $Author: argv $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/08/28 20:42:18  Goober5000
+ * implemented rotating barrels for firing primary weapons
+ * --Goober5000
+ *
  * Revision 2.44  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -609,6 +613,8 @@ typedef	struct ship_subsys {
 	int subsys_cargo_name;			// cap ship cargo on subsys
 	int subsys_cargo_revealed;
 	fix time_subsys_cargo_revealed;	// added by Goober5000
+
+	float power_output; // _argv[-1] - calculated power output of this subsystem.
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -817,6 +823,9 @@ typedef struct ship {
 	float	weapon_energy;						// Number of EUs in energy reserves
 	float	current_max_speed;				// Max ship speed (based on energy diverted to engines)
 	int	next_manage_ets;					// timestamp for when ai can next modify ets ( -1 means never )
+	// _argv[-1] - power drain effects.
+	float effective_power_drain, power_drain, time_to_next_jitter;
+	float	power_output; // calculated effective power output.
 
 	uint	flags;								// flag variable to contain ship state (see SF_ #defines)
 	uint	flags2;								// another flag variable (see SF2_ #defines)
@@ -1031,6 +1040,12 @@ extern int ship_find_exited_ship_by_signature( int signature);
 // flags2 -- added by Goober5000
 #define SIF2_DEFAULT_IN_TECH_DATABASE		(1 << 0)	// default in tech database - Goober5000
 #define SIF2_DEFAULT_IN_TECH_DATABASE_M		(1 << 1)	// ditto - Goober5000
+// _argv[-1] - AI hint so that big ships with big frontal firepower won't circle a BIG|HUGE opponent.
+#define SIF2_BIG_GUNS_IN_FRONT				(1 << 2)
+// _argv[-1] - all beams free by default.
+#define SIF2_BEAM_FREE_BY_DEFAULT			(1 << 3)
+// _argv[-1] - singular shields.
+#define SIF2_SINGULAR_SHIELDS				(1 << 4)
 
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
@@ -1131,7 +1146,10 @@ typedef struct ship_info {
 	model_subsystem *subsystems;				// see model.h for structure definition
 
 	// Energy Transfer System fields
+	// _argv[-1] - this power_output is the base power output for the ship. even with all subsystems destroyed it will still have
+	// this much power output. effective power output can be affected by other factors, of course...
 	float		power_output;						// power output of ships reactor (EU/s)
+	float		full_power_output;					// _argv[-1] - calculated full power output (including subsys output)
 	float		max_overclocked_speed;			// max speed when 100% power output sent to engines
 	float		max_weapon_reserve;				// maximum energy that can be stored for primary weapon usage
 
@@ -1221,7 +1239,8 @@ extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 // TALK TO DAVE B FIRST
 // ****************************************************************
 #ifdef INF_BUILD
-#define MAX_SHIP_TYPES		250		//DTP bumped from 130 to 200
+// _argv[-1] - bumped from 250 to 400. I *need* this increased!
+#define MAX_SHIP_TYPES		400		//DTP bumped from 130 to 200
 #else
 #define MAX_SHIP_TYPES		130		//DTP bumped from 130 to 200
 #endif
