@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-03-31 05:42:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-01 01:52:20 $
+ * $Author: phreak $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/31 05:42:26  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.5  2004/03/05 09:01:59  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -252,6 +257,7 @@
 #include "io/timer.h"
 #include "species_defs/species_defs.h"
 #include "ship/ship.h"
+#include "radar/radarsetup.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-03-05 09:02:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-01 01:51:54 $
+ * $Author: phreak $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/03/05 09:02:12  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.5  2003/08/31 06:00:41  bobboau
  * an asortment of bugfixes, mostly with the specular code,
  * HUD flickering should be completly gone now
@@ -192,6 +196,7 @@
 #include "freespace2/freespace.h"
 #include "localization/localize.h"
 #include "ship/awacs.h"
+#include "radar/radarsetup.h"
 
 int Radar_radius[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
@@ -238,16 +243,6 @@ int Radar_blip_radius_target[GR_NUM_RESOLUTIONS] = {
 float radx, rady;
 
 #define MAX_RADAR_LEVELS	2		// bright and dim radar dots are allowed
-
-#define BLIP_CURRENT_TARGET	(1<<0)
-#define BLIP_DRAW_DIM			(1<<1)	// object is farther than Radar_dim_range units away
-#define BLIP_DRAW_DISTORTED	(1<<2)	// object is resistant to sensors, so draw distorted
-
-typedef struct blip	{
-	blip	*prev, *next;
-	int	x, y, rad;
-	int	flags;	// BLIP_ flags defined above
-} blip;
 
 #define MAX_BLIPS 150
 typedef struct rcol {
@@ -334,7 +329,7 @@ int Radar_dist_coords[GR_NUM_RESOLUTIONS][RR_MAX_RANGES][2] =
 // forward declarations
 void draw_radar_blips(int desired_color, int is_dim, int distort=0);
 
-void radar_init()
+void radar_init_std()
 {
 	int i,j;
 
@@ -353,7 +348,7 @@ void radar_init()
 }
 
 // determine what color the object blip should be drawn as
-int radar_blip_color(object *objp)
+int radar_blip_color_std(object *objp)
 {
 	int	color = 0;
 	ship	*shipp = NULL;
@@ -411,7 +406,7 @@ int radar_blip_color(object *objp)
 int See_all = FALSE;
 DCF_BOOL(see_all, See_all)
 
-void radar_plot_object( object *objp )	
+void radar_plot_object_std( object *objp )	
 {
 	vector	pos, tempv;
 	float		dist, rscale, zdist, max_radar_dist;
@@ -608,7 +603,7 @@ void radar_plot_object( object *objp )
 }
 
 // set N_blips for each color/brightness level to zero
-void radar_null_nblips()
+void radar_null_nblips_std()
 {
 	int i;
 
@@ -621,7 +616,7 @@ void radar_null_nblips()
 }
 
 // radar_mission_init() is called at the start of each mission.  
-void radar_mission_init()
+void radar_mission_init_std()
 {
 	int i;
 
@@ -649,7 +644,7 @@ int Large_blip_offset_y = 0;
 char Small_blip_string[2];
 char Large_blip_string[2];
 
-void radar_frame_init()
+void radar_frame_init_std()
 {
 	radar_null_nblips();
 	radx = i2fl(Radar_radius[gr_screen.res][0])/2.0f;
@@ -671,7 +666,7 @@ void radar_frame_init()
 	Large_blip_offset_y = -h/2;
 }
 
-void radar_draw_circle( int x, int y, int rad )
+void radar_draw_circle_std( int x, int y, int rad )
 {
 	if ( rad == Radar_blip_radius_target[gr_screen.res] )	{
 		gr_string( Large_blip_offset_x+x, Large_blip_offset_y+y, Large_blip_string );
@@ -682,7 +677,7 @@ void radar_draw_circle( int x, int y, int rad )
 }
 
 // radar is damaged, so make blips dance around
-void radar_blip_draw_distorted(blip *b)
+void radar_blip_draw_distorted_std(blip *b)
 {
 	int xdiff, ydiff;
 	float scale;
@@ -701,7 +696,7 @@ void radar_blip_draw_distorted(blip *b)
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
-void radar_blip_draw_flicker(blip *b)
+void radar_blip_draw_flicker_std(blip *b)
 {
 	int xdiff=0, ydiff=0, flicker_index;
 
@@ -772,7 +767,7 @@ void draw_radar_blips(int rcol, int is_dim, int distort)
 
 // Draw the radar blips
 // input:	distorted	=>		0 (default) to draw normal, 1 to draw distorted 
-void radar_draw_blips_sorted(int distort)
+void radar_draw_blips_sorted_std(int distort)
 {
 	// draw dim blips first
 	draw_radar_blips(RCOL_JUMP_NODE, 1, distort);
@@ -798,7 +793,7 @@ void radar_draw_blips_sorted(int distort)
 }
 
 static int test_time = 1;
-void radar_draw_range()
+void radar_draw_range_std()
 {
 	char buf[32];
 
@@ -828,7 +823,7 @@ void radar_draw_range()
 	hud_set_default_color();
 }
 
-void radar_frame_render(float frametime)
+void radar_frame_render_std(float frametime)
 {
 	float	sensors_str;
 	int ok_to_blit_radar;
@@ -898,7 +893,7 @@ void radar_frame_render(float frametime)
 	}
 }
 
-void radar_blit_gauge()
+void radar_blit_gauge_std()
 {
 	SPECMAP = -1;
 	GLOWMAP = -1;
@@ -907,7 +902,7 @@ void radar_blit_gauge()
 	gr_aabitmap( Radar_coords[gr_screen.res][0], Radar_coords[gr_screen.res][1] );
 } 
 
-void radar_page_in()
+void radar_page_in_std()
 {
 	bm_page_in_aabitmap( Radar_gauge.first_frame, Radar_gauge.num_frames );
 }

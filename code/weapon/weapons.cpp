@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2004/06/29 06:02:34  wmcoolmon
+ * Support as well as the extern for "-load_only_used"; this way everything that includes cmdline.h doesn't have to be recompiled.
+ *
  * Revision 2.66  2004/06/22 23:14:10  wmcoolmon
  * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
  * OGG code has been commented out, so you don't need the SDK yet.
@@ -607,6 +610,7 @@
 #include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
 #include "parse/parselo.h"
+#include "radar/radarsetup.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"

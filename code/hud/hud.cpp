@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-06-08 00:35:43 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2004-07-01 01:53:27 $
+ * $Author: phreak $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/06/08 00:35:43  wmcoolmon
+ * Added +Color: option for custom gauges.
+ *
  * Revision 2.18  2004/06/01 07:31:56  wmcoolmon
  * Lotsa stuff. Custom gauges w/ ANIs support added, SEXPs to set gauge text, gauge image frames, and gauge coords. These SEXPs and toggle-hud reside in the Hud/change category.
  *
@@ -432,6 +435,7 @@
 #include "starfield/supernova.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
+#include "radar/radarsetup.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
