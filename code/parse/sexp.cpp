@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.127 $
- * $Date: 2005-01-17 22:46:32 $
+ * $Revision: 2.128 $
+ * $Date: 2005-01-18 00:14:37 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.127  2005/01/17 22:46:32  Goober5000
+ * variables can now be displayed in messages
+ * --Goober5000
+ *
  * Revision 2.126  2005/01/11 21:38:51  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -1452,8 +1456,8 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 {
 	int i;
 
-	i = find_operator(text);
-	if ((i == OP_TRUE) && (type == SEXP_ATOM) &&	(subtype == SEXP_ATOM_OPERATOR)) {
+	i = get_operator_const(text);
+	if ((i == OP_TRUE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR)) {
 		return Locked_sexp_true;
 	} else if ((i == OP_FALSE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR)) {
 		return Locked_sexp_false;
@@ -1824,7 +1828,8 @@ int find_argnum(int parent, int arg)
 	return tally;
 }
 
-int identify_operator(char *token)
+// from an operator name, return its index in the array Operators
+int get_operator_index(char *token)
 {
 	int	i;
 
@@ -1837,26 +1842,24 @@ int identify_operator(char *token)
 	return -1;
 }
 
-int find_operator(char *token)
+// from an operator name, return its constant (the number it was #define'd with)
+int get_operator_const(char *token)
 {
-	int	i;
+	int	idx = get_operator_index(token);
 
-	for (i=0; i<Num_operators; i++){
-		if (!stricmp(token, Operators[i].text)){
-			return Operators[i].value;
-		}
-	}
+	if (idx == -1)
+		return 0;
 
-	return 0;
+	return Operators[idx].value;
 }
 
-int query_sexp_args_count(int index)
+int query_sexp_args_count(int node)
 {
 	int count = 0;
 
-	while (Sexp_nodes[index].rest != -1){
+	while (CDR(node) != -1){
 		count++;
-		index = Sexp_nodes[index].rest;
+		node = CDR(node);
 	}
 
 	return count;
@@ -1865,30 +1868,30 @@ int query_sexp_args_count(int index)
 // returns 0 if ok, negative if there's an error in expression..
 // See the returns types in sexp.h
 
-int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index, int mode)
+int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, int mode)
 {
 	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
-	int op_index;
+	int op_node;
 
-	Assert(index >= 0 && index < MAX_SEXP_NODES);
-	Assert(Sexp_nodes[index].type != SEXP_NOT_USED);
-	if (Sexp_nodes[index].subtype == SEXP_ATOM_NUMBER && return_type == OPR_BOOL) {
+	Assert(node >= 0 && node < MAX_SEXP_NODES);
+	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER && return_type == OPR_BOOL) {
 		// special case Mark seems to want supported
-		Assert(Sexp_nodes[index].first == -1);  // only lists should have a first pointer
-		if (Sexp_nodes[index].rest != -1)  // anything after the number?
+		Assert(Sexp_nodes[node].first == -1);  // only lists should have a first pointer
+		if (Sexp_nodes[node].rest != -1)  // anything after the number?
 			return SEXP_CHECK_NONOP_ARGS; // if so, it's a syntax error
 
 		return 0;
 	}
 
-	op_index = index;		// save the index of the operator since we need to get to other args.
-	if (bad_index)
-		*bad_index = op_index;
+	op_node = node;		// save the node of the operator since we need to get to other args.
+	if (bad_node)
+		*bad_node = op_node;
 
-	if (Sexp_nodes[op_index].subtype != SEXP_ATOM_OPERATOR)
+	if (Sexp_nodes[op_node].subtype != SEXP_ATOM_OPERATOR)
 		return SEXP_CHECK_OP_EXPECTED;  // not an operator, which it should always be
 
-	op = identify_operator(CTEXT(op_index));
+	op = get_operator_index(CTEXT(op_node));
 	if (op == -1)
 		return SEXP_CHECK_UNKNOWN_OP;  // unrecognized operator
 
@@ -1913,26 +1916,26 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 		}
 	}
 
-	count = query_sexp_args_count(op_index);
+	count = query_sexp_args_count(op_node);
 	if (count < Operators[op].min || count > Operators[op].max)
 		return SEXP_CHECK_BAD_ARG_COUNT;  // incorrect number of arguments
 
 	// Goober5000 - if this is a list of stuff that has the special argument as
 	// an item in the list, assume it's valid
-	if (special_argument_appears_in_sexp_list(op_index))
+	if (special_argument_appears_in_sexp_list(op_node))
 		return 0;
 
-	index = Sexp_nodes[op_index].rest;
-	while (index != -1) {
+	node = Sexp_nodes[op_node].rest;
+	while (node != -1) {
 		type = query_operator_argument_type(op, argnum);
-		Assert(Sexp_nodes[index].type != SEXP_NOT_USED);
-		if (bad_index)
-			*bad_index = index;
+		Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
+		if (bad_node)
+			*bad_node = node;
 
-		if (Sexp_nodes[index].subtype == SEXP_ATOM_LIST) {
-			i = Sexp_nodes[index].first;
-			if (bad_index)
-				*bad_index = i;
+		if (Sexp_nodes[node].subtype == SEXP_ATOM_LIST) {
+			i = Sexp_nodes[node].first;
+			if (bad_node)
+				*bad_node = i;
 			
 			// be sure to check to see if this node is a list of stuff and not an actual operator type
 			// thing.  (i.e. in the case of a cond statement, the conditional will fall into this if
@@ -1940,7 +1943,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 			if (Sexp_nodes[i].subtype == SEXP_ATOM_LIST)
 				return 0;
 
-			op2 = identify_operator(CTEXT(i));
+			op2 = get_operator_index(CTEXT(i));
 			if (op2 == -1)
 				return SEXP_CHECK_UNKNOWN_OP;
 
@@ -1981,16 +1984,16 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 						return SEXP_CHECK_UNKNOWN_TYPE;  // no other return types available
 				}
 
-				if ((z = check_sexp_syntax(i, t, recursive, bad_index)) != 0) {
+				if ((z = check_sexp_syntax(i, t, recursive, bad_node)) != 0) {
 					return z;
 				}
 			}
 
-		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_NUMBER) {
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) {
 			char *ptr;
 
 			type2 = OPR_POSITIVE;
-			ptr = CTEXT(index);
+			ptr = CTEXT(node);
 			if (*ptr == '-') {
 				type2 = OPR_NUMBER;
 				ptr++;
@@ -2006,18 +2009,18 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				ptr++;
 			}
 
-			i = atoi(CTEXT(index));
-			z = find_operator(CTEXT(op_index));
+			i = atoi(CTEXT(node));
+			z = get_operator_const(CTEXT(op_node));
 			if ( (z == OP_HAS_DOCKED_DELAY) || (z == OP_HAS_UNDOCKED_DELAY) )
 				if ( (argnum == 2) && (i < 1) )
 					return SEXP_CHECK_NUM_RANGE_INVALID;
 
-			z = identify_operator(CTEXT(op_index));
+			z = get_operator_index(CTEXT(op_node));
 			if ( (query_operator_return_type(z) == OPR_AI_GOAL) && (argnum == Operators[op].min - 1) )
 				if ( (i < 0) || (i > 89) )
 					return SEXP_CHECK_NUM_RANGE_INVALID;
 
-		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_STRING) {
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
 			type2 = SEXP_ATOM_STRING;
 
 		} else {
@@ -2058,8 +2061,8 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (ship_name_lookup(CTEXT(index), 0) < 0) {
-					if (Fred_running || mission_parse_ship_arrived(CTEXT(index))){  // == 0 when still on arrival list
+				if (ship_name_lookup(CTEXT(node), 0) < 0) {
+					if (Fred_running || mission_parse_ship_arrived(CTEXT(node))){  // == 0 when still on arrival list
 						return SEXP_CHECK_INVALID_SHIP;
 					}
 				}
@@ -2072,14 +2075,14 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (ship_name_lookup(CTEXT(index), 1) < 0) {
-					if (Fred_running || mission_parse_ship_arrived(CTEXT(index))) {		// == 0 when still on arrival list
+				if (ship_name_lookup(CTEXT(node), 1) < 0) {
+					if (Fred_running || mission_parse_ship_arrived(CTEXT(node))) {		// == 0 when still on arrival list
 						if (type == OPF_SHIP){													// return invalid ship if not also looking for point
 							return SEXP_CHECK_INVALID_SHIP;
 						}
 
-						if (waypoint_lookup(CTEXT(index)) < 0){
-							if (verify_vector(CTEXT(index))){						// verify return non-zero on invalid point
+						if (waypoint_lookup(CTEXT(node)) < 0){
+							if (verify_vector(CTEXT(node))){						// verify return non-zero on invalid point
 								return SEXP_CHECK_INVALID_POINT;
 							}
 						}
@@ -2093,7 +2096,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (wing_name_lookup(CTEXT(index), 1) < 0){
+				if (wing_name_lookup(CTEXT(node), 1) < 0){
 					return SEXP_CHECK_INVALID_WING;
 				}
 
@@ -2105,15 +2108,15 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if ((ship_name_lookup(CTEXT(index), 1) < 0) && (wing_name_lookup(CTEXT(index), 1) < 0)) {
-					if (Fred_running || mission_parse_ship_arrived(CTEXT(index))) {		// == 0 when still on arrival list
+				if ((ship_name_lookup(CTEXT(node), 1) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0)) {
+					if (Fred_running || mission_parse_ship_arrived(CTEXT(node))) {		// == 0 when still on arrival list
 						if (type != OPF_SHIP_WING_POINT){									// return invalid if not also looking for point
 							return SEXP_CHECK_INVALID_SHIP_WING;
 						}
 
-						if (waypoint_lookup(CTEXT(index)) < 0){
-							if (verify_vector(CTEXT(index))){  // non-zero on verify vector mean invalid!
-								if (!sexp_determine_team(CTEXT(index))){
+						if (waypoint_lookup(CTEXT(node)) < 0){
+							if (verify_vector(CTEXT(node))){  // non-zero on verify vector mean invalid!
+								if (!sexp_determine_team(CTEXT(node))){
 									return SEXP_CHECK_INVALID_POINT;
 								}
 							}
@@ -2139,7 +2142,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				// with that name.  This code assumes by default that the ship is *always* the first name
 				// in the sexpression.  If this is ever not the case, the code here must be changed to
 				// get the correct ship name.
-				switch(Operators[identify_operator(CTEXT(op_index))].value)
+				switch(Operators[get_operator_index(CTEXT(op_node))].value)
 				{
 					case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 					case OP_DISTANCE_SUBSYSTEM:
@@ -2148,19 +2151,19 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					case OP_CHANGE_AI_CLASS:
 					case OP_IS_AI_CLASS:
 					case OP_MISSILE_LOCKED:
-						ship_index = Sexp_nodes[Sexp_nodes[op_index].rest].rest;
+						ship_index = Sexp_nodes[Sexp_nodes[op_node].rest].rest;
 						break;
 
 					case OP_BEAM_FIRE:
 						if(argnum == 1){
-							ship_index = Sexp_nodes[op_index].rest;
+							ship_index = Sexp_nodes[op_node].rest;
 						} else {
-							ship_index = Sexp_nodes[Sexp_nodes[Sexp_nodes[op_index].rest].rest].rest;
+							ship_index = Sexp_nodes[Sexp_nodes[Sexp_nodes[op_node].rest].rest].rest;
 						}
 						break;
 	
 					default :
-						ship_index = Sexp_nodes[op_index].rest;
+						ship_index = Sexp_nodes[op_node].rest;
 						break;
 				}
 
@@ -2182,14 +2185,14 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				// check for the special "hull" value
 				if ( (Operators[op].value == OP_SABOTAGE_SUBSYSTEM) || (Operators[op].value == OP_REPAIR_SUBSYSTEM) || (Operators[op].value == OP_SET_SUBSYSTEM_STRNGTH) ) {
-					if ( !stricmp( CTEXT(index), SEXP_HULL_STRING) ){
+					if ( !stricmp( CTEXT(node), SEXP_HULL_STRING) ){
 						break;
 					}
 				}
 
 				for (i=0; i<Ship_info[ship_class].n_subsystems; i++)
 				{
-					if (!subsystem_stricmp(Ship_info[ship_class].subsystems[i].subobj_name, CTEXT(index)))
+					if (!subsystem_stricmp(Ship_info[ship_class].subsystems[i].subobj_name, CTEXT(node)))
 					{
 						break;
 					}
@@ -2228,9 +2231,9 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (waypoint_lookup(CTEXT(index)) < 0)
+				if (waypoint_lookup(CTEXT(node)) < 0)
 				{
-					if (verify_vector(CTEXT(index)))
+					if (verify_vector(CTEXT(node)))
 					{
 						return SEXP_CHECK_INVALID_POINT;
 					}
@@ -2246,7 +2249,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				for (i=0; i<Num_team_names; i++)
 				{
-					if (!stricmp(Team_names[i], CTEXT(index)))
+					if (!stricmp(Team_names[i], CTEXT(node)))
 					{
 						break;
 					}
@@ -2267,7 +2270,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				for (i=0; i<Num_ai_classes; i++)
 				{
-					if (!stricmp(Ai_class_names[i], CTEXT(index)))
+					if (!stricmp(Ai_class_names[i], CTEXT(node)))
 					{
 						break;
 					}
@@ -2288,7 +2291,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				for (i=0; i<MAX_ARRIVAL_NAMES; i++)
 				{
-					if (!stricmp(Arrival_location_names[i], CTEXT(index)))
+					if (!stricmp(Arrival_location_names[i], CTEXT(node)))
 					{
 						break;
 					}
@@ -2309,7 +2312,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				for (i=0; i<MAX_DEPARTURE_NAMES; i++)
 				{
-					if (!stricmp(Departure_location_names[i], CTEXT(index)))
+					if (!stricmp(Departure_location_names[i], CTEXT(node)))
 					{
 						break;
 					}
@@ -2333,19 +2336,19 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 					for (i=0; i<MAX_SPECIAL_ARRIVAL_ANCHORS; i++)
 					{
-						if (!stricmp(Special_arrival_anchor_names[i], CTEXT(index)))
+						if (!stricmp(Special_arrival_anchor_names[i], CTEXT(node)))
 						{
 							valid = 1;
 							break;
 						}
 					}
 
-					if (ship_name_lookup(CTEXT(index), 1) >= 0)
+					if (ship_name_lookup(CTEXT(node), 1) >= 0)
 					{
 						valid = 1;
 					}
 
-					if (!Fred_running && !mission_parse_ship_arrived(CTEXT(index)))	// 0 when on arrival list
+					if (!Fred_running && !mission_parse_ship_arrived(CTEXT(node)))	// 0 when on arrival list
 					{
 						valid = 1;
 					}
@@ -2363,12 +2366,12 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (!stricmp(CTEXT(index), "<No Music>"))
+				if (!stricmp(CTEXT(node), "<No Music>"))
 					break;
 
 				for (i=0; i<Num_soundtracks; i++)
 				{
-					if (!stricmp(CTEXT(index), Soundtracks[i].name))
+					if (!stricmp(CTEXT(node), Soundtracks[i].name))
 					{
 						break;
 					}
@@ -2384,12 +2387,12 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (!stricmp(CTEXT(index), "<no anchor>"))
+				if (!stricmp(CTEXT(node), "<no anchor>"))
 					break;
 
-				if (ship_name_lookup(CTEXT(index), 1) < 0)
+				if (ship_name_lookup(CTEXT(node), 1) < 0)
 				{
-					if (Fred_running || mission_parse_ship_arrived(CTEXT(index)))	// == 0 when still on arrival list
+					if (Fred_running || mission_parse_ship_arrived(CTEXT(node)))	// == 0 when still on arrival list
 					{
 						return SEXP_CHECK_INVALID_SHIP;
 					}
@@ -2398,7 +2401,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				// ship exists at this point
 
 				// now determine if this ship has a docking bay
-				if (!ship_has_dock_bay(ship_name_lookup(CTEXT(index))))
+				if (!ship_has_dock_bay(ship_name_lookup(CTEXT(node))))
 				{
 					return SEXP_CHECK_INVALID_SHIP_WITH_BAY;
 				}
@@ -2409,11 +2412,11 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (!stricmp(CTEXT(index), "<any support ship class>"))
+				if (!stricmp(CTEXT(node), "<any support ship class>"))
 					break;
 
 				for (i = 0; i < Num_ship_types; i++ ) {
-					if ( !stricmp(CTEXT(index), Ship_info[i].name) )
+					if ( !stricmp(CTEXT(node), Ship_info[i].name) )
 					{
 						if (Ship_info[i].flags & SIF_SUPPORT)
 						{
@@ -2467,22 +2470,22 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if (Fred_running) {
 					int ship_num, ship2, i, w = 0, z;
 
-					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_index].rest), 1);	// Goober5000 - include players
+					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_node].rest), 1);	// Goober5000 - include players
 					if (ship_num < 0) {
-						w = wing_name_lookup(CTEXT(Sexp_nodes[op_index].rest));
+						w = wing_name_lookup(CTEXT(Sexp_nodes[op_node].rest));
 						if (w < 0) {
-							if (bad_index){
-								*bad_index = Sexp_nodes[op_index].rest;
+							if (bad_node){
+								*bad_node = Sexp_nodes[op_node].rest;
 							}
 
 							return SEXP_CHECK_INVALID_SHIP;  // should have already been caught earlier, but just in case..
 						}
 					}
 
-					Assert(Sexp_nodes[index].subtype == SEXP_ATOM_LIST);
-					z = Sexp_nodes[index].first;
+					Assert(Sexp_nodes[node].subtype == SEXP_ATOM_LIST);
+					z = Sexp_nodes[node].first;
 					Assert(Sexp_nodes[z].subtype != SEXP_ATOM_LIST);
-					z = find_operator(CTEXT(z));
+					z = get_operator_const(CTEXT(z));
 					if (ship_num >= 0) {
 						if (!query_sexp_ai_goal_valid(z, ship_num)){
 							return SEXP_CHECK_ORDER_NOT_ALLOWED;
@@ -2496,8 +2499,8 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 						}
 					}
 
-					if ((z == OP_AI_DOCK) && (Sexp_nodes[index].rest >= 0)) {
-						ship2 = ship_name_lookup(CTEXT(Sexp_nodes[index].rest), 1);	// Goober5000 - include players
+					if ((z == OP_AI_DOCK) && (Sexp_nodes[node].rest >= 0)) {
+						ship2 = ship_name_lookup(CTEXT(Sexp_nodes[node].rest), 1);	// Goober5000 - include players
 						if ((ship_num < 0) || !ship_docking_valid(ship_num, ship2)){
 							return SEXP_CHECK_DOCKING_NOT_ALLOWED;
 						}
@@ -2505,8 +2508,8 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				}
 
 				// we should check the syntax of the actual goal!!!!
-				z = Sexp_nodes[index].first;
-				if ((z = check_sexp_syntax(z, OPR_AI_GOAL, recursive, bad_index)) != 0){
+				z = Sexp_nodes[node].first;
+				if ((z = check_sexp_syntax(z, OPR_AI_GOAL, recursive, bad_node)) != 0){
 					return z;
 				}
 
@@ -2518,7 +2521,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				}
 
 				for (i=0; i<MAX_SHIP_TYPE_COUNTS; i++){
-					if (!stricmp( Ship_type_names[i], CTEXT(index))){
+					if (!stricmp( Ship_type_names[i], CTEXT(node))){
 						break;
 					}
 				}
@@ -2531,7 +2534,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 			case OPF_WAYPOINT_PATH:
 				for (i=0; i<Num_waypoint_lists; i++){
-					if (!stricmp(Waypoint_lists[i].name, CTEXT(index))){
+					if (!stricmp(Waypoint_lists[i].name, CTEXT(node))){
 						break;
 					}
 				}
@@ -2549,7 +2552,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				if (Fred_running) {
 					for (i=0; i<Num_messages; i++)
-						if (!stricmp(Messages[i].name, CTEXT(index)))
+						if (!stricmp(Messages[i].name, CTEXT(node)))
 							break;
 
 					if (i == Num_messages)
@@ -2568,7 +2571,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if (Fred_running) {  // should still check in Fred though..
 					char *name;
 
-					name = CTEXT(index);
+					name = CTEXT(node);
 					if (!stricmp(name, "low") || !stricmp(name, "normal") || !stricmp(name, "high"))
 						break;
 
@@ -2585,7 +2588,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if (Fred_running) {
 					if (mode == SEXP_MODE_CAMPAIGN) {
 						for (i=0; i<Campaign.num_missions; i++)
-							if (!stricmp(CTEXT(index), Campaign.missions[i].name)) {
+							if (!stricmp(CTEXT(node), Campaign.missions[i].name)) {
 								if ((i != Sexp_useful_number) && (Campaign.missions[i].level >= Campaign.missions[Sexp_useful_number].level))
 									return SEXP_CHECK_INVALID_LEVEL;
 
@@ -2602,7 +2605,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 							|| (Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE) )
 							break;
 
-						if (!(*Mission_filename) || stricmp(Mission_filename, CTEXT(index)))
+						if (!(*Mission_filename) || stricmp(Mission_filename, CTEXT(node)))
 							return SEXP_CHECK_INVALID_MISSION_NAME;
 					}
 				}
@@ -2616,7 +2619,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				// we only need to check the campaign list if running in Fred and are in campaign mode.
 				// otherwise, check the set of current goals
 				if ( Fred_running && (mode == SEXP_MODE_CAMPAIGN) ) {
-					z = find_parent_operator(index);
+					z = find_parent_operator(node);
 					Assert(z >= 0);
 					z = Sexp_nodes[z].rest;  // first argument of operator should be mission name
 					Assert(z >= 0);
@@ -2631,7 +2634,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					
 					if (i < Campaign.num_missions) {
 						for (t=0; t<Campaign.missions[i].num_goals; t++)
-							if (!stricmp(CTEXT(index), Campaign.missions[i].goals[t].name))
+							if (!stricmp(CTEXT(node), Campaign.missions[i].goals[t].name))
 								break;
 
 						if (t == Campaign.missions[i].num_goals)
@@ -2643,7 +2646,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 						break;
 
 					for (i=0; i<Num_goals; i++)
-						if (!stricmp(CTEXT(index), Mission_goals[i].name))
+						if (!stricmp(CTEXT(node), Mission_goals[i].name))
 							break;
 
 					if (i == Num_goals)
@@ -2659,7 +2662,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				// like above checking for goals, check events in the campaign only if in Fred
 				// and only if in campaign mode.  Otherwise, check the current set of events
 				if ( Fred_running && (mode == SEXP_MODE_CAMPAIGN) ) {
-					z = find_parent_operator(index);
+					z = find_parent_operator(node);
 					Assert(z >= 0);
 					z = Sexp_nodes[z].rest;  // first argument of operator should be mission name
 					Assert(z >= 0);
@@ -2674,7 +2677,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					
 					if (i < Campaign.num_missions) {
 						for (t=0; t<Campaign.missions[i].num_events; t++)
-							if (!stricmp(CTEXT(index), Campaign.missions[i].events[t].name))
+							if (!stricmp(CTEXT(node), Campaign.missions[i].events[t].name))
 								break;
 
 						if (t == Campaign.missions[i].num_events)
@@ -2686,7 +2689,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 						break;
 
 					for ( i = 0; i < Num_mission_events; i++ ) {
-						if ( !stricmp(CTEXT(index), Mission_events[i].name) )
+						if ( !stricmp(CTEXT(node), Mission_events[i].name) )
 							break;
 					}
 					if ( i == Num_mission_events )
@@ -2701,11 +2704,11 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if (Fred_running) {
 					int ship_num, model, i, z;
 
-					z = find_parent_operator(op_index);
+					z = find_parent_operator(op_node);
 					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[z].rest), 1);
 					if (ship_num < 0) {
-						if (bad_index)
-							*bad_index = Sexp_nodes[z].rest;
+						if (bad_node)
+							*bad_node = Sexp_nodes[z].rest;
 
 						return SEXP_CHECK_INVALID_SHIP;  // should have already been caught earlier, but just in case..
 					}
@@ -2713,7 +2716,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					model = Ships[ship_num].modelnum;
 					z = model_get_num_dock_points(model);
 					for (i=0; i<z; i++)
-						if (!stricmp(CTEXT(index), model_get_dock_name(model, i)))
+						if (!stricmp(CTEXT(node), model_get_dock_name(model, i)))
 							break;
 
 					if (i == z)
@@ -2729,10 +2732,10 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if (Fred_running) {
 					int ship_num, model, i, z;
 
-					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_index].rest), 1);
+					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_node].rest), 1);
 					if (ship_num < 0) {
-						if (bad_index)
-							*bad_index = Sexp_nodes[op_index].rest;
+						if (bad_node)
+							*bad_node = Sexp_nodes[op_node].rest;
 
 						return SEXP_CHECK_INVALID_SHIP;  // should have already been caught earlier, but just in case..
 					}
@@ -2740,7 +2743,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					model = Ships[ship_num].modelnum;
 					z = model_get_num_dock_points(model);
 					for (i=0; i<z; i++)
-						if (!stricmp(CTEXT(index), model_get_dock_name(model, i)))
+						if (!stricmp(CTEXT(node), model_get_dock_name(model, i)))
 							break;
 
 					if (i == z)
@@ -2753,13 +2756,13 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				if (*CTEXT(index) != '#') {  // not a manual source?
-					//if ( !stricmp(CTEXT(index), "<any allied>") )
+				if (*CTEXT(node) != '#') {  // not a manual source?
+					//if ( !stricmp(CTEXT(node), "<any allied>") )
 					//	return SEXP_CHECK_INVALID_MSG_SOURCE;
 
-					if ( stricmp(CTEXT(index), "<any wingman>"))  // not a special token?
-						if ((ship_name_lookup(CTEXT(index)) < 0) && (wing_name_lookup(CTEXT(index), 1) < 0))  // is it in the mission?
-							if (Fred_running || mission_parse_ship_arrived(CTEXT(index)))  // == 0 when still on arrival list
+					if ( stricmp(CTEXT(node), "<any wingman>"))  // not a special token?
+						if ((ship_name_lookup(CTEXT(node)) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
+							if (Fred_running || mission_parse_ship_arrived(CTEXT(node)))  // == 0 when still on arrival list
 								return SEXP_CHECK_INVALID_MSG_SOURCE;
 				}
 
@@ -2782,7 +2785,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if ( !stricmp(CTEXT(index), Skill_level_names(i, 0)) )
+					if ( !stricmp(CTEXT(node), Skill_level_names(i, 0)) )
 						break;
 				}
 				if ( i == NUM_SKILL_LEVELS )
@@ -2794,7 +2797,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for (i = 0; i < NUM_MEDALS; i++) {
-					if ( !stricmp(CTEXT(index), Medals[i].name) )
+					if ( !stricmp(CTEXT(node), Medals[i].name) )
 						break;
 				}
 
@@ -2808,7 +2811,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for (i = 0; i < Num_weapon_types; i++ ) {
-					if ( !stricmp(CTEXT(index), Weapon_info[i].name) )
+					if ( !stricmp(CTEXT(node), Weapon_info[i].name) )
 						break;
 				}
 
@@ -2829,7 +2832,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for (i = 0; i < Intel_info_size; i++ ) {
-					if ( !stricmp(CTEXT(index), Intel_info[i].name) )
+					if ( !stricmp(CTEXT(node), Intel_info[i].name) )
 						break;
 				}
 
@@ -2843,7 +2846,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for (i = 0; i < Num_ship_types; i++ ) {
-					if ( !stricmp(CTEXT(index), Ship_info[i].name) )
+					if ( !stricmp(CTEXT(node), Ship_info[i].name) )
 						break;
 				}
 
@@ -2857,7 +2860,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for ( i = 0; i < NUM_HUD_GAUGES; i++ ) {
-					if ( !stricmp(CTEXT(index), HUD_gauge_text[i]) )
+					if ( !stricmp(CTEXT(node), HUD_gauge_text[i]) )
 						break;
 				}
 
@@ -2872,7 +2875,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for ( i = 0; i < Num_jump_nodes; i++ ) {
-					if ( !stricmp(Jump_nodes[i].name, CTEXT(index)) )
+					if ( !stricmp(Jump_nodes[i].name, CTEXT(node)) )
 						break;
 				}
 
@@ -2884,7 +2887,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 			case OPF_VARIABLE_NAME:
 				if ( Fred_running ) {
-					if ( get_index_sexp_variable_name(Sexp_nodes[index].text)  == -1) {
+					if ( get_index_sexp_variable_name(Sexp_nodes[node].text)  == -1) {
 						return SEXP_CHECK_INVALID_VARIABLE;
 					}
 				}
@@ -2901,7 +2904,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				//Int3();  // currently unhandled argument format (so add it now)
 		}
 
-		index = Sexp_nodes[index].rest;
+		node = Sexp_nodes[node].rest;
 		argnum++;
 	}
 
@@ -3029,7 +3032,7 @@ int get_sexp(char *token)
 
 			token[len] = 0;
 			len = 0;
-			op = identify_operator(token);
+			op = get_operator_index(token);
 			if (op != -1) {
 				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
 			} else {
@@ -3066,7 +3069,7 @@ int get_sexp(char *token)
 		int n;
 		ship_info *sip;
 
-		op = identify_operator(CTEXT(start));
+		op = get_operator_const(CTEXT(start));
 		switch (op)
 		{
 			case OP_CHANGE_SHIP_MODEL:
@@ -6617,13 +6620,13 @@ void sexp_invalidate_argument(int n)
 		return;
 
 	// make sure it's a supported operator
-	op = identify_operator(CTEXT(grandparent));
+	op = get_operator_const(CTEXT(grandparent));
 	if (op != OP_WHEN_ARGUMENT && op != OP_EVERY_TIME_ARGUMENT)
 		return;
 
 	// get the first op of the grandparent, which should be a _of operator
 	arg_handler = CADR(grandparent);
-	op = identify_operator(CTEXT(arg_handler));
+	op = get_operator_const(CTEXT(arg_handler));
 	if (op != OP_ANY_OF && op != OP_EVERY_OF && op != OP_NUMBER_OF && op != OP_RANDOM_OF)
 		return;
 
@@ -12080,7 +12083,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 		node = CDR(cur_node);		// makes reading the next bit of code a little easier.
 
-		op_num = find_operator(CTEXT(cur_node)); 
+		op_num = get_operator_const(CTEXT(cur_node)); 
 		switch ( op_num ) {
 		// arithmetic operators will always return just their value
 			case OP_PLUS:
@@ -13375,7 +13378,7 @@ int get_sexp_main()
 	ch = *Mp;
 	*Mp = '\0';
 
-	op = identify_operator(CTEXT(start_node));
+	op = get_operator_index(CTEXT(start_node));
 	if (op == -1)
 		Error (LOCATION, "Can't find operator %s in operator list\n.", CTEXT(start_node) );
 
@@ -14793,7 +14796,7 @@ void update_sexp_references(char *old_name, char *new_name, int format, int node
 		return;
 	}
 
-	op = identify_operator(CTEXT(node));
+	op = get_operator_index(CTEXT(node));
 	Assert(Sexp_nodes[node].first < 0);
 	n = Sexp_nodes[node].rest;
 	i = 0;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-01-13 03:33:07 $
+ * $Revision: 2.21 $
+ * $Date: 2005-01-18 00:14:36 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/01/13 03:33:07  Goober5000
+ * hmm, rolled back one of my clarifications since it caused things to get messed up
+ * --Goober5000
+ *
  * Revision 2.19  2005/01/13 01:10:33  Goober5000
  * forgot to remove a comment
  * --Goober5000
@@ -1266,7 +1270,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
 	aigp->type = type;
 	aigp->flags = 0;
 
-	op = find_operator( text );
+	op = get_operator_const( text );
 
 	switch (op) {
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.76 $
- * $Date: 2005-01-11 21:38:50 $
+ * $Revision: 2.77 $
+ * $Date: 2005-01-18 00:14:37 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2005/01/11 21:38:50  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.75  2005/01/03 01:05:08  phreak
  * made custom loading screens work if only one resolution has been specified.
  *
@@ -4498,11 +4503,11 @@ void post_process_mission()
 
 	for (i = 0; i < MAX_SEXP_NODES; i++) {
 		if ( is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
-			int result, bindex, op;
+			int result, bad_node, op;
 
-			op = identify_operator(CTEXT(i));
+			op = get_operator_index(CTEXT(i));
 			Assert(op != -1);  // need to make sure it is an operator before we treat it like one..
-			result = check_sexp_syntax( i, query_operator_return_type(op), 1, &bindex);
+			result = check_sexp_syntax( i, query_operator_return_type(op), 1, &bad_node);
 
 			// entering this if statement will result in program termination!!!!!
 			// print out an error based on the return value from check_sexp_syntax()
@@ -4511,7 +4516,7 @@ void post_process_mission()
 
 				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE);
 				sprintf(text, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)",
-					sexp_error_message(result), sexp_str, Sexp_nodes[bindex].text);
+					sexp_error_message(result), sexp_str, Sexp_nodes[bad_node].text);
 
 				if (!Fred_running)
 					Error( LOCATION, text );

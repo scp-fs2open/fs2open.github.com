@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.81 $
+ * $Revision: 2.82 $
  * $Author: Goober5000 $
- * $Date: 2005-01-17 22:46:32 $
+ * $Date: 2005-01-18 00:14:37 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2005/01/17 22:46:32  Goober5000
+ * variables can now be displayed in messages
+ * --Goober5000
+ *
  * Revision 2.80  2004/12/23 15:57:42  phreak
  * commits for scramble-messages and unscramble-messages
  * -phreak
@@ -1387,13 +1391,16 @@ extern int cmp_sexp_chains(int node1, int node2);
 extern int find_sexp_list(int num);
 extern int find_parent_operator(int num);
 extern int is_sexp_top_level( int node );
-extern int identify_operator(char *token);
-extern int find_operator(char *token);
-extern int query_sexp_args_count(int index);
-extern int check_sexp_syntax(int index, int return_type = OPR_BOOL, int recursive = 0, int *bindex = 0 /*NULL*/, int mode = 0);
+
+// Goober5000 - renamed these to be more clear, to prevent bugs :p
+extern int get_operator_index(char *token);
+extern int get_operator_const(char *token);
+
+extern int query_sexp_args_count(int node);
+extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, int mode = 0);
 extern int get_sexp_main(void);	//	Returns start node
 extern int stuff_sexp_variable_list();
-extern int eval_sexp(int index, int index2 = -1);
+extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(char *old_name, char *new_name);
@@ -1408,7 +1415,7 @@ extern char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
 
 // Goober5000
-void do_action_for_each_special_argument(int index);
+void do_action_for_each_special_argument(int cur_node);
 int special_argument_appears_in_sexp_tree(int node);
 int special_argument_appears_in_sexp_list(int node);
 
