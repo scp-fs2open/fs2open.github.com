@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.55 $
- * $Date: 2004-02-20 21:45:40 $
+ * $Revision: 2.56 $
+ * $Date: 2004-02-20 21:58:07 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2004/02/20 21:45:40  randomtiger
+ * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
+ * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
+ * Fixed setup of center_alpha in OGL which was causing crash.
+ *
  * Revision 2.54  2004/02/16 11:47:31  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -599,7 +604,7 @@ char *Cmdline_start_mission = NULL;
 int Cmdline_ambient_factor  = 128;
 
 // Lets keep a convention here
-int Cmdline_nohtl = 1;
+int Cmdline_nohtl = 0;
 int Cmdline_jpgtga = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_d3d_no_vsync = 0;
@@ -1039,7 +1044,7 @@ void SetCmdlineParams()
 
 	if ( htl_arg.found() ) 
 	{
-		Cmdline_nohtl = 0;
+		Cmdline_nohtl = 1;
 	}
 
 	if( jpgtga_arg.found() )
@@ -1111,6 +1116,19 @@ void SetCmdlineParams()
 	if(start_mission_arg.found())
 	{
 		Cmdline_start_mission = start_mission_arg.str();
+
+		if(Cmdline_start_mission != NULL && strlen(Cmdline_start_mission) > 0)
+		{
+			char *temp = Cmdline_start_mission;
+
+			while(*temp)
+			{
+				if(*temp == '*')
+					*temp = '-';
+
+				temp++;
+			}
+		}
 	}
 
 	if(ambient_factor_arg.found())
