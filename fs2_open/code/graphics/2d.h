@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.44 $
- * $Date: 2005-02-18 09:51:06 $
+ * $Revision: 2.45 $
+ * $Date: 2005-02-27 07:08:22 $
  * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/02/18 09:51:06  wmcoolmon
+ * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
+ *
  * Revision 2.43  2005/02/10 04:01:42  wmcoolmon
  * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
  *
@@ -747,8 +750,8 @@ typedef struct screen {
 	// void (*gf_bitmap)(int x,int y);
 	// void (*gf_bitmap_ex)(int x,int y,int w,int h,int sx,int sy);
 
-	void (*gf_aabitmap)(int x, int y);
-	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy);
+	void (*gf_aabitmap)(int x, int y, bool resize);
+	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, bool resize);
 
 	void (*gf_rect)(int x, int y, int w, int h,bool resize);
 	void (*gf_shade)(int x, int y, int w, int h);
@@ -1038,8 +1041,16 @@ __inline void gr_set_bitmap( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, 
 #define gr_create_shader	GR_CALL(gr_screen.gf_create_shader)
 #define gr_set_shader		GR_CALL(gr_screen.gf_set_shader)
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
-#define gr_aabitmap			GR_CALL(gr_screen.gf_aabitmap)
-#define gr_aabitmap_ex		GR_CALL(gr_screen.gf_aabitmap_ex)
+//#define gr_aabitmap			GR_CALL(gr_screen.gf_aabitmap)
+__inline void gr_aabitmap(int x, int y, bool resize = true)
+{
+	(*gr_screen.gf_aabitmap)(x,y,resize);
+}
+//#define gr_aabitmap_ex		GR_CALL(gr_screen.gf_aabitmap_ex)
+__inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize = true)
+{
+	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize);
+}
 //#define gr_rect				GR_CALL(gr_screen.gf_rect)
 __inline void gr_rect(int x, int y, int w, int h, bool resize = true)
 {
