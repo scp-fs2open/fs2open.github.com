@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-01-26 05:44:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2005-01-31 10:34:39 $
+ * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/01/26 05:44:10  Goober5000
+ * AHA... squashed another bug
+ * --Goober5000
+ *
  * Revision 2.21  2005/01/18 00:14:36  Goober5000
  * clarified a bunch of sexp stuff and fixed a bug
  * --Goober5000
@@ -2168,6 +2172,7 @@ void validate_mission_goals(int objnum, ai_info *aip)
 }
 
 //XSTR:OFF
+/*
 static char *Goal_text[5] = {
 "EVENT_SHIP",
 "EVENT_WING",
@@ -2175,6 +2180,7 @@ static char *Goal_text[5] = {
 "PLAYER_WING",
 "DYNAMIC",
 };
+*/
 //XSTR:ON
 
 extern char *Mode_text[MAX_AI_BEHAVIORS];

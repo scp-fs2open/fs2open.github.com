@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-01-31 10:34:38 $
+ * $Author: taylor $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -519,6 +522,7 @@ static int Hud_mission_log_time2_coords[GR_NUM_RESOLUTIONS][2] = {
 //#define HUD_MSG_MAX_PIXEL_W	439	// maximum number of pixels wide message display area is
 //#define HUD_MSG_MAX_PIXEL_W	619	// maximum number of pixels wide message display area is
 
+/* not used anymore
 static int Hud_mission_log_status_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
 		170, 339		// GR_640
@@ -527,6 +531,7 @@ static int Hud_mission_log_status_coords[GR_NUM_RESOLUTIONS][2] = {
 		361, 542		// GR_1024
 	}
 };
+*/
 
 struct scrollback_buttons {
 	char *filename;
@@ -592,10 +597,12 @@ static char* Hud_mission_log_fname[GR_NUM_RESOLUTIONS] = {
 	"2_MissionLog"		// GR_1024
 };
 
+/* not used anymore
 static char* Hud_mission_log_status_fname[GR_NUM_RESOLUTIONS] = {
 	"MLStatus",		// GR_640
 	"MLStatus"		// GR_1024
 };
+*/
 
 static char* Hud_mission_log_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"MissionLog-m",		// GR_640

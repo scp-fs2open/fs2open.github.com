@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 17:50:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2005-01-31 10:34:38 $
+ * $Author: taylor $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 17:50:02  Goober5000
+ * last bit of Unix fixorage
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/18 10:07:05  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -154,6 +158,9 @@
 
 #include "globalincs/pstypes.h"
 #include "osapi/outwnd.h"
+#include "osapi/osapi.h"
+#include "osapi/osregistry.h"
+#include "cfile/cfilesystem.h"
 
 void outwnd_print(char *id, char *tmp);
 
@@ -178,18 +185,22 @@ int outwnd_filter_loaded = 0;
 #ifndef NDEBUG
 	int Log_debug_output_to_file = 1;
 	FILE *Log_fp;
-	char *Freespace_logfilename = "fs.log";
+	char *Freespace_logfilename = "fs2_open.log";
 #endif
 
 void load_filter_info(void)
 {
 	FILE *fp;
-	char pathname[256], inbuf[FILTER_NAME_LENGTH+4];
+	char pathname[MAX_PATH_LEN];
+	char inbuf[FILTER_NAME_LENGTH+4];
 	int z;
 
 	outwnd_filter_loaded = 1;
 	outwnd_filter_count = 0;
-	strcpy(pathname, "Debug_filter.cfg" );
+
+	snprintf(pathname, MAX_PATH_LEN, "%s/%s/%s/", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path);
+	strcat(pathname, "debug_filter.cfg" );
+
 	fp = fopen(pathname, "rt");
 	if (!fp)	{
 		Outwnd_no_filter_file = 1;
@@ -254,7 +265,7 @@ void save_filter_info(void)
 {
 	FILE *fp;
 	int i;
-	char pathname[256];
+	char pathname[MAX_PATH_LEN];
 
 	if (!outwnd_filter_loaded)
 		return;
@@ -263,7 +274,9 @@ void save_filter_info(void)
 		return;	// No file, don't save
 	}
 
-	strcpy(pathname, "Debug_filter.cfg" );
+	snprintf(pathname, MAX_PATH_LEN, "%s/%s/%s/", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path);
+	strcat(pathname, "debug_filter.cfg" );
+
 	fp = fopen(pathname, "wt");
 	if (fp)
 	{
@@ -285,91 +298,6 @@ void outwnd_printf2(char *format, ...)
 	outwnd_print("General", tmp);
 }
 
-
-//  char mono_ram[80*25*2];
-//  int mono_x, mono_y;
-//  int mono_found = 0;
-
-//  void mono_flush()
-//  {
-//  	if ( !mono_found ) return;
-//  	memcpy( (void *)0xb0000, mono_ram, 80*25*2 );
-//  }
-
-//  void mono_init()
-//  {
-//  	int i;
-
-//  	OSVERSIONINFO ver;
-	
-//  	ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-//  	GetVersionEx(&ver);
-//  	if ( ver.dwPlatformId == VER_PLATFORM_WIN32_NT )	{
-//  		mono_found = 0;
-//  		return;
-//  	}
-
-//  	_outp( 0x3b4, 0x0f );
-//  	_outp( 0x3b4+1, 0x55 );
-
-//  	if ( _inp( 0x3b4+1 ) == 0x55 )	{
-//  		mono_found = 1;
-//  		_outp( 0x3b4+1, 0 );
-//  	} else {
-//  		mono_found = 0;
-//  		return;
-//  	}
-
-
-//  	for (i=0; i<80*25; i++ )	{
-//  		mono_ram[i*2+0] = ' ';
-//  		mono_ram[i*2+1] = 0x07;
-//  	}
-//  	mono_flush();
-//  	mono_x = mono_y = 0;
-//  }
-
-
-//  void mono_print( char * text, int len )
-//  {
-//  	int i, j;
-
-//  	if ( !mono_found ) return;
-
-//  	for (i=0; i<len; i++ )	{
-//  		int scroll_it = 0;
-
-//  		switch( text[i] )	{
-//  		case '\n':
-//  			scroll_it = 1;
-//  			break;
-//  		default:
-//  			mono_ram[mono_y*160+mono_x*2] = text[i];
-//  			if ( mono_x < 79 )	{
-//  				mono_x++;
-//  			} else {
-//  				scroll_it = 1;
-//  			}
-//  			break;
-//  		}
-
-//  		if ( scroll_it )	{
-//  			if ( mono_y < 24 )	{
-//  				mono_y++;
-//  				mono_x = 0;
-//  			} else {
-//  				memmove( mono_ram, mono_ram+160, 80*24*2 );
-//  				for (j=0; j<80; j++ )	{
-//  					mono_ram[24*160+j*2] = ' ';
-//  				}
-//  				mono_y = 24;
-//  				mono_x = 0;
-//  			}
-//  		}
-//  	}
-//  	mono_flush();
-//  }
-
 void outwnd_printf(char *id, char *format, ...)
 {
 	char tmp[MAX_LINE_WIDTH*4];
@@ -383,9 +311,6 @@ void outwnd_printf(char *id, char *format, ...)
 
 void outwnd_print(char *id, char *tmp)
 {
-//  	char *sptr;
-//  	char *dptr;
-//	int i, nrows, ccol;
 	int i;
 	outwnd_filter_struct *temp;
 
@@ -447,11 +372,6 @@ void outwnd_print(char *id, char *tmp)
 	if (!outwnd_filter[i]->state)
 		return;
 
-//  	sptr = tmp;
-//  	ccol = strlen(outtext[mprintf_last_line] );
-//  	dptr = &outtext[mprintf_last_line][ccol];
-//  	nrows = 0;
-
 #ifndef NDEBUG
 
 	if ( Log_debug_output_to_file ) {
@@ -459,12 +379,17 @@ void outwnd_print(char *id, char *tmp)
 			fputs(tmp, Log_fp);	
 			fflush(Log_fp);
 		}
+	} else {
+		fputs(tmp, stdout);
+		fflush(stdout);
 	}
 
-#endif
+#else
 
 	fputs(tmp, stdout);
 	fflush(stdout);
+
+#endif
 }
 
 
@@ -473,12 +398,19 @@ void outwnd_init(int display_under_freespace_window)
 	outwnd_inited = TRUE;
 
 #ifndef NDEBUG
+	char pathname[MAX_PATH_LEN];
+
+	snprintf(pathname, MAX_PATH_LEN, "%s/%s/%s/", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path);
+	strcat(pathname, Freespace_logfilename);
+
 	if ( Log_fp == NULL ) {
-		Log_fp = fopen(Freespace_logfilename, "wb");
-		if ( Log_fp == NULL )
-			outwnd_printf("Error", "Error opening %s\n", Freespace_logfilename);
-		else
-			outwnd_printf("General", "Opened %s OK\n", Freespace_logfilename);
+		Log_fp = fopen(pathname, "wb");
+		if ( Log_fp == NULL ) {
+			outwnd_printf("Error", "Error opening %s\n", pathname);
+		} else {
+			outwnd_printf("General", "Opened %s OK\n", pathname);
+			printf("Future debug output directed to: %s\n", pathname);
+		}
 	}
 #endif 
 }
@@ -494,7 +426,23 @@ void outwnd_close()
 
 }
 
+char safe_string[512] = {0};
 
-#endif //NDEBUG
+void safe_point_print(char *format, ...){
+	char tmp[512];
+	va_list args;
+	
+	va_start(args, format);
+	vsprintf(tmp, format, args);
+	va_end(args);
+	strcpy(safe_string, tmp);
+}
+
+void safe_point(char *file, int line, char *format, ...)
+{
+	safe_point_print("last safepoint: %s, %d; [%s]", file, line, format);
+}
+
+#endif // NDEBUG
 
 #endif		// Goober5000 - #ifndef WIN32

@@ -5,13 +5,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2005-01-31 10:34:38 $
+ * $Author: taylor $
  *
  * Low-level X mouse routines.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:10:40  penguin
  * Warpcore CVS sync
  *
@@ -40,5 +43,6 @@ void getWindowMousePos(POINT * pt)
 void setWindowMousePos(POINT * pt)
 {
 	Assert(pt != NULL);
-	// TODO
+
+	SDL_WarpMouse(pt->x, pt->y);
 }
