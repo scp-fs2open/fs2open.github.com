@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-03-10 08:00:02 $
+ * $Revision: 2.24 $
+ * $Date: 2005-03-14 03:24:25 $
  * $Author: taylor $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/03/10 08:00:02  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.22  2005/03/01 06:55:40  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -436,7 +445,7 @@
 int Warp_model;
 int Knossos_warp_ani_used;
 
-#define WARPHOLE_GROW_TIME		(3.5f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
+#define WARPHOLE_GROW_TIME		(2.5f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
 #define MAX_FIREBALL_LOD						4
 
