@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.64 $
- * $Date: 2004-07-26 20:47:50 $
+ * $Revision: 2.65 $
+ * $Date: 2004-07-27 18:04:09 $
  * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2004/07/26 20:47:50  Kazan
+ * remove MCD complete
+ *
  * Revision 2.63  2004/07/25 19:27:51  Kazan
  * only disable afterburning during AIM_WAYPOINTS and AIM_FLY_TO_SHIP while AutoPilotEngaged
  *
@@ -4156,7 +4159,8 @@ void ai_start_fly_to_ship(object *objp, char *target_obj)
 	{
 		if (Ships[i].objnum != -1 && !stricmp(target_obj, Ships[i].ship_name))
 		{
-			aip->target_objnum = Ships[i].objnum;		
+			aip->target_objnum = Ships[i].objnum;	
+			break;
 		}
 	}
 	aip->mode = AIM_FLY_TO_SHIP;
@@ -5028,11 +5032,30 @@ void ai_fly_to_ship()
 	float		prev_dot_to_goal;
 	vector	temp_vec;
 	vector	*slop_vec;
+	int target_object=-1;
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
+	int i,j ;
+	for (i = 0; i < MAX_AI_GOALS && target_object == -1; i++)
+	{
+		if (aip->goals[i].ai_mode == AIM_FLY_TO_SHIP || aip->goals[i].ai_mode == AI_GOAL_FLY_TO_SHIP)
+		{
+			for (j = 0; j < MAX_SHIPS; j++)
+			{
+				if (Ships[j].objnum != -1 && !stricmp(aip->goals[i].ship_name, Ships[i].ship_name))
+				{
+					target_object = Ships[j].objnum;
+					break;
+				}
+			}
+		}
+	}
+	
 
-	target_pos = &Objects[aip->target_objnum].pos;
+
+
+	target_pos = &Objects[target_object].pos;
 	speed = Pl_objp->phys_info.speed;
 
 	dist_to_goal = vm_vec_dist_quick(&Pl_objp->pos, target_pos);

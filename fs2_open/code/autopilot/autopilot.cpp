@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.8 $
- * $Date: 2004-07-26 20:47:24 $
+ * $Revision: 1.9 $
+ * $Date: 2004-07-27 18:04:09 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/07/26 20:47:24  Kazan
+ * remove MCD complete
+ *
  * Revision 1.7  2004/07/26 17:54:04  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
  * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
@@ -59,10 +62,30 @@ extern fix Game_time_compression;
 
 
 #if defined(ENABLE_AUTO_PILOT)
+
+
+
 // Module variables
 bool AutoPilotEngaged;
 int CurrentNav;
 NavPoint Navs[MAX_NAVPOINTS];
+
+
+// ********************************************************************************************
+
+void autopilot_ai_waypoint_goal_fixup(ai_goal* aigp)
+{
+	// this function sets wp_index properly;
+	for (int i = 0; i < Num_waypoint_lists; i++)
+	{
+		if (!stricmp(aigp->ship_name, Waypoint_lists[i].name))
+		{
+			aigp->wp_index = i;
+			return;
+		}
+	}
+}
+
 
 // ********************************************************************************************
 bool Sel_NextNav()
@@ -185,7 +208,7 @@ void StartAutopilot()
 	Game_time_compression = F1_0*32;
 
 	// determine speed cap
-	int i;
+	int i,j;
 	float speed_cap = 1000000.0; // 1m is a safe starting point
 
 	for (i = 0; i < MAX_SHIPS; i++)
@@ -232,7 +255,7 @@ void StartAutopilot()
 					
 					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index] );
 					
-
+					//fixup has to wait until after wing goals
 				}
 				else
 				{
@@ -260,13 +283,42 @@ void StartAutopilot()
 				ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, i );
 				
 
+				// "fix up" the goal
+				for (j = 0; j < MAX_AI_GOALS; j++)
+				{
+					if (Wings[i].ai_goals[j].ai_mode == AI_GOAL_WAYPOINTS_ONCE ||
+						Wings[i].ai_goals[j].ai_mode == AIM_WAYPOINTS )
+					{
+						autopilot_ai_waypoint_goal_fixup(&(Wings[i].ai_goals[j]));
+					}
+				}
 			}
 			else
 			{
 				ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, i );
+
 			}
 		}
 	}
+
+	// fixup has to go down here because ships are assigned goals during wing goals as well
+	for (i = 0; i < MAX_SHIPS; i++)
+	{
+		if (Ships[i].objnum != -1)
+		{
+			if (Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY))
+				for (j = 0; j < MAX_AI_GOALS; j++)
+				{
+					if (Ai_info[Ships[i].ai_index].goals[j].ai_mode == AI_GOAL_WAYPOINTS_ONCE ||
+						Ai_info[Ships[i].ai_index].goals[j].ai_mode == AIM_WAYPOINTS)
+					{
+						autopilot_ai_waypoint_goal_fixup( &(Ai_info[Ships[i].ai_index].goals[j]) );
+					}
+				}
+		}
+	}
+
 }
 
 // ********************************************************************************************
