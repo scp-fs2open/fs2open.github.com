@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-01-21 08:25:14 $
+ * $Revision: 1.15 $
+ * $Date: 2005-01-21 08:54:53 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/01/21 08:25:14  taylor
+ * fill in gr_opengl_set_texture_addressing()
+ * add support for non-power-of-two textures for cards that have it
+ * temporary crash fix from multiple mipmap levels in uncompressed formats
+ *
  * Revision 1.13  2005/01/01 11:24:23  taylor
  * good OpenGL spec mapping
  * fix VBO crash with multitexture using same uv coord data
@@ -434,6 +439,13 @@ void opengl_tcache_frame ()
 		opengl_tcache_flush();
 		vram_full = 0;
 	}
+}
+
+void opengl_free_texture_slot( int n )
+{
+//	Textures[n].used_this_frame = 0;
+	Tex_used_this_frame[n] = 0;
+	opengl_free_texture( &Textures[n] );
 }
 
 int opengl_free_texture ( tcache_slot_opengl *t )

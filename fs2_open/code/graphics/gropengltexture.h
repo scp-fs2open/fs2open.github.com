@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.6 $
- * $Date: 2005-01-21 08:25:15 $
+ * $Revision: 1.7 $
+ * $Date: 2005-01-21 08:54:53 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/01/21 08:25:15  taylor
+ * fill in gr_opengl_set_texture_addressing()
+ * add support for non-power-of-two textures for cards that have it
+ * temporary crash fix from multiple mipmap levels in uncompressed formats
+ *
  * Revision 1.5  2005/01/01 11:24:23  taylor
  * good OpenGL spec mapping
  * fix VBO crash with multitexture using same uv coord data
@@ -101,6 +106,7 @@ extern int vram_full;
 void opengl_tcache_init(int use_sections);
 int opengl_free_texture(tcache_slot_opengl *t);
 void opengl_free_texture_with_handle(int handle);
+void opengl_free_texture_slot(int n);
 void opengl_tcache_flush();
 void opengl_tcache_cleanup();
 void opengl_tcache_frame();
