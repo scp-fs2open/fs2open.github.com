@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.54 $
- * $Date: 2003-03-22 08:17:34 $
+ * $Revision: 2.55 $
+ * $Date: 2003-03-28 19:56:02 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2003/03/22 08:17:34  Goober5000
+ * argh - lol
+ * --Goober5000
+ *
  * Revision 2.53  2003/03/22 07:24:53  Goober5000
  * bleah
  * --Goober5000
@@ -4595,7 +4599,7 @@ int sexp_get_object_coordinates(int n, int index)
 		// see if we have a subsys
 		if (n != -1)
 		{
-			vector subsys_pos;
+			vector subsys_pos = ZERO_VECTOR;
 			sexp_get_subsystem_pos(obj, CTEXT(n), &subsys_pos);
 
 			return sexp_vec_coordinate(&subsys_pos, index);
