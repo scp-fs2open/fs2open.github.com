@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-07-15 02:34:59 $
+ * $Revision: 2.26 $
+ * $Date: 2003-08-03 23:35:36 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/07/15 02:34:59  phreak
+ * fun work optimizing the cloak effect
+ *
  * Revision 2.24  2003/07/04 02:27:48  phreak
  * added support for cloaking.
  * i will need to contact someone who knows d3d to get this to work
@@ -2065,11 +2068,11 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 		int a;
 		
 		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) )      {
-			sz = float(1.0 - 1.0 / (1.0 + va->z / (32768.0 / 256.0)));
+			sz = float(1.0 - 1.0 / (1.0 + va->z / 32768.0 ));
 			
-			if ( sz > 0.98f ) {
-				sz = 0.98f;
-			}
+			//if ( sz > 0.98f ) {
+		//		sz = 0.98f;
+		//	}
 		} else {
 			sz = 0.99f;
 		}
@@ -2575,7 +2578,7 @@ void opengl_tcache_init (int use_sections)
 
 	mprintf(("max texture size is: %dx%d\n", GL_max_texture_width,GL_max_texture_height));
 
-	GL_square_textures = 1;
+	GL_square_textures = 0;
 
 	Textures = (tcache_slot_opengl *)malloc(MAX_BITMAPS*sizeof(tcache_slot_opengl));
 	if ( !Textures )        {
