@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.48 $
- * $Date: 2003-10-16 16:38:16 $
- * $Author: Kazan $
+ * $Revision: 2.49 $
+ * $Date: 2003-10-23 23:48:03 $
+ * $Author: phreak $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2003/10/16 16:38:16  Kazan
+ * couple more types in species_defs.cpp, also finished up "Da Species Upgrade"
+ *
  * Revision 2.47  2003/10/15 22:03:25  Kazan
  * Da Species Update :D
  *
@@ -1131,6 +1134,11 @@ void parse_mission_info(mission *pm)
 	{
 		found1024=1;
 		stuff_string(The_mission.loading_screen[GR_1024],F_NAME,NULL);
+	}
+
+	if (optional_string("$Skybox model:"))
+	{
+		stuff_string(The_mission.skybox_model,F_NAME,NULL);
 	}
 
 	//error testing

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.35 $
- * $Author: Kazan $
- * $Date: 2003-10-15 22:03:25 $
+ * $Revision: 2.36 $
+ * $Author: phreak $
+ * $Date: 2003-10-23 23:48:03 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/10/15 22:03:25  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.34  2003/09/30 04:05:09  Goober5000
  * updated FRED to import FS1 default weapons loadouts as well as missions
  * --Goober5000
@@ -429,6 +432,7 @@ typedef struct mission {
 	char	squad_filename[MAX_FILENAME_LEN+1];		// if the player has been reassigned to a squadron, this is the filename of the logo, otherwise empty string
 	char	squad_name[NAME_LENGTH+1];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
 	char	loading_screen[GR_NUM_RESOLUTIONS][NAME_LENGTH];
+	char	skybox_model[NAME_LENGTH];
 } mission;
 
 // cargo defines
