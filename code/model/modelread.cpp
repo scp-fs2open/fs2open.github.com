@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-01-15 05:18:13 $
+ * $Revision: 2.11 $
+ * $Date: 2003-01-15 08:57:23 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/01/15 05:18:13  Goober5000
+ * moved texture loading around a bit; added Texture_replace in preparation
+ * for some cool stuff
+ * --Goober5000
+ *
  * Revision 2.9  2003/01/09 21:22:36  phreak
  * fixed a small error in bob's glowmap code
  *
@@ -1150,7 +1155,6 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 	int i;
 	model_subsystem *subsystemp;
 
-
 	if ( slist==NULL ) return;			// For TestCode, POFView, etc don't bother
 	
 	// try to find the name of the subsystem passed here on the list of subsystems currently on the
@@ -2218,7 +2222,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 }
 
 //returns the number of this model
-int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
+int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
 {
 	int i, num, arc_idx;
 
@@ -2237,7 +2241,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	for (i=0; i< MAX_POLYGON_MODELS; i++)	{
 		if ( Polygon_models[i] )	{
-			if (!stricmp(filename, Polygon_models[i]->filename))		{
+			if (!stricmp(filename, Polygon_models[i]->filename) && !duplicate)		{
 				// Model already loaded; just return.
 				return Polygon_models[i]->id;
 			}
@@ -3332,7 +3336,7 @@ void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_subm
 	Assert(objp->type == OBJ_SHIP);
 
 	// Check if not currently rotating - then treat as part of superstructure.
-	int modelnum = Ships[objp->instance].modelnum;
+	int modelnum = Ship_info[Ships[objp->instance].ship_info_index].modelnum;
 	polymodel *pm = model_get(modelnum);
 	bsp_info *child_submodel;
 
@@ -3726,3 +3730,8 @@ int model_get_num_dock_points(int modelnum)
 	return pm->n_docks;
 }
 
+// Goober5000
+void model_duplicate_reskin(int new_model, int old_model, char *ship_name)
+{
+
+}

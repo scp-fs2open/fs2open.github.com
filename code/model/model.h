@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.13 $
- * $Date: 2003-01-15 05:18:13 $
+ * $Revision: 2.14 $
+ * $Date: 2003-01-15 08:57:23 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/01/15 05:18:13  Goober5000
+ * moved texture loading around a bit; added Texture_replace in preparation
+ * for some cool stuff
+ * --Goober5000
+ *
  * Revision 2.12  2003/01/06 19:33:22  Goober5000
  * cleaned up some stuff with model_set_thrust and a commented Assert that
  * shouldn't have been
@@ -815,10 +820,13 @@ void model_level_post_init();
 void model_free_all();
 
 // Loads a model from disk and returns the model number it loaded into.
-int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1);
+int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
+
+// Goober5000
+void model_duplicate_reskin(int new_model, int old_model, char *ship_name);
 
 // notify the model system that a ship has died
 void model_notify_dead_ship(int objnum);

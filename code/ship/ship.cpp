@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.34 $
- * $Date: 2003-01-15 07:09:09 $
+ * $Revision: 2.35 $
+ * $Date: 2003-01-15 08:57:23 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/01/15 07:09:09  Goober5000
+ * changed most references to modelnum to use ship instead of ship_info --
+ * this will help with the change-model sexp and any other instances of model
+ * changing
+ * --Goober5000
+ *
  * Revision 2.33  2003/01/13 23:20:00  Goober5000
  * bug hunting; fixed the beam whack effect bug
  * --Goober5000
@@ -2614,6 +2620,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		list_append( &shipp->subsys_list, ship_system );		// link the element into the ship
 
 		ship_system->system_info = sp;						// set the system_info pointer to point to the data read in from the model
+
 		if ( !Fred_running ){
 			ship_system->current_hits = sp->max_hits;		// set the max hits 
 		} else {
@@ -4967,7 +4974,7 @@ void show_ship_subsys_count()
 
 //	Returns object index of ship.
 //	-1 means failed.
-int ship_create(matrix *orient, vector *pos, int ship_type)
+int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 {
 	int			i, n, objnum, j, k, t;
 	ship_info	*sip;
@@ -5013,6 +5020,30 @@ int ship_create(matrix *orient, vector *pos, int ship_type)
 
 	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 	shipp->modelnum = sip->modelnum;
+	shipp->alt_modelnum = -1;
+
+	// check for texture_replacement - Goober5000
+	if (ship_name)
+	{
+		// do we have a replacement?
+		for (i=0; i<Num_texture_replacements; i++)
+		{
+			if (!stricmp(ship_name, Texture_replace[i].ship_name))
+			{
+				shipp->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 1, 1);
+				shipp->alt_modelnum = shipp->modelnum;
+
+				// fix the subsystems, since we had to read them in with everything else
+				for (i=0; i<sip->n_subsystems; i++)
+				{
+					sip->subsystems[i].model_num = sip->modelnum;
+				}
+
+				model_duplicate_reskin(shipp->modelnum, sip->modelnum, ship_name);
+				break;
+			}
+		}
+	}
 
 	// maybe load an optional hud target model
 	if(strlen(sip->pof_file_hud)){
