@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-02-04 10:12:33 $
+ * $Revision: 2.12 $
+ * $Date: 2005-02-23 05:05:38 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/02/04 10:12:33  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.10  2004/10/31 22:00:57  taylor
  * new bmpman merge support, add PreProcDefines.h a few new places
  *
@@ -98,7 +101,7 @@
  * $NoKeywords: $
  */
 
-#include <string>
+#include <string.h>
 
 #include "globalincs/pstypes.h"
 #include "tgautils/tgautils.h"
@@ -366,8 +369,28 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 	for(idx=0; idx<num_pixels; idx++){
 		// 24 or 32 bit
 		if ( (bytes_per_pixel == 3) || (bytes_per_pixel == 4) ) {
-			// should have it's own alpha settings so just copy it out as is
-			memcpy( *dst, *src, bytes_per_pixel );
+			// if we are going to a 16-bit destination
+			if (dest_size == 2) {
+				int pixel32;
+
+				memcpy( &pixel32, *src, bytes_per_pixel );
+
+				pixel32 = INTEL_INT(pixel32);
+
+				ubyte *tmp = (ubyte*)&pixel32;
+				ubyte alpha = 1;
+				pixel = 0;
+
+				// BGR order for 24-bit, BGRA order for 32-bit
+				bm_set_components((ubyte*)&pixel, (ubyte*)&tmp[2], (ubyte*)&tmp[1], (ubyte*)&tmp[0], &alpha);
+
+				memcpy( *dst, &pixel, dest_size );
+			}
+			// otherwise we stay at what size we already are
+			else {
+				// should have it's own alpha settings so just copy it out as is
+				memcpy( *dst, *src, bytes_per_pixel );
+			}
 		}
 		// 8 or 16 bit
 		else {
@@ -723,7 +746,7 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 
 	cfread(fileptr, bytes_remaining, 1, targa_file);	
 	
-	int rowsize = header.width * bytes_per_pixel;	
+	int rowsize = header.width * dest_size;
 
 	if ( (header.image_type == 1) || (header.image_type == 2) || (header.image_type == 3) ) {
 		// Uncompressed read

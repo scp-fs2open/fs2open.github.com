@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.54 $
- * $Date: 2005-02-15 00:06:27 $
+ * $Revision: 2.55 $
+ * $Date: 2005-02-23 05:05:38 $
  * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/02/15 00:06:27  taylor
+ * clean up some model related globals
+ * code to disable individual thruster glows
+ * fix issue where 1 extra OGL light pass didn't render
+ *
  * Revision 2.53  2005/02/08 23:49:59  taylor
  * update/add .cvsignore files for project file changes
  * silence warning about depreciated strings.h stuff for MSVC 2005
@@ -1521,8 +1526,6 @@ void model_page_out_textures( int model_num );
 // is the given model a pirate ship?
 int model_is_pirate_ship(int modelnum);
 
-#endif
-
 void set_warp_globals(float, float, float, int, float);
 
 void model_set_replacement_bitmap(int bmap);
@@ -1533,3 +1536,5 @@ int decal_make_model(polymodel * pm);
 
 void model_setup_cloak(vector *shift, int full_cloak, int alpha);
 void model_finish_cloak(int full_cloak);
+
+#endif // _MODEL_H

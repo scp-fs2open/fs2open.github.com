@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.31 $
+ * $Revision: 2.32 $
  * $Author: taylor $
- * $Date: 2005-02-04 20:06:06 $
+ * $Date: 2005-02-23 05:05:38 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/02/04 20:06:06  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.30  2005/01/30 01:38:26  wmcoolmon
  * If a required string doesn't exist, give an error instead of a warning...doi.
  *
@@ -217,12 +220,12 @@
  * $NoKeywords: $
 */
 
-#include <cstdio>
-#include <cstdlib>
-#include <string>
-#include <cassert>
-#include <cstdarg>
-#include <csetjmp>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <stdarg.h>
+#include <setjmp.h>
 
 #include "parse/parselo.h"
 #include "parse/sexp.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-10-31 21:53:24 $
+ * $Revision: 2.17 $
+ * $Date: 2005-02-23 05:05:38 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/10/31 21:53:24  taylor
+ * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
+ *
  * Revision 2.15  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -905,6 +908,11 @@ int mission_campaign_savefile_save()
 	char filename[_MAX_FNAME];
 	CFILE *fp;
 	int i,j;
+
+	// never try to save the campaign file for the standalone server or in multiplayer
+	if ((Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_STANDALONE_SERVER)) {
+		return 0;
+	}
 
 	Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
 	player *pl = &Players[Player_num];

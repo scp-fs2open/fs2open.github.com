@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-01-30 09:27:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2005-02-23 05:05:39 $
+ * $Author: taylor $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/01/30 09:27:39  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 2.19  2004/11/01 20:57:03  taylor
  * make use of Knossos_warp_ani_used flag - thanks Goober5000
  *
@@ -426,6 +430,8 @@ int Knossos_warp_ani_used;
 
 #define MAX_FIREBALLS	200
 
+#define MAX_WARP_LOD	0
+
 fireball Fireballs[MAX_FIREBALLS];
 
 fireball_info Fireball_info[MAX_FIREBALL_TYPES];
@@ -554,6 +560,10 @@ void fireball_load_data()
 		fd = &Fireball_info[i];
 
 		for(idx=0; idx<fd->lod_count; idx++){
+			// we won't use a warp effect lod greater than MAX_WARP_LOD so don't load it either
+			if ( (i == FIREBALL_WARP_EFFECT) && (idx > MAX_WARP_LOD) )
+				continue;
+
 			fd->lod[idx].bitmap_id	= bm_load_animation( fd->lod[idx].filename, &fd->lod[idx].num_frames, &fd->lod[idx].fps, 1 );
 			if ( fd->lod[idx].bitmap_id < 0 ) {
 				Error(LOCATION, "Could not load %s anim file\n", fd->lod[idx].filename);
@@ -1094,7 +1104,7 @@ int fireball_create( vector * pos, int fireball_type, int parent_obj, float size
 			fb_lod = 1;
 		}
 		*/
-		fb_lod = 0;
+		fb_lod = MAX_WARP_LOD;
 	}
 	fl = &fd->lod[fb_lod];
 
@@ -1229,6 +1239,10 @@ void fireballs_page_in()
 			continue;
 
 		for(idx=0; idx<fd->lod_count; idx++) {
+			// we won't use a warp effect lod greater than MAX_WARP_LOD so don't load it either
+			if ( (i == FIREBALL_WARP_EFFECT) && (idx > MAX_WARP_LOD) )
+				continue;
+
 			bm_page_in_texture( fd->lod[idx].bitmap_id, fd->lod[idx].num_frames );
 		}
 	}
