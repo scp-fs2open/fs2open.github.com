@@ -20,6 +20,11 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/06/13 15:33:57  phreak
+ * added a warning that will display if a modder puts in a local ssm that:
+ * is a laser or beam
+ * doesn't home
+ *
  * Revision 2.30  2003/06/12 21:21:26  phreak
  * local ssms fired without lock will not enter subspace at all
  *
@@ -841,7 +846,12 @@ void parse_wi_flags(weapon_info *weaponp)
 	}
 	if (weaponp->wi_flags2 & WIF2_LOCAL_SSM)
 	{
-		if ((First_secondary_index == -1) || (weaponp->wi_flags & WIF_HOMING));
+		if (First_secondary_index == -1)
+		{
+			Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
+		}
+
+		if (!(weaponp->wi_flags & WIF_HOMING))
 		{
 			Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
 		}
@@ -2350,8 +2360,8 @@ void weapon_home(object *obj, int num, float frame_time)
 	wip = &Weapon_info[wp->weapon_info_index];
 	hobjp = Weapons[num].homing_object;
 
-	//local ssms home only in stages 1,2,5
-	if ((wp->lssm_stage==3) || (wp->lssm_stage==4))
+	//local ssms home only in stages 1 and 5
+	if ( (wp->lssm_stage==2) || (wp->lssm_stage==3) || (wp->lssm_stage==4))
 		return;
 
 	float max_speed;
