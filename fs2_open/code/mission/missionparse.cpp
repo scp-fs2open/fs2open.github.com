@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.47 $
- * $Date: 2003-10-15 22:03:25 $
+ * $Revision: 2.48 $
+ * $Date: 2003-10-16 16:38:16 $
  * $Author: Kazan $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/10/15 22:03:25  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.46  2003/10/08 06:32:06  argv
  * Negative repeat count means repeat indefinitely. A trivial change, it should not break anything.
  *
@@ -5763,7 +5766,10 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 		// 5/6/98 -- MWA  Don't need to do anything for multiplayer.  I think that we always want to use
 		// the species of the caller ship.
+
+#if !defined(MORE_SPECIES)
 		Assert( (requester_species == SPECIES_TERRAN) || (requester_species == SPECIES_VASUDAN) );
+#endif
 	//	if ( (Game_mode & GM_NORMAL) && (requester_species == SPECIES_VASUDAN) )	{	// make vasundan's use the terran support ship
 	//		requester_species = SPECIES_TERRAN;
 	//	}

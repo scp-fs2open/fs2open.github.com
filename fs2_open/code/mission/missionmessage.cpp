@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-09-07 18:14:53 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2003-10-16 16:38:16 $
+ * $Author: Kazan $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/07 18:14:53  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.2  2002/10/17 20:40:51  randomtiger
  * Added ability to remove HUD ingame on keypress shift O
  * So I've added a new key to the bind list and made use of already existing hud removal code.
@@ -403,6 +411,7 @@
 #include "demo/demo.h"
 #include "hud/hudconfig.h"
 #include "sound/fsspeech.h"
+#include "species_defs/species_defs.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -613,9 +622,27 @@ void persona_parse()
 		}
 	}
 
+#if defined(MORE_SPECIES)
+
+	char cstrtemp[SPECIES_NAME_MAXLEN+1];
+	memset(cstrtemp, 0, SPECIES_NAME_MAXLEN+1);
+	if ( optional_string("+") )
+	{
+		stuff_string(cstrtemp, F_NAME, NULL, SPECIES_NAME_MAXLEN);
+
+		for (int j = 0; j < True_NumSpecies; j++)
+		{
+			if (!strcmp(cstrtemp, Species_names[j]))
+			{
+				Personas[Num_personas].species = j;
+				break;
+			}
+		}
+	}
+#else
 	if ( optional_string("+Vasudan") )
 		Personas[Num_personas].flags |= PERSONA_FLAG_VASUDAN;
-
+#endif
 	if ( i == MAX_PERSONA_TYPES )
 		Error(LOCATION, "Unknown persona type in messages.tbl -- %s\n", type );
 
@@ -1659,6 +1686,60 @@ int message_get_persona( ship *shipp )
 		// get the type of ship (i.e. support, fighter/bomber, etc)
 		ship_type = Ship_info[shipp->ship_info_index].flags;
 
+#if defined(MORE_SPECIES)
+		int persona_needed;
+		count = 0;
+
+		if ( ship_type & (SIF_FIGHTER|SIF_BOMBER) )
+		{
+			persona_needed = PERSONA_FLAG_WINGMAN;
+		} else if ( ship_type & SIF_SUPPORT ) 
+		{
+			persona_needed = PERSONA_FLAG_SUPPORT;
+		}
+		else 
+		{
+			persona_needed = PERSONA_FLAG_LARGE;
+		}
+
+		// first try to go for an unused persona
+		for (i = 0; i < Num_personas; i++)
+		{
+			// this Persona is not our species - skip it
+			if (Personas[i].species != Ship_info[shipp->ship_info_index].species)
+				continue;
+
+			// check the ship types, and don't try to assign those which don't type match
+			if ( Personas[i].flags & persona_needed)
+			{
+				if (!(Personas[i].flags & PERSONA_FLAG_USED))
+				{
+					// if it hasn't been used - USE IT!
+					Personas[i].flags |= PERSONA_FLAG_USED;
+					return i;
+				}
+				else
+				{
+					// otherwise add it to our list of valid options to randomly select from
+					slist[count] = i;
+					count++;
+				}
+			}
+		}
+
+		// we didn't find an unused one - so we randomly select one
+
+		i = (rand() % count);
+		i = slist[i];
+
+		return i;
+
+#else
+		//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+		// Old Volition code for personnas
+		//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+
+
 		// shorcut for Vasudan personas.  All vasudan fighters/bombers use the same persona.  All Vasudan
 		// large ships will use the same persona
 		if ( Ship_info[shipp->ship_info_index].species == SPECIES_VASUDAN ) {
@@ -1738,6 +1819,9 @@ int message_get_persona( ship *shipp )
 		nprintf(("messaging", "Couldn't find a new persona for ship %s, reusing persona %s\n", shipp->ship_name, Personas[i].name));
 
 		return i;
+
+		// +-+-+-+-+-+ End old V Code +-+-+-+-+-+ 
+#endif
 	}
 
 	// for now -- we don't support other types of personas (non-wingman personas)
