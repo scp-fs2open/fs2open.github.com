@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.85 $
- * $Date: 2004-04-07 03:31:53 $
+ * $Revision: 2.86 $
+ * $Date: 2004-04-08 05:00:13 $
  * $Author: righteous1 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2004/04/07 03:31:53  righteous1
+ * Updated to add alt_tab_pause() function to draw pause screen and discontinue sounds when the game is minimized. -R1
+ *
  * Revision 2.84  2004/03/30 08:30:38  taylor
  * handle movie file extensions better
  *
@@ -9691,7 +9694,7 @@ bool game_using_low_mem()
 void alt_tab_pause()
 {
 	// pause all game music
-	audiostream_pause_all();
+//	audiostream_pause_all();
 
 	//  Call pause_init immediately so pause screen will be drawn.
 	if (!(Game_mode & GM_MULTIPLAYER)){
@@ -9700,3 +9703,4 @@ void alt_tab_pause()
 		}
 	}
 }
+
