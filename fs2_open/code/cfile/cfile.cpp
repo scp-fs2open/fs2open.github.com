@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-08-22 07:35:07 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2003-08-25 04:39:17 $
+ * $Author: Goober5000 $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/08/22 07:35:07  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.9  2003/08/20 08:12:08  wmcoolmon
  * Made cfile_delete return 0 on failure, 1 on success
  *
@@ -694,8 +699,9 @@ int cf_exist( char *filename, int dir_type )
 
 	FILE *fp = fopen(longname, "rb");
 	if (fp) {
-		return 1;
+		// Goober5000 - these were switched, causing the fclose to be unreachable
 		fclose(fp);
+		return 1;
 	}
 
 	return 0;
