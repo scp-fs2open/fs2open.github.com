@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-03-14 06:38:31 $
+ * $Revision: 2.16 $
+ * $Date: 2005-03-14 23:31:54 $
  * $Author: wmcoolmon $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/03/14 06:38:31  wmcoolmon
+ * Whoops, this isn't needed.
+ *
  * Revision 2.14  2005/03/14 06:33:38  wmcoolmon
  * Made sounds dynamically allocated
  *
@@ -643,6 +646,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	if(n==Num_sounds)
 	{
 		Sounds.resize(n + 1);
+		Num_sounds++;	//Yeah, this would be a good idea
 		snd = &Sounds[n];
 		snd->sid = -1;
 		snd->hid = -1;
@@ -735,7 +739,10 @@ int snd_unload( int n )
 	if ( !(Sounds[n].flags & SND_F_USED) )
 	{
 		if(n==Num_sounds-1)
+		{
+			Num_sounds--;
 			Sounds.pop_back();
+		}
 		return 0;
 	}
 	
@@ -749,7 +756,10 @@ int snd_unload( int n )
 
 	//If this sound is at the end of the array, we might as well get rid of it
 	if(n==Num_sounds-1)
+	{
+		Num_sounds--;
 		Sounds.pop_back();
+	}
 
 	Sounds[n].flags &= ~SND_F_USED;
 
@@ -759,15 +769,15 @@ int snd_unload( int n )
 // ---------------------------------------------------------------------------------------
 // snd_unload_all() 
 //
-// Unload all sounds from memory.  This will release the storage, and the sound must be re-loaded via
-// sound_load() before it can be played again.
+// Unload all sounds from memory. If there's a problem unloading a file the array may not be fully cleared
+// but future files will still use unused spots, so the array size shouldn't grow out of control.
 //
 void snd_unload_all()
 {
 	int i;
 	for (i=Num_sounds-1; i>=0; i-- )
 	{
-			snd_unload(i);
+		snd_unload(i);
 	}
 }
 
