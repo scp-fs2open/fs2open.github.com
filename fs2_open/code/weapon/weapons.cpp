@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2005/03/19 18:02:35  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.98  2005/03/16 01:35:59  bobboau
  * added a geometry batcher and implemented it in sevral places
  * namely: lasers, thrusters, and particles,
@@ -822,6 +826,9 @@ int		Weapon_impact_timer;			// timer, initalized at start of each mission
 // scale factor for big ships getting hit by flak
 #define FLAK_DAMAGE_SCALE				0.05f
 
+// time delay between each swarm missile that is fired
+#define SWARM_MISSILE_DELAY				150
+
 extern int Max_allowed_player_homers[];
 extern int compute_num_homing_objects(object *target_objp);
 
@@ -1523,7 +1530,7 @@ int parse_weapon(int subtype, bool replace)
 	wip->swarm_count = -1;
 
     // *Default is 150  -Et1
-    wip->SwarmWait = 150;
+    wip->SwarmWait = SWARM_MISSILE_DELAY;
 
 	if(optional_string("$Swarm:")){
 		wip->swarm_count = SWARM_DEFAULT_NUM_MISSILES_FIRED;
@@ -2680,7 +2687,7 @@ void weapon_render(object *obj)
 				}
 
 //				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
-				add_laser(wip->laser_glow_bitmap, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, c.red*weapon_glow_alpha, c.green*weapon_glow_alpha, c.blue*weapon_glow_alpha);
+				add_laser(wip->laser_glow_bitmap, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, fl2i(c.red*weapon_glow_alpha), fl2i(c.green*weapon_glow_alpha), fl2i(c.blue*weapon_glow_alpha));
 			}						
 			break;
 		}
