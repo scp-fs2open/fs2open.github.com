@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-09-05 04:25:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-11 19:24:11 $
+ * $Author: argv $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/09/05 04:25:28  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.5  2003/08/06 17:39:04  phreak
  * added a thing to set max thrust when tertiary boost pod is engaged
  *
@@ -2007,9 +2019,12 @@ void player_maybe_fire_turret(object *objp)
 	ship_info		*sip = &Ship_info[shipp->ship_info_index];
 
 	// do a quick out if this isn't a bomber
+	// _argv[-1] - allow all player ships to carry turrets. This arbitrary restriction Sucks.
+	/*
 	if ( !(sip->flags & SIF_BOMBER) ) {
 		return;
 	}
+	*/
 
 	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED)) {
 		if (aip->dock_objnum > -1) {
