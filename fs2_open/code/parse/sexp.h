@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.43 $
- * $Author: Goober5000 $
- * $Date: 2003-04-29 01:03:24 $
+ * $Revision: 2.44 $
+ * $Author: phreak $
+ * $Date: 2003-05-24 16:47:58 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/04/29 01:03:24  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.42  2003/04/05 20:47:58  Goober5000
  * gotta love those compiler errors ;)
  * fixed those and cleaned up conflicts with the missile-locked sexp
@@ -800,6 +804,8 @@
 #define OP_PLAY_SOUND_FROM_FILE				(0x0083	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CLOSE_SOUND_FROM_FILE			(0x0084 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_TOGGLE_HUD						(0x0085	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_KAMIKAZE						(0x0086 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
+#define OP_NOT_KAMIKAZE						(0x0087 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
