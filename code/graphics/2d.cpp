@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-03-08 15:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.20 $
+ * $Date: 2004-03-08 18:36:21 $
+ * $Author: randomtiger $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/03/08 15:06:24  Kazan
+ * Did, undo
+ *
  * Revision 2.18  2004/03/07 23:07:20  Kazan
  * [Incomplete] Readd of Software renderer so Standalone server works
  *
@@ -572,6 +575,7 @@
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 #include "graphics/2d.h"
+#include "graphics/grstub.h"
 #include "render/3d.h"
 #include "bmpman/bmpman.h"
 #include "palman/palman.h"
@@ -715,9 +719,7 @@ void gr_close()
 		gr_opengl_cleanup();
 		break;
 
-	case GR_SOFTWARE:
-		//gr_soft_cleanup();
-		break;
+	case GR_STUB:break;
 
 	default:
 		Int3();		// Invalid graphics mode
@@ -1103,9 +1105,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 			gr_opengl_cleanup();
 			break;
 		
-		case GR_SOFTWARE:
-			//gr_soft_cleanup();
-			break;
+		case GR_STUB: break;
 
 		default:
 			Int3();		// Invalid graphics mode
@@ -1135,8 +1135,8 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 			gr_opengl_init();
 			break;
 
-		case GR_SOFTWARE:
-			//gr_soft_init();
+		case GR_STUB: 
+			gr_stub_init();
 			break;
 
 		default:
@@ -1188,8 +1188,7 @@ void gr_force_windowed()
 			opengl_minimize();
 			break;
 
-		case GR_SOFTWARE:
-			break;
+		case GR_STUB: break;
 
 		default:
 			Int3();		// Invalid graphics mode
@@ -1220,8 +1219,7 @@ void gr_activate(int active)
 			gr_opengl_activate(active);
 			break;
 
-		case GR_SOFTWARE:
-			break;
+		case GR_STUB: break;
 
 		default:
 			Int3();		// Invalid graphics mode

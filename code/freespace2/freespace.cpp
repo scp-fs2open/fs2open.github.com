@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.76 $
- * $Date: 2004-03-07 23:07:19 $
- * $Author: Kazan $
+ * $Revision: 2.77 $
+ * $Date: 2004-03-08 18:36:20 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2004/03/07 23:07:19  Kazan
+ * [Incomplete] Readd of Software renderer so Standalone server works
+ *
  * Revision 2.75  2004/03/05 21:19:38  Kazan
  * Fixed mission validation (was returning false positives)
  *
@@ -2759,7 +2762,7 @@ void game_init()
 	}
 	else
 	{
-		gr_init(GR_640, GR_SOFTWARE, 16, 640, 480);
+		gr_init(GR_640, GR_STUB, 16, 640, 480);
 	}
 
 #elif defined unix

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.24 $
- * $Date: 2004-03-07 23:07:20 $
- * $Author: Kazan $
+ * $Revision: 2.25 $
+ * $Date: 2004-03-08 18:36:21 $
+ * $Author: randomtiger $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/03/07 23:07:20  Kazan
+ * [Incomplete] Readd of Software renderer so Standalone server works
+ *
  * Revision 2.23  2004/02/20 21:45:41  randomtiger
  * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
  * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
@@ -838,10 +841,9 @@ extern int Gr_mmx;
 // Call this at application startup
 
 // # Software Re-added by Kazan --- THIS HAS TO STAY -- It is used by standalone!
-#define GR_SOFTWARE					(100)		// Software renderer using standard Win32 functions in a window.
-
-#define GR_DIRECT3D					(102)		// Use Direct3d hardware renderer
-#define GR_OPENGL						(104)		// Use OpenGl hardware renderer
+#define GR_STUB					(100)		
+#define GR_DIRECT3D				(102)		// Use Direct3d hardware renderer
+#define GR_OPENGL				(104)		// Use OpenGl hardware renderer
 
 // resolution constants   - always keep resolutions in ascending order and starting from 0  
 #define GR_NUM_RESOLUTIONS			2
