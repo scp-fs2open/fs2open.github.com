@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-01-09 21:22:36 $
- * $Author: phreak $
+ * $Revision: 2.10 $
+ * $Date: 2003-01-15 05:18:13 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/01/09 21:22:36  phreak
+ * fixed a small error in bob's glowmap code
+ *
  * Revision 2.8  2003/01/09 05:52:25  Goober5000
  * snagged a potential bug
  * --Goober5000
@@ -747,7 +750,8 @@ char	Global_filename[256];
 int Model_ram = 0;			// How much RAM the models use total
 #endif
 
-
+int Num_texture_replacements;
+texture_replace Texture_replace[MAX_TEXTURE_REPLACEMENTS];
 
 // Anything less than this is considered incompatible.
 #define PM_COMPATIBLE_VERSION 1900
@@ -1944,60 +1948,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				// Dont overwrite memory!!
 				Assert(n <= MAX_MODEL_TEXTURES);
 				//mprintf(0,"  num textures = %d\n",n);
-				for (i=0; i<n; i++ )	{
+				for (i=0; i<n; i++ )
+				{
 					char tmp_name[256];
 					cfread_string_len(tmp_name,127,fp);
 
-					pm->transparent[i]=0;	//it's transparent
-					pm->ambient[i]=0;		//ambient glow
-					pm->is_ani[i]=0;		//animated textures
-					if ( strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))	{
-						// Don't load textures for thruster animations or invisible textures
-						// or warp models!-Bobboau
-						pm->textures[i] = -1;
-					} else {
-
-						if(strstr(tmp_name, "-trans")){
-							pm->transparent[i]=1;
-							nprintf(("%s is transparent, oooow\n",tmp_name));
-						}
-						if(strstr(tmp_name, "-amb")){
-							pm->ambient[i]=1;
-							nprintf(("%s is amient, aaaahhh\n",tmp_name));
-						}
-
-						pm->textures[i] = bm_load( tmp_name );
-						if (pm->textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
-							
-							nprintf(("couldn't find %s.pcx",tmp_name));
-
-							pm->is_ani[i] = 1;	//this is an animated texture
-							pm->textures[i] = bm_load_animation(tmp_name,  &pm->numframes[i], &pm->fps[i], 1);
-							
-							if(pm->textures[i]<0){
-								Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
-								pm->textures[i] = -1;
-								pm->is_ani[i] = 0;	//this isn't an animated texture after all
-								nprintf((" or %s.ani\n",tmp_name));
-							}else{
-								mprintf(("but I did find %s.ani, ", tmp_name));
-								mprintf(("with %d frames, ", pm->numframes[i]));
-								mprintf(("and a rate of %d\n", pm->fps[i]));
-							}
-						}
-					}
-					pm->original_textures[i] = pm->textures[i];
-					//a quick hack for glow mapping-Bobboau
-					strcat( tmp_name, "-glow");
-					mprintf(("looking for glow map %s\n", tmp_name));
-					int glow_idx=pm->textures[i] % MAX_BITMAPS;
-					GLOWMAP[glow_idx]=bm_load( tmp_name ); //see if there is one 
-					if(GLOWMAP[glow_idx]!=-1){//then fill it into the array
-						mprintf(("texture '%s' has a glow map, %d, assosiated with it, isn't that nice\n", tmp_name, GLOWMAP[glow_idx]));
-						bm_lock((GLOWMAP[glow_idx]), 8, BMP_AABITMAP);
-						bm_unlock((GLOWMAP[glow_idx]));
-
-					}
+					model_load_texture(pm, i, tmp_name);
 
 					//mprintf(0,"<%s>\n",name_buf);
 				}
@@ -2194,7 +2150,72 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	return 1;
 }
 
+// Goober5000
+void model_load_texture(polymodel *pm, int i, char *file)
+{
+	char tmp_name[256];
+	strcpy(tmp_name, file);
 
+	pm->transparent[i]=0;	//it's transparent
+	pm->ambient[i]=0;		//ambient glow
+	pm->is_ani[i]=0;		//animated textures
+	if ( strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))
+	{
+		// Don't load textures for thruster animations or invisible textures
+		// or warp models!-Bobboau
+		pm->textures[i] = -1;
+	}
+	else
+	{
+		if(strstr(tmp_name, "-trans"))
+		{
+			pm->transparent[i]=1;
+			nprintf(("%s is transparent, oooow\n",tmp_name));
+		}
+
+		if(strstr(tmp_name, "-amb"))
+		{
+			pm->ambient[i]=1;
+			nprintf(("%s is amient, aaaahhh\n",tmp_name));
+		}
+
+		pm->textures[i] = bm_load( tmp_name );
+		if (pm->textures[i]<0)	//if I couldn't find the PCX see if there is an ani-Bobboau
+		{					
+			nprintf(("couldn't find %s.pcx",tmp_name));
+
+			pm->is_ani[i] = 1;	//this is an animated texture
+			pm->textures[i] = bm_load_animation(tmp_name,  &pm->numframes[i], &pm->fps[i], 1);
+							
+			if(pm->textures[i]<0)
+			{
+				Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
+				pm->textures[i] = -1;
+				pm->is_ani[i] = 0;	//this isn't an animated texture after all
+				nprintf((" or %s.ani\n",tmp_name));
+			}
+			else
+			{
+				mprintf(("but I did find %s.ani, ", tmp_name));
+				mprintf(("with %d frames, ", pm->numframes[i]));
+				mprintf(("and a rate of %d\n", pm->fps[i]));
+			}
+		}
+	}
+
+	pm->original_textures[i] = pm->textures[i];
+	//a quick hack for glow mapping-Bobboau
+	strcat( tmp_name, "-glow");
+	mprintf(("looking for glow map %s\n", tmp_name));
+	int glow_idx=pm->textures[i] % MAX_BITMAPS;
+	GLOWMAP[glow_idx]=bm_load( tmp_name ); //see if there is one 
+	if(GLOWMAP[glow_idx]!=-1)	//then fill it into the array
+	{
+		mprintf(("texture '%s' has a glow map, %d, assosiated with it, isn't that nice\n", tmp_name, GLOWMAP[glow_idx]));
+		bm_lock((GLOWMAP[glow_idx]), 8, BMP_AABITMAP);
+		bm_unlock((GLOWMAP[glow_idx]));
+	}
+}
 
 //returns the number of this model
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
@@ -3704,3 +3725,4 @@ int model_get_num_dock_points(int modelnum)
 	pm = model_get(modelnum);
 	return pm->n_docks;
 }
+

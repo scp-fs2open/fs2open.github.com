@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.12 $
- * $Date: 2003-01-06 19:33:22 $
+ * $Revision: 2.13 $
+ * $Date: 2003-01-15 05:18:13 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/01/06 19:33:22  Goober5000
+ * cleaned up some stuff with model_set_thrust and a commented Assert that
+ * shouldn't have been
+ * --Goober5000
+ *
  * Revision 2.11  2002/12/10 05:43:34  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -315,6 +320,7 @@
 
 #include "globalincs/pstypes.h"
 #include "decals/decals.h"
+#include "parse/parselo.h"	// for NAME_LENGTH
 struct object;
 
 #define MAX_PRIMARY_BANKS		3
@@ -786,6 +792,18 @@ typedef struct polymodel {
 
 } polymodel;
 
+// texture replacement info - Goober5000
+#define TEXTURE_NAME_LENGTH	128
+#define MAX_TEXTURE_REPLACEMENTS	20
+
+typedef struct texture_replace {
+	char ship_name[NAME_LENGTH];
+	char old_texture[TEXTURE_NAME_LENGTH];
+	char new_texture[TEXTURE_NAME_LENGTH];
+} texture_replace;
+
+extern int Num_texture_replacements;
+extern texture_replace Texture_replace[MAX_TEXTURE_REPLACEMENTS];
 
 // Call once to initialize the model system
 void model_init();
@@ -798,6 +816,9 @@ void model_free_all();
 
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1);
+
+// Goober5000
+void model_load_texture(polymodel *pm, int i, char *file);
 
 // notify the model system that a ship has died
 void model_notify_dead_ship(int objnum);
