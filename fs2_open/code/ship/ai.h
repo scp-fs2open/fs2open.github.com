@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.17 $
- * $Date: 2005-01-11 21:38:48 $
+ * $Revision: 2.18 $
+ * $Date: 2005-01-13 03:33:07 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/01/11 21:38:48  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.16  2004/08/11 05:06:33  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -297,7 +302,7 @@ struct object;
 #define AIGF_DOCKER_INDEX_VALID		(1<<0)	// when set, index field for docker is valid
 #define AIGF_DOCKEE_INDEX_VALID		(1<<1)	// when set, index field for dockee is valid
 #define AIGF_GOAL_ON_HOLD			(1<<2)	// when set, this goal cannot currently be satisfied, although it could be in the future
-#define AIGF_SUBSYS_INDEX_VALID		(1<<3)	// when set, the subsystem index (for a destroy subsystem goal) is valid, and stored in docker.index field!!
+#define AIGF_SUBSYS_NEEDS_FIXUP		(1<<3)	// when set, the subsystem index (for a destroy subsystem goal) is invalid and must be gotten from the subsys name stored in docker.name field!!
 #define AIGF_GOAL_OVERRIDE			(1<<4)	// paired with AIG_TYPE_DYNAMIC to mean this goal overrides any other goal
 #define AIGF_PURGE					(1<<5)	// purge this goal next time we process
 #define AIGF_GOALS_PURGED			(1<<6)	// this goal has already caused other goals to get purged
