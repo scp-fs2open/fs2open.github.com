@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.50 $
- * $Date: 2005-01-28 09:56:44 $
- * $Author: taylor $
+ * $Revision: 2.51 $
+ * $Date: 2005-01-28 11:57:36 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/01/28 09:56:44  taylor
+ * add model_page_out_textures() for use in techroom
+ * make model_page_in_textures() load more textures
+ *
  * Revision 2.49  2005/01/27 11:26:23  Goober5000
  * dock points on rotating submodels is *almost* working
  * --Goober5000
@@ -604,8 +608,8 @@ struct queued_animation{
 	int end;
 	bool absolute;
 
-//	void rotate_radian_relitive(float theda, float accel, float vel, int axis);			//rotate theda radians, useing accell accelleration
-//	void rotate_radian_time_relitive(float theda, float vel, float time, int axis);	//rotate theda radians, at the specifyed velocity in the specifyed time
+//	void rotate_radian_relative(float theda, float accel, float vel, int axis);			//rotate theda radians, useing accell accelleration
+//	void rotate_radian_time_relative(float theda, float vel, float time, int axis);	//rotate theda radians, at the specifyed velocity in the specifyed time
 //	void rotate_radian_absolute(float theda, float accel, float vel, int axis);			//rotate theda radians, useing accell accelleration
 //	void rotate_radian_time_absolute(float theda, float vel, float time, int axis);	//rotate theda radians, at the specifyed velocity in the specifyed time
 };
