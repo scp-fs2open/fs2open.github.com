@@ -21,6 +21,7 @@
 #include "graphics/grd3dinternal.h"
 #include "graphics/grd3dbmpman.h"
 #include "graphics/grd3dlight.h"
+#include "graphics/grd3dbatch.h"
 
 #include "debugconsole/timerbar.h"
 #include "cmdline/cmdline.h"   
@@ -189,6 +190,8 @@ void d3d_release_rendering_objects()
 void gr_d3d_cleanup()
 {
 	if (!GlobalD3DVars::D3D_inited) return;
+
+	d3d_batch_deinit();
 
 	d3d_tcache_cleanup();  
 
@@ -1272,6 +1275,11 @@ bool gr_d3d_init()
 	d3d_reset_texture_stage_states();
 
 	d3d_set_initial_render_state();
+
+	if(d3d_batch_init() == false) {
+		sprintf(Device_init_error, "Failed to setup batch system");
+		return false;
+	}
 
 	gr_d3d_activate(1);
 	d3d_start_frame();

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-10-27 23:04:22 $
+ * $Revision: 2.10 $
+ * $Date: 2003-11-06 21:10:26 $
  * $Author: randomtiger $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/27 23:04:22  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.8  2003/10/17 17:18:43  randomtiger
  * Big restructure for D3D and new modules grd3dlight and grd3dsetup
  *
@@ -2017,7 +2025,7 @@ void main_hall_process_help_stuff()
 	// set the color and print out text and shader
 	gr_set_color_fast(&Color_bright_white);
 	gr_shade(0, 0, gr_screen.max_w, (2*Main_hall_tooltip_padding[gr_screen.res]) + h - y_anim_offset);
-	gr_string((gr_screen.max_w - w)/2, Main_hall_tooltip_padding[gr_screen.res] - y_anim_offset, str);
+	gr_string((gr_screen.max_w - w)/2, Main_hall_tooltip_padding[gr_screen.res] /*- y_anim_offset*/, str);
 }
 
 // what main hall we're on (should be 0 or 1)

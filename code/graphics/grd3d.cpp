@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.38 $
- * $Date: 2003-11-02 05:50:08 $
- * $Author: bobboau $
+ * $Revision: 2.39 $
+ * $Date: 2003-11-06 21:10:26 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/11/02 05:50:08  bobboau
+ * modified trails to render with tristrips now rather than with stinky old trifans,
+ * MUCH faster now, at least one order of magnatude.
+ *
  * Revision 2.37  2003/11/01 21:59:21  bobboau
  * new matrix handeling code, and fixed some problems with 3D lit verts,
  * several other small fixes
@@ -549,6 +553,7 @@
 
 #include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
+#include "graphics/grd3dbatch.h"
 #include "graphics/grd3dlight.h"
 #include "graphics/grd3dbmpman.h"
 
@@ -840,6 +845,8 @@ void d3d_stop_frame()
 		return;
 	}
 	TIMERBAR_START_FRAME();
+
+	d3d_batch_end_frame();
 						 
 	TIMERBAR_PUSH(4);
 	// Must cope with device being lost
@@ -1692,10 +1699,10 @@ void gr_d3d_set_cull(int cull)
  */
 void gr_d3d_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct)
 {
-	gr_set_bitmap(bmap1, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f - pct );
+   	gr_set_bitmap(bmap1, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f - pct );
 	gr_bitmap(x1, y1);
 
-	gr_set_bitmap(bmap2, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, pct );
+  	gr_set_bitmap(bmap2, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, pct );
 	gr_bitmap(x2, y2);
 }
 
@@ -2100,8 +2107,10 @@ void d3d_start_clip(){
 
 	D3DXPlaneFromPointNormal(&d3d_user_clip_plane, &point, &normal);
 
-	GlobalD3DVars::lpD3DDevice->SetClipPlane(0, d3d_user_clip_plane);
-	d3d_SetRenderState(D3DRS_CLIPPLANEENABLE , D3DCLIPPLANE0);
+	HRESULT hr = GlobalD3DVars::lpD3DDevice->SetClipPlane(0, d3d_user_clip_plane);
+	Assert(hr);
+	hr = d3d_SetRenderState(D3DRS_CLIPPLANEENABLE , D3DCLIPPLANE0);
+	Assert(hr);
 }
 
 /**
