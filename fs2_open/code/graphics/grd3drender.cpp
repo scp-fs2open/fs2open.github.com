@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.53 $
- * $Date: 2004-07-29 03:41:46 $
- * $Author: taylor $
+ * $Revision: 2.54 $
+ * $Date: 2005-01-14 05:28:57 $
+ * $Author: wmcoolmon $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2004/07/29 03:41:46  taylor
+ * plug memory leaks
+ *
  * Revision 2.52  2004/07/26 20:47:31  Kazan
  * remove MCD complete
  *
@@ -3067,6 +3070,8 @@ void gr_d3d_circle( int xc, int yc, int d )
 {
 	int p,x, y, r;
 
+	gr_resize_screen_pos(&xc, &yc);
+
 	r = d/2;
 	p=3-d;
 	x=0;
@@ -3097,6 +3102,102 @@ void gr_d3d_circle( int xc, int yc, int d )
 	if(x==y)	{
 		gr_d3d_line( xc-x, yc-y, xc+x, yc-y );
 		gr_d3d_line( xc-x, yc+y, xc+x, yc+y );
+	}
+}
+
+//xc - x coordinate
+//yc - y coordinate
+//r - radius of curve
+//direction:
+//	/0 1\
+//	\2 3/
+void gr_d3d_curve( int xc, int yc, int r, int direction)
+{
+	int a,b,p;
+	gr_resize_screen_pos(&xc, &yc);
+
+	p=3-(2*r);
+	a=0;
+	b=r;
+
+	// Big clip
+	if ( (xc+r) < gr_screen.clip_left ) return;
+	if ( (yc+r) < gr_screen.clip_top ) return;
+
+	switch(direction)
+	{
+		case 0:
+			yc += r;
+			xc += r;
+			while(a<b)
+			{
+				// Draw the first octant
+				gr_d3d_line(xc - b + 1, yc-a, xc - b, yc-a);
+
+				if (p<0) 
+					p=p+(a<<2)+6;
+				else	{
+					// Draw the second octant
+					gr_d3d_line(xc-a+1,yc-b,xc-a,yc-b);
+					p=p+((a-b)<<2)+10;
+					b--;
+				}
+				a++;
+			}
+			break;
+		case 1:
+			yc += r;
+			while(a<b)
+			{
+				// Draw the first octant
+				gr_d3d_line(xc + b - 1, yc-a, xc + b, yc-a);
+
+				if (p<0) 
+					p=p+(a<<2)+6;
+				else	{
+					// Draw the second octant
+					gr_d3d_line(xc+a-1,yc-b,xc+a,yc-b);
+					p=p+((a-b)<<2)+10;
+					b--;
+				}
+				a++;
+			}
+			break;
+		case 2:
+			xc += r;
+			while(a<b)
+			{
+				// Draw the first octant
+				gr_d3d_line(xc - b + 1, yc+a, xc - b, yc+a);
+
+				if (p<0) 
+					p=p+(a<<2)+6;
+				else	{
+					// Draw the second octant
+					gr_d3d_line(xc-a+1,yc+b,xc-a,yc+b);
+					p=p+((a-b)<<2)+10;
+					b--;
+				}
+				a++;
+			}
+			break;
+		case 3:
+			while(a<b)
+			{
+				// Draw the first octant
+				gr_d3d_line(xc + b - 1, yc+a, xc + b, yc+a);
+
+				if (p<0) 
+					p=p+(a<<2)+6;
+				else	{
+					// Draw the second octant
+					gr_d3d_line(xc+a-1,yc+b,xc+a,yc+b);
+					p=p+((a-b)<<2)+10;
+					b--;
+				}
+				a++;
+			}
+			break;
 	}
 }
 
@@ -3179,6 +3280,9 @@ void gr_d3d_aaline(vertex *v1, vertex *v2)
 void gr_d3d_gradient(int x1,int y1,int x2,int y2)
 {
 	int clipped = 0, swapped=0;
+
+	gr_resize_screen_pos(&x1, &y1);
+	gr_resize_screen_pos(&x2, &y2);
 
 	if ( !gr_screen.current_color.is_alphacolor )	{
 		gr_line( x1, y1, x2, y2 );

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.39 $
- * $Date: 2005-01-01 11:24:22 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2005-01-14 05:28:57 $
+ * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/01/01 11:24:22  taylor
+ * good OpenGL spec mapping
+ * fix VBO crash with multitexture using same uv coord data
+ * little speedup of opengl_tcache_frame()
+ * error message to make sure hardware supports the minimum texture size
+ * move OpenGL version check out of the extention printout code
+ * disable 2d_poof with OpenGL
+ *
  * Revision 2.38  2004/11/27 10:48:03  taylor
  * some fixes for position problems on the HUD in non-standard resolutions
  * few compiler warning fixes
@@ -736,6 +744,7 @@ typedef struct screen {
 	void (*gf_gradient)(int x1, int y1, int x2, int y2);
  
 	void (*gf_circle)(int x, int y, int r);
+	void (*gf_curve)(int x, int y, int r, int direction);
 
 	// Integer line. Used to draw a fast but pixely line.  
 	void (*gf_line)(int x1, int y1, int x2, int y2, bool resize);
@@ -1017,6 +1026,7 @@ __inline void gr_set_bitmap( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, 
 #define gr_string				GR_CALL(gr_screen.gf_string)
 
 #define gr_circle				GR_CALL(gr_screen.gf_circle)
+#define gr_curve				GR_CALL(gr_screen.gf_curve)
 
 //#define gr_line				GR_CALL(gr_screen.gf_line)
 __inline void gr_line(int x1, int y1, int x2, int y2, bool resize = false)
