@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-01-26 02:58:33 $
+ * $Revision: 2.22 $
+ * $Date: 2003-01-26 20:04:32 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/01/26 02:58:33  wmcoolmon
+ * Added title screen support to retail version. When FS2 loads, it will build a list of PCX files in the current directory, then attempt to display one. If no PCX files exist, it will try to display one of the title screens defined in the code. Freespace 2 will then attempt to superimpose a logo in the upper-left hand corner of the screen. If neither can be displayed, FS2 will function normally.
+ *
  * Revision 2.20  2003/01/20 05:40:49  bobboau
  * added several sExps for turning glow points and glow maps on and off
  *
@@ -1112,7 +1115,7 @@ static char *Game_title_screen_fname[GR_NUM_RESOLUTIONS] = {
 #endif
 static char *Game_logo_screen_fname[GR_NUM_RESOLUTIONS] = {
 	"PreLoadLogo",
-	"PreLoadLogo"
+	"2_PreLoadLogo"
 };
 
 #ifdef _WIN32
@@ -9032,7 +9035,8 @@ void display_title_screen()
 					*p = '\0';
 				}
 
-				if(stricmp(find.name, Game_logo_screen_fname[gr_screen.res]))
+				if(stricmp(find.name, Game_logo_screen_fname[gr_screen.res])
+					&& stricmp(find.name, Game_title_screen_fname[gr_screen.res]))
 				{
 					strcpy(Splash_screens[i], find.name);
 					i++;
