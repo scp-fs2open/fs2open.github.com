@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-12-08 22:30:02 $
- * $Author: randomtiger $
+ * $Revision: 2.25 $
+ * $Date: 2004-01-20 23:01:52 $
+ * $Author: Goober5000 $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/12/08 22:30:02  randomtiger
+ * Put render state and other direct D3D calls repetition check back in, provides speed boost.
+ * Fixed bug that caused fullscreen only crash with DXT textures
+ * Put dithering back in for tgas and jpgs
+ *
  * Revision 2.23  2003/12/05 18:17:06  randomtiger
  * D3D now supports loading for DXT1-5 into the texture itself, defaults to on same as OGL.
  * Fixed bug in old ship choice screen that stopped ani repeating.
@@ -1471,7 +1476,7 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags)
 		case D3DFMT_DXT5: if(Supports_compression[4]) {use_format = D3DFMT_DXT5; break;}
 		default:
 		{
-			bool use_alpha_format;
+			bool use_alpha_format = false;	// initialization added by Goober5000
 
 			// Determine if the destination format needs to store alpha details
 			switch(type)
@@ -1479,6 +1484,7 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags)
 			case BM_TYPE_TGA: use_alpha_format = (source_desc.Format == D3DFMT_A8R8G8B8); break; // 32 Bit TGAs only
 			case BM_TYPE_JPG: use_alpha_format = false; break; // JPG: Never 
 			case BM_TYPE_DDS: use_alpha_format = true;  break; // DDS: Always
+			default: Assert(0);	// just in case -- Goober5000
 			}
 
 			if(gr_screen.bits_per_pixel == 32) {
