@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-03-27 12:28:33 $
+ * $Revision: 2.41 $
+ * $Date: 2005-03-31 11:11:56 $
  * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/03/27 12:28:33  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.39  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -624,8 +628,8 @@ ss_icon_info	*Ss_icons;
 int Ss_mouse_down_on_region = -1;
 
 int Selected_ss_class;	// set to ship class of selected ship, -1 if none selected
-int Hot_ss_icon;			// index that icon is over in list (0..4)
-int Hot_ss_slot;			// index for slot that mouse is over (0..11)
+int Hot_ss_icon;			// index that icon is over in list (0..MAX_WING_SLOTS-1)
+int Hot_ss_slot;			// index for slot that mouse is over (0..MAX_WSS_SLOTS)
 
 ////////////////////////////////////////////////////////////
 // Ship Select UI
@@ -730,7 +734,7 @@ typedef struct ss_active_item
 } ss_active_item;
 
 static ss_active_item	SS_active_head;
-//static ss_active_item	SS_active_items[MAX_WSS_SLOTS];//DTP commented out or else singleplayer will only have a max of 12 ships
+//static ss_active_item	SS_active_items[MAX_WSS_SLOTS];//DTP commented out or else singleplayer will only have a max of MAX_WSS_SLOTS ships
 static ss_active_item	SS_active_items[MAX_SHIP_TYPES];//DTP, now we have all ships in the TBL, as they can all be playerships
 
 static int SS_active_list_start;
@@ -815,7 +819,7 @@ extern int Cmdline_nohtl;
 //////////////////////////////////////////////////////
 typedef struct ss_carry_icon_info
 {
-	int from_slot;		// slot index (0..11), -1 if carried from list
+	int from_slot;		// slot index (0..MAX_WSS_SLOTS-1), -1 if carried from list
 	int ship_class;	// ship class of carried icon 
 	int from_x, from_y;
 } ss_carry_icon_info;
@@ -966,7 +970,7 @@ ss_active_item *get_free_active_list_node()
 {
 	int i;
 	for ( i = 0; i < Num_ship_types; i++ ) { 
-	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { //DTP, ONLY 12 SHIPS ???, as MAX_WSS_SLOTS will be 12.
+	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { //DTP, ONLY MAX_WSS_SLOTS SHIPS ???
 	if ( SS_active_items[i].flags == 0 ) {
 			SS_active_items[i].flags |= SS_ACTIVE_ITEM_USED;
 			return &SS_active_items[i];
@@ -1166,7 +1170,7 @@ void ship_select_init()
 	// if in multiplayer -- set my state to be ship select
 	if ( Game_mode & GM_MULTIPLAYER ){		
 		// also set the ship which is mine as the default
-		maybe_change_selected_wing_ship(Net_player->p_info.ship_index/4,Net_player->p_info.ship_index % 4);
+		maybe_change_selected_wing_ship(Net_player->p_info.ship_index/MAX_WING_SLOTS,Net_player->p_info.ship_index%MAX_WING_SLOTS);
 	}
 #endif
 
@@ -1350,8 +1354,8 @@ void maybe_change_selected_wing_ship(int wb_num, int ws_num)
 
 		case WING_SLOT_FILLED:
 		case WING_SLOT_FILLED|WING_SLOT_IS_PLAYER:
-			if ( Selected_ss_class != -1 && Selected_ss_class != Wss_slots[wb_num*4+ws_num].ship_class ) {
-				Selected_ss_class = Wss_slots[wb_num*4+ws_num].ship_class;
+			if ( Selected_ss_class != -1 && Selected_ss_class != Wss_slots[wb_num*MAX_WING_SLOTS+ws_num].ship_class ) {
+				Selected_ss_class = Wss_slots[wb_num*MAX_WING_SLOTS+ws_num].ship_class;
 				start_ship_animation(Selected_ss_class, 1);
 			}
 			break;
@@ -1369,12 +1373,12 @@ void maybe_change_selected_wing_ship(int wb_num, int ws_num)
 //				1 => icon was dropped onto slot
 int do_mouse_over_wing_slot(int block, int slot)
 {
-	Hot_ss_slot = block*4 + slot;
+	Hot_ss_slot = block*MAX_WING_SLOTS + slot;
 
 	if ( !mouse_down(MOUSE_LEFT_BUTTON) ) {
 		if ( ss_icon_being_carried() ) {
 
-			if ( ss_disabled_slot(block*4+slot) ) {
+			if ( ss_disabled_slot(block*MAX_WING_SLOTS+slot) ) {
 				gamesnd_play_iface(SND_ICON_DROP);
 				return 0;
 			}
@@ -1389,7 +1393,7 @@ int do_mouse_over_wing_slot(int block, int slot)
 		}
 	}
 	else {
-		if ( Ss_mouse_down_on_region == (WING_0_SHIP_0+block*4+slot) ) {
+		if ( Ss_mouse_down_on_region == (WING_0_SHIP_0+block*MAX_WING_SLOTS+slot) ) {
 			pick_from_wing(block, slot);
 		}
 	}
@@ -2605,7 +2609,7 @@ void pick_from_wing(int wb_num, int ws_num)
 	ss_slot_info *ws;
 	wb = &Ss_wings[wb_num];
 	ws = &wb->ss_slots[ws_num];
-	slot_index = wb_num*4+ws_num;
+	slot_index = wb_num*MAX_WING_SLOTS+ws_num;
 
 	if ( wb->wingnum < 0 )
 		return;
@@ -2694,15 +2698,15 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 	// print the wing name under the wing
 	wp = &Wings[wb->wingnum];
 	gr_get_string_size(&w, &h, wp->name);
-	sx = Wing_icon_coords[gr_screen.res][wb_num*4][0] + 16 - w/2;
-	sy = Wing_icon_coords[gr_screen.res][wb_num*4 + 3][1] + 32 + h;
+	sx = Wing_icon_coords[gr_screen.res][wb_num*MAX_WING_SLOTS][0] + 16 - w/2;
+	sy = Wing_icon_coords[gr_screen.res][wb_num*MAX_WING_SLOTS + 3][1] + 32 + h;
 	gr_set_color_fast(&Color_normal);
 	gr_string(sx, sy, wp->name);
 
 	for ( i = 0; i < MAX_WING_SLOTS; i++ ) {
 		bitmap_to_draw = -1;
 		ws = &wb->ss_slots[i];
-		slot_index = wb_num*4 + i;
+		slot_index = wb_num*MAX_WING_SLOTS + i;
 
 		if ( Wss_slots[slot_index].ship_class >= 0 ) {
 			icon = &Ss_icons[Wss_slots[slot_index].ship_class];
@@ -2832,8 +2836,8 @@ void ss_make_slot_empty(int slot_index)
 	ss_slot_info	*ws;
 
 	// calculate the wing #
-	wing_num = slot_index / 4;
-	slot_num = slot_index % 4;
+	wing_num = slot_index / MAX_WING_SLOTS;
+	slot_num = slot_index % MAX_WING_SLOTS;
 
 	// get the wing and slot entries
 	wb = &Ss_wings[wing_num];
@@ -2852,8 +2856,8 @@ void ss_make_slot_full(int slot_index)
 	ss_slot_info	*ws;
 
 	// calculate the wing #
-	wing_num = slot_index / 4;
-	slot_num = slot_index % 4;
+	wing_num = slot_index / MAX_WING_SLOTS;
+	slot_num = slot_index % MAX_WING_SLOTS;
 
 	// get the wing and slot entries
 	wb = &Ss_wings[wing_num];
@@ -2942,7 +2946,7 @@ int create_wings()
 		wp = &Wings[wb->wingnum];		
 		
 		for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
-			slot_index = i*4+j;
+			slot_index = i*MAX_WING_SLOTS+j;
 			ws = &wb->ss_slots[j];
 			switch ( ws->status ) {
 
@@ -2957,7 +2961,7 @@ int create_wings()
 					if ( ws->status & WING_SLOT_IS_PLAYER ) {
 						update_player_ship(Wss_slots[slot_index].ship_class);
 
-						if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[i*4+j]) == -1 ) {
+						if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[i*MAX_WING_SLOTS+j]) == -1 ) {
 							popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player ship has no weapons", 461));
 							return -1;
 						}
@@ -2971,7 +2975,7 @@ int create_wings()
 								if ( p_objp->wingnum == WING_INDEX(wp) ) {
 									if ( ws->sa_index == (p_objp-ship_arrivals) ) {
 										p_objp->ship_class = Wss_slots[slot_index].ship_class;
-										wl_update_parse_object_weapons(p_objp, &Wss_slots[i*4+j]);
+										wl_update_parse_object_weapons(p_objp, &Wss_slots[i*MAX_WING_SLOTS+j]);
 										found_pobj = 1;
 										break;
 									}
@@ -2987,7 +2991,7 @@ int create_wings()
 							//			of weapons and may not have the same allowed weapon types
 							if ( Ships[wp->ship_index[j]].ship_info_index != Wss_slots[slot_index].ship_class )
 								change_ship_type(wp->ship_index[j], Wss_slots[slot_index].ship_class);
-							wl_update_ship_weapons(Ships[wp->ship_index[j]].objnum, &Wss_slots[i*4+j]);
+							wl_update_ship_weapons(Ships[wp->ship_index[j]].objnum, &Wss_slots[i*MAX_WING_SLOTS+j]);
 						}
 					}
 
@@ -3135,8 +3139,8 @@ int ss_return_original_ship_class(int slot_num)
 {
 	int wnum, snum;
 
-	wnum = slot_num/4;
-	snum = slot_num%4;
+	wnum = slot_num/MAX_WING_SLOTS;
+	snum = slot_num%MAX_WING_SLOTS;
 
 	return Ss_wings[wnum].ss_slots[snum].original_ship_class;
 }
@@ -3146,8 +3150,8 @@ int ss_return_saindex(int slot_num)
 {
 	int wnum, snum;
 
-	wnum = slot_num/4;
-	snum = slot_num%4;
+	wnum = slot_num/MAX_WING_SLOTS;
+	snum = slot_num%MAX_WING_SLOTS;
 
 	return Ss_wings[wnum].ss_slots[snum].sa_index;
 }
@@ -3488,7 +3492,20 @@ int ss_disabled_slot(int slot_num)
 		return multi_ts_disabled_slot(slot_num);
 	} 
 #endif
-	return ( Ss_wings[slot_num/4].ss_slots[slot_num%4].status & WING_SLOT_IGNORE );
+	return ( Ss_wings[slot_num/MAX_WING_SLOTS].ss_slots[slot_num%MAX_WING_SLOTS].status & WING_SLOT_IGNORE );
+}
+
+// Goober5000 - determine if the slot is valid
+int ss_valid_slot(int slot_num)
+{
+	int status;
+
+	if (ss_disabled_slot(slot_num))
+		return 0;
+
+	status = Ss_wings[slot_num/MAX_WING_SLOTS].ss_slots[slot_num%MAX_WING_SLOTS].status;
+
+	return (status & WING_SLOT_FILLED) && !(status & WING_SLOT_EMPTY);
 }
 
 // reset the slot data
@@ -3501,8 +3518,8 @@ void ss_clear_slots()
 		Wss_slots[i].ship_class = -1;
 	}
 
-	for ( i = 0; i < 3; i++ ) {
-		for ( j = 0; j < 4; j++ ) {
+	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
+		for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
 			slot = &Ss_wings[i].ss_slots[j];
 			slot->status = WING_SLOT_DISABLED;
 			slot->sa_index = -1;
@@ -3562,8 +3579,8 @@ int ss_wing_slot_is_console_player(int index)
 {
 	int wingnum, slotnum;
 	
-	wingnum=index/4;
-	slotnum=index%4;
+	wingnum=index/MAX_WING_SLOTS;
+	slotnum=index%MAX_WING_SLOTS;
 
 	if ( wingnum >= Wss_num_wings ) {
 		return 0;
@@ -3647,7 +3664,7 @@ void ss_init_units()
 			}
 
 			// Assign the ship class to the unit
-			Wss_slots[i*4+j].ship_class = ss_slot->original_ship_class;
+			Wss_slots[i*MAX_WING_SLOTS+j].ship_class = ss_slot->original_ship_class;
 
 		}	// end for
 	}	// end for
@@ -3761,7 +3778,7 @@ void ss_synch_interface()
 	}
 
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-		slot = &Ss_wings[i/4].ss_slots[i%4];
+		slot = &Ss_wings[i/MAX_WING_SLOTS].ss_slots[i%MAX_WING_SLOTS];
 
 		if ( Wss_slots[i].ship_class == -1 ) {
 			if ( slot->status & WING_SLOT_FILLED ) {
@@ -3793,11 +3810,11 @@ int ss_swap_slot_slot(int from_slot, int to_slot, int *sound)
 		return 0;
 	}
 
-	fwnum = from_slot/4;
-	fsnum = from_slot%4;
+	fwnum = from_slot/MAX_WING_SLOTS;
+	fsnum = from_slot%MAX_WING_SLOTS;
 
-	twnum = to_slot/4;
-	tsnum = to_slot%4;
+	twnum = to_slot/MAX_WING_SLOTS;
+	tsnum = to_slot%MAX_WING_SLOTS;
 
 	// swap ship class
 	tmp = Wss_slots[from_slot].ship_class;
@@ -3833,8 +3850,8 @@ int ss_dump_to_list(int from_slot, int to_list, int *sound)
 		return 0;
 	}
 
-	fwnum = from_slot/4;
-	fsnum = from_slot%4;
+	fwnum = from_slot/MAX_WING_SLOTS;
+	fsnum = from_slot%MAX_WING_SLOTS;
 
 	// put ship back in list
 	Ss_pool[to_list]++;		// return to list
@@ -4023,7 +4040,7 @@ void ss_recalc_multiplayer_slots()
 				ss_slot->status |= WING_SLOT_LOCKED;
 				
 				// if this is my slot, then unlock it
-				if(!multi_ts_disabled_slot((i*4)+j)){				
+				if(!multi_ts_disabled_slot((i*MAX_WING_SLOTS)+j)){				
 					ss_slot->status &= ~WING_SLOT_LOCKED;
 				}
 			}

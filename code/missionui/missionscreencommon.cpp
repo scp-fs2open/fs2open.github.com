@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-03-25 06:57:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.18 $
+ * $Date: 2005-03-31 11:11:56 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.16  2005/03/12 04:44:24  wmcoolmon
  * Fixx0red odd drag problems
  *
@@ -1412,7 +1415,7 @@ void wss_direct_restore_loadout()
 			p_object *p_objp;
 			j=0;
 			for ( p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
-				slot = &Player_loadout.unit_data[i*4+j];
+				slot = &Player_loadout.unit_data[i*MAX_WING_SLOTS+j];
 				if ( p_objp->wingnum == WING_INDEX(wp) ) {
 					p_objp->ship_class = slot->ship_class;
 					wl_update_parse_object_weapons(p_objp, slot);
@@ -1430,7 +1433,7 @@ void wss_direct_restore_loadout()
 
 			// This wing is already created, so directly update the ships
 			for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
-				slot = &Player_loadout.unit_data[i*4+j];
+				slot = &Player_loadout.unit_data[i*MAX_WING_SLOTS+j];
 				shipp = &Ships[wp->ship_index[j]];
 				if ( shipp->ship_info_index != slot->ship_class ) {
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.h $
- * $Revision: 2.5 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-31 11:11:56 $
+ * $Author: Goober5000 $
  *
  * Header file to support functions that allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/08/11 05:06:28  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.4  2004/03/05 09:01:55  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -293,6 +296,7 @@ void	ss_return_name(int wing_block, int wing_slot, char *name);
 int	ss_return_original_ship_class(int slot_num);
 int	ss_return_saindex(int slot_num);
 int	ss_disabled_slot(int slot_num);
+int	ss_valid_slot(int slot_num);
 int	ss_wing_slot_is_console_player(int index);
 
 // lock/unlock any necessary slots for multiplayer
