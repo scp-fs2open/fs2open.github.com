@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-07-04 02:30:54 $
+ * $Revision: 2.14 $
+ * $Date: 2003-07-15 02:51:43 $
  * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/07/04 02:30:54  phreak
+ * support for cloaking added.  needs a cloakmap.pcx
+ * to cloak the players ship, activate cheats and press tilde + x
+ * some more work can be done to smooth out the animation.
+ *
  * Revision 2.12  2003/05/21 21:07:31  phreak
  * fixed *minor* problem where ships that were disabled during warpout were not
  * registering on sensors
@@ -3076,18 +3081,55 @@ void shipfx_stop_engine_wash_sound()
 	}
 }
 
-void shipfx_start_cloak(ship *shipp)
+void shipfx_start_cloak(ship *shipp, int warmup, int recalc_matrix)
 {
 
 	//get a random vector to translate the texture matrix
 	//since we don't need a z-value, zero it and renormalize
-	vm_vec_rand_vec_quick(&shipp->texture_translation_key);
-	shipp->texture_translation_key.xyz.z=0;
-	vm_vec_normalize_quick(&shipp->texture_translation_key);
-	vm_vec_zero(&shipp->current_translation);
-	
-	shipp->time_until_full_cloak=timestamp(5000);
+	if (recalc_matrix)
+	{	
+		vm_vec_rand_vec_quick(&shipp->texture_translation_key);
+		shipp->texture_translation_key.xyz.z=0;
+		vm_vec_normalize_quick(&shipp->texture_translation_key);
+		vm_vec_zero(&shipp->current_translation);
+	}
+
+	shipp->time_until_full_cloak=timestamp(warmup);
 	shipp->cloak_stage=1;
+}
+
+float shipfx_calc_visibility(object *obj, vector *view_pt)
+{
+	if (obj->type != OBJ_SHIP)
+		return 1.0f;
+
+	float dist = vm_vec_dist(&obj->pos,view_pt);
+			
+	//half bright if less than 3x radius
+	if (dist <= (obj->radius *3.0f) )
+	{
+		return 0.5f;
+	}
+	
+	//almost invis if greater than 20x radius
+	else if (dist >= (obj->radius * 20.0f) )
+	{
+		return 0.03125;
+	}
+	
+	//otherwise do linear attenuation
+	//(final radius * max_alpha / dx ) - (slope * (dist / radius))
+	else
+	{
+		float factor = dist / obj->radius;
+		float alpha = (10.0f/17.0f) - ((.46875f/17.0f) * factor);
+		return alpha;	
+	}
+	
+	//this can't happen !!
+	Int3();
+	return 1.0f;
+
 }
 
 void shipfx_cloak_frame(ship *shipp, float frametime)
@@ -3103,8 +3145,27 @@ void shipfx_cloak_frame(ship *shipp, float frametime)
 			break;
 		
 		case 2:
+		{
+			//uncloak if departing or arriving
+			if (shipp->flags & (SF_DEPART_WARP | SF_ARRIVING))
+			{
+				shipfx_stop_cloak(shipp,1000);
+				break;
+			}
+
+			//find an approiate alpha level for the ship
+			object *obj=&Objects[shipp->objnum];
+			//stop cloaking if <20% hits left. make it look cool tho
+			if ((obj->hull_strength / shipp->ship_initial_hull_strength) < .2f)
+			{
+				shipfx_stop_cloak(shipp,25000);
+				break;			//dont need to calc alpha
+			}
+
+			shipp->cloak_alpha = fl2i(shipfx_calc_visibility(obj, &Eye_position) * 255.0f);
+
+		}
 			break;
-		
 		case 3:
 			if (timestamp_elapsed(shipp->time_until_full_cloak))
 			{
@@ -3118,12 +3179,13 @@ void shipfx_cloak_frame(ship *shipp, float frametime)
 
 	//do something to the texture matrix
 	vm_vec_scale_add2(&shipp->current_translation,&shipp->texture_translation_key,frametime);
+
 }
 
-void shipfx_stop_cloak(ship *shipp)
+void shipfx_stop_cloak(ship *shipp, int warmdown)
 {
 	shipp->cloak_stage=3;
-	shipp->time_until_full_cloak=timestamp(5000);
+	shipp->time_until_full_cloak=timestamp(warmdown);
 	if (!(Ship_info[shipp->ship_info_index].flags & SIF_SHIP_CLASS_STEALTH))
 		shipp->flags2 &= ~(SF2_STEALTH);
 }
