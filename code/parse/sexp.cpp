@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.69 $
- * $Date: 2003-08-30 21:59:48 $
+ * $Revision: 2.70 $
+ * $Date: 2003-09-05 02:15:34 $
  * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2003/08/30 21:59:48  phreak
+ * added num-ships-in-battle and num-ships-in-battle-team sexp
+ *
  * Revision 2.68  2003/08/28 06:17:29  Goober5000
  * trying to commit
  * --Goober5000
@@ -899,7 +902,7 @@ sexp_oper Operators[] = {
 
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
-	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 1 },		// Goober5000
+	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 2 },		// Goober5000
 	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	1, 1 },		// Goober5000
 
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
@@ -3280,11 +3283,25 @@ int sexp_equal(int n)
 //return the number of ships of a given team in the area battle 
 int sexp_num_ships_in_battle_team(int n)
 {
-	int team=sexp_get_val(n);
+	char* c_team;
+	int team;
 	int count=0;
 	ship_obj	*so;
 	ship *shipp;
 	object* objp;
+
+	c_team = CTEXT(n);
+
+	if ( !stricmp(c_team, "friendly") )
+		team = TEAM_FRIENDLY;
+	else if ( !stricmp(c_team, "hostile") )
+		team = TEAM_HOSTILE;
+	else if ( !stricmp(c_team, "neutral") )
+		team = TEAM_NEUTRAL;
+	else if ( !stricmp(c_team, "unknown") )
+		team = TEAM_UNKNOWN;
+	else 
+		team=TEAM_FRIENDLY;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp=&Objects[so->objnum];
@@ -6288,12 +6305,23 @@ void sexp_load_music(char* fname)
 }
 
 // Goober5000
-void sexp_start_music()
+void sexp_start_music(int node)
 {
 #ifndef NO_SOUND
+	int n=CDR(node);
+	int loop=0;
+
+	if (n>0)
+	{
+		if (sexp_get_val(n) > 0)
+		{
+			loop=1;
+		}
+	}
+
 	if ( Sexp_music_handle != -1 ) {
 		if ( !audiostream_is_playing(Sexp_music_handle) )
-			audiostream_play(Sexp_music_handle, Master_event_music_volume, 0);
+			audiostream_play(Sexp_music_handle, Master_event_music_volume, loop);
 	}
 	else {
 		nprintf(("Warning", "No file exists to play sound via sexp-play-sound-from-file!\n"));
@@ -6339,7 +6367,7 @@ void sexp_play_sound_from_file(int n)
 	sexp_load_music(CTEXT(n));
 
 	// play sound file -----------------------------
-	sexp_start_music();
+	sexp_start_music(n);
 }
 
 // Goober5000
@@ -12296,7 +12324,10 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_PLAY_SOUND_FROM_FILE:
-			return OPF_STRING;
+			if (argnum==0)
+				return OPF_STRING;
+			else
+				return OPF_POSITIVE;
 
 		case OP_CLOSE_SOUND_FROM_FILE:
 			return OPF_BOOL;
