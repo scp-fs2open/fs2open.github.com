@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.50 $
- * $Date: 2003-11-11 03:56:12 $
- * $Author: bobboau $
+ * $Revision: 2.51 $
+ * $Date: 2003-11-11 18:12:41 $
+ * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2003/11/11 03:56:12  bobboau
+ * shit load of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.49  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -4061,12 +4064,12 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 
 	if((Interp_flags & MR_AUTOCENTER) && (pm->flags & PM_FLAG_AUTOCEN)){
-		g3_done_instance();
+		g3_done_instance(true);
 	}
 
 //	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
-	g3_done_instance();
+	g3_done_instance(true);
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
 	glow_maps_active = 1;
@@ -4149,7 +4152,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_filter_pop();	
 	}
-	g3_done_instance();
+	g3_done_instance(true);
 
 
 	// turn off fog after each model renders, RT This fixes HUD being fogged when debris is in target box
@@ -4821,7 +4824,7 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 	vm_vec_sub2(&Interp_offset,&pm->submodel[mn].offset);
 
 	Interp_flags = fl;
-	g3_done_instance();
+	g3_done_instance(true);
 }
 
 extern vector Object_position;
