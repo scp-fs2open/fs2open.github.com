@@ -863,8 +863,15 @@ int parse_hud_gauges_tbl(char* longname)
 }
 #endif
 
+extern int Ships_inited;
 void hud_positions_init()
 {
+	if(!ships_inited)
+	{
+		Error(LOCATION, "Could not initialize hudparse.cpp as ships were not inited first.");
+		return;
+	}
+
 	load_hud_defaults(&default_hud);
 #ifndef NEW_HUD
 
@@ -1984,4 +1991,221 @@ gauge_var::~gauge_var()
 {
 	DeallocVars();
 }
+<<<<<<< hudparse.cpp
+
+#define MAX_CHILD_OBJECTS
+#define MAX_OFFSET_NUM	
+
+struct gauge_offset
+{
+	size_t offset;
+	void *array_pointer;
+}
+
+struct gauge_child
+{
+	gauge_object* child;
+
+	unsigned int num_offsets;
+
+	gauge_offset offsets[MAX_OFFSET_NUM];	//If this isn't NULL, offset is interpreted to indicate an index into this array
+}
+
+class gauge_object_instance
+{
+private:
+	struct gauge_object_instance *next, *prev;
+	char name[NAME_LENGTH];
+	void *pointer;
+
+	std::vector<gauge_object*> (*manual_get_object_types)();
+	std::vector<gauge_object*> object_types;
+	int flags;
+
+public:
+	gauge_object_instance(){name[0]='\0';pointer=NULL;get_object_types=NULL;flags=0;}
+	void add(class gauge_object_instance* ngip);
+	void set_type_func(std::vector<gauge_object*> (*manual_get_object_types)());
+	std::vector<gauge_object*> (*get_object_types)();
+};
+
+gauge_object_instance::gauge_object_instance(char *in_name, void *in_pointer, int in_flags, gauge_object* in_object_types, ...)
+{
+	if(strlen(in_name) > sizeof(name))
+		return;
+
+	strcpy(name, in_name);
+
+	pointer = in_pointer;
+	flags = in_flags;
+
+	//Add the types
+	va_list marker;
+	unsigned int count = 0;
+	gauge_object* cotp = in_object_types;
+
+	va_start(marker, in_offsets);
+	while(cotp != -1)
+	{
+		object_types.push_back(cotp);
+		count++;
+		cotp = va_arg(marker, gauge_object*);
+	}
+	va_end(marker);
+}
+
+//Only call this from the main array
+void gauge_object_instance::add(gauge_object_instance *ngip)
+{
+	list_append(this, ngip);
+}
+
+class gauge_object
+{
+private:
+	struct gauge_object *next, *prev;
+
+	char name[NAME_LENGTH];
+	bool has_value;
+
+	unsigned int num_children;
+	gauge_child children[MAX_CHILD_OBJECTS];
+	int flags;
+public:
+	gauge_object* add(char* in_name, bool in_has_value, int in_flags = 0);
+	bool copy_children(gauge_object *in_copyee);
+	bool add_child(gauge_object* in_child, gauge_offset* in_offsets, ...);
+	~gauge_object();
+};
+
+//Call delete on the first in a list of gauge_objects, and they all go away. :)
+gauge_object::~gauge_object()
+{
+	if(next != NULL)
+		delete next;
+}
+
+//OK, so true object derivation and that crap is out. This lets you quickly copy children.
+bool gauge_object::copy_children(gauge_object *in_copyee)
+{
+	for(unsigned int i = 0; i < in_copyee->num_children; i++)
+	{
+		if(j==MAX_CHILD_OBJECTS)
+		{
+			Warning(LOCATION, "Could only copy %d child objects to %s", name);
+			return false;
+		}
+
+		in_copyee->children[num_children] = in_copyee->children[i];
+	}
+
+	return true;
+}
+
+bool gauge_object::add_child(gauge_object* in_child, gauge_offset* in_offsets, ...)
+{
+	Assert(in_child != NULL);
+	if(num_children == MAX_CHILD_OBJECTS)
+	{
+		Warning(LOCATION, "Could not add child object to %s", name);
+		return false;
+	}
+
+	gauge_child *gc = &children[num_children];
+
+	gc->child = in_child;
+
+	//DO Handle offset variables
+	va_list marker;
+	unsigned int count = 0;
+	gauge_offset* curr_offset = in_offsets;
+
+	va_start(marker, in_offsets);
+	while(curr_offset != -1 && count < MAX_OFFSET_NUM)
+	{
+		gc->offsets[count] = curr_offset;
+		count++;
+		curr_offset = va_arg(marker, size_t);
+	}
+	va_end(marker);
+	return true;
+}
+
+gauge_object* add(char* in_name, bool in_has_value, int in_flags)
+{
+	gauge_object* gop = this;	//sigh...
+
+	//Look for entries before or at this entry for a common name
+	while(gop != NULL)
+	{
+		if(!stricmp(gop->name, in_name))
+			return NULL;
+		else
+			gop = gop->prev;
+	}
+
+	//Look for entries after this entry for a commmon name
+	gop = next;
+	while(gop != NULL)
+	{
+		if(!stricmp(gop->name, in_name))
+			return NULL;
+		else
+			gop = gop->next;
+	}
+
+	//OK, apparently nothing has the same name...we're clear to go
+	gop = new gauge_object;
+
+	//Set the values
+	gop->prev = this;
+	gop->next = NULL;
+	strcpy(gop->name, in_name);
+	gop->has_value = in_has_value;
+	gop->num_offsets = 0;
+	memset(children, 0, sizeof(children));
+	gop->flags = in_flags;
+
+	//We're done, return a pointer to the new gauge object
+	return gop;
+}
+
+gauge_object* Gauge_obj_list = NULL;
+std::vector<gauge_object_instances> Gauge_obj_instances;
+//To use:
+//Gauge_obj_list = Gauge_obj_list->Add("object", false);
+//then...
+//delete Gauge_obj_list;
+
+void init()
+{
+	if(!ships_inited)
+	{
+		Error(LOCATION, "Could not initialize hudparse.cpp as ships were not inited first.");
+		return;
+	}
+	//Initialize variables
+	gauge_offset goff;
+
+	goff.offset = 0;
+	goff.array_pointer = NULL;
+
+	//"core" objects
+	gauge_object *gol_object, *gol_escort;
+	gol_object = Gauge_obj_list = Gauge_obj_list->add("object", false);
+	gol_ship = Gauge_obj_list->add("ship", false);
+
+	//"child" objects, ie variables
+	gauge_object *gol_object_type;
+	gol_object_type = Gauge_obj_list->add("type", true);
+
+	//Assign child objects
+	goff.offset = offsetof(object, type);
+	gol_object->add_child(gol_object_type, &goff);
+
+	//Instances
+
+	Gauge_obj_instances.push_back
+}
+
 #endif
