@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.23 $
+ * $Revision: 2.24 $
  * $Author: Goober5000 $
- * $Date: 2003-03-19 22:49:32 $
+ * $Date: 2003-03-20 23:20:26 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/03/19 22:49:32  Goober5000
+ * added some mission flags
+ * --Goober5000
+ *
  * Revision 2.22  2003/03/02 02:10:11  Goober5000
  * bumped alternate names from 10 to 25
  * --Goober5000
@@ -334,8 +338,8 @@ extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 #define MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT	(1<<7)	// Beam-free-all by default - Goober5000
 #define MISSION_FLAG_NO_NEB_TRAILS			(1<<8)	//Disables ship trails in nebula -C
 #define MISSION_FLAG_OLD_WARP_EFFECT		(1<<9)	// forces old warp effect, before Bobboau's - Goober5000
-#define MISSION_FLAG_NO_BRIEFING			(1<<10)	// no briefing, jump right into mission
-#define MISSION_FLAG_NO_DEBRIEFING			(1<<11)	// no debriefing, just like red-alert
+#define MISSION_FLAG_NO_BRIEFING			(1<<10)	// no briefing, jump right into mission - Goober5000
+#define MISSION_FLAG_NO_DEBRIEFING			(1<<11)	// no debriefing, just like red-alert - Goober5000
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
