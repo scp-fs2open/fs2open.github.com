@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.37 $
- * $Date: 2004-08-26 18:19:36 $
+ * $Revision: 2.38 $
+ * $Date: 2004-09-28 19:54:32 $
  * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2004/08/26 18:19:36  Kazan
+ * small standalone-related multibug fix
+ * prohibited execution of process_debug_keys(int) while Game_mode & GM_MULTIPLAYER
+ *
  * Revision 2.36  2004/07/29 19:37:50  Kazan
  * unbug the JS bug i caused --- kazan
  *
@@ -1071,6 +1075,10 @@ void process_debug_keys(int k)
 
 				switch (objp->type) {
 				case OBJ_SHIP:
+					
+					// remove guardian flag -- kazan
+					objp->flags &= ~OF_GUARDIAN;
+					
 					ship_apply_local_damage( objp, Player_obj, &objp->pos, 100000.0f, MISS_SHIELDS, CREATE_SPARKS);
 					ship_apply_local_damage( objp, Player_obj, &objp->pos, 1.0f, MISS_SHIELDS, CREATE_SPARKS);
 					break;

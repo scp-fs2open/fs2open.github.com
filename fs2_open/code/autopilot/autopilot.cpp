@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.11 $
- * $Date: 2004-07-29 23:41:21 $
+ * $Revision: 1.12 $
+ * $Date: 2004-09-28 19:54:31 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2004/07/29 23:41:21  Kazan
+ * bugfixes
+ *
  * Revision 1.10  2004/07/27 18:52:10  Kazan
  * squished another
  *
@@ -74,6 +77,7 @@ extern fix Game_time_compression;
 // Module variables
 bool AutoPilotEngaged;
 int CurrentNav;
+float ramp_bias;
 NavPoint Navs[MAX_NAVPOINTS];
 
 // used for ramping time compression;
@@ -235,6 +239,7 @@ void StartAutopilot()
 
 	// damp speed_cap to 90% of actual -- to make sure ships stay in formation
 	speed_cap = 0.90f * speed_cap;
+	ramp_bias = speed_cap/50.0f;
 
 	// assign ship goals
 	// when assigning goals to individual ships only do so if Ships[shipnum].wingnum != -1 
@@ -452,36 +457,36 @@ void NavSystem_Do()
 		int dstfrm_start = start_dist - DistanceTo(CurrentNav);
 
 		// Ramp UP time compression
-		if (dstfrm_start < 3500)
+		if (dstfrm_start < (3500*ramp_bias))
 		{
 
-			if (dstfrm_start >= 3000 && DistanceTo(CurrentNav) > 30000)
+			if (dstfrm_start >= (3000*ramp_bias) && DistanceTo(CurrentNav) > 30000)
 				Game_time_compression = F1_0 * 64;
-			else if (dstfrm_start >= 2000)
+			else if (dstfrm_start >= (2000*ramp_bias))
 				Game_time_compression = F1_0 * 32;
-			else if (dstfrm_start >= 1600)
+			else if (dstfrm_start >= (1600*ramp_bias))
 				Game_time_compression = F1_0 * 16;
-			else if (dstfrm_start >= 1200)
+			else if (dstfrm_start >= (1200*ramp_bias))
 				Game_time_compression = F1_0 * 8;
-			else if (dstfrm_start >= 800)
+			else if (dstfrm_start >= (800*ramp_bias))
 				Game_time_compression = F1_0 * 4;
-			else if (dstfrm_start >= 400)
+			else if (dstfrm_start >= (400*ramp_bias))
 				Game_time_compression = F1_0 * 2;
 		}
 
 		// Ramp DOWN time compression
-		if (DistanceTo(CurrentNav) <= 7000)
+		if (DistanceTo(CurrentNav) <= (7000*ramp_bias))
 		{
 			int dist = DistanceTo(CurrentNav);
-			if (dist >= 5000)
+			if (dist >= (5000*ramp_bias))
 				Game_time_compression = F1_0 * 32;
-			else if (dist >= 4000)
+			else if (dist >= (4000*ramp_bias))
 				Game_time_compression = F1_0 * 16;
-			else if (dist >= 3000)
+			else if (dist >= (3000*ramp_bias))
 				Game_time_compression = F1_0 * 8;
-			else if (dist >= 2000)
+			else if (dist >= (2000*ramp_bias))
 				Game_time_compression = F1_0 * 4;
-			else if (dist >= 1000)
+			else if (dist >= (1000*ramp_bias))
 				Game_time_compression = F1_0 * 2;
 		}
 	}
