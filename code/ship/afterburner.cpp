@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-08-06 17:37:08 $
+ * $Author: phreak $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -237,6 +240,10 @@ void afterburners_start(object *objp)
 		return;		// afterburners are already engaged, nothing to do here
 	}
 
+	//boosters take precedence
+	if (objp->phys_info.flags & PF_BOOSTER_ON)
+		return;
+
 	shipp = &Ships[objp->instance];
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES );
 	sip = &Ship_info[shipp->ship_info_index];
@@ -319,6 +326,14 @@ void afterburners_update(object *objp, float fl_frametime)
 		return;		// nothing to update, afterburners are not even on the ship
 	}
 
+	//shut the afterburners off if we're using the booster tertiary
+	if ( objp->phys_info.flags & PF_BOOSTER_ON)
+	{
+		if (objp==Player_obj) afterburner_stop_sounds();
+		afterburners_stop(objp);
+		return;
+	}
+
 	if ( objp == Player_obj ) {
 		if ( !timestamp_elapsed(Player_disengage_timer) ) {
 			float remaining;
@@ -345,7 +360,9 @@ void afterburners_update(object *objp, float fl_frametime)
 #endif
 		if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 			// Recover afterburner fuel
-		
+
+			float recover_rate=sip->afterburner_recover_rate;
+
 			if ( shipp->afterburner_fuel < sip->afterburner_fuel_capacity ) {
 				float recharge_scale;
 				recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * Skill_level_afterburner_recharge_scale[Game_skill_level];

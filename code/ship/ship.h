@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.42 $
- * $Date: 2003-07-15 02:52:40 $
+ * $Revision: 2.43 $
+ * $Date: 2003-08-06 17:37:08 $
  * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/07/15 02:52:40  phreak
+ * ships now decloak when firing
+ *
  * Revision 2.41  2003/07/04 02:30:54  phreak
  * support for cloaking added.  needs a cloakmap.pcx
  * to cloak the players ship, activate cheats and press tilde + x
@@ -930,6 +933,19 @@ typedef struct ship {
 	int cloak_stage;
 	fix time_until_full_cloak;
 	int cloak_alpha;
+	fix time_until_uncloak;
+
+	int tertiary_weapon_info_idx;		//the tertiary weapon that this thing carries
+
+	int boost_pod_engaged;
+	int boost_shots_remaining;
+	fix boost_finish_stamp;
+
+	int ammopod_current_secondary;		//-1 if using this to carry primary ammo
+	int ammopod_current_primary;		//-1 if using this to carry missiles
+	int ammopod_current_ammo;
+
+	int jammer_engaged;
 
 } ship;
 
@@ -1195,7 +1211,11 @@ extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 // DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
 // TALK TO DAVE B FIRST
 // ****************************************************************
-#define MAX_SHIP_TYPES		130	//DTP bumped from 130 to 200
+#ifdef INF_BUILD
+#define MAX_SHIP_TYPES		250		//DTP bumped from 130 to 200
+#else
+#define MAX_SHIP_TYPES		130		//DTP bumped from 130 to 200
+#endif
 
 #define MAX_SHIPS_PER_WING	6
 
@@ -1623,5 +1643,8 @@ extern int ship_fighterbays_all_destroyed(ship *shipp);
 
 // Goober5000
 extern int ship_subsys_takes_damage(ship_subsys *ss);
+
+//phreak
+extern int ship_fire_tertiary(object *objp);
 
 #endif
