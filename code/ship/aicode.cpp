@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.51 $
- * $Date: 2004-02-04 08:41:02 $
+ * $Revision: 2.52 $
+ * $Date: 2004-02-23 07:45:38 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2004/02/04 08:41:02  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.50  2004/01/30 07:39:05  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -14584,6 +14589,7 @@ void ai_frame(int objnum)
 
 int Waypoints_created = 0;
 
+/* Goober5000 - deprecated; use ship_info_lookup
 //	Find the ship with the name *name in the Ship_info array.
 int find_ship_name(char *name)
 {
@@ -14594,7 +14600,7 @@ int find_ship_name(char *name)
 			return i;
 
 	return -1;
-}
+}*/
 
 void create_waypoints()
 {
