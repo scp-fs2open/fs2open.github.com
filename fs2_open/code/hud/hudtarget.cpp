@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-09-13 06:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.22.2.1 $
+ * $Date: 2003-09-19 00:31:10 $
+ * $Author: argv $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.19  2003/09/09 05:51:14  Goober5000
  * if player has primitive sensors, hud will not display shield icons or message sender brackets
  * --Goober5000
@@ -329,6 +333,7 @@
 #include "localization/localize.h"
 #include "ship/awacs.h"
 #include "hud/hudartillery.h"
+#include "cmdline/cmdline.h" // _argv[-1] - some things here are command-line optional.
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);
@@ -1636,7 +1641,9 @@ void hud_target_common(int team, int next_flag)
 				target_found = TRUE;
 				set_target_objnum( Player_ai, OBJ_INDEX(A) );
 				// if ship is BIG|HUGE and last subsys is NULL, get turret
-				hud_maybe_set_sorted_turret_subsys(shipp);
+				// _argv[-1] - allow player to disable.
+				if (!Argv_options.no_auto_target_turret)
+					hud_maybe_set_sorted_turret_subsys(shipp);
 				hud_restore_subsystem_target(shipp);
 			}
 		} else {
@@ -1936,7 +1943,9 @@ void hud_target_newest_ship()
 	if (newest_obj) {
 		set_target_objnum( Player_ai, OBJ_INDEX(newest_obj) );
 		// if BIG|HUGE and no selected subsystem, get sorted turret
-		hud_maybe_set_sorted_turret_subsys(&Ships[newest_obj->instance]);
+		// _argv[-1] - allow player to disable.
+		if (!Argv_options.no_auto_target_turret)
+			hud_maybe_set_sorted_turret_subsys(&Ships[newest_obj->instance]);
 		hud_restore_subsystem_target(&Ships[newest_obj->instance]);
 	}
 	else {
@@ -2548,7 +2557,8 @@ int hud_target_closest(int team, int attacked_objnum, int play_fail_snd, int fil
 
 			// if former subobject was not a turret do, not change subsystem
 			ss = Ships[nearest_obj->instance].last_targeted_subobject[Player_num];
-			if (ss == NULL || get_closest_turret_attacking_player) {
+			// _argv[-1] - don't f with subsys targeting unnecessarily if player doesn't want that.
+			if ((ss == NULL && !(Argv_options.no_auto_target_turret)) || get_closest_turret_attacking_player) {
 				// set_targeted_subsys(Player_ai, nearest_turret_subsys, OBJ_INDEX(nearest_obj));
 				// update nearest turret with later func
 				hud_target_live_turret(1, 1, get_closest_turret_attacking_player);
@@ -2668,7 +2678,8 @@ void hud_target_targets_target()
 
 	// if we've reached here, found player target's target
 	set_target_objnum( Player_ai, tt_objnum );
-	if (Objects[tt_objnum].type == OBJ_SHIP) {
+	// _argv[-1] - allow player to disable.
+	if (Objects[tt_objnum].type == OBJ_SHIP && !Argv_options.no_auto_target_turret) {
 		hud_maybe_set_sorted_turret_subsys(&Ships[Objects[tt_objnum].instance]);
 	}
 	hud_restore_subsystem_target(&Ships[Objects[tt_objnum].instance]);
@@ -2855,7 +2866,9 @@ void hud_target_in_reticle_old()
 		set_target_objnum( Player_ai, OBJ_INDEX(target_obj) );
 		if ( target_obj->type == OBJ_SHIP ) {
 			// if BIG|HUGE, maybe set subsys to turret
-			hud_maybe_set_sorted_turret_subsys(&Ships[target_obj->instance]);
+			// _argv[-1] - allow player to disable this.
+			if (!Argv_options.no_auto_target_turret)
+				hud_maybe_set_sorted_turret_subsys(&Ships[target_obj->instance]);
 			hud_restore_subsystem_target(&Ships[target_obj->instance]);
 		}
 	}	
@@ -4415,9 +4428,17 @@ void hud_cease_subsystem_targeting(int print_message)
 void hud_cease_targeting()
 {
 	set_target_objnum( Player_ai, -1 );
-	Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
+	// _argv[-1] - allow 'target nothing' command to not disable auto targeting.
+	if ((Argv_options.no_implicit_disable_auto_target) && (Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING))
+	{
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Selecting new target", -1));
+	}
+	else
+	{
+		Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Deactivating targeting system", 325));
+	}
 	hud_cease_subsystem_targeting(0);
-	HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Deactivating targeting system", 325));
 	hud_lock_reset();
 }
 
@@ -5506,7 +5527,9 @@ void hud_target_next_list(int hostile, int next_flag)
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
 
 		// maybe set new turret subsystem
-		hud_maybe_set_sorted_turret_subsys(&Ships[nearest_obj->instance]);
+		// _argv[-1] - allow player to disable.
+		if (!Argv_options.no_auto_target_turret)
+			hud_maybe_set_sorted_turret_subsys(&Ships[nearest_obj->instance]);
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
