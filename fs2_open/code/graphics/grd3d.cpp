@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.80 $
- * $Date: 2005-03-07 13:10:20 $
- * $Author: bobboau $
+ * $Revision: 2.81 $
+ * $Date: 2005-04-05 05:53:16 $
+ * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2005/03/07 13:10:20  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.79  2005/03/01 06:55:40  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -802,10 +806,10 @@ enum stage_state{
 // External variables - booo!
 extern bool env_enabled;
 extern matrix View_matrix;
-extern vector View_position;
+extern vec3d View_position;
 extern matrix Eye_matrix;
-extern vector Eye_position;
-extern vector Object_position;
+extern vec3d Eye_position;
+extern vec3d Object_position;
 extern matrix Object_matrix;
 extern float	Canv_w2;				// Canvas_width / 2
 extern float	Canv_h2;				// Canvas_height / 2
@@ -816,8 +820,8 @@ extern float Model_Interp_scale_y;
 extern float Model_Interp_scale_z;
 
 extern int G3_user_clip;
-extern vector G3_user_clip_normal;
-extern vector G3_user_clip_point;
+extern vec3d G3_user_clip_normal;
+extern vec3d G3_user_clip_point;
 
 static int D3d_dump_frames = 0;
 static ubyte *D3d_dump_buffer = NULL;
@@ -2033,9 +2037,9 @@ int vertex_size(uint flags){
 	if(flags & VERTEX_FLAG_UV3)Assert(! ((flags & VERTEX_FLAG_UV2) || (flags & VERTEX_FLAG_UV1) || (flags & VERTEX_FLAG_UV4)));
 	if(flags & VERTEX_FLAG_UV4)Assert(! ((flags & VERTEX_FLAG_UV2) || (flags & VERTEX_FLAG_UV3) || (flags & VERTEX_FLAG_UV1)));
 
-	if(flags & VERTEX_FLAG_POSITION)size	+= sizeof(vector);
+	if(flags & VERTEX_FLAG_POSITION)size	+= sizeof(vec3d);
 	if(flags & VERTEX_FLAG_RHW)size			+= sizeof(float);
-	if(flags & VERTEX_FLAG_NORMAL)size		+= sizeof(vector);
+	if(flags & VERTEX_FLAG_NORMAL)size		+= sizeof(vec3d);
 	if(flags & VERTEX_FLAG_DIFUSE)size		+= sizeof(DWORD);
 	if(flags & VERTEX_FLAG_SPECULAR)size	+= sizeof(DWORD);
 	if(flags & VERTEX_FLAG_UV1)size			+= sizeof(float)*2;
@@ -2069,8 +2073,8 @@ int convert_to_fvf(uint flags){
 
 #define fill_v(V,v) {(*((float *) (V))) = v; V = ((byte*)(V)) + sizeof(float);}
 
-vector *check_vec1, *check_vec2;
-void fill_vert(void *V, vertex *L, vector* N, uint flags){
+vec3d *check_vec1, *check_vec2;
+void fill_vert(void *V, vertex *L, vec3d* N, uint flags){
 				if(flags & VERTEX_FLAG_RHW){
 					fill_v(V, L->sx);
 					fill_v(V, L->sy);
@@ -2078,13 +2082,13 @@ void fill_vert(void *V, vertex *L, vector* N, uint flags){
 					fill_v(V, L->sw);
 				}else
 				if(flags & VERTEX_FLAG_POSITION){
-					check_vec1 = (vector*)V;
+					check_vec1 = (vec3d*)V;
 					fill_v(V, L->x);
 					fill_v(V, L->y);
 					fill_v(V, L->z);
 				}
 				if(flags & VERTEX_FLAG_NORMAL){
-					check_vec2 = (vector*)V;
+					check_vec2 = (vec3d*)V;
 					fill_v(V, N->xyz.x);
 					fill_v(V, N->xyz.y);
 					fill_v(V, N->xyz.z);
@@ -2203,7 +2207,7 @@ int gr_d3d_make_flat_buffer(poly_list *list){
 
 		D3DLVERTEX *v, *V;
 		vertex *L;
-//		vector *N;
+//		vec3d *N;
 
 		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
 		for(int k = 0; k<list->n_verts; k++){
@@ -2243,7 +2247,7 @@ int gr_d3d_make_line_buffer(line_list *list){
 
 		D3DLVERTEX *v, *V;
 		vertex *L;
-//		vector *N;
+//		vec3d *N;
 		int c = 0;
 
 		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
@@ -2531,14 +2535,14 @@ void gr_d3d_render_buffer(int start, int n_prim, short* index_buffer)
  	void (*gf_set_proj_matrix)(float, float, float, float);
   	void (*gf_end_proj_matrix)();
 	//the view matrix
- 	void (*gf_set_view_matrix)(vector *, matrix*);
+ 	void (*gf_set_view_matrix)(vec3d *, matrix*);
   	void (*gf_end_view_matrix)();
 	//object scaleing
-	void (*gf_push_scale_matrix)(vector *);
+	void (*gf_push_scale_matrix)(vec3d *);
  	void (*gf_pop_scale_matrix)();
 	//object position and orientation
-	void (*gf_start_instance_matrix)(vector *, matrix*);
-	void (*gf_start_angles_instance_matrix)(vector *, angles*);
+	void (*gf_start_instance_matrix)(vec3d *, matrix*);
+	void (*gf_start_angles_instance_matrix)(vec3d *, angles*);
 	void (*gf_end_instance_matrix)();
 */
 
@@ -2564,7 +2568,7 @@ void gr_d3d_end_proj_matrix(){
 
 //extern float global_scaleing_factor;
 	//the view matrix
-void gr_d3d_set_view_matrix(vector* offset, matrix *orient){
+void gr_d3d_set_view_matrix(vec3d* offset, matrix *orient){
 
 //	view_matrix_stack->Push();
 
@@ -2591,7 +2595,7 @@ void gr_d3d_end_view_matrix(){
 }
 int matr_depth = 0;
 	//object position and orientation
-void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
+void gr_d3d_start_instance_matrix(vec3d* offset, matrix *orient){
 
 	D3DXMATRIX old_world = *world_matrix_stack->GetTop(), scale_m;
 	world_matrix_stack->Push();
@@ -2612,7 +2616,7 @@ void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
 	matr_depth++;
 }
 
-void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient){
+void gr_d3d_start_angles_instance_matrix(vec3d* offset, angles *orient){
 
 	D3DXMATRIX current = *world_matrix_stack->GetTop(), scale_m;
 	world_matrix_stack->Push();
@@ -2647,7 +2651,7 @@ void gr_d3d_end_instance_matrix()
 
 
 	//object scaleing
-void gr_d3d_set_scale_matrix(vector* scale){
+void gr_d3d_set_scale_matrix(vec3d* scale){
 
 	D3DXMATRIX mat = *world_matrix_stack->GetTop(), scale_m;
 	world_matrix_stack->Push();

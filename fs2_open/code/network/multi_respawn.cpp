@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_respawn.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-02 21:18:19 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:21 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/02 21:18:19  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.6  2005/02/04 10:12:31  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -176,7 +181,7 @@ ai_respawn Ai_respawns[MAX_AI_RESPAWNS];			// this is way too many, but I don't 
 // respawn point
 typedef struct respawn_point {
 	char ship_name[NAME_LENGTH+1];					// for priority respawns
-	vector pos;												// respawn location (non-priority respawns)
+	vec3d pos;												// respawn location (non-priority respawns)
 	int team;												// team it belongs to
 } respawn_point;
 
@@ -196,7 +201,7 @@ int Multi_respawn_priority_count = 0;
 //
 
 // respawn the passed player with the passed ship object and weapon link settings
-void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_secondary_bank, ubyte cur_link_status, ushort ship_ets, ushort net_sign, char *parse_name, vector *pos = NULL);
+void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_secondary_bank, ubyte cur_link_status, ushort ship_ets, ushort net_sign, char *parse_name, vec3d *pos = NULL);
 
 // respawn an AI ship
 void multi_respawn_ai(p_object *pobjp);
@@ -481,7 +486,7 @@ int multi_respawn_common_stuff(p_object *pobjp)
 }
 
 // respawn the passed player with the passed ship object and weapon link settings
-void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_secondary_bank, ubyte cur_link_status, ushort ship_ets, ushort net_sig, char *parse_name, vector *pos)
+void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_secondary_bank, ubyte cur_link_status, ushort ship_ets, ushort net_sig, char *parse_name, vec3d *pos)
 {
 	int objnum;
 	object *objp;
@@ -695,7 +700,7 @@ void multi_respawn_broadcast(net_player *np)
 	ubyte data[50],val;
 	int packet_size = 0;
 	ushort signature;
-	vector pos;
+	vec3d pos;
 
 	// broadcast the packet to all players
 	Assert(Net_player->flags & NETINFO_FLAG_AM_MASTER);
@@ -731,7 +736,7 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 	ushort net_sig,ship_ets;
 	short player_id;
 	int player_index;
-	vector v;	
+	vec3d v;	
 	char parse_name[1024] = "";
 	int offset = HEADER_LENGTH;
 
@@ -880,7 +885,7 @@ void multi_respawn_check_ai()
 //    a.) If we are, move away along the vector between the two ships (by the radius of the ship it collided with)
 //    b.) repeat step 2
 /*
-#define MOVE_AWAY() { vector away; vm_vec_sub(&away,&new_obj->pos,&hit_check->pos); \
+#define MOVE_AWAY() { vec3d away; vm_vec_sub(&away,&new_obj->pos,&hit_check->pos); \
 	                   vm_vec_normalize_quick(&away); vm_vec_scale(&away,hit_check->radius+hit_check->radius); \
 							 vm_vec_add2(&new_obj->pos,&away); }
 
@@ -893,8 +898,8 @@ void multi_respawn_check_ai()
 	polymodel *pm = model_get(s_check->modelnum); \
 	collided = 0; \
 	if(pm != NULL){ \
-		vector temp = new_obj->pos; \
-		vector gpos; \
+		vec3d temp = new_obj->pos; \
+		vec3d gpos; \
 		vm_vec_sub2(&temp, &hit_check->pos); \
 		vm_vec_rotate(&gpos, &temp, &hit_check->orient); \
 		if((gpos.xyz.x >= pm->mins.xyz.x * scale) && (gpos.xyz.y >= pm->mins.xyz.y * scale) && (gpos.xyz.z >= pm->mins.xyz.z * scale) && (gpos.xyz.x <= pm->maxs.xyz.x * scale) && (gpos.xyz.y <= pm->maxs.xyz.y * scale) && (gpos.xyz.z <= pm->maxs.xyz.z * scale)) { \

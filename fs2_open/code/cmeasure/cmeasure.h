@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:19 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-04-05 05:53:15 $
+ * $Author: taylor $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:19  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/03/05 09:01:57  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -126,7 +129,7 @@
 #include "globalincs/globals.h"
 
 struct object;
-struct vector;
+struct vec3d;
 
 #define MAX_CMEASURES 64
 
@@ -177,7 +180,7 @@ extern void cmeasure_render( object * obj );
 extern void cmeasure_delete( object * obj );
 extern void cmeasure_process_pre( object * obj, float frame_time);
 extern void cmeasure_process_post( object * obj, float frame_time);
-extern int cmeasure_create( object * source_obj, vector *pos, int cm_type, int rand_val = -1 );
+extern int cmeasure_create( object * source_obj, vec3d *pos, int cm_type, int rand_val = -1 );
 extern void cmeasure_select_next(object *objp);
 
 #endif // _CMEASURE_H

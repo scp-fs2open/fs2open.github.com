@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-03-03 06:05:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.28 $
+ * $Date: 2005-04-05 05:53:19 $
+ * $Author: taylor $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/03/03 06:05:29  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.26  2005/02/23 04:51:56  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots
  *
@@ -894,7 +897,7 @@ void techroom_ships_render(float frametime)
 
 		// lighting for techroom
 		light_reset();
-		vector light_dir = vmd_zero_vector;
+		vec3d light_dir = vmd_zero_vector;
 		light_dir.y = 1.0f;	
 		light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
 		// light_filter_reset();
@@ -916,7 +919,7 @@ void techroom_ships_render(float frametime)
 
 	// lighting for techroom
 	light_reset();
-	vector light_dir = vmd_zero_vector;
+	vec3d light_dir = vmd_zero_vector;
 	light_dir.xyz.y = 1.0f;	
 	light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
 	light_rotate_all();

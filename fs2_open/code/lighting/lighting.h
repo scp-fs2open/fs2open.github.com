@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:26 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  * Include file for lighting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:26  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -131,10 +134,10 @@ void light_set_ambient(float ambient_light);
 
 // Intensity - how strong the light is.  1.0 will cast light around 5meters or so.
 // r,g,b - only used for colored lighting. Ignored currently.
-void light_add_directional( vector *dir, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
-void light_add_point( vector * pos, float r1, float r2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
-void light_add_point_unique( vector * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
-void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
+void light_add_directional( vec3d *dir, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
+void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
+void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
+void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 void light_rotate_all();
 
 // Reset the list of lights to point to all lights.
@@ -143,27 +146,27 @@ void light_filter_reset();
 // Makes a list of only the lights that will affect
 // the sphere specified by 'pos' and 'rad' and 'objnum'.
 // Returns number of lights active.
-int light_filter_push( int objnum, vector *pos, float rad );
-int light_filter_push_box( vector *min, vector *max );
+int light_filter_push( int objnum, vec3d *pos, float rad );
+int light_filter_push_box( vec3d *min, vec3d *max );
 void light_filter_pop();
 
 // Applies light to a vertex.   In order for this to work, 
 // it assumes that one of light_filter or light_filter_reset
 // have been called.  It only uses 'vert' to fill in it's light
 // fields.  'pos' is position of point, 'norm' is the norm.
-ubyte light_apply( vector *pos, vector * norm, float static_light_val );
+ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_val );
 
-void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pos, vector * norm, vector * cam);
+void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos, vec3d * norm, vec3d * cam);
 
 // Same as above only does RGB.
-void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pos, vector * norm, float static_light_val );
+void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos, vec3d * norm, float static_light_val );
 
 // return the # of global light sources
 int light_get_global_count();
 
 // Fills direction of global light source N in pos.
 // Returns 0 if there is no global light.
-int light_get_global_dir(vector *pos, int n);
+int light_get_global_dir(vec3d *pos, int n);
 
 // Set to non-zero if we're in a shadow.
 void light_set_shadow( int state );

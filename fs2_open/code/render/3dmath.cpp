@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dMath.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-01-28 11:06:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:24 $
+ * $Author: taylor $
  *
  * 3d Math routines used by the Renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/01/28 11:06:22  Goober5000
+ * changed a bunch of transpose-rotate sequences to use unrotate instead
+ * --Goober5000
+ *
  * Revision 2.6  2004/07/26 20:47:50  Kazan
  * remove MCD complete
  *
@@ -127,7 +131,7 @@
 #define MIN_Z 0.0f
 
 //Codes a vector.  Returns the codes of a point.
-ubyte g3_code_vector(vector * p)
+ubyte g3_code_vector(vec3d * p)
 {
 	ubyte cc=0;
 
@@ -179,7 +183,7 @@ ubyte g3_code_vertex(vertex *p)
 
 	if ( G3_user_clip )	{
 		// Check if behind user plane
-		if ( g3_point_behind_user_plane((vector *)&p->x))	{
+		if ( g3_point_behind_user_plane((vec3d *)&p->x))	{
 			cc |= CC_OFF_USER;
 		}
 	}
@@ -188,7 +192,7 @@ ubyte g3_code_vertex(vertex *p)
 
 }
 
-ubyte g3_transfer_vertex(vertex *dest,vector *src)
+ubyte g3_transfer_vertex(vertex *dest,vec3d *src)
 {
 	dest->x = src->xyz.x;
 	dest->y = src->xyz.y;
@@ -203,13 +207,13 @@ ubyte g3_transfer_vertex(vertex *dest,vector *src)
 
 MONITOR( NumRotations );	
 
-ubyte g3_rotate_vertex(vertex *dest,vector *src)
+ubyte g3_rotate_vertex(vertex *dest,vec3d *src)
 {
 #if 0
-	vector tempv;
+	vec3d tempv;
 	Assert( G3_count == 1 );
 	vm_vec_sub(&tempv,src,&View_position);
-	vm_vec_rotate( (vector *)&dest->x, &tempv, &View_matrix );
+	vm_vec_rotate( (vec3d *)&dest->x, &tempv, &View_matrix );
 	dest->flags = 0;	//not projected
 	return g3_code_vertex(dest);
 #else
@@ -248,7 +252,7 @@ ubyte g3_rotate_vertex(vertex *dest,vector *src)
 
 	if ( G3_user_clip )	{
 		// Check if behind user plane
-		if ( g3_point_behind_user_plane((vector *)&dest->x))	{
+		if ( g3_point_behind_user_plane((vec3d *)&dest->x))	{
 			codes |= CC_OFF_USER;
 		}
 	}
@@ -264,22 +268,22 @@ ubyte g3_rotate_vertex(vertex *dest,vector *src)
 }	
 
 
-ubyte g3_rotate_faraway_vertex(vertex *dest,vector *src)
+ubyte g3_rotate_faraway_vertex(vertex *dest,vec3d *src)
 {	
 	Assert( G3_count == 1 );
 
 	MONITOR_INC( NumRotations, 1 );	
 
-	vm_vec_rotate( (vector *)&dest->x, src, &View_matrix );
+	vm_vec_rotate( (vec3d *)&dest->x, src, &View_matrix );
 	dest->flags = 0;	//not projected
 	return g3_code_vertex(dest);
 }	
 
 
 //rotates a point. returns codes.  does not check if already rotated
-ubyte g3_rotate_vector(vector *dest,vector *src)
+ubyte g3_rotate_vector(vec3d *dest,vec3d *src)
 {
-	vector tempv;
+	vec3d tempv;
 
 	Assert( G3_count == 1 );
 
@@ -290,7 +294,7 @@ ubyte g3_rotate_vector(vector *dest,vector *src)
 	return g3_code_vector(dest);
 }	
 		
-ubyte g3_project_vector(vector *p, float *sx, float *sy )
+ubyte g3_project_vector(vec3d *p, float *sx, float *sy )
 {
 	float w;
 
@@ -336,9 +340,9 @@ int g3_project_vertex(vertex *p)
 
 
 //from a 2d point, compute the vector through that point
-void g3_point_to_vec(vector *v,int sx,int sy)
+void g3_point_to_vec(vec3d *v,int sx,int sy)
 {
-	vector	tempv;
+	vec3d	tempv;
 
 	Assert( G3_count == 1 );
 
@@ -356,9 +360,9 @@ void g3_point_to_vec(vector *v,int sx,int sy)
 //from a 2d point, compute the vector through that point.
 // This can be called outside of a g3_start_frame/g3_end_frame
 // pair as long g3_start_frame was previously called.
-void g3_point_to_vec_delayed(vector *v,int sx,int sy)
+void g3_point_to_vec_delayed(vec3d *v,int sx,int sy)
 {
-	vector	tempv;
+	vec3d	tempv;
 
 	tempv.xyz.x =  ((float)sx - Canv_w2) / Canv_w2;
 	tempv.xyz.y = -((float)sy - Canv_h2) / Canv_h2;
@@ -371,7 +375,7 @@ void g3_point_to_vec_delayed(vector *v,int sx,int sy)
 	vm_vec_unrotate(v, &tempv, &Unscaled_matrix);
 }
 
-vector *g3_rotate_delta_vec(vector *dest,vector *src)
+vec3d *g3_rotate_delta_vec(vec3d *dest,vec3d *src)
 {
 	Assert( G3_count == 1 );
 	return vm_vec_rotate(dest,src,&View_matrix);
@@ -390,9 +394,9 @@ vector *g3_rotate_delta_vec(vector *dest,vector *src)
 /*
 
 //from a 2d point, compute the vector through that point
-void g3_point_2_vec(vector *v,int sx,int sy)
+void g3_point_2_vec(vec3d *v,int sx,int sy)
 {
-	vector tempv;
+	vec3d tempv;
 	matrix tempm;
 
 	tempv.xyz.x =  fixmuldiv(fixdiv((sx<<16) - Canv_w2,Canv_w2),Matrix_scale.xyz.z,Matrix_scale.xyz.x);
@@ -445,7 +449,7 @@ ubyte g3_add_delta_vec(g3s_point *dest,g3s_point *src,vms_vector *deltav)
 */
 
 // calculate the depth of a point - returns the z coord of the rotated point
-float g3_calc_point_depth(vector *pnt)
+float g3_calc_point_depth(vec3d *pnt)
 {
 	float q;
 

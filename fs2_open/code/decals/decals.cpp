@@ -88,7 +88,7 @@ sub functions:
 decal_create_defpoints - 
 this function parses the defpoints portion of the BSP data, it allocates and set's up 
 the decal_point_list and decal__poly via the decal_realc_pointlist function. it then stuffs
-decal_point_list with pointers to all of the vector defpoints within the defpoint chunck, at 
+decal_point_list with pointers to all of the vec3d defpoints within the defpoint chunck, at 
 the time of documantation it ignores normals.
 decal_create_sortnorm -
 this function takes care of the sortnorm chunck, it actualy ignores the sort norms them selves, 
@@ -153,7 +153,7 @@ decal_poly big_ol_decal_poly_array[MAX_GLOBAL_DECAL_POLYS];
 decal_item big_ol_decal_array[MAX_GLOBAL_DECALS];
 
 /****BSP Defpoint Buffer Start****/
-vector **decal_point_list = NULL;
+vec3d **decal_point_list = NULL;
 int *decal__poly = NULL;
 //those two are used deep within the bowels of the BSP parseing code
 
@@ -178,7 +178,7 @@ void decal_realc_pointlist(int n){
 		if(decal_point_list)free(decal_point_list);
 		if(decal__poly)free(decal__poly);
 		//then reallocate with the new point count
-		decal_point_list = (vector**) malloc(sizeof(vector *)*n); 
+		decal_point_list = (vec3d**) malloc(sizeof(vec3d *)*n); 
 		decal__poly = (int*) malloc(sizeof(int)*n); 
 		decal_points_alocated = n;
 	}
@@ -944,10 +944,10 @@ void clear_decals(decal_system	*system){
 
 
 
-static vector decal_cube_point[8];
-static vector decal_cube_plane[6][2];
-static vector decal_hit_point;
-static vector decal_hit_vect;
+static vec3d decal_cube_point[8];
+static vec3d decal_cube_plane[6][2];
+static vec3d decal_hit_point;
+static vec3d decal_hit_vect;
 static float decal_hit_radius;
 static float decal_min_hit_radius;
 
@@ -976,13 +976,13 @@ int decal_create_simple(object *obj, decal_point *point, int texture){//makes a 
 		return 0;
 	}
 //	vertex vert[1][2];
-//	vector vec[4];
+//	vec3d vec[4];
 
-	vector center = point->pnt;
+	vec3d center = point->pnt;
 	float rad = point->radius;
 	if(rad <=0) rad = 10;
 	mprintf(("radius %f\n",rad));
-	vector plain_point[4];
+	vec3d plain_point[4];
 //	mprintf(("orient uvec x %0.2f %0.2f %0.2f\n", point->orient.vec.uvec.xyz.x, point->orient.vec.uvec.xyz.y, point->orient.vec.uvec.xyz.z));
 //	mprintf(("orient rvec x %0.2f %0.2f %0.2f\n", point->orient.vec.rvec.xyz.x, point->orient.vec.rvec.xyz.y, point->orient.vec.rvec.xyz.z));
 //	mprintf(("orient fvec x %0.2f %0.2f %0.2f\n", point->orient.vec.fvec.xyz.x, point->orient.vec.fvec.xyz.y, point->orient.vec.fvec.xyz.z));
@@ -1001,7 +1001,7 @@ check_ship_decals();
 	if(!dec)return 0;
 
 	vertex vert[4];
-	vector _vert[4];
+	vec3d _vert[4];
 
 	for(int i = 0; i<4; i++){
 		vm_vec_scale_add( &_vert[i], &center, &plain_point[i], rad );
@@ -1044,15 +1044,15 @@ check_ship_decals();
 #define duw(p)	(*((uint *) (p)))
 #define dw(p)	(*((int *) (p)))
 #define dwp(p)	((int *) (p))
-#define dvp(p)	((vector *) (p))
+#define dvp(p)	((vec3d *) (p))
 #define dfl(p)	(*((float *) (p)))
 
 
 //creates a decal, returns decal index on succes, -1 on failure
-void setup_decal_cube(matrix m, vector cube_point[8]){
+void setup_decal_cube(matrix m, vec3d cube_point[8]){
 
 //setting up the decal cube
-	vector test_vec, temp1, temp2;
+	vec3d test_vec, temp1, temp2;
 	for(int i = 0; i<8; i++)decal_cube_point[i] = cube_point[i];
 
 	decal_orient = m;
@@ -1148,12 +1148,12 @@ SAFEPOINT("entering create_decal");
 	if(point->radius <= 0)return -1;
 //TIMERBAR_PUSH(TIMERBAR_GREY);
 
-	vector center = point->pnt;
+	vec3d center = point->pnt;
 	float rad = point->radius;
 	if(rad <=0) rad = 1;
 	mprintf(("radius %f\n",rad));
-	vector plain_point[4];
-	vector cube_point[8];
+	vec3d plain_point[4];
+	vec3d cube_point[8];
 //define the decals dimentions
 	plain_point[0] = point->orient.vec.uvec;
 	plain_point[1] = plain_point[0];
@@ -1162,8 +1162,8 @@ SAFEPOINT("entering create_decal");
 	plain_point[3] = plain_point[2];
 		vm_vec_negate(&plain_point[3]);
 
-	vector topcenter;
-	vector bvec = point->orient.vec.fvec;
+	vec3d topcenter;
+	vec3d bvec = point->orient.vec.fvec;
 	vm_vec_negate(&bvec);
 	vm_vec_scale_add(&topcenter, &center, &bvec, rad);
 
@@ -1304,7 +1304,7 @@ void decal_create_defpoints(ubyte * p )
 
 	mprintf(("%d verts\n",nverts));
 	ubyte * normcount = p+20;
-	vector *src = dvp(p+offset);
+	vec3d *src = dvp(p+offset);
 	
 //>	Assert( nverts < 1200 );
 
@@ -1326,8 +1326,8 @@ void decal_create_defpoints(ubyte * p )
 // Sortnorms
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      center
+// +8      vec3d      normal
+// +20     vec3d      center
 // +32     float       radius
 // 36     int     front offset
 // 40     int     back offset
@@ -1344,11 +1344,11 @@ void decal_create_sortnorm(ubyte * p)
 	int postlist = dw(p+48);
 	int onlist = dw(p+52);
 
-	vector *normal, *point;
+	vec3d *normal, *point;
 	normal = dvp(p+8);
 	point = dvp(p+20);
 
-	vector min, max, h;
+	vec3d min, max, h;
 	min.xyz = dvp(p+56)->xyz;
 	max.xyz = dvp(p+68)->xyz;
 	min.xyz.x -= decal_hit_radius;
@@ -1485,13 +1485,13 @@ bool check_ab(float a[3], float b[3]){
 }
 
 //tells weather a sphere colides with a triangle
-bool shpere_tri_edge(vector* s_point, float rad, vertex vert[3]){
-	vector n;
+bool shpere_tri_edge(vec3d* s_point, float rad, vertex vert[3]){
+	vec3d n;
 	float d;
 	for(int i = 0; i< 3; i++){
-		vector point_one;
+		vec3d point_one;
 		vm_vert2vec(&vert[i], &point_one);
-		vector point_two;
+		vec3d point_two;
 		vm_vert2vec(&vert[(i+1)%3], &point_two);
 		switch(vm_vec_dist_to_line(s_point, &point_one, &point_two, &n, NULL)){
 				// behind the line, so use the start pos
@@ -1520,7 +1520,7 @@ bool shpere_tri_edge(vector* s_point, float rad, vertex vert[3]){
 	return false;
 }
 
-bool decal_tmap_bbox(vector *test, float rad){
+bool decal_tmap_bbox(vec3d *test, float rad){
 	if(fl_abs(test->xyz.x) > rad)return false;
 	if(fl_abs(test->xyz.y) > rad)return false;
 	if(fl_abs(test->xyz.z) > rad)return false;
@@ -1638,8 +1638,8 @@ int decal_clip_tri(vertex in[3], vertex out[20]){
 	return n_verts;
 }
 
-float fvi_point_dist_plane(vector* pl_pnt, vector *pl_norm, vertex *vert){
-	vector vec;
+float fvi_point_dist_plane(vec3d* pl_pnt, vec3d *pl_norm, vertex *vert){
+	vec3d vec;
 	vm_vert2vec(vert, &vec);
 	return fvi_point_dist_plane(pl_pnt, pl_norm, &vec);
 }
@@ -1650,7 +1650,7 @@ int decal_plane_clip_tri(vertex in[3], vertex out[20]){
 	memcpy(work, in, sizeof(vertex)*3);
 	int n_verts = 0;
 	int old_n_verts = 3;
-	vector temp, temp2, temp3;
+	vec3d temp, temp2, temp3;
 
 	for(int p = 0; p<6; p++){
 		for(int i = 0; i<old_n_verts; i++){
@@ -1687,8 +1687,8 @@ int decal_plane_clip_tri(vertex in[3], vertex out[20]){
 // Textured Poly
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      normal_point
+// +8      vec3d      normal
+// +20     vec3d      normal_point
 // +32     int         radius
 // +36     int         nverts
 // +40     int         tmap_num
@@ -1704,7 +1704,7 @@ void decal_create_tmappoly(ubyte * p)
 	int i;
 	int nv;
 //	uv_pair uvlist[TMAP_MAX_VERTS];
-	vector *points[TMAP_MAX_VERTS];
+	vec3d *points[TMAP_MAX_VERTS];
 	model_tmap_vert *verts;
 
 	nv = dw(p+36);
@@ -1717,8 +1717,8 @@ void decal_create_tmappoly(ubyte * p)
 		points[i] = decal_point_list[decal__poly[i]];
 	}
 
-	vector *pnorm = dvp(p+8);
-	vector norm = *pnorm;
+	vec3d *pnorm = dvp(p+8);
+	vec3d norm = *pnorm;
 	vm_vec_normalize(&norm);
 
 	//float back = 1.0;
@@ -1726,9 +1726,9 @@ void decal_create_tmappoly(ubyte * p)
 //	if( (back_faceing == 0) && (back < 0) )return;
 
 //poly culling 
-	vector *pcenter = (vector*)(p+20);
+	vec3d *pcenter = (vec3d*)(p+20);
 	float pradius = *(float*)(p+32);
-	vector dir_to_dec;
+	vec3d dir_to_dec;
 	vm_vec_sub(&dir_to_dec, pcenter, &decal_hit_point);
 	vm_vec_normalize(&dir_to_dec);
 	float dot = vm_vec_dot(&decal_hit_vect, &norm);
@@ -1751,14 +1751,14 @@ void decal_create_tmappoly(ubyte * p)
 		return;
 	}
 
-	vector closest;
+	vec3d closest;
 	vm_project_point_onto_plane(&closest, &decal_hit_point, &norm, pcenter);
 
 	if(clip && !fvi_point_face(&closest, nv, points, &norm, NULL, NULL, NULL)){
 		// if the point isn't on the face, find the line segment it is closest to 
 		//and make that point the closest
 		float distance = FLT_MAX, test_dist = FLT_MAX;
-		vector nearest = closest, test_nearest;
+		vec3d nearest = closest, test_nearest;
 		for(i = 0; i<nv; i++){
 			switch (vm_vec_dist_to_line(&closest,decal_point_list[decal__poly[i]],decal_point_list[decal__poly[(i+1)%nv]],&test_nearest, &test_dist)){
 				case -1: 
@@ -1784,10 +1784,10 @@ void decal_create_tmappoly(ubyte * p)
 		closest = nearest;
 	}
 
-	vector local_closest;
+	vec3d local_closest;
 	if(clip){
 	vm_vec_sub(&local_closest, &closest, &decal_hit_point);
-	vector ctemp = local_closest;
+	vec3d ctemp = local_closest;
 	vm_vec_rotate(&local_closest,&ctemp, &decal_orient);
 	}
 
@@ -1833,14 +1833,14 @@ void decal_create_tmappoly(ubyte * p)
 				int k;
 				float a[3], b[3];
 				for (k=0;k<3;k++)	{
-					vector temp;
+					vec3d temp;
 					vm_vert2vec(&LAST_POLY->point[k], &temp);
 					b[k] = (fvi_point_dist_plane(&decal_cube_plane[4][0], &decal_cube_plane[4][1], &temp) / (max_rad*3));
 					a[k] = (fvi_point_dist_plane(&decal_cube_plane[5][0], &decal_cube_plane[5][1], &temp) / (max_rad*3));
 				}
 				for ( k=0;k<3;k++)	{
 					//calculate the UV coords
-					vector temp;
+					vec3d temp;
 					vm_vert2vec(&LAST_POLY->point[k], &temp);
 					LAST_POLY->point[k].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &temp) / (min_rad*2));
 					LAST_POLY->point[k].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &temp) / (min_rad*2));
@@ -1863,7 +1863,7 @@ void decal_create_tmappoly(ubyte * p)
 	
 						for ( k=0;k<3;k++)	{
 							//calculate the UV coords
-							vector temp;
+							vec3d temp;
 							vm_vert2vec(&LAST_POLY->point[k], &temp);
 							LAST_POLY->point[k].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &temp) / (min_rad*2));
 							LAST_POLY->point[k].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &temp) / (min_rad*2));
@@ -1900,7 +1900,7 @@ void decal_create_tmappoly(ubyte * p)
 		//		for (int k=0;k<3;k++)	{
 					//calculate the UV coords
 					vm_vec2vert(decal_point_list[decal__poly[0]], &LAST_POLY->point[0]);
-					vector temp;
+					vec3d temp;
 					vm_vert2vec(&LAST_POLY->point[0], &temp);
 					LAST_POLY->point[0].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &temp) / (min_rad*2));
 					LAST_POLY->point[0].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &temp) / (min_rad*2));
@@ -2161,7 +2161,7 @@ void set_submodel_instance(int model_num, int sub_model_num){
 	polymodel *pm = model_get(model_num);
 
 	angles orient[8];//probly only need 2 or 3, but what the hell
-	vector offset[8];
+	vec3d offset[8];
 
 	while ((sub_model_num >= 0) && (pm->submodel[sub_model_num].parent >= 0) ) {
 

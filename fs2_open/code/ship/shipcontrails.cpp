@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-03-03 03:53:18 $
- * $Author: wmcoolmon $
+ * $Revision: 2.23 $
+ * $Date: 2005-04-05 05:53:24 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/03/03 03:53:18  wmcoolmon
+ * This should really be like this to prevent crashing
+ *
  * Revision 2.21  2005/03/01 06:55:45  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -290,7 +293,7 @@ void ct_update_contrails(ship *shipp)
 		return;
 	}
 
-	vector v1;
+	vec3d v1;
 	int idx;
 	ship_info *sip;
 	object *objp;
@@ -334,7 +337,7 @@ void ct_create_contrails(ship *shipp)
 		return;
 	}
 
-	vector v1;
+	vec3d v1;
 	int idx;
 	ship_info *sip;
 	object *objp;
@@ -431,7 +434,7 @@ void ct_ship_process_ABtrails(ship *shipp)
 // create new ABtrails
 void ct_create_ABtrails(ship *shipp)
 {
-	vector v1;
+	vec3d v1;
 	int idx;
 	ship_info *sip;
 	object *objp;
@@ -480,7 +483,7 @@ void ct_create_ABtrails(ship *shipp)
 // update active ABtrails - moving existing ones, adding new ones where necessary
 void ct_update_ABtrails(ship *shipp)
 {
-	vector v1;
+	vec3d v1;
 	int idx;
 	ship_info *sip;
 	object *objp;

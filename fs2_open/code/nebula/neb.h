@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:20 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -111,7 +114,7 @@ extern int Neb2_slices;
 
 // nebula poofs
 typedef struct cube_poof {
-	vector	pt;				// point in space
+	vec3d	pt;				// point in space
 	int		bmap;				// bitmap in space
 	float		rot;				// rotation angle
 	float		rot_speed;		// rotation speed
@@ -141,13 +144,13 @@ void neb2_level_close();
 
 // create a nebula object, return objnum of the nebula or -1 on fail
 // NOTE : in most cases you will want to pass -1.0f for outer_radius. Trust me on this
-int neb2_create(vector *offset, int num_poofs, float inner_radius, float outer_radius, float max_poof_radius);
+int neb2_create(vec3d *offset, int num_poofs, float inner_radius, float outer_radius, float max_poof_radius);
 
 // delete a nebula object
 void neb2_delete(object *objp);
 
 // call before beginning all rendering
-void neb2_render_setup(vector *eye_pos, matrix *eye_orient);
+void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient);
 
 // renders a nebula object
 void neb2_render(object *objp);
@@ -170,7 +173,7 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *obj);
 
 // given a position in space, return a value from 0.0 to 1.0 representing the fog level 
 float neb2_get_fog_intensity(object *obj);
-float neb2_get_fog_intensity(vector *pos);
+float neb2_get_fog_intensity(vec3d *pos);
 
 // should we not render this object because its obscured by the nebula?
 int neb2_skip_render(object *objp, float z_depth);

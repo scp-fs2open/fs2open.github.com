@@ -365,7 +365,7 @@ void multi_oo_interpolate_init()
 void matrix_to_quaternion( D3DRMQUATERNION *quat, matrix *mat )
 {
 	float theta;
-	vector rot_axis;
+	vec3d rot_axis;
 	
 	vm_matrix_to_rot_axis_and_angle(mat, &theta, &rot_axis);
 
@@ -378,7 +378,7 @@ void matrix_to_quaternion( D3DRMQUATERNION *quat, matrix *mat )
 void quaternion_to_matrix( matrix *mat, D3DRMQUATERNION *quat )
 {
 	float theta;
-	vector rot_axis;
+	vec3d rot_axis;
 
 	rot_axis.x = quat->v.x;
 	rot_axis.y = quat->v.y;
@@ -459,8 +459,8 @@ void multi_oo_interpolate(object *objp, interp_info *current, interp_info *last)
 
 			/*
 			matrix tmp;
-			vector w_out;
-			vector angular_accel;
+			vec3d w_out;
+			vec3d angular_accel;
 
 			angular_accel.x  = 1000.0f;
 			angular_accel.y  = 1000.0f;
@@ -957,7 +957,7 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 	}
 
 	// client eye information
-	vector eye_pos;
+	vec3d eye_pos;
 	matrix eye_orient;
 	physics_info pi;
 
@@ -1308,8 +1308,8 @@ int multi_oo_maybe_update(net_player *pl,object *pobj,object *obj,ubyte *data)
 	ubyte oo_flags;
 	int stamp;
 	int player_index;
-	vector player_eye;
-	vector obj_dot;
+	vec3d player_eye;
+	vec3d obj_dot;
 	float eye_dot, dist;
 	int in_cone;
 	int range;

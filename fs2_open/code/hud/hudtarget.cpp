@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-03-29 07:03:16 $
- * $Author: wmcoolmon $
+ * $Revision: 2.58 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/03/29 07:03:16  wmcoolmon
+ * Removed some warnings under Linux/GCC
+ *
  * Revision 2.56  2005/03/25 06:57:34  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -2222,7 +2225,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 			// check turret has hit points and has a weapon
 			if ( (A->current_hits > 0) && (A->weapons.num_primary_banks > 0 || A->weapons.num_secondary_banks > 0) ) {
 				if ( !only_player_target || (A->turret_enemy_objnum == OBJ_INDEX(Player_obj)) ) {
-					vector gsubpos, vec_to_subsys;
+					vec3d gsubpos, vec_to_subsys;
 					float distance, dot;
 					// get world pos of subsystem and its distance
 					get_subsystem_world_pos(objp, A, &gsubpos);
@@ -2454,7 +2457,7 @@ void hud_target_auto_target_next()
 // targtee's bounding box, the distance is 0.
 float hud_find_target_distance( object *targetee, object *targeter )
 {
-	vector tmp_pnt;
+	vec3d tmp_pnt;
 
 	int model_num = -1;
 	
@@ -2600,7 +2603,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 					esct->check_nearest_turret = TRUE;
 
 					if ( !esct->turret_attacking_target || (esct->turret_attacking_target && (ss->turret_enemy_objnum == esct->attacked_objnum)) ) {
-						vector gsubpos;
+						vec3d gsubpos;
 						// get world pos of subsystem
 						vm_vec_unrotate(&gsubpos, &ss->system_info->pnt, &objp->orient);
 						vm_vec_add2(&gsubpos, &objp->pos);
@@ -2774,7 +2777,7 @@ void hud_update_closest_turret()
 		if ( (ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits > 0) ) {
 			// make sure turret is not "unused"
 			if (ss->system_info->turret_weapon_type >= 0) {
-				vector gsubpos;
+				vec3d gsubpos;
 				// get world pos of subsystem
 				vm_vec_unrotate(&gsubpos, &ss->system_info->pnt, &objp->orient);
 				vm_vec_add2(&gsubpos, &objp->pos);
@@ -2896,7 +2899,7 @@ int object_targetable_in_reticle(object *target_objp)
 
 void hud_target_in_reticle_new()
 {
-	vector	terminus;
+	vec3d	terminus;
 	object	*A;
 	mc_info	mc;
 	float		dist;
@@ -2996,7 +2999,7 @@ void hud_target_in_reticle_old()
 {
 	object	*A, *target_obj;
 	float		dist, dot;
-	vector	vec_to_target;
+	vec3d	vec_to_target;
 
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
 		if ( !object_targetable_in_reticle(A) ) {
@@ -3065,10 +3068,10 @@ void hud_target_subsystem_in_reticle()
 	object* targetp;
 	ship_subsys	*subsys;
 	ship_subsys *nearest_subsys = NULL;
-	vector subobj_pos;
+	vec3d subobj_pos;
 
 	float dist, dot, best_dot;
-	vector vec_to_target;
+	vec3d vec_to_target;
 	best_dot = -1.0f;
 
 	if ( Player_ai->target_objnum == -1){
@@ -3127,7 +3130,7 @@ void hud_target_subsystem_in_reticle()
 void hud_render_orientation_tee(object *from_objp, object *to_objp, matrix *from_orientp)
 {
 	float		dot_product;
-	vector	target_to_obj;
+	vec3d	target_to_obj;
 	float		x1,y1,x2,y2,x3,y3,x4,y4;
 
 	vm_vec_sub(&target_to_obj, &from_objp->pos, &to_objp->pos);
@@ -3405,7 +3408,7 @@ void hud_render_split_missile_triangle(float ang, float xpos, float ypos, float 
 //	Must be inside a g3_start_frame().
 //	If aspect_flag !0, then render filled, indicating aspect lock.
 // If show_interior !0, then point inwards to positions inside reticle
-void hud_render_triangle(vector *hostile_pos, int aspect_flag, int show_interior, int split_tri)
+void hud_render_triangle(vec3d *hostile_pos, int aspect_flag, int show_interior, int split_tri)
 {
 	vertex	hostile_vertex;
 	float		ang;
@@ -3781,7 +3784,7 @@ void hud_show_selection_set()
 	object *targetp;
 	int set, count;
 	vertex target_point;					// temp vertex used to find screen position for 3-D object;
-	vector target_vec;
+	vec3d target_vec;
 
 	HUD_drew_selection_bracket_on_target = 0;
 
@@ -3988,7 +3991,7 @@ void hud_update_target_in_reticle(vertex *projected_v)
 void hud_show_targeting_gauges(float frametime, int in_cockpit)
 {
 	vertex target_point;					// temp vertex used to find screen position for 3-D object;
-	vector target_pos;
+	vec3d target_pos;
 
 	if ( hud_disabled_except_messages() ) {
 		return;
@@ -4182,7 +4185,7 @@ void hud_show_hostile_triangle()
 					if ( ss->turret_enemy_objnum == player_obj_index ) {
 						turret_is_attacking = 1;						
 
-						vector		gsubpos;
+						vec3d		gsubpos;
 						// get world pos of subsystem
 						vm_vec_unrotate(&gsubpos, &ss->system_info->pnt, &A->orient);
 						vm_vec_add2(&gsubpos, &A->pos);
@@ -4302,12 +4305,12 @@ int hud_get_best_primary_bank(float *range)
 // 
 // Called by the draw lead indicator code to predict where the enemy is going to be
 //
-void polish_predicted_target_pos(vector *enemy_pos, vector *predicted_enemy_pos, float dist_to_enemy, vector *last_delta_vec, int num_polish_steps) 
+void polish_predicted_target_pos(vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps) 
 {
 	int	iteration;
-	vector	player_pos = Player_obj->pos;	
+	vec3d	player_pos = Player_obj->pos;	
 	float		time_to_enemy;
-	vector	last_predicted_enemy_pos = *predicted_enemy_pos;
+	vec3d	last_predicted_enemy_pos = *predicted_enemy_pos;
 
 	ship *shipp;
 	shipp = &Ships[Player_obj->instance];
@@ -4368,10 +4371,10 @@ int hudtarget_lead_indicator_pick_frame(float prange, float srange, float dist_t
 	// decide what frame of lead indicator to draw
 
 // hud_show_lead_indicator() determine where to draw the lead target box and display it
-void hud_show_lead_indicator(vector *target_world_pos)
+void hud_show_lead_indicator(vec3d *target_world_pos)
 {
-	vector		target_moving_direction, last_delta_vector, source_pos;
-	vector		*rel_pos;
+	vec3d		target_moving_direction, last_delta_vector, source_pos;
+	vec3d		*rel_pos;
 	vertex		lead_target_vertex;
 	object		*targetp;
 	polymodel	*po;
@@ -4426,7 +4429,7 @@ void hud_show_lead_indicator(vector *target_world_pos)
 	// weapon.
 	source_pos = Player_obj->pos;
 	if (rel_pos != NULL) {
-		vector	gun_point;
+		vec3d	gun_point;
 		vm_vec_unrotate(&gun_point, rel_pos, &Player_obj->orient);
 		vm_vec_add2(&source_pos, &gun_point);
 	} 
@@ -4650,7 +4653,7 @@ void hud_restore_subsystem_target(ship* shipp)
 // --------------------------------------------------------------------------------
 // get_subsystem_world_pos() returns the world position for a given subobject on a ship
 //
-vector* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vector* world_pos)
+vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos)
 {
 	if (subsys == NULL) {
 		*world_pos = parent_obj->pos;
@@ -4789,7 +4792,7 @@ void hud_target_change_check()
 //
 // draws the offscreen target indicator
 //
-void hud_draw_offscreen_indicator(vertex* target_point, vector *tpos, float distance)
+void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float distance)
 {
 	char buf[32];
 	int w = 0, h = 0;
@@ -4811,7 +4814,7 @@ void hud_draw_offscreen_indicator(vertex* target_point, vector *tpos, float dist
 	float x6=0.0f;
 	float y6=0.0f;
 
-	vector targ_to_player;
+	vec3d targ_to_player;
 	float dist_behind;
 	float triangle_sep;
 	float half_gauge_length, half_triangle_sep;
@@ -4862,7 +4865,7 @@ void hud_draw_offscreen_indicator(vertex* target_point, vector *tpos, float dist
 	vertex *eye_vertex = NULL;
 	vertex real_eye_vertex;
 	eye_vertex = &real_eye_vertex;	// this is needed since clip line takes a **vertex
-	vector eye_pos;
+	vec3d eye_pos;
 	vm_vec_add( &eye_pos, &Eye_position, &View_matrix.vec.fvec);
 	g3_rotate_vertex(eye_vertex, &eye_pos);
 
@@ -5754,7 +5757,7 @@ void hud_target_next_list(int hostile, int next_flag)
 	object	*A, *min_obj, *max_obj, *nearest_obj;
 	ship		*shipp;
 	ship_obj	*so;
-//	vector	target_vec;
+//	vec3d	target_vec;
 	float		cur_dist, min_dist, max_dist, new_dist, nearest_dist, diff;	
 	int		timestamp_val, valid_team;
 

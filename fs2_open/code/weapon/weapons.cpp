@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2005/04/02 21:34:08  phreak
+ * put First_secondary_index back in so FRED can compile.
+ * The weapons list is also sorted whenever all loading is done so lasers and beams always
+ * come before missiles.  FRED's loadout code needs this behavior to stick.
+ *
  * Revision 2.103  2005/03/30 02:32:41  wmcoolmon
  * Made it so *Snd fields in ships.tbl and weapons.tbl take the sound name
  * as well as its index (ie "L_sidearm.wav" instead of "76")
@@ -2737,7 +2742,7 @@ void weapon_level_init()
 }
 
 MONITOR( NumWeaponsRend );	
-float add_laser(int texture, vector *p0,float width1,vector *p1,float width2, int r, int g, int b);
+float add_laser(int texture, vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b);
 
 float weapon_glow_scale_f = 2.3f;
 float weapon_glow_scale_r = 2.3f;
@@ -2777,7 +2782,7 @@ void weapon_render(object *obj)
 				//	gr_set_bitmap(wip->laser_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 				}
 
-				vector headp;
+				vec3d headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
 //				if ( g3_draw_laser(&headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT) ) {
@@ -2797,7 +2802,7 @@ void weapon_render(object *obj)
                 // *Tail point "getting bigger" as well as headpoint isn't being taken into consideration, so
                 //  it caused uneven glow between the head and tail, which really shows in big lasers. So...fixed!    -Et1
 
-				vector headp2, tailp;
+				vec3d headp2, tailp;
 
 				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
 
@@ -2833,7 +2838,7 @@ void weapon_render(object *obj)
 					if (ft > 1.0f)
 						ft = 1.0f;
 
-					vector temp;
+					vec3d temp;
 					temp.xyz.x = ft;
 					temp.xyz.y = ft;
 					temp.xyz.z = ft;
@@ -2958,7 +2963,7 @@ void weapon_maybe_play_warning(weapon *wp)
 void detonate_nearby_missiles(cmeasure *cmp)
 {
 	missile_obj	*mop;
-	vector		cmeasure_pos;
+	vec3d		cmeasure_pos;
 
 	cmeasure_pos = Objects[cmp->objnum].pos;
 
@@ -3017,7 +3022,7 @@ void find_homing_object(object *weapon_objp, int num)
 			if ( (homing_object_team != wp->team) || (homing_object_team == TEAM_TRAITOR) ) {
 				float		dist;
 				float		dot;
-				vector	vec_to_object;
+				vec3d	vec_to_object;
 
 				if ( objp->type == OBJ_SHIP ) {
 					/* Goober5000: commented this out because if they home in on stealth,
@@ -3095,7 +3100,7 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if (objp->type == OBJ_CMEASURE) {
-			vector	vec_to_object;
+			vec3d	vec_to_object;
 			dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
 
 			if (dist < MAX_CMEASURE_TRACK_DIST) {
@@ -3324,8 +3329,8 @@ void weapon_home(object *obj, int num, float frame_time)
 	//	If the object it is homing on is still valid, home some more!
 	if (hobjp != &obj_used_list) {
 		float		old_dot, vel;
-		vector	vec_to_goal;
-		vector	target_pos;	// position of what the homing missile is seeking
+		vec3d	vec_to_goal;
+		vec3d	target_pos;	// position of what the homing missile is seeking
 
 		vm_vec_zero(&target_pos);
 
@@ -3438,7 +3443,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		dist_to_target = vm_vec_normalized_dir(&vec_to_goal, &target_pos, &obj->pos);
 		time_to_target = dist_to_target/max_speed;
 
-		vector	tvec;
+		vec3d	tvec;
 		tvec = obj->phys_info.vel;
 		vm_vec_normalize(&tvec);
 
@@ -3578,7 +3583,7 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 		}
 
 		if ( (dist > radius) && (dist < 55) ) {
-			vector	vec_to_weapon;
+			vec3d	vec_to_weapon;
 
 			vm_vec_sub(&vec_to_weapon, &weapon_objp->pos, &Eye_position);
 			vm_vec_normalize(&vec_to_weapon);
@@ -3710,7 +3715,7 @@ void weapon_process_post(object * obj, float frame_time)
 	if (wp->target_num != -1) {
 		if (Objects[wp->target_num].signature == wp->target_sig) {
 			float		cur_dist;
-			vector	v0;
+			vec3d	v0;
 
 			vm_vec_avg(&v0, &obj->pos, &obj->last_pos);
 
@@ -3720,7 +3725,7 @@ void weapon_process_post(object * obj, float frame_time)
 				wp->nearest_dist = cur_dist;
 			} else if (cur_dist > wp->nearest_dist + 1.0f) {
 				float		dot;
-				vector	tvec;
+				vec3d	tvec;
 				ai_info	*parent_aip;
 				float		lead_scale = 0.0f;
 
@@ -3796,7 +3801,7 @@ void weapon_process_post(object * obj, float frame_time)
 			}
 
 			//point where to warpout
-			vector warpout;
+			vec3d warpout;
 
 			//create a warp effect
 			vm_vec_copy_scale(&warpout,&obj->phys_info.vel,3.0f);
@@ -3833,9 +3838,9 @@ void weapon_process_post(object * obj, float frame_time)
 		if ((wp->lssm_stage==3) && (timestamp_elapsed(wp->lssm_warpin_time)))
 		{
 
-			vector warpin;
+			vec3d warpin;
 			object* target_objp=wp->homing_object;
-			vector fvec;
+			vec3d fvec;
 			matrix orient;
 
 			//spawn the ssm at a random point in a circle around the target
@@ -3961,7 +3966,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 //
 // Returns:  index of weapon in the Objects[] array, -1 if the weapon object was not created
 int Weapons_created = 0;
-int weapon_create( vector * pos, matrix * porient, int weapon_id, int parent_objnum, int secondary_flag, int group_id, int is_locked )
+int weapon_create( vec3d * pos, matrix * porient, int weapon_id, int parent_objnum, int secondary_flag, int group_id, int is_locked )
 {
 	int			n, objnum;
 	int num_deleted;
@@ -3978,7 +3983,7 @@ int weapon_create( vector * pos, matrix * porient, int weapon_id, int parent_obj
 	morient = *porient;
 	orient = &morient;
 	if(wip->field_of_fire){
-		vector f;
+		vec3d f;
 		vm_vec_random_cone(&f, &orient->vec.fvec, wip->field_of_fire);
 		vm_vec_normalize(&f);
 		vm_vector_2_matrix( orient, &f, NULL, NULL);
@@ -4275,7 +4280,7 @@ void spawn_child_weapons(object *objp)
 
 	for (i=0; i<wip->spawn_count; i++) {
 		int		weapon_objnum;
-		vector	tvec, pos;
+		vec3d	tvec, pos;
 		matrix	orient;
 
 		// for multiplayer, use the static randvec functions based on the network signatures to provide
@@ -4324,7 +4329,7 @@ void spawn_child_weapons(object *objp)
 //
 // Note: Uses Weapon_impact_timer global for timer variable
 //
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vector *hitpos)
+void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos)
 {
 	int	is_hull_hit;
 	float shield_str;
@@ -4449,13 +4454,13 @@ extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
 // input:	ship_obj		=>		pointer to ship that holds subsystem
 //				blast_pos	=>		world pos of weapon blast
 //				wi_index		=>		weapon info index of weapon causing blast
-void weapon_do_electronics_affect(object *ship_objp, vector *blast_pos, int wi_index)
+void weapon_do_electronics_affect(object *ship_objp, vec3d *blast_pos, int wi_index)
 {
 	weapon_info			*wip;
 	ship					*shipp;
 	ship_subsys			*ss;
 	model_subsystem	*psub;
-	vector				subsys_world_pos;
+	vec3d				subsys_world_pos;
 	float					dist;
 
 	shipp = &Ships[ship_objp->instance];
@@ -4562,7 +4567,7 @@ void weapon_do_electronics_affect(object *ship_objp, vector *blast_pos, int wi_i
 //	returns:		no damage occurred	=>		-1
 //					damage occured			=>		0
 //
-int weapon_area_calc_damage(object *objp, vector *pos, float inner_rad, float outer_rad, float max_blast, float max_damage, float *blast, float *damage, float limit)
+int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage, float *blast, float *damage, float limit)
 {
 	float			dist, max_dist, min_dist;
 
@@ -4612,10 +4617,10 @@ int weapon_area_calc_damage(object *objp, vector *pos, float inner_rad, float ou
 //				blast					=>		force of blast
 //				make_shockwave		=>		boolean, whether to create a shockwave or not
 //
-void weapon_area_apply_blast(vector *force_apply_pos, object *ship_obj, vector *blast_pos, float blast, int make_shockwave)
+void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *blast_pos, float blast, int make_shockwave)
 {
 	#define	SHAKE_CONST 3000
-	vector		force, vec_blast_to_ship, vec_ship_to_impact;
+	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
 	polymodel		*pm;
 
 	// apply blast force based on distance from center of explosion
@@ -4648,7 +4653,7 @@ void weapon_area_apply_blast(vector *force_apply_pos, object *ship_obj, vector *
 //				pos			=>		world pos of explosion center
 //				other_obj	=>		object pointer to ship that weapon impacted on (can be NULL)
 //
-void weapon_do_area_effect(object *wobjp, vector *pos, object *other_obj)
+void weapon_do_area_effect(object *wobjp, vec3d *pos, object *other_obj)
 {
 	weapon_info	*wip;
 	weapon *wp;
@@ -4709,7 +4714,7 @@ void weapon_do_area_effect(object *wobjp, vector *pos, object *other_obj)
 // This function is called when a weapon hits something (or, in the case of
 // missiles explodes for any particular reason)
 //
-void weapon_hit( object * weapon_obj, object * other_obj, vector * hitpos )
+void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 {
 	Assert(weapon_obj != NULL);
 	if(weapon_obj == NULL){
@@ -5113,9 +5118,9 @@ void weapon_maybe_spew_particle(object *obj)
 	weapon *wp;
 	weapon_info *wip;
 	int idx;
-	vector direct, direct_temp, particle_pos;
-	vector null_vec = ZERO_VECTOR;
-	vector vel;
+	vec3d direct, direct_temp, particle_pos;
+	vec3d null_vec = ZERO_VECTOR;
+	vec3d vel;
 	float ang;
 
 	// check some stuff
@@ -5344,7 +5349,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	return total_scale;
 }
 
-int weapon_get_expl_handle(int weapon_expl_index, vector *pos, float size)
+int weapon_get_expl_handle(int weapon_expl_index, vec3d *pos, float size)
 {
 	weapon_expl_info *wei = &Weapon_expl_info[weapon_expl_index];
 
@@ -5375,7 +5380,7 @@ int weapon_get_expl_handle(int weapon_expl_index, vector *pos, float size)
 	// if vertex is behind, find size if in front, then drop down 1 LOD
 	if (v.codes & CC_BEHIND) {
 		float dist = vm_vec_dist_quick(&Eye_position, pos);
-		vector temp;
+		vec3d temp;
 
 		behind = 1;
 		vm_vec_scale_add(&temp, &Eye_position, &Eye_matrix.vec.fvec, dist);

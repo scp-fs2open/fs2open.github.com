@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.180 $
- * $Date: 2005-04-01 07:29:40 $
+ * $Revision: 2.181 $
+ * $Date: 2005-04-05 05:53:24 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180  2005/04/01 07:29:40  taylor
+ * some minor Linux fixage
+ *
  * Revision 2.179  2005/03/31 12:38:24  Goober5000
  * fix type mismatch
  * --Goober5000
@@ -3562,7 +3565,7 @@ void physics_ship_init(object *objp)
 
 	if (pi->mass==0.0f)
 	{
-		vector size;
+		vec3d size;
 		vm_vec_sub(&size,&pm->maxs,&pm->mins);
 		float vmass=size.xyz.x*size.xyz.y*size.xyz.z;
 		float amass=4.65f*(float)pow(vmass,(2.0f/3.0f));
@@ -3707,12 +3710,12 @@ int ship_get_default_orders_accepted( ship_info *sip )
 		return 0;
 }
 
-vector get_submodel_offset(int model, int submodel){
+vec3d get_submodel_offset(int model, int submodel){
 	polymodel*pm = model_get(model);
 	if(pm->submodel[submodel].parent == -1)
 		return pm->submodel[submodel].offset;
-	vector ret = pm->submodel[submodel].offset;
-	vector v = get_submodel_offset(model,pm->submodel[submodel].parent);
+	vec3d ret = pm->submodel[submodel].offset;
+	vec3d v = get_submodel_offset(model,pm->submodel[submodel].parent);
 	vm_vec_add2(&ret, &v);
 	return ret;
 
@@ -4309,7 +4312,7 @@ void render_dock_bays(object *objp)
 	db = &pm->docking_bays[0];
 
 	vertex	v0, v1;
-	vector	p0, p1, p2, p3, nr;
+	vec3d	p0, p1, p2, p3, nr;
 
 	vm_vec_unrotate(&p0, &db->pnt[0], &objp->orient);
 	vm_vec_add2(&p0, &objp->pos);
@@ -4395,7 +4398,7 @@ void ship_render(object * obj)
 
 #if 0
 	// show target when attacking big ship
-	vector temp, target;
+	vec3d temp, target;
 	ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
 	if ( (aip->target_objnum >= 0)  && (Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & (SIF_SUPERCAP|SIF_CAPITAL|SIF_CRUISER)) ) {
 		vm_vec_unrotate(&temp, &aip->big_attack_point, &Objects[aip->target_objnum].orient);
@@ -4417,7 +4420,7 @@ void ship_render(object * obj)
 	{
 		if (ship_show_velocity_dot && (obj==Player_obj) )
 		{
-			vector p0,v;
+			vec3d p0,v;
 			vertex v0;
 
 			vm_vec_scale_add( &v, &obj->phys_info.vel, &obj->orient.vec.fvec, 3.0f );
@@ -4523,7 +4526,7 @@ void ship_render(object * obj)
 		//	ship_get_subsystem_strength( shipp, SUBSYSTEM_ENGINE)>ENGINE_MIN_STR
 
 		if ( (shipp->thruster_bitmap > -1) && (!(shipp->flags & SF_DISABLED)) && (!ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) ) {
-			vector	ft;//model_set_thrust now uses a vector as a scaleing paramiter
+			vec3d	ft;//model_set_thrust now uses a vector as a scaleing parameter
 
 			//	Add noise to thruster geometry.
 			ft.xyz.z = obj->phys_info.forward_thrust;
@@ -4675,13 +4678,13 @@ void ship_render(object * obj)
 				if(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !si->draw_secondary_models[i])continue;
 				for(k = 0; k<model_get(shipp->modelnum)->missile_banks[i].num_slots; k++){
 	
-				vector secondary_waepon_pos = model_get(shipp->modelnum)->missile_banks[i].pnt[k];
+				vec3d secondary_waepon_pos = model_get(shipp->modelnum)->missile_banks[i].pnt[k];
 			//	vm_vec_add(&secondary_waepon_pos, &obj->pos, &model_get(shipp->modelnum)->missile_banks[i].pnt[k]);
 	
 			//	if(shipp->secondary_point_reload_pct[i][k] != 1.0)vm_vec_scale_add2(&secondary_waepon_pos, &obj->orient.vec.fvec, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].model_num)->rad);
 				if(shipp->secondary_point_reload_pct[i][k] <= 0.0)continue;
 	
-				vector dir = ZERO_VECTOR;
+				vec3d dir = ZERO_VECTOR;
 				dir.xyz.z = 1.0;
 	
 				bool clipping = false;
@@ -4689,7 +4692,7 @@ void ship_render(object * obj)
 			/*	extern int G3_user_clip;
 	
 				if(!G3_user_clip){
-					vector clip_pnt;
+					vec3d clip_pnt;
 					vm_vec_rotate(&clip_pnt, &model_get(shipp->modelnum)->missile_banks[i].pnt[k], &obj->orient);
 					vm_vec_add2(&clip_pnt, &obj->pos);
 					g3_start_user_clip_plane(&clip_pnt,&obj->orient.vec.fvec);
@@ -4776,8 +4779,8 @@ void ship_render(object * obj)
 #ifndef NDEBUG
 	if(Show_tnorms){
 		ship_subsys *systemp;
-		vector tpos, tnorm, temp;
-		vector v1, v2;
+		vec3d tpos, tnorm, temp;
+		vec3d v1, v2;
 		vertex l1, l2;
 
 		gr_set_color(0, 0, 255);
@@ -5128,7 +5131,7 @@ void ship_departed( int num )
 // 
 // calculates the blast and damage applied to a ship from another ship blowing up.
 //
-int ship_explode_area_calc_damage( vector *pos1, vector *pos2, float inner_rad, float outer_rad, float max_damage, float max_blast, float *damage, float *blast )
+int ship_explode_area_calc_damage( vec3d *pos1, vec3d *pos2, float inner_rad, float outer_rad, float max_damage, float max_blast, float *damage, float *blast )
 {
 	float dist;
 
@@ -5251,7 +5254,7 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 			switch ( objp->type ) {
 			case OBJ_SHIP:
 				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage );
-				vector force, vec_ship_to_impact;
+				vec3d force, vec_ship_to_impact;
 				vm_vec_sub( &vec_ship_to_impact, &objp->pos, &exp_objp->pos );
 				vm_vec_copy_normalize( &force, &vec_ship_to_impact );
 				vm_vec_scale( &force, blast );
@@ -5281,7 +5284,7 @@ void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 	float impulse_mag;
 	float total_docked_mass;
 
-	vector impulse_norm, impulse_vec, pos;
+	vec3d impulse_norm, impulse_vec, pos;
 
 	// damage applied to each docked object
 	damage = 0.2f * dying_shipp->ship_max_hull_strength;
@@ -5385,7 +5388,7 @@ void ship_dying_frame(object *objp, int ship_num)
 		// Do fireballs for Big ship with propagating explostion, but not Kamikaze
 		if (!(Ai_info[sp->ai_index].ai_flags & AIF_KAMIKAZE) && ship_get_exp_propagates(sp)) {
 			if ( timestamp_elapsed(Ships[ship_num].next_fireball))	{
-				vector outpnt, pnt1, pnt2;
+				vec3d outpnt, pnt1, pnt2;
 				polymodel *pm = model_get(sp->modelnum);
 
 				// Gets two random points on the surface of a submodel
@@ -5408,7 +5411,7 @@ void ship_dying_frame(object *objp, int ship_num)
 		// create little fireballs for knossos as it dies
 		if (knossos_ship) {
 			if ( timestamp_elapsed(Ships[ship_num].next_fireball)) {
-				vector rand_vec, outpnt; // [0-.7 rad] in plane
+				vec3d rand_vec, outpnt; // [0-.7 rad] in plane
 				vm_vec_rand_vec_quick(&rand_vec);
 				float scale = -vm_vec_dotprod(&objp->orient.vec.fvec, &rand_vec) * (0.9f + 0.2f * frand());
 				vm_vec_scale_add2(&rand_vec, &objp->orient.vec.fvec, scale);
@@ -5472,7 +5475,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				}
 				// Find two random vertices on the model, then average them
 				// and make the piece start there.
-				vector tmp, outpnt, pnt1, pnt2;
+				vec3d tmp, outpnt, pnt1, pnt2;
 
 				// Gets two random points on the surface of a submodel [KNOSSOS]
 				submodel_get_two_random_points(sp->modelnum, pm->detail[0], &pnt1, &pnt2 );
@@ -6611,7 +6614,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 //	A faster version of ship_check_collision that does not do checking at the polygon
 //	level.  Just checks to see if a vector will intersect a sphere.
-int ship_check_collision_fast( object * obj, object * other_obj, vector * hitpos)
+int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos)
 {
 	int num;
 	mc_info mc;
@@ -6643,7 +6646,7 @@ int ship_check_collision_fast( object * obj, object * other_obj, vector * hitpos
 // second last to last point.
 void ship_maybe_fixup_subsys_path(polymodel *pm, int path_num)
 {
-	vector	*v1, *v2, dir;
+	vec3d	*v1, *v2, dir;
 	float		dist;
 	int		index_1, index_2;
 
@@ -6812,7 +6815,7 @@ void show_ship_subsys_count()
 
 //	Returns object index of ship.
 //	-1 means failed.
-int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
+int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 {
 	int			i, n, objnum, j, k, t;
 	ship_info	*sip;
@@ -7397,7 +7400,7 @@ int ship_fire_primary_debug(object *objp)
 {
 	int	i;
 	ship	*shipp = &Ships[objp->instance];
-	vector wpos;
+	vec3d wpos;
 
 	if ( !timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[0]) )
 		return 0;
@@ -7426,7 +7429,7 @@ int ship_fire_primary_debug(object *objp)
 int ship_launch_countermeasure(object *objp, int rand_val)
 {
 	int	fired, check_count, cmeasure_count;
-	vector	pos;
+	vec3d	pos;
 	ship	*shipp;
 
 	shipp = &Ships[objp->instance];
@@ -7757,7 +7760,7 @@ float ship_get_subsystem_strength( ship *shipp, int type );
 // primary.
 int ship_fire_primary(object * obj, int stream_weapons, int force)
 {
-	vector		gun_point, pnt, firing_pos;
+	vec3d		gun_point, pnt, firing_pos;
 	int			n = obj->instance;
 	ship			*shipp;
 	ship_weapon	*swp;
@@ -8198,7 +8201,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						if (winfo_p->wi_flags & WIF_FLAK)
 						{
 							object* target=&Objects[aip->target_objnum];
-							vector predicted_pos;
+							vec3d predicted_pos;
 							float flak_range=(winfo_p->lifetime)*(winfo_p->max_speed);
 							float range_to_target;
 							float wepstr=ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
@@ -8579,7 +8582,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	weapon_info	*wip;
 	ai_info		*aip;
 	polymodel	*po;
-	vector		missile_point, pnt, firing_pos;
+	vec3d		missile_point, pnt, firing_pos;
 
 	Assert( obj != NULL );
 
@@ -9487,10 +9490,10 @@ int ship_query_state(char *name)
 //	Return true/false for subsystem found/not found.
 //	Stuff vector *pos with absolute position.
 // subsysp is a pointer to the subsystem.
-int get_subsystem_pos(vector *pos, object *objp, ship_subsys *subsysp)
+int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
 {
 	model_subsystem	*psub;
-	vector	pnt;
+	vec3d	pnt;
 	ship		*shipp;
 
 	Assert(objp->type == OBJ_SHIP);
@@ -9677,12 +9680,12 @@ void compute_slew_matrix(matrix *orient, angles *a)
 // the vector of the eye is returned in the parameter 'eye'.  The orientation of the
 // eye is returned in orient.  (NOTE: this is kind of bogus for now since non 0th element
 // eyes have no defined up vector)
-void ship_get_eye( vector *eye_pos, matrix *eye_orient, object *obj )
+void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj )
 {
 	ship *shipp = &Ships[obj->instance];
 	polymodel *pm = model_get( shipp->modelnum );
 	eye *ep = &(pm->view_positions[0]);
-	// vector vec;
+	// vec3d vec;
 
 	// check to be sure that we have a view eye to look at.....spit out nasty debug message
 	if ( pm->n_view_positions == 0 ) {
@@ -9726,12 +9729,12 @@ void ship_get_eye( vector *eye_pos, matrix *eye_orient, object *obj )
 //
 // returns: pointer to subsystem if one found, NULL otherwise
 #define MAX_SUBSYS_ATTACKERS 3
-ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vector *attacker_pos)
+ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vec3d *attacker_pos)
 {
 	ship_subsys	*ss;
 	ship_subsys *best_in_sight_subsys, *lowest_attacker_subsys, *ss_return;
 	int			lowest_num_attackers, lowest_in_sight_attackers, num_attackers;
-	vector		gsubpos;
+	vec3d		gsubpos;
 	ship_obj		*sop;
 
 	lowest_in_sight_attackers = lowest_num_attackers = 1000;
@@ -9788,7 +9791,7 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vector *a
 // attacker_pos	=>	world pos of attacker (default value NULL).  If value is non-NULL, try
 //							to select the best subsystem to attack of that type (using line-of-sight)
 //							and based on the number of ships already attacking the subsystem
-ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vector *attacker_pos )
+ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos )
 {
 	int count;
 	ship_subsys *ss;
@@ -10475,7 +10478,7 @@ void ship_assign_sound(ship *sp)
 {
 	ship_info	*sip;	
 	object *objp;
-	vector engine_pos;
+	vec3d engine_pos;
 	ship_subsys *moveup;
 
 	Assert( sp->objnum >= 0 );
@@ -11223,13 +11226,13 @@ int ship_can_warp(ship *sp)
 //	exit:		0	=>	a valid vector was placed in norm
 //				!0	=> an path normal could not be calculated
 //				
-int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vector *gsubpos, vector *norm)
+int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vec3d *gsubpos, vec3d *norm)
 {
 	if ( ss->system_info->path_num >= 0 ) {
 		polymodel	*pm;
 		model_path	*mp;
-		vector		*path_point;
-		vector		gpath_point;
+		vec3d		*path_point;
+		vec3d		gpath_point;
 		pm = model_get(sp->modelnum);
 		mp = &pm->paths[ss->system_info->path_num];
 		if ( mp->nverts >= 2 ) {
@@ -11261,11 +11264,11 @@ int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vector *gsubpos, v
 //				dot_out	=>		OPTIONAL PARAMETER, output parameter, will return dot between subsys fvec and subsys_to_eye_vec
 //									(only filled in if do_facing_check is true)
 //				vec_out	=>		OPTIONAL PARAMETER, vector from eye_pos to absolute subsys_pos.  (only filled in if do_facing_check is true)
-int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vector *eye_pos, vector* subsys_pos, int do_facing_check, float *dot_out, vector *vec_out)
+int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye_pos, vec3d* subsys_pos, int do_facing_check, float *dot_out, vec3d *vec_out)
 {
 	float		dist, dot;
 	mc_info	mc;
-	vector	terminus, eye_to_pos, subsys_fvec, subsys_to_eye_vec;
+	vec3d	terminus, eye_to_pos, subsys_fvec, subsys_to_eye_vec;
 
 	if (objp->type != OBJ_SHIP)
 		return 0;
@@ -11325,7 +11328,7 @@ int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vector *eye_pos, 
 
 // try to find a subsystem matching 'type' inside the ship, and that is 
 // not destroyed.  If cannot find one, return NULL.
-ship_subsys *ship_return_next_subsys(ship *shipp, int type, vector *attacker_pos)
+ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 {
 	ship_subsys	*ssp;
 
@@ -11349,11 +11352,11 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vector *attacker_pos
 // exit:		strength of shields in the quadrant that was hit as a percentage, between 0 and 1.0
 //
 // Assumes: that hitpos is a valid global hit position
-float ship_quadrant_shield_strength(object *hit_objp, vector *hitpos)
+float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 {
 	int			quadrant_num, i;
 	float			max_quadrant;
-	vector		tmpv1, tmpv2;
+	vec3d		tmpv1, tmpv2;
 
 	// If ship doesn't have shield mesh, then return
 	if ( hit_objp->flags & OF_NO_SHIELDS ) {
@@ -11773,7 +11776,7 @@ next_cargo:
 void ship_maybe_warn_player(ship *enemy_sp, float dist)
 {
 	float		fdot; //, rdot, udot;
-	vector	vec_to_target;
+	vec3d	vec_to_target;
 	int		msg_type; //, on_right;
 
 	// First check if the player has reached the maximum number of warnings for a mission
@@ -13108,7 +13111,7 @@ void object_jettison_cargo(object *objp, object *cargo_objp)
 	Assert((objp != NULL) && (cargo_objp != NULL));
 	Assert(dock_check_find_direct_docked_object(objp, cargo_objp));
 
-	vector impulse, pos;
+	vec3d impulse, pos;
 
 	// undock the objects
 	ai_do_objects_undocked_stuff( objp, cargo_objp );
@@ -13319,7 +13322,7 @@ void ship_update_artillery_lock()
 	weapon_info *tlaser = NULL;
 	mc_info *cinfo = NULL;
 	int c_objnum;
-	vector temp, local_hit;
+	vec3d temp, local_hit;
 	ship *shipp;
 	ship_obj *so;
 
@@ -13399,7 +13402,7 @@ void ship_update_artillery_lock()
 		if(aip->artillery_lock_time >= 2.0f){
 			HUD_printf("Firing artillery");
 
-			vector temp;
+			vec3d temp;
 			vm_vec_unrotate(&temp, &aip->artillery_lock_pos, &Objects[aip->artillery_objnum].orient);
 			vm_vec_add2(&temp, &Objects[aip->artillery_objnum].pos);			
 			ssm_create(&temp, &Objects[so->objnum].pos, 0, NULL);				
@@ -13413,11 +13416,11 @@ void ship_update_artillery_lock()
 
 // checks if a world point is inside the extended bounding box of a ship
 // may not work if delta box is large and negative (ie, adjusted box crosses over on itself - min > max)
-int check_world_pt_in_expanded_ship_bbox(vector *world_pt, object *objp, float delta_box)
+int check_world_pt_in_expanded_ship_bbox(vec3d *world_pt, object *objp, float delta_box)
 {
 	Assert(objp->type == OBJ_SHIP);
 
-	vector temp, ship_pt;
+	vec3d temp, ship_pt;
 	polymodel *pm;
 	vm_vec_sub(&temp, world_pt, &objp->pos);
 	vm_vec_rotate(&ship_pt, &temp, &objp->orient);

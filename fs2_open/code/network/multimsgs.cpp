@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-04-03 08:48:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/04/03 08:48:31  Goober5000
+ * brought weapon loadout banks into agreement with ship info banks
+ * improved error reporting on apply-to-all
+ * --Goober5000
+ *
  * Revision 2.29  2005/03/27 12:28:34  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -809,7 +814,7 @@ void get_net_addr(ubyte *data, int *size, net_addr *addr)
 	*size = offset;
 }
 /*
-void add_vector_data(ubyte *data, int *size, vector vec)
+void add_vector_data(ubyte *data, int *size, vec3d vec)
 {
 	int packet_size = *size;
 
@@ -820,7 +825,7 @@ void add_vector_data(ubyte *data, int *size, vector vec)
 	*size = packet_size;
 }
 
-void get_vector_data(ubyte *data, int *size, vector vec)
+void get_vector_data(ubyte *data, int *size, vec3d vec)
 {
 	int offset = *size;
 
@@ -3026,7 +3031,7 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 	int offset, objnum, is_support;
 	ushort signature;
 	p_object *objp;
-	vector pos = ZERO_VECTOR;
+	vec3d pos = ZERO_VECTOR;
 
 	Assert ( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
 	offset = HEADER_LENGTH;
@@ -3603,9 +3608,9 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 {
 	int offset, weapon_objnum, wid;
 	ushort pnet_signature, wnet_signature;
-	vector pos, temp;
+	vec3d pos, temp;
 	matrix orient;
-	vector o_fvec;
+	vec3d o_fvec;
 	ubyte turret_index;
 	object *objp;
 	ship_subsys *ssp;
@@ -4273,7 +4278,7 @@ void process_observer_update_packet(ubyte *data, header *hinfo)
 {
 	int offset,ret;
 	int obs_num;
-	vector g_vec;
+	vec3d g_vec;
 	matrix g_mat;
 	physics_info bogus_pi;	
 	ushort target_sig;
@@ -4774,12 +4779,12 @@ void process_file_sig_request(ubyte *data, header *hinfo)
 }
 
 // functions to deal with subsystems getting whacked
-void send_subsystem_destroyed_packet( ship *shipp, int index, vector world_hitpos )
+void send_subsystem_destroyed_packet( ship *shipp, int index, vec3d world_hitpos )
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size;
 	ubyte uindex;
-	vector tmp, local_hitpos;
+	vec3d tmp, local_hitpos;
 	object *objp;
 
 	Assert ( index < UCHAR_MAX );
@@ -4804,7 +4809,7 @@ void process_subsystem_destroyed_packet( ubyte *data, header *hinfo )
 	ushort signature;
 	ubyte uindex;
 	object *objp;
-	vector local_hit_pos, world_hit_pos;
+	vec3d local_hit_pos, world_hit_pos;
 
 	offset = HEADER_LENGTH;
 
@@ -6575,7 +6580,7 @@ void process_wss_slots_data_packet(ubyte *data, header *hinfo)
 #define OBJ_VISIBILITY_DOT					0.6f	
 
 // send and receive packets for shield explosion information
-void send_shield_explosion_packet( int objnum, int tri_num, vector hit_pos )
+void send_shield_explosion_packet( int objnum, int tri_num, vec3d hit_pos )
 {
 	int packet_size, i;
 	ubyte data[MAX_PACKET_SIZE], utri_num;
@@ -6591,7 +6596,7 @@ void send_shield_explosion_packet( int objnum, int tri_num, vector hit_pos )
 	for ( i = 0; i < MAX_PLAYERS; i++ ) {
 		if ( MULTI_CONNECTED(Net_players[i]) && (&Net_players[i] != Net_player) ) {
 			float		dot;
-			vector	eye_to_obj_vec, diff, eye_pos;
+			vec3d	eye_to_obj_vec, diff, eye_pos;
 			matrix	eye_orient;
 
 			eye_pos = Net_players[i].s_info.eye_pos;
@@ -6620,7 +6625,7 @@ void send_shield_explosion_packet( int objnum, int tri_num, vector hit_pos )
 	}
 }
 
-void add_shield_point_multi(int objnum, int tri_num, vector *hit_pos);
+void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos);
 
 void process_shield_explosion_packet( ubyte *data, header *hinfo)
 {
@@ -6642,7 +6647,7 @@ void process_shield_explosion_packet( ubyte *data, header *hinfo)
 		polymodel *pm;
 		shield_info *shieldp;
 		shield_tri stri;
-		vector hit_pos;
+		vec3d hit_pos;
 		int i;
 
 		// given the tri num, find the local position which is the average of the
@@ -6902,12 +6907,12 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 }
 
 // called to create asteroid stuff
-void send_asteroid_create( object *new_objp, object *parent_objp, int asteroid_type, vector *relvec )
+void send_asteroid_create( object *new_objp, object *parent_objp, int asteroid_type, vec3d *relvec )
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE];
 	ubyte packet_type, atype;
-	vector vec;
+	vec3d vec;
 
 	vm_vec_zero(&vec);
 	if (relvec != NULL )
@@ -6945,11 +6950,11 @@ void send_asteroid_throw( object *objp )
 	multi_io_send_to_all(data, packet_size);
 }
 
-void send_asteroid_hit( object *objp, object *other_objp, vector *hitpos, float damage )
+void send_asteroid_hit( object *objp, object *other_objp, vec3d *hitpos, float damage )
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE], packet_type;
-	vector vec;
+	vec3d vec;
 
 	vm_vec_zero(&vec);
 	if ( hitpos != NULL )
@@ -6987,7 +6992,7 @@ void process_asteroid_info( ubyte *data, header *hinfo )
 	case ASTEROID_CREATE: {
 		ushort psignature, signature;
 		ubyte atype;
-		vector relvec;
+		vec3d relvec;
 		object *parent_objp;
 
 		GET_USHORT( psignature );
@@ -7011,7 +7016,7 @@ void process_asteroid_info( ubyte *data, header *hinfo )
 		// asteroid throw packet -- asteroid has wrapped bounds
 	case ASTEROID_THROW: {
 		ushort signature;
-		vector pos, vel;
+		vec3d pos, vel;
 		object *objp;
 
 		GET_USHORT( signature );
@@ -7031,7 +7036,7 @@ void process_asteroid_info( ubyte *data, header *hinfo )
 	case ASTEROID_HIT: {
 		ushort signature, osignature;
 		object *objp, *other_objp;
-		vector hitpos;
+		vec3d hitpos;
 		float damage;
 
 		GET_USHORT( signature );
@@ -8244,9 +8249,9 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 {
 	int offset, weapon_objnum, wid;
 	ushort pnet_signature;
-	vector pos, dir;
+	vec3d pos, dir;
 	matrix orient;
-	vector o_fvec;
+	vec3d o_fvec;
 	ubyte turret_index;
 	object *objp;
 	ship_subsys *ssp;	
@@ -8318,7 +8323,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 #define GET_NORM_VEC(d) do { char vnorm[3]; memcpy(vnorm, data+offset, 3); d.x = (float)vnorm[0] / 127.0f; d.y = (float)vnorm[1] / 127.0f; d.z = (float)vnorm[2] / 127.0f; } while(0);
 
 // player pain packet
-void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vector *force, vector *hitpos)
+void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	ubyte windex;
@@ -8354,8 +8359,8 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	int offset;
 	ubyte windex = 0;
 	ushort udamage;
-	vector force;
-	vector local_hit_pos;
+	vec3d force;
+	vec3d local_hit_pos;
 	weapon_info *wip;
 
 	// get the data for the pain packet
@@ -8390,7 +8395,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 }
 
 // lightning packet
-void send_lightning_packet(int bolt_type, vector *start, vector *strike)
+void send_lightning_packet(int bolt_type, vec3d *start, vec3d *strike)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	char val;
@@ -8411,7 +8416,7 @@ void process_lightning_packet(ubyte *data, header *hinfo)
 {
 	int offset;
 	char bolt_type;
-	vector start, strike;
+	vec3d start, strike;
 
 	// read the data
 	offset = HEADER_LENGTH;

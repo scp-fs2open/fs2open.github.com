@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:36 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:36  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -58,7 +61,7 @@
 // ----------------------------------------------------------------------------------------------------
 // EMP EFFECT DEFINES/VARS
 //
-struct vector;
+struct vec3d;
 
 // default EMP effect values for weapons which do not specify them
 // NOTE : anything aboce intensity max or time max will be capped
@@ -119,7 +122,7 @@ struct weapon_info;
 void emp_level_init();
 
 // apply the EMP effect to all relevant ships
-void emp_apply(vector *pos, float inner_radius, float outer_radius, float emp_intensity, float emp_time);
+void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_intensity, float emp_time);
 
 // start the emp effect for the passed ship (setup lightning arcs, timestamp, etc)
 // NOTE : if this ship is also me, I should call emp_start_local() as well

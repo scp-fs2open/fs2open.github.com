@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-04-01 07:33:08 $
+ * $Revision: 2.20 $
+ * $Date: 2005-04-05 05:53:25 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/04/01 07:33:08  taylor
+ * fix hanging on exit with OpenAL
+ * some better error handling on OpenAL init and make it more Windows friendly too
+ * basic 3d sound stuff for OpenAL, not working right yet
+ *
  * Revision 2.18  2005/03/28 00:40:09  taylor
  * fix to snd_time_remaining() to make sure we are getting the correct index into Sounds[]
  *
@@ -928,10 +933,10 @@ MONITOR( Num3DSoundsLoaded );
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-int snd_play_3d(game_snd *gs, vector *source_pos, vector *listen_pos, float radius, vector *source_vel, int looping, float vol_scale, int priority, vector *sound_fvec, float range_factor, int force )
+int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d *sound_fvec, float range_factor, int force )
 {
 	int		handle, min_range, max_range;
-	vector	vector_to_sound;
+	vec3d	vector_to_sound;
 	sound		*snd;
 	float		volume, distance, pan, max_volume;
 
@@ -1027,7 +1032,7 @@ int snd_play_3d(game_snd *gs, vector *source_pos, vector *listen_pos, float radi
 }
 
 // update the given 3d sound with a new position
-void snd_update_3d_pos(int soundnum, game_snd *gs, vector *new_pos)
+void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos)
 {
 	float vol, pan;
 	
@@ -1060,9 +1065,9 @@ void snd_update_3d_pos(int soundnum, game_snd *gs, vector *new_pos)
 //	NOTE: the volume is not scaled by the Master_sound_volume, since this always occurs
 //			when snd_play() or snd_play_looping() is called
 //
-int snd_get_3d_vol_and_pan(game_snd *gs, vector *pos, float* vol, float *pan, float radius)
+int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius)
 {
-	vector	vector_to_sound;
+	vec3d	vector_to_sound;
 	float		distance, max_volume;
 	sound		*snd;
 
@@ -1417,7 +1422,7 @@ MONITOR( SoundChannels );
 
 // update the position of the listener for the specific 3D sound API we're 
 // using
-void snd_update_listener(vector *pos, vector *vel, matrix *orient)
+void snd_update_listener(vec3d *pos, vec3d *vel, matrix *orient)
 {
 	MONITOR_INC( SoundChannels, ds_get_number_channels() );
 	ds3d_update_listener(pos, vel, orient);

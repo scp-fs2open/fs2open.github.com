@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/spline.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:36 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:36  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:32:52  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -87,13 +90,13 @@ bez_spline::bez_spline()
 }
 
 // bez constructor
-bez_spline::bez_spline(int _num_pts, vector *_pts[MAX_BEZ_PTS])
+bez_spline::bez_spline(int _num_pts, vec3d *_pts[MAX_BEZ_PTS])
 {
 	bez_set_points(_num_pts, _pts);	
 }
 
 // set control points
-void bez_spline::bez_set_points(int _num_pts, vector *_pts[MAX_BEZ_PTS])
+void bez_spline::bez_set_points(int _num_pts, vec3d *_pts[MAX_BEZ_PTS])
 {
 	int idx;
 
@@ -119,7 +122,7 @@ float bez_spline::BEZ(int k, int n, float u)
 }
 
 // get a point on the curve
-void bez_spline::bez_get_point(vector *out, float u)
+void bez_spline::bez_get_point(vec3d *out, float u)
 {	
 	int idx;
 	float bez_val;
@@ -154,7 +157,7 @@ void bez_spline::bez_render(int divs, color *c)
 	float inc;
 	int idx;
 	vertex a, b;
-	vector pt;
+	vec3d pt;
 
 	// bleh
 	if(divs <= 0){
@@ -205,13 +208,13 @@ herm_spline::herm_spline()
 }
 
 // constructor
-herm_spline::herm_spline(int _num_pts, vector *_pts[MAX_HERM_PTS], vector *_d_pts[MAX_HERM_PTS])
+herm_spline::herm_spline(int _num_pts, vec3d *_pts[MAX_HERM_PTS], vec3d *_d_pts[MAX_HERM_PTS])
 {	
 	herm_set_points(_num_pts, _pts, _d_pts);
 }
 
 // set the points
-void herm_spline::herm_set_points(int _num_pts, vector *_pts[MAX_HERM_PTS], vector *_d_pts[MAX_HERM_PTS])
+void herm_spline::herm_set_points(int _num_pts, vec3d *_pts[MAX_HERM_PTS], vec3d *_d_pts[MAX_HERM_PTS])
 {
 	int idx;
 
@@ -230,23 +233,23 @@ void herm_spline::herm_set_points(int _num_pts, vector *_pts[MAX_HERM_PTS], vect
 }
 	
 // get a point on the hermite curve.
-void herm_spline::herm_get_point(vector *out, float u, int k)
+void herm_spline::herm_get_point(vec3d *out, float u, int k)
 {
 	float a = ( (2.0f * u * u * u) - (3.0f * u * u) + 1 );
 	float b = ( (-2.0f * u * u * u) + (3.0f * u * u) );
 	float c = ( (u * u * u) - (2.0f * u * u) + u );
 	float d = ( (u * u * u) - (u * u) );
 
-	vector va;
+	vec3d va;
 	vm_vec_copy_scale(&va, &pts[k], a);
 
-	vector vb;
+	vec3d vb;
 	vm_vec_copy_scale(&vb, &pts[k+1], b);
 
-	vector vc;
+	vec3d vc;
 	vm_vec_copy_scale(&vc, &d_pts[k], c);
 
-	vector vd;
+	vec3d vd;
 	vm_vec_copy_scale(&vd, &d_pts[k+1], d);
 
 	vm_vec_add(out, &va, &vb);
@@ -255,23 +258,23 @@ void herm_spline::herm_get_point(vector *out, float u, int k)
 }
 
 // the derivative of a point on the hermite curve
-void herm_spline::herm_get_deriv(vector *deriv, float u, int k)
+void herm_spline::herm_get_deriv(vec3d *deriv, float u, int k)
 {
 	float a = ( (6.0f * u * u) - (6.0f * u) );
 	float b = ( (-6.0f * u * u) + (6.0f * u) );
 	float c = ( (3.0f * u * u) - (4.0f * u) + 1 );
 	float d = ( (3.0f * u * u) - (2.0f * u) );
 
-	vector va;
+	vec3d va;
 	vm_vec_copy_scale(&va, &pts[k], a);
 
-	vector vb;
+	vec3d vb;
 	vm_vec_copy_scale(&vb, &pts[k+1], b);
 
-	vector vc;
+	vec3d vc;
 	vm_vec_copy_scale(&vc, &d_pts[k], c);
 
-	vector vd;
+	vec3d vd;
 	vm_vec_copy_scale(&vd, &d_pts[k+1], d);
 
 	vm_vec_add(deriv, &va, &vb);
@@ -287,7 +290,7 @@ void herm_spline::herm_render(int divs, color *clc)
 	float inc = 1.0f / (float)divs;
 
 	vertex a, b, c;
-	vector pt, d_pt;
+	vec3d pt, d_pt;
 
 	// draw in red
 	gr_set_color_fast(clc);

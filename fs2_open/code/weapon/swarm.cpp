@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Swarm.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-25 06:57:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * C module for managing swarm missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/25 06:57:38  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.6  2004/07/31 08:56:47  et1
  * Implemented "+SwarmWait:"-token
  *
@@ -154,10 +157,10 @@
 typedef struct swarm_info {
 	int		flags;
 	int		change_timestamp;
-	vector	original_target;
-	vector	new_target;
-	vector	circle_rvec, circle_uvec;
-	vector	last_offset;
+	vec3d	original_target;
+	vec3d	new_target;
+	vec3d	circle_rvec, circle_uvec;
+	vec3d	last_offset;
 	uint		change_count;		
 	int		path_num;			// which path swarm missile is currently following
 	int		homing_objnum;		// object number that swarm missile is homing on, -1 if not homing
@@ -315,7 +318,7 @@ void swarm_update_direction(object *objp, float frametime)
 	weapon		*wp;
 	object		*hobjp;
 	swarm_info	*swarmp;
-	vector		obj_to_target;
+	vec3d		obj_to_target;
 	float			vel, target_dist, radius, missile_speed, missile_dist;
 	physics_info	*pi;
 
@@ -406,7 +409,7 @@ void swarm_update_direction(object *objp, float frametime)
 		}
 
 		radius = (float)tan(swarmp->angle_offset) * target_dist;
-		vector rvec_component, uvec_component;
+		vec3d rvec_component, uvec_component;
 
 		swarmp->change_count++;
 		if ( swarmp->change_count > 2 ) {

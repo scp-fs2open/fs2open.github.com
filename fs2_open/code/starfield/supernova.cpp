@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:53 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:53  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:33:07  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -89,7 +92,7 @@ float Supernova_fade_to_white = 0.0f;
 int Supernova_particle_stamp = -1;
 
 // supernova camera pos
-vector Supernova_camera_pos;
+vec3d Supernova_camera_pos;
 matrix Supernova_camera_orient;
 
 int Supernova_status = SUPERNOVA_NONE;
@@ -151,8 +154,8 @@ DCF(sn_part, "")
 void supernova_do_particles()
 {	
 	int idx;
-	vector a, b, ta, tb;
-	vector norm, sun_temp;
+	vec3d a, b, ta, tb;
+	vec3d norm, sun_temp;
 
 	// no player ship
 	if((Player_obj == NULL) || (Player_ship == NULL)){
@@ -367,12 +370,12 @@ DCF(sn_cam_dist, "")
 	dc_get_arg(ARG_FLOAT);
 	sn_cam_distance = Dc_arg_float;
 }
-void supernova_set_view(vector *eye_pos, matrix *eye_orient)
+void supernova_set_view(vec3d *eye_pos, matrix *eye_orient)
 {
-	vector at;
-	vector sun_temp, sun;
-	vector move;
-	vector view;
+	vec3d at;
+	vec3d sun_temp, sun;
+	vec3d move;
+	vec3d view;
 	float cut_pct = 1.0f - (Supernova_time / SUPERNOVA_CUT_TIME);		
 	
 	// set the controls for the heart of the sun	

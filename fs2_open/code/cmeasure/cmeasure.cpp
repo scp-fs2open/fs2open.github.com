@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:25 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-05 05:53:15 $
+ * $Author: taylor $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:25  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:43  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -369,7 +372,7 @@ float Skill_level_cmeasure_life_scale[NUM_SKILL_LEVELS] = {3.0f, 2.0f, 1.5f, 1.2
 // creates one countermeasure.  A ship fires 1 of these per launch.  rand_val is used
 // in multiplayer.  If -1, then create a random number.  If non-negative, use this
 // number for static_rand functions
-int cmeasure_create( object * source_obj, vector * pos, int cm_type, int rand_val )
+int cmeasure_create( object * source_obj, vec3d * pos, int cm_type, int rand_val )
 {
 	int		n, objnum, parent_objnum, arand;
 	object	* obj;
@@ -439,7 +442,7 @@ int cmeasure_create( object * source_obj, vector * pos, int cm_type, int rand_va
 	
 	Num_cmeasures++;
 
-	vector vel, rand_vec;
+	vec3d vel, rand_vec;
 
 	vm_vec_scale_add(&vel, &source_obj->phys_info.vel, &source_obj->orient.vec.fvec, -25.0f);
 

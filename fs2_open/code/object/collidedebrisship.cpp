@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-03-27 12:28:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/27 12:28:32  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.7  2005/03/10 08:00:11  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -235,7 +239,7 @@ int collide_debris_ship( obj_pair * pair )
 	dist = vm_vec_dist( &pdebris->pos, &pship->pos );
 	if ( dist < pdebris->radius + pship->radius )	{
 		int hit;
-		vector	hitpos;
+		vec3d	hitpos;
 		// create and initialize ship_ship_hit_info struct
 		collision_info_struct debris_hit_info;
 		memset( &debris_hit_info, -1, sizeof(collision_info_struct) );
@@ -368,7 +372,7 @@ int collide_asteroid_ship( obj_pair * pair )
 
 	if ( dist < pasteroid->radius + pship->radius )	{
 		int hit;
-		vector	hitpos;
+		vec3d	hitpos;
 		// create and initialize ship_ship_hit_info struct
 		collision_info_struct asteroid_hit_info;
 		memset( &asteroid_hit_info, -1, sizeof(collision_info_struct) );
@@ -386,7 +390,7 @@ int collide_asteroid_ship( obj_pair * pair )
 			float		ship_damage;	
 			float		asteroid_damage;
 
-			vector asteroid_vel = pasteroid->phys_info.vel;
+			vec3d asteroid_vel = pasteroid->phys_info.vel;
 
 			// do collision physics
 			calculate_ship_ship_collision_physics( &asteroid_hit_info );

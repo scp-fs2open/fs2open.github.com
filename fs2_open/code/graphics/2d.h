@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.53 $
- * $Date: 2005-03-20 00:09:07 $
- * $Author: phreak $
+ * $Revision: 2.54 $
+ * $Date: 2005-04-05 05:53:16 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/03/20 00:09:07  phreak
+ * Added gr_draw_htl_line and gr_draw_htl sphere
+ * There still needs to be D3D versions implemented, but OGL is done.
+ * Follow that or ask phreak about how its implemented/
+ *
  * Revision 2.52  2005/03/19 18:02:33  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -646,7 +651,7 @@ struct poly_list{
 	int n_prim;
 	int n_verts;
 	vertex *vert;
-	vector *norm;
+	vec3d *norm;
 private:
 	int currently_allocated;
 };
@@ -679,9 +684,9 @@ public:
 	//draws a simple 3 vert polygon
 	void draw_quad(vertex* verts);
 	//draws a simple 4 vert polygon
-	void draw_beam(vector*start,vector*end, float width, float intinsity = 1.0f);
+	void draw_beam(vec3d*start,vec3d*end, float width, float intinsity = 1.0f);
 	//draws a beam
-	float draw_laser(vector *p0,float width1,vector *p1,float width2, int r, int g, int b);
+	float draw_laser(vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b);
 	//draws a laser
 
 	void render(int flags);
@@ -701,12 +706,12 @@ struct batch_item{
 
 struct colored_vector{
 	colored_vector():pad(1.0f){};
-	vector vec;
+	vec3d vec;
 	float pad;	//needed so I can just memcpy it in d3d
 	ubyte color[4];
 };
 
-bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2);
+bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2);
 
 //finds the first occorence of a vertex within a poly list
 short find_first_index(poly_list *plist, int idx);
@@ -725,10 +730,10 @@ struct line_list{
 //and becase we may need to add some data to it
 struct light_data {
 	int		type;							// What type of light this is
-	vector	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
-	vector	vec2;							// second point on a tube light
-	vector	local_vec;					// rotated light vector
-	vector	local_vec2;					// rotated 2nd light vector for a tube light
+	vec3d	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
+	vec3d	vec2;							// second point on a tube light
+	vec3d	local_vec;					// rotated light vector
+	vec3d	local_vec2;					// rotated 2nd light vector for a tube light
 	float		intensity;					// How bright the light is.
 	float		rada, rada_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
 	float		radb, radb_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
@@ -972,7 +977,7 @@ typedef struct screen {
 	bool (*gf_make_render_target)(int n, int &x_res, int &y_res, int flags );
 	bool (*gf_set_render_target)(int n, int face);
 
-	void (*gf_translate_texture_matrix)(int unit, vector *shift);
+	void (*gf_translate_texture_matrix)(int unit, vec3d *shift);
 	void (*gf_push_texture_matrix)(int unit);
 	void (*gf_pop_texture_matrix)(int unit);
 
@@ -990,14 +995,14 @@ typedef struct screen {
  	void (*gf_set_proj_matrix)(float, float, float, float);
   	void (*gf_end_proj_matrix)();
 	//the view matrix
- 	void (*gf_set_view_matrix)(vector *, matrix*);
+ 	void (*gf_set_view_matrix)(vec3d *, matrix*);
   	void (*gf_end_view_matrix)();
 	//object scaleing
-	void (*gf_push_scale_matrix)(vector *);
+	void (*gf_push_scale_matrix)(vec3d *);
  	void (*gf_pop_scale_matrix)();
 	//object position and orientation
-	void (*gf_start_instance_matrix)(vector *, matrix*);
-	void (*gf_start_angles_instance_matrix)(vector *, angles*);
+	void (*gf_start_instance_matrix)(vec3d *, matrix*);
+	void (*gf_start_angles_instance_matrix)(vec3d *, angles*);
 	void (*gf_end_instance_matrix)();
 
 	int	 (*gf_make_light)(light_data*, int, int );
@@ -1020,13 +1025,13 @@ typedef struct screen {
 
 	void (*gf_draw_line_list)(colored_vector*lines, int num);
 
-	void (*gf_draw_htl_line)(vector *start, vector* end);
+	void (*gf_draw_htl_line)(vec3d *start, vec3d* end);
 	void (*gf_draw_htl_sphere)(float rad);
 
 //	void (*gf_set_environment_mapping)(int i);
 
 /*	void (*gf_begin_sprites)();//does prep work for sprites
-	void (*gf_draw_sprite)(vector*);//draws a sprite
+	void (*gf_draw_sprite)(vec3d*);//draws a sprite
 	void (*gf_display_sprites))();//actualy darws the drawen sprites
 	void (*gf_end_sprites)();//clears the lists and stuff
 */
@@ -1329,7 +1334,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling);
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
 // Moreover, it is _really_ intended for use with 45 degree angles. 
-void gr_pline_special(vector **pts, int num_pts, int thickness);
+void gr_pline_special(vec3d **pts, int num_pts, int thickness);
 
 #define VERTEX_FLAG_POSITION	 (1<<0)	
 #define VERTEX_FLAG_RHW			 (1<<1)	//incompatable with the next normal

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-03-27 12:28:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/03/27 12:28:32  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.11  2005/03/10 08:00:11  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -653,7 +657,7 @@ int bay_emerge_or_depart(object *heavy_objp, object *light_objp)
 	return 0;
 }
 
-int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector *hitpos)
+int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *hitpos)
 {
 	object *heavy_obj	= ship_ship_hit_info->heavy;
 	object *light_obj = ship_ship_hit_info->light;
@@ -737,19 +741,19 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 	mc_info mc;
 	memset(&mc, -1, sizeof(mc_info));
 
-//	vector submodel_hit;
+//	vec3d submodel_hit;
 
 	// Do in heavy object RF
 	mc.model_num = Ships[num].modelnum;	// Fill in the model to check
 	mc.orient = &heavy_obj->orient;		// The object's orient
 
-	vector zero, p0, p1;
+	vec3d zero, p0, p1;
 	vm_vec_zero(&zero);		// we need the physical vector and can not set its value to zero
 	vm_vec_sub(&p0, &light_obj->last_pos, &heavy_obj->last_pos);
 	vm_vec_sub(&p1, &light_obj->pos, &heavy_obj->pos);
 
 	// find the light object's position in the heavy object's reference frame at last frame and also in this frame.
-	vector p0_temp, p0_rotated;
+	vec3d p0_temp, p0_rotated;
 	
 	// Collision detection from rotation enabled if at max rotaional velocity and 5fps, rotation is less than PI/2
 	// This should account for all ships
@@ -784,7 +788,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 	
 	// copy important data
 	int copy_flags = mc.flags;  // make a copy of start end positions of sphere in  big ship RF
-	vector copy_p0, copy_p1;
+	vec3d copy_p0, copy_p1;
 	copy_p0 = *mc.p0;
 	copy_p1 = *mc.p1;
 
@@ -855,7 +859,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 						}
 
 						// find position in submodel RF of light object at collison
-						vector int_light_pos, diff;
+						vec3d int_light_pos, diff;
 						vm_vec_sub(&diff, mc.p1, mc.p0);
 						vm_vec_scale_add(&int_light_pos, mc.p0, &diff, mc.hit_dist);
 						model_find_world_point(&ship_ship_hit_info->light_collision_cm_pos, &int_light_pos, mc.model_num, mc.hit_submodel, &heavy_obj->orient, &zero);
@@ -871,7 +875,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 						// heavy last orient * (delta_orient * time)
 						matrix m_temp, rot_matrix;
 						float theta;
-						vector rot_axis;
+						vec3d rot_axis;
 
 						vm_copy_transpose_matrix(&m_temp, &heavy_obj->last_orient);			// Mtemp1 = curr ^-1
 						vm_matrix_x_matrix(&rot_matrix, &m_temp, &heavy_obj->orient);		// R = goal * Mtemp1
@@ -883,21 +887,21 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 						// set submodel angle at time of collision
 						// TODO: generalize... what happens when angle passes 0 or 2PI
 						angles temp_angs;
-						vm_vec_sub(&diff, (vector*)&pm->submodel[submodel_list[i]].angs, (vector*)&pm->submodel[submodel_list[i]].sii->prev_angs);
-						vm_vec_scale_add((vector*)&temp_angs, (vector *)&pm->submodel[submodel_list[i]].sii->prev_angs, &diff, mc.hit_dist);
+						vm_vec_sub(&diff, (vec3d*)&pm->submodel[submodel_list[i]].angs, (vec3d*)&pm->submodel[submodel_list[i]].sii->prev_angs);
+						vm_vec_scale_add((vec3d*)&temp_angs, (vec3d *)&pm->submodel[submodel_list[i]].sii->prev_angs, &diff, mc.hit_dist);
 						pm->submodel[submodel_list[i]].angs = temp_angs;
 
 						// find intersection point in submodel RF - THEN advance to end of frametime.
-						vector temp = int_light_pos;
+						vec3d temp = int_light_pos;
 						world_find_model_point(&int_submodel_pos, &int_light_pos, pm, submodel_list[i], &int_heavy_orient, &int_heavy_pos);
-						vector temp2;
+						vec3d temp2;
 
 						// Advance to end of frametime
 						pm->submodel[submodel_list[i]].angs = copy_angles;
 						model_find_world_point(&ship_ship_hit_info->light_collision_cm_pos, &int_submodel_pos, mc.model_num, mc.hit_submodel, mc.orient, &zero);
 						vm_vec_sub(&temp2, &ship_ship_hit_info->light_collision_cm_pos, &ship_ship_hit_info->hit_pos);
 		*/
-		//					vector temp2;
+		//					vec3d temp2;
 		//					vm_vec_sub(&temp2, &ship_ship_hit_info->light_collision_cm_pos, &ship_ship_hit_info->hit_pos);
 
 					}
@@ -933,7 +937,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 				}
 
 				// find position in submodel RF of light object at collison
-				vector diff;
+				vec3d diff;
 				vm_vec_sub(&diff, mc.p1, mc.p0);
 				vm_vec_scale_add(&ship_ship_hit_info->light_collision_cm_pos, mc.p0, &diff, mc.hit_dist);
 
@@ -995,7 +999,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 		vm_vec_add(hitpos, &ship_ship_hit_info->heavy->pos, &ship_ship_hit_info->r_heavy);
 
 		/*
-		vector temp1, temp2, temp3, diff;
+		vec3d temp1, temp2, temp3, diff;
 		vm_vec_add(&temp1, &ship_ship_hit_info->light_collision_cm_pos, &ship_ship_hit_info->r_light);
 		vm_vec_add(&temp2, &ship_ship_hit_info->heavy_collision_cm_pos, &ship_ship_hit_info->r_heavy);
 		vm_vec_sub(&diff, &temp2, &temp1);
@@ -1025,7 +1029,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 			if ((Ship_info[heavy_shipp->ship_info_index].flags & SIF_SMALL_SHIP) && (Ship_info[light_shipp->ship_info_index].flags & SIF_SMALL_SHIP)) {
 				if ((heavy_obj->flags & OF_PLAYER_SHIP) || (light_obj->flags & OF_PLAYER_SHIP)) {
 					/*
-					vector	h2l_vec;										
+					vec3d	h2l_vec;										
 					float		mass_sum = heavy_obj->phys_info.mass + light_obj->phys_info.mass; 
 					float		lh_ratio;
 
@@ -1061,9 +1065,9 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vector 
 						}
 					}*/
 
-					vector h_to_l_vec;
-					vector rel_vel_h;
-					vector perp_rel_vel;
+					vec3d h_to_l_vec;
+					vec3d rel_vel_h;
+					vec3d perp_rel_vel;
 
 					vm_vec_sub(&h_to_l_vec, &heavy_obj->pos, &light_obj->pos);
 					vm_vec_sub(&rel_vel_h, &heavy_obj->phys_info.vel, &light_obj->phys_info.vel);
@@ -1192,8 +1196,8 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 
 	float		coeff_restitution;	// parameter controls amount of bounce
 	float		v_rel_normal_m;		// relative collision velocity in the direction of the collision normal
-	vector	v_rel_parallel_m;		// normalized v_rel (Va-Vb) projected onto collision surface
-	vector	world_rotvel_heavy_m, world_rotvel_light_m, vel_from_rotvel_heavy_m, vel_from_rotvel_light_m, v_rel_m, vel_heavy_m, vel_light_m;
+	vec3d	v_rel_parallel_m;		// normalized v_rel (Va-Vb) projected onto collision surface
+	vec3d	world_rotvel_heavy_m, world_rotvel_light_m, vel_from_rotvel_heavy_m, vel_from_rotvel_light_m, v_rel_m, vel_heavy_m, vel_light_m;
 
 	coeff_restitution = 0.1f;		// relative velocity wrt normal is zero after the collision ( range 0-1 )
 
@@ -1211,7 +1215,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	}
 
 	// if collision from rotating submodel of heavy obj, add in vel from rotvel of submodel
-	vector local_vel_from_submodel;
+	vec3d local_vel_from_submodel;
 
 	if (ship_ship_hit_info->submodel_rot_hit == 1) {
 		bool set_model = false;
@@ -1229,7 +1233,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			model_init_submodel_axis_pt(pm->submodel[ship_ship_hit_info->submodel_num].sii,  Ships[heavy->instance].modelnum, ship_ship_hit_info->submodel_num);
 		}
 
-		vector omega, axis, r_rot;
+		vec3d omega, axis, r_rot;
 		if (pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_X) {
 			axis = vmd_x_vector;
 		} else if (pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Y) {
@@ -1246,7 +1250,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		vm_vec_scale(&omega, pm->submodel[ship_ship_hit_info->submodel_num].sii->cur_turn_rate);
 
 		// world coords for r_rot
-		vector temp;
+		vec3d temp;
 		vm_vec_unrotate(&temp, &pm->submodel[ship_ship_hit_info->submodel_num].sii->pt_on_axis, &heavy->orient);
 		vm_vec_sub(&r_rot, &ship_ship_hit_info->hit_pos, &temp);
 //		vm_vec_rotate(&temp, &r_rot, &heavy->orient);	// to ship coords
@@ -1292,8 +1296,8 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		v_rel_normal_m = -v_rel_normal_m;
 	}
 
-	vector	rotational_impulse_heavy, rotational_impulse_light, delta_rotvel_heavy, delta_rotvel_light;
-	vector	delta_vel_from_delta_rotvel_heavy, delta_vel_from_delta_rotvel_light, impulse;
+	vec3d	rotational_impulse_heavy, rotational_impulse_light, delta_rotvel_heavy, delta_rotvel_light;
+	vec3d	delta_vel_from_delta_rotvel_heavy, delta_vel_from_delta_rotvel_light, impulse;
 	float		impulse_mag, heavy_denom, light_denom;
 	matrix	heavy_I_inv, light_I_inv;
 
@@ -1376,7 +1380,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 
 	// Try to move each body back to its position just before collision occured to prevent interpenetration
 	// Move away in direction of light and away in direction of normal
-	vector direction_light;	// direction light is moving relative to heavy
+	vec3d direction_light;	// direction light is moving relative to heavy
 	vm_vec_sub(&direction_light, &ship_ship_hit_info->light_rel_vel, &local_vel_from_submodel);
 	vm_vec_normalize_safe(&direction_light);
 
@@ -1483,10 +1487,10 @@ int maybe_collide_planet (object *obj1, object *obj2)
 }
 
 //	Given a global point and an object, get the quadrant number the point belongs to.
-int get_ship_quadrant_from_global(vector *global_pos, object *objp)
+int get_ship_quadrant_from_global(vec3d *global_pos, object *objp)
 {
-	vector	tpos;
-	vector	rotpos;
+	vec3d	tpos;
+	vec3d	rotpos;
 
 	vm_vec_sub(&tpos, global_pos, &objp->pos);
 	vm_vec_rotate(&rotpos, &tpos, &objp->orient);
@@ -1504,9 +1508,9 @@ void collide_ship_ship_sounds_init()
 }
 
 // determine what sound to play when two ships collide
-void collide_ship_ship_do_sound(vector *world_hit_pos, object *A, object *B, int player_involved)
+void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int player_involved)
 {
-	vector	rel_vel;
+	vec3d	rel_vel;
 	float		rel_speed;
 	int		light_collision=0;
 			
@@ -1576,7 +1580,7 @@ void do_kamikaze_crash(object *obj1, object *obj2)
 }
 
 // response when hit by fast moving cap ship
-void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_obj, float impulse, vector *normal)
+void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_obj, float impulse, vec3d *normal)
 
 {
 	// Move player out of the way of a BIG|HUGE ship warping in or out
@@ -1586,7 +1590,7 @@ void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_ob
 			if (big_speed > 3*big_obj->phys_info.max_vel.xyz.z) {
 				// push player away in direction perp to forward of big ship
 				// get perp vec
-				vector temp, perp;
+				vec3d temp, perp;
 				vm_vec_sub(&temp, &small_obj->pos, &big_obj->pos);
 				vm_vec_scale_add(&perp, &temp, &big_obj->orient.vec.fvec, -vm_vec_dotprod(&temp, &big_obj->orient.vec.fvec));
 				vm_vec_normalize_quick(&perp);
@@ -1675,7 +1679,7 @@ int collide_ship_ship( obj_pair * pair )
 		ship_ship_hit_info.heavy = HeavyOne;		// heavy object, generally slower moving
 		ship_ship_hit_info.light = LightOne;		// light object, generally faster moving
 
-		vector world_hit_pos;
+		vec3d world_hit_pos;
 
 		hit = ship_ship_check_collision(&ship_ship_hit_info, &world_hit_pos);
 
@@ -1694,7 +1698,7 @@ int collide_ship_ship( obj_pair * pair )
 				HUD_printf(XSTR( "Warpout sequence aborted.", 466));
 			}
 
-//			vector	rel_vec;
+//			vec3d	rel_vec;
 
 			//	Hack, following line would cause a null vector in vm_vec_normalized_dir below.  This should prevent it.
 			// FastOne->pos = FastOne->last_pos;
@@ -1734,7 +1738,7 @@ int collide_ship_ship( obj_pair * pair )
 //					if ( player_involved ) {
 //						object	*other_objp;
 //						float		dot;
-//						vector	v2h;
+//						vec3d	v2h;
 //
 //						if (A == Player_obj)
 //							other_objp = B;
@@ -1762,7 +1766,7 @@ int collide_ship_ship( obj_pair * pair )
 			// check if we should do force feedback stuff
 			if (player_involved && (ship_ship_hit_info.impulse > 0)) {
 				float scaler;
-				vector v;
+				vec3d v;
 
 				scaler = -ship_ship_hit_info.impulse / Player_obj->phys_info.mass * 300;
 				vm_vec_copy_normalize(&v, &world_hit_pos);
@@ -1773,7 +1777,7 @@ int collide_ship_ship( obj_pair * pair )
 			#ifndef NDEBUG
 			if ( !Collide_friendly ) {
 				if ( Ships[A->instance].team == Ships[B->instance].team ) {
-					vector	collision_vec, right_angle_vec;
+					vec3d	collision_vec, right_angle_vec;
 					vm_vec_normalized_dir(&collision_vec, &ship_ship_hit_info.hit_pos, &A->pos);
 					if (vm_vec_dot(&collision_vec, &A->orient.vec.fvec) > 0.999f){
 						right_angle_vec = A->orient.vec.rvec;
@@ -1887,10 +1891,10 @@ void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_in
 	// first find orientation of B relative to the normal it collides against.
 	// then find an approx hit location using the position hit on the bounding box
 
-	vector *r_heavy = &ship_ship_hit_info->r_heavy;
-	vector *r_light = &ship_ship_hit_info->r_light;
-	vector *heavy_collide_cm_pos = &ship_ship_hit_info->heavy_collision_cm_pos;
-	vector *light_collide_cm_pos = &ship_ship_hit_info->light_collision_cm_pos;
+	vec3d *r_heavy = &ship_ship_hit_info->r_heavy;
+	vec3d *r_light = &ship_ship_hit_info->r_light;
+	vec3d *heavy_collide_cm_pos = &ship_ship_hit_info->heavy_collision_cm_pos;
+	vec3d *light_collide_cm_pos = &ship_ship_hit_info->light_collision_cm_pos;
 
 	float core_rad = model_get_core_radius( Ships[light->instance].modelnum );
 
@@ -1899,7 +1903,7 @@ void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_in
 
 	// get light_collide_cm_pos
 	if ( !ship_ship_hit_info->submodel_rot_hit ) {
-		vector displacement;
+		vec3d displacement;
 		vm_vec_sub(&displacement, mc_info->p1, mc_info->p0);
 
 		*light_collide_cm_pos = *mc_info->p0;

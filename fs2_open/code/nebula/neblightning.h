@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:20 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -64,7 +67,7 @@ typedef struct storm_type {
 
 	char		bolt_types[MAX_BOLT_TYPES];	// indices into the lightning types	
 
-	vector	flavor;								// flavor of the storm
+	vec3d	flavor;								// flavor of the storm
 
 	int		min, max;							// min and max delay between bolt firing.	
 	int		min_count, max_count;			// # of bolts spewed
@@ -108,7 +111,7 @@ void nebl_level_init();
 void nebl_render_all();
 
 // create a lightning bolt - pass BOLT_TYPE_ANY to get a random bolt
-void nebl_bolt(int bolt_type, vector *start, vector *strike);
+void nebl_bolt(int bolt_type, vec3d *start, vec3d *strike);
 
 // process lightning (randomly generate bolts, etc, etc);
 void nebl_process();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:36 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  * static random functions.  Return "random" number based on integer inut
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:36  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:52  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -109,7 +112,7 @@ float static_randf_range(int num, float min, float max)
 }
 
 
-void static_randvec(int num, vector *vp)
+void static_randvec(int num, vec3d *vp)
 {
 	vp->xyz.x = static_randf(num) - 0.5f;
 	vp->xyz.y = static_randf(num+1) - 0.5f;
@@ -119,9 +122,9 @@ void static_randvec(int num, vector *vp)
 }
 
 // randomly perturb a vector around a given (normalized vector) or optional orientation matrix
-void static_rand_cone(int num, vector *out, vector *in, float max_angle, matrix *orient)
+void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *orient)
 {
-	vector t1, t2;
+	vec3d t1, t2;
 	matrix *rot;
 	matrix m;
 

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.1 $
- * $Date: 2005-03-25 06:45:12 $
- * $Author: wmcoolmon $
+ * $Revision: 1.2 $
+ * $Date: 2005-04-05 05:53:13 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/03/25 06:45:12  wmcoolmon
+ * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
+ *
  * Revision 2.21  2005/02/20 23:13:00  wmcoolmon
  * Trails stuff, moved ship docking func declaration so FRED could get to it.
  *
@@ -415,7 +418,7 @@ typedef struct waypoint_list {
 	char		name[NAME_LENGTH];
 	int		count;
 	char		flags[MAX_WAYPOINTS_PER_LIST];
-	vector	waypoints[MAX_WAYPOINTS_PER_LIST];
+	vec3d	waypoints[MAX_WAYPOINTS_PER_LIST];
 } waypoint_list;
 
 #define AI_GOAL_NONE				-1
@@ -499,7 +502,7 @@ typedef struct ai_class {
 //	This hook is used to extract information on the point such as whether it is
 //	protected by turrets.
 typedef struct pnode {
-	vector	pos;
+	vec3d	pos;
 	int		path_num;			//	path number from polymodel, ie in polymodel, paths[path_num]
 	int		path_index;			//	index in original model path of point, ie in model_path, use verts[path_index]
 } pnode;
@@ -525,8 +528,8 @@ typedef struct ai_info {
 	int		stealth_last_cheat_visible_stamp;	// when within 100m, always update pos and velocity, with error increasing for increasing time from last legal visible
 	int		stealth_last_visible_stamp;
 	float		stealth_sweep_box_size;
-	vector	stealth_last_pos;
-	vector	stealth_velocity;
+	vec3d	stealth_last_pos;
+	vec3d	stealth_velocity;
 
 	float		previous_dot_to_enemy;	//	dot(fvec, vec_to_enemy) last frame
 	float		target_time;			//	Amount of time continuously targeting this ship.
@@ -562,7 +565,7 @@ typedef struct ai_info {
 	int		path_objnum;			//	Object of interest.  It's model contains the path.
 	int		path_goal_obj_hash;	//	Hash value of goal object when global path created.
 	fix		path_next_create_time;	//	Next time at which we'll create a global path.
-	vector	path_create_pos;		//	Object's position at time of global path creation.
+	vec3d	path_create_pos;		//	Object's position at time of global path creation.
 	matrix	path_create_orient;	//	Object's orientation at time of global path creation.
 	int		mp_index;				//	Model path index.  Index in polymodel:model_paths
 	fix		path_next_check_time;	//	Last time checked to see if would collide with model.
@@ -583,7 +586,7 @@ typedef struct ai_info {
 	int		active_goal;			//	index of active goal, -1 if none, AI_ACTIVE_GOAL_DYNAMIC if dynamic (runtime-created) goal
 	int		goal_check_time;		// timer used for processing goals for this ai object
 
-	vector	last_predicted_enemy_pos;		//	Where he thought enemy was last time.
+	vec3d	last_predicted_enemy_pos;		//	Where he thought enemy was last time.
 	float		time_enemy_in_range;				//	Amount of time enemy continuously in "sight", near crosshair.
 	fix		last_attack_time;					//	Missiontime of last time this ship attacked its enemy.
 	fix		last_hit_time;						//	Missiontime of last time this ship was hit by anyone.
@@ -594,8 +597,8 @@ typedef struct ai_info {
 	fix		resume_goal_time;					//	Time at which to resume interrupted goal, if nothing else intervenes.
 	float		prev_accel;							//	Acceleration last frame.
 	float		prev_dot_to_goal;					//	dot of fvec to goal last frame, used to see if making progress towards goal.
-	vector	goal_point;							//	Used in AIM_SAFETY, AIM_STILL and in circling.
-	vector	prev_goal_point;					//	Previous location of goal point, used at least for evading.
+	vec3d	goal_point;							//	Used in AIM_SAFETY, AIM_STILL and in circling.
+	vec3d	prev_goal_point;					//	Previous location of goal point, used at least for evading.
 	float		ai_accuracy, ai_evasion, ai_courage, ai_patience;
 	union {
 	float		lead_scale;							//	Amount to lead current opponent by.
@@ -618,7 +621,7 @@ typedef struct ai_info {
 	int		danger_weapon_objnum;			//	Closest objnum of weapon fired at this ship.
 	int		danger_weapon_signature;		//	Signature of object danger_weapon_objnum.
 
-	vector	guard_vec;							//	vector to object being guarded, only used in AIS_GUARD_STATIC submode
+	vec3d	guard_vec;							//	vector to object being guarded, only used in AIS_GUARD_STATIC submode
 	int		nearest_locked_object;			//	Nearest locked object.
 	float		nearest_locked_distance;		//	Distance to nearest locked object.
 
@@ -657,19 +660,19 @@ typedef struct ai_info {
 	int		ok_to_target_timestamp;			//	Time at which this ship can dynamically target.
 
 	float		kamikaze_damage;					// some damage value used to produce a shockwave from a kamikaze ship
-	vector	big_attack_point;					//	Global point this ship is attacking on a big ship.
-	vector	big_attack_surface_normal;		// Surface normal at ship at big_attack_point;
+	vec3d	big_attack_point;					//	Global point this ship is attacking on a big ship.
+	vec3d	big_attack_surface_normal;		// Surface normal at ship at big_attack_point;
 	int		pick_big_attack_point_timestamp; //	timestamp at which to pick a new point to attack on a big ship.
 
 	//	Note: These three avoid_XX terms are shared between the code that avoids small (only player now) and large ships
 	//	The bits in ai_flags determine which is occurring.  AIF_AVOID_SMALL_SHIP, AIF_AVOID_BIG_SHIP
 	int		avoid_ship_num;					//	object index of small ship to avoid
-	vector	avoid_goal_point;					//	point to aim at when avoiding a ship
+	vec3d	avoid_goal_point;					//	point to aim at when avoiding a ship
 	fix		avoid_check_timestamp;			//	timestamp at which to next check for having to avoid ship
 
-	vector	big_collision_normal;			// Global normal of collision with big ship.  Helps find direction to fly away from big ship.  Set for each collision.
-	vector	big_recover_pos_1;				//	Global point to fly towards when recovering from collision with a big ship, stage 1.
-	vector	big_recover_pos_2;				//	Global point to fly towards when recovering from collision with a big ship, stage 2.
+	vec3d	big_collision_normal;			// Global normal of collision with big ship.  Helps find direction to fly away from big ship.  Set for each collision.
+	vec3d	big_recover_pos_1;				//	Global point to fly towards when recovering from collision with a big ship, stage 1.
+	vec3d	big_recover_pos_2;				//	Global point to fly towards when recovering from collision with a big ship, stage 2.
 	int		big_recover_timestamp;			//	timestamp at which it's OK to re-enter stage 1.
 
 	int		abort_rearm_timestamp;			//	time at which this rearm should be aborted in a multiplayer game.
@@ -678,7 +681,7 @@ typedef struct ai_info {
 	int		artillery_objnum;					// object currently being targeted for artillery lock/attack
 	int		artillery_sig;						// artillery object signature
 	float		artillery_lock_time;				// how long we've been locked onto this guy
-	vector	artillery_lock_pos;				// base position of the lock point on (in model's frame of reference)
+	vec3d	artillery_lock_pos;				// base position of the lock point on (in model's frame of reference)
 	float		lethality;							// measure of how dangerous ship is to enemy BIG|HUGE ships (likelyhood of targeting)
 } ai_info;
 
@@ -751,13 +754,13 @@ extern void ai_evade_object(object *evader, object *evaded, int priority);
 extern void ai_ignore_object(object *ignorer, object *ignored, int priority);
 extern void ai_ignore_wing(object *ignorer, int wingnum, int priority);
 extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int priority, int dock_type);
-extern void ai_stay_still(object *still_objp, vector *view_pos);
+extern void ai_stay_still(object *still_objp, vec3d *view_pos);
 extern void ai_set_default_behavior(object *obj, int classnum);
 extern void ai_do_default_behavior(object *obj);
 extern void ai_start_waypoints(object *objp, int waypoint_list_index, int wp_flags);
-extern void ai_ship_hit(object *objp_ship, object *hit_objp, vector *hitpos, int shield_quadrant, vector *hit_normal);
+extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_quadrant, vec3d *hit_normal);
 extern void ai_ship_destroy(int shipnum, int method);
-extern void ai_turn_towards_vector(vector *dest, object *objp, float frametime, float turn_time, vector *slide_vec, vector *rel_pos, float bank_override, int flags, vector *rvec = NULL, int sexp_flags = 0);
+extern void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float turn_time, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec = NULL, int sexp_flags = 0);
 extern void init_ai_object(int objnum);
 extern void ai_init(void);				//	Call this one to parse ai.tbl.
 extern void ai_level_init(void);		//	Call before each level to reset AI
@@ -770,14 +773,14 @@ extern void ai_update_danger_weapon(int objnum, int weapon_objnum);
 
 // called externally from MissionParse.cpp to position ships in wings upon arrival into the
 // mission.
-extern void get_absolute_wing_pos( vector *result_pos, object *leader_objp, int wing_index, int formation_object_flag);
+extern void get_absolute_wing_pos( vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag);
 
 
 //	Interface from goals code to AI.  Set ship to guard.  *objp guards *other_objp
 extern void ai_set_guard_object(object *objp, object *other_objp);
 extern void ai_set_evade_object(object *objp, object *other_objp);
 extern void ai_set_guard_wing(object *objp, int wingnum);
-extern void ai_warp_out(object *objp, vector *vp);
+extern void ai_warp_out(object *objp, vec3d *vp);
 extern void ai_attack_wing(object *attacker, int wingnum, int priority);
 extern void ai_deathroll_start(object *ship_obj);
 extern void ai_fly_in_formation(int wing_num);		//	Force wing to fly in formation.
@@ -794,15 +797,15 @@ extern void create_model_path(object *pl_objp, object *mobjp, int path_num, int 
 extern void ai_do_safety(object *objp);
 
 // used to get path info for fighter bay emerging and departing
-int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vector *pos, vector *fvec);
+int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vec3d *pos, vec3d *fvec);
 int ai_acquire_depart_path(object *pl_objp, int parent_objnum);
 
 // used by AiBig.cpp
-extern void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vector *player_pos, vector *enemy_pos);
+extern void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *player_pos, vec3d *enemy_pos);
 extern void accelerate_ship(ai_info *aip, float accel);
-extern void turn_away_from_point(object *objp, vector *point, float bank_override);
+extern void turn_away_from_point(object *objp, vec3d *point, float bank_override);
 extern float ai_endangered_by_weapon(ai_info *aip);
-extern void update_aspect_lock_information(ai_info *aip, vector *vec_to_enemy, float dist_to_enemy, float enemy_radius);
+extern void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dist_to_enemy, float enemy_radius);
 extern void ai_chase_ct();
 extern void ai_find_path(object *pl_objp, int objnum, int path_num, int exit_flag, int subsys_path=0);
 extern float ai_path();
@@ -811,15 +814,15 @@ extern int might_collide_with_ship(object *obj1, object *obj2, float dot_to_enem
 extern int ai_fire_primary_weapon(object *objp);	//changed to return weather it fired-Bobboau
 extern int ai_fire_secondary_weapon(object *objp, int priority1 = -1, int priority2 = -1);
 extern float ai_get_weapon_dist(ship_weapon *swp);
-extern void turn_towards_point(object *objp, vector *point, vector *slide_vec, float bank_override);
+extern void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override);
 extern int ai_maybe_fire_afterburner(object *objp, ai_info *aip);
-extern void set_predicted_enemy_pos(vector *predicted_enemy_pos, object *pobjp, object *eobjp, ai_info *aip);
+extern void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *eobjp, ai_info *aip);
 
 extern int is_instructor(object *objp);
 extern int find_enemy(int objnum, float range, int max_attackers, int except = 0);
 
 float ai_get_weapon_speed(ship_weapon *swp);
-void set_predicted_enemy_pos_turret(vector *predicted_enemy_pos, vector *gun_pos, object *pobjp, vector *enemy_pos, vector *enemy_vel, float weapon_speed, float time_enemy_in_range);
+void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, float weapon_speed, float time_enemy_in_range);
 
 // function to change rearm status for ai ships (called from sexpression code)
 extern void ai_set_rearm_status( int team, int new_status );
@@ -849,6 +852,6 @@ void process_subobjects(int objnum);
 //From aicode.cpp
 // Goober5000
 //	Move to a position relative to a dock bay using thrusters.
-extern float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, vector *docker_point_param = NULL, vector *dockee_point_param = NULL, float *rotating_submodel_tangential_velocity = NULL);
+extern float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, vec3d *docker_point_param = NULL, vec3d *dockee_point_param = NULL, float *rotating_submodel_tangential_velocity = NULL);
 
 #endif

@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.h $
- * $Revision: 2.2 $
- * $Date: 2005-03-03 06:05:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * New docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/03/03 06:05:30  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.1  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -56,8 +59,8 @@ typedef struct dock_function_info {
 		double		double_value;
 
 		object*		objp_value;
-		vector*		vecp_value;
-		vector*		vecp_value2;
+		vec3d*		vecp_value;
+		vec3d*		vecp_value2;
 	} parameter_variables, maintained_variables;
 
 
@@ -95,12 +98,12 @@ object *dock_find_object_at_dockpoint(object *objp, int dockpoint);
 int dock_find_dockpoint_used_by_object(object *objp, object *other_objp);
 
 // calculate the center of all docked objects (returned in dest)
-void dock_calc_docked_center(vector *dest, object *objp);
+void dock_calc_docked_center(vec3d *dest, object *objp);
 
 // calculate the center of mass of all docked objects (returned in dest)
 // currently the game assumes the center of mass is the center of an object; this will need to
 // be fixed eventually (though this function does weight the object masses properly)
-void dock_calc_docked_center_of_mass(vector *dest, object *objp);
+void dock_calc_docked_center_of_mass(vec3d *dest, object *objp);
 
 // sum the masses of all directly or indirectly docked ships
 float dock_calc_total_docked_mass(object *objp);

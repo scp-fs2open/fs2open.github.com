@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.9 $
- * $Date: 2005-03-25 06:57:37 $
- * $Author: wmcoolmon $
+ * $Revision: 1.10 $
+ * $Date: 2005-04-05 05:53:23 $
+ * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/03/25 06:57:37  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 1.8  2005/03/24 23:29:33  taylor
  * (re)move some uneeded variables to fix compiler warnings
  *
@@ -99,10 +102,10 @@ extern int Radar_static_looping;					// id for looping radar static sound
 
 extern hud_frames Radar_gauge;
 
-vector orb_ring_yz[25];
-vector orb_ring_xy[25];
-vector orb_ring_xz[25];
-vector vec_extents[]=
+vec3d orb_ring_yz[25];
+vec3d orb_ring_xy[25];
+vec3d orb_ring_xz[25];
+vec3d vec_extents[]=
 {
 	{1,0,0},
 	{0,1,0},
@@ -131,9 +134,9 @@ void radar_init_orb()
 		}
 	}
 
-	memset(orb_ring_xy,25*sizeof(vector),0);
-	memset(orb_ring_yz,25*sizeof(vector),0);
-	memset(orb_ring_xz,25*sizeof(vector),0);
+	memset(orb_ring_xy,25*sizeof(vec3d),0);
+	memset(orb_ring_yz,25*sizeof(vec3d),0);
+	memset(orb_ring_xz,25*sizeof(vec3d),0);
 	
 	for (i=0; i < 25; i++)
 	{
@@ -206,12 +209,12 @@ int radar_blip_color_orb(object *objp)
 
 void radar_plot_object_orb( object *objp )	
 {
-	vector	pos, tempv;
+	vec3d	pos, tempv;
 	float		dist, max_radar_dist;
 	//float rscale, zdist;
 	//int		xpos, ypos;
 	int color=0;
-	vector	world_pos = objp->pos;	
+	vec3d	world_pos = objp->pos;	
 	float		awacs_level;
 
 #ifndef NO_NETWORK
@@ -439,10 +442,10 @@ void radar_frame_init_orb()
 	Large_blip_offset_y = -h/2;
 }
 
-void radar_orb_draw_contact(vector *pnt, int rad)
+void radar_orb_draw_contact(vec3d *pnt, int rad)
 {
 	vertex verts[2];
-	vector p;
+	vec3d p;
 
 	p=*pnt;
 	vm_vec_normalize(&p);
@@ -482,7 +485,7 @@ void radar_blip_draw_distorted_orb(blip *b)
 {
 	float scale;
 	float dist=vm_vec_normalize(&b->position);
-	vector out;
+	vec3d out;
 	float distortion_angle=20;
 	
 	// maybe alter the effect if EMP is active
@@ -507,7 +510,7 @@ void radar_blip_draw_flicker_orb(blip *b)
 	int flicker_index;
 
 	float dist=vm_vec_normalize(&b->position);
-	vector out;
+	vec3d out;
 	float distortion_angle=20;
 
 	if ( (b-Blips) & 1 ) {
@@ -658,7 +661,7 @@ void radar_orb_setup_view()
 	hud_save_restore_camera_data(1);
 
 	//draw the guide circles
-	static vector eye={0,0,-2.25};
+	static vec3d eye={0,0,-2.25};
 	g3_end_frame();
 
 	int w,h;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-01-29 08:05:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:16 $
+ * $Author: taylor $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/01/29 08:05:31  wmcoolmon
+ * Update to work with optimized shader func
+ *
  * Revision 2.6  2004/07/26 20:47:30  Kazan
  * remove MCD complete
  *
@@ -155,8 +158,8 @@ typedef struct {
 } help_line;
 
 typedef struct {
-	vector vtx[HELP_MAX_PLINE_VERTICES];
-	vector *pvtx[HELP_MAX_PLINE_VERTICES];
+	vec3d vtx[HELP_MAX_PLINE_VERTICES];
+	vec3d *pvtx[HELP_MAX_PLINE_VERTICES];
 	int vtxcount;
 } help_pline;
 

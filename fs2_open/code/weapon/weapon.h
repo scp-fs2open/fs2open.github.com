@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/04/02 21:34:08  phreak
+ * put First_secondary_index back in so FRED can compile.
+ * The weapons list is also sorted whenever all loading is done so lasers and beams always
+ * come before missiles.  FRED's loadout code needs this behavior to stick.
+ *
  * Revision 2.45  2005/03/25 06:57:38  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -549,7 +554,7 @@ typedef struct weapon {
 	int		weapon_flags;					//	bit flags defining behavior, see WF_xxxx
 	object*	homing_object;					//	object this weapon is homing on.
 	ship_subsys*	homing_subsys;			// subsystem this weapon is homing on
-	vector	homing_pos;						// world position missile is homing on
+	vec3d	homing_pos;						// world position missile is homing on
 	short		swarm_index;					// index into swarm missile info, -1 if not WIF_SWARM
 	int		missile_list_index;			// index for missiles into Missile_obj_list, -1 weapon not missile
 	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
@@ -564,7 +569,7 @@ typedef struct weapon {
 	float		thruster_glow_noise;				// Noise for current frame
 
 	int		pick_big_attack_point_timestamp;	//	Timestamp at which to pick a new point to attack.
-	vector	big_attack_point;				//	Target-relative location of attack point.
+	vec3d	big_attack_point;				//	Target-relative location of attack point.
 
 	int		cmeasure_ignore_objnum;		//	Ignoring this countermeasure.  It's failed to attract this weapon.
 	int		cmeasure_chase_objnum;		//	Chasing this countermeasure.  Don't maybe ignore in future.
@@ -587,7 +592,7 @@ typedef struct weapon {
 	int lssm_warp_idx;			//warphole index
 	float lssm_warp_time;		//length of time warphole stays open		
 	float lssm_warp_pct;		//how much of the warphole's life should be dedicated to stage 2
-	vector lssm_target_pos;
+	vec3d lssm_target_pos;
 
 } weapon;
 
@@ -939,22 +944,22 @@ int weapon_create_group_id();
 
 // Passing a group_id of -1 means it isn't in a group.  See weapon_create_group_id for more 
 // help on weapon groups.
-int weapon_create( vector * pos, matrix * orient, int weapon_type, int parent_obj, int secondary_flag, int group_id=-1, int is_locked = 0);
+int weapon_create( vec3d * pos, matrix * orient, int weapon_type, int parent_obj, int secondary_flag, int group_id=-1, int is_locked = 0);
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
 
 // for weapons flagged as particle spewers, spew particles. wheee
 void weapon_maybe_spew_particle(object *obj);
 
 
-void weapon_hit( object * weapon_obj, object * other_obj, vector * hitpos );
+void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos );
 int weapon_name_lookup(char *name);
 void spawn_child_weapons( object *objp );
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
 void weapon_detonate(object *objp);
 
-void	weapon_area_apply_blast(vector *force_apply_pos, object *ship_objp, vector *blast_pos, float blast, int make_shockwave);
-int	weapon_area_calc_damage(object *objp, vector *pos, float inner_rad, float outer_rad, float max_blast, float max_damage,
+void	weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave);
+int	weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage,
 										float *blast, float *damage, float limit);
 
 void	missile_obj_list_rebuild();	// called by save/restore code only
@@ -974,12 +979,12 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 // call to get the "color" of the laser at the given moment (since glowing lasers can cycle colors)
 void weapon_get_laser_color(color *c, object *objp);
 
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vector *hitpos);
+void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos);
 
 // return a scale factor for damage which should be applied for 2 collisions
 float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target);
 
 // return handle to explosion ani
-int weapon_get_expl_handle(int weapon_expl_index, vector *pos, float size);
+int weapon_get_expl_handle(int weapon_expl_index, vec3d *pos, float size);
 
 #endif

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.62 $
- * $Date: 2005-03-24 23:36:14 $
+ * $Revision: 2.63 $
+ * $Date: 2005-04-05 05:53:20 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/03/24 23:36:14  taylor
+ * fix compiler warnings with mismatched types and unused variables
+ * cleanup some debug messages so they can be turned off if needed
+ * get rid of extra strstr() check for thrusters since it should never get that far anyway
+ * page_in/page_out of model glows should be better now
+ * removed a bunch of unneeded casts and get type specific math functions right
+ *
  * Revision 2.61  2005/03/10 08:00:10  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -1442,8 +1449,8 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 // used in collision code to check if submode rotates too far
 float get_submodel_delta_angle(submodel_instance_info *sii)
 {
-	vector diff;
-	vm_vec_sub(&diff, (vector*)&sii->angs, (vector*)&sii->prev_angs);
+	vec3d diff;
+	vm_vec_sub(&diff, (vec3d*)&sii->angs, (vec3d*)&sii->prev_angs);
 
 	// find the angle
 	float delta_angle = vm_vec_mag(&diff);
@@ -1456,7 +1463,7 @@ float get_submodel_delta_angle(submodel_instance_info *sii)
 	return delta_angle;
 }
 
-void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, vector *pnt, char *props, char *subobj_name, int model_num )
+void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, vec3d *pnt, char *props, char *subobj_name, int model_num )
 {
 	int i;
 	model_subsystem *subsystemp;
@@ -1571,7 +1578,7 @@ void create_family_tree(polymodel *obj)
 	}
 }
 
-void model_calc_bound_box( vector *box, vector *big_mn, vector *big_mx)
+void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
 {
 	box[0].xyz.x = big_mn->xyz.x; box[0].xyz.y = big_mn->xyz.y; box[0].xyz.z = big_mn->xyz.z;
 	box[1].xyz.x = big_mx->xyz.x; box[1].xyz.y = big_mn->xyz.y; box[1].xyz.z = big_mn->xyz.z;
@@ -2329,7 +2336,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 //turret_gun_sobj
 
 					if ( (n_subsystems == 0) || (snum == n_subsystems) ) {
-						vector bogus;
+						vec3d bogus;
 
 						nprintf(("Warning", "Turret object not found for turret firing point in model %s\n", model_filename));
 						cfread_vector( &bogus, fp );
@@ -2345,7 +2352,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				char name[MAX_NAME_LEN], props[MAX_PROP_LEN], *p;
 				int n_specials;
 				float radius;
-				vector pnt;
+				vec3d pnt;
 
 				n_specials = cfread_int(fp);		// get the number of special subobjects we have
 				for (i = 0; i < n_specials; i++) {
@@ -2536,7 +2543,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							pm->ins[idx].u[idx2][idx3] = cfread_float(fp);
 							pm->ins[idx].v[idx2][idx3] = cfread_float(fp);
 						}
-						vector tempv;
+						vec3d tempv;
 
 						//get three points (rotated) and compute normal
 
@@ -3048,10 +3055,10 @@ polymodel * model_get(int model_num)
 // then it starts from the root object.   If inc_children is non-zero, 
 // then this will recurse and find the bounding box for all children
 // also.
-void model_find_bound_box_3d(int model_num,int submodel_num, int inc_children, matrix *orient, vector * pos, vector * box )
+void model_find_bound_box_3d(int model_num,int submodel_num, int inc_children, matrix *orient, vec3d * pos, vec3d * box )
 {
 	polymodel * pm;
-	vector to_root_xlat;
+	vec3d to_root_xlat;
 	matrix to_root_rotate;
 	int n_steps, steps[16];
 	int tmp_sobj;
@@ -3084,7 +3091,7 @@ void model_find_bound_box_3d(int model_num,int submodel_num, int inc_children, m
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
-int model_find_2d_bound_min(int model_num,matrix *orient, vector * pos,int *x1, int *y1, int *x2, int *y2 )
+int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
 	polymodel * po;
 	int n_valid_pts;
@@ -3148,7 +3155,7 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vector * pos,int *x1, 
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
-int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vector * pos,int *x1, int *y1, int *x2, int *y2 )
+int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
 	polymodel * po;
 	int n_valid_pts;
@@ -3212,7 +3219,7 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vecto
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
-int model_find_2d_bound(int model_num,matrix *orient, vector * pos,int *x1, int *y1, int *x2, int *y2 )
+int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
 	float t,w,h;
 	vertex pnt;
@@ -3252,7 +3259,7 @@ int model_find_2d_bound(int model_num,matrix *orient, vector * pos,int *x1, int 
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
-int subobj_find_2d_bound(float radius ,matrix *orient, vector * pos,int *x1, int *y1, int *x2, int *y2 )
+int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
 	float t,w,h;
 	vertex pnt;
@@ -3291,9 +3298,9 @@ int subobj_find_2d_bound(float radius ,matrix *orient, vector * pos,int *x1, int
 // Given a vector that is in sub_model_num's frame of
 // reference, and given the object's orient and position,
 // return the vector in the model's frame of reference.
-void model_find_obj_dir(vector *w_vec, vector *m_vec, object *ship_obj, int sub_model_num)
+void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_model_num)
 {
-	vector tvec, vec;
+	vec3d tvec, vec;
 	matrix m;
 	int mn;
 
@@ -3320,10 +3327,10 @@ void model_find_obj_dir(vector *w_vec, vector *m_vec, object *ship_obj, int sub_
 
 // Given a point (pnt) that is in sub_model_num's frame of
 // reference, return the point in in the object's frame of reference
-void model_rot_sub_into_obj(vector * outpnt, vector *mpnt,polymodel *pm, int sub_model_num)
+void model_rot_sub_into_obj(vec3d * outpnt, vec3d *mpnt,polymodel *pm, int sub_model_num)
 {
-	vector pnt;
-	vector tpnt;
+	vec3d pnt;
+	vec3d tpnt;
 	matrix m;
 	int mn;
 
@@ -3346,7 +3353,7 @@ void model_rot_sub_into_obj(vector * outpnt, vector *mpnt,polymodel *pm, int sub
 
 
 // Given a rotating submodel, find the ship and world axes or rotatation.
-void model_get_rotating_submodel_axis(vector *model_axis, vector *world_axis, int modelnum, int submodel_num, object *obj)
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int modelnum, int submodel_num, object *obj)
 {
 	polymodel *pm = model_get(modelnum);
 
@@ -3757,7 +3764,7 @@ void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii)
 void model_make_turrent_matrix(int model_num, model_subsystem * turret )
 {
 	polymodel * pm;
-	vector fvec, uvec, rvec;
+	vec3d fvec, uvec, rvec;
 
 	pm = model_get(model_num);
 	bsp_info * sm = &pm->submodel[turret->turret_gun_sobj];
@@ -3800,7 +3807,7 @@ void model_make_turrent_matrix(int model_num, model_subsystem * turret )
 // Tries to move joints so that the turrent points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *turret1, angles *turret2, vector *pos, vector *dst)
+int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *turret1, angles *turret2, vec3d *pos, vec3d *dst)
 {
 	polymodel * pm;
 
@@ -3829,8 +3836,8 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 // at the gun point.
 #if 0
 	{
-		vector tmp;
-		vector tmp1;
+		vec3d tmp;
+		vec3d tmp1;
 		vertex dpnt1, dpnt2;
 
 		model_clear_instance(model_num);
@@ -3873,10 +3880,10 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	// rotate the dest point into the turret gun normal's frame of
 	// reference, but not using the turret's angles.
 	// Call this vector of_dst
-	vector of_dst;							
+	vec3d of_dst;							
 	matrix world_to_turret_matrix;		// converts world coordinates to turret's FOR
-	vector world_to_turret_translate;	// converts world coordinates to turret's FOR
-	vector tempv;
+	vec3d world_to_turret_translate;	// converts world coordinates to turret's FOR
+	vec3d tempv;
 
 	vm_vec_unrotate( &tempv, &sm_parent->offset, orient);
 	vm_vec_add( &world_to_turret_translate, pos, &tempv );
@@ -3917,7 +3924,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 
 // Goober5000
 // For a submodel, return its overall offset from the main model.
-void model_find_submodel_offset(vector *outpnt, int model_num, int sub_model_num)
+void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_model_num)
 {
 	int mn;
 	polymodel *pm = model_get(model_num);
@@ -3937,10 +3944,10 @@ void model_find_submodel_offset(vector *outpnt, int model_num, int sub_model_num
 // Given a point (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-void model_find_world_point(vector * outpnt, vector *mpnt,int model_num,int sub_model_num, matrix * objorient, vector * objpos )
+void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_model_num, matrix * objorient, vec3d * objpos )
 {
-	vector pnt;
-	vector tpnt;
+	vec3d pnt;
+	vec3d tpnt;
 	matrix m;
 	int mn;
 	polymodel *pm = model_get(model_num);
@@ -3974,11 +3981,11 @@ void model_find_world_point(vector * outpnt, vector *mpnt,int model_num,int sub_
 // submodel_num - submodel in whose RF we're trying to find the corresponding world point
 // orient - orient matrix of ship
 // pos - pos vector of ship
-void world_find_model_point(vector *out, vector *world_pt, polymodel *pm, int submodel_num, matrix *orient, vector *pos)
+void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos)
 {
 	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
 
-	vector tempv1, tempv2;
+	vec3d tempv1, tempv2;
 	matrix m;
 
 	// get into ship RF
@@ -4082,10 +4089,10 @@ void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_subm
 // Given a direction (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-void model_find_world_dir(vector * out_dir, vector *in_dir,int model_num, int sub_model_num, matrix * objorient, vector * objpos )
+void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos )
 {
-	vector pnt;
-	vector tpnt;
+	vec3d pnt;
+	vec3d tpnt;
 	matrix m;
 	int mn;
 	polymodel *pm = model_get(model_num);
@@ -4236,9 +4243,9 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 // Finds a point on the rotation axis of a submodel, used in collision, generally find rotational velocity
 void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int submodel_num)
 {
-	vector axis;
-	vector *mpoint1, *mpoint2;
-	vector p1, v1, p2, v2, int1;
+	vec3d axis;
+	vec3d *mpoint1, *mpoint2;
+	vec3d p1, v1, p2, v2, int1;
 
 	polymodel *pm = model_get(model_num);
 	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT);
@@ -4271,12 +4278,12 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 	angles copy_angs = pm->submodel[submodel_num].angs;
 
 	// find two points rotated into model RF when angs set to 0
-	vm_vec_copy_scale((vector*)&pm->submodel[submodel_num].angs, &axis, 0.0f);
+	vm_vec_copy_scale((vec3d*)&pm->submodel[submodel_num].angs, &axis, 0.0f);
 	model_find_world_point(&p1, mpoint1, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 	model_find_world_point(&p2, mpoint2, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
 	// find two points rotated into model RF when angs set to PI
-	vm_vec_copy_scale((vector*)&pm->submodel[submodel_num].angs, &axis, PI);
+	vm_vec_copy_scale((vec3d*)&pm->submodel[submodel_num].angs, &axis, PI);
 	model_find_world_point(&v1, mpoint1, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 	model_find_world_point(&v2, mpoint2, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
@@ -4301,7 +4308,7 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 
 
 // Adds an electrical arcing effect to a submodel
-void model_add_arc(int model_num, int sub_model_num, vector *v1, vector *v2, int arc_type )
+void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type )
 {
 	polymodel * pm;
 
@@ -4472,7 +4479,7 @@ void swap_bsp_defpoints(ubyte * p)
 	w(p+12) = n_norms;
 
 	ubyte * normcount = p+20;
-	vector *src = vp(p+offset);
+	vec3d *src = vp(p+offset);
 
 	Assert( nverts < MAX_POLYGON_VECS );
 	// Assert( nnorms < MAX_POLYGON_NORMS );
@@ -4498,8 +4505,8 @@ void swap_bsp_tmappoly( polymodel * pm, ubyte * p )
 {
 	int i, nv;
 	model_tmap_vert *verts;
-	vector * normal = vp(p+8);	//tigital
-	vector * center = vp(p+20);
+	vec3d * normal = vp(p+8);	//tigital
+	vec3d * center = vp(p+20);
 	float radius = INTEL_FLOAT( &fl(p+32) );
 
 	fl(p+32) = radius;
@@ -4529,7 +4536,7 @@ void swap_bsp_tmappoly( polymodel * pm, ubyte * p )
 
 	if ( pm->version < 2003 )	{
 		// Set the "normal_point" part of field to be the center of the polygon
-		vector center_point;
+		vec3d center_point;
 		vm_vec_zero( &center_point );
 
 		for (i=0;i<nv;i++)	{
@@ -4558,8 +4565,8 @@ void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 {
 	int i, nv;
 	short *verts;
-	vector * normal = vp(p+8);	//tigital
-	vector * center = vp(p+20);
+	vec3d * normal = vp(p+8);	//tigital
+	vec3d * center = vp(p+20);
 
 	float radius = INTEL_FLOAT( &fl(p+32) );
 
@@ -4584,7 +4591,7 @@ void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 
 	if ( pm->version < 2003 )	{
 		// Set the "normal_point" part of field to be the center of the polygon
-		vector center_point;
+		vec3d center_point;
 		vm_vec_zero( &center_point );
 
 		for (i=0;i<nv;i++)	{
@@ -4623,8 +4630,8 @@ void swap_bsp_sortnorms( polymodel * pm, ubyte * p )
 	w(p+48) = postlist;
 	w(p+52) = onlist;
 
-	vector * normal = vp(p+8);	//tigital
-	vector * center = vp(p+20);
+	vec3d * normal = vp(p+8);	//tigital
+	vec3d * center = vp(p+20);
 	int  tmp = INTEL_INT( w(p+32) );
 	
 	w(p+32) = tmp;
@@ -4636,8 +4643,8 @@ void swap_bsp_sortnorms( polymodel * pm, ubyte * p )
 	center->xyz.y = INTEL_FLOAT( &center->xyz.y );
 	center->xyz.z = INTEL_FLOAT( &center->xyz.z );
 
-	vector * bmin = vp(p+56);	//tigital
-	vector * bmax = vp(p+68);
+	vec3d * bmin = vp(p+56);	//tigital
+	vec3d * bmax = vp(p+68);
 
 	bmin->xyz.x = INTEL_FLOAT( &bmin->xyz.x );
 	bmin->xyz.y = INTEL_FLOAT( &bmin->xyz.y );
@@ -4659,8 +4666,8 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 #if BYTE_ORDER == BIG_ENDIAN
 	ubyte *p = (ubyte *)model_ptr;
 	int chunk_type, chunk_size;
-	vector * min;
-	vector * max;
+	vec3d * min;
+	vec3d * max;
 
 	chunk_type = INTEL_INT( w(p) );	//tigital
 	chunk_size = INTEL_INT( w(p+4) );

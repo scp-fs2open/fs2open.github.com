@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-03-25 06:57:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.26 $
+ * $Date: 2005-04-05 05:53:15 $
+ * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/03/25 06:57:33  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.24  2005/03/19 18:02:33  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -235,18 +238,18 @@ extern int Cmdline_3dwarp;
 DCF(norm,"normalize a zero length vector")
 {
 	if ( Dc_command )	{
-		vector tmp = vmd_zero_vector;
+		vec3d tmp = vmd_zero_vector;
 		vm_vec_normalize(&tmp);
 	}
 }
 
 void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 {
-	vector norm;
+	vec3d norm;
 	vertex *vertlist[3];
 
-	vm_vec_perp(&norm,(vector *)&v1->x,(vector *)&v2->x,(vector *)&v3->x);
-	if ( vm_vec_dot(&norm,(vector *)&v1->x ) >= 0.0 )	{
+	vm_vec_perp(&norm,(vec3d *)&v1->x,(vec3d *)&v2->x,(vec3d *)&v3->x);
+	if ( vm_vec_dot(&norm,(vec3d *)&v1->x ) >= 0.0 )	{
 		vertlist[0] = v3;
 		vertlist[1] = v2;
 		vertlist[2] = v1;
@@ -264,7 +267,7 @@ void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 #define wR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
 #define wP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 
-void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
+void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
 {
 	static flash_ball warp_ball(20, .1f,.25f, &vmd_z_vector, &vmd_zero_vector, 4.0f, 0.5f);
 
@@ -277,12 +280,12 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 
 	float Grid_depth = radius/2.5f;
 
-	vector center;
+	vec3d center;
 
 	vm_vec_scale_add( &center, pos, &orient->vec.fvec, -(max_radius/2.5f)/3.0f );
 
 //	Warp_Map = texture_bitmap_num;//sets the warp map, and thus sets the interp flag for this being a warpin effect
-	vector vecs[5];
+	vec3d vecs[5];
 	vertex verts[5];
 
 	vecs[4] = center;		//this is for the warp glow-Bobboau
@@ -370,7 +373,7 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 		gr_set_cull(0);
 
 		matrix m;
-		vector ray_dir;
+		vec3d ray_dir;
 		vm_vector_2_matrix(&m, &orient->vec.fvec, NULL, NULL);//this is the beam things that will come outof the point-Bobboau
 		float angle = ANG_TO_RAD(135.0f);
 		if(life_percent < 0.2f){
@@ -379,13 +382,13 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 		for(int idx=0; idx<1; idx++){
 			vm_vec_random_cone(&ray_dir, &orient->vec.fvec, angle, &m);
 			mprintf(( "ray direction %f %f %f, orentation %f %f %f, angle %f\n",ray_dir.xyz.x, ray_dir.xyz.y, ray_dir.xyz.z, orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, orient->vec.fvec.xyz.z, angle));
-			vector p_temp = *pos;
+			vec3d p_temp = *pos;
 			vm_vec_scale_add(&p_temp, pos, &ray_dir, (max_radius * 10 * frand_range(0.75f, 0.9f)));
 			mprintf(( "end %f %f %f",p_temp.xyz.x, p_temp.xyz.y, p_temp.xyz.z));
 			
 			vertex h1[4];				// halves of a beam section	
 			vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
-			vector top1, bottom1, top2, bottom2;
+			vec3d top1, bottom1, top2, bottom2;
 
 			beam_calc_facing_pts(&top1, &bottom1, &ray_dir, pos, 1.0f, 1.0f);	
 			beam_calc_facing_pts(&top2, &bottom2, &ray_dir, &p_temp, 1.0f, 1.0f);	

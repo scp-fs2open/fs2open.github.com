@@ -9,16 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.27 $
- * $Date: 2005-03-10 08:00:04 $
+ * $Revision: 2.28 $
+ * $Date: 2005-04-05 05:53:16 $
  * $Author: taylor $
- * $Revision: 2.27 $
- * $Date: 2005-03-10 08:00:04 $
+ * $Revision: 2.28 $
+ * $Date: 2005-04-05 05:53:16 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/03/10 08:00:04  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.26  2005/03/07 13:10:20  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -426,7 +435,7 @@ typedef struct ccodes {
 
 struct vertex;
 
-typedef struct vector {
+typedef struct vec3d {
 	union {
 		struct {
 			float x,y,z;
@@ -435,7 +444,7 @@ typedef struct vector {
 	};
 	inline void operator= (vertex&vert);
 	inline void set_screen_vert(vertex&vert);
-} vector;
+} vec3d;
 
 // A vector referenced as an array
 typedef struct vectora {
@@ -458,7 +467,7 @@ typedef struct angles {
 typedef struct matrix {
 	union {
 		struct {
-			vector	rvec, uvec, fvec;
+			vec3d	rvec, uvec, fvec;
 		} vec;
 		float a2d[3][3];
 		float a1d[9];
@@ -475,23 +484,23 @@ typedef struct vertex {
 	float		x, y, z;				// world space position
 	float		sx, sy, sw;			// screen space position (sw == 1/z)
 	float		u, v, u2, v2, u3, v3, u4, v4;					// texture position
-	vector		real_pos;			// _real_ world position
+	vec3d		real_pos;			// _real_ world position
 	ubyte spec_a, spec_r, spec_b, spec_g;	//specular highlights -Bobboau
 	ubyte		r, g, b, a;			// color.  Use b for darkening;
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
 	ubyte		flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.
 	ubyte		pad[2];				// pad structure to be 4 byte aligned.
-	void operator=(vector&vec){
-		memcpy(&x,&vec, sizeof(vector));
+	void operator=(vec3d&vec){
+		memcpy(&x,&vec, sizeof(vec3d));
 	}
 } vertex;
 
-inline void vector::operator= (vertex&vert){
-	memcpy(this,&vert.x,sizeof(vector));
+inline void vec3d::operator= (vertex&vert){
+	memcpy(this,&vert.x,sizeof(vec3d));
 }
 //set the vector to the vertex screen position
-inline void vector::set_screen_vert(vertex&vert){
-	memcpy(this,&vert.sx,sizeof(vector));
+inline void vec3d::set_screen_vert(vertex&vert){
+	memcpy(this,&vert.sx,sizeof(vec3d));
 }
 
 extern int spec;

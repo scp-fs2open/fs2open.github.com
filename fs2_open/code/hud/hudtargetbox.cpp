@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-03-27 12:28:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.49 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/03/27 12:28:33  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.47  2005/03/25 06:57:34  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -786,7 +790,7 @@ void hud_render_target_background()
 //
 // Common set up for the 3d code for drawing the target monitor, for ships/debris/missiles
 //
-void hud_render_target_setup(vector *camera_eye, matrix *camera_orient, float zoom)
+void hud_render_target_setup(vec3d *camera_eye, matrix *camera_orient, float zoom)
 {
 	// JAS: g3_start_frame uses clip_width and clip_height to determine the
 	// size to render to.  Normally, you would set this by using gr_set_clip,
@@ -926,10 +930,10 @@ void hud_render_target_jump_node(object *target_objp)
 	}
 
 	char			outstr[256];
-	vector		obj_pos = {0.0f,0.0f,0.0f};
-	vector		camera_eye = {0.0f,0.0f,0.0f};
+	vec3d		obj_pos = {0.0f,0.0f,0.0f};
+	vec3d		camera_eye = {0.0f,0.0f,0.0f};
 	matrix		camera_orient = IDENTITY_MATRIX;
-	vector		orient_vec, up_vector;
+	vec3d		orient_vec, up_vector;
 	float			factor, dist;
 	int			hx, hy, w, h;
 
@@ -982,11 +986,11 @@ void hud_render_target_jump_node(object *target_objp)
 void hud_render_target_asteroid(object *target_objp)
 {
 #ifndef FS2_DEMO
-	vector		obj_pos = {0.0f,0.0f,0.0f};
-	vector		camera_eye = {0.0f,0.0f,0.0f};
+	vec3d		obj_pos = {0.0f,0.0f,0.0f};
+	vec3d		camera_eye = {0.0f,0.0f,0.0f};
 	matrix		camera_orient = IDENTITY_MATRIX;
 	asteroid		*asteroidp;
-	vector		orient_vec, up_vector;
+	vec3d		orient_vec, up_vector;
 	int			target_team;
 	float			time_to_impact, factor;	
 	int			subtype;
@@ -1352,7 +1356,7 @@ void hud_blit_target_integrity(int disabled,int force_obj_num)
 int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 {
 	ship_subsys	*subsys;
-	vector		subobj_pos;
+	vec3d		subobj_pos;
 	vertex		subobj_vertex;
 	int			rval = -1;
 	polymodel	*pm;
@@ -1374,7 +1378,7 @@ int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 		if (target_objp->type == OBJ_SHIP) {
 			pm = model_get(Ships[target_objp->instance].modelnum);
 			if (pm->flags & PM_FLAG_AUTOCEN) {
-				vector temp, delta;
+				vec3d temp, delta;
 				vm_vec_copy_scale(&temp, &pm->autocenter, -1.0f);
 				vm_vec_unrotate(&delta, &temp, &target_objp->orient);
 				vm_vec_add2(&subobj_pos, &delta);
@@ -1453,12 +1457,12 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 // Get the eye position for an object at the origin, called from hud_render_target_ship()
 // input:	eye_pos		=>	Global pos for eye (output parameter)
 //			orient		=>	Orientation of object at the origin
-void hud_targetbox_get_eye(vector *eye_pos, matrix *orient, int ship_num)
+void hud_targetbox_get_eye(vec3d *eye_pos, matrix *orient, int ship_num)
 {
 	ship		*shipp;
 	polymodel	*pm;
 	eye			*ep;
-	vector		origin = {0.0f, 0.0f, 0.0f};
+	vec3d		origin = {0.0f, 0.0f, 0.0f};
 
 	shipp = &Ships[ship_num];
 	pm = model_get( shipp->modelnum );
@@ -1480,12 +1484,12 @@ void hud_targetbox_get_eye(vector *eye_pos, matrix *orient, int ship_num)
 //
 void hud_render_target_ship(object *target_objp)
 {
-	vector		obj_pos = {0.0f,0.0f,0.0f};
-	vector		camera_eye = {0.0f,0.0f,0.0f};
+	vec3d		obj_pos = {0.0f,0.0f,0.0f};
+	vec3d		camera_eye = {0.0f,0.0f,0.0f};
 	matrix		camera_orient = IDENTITY_MATRIX;
 	ship		*target_shipp;
 	ship_info	*target_sip;
-	vector		orient_vec, up_vector;
+	vec3d		orient_vec, up_vector;
 	int			sx, sy;
 	int			subsys_in_view;
 	float		factor;
@@ -1559,7 +1563,7 @@ void hud_render_target_ship(object *target_objp)
 		sy = 0;
 		// check if subsystem target has changed
 		if ( Player_ai->targeted_subsys == Player_ai->last_subsys_target ) {
-			vector save_pos;
+			vec3d save_pos;
 			save_pos = target_objp->pos;
 			target_objp->pos = obj_pos;
 			subsys_in_view = hud_targetbox_subsystem_in_view(target_objp, &sx, &sy);
@@ -1603,11 +1607,11 @@ void hud_render_target_ship(object *target_objp)
 //
 void hud_render_target_debris(object *target_objp)
 {
-	vector	obj_pos = {0.0f,0.0f,0.0f};
-	vector	camera_eye = {0.0f,0.0f,0.0f};
+	vec3d	obj_pos = {0.0f,0.0f,0.0f};
+	vec3d	camera_eye = {0.0f,0.0f,0.0f};
 	matrix	camera_orient = IDENTITY_MATRIX;
 	debris	*debrisp;
-	vector	orient_vec, up_vector;
+	vec3d	orient_vec, up_vector;
 	int		target_team, base_index;
 	float		factor;	
 	int flags=0;
@@ -1673,10 +1677,10 @@ void hud_render_target_debris(object *target_objp)
 //
 void hud_render_target_weapon(object *target_objp)
 {
-	vector		obj_pos = {0.0f,0.0f,0.0f};
-	vector		camera_eye = {0.0f,0.0f,0.0f};
+	vec3d		obj_pos = {0.0f,0.0f,0.0f};
+	vec3d		camera_eye = {0.0f,0.0f,0.0f};
 	matrix		camera_orient = IDENTITY_MATRIX;
-	vector		orient_vec, up_vector;
+	vec3d		orient_vec, up_vector;
 	weapon_info	*target_wip = NULL;
 	weapon		*wp = NULL;
 	object		*viewer_obj, *viewed_obj;
@@ -2019,7 +2023,7 @@ void hud_show_target_data(float frametime)
 			if (aip->target_objnum != -1) {
 				char	target_str[32];
 				float	dot, dist;
-				vector	v2t;
+				vec3d	v2t;
 
 				if (aip->target_objnum == Player_obj-Objects)
 					strcpy(target_str, "Player!");
@@ -2071,7 +2075,7 @@ void hud_show_target_data(float frametime)
 						ship		*eshipp;
 						ai_info	*eaip;
 						float		dot, dist;
-						vector	v2t;
+						vec3d	v2t;
 
 						eshipp = &Ships[Enemy_attacker->instance];
 						eaip = &Ai_info[eshipp->ai_index];

@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.11 $
- * $Date: 2005-03-13 08:32:28 $
- * $Author: wmcoolmon $
+ * $Revision: 1.12 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/03/13 08:32:28  wmcoolmon
+ * Hud fixing goodness. I also removed some obsolete code for displaying HUD weapons.
+ *
  * Revision 1.10  2005/01/30 03:28:17  wmcoolmon
  * Make sure hudnavigation uses the correct draw_brackets_Square
  *
@@ -92,7 +95,7 @@ void HUD_Draw_Navigation()
 			in_cockpit = 0;
 
 		vertex target_point;					// temp vertex used to find screen position for 3-D object;
-		vector target_pos;
+		vec3d target_pos;
 
 		//Players[Player_num].lead_indicator_active = 0;
 

@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Demo/Demo.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-01-31 23:27:52 $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-05 05:53:15 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/31 23:27:52  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.5  2004/07/26 20:47:27  Kazan
  * remove MCD complete
  *
@@ -151,7 +154,7 @@ int Demo_error = DEMO_ERROR_NONE;
 #define DEMO_BYTE(vl)					do { DEMO_DATA(vl, sizeof(char)); } while(0)
 #define DEMO_UBYTE(vl)					do { DEMO_DATA(vl, sizeof(ubyte)); } while(0)
 #define DEMO_FLOAT(vl)					do { DEMO_DATA(vl, sizeof(float)); } while(0)
-#define DEMO_VECTOR(vl)					do { DEMO_DATA(vl, sizeof(vector)); } while(0)
+#define DEMO_VECTOR(vl)					do { DEMO_DATA(vl, sizeof(vec3d)); } while(0)
 #define DEMO_MATRIX(vl)					do { DEMO_DATA(vl, sizeof(matrix)); } while(0)
 #define DEMO_STRING(vl)					do { int stlen; if(Game_mode & GM_DEMO_RECORD){ stlen = strlen(vl); if(stlen <= 0){ break; }	DEMO_DATA(stlen, sizeof(ushort)); DEMO_DATA(*vl, strlen(vl)); } else { ushort len = 0; DEMO_USHORT(len); DEMO_DATA(*vl, len); vl[len] = '\0'; } } while(0)
 		
@@ -830,7 +833,7 @@ int demo_playback_seek_sub(int frame_size)
 			ushort obj_count = 0;
 			int obj_sig = 0;
 			ubyte team = 0;
-			vector obj_pos = vmd_zero_vector;
+			vec3d obj_pos = vmd_zero_vector;
 			matrix obj_orient = vmd_identity_matrix;
 			float obj_fthrust = 0;
 			int ship_index = 0;

@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-03-03 06:05:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/03/03 06:05:30  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.4  2005/02/10 04:05:42  wmcoolmon
  * Got rid of a couple annoying compiler warnings
  *
@@ -150,7 +153,7 @@ int dock_find_dockpoint_used_by_object(object *objp, object *other_objp)
 		return result->dockpoint_used;
 }
 
-void dock_calc_docked_center(vector *dest, object *objp)
+void dock_calc_docked_center(vec3d *dest, object *objp)
 {
 	vm_vec_zero(dest);
 
@@ -163,7 +166,7 @@ void dock_calc_docked_center(vector *dest, object *objp)
 	vm_vec_scale(dest, (1.0f / (float) dfi.maintained_variables.int_value));
 }
 
-void dock_calc_docked_center_of_mass(vector *dest, object *objp)
+void dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
 {
 	vm_vec_zero(dest);
 
@@ -187,8 +190,8 @@ float dock_calc_total_docked_mass(object *objp)
 
 float dock_calc_cross_sectional_radius_perpendicular_to_axis(object *objp, axis_type axis)
 {
-	vector local_line_start, local_line_end;
-	vector world_line_start, world_line_end;
+	vec3d local_line_start, local_line_end;
+	vec3d world_line_start, world_line_end;
 	dock_function_info dfi;
 
 	// to calculate cross-sectional radius, we need a line that will be perpendicular to the cross-section
@@ -458,13 +461,13 @@ void dock_calc_total_docked_mass_helper(object *objp, dock_function_info *infop)
 // we take the square root of the final value.
 void dock_calc_cross_sectional_radius_squared_perpendicular_to_line_helper(object *objp, dock_function_info *infop)
 {
-	vector world_point, local_point, nearest;
+	vec3d world_point, local_point, nearest;
 	polymodel *pm;
 	float dist_squared;
 
 	// line parameters
-	vector *line_start = infop->parameter_variables.vecp_value;
-	vector *line_end = infop->parameter_variables.vecp_value2;
+	vec3d *line_start = infop->parameter_variables.vecp_value;
+	vec3d *line_end = infop->parameter_variables.vecp_value2;
 
 	// We must find world coordinates for each of the six endpoints on the three axes of the object.  I looked up
 	// which axis is front/back, left/right, and up/down, but I'm not sure which endpoint is which.  It doesn't

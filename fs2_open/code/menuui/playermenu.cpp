@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-03-10 08:00:08 $
+ * $Revision: 2.20 $
+ * $Date: 2005-04-05 05:53:19 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/03/10 08:00:08  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.18  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -748,8 +757,8 @@ void player_select_do()
 	
 	/*
 	gr_set_color(255, 0, 0);
-	vector whee[5];
-	vector *arr[5] = {&whee[0], &whee[1], &whee[2], &whee[3], &whee[4]};
+	vec3d whee[5];
+	vec3d *arr[5] = {&whee[0], &whee[1], &whee[2], &whee[3], &whee[4]};
 	whee[0].x = 10; whee[0].y = 10; whee[0].z = 0.0f;
 	whee[1].x = 50; whee[1].y = 50; whee[1].z = 0.0f;
 	whee[2].x = 50; whee[2].y = 90; whee[2].z = 0.0f;

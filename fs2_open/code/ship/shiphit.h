@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.h $
- * $Revision: 2.5 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-05 05:53:24 $
+ * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.4  2004/08/23 03:34:34  Goober5000
  * modularized tag stuff in preparation for sexp
  * --Goober5000
@@ -105,7 +110,7 @@
 #ifndef _SHIPHIT_H
 #define _SHIPHIT_H
 
-struct vector;
+struct vec3d;
 struct ship;
 struct ship_subsys;
 struct object;
@@ -123,16 +128,16 @@ struct object;
 // for damaging ship's hulls, shields, and subsystems.  Nothing more.
 
 // function to destroy a subsystem.  Called internally and from multiplayer messaging code
-extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector *hitpos );
+extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d *hitpos );
 
 // Goober5000
-extern void ship_apply_tag(int ship_num, int tag_level, float tag_time, vector *target, vector *start, int ssm_index);
+extern void ship_apply_tag(int ship_num, int tag_level, float tag_time, vec3d *target, vec3d *start, int ssm_index);
 
 // This gets called to apply damage when something hits a particular point on a ship.
 // This assumes that whoever called this knows if the shield got hit or not.
 // hitpos is in world coordinates.
 // if quadrant is not -1, then that part of the shield takes damage properly.
-void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int quadrant, bool create_spark=true, int submodel_num=-1, vector *hit_normal=0 /*NULL*/);
+void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, int quadrant, bool create_spark=true, int submodel_num=-1, vec3d *hit_normal=0 /*NULL*/);
 
 // This gets called to apply damage when a damaging force hits a ship, but at no 
 // point in particular.  Like from a shockwave.   This routine will see if the
@@ -140,7 +145,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 // You can pass force_center==NULL if you the damage doesn't come from anywhere,
 // like for debug keys to damage an object or something.  It will 
 // assume damage is non-directional and will apply it correctly.   
-void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force_center, float damage );
+void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_center, float damage );
 
 // like above, but does not apply damage to shields
 void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage);
@@ -152,10 +157,10 @@ void ship_self_destruct( object *objp );
 
 // Call this instead of physics_apply_whack directly to 
 // deal with two docked ships properly.
-void ship_apply_whack(vector *force, vector *hit_pos, object *objp);
+void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp);
 
 // externed for code in missionparse to create sparks on a ship with < 100% hull integrity.
-void ship_hit_sparks_no_rotate(object *ship_obj, vector *hitpos);
+void ship_hit_sparks_no_rotate(object *ship_obj, vec3d *hitpos);
 
 // externed so that ships which self destruct have the proper things done to them in multiplayer
 void ship_generic_kill_stuff( object *objp, float percent_killed );

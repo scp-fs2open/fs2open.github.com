@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:36 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:36  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -127,7 +130,7 @@ typedef struct shockwave {
 	float		speed, radius;
 	float		inner_radius, outer_radius, damage;
 	int			weapon_info_index;	// -1 if shockwave not caused by weapon	
-	vector		pos;
+	vec3d		pos;
 	float		blast;					// amount of blast to apply
 	int			next_blast;				// timestamp for when to apply next blast damage
 	int			shockwave_info_index;
@@ -156,7 +159,7 @@ void shockwave_level_init();
 void shockwave_level_close();
 void shockwave_delete(object *objp);
 void shockwave_move_all(float frametime);
-int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci, int flag, int delay = -1, int model = -1);
+int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay = -1, int model = -1);
 void shockwave_render(object *objp);
 int shockwave_weapon_index(int index);
 float shockwave_max_radius(int index);

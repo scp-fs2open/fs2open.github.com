@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:45 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:45  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:59  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -280,7 +283,7 @@
 //  // --mharris port hack--
 //  int ds_using_ds3d();
 //  int ds_get_channel(int);
-//  int ds3d_update_buffer(int, float, float, vector *, vector *);
+//  int ds3d_update_buffer(int, float, float, vec3d *, vec3d *);
 // --end hack--
 
 
@@ -295,7 +298,7 @@ typedef struct _obj_snd {
 	float		pan;				// pan of sound (range: -1.0 -> 1.0)
 	int		freq;				// valid range: 100 -> 100000 Hz
 	int		flags;			
-	vector	offset;			// offset from the center of the object where the sound lives
+	vec3d	offset;			// offset from the center of the object where the sound lives
 } obj_snd;
 
 #define VOL_PAN_UPDATE			50						// time in ms to update a persistant sound vol/pan
@@ -329,9 +332,9 @@ int		Flyby_next_repeat;
 object	*Flyby_last_objp;
 
 // return the world pos of the sound source on a ship.  
-void obj_snd_source_pos(vector *sound_pos, obj_snd *osp)
+void obj_snd_source_pos(vec3d *sound_pos, obj_snd *osp)
 {
-	vector offset_world;
+	vec3d offset_world;
 	object *objp = &Objects[osp->objnum];
 
 	// get sound pos in world coords
@@ -382,7 +385,7 @@ DCF(objsnd, "Persistant sound stuff" )
 					sprintf(buf2, "Unknown");
 				}
 
-				vector source_pos;
+				vec3d source_pos;
 				float distance;
 
 				obj_snd_source_pos(&source_pos, osp);
@@ -554,9 +557,9 @@ void obj_snd_stop_all()
 //
 //	returns:		frequency of the sound
 //
-int obj_snd_get_freq(int source_freq, object* source, object* observor, vector *source_pos)
+int obj_snd_get_freq(int source_freq, object* source, object* observor, vec3d *source_pos)
 {
-	vector	v_os, v_so;	// os == observor to source, so == source to observor
+	vec3d	v_os, v_so;	// os == observor to source, so == source to observor
 	float		vo, vs, freq;
 
 	vm_vec_normalized_dir(&v_os, source_pos, &observor->pos);
@@ -643,7 +646,7 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp)
 
 	if ( closest_dist < FLYBY_MIN_DISTANCE ) {
 		float relative_speed;
-		vector diff;
+		vec3d diff;
 		vm_vec_sub(&diff, &Player_obj->phys_info.vel, &closest_objp->phys_info.vel);
 
 
@@ -710,7 +713,7 @@ void obj_snd_do_frame()
 	game_snd			*gs;
 	ship				*sp;
 	int				channel, go_ahead_flag;
-	vector			source_pos;
+	vec3d			source_pos;
 	float				add_distance;
 
 	if ( Obj_snd_enabled == FALSE )
@@ -864,7 +867,7 @@ void obj_snd_do_frame()
 				snd_set_volume( osp->instance, 0.0f );
 			}
 
-			vector *vel=NULL;
+			vec3d *vel=NULL;
 			vel = &objp->phys_info.vel;
 
 			// Don't play doppler effect for cruisers or capitals
@@ -916,7 +919,7 @@ void obj_snd_do_frame()
 //										sound can be assigned per object).  
 //               0			=> sound was successfully assigned
 //
-int obj_snd_assign(int objnum, int i, vector *pos, int main)
+int obj_snd_assign(int objnum, int i, vec3d *pos, int main)
 {
 	obj_snd	*snd;
 	object	*objp;

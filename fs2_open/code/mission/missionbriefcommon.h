@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.5 $
- * $Date: 2005-02-21 09:00:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-05 05:53:19 $
+ * $Author: taylor $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/02/21 09:00:17  wmcoolmon
+ * Multi-res support
+ *
  * Revision 2.4  2004/08/11 05:06:27  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -264,7 +267,7 @@ typedef struct brief_icon
 	int		bitmap_id;
 	int		id;
 	int		team;
-	vector	pos;
+	vec3d	pos;
 	char		label[MAX_LABEL_LEN];
 	char		closeup_label[MAX_LABEL_LEN];
 //	char		text[MAX_ICON_TEXT_LEN];
@@ -289,7 +292,7 @@ typedef struct brief_stage
 {
 	char			*new_text;
 	char			voice[MAX_FILENAME_LEN];
-	vector		camera_pos;
+	vec3d		camera_pos;
 	matrix		camera_orient;
 	int			camera_time;		// ms
 	int			flags;				// see BS_ flags above
@@ -403,7 +406,7 @@ void brief_close_map();
 void brief_init_map();
 void brief_init_screen(int multiplayer_flag);
 void brief_render_map(int stage_num, float frametime);
-void brief_set_new_stage(vector *pos, matrix *orient, int time, int stage_num);
+void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num);
 void brief_camera_move(float frametime, int stage_num);
 void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float w_scale_factor = 1.0f, float h_scale_factor = 1.0f);
 void brief_render_icon_line(int stage_num, int line_num);

@@ -485,7 +485,7 @@ void joy_ff_fly_by(int mag)
 //	STUB_FUNCTION;
 }
 
-void joy_ff_mission_init(vector v)
+void joy_ff_mission_init(vec3d v)
 {
 //	STUB_FUNCTION;
 }
@@ -510,7 +510,7 @@ void joy_ff_play_secondary_shoot(int gain)
 //	STUB_FUNCTION;
 }
 
-void joy_ff_play_vector_effect(vector *v, float scaler)
+void joy_ff_play_vector_effect(vec3d *v, float scaler)
 {
 //	STUB_FUNCTION;
 }

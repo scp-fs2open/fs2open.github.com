@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:56 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:56  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:33:09  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -78,7 +81,7 @@ float Flak_range = FLAK_RANGE_DEFAULT;
 // flak info
 #define MAX_FLAK_INFO											350
 typedef struct flak_info {	
-	vector start_pos;							// initial pos
+	vec3d start_pos;							// initial pos
 	float range;								// range at which we'll detonate (-1 if unused);
 } flak_info;
 flak_info Flak[MAX_FLAK_INFO];
@@ -158,10 +161,10 @@ void flak_delete(int flak_index)
 }
 
 // given a just fired flak shell, pick a detonating distance for it
-void flak_pick_range(object *objp, vector *predicted_target_pos, float weapon_subsys_strength)
+void flak_pick_range(object *objp, vec3d *predicted_target_pos, float weapon_subsys_strength)
 {
 	float final_range;
-	vector temp;
+	vec3d temp;
 	
 	// make sure this flak object is valid
 	Assert(objp->type == OBJ_WEAPON);
@@ -192,11 +195,11 @@ void flak_pick_range(object *objp, vector *predicted_target_pos, float weapon_su
 
 // add some jitter to a flak gun's aiming direction, take into account range to target so that we're never _too_ far off
 // assumes dir is normalized
-void flak_jitter_aim(vector *dir, float dist_to_target, float weapon_subsys_strength)
+void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength)
 {			
-	vector rand_twist_pre, rand_twist_post;		
+	vec3d rand_twist_pre, rand_twist_post;		
 	matrix temp;
-	vector final_aim;
+	vec3d final_aim;
 	float error_val;
 	
 	// get the matrix needed to rotate the base direction to the actual direction		
@@ -224,7 +227,7 @@ void flak_jitter_aim(vector *dir, float dist_to_target, float weapon_subsys_stre
 }
 
 // create a muzzle flash from a flak gun based upon firing position and weapon type
-void flak_muzzle_flash(vector *pos, vector *dir, int turret_weapon_class)
+void flak_muzzle_flash(vec3d *pos, vec3d *dir, int turret_weapon_class)
 {
 	// sanity
 	Assert((turret_weapon_class >= 0) && (turret_weapon_class < Num_weapon_types));
@@ -259,7 +262,7 @@ void flak_muzzle_flash(vector *pos, vector *dir, int turret_weapon_class)
 // maybe detonate a flak shell early/late (call from weapon_process_pre(...))
 void flak_maybe_detonate(object *objp)
 {			
-	vector temp;	
+	vec3d temp;	
 
 	// multiplayer clients should never detonate flak early
 	// if(MULTIPLAYER_CLIENT){
@@ -274,7 +277,7 @@ void flak_maybe_detonate(object *objp)
 }
 
 // given a just fired flak shell, pick a detonating distance for it
-void flak_set_range(object *objp, vector *start_pos, float range)
+void flak_set_range(object *objp, vec3d *start_pos, float range)
 {
 	Assert(objp->type == OBJ_WEAPON);
 	Assert(objp->instance >= 0);	

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-03-16 01:35:59 $
- * $Author: bobboau $
+ * $Revision: 2.15 $
+ * $Date: 2005-04-05 05:53:24 $
+ * $Author: taylor $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/03/16 01:35:59  bobboau
+ * added a geometry batcher and implemented it in sevral places
+ * namely: lasers, thrusters, and particles,
+ * these have been the primary botle necks for some time,
+ * and this seems to have smoothed them out quite a bit.
+ *
  * Revision 2.13  2004/07/26 20:47:50  Kazan
  * remove MCD complete
  *
@@ -207,9 +213,9 @@ int Lasers = 1;
 DCF_BOOL( lasers, Lasers );
 /*
 // This works but leaves the effect looking very flat
-float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, int g, int b, uint tmap_flags)
+float g3_draw_laser_htl(vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b, uint tmap_flags)
 {
-	vector uvec, fvec, rvec, center;
+	vec3d uvec, fvec, rvec, center;
 
 	vm_vec_sub( &fvec, p0, p1 );
 	vm_vec_normalize_safe( &fvec );
@@ -229,7 +235,7 @@ float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, 
 	// of the face.
 
 	int i;
-	vector vecs[4];
+	vec3d vecs[4];
 	vertex pts[4];
 	vertex *ptlist[8] = 
 	{ &pts[3], &pts[2], &pts[1], &pts[0], 
@@ -275,11 +281,11 @@ float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, 
 }
 */
 
-float g3_draw_laser_htl_batched(vector *p0,float width1,vector *p1,float width2, int r, int g, int b, uint tmap_flags)
+float g3_draw_laser_htl_batched(vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b, uint tmap_flags)
 {
 	width1 *= 0.5f;
 	width2 *= 0.5f;
-	vector uvec, fvec, rvec, center, reye;
+	vec3d uvec, fvec, rvec, center, reye;
 
 	vm_vec_sub( &fvec, p0, p1 );
 	vm_vec_normalize_safe( &fvec );
@@ -304,10 +310,10 @@ float g3_draw_laser_htl_batched(vector *p0,float width1,vector *p1,float width2,
 	// of the face.
 
 	int i;
-	vector start, end;
+	vec3d start, end;
 	vm_vec_scale_add(&start, p0, &fvec, -width1);
 	vm_vec_scale_add(&end, p1, &fvec, width2);
-	vector vecs[6];
+	vec3d vecs[6];
 
 	vm_vec_scale_add( &vecs[0], &start, &uvec, width1 );
 	vm_vec_scale_add( &vecs[1], &end, &uvec, width2 );
@@ -356,7 +362,7 @@ float g3_draw_laser_htl_batched(vector *p0,float width1,vector *p1,float width2,
 }
 
 
-float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, int g, int b, uint tmap_flags)
+float g3_draw_laser_htl(vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b, uint tmap_flags)
 {
 	// Redirect for batching!
 	if(Cmdline_batch_3dunlit && tmap_flags & TMAP_HTL_3DU_BATCH)
@@ -367,7 +373,7 @@ float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, 
 
 	width1 *= 0.5f;
 	width2 *= 0.5f;
-	vector uvec, fvec, rvec, center, reye;
+	vec3d uvec, fvec, rvec, center, reye;
 
 	vm_vec_sub( &fvec, p0, p1 );
 	vm_vec_normalize_safe( &fvec );
@@ -392,10 +398,10 @@ float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, 
 	// of the face.
 
 	int i;
-	vector start, end;
+	vec3d start, end;
 	vm_vec_scale_add(&start, p0, &fvec, -width1);
 	vm_vec_scale_add(&end, p1, &fvec, width2);
-	vector vecs[4];
+	vec3d vecs[4];
 	vertex pts[4];
 	vertex *ptlist[8] = 
 	{ &pts[3], &pts[2], &pts[1], &pts[0], 
@@ -444,7 +450,7 @@ float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, 
 // and a bitmap with gr_set_bitmap.  If it is very far away, it draws the laser
 // as flat-shaded using current color, else textured using current texture.
 // If max_len is > 1.0, then this caps the length to be no longer than max_len pixels.
-float g3_draw_laser(vector *headp, float head_width, vector *tailp, float tail_width, uint tmap_flags, float max_len )
+float g3_draw_laser(vec3d *headp, float head_width, vec3d *tailp, float tail_width, uint tmap_flags, float max_len )
 {
 	if (!Lasers){
 		return 0.0f;
@@ -607,7 +613,7 @@ float g3_draw_laser(vector *headp, float head_width, vector *tailp, float tail_w
 
 // Draw a laser shaped 3d looking thing using vertex coloring (useful for things like colored laser glows)
 // If max_len is > 1.0, then this caps the length to be no longer than max_len pixels
-float g3_draw_laser_rgb(vector *headp, float head_width, vector *tailp, float tail_width, int r, int g, int b, uint tmap_flags, float max_len )
+float g3_draw_laser_rgb(vec3d *headp, float head_width, vec3d *tailp, float tail_width, int r, int g, int b, uint tmap_flags, float max_len )
 {
 	if (!Lasers){
 		return 0.0f;

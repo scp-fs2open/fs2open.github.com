@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-25 06:57:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:22 $
+ * $Author: taylor $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/25 06:57:37  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.6  2005/03/16 01:35:59  bobboau
  * added a geometry batcher and implemented it in sevral places
  * namely: lasers, thrusters, and particles,
@@ -199,7 +202,7 @@ int Object_sort_order[MAX_OBJECTS];
 
 // Used to (fairly) quicky find the 8 extreme
 // points around an object.
-vector check_offsets[8] = { 
+vec3d check_offsets[8] = { 
   { -1.0f, -1.0f, -1.0f },
   { -1.0f, -1.0f,  1.0f },
   { -1.0f,  1.0f, -1.0f },
@@ -220,7 +223,7 @@ vector check_offsets[8] = {
 int obj_in_view_cone( object * objp )
 {
 	int i;
-	vector tmp,pt; 
+	vec3d tmp,pt; 
 	ubyte codes;
 
 // Use this to hack out player for testing.
@@ -298,7 +301,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 				Num_sorted_objects++;
 
 				osp->obj = objp;
-				vector to_obj;
+				vec3d to_obj;
 				vm_vec_sub( &to_obj, &objp->pos, &Eye_position );
 				osp->z = vm_vec_dot( &Eye_matrix.vec.fvec, &to_obj );
 /*

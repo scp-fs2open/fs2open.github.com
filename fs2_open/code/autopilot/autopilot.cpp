@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-03-25 06:57:32 $
- * $Author: wmcoolmon $
+ * $Revision: 1.18 $
+ * $Date: 2005-04-05 05:53:14 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/03/25 06:57:32  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 1.16  2005/03/03 06:05:26  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -152,9 +155,9 @@ bool Sel_NextNav()
 
 
 // ********************************************************************************************
-vector NavPoint::GetPosition()
+vec3d NavPoint::GetPosition()
 {
-	vector position;
+	vec3d position;
 
 	if (flags & NP_WAYPOINT)
 	{

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.112 $
- * $Date: 2005-03-25 06:57:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.113 $
+ * $Date: 2005-04-05 05:53:20 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.111  2005/03/25 01:10:51  taylor
  * I think I deserve a medal or something for that one :)
  *
@@ -790,8 +793,8 @@ typedef struct model_light_object {
 // Vertices used internally to rotate model points
 static vertex Interp_points[MAX_POLYGON_VECS];
 static vertex Interp_splode_points[MAX_POLYGON_VECS];
-vector *Interp_verts[MAX_POLYGON_VECS];
-vector Interp_splode_verts[MAX_POLYGON_VECS];
+vec3d *Interp_verts[MAX_POLYGON_VECS];
+vec3d Interp_splode_verts[MAX_POLYGON_VECS];
 static int Interp_num_verts;
 
 
@@ -816,7 +819,7 @@ int Interp_saved_lighting_full = 0;
 
 
 static ubyte Interp_light_applied[MAX_POLYGON_NORMS];
-static vector *Interp_norms[MAX_POLYGON_NORMS];
+static vec3d *Interp_norms[MAX_POLYGON_NORMS];
 static int Interp_num_norms = 0;
 static ubyte *Interp_lights;
 
@@ -840,7 +843,7 @@ static float Interp_thrust_glow_rad_factor = 1.0f;
 static float Interp_secondary_thrust_glow_rad_factor = 1.0f;
 static float Interp_secondary_thrust_glow_len_factor = 1.0f;
 static float Interp_tertiary_thrust_glow_rad_factor = 1.0f;
-static vector controle_rotval = ZERO_VECTOR;
+static vec3d controle_rotval = ZERO_VECTOR;
 static float Interp_thrust_glow_noise = 1.0f;
 static float Interp_thrust_scale_x = 0.0f;//added -bobboau
 static float Interp_thrust_scale_y = 0.0f;//added -bobboau
@@ -894,7 +897,7 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 
 void (*model_interp_sortnorm)(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check) = model_interp_sortnorm_b2f;
 
-void model_setup_cloak(vector *shift, int full_cloak, int alpha)
+void model_setup_cloak(vec3d *shift, int full_cloak, int alpha)
 {
 	FULLCLOAK=full_cloak;
 	int unit;
@@ -1059,7 +1062,7 @@ void interp_clear_instance()
 }
 
 // Scales the engines thrusters by this much
-void model_set_thrust( int model_num, vector *length /*<-I did that-Bobboau*/, int bitmap, int glow_bitmap, float glow_noise, bool AB, int secondary_bitmap, int tertiary_bitmap, vector *rovel, float trf1, float trf2, float trf3, float tlf)
+void model_set_thrust( int model_num, vec3d *length /*<-I did that-Bobboau*/, int bitmap, int glow_bitmap, float glow_noise, bool AB, int secondary_bitmap, int tertiary_bitmap, vec3d *rovel, float trf1, float trf2, float trf3, float tlf)
 {
 	Interp_AB = AB;
 
@@ -1132,11 +1135,11 @@ void model_interp_splode_defpoints(ubyte * p, polymodel *pm, bsp_info *sm, float
 
 	ubyte * normcount = p+20;
 	vertex *dest = Interp_splode_points;
-	vector *src = vp(p+offset);
+	vec3d *src = vp(p+offset);
 
 	Assert( nverts < MAX_POLYGON_VECS );
 
-	vector dir;
+	vec3d dir;
 
 	for (n=0; n<nverts; n++ )	{	
 		Interp_splode_verts[n] = *src;		
@@ -1178,7 +1181,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 
 	ubyte * normcount = p+20;
 	vertex *dest = Interp_points;
-	vector *src = vp(p+offset);
+	vec3d *src = vp(p+offset);
 
 	// Get pointer to lights
 	Interp_lights = p+20+nverts;
@@ -1220,7 +1223,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 		}
 
 		for (n=0; n<nverts; n++ )	{
-			vector tmp;
+			vec3d tmp;
 			if(nverts >= MAX_POLYGON_VECS)Error( LOCATION, "model has too many points %d needs to be less than %d\n", nverts ,MAX_POLYGON_VECS );
 
 			Interp_verts[n] = src;
@@ -1257,7 +1260,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 		// SHUT UP! -- Kazan -- This is massively slowing debug builds down
 		//mprintf(("warp model being scaled by %f %f %f\n",Model_Interp_scale_x ,Model_Interp_scale_y, Model_Interp_scale_z));
 		for (n=0; n<nverts; n++ )	{
-			vector tmp;
+			vec3d tmp;
 
 			Interp_verts[n] = src;
 
@@ -1281,7 +1284,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 	}else{
 
 
-		vector point;
+		vec3d point;
 
 		for (n=0; n<nverts; n++ )	{	
 
@@ -1304,7 +1307,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 	
 				Interp_verts[n] = src; 	 
 				 /* 	                                 
-				 vector tmp = *src; 	 
+				 vec3d tmp = *src; 	 
 				 // TEST 	                                 ;
 				 if(Interp_thrust_twist > 0.0f){ 	                                 
 						 float theta; 	                                 
@@ -1347,14 +1350,14 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 }
 
 matrix *Interp_orient;
-vector *Interp_pos;
-vector Interp_offset;
+vec3d *Interp_pos;
+vec3d Interp_offset;
 
 
-void interp_compute_environment_mapping( vector *nrm, vertex * pnt)
+void interp_compute_environment_mapping( vec3d *nrm, vertex * pnt)
 {
 	return;
-	vector R;
+	vec3d R;
 	float a;
 //	matrix * m = &View_matrix;
 
@@ -1379,8 +1382,8 @@ extern bool cell_enabled;
 // Flat Poly
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      center
+// +8      vec3d      normal
+// +20     vec3d      center
 // +32     float       radius
 // +36     int         nverts
 // +40     byte        red
@@ -1461,8 +1464,8 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 
 extern bool env_enabled;
 
-void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pnt, vector *norm, float alpha, bool invert = false){
-	vector r;
+void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pnt, vec3d *norm, float alpha, bool invert = false){
+	vec3d r;
 	vm_vec_sub(&r, &View_position, pnt);
 	vm_vec_normalize(&r);
 	float d = vm_vec_dot(&r, norm);
@@ -1477,8 +1480,8 @@ void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, ve
 // Textured Poly
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      center
+// +8      vec3d      normal
+// +20     vec3d      center
 // +32     float       radius
 // +36     int         nverts
 // +40     int         tmap_num
@@ -1762,11 +1765,11 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 }
 
-void interp_draw_box( vector *min, vector *max )
+void interp_draw_box( vec3d *min, vec3d *max )
 {
 /*
 	int i;
-	vector bounding_box[8];
+	vec3d bounding_box[8];
 	vertex pts[8];
 	vertex *l[4];
 
@@ -1804,8 +1807,8 @@ void interp_draw_box( vector *min, vector *max )
 // Sortnorms
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      normal_point
+// +8      vec3d      normal
+// +20     vec3d      normal_point
 // +32     int         tmp=0
 // 36     int     front offset
 // 40     int     back offset
@@ -1855,8 +1858,8 @@ void model_interp_sortnorm_b2f(ubyte * p,polymodel * pm, bsp_info *sm, int do_bo
 // Sortnorms
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      normal_point
+// +8      vec3d      normal
+// +20     vec3d      normal_point
 // +32     int         tmp=0
 // 36     int     front offset
 // 40     int     back offset
@@ -1967,7 +1970,7 @@ void model_draw_debug_points( polymodel *pm, bsp_info * submodel )
 		int j;
 		for (j=0; j<8; j++ )	{
 
-			vector	bounding_box[8];		// caclulated fron min/max
+			vec3d	bounding_box[8];		// caclulated fron min/max
 			model_calc_bound_box(bounding_box,&pm->octants[j].min,&pm->octants[j].max);
 
 			for (i=0; i<8; i++ )	{
@@ -1996,7 +1999,7 @@ void model_draw_debug_points( polymodel *pm, bsp_info * submodel )
 void model_draw_paths( int model_num )
 {
 	int i,j;
-	vector pnt;
+	vec3d pnt;
 	polymodel * pm;	
 
 	if ( Interp_flags & MR_SHOW_OUTLINE_PRESET )	{
@@ -2045,8 +2048,8 @@ void model_draw_paths( int model_num )
 void model_draw_paths_htl( int model_num )
 {
 	int i,j;
-	vector pnt;
-	vector prev_pnt;
+	vec3d pnt;
+	vec3d prev_pnt;
 	polymodel * pm;	
 
 	if ( Interp_flags & MR_SHOW_OUTLINE_PRESET )	{
@@ -2097,7 +2100,7 @@ void model_draw_paths_htl( int model_num )
 void model_draw_bay_paths_htl(int model_num)
 {
 	int idx, s_idx;
-	vector v1, v2;
+	vec3d v1, v2;
 
 	polymodel *pm = model_get(model_num);
 	if(pm == NULL){
@@ -2141,7 +2144,7 @@ void model_draw_bay_paths_htl(int model_num)
 void model_draw_bay_paths(int model_num)
 {
 	int idx, s_idx;
-	vector v1, v2;
+	vec3d v1, v2;
 	vertex l1, l2;	
 
 	polymodel *pm = model_get(model_num);
@@ -2197,7 +2200,7 @@ typedef struct ship_bay {
 } ship_bay;
 
   typedef struct mp_vert {
-	vector		pos;				// xyz coordinates of vertex in object's frame of reference
+	vec3d		pos;				// xyz coordinates of vertex in object's frame of reference
 	int			nturrets;		// number of turrets guarding this vertex
 	int			*turret_ids;	// array of indices into ship_subsys linked list (can't index using [] though)
 	float			radius;			// How far the closest obstruction is from this vertex
@@ -2217,7 +2220,7 @@ typedef struct model_path {
 } model_path;
 */
 
-void interp_render_arc_segment( vector *v1, vector *v2, int depth, color *outside_color, bool init_halfway )
+void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth, color *outside_color, bool init_halfway )
 {
 	static color halfway_color;
 	float d = vm_vec_dist_quick( v1, v2 );
@@ -2246,7 +2249,7 @@ void interp_render_arc_segment( vector *v1, vector *v2, int depth, color *outsid
 	//	g3_draw_line( &p1, &p2 );
 	} else {
 		// divide in half
-		vector tmp;
+		vec3d tmp;
 		vm_vec_avg( &tmp, v1, v2 );
 	
 		float scaler = 0.30f;
@@ -2390,13 +2393,13 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 #define IBOX_ALL_ON 1
 #define IBOX_SOME_ON_SOME_OFF 2
 
-int interp_box_offscreen( vector *min, vector *max )
+int interp_box_offscreen( vec3d *min, vec3d *max )
 {
 	if ( keyd_pressed[KEY_LSHIFT] )	{
 		return IBOX_ALL_ON;
 	}
 
-	vector v[8];
+	vec3d v[8];
 	v[0].xyz.x = min->xyz.x; v[0].xyz.y = min->xyz.y; v[0].xyz.z = min->xyz.z;
 	v[1].xyz.x = max->xyz.x; v[1].xyz.y = min->xyz.y; v[1].xyz.z = min->xyz.z;
 	v[2].xyz.x = max->xyz.x; v[2].xyz.y = max->xyz.y; v[2].xyz.z = min->xyz.z;
@@ -2590,7 +2593,7 @@ void model_render_insignias(polymodel *pm, int detail_level)
 	int idx, s_idx;
 	vertex vecs[3];
 	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
-	vector t1, t2, t3, x;
+	vec3d t1, t2, t3, x;
 	int i1, i2, i3;
 
 	x.xyz.x=0;
@@ -2676,7 +2679,7 @@ MONITOR( NumLowModelsRend );
 typedef struct model_cache {
 	int		model_num;
 	//matrix	orient;
-	vector	pos;
+	vec3d	pos;
 	int		num_lights;
 
 	float		last_dot;
@@ -2706,7 +2709,7 @@ int Model_cache_inited = 0;
 
 
 // Returns 0 if not valid points
-int model_cache_calc_coords(vector *pnt,float rad, float *cx, float *cy, float *cr)
+int model_cache_calc_coords(vec3d *pnt,float rad, float *cx, float *cy, float *cr)
 {
 	vertex pt;
 	ubyte flags;
@@ -2896,7 +2899,7 @@ float scale_it( float min, float max, float v, float v1, float v2 )
 	return v;
 }
 
-void model_render(int model_num, matrix *orient, vector * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures)
+void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures)
 {
 	// replacement textures - Goober5000
 	model_set_replacement_textures(replacement_textures);
@@ -2934,8 +2937,8 @@ void model_render(int model_num, matrix *orient, vector * pos, uint flags, int o
 
 
 /*
-	vector thruster_pnt=vmd_zero_vector;
-	vector rotated_thruster;
+	vec3d thruster_pnt=vmd_zero_vector;
+	vec3d rotated_thruster;
 	//maybe add lights by engine glows
 	if (Interp_flags & MR_SHOW_THRUSTERS) 
 	{
@@ -3070,7 +3073,7 @@ int Mc_detail_add[MAX_DETAIL_LEVEL+1] = { -2, -1, +1, +2, +4 };
 
 extern float flFrametime;
 
-void model_try_cache_render(int model_num, matrix *orient, vector * pos, uint flags, int objnum, int num_lights)
+void model_try_cache_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int num_lights)
 {
 	model_really_render(model_num, orient, pos, flags, objnum);
 	/*
@@ -3158,7 +3161,7 @@ void model_try_cache_render(int model_num, matrix *orient, vector * pos, uint fl
 	// A bunch of checks to see if we need to redraw the model or not
 
 	
-	vector ship_to_eye;
+	vec3d ship_to_eye;
 
 	vm_vec_sub( &ship_to_eye, &Eye_position, pos );
 	vm_vec_normalize_safe(&ship_to_eye);
@@ -3473,7 +3476,7 @@ JustDrawIt:
 
 // Find the distance from p0 to the closest point on a box.
 // The box's dimensions from 'min' to 'max'.
-float interp_closest_dist_to_box( vector *hitpt, vector *p0, vector *min, vector *max )
+float interp_closest_dist_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *max )
 {
 	float *origin = (float *)&p0->xyz.x;
 	float *minB = (float *)min;
@@ -3513,9 +3516,9 @@ float interp_closest_dist_to_box( vector *hitpt, vector *p0, vector *min, vector
 //   distance from eye_pos to closest_point.  0 means eye_pos is 
 //   on or inside the bounding box.
 //   Also fills in outpnt with the actual closest point.
-float model_find_closest_point( vector *outpnt, int model_num, int submodel_num, matrix *orient, vector * pos, vector *eye_pos )
+float model_find_closest_point( vec3d *outpnt, int model_num, int submodel_num, matrix *orient, vec3d * pos, vec3d *eye_pos )
 {
-	vector closest_pos, tempv, eye_rel_pos;
+	vec3d closest_pos, tempv, eye_rel_pos;
 	
 	polymodel *pm = model_get(model_num);
 
@@ -3541,10 +3544,10 @@ DCF(tiling, "")
 	}
 }
 
-void moldel_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos, float w, float z_add, vector *Eyeposition )
+void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition )
 {
-	vector uvec, rvec;
-	vector temp;
+	vec3d uvec, rvec;
+	vec3d temp;
 
 	temp = *pos;
 
@@ -3571,7 +3574,7 @@ void light_set_all_relevent();
 
 extern int Warp_model;
 
-void model_really_render(int model_num, matrix *orient, vector * pos, uint flags, int light_ignore_id )
+void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int light_ignore_id )
 {
 	int i, detail_level;
 	polymodel * pm;
@@ -3597,7 +3600,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	Interp_orient = orient;
 	Interp_pos = pos;
-	memset(&Interp_offset,0,sizeof(vector));
+	memset(&Interp_offset,0,sizeof(vec3d));
 
 	int tmp_detail_level = Game_detail_level;
 	
@@ -3668,7 +3671,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	Assert( pm->n_detail_levels < MAX_MODEL_DETAIL_LEVELS );
 
-	vector closest_pos;
+	vec3d closest_pos;
 	float depth = model_find_closest_point( &closest_pos, model_num, -1, orient, pos, &Eye_position );
 	if ( pm->n_detail_levels > 1 )	{
 
@@ -3751,7 +3754,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 #endif	
 
 	if((Interp_flags & MR_AUTOCENTER) && (pm->flags & PM_FLAG_AUTOCEN)){
-		vector auto_back = pm->autocenter;				
+		vec3d auto_back = pm->autocenter;				
 		vm_vec_scale(&auto_back, -1.0f);		
 		g3_start_instance_matrix(&auto_back, NULL, true);		
 	}	
@@ -3836,7 +3839,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	if(!Cmdline_nohtl)gr_set_lighting(true,true);
 
-	vector decal_z_corection = View_position;
+	vec3d decal_z_corection = View_position;
 //	vm_vec_sub(&decal_z_corection, &Eye_position, pos);
 	if(decal_z_corection.xyz.x != 0 && decal_z_corection.xyz.y != 0 && decal_z_corection.xyz.z != 0)
 		vm_vec_normalize(&decal_z_corection);
@@ -3916,8 +3919,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
  
 					if(flick == 1){
 						glow_point *gpt = &bank->point[j];
-						vector pnt = gpt->pnt;
-						vector norm = gpt->norm;
+						vec3d pnt = gpt->pnt;
+						vec3d norm = gpt->norm;
 					
 						if(bank->submodel_parent > 0){//this is were it rotates for the submodel parent-Bobboau
 							matrix m;
@@ -3933,15 +3936,15 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 							vm_angles_2_matrix(&m, &angs);
 
-							vector offset = pm->submodel[bank->submodel_parent].offset;
+							vec3d offset = pm->submodel[bank->submodel_parent].offset;
 							vm_vec_sub(&pnt, &pnt, &offset);
-							vector p = pnt;
-							vector n = norm;
+							vec3d p = pnt;
+							vec3d n = norm;
 							vm_vec_rotate(&pnt, &p, &m);
 							vm_vec_rotate(&norm, &n, &m);
 							vm_vec_add2(&pnt, &offset);
 						}
-							vector tempv;
+							vec3d tempv;
 						switch(bank->type){
 						case 0:
 							float d;
@@ -3965,7 +3968,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		
 								// fade them in the nebula as well
 								if(The_mission.flags & MISSION_FLAG_FULLNEB){
-									vector npnt;
+									vec3d npnt;
 									vm_vec_add(&npnt, &pnt, pos);
 									d *= (1.0f - neb2_get_fog_intensity(&npnt));
 									w *= 1.5;	//make it bigger in a nebula
@@ -3996,7 +3999,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 						case 1:
 								vertex h1[4];				// halves of a beam section	
 								vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
-								vector fvec, top1, bottom1, top2, bottom2, start, end;
+								vec3d fvec, top1, bottom1, top2, bottom2, start, end;
 
 								vm_vec_add2(&norm, &pnt);
 
@@ -4069,7 +4072,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		tertiary_thruster_batcher.allocate(n_q);
 		//this is used for the secondary thruster glows 
 		//it only needs to be calculated once so I'm doing it here -Bobboau
-				vector norm /*= bank->norm[j]*/;
+				vec3d norm /*= bank->norm[j]*/;
 				norm.xyz.z = -1.0f;
 				norm.xyz.x = 1.0f;
 				norm.xyz.y = -1.0f;
@@ -4089,7 +4092,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 			for ( j=0; j<bank->num_slots; j++ )	{
 				float d, D;
-				vector tempv;
+				vec3d tempv;
 				vm_vec_sub(&tempv,&View_position,&bank->point[j].pnt);
 				vm_vec_normalize(&tempv);
 
@@ -4103,7 +4106,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 						
 // the following replaces Bobboau's code, commented out below - Goober5000
 					float magnitude;
-					vector scale_vec;
+					vec3d scale_vec;
 
 					// normalize banks, in case of incredibly big normals
 					vm_vec_copy_normalize(&scale_vec, &bank->point[j].norm);
@@ -4130,11 +4133,11 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					d *= 3.0f;
 					if ( d > 1.0f ) d = 1.0f;
 				}
-				vector npnt;
+				vec3d npnt;
 				float fog_int = 1.0;
 				// fade them in the nebula as well
 				if(The_mission.flags & MISSION_FLAG_FULLNEB){
-				//	vector npnt;
+				//	vec3d npnt;
 					vm_vec_rotate(&npnt, &bank->point[j].pnt, orient);
 					vm_vec_add2(&npnt, pos);
 					fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
@@ -4200,14 +4203,14 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				//ok, how's this there suposed to look cool! hows that, 
 				//it that scientific enough for you!! you anti-asthetic basturds!!!
 				///AAAHHhhhh!!!!
-				vector pnt = bank->point[j].pnt;
+				vec3d pnt = bank->point[j].pnt;
 
 				scale = magnitude*(MAX_SCALE-(MIN_SCALE/2))+(MIN_SCALE/2);
 																				    
 			//	vertex h1[4];				// halves of a beam section	
 			//	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
-				vector fvec, norm2;
-			//	vector top1, bottom1, top2, bottom2;
+				vec3d fvec, norm2;
+			//	vec3d top1, bottom1, top2, bottom2;
 
 				d = vm_vec_dot(&tempv,&norm);
 				d += 0.75f;
@@ -4231,7 +4234,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 					vm_vec_scale_add(&norm2, &pnt, &fvec, w*2*Interp_secondary_thrust_glow_len_factor);
 
-/*				vector eyepos;
+/*				vec3d eyepos;
 				eyepos = Eye_position;
 				vm_vec_add2(&eyepos, pos);
 */
@@ -4264,7 +4267,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					vm_vec_normalize(&tempv);
 
 */					if(The_mission.flags & MISSION_FLAG_FULLNEB){
-						vector npnt;
+						vec3d npnt;
 						vm_vec_add(&npnt, &pnt, pos);
 						d *= fog_int;
 					}
@@ -4293,7 +4296,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					pe.normal_variance = 0.2f;
 					pe.num_high = 5;
 					pe.num_low = 1;
-						vector npnt;
+						vec3d npnt;
 						vm_vec_add(&npnt, &pnt, pos);
 					pe.pos = npnt;
 					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;
@@ -4309,14 +4312,14 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 						tp = &sip->normal_thruster_particles[P];
 
 					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
-						vector npnt = pnt;
+						vec3d npnt = pnt;
 						vm_vec_unrotate(&npnt, &pnt, orient);
 						vm_vec_add(&npnt, &npnt, pos);
 
 					pe.pos = npnt;				// Where the particles emit from
 					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;	// Initial velocity of all the particles
 	
-					vector nn = orient->vec.fvec;
+					vec3d nn = orient->vec.fvec;
 					vm_vec_negate(&nn);
 				//	vm_vec_unrotate(&nn, &bank->norm[j], orient);
 
@@ -4404,12 +4407,12 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
 	glow_maps_active = 1;
-	memset(&Interp_offset,0,sizeof(vector));
+	memset(&Interp_offset,0,sizeof(vec3d));
 
 }
 
 
-void submodel_render(int model_num, int submodel_num, matrix *orient, vector * pos, uint flags, int light_ignore_id, int *replacement_textures)
+void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * pos, uint flags, int light_ignore_id, int *replacement_textures)
 {
 	// replacement textures - Goober5000
 	model_set_replacement_textures(replacement_textures);
@@ -4512,7 +4515,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 // Fills in an array with points from a model.
 // Only gets up to max_num verts;
 // Returns number of verts found;
-static int submodel_get_points_internal(int model_num, int submodel_num, int max_num, vector **pnts, vector **norms )
+static int submodel_get_points_internal(int model_num, int submodel_num, int max_num, vec3d **pnts, vec3d **norms )
 {
 	polymodel * pm;
 
@@ -4537,7 +4540,7 @@ static int submodel_get_points_internal(int model_num, int submodel_num, int max
 				int offset = w(p+16);				
 
 				ubyte * normcount = p+20;
-				vector *src = vp(p+offset);
+				vec3d *src = vp(p+offset);
 
 				if ( nverts > max_num )
 					nverts = max_num; 
@@ -4568,7 +4571,7 @@ static int submodel_get_points_internal(int model_num, int submodel_num, int max
 }
 
 // Gets two random points on a model
-void submodel_get_two_random_points(int model_num, int submodel_num, vector *v1, vector *v2, vector *n1, vector *n2 )
+void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1, vec3d *n2 )
 {
 	int nv = submodel_get_points_internal(model_num, submodel_num, MAX_POLYGON_VECS, Interp_verts, Interp_norms );
 
@@ -4788,10 +4791,10 @@ int model_find_texture(int model_num, int bitmap)
 // positive return value means start_point is outside extended box
 // displaces closest point an optional amount delta to the outside of the box
 // closest_box_point can be NULL.
-float get_model_closest_box_point_with_delta(vector *closest_box_point, vector *start_point, int modelnum, int *is_inside, float delta)
+float get_model_closest_box_point_with_delta(vec3d *closest_box_point, vec3d *start_point, int modelnum, int *is_inside, float delta)
 {
 	int i, idx;
-	vector box_point, ray_direction, *extremes;
+	vec3d box_point, ray_direction, *extremes;
 	float dist, best_dist;
 	polymodel *pm;
 	int inside = 0;
@@ -4804,7 +4807,7 @@ float get_model_closest_box_point_with_delta(vector *closest_box_point, vector *
 	for (i=0; i<6; i++) {
 		idx = i / 2;	// which row vector of Identity matrix
 
-		memcpy(&ray_direction, vmd_identity_matrix.a2d[idx], sizeof(vector));
+		memcpy(&ray_direction, vmd_identity_matrix.a2d[idx], sizeof(vec3d));
 
 		// do negative, then positive plane for each axis
 		if (2 * idx == i) {
@@ -4840,9 +4843,9 @@ float get_model_closest_box_point_with_delta(vector *closest_box_point, vector *
 // positive return value means start_point is outside extended box
 // displaces closest point an optional amount delta to the outside of the box
 // closest_box_point can be NULL.
-float get_world_closest_box_point_with_delta(vector *closest_box_point, object *box_obj, vector *start_point, int *is_inside, float delta)
+float get_world_closest_box_point_with_delta(vec3d *closest_box_point, object *box_obj, vec3d *start_point, int *is_inside, float delta)
 {
-	vector temp, box_start;
+	vec3d temp, box_start;
 	float dist;
 	int modelnum;
 
@@ -4987,8 +4990,8 @@ poly_list list[MAX_MODEL_TEXTURES];
 poly_list flat_list;
 line_list flat_line_list;
 
-vector **htl_verts = NULL;
-vector **htl_norms = NULL;
+vec3d **htl_verts = NULL;
+vec3d **htl_norms = NULL;
 
 int htl_nverts = 0;
 int htl_nnorms = 0;
@@ -5009,7 +5012,7 @@ void parse_defpoint(int off, ubyte *bsp_data){
 
 	ubyte * normcount = off+bsp_data+20;
 //	vertex *dest = Interp_points;
-	vector *src = vp(off+bsp_data+offset);
+	vec3d *src = vp(off+bsp_data+offset);
 
 	// Get pointer to lights
 	Interp_lights = off+bsp_data+20+nverts;
@@ -5047,7 +5050,7 @@ void parse_defpoint(int off, ubyte *bsp_data){
 
 }
 
-inline int check_values(vector *N)
+inline int check_values(vec3d *N)
 {
 	// Values equal to -1.#IND0
 	if((N->xyz.x * N->xyz.x) < 0 ||
@@ -5077,8 +5080,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 	temp_verts = &bsp_data[offset+44];
 
 	vertex *V;
-	vector *v;
-	vector *N;
+	vec3d *v;
+	vec3d *N;
 
 	int problem_count = 0;
 
@@ -5142,8 +5145,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 // Flat Poly
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      center
+// +8      vec3d      normal
+// +20     vec3d      center
 // +32     float       radius
 // +36     int         nverts
 // +40     byte        red
@@ -5158,8 +5161,8 @@ void parse_flat_poly(int offset, ubyte *bsp_data)
 	short *verts = (short *)(&bsp_data[offset+44]);
 
 	vertex *V;
-	vector *v;
-	vector *N;
+	vec3d *v;
+	vec3d *N;
 	int i = 0;
 */
 /*	for( i = 1; i<nv-1; i++){
@@ -5171,7 +5174,7 @@ void parse_flat_poly(int offset, ubyte *bsp_data)
 		V->z = v->xyz.z;
 		V->u = 0.0f;
 		V->v = 0.0f;
-		*N = *(vector*)&bsp_data[offset+8];
+		*N = *(vec3d*)&bsp_data[offset+8];
 		V->r = bsp_data[offset+40];
 		V->g = bsp_data[offset+41];
 		V->b = bsp_data[offset+42];
@@ -5185,7 +5188,7 @@ void parse_flat_poly(int offset, ubyte *bsp_data)
 		V->z = v->xyz.z;
 		V->u = 0.0f;
 		V->v = 0.0f;
-		*N = *(vector*)&bsp_data[offset+8];
+		*N = *(vec3d*)&bsp_data[offset+8];
 		V->r = bsp_data[offset+40];
 		V->g = bsp_data[offset+41];
 		V->b = bsp_data[offset+42];
@@ -5199,7 +5202,7 @@ void parse_flat_poly(int offset, ubyte *bsp_data)
 		V->z = v->xyz.z;
 		V->u = 0.0f;
 		V->v = 0.0f;
-		*N = *(vector*)&bsp_data[offset+8];
+		*N = *(vec3d*)&bsp_data[offset+8];
 		V->r = bsp_data[offset+40];
 		V->g = bsp_data[offset+41];
 		V->b = bsp_data[offset+42];
@@ -5293,8 +5296,8 @@ void find_tri_counts(int offset, ubyte *bsp_data);
 /*
 int htl_nverts = 0;
 int htl_nnorms = 0;
-vector *htl_verts;
-vector *htl_norms;
+vec3d *htl_verts;
+vec3d *htl_norms;
 */
 
 void dealc_model_loadstuf(){
@@ -5313,12 +5316,12 @@ void alocate_poly_list(){
 	}
 	if(htl_nverts > alocate_poly_list_nvert){
 		if(htl_verts)free(htl_verts);
-		htl_verts = (vector**)malloc(sizeof(vector*)*htl_nverts);
+		htl_verts = (vec3d**)malloc(sizeof(vec3d*)*htl_nverts);
 		alocate_poly_list_nvert = htl_nverts;
 	}
 	if(htl_nnorms > alocate_poly_list_nnorm){
 		if(htl_nnorms)free(htl_norms);
-		htl_norms = (vector**)malloc(sizeof(vector*)*htl_nnorms);
+		htl_norms = (vec3d**)malloc(sizeof(vec3d*)*htl_nnorms);
 		alocate_poly_list_nnorm = htl_nnorms;
 	}
 
@@ -5370,7 +5373,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 	for(i=0; i<MAX_MODEL_TEXTURES; i++){
 		if(!list[i].n_verts)continue;
 		memcpy( (model_list.vert) + model_list.n_verts, list[i].vert, sizeof(vertex) * list[i].n_verts);
-		memcpy( (model_list.norm) + model_list.n_verts, list[i].norm, sizeof(vector) * list[i].n_verts);
+		memcpy( (model_list.norm) + model_list.n_verts, list[i].norm, sizeof(vec3d) * list[i].n_verts);
 		model_list.n_verts += list[i].n_verts;
 	}
 
@@ -5498,8 +5501,8 @@ void find_sortnorm(int offset, ubyte *bsp_data){
 }
 /*
 vertex *htl_points;
-vector *htl_verts;
-vector *htl_norms;
+vec3d *htl_verts;
+vec3d *htl_norms;
 
 int htl_nverts = 0;
 int htl_nnorms = 0;
@@ -5513,7 +5516,7 @@ void find_defpoint(int off, ubyte *bsp_data){
 	//int next_norm = 0;
 
 	ubyte * normcount = off+bsp_data+20;
-	vector *src = vp(off+bsp_data+offset);
+	vec3d *src = vp(off+bsp_data+offset);
 
 	// Get pointer to lights
 	Interp_lights = off+bsp_data+20+nverts;
@@ -5574,7 +5577,7 @@ void find_tri_counts(int offset, ubyte *bsp_data){
 }
 
 
-int in_box(vector *min, vector *max, vector * point){
+int in_box(vec3d *min, vec3d *max, vec3d * point){
 	if(point->xyz.x >= min->xyz.x && point->xyz.x <= max->xyz.x &&
 		point->xyz.y >= min->xyz.y && point->xyz.y <= max->xyz.y &&
 		point->xyz.z >= min->xyz.z && point->xyz.z <= max->xyz.z)return 1;
@@ -5663,7 +5666,7 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 	g3_done_instance(true);
 }
 
-extern vector Object_position;
+extern vec3d Object_position;
 extern matrix Object_matrix;
 
 void model_render_buffers(bsp_info* model, polymodel * pm){
@@ -5675,7 +5678,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 	// RT Added second conditional parameter, seems to not distrupt anything in either API
 	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING), !(Interp_flags & MR_NO_LIGHTING) );
 
-	vector scale;
+	vec3d scale;
 
 	if(Interp_thrust_scale_subobj){
 		scale.xyz.x = 1.0f;
@@ -5805,7 +5808,7 @@ void recode_tmap(int offset, ubyte *bsp_data){
 	for(int i = 0; i<n_vert; i++){	
 		vertex vert;
 		vm_vec2vert(htl_verts[(int)tverts[i].vertnum], &vert);
-		vector norm = *htl_norms[(int)tverts[i].normnum];
+		vec3d norm = *htl_norms[(int)tverts[i].normnum];
 		vm_vec_normalize(&norm);
 
 		vert.u = tverts[i].u;
@@ -5928,8 +5931,8 @@ void model_resort_index_buffer_sortnorm_nonsorted(int offset, ubyte *bsp_info, i
 // Sortnorms
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      normal_point
+// +8      vec3d      normal
+// +20     vec3d      normal_point
 // +32     int         tmp=0
 // 36     int     front offset
 // 40     int     back offset
@@ -5980,8 +5983,8 @@ void model_resort_index_buffer_sortnorm_b2f(int offset, ubyte *bsp_info, int tex
 // Sortnorms
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      normal_point
+// +8      vec3d      normal
+// +20     vec3d      normal_point
 // +32     int         tmp=0
 // 36     int     front offset
 // 40     int     back offset
@@ -6005,7 +6008,7 @@ void model_resort_index_buffer_sortnorm_f2b(int offset, ubyte *bsp_info, int tex
 
 	if (postlist) model_resort_index_buffer_bsp(offset+postlist,bsp_info, true, texture, index_buffer);		// postlist
 
-	if (g3_check_normal_facing((vector*)&bsp_info[offset+20],(vector*)&bsp_info[offset+8])) {		//facing
+	if (g3_check_normal_facing((vec3d*)&bsp_info[offset+20],(vec3d*)&bsp_info[offset+8])) {		//facing
 
 		// 
 
@@ -6099,7 +6102,7 @@ struct silhouette_index{
 };
 
 
-void get_silhouette_from_point(vector *point_list, ubyte *bsp_data, vector* point){
+void get_silhouette_from_point(vec3d *point_list, ubyte *bsp_data, vec3d* point){
 }
 */
 //************************************//
@@ -6128,7 +6131,7 @@ void triggered_rotation::start(queued_animation* q){
 	char ax[]="xyz";
 #endif
 
-//	vector sp;
+//	vec3d sp;
 //	vm_vec_rotate(&sp,&snd_pnt,&Objects[obj_num].orient);
 //	vm_vec_add2(&sp, &Objects[obj_num].pos);
 //	if(q->start_sound != -1)current_snd = snd_play_3d(&Snds[q->start_sound], &sp, &View_position, q->snd_rad) ;
@@ -6169,7 +6172,7 @@ void triggered_rotation::set_to_end(queued_animation* q){
 }
 
 triggered_rotation::triggered_rotation(){
-	vector v = ZERO_VECTOR;
+	vec3d v = ZERO_VECTOR;
 	current_ang = v;	
 	current_vel = v;	
 	rot_accel = v;	

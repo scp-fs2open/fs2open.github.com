@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.35 $
- * $Author: wmcoolmon $
- * $Date: 2005-03-25 06:57:37 $
+ * $Revision: 2.36 $
+ * $Author: taylor $
+ * $Date: 2005-04-05 05:53:22 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/03/25 06:57:37  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.34  2005/03/12 03:09:22  wmcoolmon
  * New commandline option "-noparseerrors"
  *
@@ -1948,26 +1951,26 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 
 
 //	Stuff a vector, which is 3 floats.
-void stuff_vector(vector *vp)
+void stuff_vector(vec3d *vp)
 {
 	stuff_float(&vp->xyz.x);
 	stuff_float(&vp->xyz.y);
 	stuff_float(&vp->xyz.z);
 }
 
-void stuff_parenthesized_vector(vector *vp)
+void stuff_parenthesized_vector(vec3d *vp)
 {
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading parenthesized vector.  Found [%c].  Expecting '('.\n", *Mp);
+		error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting '('.\n", *Mp);
 		longjmp(parse_abort, 11);
 	} else {
 		Mp++;
 		stuff_vector(vp);
 		ignore_white_space();
 		if (*Mp != ')') {
-			error_display(1, "Reading parenthesized vector.  Found [%c].  Expecting ')'.\n", *Mp);
+			error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting ')'.\n", *Mp);
 			longjmp(parse_abort, 12);
 		}
 		Mp++;
@@ -1980,7 +1983,7 @@ void stuff_parenthesized_vector(vector *vp)
 //	  where vector is a vector
 // For example, ( (1 2 3) (2 3 4) (2 3 5) )
 //		 is a vector list of three vectors.
-int stuff_vector_list(vector *vlp, int max_vecs)
+int stuff_vector_list(vec3d *vlp, int max_vecs)
 {
 	int	count = 0;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fvi.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:36 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:18 $
+ * $Author: taylor $
  *
  * Routines to find intersections of various 3d things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:36  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:52  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -179,7 +182,7 @@
 void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 );
 
 
-float matrix_determinant_from_vectors(vector *v1,vector *v2,vector *v3)
+float matrix_determinant_from_vectors(vec3d *v1,vec3d *v2,vec3d *v3)
 {
 	float ans;
 	ans =  v1->xyz.x * v2->xyz.y * v3->xyz.z;
@@ -196,9 +199,9 @@ float matrix_determinant_from_vectors(vector *v1,vector *v2,vector *v3)
 // finds the point on each line of closest approach (s and t) (lines need not intersect to get closest point)
 // taken from graphic gems I, p. 304
 // 
-void fvi_two_lines_in_3space(vector *p1, vector *v1, vector *p2, vector *v2, float *s, float *t)
+void fvi_two_lines_in_3space(vec3d *p1, vec3d *v1, vec3d *p2, vec3d *v2, float *s, float *t)
 {
-	vector cross,delta;
+	vec3d cross,delta;
 	vm_vec_crossprod(&cross, v1, v2);
 	vm_vec_sub(&delta, p2, p1);
 
@@ -219,8 +222,8 @@ void fvi_two_lines_in_3space(vector *p1, vector *v1, vector *p2, vector *v2, flo
 }
 
 //tells distance from a plain to a point-Bobboau
-float fvi_point_dist_plane(	vector *plane_pnt, vector *plane_norm,		// Plane description, a point and a normal
-					    vector *point	//a point to test
+float fvi_point_dist_plane(	vec3d *plane_pnt, vec3d *plane_norm,		// Plane description, a point and a normal
+					    vec3d *point	//a point to test
 						)
 {
 	float dist,D;
@@ -263,12 +266,12 @@ float fvi_point_dist_plane(	vector *plane_pnt, vector *plane_norm,		// Plane des
 // p0 as ray_origin, p1-p0 as the ray_direction, and there would be an
 // intersection if the return value is between 0 and 1.
 
-float fvi_ray_plane(vector *new_pnt,
-                    vector *plane_pnt,vector *plane_norm,		// Plane description, a point and a normal
-                    vector *ray_origin,vector *ray_direction,	// Ray description, a point and a direction
+float fvi_ray_plane(vec3d *new_pnt,
+                    vec3d *plane_pnt,vec3d *plane_norm,		// Plane description, a point and a normal
+                    vec3d *ray_origin,vec3d *ray_direction,	// Ray description, a point and a direction
 						  float rad)
 {
-	vector w;
+	vec3d w;
 	float num,den,t;
 	
 	vm_vec_sub(&w,ray_origin,plane_pnt);
@@ -300,12 +303,12 @@ float fvi_ray_plane(vector *new_pnt,
 //new_pnt is the found point on the plane
 //plane_pnt & plane_norm describe the plane
 //p0 & p1 are the ends of the line.  
-int fvi_segment_plane(vector *new_pnt,
-										vector *plane_pnt,vector *plane_norm,
-                                 vector *p0,vector *p1,float rad)
+int fvi_segment_plane(vec3d *new_pnt,
+										vec3d *plane_pnt,vec3d *plane_norm,
+                                 vec3d *p0,vec3d *p1,float rad)
 {
 	float t;
-	vector d;
+	vec3d d;
 
 	vm_vec_sub( &d, p1, p0 );
 	
@@ -329,9 +332,9 @@ int fvi_segment_plane(vector *new_pnt,
 //vector defined by p0,p1 
 //returns 1 if intersects, and fills in intp
 //else returns 0
-int fvi_segment_sphere(vector *intp,vector *p0,vector *p1,vector *sphere_pos,float sphere_rad)
+int fvi_segment_sphere(vec3d *intp,vec3d *p0,vec3d *p1,vec3d *sphere_pos,float sphere_rad)
 {
-	vector d,dn,w,closest_point;
+	vec3d d,dn,w,closest_point;
 	float mag_d,dist,w_dist,int_dist;
 
 	//this routine could be optimized if it's taking too much time!
@@ -401,9 +404,9 @@ int fvi_segment_sphere(vector *intp,vector *p0,vector *p1,vector *sphere_pos,flo
 //vector defined by p0,p1 
 //returns 1 if intersects, and fills in intp
 //else returns 0
-int fvi_ray_sphere(vector *intp,vector *p0,vector *p1,vector *sphere_pos,float sphere_rad)
+int fvi_ray_sphere(vec3d *intp,vec3d *p0,vec3d *p1,vec3d *sphere_pos,float sphere_rad)
 {
-	vector d,dn,w,closest_point;
+	vec3d d,dn,w,closest_point;
 	float mag_d,dist,w_dist,int_dist;
 
 	//this routine could be optimized if it's taking too much time!
@@ -477,7 +480,7 @@ int fvi_ray_sphere(vector *intp,vector *p0,vector *p1,vector *sphere_pos,float s
 // from min to max.   If there was an intersection, then hitpt will contain
 // the point where the ray begins inside the box.
 // Fast ray-box intersection taken from Graphics Gems I, pages 395,736.
-int fvi_ray_boundingbox( vector *min, vector *max, vector * p0, vector *pdir, vector *hitpt )
+int fvi_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d *hitpt )
 {
 	float *origin = (float *)&p0->xyz.x;
 	float *dir = (float *)&pdir->xyz.x;
@@ -572,10 +575,10 @@ int ij_table[3][2] =        {
 #define delta 0.0001f
 #define	UNINITIALIZED_VALUE	-1234567.8f
 
-int fvi_point_face(vector *checkp, int nv, vector **verts, vector * norm1, float *u_out,float *v_out, uv_pair * uvls )
+int fvi_point_face(vec3d *checkp, int nv, vec3d **verts, vec3d * norm1, float *u_out,float *v_out, uv_pair * uvls )
 {
 	float *norm, *P;
-	vector t;
+	vec3d t;
 	int i0, i1,i2;
 
 	norm = (float *)norm1;
@@ -673,7 +676,7 @@ int fvi_point_face(vector *checkp, int nv, vector **verts, vector * norm1, float
 //
 // ****************************************************************************
 
-int check_sphere_point( vector *point, vector *sphere_start, vector *sphere_vel, float radius, float *collide_time );
+int check_sphere_point( vec3d *point, vec3d *sphere_start, vec3d *sphere_vel, float radius, float *collide_time );
 
 // ----------------------------------------------------------------------------
 // fvi_sphere_plane()
@@ -693,8 +696,8 @@ int check_sphere_point( vector *point, vector *sphere_start, vector *sphere_vel,
 //		return:	1 if sphere may be in contact with plane in time range [0-1], 0 otherwise
 //
 
-int fvi_sphere_plane(vector *intersect_point, vector *sphere_center_start, vector *sphere_velocity, float sphere_radius, 
-							vector *plane_normal, vector *plane_point, float *hit_time, float *crossing_time)
+int fvi_sphere_plane(vec3d *intersect_point, vec3d *sphere_center_start, vec3d *sphere_velocity, float sphere_radius, 
+							vec3d *plane_normal, vec3d *plane_point, float *hit_time, float *crossing_time)
 {
 	float	D, xs0_dot_norm, vs_dot_norm;
 	float t1, t2;
@@ -723,7 +726,7 @@ int fvi_sphere_plane(vector *intersect_point, vector *sphere_center_start, vecto
 
 	// find hit pos if t1 in range 0-1
 	if (t1 > 0 && t1 < 1) {
-		vector v_temp;
+		vec3d v_temp;
 		vm_vec_scale_add( &v_temp, sphere_center_start, sphere_velocity, t1 );
 		vm_project_point_onto_plane( intersect_point, &v_temp, plane_normal, plane_point );
 	}
@@ -749,24 +752,24 @@ int fvi_sphere_plane(vector *intersect_point, vector *sphere_center_start, vecto
 //					max_time					=>		maximum legal time at which collision can occur
 //					collide_time			=>		actual time of the collision
 //		
-int fvi_sphere_perp_edge(vector *intersect_point, vector *sphere_center_start, vector *sphere_velocity,
-								 float sphere_radius, vector *edge_point1, vector *edge_point2, float *collide_time)
+int fvi_sphere_perp_edge(vec3d *intersect_point, vec3d *sphere_center_start, vec3d *sphere_velocity,
+								 float sphere_radius, vec3d *edge_point1, vec3d *edge_point2, float *collide_time)
 {
 	// find the intersection in the plane normal to sphere velocity and edge velocity
 	// choose a plane point V0 (first vertex of the edge)
 	// project vectors and points into the plane
 	// find the projection of the intersection and see if it lies on the edge
 
-	vector edge_velocity;
-	vector V0, V1;
-	vector Xe_proj, Xs_proj;
+	vec3d edge_velocity;
+	vec3d V0, V1;
+	vec3d Xe_proj, Xs_proj;
 
 	V0 = *edge_point1;
 	V1 = *edge_point2;
 	vm_vec_sub(&edge_velocity, &V1, &V0);
 
 	// define a set of local unit vectors
-	vector x_hat, y_hat, z_hat;
+	vec3d x_hat, y_hat, z_hat;
 	float max_edge_parameter;
 
 	vm_vec_copy_normalize( &x_hat, &edge_velocity );
@@ -774,7 +777,7 @@ int fvi_sphere_perp_edge(vector *intersect_point, vector *sphere_center_start, v
 	vm_vec_crossprod( &z_hat, &x_hat, &y_hat );
 	max_edge_parameter = vm_vec_mag( &edge_velocity );
 
-	vector temp;
+	vec3d temp;
 	// next two temp should be same as starting velocities
 	vm_vec_projection_onto_plane(&temp, sphere_velocity, &z_hat);
 	Assert ( !vm_vec_cmp(&temp, sphere_velocity) );
@@ -787,7 +790,7 @@ int fvi_sphere_perp_edge(vector *intersect_point, vector *sphere_center_start, v
 
 	vm_project_point_onto_plane(&Xs_proj, sphere_center_start, &z_hat, &V0);
 
-	vector plane_coord;
+	vec3d plane_coord;
 	plane_coord.xyz.x = vm_vec_dotprod(&Xs_proj, &x_hat);
 	plane_coord.xyz.y = vm_vec_dotprod(&Xe_proj, &y_hat);
 	plane_coord.xyz.z = vm_vec_dotprod(&Xe_proj, &z_hat);
@@ -799,7 +802,7 @@ int fvi_sphere_perp_edge(vector *intersect_point, vector *sphere_center_start, v
 
 	// check if point is actually on edge
 	float edge_parameter;
-	vector temp_vec;
+	vec3d temp_vec;
 
 	vm_vec_sub( &temp_vec, intersect_point, &V0 );
 	edge_parameter = vm_vec_dotprod( &temp_vec, &x_hat );
@@ -822,9 +825,9 @@ int fvi_sphere_perp_edge(vector *intersect_point, vector *sphere_center_start, v
 //							radius			=>		radius of sphere
 //							collide_time	=>		time of first collision with t >= 0
 //
-int check_sphere_point( vector *point, vector *sphere_start, vector *sphere_vel, float radius, float *collide_time )
+int check_sphere_point( vec3d *point, vec3d *sphere_start, vec3d *sphere_vel, float radius, float *collide_time )
 {
-	vector delta_x;
+	vec3d delta_x;
 	float delta_x_sqr, vs_sqr, delta_x_dot_vs;
 
 	vm_vec_sub( &delta_x, sphere_start, point );
@@ -885,18 +888,18 @@ int check_sphere_point( vector *point, vector *sphere_start, vector *sphere_vel,
 /*
 #define TOL 1E-3
 
-int fvi_polyedge_sphereline(vector *hit_point, vector *xs0, vector *vs, float Rs, int nv, vector **verts, float *hit_time)
+int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, int nv, vec3d **verts, float *hit_time)
 {
 	int i;
-	vector v0, v1;
-	vector ve;						// edge velocity
+	vec3d v0, v1;
+	vec3d ve;						// edge velocity
 	float best_sphere_time;		// earliest time sphere hits edge
-	vector delta_x;
+	vec3d delta_x;
 	float	delta_x_dot_ve, delta_x_dot_vs, ve_dot_vs, ve_sqr, vs_sqr;
 	float denominator;
 	float time_el, time_sl;		// times for edge_line and sphere_line at closest approach
-	vector temp_edge_hit, temp_sphere_hit;
-	vector best_edge_hit;		// edge position for earliest edge hit
+	vec3d temp_edge_hit, temp_sphere_hit;
+	vec3d best_edge_hit;		// edge position for earliest edge hit
 
 	best_sphere_time = FLT_MAX;
 
@@ -940,7 +943,7 @@ int fvi_polyedge_sphereline(vector *hit_point, vector *xs0, vector *vs, float Rs
 		vm_vec_scale_add(&temp_sphere_hit, xs0, vs, time_sl);
 
 		// Compute distance squared at closest approach.
-		vector diff;
+		vec3d diff;
 		float  d0_sqr;
 		vm_vec_sub(&diff, &temp_sphere_hit, &temp_edge_hit);
 		d0_sqr = vm_vec_mag_squared(&diff);
@@ -1085,7 +1088,7 @@ int fvi_polyedge_sphereline(vector *hit_point, vector *xs0, vector *vs, float Rs
 		}
 
 Hit:
-//		vector temp;
+//		vec3d temp;
 //		vm_vec_scale_add( &temp, xs0, vs, time_s);
 //		float q = vm_vec_dist( &temp, &temp_edge_hit );
 //		if (q > Rs + .003 || q < Rs - .003) {
@@ -1124,15 +1127,15 @@ Hit:
 
 #define WARN_DIST	1.0
 
-int fvi_polyedge_sphereline(vector *hit_point, vector *xs0, vector *vs, float Rs, int nv, vector **verts, float *hit_time)
+int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, int nv, vec3d **verts, float *hit_time)
 {
 	int i;
-	vector v0, v1;
-	vector ve;						// edge velocity
+	vec3d v0, v1;
+	vec3d ve;						// edge velocity
 	float best_sphere_time;		// earliest time sphere hits edge
-	vector delta_x;
+	vec3d delta_x;
 	float	delta_x_dot_ve, delta_x_dot_vs, ve_dot_vs, ve_sqr, vs_sqr, delta_x_sqr;
-	vector temp_edge_hit, temp_sphere_hit;
+	vec3d temp_edge_hit, temp_sphere_hit;
 
 	best_sphere_time = FLT_MAX;
 
@@ -1346,7 +1349,7 @@ TryVertex:
 		// } 
 
 Hit:
-//		vector temp;
+//		vec3d temp;
 //		vm_vec_scale_add( &temp, xs0, vs, time_s);
 //		float q = vm_vec_dist( &temp, &temp_edge_hit );
 //		if (q > Rs + .003 || q < Rs - .003) {
@@ -1378,9 +1381,9 @@ Hit:
 //					line_point1		=>		first point on the line
 //					line_point2		=>		second point on the line
 //
-void fvi_closest_point_on_line_segment(vector *closest_point, vector *fixed_point, vector *line_point1, vector *line_point2)
+void fvi_closest_point_on_line_segment(vec3d *closest_point, vec3d *fixed_point, vec3d *line_point1, vec3d *line_point2)
 {
-	vector delta_x, line_velocity;
+	vec3d delta_x, line_velocity;
 	float t;
 
 	vm_vec_sub(&line_velocity, line_point2, line_point1);
@@ -1414,9 +1417,9 @@ void fvi_closest_point_on_line_segment(vector *closest_point, vector *fixed_poin
 //
 //		returns 1 if spheres overlap, 0 otherwise
 //
-int fvi_check_sphere_sphere(vector *x_p0, vector *x_p1, vector *x_s0, vector *x_s1, float radius_p, float radius_s, float *t1, float *t2)
+int fvi_check_sphere_sphere(vec3d *x_p0, vec3d *x_p1, vec3d *x_s0, vec3d *x_s1, float radius_p, float radius_s, float *t1, float *t2)
 {
-	vector delta_x, delta_v;
+	vec3d delta_x, delta_v;
 	float discriminant, separation, delta_x_dot_delta_v, delta_v_sqr, delta_x_sqr;
 	float time1, time2;
 
@@ -1491,9 +1494,9 @@ int fvi_check_sphere_sphere(vector *x_p0, vector *x_p1, vector *x_s0, vector *x_
 //
 //		Polygon face is characterized by a center and a radius.  This routine checks whether it is 
 //		*impossible* for a moving sphere to intersect a fixed polygon face.
-int fvi_cull_polyface_sphere(vector *poly_center, float poly_r, vector *sphere_start, vector *sphere_end, float sphere_r)
+int fvi_cull_polyface_sphere(vec3d *poly_center, float poly_r, vec3d *sphere_start, vec3d *sphere_end, float sphere_r)
 {
-	vector closest_point, closest_separation;
+	vec3d closest_point, closest_separation;
 	float max_sep;
 
 	fvi_closest_point_on_line_segment(&closest_point, poly_center, sphere_start, sphere_end);
@@ -1512,9 +1515,9 @@ int fvi_cull_polyface_sphere(vector *poly_center, float poly_r, vector *sphere_s
 // fvi_closest_line_line
 // finds the closest points between two lines
 //
-void fvi_closest_line_line( vector *x0, vector *vx, vector *y0, vector *vy, float *x_time, float *y_time )
+void fvi_closest_line_line( vec3d *x0, vec3d *vx, vec3d *y0, vec3d *vy, float *x_time, float *y_time )
 {
-	vector vx_cross_vy, delta_l, delta_l_cross_vx, delta_l_cross_vy;
+	vec3d vx_cross_vy, delta_l, delta_l_cross_vx, delta_l_cross_vy;
 	float denominator;
 
 	vm_vec_sub(&delta_l, y0, x0);
@@ -1528,7 +1531,7 @@ void fvi_closest_line_line( vector *x0, vector *vx, vector *y0, vector *vy, floa
 	*x_time = vm_vec_dotprod(&delta_l_cross_vy, &vx_cross_vy) / denominator; 
 	*y_time = vm_vec_dotprod(&delta_l_cross_vx, &vx_cross_vy) / denominator; 
 
-//	vector x_result, y_result;
+//	vec3d x_result, y_result;
 //	vm_vec_scale_add(&x_result, x0, vx, *x_time);
 //	vm_vec_scale_add(&y_result, y0, vy, *y_time);
 //	*dist_sqr = vm_vec_dist_squared(&x_result, &y_result);
@@ -1549,13 +1552,13 @@ void accurate_square_root( float A, float B, float C, float discriminant, float 
 	}
 }
 
-// vector mins - minimum extents of bbox
-// vector maxs - maximum extents of bbox
-// vector start - point in bbox reference frame
-// vector box_pt - point in bbox reference frame.
+// vec3d mins - minimum extents of bbox
+// vec3d maxs - maximum extents of bbox
+// vec3d start - point in bbox reference frame
+// vec3d box_pt - point in bbox reference frame.
 // NOTE: if a coordinate of start is *inside* the bbox, it is *not* moved to surface of bbox
 // return: 1 if inside, 0 otherwise.
-int project_point_onto_bbox(vector *mins, vector *maxs, vector *start, vector *box_pt)
+int project_point_onto_bbox(vec3d *mins, vec3d *maxs, vec3d *start, vec3d *box_pt)
 {
 	int inside = TRUE;
 

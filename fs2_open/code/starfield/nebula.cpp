@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-01-31 10:34:39 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:25 $
  * $Author: taylor $
  *
  * Code to load & display nebulas
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/01/31 10:34:39  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.6  2004/07/26 20:47:53  Kazan
  * remove MCD complete
  *
@@ -165,7 +168,7 @@
 //static int nebula_inited = 0;
 static int num_pts = 0;
 
-static vector nebula_vecs[MAX_POINTS];
+static vec3d nebula_vecs[MAX_POINTS];
 static vertex nebula_verts[MAX_POINTS];
 
 static float scale_factor = 1.0f;
@@ -195,7 +198,7 @@ void nebula_close()
 // given:
 // u,v in range 0-1
 
-void project_2d_onto_sphere( vector *pnt, float u, float v )
+void project_2d_onto_sphere( vec3d *pnt, float u, float v )
 {
 	float a,x,y,z,s;
 

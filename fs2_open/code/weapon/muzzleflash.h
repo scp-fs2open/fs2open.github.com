@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:36 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:36  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -52,7 +55,7 @@
 
 // prototypes
 struct object;
-struct vector;
+struct vec3d;
 
 // muzzle flash types
 #define MAX_MUZZLE_FLASH_TYPES				10
@@ -72,7 +75,7 @@ void mflash_level_init();
 void mflash_level_close();
 
 // create a muzzle flash on the guy
-void mflash_create(vector *gun_pos, vector *gun_dir, int mflash_type);
+void mflash_create(vec3d *gun_pos, vec3d *gun_dir, int mflash_type);
 
 // process muzzle flash stuff
 void mflash_process_all();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/radarsetup.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:33 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:23 $
+ * $Author: taylor $
  *
  * C module containg functions switch between radar modes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:33  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2004/08/02 22:43:03  phreak
  * orb radar rendering style
  *
@@ -75,7 +78,7 @@ typedef struct blip	{
 	blip	*prev, *next;
 	int	x, y, rad;
 	int	flags;	// BLIP_ flags defined above
-	vector position;
+	vec3d position;
 } blip;
 
 extern blip	Blip_bright_list[MAX_RADAR_COLORS];		// linked list of bright blips

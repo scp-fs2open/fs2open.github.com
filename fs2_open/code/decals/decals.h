@@ -35,7 +35,7 @@ struct decal_list;
 struct decal_list_controle;
 
 struct decal_poly{
-	vector norm[3];
+	vec3d norm[3];
 	vertex point[3];
 	decal_poly *next;
 	decal* parent;
@@ -93,7 +93,7 @@ struct decal_system{
 //this is used to give all the data to the generation data to the functions that make them
 
 struct decal_point{
-	vector pnt;
+	vec3d pnt;
 	matrix orient;
 	float radius;
 };

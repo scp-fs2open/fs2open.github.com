@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-03-27 12:28:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.37 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/03/27 12:28:32  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.35  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -1027,7 +1031,7 @@ void obj_free(int objnum)
 //returns the object number.  The object will be a non-rendering, non-physics
 //object.   Pass -1 if no parent.
 int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
-               vector * pos, float radius, uint flags )
+               vec3d * pos, float radius, uint flags )
 {
 	int objnum,idx;
 	object *obj;
@@ -1454,7 +1458,7 @@ void obj_move_call_physics(object *objp, float frametime)
 
 			if ( (objp->type == OBJ_ASTEROID) && (Model_caching && (!D3D_enabled || !OGL_enabled) ) )	{
 				// If we're doing model caching, don't rotate asteroids
-				vector tmp = objp->phys_info.rotvel;
+				vec3d tmp = objp->phys_info.rotvel;
 
 				objp->phys_info.rotvel = vmd_zero_vector;
 				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
@@ -1803,7 +1807,7 @@ void obj_move_all_post(object *objp, float frametime)
 				for (i=0; i<MAX_SHIP_ARCS; i++ )	{
 					if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
 						// Move arc endpoints into world coordinates	
-						vector tmp1, tmp2;
+						vec3d tmp1, tmp2;
 						vm_vec_unrotate(&tmp1,&shipp->arc_pts[i][0],&objp->orient);
 						vm_vec_add2(&tmp1,&objp->pos);
 
@@ -1885,7 +1889,7 @@ void obj_move_all_post(object *objp, float frametime)
 				for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
 					if ( timestamp_valid( db->arc_timestamp[i] ) )	{
 						// Move arc endpoints into world coordinates	
-						vector tmp1, tmp2;
+						vec3d tmp1, tmp2;
 						vm_vec_unrotate(&tmp1,&db->arc_pts[i][0],&objp->orient);
 						vm_vec_add2(&tmp1,&objp->pos);
 
@@ -1962,7 +1966,7 @@ void obj_move_all(float frametime)
 	while( objp !=END_OF_LIST(&obj_used_list) )	{
 		// skip objects which should be dead
 		if ( !(objp->flags&OF_SHOULD_BE_DEAD) )	{		
-			vector	cur_pos = objp->pos;			// Save the current position
+			vec3d	cur_pos = objp->pos;			// Save the current position
 
 			// if this is an observer object, skip it
 			if(objp->type == OBJ_OBSERVER){
@@ -2221,7 +2225,7 @@ void obj_client_simulate(float frametime)
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )	{
 
 		if ( !(objp->flags&OF_SHOULD_BE_DEAD) )	{
-			vector	cur_pos = objp->pos;			// Save the current position
+			vec3d	cur_pos = objp->pos;			// Save the current position
 
 			obj_move_all_pre(objp, frametime);
 
@@ -2287,7 +2291,7 @@ void obj_observer_move(float frame_time)
 }
 
 // function to return a vector of the average position of all ships in the mission.
-void obj_get_average_ship_pos( vector *pos )
+void obj_get_average_ship_pos( vec3d *pos )
 {
 	int count;
 	object *objp;

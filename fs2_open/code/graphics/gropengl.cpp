@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.113 $
- * $Date: 2005-04-01 07:25:54 $
+ * $Revision: 2.114 $
+ * $Date: 2005-04-05 05:53:17 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2005/04/01 07:25:54  taylor
+ * go back to 24-bit depth, 32 didn't help any with ATI bugs
+ *
  * Revision 2.112  2005/03/24 23:42:20  taylor
  * s/gr_ogl_/gr_opengl_/g
  * add empty gr_opengl_draw_line_list() so that it's not a NULL pointer
@@ -835,15 +838,15 @@ void (*gr_opengl_set_tex_src)(gr_texture_source ts);
 
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
-extern vector G3_user_clip_normal;
-extern vector G3_user_clip_point;
+extern vec3d G3_user_clip_normal;
+extern vec3d G3_user_clip_point;
 
 //some globals
 extern matrix View_matrix;
-extern vector View_position;
+extern vec3d View_position;
 extern matrix Eye_matrix;
-extern vector Eye_position;
-extern vector Object_position;
+extern vec3d Eye_position;
+extern vec3d Object_position;
 extern matrix Object_matrix;
 extern float	Canv_w2;				// Canvas_width / 2
 extern float	Canv_h2;				// Canvas_height / 2
@@ -1947,15 +1950,15 @@ void gr_opengl_curve( int xc, int yc, int r, int direction)
 }
 
 
-extern vector *Interp_pos;
-extern vector Interp_offset;
+extern vec3d *Interp_pos;
+extern vec3d Interp_offset;
 extern matrix *Interp_orient;
 
 void gr_opengl_stuff_fog_coord(vertex *v)
 {
 	float d;
-	vector pos;			//position of the vertex in question
-	vector final;
+	vec3d pos;			//position of the vertex in question
+	vec3d final;
 	vm_vec_add(&pos, Interp_pos,&Interp_offset);
 	vm_vec_add2(&pos, &v->real_pos);
 	vm_vec_rotate(&final, &pos, Interp_orient);
@@ -1979,7 +1982,7 @@ void gr_opengl_stuff_secondary_color(vertex *v, ubyte fr, ubyte fg, ubyte fb)
 
 	float d;
 	float d_over_far;
-	vector pos;			//position of the vertex in question
+	vec3d pos;			//position of the vertex in question
 	vm_vec_add(&pos, Interp_pos,&Interp_offset);
 	vm_vec_add2(&pos, &v->real_pos);
 	d=vm_vec_dist_squared(&pos,&Eye_position);
@@ -3419,7 +3422,7 @@ void gr_opengl_pop_texture_matrix(int unit)
 	glMatrixMode(current_matrix);
 }
 
-void gr_opengl_translate_texture_matrix(int unit, vector *shift)
+void gr_opengl_translate_texture_matrix(int unit, vec3d *shift)
 {
 	if (unit > GL_supported_texture_units){ /*tex_shift=*shift;*/ return;}
 	GLint current_matrix;

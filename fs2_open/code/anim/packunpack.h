@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:18 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-04-05 05:53:14 $
+ * $Author: taylor $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
  * Anim files.  Also handles Anim loading, creating Anim instances (for
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:18  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/03/05 09:01:53  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -218,7 +221,7 @@ typedef struct anim {
 typedef struct anim_instance {
 	anim_instance *next, *prev;
 	int		x,y;				// coordinates anim is played at (top left corner of anim)
-	vector	*world_pos;		// world (x,y,z) position of explosion
+	vec3d	*world_pos;		// world (x,y,z) position of explosion
 	float		radius;			// radius of image, needed for scaling
 	int		frame_num;		// current frame, or last frame if between frames (first frame is 0)
 	int		last_frame_num;// last frame rendered

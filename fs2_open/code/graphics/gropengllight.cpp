@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.11 $
- * $Date: 2005-02-05 00:30:49 $
+ * $Revision: 1.12 $
+ * $Date: 2005-04-05 05:53:17 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/02/05 00:30:49  taylor
+ * fix a few things post merge
+ *
  * Revision 1.10  2005/02/04 23:29:31  taylor
  * merge with Linux/OSX tree - p0204-3
  *
@@ -202,8 +205,8 @@ void opengl_change_active_lights(int pos){
 	glLoadIdentity();
 
 //straight cut'n'paste out of gr_opengl_set_view_matrix, but I couldn't use that, since it messes up with the stack depth var
-	vector fwd;
-	vector *uvec=&Eye_matrix.vec.uvec;
+	vec3d fwd;
+	vec3d *uvec=&Eye_matrix.vec.uvec;
 
 	vm_vec_add(&fwd, &Eye_position, &Eye_matrix.vec.fvec);
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dClipper.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:50 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-05 05:53:23 $
+ * $Author: taylor $
  *
  * Polygon clipping functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:50  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/12 16:33:04  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -165,12 +168,12 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 	if ( plane_flag & CC_OFF_USER )	{
 
 		// Clip with user-defined plane
-		vector w, ray_direction;
+		vec3d w, ray_direction;
 		float num,den;
 
-		vm_vec_sub(&ray_direction,(vector *)&off_pnt->x,(vector *)&on_pnt->x);
+		vm_vec_sub(&ray_direction,(vec3d *)&off_pnt->x,(vec3d *)&on_pnt->x);
 			
-		vm_vec_sub(&w,(vector *)&on_pnt->x,&G3_user_clip_point);
+		vm_vec_sub(&w,(vec3d *)&on_pnt->x,&G3_user_clip_point);
 	
 		den = -vm_vec_dot(&G3_user_clip_normal,&ray_direction);
 		if ( den == 0.0f ) {	// Ray & plane are parallel, so there is no intersection

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-03-02 21:24:48 $
+ * $Revision: 2.11 $
+ * $Date: 2005-04-05 05:53:25 $
  * $Author: taylor $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/02 21:24:48  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.9  2005/01/31 23:27:55  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -193,10 +196,10 @@ void emp_level_init()
 }
 
 // apply the EMP effect to all relevant ships
-void emp_apply(vector *pos, float inner_radius, float outer_radius, float emp_intensity, float emp_time)
+void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_intensity, float emp_time)
 {	
 	float actual_intensity, actual_time;
-	vector dist;
+	vec3d dist;
 	float dist_mag;
 	float scale_factor;
 	object *target;
@@ -270,7 +273,7 @@ void emp_apply(vector *pos, float inner_radius, float outer_radius, float emp_in
 			while(moveup != &Ships[target->instance].subsys_list){
 				// if this is a turret, disrupt it
 				if((moveup->system_info != NULL) && (moveup->system_info->type == SUBSYSTEM_TURRET)){
-					vector actual_pos;					
+					vec3d actual_pos;					
 					
 					// get the distance to the subsys					
 					vm_vec_unrotate(&actual_pos, &moveup->system_info->pnt, &target->orient);

@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_observer.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-02 21:18:19 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:21 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/02 21:18:19  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.6  2005/02/04 10:12:31  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -288,7 +293,7 @@ void multi_obs_level_init()
 // if i'm an observer, zoom to near my targted object (if any)
 void multi_obs_zoom_to_target()
 {
-	vector direct;		
+	vec3d direct;		
 	float dist;	
 	
 	// if i'm not an observer, do nothing

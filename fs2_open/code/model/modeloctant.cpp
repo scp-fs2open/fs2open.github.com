@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:41 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-05 05:53:20 $
+ * $Author: taylor $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:41  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:56  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -119,7 +122,7 @@
 
 
 // returns 1 if a point is in an octant.
-int point_in_octant( polymodel * pm, model_octant * oct, vector *vert )
+int point_in_octant( polymodel * pm, model_octant * oct, vec3d *vert )
 {
 	if ( vert->xyz.x < oct->min.xyz.x ) return 0;
 	if ( vert->xyz.x > oct->max.xyz.x ) return 0;
@@ -178,7 +181,7 @@ void model_octant_find_shields( polymodel * pm, model_octant * oct )
 	Assert( oct->nshield_tris == n );
 }
 
-extern vector **htl_verts;
+extern vec3d **htl_verts;
 //this whole module is called after model load 
 //htl_verts is realocated to be large enugh to hold all the verts, but never down sized
 //therefore it should be safe to use htl_verts in place of Interp_verts in HTL mode
@@ -191,7 +194,7 @@ void moff_defpoints(ubyte * p)
 	int offset = w(p+16);	
 
 	ubyte * normcount = p+20;
-	vector *src = vp(p+offset);
+	vec3d *src = vp(p+offset);
 
 	Assert( nverts < MAX_POLYGON_VECS );
 	// Assert( nnorms < MAX_POLYGON_NORMS );
@@ -210,15 +213,15 @@ void moff_defpoints(ubyte * p)
 // Textured Poly
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      center
+// +8      vec3d      normal
+// +20     vec3d      center
 // +32     float      radius
 // +36     int         nverts
 // +40     int         tmap_num
 // +44     nverts*(model_tmap_vert) vertlist (n,u,v)
 void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count )
 {
-	vector ** oct_points;
+	vec3d ** oct_points;
 	if(Cmdline_nohtl) oct_points = Interp_verts;
 	else oct_points = htl_verts;
 
@@ -232,7 +235,7 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 
 	if ( pm->version < 2003 )	{
 		// Set the "normal_point" part of field to be the center of the polygon
-		vector center_point;
+		vec3d center_point;
 		vm_vec_zero( &center_point );
 
 		for (i=0;i<nv;i++)	{
@@ -270,8 +273,8 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 // Flat Poly
 // +0      int         id
 // +4      int         size 
-// +8      vector      normal
-// +20     vector      center
+// +8      vec3d      normal
+// +20     vec3d      center
 // +32     float       radius
 // +36     int         nverts
 // +40     byte        red
@@ -281,7 +284,7 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 // +44     nverts*int  vertlist
 void moff_flatpoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count )
 {
-	vector ** oct_points;
+	vec3d ** oct_points;
 	if(Cmdline_nohtl) oct_points = Interp_verts;
 	else oct_points = htl_verts;
 
@@ -295,7 +298,7 @@ void moff_flatpoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 
 	if ( pm->version < 2003 )	{
 		// Set the "normal_point" part of field to be the center of the polygon
-		vector center_point;
+		vec3d center_point;
 		vm_vec_zero( &center_point );
 
 		for (i=0;i<nv;i++)	{
@@ -391,7 +394,7 @@ void model_octant_find_faces( polymodel * pm, model_octant * oct )
 		return;
 	}
 
-	oct->verts = (vector **)malloc( sizeof(vector *) * oct->nverts );
+	oct->verts = (vec3d **)malloc( sizeof(vec3d *) * oct->nverts );
 	Assert(oct->verts!=NULL);
 
 	oct->nverts = 0;
@@ -404,7 +407,7 @@ void model_octant_find_faces( polymodel * pm, model_octant * oct )
 // Creates the octants for a given polygon model
 void model_octant_create( polymodel * pm )
 {
-	vector min, max, center;
+	vec3d min, max, center;
 	int i, x, y, z;
 
 	min = pm->mins;
@@ -477,9 +480,9 @@ void model_octant_free( polymodel * pm )
 // be rotated into the model's local coordinates.
 // If oct is not null, it will be filled in with a pointer to the octant
 // data.
-int model_which_octant_distant_many( vector *pnt, int model_num,matrix *model_orient, vector * model_pos, polymodel **pm, int *octs)
+int model_which_octant_distant_many( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, polymodel **pm, int *octs)
 {
-	vector tempv, rotpnt;
+	vec3d tempv, rotpnt;
 
 	*pm = model_get(model_num);
 
@@ -491,7 +494,7 @@ int model_which_octant_distant_many( vector *pnt, int model_num,matrix *model_or
 		rotpnt = *pnt;
 	}
 
-	vector center;
+	vec3d center;
 	vm_vec_avg( &center, &((*pm)->mins), &((*pm)->maxs ));
 	int i, x, y, z;
 
@@ -516,10 +519,10 @@ int model_which_octant_distant_many( vector *pnt, int model_num,matrix *model_or
 // be rotated into the model's local coordinates.
 // If oct is not null, it will be filled in with a pointer to the octant
 // data.
-int model_which_octant_distant( vector *pnt, int model_num,matrix *model_orient, vector * model_pos, model_octant **oct )
+int model_which_octant_distant( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct )
 {
 	polymodel * pm;
-	vector tempv, rotpnt;
+	vec3d tempv, rotpnt;
 
 	pm = model_get(model_num);
 
@@ -531,7 +534,7 @@ int model_which_octant_distant( vector *pnt, int model_num,matrix *model_orient,
 		rotpnt = *pnt;
 	}
 
-	vector center;
+	vec3d center;
 	vm_vec_avg( &center, &pm->mins, &pm->maxs );
 	int i, x, y, z;
 
@@ -555,10 +558,10 @@ int model_which_octant_distant( vector *pnt, int model_num,matrix *model_orient,
 // be rotated into the model's local coordinates.
 // If oct is not null, it will be filled in with a pointer to the octant
 // data.  Or NULL if the pnt isn't in the octant.
-int model_which_octant( vector *pnt, int model_num,matrix *model_orient, vector * model_pos, model_octant **oct )
+int model_which_octant( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct )
 {
 	polymodel * pm;
-	vector tempv, rotpnt;
+	vec3d tempv, rotpnt;
 	
 	pm = model_get(model_num);
 
@@ -570,7 +573,7 @@ int model_which_octant( vector *pnt, int model_num,matrix *model_orient, vector 
 		rotpnt = *pnt;
 	}
 
-	vector center;
+	vec3d center;
 	vm_vec_avg( &center, &pm->mins, &pm->maxs );
 	int i, x, y, z;
 

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-03-10 08:00:08 $
+ * $Revision: 2.21 $
+ * $Date: 2005-04-05 05:53:19 $
  * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/03/10 08:00:08  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.19  2005/03/06 11:23:45  wmcoolmon
  * RE-fixed stuff. Ogg support. Briefings.
  *
@@ -363,17 +372,17 @@ const char BRIEF_META_CHAR = '$';
 // static int Brief_voice_ask_for_cd;
 
 // camera related
-static vector	Current_cam_pos;		// current camera position
-static vector	Target_cam_pos;		// desired camera position
+static vec3d	Current_cam_pos;		// current camera position
+static vec3d	Target_cam_pos;		// desired camera position
 static matrix	Current_cam_orient;	// current camera orientation
 static matrix	Target_cam_orient;	// desired camera orientation
 static matrix	Start_cam_orient;		// start camera orientation
-static vector	Start_cam_pos;			// position of camera at the start of a translation
-static vector	Cam_vel;					//	camera velocity
-static vector	Current_lookat_pos;	// lookat point
-static vector	Target_lookat_pos;	// lookat point
-static vector	Start_lookat_pos;
-static vector	Lookat_vel;				//	lookat point velocity
+static vec3d	Start_cam_pos;			// position of camera at the start of a translation
+static vec3d	Cam_vel;					//	camera velocity
+static vec3d	Current_lookat_pos;	// lookat point
+static vec3d	Target_lookat_pos;	// lookat point
+static vec3d	Start_lookat_pos;
+static vec3d	Lookat_vel;				//	lookat point velocity
 
 static float	Start_cam_move;		// time at which camera started moving (seconds)
 static float	Total_move_time;		// time in which camera should move from current pos to target pos (seconds)
@@ -383,14 +392,14 @@ static float	Start_dist;
 static float	End_dist;
 static float	Dist_change_rate;
 
-static vector	Acc_limit;
-static vector	Vel_limit;
+static vec3d	Acc_limit;
+static vec3d	Vel_limit;
 
 static float	Total_dist;
 static float	Peak_speed;
 static float	Cam_accel;
 static float	Last_dist;
-static vector	W_init;
+static vec3d	W_init;
 
 // flag to indicate that the sound for a spinning highlight animation has played
 static int Brief_stage_highlight_sound_handle = -1;
@@ -463,12 +472,12 @@ typedef struct icon_move_info
 	icon_move_info	*next, *prev;
 	int				used;
 	int				id;
-	vector			start;
-	vector			finish;
-	vector			current;
+	vec3d			start;
+	vec3d			finish;
+	vec3d			current;
 
 	// used to move icons smoothly
-	vector			direction;
+	vec3d			direction;
 	float				total_dist;
 	float				accel;
 	float				total_move_time;
@@ -485,7 +494,7 @@ icon_move_info	Icon_move_list;	// head of linked list
 typedef struct fade_icon
 {
 	hud_anim	fade_anim;		// anim info
-	vector	pos;
+	vec3d	pos;
 	int		team;
 } fade_icon;
 
@@ -502,18 +511,18 @@ cmd_brief Cmd_briefs[MAX_TEAMS];
 // --------------------------------------------------------------------------------------
 // forward declarations
 // --------------------------------------------------------------------------------------
-void	brief_render_elements(vector *pos, grid *gridp);
+void	brief_render_elements(vec3d *pos, grid *gridp);
 void	brief_render_icons(int stage_num, float frametime);
 void 	brief_parse_icon_tbl();
 void	brief_grid_read_camera_controls( control_info * ci, float frametime );
-void	brief_maybe_create_new_grid(grid *gridp, vector *pos, matrix *orient, int force = 0);
-grid	*brief_create_grid(grid *gridp, vector *forward, vector *right, vector *center, int nrows, int ncols, float square_size);
+void	brief_maybe_create_new_grid(grid *gridp, vec3d *pos, matrix *orient, int force = 0);
+grid	*brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int nrows, int ncols, float square_size);
 grid	*brief_create_default_grid(void);
 void	brief_render_grid(grid *gridp);
 void	brief_modify_grid(grid *gridp);
-void	brief_rpd_line(vector *v0, vector *v1);
+void	brief_rpd_line(vec3d *v0, vec3d *v1);
 void	brief_set_text_color(int color_index);
-extern void get_camera_limits(matrix *start_camera, matrix *end_camera, float time, vector *acc_max, vector *w_max);
+extern void get_camera_limits(matrix *start_camera, matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max);
 int brief_text_wipe_finished();
 
 void brief_set_icon_color(int team)
@@ -1005,7 +1014,7 @@ void brief_preload_anims()
 //
 void brief_init_map()
 {
-	vector *pos;
+	vec3d *pos;
 	matrix *orient;
 
 	Assert( Briefing != NULL );
@@ -1148,7 +1157,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 	brief_icon	*bi, *closeup_icon;
 	hud_frames	*ib;
 	vertex		tv;	// temp vertex used to find screen position for text
-	vector		*pos = NULL;
+	vec3d		*pos = NULL;
 	int			bx,by,bc,w,h,icon_w,icon_h,icon_bitmap=-1;
 	float			bxf, byf, dist=0.0f;
 
@@ -1175,7 +1184,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				}
 
 				if ( !mi->reached_dest ) {
-					vector dist_moved;
+					vec3d dist_moved;
 					vm_vec_copy_scale(&dist_moved, &mi->direction, dist);
 					vm_vec_add(&mi->current, &mi->start, &dist_moved);
 				} else {
@@ -1676,13 +1685,13 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 //
 // Draw the lines that show objects positions on the grid
 //
-void brief_render_elements(vector *pos, grid* gridp)
+void brief_render_elements(vec3d *pos, grid* gridp)
 {
-	vector	gpos;	//	Location of point on grid.
-//	vector	tpos;
+	vec3d	gpos;	//	Location of point on grid.
+//	vec3d	tpos;
 	float		dxz;
 	plane		tplane;
-	vector	*gv;
+	vec3d	*gv;
 	
 	if ( pos->xyz.y < 1 && pos->xyz.y > -1 )
 		return;
@@ -1749,7 +1758,7 @@ void brief_reset_icons(int stage_num)
 //				orient	=>		target orientation for the camera
 //				time		=>		time in ms to reach target
 //
-void brief_set_camera_target(vector *pos, matrix *orient, int time)
+void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 {
 	float time_in_seconds;
 	
@@ -1958,7 +1967,7 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 	brief_stage		*newb, *cb;	
 	icon_move_info	*imi;	
 	int				i,j,k,num_movers,is_gone=0;
-	vector			zero_v = ZERO_VECTOR;
+	vec3d			zero_v = ZERO_VECTOR;
 
 	Assert(new_stage != current_stage);
 	
@@ -2062,7 +2071,7 @@ void brief_clear_fade_out_icons()
 //				stage_num	=>		stage number of briefing (start numbering at 0)
 //
 
-void brief_set_new_stage(vector *pos, matrix *orient, int time, int stage_num)
+void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 {
 	char msg[MAX_BRIEF_LEN];
 	int num_movers, new_time, not_objv = 1;
@@ -2140,9 +2149,9 @@ void brief_set_new_stage(vector *pos, matrix *orient, int time, int stage_num)
 // camera_pos_past_target()
 //
 //
-int camera_pos_past_target(vector *start, vector *current, vector *dest)
+int camera_pos_past_target(vec3d *start, vec3d *current, vec3d *dest)
 {
-	vector num, den;
+	vec3d num, den;
 	float ratio;
 
 	vm_vec_sub(&num, current, start);
@@ -2161,7 +2170,7 @@ int camera_pos_past_target(vector *start, vector *current, vector *dest)
 // and goal.
 void interpolate_matrix(matrix *result, matrix *goal, matrix *start, float elapsed_time, float total_time)
 {
-	vector fvec, rvec;
+	vec3d fvec, rvec;
 	float	time0, time1;
 	
 	if ( !vm_matrix_cmp( goal, start ) ) {
@@ -2202,9 +2211,9 @@ float brief_camera_get_dist_moved(float elapsed_time)
 // Update the camera position
 void brief_camera_move(float frametime, int stage_num)
 {
-	vector	dist_moved;
+	vec3d	dist_moved;
 	float		dist;
-	vector	w_out;
+	vec3d	w_out;
 	matrix	result;
 
 	Elapsed_time += frametime;
@@ -2268,11 +2277,11 @@ void brief_camera_move(float frametime, int stage_num)
 
 //	Project the viewer's position onto the grid plane.  If more than threshold distance
 //	from grid center, move grid center.
-void brief_maybe_create_new_grid(grid* gridp, vector *pos, matrix *orient, int force)
+void brief_maybe_create_new_grid(grid* gridp, vec3d *pos, matrix *orient, int force)
 {
 	int roundoff;
 	plane	tplane;
-	vector	gpos, tmp, c;
+	vec3d	gpos, tmp, c;
 	float	dist_to_plane;
 	float	square_size, ux, uy, uz;
 
@@ -2292,7 +2301,7 @@ void brief_maybe_create_new_grid(grid* gridp, vector *pos, matrix *orient, int f
 	}
 	
 	if (fvi_ray_plane(&gpos, &gridp->center, &gridp->gmatrix.vec.uvec, pos, &orient->vec.fvec, 0.0f)<0.0f)	{
-		vector p;
+		vec3d p;
 		vm_vec_scale_add(&p,pos,&orient->vec.fvec, 100.0f );
 		compute_point_on_plane(&gpos, &tplane, &p );
 	}
@@ -2344,10 +2353,10 @@ void brief_maybe_create_new_grid(grid* gridp, vector *pos, matrix *orient, int f
 //	(In fact, it will be the xz plane because it is centered on the origin.)
 //
 //	Stuffs grid in *gridp.  If gridp == NULL, mallocs and returns a grid.
-grid *brief_create_grid(grid *gridp, vector *forward, vector *right, vector *center, int nrows, int ncols, float square_size)
+grid *brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int nrows, int ncols, float square_size)
 {
 	int	i, ncols2, nrows2, d = 1;
-	vector	dfvec, drvec, cur, cur2, tvec, uvec, save, save2;
+	vec3d	dfvec, drvec, cur, cur2, tvec, uvec, save, save2;
 
 	Assert(square_size > 0.0);
 	if (double_fine_gridlines)
@@ -2435,7 +2444,7 @@ grid *brief_create_grid(grid *gridp, vector *forward, vector *right, vector *cen
 grid *brief_create_default_grid(void)
 {
 	grid	*rgrid;
-	vector	fvec, rvec, cvec;
+	vec3d	fvec, rvec, cvec;
 
 	rgrid = brief_create_grid(&Global_grid, vm_vec_make(&fvec, 0.0f, 0.0f, 1.0f),
 		vm_vec_make(&rvec, 1.0f, 0.0f, 0.0f),
@@ -2447,7 +2456,7 @@ grid *brief_create_default_grid(void)
 }
 
 //	Rotate and project points and draw a line.
-void brief_rpd_line(vector *v0, vector *v1)
+void brief_rpd_line(vec3d *v0, vec3d *v1)
 {
 	vertex	tv0, tv1;
 	g3_rotate_vertex(&tv0, v0);

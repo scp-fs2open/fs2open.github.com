@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-03-24 23:29:33 $
+ * $Revision: 2.15 $
+ * $Date: 2005-04-05 05:53:23 $
  * $Author: taylor $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/03/24 23:29:33  taylor
+ * (re)move some uneeded variables to fix compiler warnings
+ *
  * Revision 2.13  2005/03/02 21:24:46  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -328,10 +331,10 @@ int radar_blip_color_std(object *objp)
 
 void radar_plot_object_std( object *objp )	
 {
-	vector	pos, tempv;
+	vec3d	pos, tempv;
 	float		dist, rscale, zdist, max_radar_dist;
 	int		xpos, ypos, color=0;
-	vector	*world_pos = &objp->pos;	
+	vec3d	*world_pos = &objp->pos;	
 	float		awacs_level;
 
 #ifndef NO_NETWORK

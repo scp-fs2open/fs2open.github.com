@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.10 $
- * $Date: 2005-03-20 20:02:29 $
- * $Author: phreak $
+ * $Revision: 2.11 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/20 20:02:29  phreak
+ * export the functions that deal with the creation and destruction of the starfield buffer.
+ * FRED needs them
+ *
  * Revision 2.9  2004/08/11 05:06:35  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -232,7 +236,7 @@ void stars_level_init();
 // This *must* be called to initialize the lighting.
 // You can turn off all the stars and suns and nebulas, though.
 void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env);
-// void calculate_bitmap_matrix(starfield_bitmaps *bm, vector *v);
+// void calculate_bitmap_matrix(starfield_bitmaps *bm, vec3d *v);
 // void calculate_bitmap_points(starfield_bitmaps *bm, float bank = 0.0f);
 
 // draw the corresponding glow for sun_n
@@ -252,7 +256,7 @@ int stars_find_bitmap(char *name);
 int stars_find_sun(char *name);
 
 // get the world coords of the sun pos on the unit sphere.
-void stars_get_sun_pos(int sun_n, vector *pos);
+void stars_get_sun_pos(int sun_n, vec3d *pos);
 
 void stars_generate_bitmap_instance_vertex_buffers();
 void starfield_kill_bitmap_buffer();

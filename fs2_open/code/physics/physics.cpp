@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-01-11 21:25:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-04-05 05:53:23 $
+ * $Author: taylor $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/01/11 21:25:58  Goober5000
+ * fixed two small things with physics
+ * --Goober500
+ *
  * Revision 2.9  2004/07/26 20:47:48  Kazan
  * remove MCD complete
  *
@@ -527,7 +531,7 @@ void physics_set_viewer( physics_info * p, int dir )
 void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 {
 	angles	tangles;
-	vector	new_vel;
+	vec3d	new_vel;
 	matrix	tmp;
 	float		shock_amplitude;
 	float		rotdamp;
@@ -645,7 +649,7 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 void physics_sim_rot_editor(matrix * orient, physics_info * pi, float sim_time)
 {
 	angles	tangles;
-	vector	new_vel;
+	vec3d	new_vel;
 	matrix	tmp;
 	angles	t1, t2;
 
@@ -682,13 +686,13 @@ void physics_sim_rot_editor(matrix * orient, physics_info * pi, float sim_time)
 
 // Adds velocity to position
 // finds velocity and displacement in local coords
-void physics_sim_vel(vector * position, physics_info * pi, float sim_time, matrix *orient)
+void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix *orient)
 {
-	vector local_disp;		// displacement in this frame
-	vector local_v_in;		// velocity in local coords at the start of this frame
-	vector local_desired_vel;	// desired velocity in local coords
-	vector local_v_out;		// velocity in local coords following this frame
-	vector damp;
+	vec3d local_disp;		// displacement in this frame
+	vec3d local_v_in;		// velocity in local coords at the start of this frame
+	vec3d local_desired_vel;	// desired velocity in local coords
+	vec3d local_v_out;		// velocity in local coords following this frame
+	vec3d damp;
 
 	//	Maybe clear the reduced_damp flag.
 	//	This fixes the problem of the player getting near-instantaneous acceleration under unknown circumstances.
@@ -750,7 +754,7 @@ void physics_sim_vel(vector * position, physics_info * pi, float sim_time, matri
 		local_disp.xyz.z = (pi->max_vel.xyz.z * sim_time) + excess * (float(SPECIAL_WARP_T_CONST) * (1.0f - exp_factor));
 	} else if (pi->flags & PF_SPECIAL_WARP_OUT) {
 		float exp_factor = float(exp(-sim_time / SPECIAL_WARP_T_CONST));
-		vector temp;
+		vec3d temp;
 		vm_vec_rotate(&temp, &pi->prev_ramp_vel, orient);
 		float deficeit = temp.xyz.z - local_v_in.xyz.z;
 		local_v_out.xyz.z = local_v_in.xyz.z + deficeit * (1.0f - exp_factor);
@@ -765,7 +769,7 @@ void physics_sim_vel(vector * position, physics_info * pi, float sim_time, matri
 	}
 
 	// update world position from local to world coords using orient
-	vector world_disp;
+	vec3d world_disp;
 	vm_vec_unrotate (&world_disp, &local_disp, orient);
 #ifdef PHYS_DEBUG
 	// check for  excess velocity or translation
@@ -787,7 +791,7 @@ void physics_sim_vel(vector * position, physics_info * pi, float sim_time, matri
 
 //	-----------------------------------------------------------------------------------------------------------
 // Simulate a physics object for this frame
-void physics_sim(vector* position, matrix* orient, physics_info* pi, float sim_time)
+void physics_sim(vec3d* position, matrix* orient, physics_info* pi, float sim_time)
 {
 	// check flag which tells us whether or not to do velocity translation
 	if (pi->flags & PF_CONST_VEL) {
@@ -807,7 +811,7 @@ void physics_sim(vector* position, matrix* orient, physics_info* pi, float sim_t
 // Simulate a physics object for this frame.  Used by the editor.  The difference between
 // this function and physics_sim() is that this one uses a heading change to rotate around
 // the universal Y axis, rather than the local orientation's Y axis.  Banking is also ignored.
-void physics_sim_editor(vector *position, matrix * orient, physics_info * pi, float sim_time )
+void physics_sim_editor(vec3d *position, matrix * orient, physics_info * pi, float sim_time )
 {
 	physics_sim_vel(position, pi, sim_time, orient);
 	physics_sim_rot_editor(orient, pi, sim_time);
@@ -816,7 +820,7 @@ void physics_sim_editor(vector *position, matrix * orient, physics_info * pi, fl
 }
 
 // function to predict an object's position given the delta time and an objects physics info
-void physics_predict_pos(physics_info *pi, float delta_time, vector *predicted_pos)
+void physics_predict_pos(physics_info *pi, float delta_time, vec3d *predicted_pos)
 {
 	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time, 
 								 NULL, &predicted_pos->xyz.x );
@@ -829,7 +833,7 @@ void physics_predict_pos(physics_info *pi, float delta_time, vector *predicted_p
 }
 
 // function to predict an object's velocity given the parameters
-void physics_predict_vel(physics_info *pi, float delta_time, vector *predicted_vel)
+void physics_predict_vel(physics_info *pi, float delta_time, vec3d *predicted_vel)
 {
 	if (pi->flags & PF_CONST_VEL) {
 		predicted_vel = &pi->vel;
@@ -846,7 +850,7 @@ void physics_predict_vel(physics_info *pi, float delta_time, vector *predicted_v
 }
 
 // function to predict position and velocity of an object
-void physics_predict_pos_and_vel(physics_info *pi, float delta_time, vector *predicted_vel, vector *predicted_pos)
+void physics_predict_pos_and_vel(physics_info *pi, float delta_time, vec3d *predicted_vel, vec3d *predicted_pos)
 {
 
 	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time, 
@@ -871,9 +875,9 @@ void physics_predict_pos_and_vel(physics_info *pi, float delta_time, vector *pre
 
 // function looks at the flying controls and the current velocity to determine a goal velocity
 // function determines velocity in object's reference frame and goal velocity in object's reference frame
-void physics_read_flying_controls( matrix * orient, physics_info * pi, control_info * ci, float sim_time, vector *wash_rot)
+void physics_read_flying_controls( matrix * orient, physics_info * pi, control_info * ci, float sim_time, vec3d *wash_rot)
 {
-	vector goal_vel;		// goal velocity in local coords, *not* accounting for ramping of velcity
+	vec3d goal_vel;		// goal velocity in local coords, *not* accounting for ramping of velcity
 	float ramp_time_const;		// time constant for velocity ramping
 
 	float velocity_ramp (float v_in, float v_goal, float time_const, float t);
@@ -1085,10 +1089,10 @@ void physics_set_rotvel_and_saturate(float *dest, float delta)
 //
 #define WHACK_LIMIT	0.001f
 #define ROTVEL_WHACK_CONST 0.12
-void physics_apply_whack(vector *impulse, vector *pos, physics_info *pi, matrix *orient, float mass)
+void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, float mass)
 {
-	vector	local_torque, torque;
-//	vector	npos;
+	vec3d	local_torque, torque;
+//	vec3d	npos;
 
 	//	Detect null vector.
 	if ((fl_abs(impulse->xyz.x) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.y) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.z) <= WHACK_LIMIT))
@@ -1101,7 +1105,7 @@ void physics_apply_whack(vector *impulse, vector *pos, physics_info *pi, matrix 
 	vm_vec_crossprod(&torque, pos, impulse);
 	vm_vec_rotate ( &local_torque, &torque, orient );
 
-	vector delta_rotvel;
+	vec3d delta_rotvel;
 	vm_vec_rotate( &delta_rotvel, &local_torque, &pi->I_body_inv );
 	vm_vec_scale ( &delta_rotvel, (float) ROTVEL_WHACK_CONST );
 	vm_vec_add2( &pi->rotvel, &delta_rotvel );
@@ -1192,13 +1196,13 @@ float velocity_ramp (float v_in, float v_goal, float ramp_time_const, float t)
 #define	MAX_ROTVEL			0.4		// max rotational velocity
 #define	MAX_SHAKE			0.1		// max rotational amplitude of shake
 #define	MAX_VEL				8			// max vel from shockwave 
-void physics_apply_shock(vector *direction_vec, float pressure, physics_info *pi, matrix *orient, vector *min, vector *max, float radius)
+void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius)
 {
-	vector normal;
-	vector local_torque, temp_torque, torque;
-	vector impact_vec;
-	vector area;
-	vector sin;
+	vec3d normal;
+	vec3d local_torque, temp_torque, torque;
+	vec3d impact_vec;
+	vec3d area;
+	vec3d sin;
 
 	if (radius > MAX_RADIUS) {
 		return;
@@ -1258,7 +1262,7 @@ void physics_apply_shock(vector *direction_vec, float pressure, physics_info *pi
 
 	// compute delta rotvel, scale according to blast and radius
 	float scale;
-	vector delta_rotvel;
+	vec3d delta_rotvel;
 	vm_vec_rotate( &local_torque, &torque, orient );
 	vm_vec_copy_normalize(&delta_rotvel, &local_torque);
 	if (radius < MIN_RADIUS) {
@@ -1314,9 +1318,9 @@ void physics_apply_shock(vector *direction_vec, float pressure, physics_info *pi
 // Warning:  Do not change ROTVEL_COLLIDE_WHACK_CONST.  This will mess up collision physics.
 // If you need to change the rotation, change  COLLISION_ROTATION_FACTOR in collide_ship_ship.
 #define ROTVEL_COLLIDE_WHACK_CONST 1.0
-void physics_collide_whack( vector *impulse, vector *world_delta_rotvel, physics_info *pi, matrix *orient )
+void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_info *pi, matrix *orient )
 {
-	vector	body_delta_rotvel;
+	vec3d	body_delta_rotvel;
 
 	//	Detect null vector.
 	if ((fl_abs(impulse->xyz.x) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.y) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.z) <= WHACK_LIMIT))

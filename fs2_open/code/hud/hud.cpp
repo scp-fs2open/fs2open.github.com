@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-03-27 12:28:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.44 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/03/27 12:28:33  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.42  2005/03/25 06:57:34  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -1371,7 +1375,7 @@ void hud_update_frame()
 void HUD_render_forward_icon(object *objp)
 {
 	vertex	v0;
-	vector	p0;
+	vec3d	p0;
 
 	vm_vec_scale_add(&p0, &objp->pos, &objp->orient.vec.fvec, 100.0f);
 	g3_rotate_vertex(&v0, &p0);
@@ -2587,7 +2591,7 @@ int hud_get_dock_time( object *docker_objp )
 	ai_info	*aip;
 	object	*dockee_objp;
 	float		dist, rel_speed, docker_speed;
-	vector	rel_vel;
+	vec3d	rel_vel;
 
 	aip = &Ai_info[Ships[docker_objp->instance].ai_index];
 
@@ -3407,7 +3411,7 @@ void hud_maybe_render_multi_text()
 void HUD_set_offsets(object *viewer_obj, int wiggedy_wack)
 {
 	if ( (viewer_obj == Player_obj) && wiggedy_wack ){		
-		vector tmp;
+		vec3d tmp;
 		vertex pt;
 		ubyte flags;		
 
@@ -3471,11 +3475,11 @@ void HUD_set_clip(int x, int y, int w, int h, bool resize)
 //
 void hud_save_restore_camera_data(int save)
 {
-	static vector	save_view_position;
+	static vec3d	save_view_position;
 	static float	save_view_zoom;
 	static matrix	save_view_matrix;
 	static matrix	save_eye_matrix;
-	static vector	save_eye_position;
+	static vec3d	save_eye_position;
 
 	// save global view variables, so we can restore them
 	if ( save ) {

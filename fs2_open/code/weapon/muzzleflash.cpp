@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:56 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:56  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:33:09  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -217,7 +220,7 @@ void mflash_level_close()
 }
 
 // create a muzzle flash on the guy
-void mflash_create(vector *gun_pos, vector *gun_dir, int mflash_type)
+void mflash_create(vec3d *gun_pos, vec3d *gun_dir, int mflash_type)
 {	
 	// mflash *mflashp;
 	mflash_info *mi;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-03-25 06:57:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.42 $
+ * $Date: 2005-04-05 05:53:16 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/03/25 06:57:34  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.40  2005/03/19 18:02:33  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -1601,9 +1604,9 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
 
 
 // given endpoints, and thickness, calculate coords of the endpoint
-void gr_pline_helper(vector *out, vector *in1, vector *in2, int thickness)
+void gr_pline_helper(vec3d *out, vec3d *in1, vec3d *in2, int thickness)
 {
-	vector slope;	
+	vec3d slope;	
 
 	// slope of the line	
 	if(vm_vec_same(in1, in2)){
@@ -1623,10 +1626,10 @@ void gr_pline_helper(vector *out, vector *in1, vector *in2, int thickness)
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
 // Moreover, it is _really_ intended for use with 45 degree angles. 
-void gr_pline_special(vector **pts, int num_pts, int thickness)
+void gr_pline_special(vec3d **pts, int num_pts, int thickness)
 {				
-	vector s1, s2, e1, e2, dir;
-	vector last_e1, last_e2;
+	vec3d s1, s2, e1, e2, dir;
+	vec3d last_e1, last_e2;
 	vertex v[4];
 	vertex *verts[4] = {&v[0], &v[1], &v[2], &v[3]};
 	int saved_zbuffer_mode, idx;		
@@ -1768,7 +1771,7 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 }
 
 
-bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2){
+bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2){
 	return(
 		(v1->x == v2->x) &&
 		(v1->y == v2->y) &&
@@ -1783,7 +1786,7 @@ bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2){
 
 //finds the first occorence of a vertex within a poly list
 short find_first_index(poly_list *plist, int idx){
-	vector norm = plist->norm[idx];
+	vec3d norm = plist->norm[idx];
 	vertex vert = plist->vert[idx];
 	int missed = 0;
 	for(short i = 0; i<plist->n_verts; i++){
@@ -1812,7 +1815,7 @@ void poly_list::allocate(int virts){
 		if(vert!=NULL){free((void*)vert); vert = NULL;}
 		if(norm!=NULL){free((void*)norm); norm = NULL;}
 		if(virts)vert = (vertex*)malloc(sizeof(vertex)*virts);
-		if(virts)norm = (vector*)malloc(sizeof(vector)*virts);
+		if(virts)norm = (vec3d*)malloc(sizeof(vec3d)*virts);
 		n_verts = 0;
 		currently_allocated = virts;
 }
@@ -1853,7 +1856,7 @@ void poly_list::make_index_buffer(){
 
 poly_list& poly_list::operator = (poly_list &other_list){
 	allocate(other_list.n_verts);
-	memcpy(norm, other_list.norm, sizeof(vector) * other_list.n_verts);
+	memcpy(norm, other_list.norm, sizeof(vec3d) * other_list.n_verts);
 	memcpy(vert, other_list.vert, sizeof(vertex) * other_list.n_verts);
 	n_verts = other_list.n_verts;
 	n_prim = other_list.n_prim;

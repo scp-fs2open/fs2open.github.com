@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds3d.h $
- * $Revision: 2.1 $
- * $Date: 2004-08-11 05:06:34 $
- * $Author: Kazan $
+ * $Revision: 2.2 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * Header file for interface to DirectSound3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/08/11 05:06:34  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -61,8 +64,8 @@
 
 int	ds3d_init(int voice_manager_required);
 void	ds3d_close();
-int	ds3d_update_listener(vector *pos, vector *vel, matrix *orient);
-int	ds3d_update_buffer(int channel, float min, float max, vector *pos, vector *vel);
+int	ds3d_update_listener(vec3d *pos, vec3d *vel, matrix *orient);
+int	ds3d_update_buffer(int channel, float min, float max, vec3d *pos, vec3d *vel);
 int	ds3d_set_sound_cone(int channel, int inner_angle, int outer_angle, int vol);
 
 #endif /* __DS3D_H__ */

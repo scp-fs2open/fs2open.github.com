@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.12 $
- * $Date: 2005-03-27 12:28:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/03/27 12:28:32  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.11  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -430,7 +434,7 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 //        to setting the thrust, seeing if we've died, etc.
 // }
 //
-// int weapon_check_collision( object * obj, object * other_obj, vector * hitpos )
+// int weapon_check_collision( object * obj, object * other_obj, vec3d * hitpos )
 // {
 //    this should check if a vector from 
 //		other_obj->last_pos to other_obj->pos with a radius of other_obj->radius
@@ -440,7 +444,7 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 // }
 
 // 
-// void weapon_hit( object * obj, object * other_obj, vector * hitpos )
+// void weapon_hit( object * obj, object * other_obj, vec3d * hitpos )
 // {
 //    {Put a call to this in COLLIDE.C}
 //    ... Do what needs to be done when this object gets hit
@@ -485,10 +489,10 @@ typedef struct object {
 	char				parent_type;	// This object's parent's type
 	int				instance;		// which instance.  ie.. if type is Robot, then this indexes into the Robots array
 	uint				flags;			// misc flags.  Call obj_set_flags to change this.
-	vector			pos;				// absolute x,y,z coordinate of center of object
+	vec3d			pos;				// absolute x,y,z coordinate of center of object
 	matrix			orient;			// orientation of object in world
 	float				radius;			// 3d size of object - for collision detection
-	vector			last_pos;		// where object was last frame
+	vec3d			last_pos;		// where object was last frame
 	matrix			last_orient;	// how the object was oriented last frame
 	physics_info	phys_info;		// a physics object
 	float				shield_quadrant[MAX_SHIELD_SECTIONS];	//	Shield is broken into components.  Quadrants on 4/24/97.
@@ -505,7 +509,7 @@ typedef struct object {
 
 // object backup struct used by Fred.
 typedef struct object_orient_pos {
-	vector pos;
+	vec3d pos;
 	matrix orient;
 } object_orient_pos;
 
@@ -552,7 +556,7 @@ void obj_init();
 //object.  Returns 0 if failed, otherwise object index.
 //You can pass 0 for parent if you don't care about that.
 //You can pass null for orient and/or pos if you don't care.
-int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vector * pos, float radius, uint flags );
+int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, uint flags );
 
 //Render an object.  Calls one of several routines based on type
 void obj_render(object *obj);
@@ -603,7 +607,7 @@ float get_shield_pct(object *objp);
 float get_max_shield_quad(object *objp);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
-void obj_get_average_ship_pos(vector *pos);
+void obj_get_average_ship_pos(vec3d *pos);
 
 // function to deal with firing player things like lasers, missiles, etc.
 // separated out because of multiplayer issues.

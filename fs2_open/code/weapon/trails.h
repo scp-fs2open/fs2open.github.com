@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.h $
- * $Revision: 2.7 $
- * $Date: 2005-02-20 23:11:51 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * External defs for missile trail stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/20 23:11:51  wmcoolmon
+ * Fix0r3d trails
+ *
  * Revision 2.6  2005/02/20 07:39:14  wmcoolmon
  * Trails update: Better, faster, stronger, but not much more reliable
  *
@@ -78,7 +81,7 @@
 // contrail info - similar to that for missile trails
 // place this inside of info structures instead of explicit structs (eg. ship_info instead of ship, or weapon_info instead of weapon)
 typedef struct trail_info {
-	vector pt;				// offset from the object's center
+	vec3d pt;				// offset from the object's center
 	float w_start;			// starting width
 	float w_end;			// ending width
 	float a_start;			// starting alpha
@@ -90,7 +93,7 @@ typedef struct trail_info {
 
 typedef struct trail {
 	int		head, tail;						// pointers into the queue for the trail points
-	vector	pos[NUM_TRAIL_SECTIONS];	// positions of trail points
+	vec3d	pos[NUM_TRAIL_SECTIONS];	// positions of trail points
 	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
 	bool	object_died;					// set to zero as long as object	
 	int		trail_stamp;					// trail timestamp	
@@ -120,8 +123,8 @@ void trail_render_all();
 
 // Returns -1 if failed
 trail *trail_create(trail_info *info);
-void trail_add_segment( trail *trailp, vector *pos );
-void trail_set_segment( trail *trailp, vector *pos );
+void trail_add_segment( trail *trailp, vec3d *pos );
+void trail_set_segment( trail *trailp, vec3d *pos );
 void trail_object_died( trail *trailp );
 int trail_stamp_elapsed( trail *trailp );
 void trail_set_stamp( trail *trailp );

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-03-27 12:28:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.39 $
+ * $Date: 2005-04-05 05:53:24 $
+ * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/03/27 12:28:35  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.37  2005/03/10 08:00:16  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -620,7 +624,7 @@
 //#pragma auto_inline(off)
 
 struct ssm_firing_info;
-extern void ssm_create(vector *target, vector *start, int ssm_index, ssm_firing_info *override);
+extern void ssm_create(vec3d *target, vec3d *start, int ssm_index, ssm_firing_info *override);
 
 typedef struct spark_pair {
 	int index1, index2;
@@ -631,8 +635,8 @@ typedef struct spark_pair {
 
 #define	BIG_SHIP_MIN_RADIUS	80.0f	//	ship radius above which death rolls can't be shortened by excessive damage
 
-vector	Dead_camera_pos;
-vector	Original_vec_to_deader;
+vec3d	Dead_camera_pos;
+vec3d	Original_vec_to_deader;
 
 //	Decrease damage applied to a subsystem based on skill level.
 float	Skill_level_subsys_damage_scale[NUM_SKILL_LEVELS] = {0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
@@ -661,12 +665,12 @@ bool is_subsys_destroyed(ship *shipp, int submodel)
 // do_subobj_destroyed_stuff is called when a subobject for a ship is killed.  Separated out
 // to separate function on 10/15/97 by MWA for easy multiplayer access.  It does all of the
 // cool things like blowing off the model (if applicable, writing the logs, etc)
-void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector* hitpos )
+void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos )
 {
 	ship_info *sip;
 	object *ship_obj;
 	model_subsystem *psub;
-	vector	g_subobj_pos;
+	vec3d	g_subobj_pos;
 	int type, i, log_index;
 
 	// get some local variables
@@ -687,7 +691,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector* hitpo
 			 num_fireballs = 5;
 		}
 
-		vector temp_vec, center_to_subsys, rand_vec;
+		vec3d temp_vec, center_to_subsys, rand_vec;
 		vm_vec_sub(&center_to_subsys, &g_subobj_pos, &objp->pos);
 		for (int i=0; i<num_fireballs; i++) {
 			if (i==0) {
@@ -711,7 +715,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector* hitpo
 				fireball_rad = 10.0f;
 			}
 
-			vector fb_vel;
+			vec3d fb_vel;
 			vm_vec_crossprod(&fb_vel, &objp->phys_info.rotvel, &center_to_subsys);
 			vm_vec_add2(&fb_vel, &objp->phys_info.vel);
 			fireball_create( &temp_vec, FIREBALL_EXPLOSION_MEDIUM, OBJ_INDEX(objp), fireball_rad, 0, &fb_vel );
@@ -724,7 +728,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vector* hitpo
 
 		index = ship_get_index_from_subsys(subsys, ship_p->objnum);
 		
-		vector hit;
+		vec3d hit;
 		if (hitpos) {
 			hit = *hitpos;
 		} else {
@@ -873,7 +877,7 @@ float subsys_get_range(object *other_obj, ship_subsys *subsys)
 
 // Make some random debris particles.  Previous way was not very random.  Create debris 75% of the time.
 // Don't worry about multiplayer since this debris is the small stuff that cannot collide
-void create_subsys_debris(object *ship_obj, vector *hitpos)
+void create_subsys_debris(object *ship_obj, vec3d *hitpos)
 {
 	float show_debris = frand();
 	
@@ -892,7 +896,7 @@ void create_subsys_debris(object *ship_obj, vector *hitpos)
 	}
 }
 
-void create_vaporize_debris(object *ship_obj, vector *hitpos)
+void create_vaporize_debris(object *ship_obj, vec3d *hitpos)
 {
 	int ndebris;
 	float show_debris = frand();
@@ -949,15 +953,15 @@ typedef struct {
 // apply the same damage to all subsystems.
 //	Note: A negative damage number means to destroy the corresponding subsystem.  For example, call with -SUBSYSTEM_ENGINE to destroy engine.
 
-float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, float damage)
+float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, float damage)
 {
-	vector			g_subobj_pos;
+	vec3d			g_subobj_pos;
 	float				damage_left;
 	int				weapon_info_index;
 	ship_subsys		*subsys;
 	ship				*ship_p;
 	sublist			subsys_list[MAX_SUBSYS_LIST];
-	vector			hitpos2;
+	vec3d			hitpos2;
 
 	Assert(ship_obj);	// Goober5000 (but other_obj might be NULL via sexp)
 	Assert(hitpos);		// Goober5000
@@ -1409,7 +1413,7 @@ void ship_hit_music(object *ship_obj, object *other_obj)
 // Currently used in misison_parse to create partially damaged ships.
 // NOTE: hitpos is in model coordinates on the detail[0] submodel (highest detail hull)
 // WILL NOT WORK RIGHT IF ON A ROTATING SUBMODEL
-void ship_hit_sparks_no_rotate(object *ship_obj, vector *hitpos)
+void ship_hit_sparks_no_rotate(object *ship_obj, vec3d *hitpos)
 {
 	ship		*ship_p = &Ships[ship_obj->instance];
 
@@ -1486,10 +1490,10 @@ int spark_compare( const void *elem1, const void *elem2 )
 }
 
 // for big ships, when all spark slots are filled, make intelligent choice of one to be recycled
-int choose_next_spark(object *ship_obj, vector *hitpos)
+int choose_next_spark(object *ship_obj, vec3d *hitpos)
 {
 	int i, j, count, num_sparks, num_spark_pairs, spark_num;
-	vector world_hitpos[MAX_SHIP_HITS];
+	vec3d world_hitpos[MAX_SHIP_HITS];
 	spark_pair spark_pairs[MAX_SPARK_PAIRS];
 	ship *shipp = &Ships[ship_obj->instance];
 
@@ -1589,9 +1593,9 @@ int choose_next_spark(object *ship_obj, vector *hitpos)
 
 
 //	Make sparks fly off a ship.
-void ship_hit_create_sparks(object *ship_obj, vector *hitpos, int submodel_num)
+void ship_hit_create_sparks(object *ship_obj, vec3d *hitpos, int submodel_num)
 {
-	vector	tempv;
+	vec3d	tempv;
 	ship		*ship_p = &Ships[ship_obj->instance];
 
 	int n, max_sparks;
@@ -1627,7 +1631,7 @@ void ship_hit_create_sparks(object *ship_obj, vector *hitpos, int submodel_num)
 	if (instancing) {
 		// get the hit position in the subobject RF
 		ship_model_start(ship_obj);
-		vector temp_zero, temp_x, temp_y, temp_z;
+		vec3d temp_zero, temp_x, temp_y, temp_z;
 		model_find_world_point(&temp_zero, &vmd_zero_vector, pship->modelnum, submodel_num, &ship_obj->orient, &ship_obj->pos);
 		model_find_world_point(&temp_x, &vmd_x_vector, pship->modelnum, submodel_num, &ship_obj->orient, &ship_obj->pos);
 		model_find_world_point(&temp_y, &vmd_y_vector, pship->modelnum, submodel_num, &ship_obj->orient, &ship_obj->pos);
@@ -1640,7 +1644,7 @@ void ship_hit_create_sparks(object *ship_obj, vector *hitpos, int submodel_num)
 		vm_vec_sub2(&temp_z, &temp_zero);
 
 		// find displacement from submodel origin
-		vector diff;
+		vec3d diff;
 		vm_vec_sub(&diff, hitpos, &temp_zero);
 
 		// find displacement from submodel origin in submodel RF
@@ -1718,8 +1722,8 @@ void player_died_start(object *killer_objp)
 	vm_vec_add2(&Original_vec_to_deader, &Player_obj->orient.vec.uvec);
 	vm_vec_normalize(&Original_vec_to_deader);
 
-	vector	vec_from_killer;
-	vector	*side_vec;
+	vec3d	vec_from_killer;
+	vec3d	*side_vec;
 	float		dist;
 
 	Assert(other_objp != NULL);
@@ -2119,11 +2123,11 @@ extern int Homing_hits, Homing_misses;
 // Call this instead of physics_apply_whack directly to 
 // deal with two docked ships properly.
 // Goober5000 - note... hit_pos is in *local* coordinates
-void ship_apply_whack(vector *force, vector *hit_pos, object *objp)
+void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 {
 	if (objp == Player_obj) {
 		nprintf(("Sandeep", "Playing stupid joystick effect\n"));
-		vector test;
+		vec3d test;
 		vm_vec_unrotate(&test, force, &objp->orient);
 
 		game_whack_apply( -test.xyz.x, -test.xyz.y );
@@ -2138,7 +2142,7 @@ void ship_apply_whack(vector *force, vector *hit_pos, object *objp)
 		// still uses the moment of inertia for the whacked object, not for all objects).  Commenting
 		// the bracketed code restores Volition's code, but it doesn't calculate the correct torque.
 		{
-			vector world_hit_pos, world_center_pos;
+			vec3d world_hit_pos, world_center_pos;
 
 			// calc world hit pos of the hit ship
 			vm_vec_unrotate(&world_hit_pos, hit_pos, &objp->orient);
@@ -2222,7 +2226,7 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 	ship_subsys *subsys;
 	ship *shipp;
 	float dist, nearest_dist = FLT_MAX;
-	vector g_subobj_pos;
+	vec3d g_subobj_pos;
 	float max_damage;
 	shockwave *sw;
 
@@ -2292,7 +2296,7 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 // Goober5000 - sanity checked this whole function in the case that other_obj is NULL, which
 // will happen with the explosion-effect sexp
 void ai_update_lethality(object *ship_obj, object *weapon_obj, float damage);
-static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int quadrant, int wash_damage=0)
+static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, int quadrant, int wash_damage=0)
 {
 //	mprintf(("doing damage\n"));
 
@@ -2630,7 +2634,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 }
 
 // Goober5000
-void ship_apply_tag(int ship_num, int tag_level, float tag_time, vector *target, vector *start, int ssm_index)
+void ship_apply_tag(int ship_num, int tag_level, float tag_time, vec3d *target, vec3d *start, int ssm_index)
 {
 	// set time first tagged
 	if (Ships[ship_num].time_first_tagged == 0)
@@ -2667,7 +2671,7 @@ void ship_apply_tag(int ship_num, int tag_level, float tag_time, vector *target,
 // This assumes that whoever called this knows if the shield got hit or not.
 // hitpos is in world coordinates.
 // if quadrant is not -1, then that part of the shield takes damage properly.
-void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos, float damage, int quadrant, bool create_spark, int submodel_num, vector *hit_normal)
+void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, int quadrant, bool create_spark, int submodel_num, vec3d *hit_normal)
 {
 	Assert(ship_obj);	// Goober5000
 	Assert(other_obj);	// Goober5000
@@ -2747,8 +2751,8 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 		weapon_info *wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 
 		// ssm stuff
-		vector *target = hitpos;
-		vector *start = &Objects[ship_obj->instance].pos;
+		vec3d *target = hitpos;
+		vec3d *start = &Objects[ship_obj->instance].pos;
 		int ssm_index = wip->SSM_index;
 
 		ship_apply_tag(ship_obj->instance, wip->tag_level, wip->tag_time, target, start, ssm_index);
@@ -2803,15 +2807,15 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vector *hitpos
 // You can pass force_center==NULL if you the damage doesn't come from anywhere,
 // like for debug keys to damage an object or something.  It will 
 // assume damage is non-directional and will apply it correctly.   
-void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force_center, float damage )
+void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_center, float damage )
 {
 	Assert(ship_obj);	// Goober5000 (but not other_obj in case of sexp)
 
-	vector tmp, world_hitpos;
+	vec3d tmp, world_hitpos;
 
 	if ( force_center )	{
 		int shield_quad;
-		vector local_hitpos;
+		vec3d local_hitpos;
 
 		// find world hitpos
 		vm_vec_sub( &tmp, force_center, &ship_obj->pos );
@@ -2860,7 +2864,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vector *force
 
 void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage)
 {
-	vector world_hitpos, direction_vec, rand_vec;
+	vec3d world_hitpos, direction_vec, rand_vec;
 
 	// Since an force_center wasn't specified, this is probably just a debug key
 	// to kill an object.   So pick a shield quadrant and a point on the

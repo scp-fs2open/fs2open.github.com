@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.9 $
- * $Date: 2005-03-20 00:09:07 $
- * $Author: phreak $
+ * $Revision: 1.10 $
+ * $Date: 2005-04-05 05:53:17 $
+ * $Author: taylor $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/03/20 00:09:07  phreak
+ * Added gr_draw_htl_line and gr_draw_htl sphere
+ * There still needs to be D3D versions implemented, but OGL is done.
+ * Follow that or ask phreak about how its implemented/
+ *
  * Revision 1.8  2005/03/19 18:02:34  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -66,16 +71,16 @@
 #include "globalincs/pstypes.h"
 struct poly_list;
 
-void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation);
-void gr_opengl_start_instance_angles(vector *pos, angles* rotation);
+void gr_opengl_start_instance_matrix(vec3d *offset, matrix* rotation);
+void gr_opengl_start_instance_angles(vec3d *pos, angles* rotation);
 void gr_opengl_end_instance_matrix();
 void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, float z_far);
 void gr_opengl_end_projection_matrix();
-void gr_opengl_set_view_matrix(vector *pos, matrix* orient);
+void gr_opengl_set_view_matrix(vec3d *pos, matrix* orient);
 void gr_opengl_end_view_matrix();
 void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/);
 void gr_opengl_end_2d_matrix();
-void gr_opengl_push_scale_matrix(vector *scale_factor);
+void gr_opengl_push_scale_matrix(vec3d *scale_factor);
 void gr_opengl_pop_scale_matrix();
 
 void gr_opengl_start_clip_plane();
@@ -92,7 +97,7 @@ void gr_opengl_start_state_block();
 int gr_opengl_end_state_block();
 void gr_opengl_set_state_block(int);
 
-void gr_opengl_draw_htl_line(vector *start, vector* end);
+void gr_opengl_draw_htl_line(vec3d *start, vec3d* end);
 void gr_opengl_draw_htl_sphere(float rad);
 
 #endif //_GROPENGLTNL_H

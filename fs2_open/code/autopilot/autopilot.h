@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.h $
- * $Revision: 1.6 $
- * $Date: 2004-08-11 05:06:18 $
- * $Author: Kazan $
+ * $Revision: 1.7 $
+ * $Date: 2005-04-05 05:53:14 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/08/11 05:06:18  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.5  2004/07/27 18:52:10  Kazan
  * squished another
  *
@@ -57,7 +60,7 @@ struct NavPoint
 	void *target_obj;
 	int waypoint_num; //only used when flags & NP_WAYPOINT
 
-	vector GetPosition();
+	vec3d GetPosition();
 	char* GetInteralName();
 };
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-03-19 18:02:33 $
- * $Author: bobboau $
+ * $Revision: 2.26 $
+ * $Date: 2005-04-05 05:53:15 $
+ * $Author: taylor $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/03/19 18:02:33  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.24  2005/03/14 03:24:25  taylor
  * speedup grow/shrink time for the warp to avoid the big size skips
  *
@@ -990,7 +994,7 @@ float fireball_lifeleft_percent( object *obj )
 }
 
 // determine LOD to use
-int fireball_get_lod(vector *pos, fireball_info *fd, float size)
+int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 {
 	vertex v;
 	int x, y, w, h, bm_size;
@@ -1019,7 +1023,7 @@ int fireball_get_lod(vector *pos, fireball_info *fd, float size)
 	// if vertex is behind, find size if in front, then drop down 1 LOD
 	if (v.codes & CC_BEHIND) {
 		float dist = vm_vec_dist_quick(&Eye_position, pos);
-		vector temp;
+		vec3d temp;
 
 		behind = 1;
 		vm_vec_scale_add(&temp, &Eye_position, &Eye_matrix.vec.fvec, dist);
@@ -1072,7 +1076,7 @@ int fireball_get_lod(vector *pos, fireball_info *fd, float size)
 }
 
 //	Create a fireball, return object index.
-int fireball_create( vector * pos, int fireball_type, int parent_obj, float size, int reverse, vector *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, int warp_open_sound, int warp_close_sound)
+int fireball_create( vec3d * pos, int fireball_type, int parent_obj, float size, int reverse, vec3d *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, int warp_open_sound, int warp_close_sound)
 {
 	int				n, objnum, fb_lod;
 	object			*obj;

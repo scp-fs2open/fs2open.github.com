@@ -68,7 +68,7 @@ struct polymodel;
 #define uw(p)	(*((uint *) (p)))
 #define w(p)	(*((int *) (p)))
 #define wp(p)	((int *) (p))
-#define vp(p)	((vector *) (p))
+#define vp(p)	((vec3d *) (p))
 #define fl(p)	(*((float *) (p)))
 
 extern int model_interp(matrix * orient, ubyte * data, polymodel * pm );
@@ -79,7 +79,7 @@ void model_octant_create( polymodel * pm );
 // frees the memory the octants use for a given polygon model
 void model_octant_free( polymodel * pm );
 
-void model_calc_bound_box( vector *box, vector *big_mn, vector *big_mx);
+void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx);
 
 void interp_clear_instance();
 
@@ -90,6 +90,6 @@ void swap_bsp_data( polymodel *pm, void *model_ptr );
 //be sure to update 2d.h
 #define MAX_POLYGON_NORMS	6500		//6500 (3x)
 
-extern vector *Interp_verts[MAX_POLYGON_VECS];
+extern vec3d *Interp_verts[MAX_POLYGON_VECS];
 
 #endif

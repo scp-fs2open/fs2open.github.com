@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-10 08:00:17 $
+ * $Revision: 2.12 $
+ * $Date: 2005-04-05 05:53:25 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/10 08:00:17  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.10  2004/07/26 20:47:56  Kazan
  * remove MCD complete
  *
@@ -323,7 +332,7 @@ extern int Show_area_effect;
 //				failure			=>	-1
 //
 // Goober5000 - now parent_objnum can be allowed to be -1
-int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci, int flag, int delay, int model)
+int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay, int model)
 {
 	if(model == -1)model = defalt_shockwave_model;
 
