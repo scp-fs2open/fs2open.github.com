@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.44 $
- * $Date: 2003-03-18 13:38:07 $
- * $Author: unknownplayer $
+ * $Revision: 2.45 $
+ * $Date: 2003-03-19 06:23:27 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/03/18 13:38:07  unknownplayer
+ * Fixed up a bug in the code which was causing all mission loads to crash.
+ * As of this update, the DX merge is officially functional and complete within the CVS main branch. Tell Inquisitor we won't need to roll back at all, but Goober5000 needs to go and look at his SEXP code since he messed up a bunch of checking functions with it
+ *
  * Revision 2.43  2003/03/18 08:44:04  Goober5000
  * added explosion-effect sexp and did some other minor housekeeping
  * --Goober5000
@@ -580,13 +584,6 @@ sexp_oper Operators[] = {
 	{ "/",					OP_DIV,				2,	INT_MAX	},
 	{ "mod",				OP_MOD,				2,	INT_MAX	},
 	{ "rand",				OP_RAND,			2,	2	},
-	{ "get-object-x",		OP_GET_OBJECT_X,	1,	2	},	// Goober5000
-	{ "get-object-y",		OP_GET_OBJECT_Y,	1,	2	},	// Goober5000
-	{ "get-object-z",		OP_GET_OBJECT_Z,	1,	2	},	// Goober5000
-	{ "set-object-x",		OP_SET_OBJECT_X,	2,	2	},	// Goober5000
-	{ "set-object-y",		OP_SET_OBJECT_Y,	2,	2	},	// Goober5000
-	{ "set-object-z",		OP_SET_OBJECT_Z,	2,	2	},	// Goober5000
-
 
 	{ "true",							OP_TRUE,							0,	0,			},
 	{ "false",							OP_FALSE,						0,	0,			},
@@ -686,7 +683,6 @@ sexp_oper Operators[] = {
 	{ "when",			OP_WHEN,	2, INT_MAX, },
 	{ "cond",			OP_COND, 1, INT_MAX, },
 
-
 	{ "send-message-list",			OP_SEND_MESSAGE_LIST,			4, INT_MAX	},
 	{ "send-message",					OP_SEND_MESSAGE,					3, 3,			},
 	{ "send-random-message",		OP_SEND_RANDOM_MESSAGE,			3, INT_MAX,	},
@@ -774,6 +770,15 @@ sexp_oper Operators[] = {
 	{ "activate-glow-maps",			OP_ACTIVATE_GLOW_MAPS,			1, INT_MAX },	//-Bobboau
 	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINTS },	//-Bobboau
 	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINTS },	//-Bobboau
+
+	{ "get-object-x",				OP_GET_OBJECT_X,				1,	2	},	// Goober5000
+	{ "get-object-y",				OP_GET_OBJECT_Y,				1,	2	},	// Goober5000
+	{ "get-object-z",				OP_GET_OBJECT_Z,				1,	2	},	// Goober5000
+	{ "set-object-x",				OP_SET_OBJECT_X,				2,	2	},	// Goober5000
+	{ "set-object-y",				OP_SET_OBJECT_Y,				2,	2	},	// Goober5000
+	{ "set-object-z",				OP_SET_OBJECT_Z,				2,	2	},	// Goober5000
+	{ "set-ship-facing",			OP_SET_SHIP_FACING,				4,	4	},	// Goober5000
+	{ "set-ship-facing-object",		OP_SET_SHIP_FACING_OBJECT,		2,	2	},	// Goober5000
 
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
@@ -4089,73 +4094,6 @@ int sexp_determine_team(char *subj)
 	return team;
 }
 
-// Goober5000
-int sexp_deal_with_object_coordinates(int n, int get_coordinate, int index) 
-{
-	vector *p_pos, pos;
-	int ship_num;
-	char *ship_name = CTEXT(n);
-
-	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-		return SEXP_NAN;
-
-	// get the ship num.  If we get a -1 for the number here, ship has yet to arrive, so return NAN.
-	ship_num = ship_name_lookup(ship_name, 1);
-	if (ship_num == -1)
-		return SEXP_NAN;
-
-	n = CDR(n);
-
-	// get position
-	p_pos = &Objects[Ships[ship_num].objnum].pos;
-
-	// get
-	if (get_coordinate)
-	{
-		// might we have a subsys?
-		if (n != -1)
-		{
-			sexp_get_subsystem_pos(ship_num, CTEXT(n), &pos);
-			p_pos = &pos;
-		}
-
-		// return result:
-		switch(index)
-		{
-			case 0:
-				return (int)p_pos->xyz.x;
-			case 1:
-				return (int)p_pos->xyz.y;
-			case 2:
-				return (int)p_pos->xyz.z;
-			default:
-				Int3();
-		}
-	}
-	// set
-	else
-	{
-		// set pos:
-		switch(index)
-		{
-			case 0:
-				p_pos->xyz.x = (float)atoi(CTEXT(n));
-				break;
-			case 1:
-				p_pos->xyz.y = (float)atoi(CTEXT(n));
-				break;
-			case 2:
-				p_pos->xyz.z = (float)atoi(CTEXT(n));
-				break;
-			default:
-				Int3();
-		}
-	}
-
-	return SEXP_TRUE;
-}
-
 // returns the distance between two objects.  If a wing is specified as one (or both) of the arguments
 // to this function, we are looking for the closest distance
 int sexp_distance(int n)
@@ -4448,6 +4386,204 @@ int sexp_distance_subsystem(int n)	// Goober5000
 	}
 
 	return dist_min;
+}
+
+// Goober5000
+int sexp_deal_with_object_coordinates(int n, int get_coordinate, int index) 
+{
+	vector *p_pos, pos;
+	int ship_num;
+	char *ship_name = CTEXT(n);
+
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+		return SEXP_NAN;
+
+	// get the ship num.  If we get a -1 for the number here, ship has yet to arrive, so return NAN.
+	ship_num = ship_name_lookup(ship_name, 1);
+	if (ship_num == -1)
+		return SEXP_NAN;
+
+	n = CDR(n);
+
+	// get position
+	p_pos = &Objects[Ships[ship_num].objnum].pos;
+
+	// get
+	if (get_coordinate)
+	{
+		// might we have a subsys?
+		if (n != -1)
+		{
+			sexp_get_subsystem_pos(ship_num, CTEXT(n), &pos);
+			p_pos = &pos;
+		}
+
+		// return result:
+		switch(index)
+		{
+			case 0:
+				return (int)p_pos->xyz.x;
+			case 1:
+				return (int)p_pos->xyz.y;
+			case 2:
+				return (int)p_pos->xyz.z;
+			default:
+				Int3();
+		}
+	}
+	// set
+	else
+	{
+		// set pos:
+		switch(index)
+		{
+			case 0:
+				p_pos->xyz.x = (float)atoi(CTEXT(n));
+				break;
+			case 1:
+				p_pos->xyz.y = (float)atoi(CTEXT(n));
+				break;
+			case 2:
+				p_pos->xyz.z = (float)atoi(CTEXT(n));
+				break;
+			default:
+				Int3();
+		}
+	}
+
+	return SEXP_TRUE;
+}
+
+// Goober5000
+void sexp_set_ship_orient(int ship_num, vector *location)
+{
+	vector v_orient;
+	matrix m_orient;
+	object *obj;
+
+	obj = &Objects[Ships[ship_num].objnum];
+
+	// calculate orientation matrix ----------------
+	memset(&v_orient, 0, sizeof(vector));
+
+	vm_vec_sub(&v_orient, location, &obj->pos);
+
+	if (IS_VEC_NULL(&v_orient))
+	{
+		Warning(LOCATION, "error in warp-effect: warp can't point to itself; quitting the warp...\n");
+		return;
+	}
+
+	vm_vector_2_matrix(&m_orient, &v_orient, NULL, NULL);
+
+
+	// set orientation -----------------------------
+	obj->orient = m_orient;
+}
+
+// Goober5000
+void sexp_set_ship_facing(int n)
+{
+	vector location;
+	char *ship_name;
+	int ship_num;
+	
+	ship_name = CTEXT(n);
+	n = CDR(n);
+
+	location.xyz.x = (float)atoi(CTEXT(n));
+	n = CDR(n);
+	location.xyz.y = (float)atoi(CTEXT(n));
+	n = CDR(n);
+	location.xyz.z = (float)atoi(CTEXT(n));
+
+	// check to see if the ship was destroyed or departed.  If so, then make this node known false
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ) 
+		return;
+
+	// get ship number
+	ship_num = ship_name_lookup(ship_name);
+
+	// if the ship isn't in the mission, do nothing
+	if (ship_num < 0)
+		return;
+
+	sexp_set_ship_orient(ship_num, &location);
+}
+
+// Goober5000
+void sexp_set_ship_facing_object(int n)
+{
+	ship_obj *so;
+	char *ship_name;
+	char *target_name;
+	int ship_num, team, obj;
+
+	ship_name = CTEXT(n);
+	target_name = CTEXT(CDR(n));
+
+	// check to see if either ship was destroyed or departed.  If so, then make this node known false
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ||
+		  mission_log_get_time(LOG_SHIP_DESTROYED, target_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, target_name, NULL, NULL) ) 
+		return;
+
+	// get ship number
+	ship_num = ship_name_lookup(ship_name);
+
+	// if the ship isn't in the mission, do nothing
+	if (ship_num < 0)
+		return;
+
+	// the second name might be the name of a wing.  Check to see if the wing is detroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, target_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, target_name, NULL, NULL) ) 
+		return;
+
+	team = sexp_determine_team(target_name);
+	if (team)	// we have a team type, so pick the first ship of that type
+	{
+		so = GET_FIRST(&Ship_obj_list);
+		while (so != END_OF_LIST(&Ship_obj_list))
+		{
+			if (Ships[Objects[so->objnum].instance].team == team)
+			{
+				sexp_set_ship_orient(ship_num, &Objects[so->objnum].pos);
+				return;
+			}
+
+			so = GET_NEXT(so);
+		}
+
+		return;	// if no match
+	}
+
+	// at this point, we must have a wing, ship or point for a target
+	obj = ship_name_lookup(target_name);
+	if (obj >= 0)
+	{
+		sexp_set_ship_orient(ship_num, &Objects[Ships[obj].objnum].pos);
+		return;
+	}
+
+	// at this point, we must have a wing or point for a target
+	obj = waypoint_lookup(target_name);
+	if (obj >= 0)
+	{
+		sexp_set_ship_orient(ship_num, &Objects[obj].pos);
+		return;
+	}
+		
+	// at this point, we must have a wing for a target
+	obj = wing_name_lookup(target_name);
+	if (obj < 0)
+		return;  // we apparently don't have anything legal
+
+	// make sure at least one ship exists
+	if (!Wings[obj].current_count)
+		return;
+
+	// point to wing leader
+	sexp_set_ship_orient(ship_num, &Objects[Ships[Wings[obj].ship_index[0]].objnum].pos);
 }
 
 // funciton to determine when the last meaningful order was given to one or more ships.  Returns
@@ -5699,6 +5835,7 @@ void sexp_explosion_effect(int n)
 	shockwave_speed = atoi(CTEXT(n));
 	n = CDR(n);
 
+	// fireball type
 	if (atoi(CTEXT(n)) == 0)
 	{
 		fireball_type = FIREBALL_EXPLOSION_MEDIUM;
@@ -5713,7 +5850,7 @@ void sexp_explosion_effect(int n)
 	}
 	else
 	{
-		Warning(LOCATION, "explosion-effect style is out of range; quitting the explosion...\n");
+		Warning(LOCATION, "explosion-effect type is out of range; quitting the explosion...\n");
 		return;
 	}
 	n = CDR(n);
@@ -5808,11 +5945,87 @@ void sexp_warp_effect(int n)
 		"\t8:  Duration in seconds\r\n"
 		"\t9:  Warp opening sound (index into sounds.tbl)\r\n"
 		"\t10: Warp closing sound (index into sounds.tbl)\r\n"
-		"\t11: Color (0 for standard blue [default], 1 for Knossos green)\r\n"
-		"\t12: Type (0 for Bobboau's new effect [default], 1 for original FS2 effect)" },
+		"\t11: Type (0 for standard blue [default], 1 for Knossos green)\r\n"
+		"\t12: Effect (0 for Bobboau's new effect [default], 1 for original FS2 effect)" },
 */
 {
-	
+	vector origin, location, v_orient;
+	matrix m_orient;
+	int radius, duration, warp_open_sound_index, warp_close_sound_index, fireball_type, extra_flags;
+	extra_flags = FBF_WARP_VIA_SEXP;
+
+	// read in data --------------------------------
+	origin.xyz.x = (float)atoi(CTEXT(n));
+	n = CDR(n);
+	origin.xyz.y = (float)atoi(CTEXT(n));
+	n = CDR(n);
+	origin.xyz.z = (float)atoi(CTEXT(n));
+	n = CDR(n);
+
+	location.xyz.x = (float)atoi(CTEXT(n));
+	n = CDR(n);
+	location.xyz.y = (float)atoi(CTEXT(n));
+	n = CDR(n);
+	location.xyz.z = (float)atoi(CTEXT(n));
+	n = CDR(n);
+
+	radius = atoi(CTEXT(n));
+	n = CDR(n);
+	duration = atoi(CTEXT(n));
+	n = CDR(n);
+
+	warp_open_sound_index = atoi(CTEXT(n));
+	n = CDR(n);
+	warp_close_sound_index = atoi(CTEXT(n));
+	n = CDR(n);
+
+	// fireball type
+	if (atoi(CTEXT(n)) == 0)
+	{
+		fireball_type = FIREBALL_WARP_EFFECT;
+	}
+	else if (atoi(CTEXT(n)) == 1)
+	{
+		fireball_type = FIREBALL_KNOSSOS_EFFECT;
+	}
+	else
+	{
+		Warning(LOCATION, "warp-effect type is out of range; quitting the warp...\n");
+		return;
+	}
+	n = CDR(n);
+
+	// effect type
+	if (atoi(CTEXT(n)) == 0)
+	{
+		// do nothing; this is standard
+	}
+	else if (atoi(CTEXT(n)) == 1)
+	{
+		extra_flags |= FBF_WARP_FORCE_OLD;
+	}
+	else
+	{
+		Warning(LOCATION, "warp-effect effect is out of range; quitting the warp...\n");
+		return;
+	}
+
+
+	// calculate orientation matrix ----------------
+	memset(&v_orient, 0, sizeof(vector));
+
+	vm_vec_sub(&v_orient, &location, &origin);
+
+	if (IS_VEC_NULL(&v_orient))
+	{
+		Warning(LOCATION, "error in warp-effect: warp can't point to itself; quitting the warp...\n");
+		return;
+	}
+
+	vm_vector_2_matrix(&m_orient, &v_orient, NULL, NULL);
+
+	// create fireball -----------------------------
+	fireball_create(&origin, fireball_type, -1, (float)radius, 0, NULL, (float)duration, -1, &m_orient, 0, extra_flags, warp_open_sound_index, warp_close_sound_index);
 }
 
 // Goober5000
@@ -9514,15 +9727,6 @@ int eval_sexp(int cur_node)
 				sexp_val = rand_sexp( node );
 				break;
 
-			case OP_GET_OBJECT_X:
-			case OP_GET_OBJECT_Y:
-			case OP_GET_OBJECT_Z:
-			case OP_SET_OBJECT_X:
-			case OP_SET_OBJECT_Y:
-			case OP_SET_OBJECT_Z:
-				sexp_val = sexp_deal_with_object_coordinates(node, (op_num==OP_GET_OBJECT_X||op_num==OP_GET_OBJECT_Y||op_num==OP_GET_OBJECT_Z), (op_num==OP_GET_OBJECT_X||op_num==OP_SET_OBJECT_X)?0:((op_num==OP_GET_OBJECT_Y||op_num==OP_SET_OBJECT_Y)?1:2));
-				break;
-
 		// boolean operators can have one of the special sexp values (known true, known false, unknown)
 			case OP_TRUE:
 				sexp_val = SEXP_KNOWN_TRUE;
@@ -10153,6 +10357,25 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_GET_OBJECT_X:
+			case OP_GET_OBJECT_Y:
+			case OP_GET_OBJECT_Z:
+			case OP_SET_OBJECT_X:
+			case OP_SET_OBJECT_Y:
+			case OP_SET_OBJECT_Z:
+				sexp_val = sexp_deal_with_object_coordinates(node, (op_num==OP_GET_OBJECT_X||op_num==OP_GET_OBJECT_Y||op_num==OP_GET_OBJECT_Z), (op_num==OP_GET_OBJECT_X||op_num==OP_SET_OBJECT_X)?0:((op_num==OP_GET_OBJECT_Y||op_num==OP_SET_OBJECT_Y)?1:2));
+				break;
+
+			case OP_SET_SHIP_FACING:
+				sexp_set_ship_facing(node);
+				sexp_val = 1;
+				break;
+
+			case OP_SET_SHIP_FACING_OBJECT:
+				sexp_set_ship_facing_object(node);
+				sexp_val = 1;
+				break;
+
 			// training operators
 			case OP_KEY_PRESSED:
 				sexp_val = sexp_key_pressed(node);
@@ -10616,8 +10839,6 @@ int query_operator_return_type(int op)
 		case OP_MUL:
 		case OP_DIV:
 		case OP_RAND:
-//			return OPR_NUMBER;
-
 		case OP_TIME_SHIP_DESTROYED:
 		case OP_TIME_SHIP_ARRIVED:
 		case OP_TIME_SHIP_DEPARTED:
@@ -10759,6 +10980,8 @@ int query_operator_return_type(int op)
 		case OP_SET_OBJECT_X:
 		case OP_SET_OBJECT_Y:
 		case OP_SET_OBJECT_Z:
+		case OP_SET_SHIP_FACING:
+		case OP_SET_SHIP_FACING_OBJECT:
 			return OPR_NULL;
 
 		case OP_GET_OBJECT_X:
@@ -10846,8 +11069,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_EQUALS:
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
-//			return OPF_NUMBER;
-
 		case OP_RAND:
 		case OP_HAS_TIME_ELAPSED:
 		case OP_SPEED:
@@ -10968,6 +11189,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			else
 				return OPF_NUMBER;
+
+		case OP_SET_SHIP_FACING:
+			return OPF_NUMBER;
+
+		case OP_SET_SHIP_FACING_OBJECT:
+			return OPF_SHIP_WING_POINT;
 
 		case OP_MODIFY_VARIABLE:
 			if (argnum == 0) {
@@ -12439,6 +12666,28 @@ int get_subcategory(int sexp_id)
 		case OP_TECH_RESET_TO_DEFAULT:
 			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
 
+		case OP_DONT_COLLIDE_INVISIBLE:
+		case OP_COLLIDE_INVISIBLE:
+		case OP_CHANGE_SHIP_MODEL:
+		case OP_CHANGE_SHIP_CLASS:
+		case OP_DEACTIVATE_GLOW_POINTS:
+		case OP_ACTIVATE_GLOW_POINTS:
+		case OP_DEACTIVATE_GLOW_MAPS:
+		case OP_ACTIVATE_GLOW_MAPS:
+		case OP_DEACTIVATE_GLOW_POINT_BANK:
+		case OP_ACTIVATE_GLOW_POINT_BANK:
+			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
+
+		case OP_GET_OBJECT_X:
+		case OP_GET_OBJECT_Y:
+		case OP_GET_OBJECT_Z:
+		case OP_SET_OBJECT_X:
+		case OP_SET_OBJECT_Y:
+		case OP_SET_OBJECT_Z:
+		case OP_SET_SHIP_FACING:
+		case OP_SET_SHIP_FACING_OBJECT:
+			return CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION;
+
 		case OP_MODIFY_VARIABLE:
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_AWACS_SET_RADIUS:
@@ -12461,18 +12710,6 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_EFFECT:
 		case OP_EMP_EFFECT:
 			return CHANGE_SUBCATEGORY_SPECIAL;
-
-		case OP_DONT_COLLIDE_INVISIBLE:
-		case OP_COLLIDE_INVISIBLE:
-		case OP_CHANGE_SHIP_MODEL:
-		case OP_CHANGE_SHIP_CLASS:
-		case OP_DEACTIVATE_GLOW_POINTS:
-		case OP_ACTIVATE_GLOW_POINTS:
-		case OP_DEACTIVATE_GLOW_MAPS:
-		case OP_ACTIVATE_GLOW_MAPS:
-		case OP_DEACTIVATE_GLOW_POINT_BANK:
-		case OP_ACTIVATE_GLOW_POINT_BANK:
-			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 		
 		default:
 			return -1;		// sexp doesn't have a subcategory

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.3 $
- * $Date: 2003-03-02 05:12:39 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-19 06:23:27 $
+ * $Author: Goober5000 $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/02 05:12:39  penguin
+ * Moved "extern int wm" declaration inside the header #ifdef block
+ *  - penguin
+ *
  * Revision 2.2  2002/11/14 04:18:16  bobboau
  * added warp model and type 1 glow points
  * and well as made the new glow file type,
@@ -183,6 +187,40 @@
 
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
+// all this moved here by Goober5000 because it makes more sense in the H file
+typedef struct fireball_lod {
+	char	filename[MAX_FILENAME_LEN];
+	int	bitmap_id;
+	int	num_frames;
+	int	fps;
+} fireball_lod;
+
+typedef struct fireball_info	{
+	int					lod_count;	
+	fireball_lod		lod[4];
+} fireball_info;
+
+// flag values for fireball struct flags member
+#define	FBF_WARP_CLOSE_SOUND_PLAYED		(1<<0)
+#define	FBF_WARP_CAPITAL_SIZE			(1<<1)
+#define	FBF_WARP_CRUISER_SIZE			(1<<2)
+#define FBF_WARP_FORCE_OLD				(1<<3)	// Goober5000
+#define FBF_WARP_VIA_SEXP				(1<<4)	// Goober5000
+
+typedef struct fireball {					
+	int		objnum;					// If -1 this object is unused
+	int		fireball_info_index;	// Index into Fireball_info array
+	int		current_bitmap;
+	int		orient;					// For fireballs, which orientation.  For warps, 0 is warpin, 1 is warpout
+	int		flags;					// see #define FBF_*
+	char		lod;						// current LOD
+	float		time_elapsed;			// in seconds
+	float		total_time;				// total lifetime of animation in seconds
+	int warp_open_sound_index;	// for warp-effect - Goober5000
+	int warp_close_sound_index;	// for warp-effect - Goober5000
+} fireball;
+// end move
+
 void fireball_init();
 void fireball_render(object * obj);
 void fireball_delete( object * obj );
@@ -192,7 +230,7 @@ void fireball_process_post(object * obj, float frame_time);
 // reversed is for warp_in/out effects
 // Velocity: If not NULL, the fireball will move at a constant velocity.
 // warp_lifetime: If warp_lifetime > 0.0f then makes the explosion loop so it lasts this long.  Only works for warp effect
-int fireball_create(vector *pos, int fireball_type, int parent_obj, float size, int reversed=0, vector *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0); 
+int fireball_create(vector *pos, int fireball_type, int parent_obj, float size, int reversed=0, vector *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, int warp_open_sound=0, int warp_close_sound=0); 
 void fireball_render_plane(int plane);
 void fireball_close();
 void fireball_level_close();
@@ -211,7 +249,7 @@ float fireball_lifeleft( object *obj );
 float fireball_lifeleft_percent( object *obj );
 
 // internal function to draw warp grid.
-extern void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius );
+extern void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int force_old = 0 );
 extern int Warp_glow_bitmap;			// Internal
 
 extern int wm;

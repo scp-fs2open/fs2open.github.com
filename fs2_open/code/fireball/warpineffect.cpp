@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-18 01:44:30 $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-19 06:23:27 $
  * $Author: Goober5000 $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/18 01:44:30  Goober5000
+ * fixed some misspellings
+ * --Goober5000
+ *
  * Revision 2.3  2003/01/05 23:41:50  bobboau
  * disabled decals (for now), removed the warp ray thingys,
  * made some better error mesages while parseing weapons and ships tbls,
@@ -184,7 +188,7 @@ void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 #define wR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
 #define wP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 
-void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius )
+void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int force_old)
 {
 
 	int i;
@@ -204,7 +208,7 @@ void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float ra
 	vector vecs[5];
 	vertex verts[5];
 
-	if(wm > -1){
+	if(wm > -1 && !force_old){
 		float model_Interp_scale_x = radius /20;
 		float model_Interp_scale_y = radius /20;
 		float model_Interp_scale_z = max_radius /20;

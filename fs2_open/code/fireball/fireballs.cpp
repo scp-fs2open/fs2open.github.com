@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-18 01:44:30 $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-19 06:23:27 $
  * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/18 01:44:30  Goober5000
+ * fixed some misspellings
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/07 01:37:41  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -363,34 +367,6 @@ int wm;
 
 #define MAX_FIREBALL_LOD						4
 
-typedef struct fireball_lod {
-	char	filename[MAX_FILENAME_LEN];
-	int	bitmap_id;
-	int	num_frames;
-	int	fps;
-} fireball_lod;
-
-typedef struct fireball_info	{
-	int					lod_count;	
-	fireball_lod		lod[4];
-} fireball_info;
-
-// flag values for fireball struct flags member
-#define	FBF_WARP_CLOSE_SOUND_PLAYED	(1<<0)
-#define	FBF_WARP_CAPITAL_SIZE			(1<<1)
-#define	FBF_WARP_CRUISER_SIZE			(1<<2)
-
-typedef struct fireball {					
-	int		objnum;					// If -1 this object is unused
-	int		fireball_info_index;	// Index into Fireball_info array
-	int		current_bitmap;
-	int		orient;					// For fireballs, which orientation.  For warps, 0 is warpin, 1 is warpout
-	int		flags;					// see #define FBF_*
-	char		lod;						// current LOD
-	float		time_elapsed;			// in seconds
-	float		total_time;				// total lifetime of animation in seconds
-} fireball;
-
 #define MAX_FIREBALLS	200
 
 fireball Fireballs[MAX_FIREBALLS];
@@ -429,6 +405,10 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 			fb->flags |= FBF_WARP_CRUISER_SIZE;
 		}
 	}
+	else
+	{
+		sound_index = fb->warp_open_sound_index;
+	}
 
 	snd_play_3d(&Snds[sound_index], &fireball_objp->pos, &Eye_position, fireball_objp->radius, NULL, 0, 1.0f, SND_PRIORITY_DOUBLE_INSTANCE, NULL, range_multiplier); // play warp sound effect
 }
@@ -446,6 +426,8 @@ void fireball_play_warphole_close_sound(fireball *fb)
 
 	if ( fb->flags & FBF_WARP_CAPITAL_SIZE ) {
 		sound_index = SND_CAPITAL_WARP_OUT;
+	} else if ( fb->flags & FBF_WARP_VIA_SEXP ) {
+		sound_index = fb->warp_close_sound_index;
 	} else {
 		// AL 27-3-98: Decided that warphole closing is only required for capital ship sized warp effects.
 		return;
@@ -656,7 +638,7 @@ void fireball_render(object * obj)
 //				obj->alt_rad = rad;
 
 
-				warpin_render(&obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius );
+				warpin_render(&obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_FORCE_OLD) );
 			}
 			break;
 
@@ -1001,7 +983,7 @@ int fireball_get_lod(vector *pos, fireball_info *fd, float size)
 }
 
 //	Create a fireball, return object index.
-int fireball_create( vector * pos, int fireball_type, int parent_obj, float size, int reverse, vector *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res)
+int fireball_create( vector * pos, int fireball_type, int parent_obj, float size, int reverse, vector *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, int warp_open_sound, int warp_close_sound)
 {
 	int				n, objnum, fb_lod;
 	object			*obj;
@@ -1070,7 +1052,11 @@ int fireball_create( vector * pos, int fireball_type, int parent_obj, float size
 	fl = &fd->lod[fb_lod];
 
 	fb->lod = (char)fb_lod;
-	fb->flags = 0;
+
+	fb->flags = extra_flags;
+	fb->warp_open_sound_index = warp_open_sound;
+	fb->warp_close_sound_index = warp_close_sound;
+
 	matrix orient;
 	if(orient_override != NULL){
 		orient = *orient_override;
