@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-11 03:56:12 $
- * $Author: bobboau $
+ * $Revision: 2.12 $
+ * $Date: 2003-11-11 18:04:06 $
+ * $Author: phreak $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/11 03:56:12  bobboau
+ * shit load of bug fixing, much of it in nebula and bitmap drawing
+ *
  * Revision 2.10  2003/11/06 22:49:22  phreak
  * fixed up some of the matrix functions that were causing problems
  * bob: i there is an important change here. i don't know if its going to cause any d3d problems
@@ -439,7 +442,7 @@ void g3_start_instance_angles(vector *pos,angles *orient)
 
 
 //pops the old context
-void g3_done_instance()
+void g3_done_instance(bool use_api)
 {
 	Assert( G3_count == 1 );
 
@@ -454,7 +457,7 @@ void g3_done_instance()
 	Object_matrix = instance_stack[instance_depth].om;
 	Object_position = instance_stack[instance_depth].op;
 
-	if(!Cmdline_nohtl)
+	if (!Cmdline_nohtl && use_api)
 		gr_end_instance_matrix();
 }
 
