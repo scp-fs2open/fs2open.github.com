@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-03-11 01:37:35 $
- * $Author: wmcoolmon $
+ * $Revision: 1.18 $
+ * $Date: 2005-03-12 04:59:14 $
+ * $Author: taylor $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/03/11 01:37:35  wmcoolmon
+ * Isn't the extern needed too? causes linking errors on my system w/o it, although it compiles fine.
+ *
  * Revision 1.16  2005/03/11 01:34:19  wmcoolmon
  * Not really. I've got lib files in my main VC.NET libs directory, and include files in grouped subdirectories under my VC.NET include directory. it keeps my HD free of scattered SDK directories and helps keep conflicts down.
  *
@@ -72,7 +75,7 @@
 #include <setjmp.h>
 
 #ifndef WMC
-#include "jpeglib.h"
+#include "../../libjpeg/jpeglib.h"
 #else
 extern "C" {
 #include <libjpeg/jpeglib.h>
