@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.175 $
- * $Date: 2005-03-27 12:28:35 $
+ * $Revision: 2.176 $
+ * $Date: 2005-03-27 13:37:15 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.175  2005/03/27 12:28:35  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.174  2005/03/25 06:57:37  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -12121,7 +12125,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 
 	int message_type = -1;
 	int heavily_damaged = 0;
-	if ( get_hull_pct(sp->objnum) < 0.4 ) {
+	if ( get_hull_pct(&Objects[sp->objnum]) < 0.4 ) {
 		heavily_damaged = 1;
 	}
 
