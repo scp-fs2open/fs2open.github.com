@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.19 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
- * $Revision: 2.19 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.20 $
+ * $Date: 2004-10-31 21:32:27 $
+ * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2004-10-31 21:32:27 $
+ * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.18  2004/07/05 05:09:18  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -316,6 +319,11 @@
 //  	#define GAME_CD_CHECK
 //  #endif
 
+// Inferno build break multiplayer to just build without networking
+#if defined(INF_BUILD)
+	#define NO_NETWORKING
+#endif
+
 // 4127 is constant conditional (assert)
 // 4100 is unreferenced formal parameters,
 // 4514 is unreferenced inline function removed, 
@@ -354,20 +362,25 @@
 
 #define LOCAL static			// make module local varilable static.
 
-#if defined( _WIN32 ) && defined( _MSC_VER )
+#ifdef IAM_64BIT
+typedef __int32 _fs_time_t;  // time_t here is 64-bit and we need 32-bit
+typedef __int32 fix;
+// PTR compatible sizes
+typedef __int64 ptr_s;
+typedef unsigned __int64 ptr_u;
+#else
+typedef long fix;
+typedef	long _fs_time_t;
+typedef int ptr_s;
+typedef unsigned int ptr_u;
+#endif // 64-bit
+
 typedef __int64 longlong;
 typedef unsigned __int64 ulonglong;
-#elif defined ( __GNUC__ )
-typedef long long longlong;
-typedef unsigned long long ulonglong;
-#else
-#error unknown compiler/architecture
-#endif
-
-typedef long fix;
 typedef unsigned char ubyte;
 typedef unsigned short ushort;
 typedef unsigned int uint;
+
 
 #define HARDWARE_ONLY
 
