@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-11-11 02:15:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-04-06 03:09:01 $
+ * $Author: phreak $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/11/11 02:15:43  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.3  2002/10/19 19:29:27  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -552,6 +557,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{				  KEY_SHIFTED | KEY_1,			-1, SHIP_TAB, "Left Thrust", CC_TYPE_CONTINUOUS},
 	{				  KEY_SHIFTED | KEY_PADPLUS,	-1, SHIP_TAB, "Up Thrust", CC_TYPE_CONTINUOUS},
 	{				  KEY_SHIFTED | KEY_PADENTER,	-1, SHIP_TAB, "Down Thrust", CC_TYPE_CONTINUOUS},
+	{ KEY_ALTED |     KEY_SHIFTED | KEY_Q,			-1, COMPUTER_TAB, "Toggle HUD Wireframe Targetbox"},
 
 	{                           -1,					-1, -1,				"" }
 };

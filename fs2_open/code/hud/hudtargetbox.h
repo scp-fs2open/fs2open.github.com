@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-04-06 03:09:53 $
+ * $Author: phreak $
  *
  * Header file for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:04  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/06 16:50:13  phreak
  * added Targetbox_wire variable to check what mode the
  * hud targetbox uses
@@ -188,5 +192,8 @@ void hud_update_cargo_scan_sound();
 void hud_cargo_scan_update(object *targetp, float frametime);
 
 char *hud_targetbox_truncate_subsys_name(char *outstr);
+
+//swich through the valid targetbox modes
+void hud_targetbox_switch_wireframe_mode();
 
 #endif /* __FREESPACE_HUDTARGETBOX_H__ */

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-04-06 01:11:41 $
- * $Author: Kazan $
+ * $Revision: 2.23 $
+ * $Date: 2004-04-06 03:09:26 $
+ * $Author: phreak $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/04/06 01:11:41  Kazan
+ * make custom build work again
+ *
  * Revision 2.21  2004/03/05 09:02:04  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -589,7 +592,8 @@ int Normal_key_set[] = {
 	MULTI_TOGGLE_NETINFO,
 	MULTI_SELF_DESTRUCT,
 
-	TOGGLE_HUD
+	TOGGLE_HUD,
+	HUD_TARGETBOX_TOGGLE_WIREFRAME
 };
 
 int Dead_key_set[] = {
@@ -715,7 +719,8 @@ int Non_critical_key_set[] = {
 	MULTI_TOGGLE_NETINFO,
 	MULTI_SELF_DESTRUCT,
 
-	TOGGLE_HUD
+	TOGGLE_HUD,
+	HUD_TARGETBOX_TOGGLE_WIREFRAME
 };
 
 
@@ -921,43 +926,10 @@ void process_debug_keys(int k)
 
 		case KEY_DEBUGGED + KEY_X:
 		case KEY_DEBUGGED1 + KEY_X:
-			if (Player_ship->cloak_stage==0)
-			{
-				shipfx_start_cloak(Player_ship,5000,1);
-				HUD_printf("Cloaking started");
-			}
-			else
-			{
-				shipfx_stop_cloak(Player_ship);
-				HUD_printf("Cloaking stopped");
-			}
-
-			break;
-
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_X:
 		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_X:
-		{
-			if (Player_ai->target_objnum == -1) break;
-			object *target = &Objects[Player_ai->target_objnum];
-			ship *target_ship;
-			if (target->type != OBJ_SHIP)		break;
-			
-			target_ship = &Ships[target->instance];
-			if (target_ship->cloak_stage==0)
-			{
-				shipfx_start_cloak(target_ship,5000,1);
-				HUD_printf("%s has started to cloak",target_ship->ship_name);
-			}
-			else
-			{
-				shipfx_stop_cloak(target_ship);
-				HUD_printf("%s has stopped cloaking",target_ship->ship_name);
-			}
-		}
-		break;
-
-
-
+			HUD_printf("Cloaking has been disabled, thank you for playing fs2_open, %s", Player->callsign);
+			break;
 
 		case KEY_DEBUGGED + KEY_C:
 		case KEY_DEBUGGED1 + KEY_C:
@@ -1689,17 +1661,6 @@ void process_player_ship_keys(int k)
 	if(Player->control_mode == PCM_SUPERNOVA){
 		return;
 	}
-
-	//phreak 2002/08/04 - put this here for now
-	if (k==KEY_SHIFTED + KEY_CTRLED + KEY_Q)
-	{
-		extern int Targetbox_wire;
-		Targetbox_wire++;
-		if (Targetbox_wire==3)
-			Targetbox_wire=0;
-	}
-
-
 
 	// pass the key to the squadmate messaging code.  If the messaging code took the key, then return
 	// from here immediately since we don't want to do further key processing.
@@ -3107,6 +3068,11 @@ int button_function(int n)
 			gamesnd_play_iface(SND_USER_SELECT);
 			hud_toggle_draw();
 			break;
+
+		case HUD_TARGETBOX_TOGGLE_WIREFRAME:
+			gamesnd_play_iface(SND_USER_SELECT);
+			hud_targetbox_switch_wireframe_mode();
+			break;	
 
 		// following are not handled here, but we need to bypass the Int3()
 		case LAUNCH_COUNTERMEASURE:
