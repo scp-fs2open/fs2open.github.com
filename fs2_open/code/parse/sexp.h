@@ -9,13 +9,20 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.85 $
+ * $Revision: 2.86 $
  * $Author: Goober5000 $
- * $Date: 2005-03-15 07:26:52 $
+ * $Date: 2005-03-27 13:00:40 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2005/03/15 07:26:52  Goober5000
+ * *fixed some sexp declaration formatting
+ * *implemented string comparison sexps
+ * *simplified numeric comparison sexps
+ * *fixed numeric comparison (especially equals) sexps to actually work on all their arguments like they were designed to
+ * --Goober5000
+ *
  * Revision 2.84  2005/03/03 06:05:31  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -1062,6 +1069,7 @@ struct ship_subsys;
 #define OP_UNSCRAMBLE_MESSAGES				(0x009c | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// phreak
 #define	OP_SET_OBJECT_POSITION				(0x009d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 
+// WMC
 #define OP_CUTSCENES_SET_CUTSCENE_BARS		(0x009e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_CUTSCENES_UNSET_CUTSCENE_BARS	(0x009f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_CUTSCENES_FADE_IN				(0x00a0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
@@ -1078,11 +1086,16 @@ struct ship_subsys;
 #define OP_CUTSCENES_RESET_TIME_COMPRESSION	(0x00ab | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_CUTSCENES_FORCE_PERSPECTIVE		(0x00ac | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 
-//#define OP_JUMP_NODE_SET_JUMPNODE_NAME		(0x00b0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_JUMP_NODE_SET_JUMPNODE_COLOR		(0x00b0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_JUMP_NODE_SET_JUMPNODE_MODEL		(0x00b1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_JUMP_NODE_SHOW_JUMPNODE			(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_JUMP_NODE_HIDE_JUMPNODE			(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+// WMC
+#define OP_JUMP_NODE_SET_JUMPNODE_NAME		(0x00ad | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_JUMP_NODE_SET_JUMPNODE_COLOR		(0x00ae | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_JUMP_NODE_SET_JUMPNODE_MODEL		(0x00af | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_JUMP_NODE_SHOW_JUMPNODE			(0x00b0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_JUMP_NODE_HIDE_JUMPNODE			(0x00b1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+
+#define OP_SHIP_GUARDIAN_THRESHOLD			(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD	(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
 
 /* made obsolete by Goober5000
 // debugging sexpressions
