@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.153 $
- * $Date: 2005-01-17 23:35:45 $
- * $Author: argv $
+ * $Revision: 2.154 $
+ * $Date: 2005-01-27 04:23:17 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.153  2005/01/17 23:35:45  argv
+ * Surface shields.
+ *
+ * See forum thread:
+ * http://dynamic4.gamespy.com/~freespace/forums/showthread.php?s=&threadid=29643
+ *
+ * -- _argv[-1]
+ *
  * Revision 2.152  2005/01/16 23:18:03  wmcoolmon
  * Added "show ship" ship flag
  *
@@ -2345,6 +2353,25 @@ strcpy(parse_error_text, temp_error);
 	{
 		Warning(LOCATION, "Initial hull strength on ship %s cannot be 0.  Defaulting to 100.\n", sip->name);
 		sip->initial_hull_strength = 100.0f;
+	}
+
+	if(optional_string("+Hull Repair Rate:"))
+	{
+		stuff_float(&sip->hull_repair_rate_percent);
+	}
+	else
+	{
+		sip->hull_repair_rate_percent = 0.0f;
+	}
+
+	if(optional_string("+Subsystem Repair Rate:"))
+	{
+		stuff_float(&sip->subsys_repair_rate_percent);
+	}
+	else
+	{
+		//Old SHIP_REPAIR_SUBSYSTEM_RATE define
+		sip->subsys_repair_rate_percent = 0.01f;
 	}
 
 	required_string("$Flags:");
@@ -5505,6 +5532,7 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 	ship_subsys_info	*ssip;
 	ship					*sp;
 	ship_info			*sip;
+	object				*objp;
 
 	#ifndef NDEBUG
 	if ( !Ship_auto_repair )	// only repair subsystems if Ship_auto_repair flag is set
@@ -5514,13 +5542,27 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS);
 	sp = &Ships[shipnum];
 	sip = &Ship_info[sp->ship_info_index];
+	objp = &Objects[sp->objnum];
+
+	//Repair the hull...or maybe unrepair?
+	if(sip->hull_repair_rate_percent != 0.0f && objp->hull_strength < sp->ship_initial_hull_strength)
+	{
+		objp->hull_strength += sp->ship_initial_hull_strength * sip->hull_repair_rate_percent * frametime;
+
+		if(objp->hull_strength > sp->ship_initial_hull_strength)
+		{
+			objp->hull_strength = sp->ship_initial_hull_strength;
+		}
+	}
 
 	// only allow for the auto-repair of subsystems on small ships
-	if ( !(sip->flags & SIF_SMALL_SHIP) )
+	//...NOT. Check if var has been changed from def -C
+	if ( !(sip->flags & SIF_SMALL_SHIP) && sip->subsys_repair_rate_percent == 0.01f)
 		return;
 
 	// AL 3-14-98: only allow auto-repair if power output not zero
-	if ( sip->power_output <= 0 )
+	//...NOT. Check if var has been changed from def -C
+	if ( (sip->power_output <= 0 && sip->subsys_repair_rate_percent == 0.01f) || sip->subsys_repair_rate_percent == 0.0f)
 		return;
 	
 	// iterate through subsystems, repair as needed based on elapsed frametime
@@ -5535,8 +5577,8 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 				continue;
 
 			// do incremental repair on the subsystem
-			ssp->current_hits += ssp->max_hits * SHIP_REPAIR_SUBSYSTEM_RATE * frametime;
-			ssip->current_hits += ssip->total_hits * SHIP_REPAIR_SUBSYSTEM_RATE * frametime;
+			ssp->current_hits += ssp->max_hits * sip->subsys_repair_rate_percent * frametime;
+			ssip->current_hits += ssip->total_hits * sip->subsys_repair_rate_percent * frametime;
 		
 			// check for overflow of current_hits
 			if ( ssp->current_hits >= ssp->max_hits ) {
