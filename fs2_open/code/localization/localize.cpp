@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-08-22 07:01:57 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -289,6 +292,7 @@
 #include "osapi/osregistry.h"
 #include "parse/encrypt.h"
 #include "graphics/2d.h"
+#include "playerman/player.h"
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS
@@ -761,6 +765,53 @@ void lcl_ext_close()
 	Lcl_ext_file = NULL;
 }
 
+// Goober5000 - replace stuff in the string, e.g. "$callsign" with player's callsign
+#define LCL_NUM_REPLACEMENTS 1
+#define LCL_TEMP_TEXT_SIZE 2048
+void lcl_replace_stuff(char *text, uint max_len)
+{
+	if (Fred_running)
+		return;
+
+	if (!Player)
+		return;
+
+	int i;
+	char *replace_pos;
+	char temp[LCL_TEMP_TEXT_SIZE];
+	char replace[LCL_NUM_REPLACEMENTS][2][NAME_LENGTH];
+
+	// fill replacements array (this is if we want to add more in the future)
+	strcpy(replace[0][0], "$callsign");
+	strcpy(replace[0][1], Player->callsign);
+
+	// do all replacements
+	for (i = 0; i < LCL_NUM_REPLACEMENTS; i++)
+	{
+		// search for offending word
+		while ( (replace_pos = strstr(text, replace[i][0])) != NULL )
+		{
+			// handle if we don't have enough room to do the replacement
+			if (strlen(text) - strlen(replace[i][0]) + strlen(replace[i][1]) >= max_len - 1)
+			{
+				strnset(replace_pos, '-', strlen(replace[i][0]));
+			}
+			// replace
+			else
+			{
+				// save remainder of string
+				strcpy(temp, replace_pos);
+
+				// replace token
+				strcpy(replace_pos, replace[i][1]);
+
+				// append remainder of string
+				strncat(text, temp + strlen(replace[i][0]), strlen(temp) - 1);
+			}
+		}
+	}
+}
+
 // get the localized version of the string. if none exists, return the original string
 // valid input to this function includes :
 // "this is some text"
@@ -778,6 +829,9 @@ void lcl_ext_localize(char *in, char *out, int max_len, int *id)
 
 	Assert(in);
 	Assert(out);
+
+	// Goober5000
+	lcl_replace_stuff(in, max_len);
 
 	// default (non-external string) value
 	if(id != NULL){
