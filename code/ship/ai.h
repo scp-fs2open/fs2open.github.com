@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.12 $
- * $Date: 2003-11-11 02:15:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2004-01-26 23:07:43 $
+ * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/11/11 02:15:40  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.11  2003/09/13 06:02:03  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -330,7 +335,11 @@ typedef struct ai_goals {
 
 #include "ship/ship.h"  // ai_goal must be declared before including this.
 
+#ifdef INF_BUILD
+#define	MAX_AI_CLASSES		30
+#else
 #define	MAX_AI_CLASSES		10
+#endif
 #define	MAX_GOAL_SHIP_NAMES	100
 
 #define	AIM_CHASE				0
