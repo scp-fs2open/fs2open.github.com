@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-03-20 14:47:13 $
- * $Author: randomtiger $
+ * $Revision: 2.22 $
+ * $Date: 2004-04-26 13:00:56 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/03/20 14:47:13  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.20  2004/03/08 18:36:21  randomtiger
  * Added complete stub system to replace software.
  *
@@ -596,6 +600,9 @@
 #include "graphics/grd3dsetup.h"
 #include "graphics/gropengl.h"
 
+// DevIL - has to be inited before it gets used
+#include "openil/il_func.h"
+
 screen gr_screen;
 
 color_gun Gr_red, Gr_green, Gr_blue, Gr_alpha;
@@ -727,6 +734,8 @@ void gr_close()
 	default:
 		Int3();		// Invalid graphics mode
 	}
+
+	openil_close();
 
 	gr_font_close();
 	batch_deinit();
@@ -1153,6 +1162,9 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 //  	memmove( Gr_current_palette, Gr_original_palette, 768 );
 //  	gr_set_palette_internal(Gr_current_palette_name, Gr_current_palette,0);	
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);	
+
+	// initialize DevIL (after OGL)
+	openil_init();
 
 	bm_init();
 	if ( Gr_cursor == -1 ){
