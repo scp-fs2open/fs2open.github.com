@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.37 $
- * $Date: 2004-11-23 00:10:06 $
+ * $Revision: 2.38 $
+ * $Date: 2004-11-27 22:08:21 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2004/11/23 00:10:06  taylor
+ * try and protect the bitmap_entry stuff a bit better
+ * fix the transparent support ship, again, but correctly this time
+ *
  * Revision 2.36  2004/11/21 11:26:39  taylor
  * split bm_load_sub() into fast (memory only) and slow (disk only) versions
  * EFF bug fix for fps and much better error handling
@@ -1336,7 +1340,6 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 	if (optional_string_ex( "$FPS:" ))
 		stuff_int_ex(&fps);
 
-	mprintf(("EFF = filename: %s, type: %s, frames: %d, fps: %d\n", filename, ext, frames, fps));
 
 	if (!stricmp(NOX("dds"), ext)) {
 		c_type = BM_TYPE_DDS;
@@ -1454,6 +1457,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		if ( bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &c_type) != 0 ) {
 			mprintf(("BMPMAN: Error reading EFF\n"));
 			return -1;
+		} else {
+			mprintf(("BMPMAN: Found EFF (%s) with %d frames at %d fps.\n", filename, anim_frames, anim_fps));
 		}
 	}
 	// regular ani file
@@ -1498,10 +1503,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 			sprintf(bm_bitmaps[n+i].info.eff.filename, "%s_%.4d", clean_name, i);
 			ubyte dds_type = BM_TYPE_NONE;
 			if (!gr_bm_load(c_type, n+i, bm_bitmaps[n+i].info.eff.filename, NULL, &anim_width, &anim_height, &bpp, &dds_type, &mm_lvl, &img_size)) {
-				if (dds_type != BM_TYPE_NONE)
-					c_type = dds_type;
-
-				bm_bitmaps[n+i].info.eff.type = c_type;
+				bm_bitmaps[n+i].info.eff.type = (dds_type == BM_TYPE_NONE) ? c_type : dds_type;
 			} else {
 				// if we didn't get anything then bail out now
 				if ( i == 0 ) {
@@ -2031,10 +2033,14 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	Assert(Texture_compression_enabled);
 	Assert(be->mem_taken > 0);
 
-	data = (ubyte*)malloc(be->mem_taken);
+	data = (ubyte*)bm_malloc(bitmapnum, be->mem_taken);
 
 	if ( data == NULL )
 		return;
+
+	#ifdef BMPMAN_NDEBUG
+	Assert( be->data_size > 0 );
+	#endif
 
 	memset( data, 0, be->mem_taken );
 
@@ -3082,6 +3088,7 @@ void bm_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h)
 int bm_is_compressed(int num)
 {
 	int n = num % MAX_BITMAPS;
+	ubyte type = BM_TYPE_NONE;
 
 	//duh
 	if (!Texture_compression_enabled)
@@ -3089,7 +3096,13 @@ int bm_is_compressed(int num)
 
 	Assert(num == bm_bitmaps[n].handle);
 
-	switch (bm_bitmaps[n].type) {
+	if (bm_bitmaps[n].type == BM_TYPE_EFF) {
+		type = bm_bitmaps[n].info.eff.type;
+	} else {
+		type = bm_bitmaps[n].type;
+	}
+
+	switch (type) {
 		case BM_TYPE_DXT1:
 			return DDS_DXT1;
 		case BM_TYPE_DXT3:
