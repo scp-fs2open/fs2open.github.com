@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.29 $
+ * $Revision: 2.30 $
  * $Author: Goober5000 $
- * $Date: 2003-03-03 04:28:37 $
+ * $Date: 2003-03-18 08:44:05 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/03/03 04:28:37  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.28  2003/01/26 18:37:19  Goober5000
  * changed change-music to change-soundtrack
  * --Goober5000
@@ -550,6 +554,13 @@
 #define	OP_MUL									(0x0003 | OP_CATEGORY_ARITHMETIC)
 #define	OP_DIV									(0x0004 | OP_CATEGORY_ARITHMETIC)
 #define	OP_RAND									(0x0005 | OP_CATEGORY_ARITHMETIC)
+#define OP_GET_OBJECT_X							(0x0006	| OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_GET_OBJECT_Y							(0x0007	| OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_GET_OBJECT_Z							(0x0008	| OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_SET_OBJECT_X							(0x0009	| OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_SET_OBJECT_Y							(0x000a	| OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_SET_OBJECT_Z							(0x000b	| OP_CATEGORY_ARITHMETIC)	// Goober5000
+
 
 #define	OP_TRUE									(0x0000 | OP_CATEGORY_LOGICAL)
 #define	OP_FALSE									(0x0001 | OP_CATEGORY_LOGICAL)
@@ -730,7 +741,9 @@
 #define OP_CHANGE_SOUNDTRACK				(0x007a	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_TECH_ADD_INTEL					(0x007b	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_TECH_RESET_TO_DEFAULT			(0x007c	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-
+#define OP_EXPLOSION_EFFECT					(0x007d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_WARP_EFFECT						(0x007e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_EMP_EFFECT						(0x007f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
@@ -1048,5 +1061,7 @@ void sexp_variable_block_free(const char *ship_name, int start_index, int block_
 
 // menu and category stuff
 extern int get_subcategory(int sexp_id);
+
+void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vector *subsys_world_pos);
 
 #endif

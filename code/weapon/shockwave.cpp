@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:11 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-18 08:44:06 $
+ * $Author: Goober5000 $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:11  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -277,6 +280,7 @@ extern int Show_area_effect;
 //	return:	success			=>	object number of shockwave
 //				failure			=>	-1
 //
+// Goober5000 - now parent_objnum can be allowed to be -1
 int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci, int flag, int delay)
 {
 	int				i, objnum, real_parent;
@@ -295,7 +299,9 @@ int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci,
 	}
 
 	// real_parent is the guy who caused this shockwave to happen
-	if ( Objects[parent_objnum].type == OBJ_WEAPON ){
+	if (parent_objnum == -1) {
+		real_parent = -1;
+	} else if ( Objects[parent_objnum].type == OBJ_WEAPON ){
 		real_parent = Objects[parent_objnum].parent;
 	} else {
 		real_parent = parent_objnum;
@@ -323,7 +329,7 @@ int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci,
 //	sw->total_time = i2fl(si->num_frames) / si->fps;	// in seconds
 	sw->total_time = sw->outer_radius / sw->speed;
 
-	if ( Objects[parent_objnum].type == OBJ_WEAPON ) {		
+	if ( (parent_objnum != -1) && Objects[parent_objnum].type == OBJ_WEAPON ) {		
 		sw->weapon_info_index = Weapons[Objects[parent_objnum].instance].weapon_info_index;
 	}
 	else {		

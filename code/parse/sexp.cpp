@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.42 $
- * $Date: 2003-03-03 04:28:37 $
+ * $Revision: 2.43 $
+ * $Date: 2003-03-18 08:44:04 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/03/03 04:28:37  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.41  2003/03/01 01:15:38  Goober5000
  * fixed the initial status bug
  *
@@ -543,9 +547,15 @@
 #include "hud/hudets.h"
 #include "math/fvi.h"
 #include "ship/awacs.h"
-#include "hud/hudsquadmsg.h"	// for the order sexp
-#include "gamesnd/eventmusic.h"	// for change-soundtrack
-#include "menuui/techmenu.h"	// for intel stuff
+#include "hud/hudsquadmsg.h"		// for the order sexp
+#include "gamesnd/eventmusic.h"		// for change-soundtrack
+#include "menuui/techmenu.h"		// for intel stuff
+#include "fireball/fireballs.h"	// for explosion stuff
+#include "gamesnd/gamesnd.h"
+#include "render/3d.h"
+#include "asteroid/asteroid.h"
+#include "ship/shipfx.h"
+#include "weapon/shockwave.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -560,12 +570,19 @@
 
 sexp_oper Operators[] = {
 //   Operator, Identity, Min / Max arguments
-	{ "+",		OP_PLUS,		2,	INT_MAX	},
-	{ "-",		OP_MINUS,	2,	INT_MAX	},
-	{ "*",		OP_MUL,		2,	INT_MAX	},
-	{ "/",		OP_DIV,		2,	INT_MAX	},
-	{ "mod",		OP_MOD,		2,	INT_MAX	},
-	{ "rand",	OP_RAND,		2,	2			},
+	{ "+",					OP_PLUS,			2,	INT_MAX	},
+	{ "-",					OP_MINUS,			2,	INT_MAX	},
+	{ "*",					OP_MUL,				2,	INT_MAX	},
+	{ "/",					OP_DIV,				2,	INT_MAX	},
+	{ "mod",				OP_MOD,				2,	INT_MAX	},
+	{ "rand",				OP_RAND,			2,	2	},
+	{ "get-object-x",		OP_GET_OBJECT_X,	1,	2	},	// Goober5000
+	{ "get-object-y",		OP_GET_OBJECT_Y,	1,	2	},	// Goober5000
+	{ "get-object-z",		OP_GET_OBJECT_Z,	1,	2	},	// Goober5000
+	{ "set-object-x",		OP_SET_OBJECT_X,	2,	2	},	// Goober5000
+	{ "set-object-y",		OP_SET_OBJECT_Y,	2,	2	},	// Goober5000
+	{ "set-object-z",		OP_SET_OBJECT_Z,	2,	2	},	// Goober5000
+
 
 	{ "true",							OP_TRUE,							0,	0,			},
 	{ "false",							OP_FALSE,						0,	0,			},
@@ -770,6 +787,9 @@ sexp_oper Operators[] = {
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
+	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 11 },			// Goober5000
+	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
+	{ "emp-effect",					OP_EMP_EFFECT,					1, 1 },			// Goober5000
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -4065,6 +4085,73 @@ int sexp_determine_team(char *subj)
 	return team;
 }
 
+// Goober5000
+int sexp_deal_with_object_coordinates(int n, int get_coordinate, int index) 
+{
+	vector *p_pos, pos;
+	int ship_num;
+	char *ship_name = CTEXT(n);
+
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+		return SEXP_NAN;
+
+	// get the ship num.  If we get a -1 for the number here, ship has yet to arrive, so return NAN.
+	ship_num = ship_name_lookup(ship_name, 1);
+	if (ship_num == -1)
+		return SEXP_NAN;
+
+	n = CDR(n);
+
+	// get position
+	p_pos = &Objects[Ships[ship_num].objnum].pos;
+
+	// get
+	if (get_coordinate)
+	{
+		// might we have a subsys?
+		if (n != -1)
+		{
+			sexp_get_subsystem_pos(ship_num, CTEXT(n), &pos);
+			p_pos = &pos;
+		}
+
+		// return result:
+		switch(index)
+		{
+			case 0:
+				return (int)p_pos->xyz.x;
+			case 1:
+				return (int)p_pos->xyz.y;
+			case 2:
+				return (int)p_pos->xyz.z;
+			default:
+				Int3();
+		}
+	}
+	// set
+	else
+	{
+		// set pos:
+		switch(index)
+		{
+			case 0:
+				p_pos->xyz.x = (float)atoi(CTEXT(n));
+				break;
+			case 1:
+				p_pos->xyz.y = (float)atoi(CTEXT(n));
+				break;
+			case 2:
+				p_pos->xyz.z = (float)atoi(CTEXT(n));
+				break;
+			default:
+				Int3();
+		}
+	}
+
+	return SEXP_TRUE;
+}
+
 // returns the distance between two objects.  If a wing is specified as one (or both) of the arguments
 // to this function, we are looking for the closest distance
 int sexp_distance(int n)
@@ -5557,6 +5644,186 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 void sexp_change_music(int n)
 {
 	event_sexp_change_music(CTEXT(n));
+}
+
+// Goober5000
+void sexp_explosion_effect(int n)
+/* From the SEXP help...
+	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
+		"\tCauses an explosion at a given origin, with the given parameters.  The explosion goes off immediately.\r\n"
+		"Takes 10 arguments...\r\n"
+		"\t1:  Origin X\r\n"
+		"\t2:  Origin Y\r\n"
+		"\t3:  Origin Z\r\n"
+		"\t4:  Damage\r\n"
+		"\t5:  Blast force\r\n"
+		"\t6:  Size of explosion\r\n"
+		"\t7:  Inner radius to apply damage\r\n"
+		"\t8:  Outer radius to apply damage\r\n"
+		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
+		"\t10: Type (0 = medium, 1 = large1, 2 = large2)\r\n"
+		"\t11: Sound (index into sounds.tbl)" },
+*/
+// Basically, this function pretends that there's a ship at the origin that's blowing up, and
+// it does stuff accordingly.  In some places, it has to tiptoe around a little because the
+// code often expects a parent object when in fact there is none. <.<  >.>
+{
+	vector origin;
+	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, fireball_type, sound_index;
+	shockwave_create_info sci;
+
+	// read in data --------------------------------
+	origin.xyz.x = (float)atoi(CTEXT(n));
+	n = CDR(n);
+	origin.xyz.y = (float)atoi(CTEXT(n));
+	n = CDR(n);
+	origin.xyz.z = (float)atoi(CTEXT(n));
+	n = CDR(n);
+
+	max_damage = atoi(CTEXT(n));
+	n = CDR(n);
+	max_blast = atoi(CTEXT(n));
+	n = CDR(n);
+
+	explosion_size = atoi(CTEXT(n));
+	n = CDR(n);
+	inner_radius = atoi(CTEXT(n));
+	n = CDR(n);
+	outer_radius = atoi(CTEXT(n));
+	n = CDR(n);
+
+	shockwave_speed = atoi(CTEXT(n));
+	n = CDR(n);
+
+	if (atoi(CTEXT(n)) == 0)
+	{
+		fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+	}
+	else if (atoi(CTEXT(n)) == 1)
+	{
+		fireball_type = FIREBALL_EXPLOSION_LARGE1;
+	}
+	else if (atoi(CTEXT(n)) == 2)
+	{
+		fireball_type = FIREBALL_EXPLOSION_LARGE2;
+	}
+	else
+	{
+		Warning(LOCATION, "explosion-effect style is out of range; quitting the explosion...\n");
+		return;
+	}
+	n = CDR(n);
+
+	sound_index = atoi(CTEXT(n));
+
+
+	// play sound effect ---------------------------
+	snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+
+
+	// create the fireball -------------------------
+	fireball_create( &origin, fireball_type, -1, (float)explosion_size );
+
+
+	// apply area affect damage --------------------
+	if (!max_damage && !max_blast)
+		return;
+
+	if ( shockwave_speed > 0 )
+	{
+		sci.inner_rad = (float)inner_radius;
+		sci.outer_rad = (float)outer_radius;
+		sci.blast = (float)max_blast;
+		sci.damage = (float)max_damage;
+		sci.speed = (float)shockwave_speed;
+		sci.rot_angle = frand_range(0.0f, 359.0f);
+		shockwave_create(-1, &origin, &sci, SW_SHIP_DEATH);
+	}
+	else
+	{
+		object *objp;
+		float t_blast = 0.0f;
+		float t_damage = 0.0f;
+		for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+		{
+			if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) )
+			{
+				continue;
+			}
+		
+			// don't blast navbuoys
+			if ( objp->type == OBJ_SHIP )
+			{
+				if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY )
+				{
+					continue;
+				}
+			}
+
+			if ( ship_explode_area_calc_damage( &origin, &objp->pos, (float)inner_radius, (float)outer_radius, (float)max_damage, (float)max_blast, &t_damage, &t_blast ) == -1 )
+			{
+				continue;
+			}
+
+			switch ( objp->type )
+			{
+				case OBJ_SHIP:
+					ship_apply_global_damage( objp, NULL, &origin, t_damage );
+					vector force, vec_ship_to_impact;
+					vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
+					vm_vec_copy_normalize( &force, &vec_ship_to_impact );
+					vm_vec_scale( &force, (float)max_blast );
+					ship_apply_whack( &force, &vec_ship_to_impact, objp );
+					break;
+
+				case OBJ_ASTEROID:
+					asteroid_hit(objp, NULL, NULL, t_damage);
+					break;
+
+				default:
+					Int3();
+					break;
+			}
+		}	// end for
+	}
+}
+
+// Goober5000
+void sexp_warp_effect(int n)
+/* From the SEXP help...
+	{ OP_WARP_EFFECT, "warp-effect\r\n"
+		"\tCauses a subspace warp effect at a given origin, facing toward a given location, with the given parameters.\r\n"
+		"Takes 12 arguments...\r\n"
+		"\t1:  Origin X\r\n"
+		"\t2:  Origin Y\r\n"
+		"\t3:  Origin Z\r\n"
+		"\t4:  Location X\r\n"
+		"\t5:  Location Y\r\n"
+		"\t6:  Location Z\r\n"
+		"\t7:  Radius\r\n"
+		"\t8:  Duration in seconds\r\n"
+		"\t9:  Warp opening sound (index into sounds.tbl)\r\n"
+		"\t10: Warp closing sound (index into sounds.tbl)\r\n"
+		"\t11: Color (0 for standard blue [default], 1 for Knossos green)\r\n"
+		"\t12: Type (0 for Bobboau's new effect [default], 1 for original FS2 effect)" },
+*/
+{
+	
+}
+
+// Goober5000
+void sexp_emp_effect(int n)
+/* From the SEXP help...
+	{ OP_EMP_EFFECT, "emp-effect\r\n"
+		"\tCauses an emp blast at a given origin, with the given parameters.\r\n"
+		"Takes 5 arguments...\r\n"
+		"\t1: Origin X\r\n"
+		"\t2: Origin Y\r\n"
+		"\t3: Origin Z\r\n"
+		"\t4: Intensity\r\n"
+		"\t5: Duration in seconds" },*/
+{
+
 }
 
 void sexp_send_message( int n )
@@ -9243,6 +9510,15 @@ int eval_sexp(int cur_node)
 				sexp_val = rand_sexp( node );
 				break;
 
+			case OP_GET_OBJECT_X:
+			case OP_GET_OBJECT_Y:
+			case OP_GET_OBJECT_Z:
+			case OP_SET_OBJECT_X:
+			case OP_SET_OBJECT_Y:
+			case OP_SET_OBJECT_Z:
+				sexp_val = sexp_deal_with_object_coordinates(node, (op_num==OP_GET_OBJECT_X||op_num==OP_GET_OBJECT_Y||op_num==OP_GET_OBJECT_Z), (op_num==OP_GET_OBJECT_X||op_num==OP_SET_OBJECT_X)?0:((op_num==OP_GET_OBJECT_Y||op_num==OP_SET_OBJECT_Y)?1:2));
+				break;
+
 		// boolean operators can have one of the special sexp values (known true, known false, unknown)
 			case OP_TRUE:
 				sexp_val = SEXP_KNOWN_TRUE;
@@ -9678,6 +9954,21 @@ int eval_sexp(int cur_node)
 				
 			case OP_CHANGE_SOUNDTRACK:
 				sexp_change_music(node);
+				sexp_val = 1;
+				break;
+
+			case OP_EXPLOSION_EFFECT:
+				sexp_explosion_effect(node);
+				sexp_val = 1;
+				break;
+
+			case OP_WARP_EFFECT:
+				sexp_warp_effect(node);
+				sexp_val = 1;
+				break;
+
+			case OP_EMP_EFFECT:
+				sexp_emp_effect(node);
 				sexp_val = 1;
 				break;
 
@@ -10321,6 +10612,8 @@ int query_operator_return_type(int op)
 		case OP_MUL:
 		case OP_DIV:
 		case OP_RAND:
+			return OPR_NUMBER;
+
 		case OP_TIME_SHIP_DESTROYED:
 		case OP_TIME_SHIP_ARRIVED:
 		case OP_TIME_SHIP_DEPARTED:
@@ -10456,7 +10749,18 @@ int query_operator_return_type(int op)
 		case OP_ACTIVATE_GLOW_POINT_BANK:
 		case OP_SET_SUPPORT_SHIP:
 		case OP_CHANGE_SOUNDTRACK:
+		case OP_EXPLOSION_EFFECT:
+		case OP_WARP_EFFECT:
+		case OP_EMP_EFFECT:
+		case OP_SET_OBJECT_X:
+		case OP_SET_OBJECT_Y:
+		case OP_SET_OBJECT_Z:
 			return OPR_NULL;
+
+		case OP_GET_OBJECT_X:
+		case OP_GET_OBJECT_Y:
+		case OP_GET_OBJECT_Z:
+			return OPR_NUMBER;
 
 		case OP_AI_CHASE:
 		case OP_AI_DOCK:
@@ -10535,10 +10839,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_MOD:
 		case OP_MUL:
 		case OP_DIV:
-		case OP_RAND:
 		case OP_EQUALS:
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
+			return OPF_NUMBER;
+
+		case OP_RAND:
 		case OP_HAS_TIME_ELAPSED:
 		case OP_SPEED:
 		case OP_SET_TRAINING_CONTEXT_SPEED:
@@ -10642,6 +10948,22 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_DISTANCE:
 			return OPF_SHIP_WING_POINT;
+
+		case OP_GET_OBJECT_X:
+		case OP_GET_OBJECT_Y:
+		case OP_GET_OBJECT_Z:
+			if (argnum==0)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM;
+
+		case OP_SET_OBJECT_X:
+		case OP_SET_OBJECT_Y:
+		case OP_SET_OBJECT_Z:
+			if (argnum==0)
+				return OPF_SHIP;
+			else
+				return OPF_NUMBER;
 
 		case OP_MODIFY_VARIABLE:
 			if (argnum == 0) {
@@ -10803,6 +11125,24 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CHANGE_SOUNDTRACK:
 			return OPF_SOUNDTRACK_NAME;
+
+		case OP_EXPLOSION_EFFECT:
+			if (argnum <= 2)
+				return OPF_NUMBER;
+			else
+				return OPF_POSITIVE;
+
+		case OP_WARP_EFFECT:
+			if (argnum <= 5)
+				return OPF_NUMBER;
+			else
+				return OPF_POSITIVE;
+
+		case OP_EMP_EFFECT:
+			if (argnum <= 2)
+				return OPF_NUMBER;
+			else
+				return OPF_POSITIVE;
 
 		case OP_SEND_MESSAGE:
 		case OP_SEND_RANDOM_MESSAGE:
@@ -12113,6 +12453,9 @@ int get_subcategory(int sexp_id)
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
 		case OP_CHANGE_SOUNDTRACK:
+		case OP_EXPLOSION_EFFECT:
+		case OP_WARP_EFFECT:
+		case OP_EMP_EFFECT:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_DONT_COLLIDE_INVISIBLE:
