@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.42 $
+ * $Date: 2005-01-29 09:19:45 $
+ * $Author: argv $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.40  2005/01/01 19:47:26  taylor
  * make use of MR_NO_FOGGING to render models without fog
  *
@@ -802,7 +807,7 @@ void hud_render_target_setup(vector *camera_eye, matrix *camera_orient, float zo
 
 	HUD_set_clip(Target_window_coords[gr_screen.res][0],Target_window_coords[gr_screen.res][1],Target_window_coords[gr_screen.res][2],Target_window_coords[gr_screen.res][3]);
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 }

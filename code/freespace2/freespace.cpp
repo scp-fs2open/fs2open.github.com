@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.119 $
- * $Date: 2005-01-16 22:39:08 $
- * $Author: wmcoolmon $
+ * $Revision: 2.120 $
+ * $Date: 2005-01-29 09:19:45 $
+ * $Author: argv $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.119  2005/01/16 22:39:08  wmcoolmon
+ * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
+ *
  * Revision 2.118  2005/01/08 10:00:59  wmcoolmon
  * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
  *
@@ -4468,7 +4471,7 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	}
 
 	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 
