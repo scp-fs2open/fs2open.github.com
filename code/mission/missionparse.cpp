@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.66 $
- * $Date: 2004-10-11 22:29:25 $
+ * $Revision: 2.67 $
+ * $Date: 2004-10-12 07:34:45 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2004/10/11 22:29:25  Goober5000
+ * added the no-bank ship flag (which works) and the affected-by-gravity flag
+ * (which won't work until I implement gravity points)
+ * --Goober5000
+ *
  * Revision 2.65  2004/09/01 00:22:36  Goober5000
  * fixed a small bug in the custom hitpoints mod
  * --Goober5000
@@ -1063,6 +1068,12 @@ void parse_mission_info(mission *pm)
 	if ((pm->flags & MISSION_FLAG_FULLNEB) && (!(pm->flags & MISSION_FLAG_NO_NEB_TRAILS)))
 	{
 		pm->flags |= MISSION_FLAG_SHIP_TRAILS;
+	}
+
+	// Goober5000 - ship contrail speed threshold
+	pm->contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
+	if (optional_string("$Contrail Speed Threshold:")){
+		stuff_int(&pm->contrail_threshold);
 	}
 
 	// get the number of players if in a multiplayer mission
