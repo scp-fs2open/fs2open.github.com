@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-04-29 01:03:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2003-05-04 20:08:04 $
+ * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/04/29 01:03:21  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.8  2003/03/19 12:29:02  unknownplayer
  * Woohoo! Killed two birds with one stone!
  * Fixed the 'black screen around dialog boxes' problem and also the much more serious freezing problem experienced by Goober5000. It wasn't a crash, just an infinite loop. DX8 merge is GO! once again :)
@@ -2408,6 +2412,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 	object *obj = &Objects[shipp->objnum];
 
 	should_arc = 1;
+	int disrupted_arc=0;
 
 	float damage = obj->hull_strength / shipp->ship_initial_hull_strength;	
 
@@ -2426,6 +2431,14 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		should_arc = 1;
 	}
 
+	if ((ship_subsys_disrupted(shipp,SUBSYSTEM_ENGINE)) ||
+		(ship_subsys_disrupted(shipp,SUBSYSTEM_WEAPONS)) || 
+		(ship_subsys_disrupted(shipp,SUBSYSTEM_SENSORS)) )
+	{
+		disrupted_arc=1;
+		should_arc=1;
+	}
+
 	// Kill off old sparks
 	for(i=0; i<MAX_SHIP_ARCS; i++){
 		if(timestamp_valid(shipp->arc_timestamp[i]) && timestamp_elapsed(shipp->arc_timestamp[i])){			
@@ -2442,8 +2455,8 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		// start the next fireball up in the next 10 seconds or so... 
 		int freq;
 		
-		// if the emp effect is active
-		if(shipp->emp_intensity > 0.0f){
+		// if the emp effect is active or its disrupted
+		if((shipp->emp_intensity > 0.0f) || (disrupted_arc)){
 			freq = fl2i(MAX_EMP_ARC_TIMESTAMP);
 		}
 		// otherwise if we're arcing based upon damage
@@ -2532,7 +2545,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 				}
 
 				// determine what kind of arc to create
-				if(shipp->emp_intensity > 0.0f){
+				if((shipp->emp_intensity > 0.0f) || (disrupted_arc)){
 					shipp->arc_type[i] = MARC_TYPE_EMP;
 				} else {
 					shipp->arc_type[i] = MARC_TYPE_NORMAL;
