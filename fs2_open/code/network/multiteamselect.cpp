@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -165,6 +168,7 @@
  *   
  */
 
+#include "multi.h"
 #include "multiteamselect.h"
 #include "ui.h"
 #include "chatbox.h"
@@ -188,7 +192,6 @@
 #include "multiui.h"
 #include "multi_endgame.h"
 #include "alphacolors.h"
-#include "multi.h"
 
 // ------------------------------------------------------------------------------------------------------
 // TEAM SELECT DEFINES/VARS
@@ -1692,7 +1695,7 @@ void multi_ts_blit_ship_info()
 	// blit the max velocity
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start,XSTR("Max Velocity",742));	
-	sprintf(str,XSTR("%d m/s",743),(int)sip->max_vel.z);
+	sprintf(str,XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
 	gr_set_color_fast(&Color_bright);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,str);	
 	y_start += 10;

@@ -10,9 +10,12 @@
 #ifndef __D3DRMWIN_H__
 #define __D3DRMWIN_H__
 
+#ifdef _WIN32
 #ifndef WIN32
 #define WIN32
 #endif
+#endif
+
 
 #include "vd3drm.h"
 #include "vddraw.h"

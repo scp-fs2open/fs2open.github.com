@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:56:00 $
  * $Author: penguin $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -892,7 +895,7 @@ int snd_play_3d(game_snd *gs, vector *source_pos, vector *listen_pos, float radi
 			pan = 0.0f;
 		}
 		else {
-			pan = vm_vec_dot(&View_matrix.rvec,&vector_to_sound);
+			pan = vm_vec_dot(&View_matrix.vec.rvec,&vector_to_sound);
 		}
 		if(looping){
 			handle = snd_play_looping( gs, pan, -1, -1, volume/gs->default_volume, priority, force );
@@ -978,7 +981,7 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vector *pos, float* vol, float *pan, fl
 		if ( distance <= 0 )
 			*pan = 0.0f;
 		else
-			*pan = vm_vec_dot(&View_matrix.rvec,&vector_to_sound);
+			*pan = vm_vec_dot(&View_matrix.vec.rvec,&vector_to_sound);
 	}
 
 	return 0;

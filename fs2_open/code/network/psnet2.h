@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Header file for the application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:09  mharris
  * got some stuff to compile
  *
@@ -53,6 +56,8 @@
 
 #ifndef _PSNET2_H
 #define _PSNET2_H
+
+#include "pstypes.h"
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 DEFINES/VARS
@@ -143,7 +148,7 @@ extern uint Unreliable_socket;	// all PXO API modules should use this to send an
 //
 
 struct sockaddr;
-#ifdef WINDOWS
+#ifdef _WIN32
 struct fd_set;
 #endif
 struct timeval;

@@ -10,7 +10,7 @@
 #ifndef _D3DTYPES_H_
 #define _D3DTYPES_H_
 
-#if (! defined WIN32) && (! defined WIN95)
+#if (! defined _WIN32) && (! defined WIN95)
 #include "subwtype.h"
 #else
 #include <windows.h>

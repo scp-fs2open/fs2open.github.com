@@ -175,8 +175,8 @@ int multi_oo_sort_func(const void *ship1, const void *ship2)
 	dist1 = vm_vec_copy_normalize(&vn1, &v1);
 	vm_vec_sub(&v2, &OO_player_obj->pos, &obj2->pos);
 	dist2 = vm_vec_copy_normalize(&vn2, &v2);
-	dot1 = vm_vec_dotprod(&OO_player_obj->orient.fvec, &vn1);
-	dot2 = vm_vec_dotprod(&OO_player_obj->orient.fvec, &vn2);
+	dot1 = vm_vec_dotprod(&OO_player_obj->orient.vec.fvec, &vn1);
+	dot2 = vm_vec_dotprod(&OO_player_obj->orient.vec.fvec, &vn2);
 
 	// objects in front take precedence
 	if((dot1 < 0.0f) && (dot2 >= 0.0f)){
@@ -1118,7 +1118,7 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	}
 	
 	// check dot products		
-	player_eye = pl->s_info.eye_orient.fvec;
+	player_eye = pl->s_info.eye_orient.vec.fvec;
 	vm_vec_sub(&obj_dot, &obj->pos, &pl->s_info.eye_pos);
 	vm_vec_normalize(&obj_dot);
 	eye_dot = vm_vec_dot(&obj_dot, &player_eye);		

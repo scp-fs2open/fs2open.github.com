@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Mission load header file
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:09  mharris
  * got some stuff to compile
  *
@@ -45,7 +48,8 @@
 #ifndef _MISSIONLOAD_H
 #define _MISSIONLOAD_H
 
-#include "config.h"
+#include "pstypes.h"
+
 // -----------------------------------------------
 // For recording most recent missions played
 // -----------------------------------------------

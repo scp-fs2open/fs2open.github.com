@@ -1,10 +1,38 @@
 // config.h
 
+/*
+ * $Logfile: $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:56:00 $
+ * $Author: penguin $
+ *
+ * OS-dependent definitions.
+ *
+ * $Log: not supported by cvs2svn $
+ * $NoKeywords: $
+ */
+
+
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
 
-#if !defined( WINDOWS )
+#if defined _WIN32
+
+#if !defined BYTE_ORDER
+ #define LITTLE_ENDIAN 1234
+ #define BIG_ENDIAN    4321
+
+ #if defined _M_IX86
+  #define BYTE_ORDER   LITTLE_ENDIAN
+ #else
+  #error unknown byte order
+ #endif
+#endif  // BYTE_ORDER
+
+
+#else  // ! Win32
+
 #include <limits.h>
 #include <unistd.h>
 #include <pthread.h>

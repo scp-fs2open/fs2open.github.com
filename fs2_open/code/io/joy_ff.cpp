@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy_ff.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Code for joystick Force Feedback.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -400,7 +403,7 @@ void joy_ff_stop_effects()
 
 void joy_ff_mission_init(vector v)
 {
-	v.z = 0.0f;
+	v.xyz.z = 0.0f;
 //	joy_ff_handling_scaler = (int) ((vm_vec_mag(&v) - 1.3f) * 10.5f);
 	joy_ff_handling_scaler = (int) ((vm_vec_mag(&v) + 1.3f) * 5.0f);
 //	joy_ff_handling_scaler = (int) (vm_vec_mag(&v) * 7.5f);
@@ -673,12 +676,12 @@ void joy_ff_play_vector_effect(vector *v, float scaler)
 	vector vf;
 	float x, y;
 
-	nprintf(("Joystick", "FF: vec = { %f, %f, %f } s = %f\n", v->x, v->y, v->z, scaler));
+	nprintf(("Joystick", "FF: vec = { %f, %f, %f } s = %f\n", v->xyz.x, v->xyz.y, v->xyz.z, scaler));
 	vm_vec_copy_scale(&vf, v, scaler);
-	x = vf.x;
-	vf.x = 0.0f;
+	x = vf.xyz.x;
+	vf.xyz.x = 0.0f;
 
-	if (vf.y + vf.z < 0)
+	if (vf.xyz.y + vf.xyz.z < 0)
 		y = -vm_vec_mag(&vf);
 	else
 		y = vm_vec_mag(&vf);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/17 03:05:08  mharris
  * more porting tweaks
  *
@@ -744,7 +747,7 @@ void credits_do_frame(float frametime)
 		sy = fl2i(Credit_position-0.5f);
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	// HACK - I don't want to change the string code, so we'll just use a special version here
 	if(gr_screen.mode == GR_GLIDE){
 		extern void gr_glide_string_hack(int sx, int sy, char *s);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/09 13:50:20  mharris
  * define AsmInt3() to abort()
  *
@@ -222,6 +225,7 @@
 #include <memory.h>
 #include <malloc.h>
 #include <string.h>
+
 #include "config.h"
 
 // value to represent an uninitialized state in any int or uint
@@ -240,7 +244,7 @@
 
 #define LOCAL static			// make module local varilable static.
 
-#if defined( WINDOWS ) && defined( MSVC )
+#if defined( _WIN32 ) && defined( _MSC_VER )
 typedef __int64 longlong;
 typedef unsigned __int64 ulonglong;
 #elif defined ( __GNUC__ )
@@ -385,7 +389,7 @@ void gr_activate(int);
 
 	// define to call from Warning function above since it calls Int3, so without this, we
 	// get put into infinite dialog boxes
-   #ifdef WIN32
+   #ifdef _WIN32
 	  #define AsmInt3() _asm { int 3 }
    #else
      #define AsmInt3() abort()
@@ -526,13 +530,14 @@ void dc_printf( char *format, ... );
 //======================================================================================
 
 
-#include "config.h"
 #include "fix.h"
 #include "floating.h"
 
 // Some constants for stuff
-//  #define MAX_FILENAME_LEN	32			// Length for filenames, ie "title.pcx"
-//  #define MAX_PATH_LEN			128		// Length for pathnames, ie "c:\bitmaps\title.pcx"
+#ifdef _WIN32
+#define MAX_FILENAME_LEN	32			// Length for filenames, ie "title.pcx"
+#define MAX_PATH_LEN			128		// Length for pathnames, ie "c:\bitmaps\title.pcx"
+#endif
 
 // contants and defined for byteswapping routines (useful for mac)
 

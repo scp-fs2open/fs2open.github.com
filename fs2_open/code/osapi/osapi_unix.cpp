@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:10:40 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:10:40  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/06/03 03:42:13  mharris
  * fAppActive is now set correctly; translate some keyboard scancodes
  * that appear to be different between SDL and Win32; combine KEYDOWN
@@ -93,7 +96,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <pthread.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <SDL.h>
 #include <SDL_opengl.h>
 #endif

@@ -42,7 +42,7 @@
 
 #if defined(FX_DLL_DEFINITION)
   #if defined(FX_DLL_ENABLE)
-    #if defined(__MSC__)
+    #if defined(_MSC_VER)
       #ifndef KERNEL
         #define FX_ENTRY __declspec( dllexport )
         #define FX_EXPORT __declspec( dllexport )

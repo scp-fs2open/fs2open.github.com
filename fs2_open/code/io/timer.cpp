@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.4  2002/05/24 16:46:47  mharris
  * Fixed stupid error I made in timer_get_fixed_seconds()
  *
@@ -78,7 +81,7 @@
  * $NoKeywords: $
  */
 
-#if defined WIN32
+#if defined _WIN32
 	#include <windows.h>
 #elif defined unix
 	#include <sys/time.h>
@@ -95,7 +98,7 @@
 	#define USE_TIMING
 #endif
 
-#if defined WIN32
+#if defined _WIN32
 static longlong Timer_last_value, Timer_base;
 static uint Timer_freq=0;
 #elif defined unix
@@ -117,7 +120,7 @@ void timer_close()
 void timer_init()
 {
 	if ( !Timer_inited )	{
-#if defined WIN32
+#if defined _WIN32
 		LARGE_INTEGER tmp;
 		QueryPerformanceFrequency(&tmp);
 		Assert( tmp.HighPart == 0 );
@@ -138,7 +141,7 @@ void timer_init()
 }
 
 // Fills Time_now with the ticks since program start
-#if defined WIN32
+#if defined _WIN32
 static void timer_get(LARGE_INTEGER * out)
 #elif defined unix
 static void timer_get(timeval * out)
@@ -146,7 +149,7 @@ static void timer_get(timeval * out)
 {
 	EnterCriticalSection(&Timer_lock);
 
-#if defined WIN32
+#if defined _WIN32
 	longlong time_tmp;
 	longlong Time_now;
 
@@ -184,7 +187,7 @@ fix timer_get_fixed_seconds()
 		return 0;
 	}
 
-#if defined(WIN32) && defined(MSVC)
+#if defined(_WIN32) && defined(_MSC_VER)
 	int tmp;
 	LARGE_INTEGER temp_large;
 	timer_get(&temp_large);
@@ -241,7 +244,7 @@ int timer_get_milliseconds()
 		return 0;
 	}
 
-#if defined(WIN32) && defined(MSVC)
+#if defined(_WIN32) && defined(_MSC_VER)
 	int tmp;
 	LARGE_INTEGER temp_large;
 
@@ -287,7 +290,7 @@ int timer_get_microseconds()
 		return 0;
 	}
 
-#if defined(WIN32) && defined(MSVC)
+#if defined(_WIN32) && defined(_MSC_VER)
 	int tmp;
 	LARGE_INTEGER temp_large;
 

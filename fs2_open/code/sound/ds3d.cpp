@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds3d.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:56:00 $
  * $Author: penguin $
  *
  * C file for interface to DirectSound3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -170,12 +173,12 @@ int ds3d_update_buffer(int channel, float min, float max, vector *pos, vector *v
 
 	// set the buffer position
 	if ( pos != NULL ) {
-		hr = pds3db->SetPosition(pos->x, pos->y, pos->z, DS3D_DEFERRED);
+		hr = pds3db->SetPosition(pos->xyz.x, pos->xyz.y, pos->xyz.z, DS3D_DEFERRED);
 	}
 
 	// set the buffer veclocity
 	if ( vel != NULL ) {
-		hr = pds3db->SetVelocity(vel->x, vel->y, vel->z, DS3D_DEFERRED);
+		hr = pds3db->SetVelocity(vel->xyz.x, vel->xyz.y, vel->xyz.z, DS3D_DEFERRED);
 	}
 	else {
 		hr = pds3db->SetVelocity(0.0f, 0.0f, 0.0f, DS3D_DEFERRED);
@@ -211,17 +214,17 @@ int ds3d_update_listener(vector *pos, vector *vel, matrix *orient)
 	
 	// set the listener position
 	if ( pos != NULL ) {
-		hr = pDS3D_listener->SetPosition(pos->x, pos->y, pos->z, DS3D_DEFERRED); 
+		hr = pDS3D_listener->SetPosition(pos->xyz.x, pos->xyz.y, pos->xyz.z, DS3D_DEFERRED); 
 	}
 
 	// set the listener veclocity
 	if ( vel != NULL ) {
-		hr = pDS3D_listener->SetVelocity(vel->x, vel->y, vel->z, DS3D_DEFERRED); 
+		hr = pDS3D_listener->SetVelocity(vel->xyz.x, vel->xyz.y, vel->xyz.z, DS3D_DEFERRED); 
 	}
 
 	if ( orient != NULL ) {
-		hr = pDS3D_listener->SetOrientation(	orient->fvec.x, orient->fvec.y, orient->fvec.z,
-															orient->uvec.x, orient->uvec.y, orient->uvec.z,
+		hr = pDS3D_listener->SetOrientation(	orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, orient->vec.fvec.xyz.z,
+															orient->vec.uvec.xyz.x, orient->vec.uvec.xyz.y, orient->vec.uvec.xyz.z,
 															DS3D_DEFERRED );
 	}
 

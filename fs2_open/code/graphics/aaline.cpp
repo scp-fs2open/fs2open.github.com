@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/aaline.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Code to draw antialiased lines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:08  mharris
  * got some stuff to compile
  *
@@ -240,7 +243,7 @@ void aaline_init_tables()
 // less than 1.0 and less total bits are sufficient.
 // Some of the steps here are not needed.  This was originally
 // written to simulate exact hardware behavior.
-#if defined( WINDOWS ) && defined( MSVC )		
+#if defined( _WIN32 ) && defined( _MSC_VER )		
 long int fix_xy_mult(long int oa, fix_xy ob)
 {
 	int retval;
@@ -256,7 +259,7 @@ long int fix_xy_mult(long int oa, fix_xy ob)
 }
 #else
 long int fix_xy_mult(long int oa, fix_xy ob);
-#endif // if defined( WINDOWS ) && defined( MSVC )		
+#endif // if defined( _WIN32 ) && defined( _MSC_VER )		
 
 
 

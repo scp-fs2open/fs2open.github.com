@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Tmapper.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Routines to draw a texture map.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/08 02:36:01  mharris
  * porting
  *
@@ -458,7 +461,7 @@ static inline int tmap_ftol(float f)
 {
 	  int x;
 
-#if defined(WIN32) && defined(MSVC)
+#if defined(_WIN32) && defined(_MSC_VER)
 	_asm fld f
 	_asm fistp x
 #elif defined(__GNUC__) && defined(__i386__)

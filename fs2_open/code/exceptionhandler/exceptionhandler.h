@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:58 $
  * $Author: penguin $
  *
  * Header file for program exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/07 02:58:10  mharris
  * ifdef around pragma
  *
@@ -32,7 +35,7 @@
  * $NoKeywords: $
  */
 
-#ifdef MSVC
+#ifdef _MSC_VER
 #pragma once		// Include this file only once
 #endif
 

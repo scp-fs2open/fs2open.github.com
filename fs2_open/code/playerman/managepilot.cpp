@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.9  2002/05/17 03:06:13  mharris
  * more porting tweaks
  *
@@ -294,7 +297,7 @@ void write_multiplayer_options(player *p,CFILE *file);
 // used in barracks and player_select
 void delete_pilot_file( char *pilot_name, int single )
 {
-#ifdef WIN32
+#ifdef _WIN32
 	char filename[MAX_FILENAME_LEN];
 	char basename[MAX_FILENAME_LEN];
 

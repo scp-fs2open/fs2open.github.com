@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:58 $
  * $Author: penguin $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/16 06:03:29  mharris
  * Unix port changes
  *
@@ -340,7 +343,7 @@
 #include <time.h>
 #include "pstypes.h"
 
-#if defined WIN32
+#if defined _WIN32
   #define DIR_SEPARATOR_CHAR '\\'
   #define DIR_SEPARATOR_STR  "\\"
 #elif defined unix
@@ -608,7 +611,7 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 // Functions to change directories
 int cfile_chdir(char *dir);
 
-#ifdef WIN32
+#ifdef _WIN32
 int cfile_chdrive(int DriveNum, int flag);
 #endif
 

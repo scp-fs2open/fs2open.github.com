@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:58 $
  * $Author: penguin $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.7  2002/05/21 15:37:14  mharris
  * Cosmetics - reformat Pathtypes to line up again
  *
@@ -273,7 +276,7 @@ int cfget_cfile_block();
 CFILE *cf_open_fill_cfblock(FILE * fp, int type);
 CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size);
 
-#if defined WIN32
+#if defined _WIN32
 CFILE *cf_open_mapped_fill_cfblock(HANDLE hFile, int type);
 #elif defined unix
 CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type);
@@ -343,7 +346,7 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 
 		// are we in a root directory?		
 		if(cfile_in_root_dir(buf)){
-#if defined WIN32
+#if defined _WIN32
 			MessageBox((HWND)NULL, "Freespace2/Fred2 cannot be run from a drive root directory!", "Error", MB_OK);
 #elif defined unix
 			fprintf(stderr, "Error: Freespace2/Fred2 cannot be run from a drive root directory!\n");
@@ -361,7 +364,7 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 			buf[i] = 0;						
 			cfile_chdir(buf);
 		} else {
-#if defined WIN32
+#if defined _WIN32
 			MessageBox((HWND)NULL, "Error trying to determine executable root directory!", "Error", MB_OK);
 #elif defined unix
 			fprintf(stderr, "Error trying to determine executable root directory!\n");
@@ -397,7 +400,7 @@ void cfile_refresh()
 }
 
 
-#ifdef WIN32
+#ifdef _WIN32
 // Changes to a drive if valid.. 1=A, 2=B, etc
 // If flag, then changes to it.
 // Returns 0 if not-valid, 1 if valid.
@@ -443,7 +446,7 @@ int cfile_push_chdir(int type)
 	Drive = strchr(dir, ':');
 
 	if (Drive) {
-	   #ifdef WIN32
+	   #ifdef _WIN32
 		if (!cfile_chdrive( *(Drive - 1) - 'a' + 1, 1))
 			return 1;
 
@@ -460,7 +463,7 @@ int cfile_push_chdir(int type)
 	// This chdir might get a critical error!
 	e = _chdir( Path );
 	if (e) {
-		#ifdef WIN32
+		#ifdef _WIN32
 		cfile_chdrive( OriginalDirectory[0] - 'a' + 1, 1 );
 		#endif
 		return 2;
@@ -482,7 +485,7 @@ int cfile_chdir(char *dir)
 
 	Drive = strchr(dir, ':');
 	if (Drive)	{
-		#ifdef WIN32
+		#ifdef _WIN32
 		if (!cfile_chdrive( *(Drive - 1) - 'a' + 1, 1))
 			return 1;
 
@@ -499,7 +502,7 @@ int cfile_chdir(char *dir)
 	// This chdir might get a critical error!
 	e = _chdir( Path );
 	if (e) {
-		#ifdef WIN32
+		#ifdef _WIN32
 		cfile_chdrive( OriginalDirectory[0] - 'a' + 1, 1 );
 		#endif
 		return 2;
@@ -531,7 +534,7 @@ int cfile_flush_dir(int dir_type)
 
 	// proceed to delete the files
 	del_count = 0;
-#if defined WIN32
+#if defined _WIN32
 	_finddata_t find;
 	find_handle = _findfirst( "*", &find );
 	if (find_handle != -1) {
@@ -648,7 +651,7 @@ int cf_exist( char *filename, int dir_type )
 	return 0;
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 void cf_attrib(char *filename, int set, int clear, int dir_type)
 {
 	char longname[MAX_PATH_LEN];
@@ -819,7 +822,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 		
 			// Can't open memory mapped files out of pack files
 			if ( offset == 0 )	{
-#if defined WIN32
+#if defined _WIN32
 				HANDLE hFile;
 
 				hFile = CreateFile(longname, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -922,7 +925,7 @@ int cfclose( CFILE * cfile )
 	result = 0;
 	if ( cb->data ) {
 		// close memory mapped file
-#if defined WIN32
+#if defined _WIN32
 		result = UnmapViewOfFile((void*)cb->data);
 		Assert(result);
 		result = CloseHandle(cb->hInFile);		
@@ -973,7 +976,7 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
 		
-#if defined WIN32
+#if defined _WIN32
 		cf_init_lowlevel_read_code(cfp,0,filelength(fileno(fp)) );
 #elif defined unix
 		struct stat statbuf;
@@ -1026,7 +1029,7 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 //
 // returns:   ptr CFILE structure.  
 //
-#if defined WIN32
+#if defined _WIN32
 CFILE *cf_open_mapped_fill_cfblock(HANDLE hFile, int type)
 #elif defined unix
 CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
@@ -1046,13 +1049,13 @@ CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 		cfp = &Cfile_list[cfile_block_index];
 		cfp->id = cfile_block_index;
 		cfbp->fp = NULL;
-#if defined WIN32
+#if defined _WIN32
 		cfbp->hInFile = hFile;
 #endif
 		cfbp->dir_type = type;
 
 		cf_init_lowlevel_read_code(cfp,0 , 0 );
-#if defined WIN32
+#if defined _WIN32
 		cfbp->hMapFile = CreateFileMapping(cfbp->hInFile, NULL, PAGE_READONLY, 0, 0, NULL);
 		if (cfbp->hMapFile == NULL) { 
 			nprintf(("Error", "Could not create file-mapping object.\n")); 

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_respawn.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -104,6 +107,7 @@
  * $NoKeywords: $
  */
 
+#include "multi.h"
 #include "systemvars.h"
 #include "multi.h"
 #include "object.h"
@@ -869,7 +873,7 @@ void multi_respawn_check_ai()
 		vector gpos; \
 		vm_vec_sub2(&temp, &hit_check->pos); \
 		vm_vec_rotate(&gpos, &temp, &hit_check->orient); \
-		if((gpos.x >= pm->mins.x * scale) && (gpos.y >= pm->mins.y * scale) && (gpos.z >= pm->mins.z * scale) && (gpos.x <= pm->maxs.x * scale) && (gpos.y <= pm->maxs.y * scale) && (gpos.z <= pm->maxs.z * scale)) { \
+		if((gpos.xyz.x >= pm->mins.xyz.x * scale) && (gpos.xyz.y >= pm->mins.xyz.y * scale) && (gpos.xyz.z >= pm->mins.xyz.z * scale) && (gpos.xyz.x <= pm->maxs.xyz.x * scale) && (gpos.xyz.y <= pm->maxs.xyz.y * scale) && (gpos.xyz.z <= pm->maxs.xyz.z * scale)) { \
 			collided = 1; \
 		} \
 	} \
@@ -880,19 +884,19 @@ void multi_respawn_check_ai()
 	if(pm != NULL){ \
 		switch((int)frand_range(0.0f, 3.9f)){ \
 		case 0: \
-			new_obj->pos.x += 200.0f; \
+			new_obj->pos.xyz.x += 200.0f; \
 			break; \
 		case 1: \
-			new_obj->pos.x -= 200.0f; \
+			new_obj->pos.xyz.x -= 200.0f; \
 			break; \
 		case 2: \
-			new_obj->pos.y += 200.0f; \
+			new_obj->pos.xyz.y += 200.0f; \
 			break; \
 		case 3: \
-			new_obj->pos.y -= 200.0f; \
+			new_obj->pos.xyz.y -= 200.0f; \
 			break; \
 		default : \
-			new_obj->pos.z -= 200.0f; \
+			new_obj->pos.xyz.z -= 200.0f; \
 			break; \
 		} \
 	} \
@@ -929,37 +933,37 @@ void multi_respawn_place(object *new_obj, int team)
 
 		// hmm, ugly. Pick a point 2000 meters to the y direction
 		if(pm == NULL){			
-			vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.rvec, 2000.0f);
+			vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.vec.rvec, 2000.0f);
 		} else {
 			// pick a random direction
 			int d = (int)frand_range(0.0f, 5.9f);
 			switch(d){
 			case 0:
-				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.rvec, (pm->maxs.x - pm->mins.x)); 
+				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.vec.rvec, (pm->maxs.xyz.x - pm->mins.xyz.x)); 
 				break;
 
 			case 1:
-				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.rvec, -(pm->maxs.x - pm->mins.x)); 
+				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.vec.rvec, -(pm->maxs.xyz.x - pm->mins.xyz.x)); 
 				break;
 
 			case 2:
-				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.uvec, (pm->maxs.y - pm->mins.y)); 
+				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.vec.uvec, (pm->maxs.xyz.y - pm->mins.xyz.y)); 
 				break;
 
 			case 3:
-				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.uvec, -(pm->maxs.y - pm->mins.y)); 
+				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.vec.uvec, -(pm->maxs.xyz.y - pm->mins.xyz.y)); 
 				break;
 
 			case 4:
-				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.fvec, (pm->maxs.z - pm->mins.z)); 
+				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.vec.fvec, (pm->maxs.xyz.z - pm->mins.xyz.z)); 
 				break;
 
 			case 5:
-				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.fvec, -(pm->maxs.z - pm->mins.z)); 
+				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.vec.fvec, -(pm->maxs.xyz.z - pm->mins.xyz.z)); 
 				break;
 
 			default:
-				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.uvec, -(pm->maxs.y - pm->mins.y)); 
+				vm_vec_scale_add(&new_obj->pos, &pri_obj->pos, &pri_obj->orient.vec.uvec, -(pm->maxs.xyz.y - pm->mins.xyz.y)); 
 				break;
 			}
 		}
@@ -1009,11 +1013,11 @@ void multi_respawn_place(object *new_obj, int team)
 				
 				// just to make sure we don't get any strange magnitude errors
 				if(vm_vec_same(&hit_check->pos, &new_obj->pos)){
-					new_obj->pos.x += 1.0f;
+					new_obj->pos.xyz.x += 1.0f;
 				}
 				
-				WITHIN_BBOX();				
-				if(collided){						
+				WITHIN_BBOX();
+				if(collided){
 					MOVE_AWAY_BBOX();
 					break;
 				} 

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_observer.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *  
@@ -185,9 +188,9 @@ void multi_obs_create_observer(net_player *pl)
 	Objects[objnum].net_signature = 0;
 
 	// put it a 1,1,1
-	Objects[objnum].pos.x = 1.0f;
-	Objects[objnum].pos.y = 1.0f;
-	Objects[objnum].pos.z = 1.0f;
+	Objects[objnum].pos.xyz.x = 1.0f;
+	Objects[objnum].pos.xyz.y = 1.0f;
+	Objects[objnum].pos.xyz.z = 1.0f;
 
 	// assign this object to the player
 	pl->player->objnum = objnum;				

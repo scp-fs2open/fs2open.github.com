@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/04 04:52:22  mharris
  * 1st draft at porting
  *
@@ -248,17 +251,17 @@
 #include "linklist.h"
 #include "ship.h"
 #include "gamesnd.h"
-//#include "ds.h"
-//#include "ds3d.h"
+#include "ds.h"
+#include "ds3d.h"
 #include "timer.h"
 #include "3d.h"
 #include "joy_ff.h"
 
 
-// --mharris port hack--
-int ds_using_ds3d();
-int ds_get_channel(int);
-void ds3d_update_buffer(int, float, float, vector *, vector *);
+//  // --mharris port hack--
+//  int ds_using_ds3d();
+//  int ds_get_channel(int);
+//  int ds3d_update_buffer(int, float, float, vector *, vector *);
 // --end hack--
 
 

@@ -22,7 +22,6 @@
 #ifndef __GLIDE_H__
 #define __GLIDE_H__
 
-#define __MSC__
 #define FX_GLIDE_NO_FUNC_PROTO
 
 #include "3dfx.h"

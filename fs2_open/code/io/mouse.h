@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:55:59 $
  * $Author: penguin $
  *
  * Include file for mouse reading routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/17 03:04:09  mharris
  * Make mouse routines more portable
  *
@@ -84,6 +87,10 @@
 #define _MOUSE_H
 
 #include "pstypes.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 extern int Mouse_sensitivity;
 extern int Use_mouse_to_fly;

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-07 19:56:00 $
  * $Author: penguin $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/15 15:06:11  mharris
  * TEMP PORT FIX: for non-Win32, ifdef out code to assign multiple
  * levels of a medal to remove _splitpath() reference.
@@ -674,7 +677,7 @@ void init_medal_bitmaps()
 			// for this medal.  if the player has > 1 of these types of medals, then determien
 			// which of the possible version to use based on the player's count of this medal
 			strcpy( filename, Medals[idx].bitmap );
-#ifdef WIN32
+#ifdef _WIN32
 			_splitpath( filename, NULL, NULL, base, NULL );
 
 			num_medals = Player_score->medals[idx];

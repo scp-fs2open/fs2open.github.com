@@ -9,13 +9,16 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/Chttpget.cpp $
-* $Revision: 2.0 $
-* $Date: 2002-06-03 04:02:23 $
+* $Revision: 2.1 $
+* $Date: 2002-07-07 19:55:59 $
 * $Author: penguin $
 *
 * HTTP Client class (get only)
 *
 * $Log: not supported by cvs2svn $
+* Revision 2.0  2002/06/03 04:02:23  penguin
+* Warpcore CVS sync
+*
 * Revision 1.2  2002/05/08 02:35:09  mharris
 * porting
 *
@@ -99,10 +102,10 @@
 
 // #define WIN32
 
-// #ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <process.h>
-// #endif
+#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -110,6 +113,7 @@
 #include <ctype.h>
 #include <errno.h>
 
+#include "pstypes.h"
 #include "inetgetfile.h"
 #include "chttpget.h"
 
