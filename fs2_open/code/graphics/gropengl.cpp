@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.75 $
- * $Date: 2004-05-02 16:01:38 $
- * $Author: taylor $
+ * $Revision: 2.76 $
+ * $Date: 2004-05-11 16:48:19 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2004/05/02 16:01:38  taylor
+ * don't use HTL line fix with Fred
+ *
  * Revision 2.74  2004/04/26 12:43:58  taylor
  * minor fixes, HTL lines, 32-bit texture support
  *
@@ -2150,6 +2153,7 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 
 
 	glColor3ub(191,191,191);	//its unlit
+	ubyte zero[]={0,0,0}; glSecondaryColor3ubvEXT(zero);
 
 	vertex *va;
 	if (flags & TMAP_FLAG_TRISTRIP) glBegin(GL_TRIANGLE_STRIP);
@@ -3374,8 +3378,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	if(!Fred_running)
 		OGL_fogmode=1;
 
-	glEnable(GL_COLOR_SUM_EXT);
-	
 	if (!reinit)
 	{
 		//start extension
@@ -3584,6 +3586,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	/*else*/
 	if (GL_Extensions[GL_FOG_COORDF].enabled && !Fred_running)
 		OGL_fogmode=2;
+
+	if (GL_Extensions[GL_SECONDARY_COLOR_3UBV].enabled) glEnable(GL_COLOR_SUM_EXT);
 
 	glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &GL_supported_texture_units);
 
