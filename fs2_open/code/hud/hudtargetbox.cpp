@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-03-03 06:05:28 $
+ * $Revision: 2.46 $
+ * $Date: 2005-03-06 11:23:45 $
  * $Author: wmcoolmon $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/03/03 06:05:28  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.44  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1558,6 +1561,7 @@ void hud_render_target_ship(object *target_objp)
 					hud_set_iff_color( target_objp, 1 );
 				}
 
+				gr_unsize_screen_pos(&sx, &sy);
 				if ( subsys_in_view ) {
 					draw_brackets_square_quick(sx - 10, sy - 10, sx + 10, sy + 10);
 				} else {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.46 $
- * $Date: 2005-03-03 06:05:27 $
+ * $Revision: 2.47 $
+ * $Date: 2005-03-06 11:23:44 $
  * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.45  2005/02/27 07:08:22  wmcoolmon
  * More nonstandard res stuff
  *
@@ -1055,7 +1058,7 @@ __inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool re
 	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize);
 }
 //#define gr_rect				GR_CALL(gr_screen.gf_rect)
-__inline void gr_rect(int x, int y, int w, int h, bool resize = true)
+__inline void gr_rect(int x, int y, int w, int h, bool resize = false)
 {
 	//As of yet, resize does nothing
 	(*gr_screen.gf_rect)(x,y,w,h,resize);

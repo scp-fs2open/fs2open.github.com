@@ -1991,7 +1991,6 @@ gauge_var::~gauge_var()
 {
 	DeallocVars();
 }
-<<<<<<< hudparse.cpp
 
 #define MAX_CHILD_OBJECTS
 #define MAX_OFFSET_NUM	
@@ -1999,7 +1998,7 @@ gauge_var::~gauge_var()
 struct gauge_offset
 {
 	size_t offset;
-	void *array_pointer;
+	int array_index;	//-1 if not an array. -2 if an array. Anything else if it's an indice into array
 }
 
 struct gauge_child
