@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-02-10 04:01:42 $
+ * $Revision: 2.58 $
+ * $Date: 2005-02-18 09:51:06 $
  * $Author: wmcoolmon $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/02/10 04:01:42  wmcoolmon
+ * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
+ *
  * Revision 2.56  2005/01/30 03:24:39  wmcoolmon
  * Don't try and create a vertex buffer with no vertices (Seems to cause CTD) and fix to brackets in nonstandard res
  *
@@ -2874,7 +2877,7 @@ void gr_d3d_aabitmap(int x, int y)
  *
  * @return void
  */
-void gr_d3d_string( int sx, int sy, char *s)
+void gr_d3d_string( int sx, int sy, char *s, bool resize)
 {
 
 //	mprintf(("<%s>\n", s));
@@ -2920,7 +2923,7 @@ void gr_d3d_string( int sx, int sy, char *s)
 
 
 	d3d_set_initial_render_state();
-  	d3d_batch_string(sx, sy, s, bw, bh, u_scale, v_scale, color);
+  	d3d_batch_string(sx, sy, s, bw, bh, u_scale, v_scale, color, resize);
 }
 
 /**
@@ -2933,7 +2936,7 @@ void gr_d3d_string( int sx, int sy, char *s)
  *
  * @return void
  */
-void gr_d3d_rect(int x,int y,int w,int h)
+void gr_d3d_rect(int x,int y,int w,int h,bool resize)
 {
 	gr_d3d_rect_internal(x, y, w, h, gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);	
 }
@@ -3086,11 +3089,12 @@ void gr_d3d_shade(int x,int y,int w,int h)
  *
  * @return void
  */
-void gr_d3d_circle( int xc, int yc, int d )
+void gr_d3d_circle( int xc, int yc, int d, bool resize)
 {
 	int p,x, y, r;
 
-	gr_resize_screen_pos(&xc, &yc);
+	if(resize)
+		gr_resize_screen_pos(&xc, &yc);
 
 	r = d/2;
 	p=3-d;

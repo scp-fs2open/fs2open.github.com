@@ -9,6 +9,9 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/02/10 04:01:42  wmcoolmon
+ * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
+ *
  * Revision 2.16  2004/07/26 20:47:31  Kazan
  * remove MCD complete
  *
@@ -402,7 +405,7 @@ void d3d_batch_end_frame()
  *
  * @return void
  */
-void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, int bw, int bh, float u_scale, float v_scale, uint color, bool x_resize)
+void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, int bw, int bh, float u_scale, float v_scale, uint color, bool x_resize, bool resize)
 {
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
@@ -443,12 +446,15 @@ void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, i
 		int nw = x+w+gr_screen.offset_x;
 		int nh = y+h+gr_screen.offset_y;
 
-		if(x_resize)
-			gr_resize_screen_pos(&nx, &ny);
-		else
-			gr_resize_screen_pos(NULL, &ny);
+		if(resize)
+		{
+			//if(x_resize)
+				gr_resize_screen_pos(&nx, &ny);
+			//else
+			//	gr_resize_screen_pos(NULL, &ny);
 
-		gr_resize_screen_pos(&nw, &nh);
+			gr_resize_screen_pos(&nw, &nh);
+		}
 
 		x1 = i2fl(nx);
 		y1 = i2fl(ny);
@@ -675,7 +681,7 @@ inline int strlen_magic(char *s, int &magic_number, int &magic_number2)
 	return count;
 }
 
-void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, float v_scale, uint color)
+void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, float v_scale, uint color, bool resize)
 {
 	int spacing = 0;
 	int width;
@@ -824,7 +830,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 	  		color2 = 0xff0000ff;
 #endif
 
-	 	d3d_stuff_char(src_v, xc, yc, wc, hc, u+xd, v+yd, bw, bh, u_scale, v_scale, color, x_resize);
+	 	d3d_stuff_char(src_v, xc, yc, wc, hc, u+xd, v+yd, bw, bh, u_scale, v_scale, color, x_resize, resize);
 
 		char_count++;
 		if(char_count >= MAX_STRING_LEN) {

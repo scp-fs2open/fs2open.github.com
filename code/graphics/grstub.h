@@ -2,8 +2,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.13 $
- * $Date: 2005-02-10 04:01:43 $
+ * $Revision: 2.14 $
+ * $Date: 2005-02-18 09:51:07 $
  * $Author: wmcoolmon $
  *
  * $NoKeywords: $
@@ -34,16 +34,16 @@ void gr_stub_reset_clip() {}
 void gr_stub_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx, int sy ) {}
 void gr_stub_create_shader(shader * shade, float r, float g, float b, float c ) {}
 void gr_stub_rect_internal(int x, int y, int w, int h, int r, int g, int b, int a) {}
-void gr_stub_rect(int x,int y,int w,int h) {}
+void gr_stub_rect(int x,int y,int w,int h,bool resize) {}
 void gr_stub_shade(int x,int y,int w,int h) {}
 void gr_stub_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy) {}
 void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy) {}
 void gr_stub_aabitmap(int x, int y) {}
-void gr_stub_string( int sx, int sy, char *s ) {}
+void gr_stub_string( int sx, int sy, char *s, bool resize = false) {}
 void gr_stub_line(int x1,int y1,int x2,int y2, bool resize = false) {}
 void gr_stub_aaline(vertex *v1, vertex *v2) {}
 void gr_stub_gradient(int x1,int y1,int x2,int y2) {}
-void gr_stub_circle( int xc, int yc, int d ) {}
+void gr_stub_circle( int xc, int yc, int d, bool resize ) {}
 void gr_stub_curve(int xc, int yc, int r, int direction) {}
 void gr_stub_stuff_fog_coord(vertex *v) {}
 void gr_stub_stuff_secondary_color(vertex *v, ubyte fr, ubyte fg, ubyte fb) {}
