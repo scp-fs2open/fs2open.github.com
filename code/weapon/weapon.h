@@ -12,6 +12,13 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/10/25 06:56:07  bobboau
+ * adding FOF stuff,
+ * and fixed a small error in the matrix code,
+ * I told you it was indeed suposed to be gr_start_instance_matrix
+ * in g3_done_instance,
+ * g3_start_instance_angles needs to have an gr_ API abstraction version of it made
+ *
  * Revision 2.22  2003/10/13 05:57:50  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
  * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
@@ -437,7 +444,7 @@
 #define WIF2_DEFAULT_IN_TECH_DATABASE	(1 << 2)	// default in tech database - Goober5000
 #define WIF2_LOCAL_SSM					(1 << 3)	// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
 #define WIF2_TAGGED_ONLY				(1 << 4)	// can only fire if target is tagged
-#define WIG2_BEAM_NO_WHACK				(1 << 5)	// this beam doesn't "whack" -- Kazan
+#define WIF2_BEAM_NO_WHACK				(1 << 5)	// this beam doesn't "whack" -- Kazan
 #define WIF2_CYCLE						(1 << 6)	// will only fire from (shots (defalts to 1)) points at a time
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)

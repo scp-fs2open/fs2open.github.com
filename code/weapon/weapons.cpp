@@ -20,6 +20,13 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/10/25 06:56:07  bobboau
+ * adding FOF stuff,
+ * and fixed a small error in the matrix code,
+ * I told you it was indeed suposed to be gr_start_instance_matrix
+ * in g3_done_instance,
+ * g3_start_instance_angles needs to have an gr_ API abstraction version of it made
+ *
  * Revision 2.41  2003/10/13 05:57:50  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
  * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
@@ -876,7 +883,7 @@ void parse_wi_flags(weapon_info *weaponp)
 		else if (!stricmp(NOX("tagged only"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_TAGGED_ONLY;
 		else if (!stricmp(NOX("beam no whack"), weapon_strings[i]))
-			weaponp->wi_flags2 |= WIG2_BEAM_NO_WHACK;
+			weaponp->wi_flags2 |= WIF2_BEAM_NO_WHACK;
 		else if (!stricmp(NOX("cycle"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_CYCLE;
 		else
