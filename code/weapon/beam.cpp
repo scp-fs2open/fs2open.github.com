@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-02-25 06:22:50 $
+ * $Revision: 2.14 $
+ * $Date: 2003-02-25 07:15:07 $
  * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/02/25 06:22:50  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.12  2003/02/16 18:55:59  phreak
  * fixed typecasting warnings
  *
@@ -1497,9 +1503,10 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 		verts[3]->u = (0 + (U_offset * bwi->sections[s_idx].translation));
 		verts[0]->u = (0 + (U_offset * bwi->sections[s_idx].translation));
 
-		Assert(length != 0);
+		float per = 1.0f;
+		if(bwi->range)per -= length / bwi->range;
 
-		float per = bwi->range / length;
+		//this should never happen but, just to be safe
 		if(per > 1.0f)per = 1.0f;
 		if(per < 0.0f)per = 0.0f;
 
