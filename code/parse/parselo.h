@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.14 $
+ * $Revision: 2.15 $
  * $Author: wmcoolmon $
- * $Date: 2004-05-29 02:52:17 $
+ * $Date: 2004-05-31 08:32:25 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/05/29 02:52:17  wmcoolmon
+ * Added stuff_float_list
+ *
  * Revision 2.13  2004/05/26 03:52:07  wmcoolmon
  * Ship & weapon modular table files
  *
@@ -365,7 +368,7 @@ extern void error_display(int error_level, char *format, ...);
 
 // skip
 extern int skip_to_string(char *pstr, char *end = NULL);
-extern int skip_to_start_of_strings(char *pstr1, char *pstr2);
+extern int skip_to_start_of_strings(char *pstr1, char *pstr2, char *end = NULL);
 extern void advance_to_eoln(char *terminators);
 extern void skip_token();
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-05-03 21:22:21 $
- * $Author: Kazan $
+ * $Revision: 2.16 $
+ * $Date: 2004-05-31 08:32:25 $
+ * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/05/03 21:22:21  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.14  2004/04/25 06:31:52  Goober5000
  * made time dilation only available in cheat mode; also fixed an obscure CTD
  * --Goober5000
@@ -395,6 +400,7 @@
 #include "hud/hudtarget.h"
 #include "hud/hudtargetbox.h"
 #include "hud/hudwingmanstatus.h"
+#include "hud/hudparse.h"
 
 #if defined(ENABLE_AUTO_PILOT)
 #include "hud/hudnavigation.h"	//kazan
@@ -1560,6 +1566,20 @@ void HUD_render_2d(float frametime)
 */
 	if ( hud_disabled() ) {
 		return;
+	}
+
+	//Custom hud stuff
+	for(int i = 0; i < Num_custom_gauges; i++)
+	{
+		if(strlen(current_hud->custom_gauge_text[i]))
+		{
+			hud_num_make_mono(current_hud->custom_gauge_text[i]);
+			gr_string(current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1], current_hud->custom_gauge_text[i]);
+		}
+		if(strlen(current_hud->custom_gauge_images[i]))
+		{
+			GR_AABITMAP(bm_load(current_hud->custom_gauge_images[i]), current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
+		}
 	}
 
 	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {		
@@ -3297,5 +3317,7 @@ void hud_page_in()
 	hudsquadmsg_page_in();
 	hudtarget_page_in();
 	hudtargetbox_page_in();
+	//CUSTOM gauges
+//	hudcustom_page_in();
 }
 
