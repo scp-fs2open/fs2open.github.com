@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-01-24 03:15:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-05-04 20:51:14 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/01/24 03:15:11  Goober5000
+ * fixed a small nebula ship trail bug
+ * --Goober5000
+ *
  * Revision 2.5  2003/01/12 03:26:41  wmcoolmon
  * Very slightly optimized code
  *
@@ -318,13 +322,21 @@ void ct_ship_process_ABtrails(ship *shipp)
 {
 	int idx;		
 	object *objp;
+	ship_info* sip;
 
 	Assert(shipp != NULL);
 	Assert(shipp->objnum >= 0);
 	objp = &Objects[shipp->objnum];	
+	sip=&Ship_info[shipp->ship_info_index];
 
 	// if this is not a ship, we don't care
 	if((objp->type != OBJ_SHIP) || (Ship_info[Ships[objp->instance].ship_info_index].ct_count <= 0)){
+		return;
+	}
+
+	//if the ship has no afterburner trail bitmap, don't bother with anything
+	if (sip->ABbitmap < 0)
+	{
 		return;
 	}
 
@@ -377,6 +389,12 @@ void ct_create_ABtrails(ship *shipp)
 	objp = &Objects[shipp->objnum];
 	sip = &Ship_info[shipp->ship_info_index];
 
+	//if the ship has no afterburner trail bitmap, don't bother with anything
+	if (sip->ABbitmap < 0)
+	{
+		return;
+	}
+
 	// get the inverse rotation matrix
 	vm_copy_transpose_matrix(&m, &objp->orient);
 
@@ -421,6 +439,12 @@ void ct_update_ABtrails(ship *shipp)
 	objp = &Objects[shipp->objnum];
 	sip = &Ship_info[shipp->ship_info_index];
 
+	//if the ship has no afterburner trail bitmap, don't bother with anything
+	if (sip->ABbitmap < 0)
+	{
+		return;
+	}
+
 	// get the inverse rotation matrix
 	vm_copy_transpose_matrix(&m, &objp->orient);
 
@@ -449,12 +473,20 @@ void ct_update_ABtrails(ship *shipp)
 int ct_has_ABtrails(ship *shipp)
 {
 	int idx;
+	ship_info* sip=&Ship_info[shipp->ship_info_index];
+
+	//if the ship has no afterburner trail bitmap, don't bother with anything
+	if (sip->ABbitmap < 0)
+	{
+		return 0;
+	}
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 		if(shipp->ABtrail_num[idx] >= 0){
 			return 1;
 		}
 	}
+
 
 	// no contrails
 	return 0;
