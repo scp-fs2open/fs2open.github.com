@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.12 $
- * $Date: 2002-11-10 16:30:53 $
+ * $Revision: 2.13 $
+ * $Date: 2002-12-17 02:21:06 $
  * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2002/11/10 16:30:53  DTP
+ * -DTP reworked mod support,
+ *
  * Revision 2.11  2002/10/31 21:14:16  DTP
  * DTP Quickly added something needed to cmdline.h, since otherwise we can not compile the code as it misses some externals. Thought a rollback rolled all back.
  *
@@ -226,5 +229,10 @@ extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
 extern int Cmdline_allslev;
 extern int Cmdline_phreak;
 extern char *Cmdline_mod; //DTP for mod support
+
+#ifndef _DEBUG //will make a mess if show_frame is allowed during debug builds
+extern int Show_framerate;//DTP moved here because it is the correct place for it to be.
+#endif
+
 
 #endif

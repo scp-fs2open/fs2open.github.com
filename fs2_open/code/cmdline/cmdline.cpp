@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.12 $
- * $Date: 2002-12-14 17:09:08 $
- * $Author: phreak $
+ * $Revision: 2.13 $
+ * $Date: 2002-12-17 02:21:06 $
+ * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2002/12/14 17:09:08  phreak
+ * added a command line that displays frames per second when enabled.
+ * use "-fps"
+ *
  * Revision 2.11  2002/11/10 16:32:42  DTP
  * -DTP reworked mod support,
  *
@@ -696,11 +700,14 @@ int parse_cmdline(int argc, char *argv[])
 		Cmdline_mod = mod_arg.str();
 	}
 
+#ifndef _DEBUG
+
 	if (fps_arg.found())
 	{
-		extern int Show_framerate;
 		Show_framerate=1;
 	}
+#endif
 
 	return 1;
 }
+
