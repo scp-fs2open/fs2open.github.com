@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.124 $
- * $Date: 2005-02-23 04:51:55 $
- * $Author: taylor $
+ * $Revision: 2.125 $
+ * $Date: 2005-03-01 06:55:40 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.124  2005/02/23 04:51:55  taylor
+ * some bm_unload() -> bm_release() changes to save bmpman slots
+ *
  * Revision 2.123  2005/02/14 23:54:10  taylor
  * make loading screen shader a bit taller
  * add i.o to credits for Linux and OSX code
@@ -2298,6 +2301,7 @@ void game_loading_callback(int count)
 		framenum = 0;
 	}
 
+	static int last_cbitmap = -1;
 	int cbitmap = -1;
 	while ( Game_loading_frame < framenum )	{
 		Game_loading_frame++;
@@ -2315,7 +2319,7 @@ void game_loading_callback(int count)
 		gr_set_bitmap( cbitmap );
 		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
 
-		bm_release(cbitmap);
+		if(last_cbitmap > -1 && last_cbitmap != cbitmap)bm_release(last_cbitmap);
 	
 		do_flip = 1;
 	}
@@ -2331,6 +2335,15 @@ void game_loading_callback(int count)
 	}
 
 	if (Processing_filename[0] != '\0') {
+		if ( cbitmap == -1 && last_cbitmap >-1 ){
+			if ( Game_loading_background > -1 )	{
+				gr_set_bitmap( Game_loading_background );
+				gr_bitmap(0,0);
+			}
+			gr_set_bitmap( last_cbitmap );
+			gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
+		}
+
 		gr_set_shader(&busy_shader);
 		gr_shade(0, 0, gr_screen.clip_width, 17); // make sure it goes across the entire width
 
@@ -2341,6 +2354,7 @@ void game_loading_callback(int count)
 		memset( Processing_filename, 0, MAX_PATH_LEN );
 	}
 #endif
+	if(cbitmap != -1)last_cbitmap = cbitmap;
 
 	if (do_flip) {
 		gr_flip();
@@ -2558,6 +2572,23 @@ int game_start_mission()
 	freespace_mission_load_stuff();
 	load_mission_stuff = time(NULL) - load_mission_stuff;
 
+	//set the inital animation positions
+/*
+		ship_obj *moveup = GET_FIRST(&Ship_obj_list);
+		ship *shipp;
+		while((moveup != END_OF_LIST(&Ship_obj_list)) && (moveup != NULL)){
+			// bogus
+			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= Num_ship_types)){
+				moveup = GET_NEXT(moveup);
+				continue;
+			}
+			shipp = &Ships[Objects[moveup->objnum].instance];
+
+			ship_animation_set_inital_states(shipp);
+
+			moveup = GET_NEXT(moveup);
+		}
+*/
 	bm_print_bitmaps();
 
 	return 1;
@@ -4544,14 +4575,14 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 #endif
 
 	// don't set proj/view matrix before this call, breaks OGL
-	gr_setup_background_fog(true);
+/*	gr_setup_background_fog(true);
 	if ( Game_subspace_effect )	{
 		stars_draw(0,0,0,1,0);
 	} else {
 		stars_draw(1,1,1,0,0);
 	}
 	gr_setup_background_fog(false);
-
+*/
 	if((!cube_map_drawen || Game_subspace_effect) && Cmdline_env){
 		setup_environment_mapping(eye_pos, eye_orient);
 		cube_map_drawen = true;

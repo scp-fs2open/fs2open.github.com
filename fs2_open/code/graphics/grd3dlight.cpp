@@ -207,6 +207,10 @@ void gr_d3d_set_light(light_data *light)
 {
 	//Init the light
 	FSLight2DXLight(&d3d_lights[n_active_lights].light,light);
+#ifndef NDEBUG
+	Assert(d3d_lights[n_active_lights].light.Range >= 0);
+	Assert(d3d_lights[n_active_lights].light.Range != 0 || d3d_lights[n_active_lights].light.Type == D3DLIGHT_DIRECTIONAL);
+#endif
 	d3d_lights[n_active_lights].occupied = true;
 	active_list[n_active_lights++] = true;
 }
@@ -327,6 +331,7 @@ void gr_d3d_center_alpha_int(int type){
 	DXLight->Ambient.b = 0.0f;
 	}
 	DXLight->Ambient.a = 1.0f;
+	DXLight->Range = 100; //not even used for directional lights
 
 		DXLight->Type = D3DLIGHT_DIRECTIONAL;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-02-05 00:30:49 $
- * $Author: taylor $
+ * $Revision: 2.35 $
+ * $Date: 2005-03-01 06:55:40 $
+ * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/02/05 00:30:49  taylor
+ * fix a few things post merge
+ *
  * Revision 2.33  2005/02/04 10:12:29  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -1232,6 +1235,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	switch( mode )	{
 #ifdef _WIN32
 		case GR_DIRECT3D:
+			Gr_inited = 0;
 			Gr_inited = gr_d3d_init();
 			break;
 #endif  // ifdef WIN32
@@ -1309,8 +1313,13 @@ void gr_force_windowed()
 
 }
 
+int gr_activated = 0;
 void gr_activate(int active)
 {
+
+	if(gr_activated == active)return;
+	gr_activated = active;
+
 	if ( !Gr_inited ) return;
 
 	switch( gr_screen.mode )	{

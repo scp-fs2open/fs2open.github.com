@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.55 $
- * $Date: 2005-02-23 05:05:38 $
- * $Author: taylor $
+ * $Revision: 2.56 $
+ * $Date: 2005-03-01 06:55:41 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/02/23 05:05:38  taylor
+ * compiler warning fixes (for MSVC++ 6)
+ * have the warp effect only load as many LODs as will get used
+ * head off strange bug in release when corrupt soundtrack number gets used
+ *    (will still Assert in debug)
+ * don't ever try and save a campaign savefile in multi or standalone modes
+ * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
+ *
  * Revision 2.54  2005/02/15 00:06:27  taylor
  * clean up some model related globals
  * code to disable individual thruster glows
@@ -561,6 +569,7 @@ struct object;
 
 #define MAX_SPLIT_PLANE				3				// number of artist specified split planes (used in big ship explosions)
 
+class triggered_rotation;
 // Data specific to a particular instance of a submodel.  This gets stuffed/unstuffed using
 // the model_clear_instance, model_set_instance, model_get_instance functions.
 typedef struct submodel_instance_info {
@@ -607,33 +616,60 @@ typedef struct stepped_rotation {
 
 #define MAX_TRIGGERED_ANIMATIONS 15
 
-#define TRIGGER_TYPE_DOCKING	1
-#define TRIGGER_TYPE_DOCKED		2
+#define TRIGGER_TYPE_NONE					-1		//no animation
+#define TRIGGER_TYPE_INITAL					0		//this is just the position the subobject should be placed in
+#define TRIGGER_TYPE_DOCKING				1		//before you dock
+#define TRIGGER_TYPE_DOCKED					2		//after you have docked
+#define TRIGGER_TYPE_PRIMARY_BANK			3		//primary banks
+#define TRIGGER_TYPE_SECONDARY_BANK			4		//secondary banks
+#define TRIGGER_TYPE_DOCK_BAY_DOOR			5		//fighter bays
 
+#define MAX_TRIGGER_ANIMATION_TYPES			6
+
+
+extern char* animation_type_names[MAX_TRIGGER_ANIMATION_TYPES];
+
+#define ANIMATION_SUBTYPE_ALL -1
+
+//this is an object responsable for storeing the animation information assosiated with a specific triggered animation, one subobject can have many triggered animations
 struct queued_animation{
-	queued_animation(float an,float v,float a,int s, int e, int axis);
-	queued_animation(vector an,vector v,vector a,int s, int e):angle(an),vel(v),accel(a),start(s),end(e),absolute(false){};
-	queued_animation():start(0),end(0),absolute(false){angle.xyz.x=0;angle.xyz.y=0;angle.xyz.z=0;vel.xyz.x=0;vel.xyz.y=0;vel.xyz.z=0;accel.xyz.x=0;accel.xyz.y=0;accel.xyz.z=0;};
+	queued_animation(float an,float v,float a,int s, int e, int t, int st, int axis);
+	queued_animation(vector an,vector v,vector a,int s, int e, int t, int st):angle(an),vel(v),accel(a),start(s),end(e),absolute(false), type(t), subtype(st){};
+	queued_animation():start(0),end(0),absolute(false),type(TRIGGER_TYPE_NONE),subtype(ANIMATION_SUBTYPE_ALL){angle.xyz.x=0;angle.xyz.y=0;angle.xyz.z=0;vel.xyz.x=0;vel.xyz.y=0;vel.xyz.z=0;accel.xyz.x=0;accel.xyz.y=0;accel.xyz.z=0;};
 
 	vector angle;
 	vector vel;
 	vector accel;
 	int start;
+	int reverse_start;
 	int end;
 	bool absolute;
+	int type;
+	int subtype;
+	int instance;
+	int real_end_time;
+
+	int start_sound;
+	int loop_sound;
+	int end_sound;
+	float snd_rad;
 
 //	void rotate_radian_relative(float theda, float accel, float vel, int axis);			//rotate theda radians, useing accell accelleration
 //	void rotate_radian_time_relative(float theda, float vel, float time, int axis);	//rotate theda radians, at the specifyed velocity in the specifyed time
 //	void rotate_radian_absolute(float theda, float accel, float vel, int axis);			//rotate theda radians, useing accell accelleration
 //	void rotate_radian_time_absolute(float theda, float vel, float time, int axis);	//rotate theda radians, at the specifyed velocity in the specifyed time
+	void corect();
 };
-
+/*
 struct trigger_instance{
 	int type;
+	int sub_type;
 	queued_animation properties;
 	void corect();
 };
+*/
 
+//this is the triggered animation object, it is responcable for controleing how the current triggered animation works
 //rot_accel is the accelleration for starting to move and stopping, so figure it in twice
 class triggered_rotation{
 public:
@@ -648,13 +684,25 @@ public:
 	vector end_angle;	//lock it in
 	vector direction;
 	int end_time;	//time that we should stop
+	int start_time;		//the time the current animation started
+	int instance;		//wich animation this is (for reversals)
 
 	int n_queue;
 	queued_animation queue[MAX_TRIGGERED_ANIMATIONS];
 
-	void start(queued_animation* q);
+	vector snd_pnt;
+	int start_sound;
+	int loop_sound;
+	int end_sound;
+	int current_snd;
+	int current_snd_index;
+	float snd_rad;
+	int obj_num;
 
-	void add_queue(queued_animation* new_queue);
+	void start(queued_animation* q);
+	void set_to_end(queued_animation* q);
+
+	void add_queue(queued_animation* new_queue, int direction);
 	void proces_queue();
 };
 
@@ -706,7 +754,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	triggered_rotation trigger;		//the actual currently running animation and assosiated states
 
 	int n_triggers;
-	trigger_instance *triggers;		//all the triggered animations assosiated with this object
+	queued_animation *triggers;		//all the triggered animations assosiated with this object
 
 	ubyte	targetable;	//can you target this thing
 } model_subsystem;
@@ -801,10 +849,11 @@ typedef struct bsp_info {
 	vector	render_box_min;
 	vector	render_box_max;
 	int		use_render_box;	//0==do nothing, 1==only render this object if you are inside the box, -1==only if your out
+	bool	gun_rotation;//for animated weapon models
 
 } bsp_info;
 
-void parse_triggersint( int &n_trig, trigger_instance **triggers, char *props);
+void parse_triggersint( int &n_trig, queued_animation **triggers, char *props);
 
 #define MP_TYPE_UNUSED 0
 #define MP_TYPE_SUBSYS 1
@@ -1081,6 +1130,8 @@ typedef struct polymodel {
 
 	int n_glows;							// number of glows on this ship. -Bobboau
 	glow_bank *glows;						// array of glow objects -Bobboau
+
+	float gun_submodel_rotation;
 
 } polymodel;
 
@@ -1468,7 +1519,7 @@ int model_which_octant( vector *pnt, int model_num,matrix *model_orient, vector 
 
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
-void model_set_thrust(int model_num, vector *length, int bitmapnum, int glow_bitmapnum=-1, float glow_noise=1.0f, bool AB = false, int secondary_bitmap = -1, int tertiary_thruster_bitmap = -1, vector *rovel = NULL, float trf1 = 1.0f, float trf2 = 1.0f, float trf3 = 1.0f, float tlf = 1.0f);
+void model_set_thrust(int model_num = -1, vector *length = &vmd_zero_vector, int bitmapnum = -1, int glow_bitmapnum=-1, float glow_noise=1.0f, bool AB = false, int secondary_bitmap = -1, int tertiary_thruster_bitmap = -1, vector *rovel = NULL, float trf1 = 1.0f, float trf2 = 1.0f, float trf3 = 1.0f, float tlf = 1.0f);
 
 //=========================================================
 // model caching

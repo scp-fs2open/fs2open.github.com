@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.80 $
- * $Date: 2005-01-31 23:27:54 $
- * $Author: taylor $
+ * $Revision: 2.81 $
+ * $Date: 2005-03-01 06:55:41 $
+ * $Author: bobboau $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.79  2005/01/26 21:42:19  Goober5000
  * important bugfix
  * --Goober5000
@@ -4612,10 +4615,12 @@ void post_process_mission()
 		// swp = &Player_ship->weapons;
 		if ( swp->num_primary_banks > 0 ) {
 			swp->current_primary_bank = 0;			// currently selected primary bank
+	//		ship_primary_changed(shipp);
 		}
 
 		if ( swp->num_secondary_banks > 0 ) {
 			swp->current_secondary_bank = 0;			// currently selected secondary bank
+	//		ship_secondary_changed(shipp);
 		}
 	}
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-02-15 00:06:27 $
- * $Author: taylor $
+ * $Revision: 2.57 $
+ * $Date: 2005-03-01 06:55:41 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/02/15 00:06:27  taylor
+ * clean up some model related globals
+ * code to disable individual thruster glows
+ * fix issue where 1 extra OGL light pass didn't render
+ *
  * Revision 2.55  2005/02/08 23:49:59  taylor
  * update/add .cvsignore files for project file changes
  * silence warning about depreciated strings.h stuff for MSVC 2005
@@ -961,6 +966,7 @@
 #include "cmdline/cmdline.h"
 
 
+#include "gamesnd/gamesnd.h"
 
 
 #define MAX_SUBMODEL_COLLISION_ROT_ANGLE (PI / 6.0f)	// max 30 degrees per frame
@@ -1336,40 +1342,6 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		} // end of weapon rotation stuff
 
 		
-/* Bobboau's code commented by Goober5000 - this will need to be substantially reworked;
-// in any case, weapon rotation was implemented by me above - it might be a good pattern
-// to follow for future stuff
-		// CASE OF AI ROTATION
-		if ( (p = strstr(props, "$ai")) != NULL) {
-			get_user_prop_value(p+3, buf);
-			subsystemp->flags |= MSS_FLAG_AI_ROTATE;
-//reading early animation suport-Bobboau
-			if(!stricmp("dock",buf)){
-				subsystemp->ai_rotation.type &= MSS_AI_DOCK;
-				mprintf(("model has AI animation, %s", buf));
-				if((p = strstr(props, "$up")) != NULL){
-					get_user_prop_value(p+3, buf);
-//					mprintf((" up"));
-					subsystemp->ai_rotation.min = (float)(atof("90"));
-				}
-				if((p = strstr(props, "$down")) != NULL){
-//					mprintf(("down"));
-					get_user_prop_value(p+5, buf);
-					subsystemp->ai_rotation.max = (float)atof("0");
-				}
-//				if((p = strstr(props, "$time")) != NULL){
-//					mprintf(("time"));
-//					get_user_prop_value(p+5, buf);
-					subsystemp->ai_rotation.time = (int)(turn_time * 1000);
-//				}
-mprintf(("animation values, %f %f %d", subsystemp->ai_rotation.min, subsystemp->ai_rotation.max, subsystemp->ai_rotation.time));
-			}
-			// get parameters - ie, speed / dist / other ??
-			// time to activate
-			// condition
-		}
-*/
-
 		// *** determine how the subsys rotates ***
 
 		// CASE OF STEPPED ROTATION
@@ -1587,7 +1559,7 @@ void model_calc_bound_box( vector *box, vector *big_mn, vector *big_mx)
 #ifndef NDEBUG
 int Bogus_warning_flag_1903 = 0;
 #endif
-void parse_triggers(int &n_trig, trigger_instance **triggers, char *props);
+void parse_triggers(int &n_trig, queued_animation **triggers, char *props);
 
 
 IBX ibuffer_info;
@@ -1956,6 +1928,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 //				pm->submodel[n].triggers = NULL;
 
 				//parse_triggers(pm->submodel[n].n_triggers, &pm->submodel[n].triggers, &props[0]);
+
+				if ( ( p = strstr(props, "$gun_rotation:"))== NULL )pm->submodel[n].gun_rotation = true;
+				else pm->submodel[n].gun_rotation = false;
 
 				if ( ( p = strstr(props, "$detail_box:"))!= NULL ) {
 					p+=13;
@@ -3587,8 +3562,21 @@ void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
 }
 */
 
+/*
+ok a triggered animation works like this, at some point a subobject will be triggered to rotate 
+when this happens the following phases of rotation will happen
+1) it will accelerate at a constant rate untill it reaches a 
+quasi-arbitrary (there are limitations on what it can be) velocity
+2) it will maintain a constant rotational velocity untill it reaches the angle at wich it 
+needs to start slowing down in order to stop a the right end angle
+3)it will slow down at the same rate it has sped up earlier, when the rotational velocity
+starts going in the wrong direction it'll be locked at 0 and the angle of the submodel will 
+be locked at the angle it's suposed to end at
+*/
+//-Bobboau
 void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii){
 	triggered_rotation *trigger = &psub->trigger;
+
 
 	bsp_info * sm;
 
@@ -3598,6 +3586,7 @@ void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	sm = &pm->submodel[psub->subobj_num];
 
 //	if ( sm->movement_type != MOVEMENT_TYPE_TRIGGERED ) return;
+	//one less thing that can go wrong
 
 	// save last angles
 	sii->prev_angs = sii->angs;
@@ -3611,8 +3600,10 @@ void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	float *end_angle;
 	float *direction;
 
+	int looping = 0;	
 	//process velocity and position
 	//first you accelerate, then you maintain a speed, then you slowdown, then you stay put
+	int not_moveing_count = 0;
 	for(int i = 0; i<3; i++){
 		current_ang = &trigger->current_ang.a1d[i];
 		current_vel = &trigger->current_vel.a1d[i];
@@ -3623,41 +3614,81 @@ void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii)
 		end_angle = &trigger->end_angle.a1d[i];
 		direction = &trigger->direction.a1d[i];
 
-			if(*current_vel != 0.0f || *current_ang*(*direction) < *slow_angle*(*direction)){
+			if(*current_vel != 0.0f || *current_ang*(*direction) <= *slow_angle*(*direction)){
 				//our velocity is something other than 0 or we are in the acceleration phase (were velocity starts out at 0)
+
 				//we are moveing
-				if(*current_ang*(*direction) < *slow_angle*(*direction)){
+				if(*current_ang*(*direction) <= *slow_angle*(*direction)){
 					//while  you are not slowing down
+
 					if(*current_vel*(*direction) < *rot_vel*(*direction) && *rot_accel!=0.0f){
 						//while you are speeding up
+
 						*current_vel += *rot_accel*flFrametime;
+
 					}else {
 						//when you have reached the target speed
+						looping = 1;
+
 						*current_vel = *rot_vel;
 					}
 				}else{
 					//we are slowing down
+
 					if(*current_vel*(*direction) > 0 && *rot_accel!=0.0f){
 						//while our velocity is still in the direction we are suposed to be moveing
+
 						*current_vel -= *rot_accel*flFrametime;
 					}else {
-						//our velocity has gone in the opposite direction
-						*current_vel=0.0f;
+						//our velocity is in the wrong direction
+						//this can happen if we have decelerated too long
+						//or if an animation was reversed quickly
+						//the way to tell the diference between these two cases is the acceleration
+
+						//if the curent velocityis in the opposite direction as the accelleration then it was interupted
+						if(*current_vel / fabs(*current_vel) != *rot_accel / fabs(*rot_accel) ){
+							//this is gona be some messy stuff in here to figure out when it should start to slow down again
+							//it'll have to make a new slow angle I guess
+							//with an inital v in the oposite direction the time it will take for it to stop
+							//will be v/a, to get back up to the same speed again we will need twice that 
+							//it should be back to were it was in terms of both speed and position then
+							//so...
+							*slow_angle = *current_ang;
+							*rot_vel = -*current_vel;
+
+							//I guess that wasn't so messy after all :D
+
+							//it might hit exactly 0 every now and then, but it will be before the slow angle so it will be fine
+							//this assumes that the reversed animation is the same exact animation only played in reverse, 
+							//if the speeds or accelerations are diferent then might not work
+
+						}else{
+						//our velocity has gone in the opposite direction becase we decelerated too long
+
+							*current_vel=0.0f;
+						}
 					}
 				}
+
 				//we are moveing
+
 				if(*current_ang*(*direction) > *end_angle*(*direction)){
 					//if we've over shot the angle, this shouldn't happen but it might if odd values are given
 					*current_ang = *end_angle;
 					*current_vel=0.0f;
+					not_moveing_count++;
 				}else{
 					*current_ang += (*current_vel)*flFrametime;
 				}
 			}else{
-				//not moveing
-				*current_ang=*end_angle;
+					//not moveing
+					*current_ang=*end_angle;
+					not_moveing_count++;
 			}
 
+	}
+	if(not_moveing_count == 3){
+		trigger->instance = -1;
 	}
 
 	//objects can be animated along sevral axes at the same time
@@ -3674,6 +3705,8 @@ void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii)
 
 //	case MOVEMENT_AXIS_Z:	
 			sii->angs.b = trigger->current_ang.xyz.z - (2*PI2*(float)int(trigger->current_ang.xyz.z/(2*PI2)));
+
+
 }
 
 //=========================================================================
@@ -4037,7 +4070,6 @@ void model_find_world_dir(vector * out_dir, vector *in_dir,int model_num, int su
 }
 
 
-
 // Clears all the submodel instances stored in a model to their defaults.
 void model_clear_instance(int model_num)
 {
@@ -4046,6 +4078,7 @@ void model_clear_instance(int model_num)
 
 	pm = model_get(model_num);
 
+	pm->gun_submodel_rotation = 0.0f;
 	// reset textures to original ones
 	for (i=0; i<pm->n_textures; i++ )	{
 		pm->textures[i] = pm->original_textures[i];

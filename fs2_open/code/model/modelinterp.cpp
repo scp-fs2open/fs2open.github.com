@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.103 $
- * $Date: 2005-02-27 23:42:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.104 $
+ * $Date: 2005-03-01 06:55:41 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2005/02/27 23:42:07  wmcoolmon
+ * Added a white component to lightning so it isn't just a big blue block
+ *
  * Revision 2.102  2005/02/15 00:06:27  taylor
  * clean up some model related globals
  * code to disable individual thruster glows
@@ -706,6 +709,7 @@
 #include "particle/particle.h"
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
+#include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 
 
@@ -1041,7 +1045,8 @@ void model_set_thrust( int model_num, vector *length /*<-I did that-Bobboau*/, i
 	} else if ( Interp_thrust_scale > 1.0f ) {
 		Interp_thrust_scale = 1.0f;
 	}
-
+	//this isn't used
+/*
 	polymodel * pm = model_get( model_num );
 	int i;
 
@@ -1053,6 +1058,7 @@ void model_set_thrust( int model_num, vector *length /*<-I did that-Bobboau*/, i
 			pm->lights[i].value += (scale+Interp_thrust_glow_noise*0.2f) / 255.0f;
 		}
 	}
+	*/
 }
 
 extern int spec;
@@ -3688,7 +3694,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 //	vm_vec_sub(&decal_z_corection, &Eye_position, pos);
 	if(decal_z_corection.xyz.x != 0 && decal_z_corection.xyz.y != 0 && decal_z_corection.xyz.z != 0)
 		vm_vec_normalize(&decal_z_corection);
-	float corection = 0.1f;
+	float corection = 0.2f;
 	vm_vec_scale(&decal_z_corection, corection);
 	g3_start_instance_matrix(&decal_z_corection, NULL, use_api);		
 	decal_render_all(&Objects[objnum]);
@@ -3724,7 +3730,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	
 //	object *obj = &Objects[objnum];
 //	decal_render_all(&Objects[objnum]);
-//	gr_set_lighting(false,false);
+	gr_set_lighting(false,false);
 
 	if (FULLCLOAK != -1)	model_finish_cloak(FULLCLOAK);
 
@@ -4205,9 +4211,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	Interp_secondary_thrust_glow_len_factor = tlf;
 	Interp_tertiary_thrust_glow_rad_factor = trf3;
 */
-	Interp_thrust_glow_bitmap = -1;	
-	Interp_secondary_thrust_glow_bitmap = -1;
-	Interp_tertiary_thrust_glow_bitmap = -1;
+//	Interp_thrust_glow_bitmap = -1;	
+//	Interp_secondary_thrust_glow_bitmap = -1;
+//	Interp_tertiary_thrust_glow_bitmap = -1;
 	vm_vec_zero(&controle_rotval);
 
 	gr_set_cull(0);	
@@ -5151,8 +5157,10 @@ vector *htl_norms;
 */
 
 void dealc_model_loadstuf(){
-	free(htl_verts);
-	free(htl_norms);
+	if(htl_verts)free(htl_verts);
+	htl_verts= NULL;
+	if(htl_norms)free(htl_norms);
+	htl_norms= NULL;
 }
 
  int alocate_poly_list_nvert = 0;
@@ -5464,7 +5472,19 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 
 	vm_vec_add2(&Interp_offset,&pm->submodel[mn].offset);
 
-	g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
+	if(model->gun_rotation){
+			if (pm->gun_submodel_rotation > PI2 )
+				pm->gun_submodel_rotation -= PI2;
+			else if (pm->gun_submodel_rotation < 0.0f )
+				pm->gun_submodel_rotation += PI2;
+	
+		angles ang = pm->submodel[mn].angs;
+		ang.b += pm->gun_submodel_rotation;
+
+		g3_start_instance_angles(&pm->submodel[mn].offset, &ang);
+	}else{
+		g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
+	}
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_rotate_all();
 	}
@@ -5495,6 +5515,8 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 	}
 
 	vm_vec_sub2(&Interp_offset,&pm->submodel[mn].offset);
+
+
 
 	Interp_flags = fl;
 	g3_done_instance(true);
@@ -5905,23 +5927,77 @@ void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* in
 	model_resort_index_buffer_bsp(0, bsp_data, f2b, texture, index_buffer);
 }
 
+/*
+struct silhouette_index{
+	short* silhouette_index;
+	int silhouette_n_allocated;
+	int n_in_list;
+	void allocate(int size){
+		if(size <= silhouette_n_allocated)return;
+		short* new_buffer = (short*)malloc(sizeof(short)* size);
+		if(silhouette_n_allocated){memcpy(new_buffer, silhouette_index, sizeof(short)*silhouette_n_allocated );}
+		silhouette_n_allocated = size;
+	};
+	void add_line(short one, short two){
+		for(int i = 0; i<n_in_list; i+=2){
+			if(silhouette_index[i] == one && silhouette_index[i+1] = two ||
+				silhouette_index[i] == two && silhouette_index[i+1] = one){
+				memcpy(&silhouette_index[i+2], &silhouette_index[i], n_in_list - i - 2);
+				return;
+			}else{
+				allocate(n_in_list+2);
+				silhouette_index[n_in_list] = one;
+				silhouette_index[n_in_list+1] = two;
+			}
+		}
+	};
+	silhouette_index(){silhouette_n_allocated=0; n_in_list=0;};
+	~silhouette_index(){free(silhouette_index);};
+};
 
+
+void get_silhouette_from_point(vector *point_list, ubyte *bsp_data, vector* point){
+}
+*/
 //************************************//
 //*** triggered submodel animation ***//
 //************************************//
 
+char* animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] = {
+"\"inital\"",
+"\"docking\"",
+"\"docked\"",
+"\"primary_bank\"",
+"\"secondary_bank\"",
+"\"door\""
+};
+
+
 //this calculates the angle at wich the rotation should start to slow down
 //and basicly fills in a bunch of other crap
 //if anyone wants the calculus behind these numbers I'll provide it
-void triggered_rotation::start(queued_animation* q)
-{
+void triggered_rotation::start(queued_animation* q){
+	start_time = timestamp();
+	instance = q->instance;
+
 #ifndef NDEBUG
 	mprintf(("animation start at %d\n",timestamp()));
 	char ax[]="xyz";
 #endif
 
-	for (int axis = 0; axis < 3; axis++)
-	{
+//	vector sp;
+//	vm_vec_rotate(&sp,&snd_pnt,&Objects[obj_num].orient);
+//	vm_vec_add2(&sp, &Objects[obj_num].pos);
+//	if(q->start_sound != -1)current_snd = snd_play_3d(&Snds[q->start_sound], &sp, &View_position, q->snd_rad) ;
+
+	current_snd = -2;
+	current_snd_index = start_sound = q->start_sound;
+	loop_sound = q->loop_sound;
+	end_sound = q->end_sound;
+	snd_rad = q->snd_rad;
+
+	for(int axis = 0; axis < 3; axis++){
+
 		direction.a1d[axis] = (end_angle.a1d[axis]+q->angle.a1d[axis])-current_ang.a1d[axis];
 		if(direction.a1d[axis])direction.a1d[axis] /= (float)fabs(direction.a1d[axis]);
 
@@ -5943,6 +6019,12 @@ void triggered_rotation::start(queued_animation* q)
 	}
 }
 
+void triggered_rotation::set_to_end(queued_animation* q){
+	for(int axis = 0; axis < 3; axis++){
+		current_ang.a1d[axis] += q->angle.a1d[axis];
+	}
+}
+
 triggered_rotation::triggered_rotation(){
 	vector v = ZERO_VECTOR;
 	current_ang = v;	
@@ -5953,6 +6035,7 @@ triggered_rotation::triggered_rotation(){
 	end_time = 0;	
 	end_angle = v;
 	n_queue = 0;
+	instance = -1;
 }
 
 triggered_rotation::~triggered_rotation(){
@@ -5961,7 +6044,53 @@ triggered_rotation::~triggered_rotation(){
 
 
 
-void triggered_rotation::add_queue(queued_animation* new_queue){
+void triggered_rotation::add_queue(queued_animation* the_queue, int direction){
+	static queued_animation scrap_queue;
+	scrap_queue = *the_queue;
+
+	queued_animation* new_queue = &scrap_queue;
+
+	if(direction == -1)new_queue->start = new_queue->reverse_start;
+
+	if(direction == -1){
+		scrap_queue.angle.xyz.x *= direction;
+		scrap_queue.angle.xyz.y *= direction;
+		scrap_queue.angle.xyz.z *= direction;
+	}
+
+	queued_animation old[MAX_TRIGGERED_ANIMATIONS];		//all the triggered animations assosiated with this object
+
+	memcpy(old, queue, sizeof(queued_animation)*MAX_TRIGGERED_ANIMATIONS);
+
+	int i;
+	if(n_queue > 0){
+		//remove any items on the queue that are the opposite of what we are thinking about doing
+//		if(direction = -1){
+			//if we are reverseing an animation see if the forward animation is on the queue already
+			//if it is remove it
+			for(i = 0; i < n_queue && i < MAX_TRIGGERED_ANIMATIONS; i++){
+				if(new_queue->type == old[i].type && new_queue->subtype == old[i].subtype){
+					//same type, if they have the same values (direction reversed) this bitch is gone!
+					if(new_queue->instance == old[i].instance){
+						//that's it that's everything is the same
+						break;
+					}
+				}
+			}
+			if(i!=n_queue){
+				//we've got to remove item number i
+				if(i!=MAX_TRIGGERED_ANIMATIONS-1)
+					//if it's not the last item on the list
+					//copy everything after it over top of it
+					memcpy(&old[i], &old[i+1], sizeof(queued_animation)*(MAX_TRIGGERED_ANIMATIONS-(i+1)));
+				n_queue--;
+				//ok these two animations basicly caceled each other out, 
+				//so he doesn't get on the queue
+				return;
+			}
+	//	}
+	}
+
 	if(new_queue->start == 0){
 		new_queue->start += timestamp();
 		new_queue->end += new_queue->start;
@@ -5969,14 +6098,25 @@ void triggered_rotation::add_queue(queued_animation* new_queue){
 		return;
 	}
 
+	if(new_queue->instance == instance){
+		//same animation is playing that we are about to think about playing some point in the future
+		if(this->direction.xyz.x * rot_vel.xyz.x == new_queue->vel.xyz.x && this->direction.xyz.y * rot_vel.xyz.y == new_queue->vel.xyz.y && this->direction.xyz.z * rot_vel.xyz.z == new_queue->vel.xyz.z){
+			//there going in opposite directions
+			//one of them is a reversal!
+			//so this means thata there is some sort of delay that's getting fubared becase of other queue items getting removed due to reversal
+			//this animation needs to be started now!
+			new_queue->start =  start_time + new_queue->real_end_time - timestamp();
+			new_queue->end += new_queue->start;
+			start(new_queue);	//if there is no delay don't bother with the queue, just start the damned thing
+			return;
+		}
+	}
+
 	//starts that many seconds from now
 	new_queue->start += timestamp();
 	//runs for that long
 	new_queue->end += new_queue->start;
 
-	queued_animation old[MAX_TRIGGERED_ANIMATIONS];		//all the triggered animations assosiated with this object
-
-	memcpy(old, queue, sizeof(queued_animation)*MAX_TRIGGERED_ANIMATIONS);
 
 	if(n_queue > 0){
 		int i;
@@ -5987,11 +6127,11 @@ void triggered_rotation::add_queue(queued_animation* new_queue){
 		//then incert the new item before that item
 		//from the begining of the queue to the item on the queue that is just before the new item
 		if(i)memcpy(queue, old, sizeof(queued_animation)*(i));
+		//if there are any items after copy them from the origonal queue
+		if(n_queue >= i+1)
+			memcpy(&queue[i+1], &old[i], sizeof(queued_animation)*(n_queue - i));
 		//add the new item
 		queue[i] = *new_queue;
-		//if there are any items after copy them from the origonal queue
-		if(n_queue > i+1)
-			memcpy(&queue[i+1], &old[i], sizeof(queued_animation)*(n_queue - i));
 	}else{
 		queue[0] = *new_queue;
 	}
@@ -6026,11 +6166,12 @@ void triggered_rotation::proces_queue(){
 //	}
 	//then erase the old queue
 	n_queue-=i;
+	queue[n_queue].start = -1;
 }
 
 
-queued_animation::queued_animation(float an,float v,float a,int s, int e, int axis)
-:start(s),end(e),absolute(false){
+queued_animation::queued_animation(float an,float v,float a,int s, int e, int t, int st, int axis)
+:start(s),end(e),absolute(false),type(t),subtype(st){
 	angle.a1d[axis]=an; 
 	angle.a1d[(axis+1)%3]=0; 
 	angle.a1d[(axis+2)%3]=0; 
@@ -6042,11 +6183,12 @@ queued_animation::queued_animation(float an,float v,float a,int s, int e, int ax
 	accel.a1d[(axis+2)%3]=0;
 }
 
-void trigger_instance::corect(){
+void queued_animation::corect(){
 	for(int i = 0; i<3; i++)
-		if((properties.vel.a1d[i]*properties.vel.a1d[i])/properties.accel.a1d[i] > fabs(properties.angle.a1d[i]))
-			properties.vel.a1d[i] = (float)sqrt(fabs(properties.accel.a1d[i] * properties.angle.a1d[i]));
+		if((vel.a1d[i]*vel.a1d[i])/accel.a1d[i] > fabs(angle.a1d[i]))
+			vel.a1d[i] = (float)sqrt(fabs(accel.a1d[i] * angle.a1d[i]));
 }
+
 
 // returns 1 if the thruster should be drawn
 //         0 if it shouldn't

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-02-23 05:05:39 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2005-03-01 06:55:40 $
+ * $Author: bobboau $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/02/23 05:05:39  taylor
+ * compiler warning fixes (for MSVC++ 6)
+ * have the warp effect only load as many LODs as will get used
+ * head off strange bug in release when corrupt soundtrack number gets used
+ *    (will still Assert in debug)
+ * don't ever try and save a campaign savefile in multi or standalone modes
+ * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
+ *
  * Revision 2.20  2005/01/30 09:27:39  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -954,7 +962,11 @@ float fireball_lifeleft_percent( object *obj )
 
 	fb = &Fireballs[num];
 
-	return (fb->total_time - fb->time_elapsed) / fb->total_time;
+//	Assert((fb->total_time - fb->time_elapsed) / fb->total_time >=0);
+
+	float p = (fb->total_time - fb->time_elapsed) / fb->total_time;
+	if (p < 0)p=0.0f;
+	return p;
 }
 
 // determine LOD to use

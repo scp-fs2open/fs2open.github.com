@@ -114,6 +114,8 @@ void d3d_dump_format(PIXELFORMAT *pf)
 	}
 }
 
+extern int Gr_inited;
+
 void gr_d3d_activate(int active)
 {
 	//mprintf(( "Direct3D activate: %d\n", active ));
@@ -124,8 +126,13 @@ void gr_d3d_activate(int active)
 		GlobalD3DVars::D3D_activate = 1;
 
 		if ( hwnd )	{
-			d3d_clip_cursor();
 			ShowWindow(hwnd,SW_RESTORE);
+			UpdateWindow( hwnd );
+			if(!Cmdline_window){
+				d3d_lost_device(true);
+			}
+			d3d_clip_cursor();
+			ShowCursor(FALSE);
 		}
 
 	} else {
@@ -133,14 +140,20 @@ void gr_d3d_activate(int active)
 		GlobalD3DVars::D3D_activate = 0;
 
 		if ( hwnd )	{
+//			d3d_lost_device();
+			if(!Cmdline_window){
+				GlobalD3DVars::d3dpp.Windowed = true;
+				d3d_lost_device(true);
+				//you will fucking minimize! /*twitch*/
+				GlobalD3DVars::d3dpp.Windowed = false;
+			}
 			ClipCursor(NULL);
+			ShowCursor(TRUE);
+			UpdateWindow( hwnd );
 			ShowWindow(hwnd,SW_MINIMIZE);
 		}
 	}
 //	ID3DXMatrixStack *world_matrix_stack, *view_matrix_stack, *proj_matrix_stack;
-	D3DXCreateMatrixStack(0, &world_matrix_stack);
-	D3DXCreateMatrixStack(0, &view_matrix_stack);
-	D3DXCreateMatrixStack(0, &proj_matrix_stack);
 
 }
 
@@ -1461,6 +1474,23 @@ void d3d_generate_state_blocks(){
 */
 }
 
+void d3d_kill_state_blocks(){
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( inital_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( defuse_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( glow_mapped_defuse_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( nonmapped_specular_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( glow_mapped_nonmapped_specular_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( mapped_specular_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( cell_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( glow_mapped_cell_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( additive_glow_mapping_state_block);
+//	DeleteStateBlock( &single_pass_specmapping_state_block);
+//	DeleteStateBlock( &single_pass_glow_spec_mapping_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( background_fog_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( env_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( cloak_state_block);
+}
+
 void d3d_init_environment();
 
 bool gr_d3d_init()
@@ -1472,7 +1502,7 @@ bool gr_d3d_init()
 		return false;
 	}
 
-	ShowCursor(false);
+//	ShowCursor(false);
 
 	if(d3d_init_device() == false) {
 		// Func will give its own errors
@@ -1526,6 +1556,11 @@ bool gr_d3d_init()
 	}
 
 	gr_d3d_activate(1);
+
+	D3DXCreateMatrixStack(0, &world_matrix_stack);
+	D3DXCreateMatrixStack(0, &view_matrix_stack);
+	D3DXCreateMatrixStack(0, &proj_matrix_stack);
+
 	d3d_start_frame();
 
 	Mouse_hidden++;

@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/02/19 07:54:33  wmcoolmon
+ * Removed trails limit
+ *
  * Revision 2.40  2005/02/18 04:54:44  wmcoolmon
  * Added $Tech Model (after +Tech Description)
  *
@@ -630,6 +633,8 @@ typedef struct weapon_info {
 	int	render_type;						//	rendering method, laser, pof, avi
 	char	pofbitmap_name[NAME_LENGTH];	// Name of the pof representing this if POF, or bitmap filename if bitmap
 	int	model_num;							// modelnum of weapon -- -1 if no model
+	char external_model_name[NAME_LENGTH];					//the model rendered on the weapon points of a ship
+	int external_model_num;					//the model rendered on the weapon points of a ship
 
 	char	*tech_desc;								// weapon's description (in tech database)
 	char	tech_anim_filename[NAME_LENGTH];	// weapon's tech room animation
@@ -777,6 +782,8 @@ typedef struct weapon_info {
     float WeaponMinRange;           // *Mínimum weapon range, default is 0 -Et1
 
 
+	float weapon_submodel_rotate_accell;
+	float weapon_submodel_rotate_vel;
 
 
 } weapon_info;

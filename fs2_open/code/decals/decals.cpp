@@ -1700,6 +1700,7 @@ void decal_create_tmappoly(ubyte * p)
 
 
 
+	bool clip = true;
 	int i;
 	int nv;
 //	uv_pair uvlist[TMAP_MAX_VERTS];
@@ -1745,7 +1746,7 @@ void decal_create_tmappoly(ubyte * p)
 	}
 */
 	float decal_plane_dist = fl_abs(fvi_point_dist_plane(pcenter, pnorm, &decal_hit_point));
-	if(decal_plane_dist > max_rad){
+	if(decal_plane_dist > max_rad*1.5f){
 //		TIMERBAR_POP();
 		return;
 	}
@@ -1753,7 +1754,7 @@ void decal_create_tmappoly(ubyte * p)
 	vector closest;
 	vm_project_point_onto_plane(&closest, &decal_hit_point, &norm, pcenter);
 
-	if(!fvi_point_face(&closest, nv, points, &norm, NULL, NULL, NULL)){
+	if(clip && !fvi_point_face(&closest, nv, points, &norm, NULL, NULL, NULL)){
 		// if the point isn't on the face, find the line segment it is closest to 
 		//and make that point the closest
 		float distance = FLT_MAX, test_dist = FLT_MAX;
@@ -1784,11 +1785,13 @@ void decal_create_tmappoly(ubyte * p)
 	}
 
 	vector local_closest;
+	if(clip){
 	vm_vec_sub(&local_closest, &closest, &decal_hit_point);
 	vector ctemp = local_closest;
 	vm_vec_rotate(&local_closest,&ctemp, &decal_orient);
+	}
 
-	bool defenately = (decal_tmap_bbox(&local_closest, decal_min_hit_radius));
+	bool defenately = !clip || (decal_tmap_bbox(&local_closest, decal_min_hit_radius));
 
 	if(!defenately && max_rad*1.5 < vm_vec_dist(&closest, &decal_hit_point)){
 		mprintf(("bugging out becase closest is out of max_rad\n"));		
@@ -1804,89 +1807,125 @@ void decal_create_tmappoly(ubyte * p)
 	vertex work_poly[20];
 	if(nv > 2){
 	//	decal_poly *poly = set_decal->get_last_poly();
-		for (i=1;i<(nv-1);i++)	{
-			if(set_decal->n_poly >= MAX_DECAL_POLY-1){
-				mprintf(("bugging out becase there are too many polys in the decal\n"));		
-//				TIMERBAR_POP();
-				return;
-			}
-		
-			Assert(decal_points_alocated >= i%nv);
-			Assert(decal_points_alocated >= (i+1)%nv);
-			Assert(decal_points_alocated >= decal__poly[0]);
-			Assert(decal_points_alocated >= decal__poly[i%nv]);
-			Assert(decal_points_alocated >= decal__poly[(i+1)%nv]);
-
-			vm_vec2vert(decal_point_list[decal__poly[0]], &LAST_POLY->point[0]);
-			vm_vec2vert(decal_point_list[decal__poly[i%nv]], &LAST_POLY->point[1]);
-			vm_vec2vert(decal_point_list[decal__poly[(i+1)%nv]], &LAST_POLY->point[2]);
-			LAST_POLY->norm[0] = norm;
-			LAST_POLY->norm[1] = norm;
-			LAST_POLY->norm[2] = norm;
-//			set_decal->poly[set_decal->n_poly].norm = norm;
-//			set_decal->n_poly++;
-			int k;
-			float a[3], b[3];
-			for (k=0;k<3;k++)	{
-				vector temp;
-				vm_vert2vec(&LAST_POLY->point[k], &temp);
-				b[k] = (fvi_point_dist_plane(&decal_cube_plane[4][0], &decal_cube_plane[4][1], &temp) / (max_rad*3));
-				a[k] = (fvi_point_dist_plane(&decal_cube_plane[5][0], &decal_cube_plane[5][1], &temp) / (max_rad*3));
-			}
-			for ( k=0;k<3;k++)	{
-				//calculate the UV coords
-				vector temp;
-				vm_vert2vec(&LAST_POLY->point[k], &temp);
-				LAST_POLY->point[k].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &temp) / (min_rad*2));
-				LAST_POLY->point[k].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &temp) / (min_rad*2));
-			}
-//			bool uv_passed = check_uv(LAST_POLY);
-//			mprintf(("decal poly %d, vert 0 being set to %d, vert 1 %d, and vert 2 %d\n", set_decal->n_poly, new_decal->poly[set_decal->n_poly].point[0], new_decal->poly[set_decal->n_poly].point[1], new_decal->poly[set_decal->n_poly].point[2]));
-			int work_n_verts = 0;;
-			/*if(uv_passed)*/{
-				if(pradius > max_rad){
-					work_n_verts = decal_plane_clip_tri(LAST_POLY->point, work_poly);
-				}else{
-					memcpy(work_poly, LAST_POLY->point, sizeof(vertex)*3);
-					work_n_verts = 3;
+		if(clip){
+			//cliped decals
+			for (i=1;i<(nv-1);i++)	{
+				if(set_decal->n_poly >= MAX_DECAL_POLY-1){
+					mprintf(("bugging out becase there are too many polys in the decal\n"));		
+//					TIMERBAR_POP();
+					return;
 				}
-				for( int j = 1; j < work_n_verts-1; j++){
-
-					LAST_POLY->point[0] = work_poly[0];
-					LAST_POLY->point[1] = work_poly[j];
-					LAST_POLY->point[2] = work_poly[(j+1)%work_n_verts];
-
-					for ( k=0;k<3;k++)	{
-						//calculate the UV coords
-						vector temp;
-						vm_vert2vec(&LAST_POLY->point[k], &temp);
-						LAST_POLY->point[k].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &temp) / (min_rad*2));
-						LAST_POLY->point[k].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &temp) / (min_rad*2));
+			
+				Assert(decal_points_alocated >= i%nv);
+				Assert(decal_points_alocated >= (i+1)%nv);
+				Assert(decal_points_alocated >= decal__poly[0]);
+				Assert(decal_points_alocated >= decal__poly[i%nv]);
+				Assert(decal_points_alocated >= decal__poly[(i+1)%nv]);
+	
+				vm_vec2vert(decal_point_list[decal__poly[0]], &LAST_POLY->point[0]);
+				vm_vec2vert(decal_point_list[decal__poly[i%nv]], &LAST_POLY->point[1]);
+				vm_vec2vert(decal_point_list[decal__poly[(i+1)%nv]], &LAST_POLY->point[2]);
+				LAST_POLY->norm[0] = norm;
+				LAST_POLY->norm[1] = norm;
+				LAST_POLY->norm[2] = norm;
+//				set_decal->poly[set_decal->n_poly].norm = norm;
+//				set_decal->n_poly++;
+				int k;
+				float a[3], b[3];
+				for (k=0;k<3;k++)	{
+					vector temp;
+					vm_vert2vec(&LAST_POLY->point[k], &temp);
+					b[k] = (fvi_point_dist_plane(&decal_cube_plane[4][0], &decal_cube_plane[4][1], &temp) / (max_rad*3));
+					a[k] = (fvi_point_dist_plane(&decal_cube_plane[5][0], &decal_cube_plane[5][1], &temp) / (max_rad*3));
+				}
+				for ( k=0;k<3;k++)	{
+					//calculate the UV coords
+					vector temp;
+					vm_vert2vec(&LAST_POLY->point[k], &temp);
+					LAST_POLY->point[k].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &temp) / (min_rad*2));
+					LAST_POLY->point[k].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &temp) / (min_rad*2));
+				}
+//				bool uv_passed = check_uv(LAST_POLY);
+//				mprintf(("decal poly %d, vert 0 being set to %d, vert 1 %d, and vert 2 %d\n", set_decal->n_poly, new_decal->poly[set_decal->n_poly].point[0], new_decal->poly[set_decal->n_poly].point[1], new_decal->poly[set_decal->n_poly].point[2]));
+				int work_n_verts = 0;;
+				/*if(uv_passed)*/{
+					if(pradius > max_rad){
+						work_n_verts = decal_plane_clip_tri(LAST_POLY->point, work_poly);
+					}else{
+						memcpy(work_poly, LAST_POLY->point, sizeof(vertex)*3);
+						work_n_verts = 3;
 					}
+					for( int j = 1; j < work_n_verts-1; j++){
+	
+						LAST_POLY->point[0] = work_poly[0];
+						LAST_POLY->point[1] = work_poly[j];
+						LAST_POLY->point[2] = work_poly[(j+1)%work_n_verts];
+	
+						for ( k=0;k<3;k++)	{
+							//calculate the UV coords
+							vector temp;
+							vm_vert2vec(&LAST_POLY->point[k], &temp);
+							LAST_POLY->point[k].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &temp) / (min_rad*2));
+							LAST_POLY->point[k].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &temp) / (min_rad*2));
+						}
+	
+						bool uv_passed = check_uv(LAST_POLY);
+						if(defenately){
+							LAST_POLY = set_decal->add_poly();
+							mprintf(("there are now %d polys in the current decal\n", set_decal->n_poly));
+						}else
+						if(uv_passed && IS_VEC_NULL(&local_closest)){
+							//if local_closest is null than the poly is coplaner to the poly that was hit, 
+							//only if it's UVs are out of range would it not count
+							LAST_POLY = set_decal->add_poly();
+							mprintf(("there are now %d polys in the current decal\n", set_decal->n_poly));
+						}else 
+						if(uv_passed && check_ab(a,b)){
+							LAST_POLY = set_decal->add_poly();
+							mprintf(("there are now %d polys in the current decal\n", set_decal->n_poly));
+						}/*else 
+						if(shpere_tri_edge(&decal_hit_point, decal_min_hit_radius, LAST_POLY->point)){
+							LAST_POLY = set_decal->add_poly();
+							mprintf(("there are now %d polys in the current decal, sphere colide\n", set_decal->n_poly));
+						}else
+						if(shpere_tri_edge(&decal_hit_point, decal_hit_radius, LAST_POLY->point)){
+							LAST_POLY = set_decal->add_poly();
+							mprintf(("there are now %d polys in the current decal, big sphere colide\n", set_decal->n_poly));
+						}*/
+					}
+				}
+			}
+		}else{
+			for (i=1;i<(nv-1);i++)	{
+		//		for (int k=0;k<3;k++)	{
+					//calculate the UV coords
+					vm_vec2vert(decal_point_list[decal__poly[0]], &LAST_POLY->point[0]);
+					vector temp;
+					vm_vert2vec(&LAST_POLY->point[0], &temp);
+					LAST_POLY->point[0].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &temp) / (min_rad*2));
+					LAST_POLY->point[0].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &temp) / (min_rad*2));
 
-					bool uv_passed = check_uv(LAST_POLY);
-					if(defenately){
-						LAST_POLY = set_decal->add_poly();
-						mprintf(("there are now %d polys in the current decal\n", set_decal->n_poly));
-					}else
-					if(uv_passed && IS_VEC_NULL(&local_closest)){
-						//if local_closest is null than the poly is coplaner to the poly that was hit, 
-						//only if it's UVs are out of range would it not count
-						LAST_POLY = set_decal->add_poly();
-						mprintf(("there are now %d polys in the current decal\n", set_decal->n_poly));
-					}else 
-					if(uv_passed && check_ab(a,b)){
-						LAST_POLY = set_decal->add_poly();
-						mprintf(("there are now %d polys in the current decal\n", set_decal->n_poly));
-					}/*else 
-					if(shpere_tri_edge(&decal_hit_point, decal_min_hit_radius, LAST_POLY->point)){
-						LAST_POLY = set_decal->add_poly();
-						mprintf(("there are now %d polys in the current decal, sphere colide\n", set_decal->n_poly));
-					}else
-					if(shpere_tri_edge(&decal_hit_point, decal_hit_radius, LAST_POLY->point)){
-						LAST_POLY = set_decal->add_poly();
-						mprintf(("there are now %d polys in the current decal, big sphere colide\n", set_decal->n_poly));
-					}*/
+					vm_vec2vert(decal_point_list[decal__poly[i]], &LAST_POLY->point[1]);
+					vm_vert2vec(&LAST_POLY->point[1], &temp);
+					LAST_POLY->point[1].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &temp) / (min_rad*2));
+					LAST_POLY->point[1].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &temp) / (min_rad*2));
+										
+					vm_vec2vert(decal_point_list[decal__poly[(i+1)%nv]], &LAST_POLY->point[2]);
+					vm_vert2vec(&LAST_POLY->point[2], &temp);
+					LAST_POLY->point[2].u = (fvi_point_dist_plane(&decal_cube_plane[0][0], &decal_cube_plane[0][1], &temp) / (min_rad*2));
+					LAST_POLY->point[2].v = (fvi_point_dist_plane(&decal_cube_plane[2][0], &decal_cube_plane[2][1], &temp) / (min_rad*2));
+
+		//		}
+				bool uv_passed = check_uv(LAST_POLY);
+				if(defenately){
+					LAST_POLY = set_decal->add_poly();
+					mprintf(("there are now %d polys in the current decal\n", set_decal->n_poly));
+				}else
+				if(uv_passed && IS_VEC_NULL(&local_closest)){
+					//if local_closest is null than the poly is coplaner to the poly that was hit, 
+					//only if it's UVs are out of range would it not count
+					LAST_POLY = set_decal->add_poly();
+					mprintf(("there are now %d polys in the current decal\n", set_decal->n_poly));
 				}
 			}
 		}
@@ -2034,7 +2073,7 @@ check_poly_decals();
 		if(list->buffer > -1)gr_destroy_buffer(list->buffer);
 		if(dec_list.n_verts)list->buffer = gr_make_buffer(&dec_list, VERTEX_FLAG_POSITION | VERTEX_FLAG_NORMAL | VERTEX_FLAG_UV1);
 		else {
-			Warning(LOCATION, "no polys in the poly list!");
+//n			Warning(LOCATION, "no polys in the poly list!");
 			list->buffer = -1;
 		}
 

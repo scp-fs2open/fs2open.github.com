@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-02-23 04:55:07 $
- * $Author: taylor $
+ * $Revision: 2.18 $
+ * $Date: 2005-03-01 06:55:41 $
+ * $Author: bobboau $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.16  2005/02/21 09:00:17  wmcoolmon
  * Multi-res support
  *
@@ -1263,7 +1266,8 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				hud_anim_render(ha, frametime, 1, 0, 1, 0, false);
+				//hud_anim_render(ha, frametime, 1, 0, 1, 0, false);
+				hud_anim_render(ha, frametime, 1, 0, 1, 0);  //guessing the false shouldnt have been there was getting a compile error -Bobboau
 
 				if ( Brief_stage_highlight_sound_handle < 0 ) {
 					if ( !Fred_running) {
@@ -1282,7 +1286,9 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 //				hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1,false) == 0 ) {
+//				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1,false) == 0 ) {
+//guessing the false shouldnt have been there was getting a compile error -Bobboau
+				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1) == 0 ) {
 					bi->flags &= ~BI_FADEIN;
 				}
 			} else {
@@ -1292,7 +1298,9 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-			gr_aabitmap(bx, by, false);
+//guessing the false shouldnt have been there was getting a compile error -Bobboau
+//			gr_aabitmap(bx, by, false);
+			gr_aabitmap(bx, by);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {

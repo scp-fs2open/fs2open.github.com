@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-02-18 09:58:40 $
- * $Author: wmcoolmon $
+ * $Revision: 2.27 $
+ * $Date: 2005-03-01 06:55:43 $
+ * $Author: bobboau $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/02/18 09:58:40  wmcoolmon
+ * More nonstandard res fixing
+ *
  * Revision 2.25  2005/02/04 20:06:07  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -765,7 +768,7 @@ int g3_draw_bitmap_3d_batched(vertex *pnt,int orient, float rad,uint tmap_flags,
 	return 0;
 }
 
-
+/*
 int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth)
 {
 	// Redirect for batching!
@@ -816,36 +819,35 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 
 	return 0;
 }
+*/
 
-/*
 //alternate method
 int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth){
 //return 0;
-//	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+
+//	rad*=3.0f;
 	vector PNT;
 	vm_vert2vec(pnt, &PNT);
 	vector p[4];
 	vertex P[4];
 	vector fvec, rvec, uvec;
+
 	vm_vec_sub(&fvec, &View_position, &PNT);
 	vm_vec_normalize(&fvec);
-//	vm_vec_sub(&fvec, &PNT, &View_position);
-//	vm_vec_crossprod(&uvec, &fvec, &View_matrix.vec.rvec);
-//	vm_vec_crossprod(&rvec, &fvec, &uvec);
-	//unused variables that were there for some reason
-	matrix m;
-//	vm_set_identity(&m);
-	vm_vector_2_matrix(&m, &fvec, &View_matrix.vec.uvec, NULL);
-	vm_fix_matrix(&m);
-	uvec = m.vec.uvec;
-	rvec = m.vec.rvec;
+
+	uvec = View_matrix.vec.uvec;
+
+	vm_vec_crossprod(&rvec, &fvec, &uvec);
+	vm_vec_normalize(&rvec);
+	vm_vec_crossprod(&uvec, &fvec, &rvec);
 
 	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
 	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
 
 	vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
-	vm_vec_scale_add(&p[0], &PNT, &rvec, rad * aspect);
-	vm_vec_scale_add(&p[2], &PNT, &rvec, -rad * aspect);
+	vm_vec_scale_add(&p[0], &PNT, &rvec, rad);
+	vm_vec_scale_add(&p[2], &PNT, &rvec, -rad);
 
 	vm_vec_scale_add(&p[1], &p[2], &uvec, rad);
 	vm_vec_scale_add(&p[3], &p[0], &uvec, -rad);
@@ -881,7 +883,7 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 
 	return 0;
 }
-*/
+
 int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float depth, float c){
 //return 0;
 //	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
@@ -1093,7 +1095,7 @@ int g3_get_bitmap_dims(int bitmap, vertex *pnt, float rad, int *x, int *y, int *
 
 	return 0;
 }
-
+/*
 int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags, float depth){
 
 //	return 0;
@@ -1140,11 +1142,70 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	P[2].u = 1.0f;	P[2].v = 1.0f;
 	P[3].u = 0.0f;	P[3].v = 1.0f;
 
-/*	P[0].spec_r = 0;	P[0].spec_g = 0;	P[0].spec_b = 0;
-	P[1].spec_r = 0;	P[1].spec_g = 0;	P[1].spec_b = 0;
-	P[2].spec_r = 0;	P[2].spec_g = 0;	P[2].spec_b = 0;
-	P[3].spec_r = 0;	P[3].spec_g = 0;	P[3].spec_b = 0;
+	gr_set_cull(0);
+	g3_draw_poly(4,ptlist,tmap_flags);
+	gr_set_cull(1);
+
+	return 0;
+}
 */
+
+//alternate method
+int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags, float depth){
+//return 0;
+	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+
+	angle+=Physics_viewer_bank;
+	if ( angle < 0.0f )
+		angle += PI2;
+	else if ( angle > PI2 )
+		angle -= PI2;
+	float sa = (float)sin(angle);
+	float ca = (float)cos(angle);
+
+//	rad*=3.0f;
+
+	vector PNT;
+	vm_vert2vec(pnt, &PNT);
+	vector p[4];
+	vertex P[4];
+	vector fvec, rvec, uvec;
+
+	vm_vec_sub(&fvec, &View_position, &PNT);
+	vm_vec_normalize(&fvec);
+
+	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &fvec);
+//	uvec = View_matrix.vec.uvec;
+
+	vm_vec_crossprod(&rvec, &fvec, &uvec);
+	vm_vec_normalize(&rvec);
+	vm_vec_crossprod(&uvec, &fvec, &rvec);
+
+	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
+	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
+
+	vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
+	vm_vec_scale_add(&p[0], &PNT, &rvec, rad);
+	vm_vec_scale_add(&p[2], &PNT, &rvec, -rad);
+
+	vm_vec_scale_add(&p[1], &p[2], &uvec, rad);
+	vm_vec_scale_add(&p[3], &p[0], &uvec, -rad);
+	vm_vec_scale_add(&p[0], &p[0], &uvec, rad);
+	vm_vec_scale_add(&p[2], &p[2], &uvec, -rad);
+
+
+	//move all the data from the vecs into the verts
+	g3_transfer_vertex(&P[0], &p[3]);
+	g3_transfer_vertex(&P[1], &p[2]);
+	g3_transfer_vertex(&P[2], &p[1]);
+	g3_transfer_vertex(&P[3], &p[0]);
+
+	//set up the UV coords
+	P[0].u = 0.0f;	P[0].v = 0.0f;
+	P[1].u = 1.0f;	P[1].v = 0.0f;
+	P[2].u = 1.0f;	P[2].v = 1.0f;
+	P[3].u = 0.0f;	P[3].v = 1.0f;
+
 	gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags);
 	gr_set_cull(1);

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-02-23 04:57:29 $
- * $Author: taylor $
+ * $Revision: 2.43 $
+ * $Date: 2005-03-01 06:55:45 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/02/23 04:57:29  taylor
+ * even more bm_unload() -> bm_release() changes
+ *
  * Revision 2.41  2005/02/15 00:03:34  taylor
  * don't try and draw starfield bitmaps if they aren't valid
  * make AB thruster stuff in ship_create() a little less weird
@@ -1341,6 +1344,8 @@ int st___ = -1;
 void stars_draw_bitmaps( int show_bitmaps, int env )
 {
 	if(!Cmdline_nohtl)gr_set_lighting(false,false);
+
+	if(perspective_bitmap_buffer == -1)return;	//we don't have anything to draw
 
 	int idx;
 	int star_index;	

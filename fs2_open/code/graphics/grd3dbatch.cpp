@@ -9,6 +9,9 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/02/27 10:38:06  wmcoolmon
+ * Nonstandard res stuff
+ *
  * Revision 2.18  2005/02/18 09:51:06  wmcoolmon
  * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
  *
@@ -220,7 +223,7 @@ int d3d_create_batch(int num_verts, int vert_type, int ptype)
 		num_verts * vertex_types[vert_type].size, 
 		D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, // Usage
 		vertex_types[vert_type].fvf,
-		D3DPOOL_DEFAULT, 
+		D3DPOOL_MANAGED, 
 		&batch_array[i].vbuffer);
 
 	if(FAILED(hr)) return -1;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-02-04 20:06:06 $
- * $Author: taylor $
+ * $Revision: 2.32 $
+ * $Date: 2005-03-01 06:55:42 $
+ * $Author: bobboau $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/02/04 20:06:06  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.30  2005/01/30 09:27:40  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -1355,6 +1358,34 @@ void obj_move_call_physics(object *objp, float frametime)
 				//	objp->phys_info.flags &= ~(PF_REDUCED_DAMP | PF_DEAD_DAMP);
 				// objp->phys_info.side_slip_time_const = Ship_info[Ships[objp->instance].ship_info_index].damp;
 			// }
+			for(int i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
+				if(Ships[objp->instance].weapons.secondary_bank_ammo[i] == 0)continue;
+				//if there are no missles left don't bother
+				int points = model_get(Ships[objp->instance].modelnum)->missile_banks[i].num_slots;
+				int missles_left = Ships[objp->instance].weapons.secondary_bank_ammo[i];
+				int next_point = Ships[objp->instance].weapons.secondary_next_slot[i];
+
+				//ok so...we want to move up missles but only if there is a missle there to be moved up
+				//there is a missle behind next_point, and how ever many missles there are left after that
+
+				if(points>missles_left){
+					//there are more slots than missles left, so not all of the slots will have missles drawen on them
+					for(int K = next_point; K<next_point+missles_left; K ++){
+						int k=K%points;
+						float &s_pct = Ships[objp->instance].secondary_point_reload_pct[i][k];
+						if(s_pct < 1.0)s_pct += Ships[objp->instance].reload_time[i] * frametime;
+						if(s_pct > 1.0)s_pct = 1.0f;
+					}
+				}else{
+					//we don't have to worry about such things
+					for(int k = 0; k<points; k++){
+						float &s_pct = Ships[objp->instance].secondary_point_reload_pct[i][k];
+						if(s_pct < 1.0)s_pct += Ships[objp->instance].reload_time[i] * frametime;
+						if(s_pct > 1.0)s_pct = 1.0f;
+					}
+				}
+			}
+				
 		}
 
 		// if a weapon is flagged as dead, kill its engines just like a ship
@@ -1806,14 +1837,16 @@ void obj_move_all_post(object *objp, float frametime)
 			}
 			// Make explosions cast light
 			float p = fireball_lifeleft_percent(objp);
-			if ( p > 0.5f )	{
-				p = 1.0f - p;
-			}
-			p *= 2.0f;
-			// P goes from 0 to 1 to 0 over the life of the explosion
-			float rad = p*(1.0f+frand()*0.05f)*objp->radius;
+			if(p>0.0f){
+				if ( p > 0.5f )	{
+					p = 1.0f - p;
+				}
+				p *= 2.0f;
+				// P goes from 0 to 1 to 0 over the life of the explosion
+				float rad = p*(1.0f+frand()*0.05f)*objp->radius;
 
-			light_add_point( &objp->pos, rad*2.0f, rad*5.0f, 1.0f, r, g, b, -1 );
+				light_add_point( &objp->pos, rad*2.0f, rad*5.0f, 1.0f, r, g, b, -1 );
+			}
 		}
 		break;
 

@@ -98,3 +98,5 @@ void os_suspend();
 void os_resume();
 
 #endif
+
+extern bool stay_minimised_damnit;

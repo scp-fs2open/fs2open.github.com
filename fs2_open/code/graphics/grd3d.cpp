@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.78 $
- * $Date: 2005-02-18 09:51:06 $
- * $Author: wmcoolmon $
+ * $Revision: 2.79 $
+ * $Date: 2005-03-01 06:55:40 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2005/02/18 09:51:06  wmcoolmon
+ * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
+ *
  * Revision 2.77  2005/02/18 08:05:16  wmcoolmon
  * If a vertex buffer fails to be made, don't crash.
  *
@@ -832,7 +835,7 @@ extern int n_active_lights;
 D3DXPLANE d3d_user_clip_plane;
 
 IDirect3DSurface8 *old_render_target = NULL;
-IDirect3DTexture8 *background_render_target = NULL;
+//IDirect3DTexture8 *background_render_target = NULL;
 
 // Function declarations
 void shift_active_lights(int pos);
@@ -974,7 +977,7 @@ void d3d_stop_frame()
 	if (!GlobalD3DVars::D3D_inited) return;
 	if(!GlobalD3DVars::D3D_activate) return;
 
-	batch_render();
+	if(GlobalD3DVars::D3D_activate)batch_render();
 
 	if ( In_frame < 0 || In_frame > 1 )	{
 		mprintf(( "Stop frame error! (%d)\n", In_frame ));
@@ -985,7 +988,7 @@ void d3d_stop_frame()
 
 	In_frame--;
 
-	TIMERBAR_END_FRAME();
+	if(GlobalD3DVars::D3D_activate)TIMERBAR_END_FRAME();
 	if(FAILED(GlobalD3DVars::lpD3DDevice->EndScene()))
 	{
 		return;
@@ -1342,7 +1345,7 @@ bool set_stage_for_env_mapped(bool set){
 	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1, set, set);
 //	d3d_SetTexture(0, SPECMAP);
 
-	d3d_SetTexture(1, cube_map);
+	if(!set)d3d_SetTexture(1, cube_map);
 	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR, set, set);
 
@@ -2169,7 +2172,7 @@ int gr_d3d_make_buffer(poly_list *list, uint flags){
 
 		byte* v;
 
-		vertex_buffer[idx].buffer->Lock(0, 0, &v, D3DLOCK_DISCARD);
+		vertex_buffer[idx].buffer->Lock(0, 0, &v, 0);
 		for(k = 0; k<list->n_verts; k++){
 				fill_vert(&v[k*vertex_buffer[idx].size],  &list->vert[k], &list->norm[k], flags);
 				vertex_buffer[idx].n_verts++;
@@ -2307,6 +2310,7 @@ void gr_d3d_center_alpha_int(int type);
 Vertex_buffer *set_buffer;
 
 void gr_d3d_set_buffer(int idx){
+	if(idx <0){set_buffer = NULL; return;}
 	set_buffer = &vertex_buffer[idx];
 	d3d_SetVertexShader(set_buffer->FVF);
 	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, set_buffer->buffer, set_buffer->size);
@@ -2318,9 +2322,11 @@ int index_buffer_size = 0;
 
 void gr_d3d_render_buffer(int start, int n_prim, short* index_buffer)
 {
+	if(set_buffer == NULL)return;
 	if(index_buffer != NULL){
-		if(index_buffer_size < n_prim * 3){
-			GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(short), D3DUSAGE_DYNAMIC, D3DFMT_INDEX16, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer);
+		if(index_buffer_size < n_prim * 3 || !global_index_buffer){
+			if(global_index_buffer)global_index_buffer->Release();
+			GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(short), D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer);
 			index_buffer_size = n_prim * 3;
 		}
 		short* i_buffer;
@@ -2704,7 +2710,7 @@ const char *d3d_error_string(HRESULT error)
 //it will render the model with the background texture then fog with black as the color
 void gr_d3d_setup_background_fog(bool set){
 	return;
-	IDirect3DSurface8 *bg_surf;
+/*	IDirect3DSurface8 *bg_surf;
 	if(!background_render_target){
 		GlobalD3DVars::lpD3DDevice->CreateTexture(
 			1024, 1024,
@@ -2721,7 +2727,7 @@ void gr_d3d_setup_background_fog(bool set){
 	}else{
 	//	GlobalD3DVars::lpD3DDevice->GetRenderTarget(&background_render_target);
 		GlobalD3DVars::lpD3DDevice->SetRenderTarget(old_render_target , 0);
-	}
+	}*/
 }
 
 
@@ -2752,6 +2758,7 @@ void d3d_init_environment(){
 	for(int i = 0; i<6; i++){
 		cube_map->GetCubeMapSurface(_D3DCUBEMAP_FACES(i), 0, &face);
 		GlobalD3DVars::lpD3DDevice->SetRenderTarget(face , NULL);
+		int r = face->Release();
 		gr_d3d_clear();
 	}
 	GlobalD3DVars::lpD3DDevice->SetRenderTarget(old_render_target, old_render_sten);
@@ -2760,7 +2767,12 @@ void d3d_init_environment(){
 
 }
 
+LPDIRECT3DSURFACE8 env_face = NULL;
 void d3d_render_to_env(int FACE){
+	if(env_face){
+		env_face->Release();
+		env_face = NULL;
+	}
 	if(!cube_map){
 		D3DFORMAT use_format;
 		use_format =  D3DFMT_X8R8G8B8;
@@ -2780,8 +2792,8 @@ void d3d_render_to_env(int FACE){
 	}
 	
 	if(FACE > -1){
-		cube_map->GetCubeMapSurface(_D3DCUBEMAP_FACES(FACE), 0, &face);
-		GlobalD3DVars::lpD3DDevice->SetRenderTarget(face , NULL);
+		cube_map->GetCubeMapSurface(_D3DCUBEMAP_FACES(FACE), 0, &env_face);
+		GlobalD3DVars::lpD3DDevice->SetRenderTarget(env_face , NULL);
 		gr_d3d_clear();
 	}else{
 		GlobalD3DVars::lpD3DDevice->SetRenderTarget(old_render_target, old_render_sten);

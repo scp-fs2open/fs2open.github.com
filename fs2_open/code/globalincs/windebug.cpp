@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-02-04 10:12:29 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-03-01 06:55:40 $
+ * $Author: bobboau $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/02/04 10:12:29  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.15  2005/01/30 09:27:41  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -879,7 +882,8 @@ static DumpBuffer dumpBuffer ;
 char AssertText1[1024];
 char AssertText2[1024];
 
-uint flags = MB_TASKMODAL|MB_SETFOREGROUND;
+uint flags = MB_SYSTEMMODAL|MB_SETFOREGROUND;
+//uint flags = MB_SYSTEMMODAL;
 
 extern void gr_force_windowed();
 
@@ -933,10 +937,14 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 		dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 		dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
 
+	stay_minimised_damnit = true;
 		val = MessageBox(NULL, dumpBuffer.buffer, "Assertion Failed!", MB_OKCANCEL|flags );
 	#else
 		val = MessageBox(NULL, AssertText1, "Assertion Failed!", MB_OKCANCEL|flags );
 	#endif
+	stay_minimised_damnit = false;
+
+	ShowCursor(false);
 
 	if (val == IDCANCEL)
 		exit(1);
@@ -955,6 +963,7 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 	int val;
 	va_list args;
 
+//	gr_activate(0);
 	gr_force_windowed();
 
 	va_start(args, format);
@@ -972,11 +981,15 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 		dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 		dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
 
+	stay_minimised_damnit = true;
 		val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags|MB_OKCANCEL );
 	#else
 		strcat(AssertText2,"\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
 		val = MessageBox(NULL, AssertText2, "Error!", flags|MB_OKCANCEL );
 	#endif
+	stay_minimised_damnit = false;
+
+	ShowCursor(false);
 
 	if (val == IDCANCEL ) {
 		exit(1);
@@ -1012,8 +1025,11 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 		sprintf(AssertText2,"%s\n\nWarning: %s\r\nFile:%s\r\nLine: %d\n\n%s", 
 			explanation, AssertText1, filename, line, end);
 
+	stay_minimised_damnit = true;
 		int result = MessageBox((HWND) os_get_window(), AssertText2, "Fred Warning", MB_ICONWARNING | MB_YESNO);//CANCEL);
+	stay_minimised_damnit = false;
 
+	ShowCursor(false);
 		switch(result)
 		{
 			case IDNO: show_warnings = false; break;
@@ -1033,6 +1049,8 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 
 	gr_force_windowed();
 
+	gr_activate(0);
+
 	va_start(args, format);
 	vsprintf(AssertText1,format,args);
 	va_end(args);
@@ -1048,11 +1066,14 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 		dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 		dumpBuffer.Printf("\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 
+	stay_minimised_damnit = true;
 		id = MessageBox(NULL, dumpBuffer.buffer, "Warning!", MB_YESNOCANCEL|flags );
 	#else
 		strcat(AssertText2,"\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 		id = MessageBox(NULL, AssertText2, "Warning!", MB_YESNOCANCEL|flags );
 	#endif
+	stay_minimised_damnit = false;
+	ShowCursor(false);
 	if ( id == IDCANCEL )
 		exit(1);
 	else if ( id == IDYES ) {
@@ -1062,6 +1083,7 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 		AsmInt3();
 #endif
 	}
+	gr_activate(1);
 
 #endif // DONT_SHOW_WARNINGS - Goober5000
 #endif // NDEBUG
@@ -1402,7 +1424,7 @@ void memblockinfo_output_memleak()
 	{
 		if(mem_ptr_list[f].ptr)
 		{
-		 	_RPT3(_CRT_WARN, "Memory leaks: (%s %d) of %d bytes\n", mem_ptr_list[f].filename, mem_ptr_list[f].line, mem_ptr_list[f].size);
+		 	_RPT3(_CRT_WARN, "Memory leaks: (%s line %d) of %d bytes\n", mem_ptr_list[f].filename, mem_ptr_list[f].line, mem_ptr_list[f].size);
 			total += mem_ptr_list[f].size;
 		}
 	}
@@ -1587,6 +1609,15 @@ void *vm_realloc( void *ptr, int size, char *filename, int line )
 void *vm_realloc( void *ptr, int size )
 #endif
 {
+	// if this is the first time it's used then we need to malloc it first
+	if ( ptr == NULL ) {
+#ifndef NDEBUG
+		return vm_malloc(size, filename, line);
+#else
+		return vm_malloc(size);
+#endif
+	}
+
 	void *ret_ptr = NULL;
 
 	#if (!defined(NDEBUG)) && defined(_MSC_VER)
@@ -1599,11 +1630,6 @@ void *vm_realloc( void *ptr, int size )
 		return ptr;
 	}
 	#endif
-
-	// if this is the first time it's used then we need to malloc it first
-	if ( ptr == NULL ) {
-		return vm_malloc(size);
-	}
 
 	ret_ptr = HeapReAlloc(Heap, HEAP_FLAG, ptr, size);
 
