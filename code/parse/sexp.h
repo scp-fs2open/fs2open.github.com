@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.67 $
- * $Author: Goober5000 $
- * $Date: 2004-07-26 21:26:45 $
+ * $Revision: 2.68 $
+ * $Author: Kazan $
+ * $Date: 2004-07-27 18:52:11 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2004/07/26 21:26:45  Goober5000
+ * outline of ship-tag and ship-untag sexps
+ * --Goober5000
+ *
  * Revision 2.66  2004/07/26 17:54:05  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
  * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
@@ -1040,7 +1044,8 @@ struct ship_subsys;
 #define OP_NAV_SET_CARRY					(0x0009 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 //text: unset-nav-carry
 #define OP_NAV_UNSET_CARRY					(0x0010 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
-
+//text: unset-nav-visited
+#define OP_NAV_UNSET_VISITED				(0x0011 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 
 #endif
 

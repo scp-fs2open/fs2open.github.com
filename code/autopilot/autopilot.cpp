@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.9 $
- * $Date: 2004-07-27 18:04:09 $
+ * $Revision: 1.10 $
+ * $Date: 2004-07-27 18:52:10 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2004/07/27 18:04:09  Kazan
+ * i love it when bugs go crunch (autopilot ai fixup)
+ *
  * Revision 1.8  2004/07/26 20:47:24  Kazan
  * remove MCD complete
  *
@@ -688,20 +691,22 @@ bool Nav_UnSet_NoAccess(char *Nav)
 
 bool Nav_UnSet_Visited(char *Nav)
 {
-	return Nav_UnSet_Flag(Nav, NP_HIDDEN);
+	return Nav_UnSet_Flag(Nav, NP_VISITED);
 }
+
+
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
-int DistanceTo(char *nav)
+unsigned int DistanceTo(char *nav)
 {
 	int n = FindNav(nav);
 
 	return DistanceTo(n);
 }
 
-int DistanceTo(int nav)
+unsigned int DistanceTo(int nav)
 {
 	if (nav > MAX_NAVPOINTS && nav < 0)
 		return 0xFFFFFFFF;
@@ -710,6 +715,8 @@ int DistanceTo(int nav)
 	int distance = sexp_distance2(Player_ship->objnum, name);
 	delete[] name;
 
+	if (distance == SEXP_NAN)
+		return 0xFFFFFFFF;
 	return distance;
 }
 

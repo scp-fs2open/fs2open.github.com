@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.h $
- * $Revision: 1.4 $
- * $Date: 2004-07-25 19:27:51 $
+ * $Revision: 1.5 $
+ * $Date: 2004-07-27 18:52:10 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/07/25 19:27:51  Kazan
+ * only disable afterburning during AIM_WAYPOINTS and AIM_FLY_TO_SHIP while AutoPilotEngaged
+ *
  * Revision 1.3  2004/07/25 00:31:27  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -131,8 +134,8 @@ bool Nav_UnSet_NoAccess(char *Nav);
 bool Nav_UnSet_Visited(char *Nav);
 
 // Useful functions
-int DistanceTo(char *nav);
-int DistanceTo(int nav);
+unsigned int DistanceTo(char *nav);
+unsigned int DistanceTo(int nav);
 
 bool IsVisited(char *nav);
 bool IsVisited(int nav);
