@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.14 $
- * $Date: 2002-12-14 17:09:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2002-12-15 06:29:24 $
+ * $Author: DTP $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2002/12/14 17:09:27  Goober5000
+ * removed mission flag for fighterbay damage; instead made damage display contingent on whether the fighterbay subsystem is assigned a damage percentage in ships.tbl
+ * --Goober5000
+ *
  * Revision 2.13  2002/12/10 05:41:38  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -6612,7 +6616,7 @@ done_secondary:
 		if ( ship_select_next_valid_secondary_bank(swp) ) {			//DTP here we switch to the next valid bank, but we cant call weapon_info on next fire_wait
 			//swp->next_secondary_fire_stamp[swp->current_secondary_bank] = max(timestamp(250),timestamp(fire_wait));	//	1/4 second delay until can fire	//DTP, Commented out mistake, here AL put the wroung firewait into the correct next_firestamp
 			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
-				shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(250);	//DTP, the magical 1/4 second delay or we fire things like Quad Trebuchets, or every other weapon that do not have the "no dumbfire" flag.
+				shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(1000);	//Bumped from 250 to 1000 because some people seem to be to triggerhappy :).
 			}
 						
 			if ( obj == Player_obj ) {
