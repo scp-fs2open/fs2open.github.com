@@ -98,7 +98,8 @@ NETWORK_OBJS= \
 	"$(INTDIR)\psnet.obj" \
 	"$(INTDIR)\stand_gui.obj" \
 	"$(INTDIR)\optionsmenumulti.obj" \
-	"$(INTDIR)\chatbox.obj"
+	"$(INTDIR)\chatbox.obj" \
+	"$(INTDIR)\fs2ox.obj"
 !ENDIF # USE_NETWORK
 
 
@@ -337,19 +338,19 @@ CLEAN :
 	-@erase "$(INTDIR)\multi.obj"
 	-@erase "$(INTDIR)\multimsgs.obj"
 	-@erase "$(INTDIR)\multiteamselect.obj"
-        -@erase "$(INTDIR)\multiui"
+	-@erase "$(INTDIR)\multiui"
 	-@erase "$(INTDIR)\multi_campaign.obj"
 	-@erase "$(INTDIR)\multi_data.obj"
 	-@erase "$(INTDIR)\multi_dogfight.obj"
-        -@erase "$(INTDIR)\multi_endgame"
-        -@erase "$(INTDIR)\multi_ingame"
-        -@erase "$(INTDIR)\multi_kick"
-        -@erase "$(INTDIR)\multi_obj.obj"
-        -@erase "$(INTDIR)\multi_observer.obj"
-        -@erase "$(INTDIR)\multi_options.obj"
-        -@erase "$(INTDIR)\multi_pause.obj"
-        -@erase "$(INTDIR)\multi_pinfo.obj"
-        -@erase "$(INTDIR)\multi_ping.obj"
+	-@erase "$(INTDIR)\multi_endgame"
+	-@erase "$(INTDIR)\multi_ingame"
+	-@erase "$(INTDIR)\multi_kick"
+	-@erase "$(INTDIR)\multi_obj.obj"
+	-@erase "$(INTDIR)\multi_observer.obj"
+	-@erase "$(INTDIR)\multi_options.obj"
+	-@erase "$(INTDIR)\multi_pause.obj"
+	-@erase "$(INTDIR)\multi_pinfo.obj"
+	-@erase "$(INTDIR)\multi_ping.obj"
 	-@erase "$(INTDIR)\multi_pmsg.obj"
 	-@erase "$(INTDIR)\multi_rate.obj"
 	-@erase "$(INTDIR)\multi_respawn.obj"
@@ -360,6 +361,7 @@ CLEAN :
 	-@erase "$(INTDIR)\stand_gui.obj"
 	-@erase "$(INTDIR)\optionsmenumulti.obj"
 	-@erase "$(INTDIR)\chatbox.obj"
+	-@erase "$(INTDIR)\fs2ox.obj"
 	-@erase "$(OUTDIR)\fs2_open.exe"
 
 "$(OUTDIR)" :
@@ -810,19 +812,19 @@ CLEAN :
 	-@erase "$(INTDIR)\multi.obj"
 	-@erase "$(INTDIR)\multimsgs.obj"
 	-@erase "$(INTDIR)\multiteamselect.obj"
-        -@erase "$(INTDIR)\multiui"
+	-@erase "$(INTDIR)\multiui"
 	-@erase "$(INTDIR)\multi_campaign.obj"
 	-@erase "$(INTDIR)\multi_data.obj"
 	-@erase "$(INTDIR)\multi_dogfight.obj"
-        -@erase "$(INTDIR)\multi_endgame"
-        -@erase "$(INTDIR)\multi_ingame"
-        -@erase "$(INTDIR)\multi_kick"
-        -@erase "$(INTDIR)\multi_obj.obj"
-        -@erase "$(INTDIR)\multi_observer.obj"
-        -@erase "$(INTDIR)\multi_options.obj"
-        -@erase "$(INTDIR)\multi_pause.obj"
-        -@erase "$(INTDIR)\multi_pinfo.obj"
-        -@erase "$(INTDIR)\multi_ping.obj"
+	-@erase "$(INTDIR)\multi_endgame"
+	-@erase "$(INTDIR)\multi_ingame"
+	-@erase "$(INTDIR)\multi_kick"
+	-@erase "$(INTDIR)\multi_obj.obj"
+	-@erase "$(INTDIR)\multi_observer.obj"
+	-@erase "$(INTDIR)\multi_options.obj"
+	-@erase "$(INTDIR)\multi_pause.obj"
+	-@erase "$(INTDIR)\multi_pinfo.obj"
+	-@erase "$(INTDIR)\multi_ping.obj"
 	-@erase "$(INTDIR)\multi_pmsg.obj"
 	-@erase "$(INTDIR)\multi_rate.obj"
 	-@erase "$(INTDIR)\multi_respawn.obj"
@@ -833,6 +835,7 @@ CLEAN :
 	-@erase "$(INTDIR)\stand_gui.obj"
 	-@erase "$(INTDIR)\optionsmenumulti.obj"
 	-@erase "$(INTDIR)\chatbox.obj"
+	-@erase "$(INTDIR)\fs2ox.obj"
 	-@erase "$(OUTDIR)\fs2_open.exe"
 	-@erase "$(OUTDIR)\fs2_open.ilk"
 	-@erase "$(OUTDIR)\fs2_open.pdb"
@@ -2547,6 +2550,12 @@ SOURCE=.\code\MenuUI\optionsmenumulti.cpp
 SOURCE=.\code\MissionUI\chatbox.cpp
 
 "$(INTDIR)\chatbox.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+SOURCE=.\code\Network\fs2ox.cpp
+
+"$(INTDIR)\fs2ox.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
