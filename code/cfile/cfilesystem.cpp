@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-08-20 08:14:50 $
+ * $Revision: 2.8 $
+ * $Date: 2003-09-14 18:32:41 $
  * $Author: wmcoolmon $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/08/20 08:14:50  wmcoolmon
+ * Modified find_file_location to speed up file loading.
+ *
  * Revision 2.6  2002/11/10 16:28:08  DTP
  * -DTP reworked mod support,
  *
@@ -844,13 +847,42 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 
 		cf_create_default_path_string( longname, search_order[i], filespec, localize );
 #if defined _WIN32
-		findhandle = _findfirst(longname, &findstruct);
-		if (findhandle != -1)	{
-			if ( size ) {
-				*size = findstruct.size;
+
+		if(!Cmdline_safeloading)
+		{
+			findhandle = _findfirst(longname, &findstruct);
+			if (findhandle != -1)	{
+				if ( size ) {
+					*size = findstruct.size;
+				}
+				
+				_findclose(findhandle);
+
+				if ( offset ) *offset = 0;
+				if ( pack_filename ) {
+					strcpy( pack_filename, longname );
+				};
+				return 1;
 			}
-			
-			_findclose(findhandle);
+		}
+		else
+		{
+			FILE *fp = fopen(longname, "rb" );
+			if(fp) {
+				if( size ) {
+					*size = filelength( fileno(fp) );
+				}
+
+				fclose(fp);
+
+				if(offset) *offset = 0;
+				if( pack_filename ) {
+					strcpy(pack_filename, longname);
+				}
+
+				return 1;
+			}
+		}
 #elif defined unix
 		FILE *fp = fopen(longname, "rb" );
 		if (fp) {
@@ -862,13 +894,13 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 
 			fclose(fp);
 				
-#endif
 			if ( offset ) *offset = 0;
 			if ( pack_filename ) {
 				strcpy( pack_filename, longname );
 			}	
 			return 1;		
 		}
+#endif
 	} 
 
 	// Search the pak files and CD-ROM.
