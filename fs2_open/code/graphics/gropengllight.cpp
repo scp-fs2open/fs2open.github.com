@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-01-21 08:29:04 $
+ * $Revision: 1.9 $
+ * $Date: 2005-01-21 21:12:52 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/01/21 08:29:04  taylor
+ * add -rlm cmdline option to switch to local viewpoint lighting calculations (OGL only for now)
+ *
  * Revision 1.7  2005/01/07 14:00:04  argv
  * Added missing #include.
  *
@@ -286,7 +289,6 @@ void opengl_init_light()
 	// more realistic lighting model
 	if (Cmdline_rlm)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
-	}
 
 	glGetIntegerv(GL_MAX_LIGHTS, &GL_max_lights); // Get the max number of lights supported
 
