@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-22 01:22:25 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-28 15:07:43 $
+ * $Author: DTP $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/22 01:22:25  penguin
+ * Linux port -- added NO_STANDALONE ifdefs
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -2813,6 +2816,7 @@ void multi_start_game_do()
 	// return here since we will be moving to the next stage anyway -- I don't want to see the backgrounds of
 	// all the screens for < 1 second for every screen we automatically move to.
 	if ( Cmdline_start_netgame ) {
+		Cmdline_start_netgame = NULL; // DTP no quit fix; by using -startgame Quit was sort of out of function 
 		return;
 	}
 
