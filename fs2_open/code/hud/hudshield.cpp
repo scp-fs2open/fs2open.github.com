@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-17 10:37:32 $
+ * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/20 23:51:59  DTP
  * Bumped Max Shield Icons to 80
  *
@@ -528,6 +531,13 @@ void hud_shield_equalize(object *objp, player *pl)
 	}
 	Assert(objp->type == OBJ_SHIP);
 	if(objp->type != OBJ_SHIP){
+		return;
+	}
+
+	// Goober5000 - quick out if we have no shields
+	// (mainly to prevent the sound if player presses Q)
+	if (objp->flags & OF_NO_SHIELDS)
+	{
 		return;
 	}
 
