@@ -12,6 +12,15 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2005/03/10 08:00:17  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.95  2005/03/08 04:41:39  Goober5000
  * whoops
  *
@@ -1858,7 +1867,7 @@ int parse_weapon(int subtype, bool replace)
 
 	//read in the spawn angle info
 	//if the weapon isn't a spawn weapon, then this is not going to be used.
-	wip->spawn_angle = 180;
+	wip->spawn_angle = 360;
 	if (optional_string("$Spawn Angle:"))
 	{
 		stuff_float(&wip->spawn_angle);
