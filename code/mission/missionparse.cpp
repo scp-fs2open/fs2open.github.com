@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-01-15 08:57:23 $
+ * $Revision: 2.22 $
+ * $Date: 2003-01-17 01:48:50 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/01/15 08:57:23  Goober5000
+ * assigning duplicate models to ships now works; committing so I have a base
+ * to fall back to as I work on texture replacement
+ * --Goober5000
+ *
  * Revision 2.20  2003/01/15 07:09:09  Goober5000
  * changed most references to modelnum to use ship instead of ship_info --
  * this will help with the change-model sexp and any other instances of model
@@ -1524,6 +1529,11 @@ int parse_create_object(p_object *objp)
 	subsys_status *sssp;
 	ship_weapon *wp;
 
+	// texture replacements
+	char texture_file[MAX_FILENAME_LEN];
+	char *p;
+	polymodel *pm;
+
 	// base level creation - need ship name in case of duplicate textures
 	objnum = ship_create(&objp->orient, &objp->pos, objp->ship_class, objp->name);
 	Assert(objnum != -1);
@@ -1592,7 +1602,40 @@ int parse_create_object(p_object *objp)
 	Ships[shipnum].hotkey = objp->hotkey;
 	Ships[shipnum].score = objp->score;
 	Ships[shipnum].persona_index = objp->persona_index;
-	Ships[shipnum].nameplate = objp->nameplate;
+
+	// handle the replacement textures - Goober5000
+	if (objp->num_texture_replacements > 0)
+	{
+		Ships[shipnum].replacement_textures = Ships[shipnum].replacement_textures_buf;
+	}
+
+	// now fill them in
+	for (i=0; i<objp->num_texture_replacements; i++)
+	{
+		pm = model_get(sip->modelnum);
+
+		// look for textures
+		for (j=0; j<pm->n_textures; j++)
+		{
+			// get texture file name
+			bm_get_filename(pm->textures[j], texture_file);
+
+			// get rid of file extension
+			p = strchr( texture_file, '.' );
+			if ( p )
+			{
+				mprintf(( "ignoring extension on file '%s'\n", texture_file ));
+				*p = 0;
+			}
+
+			// now compare the extension-less texture file names
+			if (!stricmp(texture_file, objp->replacement_textures[i].old_texture))
+			{
+				// replace it
+				Ships[shipnum].replacement_textures[j] = objp->replacement_textures[i].new_texture_id;
+			}
+		}
+	}
 
 	// set the orders that this ship will accept.  It will have already been set to default from the
 	// ship create code, so only set them if the parse object flags say they are unique
@@ -2291,31 +2334,15 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		objp->persona_index = -1;
 	}
 
-	if ( optional_string("+nameplate:")){
-		char tempname[64];
-		stuff_string(tempname, F_NAME, NULL);
-		mprintf(("ship %s should have nameplate texture %s",objp->name,tempname));
-		objp->nameplate = bm_load(tempname);
-	
-		if(objp->nameplate >-1)
-			mprintf((" and it does, number %d\n",objp->nameplate));
-		else
-			mprintf((" but it failed :(\n"));
-
-	} else {
-		// ARGH!!! STUPID BUG! BOBBOAU, CHECK YOUR CODE!!!!!  Nameplates and personas are very
-		// different things!!!!!!
-		objp->nameplate = -1;
-	}
-
 	// texture replacement - Goober5000
+	objp->num_texture_replacements = 0;
 	if ( optional_string("$Texture Replace:") )
 	{
 		char *p;
 
 		while ((Num_texture_replacements < MAX_TEXTURE_REPLACEMENTS) && (optional_string("+old:")))
 		{
-			strcpy(Texture_replace[Num_texture_replacements].ship_name, objp->name);
+/*			strcpy(Texture_replace[Num_texture_replacements].ship_name, objp->name);
 			stuff_string(Texture_replace[Num_texture_replacements].old_texture, F_NAME, NULL);
 			required_string("+new:");
 			stuff_string(Texture_replace[Num_texture_replacements].new_texture, F_NAME, NULL);
@@ -2336,6 +2363,35 @@ int parse_object(mission *pm, int flag, p_object *objp)
 
 			// increment
 			Num_texture_replacements++;
+*/
+			stuff_string(objp->replacement_textures[objp->num_texture_replacements].old_texture, F_NAME, NULL);
+			required_string("+new:");
+			stuff_string(objp->replacement_textures[objp->num_texture_replacements].new_texture, F_NAME, NULL);
+
+			// get rid of extensions
+			p = strchr( objp->replacement_textures[objp->num_texture_replacements].old_texture, '.' );
+			if ( p )
+			{
+				mprintf(( "Extraneous extension found on replacement texture %s!\n", objp->replacement_textures[objp->num_texture_replacements].old_texture));
+				*p = 0;
+			}
+			p = strchr( objp->replacement_textures[objp->num_texture_replacements].new_texture, '.' );
+			if ( p )
+			{
+				mprintf(( "Extraneous extension found on replacement texture %s!\n", objp->replacement_textures[objp->num_texture_replacements].new_texture));
+				*p = 0;
+			}
+
+			// load the texture
+			objp->replacement_textures[objp->num_texture_replacements].new_texture_id = bm_load(objp->replacement_textures[objp->num_texture_replacements].new_texture);
+
+			if (objp->replacement_textures[objp->num_texture_replacements].new_texture_id < 0)
+			{
+				mprintf(("Could not load replacement texture %s\n", objp->replacement_textures[objp->num_texture_replacements].new_texture));
+			}
+
+			// increment
+			objp->num_texture_replacements++;
 		}
 
 		// if we ran out of texture replacement slots, don't read any more
@@ -5371,8 +5427,7 @@ void mission_warp_in_support_ship( object *requester_objp )
 	pobj->wing_status_wing_pos = -1;
 	pobj->respawn_count = 0;
 	pobj->alt_type_index = -1;
-	pobj->nameplate = -1;
-
+	pobj->num_texture_replacements = 0;
 }
 
 // returns true if a support ship is currently in the process of warping in.

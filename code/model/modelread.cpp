@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-01-16 06:49:11 $
+ * $Revision: 2.14 $
+ * $Date: 2003-01-17 01:48:49 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/01/16 06:49:11  Goober5000
+ * yay! got texture replacement to work!!!
+ * --Goober5000
+ *
  * Revision 2.12  2003/01/15 23:23:30  Goober5000
  * NOW the model duplicates work! :p
  * still gotta do the textures, but it shouldn't be hard now
@@ -1598,11 +1602,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->submodel[n].is_damaged=1;
 				else
 					pm->submodel[n].is_damaged=0;
-
-				if ( strstr( pm->submodel[n].name, "-nameplate") )	
-					pm->submodel[n].is_nameplate=1;
-				else
-					pm->submodel[n].is_nameplate=0;
 
 				//mprintf(( "Submodel %d, name '%s', parent = %d\n", n, pm->submodel[n].name, pm->submodel[n].parent ));
 				//key_getch();

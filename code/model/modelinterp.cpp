@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-01-16 06:49:11 $
+ * $Revision: 2.13 $
+ * $Date: 2003-01-17 01:48:49 $
  * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/01/16 06:49:11  Goober5000
+ * yay! got texture replacement to work!!!
+ * --Goober5000
+ *
  * Revision 2.11  2003/01/09 05:55:55  Goober5000
  * fixed the giant thruster glow bug
  * --Goober5000
@@ -377,8 +381,10 @@ static int Interp_objnum = -1;
 // if != -1, use this bitmap when rendering ship insignias
 static int Interp_insignia_bitmap = -1;
 
-static int Interp_nameplate_bitmap = -1;
-int IS_NAMEPLATE = -1;
+// replacement - Goober5000
+static int Interp_replacement_bitmap = -1;
+static int *Interp_replacement_textures = NULL;
+
 // if != -1, use this bitmap when rendering with a forced texture
 static int Interp_forced_bitmap = -1;
 
@@ -386,13 +392,6 @@ static int Interp_forced_bitmap = -1;
 static float Interp_xparent_alpha = 1.0f;
 
 float Interp_light = 0.0f;
-
-// forward references
-int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check );
-
-void model_set_nameplate_bitmap(int bmap);
-
-void set_warp_gloabals(float, float, float, int, float);
 
 void set_warp_gloabals(float a, float b, float c, int d, float e){
 	Model_Interp_scale_x =a;
@@ -1024,8 +1023,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					// if we're rendering a nebula background pof, maybe select a custom texture
 					if((Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0)){
 						texture = Interp_forced_bitmap;
-					}else if(IS_NAMEPLATE == 1){
-						texture = Interp_nameplate_bitmap;
+					}else if(Interp_replacement_bitmap >= 0){
+						texture = Interp_replacement_bitmap;
 					} else {
 						if (pm->is_ani[w(p+40)]){
 							texture = pm->textures[w(p+40)] + ((timestamp() / (int)(pm->fps[w(p+40)])) % pm->num_frames[w(p+40)]);//here is were it picks the texture to render for ani-Bobboau
@@ -1528,12 +1527,6 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 		Interp_thrust_scale_subobj=0;
 	}
 
-	if (pm->submodel[mn].is_nameplate )	{
-		IS_NAMEPLATE = 1;
-	}else{
-		IS_NAMEPLATE = -1;
-	}
-	
 	g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_rotate_all();
@@ -1637,15 +1630,28 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 	chunk_type = w(p);
 	chunk_size = w(p+4);
 
+	
 	while ( chunk_type != OP_EOF )	{
 
 //		mprintf(( "Processing chunk type %d, len=%d\n", chunk_type, chunk_size ));
 
 		switch (chunk_type) {
 		case OP_EOF: return 1;
-		case OP_DEFPOINTS:	model_interp_defpoints(p,pm,sm); break;
+		case OP_DEFPOINTS:		model_interp_defpoints(p,pm,sm); break;
 		case OP_FLATPOLY:		model_interp_flatpoly(p,pm); break;
-		case OP_TMAPPOLY:		model_interp_tmappoly(p,pm); 	break;
+		case OP_TMAPPOLY:
+			// possible texture replacements - Goober5000
+			if (Interp_replacement_textures)
+			{
+				model_set_replacement_bitmap(Interp_replacement_textures[w(p+40)]);
+			}
+			else
+			{
+				model_set_replacement_bitmap(-1);
+			}
+			
+			model_interp_tmappoly(p,pm);
+			break;
 		case OP_SORTNORM:		model_interp_sortnorm(p,pm,sm,do_box_check); break;
 	
 		case OP_BOUNDBOX:		
@@ -1901,8 +1907,6 @@ int model_cache_calc_coords(vector *pnt,float rad, float *cx, float *cy, float *
 	return 0;
 }
 
-void model_really_render(int model_num, matrix *orient, vector * pos, uint flags, int light_ignore_id );
-
 
 //draws a bitmap with the specified 3d width & height 
 //returns 1 if off screen, 0 if not
@@ -2036,7 +2040,6 @@ DCF(model_darkening,"Makes models darker with distance")
 	}
 }
 
-void model_try_cache_render(int model_num, matrix *orient, vector * pos, uint flags, int objnum, int num_lights );
 
 		// Compare it to 999.75f at R = 64.0f
 		//               0.0000f at R = 4.0f
@@ -2056,8 +2059,11 @@ float scale_it( float min, float max, float v, float v1, float v2 )
 	return v;
 }
 
-void model_render(int model_num, matrix *orient, vector * pos, uint flags, int objnum, int lighting_skip )
+void model_render(int model_num, matrix *orient, vector * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures)
 {
+	// replacement textures - Goober5000
+	model_set_replacement_textures(replacement_textures);
+
 	polymodel *pm = model_get(model_num);
 
 	int time = timestamp();
@@ -2209,7 +2215,7 @@ int Mc_detail_add[MAX_DETAIL_LEVEL+1] = { -2, -1, +1, +2, +4 };
 
 extern float flFrametime;
 
-void model_try_cache_render(int model_num, matrix *orient, vector * pos, uint flags, int objnum, int num_lights )
+void model_try_cache_render(int model_num, matrix *orient, vector * pos, uint flags, int objnum, int num_lights)
 {
 	model_really_render(model_num, orient, pos, flags, objnum);
 	/*
@@ -2712,6 +2718,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 {
 	int i, detail_level;
 	polymodel * pm;
+
 	uint save_gr_zbuffering_mode;
 	int zbuf_mode;
 	int objnum = light_ignore_id;
@@ -3303,8 +3310,11 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 }
 
 
-void submodel_render(int model_num, int submodel_num, matrix *orient, vector * pos, uint flags, int light_ignore_id)
+void submodel_render(int model_num, int submodel_num, matrix *orient, vector * pos, uint flags, int light_ignore_id, int *replacement_textures)
 {
+	// replacement textures - Goober5000
+	model_set_replacement_textures(replacement_textures);
+
 	polymodel * pm;
 
 	MONITOR_INC( NumModelsRend, 1 );	
@@ -3609,9 +3619,14 @@ void model_set_insignia_bitmap(int bmap)
 	Interp_insignia_bitmap = bmap;
 }
 
-void model_set_nameplate_bitmap(int bmap)
+void model_set_replacement_bitmap(int bmap)
 {
-	Interp_nameplate_bitmap = bmap;
+	Interp_replacement_bitmap = bmap;
+}
+
+void model_set_replacement_textures(int *replacement_textures)
+{
+	Interp_replacement_textures = replacement_textures;	//replacement_textures;
 }
 
 // set the forces bitmap

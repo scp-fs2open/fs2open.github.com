@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-01-15 20:49:10 $
+ * $Revision: 2.11 $
+ * $Date: 2003-01-17 01:48:50 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/01/15 20:49:10  Goober5000
+ * did the XSTR for the turret thing
+ * --Goober5000
+ *
  * Revision 2.9  2003/01/15 16:52:27  Goober5000
  * oops, that'll introduce a bug - naming it just plain "Turret" instead
  * --Goober5000
@@ -1372,7 +1376,7 @@ void hud_render_target_ship(object *target_objp)
 		if(target_sip->modelnum_hud >= 0){
 			model_render( target_sip->modelnum_hud, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
 		} else {
-			model_render( target_shipp->modelnum, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
+			model_render( target_shipp->modelnum, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER, -1, -1, target_shipp->replacement_textures);
 		}
 		ship_model_stop( target_objp );
 
@@ -1501,6 +1505,7 @@ void hud_render_target_weapon(object *target_objp)
 	weapon_info	*target_wip = NULL;
 	weapon		*wp = NULL;
 	object		*viewer_obj, *viewed_obj;
+	int *replacement_textures = NULL;
 	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, w, h;
 	float			factor;
 	char			outstr[100];				// temp buffer
@@ -1531,6 +1536,7 @@ void hud_render_target_weapon(object *target_objp)
 			viewed_obj			= wp->homing_object;
 			missile_view		= TRUE;
 			viewed_model_num	= Ships[wp->homing_object->instance].modelnum;
+			replacement_textures = Ships[wp->homing_object->instance].replacement_textures;
 		}
 
 		if (Targetbox_wire!=0)
@@ -1578,7 +1584,7 @@ void hud_render_target_weapon(object *target_objp)
 		hud_render_target_setup(&camera_eye, &camera_orient, View_zoom/3);
 		model_clear_instance(viewed_model_num);
 
-		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);		
+		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER, -1, -1, replacement_textures);
 		hud_render_target_close();
 	}
 

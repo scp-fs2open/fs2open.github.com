@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.37 $
- * $Date: 2003-01-16 06:49:11 $
+ * $Revision: 2.38 $
+ * $Date: 2003-01-17 01:48:49 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/01/16 06:49:11  Goober5000
+ * yay! got texture replacement to work!!!
+ * --Goober5000
+ *
  * Revision 2.36  2003/01/15 23:23:30  Goober5000
  * NOW the model duplicates work! :p
  * still gotta do the textures, but it shouldn't be hard now
@@ -2500,11 +2504,16 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	// set awacs warning flags so awacs ship only asks for help once at each level
 	shipp->awacs_warning_flag = AWACS_WARN_NONE;
-	shipp->nameplate = -1;
+
+	// initialize revised texture replacements - Goober5000
+	shipp->replacement_textures = NULL;
+	for (i=0; i<MAX_MODEL_TEXTURES; i++)
+	{
+		shipp->replacement_textures_buf[i] = -1;
+	}
 
 	for(i=0; i<MAX_SHIP_DECALS; i++)
 		shipp->decals[i].is_valid = 0;
-
 
 	
 	for(i = 1; i < MAX_SHIP_DECALS; i++){
@@ -2971,7 +2980,7 @@ void ship_render(object * obj)
 
 		// maybe set squad logo bitmap
 		model_set_insignia_bitmap(-1);
-		model_set_nameplate_bitmap(shipp->nameplate);
+
 #ifndef NO_NETWORK
 		if(Game_mode & GM_MULTIPLAYER){
 			// if its any player's object
@@ -3022,12 +3031,12 @@ void ship_render(object * obj)
 			float fog_val = neb2_get_fog_intensity(obj);
 			if(fog_val >= 0.6f){
 				model_set_detail_level(2);
-				model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags | MR_LOCK_DETAIL, OBJ_INDEX(obj) );
+				model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags | MR_LOCK_DETAIL, OBJ_INDEX(obj), -1, shipp->replacement_textures );
 			} else {
-				model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj) );
+				model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->replacement_textures );
 			}
 		} else {
-			model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj) );
+			model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->replacement_textures );
 		}
 
 //		decal_render_all(obj);
@@ -10445,8 +10454,31 @@ void ship_page_in()
 	// page in duplicate model textures - Goober5000
 	for (i = 0; i < MAX_SHIPS; i++)
 	{
+		// is this a valid ship?
 		if ( Ships[i].objnum != -1)
 		{
+			// do we have any textures?
+			if (Ships[i].replacement_textures)
+			{
+				// page in replacement textures
+				for (j=0; j<MAX_MODEL_TEXTURES; j++)
+				{
+					if (Ships[i].replacement_textures[j] != -1)
+					{
+						// if we're in Glide (and maybe later with D3D), use nondarkening textures
+						if(gr_screen.mode == GR_GLIDE)
+						{
+							bm_page_in_nondarkening_texture( Ships[i].replacement_textures[j] );
+						}
+						else
+						{
+							bm_page_in_texture( Ships[i].replacement_textures[j] );
+						}
+					}
+				}
+			}
+
+			// do we have a replacement model?
 			if ( Ships[i].alt_modelnum != -1 )
 			{
 				Assert(Ships[i].modelnum == Ships[i].alt_modelnum);
