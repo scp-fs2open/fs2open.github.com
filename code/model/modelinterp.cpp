@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.63 $
- * $Date: 2004-01-30 07:39:08 $
+ * $Revision: 2.64 $
+ * $Date: 2004-02-04 10:14:58 $
  * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2004/01/30 07:39:08  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.62  2004/01/24 12:47:48  randomtiger
  * Font and other small changes for Fred
  *
@@ -3622,7 +3628,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}	
 #endif
 //	object *obj = &Objects[objnum];
-	decal_render_all(&Objects[objnum]);
+//	decal_render_all(&Objects[objnum]);
 //	gr_set_lighting(false,false);
 
 	if (FULLCLOAK != -1)	model_finish_cloak(FULLCLOAK);
