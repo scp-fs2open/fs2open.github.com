@@ -333,10 +333,6 @@ SOURCE=.\DirectX\vdvp.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\DirectX\vDdraw.lib
-# End Source File
-# Begin Source File
-
 SOURCE=.\DirectX\vDinput.lib
 # End Source File
 # Begin Source File
@@ -345,7 +341,15 @@ SOURCE=.\DirectX\vDsound.lib
 # End Source File
 # Begin Source File
 
-SOURCE=.\DirectX\vDxguid.lib
+SOURCE=.\directx\ddraw.lib
+# End Source File
+# Begin Source File
+
+SOURCE=.\directx\dxguid.lib
+# End Source File
+# Begin Source File
+
+SOURCE=.\directx\strmiids.lib
 # End Source File
 # End Group
 # Begin Group "Fireball"
