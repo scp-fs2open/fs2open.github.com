@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.57 $
- * $Date: 2004-03-17 04:07:31 $
- * $Author: bobboau $
+ * $Revision: 2.58 $
+ * $Date: 2004-04-06 16:19:11 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2004/03/17 04:07:31  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.56  2004/03/06 23:28:24  bobboau
  * fixed motion debris
  * animated laser textures
@@ -11662,6 +11669,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 
 		//start testing if your going to hit yourself-Bobboau
+		/* Goober5000 - commented this out because it screws up some stuff in the main campaign
 		{
 			polymodel *pm = model_get(shipp->modelnum);		
 			mc_info test_collide;
@@ -11696,6 +11704,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}//else notblocked++;
 		}
 		//end testing if your going to hit yourself
+		*/
 
 //		mprintf(( "blocked:%d, not blocked:,%d,\n", blocked, notblocked ));
 
