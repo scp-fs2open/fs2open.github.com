@@ -9,12 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-02-28 14:14:57 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2004-04-26 02:14:38 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/02/28 14:14:57  randomtiger
+ * Removed a few uneeded if DIRECT3D's.
+ * Set laser function to only render the effect one sided.
+ * Added some stuff to the credits.
+ * Set D3D fogging to fall back to vertex fog if table fog not supported.
+ *
  * Revision 2.2  2003/03/18 10:07:06  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -78,6 +84,7 @@
 #include "bmpman/bmpman.h"
 #include "palman/palman.h"
 #include "graphics/2d.h"
+#include "openil/il_func.h"
 
 // -----------------
 //
@@ -388,6 +395,7 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 //
 int targa_read_header(char *real_filename, int *w, int *h, int *bpp, ubyte *palette )
 {	
+#ifndef USE_DEVIL_TGA
 	targa_header header;
 	CFILE *targa_file;
 	char filename[MAX_FILENAME_LEN];
@@ -448,7 +456,37 @@ int targa_read_header(char *real_filename, int *w, int *h, int *bpp, ubyte *pale
 	Assert(*bpp == 16);
 	if(*bpp != 16)
 		return TARGA_ERROR_READING;
-	
+
+#else
+	char filename[MAX_FILENAME_LEN];
+	ILuint tgaimage;
+	ILint ilw, ilh, ilbpp;
+		
+	strcpy( filename, real_filename );
+	char *p = strchr( filename, '.' );
+	if ( p ) *p = 0;
+	strcat( filename, ".tga" );
+
+	ilGenImages(1,&tgaimage);
+	ilBindImage(tgaimage);
+
+	if (ilLoadImage(filename) == IL_FALSE) {
+		mprintf(( "Couldn't open '%s' -- some kind of devIL-error: %s\n", filename, iluErrorString(ilGetError()) ));
+		ilDeleteImages(1,&tgaimage);
+		return TARGA_ERROR_READING;
+	}
+
+	ilGetIntegerv(IL_IMAGE_WIDTH,&ilw);
+	ilGetIntegerv(IL_IMAGE_HEIGHT,&ilh);
+	ilGetIntegerv(IL_IMAGE_BITS_PER_PIXEL,&ilbpp);
+
+	*w = ilw;
+	*h = ilh;
+	*bpp = ilbpp;
+
+	ilDeleteImages(1,&tgaimage);
+#endif
+
 	return TARGA_ERROR_NONE;
 }
 
@@ -705,6 +743,49 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 	free(fileptr);
 	cfclose(targa_file);
 	targa_file = NULL;
+
+	return TARGA_ERROR_NONE;
+}
+
+// Loads a 32-bit Targa bitmap
+// 
+// filename - name of the targa file to load
+// image_data - allocated storage for the bitmap
+//
+// returns - true if succesful, false otherwise
+//
+int targa_read_bitmap_32(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size)
+{
+#ifndef USE_DEVIL_TGA
+	// non-DevIL stuff...
+#else
+	char filename[MAX_FILENAME_LEN];
+	ILuint tgaimage;
+	ILint ilsize;
+		
+	strcpy( filename, real_filename );
+	char *p = strchr( filename, '.' );
+	if ( p ) *p = 0;
+	strcat( filename, ".tga" );
+
+	ilGenImages(1,&tgaimage);
+	ilBindImage(tgaimage);
+
+	if (ilLoadImage(filename) == IL_FALSE) {
+		mprintf(("Couldn't open '%s -- some kind of devIL-error: %s\n", filename, iluErrorString(ilGetError()) ));
+		ilDeleteImages(1,&tgaimage);
+		return TARGA_ERROR_READING;
+	}
+
+	// convert to BGRA if not already there, should be though
+	ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
+
+	ilGetIntegerv(IL_IMAGE_SIZE_OF_DATA,&ilsize);
+
+	memcpy(image_data, ilGetData(), ilsize);
+
+	ilDeleteImages(1,&tgaimage);
+#endif
 
 	return TARGA_ERROR_NONE;
 }

@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-04-26 02:14:38 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -51,6 +54,7 @@
 
 int targa_read_header(char *filename, int *w, int *h, int *bpp, ubyte *palette=NULL );
 int targa_read_bitmap(char *filename, ubyte *data, ubyte *palette, int dest_size );
+int targa_read_bitmap_32(char *filename, ubyte *data, ubyte *palette, int dest_size );
 int targa_write_bitmap(char *filename, ubyte *data, ubyte *palette, int w, int h, int bpp);
 
 // The following are used by the tools\vani code.
