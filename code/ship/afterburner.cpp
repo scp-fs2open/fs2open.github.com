@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-08-21 06:11:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2003-09-11 19:25:00 $
+ * $Author: argv $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/08/21 06:11:32  Goober5000
+ * removed an extraneous thingy
+ * --Goober5000
+ *
  * Revision 2.2  2003/08/06 17:37:08  phreak
  * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
  *
@@ -361,6 +365,14 @@ void afterburners_update(object *objp, float fl_frametime)
 #else
 	if (objp != Player_obj) {
 #endif
+		// _argv[-1] - apply power drain.
+		if (shipp->power_drain != 0.0f) {
+			shipp->afterburner_fuel -= fl_frametime * shipp->power_drain;
+			if (shipp->afterburner_fuel < 0.0f)
+				shipp->afterburner_fuel = 0.0f;
+			else if (shipp->afterburner_fuel > sip->afterburner_fuel_capacity)
+				shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
+		}
 		if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 			// Recover afterburner fuel
 
@@ -368,7 +380,8 @@ void afterburners_update(object *objp, float fl_frametime)
 
 			if ( shipp->afterburner_fuel < sip->afterburner_fuel_capacity ) {
 				float recharge_scale;
-				recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * Skill_level_afterburner_recharge_scale[Game_skill_level];
+				// _argv[-1] - apply effect of reduction of power output.
+				recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * Skill_level_afterburner_recharge_scale[Game_skill_level] * (shipp->power_output / sip->full_power_output);
 				shipp->afterburner_fuel += (sip->afterburner_recover_rate * fl_frametime * recharge_scale);
 
 				if ( shipp->afterburner_fuel >  sip->afterburner_fuel_capacity){
