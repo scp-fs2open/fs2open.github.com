@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.80 $
- * $Date: 2005-01-12 00:52:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.81 $
+ * $Date: 2005-01-13 02:25:52 $
+ * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2005/01/12 00:52:41  Goober5000
+ * two minor but important bugfixes to the multiple ship docking
+ * --Goober5000
+ *
  * Revision 2.79  2005/01/11 21:38:48  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -1354,6 +1358,17 @@ void parse_float_list(float *plist)
 	}
 }
 
+
+//	Stuff a list of NUM_SKILL_LEVELS ints at *plist.
+void parse_int_list(int *ilist)
+{
+	int	i;
+
+	for (i=0; i<NUM_SKILL_LEVELS; i++) {
+		stuff_int(&ilist[i]);
+	}
+}
+
 void parse_ai_class()
 {
 	ai_class	*aicp = &Ai_classes[Num_ai_classes];
@@ -1401,6 +1416,121 @@ void parse_aitbl()
 	lcl_ext_close();
 }
 
+void parse_difftbl()
+{
+	read_file_text("difficulty.tbl");
+
+	reset_parse();
+
+	extern int Max_incoming_asteroids[NUM_SKILL_LEVELS];
+	extern float Skill_level_cmeasure_life_scale[NUM_SKILL_LEVELS];
+	extern float Skill_level_weapon_energy_scale[NUM_SKILL_LEVELS];
+	extern float Skill_level_shield_energy_scale[NUM_SKILL_LEVELS];
+	extern float Skill_level_afterburner_recharge_scale[NUM_SKILL_LEVELS];
+	extern float Skill_level_player_damage_scale[NUM_SKILL_LEVELS];
+	extern float Skill_level_subsys_damage_scale[NUM_SKILL_LEVELS];
+	extern float Beam_friendly_cap[NUM_SKILL_LEVELS];
+
+	required_string("#Difficulty Settings");
+	if (optional_string("$Max Incoming Asteroids:"))
+	{
+		parse_int_list(Max_incoming_asteroids);
+	}
+	if (optional_string("$Player Countermeasure Life Scale:"))
+	{
+		parse_float_list(Skill_level_cmeasure_life_scale);
+	}
+	if (optional_string("$Player Weapon Recharge Scale:"))
+	{
+		parse_float_list(Skill_level_weapon_energy_scale);
+	}
+	if (optional_string("$Player Shield Recharge Scale:"))
+	{
+		parse_float_list(Skill_level_shield_energy_scale);
+	}
+	if (optional_string("$Player Afterburner Recharge Scale:"))
+	{
+		parse_float_list(Skill_level_afterburner_recharge_scale);
+	}
+	if (optional_string("$Max Missles Locked on Player:"))
+	{
+		parse_int_list(Max_allowed_player_homers);
+	}
+	if (optional_string("$Max Player Attackers:"))
+	{
+		parse_int_list(Skill_level_max_attackers);
+	}
+	if (optional_string("$AI Turn Time Scale:"))
+	{
+		parse_float_list(Turn_time_skill_level_scale);
+	}
+	if (optional_string("$AI Always Links Energy Weapons:"))
+	{
+		parse_float_list(Link_energy_levels_always);
+	}
+	if (optional_string("$AI Maybe Links Energy Weapons:"))
+	{
+		parse_float_list(Link_energy_levels_maybe);
+	}
+
+	//since ballistic primaries use ammo percentage normalized to 1 instead of 100
+	//normalize it to 1 so we're always parsing with respect to 100 (to keep it consistant with lasers)
+	if (optional_string("$AI Always Links Ammo Weapons:"))
+	{
+		parse_float_list(Link_ammo_levels_always);
+		Link_ammo_levels_always[0]*=.01f;
+		Link_ammo_levels_always[1]*=.01f;
+		Link_ammo_levels_always[2]*=.01f;
+		Link_ammo_levels_always[3]*=.01f;
+		Link_ammo_levels_always[4]*=.01f;
+	}
+	if (optional_string("$AI Maybe Links Ammo Weapons:"))
+	{
+		parse_float_list(Link_ammo_levels_maybe);
+		Link_ammo_levels_maybe[0]*=.01f;
+		Link_ammo_levels_maybe[1]*=.01f;
+		Link_ammo_levels_maybe[2]*=.01f;
+		Link_ammo_levels_maybe[3]*=.01f;
+		Link_ammo_levels_maybe[4]*=.01f;
+	}
+
+	if (optional_string("$AI In Range Time:"))
+	{
+		parse_float_list(In_range_time);
+	}
+	if (optional_string("$AI Countermeasure Firing Chance:"))
+	{
+		parse_float_list(Cmeasure_fire_chance);
+	}
+	if (optional_string("$AI Sheild Manage Delays:"))
+	{
+		parse_float_list(Shield_manage_delays);
+	}
+	if (optional_string("$Friendly AI Fire Delay Scale:"))
+	{
+		parse_float_list(Ship_fire_delay_scale_friendly);
+	}
+	if (optional_string("$Hostile AI Fire Delay Scale:"))
+	{
+		parse_float_list(Ship_fire_delay_scale_hostile);
+	}
+	if (optional_string("$AI Damage Reduction to Player Hull:"))
+	{
+		parse_float_list(Skill_level_player_damage_scale);
+	}
+	if (optional_string("$AI Damage Reduction to Player Subsys:"))
+	{
+		parse_float_list(Skill_level_subsys_damage_scale);
+	}
+	if (optional_string("$Max Beam Friendly Fire Damage:"))
+	{
+		parse_float_list(Beam_friendly_cap);
+	}
+
+	required_string("#End");
+
+}
+
 LOCAL int ai_inited = 0;
 
 //========================= BOOK-KEEPING FUNCTIONS =======================
@@ -1418,6 +1548,12 @@ void ai_init()
 			parse_aitbl();			
 		}
 
+		if ((rval = setjmp(parse_abort)) != 0) {
+			nprintf(("Warning", "Unable to parse %difficulty!  Code = %i.\n", rval));
+		} else {			
+			parse_difftbl();			
+		}
+		
 		ai_inited = 1;
 	}
 
