@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.100 $
- * $Date: 2004-01-30 07:39:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.101 $
+ * $Date: 2004-01-31 04:06:29 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2004/01/30 07:39:06  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.99  2004/01/14 07:07:14  Goober5000
  * added error checking for an annoying crash when running an out-of-range
  * sound; also, Phreak misspelled "tertiary"
@@ -3190,14 +3196,14 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->replacement_textures_buf[i] = -1;
 	}
 
-	for(i=0; i<MAX_SHIP_DECALS; i++)
-		shipp->decals[i].is_valid = 0;
+//	for(i=0; i<MAX_SHIP_DECALS; i++)
+//		shipp->decals[i].is_valid = 0;
 
 	
-	for(i = 1; i < MAX_SHIP_DECALS; i++){
-		shipp->decals[i].timestamp = timestamp();
-		shipp->decals[i].is_valid = 0;
-	}
+//	for(i = 1; i < MAX_SHIP_DECALS; i++){
+//		shipp->decals[i].timestamp = timestamp();
+//		shipp->decals[i].is_valid = 0;
+//	}
 	for(i = 0; i<32; i++){
 		(shipp->glows_active |= (1 << i));
 	}
