@@ -108,7 +108,7 @@ except ImportError:
 from cStringIO import StringIO
 
 # Which SMTP server to do we connect to?
-MAILHOST = 'localhost'
+MAILHOST = 'mail.warpcore.org'
 MAILPORT = 25
 
 # Diff trimming stuff
