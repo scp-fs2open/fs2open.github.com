@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-05-21 20:23:00 $
+ * $Revision: 2.22 $
+ * $Date: 2003-06-07 20:51:06 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/05/21 20:23:00  phreak
+ * improved glowmap rendering speed
+ *
  * Revision 2.20  2003/05/07 00:52:36  phreak
  * fixed old bug that created "mouse trails" during a popup screen
  * a result of doing something a long time ago that i thought was right, but wasn't
@@ -32,7 +35,7 @@
  *
  * Revision 2.14  2003/02/01 02:57:42  phreak
  * started to finalize before 3.50 release.
- * added support for GL_EXT_texture_filter_ansiotropic
+ * added support for GL_EXT_texture_filter_anisotropic
  *
  * Revision 2.13  2003/01/26 23:30:53  DTP
  * temporary fix, added some // so that we can do debug builds. i expect Goober5000 will fix it soon.
@@ -389,6 +392,7 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #include "globalincs/systemvars.h"
 #include "graphics/grinternal.h"
 #include "graphics/gropengl.h"
+#include "graphics/gropenglbmpman.h"
 #include "graphics/line.h"
 #include "nebula/neb.h"
 #include "io/mouse.h"
@@ -410,7 +414,7 @@ int vram_full = 0;			// UnknownPlayer
 //0==no fog
 //1==linear
 //2==fog coord EXT
-//3==secondary color EXT
+//3==NV Radial
 static int OGL_fogmode=0;
 
 static HDC dev_context = NULL;
@@ -436,18 +440,17 @@ typedef struct ogl_extension
 	int required_to_run;			//is this extension required for use	
 } ogl_extension;
 
-#define GL_FOG_COORDF					0			// coordinate fog system
+#define GL_FOG_COORDF					0			// for better looking fog
 #define GL_FOG_COORD_POINTER			1			// used with vertex arrays
-#define GL_MULTITEXTURE_COORD2F			2			// multitex coordinated
+#define GL_MULTITEXTURE_COORD2F			2			// multitex coordinates
 #define GL_ACTIVE_TEX					3			// currenly active multitexture
-#define GL_SECONDARY_COLOR3F			4			// secondary color (3 floats)
-#define GL_SECONDARY_COLOR3UB			5			// secondary color (3 unsinged bytes)
-#define GL_SECONDARY_COLOR_POINTER		6			// secondary color array
-#define GL_TEXTURE_ENV_ADD				7			// additive texture environment
-#define GL_COMP_TEX						8			// texture compression
-#define GL_TEX_COMP_S3TC				9			// S3TC/DXTC compression format
-#define GL_TEX_FILTER_ANSIO				10			// ansiotrophic filtering
-#define GL_NUM_EXTENSIONS				11
+#define GL_TEXTURE_ENV_ADD				4			// additive texture environment
+#define GL_COMP_TEX						5			// texture compression
+#define GL_TEX_COMP_S3TC				6			// S3TC/DXTC compression format
+#define GL_TEX_FILTER_aniso				7			// anisotrophic filtering
+#define GL_NV_RADIAL_FOG				8			// for better looking fog
+#define GL_SECONDARY_COLOR				9			// for better looking fog
+#define GL_NUM_EXTENSIONS				10
 
 static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 {
@@ -455,13 +458,13 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 	{0, NULL, "glFogCoordPointerEXT", "GL_EXT_fog_coord",0},
 	{0, NULL, "glMultiTexCoord2fARB", "GL_ARB_multitexture",1},		//required for glow maps
 	{0, NULL, "glActiveTextureARB", "GL_ARB_multitexture",1},		//required for glow maps
-	{0, NULL, "glSecondaryColor3fEXT", "GL_EXT_secondary_color",0},
-	{0, NULL, "glSecondaryColor3ubEXT", "GL_EXT_secondary_color",0},
-	{0, NULL, "glSecondaryColorPointerEXT", "GL_EXT_secondary_color",0},
 	{0, NULL, NULL, "GL_ARB_texture_env_add", 1},					//required for glow maps
 	{0, NULL, "glCompressedTexImage2D", "GL_ARB_texture_compression",0},
 	{0, NULL, NULL, "GL_EXT_texture_compression_s3tc",0},
-	{0, NULL, NULL, "GL_EXT_texture_filter_anisotropic", 0}
+	{0, NULL, NULL, "GL_EXT_texture_filter_anisotropic", 0},
+	{0, NULL, NULL, "GL_NV_fog_distance", 0},
+	{0, NULL, "glSecondaryColor3fvEXT", "GL_EXT_secondary_color", 0}
+
 };
 
 #define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
@@ -475,13 +478,9 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 
 #define glActiveTextureARB GLEXT_CALL(PFNGLACTIVETEXTUREARBPROC, GL_ACTIVE_TEX)
 
-#define glSecondaryColor3fEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3FEXTPROC, GL_SECONDARY_COLOR3F)
-
-#define glSecondaryColor3ubEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3UBEXTPROC, GL_SECONDARY_COLOR3UB)
-
-#define glSecondaryColorPointerEXT GLEXT_CALL(PFNGLSECONDARYCOLORPOINTEREXTPROC, GL_SECONDARY_COLOR_POINTER)
-
 #define glCompressedTexImage2D GLEXT_CALL(PFNGLCOMPRESSEDTEXIMAGE2DPROC, GL_COMP_TEX)
+
+#define glSecondaryColor3fvEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3FVEXTPROC, GL_SECONDARY_COLOR)
 
 extern int Texture_compression_enabled;
 
@@ -489,7 +488,6 @@ typedef enum gr_texture_source {
 	TEXTURE_SOURCE_NONE,
 	TEXTURE_SOURCE_DECAL,
 	TEXTURE_SOURCE_NO_FILTERING,
-	TEXTURE_SOURCE_ADD
 } gr_texture_source;
 
 typedef enum gr_alpha_blend {
@@ -514,6 +512,8 @@ volatile int GL_deactivate = 0;
 static char *Gr_saved_screen = NULL;
 static int Gr_saved_screen_bitmap;
 
+static ubyte* back_buffer;
+
 
 static int Gr_opengl_mouse_saved = 0;
 static int Gr_opengl_mouse_saved_x1 = 0;
@@ -529,6 +529,8 @@ static const char* OGL_extensions;
 
 static int arb0_enabled=0;
 static int arb1_enabled=0;
+
+static float max_aniso=1.0f;			//max anisotropic filtering ratio
 
 inline static void opengl_switch_arb0(int state)
 {
@@ -662,6 +664,10 @@ void opengl_minimize()
 	os_resume();
 }
 
+static inline void opengl_set_max_anistropy()
+{
+	if (GL_Extensions[GL_TEX_FILTER_aniso].enabled)		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
+}
 
 void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
 {
@@ -674,16 +680,14 @@ void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_typ
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			opengl_set_max_anistropy();
 			break;
 		case TEXTURE_SOURCE_NO_FILTERING:
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			opengl_set_max_anistropy();
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			break;
-		case TEXTURE_SOURCE_ADD:
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
 		default:
 			break;
 	}
@@ -739,7 +743,6 @@ void gr_opengl_activate(int active)
 		opengl_minimize();
 	}
 	
-	STUB_FUNCTION;
 }
 
 
@@ -835,10 +838,12 @@ void gr_opengl_flip()
 		}
 		ic++;
 	} while (error != GL_NO_ERROR);
+
 #endif
 	
 	if(!SwapBuffers(dev_context))
 	{
+		opengl_minimize();
 		swap_error=GetLastError();
 		Error(LOCATION,"Unable to swap buffers\nError code: %d",swap_error);
 		exit(2);
@@ -1419,20 +1424,66 @@ void gr_opengl_circle( int xc, int yc, int d )
 	return;
 }
 
-void gr_opengl_stuff_fog_value(float z, int *r, int *g, int *b, int *a)
+
+extern vector *Interp_pos;
+extern vector Interp_offset;
+extern matrix *Interp_orient;
+
+void gr_opengl_stuff_fog_coord(vertex *v)
 {
-	float f_float;
-	
-	f_float = (gr_screen.fog_far - z) / (gr_screen.fog_far - gr_screen.fog_near);
-	if (f_float < 0.0f) {
-		f_float = 0.0f;
-	} else {
-		f_float = 1.0f;
+	float d;
+	vector pos;			//position of the vertex in question
+	vector final;
+	vm_vec_add(&pos, Interp_pos,&Interp_offset);
+	vm_vec_add2(&pos, &v->real_pos);
+	vm_vec_rotate(&final, &pos, Interp_orient);
+	d=vm_vec_dist_squared(&pos,&Eye_position);
+	glFogCoordfEXT(d);
+}
+
+void gr_opengl_stuff_secondary_color(vertex *v, ubyte fr, ubyte fg, ubyte fb)
+{
+
+	float color[]={	(float)fr/255.0f,
+					(float)fg/255.0f,
+					(float)fb/255.0f};
+
+	if ((fr==0) && (fg==0) && (fb==0))
+	{
+		//easy out
+		glSecondaryColor3fvEXT(color);
+		return;
 	}
-	*r = 0;
-	*g = 0;
-	*b = 0;
-	*a = (int)(f_float * 255.0);
+
+	float d;
+	float d_over_far;
+	vector pos;			//position of the vertex in question
+	vm_vec_add(&pos, Interp_pos,&Interp_offset);
+	vm_vec_add2(&pos, &v->real_pos);
+	d=vm_vec_dist_squared(&pos,&Eye_position);
+	
+	d_over_far = d/(gr_screen.fog_far*gr_screen.fog_far);
+
+	if (d_over_far <= (gr_screen.fog_near * gr_screen.fog_near))
+	{
+		memset(color,0,sizeof(float)*3);
+		glSecondaryColor3fvEXT(color);
+		return;
+	}
+
+	if (d_over_far >= 1.0f)
+	{
+		//another easy out
+		glSecondaryColor3fvEXT(color);
+		return;
+	}
+
+	color[0]*=d_over_far;
+	color[1]*=d_over_far;
+	color[2]*=d_over_far;
+
+	glSecondaryColor3fvEXT(color);
+	return;
 }
 
 void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_scaler )
@@ -1549,22 +1600,21 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		int ra, ga, ba;
 		ra = ga = ba = 0;
 	
-		/* argh */
-		for (i=nv-1;i>=0;i--)	// DDOI - change polygon winding
+		for (i=nv-1;i>=0 ;i--)	
 		{
-			vertex * va = verts[i];
+			vertex *va = verts[i];
 			float sx, sy;
-		
+                
 			int x, y;
 			x = fl2i(va->sx*16.0f);
 			y = fl2i(va->sy*16.0f);
-		
+
 			x += gr_screen.offset_x*16;
 			y += gr_screen.offset_y*16;
-		
+
 			sx = i2fl(x) / 16.0f;
 			sy = i2fl(y) / 16.0f;
-		
+
 			neb2_get_pixel((int)sx, (int)sy, &r, &g, &b);
 			
 			ra += r;
@@ -1575,7 +1625,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		ra /= nv;
 		ga /= nv;
 		ba /= nv;
-		
+
 		gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 	}
 	
@@ -1629,15 +1679,23 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		
 		glColor4ub ((ubyte)r,(ubyte)g,(ubyte)b,(ubyte)a);
 	
-		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 3)){
-			int sr, sg, sb, sa;
-			
-			/* this is for GL_EXT_SECONDARY_COLOR */
-			gr_opengl_stuff_fog_value(va->z, &sr, &sg, &sb, &sa);
-			/* do separate color call here */
-			
-			STUB_FUNCTION;
+		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 2)){
+		
+			// this is for GL_EXT_FOG_COORD 
+			gr_opengl_stuff_fog_coord(va);
 		}
+
+/*		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) ){
+		
+			// this is for GL_EXT_SECONDARY_COLOR
+			//doesn't matter if its there since the error checking code (it is on most gfx cards nowadays)
+			gr_opengl_stuff_secondary_color(va,gr_screen.current_fog_color.red,gr_screen.current_fog_color.green,gr_screen.current_fog_color.blue);
+		}
+		else
+		{
+			gr_opengl_stuff_secondary_color(va,0,0,0);
+		}
+*/
 		
 		int x, y;
 		x = fl2i(va->sx*16.0f);
@@ -1927,6 +1985,10 @@ void gr_opengl_cleanup(int minimize)
 		if (!Cmdline_window)
 			ChangeDisplaySettings(NULL, 0);
 	}
+
+	//this should be initialized
+	free(back_buffer);
+
 }
 
 void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
@@ -1947,13 +2009,21 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	}
 	
 	if (gr_screen.current_fog_mode != fog_mode) {
-		glEnable(GL_FOG);
-		
-		if (OGL_fogmode == 1) {
-			glFogi(GL_FOG_MODE, GL_EXP2);
+		if (OGL_fogmode==3)
+			glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
+		else if (OGL_fogmode==2)
+		{
+			glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT);
+			fog_near*=fog_near;		//its faster this way
+			fog_far*=fog_far;		
 		}
-		
+		glEnable(GL_FOG);
+		glFogf(GL_FOG_MODE, GL_LINEAR);
+		glFogf(GL_FOG_START, fog_near);
+		glFogf(GL_FOG_END, fog_far);
 		gr_screen.current_fog_mode = fog_mode;
+		
+
 	}
 	
 	if ( (gr_screen.current_fog_color.red != r) ||
@@ -1970,17 +2040,7 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 		
 		glFogfv(GL_FOG_COLOR, fc);
 	}
-	
-	if( (fog_near >= 0.0f) && (fog_far >= 0.0f) && 
-			((fog_near != gr_screen.fog_near) || 
-			(fog_far != gr_screen.fog_far)) ) {
-		gr_screen.fog_near = fog_near;
-		gr_screen.fog_far = fog_far;
-		
-		if (OGL_fogmode == 1) {
-			glFogf(GL_FOG_DENSITY, .6f);
-		}
-	}
+
 }
 
 void gr_opengl_get_pixel(int x, int y, int *r, int *g, int *b)
@@ -2070,8 +2130,12 @@ void opengl_tcache_init (int use_sections)
 
 	GL_min_texture_width = 16;
 	GL_min_texture_height = 16;
-	GL_max_texture_width = 256;
-	GL_max_texture_height = 256;
+	
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &GL_max_texture_width);
+
+	GL_max_texture_height=GL_max_texture_width;
+
+	mprintf(("max texture size is: %dx%d\n", GL_max_texture_width,GL_max_texture_height));
 
 	GL_square_textures = 1;
 
@@ -2385,7 +2449,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
+	
 	//compression takes precedence
 	if (bitmap_type & TCACHE_TYPE_COMPRESSED)
 	{
@@ -2445,7 +2509,6 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 				}
 
 				glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_w, tex_h, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
-
 				free (texmem);
 			}
 			break;
@@ -2471,9 +2534,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 						}
 					}
 				}
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA,
-					GL_UNSIGNED_SHORT_1_5_5_5_REV, texmem);
-					
+				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA,GL_UNSIGNED_SHORT_1_5_5_5_REV, texmem);
 				free(texmem);
 				break;
 			}
@@ -2503,9 +2564,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 					v += dv;
 				}
 
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA,
-					GL_UNSIGNED_SHORT_1_5_5_5_REV, texmem);
-					
+				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA,GL_UNSIGNED_SHORT_1_5_5_5_REV, texmem);
 				free(texmem);
 				break;
 			}
@@ -2723,12 +2782,14 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 		Assert(arb1_enabled);
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
-		
 	}
 	else
 	{
 		glActiveTextureARB(GL_TEXTURE0_ARB);
 	}
+	
+
+	opengl_set_max_anistropy();
 
 	if (bitmap_type == TCACHE_TYPE_BITMAP_SECTION){
 		Assert((sx >= 0) && (sy >= 0) && (sx < MAX_BMAP_SECTIONS_X) && (sy < MAX_BMAP_SECTIONS_Y));
@@ -2935,24 +2996,24 @@ void gr_opengl_fade_out(int instantaneous)
 
 void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 {
-	if (front) {
-		glReadBuffer(GL_FRONT);
-	} else {
+
+//	if (front) {
+//		glReadBuffer(GL_FRONT);
+//	} else {
 		glReadBuffer(GL_BACK);
-	}
-	
+//	}
+
 	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
 	
-	glPixelStorei(GL_PACK_ROW_LENGTH, gr_screen.max_w);
-	
 	if (gr_screen.bits_per_pixel == 16) {
-		glReadPixels(0, gr_screen.max_h-h-1, w, h, GL_BGRA_EXT, GL_UNSIGNED_SHORT, data);
+		glReadPixels(0, gr_screen.max_h-h, w, h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, data);
 	} else if (gr_screen.bits_per_pixel == 32) {
-		glReadPixels(0, gr_screen.max_h-h-1, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glReadPixels(0, gr_screen.max_h-h, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	}
-	
-	glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+
+
 }
+
 
 #define MAX_SAVE_SIZE (32*32)
 static ubyte Gr_opengl_mouse_saved_data[MAX_SAVE_SIZE*2];
@@ -3335,12 +3396,12 @@ void gr_opengl_init(int reinit)
 		Gr_red.bits = 8;
 		Gr_red.shift = 16;
 		Gr_red.scale = 1;
-		Gr_red.mask = 0xff;
+		Gr_red.mask = 0xff0000;
 
 		Gr_green.bits = 8;
 		Gr_green.shift = 8;
 		Gr_green.scale = 1;
-		Gr_green.mask = 0xff00;
+		Gr_green.mask = 0x00ff00;
 
 		Gr_blue.bits = 8;
 		Gr_blue.shift = 0;
@@ -3418,7 +3479,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	pfd.nVersion=1;
 	pfd.cColorBits=(ubyte)bpp;
 	pfd.dwFlags=PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pfd.cDepthBits=16;
+	pfd.cDepthBits=24;
 	pfd.iPixelType=PFD_TYPE_RGBA;
 	pfd.cRedBits=(ubyte)Gr_red.bits;
 	pfd.cRedShift=(ubyte)Gr_red.shift;
@@ -3532,8 +3593,12 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	glFlush();
 	
 	Bm_pixel_format = BM_PIXEL_FORMAT_ARGB;
+		
+
 	Gr_bitmap_poly = 1;
 	OGL_fogmode=1;
+
+	glEnable(GL_COLOR_SUM_EXT);
 	
 	
 	if (!reinit)
@@ -3664,18 +3729,53 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	//if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
 	Texture_compression_enabled=((GL_Extensions[GL_TEX_COMP_S3TC].enabled) && (GL_Extensions[GL_COMP_TEX].enabled));
 
-	//setup ansiotropic filtering if found
-	if (GL_Extensions[GL_TEX_FILTER_ANSIO].enabled)
+	//setup anisotropic filtering if found
+	if (GL_Extensions[GL_TEX_FILTER_aniso].enabled)
 	{
-		float max_ansio;
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_ansio);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_ansio);
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_aniso);
 	}
 
 	glActiveTextureARB(GL_TEXTURE0_ARB);
 	glEnable(GL_TEXTURE_2D);
 	arb0_enabled=1;
+
+	//setup the best fog function found
+	//start with NV Radial Fog (GeForces only)  -- needs t&l, will have to wait
+	//if (GL_Extensions[GL_NV_RADIAL_FOG].enabled)
+	//	OGL_fogmode=3;
+	/*else*/
+	if (GL_Extensions[GL_FOG_COORDF].enabled)
+		OGL_fogmode=2;
+
+	back_buffer = (ubyte*)malloc(gr_screen.max_h*gr_screen.max_w*gr_screen.bytes_per_pixel);
+	if (!back_buffer)
+	{
+		Error(LOCATION, "unable to create back buffer");
+	}
 }
+
+DCF(min_ogl, "minimizes opengl")
+{
+	if (Dc_command)
+	{
+		if (gr_screen.mode != GR_OPENGL)
+			return;
+		opengl_minimize();
+	}
+	if (Dc_help)
+		dc_printf("minimizes opengl\n");
+}
+
+DCF(aniso, "toggles anisotropic filtering")
+{
+	if (Dc_command)
+	{
+		if (max_aniso==1.0f) max_aniso=2.0f;
+		else max_aniso=1.0f;
+	}
+	if (Dc_help) dc_printf("toggles anisotropic filtering");
+}
+
 #endif
 
 
