@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-01-10 04:44:03 $
+ * $Revision: 2.22 $
+ * $Date: 2005-01-28 02:57:59 $
  * $Author: wmcoolmon $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/01/10 04:44:03  wmcoolmon
+ * Small fix, so we don't try to delete the same thing twice
+ *
  * Revision 2.20  2005/01/09 22:27:38  wmcoolmon
  * Techroom and Barracks now allocate memory only when open, and only for the number of ships currently loaded
  *
@@ -1089,13 +1092,6 @@ void techroom_change_tab(int num)
 {
 	int i, multi = 0, mask, font_height, max_num_entries_viewable;	
 
-	if(Ship_list != NULL)
-	{
-		delete[] Ship_list;
-	}
-
-	Ship_list = new tech_list_entry[Num_ship_types];
-
 	Tab = num;
 	// Assert(Current_list_size >= 0);
 	List_offset = 0;
@@ -1118,6 +1114,7 @@ void techroom_change_tab(int num)
 			
 			// load ship info if necessary
 			if (Ships_loaded == 0) {
+				Ship_list = new tech_list_entry[Num_ship_types];
 				Ship_list_size = 0;
 				for (i=0; i<Num_ship_types; i++) {
 					if (Ship_info[i].flags & mask) {
