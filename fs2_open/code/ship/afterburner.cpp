@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-08-06 17:37:08 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2003-08-21 06:11:32 $
+ * $Author: Goober5000 $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/08/06 17:37:08  phreak
+ * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -361,7 +364,7 @@ void afterburners_update(object *objp, float fl_frametime)
 		if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 			// Recover afterburner fuel
 
-			float recover_rate=sip->afterburner_recover_rate;
+//			float recover_rate=sip->afterburner_recover_rate;
 
 			if ( shipp->afterburner_fuel < sip->afterburner_fuel_capacity ) {
 				float recharge_scale;
