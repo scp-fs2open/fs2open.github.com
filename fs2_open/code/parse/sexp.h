@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.22 $
+ * $Revision: 2.23 $
  * $Author: Goober5000 $
- * $Date: 2003-01-07 20:06:44 $
+ * $Date: 2003-01-10 04:14:19 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/01/07 20:06:44  Goober5000
+ * added ai-chase-any-except sexp
+ * --Goober5000
+ *
  * Revision 2.21  2003/01/03 21:58:07  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -504,6 +508,7 @@
 #define CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS				(0x0004 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN				(0x0005 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_SPECIAL							(0x0006 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_MODEL							(0x0007 | OP_CATEGORY_CHANGE)
 
 #define	OP_PLUS									(0x0000 | OP_CATEGORY_ARITHMETIC)
 #define	OP_MINUS								(0x0001 | OP_CATEGORY_ARITHMETIC)
@@ -679,6 +684,8 @@
 #define OP_COLLIDE_INVISIBLE			(0x006e	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_DONT_COLLIDE_INVISIBLE		(0x006f	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_PRIMITIVE_SENSORS_SET_RANGE	(0x0070	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_CHANGE_SHIP_CLASS			(0x0071	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_CHANGE_SHIP_MODEL			(0x0072	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // debugging sexpressions

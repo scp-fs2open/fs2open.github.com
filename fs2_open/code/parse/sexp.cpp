@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.28 $
- * $Date: 2003-01-07 20:06:44 $
+ * $Revision: 2.29 $
+ * $Date: 2003-01-10 04:14:19 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/01/07 20:06:44  Goober5000
+ * added ai-chase-any-except sexp
+ * --Goober5000
+ *
  * Revision 2.27  2003/01/05 01:26:35  Goober5000
  * added capability of is-iff and change-iff to have wings as well as ships
  * as their arguments; also allowed a bunch of sexps to accept the player
@@ -644,9 +648,11 @@ sexp_oper Operators[] = {
 	{ "ship-invisible",				OP_SHIP_INVISIBLE,				1, INT_MAX	},
 	{ "ship-visible",				OP_SHIP_VISIBLE,					1, INT_MAX	},
 	{ "ship-stealthy",				OP_SHIP_STEALTHY,			1, INT_MAX },
-	{ "ship-unstealthy",			OP_SHIP_UNSTEALTHY,		1, INT_MAX },
-	{ "friendly-stealth-invisible",	OP_FRIENDLY_STEALTH_INVISIBLE,	1, INT_MAX },
-	{ "friendly-stealth-visible",	OP_FRIENDLY_STEALTH_VISIBLE,	1, INT_MAX },
+	{ "ship-unstealthy",			OP_SHIP_UNSTEALTHY,		1, INT_MAX },			// Goober5000
+	{ "friendly-stealth-invisible",	OP_FRIENDLY_STEALTH_INVISIBLE,	1, INT_MAX },	// Goober5000
+	{ "friendly-stealth-visible",	OP_FRIENDLY_STEALTH_VISIBLE,	1, INT_MAX },	// Goober5000
+	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },	// Goober5000
+	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },	// Goober5000
 	{ "break-warp",					OP_WARP_BROKEN,					1, INT_MAX,	},
 	{ "fix-warp",						OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
 	{ "never-warp",					OP_WARP_NEVER,						1, INT_MAX, },
@@ -676,6 +682,11 @@ sexp_oper Operators[] = {
 	{ "tech-add-ships",				OP_TECH_ADD_SHIP,					1, INT_MAX	},
 	{ "tech-add-weapons",			OP_TECH_ADD_WEAPON,				1, INT_MAX	},
 
+	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
+	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
+	{ "change-ship-model",			OP_CHANGE_SHIP_MODEL,			2, INT_MAX },	// Goober5000
+	{ "change-ship-class",			OP_CHANGE_SHIP_CLASS,			2, INT_MAX },	// Goober5000
+
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,		3, INT_MAX },					//phreak
@@ -686,14 +697,10 @@ sexp_oper Operators[] = {
 	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
 	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
-	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },	// Goober5000
-	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },	// Goober5000
 	{ "ship-lights-on",					OP_SHIP_LIGHTS_ON,					1, 1			}, //-WMCoolmon
 	{ "ship-lights-off",					OP_SHIP_LIGHTS_OFF,					1, 1			}, //-WMCoolmon
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
-	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
-	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -7621,6 +7628,54 @@ int sexp_secondary_ammo_pct(int node)
 	return ret;
 }
 
+// Goober5000
+void sexp_change_ship_model(int n)
+{
+	int ship_num, class_num = ship_info_lookup(CTEXT(n));
+	Assert(class_num != -1);
+
+	n = CDR(n);
+	// all ships in the sexp
+	for ( ; n != -1; n = CDR(n))
+	{
+		ship_num = ship_name_lookup(CTEXT(n), 1);
+
+		// don't change unless it's currently in the mission
+		if (ship_num != -1)
+		{
+			// don't mess with a ship that's occupied
+			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
+			{
+				ship_model_change(ship_num, class_num);
+			}
+		}
+	}
+}
+
+// Goober5000
+void sexp_change_ship_class(int n)
+{
+	int ship_num, class_num = ship_info_lookup(CTEXT(n));
+	Assert(class_num != -1);
+
+	n = CDR(n);
+	// all ships in the sexp
+	for ( ; n != -1; n = CDR(n))
+	{
+		ship_num = ship_name_lookup(CTEXT(n), 1);
+
+		// don't change unless it's currently in the mission
+		if (ship_num != -1)
+		{
+			// don't mess with a ship that's occupied
+			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
+			{
+				change_ship_type(ship_num, class_num);
+			}
+		}
+	}
+}
+
 void sexp_beam_fire(int node)
 {
 	int sindex;
@@ -9583,6 +9638,18 @@ int eval_sexp(int cur_node)
 				sexp_val = sexp_is_primary_selected(node);
 				break;
 
+			// Goober5000
+			case OP_CHANGE_SHIP_MODEL:
+				sexp_change_ship_model(node);
+				sexp_val = 1;
+				break;
+
+			// Goober5000
+			case OP_CHANGE_SHIP_CLASS:
+				sexp_change_ship_class(node);
+				sexp_val = 1;
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -9900,6 +9967,8 @@ int query_operator_return_type(int op)
 		case OP_SHIP_NO_VAPORIZE:
 		case OP_DONT_COLLIDE_INVISIBLE:
 		case OP_COLLIDE_INVISIBLE:
+		case OP_CHANGE_SHIP_MODEL:
+		case OP_CHANGE_SHIP_CLASS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -10633,6 +10702,13 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 			return OPF_POSITIVE;
+
+		case OP_CHANGE_SHIP_MODEL:
+		case OP_CHANGE_SHIP_CLASS:
+			if (!argnum)
+				return OPF_SHIP_CLASS_NAME;
+			else
+				return OPF_SHIP;
 
 		default:
 			Int3();
@@ -11493,9 +11569,13 @@ int get_subcategory(int sexp_id)
 		case OP_SHIELDS_OFF:
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
+			return CHANGE_SUBCATEGORY_SPECIAL;
+
 		case OP_DONT_COLLIDE_INVISIBLE:
 		case OP_COLLIDE_INVISIBLE:
-			return CHANGE_SUBCATEGORY_SPECIAL;
+		case OP_CHANGE_SHIP_MODEL:
+		case OP_CHANGE_SHIP_CLASS:
+			return CHANGE_SUBCATEGORY_MODEL;
 		
 		default:
 			return -1;		// sexp doesn't have a subcategory

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.31 $
- * $Date: 2003-01-06 19:33:21 $
+ * $Revision: 2.32 $
+ * $Date: 2003-01-10 04:14:18 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/01/06 19:33:21  Goober5000
+ * cleaned up some stuff with model_set_thrust and a commented Assert that
+ * shouldn't have been
+ * --Goober5000
+ *
  * Revision 2.30  2003/01/06 18:50:37  Goober5000
  * a wee failsafe added
  * --Goober5000
@@ -5260,14 +5265,16 @@ void change_ship_type(int n, int ship_type)
 	if (Fred_running) {
 		objp->hull_strength = 100.0f;
 	} else {
-		objp->hull_strength = sip->initial_hull_strength;
+		// commented by Goober5000: we want to maintain hull strength
+		//objp->hull_strength = sip->initial_hull_strength;
 	}
 
 	// set the correct shields strength
 	if (Fred_running) {
 		objp->shields[0] = 100.0f;
 	} else {
-		set_shield_strength(objp, sip->shields);
+		// Goober5000 - again, we want to maintain shield strength
+		//set_shield_strength(objp, sip->shields);
 	}
 
 	sp->afterburner_fuel = sip->afterburner_fuel_capacity;
@@ -5278,7 +5285,10 @@ void change_ship_type(int n, int ship_type)
 	// mwa removed the next line in favor of simply setting the ai_class in AI_info.  ai_object_init
 	// was trashing mode in ai_info when it was valid due to goals.
 	//ai_object_init(&Objects[sp->objnum], sp->ai_index);
-	Ai_info[sp->ai_index].ai_class = sip->ai_class;
+//	Ai_info[sp->ai_index].ai_class = sip->ai_class;
+
+	// above removed by Goober5000 in favor of new ship_set_new_ai_class function :)
+	ship_set_new_ai_class(n, sip->ai_class);
 }
 
 #ifndef NDEBUG
@@ -7174,6 +7184,11 @@ int wing_lookup(char *name)
 int ship_info_lookup(char *name)
 {
 	int	i;
+
+	// bogus
+	if(name == NULL){
+		return -1;
+	}
 
 	for (i=0; i < Num_ship_types; i++)
 		if (!stricmp(name, Ship_info[i].name))
