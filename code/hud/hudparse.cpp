@@ -66,7 +66,7 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 int Num_gauge_types = 16;
 int Num_custom_gauges = 0;
 #endif
-#ifdef NUDE_HUD
+#ifdef NEW_HUD
 /*
 int hud_escort_list(gauge_data* cg, ship* gauge_owner)
 {
