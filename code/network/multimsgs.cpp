@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-03-17 04:07:30 $
- * $Author: bobboau $
+ * $Revision: 2.17 $
+ * $Date: 2004-03-31 05:42:27 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/03/17 04:07:30  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.15  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -457,6 +464,9 @@
 #include "mission/missionbriefcommon.h"
 
 #pragma warning(push)
+// 4018 = signed/unsigned mismatch
+// 4663 = new template specification syntax
+// 4245 = signed/unsigned mismatch in conversion of const value
 #pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
 #if !defined(PXO_TCP)

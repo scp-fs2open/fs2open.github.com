@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.2 $
- * $Date: 2004-03-10 20:51:16 $
- * $Author: Kazan $
+ * $Revision: 1.3 $
+ * $Date: 2004-03-31 05:42:28 $
+ * $Author: Goober5000 $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/03/10 20:51:16  Kazan
+ * irc
+ *
  * Revision 1.1  2004/03/10 19:11:40  Kazan
  * generally it helps if i actually add and commit the files i want to modify on a different system
  *
@@ -29,8 +32,11 @@
 
 #include "fs2open_pxo/TCP_Socket.h"
 
+#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <string>
 #include <vector>
+#pragma warning(pop)
+
 #include <fstream.h>
 
 struct irc_user

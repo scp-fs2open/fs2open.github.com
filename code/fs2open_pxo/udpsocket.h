@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.h $
- * $Revision: 1.3 $
- * $Date: 2004-02-21 00:59:43 $
- * $Author: Kazan $
+ * $Revision: 1.4 $
+ * $Date: 2004-03-31 05:42:26 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/02/21 00:59:43  Kazan
+ * FS2NETD License Comments
+ *
  * Revision 1.2  2003/10/13 06:02:50  Kazan
  * Added Log Comment Thingy to these files
  *
@@ -29,7 +32,11 @@
 #if defined(WIN32)
 // Windows Version
 #include <windows.h>
+
+#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <string>
+#pragma warning(pop)
+
 //#include <winsock2.h>
 #define STYPE SOCKET
 #define CLOSEFUNC closesocket

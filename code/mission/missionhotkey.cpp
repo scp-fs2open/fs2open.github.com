@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:02:06 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-31 05:42:28 $
  * $Author: Goober5000 $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2003/04/05 11:09:21  Goober5000
  * fixed some fiddly bits with scrolling and ui stuff
  * --Goober5000
@@ -358,7 +362,7 @@ static int Hotkey_ship_x[GR_NUM_RESOLUTIONS] = {
 
 // pragma pair put into place because of compiler warnings about being unable to inline
 // the constructor function of the hotkey_buttons set.
-#pragma warning(disable: 4710)
+#pragma warning(disable: 4710)	// function not inlined
 
 struct hotkey_buttons {
 	char *filename;
@@ -400,7 +404,7 @@ static hotkey_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 	}
 //XSTR:ON
 };
-#pragma warning(default: 4710)
+#pragma warning(default: 4710)	// function not inlined
 
 #define HOTKEY_NUM_TEXT		6
 static UI_XSTR Hotkey_text[GR_NUM_RESOLUTIONS][HOTKEY_NUM_TEXT] = {

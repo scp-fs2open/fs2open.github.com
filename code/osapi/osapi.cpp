@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-03-05 09:02:08 $
+ * $Revision: 2.18 $
+ * $Date: 2004-03-31 05:42:28 $
  * $Author: Goober5000 $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/03/05 09:02:08  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.16  2004/02/16 16:15:04  phreak
  * grr fixed a warning message i didn't see
  *
@@ -347,7 +351,7 @@ void os_resume()
 // OSAPI FORWARD DECLARATIONS
 //
 
-#pragma warning(disable:4702)
+#pragma warning(disable:4702)	// unreachable code
 #ifdef THREADED
 
 // thread handler for the main message thread
@@ -404,7 +408,7 @@ DWORD win32_process2(DWORD lparam)
 	return 0;
 }
 #endif // THREADED
-#pragma warning(default:4702)
+#pragma warning(default:4702)	// unreachable code
 
 // Fills in the Os_debugger_running with non-zero if debugger detected.
 void os_check_debugger()

@@ -16,7 +16,7 @@
 #include "debugconsole/dbugfile.h"
 #include "sound/fsspeech.h"
 
-#pragma warning(disable:4711)
+#pragma warning(disable:4711)	// function selected for inlining
 
 const int MAX_SPEECH_BUFFER_LEN = 4096;
 

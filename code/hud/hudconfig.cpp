@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:02:03 $
+ * $Revision: 2.6 $
+ * $Date: 2004-03-31 05:42:27 $
  * $Author: Goober5000 $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -441,7 +445,7 @@ int HC_select_all = 0;
 // Module Globals
 //////////////////////////////////////////////////////////////////////////////
 
-#pragma warning(disable:4710)
+#pragma warning(disable:4710)	// function not inlined
 
 char *Hud_config_fname[GR_NUM_RESOLUTIONS] = {
 	"HUDConfig",
@@ -563,7 +567,7 @@ struct HC_gauge_region	HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES] =
 	}
 };
 
-#pragma warning(default:4710)
+#pragma warning(default:4710)	// function not inlined
 
 int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	{	// GR_640
@@ -682,7 +686,7 @@ char *HC_gauge_descriptions(int n)
 #define HCB_RESET					18
 #define HCB_ACCEPT				19
 
-#pragma warning(disable : 4710)
+#pragma warning(disable : 4710)	// function not inlined
 
 ui_button_info HC_buttons[GR_NUM_RESOLUTIONS][NUM_HUD_BUTTONS] = {
 	{ // GR_640

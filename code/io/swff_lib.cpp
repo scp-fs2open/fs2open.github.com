@@ -41,7 +41,7 @@ Version	Date		Author	Comments
 #include "directx/vdinput.h"
 #undef INITGUIDS
 
-#pragma warning(disable:4711)
+#pragma warning(disable:4711)	// function selected for inlining
 
 BOOL CALLBACK DIEnumAndDestroyCreatedEffectsProc(LPDIRECTINPUTEFFECT pDIEffect, LPVOID lpvRef);
 BOOL CALLBACK DIEnumDevicesProc(LPCDIDEVICEINSTANCE lpddi, LPVOID lpvContext);
@@ -366,7 +366,7 @@ HRESULT SWFF_DestroyAllEffects(
 }
 
 #pragma warning(push)
-#pragma warning(disable:4100)
+#pragma warning(disable:4100)	// unreferenced formal parameter
 BOOL CALLBACK DIEnumAndDestroyCreatedEffectsProc(LPDIRECTINPUTEFFECT pDIEffect, LPVOID lpvRef)
 {
 	pDIEffect->Release();

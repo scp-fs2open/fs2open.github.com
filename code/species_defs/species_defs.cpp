@@ -5,11 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.7 $
- * $Date: 2004-03-05 09:02:13 $
+ * $Revision: 1.8 $
+ * $Date: 2004-03-31 05:42:29 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/03/05 09:02:13  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 1.6  2004/02/20 04:29:56  bobboau
  * pluged memory leaks,
  * 3D HTL lasers (they work perfictly)
@@ -43,7 +47,7 @@
  */
 
 
-#pragma warning(disable:4710)
+#pragma warning(disable:4710)	// function not inlined
 
 #include "species_defs/species_defs.h"
 #include "mission/missionparse.h"

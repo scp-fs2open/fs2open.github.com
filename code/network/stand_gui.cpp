@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-05 09:02:02 $
+ * $Revision: 2.10 $
+ * $Date: 2004-03-31 05:42:27 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.8  2004/03/04 05:57:45  Kazan
  * LAN works A1 Supar!
  *
@@ -376,6 +380,9 @@
 #include "cfile/cfile.h"
 
 #pragma warning(push)
+// 4018 = signed/unsigned mismatch
+// 4663 = new template specification syntax
+// 4245 = signed/unsigned mismatch in conversion of const value
 #pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
 #pragma warning(pop)

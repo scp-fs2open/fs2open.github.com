@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-03-06 23:28:22 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2004-03-31 05:42:26 $
+ * $Author: Goober5000 $
  *
  * Main file for dealing with exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/06 23:28:22  bobboau
+ * fixed motion debris
+ * animated laser textures
+ * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
+ *
  * Revision 2.3  2003/11/11 02:15:43  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -63,7 +68,7 @@ on how to hook it in.
 
 #include <windows.h>
 
-#pragma warning(disable:4711)
+#pragma warning(disable:4711)	// function selected for inlining
 
 // --------------------
 //

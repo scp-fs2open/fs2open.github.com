@@ -9,13 +9,16 @@
 
 /*
  * $Logfile$
- * $Revision: 1.6 $
- * $Date: 2004-03-10 20:51:16 $
- * $Author: Kazan $
+ * $Revision: 1.7 $
+ * $Date: 2004-03-31 05:42:27 $
+ * $Author: Goober5000 $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/03/10 20:51:16  Kazan
+ * irc
+ *
  * Revision 1.5  2004/03/10 18:45:09  Kazan
  * partially complete IRC - so i can work on it on my laptop
  *
@@ -36,8 +39,8 @@
  */
 
 
-#pragma warning(disable:4786)
-#pragma warning(disable:4710)
+#pragma warning(disable:4786)	// identifier truncated in the debug information
+#pragma warning(disable:4710)	// function not inlined
 
 #include "globalincs/pstypes.h"
 #include "ui/ui.h"
