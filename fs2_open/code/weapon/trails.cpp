@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-07-15 16:07:12 $
+ * $Revision: 2.4 $
+ * $Date: 2003-08-21 15:04:17 $
  * $Author: phreak $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/07/15 16:07:12  phreak
+ * trails now properly alphablend in ogl as it does in d3d
+ *
  * Revision 2.2  2003/05/04 20:50:06  phreak
  * bumped MAX_TRAILS to 500 because of afterburner trails
  *
@@ -323,9 +326,9 @@ void trail_render( trail * trailp )
 				vlist[1] = &last_bot;
 				vlist[2] = &center;
 
-				vlist[0]->u = 0.0f;  vlist[0]->v = 1.0f;
-				vlist[1]->u = 0.0f;  vlist[1]->v = 0.0f;
-				vlist[2]->u = 1.0f;  vlist[2]->v = 0.5f;
+				vlist[0]->u = 0.0f;  vlist[0]->v = 1.0f; vlist[0]->spec_r=vlist[0]->spec_g=vlist[0]->spec_b=0;
+				vlist[1]->u = 0.0f;  vlist[1]->v = 0.0f; vlist[1]->spec_r=vlist[1]->spec_g=vlist[1]->spec_b=0;
+				vlist[2]->u = 1.0f;  vlist[2]->v = 0.5f; vlist[1]->spec_r=vlist[1]->spec_g=vlist[1]->spec_b=0;
 
 				gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, l/255.0f );
 				if ( D3D_enabled || OGL_inited )	{
@@ -342,10 +345,10 @@ void trail_render( trail * trailp )
 				vlist[2] = &top;
 				vlist[3] = &last_top;
 
-				vlist[0]->u = 0.0f;  vlist[0]->v = 0.0f;
-				vlist[1]->u = 1.0f;  vlist[1]->v = 0.0f;
-				vlist[2]->u = 1.0f;  vlist[2]->v = 1.0f;
-				vlist[3]->u = 0.0f;  vlist[3]->v = 1.0f;
+				vlist[0]->u = 0.0f;  vlist[0]->v = 0.0f; vlist[0]->spec_r=vlist[0]->spec_g=vlist[0]->spec_b=0;
+				vlist[1]->u = 1.0f;  vlist[1]->v = 0.0f; vlist[1]->spec_r=vlist[1]->spec_g=vlist[1]->spec_b=0;
+				vlist[2]->u = 1.0f;  vlist[2]->v = 1.0f; vlist[2]->spec_r=vlist[2]->spec_g=vlist[2]->spec_b=0;
+				vlist[3]->u = 0.0f;  vlist[3]->v = 1.0f; vlist[3]->spec_r=vlist[3]->spec_g=vlist[3]->spec_b=0;
 
 				gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, l/255.0f );
 				if ( D3D_enabled || OGL_inited )	{

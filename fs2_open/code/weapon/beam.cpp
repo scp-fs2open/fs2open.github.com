@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-07-16 23:12:44 $
+ * $Revision: 2.23 $
+ * $Date: 2003-08-21 15:04:17 $
  * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/07/16 23:12:44  phreak
+ * fixed a dumb bug
+ *
  * Revision 2.21  2003/07/15 02:39:59  phreak
  * fixed problem where beams that ignore shields do not fully damage the target
  * disabled attenuation for beams, pending rework
@@ -1494,6 +1497,8 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 	float u_scale;	// beam tileing -Bobboau
 	float length;	// beam tileing -Bobboau
 
+	memset(h1,0,sizeof(vertex)*4);
+
 	// bogus weapon info index
 	if(bwi == NULL){
 		return;
@@ -2565,10 +2570,10 @@ int beam_collide_ship(obj_pair *pair)
 		beam_add_collision(b, pair->b, &test_collide);
 
 		// if we went through the shield
-		if (quad != -1)
-		{
-			Objects[shipp->objnum].shield_quadrant[quad] = 0.0f;	// Bobboau's addition: now works correctly
-		}
+	//	if (quad != -1)
+	//	{
+	//		Objects[shipp->objnum].shield_quadrant[quad] = 0.0f;	// Bobboau's addition: now works correctly
+	//	}
 	}	
 
 	// add this guy to the lighting list
