@@ -4,11 +4,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.12 $
- * $Date: 2004-09-28 19:54:31 $
+ * $Revision: 1.13 $
+ * $Date: 2004-09-28 22:51:41 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2004/09/28 19:54:31  Kazan
+ * | is binary or, || is boolean or - please use the right one
+ * autopilot velocity ramping biasing
+ * made debugged+k kill guardianed ships
+ *
  * Revision 1.11  2004/07/29 23:41:21  Kazan
  * bugfixes
  *
@@ -63,7 +68,7 @@
 
 
 // Extern functions/variables
-extern void sexp_player_use_ai(int use_ai);
+extern int		Player_use_ai;
 extern int sexp_distance2(int obj1, char *subj);
 extern int ai_goal_find_empty_slot( ai_goal *goals );
 
@@ -216,7 +221,7 @@ void StartAutopilot()
 
 	AutoPilotEngaged = true;
 
-	sexp_player_use_ai(1);
+	Player_use_ai = 1;
 	Game_time_compression = F1_0;
 
 	// determine speed cap
@@ -266,13 +271,13 @@ void StartAutopilot()
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
 					
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, AIF_FORMATION_WING, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index] );
 					
 					//fixup has to wait until after wing goals
 				}
 				else
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, AIF_FORMATION_WING, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
 				}
 			}
 		}
@@ -293,7 +298,7 @@ void StartAutopilot()
 			if (Navs[CurrentNav].flags & NP_WAYPOINT)
 			{
 				
-				ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, i );
+				ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, AIF_FORMATION_WING, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, i );
 				
 
 				// "fix up" the goal
@@ -308,7 +313,7 @@ void StartAutopilot()
 			}
 			else
 			{
-				ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, i );
+				ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, AIF_FORMATION_WING, ((ship*)Navs[CurrentNav].target_obj)->ship_name, i );
 
 			}
 		}
@@ -357,8 +362,7 @@ void EndAutoPilot()
 	AutoPilotEngaged = false;
 
 	Game_time_compression = F1_0;
-	sexp_player_use_ai(0);
-
+	Player_use_ai = 0;
 	//Clear AI Goals
 
 	// assign ship goals

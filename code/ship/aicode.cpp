@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.69 $
- * $Date: 2004-09-10 13:54:21 $
- * $Author: et1 $
+ * $Revision: 2.70 $
+ * $Date: 2004-09-28 22:51:41 $
+ * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2004/09/10 13:54:21  et1
+ * Implemented "+WeaponMinRange" token. Fixed a crash issue with fighter launch checks
+ *
  * Revision 2.68  2004/09/01 01:26:20  phreak
  * MISSION_FLAG_USE_NEW_AI fixes for bomber+ missile selection, rapid dumbfire
  * firing and primary weapons selection
@@ -12657,7 +12660,7 @@ int ai_formation()
 		leader_objp = &Objects[aip->goal_objnum];
 	} else {	//	Formation flying in waypoint mode.
 		Assert(aip->ai_flags & AIF_FORMATION_WING);
-		if (aip->mode != AIM_WAYPOINTS) {
+		if (aip->mode != AIM_WAYPOINTS && aip->mode != AIM_FLY_TO_SHIP) {
 			aip->ai_flags &= ~AIF_FORMATION_WING;
 			return 1;
 		}
@@ -12669,7 +12672,7 @@ int ai_formation()
 
 		// disable formation flying for any ship in the players wing
 		player_wing = Ships[Player_obj->instance].wingnum;
-		if ( (player_wing != -1) && (wingnum == player_wing) )
+		if ( (player_wing != -1) && (wingnum == player_wing) && !AutoPilotEngaged)
 			return 1;
 
 		wing_index = get_wing_index(Pl_objp, wingnum);
