@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-02-16 19:00:56 $
- * $Author: phreak $
+ * $Revision: 2.26 $
+ * $Date: 2003-02-23 20:55:57 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/02/16 19:00:56  phreak
+ * stupid typo -- my bad
+ *
  * Revision 2.24  2003/02/16 18:53:59  phreak
  * fixed around splash screen
  * 2_splash.pcx is loaded in 1024x768
@@ -9017,13 +9020,14 @@ int game_hacked_data()
 }
 
 
-#define MAX_SPLASHSCREENS 64
-char Splash_screens[MAX_SPLASHSCREENS][MAX_FILENAME_LEN];
+//#define MAX_SPLASHSCREENS 64
+//char Splash_screens[MAX_SPLASHSCREENS][MAX_FILENAME_LEN];
 
 
 void display_title_screen()
 {
-	int title_bitmap=-1, title_logo;
+	int title_bitmap = -1;
+	int title_logo =-1;
 /*	_finddata_t find;
 	long		find_handle;
 	char current_dir[256];
@@ -9068,8 +9072,6 @@ void display_title_screen()
 	} else {
 		title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
 	}
-
-	title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
 	
 	if (title_bitmap == -1 && title_logo == -1) {
 //		return;
@@ -9083,21 +9085,8 @@ void display_title_screen()
 	}
 #endif
 
-
-	title_logo=-1;
-
-	if (gr_screen.res==GR_1024)
-	{
-		//check for a hires splash screen
-		title_bitmap=bm_load("2_splash");
-
-	}
-
-	//if there is none, use the normal one
-	if (title_bitmap==-1)
-		bm_load("splash");
-
-	int width, height;
+	title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+	title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
 
 	if(title_bitmap != -1)
 	{
@@ -9105,6 +9094,7 @@ void display_title_screen()
 		gr_set_bitmap(title_bitmap);
 
 		//Get bitmap's width and height
+		int width, height;
 		bm_get_info(title_bitmap, &width, &height);
 
 		//Draw it in the center of the screen
@@ -9114,16 +9104,10 @@ void display_title_screen()
 
 	if(title_logo != -1)
 	{
-		// set
 		gr_set_bitmap(title_logo);
 
-		//Get bitmap's width and height
-		int width, height;
-		bm_get_info(title_logo, &width, &height);
-
-		//Draw it in the center of the screen
 		gr_bitmap(0,0);
-		//gr_bitmap((gr_screen.max_w - width)/2, (gr_screen.max_h - height)/2);
+
 		bm_unload(title_logo);
 	}
 
