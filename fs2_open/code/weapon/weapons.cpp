@@ -20,6 +20,9 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/06/12 21:21:26  phreak
+ * local ssms fired without lock will not enter subspace at all
+ *
  * Revision 2.29  2003/06/12 17:45:54  phreak
  * local ssm warpin is now handled better than what i committed earlier
  *
@@ -836,11 +839,14 @@ void parse_wi_flags(weapon_info *weaponp)
 	if(weaponp->wi_flags & WIF_SWARM){
 		Assert(!(weaponp->wi_flags & WIF_CORKSCREW) && !(weaponp->wi_flags & WIF_FLAK));
 	}
-
-	// make sure flak guns are only placed on turrets
-	if(weaponp->wi_flags & WIF_FLAK){
-		Assert(weaponp->wi_flags & WIF_BIG_ONLY);
+	if (weaponp->wi_flags2 & WIF2_LOCAL_SSM)
+	{
+		if ((First_secondary_index == -1) || (weaponp->wi_flags & WIF_HOMING));
+		{
+			Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
+		}
 	}
+
 }
 
 // function to parse the information for a specific weapon type.	
@@ -1427,11 +1433,11 @@ int parse_weapon()
 		stuff_float(&wip->elec_sensors_mult);
 	}
 
-	//	int lssm_warpout_delay;			//delay between launch and warpout (ms)
-	//int lssm_warpin_delay;			//delay between warpout and warpin (ms)
-	//float lssm_stage5_vel;			//velocity during final stage
-	//float lssm_warpin_radius;
 
+	wip->lssm_warpout_delay=2000;			//delay between launch and warpout (ms)
+	wip->lssm_warpin_delay=7000;			//delay between warpout and warpin (ms)
+	wip->lssm_stage5_vel=100.0f;		//velocity during final stage
+	wip->lssm_warpin_radius=500.0f;
 	if (optional_string("$Local SSM:"))
 	{
 		required_string("+Warpout Delay:");
