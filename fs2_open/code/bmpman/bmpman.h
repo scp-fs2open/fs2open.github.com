@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
- * $Revision: 2.1 $
- * $Date: 2003-01-05 23:41:50 $
- * $Author: bobboau $
+ * $Revision: 2.2 $
+ * $Date: 2003-01-18 19:55:16 $
+ * $Author: phreak $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/01/05 23:41:50  bobboau
+ * disabled decals (for now), removed the warp ray thingys,
+ * made some better error mesages while parseing weapons and ships tbls,
+ * and... oh ya, added glow mapping
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -355,5 +360,8 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 void bm_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h);
 
 extern int GLOWMAP[MAX_BITMAPS];	//this holds a reference to a map that is a fully lit version of it's index -Bobboau
+
+int bm_is_compressed(int num);
+int bm_get_size(int num);
 
 #endif

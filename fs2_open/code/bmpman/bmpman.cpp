@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-01-09 22:23:38 $
- * $Author: inquisitor $
+ * $Revision: 2.10 $
+ * $Date: 2003-01-18 19:55:16 $
+ * $Author: phreak $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/01/09 22:23:38  inquisitor
+ * Rollback to 2.7 to fix glow code issue that phreak noticed.
+ * -Quiz
+ *
  * Revision 2.7  2003/01/05 23:41:50  bobboau
  * disabled decals (for now), removed the warp ray thingys,
  * made some better error mesages while parseing weapons and ships tbls,
@@ -513,11 +517,13 @@
 #include "graphics/grinternal.h"
 #include "tgautils/tgautils.h"
 #include "ship/ship.h"
+#include "ddsutils/ddsutils.h"
 
 #ifndef NDEBUG
 #define BMPMAN_NDEBUG
 #endif
 
+extern int Texture_compression_enabled;
 
 int GLOWMAP[MAX_BITMAPS] = {-1};
 
@@ -532,6 +538,9 @@ int bm_inited = 0;
 #define	BM_TYPE_USER		2
 #define	BM_TYPE_ANI			3		// in-house ANI format
 #define	BM_TYPE_TGA			4		// 16 bit targa
+#define BM_TYPE_DXT1		5		// 24 bit with switchable alpha		(compressed)
+#define BM_TYPE_DXT3		6		// 32 bit with 4 bit alpha			(compressed)
+#define BM_TYPE_DXT5		7		// 32 bit with 8 bit alpha			(compressed)
 
 typedef union bm_extra_info	{
 	struct {
@@ -570,6 +579,7 @@ typedef struct bitmap_entry	{
 	// Data for animations and user bitmaps
 	bm_extra_info	info;		
 
+	int mem_taken;											//how much memory it takes up
 #ifdef BMPMAN_NDEBUG
 	// bookeeping
 	ubyte		used_last_frame;							// If set, then it was used last frame
@@ -925,16 +935,15 @@ int bm_load_sub(char *real_filename, char *ext, int *handle)
 	}
 
 	// try and find the file
-	/*
 	CFILE *test = cfopen(filename, "rb");
 	if(test != NULL){
 		cfclose(test);
 		return 0;
 	}
-	*/
+	
 
 	// could not be found
-	return 0;
+	return -1;
 }
 
 // This loads a bitmap so we can draw with it later.
@@ -948,8 +957,10 @@ int bm_load( char * real_filename )
 	int w, h, bpp;
 	char filename[MAX_FILENAME_LEN];
 	int tga = 0;
+	int dds = 0;
 	int handle;
 	int found = 0;
+	unsigned char type;
 
 	if ( !bm_inited ) bm_init();
 
@@ -966,24 +977,52 @@ int bm_load( char * real_filename )
 		//Int3();
 		*p = 0;
 	}
+	
+	// try and find a compressed tex first	
+	// unless we're cant do so
+	if (Texture_compression_enabled)
+	{
+		switch(bm_load_sub(filename, ".dds", &handle)){
+		// error
+		case -1:
+			break;
+
+		// found as a file
+		case 0:
+			found = 1;
+			dds=1;
+			strcat(filename, ".dds");
+			break;
+
+		// found as pre-existing
+		case 1:
+			found = 1;
+			GLOWMAP[handle] = -1;
+			return handle;		
+		}
+	}
 	 
-	// try and find the pcx file		
-	switch(bm_load_sub(filename, ".pcx", &handle)){
-	// error
-	case -1:
-		break;
+	if (!found)
+	{
 
-	// found as a file
-	case 0:
-		found = 1;
-		strcat(filename, ".pcx");
-		break;
+		// try and find the pcx file		
+		switch(bm_load_sub(filename, ".pcx", &handle)){
+		// error
+		case -1:
+			break;
+	
+		// found as a file
+		case 0:
+			found = 1;
+			strcat(filename, ".pcx");
+			break;
 
-	// found as pre-existing
-	case 1:
-		found = 1;
-		GLOWMAP[handle] = -1;
-		return handle;		
+		// found as pre-existing
+		case 1:
+			found = 1;
+			GLOWMAP[handle] = -1;
+			return handle;		
+		}
 	}
 
 	if(!found){
@@ -1007,13 +1046,45 @@ int bm_load( char * real_filename )
 		}
 	}
 
+	
+	if (dds)
+	{
+		int ct;
+		int dds_error=dds_read_header ( filename, &w,  &h, &bpp, &ct);
+		if (dds_error != DDS_ERROR_NONE)
+		{
+			mprintf(("Couldn't open '%s -- error description %s\n", filename, dds_error_string(dds_error)));
+			return -1;
+		}
+		mprintf(("Found a .dds file! %s\n", filename));
+		switch (ct)
+		{
+			case DDS_DXT1:
+				type=BM_TYPE_DXT1;
+				break;
+
+			case DDS_DXT3:
+				type=BM_TYPE_DXT3;
+				break;
+
+			case DDS_DXT5:
+				type=BM_TYPE_DXT5;
+				break;
+
+			default:
+				Error(LOCATION, "bad DDS file compression.  Not using DXT1,3,5 %s", filename);
+				return -1;
+		}
+	}
+
 	// if its a tga file
-	if(tga){
+	else if(tga){
 		int tga_error=targa_read_header( filename, &w, &h, &bpp, NULL );
 		if ( tga_error != TARGA_ERROR_NONE )	{
 			mprintf(( "Couldn't open '%s'\n", filename ));
 			return -1;
 		}
+		type = BM_TYPE_TGA;
 	}
 	// if its a pcx file
 	else {
@@ -1022,6 +1093,7 @@ int bm_load( char * real_filename )
 			mprintf(( "Couldn't open '%s'\n", filename ));
 			return -1;
 		}
+		type=BM_TYPE_PCX;
 	}
 
 	// Error( LOCATION, "Unknown bitmap type %s\n", filename );
@@ -1047,7 +1119,7 @@ int bm_load( char * real_filename )
 	
 	// Mark the slot as filled, because cf_read might load a new bitmap
 	// into this slot.
-	bm_bitmaps[n].type = tga ? (ubyte)BM_TYPE_TGA : (ubyte)BM_TYPE_PCX;
+	bm_bitmaps[n].type = type;
 	bm_bitmaps[n].signature = Bm_next_signature++;
 	Assert ( strlen(filename) < MAX_FILENAME_LEN );
 	strncpy(bm_bitmaps[n].filename, filename, MAX_FILENAME_LEN-1 );
@@ -1700,6 +1772,35 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	bm_convert_format( bitmapnum, bmp, bpp, flags );
 }
 
+//lock a dds file
+void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
+{
+	uint data;
+	int size;
+	int error;
+
+	Assert(Texture_compression_enabled);
+	Assert(&be->bm == bmp);
+	#ifdef BMPMAN_NDEBUG
+	Assert( be->data_size > 0 );
+	#endif
+
+	//data is malloc'ed in the function
+	error=dds_read_bitmap( be->filename, &size, &data );
+	if (error != DDS_ERROR_NONE)
+	{
+		Error(LOCATION, "error loading %s -- %s", be->filename, dds_error_string(error));
+	}
+
+	bmp->bpp=bpp;
+	bmp->data=data;
+	bmp->flags =0;
+	be->mem_taken=size;
+
+}
+
+
+
 MONITOR( NumBitmapPage );
 MONITOR( SizeBitmapPage );
 
@@ -1733,8 +1834,18 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 		} else {
 			if(flags & BMP_AABITMAP){
 				Assert( bpp == 8 );
-			} else {
+			} else if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
 				Assert( bpp == 16 );
+			}
+			else if (flags & BMP_TEX_DXT1){
+				Assert(bpp==24);
+			}
+			else if (flags & (BMP_TEX_DXT3 | BMP_TEX_DXT5)){
+				Assert(bpp==32);
+			}
+			else
+			{
+				Assert(0);		//?
 			}
 		}
 	}
@@ -1816,6 +1927,12 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 
 		case BM_TYPE_TGA:
 			bm_lock_tga( handle, bitmapnum, be, bmp, bpp, flags );
+			break;
+
+		case BM_TYPE_DXT1:
+		case BM_TYPE_DXT3:
+		case BM_TYPE_DXT5:
+			bm_lock_dds( handle, bitmapnum, be, bmp, bpp, flags );
 			break;
 
 		default:
@@ -2091,6 +2208,26 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 
 		bm_bitmaps[n+i].preloaded = 1;
 
+		//check if its compressed
+		if (OGL_inited)
+		{
+			switch (bm_bitmaps[n+i].type)
+			{
+				case BM_TYPE_DXT1:
+					bm_bitmaps[n+i].used_flags = BMP_TEX_DXT1;
+					continue;
+				
+				case BM_TYPE_DXT3:
+					bm_bitmaps[n+i].used_flags = BMP_TEX_DXT3;
+					continue;
+
+				case BM_TYPE_DXT5:
+					bm_bitmaps[n+i].used_flags = BMP_TEX_DXT5;
+					continue;
+				
+			}
+
+		}
 		if ( D3D_enabled || OGL_inited )	{
 			bm_bitmaps[n+i].used_flags = BMP_TEX_OTHER;
 		} else {			
@@ -2128,6 +2265,25 @@ void bm_page_in_xparent_texture( int bitmapnum, int nframes)
 
 		bm_bitmaps[n+i].preloaded = 3;
 
+		//check if its compressed
+		if (OGL_inited)
+		{
+			switch (bm_bitmaps[n+i].type)
+			{
+				case BM_TYPE_DXT1:
+					bm_bitmaps[n+i].used_flags = BMP_TEX_DXT1;
+					continue;
+					
+				case BM_TYPE_DXT3:
+					bm_bitmaps[n+i].used_flags = BMP_TEX_DXT3;
+					continue;
+
+				case BM_TYPE_DXT5:
+					bm_bitmaps[n+i].used_flags = BMP_TEX_DXT5;
+					continue;
+			}
+
+		}
 		if ( D3D_enabled || OGL_inited )	{
 			// bm_bitmaps[n+i].used_flags = BMP_NO_PALETTE_MAP;
 			bm_bitmaps[n+i].used_flags = BMP_TEX_XPARENT;
@@ -2677,4 +2833,39 @@ void bm_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h)
 	// determine the width and height of this section
 	*w = sx < (sections->num_x - 1) ? MAX_BMAP_SECTION_SIZE : bw - sections->sx[sx];
 	*h = sy < (sections->num_y - 1) ? MAX_BMAP_SECTION_SIZE : bh - sections->sy[sy];										
+}
+
+int bm_is_compressed(int num)
+{
+	int n=num % MAX_BITMAPS;
+
+	//duh
+	if (!Texture_compression_enabled)
+		return 0;
+
+	Assert(num==bm_bitmaps[n].handle);
+
+	switch (bm_bitmaps[n].type)
+	{
+		case BM_TYPE_DXT1:
+			return 1;
+		case BM_TYPE_DXT3:
+			return 2;
+		case BM_TYPE_DXT5:
+			return 3;
+	}
+	return 0;
+}
+
+//needed only for compressed bitmaps
+int bm_get_size(int num)
+{
+	int n=num % MAX_BITMAPS;
+
+	if (!bm_is_compressed(num))
+		return 0;
+
+	Assert(num==bm_bitmaps[n].handle);
+
+	return bm_bitmaps[n].mem_taken;
 }
