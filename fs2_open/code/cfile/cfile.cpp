@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-11-04 08:32:38 $
+ * $Revision: 2.7 $
+ * $Date: 2002-11-10 16:29:53 $
  * $Author: DTP $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/11/04 08:32:38  DTP
+ * Made sure, that VP and Plain files dont get added twice to the search order. Side-effect of Mod support.
+ *
  * Revision 2.5  2002/10/30 06:31:05  DTP
  * doh!, used upper case in include, dont know how much it matters for *nix systems, but here it is
  *
@@ -274,41 +277,6 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_DEMOS,					"data" DIR_SEPARATOR_STR "demos",															".fsd",						CF_TYPE_DATA	},
 	{ CF_TYPE_CBANIMS,				"data" DIR_SEPARATOR_STR "cbanims",															".ani",						CF_TYPE_DATA	},
 	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",														".ani",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_ROOT,					"",																									".mve",						CF_TYPE_ROOT	},
-	{ CF_TYPE_MOD_DATA,					"data",																								".cfg .log .txt",			CF_TYPE_ROOT	},
-	{ CF_TYPE_MOD_MAPS,					"data" DIR_SEPARATOR_STR "maps",																".pcx .ani .tga",			CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_TEXT,					"data" DIR_SEPARATOR_STR "text",																".txt .net",				CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_MISSIONS,				"data" DIR_SEPARATOR_STR "missions",														".fs2 .fc2 .ntl .ssv",	CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_MODELS,					"data" DIR_SEPARATOR_STR "models",															".pof",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_TABLES,					"data" DIR_SEPARATOR_STR "tables",															".tbl",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_SOUNDS,					"data" DIR_SEPARATOR_STR "sounds",															".wav",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_SOUNDS_8B22K,			"data" DIR_SEPARATOR_STR "sounds" DIR_SEPARATOR_STR "8b22k",						".wav",						CF_TYPE_SOUNDS	},
-	{ CF_TYPE_MOD_SOUNDS_16B11K,		"data" DIR_SEPARATOR_STR "sounds" DIR_SEPARATOR_STR "16b11k",						".wav",						CF_TYPE_SOUNDS	},
-	{ CF_TYPE_MOD_VOICE,					"data" DIR_SEPARATOR_STR "voice",															"",							CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_VOICE_BRIEFINGS,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "briefing",						".wav",						CF_TYPE_VOICE	},
-	{ CF_TYPE_MOD_VOICE_CMD_BRIEF,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "command_briefings",			".wav",						CF_TYPE_VOICE	},
-	{ CF_TYPE_MOD_VOICE_DEBRIEFINGS,	"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "debriefing",					".wav",						CF_TYPE_VOICE	},
-	{ CF_TYPE_MOD_VOICE_PERSONAS,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "personas",						".wav",						CF_TYPE_VOICE	},
-	{ CF_TYPE_MOD_VOICE_SPECIAL,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "special",						".wav",						CF_TYPE_VOICE	},
-	{ CF_TYPE_MOD_VOICE_TRAINING,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "training",						".wav",						CF_TYPE_VOICE	},
-	{ CF_TYPE_MOD_MUSIC,					"data" DIR_SEPARATOR_STR "music",															".wav",						CF_TYPE_VOICE	},
-	{ CF_TYPE_MOD_MOVIES,					"data" DIR_SEPARATOR_STR "movies",															".mve .msb",				CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_INTERFACE,				"data" DIR_SEPARATOR_STR "interface",														".pcx .ani .tga",			CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_FONT,					"data" DIR_SEPARATOR_STR "fonts",															".vf",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",															".ani .pcx .neb .tga",	CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_HUD,						"data" DIR_SEPARATOR_STR "hud",																".ani .pcx .tga",			CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_PLAYER_MAIN,			"data" DIR_SEPARATOR_STR "players",															"",							CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_PLAYER_IMAGES_MAIN,	"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",						".pcx",						CF_TYPE_PLAYER_MAIN	},
-	{ CF_TYPE_MOD_CACHE,					"data" DIR_SEPARATOR_STR "cache",															".clr .tmp",				CF_TYPE_DATA	}, 	//clr=cached color
-	{ CF_TYPE_MOD_PLAYERS,				"data" DIR_SEPARATOR_STR "players",															".hcf",						CF_TYPE_DATA	},	
-	{ CF_TYPE_MOD_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",						".plr .csg .css",			CF_TYPE_PLAYERS	},
- 	{ CF_TYPE_MOD_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",						".plr",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",														".pcx .fs2",				CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_CONFIG,					"data" DIR_SEPARATOR_STR "config",															".cfg",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_SQUAD_IMAGES_MAIN,	"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "squads",						".pcx",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_DEMOS,					"data" DIR_SEPARATOR_STR "demos",															".fsd",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_CBANIMS,				"data" DIR_SEPARATOR_STR "cbanims",															".ani",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOD_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",														".ani",						CF_TYPE_DATA	},
 };
 
 
@@ -386,22 +354,6 @@ int cfile_in_root_dir(char *exe_path)
 //
 int cfile_init(char *exe_dir, char *cdrom_dir)
 {
-	//DTP here mod flag gets checked and appropriate action is taken
-	if(Cmdline_mod ) {
-		if (checkout_mod(Cmdline_mod)) {
-			int i;
-			strcat(Hold_mod, DIR_SEPARATOR_STR);
-			strcat(Pathtypes[CF_TYPE_MOD_ROOT].path,Hold_mod);
-			for(i=CF_TYPE_ROOT+1;i<CF_TYPE_MOD_ROOT;i++) {
-				strcpy(Pathtypes[i].path,cf_add_modname(Pathtypes[CF_TYPE_MOD_ROOT].path, Pathtypes[i].path));
-			}
-		}
-	}
-	if(!(Cmdline_mod)) {
-		CF_MAX_PATH_TYPES == CF_TYPE_MOD_ROOT; //DTP set max_path_types to mod_root since we dont want to add the same VP or plain file Twice
-	}
-
-
 	int i;
 
 	// initialize encryption
@@ -1822,24 +1774,6 @@ int cflush(CFILE *cfile)
 
 	Assert(cb->fp != NULL);
 	return fflush(cb->fp);
-}
-// DTP checkout mod name, directory etc
-// checkout modname
-// 1 - succes
-// 0 - failure
-int checkout_mod(char *checkmod)
-{
-	return 1;
-	
-}
-
-char *cf_add_modname(char *filename, char *ext)
-{
-//	int flen, elen;
-	static char path[MAX_PATH_LEN];
-	strcpy(path, filename);
-	strcat(path, ext);
-	return path;
 }
 
 

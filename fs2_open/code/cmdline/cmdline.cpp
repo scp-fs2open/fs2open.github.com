@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.9 $
- * $Date: 2002-10-27 23:55:36 $
+ * $Revision: 2.10 $
+ * $Date: 2002-11-10 16:30:53 $
  * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2002/10/27 23:55:36  DTP
+ * DTP; started basic implementation of mod-support
+ * plain files only for now. fs2_open.exe -mod X will look for files in fs2/ X /all-legal-subdirectories. no checking/creating dirs yet. directories must be there.
+ *
  * Revision 2.8  2002/10/22 23:02:39  randomtiger
  * Made Phreaks alternative scanning style optional under the command line tag "-phreak"
  * Fixed bug that changes HUD colour when targetting debris in a full nebula. - RT
@@ -683,7 +687,6 @@ int parse_cmdline(int argc, char *argv[])
 
 	if(mod_arg.found() ) {
 		Cmdline_mod = mod_arg.str();
-		Hold_mod = mod_arg.str();
 	}
 
 	return 1;

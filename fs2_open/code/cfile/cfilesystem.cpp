@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-10-30 06:29:45 $
+ * $Revision: 2.6 $
+ * $Date: 2002-11-10 16:28:08 $
  * $Author: DTP $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/10/30 06:29:45  DTP
+ * doh!, used upper case in include, dont know how much it matters for *nix systems, but here it is
+ *
  * Revision 2.4  2002/10/30 06:26:11  DTP
  * DTP Implemented basic VP files handling. mission and campaign files inside VP files found in mod dir still not supported, cheking / creating directories not implented either
  *
@@ -256,11 +259,10 @@ int cf_get_packfile_count(cf_root *root)
 	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
 		strcpy( filespec, root->path );
 		
-		if((!(Cmdline_mod)) && (i != CF_TYPE_MOD_ROOT)) {
-			if(strlen(Pathtypes[i].path)) { //DTP dont add slash for roots
+			if(strlen(Pathtypes[i].path)) { 
 				strcat( filespec, Pathtypes[i].path );
 				strcat( filespec, DIR_SEPARATOR_STR );
-			}
+		//	}
 		}
 
 #if defined _WIN32
@@ -347,8 +349,7 @@ void cf_build_pack_list( cf_root *root )
 	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
 		strcpy( filespec, root->path );
 		
-		if((i != CF_TYPE_ROOT) && (i != CF_TYPE_MOD_ROOT))	{ //DTP dont add slash for roots
-			//strlen(Pathtypes[i].path)) {
+		if(strlen(Pathtypes[i].path)) {
 			strcat( filespec, Pathtypes[i].path );
 			strcat( filespec, DIR_SEPARATOR_STR );
 		}
@@ -374,8 +375,9 @@ void cf_build_pack_list( cf_root *root )
 
 					// fill in all the proper info
 					strcpy(rptr_sort->path, root->path);
-					if((i != CF_TYPE_ROOT) && (i != CF_TYPE_MOD_ROOT))	{//DTP dont add slash for roots
-						//				if(strlen(Pathtypes[i].path)) {
+					
+					if(strlen(Pathtypes[i].path)) {
+
 						strcat(rptr_sort->path, Pathtypes[i].path );
 						strcat(rptr_sort->path, DIR_SEPARATOR_STR);
 					}
@@ -446,10 +448,17 @@ void cf_build_root_list(char *cdrom_dir)
 
 	cf_root	*root;
 
+	if(Cmdline_mod) {
+		strcat(Cmdline_mod, DIR_SEPARATOR_STR);
+		cf_root *modroot;
+		modroot = cf_create_root();
+		strcpy(modroot->path,Cmdline_mod);
+		modroot->roottype = CF_ROOTTYPE_PATH;
+		cf_build_pack_list(modroot);
+	}
+
 	root = cf_create_root();
 	
-	
-
 	if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
 		Error(LOCATION, "Can't get current working directory -- %d", errno );
 	}
@@ -459,19 +468,7 @@ void cf_build_root_list(char *cdrom_dir)
 		strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 	}
 
-			
-	if(Cmdline_mod) { //add root here since it will then use files inside this pack before it uses
-					  //matching files Vp files found in ../freespace2/
-		cf_root *modroot;
-		modroot = cf_create_root();
-		
-		strcpy(modroot->path,cf_add_modname(modroot->path,Pathtypes[CF_TYPE_MOD_ROOT].path));
-		cf_build_pack_list(modroot);
-		modroot->roottype = CF_ROOTTYPE_PATH;
-	}
-	
-		
-   
+	   
 	root->roottype = CF_ROOTTYPE_PATH;
 
    //======================================================
@@ -524,8 +521,7 @@ void cf_search_root_path(int root_index)
 
 		strcpy( search_path, root->path );
 
-		if((i != CF_TYPE_ROOT) && (i != CF_TYPE_MOD_ROOT))	{ //DTP dont add slash for roots
-		//if(strlen(Pathtypes[i].path) {
+		if(strlen(Pathtypes[i].path)) {
 			strcat( search_path, Pathtypes[i].path );
 			strcat( search_path, DIR_SEPARATOR_STR );
 		} 
