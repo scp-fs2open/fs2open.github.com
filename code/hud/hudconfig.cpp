@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-18 20:07:49 $
  * $Author: penguin $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/29 14:44:54  mharris
  * Don't use pointers to temp. auto variables in init_alphacolor(); instead
  * use pointers to global HUD_config array.
@@ -1055,10 +1058,10 @@ void hud_config_popup_flag_clear(int i)
 void hud_config_render_gauges()
 {
 	int i;
-	color *use_color;
-	int alpha;
 
 	for ( i=0; i<NUM_HUD_GAUGES; i++ ) {
+		color *use_color;
+		int alpha;
 		if ( (hud_config_show_flag_is_set(i)) ) {
 			// set the correct color
 			if(!HC_gauge_regions[gr_screen.res][i].use_iff){
@@ -1082,8 +1085,9 @@ void hud_config_render_gauges()
 			gr_set_color_fast(use_color);			
 		} else {
 			// if its off, make it dark gray
-			gr_init_alphacolor(use_color, 127, 127, 127, 64);
-			gr_set_color_fast(use_color);			
+			static color use_color;
+			gr_init_alphacolor(&use_color, 127, 127, 127, 64);
+			gr_set_color_fast(&use_color);			
 		}
 
 		// draw
